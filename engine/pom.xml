@@ -185,10 +185,6 @@
 			<groupId>org.antlr</groupId>
 			<artifactId>antlr-runtime</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-math</artifactId>
-		</dependency>
 		<!-- <dependency> <groupId>org.apache.hadoop</groupId> <artifactId>hadoop-common</artifactId> 
 			<version>${hadoop.version}</version> <exclusions> <exclusion> <groupId>commons-el</groupId> 
 			<artifactId>commons-el</artifactId> </exclusion> <exclusion> <groupId>tomcat</groupId> 
@@ -230,17 +226,8 @@
 			<artifactId>commons-logging-api</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>commons-configuration</groupId>
-			<artifactId>commons-configuration</artifactId>
-			<version>1.7</version>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.hbase</groupId>
-			<artifactId>hbase</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>

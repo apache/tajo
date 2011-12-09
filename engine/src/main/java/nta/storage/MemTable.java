@@ -3,16 +3,12 @@ package nta.storage;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
-import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.hadoop.hbase.util.Bytes;
-
-import nta.catalog.Column;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 
