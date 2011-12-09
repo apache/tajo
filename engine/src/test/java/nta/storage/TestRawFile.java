@@ -146,17 +146,4 @@ public class TestRawFile {
 		
 		readonly.close();
 	}
-	
-	@Test
-	public final void testScan() throws IOException {
-		FileSystem fs = LocalFileSystem.get(conf);
-		StoreManager sm = new StoreManager(conf, fs);
-		Store store = sm.open(URI.create("src/test/resources/nta/storage/RawFile/table1"));
-		
-		Scanner sc = sm.getScanner(store);
-		Tuple tuple = null;
-		while((tuple = sc.next2()) != null) {
-			
-		}	
-	}
 }

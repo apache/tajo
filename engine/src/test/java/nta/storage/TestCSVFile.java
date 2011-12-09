@@ -11,6 +11,7 @@ import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
+import nta.engine.NtaEngineConstants;
 import nta.engine.TestUtils;
 
 import org.apache.hadoop.fs.FileSystem;
@@ -23,22 +24,16 @@ import org.junit.Test;
 public class TestCSVFile {
 	private NtaConf conf; 
 	private static String TEST_PATH = "target/test-data/TestCSVFile";
-	private File testDir;
 
 	@Before
 	public void setUp() throws Exception {
 		conf = new NtaConf();
-		
-		testDir = new File(TEST_PATH);
-		if(testDir.exists()) {
-			testDir.delete();
-		}
-		testDir.mkdirs();
+		conf.set(NtaEngineConstants.ENGINE_DATA_DIR, TEST_PATH+"/data");
+		TestUtils.buildTestDir(TEST_PATH);
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		testDir.delete();
 	}
 
 	@Test

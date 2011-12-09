@@ -218,8 +218,6 @@ public class MemTable implements UpdatableScanner {
 	}
 
 	@Override
-	public void close() {		
-		slots.clear();
-		slots = null;
+	public void close() {
 	}
 }
