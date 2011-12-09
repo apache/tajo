@@ -1,0 +1,72 @@
+option java_package = "nta.catalog.proto";
+option java_outer_classname = "TableProtos";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
+
+enum DataType {
+	BOOLEAN = 0;
+	BYTE = 1;
+	BYTES = 2;
+	SHORT = 3;
+	INT = 4;
+	LONG = 5;
+	FLOAT = 6;
+	DOUBLE = 7;
+	STRING = 8;
+	ENUM = 9;
+	IPv4 = 10;
+	IPv6 = 11;
+	ANY = 12;
+}
+
+enum AttrType {
+	NORMAL = 0;
+	AGGREGATED = 1;
+	GROUPBY = 2;
+}
+
+enum TableType {
+	BASETABLE = 0;
+	CUBE = 1;
+	TEMPORAL = 2;
+}
+
+enum StoreType {
+	MEM = 0;
+	CSV = 1;
+	RAW = 2;
+}
+
+message ColumnProto {
+	required int32 columnId = 1;
+	required string columnName = 2;
+	required DataType dataType = 3;
+	optional AttrType attrType = 4;
+}
+
+message SchemaProto {
+	repeated ColumnProto fields = 1;
+}
+
+message KeyValueProto {
+	required string key = 1;
+	required string value = 2;
+}
+
+message OptionsProto {
+	repeated KeyValueProto keyval = 1;
+}
+
+message TableProto {
+	required TableType tableType = 1;
+	required StoreType storeType = 2;
+	required SchemaProto schema = 3;
+	optional OptionsProto options = 4;
+	optional int64 startKey = 5;
+	optional int64 endKey = 6;
+	optional int64 unit = 7;
+}
+
+message TableStatisticProto {
+	required int32 rowNum = 1;
+}

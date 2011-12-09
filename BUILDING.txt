@@ -1,0 +1,5 @@
+# Download the full source code
+git clone git clone git@bitbucket.org:dblab/nta.git
+
+# Build
+mvn compile assembly:assembly

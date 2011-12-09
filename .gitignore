@@ -1,0 +1,7 @@
+.project
+.settings
+.classpath
+target
+*.flr
+vpproject
+*.DS_Store

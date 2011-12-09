@@ -1,0 +1,195 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>kr.ac.korea.dbserver</groupId>
+	<artifactId>nta</artifactId>
+	<version>0.3.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>Nta</name>
+	<description>Network Traffic Analyzer</description>
+	<issueManagement>
+		<system>Jira</system>
+		<url>https://dbserver.korea.ac.kr/jira</url>
+	</issueManagement>
+	<ciManagement>
+		<system>Jenkins</system>
+		<url>https://dbserver.korea.ac.kr/jenkins</url>
+	</ciManagement>
+	<scm>
+		<url>ssh://dbserver.korea.ac.kr/git/nta.git</url>
+	</scm>
+	<organization>
+		<name>Database Laboratory, Korea University</name>
+		<url>http://dbserver.korea.ac.kr</url>
+	</organization>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<hadoop.version>0.24.0-SNAPSHOT</hadoop.version>
+		<yarn.version>0.24.0-SNAPSHOT</yarn.version>
+		<nta.version>0.2.0-SNAPSHOT</nta.version>
+	</properties>
+
+	<repositories>
+		<repository>
+			<id>repository.jboss.org</id>
+			<url>http://repository.jboss.org/nexus/content/groups/public/</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>apache.snapshots</id>
+			<url>http://repository.apache.org/snapshots</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>eclipse-jetty</id>
+			<url>http://repo2.maven.org/maven2/org/eclipse/jetty/jetty-distribution/</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>cloudera.repo</id>
+			<url>https://repository.cloudera.com/content/repositories/releases/</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>2.3.2</version>
+				</plugin>
+				<plugin>
+					<groupId>org.antlr</groupId>
+					<artifactId>antlr3-maven-plugin</artifactId>
+					<version>3.3</version>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>surefire-report-maven-plugin</artifactId>
+					<version>2.0-beta-1</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-eclipse-plugin</artifactId>
+					<version>2.8</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<executions>
+						<execution>
+							<id>attach-sources</id>
+							<goals>
+								<goal>jar</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<dependencyManagement>
+		<dependencies>
+			<!-- <dependency> <groupId>org.apache.hadoop</groupId> <artifactId>hadoop-yarn-server-nodemanager</artifactId> 
+				<version>${yarn.version}</version> <scope>test</scope> </dependency> <dependency> 
+				<groupId>org.apache.hadoop</groupId> <artifactId>hadoop-yarn-server-tests</artifactId> 
+				<version>${yarn.version}</version> <type>test-jar</type> </dependency> <dependency> 
+				<groupId>org.apache.hadoop</groupId> <artifactId>hadoop-mapreduce-client-app</artifactId> 
+				<version>${hadoop-mapreduce.version}</version> <type>test-jar</type> <scope>test</scope> 
+				</dependency> -->
+			<dependency>
+				<groupId>org.antlr</groupId>
+				<artifactId>antlr</artifactId>
+				<version>3.3</version>
+				<type>jar</type>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.antlr</groupId>
+				<artifactId>antlr-runtime</artifactId>
+				<version>3.3</version>
+				<type>jar</type>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>4.8.2</version>
+				<type>jar</type>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-math</artifactId>
+				<version>2.2</version>
+				<type>jar</type>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>kr.ac.korea.dbserver</groupId>
+				<artifactId>nta-common</artifactId>
+				<version>${nta.version}</version>
+				<type>jar</type>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>kr.ac.korea.dbserver</groupId>
+				<artifactId>nta-engine</artifactId>
+				<version>${nta.version}</version>
+				<type>jar</type>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>kr.ac.korea.dbserver</groupId>
+				<artifactId>nta-cube</artifactId>
+				<version>${nta.version}</version>
+				<type>jar</type>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>commons-logging</groupId>
+				<artifactId>commons-logging</artifactId>
+				<version>1.1.1</version>
+			</dependency>
+			<dependency>
+				<groupId>commons-logging</groupId>
+				<artifactId>commons-logging-api</artifactId>
+				<version>1.1</version>
+			</dependency>
+			<!-- <dependency> <groupId>org.apache.hadoop</groupId> <artifactId>hadoop-common</artifactId> 
+				<version>${hadoop.version}</version> </dependency> <dependency> <groupId>org.apache.hadoop</groupId> 
+				<artifactId>hadoop-hdfs</artifactId> <version>${hadoop.version}</version> 
+				<type>test-jar</type> <scope>test</scope> </dependency> -->
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-core</artifactId>
+				<version>0.20.2-cdh3u1</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.hbase</groupId>
+				<artifactId>hbase</artifactId>
+				<version>0.90.3-cdh3u1</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<modules>
+		<module>common</module>
+		<module>engine</module>
+		<module>logserver</module>
+		<module>etl</module>
+	</modules>
+</project>
