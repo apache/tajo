@@ -19,7 +19,7 @@ public class ByteArrayDatum extends Datum {
 	 * 
 	 */
 	public ByteArrayDatum() {
-		super(DatumType.BYTE);
+		super(DatumType.BYTEARRAY);
 	}
 	
 	public ByteArrayDatum(byte [] val) {
