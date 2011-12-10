@@ -67,7 +67,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 	public NtaEngine(NtaConf conf) throws IOException {
 		this.conf = conf;	
 		
-		String master = conf.get(NConstants.MASTER_PORT,"local");
+		String master = conf.get(NConstants.MASTER_HOST,"local");
 		if("local".equals(master)) {
 			// local mode
 			this.defaultFS = LocalFileSystem.get(conf);
