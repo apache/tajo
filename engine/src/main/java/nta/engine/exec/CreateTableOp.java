@@ -15,7 +15,7 @@ import nta.catalog.proto.TableProtos.TableType;
 import nta.engine.plan.logical.CreateTableLO;
 import nta.engine.query.DBContext;
 import nta.storage.Store;
-import nta.storage.StoreManager;
+import nta.storage.StorageManager;
 import nta.storage.VTuple;
 
 /**
@@ -25,9 +25,9 @@ import nta.storage.VTuple;
 public class CreateTableOp extends PhysicalOp {
 	private final CreateTableLO logicalOp;
 	private final Catalog cat;
-	private final StoreManager sm;
+	private final StorageManager sm;
 	
-	public CreateTableOp(CreateTableLO op, Catalog cat, StoreManager sm) {
+	public CreateTableOp(CreateTableLO op, Catalog cat, StorageManager sm) {
 		this.logicalOp = op;
 		this.cat = cat;
 		this.sm = sm;

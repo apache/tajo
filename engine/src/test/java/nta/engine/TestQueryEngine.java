@@ -33,7 +33,7 @@ public class TestQueryEngine {
 		engine.init();
 		engine.start();
 		
-		TestUtils.buildTestDir(TEST_DIR);
+		EngineTestingUtils.buildTestDir(TEST_DIR);
 		
 		Schema schema = new Schema();
 		schema.addColumn("id",DataType.INT);
@@ -53,7 +53,7 @@ public class TestQueryEngine {
 		"4,24,haemi"
 		};
 		
-		TestUtils.writeCSVTable(TEST_DIR+"/table1", meta, tuples);
+		EngineTestingUtils.writeCSVTable(TEST_DIR+"/table1", meta, tuples);
 		
 		engine.attachTable("test", new Path(TEST_DIR+"/table1"));
 	}

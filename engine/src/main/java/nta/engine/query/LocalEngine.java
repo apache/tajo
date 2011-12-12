@@ -19,7 +19,7 @@ import nta.engine.exec.PhysicalOp;
 import nta.engine.parser.NQL;
 import nta.engine.parser.NQL.Query;
 import nta.engine.plan.logical.LogicalPlan;
-import nta.storage.StoreManager;
+import nta.storage.StorageManager;
 import nta.storage.VTuple;
 
 /**
@@ -32,7 +32,7 @@ public class LocalEngine implements EngineService {
 	
 	private final NtaConf conf;
 	private final Catalog catalog;
-	private final StoreManager storageManager;
+	private final StorageManager storageManager;
 	private final NQL parser;
 	
 	LogicalPlanner loPlanner;
@@ -41,7 +41,7 @@ public class LocalEngine implements EngineService {
 	
 	PrintStream stream;
 	
-	public LocalEngine(NtaConf conf, Catalog cat, StoreManager sm, PrintStream stream) {
+	public LocalEngine(NtaConf conf, Catalog cat, StorageManager sm, PrintStream stream) {
 		this.conf = conf;
 		this.catalog = cat;
 		this.storageManager = sm;

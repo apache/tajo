@@ -13,7 +13,7 @@ import nta.catalog.TableInfo;
 import nta.engine.plan.logical.InsertIntoLO;
 import nta.engine.query.TargetEntry;
 import nta.engine.utils.TupleUtils;
-import nta.storage.StoreManager;
+import nta.storage.StorageManager;
 import nta.storage.UpdatableScanner;
 import nta.storage.VTuple;
 
@@ -23,12 +23,12 @@ import nta.storage.VTuple;
  */
 public class InsertIntoOp extends PhysicalOp {
 	final Catalog cat;
-	final StoreManager sm;
+	final StorageManager sm;
 	final InsertIntoLO lo;
 	/**
 	 * 
 	 */
-	public InsertIntoOp(Catalog cat, StoreManager sm, InsertIntoLO lo) {
+	public InsertIntoOp(Catalog cat, StorageManager sm, InsertIntoLO lo) {
 		this.cat = cat;
 		this.sm = sm;
 		this.lo = lo;

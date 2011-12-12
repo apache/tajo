@@ -32,7 +32,7 @@ import nta.conf.NtaConf;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.query.LocalEngine;
 import nta.storage.Store;
-import nta.storage.StoreManager;
+import nta.storage.StorageManager;
 
 /**
  * @author hyunsik
@@ -45,7 +45,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 	private FileSystem defaultFS;
 	
 	private Catalog catalog;
-	private StoreManager storeManager;
+	private StorageManager storeManager;
 	private LocalEngine queryEngine;
 	
 	private final Path basePath;
@@ -92,7 +92,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 			defaultFS.mkdirs(dataPath);
 			LOG.info("Data dir ("+dataPath+") is created");
 		}		
-		this.storeManager = new StoreManager(conf, defaultFS);
+		this.storeManager = new StorageManager(conf, defaultFS);
 		
 		this.catalogPath = new Path(conf.get(NConstants.ENGINE_CATALOG_DIR));
 		LOG.info("Catalog dir is set to " + this.catalogPath);

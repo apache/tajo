@@ -18,7 +18,7 @@ import nta.engine.executor.eval.Expr;
 import nta.engine.executor.eval.FieldExpr;
 import nta.engine.function.FuncType;
 import nta.engine.function.Function;
-import nta.storage.StoreManager;
+import nta.storage.StorageManager;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +31,7 @@ import org.junit.Test;
 public class TestCatalog {
 	NtaConf conf;
 	Catalog cat;
-	StoreManager manager;
+	StorageManager manager;
 	
 	static final String FieldName1="f1";
 	static final String FieldName2="f2";

@@ -21,7 +21,7 @@ import nta.catalog.TableMeta;
 import nta.conf.NtaConf;
 import nta.storage.RawFile;
 import nta.storage.Store;
-import nta.storage.StoreManager;
+import nta.storage.StorageManager;
 import nta.storage.UpdatableScanner;
 import nta.storage.VTuple;
 import nta.util.FileUtils;
@@ -31,7 +31,7 @@ import nta.util.ReflectionUtils;
  * @author hyunsik
  *
  */
-public class TestUtils {	
+public class EngineTestingUtils {	
 	
 	public static final void buildTestDir(String dir) throws IOException {
 		Path path = new Path(dir);
@@ -75,7 +75,7 @@ public class TestUtils {
 //		dataDir.mkdir();
 		
 		FileSystem fs = LocalFileSystem.get(conf);
-		StoreManager sm = new StoreManager(conf, fs);
+		StorageManager sm = new StorageManager(conf, fs);
 		Store store = sm.create(meta);
 		//RawFile rf = new RawFile(conf, store);
 		//rf.init();

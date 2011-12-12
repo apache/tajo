@@ -6,7 +6,7 @@ import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableProto;
 import nta.catalog.proto.TableProtos.TableType;
-import nta.engine.TestUtils;
+import nta.engine.EngineTestingUtils;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -118,7 +118,7 @@ public class TestTableMeta {
 	
 	@Test
 	public void testWritable() throws Exception {
-		TableMeta meta2 = (TableMeta) TestUtils.testWritable(meta);
+		TableMeta meta2 = (TableMeta) EngineTestingUtils.testWritable(meta);
 		assertEquals(meta, meta2);
 	}
 }
