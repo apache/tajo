@@ -29,8 +29,8 @@ import nta.util.FileUtils;
  * @author Hyunsik Choi
  *
  */
-public class StoreManager {
-	private final Log LOG = LogFactory.getLog(StoreManager.class);
+public class StorageManager {
+	private final Log LOG = LogFactory.getLog(StorageManager.class);
 
 	private final NtaConf conf;
 	private final FileSystem defaultFS;
@@ -38,7 +38,7 @@ public class StoreManager {
 	
 	private final MemStores memStores;
 
-	public StoreManager(NtaConf conf, FileSystem defaultFS) {
+	public StorageManager(NtaConf conf, FileSystem defaultFS) {
 		this.conf = conf;
 		this.defaultFS = defaultFS;
 		this.dataRootPath = new Path(conf.get(NConstants.ENGINE_DATA_DIR));

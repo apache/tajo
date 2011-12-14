@@ -28,7 +28,7 @@ public class TestQueryEngineWithRawFile {
 
 	@BeforeClass
 	public static void setUp() throws Exception {
-		TestUtils.buildTestDir(TEST_DIR);
+		EngineTestingUtils.buildTestDir(TEST_DIR);
 		
 		conf = new NtaConf();
 		conf.set(NConstants.ENGINE_BASE_DIR, TEST_DIR);
@@ -70,7 +70,7 @@ public class TestQueryEngineWithRawFile {
 		
 		FileSystem fs = LocalFileSystem.get(conf);
 		fs.delete(new Path(TEST_DIR + "/table1"), true);
-		TestUtils.writeRawTable(conf, meta, tuples);
+		EngineTestingUtils.writeRawTable(conf, meta, tuples);
 		
 		engine.attachTable("table1", new Path(TEST_DIR+"/data/table1"));
 	}

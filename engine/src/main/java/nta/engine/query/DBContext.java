@@ -11,7 +11,7 @@ import org.apache.hadoop.fs.FileSystem;
 
 import nta.catalog.Catalog;
 import nta.conf.NtaConf;
-import nta.storage.StoreManager;
+import nta.storage.StorageManager;
 
 /**
  * 
@@ -21,10 +21,10 @@ import nta.storage.StoreManager;
 public class DBContext {
 	private final NtaConf conf;
 	private final Catalog catalog;
-	private final StoreManager storageMamager;
+	private final StorageManager storageMamager;
 	private PrintStream output = null;	
 	
-	public DBContext(NtaConf conf, StoreManager storageManager, Catalog catlog) throws IOException, URISyntaxException {
+	public DBContext(NtaConf conf, StorageManager storageManager, Catalog catlog) throws IOException, URISyntaxException {
 		this.conf = conf;
 		this.storageMamager = storageManager;
 		this.catalog = catlog;
@@ -34,7 +34,7 @@ public class DBContext {
 		return this.catalog;
 	}
 	
-	public StoreManager getStorageManager() {
+	public StorageManager getStorageManager() {
 		return this.storageMamager;
 	}
 	

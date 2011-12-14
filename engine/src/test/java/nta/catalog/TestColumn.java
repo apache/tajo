@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 import nta.catalog.Column;
 import nta.catalog.proto.TableProtos.AttrType;
 import nta.catalog.proto.TableProtos.DataType;
-import nta.engine.TestUtils;
+import nta.engine.EngineTestingUtils;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -80,11 +80,11 @@ public class TestColumn {
 	
 	@Test
 	public final void testWritable() throws Exception {
-		Column t1 = (Column) TestUtils.testWritable(field1);
+		Column t1 = (Column) EngineTestingUtils.testWritable(field1);
 		assertEquals(field1, t1);
-		Column t2 = (Column) TestUtils.testWritable(field2);
+		Column t2 = (Column) EngineTestingUtils.testWritable(field2);
 		assertEquals(field2, t2);
-		Column t3 = (Column) TestUtils.testWritable(field3);
+		Column t3 = (Column) EngineTestingUtils.testWritable(field3);
 		assertEquals(field3, t3);
 	}
 }

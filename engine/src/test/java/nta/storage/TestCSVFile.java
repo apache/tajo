@@ -12,7 +12,7 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
 import nta.engine.NtaEngineConstants;
-import nta.engine.TestUtils;
+import nta.engine.EngineTestingUtils;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
@@ -29,7 +29,7 @@ public class TestCSVFile {
 	public void setUp() throws Exception {
 		conf = new NtaConf();
 		conf.set(NtaEngineConstants.ENGINE_DATA_DIR, TEST_PATH+"/data");
-		TestUtils.buildTestDir(TEST_PATH);
+		EngineTestingUtils.buildTestDir(TEST_PATH);
 	}
 
 	@After
@@ -53,10 +53,10 @@ public class TestCSVFile {
 		tuples[1] = "jihoon,2";
 		tuples[2] = "jimin,3";
 		tuples[3] = "haemi,4";
-		TestUtils.writeCSVTable(TEST_PATH+"/table1", meta, tuples);
+		EngineTestingUtils.writeCSVTable(TEST_PATH+"/table1", meta, tuples);
 		
 		FileSystem fs = LocalFileSystem.get(conf);
-		StoreManager sm = new StoreManager(conf, fs);
+		StorageManager sm = new StorageManager(conf, fs);
 		File file = new File(TEST_PATH+"/table1");
 		Store store = sm.open(new Path("file:///"+file.getAbsolutePath()).toUri());
 		Scanner scanner = sm.getScanner(store);

@@ -31,7 +31,7 @@ import nta.engine.plan.logical.ScanOp;
 import nta.engine.plan.logical.SelectionOp;
 import nta.storage.Scanner;
 import nta.storage.Store;
-import nta.storage.StoreManager;
+import nta.storage.StorageManager;
 
 /**
  * @author Hyunsik Choi
@@ -39,12 +39,12 @@ import nta.storage.StoreManager;
  */
 public class PhysicalPlanner {
 	Catalog cat;
-	StoreManager sm;
+	StorageManager sm;
 	
 	/**
 	 * 
 	 */
-	public PhysicalPlanner(Catalog cat, StoreManager sm) {
+	public PhysicalPlanner(Catalog cat, StorageManager sm) {
 		this.cat = cat;
 		this.sm = sm;
 	}

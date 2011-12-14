@@ -51,7 +51,7 @@ public class TestRawFile {
 
 	@Test
 	public final void testInit() throws IOException {
-		StoreManager sm = new StoreManager(conf, fs);
+		StorageManager sm = new StorageManager(conf, fs);
 		
 		Schema schema = new Schema();
 		schema.addColumn("id", DataType.LONG);
@@ -82,7 +82,7 @@ public class TestRawFile {
 		meta.setTableType(TableType.BASETABLE);
 		
 		FileSystem fs = LocalFileSystem.get(conf);
-		StoreManager sm = new StoreManager(conf, fs);
+		StorageManager sm = new StorageManager(conf, fs);
 		Store store = sm.create(meta);
 		UpdatableScanner scanner = sm.getUpdatableScanner(store);
 		

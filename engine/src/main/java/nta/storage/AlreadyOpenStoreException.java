@@ -3,11 +3,13 @@
  */
 package nta.storage;
 
+import java.io.IOException;
+
 /**
  * @author hyunsik
  *
  */
-public class AlreadyOpenStoreException extends StoreManagerException {
+public class AlreadyOpenStoreException extends IOException {
 	private static final long serialVersionUID = 9013376772212652755L;
 
 	/**

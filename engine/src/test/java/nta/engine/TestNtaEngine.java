@@ -36,7 +36,7 @@ public class TestNtaEngine {
 		conf.setInt(NConstants.MASTER_PORT, 0);
 		conf.set(NConstants.ENGINE_BASE_DIR, TEST_BASEDIR);
 		
-		TestUtils.buildTestDir(TEST_DIR);
+		EngineTestingUtils.buildTestDir(TEST_DIR);
 		
 		engine = new NtaEngine(conf);
 		engine.init();
@@ -100,7 +100,7 @@ public class TestNtaEngine {
 		tuples[2] = "jimin,27";
 		tuples[3] = "haemi,25";		
 		
-		TestUtils.writeCSVTable(TEST_DIR+"/attach1", meta, tuples);
+		EngineTestingUtils.writeCSVTable(TEST_DIR+"/attach1", meta, tuples);
 		
 		engine.attachTable("attach1", new Path(TEST_DIR+"/attach1"));
 		assertTrue(engine.existsTable("attach1"));
@@ -137,21 +137,21 @@ public class TestNtaEngine {
 		tuples[2] = "jimin,27";
 		tuples[3] = "haemi,25";		
 		
-		TestUtils.writeCSVTable(TEST_DIR+"/attach3", meta, tuples);		
+		EngineTestingUtils.writeCSVTable(TEST_DIR+"/attach3", meta, tuples);		
 		engine.attachTable("attach3", new Path(TEST_DIR+"/attach3"));
 		assertTrue(engine.existsTable("attach3"));
 				
 		TableMeta meta2 = new TableMeta(meta.getProto());
 		meta2.setStartKey(201);
 		meta2.setEndKey(300);		
-		TestUtils.writeCSVTable(TEST_DIR+"/attach4", meta2, tuples);
+		EngineTestingUtils.writeCSVTable(TEST_DIR+"/attach4", meta2, tuples);
 		engine.attachTable("attach4", new Path(TEST_DIR+"/attach4"));
 		assertTrue(engine.existsTable("attach4"));
 		
 		TableMeta meta3 = new TableMeta(meta.getProto());
 		meta3.setStartKey(301);
 		meta3.setEndKey(400);
-		TestUtils.writeCSVTable(TEST_DIR+"/attach5", meta3, tuples);
+		EngineTestingUtils.writeCSVTable(TEST_DIR+"/attach5", meta3, tuples);
 		engine.attachTable("attach5", new Path(TEST_DIR+"/attach5"));
 		assertTrue(engine.existsTable("attach5"));
 		
@@ -176,7 +176,7 @@ public class TestNtaEngine {
 		tuples[2] = "jimin,27";
 		tuples[3] = "haemi,25";		
 		
-		TestUtils.writeCSVTable(TEST_DIR+"/attach6", meta, tuples);
+		EngineTestingUtils.writeCSVTable(TEST_DIR+"/attach6", meta, tuples);
 		
 		engine.attachTable("attach6", new Path(TEST_DIR+"/attach6"));
 		assertTrue(engine.existsTable("attach6"));
@@ -184,7 +184,7 @@ public class TestNtaEngine {
 		TableMeta meta2 = new TableMeta(meta.getProto());
 		meta2.setStartKey(201);
 		meta2.setEndKey(300);		
-		TestUtils.writeCSVTable(TEST_DIR+"/attach7", meta2, tuples);
+		EngineTestingUtils.writeCSVTable(TEST_DIR+"/attach7", meta2, tuples);
 		engine.attachTable("attach7", new Path(TEST_DIR+"/attach7"));
 		assertTrue(engine.existsTable("attach7"));		
 		engine.shutdown();
