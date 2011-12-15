@@ -1,8 +1,14 @@
 package nta.engine;
 
 public interface NtaEngineConstants {
-	public static String ENGINE_ADDR="nta.engine.addr";
-	public static String ENGINE_ADDR_DEFAULT="localhost:9001";
+	public static String MASTER_PORT="nta.engine.addr";
+	public static int MASTER_PORT_DEFAULT=9001;
+	
+	public static String LEAFSERVER_PORT="nta.engine.addr";
+	public static int LEAFSERVER_PORT_DEFAULT=10001;
+	
+	public static String CLUSTER_DISTRIBUTED="nta.cluster.distributed";
+	public static String CLUSTER_IS_LOCAL="false";
 	
 	public static String ENGINE_BASE_DIR="nta.engine.basedir";
 	public static String ENGINE_BASE_DIR_DEFAULT="/tmp/nta";
