@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
@@ -28,8 +30,16 @@ public class RawFile implements UpdatableScanner {
 	
 	private boolean updatable;
 	
+	private byte[] sync;
+	private static final int SYNC_ESCAPE = -1;
+	private static final int SYNC_SIZE = 16;
+	private long syncInterval;
+	private long lastSyncPos;
+	
 	public RawFile(NtaConf conf, Store store) throws IOException {
 		this.schema = store.getSchema();
+		this.syncInterval = conf.getInt("file.sync.interval", (SYNC_ESCAPE+SYNC_SIZE)*100);
+		this.sync = new byte[SYNC_SIZE];
 
 		dataPath = new Path(new Path(store.getURI()), "data");
 		this.fs = dataPath.getFileSystem(conf);
@@ -44,9 +54,38 @@ public class RawFile implements UpdatableScanner {
 		if (filelist.length > 0) {
 			updatable = false;
 			in = fs.open(filelist[0].getPath());
+			readHead();
 		} else {
 			updatable = true;
+			MessageDigest digest;
+			try {
+				digest = MessageDigest.getInstance("MD5");
+				digest.update((dataPath.toString()+System.currentTimeMillis()).getBytes());
+				sync = digest.digest();
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+			}
 			out = fs.create(new Path(dataPath, "table"+filelist.length+".raw"));
+			writeHead();
+		}
+	}
+	
+	private void readHead() throws IOException {
+		this.syncInterval = in.readLong();
+		in.read(this.sync, 0, SYNC_SIZE);
+	}
+	
+	private void writeHead() throws IOException {
+		out.writeLong(this.syncInterval);
+		out.write(sync);
+		lastSyncPos = out.getPos();
+	}
+	
+	private void sync() throws IOException {
+		if (updatable && lastSyncPos != out.getPos()) {
+			out.writeInt(SYNC_ESCAPE);
+			out.write(sync);
+			lastSyncPos = out.getPos();
 		}
 	}
 
@@ -61,6 +100,8 @@ public class RawFile implements UpdatableScanner {
 		if (in.available() == 0) {
 			return null;
 		}
+		// if the current position is sync
+		
 		
 		VTuple tuple = new VTuple(schema.getColumnNum());
 
@@ -123,6 +164,7 @@ public class RawFile implements UpdatableScanner {
 			in.close();
 		}
 		if (out != null) {
+			sync();
 			out.flush();
 			out.close();
 		}
@@ -135,7 +177,7 @@ public class RawFile implements UpdatableScanner {
 
 	@Override
 	public boolean isLocalFile() {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -237,6 +279,7 @@ public class RawFile implements UpdatableScanner {
 		if (this.readOnly()) {
 			throw new ReadOnlyException();
 		} else {
+			checkAndWriteSync();
 			Column col = null;
 			for (int i = 0; i < schema.getColumnNum(); i++) {
 				out.writeBoolean(tuple.contains(i));
@@ -287,4 +330,9 @@ public class RawFile implements UpdatableScanner {
 		}
 	}
 
+	synchronized void checkAndWriteSync() throws IOException {
+		if (updatable && out.getPos() >= lastSyncPos + this.syncInterval) {
+			sync();
+		}
+	}
 }
