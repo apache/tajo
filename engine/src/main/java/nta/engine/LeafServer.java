@@ -109,14 +109,31 @@ public class LeafServer extends Thread implements LeafServerInterface {
 
 	@Override
 	public void assignTablets(AssignTabletRequest request) {
-		// TODO Auto-generated method stub
-
+		
 	}
 
 	@Override
 	public void releaseTablets(ReleaseTableRequest request) {
 		// TODO Auto-generated method stub
 
+	}
+	
+	public void stop(final String msg) {
+		this.stopped = true;
+		LOG.info("STOPPED: "+msg);
+		synchronized (this) {
+			notifyAll();
+		}
+	}
+	
+	public void abort(String reason, Throwable cause) {
+		if(cause != null) {
+			LOG.fatal("ABORTING leaf server " + this + ": " + reason, cause);			
+		} else {
+			LOG.fatal("ABORTING leaf server " + this +": " + reason);
+		}
+		// TODO - abortRequest : to be implemented
+		stop(reason);
 	}
 
 	public static void main(String [] args) throws IOException {

@@ -185,7 +185,7 @@ public class LocalNtaEngineCluster {
 	 */
 	public static void main(String[] args) throws IOException, InterruptedException {
 		Configuration conf = new NtaConf();
-	    LocalNtaEngineCluster cluster = new LocalNtaEngineCluster(conf,10);
+	    LocalNtaEngineCluster cluster = new LocalNtaEngineCluster(conf,2);
 	    cluster.startup();
 	    Thread.sleep(1000);
 	    cluster.shutdown();
