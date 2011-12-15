@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.conf.NtaConf;
+import nta.storage.exception.ReadOnlyException;
 
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -25,6 +26,8 @@ public class RawFile implements UpdatableScanner {
 	private FSDataInputStream in;
 	private FSDataOutputStream out;
 	
+	private boolean updatable;
+	
 	public RawFile(NtaConf conf, Store store) throws IOException {
 		this.schema = store.getSchema();
 
@@ -39,8 +42,10 @@ public class RawFile implements UpdatableScanner {
 	@Override
 	public void init() throws IOException {
 		if (filelist.length > 0) {
+			updatable = false;
 			in = fs.open(filelist[0].getPath());
 		} else {
+			updatable = true;
 			out = fs.create(new Path(dataPath, "table"+filelist.length+".raw"));
 		}
 	}
@@ -59,8 +64,6 @@ public class RawFile implements UpdatableScanner {
 		
 		VTuple tuple = new VTuple(schema.getColumnNum());
 
-//		if (in.available() < StorageUtils.getRowByteSize(schema))
-//			return null;
 		boolean [] contains = new boolean[schema.getColumnNum()];
 		for (int i = 0; i < schema.getColumnNum(); i++) {
 			contains[i] = in.readBoolean();
@@ -137,7 +140,7 @@ public class RawFile implements UpdatableScanner {
 
 	@Override
 	public boolean readOnly() {
-		return false;
+		return !updatable;
 	}
 
 	@Override
@@ -231,50 +234,54 @@ public class RawFile implements UpdatableScanner {
 
 	@Override
 	public void addTuple(Tuple tuple) throws IOException {
-		Column col = null;
-		for (int i = 0; i < schema.getColumnNum(); i++) {
-			out.writeBoolean(tuple.contains(i));
-		}
-		for (int i = 0; i < schema.getColumnNum(); i++) {
-			if (tuple.contains(i)) {
-				col = schema.getColumn(i);
-				switch (col.getDataType()) {
-				case BYTE:
-					out.writeByte(tuple.getByte(i));
-					break;
-				case STRING:
-					byte[] buf = tuple.getString(i).getBytes();
-					if (buf.length > 256) {
-						buf = new byte[256];
-						byte[] str = tuple.getString(i).getBytes();
-						System.arraycopy(str, 0, buf, 0, 256);
-					} 
-					out.writeShort(buf.length);
-					out.write(buf, 0, buf.length);
-					break;
-				case SHORT:
-					out.writeShort(tuple.getShort(i));
-					break;
-				case INT:
-					out.writeInt(tuple.getInt(i));
-					break;
-				case LONG:
-					out.writeLong(tuple.getLong(i));
-					break;
-				case FLOAT:
-					out.writeFloat(tuple.getFloat(i));
-					break;
-				case DOUBLE:
-					out.writeDouble(tuple.getDouble(i));
-					break;
-				case IPv4:
-					out.write(tuple.getIPv4Bytes(i));
-					break;
-				case IPv6:
-					out.write(tuple.getIPv6Bytes(i));
-					break;
-				default:
-					break;
+		if (this.readOnly()) {
+			throw new ReadOnlyException();
+		} else {
+			Column col = null;
+			for (int i = 0; i < schema.getColumnNum(); i++) {
+				out.writeBoolean(tuple.contains(i));
+			}
+			for (int i = 0; i < schema.getColumnNum(); i++) {
+				if (tuple.contains(i)) {
+					col = schema.getColumn(i);
+					switch (col.getDataType()) {
+					case BYTE:
+						out.writeByte(tuple.getByte(i));
+						break;
+					case STRING:
+						byte[] buf = tuple.getString(i).getBytes();
+						if (buf.length > 256) {
+							buf = new byte[256];
+							byte[] str = tuple.getString(i).getBytes();
+							System.arraycopy(str, 0, buf, 0, 256);
+						} 
+						out.writeShort(buf.length);
+						out.write(buf, 0, buf.length);
+						break;
+					case SHORT:
+						out.writeShort(tuple.getShort(i));
+						break;
+					case INT:
+						out.writeInt(tuple.getInt(i));
+						break;
+					case LONG:
+						out.writeLong(tuple.getLong(i));
+						break;
+					case FLOAT:
+						out.writeFloat(tuple.getFloat(i));
+						break;
+					case DOUBLE:
+						out.writeDouble(tuple.getDouble(i));
+						break;
+					case IPv4:
+						out.write(tuple.getIPv4Bytes(i));
+						break;
+					case IPv6:
+						out.write(tuple.getIPv6Bytes(i));
+						break;
+					default:
+						break;
+					}
 				}
 			}
 		}

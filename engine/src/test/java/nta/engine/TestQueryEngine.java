@@ -102,6 +102,7 @@ public class TestQueryEngine {
 		assertFalse(rs1.next());
 	}	
 	
+	@Test
 	public final void testInsertIntoRaw() throws IOException {
 		engine.updateQuery(SELECTION_TEST[8]);
 		assertTrue(engine.existsTable("mod"));
