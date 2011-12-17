@@ -100,25 +100,6 @@ public class TestQueryEngine {
 		assertEquals(3, rs1.getInt("age"));
 		
 		assertFalse(rs1.next());
-	}	
-	
-	@Test
-	public final void testInsertIntoRaw() throws IOException {
-		engine.updateQuery(SELECTION_TEST[8]);
-		assertTrue(engine.existsTable("mod"));
-		engine.updateQuery("insert into mod (id, age) values(1,2)");
-		engine.updateQuery("insert into mod (id, age) values(2,3)");
-		
-		ResultSet rs1 = engine.executeQuery("select id, age from mod");
-		assertTrue(rs1.next());
-		assertEquals(1, rs1.getInt("id"));
-		assertEquals(2, rs1.getInt("age"));
-		
-		assertTrue(rs1.next());
-		assertEquals(2, rs1.getInt("id"));
-		assertEquals(3, rs1.getInt("age"));
-		
-		assertFalse(rs1.next());
 	}
 	
 	@Test
