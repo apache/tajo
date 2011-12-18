@@ -16,4 +16,6 @@ public final class NConstants {
 	
 	public static String ENGINE_CATALOG_FILENAME = "catalog.tex";
 	public static String ENGINE_TABLEMETA_FILENAME = ".meta";
+	
+	public static String RAWFILE_SYNC_INTERVAL = "rawfile.sync.interval";
 }
