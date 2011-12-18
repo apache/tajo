@@ -1,6 +1,7 @@
 .project
 .settings
 .classpath
+.metadata
 target
 *.flr
 vpproject
