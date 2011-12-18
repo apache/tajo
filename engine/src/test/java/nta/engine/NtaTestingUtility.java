@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 import nta.conf.NtaConf;
+import nta.engine.zookeeper.MiniZooKeeperCluster;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,9 +26,16 @@ public class NtaTestingUtility {
 	private static Log LOG = LogFactory.getLog(NtaTestingUtility.class);
 	private NtaConf conf;
 
+	/**
+	 * Set if we were passed a zkCluster.  If so, we won't shutdown zk as
+	 * part of general shutdown.
+	 */
+	private boolean passedZkCluster = false;
+	
 	private FileSystem defaultFS = null;
 	private MiniDFSCluster dfsCluster;
 	private MiniMRCluster mrCluster;
+	private MiniZooKeeperCluster zkCluster = null;
 	private MiniNtaEngineCluster engineCluster;
 
 	// If non-null, then already a cluster running.
@@ -101,12 +109,12 @@ public class NtaTestingUtility {
 			this.clusterTestBuildDir);
 	}
 	
-	public MiniNtaEngineCluster startMiniCluster(final int numSlaves) throws IOException {
+	public MiniNtaEngineCluster startMiniCluster(final int numSlaves) throws Exception {
 		return startMiniCluster(numSlaves, null);
 	}
 
 	public MiniNtaEngineCluster startMiniCluster(final int numSlaves, final String [] dataNodeHosts) 
-		throws IOException {
+		throws Exception {
 		int numDataNodes = numSlaves;
 		if(dataNodeHosts != null && dataNodeHosts.length != 0) {
 			numDataNodes = dataNodeHosts.length;
@@ -130,6 +138,11 @@ public class NtaTestingUtility {
 
 		startMiniDFSCluster(numDataNodes, this.clusterTestBuildDir, dataNodeHosts);
 		this.dfsCluster.waitClusterUp();
+		
+		// Start up a zk cluster.
+	    if (this.zkCluster == null) {
+	      startMiniZKCluster(this.clusterTestBuildDir);
+	    }
 		
 		return startMiniNtaEngineCluster(numSlaves);
 	}
@@ -226,6 +239,34 @@ public class NtaTestingUtility {
 		}
 	}
 	
+	public MiniZooKeeperCluster startMiniZKCluster(int zookeeperServerNum) throws Exception {
+		return startMiniZKCluster(setupClusterTestBuildDir(), zookeeperServerNum);
+	}
+	
+	private MiniZooKeeperCluster startMiniZKCluster(final File dir) throws Exception {
+		return startMiniZKCluster(dir, 1);
+	}
+	
+	private MiniZooKeeperCluster startMiniZKCluster(final File dir,
+		int zookeeperServerNum) throws Exception {
+		this.passedZkCluster = false;
+		if(this.zkCluster != null) {
+			throw new IOException("Zoookeeper Cluster already running at "+dir);
+		}
+		this.zkCluster = new MiniZooKeeperCluster();
+		int clientPort = this.zkCluster.startup(dir, zookeeperServerNum);
+		this.conf.set("nta.zookeeper.property.clientPort",Integer.toString(clientPort));
+		
+		return this.zkCluster;
+	}
+	
+	public void shutdownMiniZKCluster() throws IOException {
+		if(this.zkCluster != null) {
+			this.zkCluster.shutdown();
+			this.zkCluster = null;
+		}
+	}
+	
 	public boolean isRunningDFSCluster() {
 		return this.defaultFS != null;
 	}
@@ -278,6 +319,6 @@ public class NtaTestingUtility {
 	 */
 	public static void main(String[] args) throws Exception {
 		NtaTestingUtility cluster = new NtaTestingUtility();
-		cluster.startMiniCluster(2);		
+		cluster.startMiniCluster(2);
 	}
 }

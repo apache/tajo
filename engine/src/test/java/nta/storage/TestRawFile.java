@@ -1,10 +1,11 @@
 package nta.storage;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.util.Arrays;
 
 import nta.catalog.Schema;
@@ -15,7 +16,6 @@ import nta.catalog.proto.TableProtos.TableType;
 import nta.common.exception.InvalidAddressException;
 import nta.common.type.IPv4;
 import nta.conf.NtaConf;
-import nta.engine.NtaEngine;
 import nta.engine.NConstants;
 
 import org.apache.hadoop.fs.FileSystem;
