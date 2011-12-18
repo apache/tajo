@@ -3,6 +3,7 @@ package nta.storage;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
@@ -48,10 +49,10 @@ public class RawFile2 {
 		private FileSystem fs;
 		private byte[] sync;
 		private byte[] checkSync;
-		private int escape;
+//		private int escape;
 		private long start, end;
 		private long lastSyncPos;
-		private long headPos;
+		private long headerPos;
 		
 		public RawFileScanner(NtaConf conf, Store store, long start, long end) throws IOException {
 			this.conf = conf;
@@ -72,19 +73,25 @@ public class RawFile2 {
 		
 		private void init() throws IOException {
 			readHeader();
-			headPos = in.getPos();
-			if (start < headPos) {
-				in.seek(headPos);
+			headerPos = in.getPos();
+			if (start < headerPos) {
+				in.seek(headerPos);
 			} else {
 				in.seek(start);
 			}
-			if (in.getPos() != lastSyncPos) {
-				for (int i = 0; in.getPos() < end; i++) {
-					if (checkSync()) {
-						lastSyncPos = in.getPos();
-						break;
-					} else {
-						in.seek(in.getPos()-SYNC_SIZE+1);
+			if (in.getPos() != headerPos) {
+				in.seek(in.getPos()-SYNC_SIZE);
+				if (checkSync()) {
+					lastSyncPos = in.getPos();
+				} else {
+					in.seek(in.getPos()+SYNC_SIZE);
+					while(in.getPos() < end) {
+						if (checkSync()) {
+							lastSyncPos = in.getPos();
+							break;
+						} else {
+							in.seek(in.getPos()+1);
+						}
 					}
 				}
 			}
@@ -97,23 +104,14 @@ public class RawFile2 {
 		}
 		
 		private boolean checkSync() throws IOException {
-			int i;
-			escape = in.readInt();
-			if (escape == SYNC_ESCAPE) {
-				in.read(checkSync, 0, SYNC_HASH_SIZE);
-				for (i = 0; i < SYNC_HASH_SIZE; i++) {
-					if (checkSync[i] != sync[i]) {
-						break;
-					}
-				}
-				if (i != SYNC_HASH_SIZE) {
-					return false;
-				}
-			} else {
-				in.seek(in.getPos()+SYNC_HASH_SIZE);
+			in.readInt();							// escape
+			in.read(checkSync, 0, SYNC_HASH_SIZE);	// sync
+			if (!Arrays.equals(checkSync, sync)) {
+				in.seek(in.getPos()-SYNC_SIZE);
 				return false;
+			} else {
+				return true;
 			}
-			return true;
 		}
 
 		@Override
@@ -128,8 +126,6 @@ public class RawFile2 {
 					return null;
 				}
 				lastSyncPos = in.getPos();
-			} else {
-				in.seek(in.getPos()-SYNC_SIZE);
 			}
 			
 			if (in.available() == 0) {
