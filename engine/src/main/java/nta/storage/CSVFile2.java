@@ -95,7 +95,6 @@ public class CSVFile2 {
 		private FSDataInputStream fis;
 		private long startOffset;
 		private long length;
-		private boolean moveOffset;
 		private String line;
 		private byte[] sweep;
 		private static final byte LF = '\n';
@@ -114,19 +113,23 @@ public class CSVFile2 {
 		
 			fis = fs.open(new Path(this.path, "table1.csv"));
 
-			if(startOffset != 0) {
+			if(startOffset != 0) {									// 파일의 시작이 아니면 체크.
 				this.sweep = new byte[(int)this.startOffset];
 				for (int i = 0; i < this.startOffset; i++) {
 					this.sweep[i] = fis.readByte();
 				}
-				if (this.sweep[(int)this.startOffset-1] == LF) this.moveOffset = false;
-				else this.moveOffset = true;
+				if (this.sweep[(int)this.startOffset-1] == LF) ;	// 잘못된 위치가 아님.
+				else { 												// 잘못된 위치.
+					for (; fis.readByte() != LF; ) ;				
+				}
 			}
 		}
 		
 		@Override
 		public Tuple next() throws IOException {
 			if((line = fis.readLine()) == null) return null;
+			
+			if(fis.getPos() > length) return null;
 			
 			VTuple tuple = new VTuple(schema.getColumnNum());
 			String[] cells = null;
@@ -167,14 +170,7 @@ public class CSVFile2 {
 
 		@Override
 		public void reset() throws IOException {
-			if (moveOffset == true) {
-				while (fis.available() > 0) {
-					if (fis.readByte() == LF) {
-						this.startOffset = fis.getPos();
-						break;
-					} else continue;
-				}
-			}
+			
 		}
 
 		@Override
