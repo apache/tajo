@@ -63,17 +63,18 @@ public class TestCSVFile2 {
 		
 		FileScanner fileScanner = new CSVFile2.CSVScanner(conf, path, schema, 0, randomNum);
 		int tupleCnt;
-		vTuple = null;
 		vTuple = (VTuple) fileScanner.next();
-		for (tupleCnt = 0; vTuple != null; tupleCnt++) {
+		for (tupleCnt = 1; vTuple != null; tupleCnt++) {
 			vTuple = (VTuple) fileScanner.next();			
 		}
+		fileScanner.close();
 		
 		fileScanner = new CSVFile2.CSVScanner(conf, path, schema, randomNum, fileLen);
+		vTuple = (VTuple) fileScanner.next();
 		for (; vTuple != null; tupleCnt++) {
 			vTuple = (VTuple) fileScanner.next();
 		}		
-		fileScanner.close();
+		fileScanner.close();		
 		
 		assertEquals(tupleCnt, tupleNum);
 	}
