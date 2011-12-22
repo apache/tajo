@@ -44,7 +44,7 @@ public class LeafServer extends Thread implements LeafServerInterface {
 		String hostname = DNS.getDefaultHost(
 			conf.get("nta.master.dns.interface", "default"),
 			conf.get("nta.master.dns.nameserver", "default"));
-		int port = conf.getInt(NtaEngineConstants.MASTER_PORT, NtaEngineConstants.MASTER_PORT_DEFAULT);
+		int port = conf.getInt(NConstants.LEAFSERVER_PORT, NConstants.DEFAULT_LEAFSERVER_PORT);
 		// Creation of a HSA will force a resolve.
 		InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
 		if (initialIsa.getAddress() == null) {

@@ -35,7 +35,7 @@ public class NtaEngineMaster extends Thread {
 		String hostname = DNS.getDefaultHost(
 			conf.get("nta.master.dns.interface", "default"),
 			conf.get("nta.master.dns.nameserver", "default"));
-		int port = conf.getInt(NtaEngineConstants.MASTER_PORT, NtaEngineConstants.MASTER_PORT_DEFAULT);
+		int port = conf.getInt(NConstants.MASTER_PORT, NConstants.DEFAULT_MASTER_PORT);
 		// Creation of a HSA will force a resolve.
 		InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
 		

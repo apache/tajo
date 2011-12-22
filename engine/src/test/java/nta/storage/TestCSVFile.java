@@ -11,7 +11,7 @@ import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
-import nta.engine.NtaEngineConstants;
+import nta.engine.NConstants;
 import nta.engine.EngineTestingUtils;
 
 import org.apache.hadoop.fs.FileSystem;
@@ -28,7 +28,7 @@ public class TestCSVFile {
 	@Before
 	public void setUp() throws Exception {
 		conf = new NtaConf();
-		conf.set(NtaEngineConstants.ENGINE_DATA_DIR, TEST_PATH+"/data");
+		conf.set(NConstants.ENGINE_DATA_DIR, TEST_PATH+"/data");
 		EngineTestingUtils.buildTestDir(TEST_PATH);
 	}
 

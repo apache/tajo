@@ -3,29 +3,28 @@
  */
 package nta.engine;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import nta.catalog.TableMeta;
+import nta.conf.NtaConf;
+import nta.storage.StorageManager;
+import nta.storage.Store;
+import nta.storage.UpdatableScanner;
+import nta.storage.VTuple;
+import nta.util.FileUtil;
+import nta.util.ReflectionUtil;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.Writable;
-
-import nta.catalog.TableMeta;
-import nta.conf.NtaConf;
-import nta.storage.RawFile;
-import nta.storage.Store;
-import nta.storage.StorageManager;
-import nta.storage.UpdatableScanner;
-import nta.storage.VTuple;
-import nta.util.FileUtils;
-import nta.util.ReflectionUtils;
 
 /**
  * @author hyunsik
@@ -54,7 +53,7 @@ public class EngineTestingUtils {
 		tableRoot.mkdir();
 		
 		File metaFile = new File(tableRoot+"/.meta");
-		FileUtils.writeProto(metaFile, meta.getProto());
+		FileUtil.writeProto(metaFile, meta.getProto());
 		
 		File dataDir = new File(tableRoot+"/data");
 		dataDir.mkdir();
@@ -98,7 +97,7 @@ public class EngineTestingUtils {
 		DataInputBuffer dib = new DataInputBuffer();
 		dib.reset(dob.getData(), dob.getLength());
 
-		Writable after = (Writable)ReflectionUtils.newInstance(before.getClass());
+		Writable after = (Writable)ReflectionUtil.newInstance(before.getClass());
 		after.readFields(dib);
 
 		assertEquals(before, after);

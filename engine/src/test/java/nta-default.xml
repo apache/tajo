@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-
-<configuration>
-<property>
-<name>nta.worker.data.dir</name>
-<value>/tmp/nta/data</value>
-</property>
-</configuration>

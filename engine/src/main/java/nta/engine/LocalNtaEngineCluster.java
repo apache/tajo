@@ -32,8 +32,8 @@ public class LocalNtaEngineCluster {
 
 	public LocalNtaEngineCluster(final Configuration conf, final int numLeafServers) throws IOException {
 		this.conf = conf;
-		conf.set(NtaEngineConstants.MASTER_PORT, "0");
-		conf.set(NtaEngineConstants.LEAFSERVER_PORT, "0");
+		conf.set(NConstants.MASTER_PORT, "0");
+		conf.set(NConstants.LEAFSERVER_PORT, "0");
 
 		addMaster(new Configuration(conf), 0);
 
@@ -174,8 +174,8 @@ public class LocalNtaEngineCluster {
 	 * @return True if a 'local' address in hbase.master value.
 	 */
 	public static boolean isLocal(final Configuration c) {
-		final String mode = c.get(NtaEngineConstants.CLUSTER_DISTRIBUTED); 
-		return mode == null || mode.equals(NtaEngineConstants.CLUSTER_IS_LOCAL);
+		final String mode = c.get(NConstants.CLUSTER_DISTRIBUTED); 
+		return mode == null || mode.equals(NConstants.CLUSTER_IS_LOCAL);
 	}
 
 	/**

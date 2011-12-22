@@ -9,7 +9,7 @@ import java.io.OutputStream;
 
 import com.google.protobuf.Message;
 
-public class FileUtils {
+public class FileUtil {
 	public static void writeProto(File file, Message proto) throws IOException {
 		FileOutputStream stream = new FileOutputStream(file);
 		stream.write(proto.toByteArray());
@@ -28,5 +28,9 @@ public class FileUtils {
 	public static Message loadProto(InputStream in, Message proto) throws IOException {
 		Message.Builder builder = proto.newBuilderForType().mergeFrom(in);
 		return builder.build();
+	}
+	
+	public static File getFile(String path) {
+		return new File(path);
 	}
 }

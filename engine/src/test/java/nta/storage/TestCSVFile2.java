@@ -11,13 +11,13 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
 import nta.engine.EngineTestingUtils;
-import nta.engine.NtaEngineConstants;
+import nta.engine.NConstants;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
-import org.junit.Before;	
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestCSVFile2 {
@@ -28,7 +28,7 @@ public class TestCSVFile2 {
 	@Before
 	public void setup() throws Exception {
 		conf = new NtaConf();
-		conf.set(NtaEngineConstants.ENGINE_DATA_DIR, TEST_PATH);
+		conf.set(NConstants.ENGINE_DATA_DIR, TEST_PATH);
 		EngineTestingUtils.buildTestDir(TEST_PATH);
 	}
 	

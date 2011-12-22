@@ -2,16 +2,10 @@ package nta.catalog;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,9 +14,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import nta.catalog.exception.AlreadyExistsFunction;
 import nta.catalog.exception.AlreadyExistsTableException;
@@ -36,6 +27,9 @@ import nta.engine.function.FuncType;
 import nta.engine.function.TestFunc;
 import nta.engine.function.UnixTimeFunc;
 import nta.engine.query.LocalEngine;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Hyunsik Choi

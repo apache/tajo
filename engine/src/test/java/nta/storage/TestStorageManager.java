@@ -1,9 +1,8 @@
 package nta.storage;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 
 import nta.catalog.Schema;
@@ -13,7 +12,6 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
 import nta.engine.EngineTestingUtils;
-import nta.util.FileUtils;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
