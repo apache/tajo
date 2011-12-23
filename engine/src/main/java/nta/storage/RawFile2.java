@@ -27,12 +27,12 @@ public class RawFile2 {
 		
 	}
 	
-	public static RawFileScanner getScanner(NtaConf conf, Store store, long start, long end) throws IOException {
-		return new RawFileScanner(conf, store, start, end);
+	public static RawFileScanner getScanner(NtaConf conf, final Path path, final Schema schema, long start, long length) throws IOException {
+		return new RawFileScanner(conf, path, schema, start, start+length);
 	}
 	
-	public static RawFileAppender getAppender(NtaConf conf, Store store) throws IOException {
-		return new RawFileAppender(conf, store); 
+	public static RawFileAppender getAppender(NtaConf conf, final Path path, final Schema schema) throws IOException {
+		return new RawFileAppender(conf, path, schema); 
 	}
 
 	private static final int SYNC_ESCAPE = -1;
@@ -54,16 +54,16 @@ public class RawFile2 {
 		private long lastSyncPos;
 		private long headerPos;
 		
-		public RawFileScanner(NtaConf conf, Store store, long start, long end) throws IOException {
+		public RawFileScanner(NtaConf conf, final Path path, final Schema schema, long start, long end) throws IOException {
 			this.conf = conf;
-			this.schema = store.getSchema();
-			this.path = new Path(new Path(store.getURI()), "data/table.raw");
+			this.schema = schema;
+			this.path = new Path(path, "data/table.raw");
 			this.fs = path.getFileSystem(conf);
 			this.start = start;
-			FileStatus status = fs.getFileStatus(path);
+			FileStatus status = fs.getFileStatus(this.path);
 			this.end = end > status.getLen() ? status.getLen() : end;
 
-			in = fs.open(path);
+			in = fs.open(this.path);
 			
 			sync = new byte[SYNC_HASH_SIZE];
 			checkSync = new byte[SYNC_HASH_SIZE];
@@ -81,17 +81,12 @@ public class RawFile2 {
 			}
 			if (in.getPos() != headerPos) {
 				in.seek(in.getPos()-SYNC_SIZE);
-				if (checkSync()) {
-					lastSyncPos = in.getPos();
-				} else {
-					in.seek(in.getPos()+SYNC_SIZE);
-					while(in.getPos() < end) {
-						if (checkSync()) {
-							lastSyncPos = in.getPos();
-							break;
-						} else {
-							in.seek(in.getPos()+1);
-						}
+				while(in.getPos() < end) {
+					if (checkSync()) {
+						lastSyncPos = in.getPos();
+						break;
+					} else {
+						in.seek(in.getPos()+1);
 					}
 				}
 			}
@@ -207,11 +202,11 @@ public class RawFile2 {
 		private FileSystem fs;
 		private byte[] sync;
 		
-		public RawFileAppender(NtaConf conf, Store store) throws IOException {
+		public RawFileAppender(NtaConf conf, final Path path, final Schema schema) throws IOException {
 			this.conf = conf;
 			SYNC_INTERVAL = conf.getInt(NConstants.RAWFILE_SYNC_INTERVAL, SYNC_SIZE*100);
-			schema = store.getSchema();
-			path = new Path(store.getURI().toString(), "data");
+			this.schema = schema;
+			this.path = new Path(path, "data");
 			fs = path.getFileSystem(conf);
 			if (!fs.exists(path)) {
 				fs.mkdirs(path);
