@@ -56,20 +56,13 @@ public class TestRawFile2 {
 		Schema schema = new Schema();
 		schema.addColumn("id", DataType.INT);
 		schema.addColumn("age", DataType.LONG);
-
-		TableMeta meta = new TableMeta();
-		meta.setName("table1");
-		meta.setSchema(schema);
-		meta.setStorageType(StoreType.RAW);
-		meta.setTableType(TableType.BASETABLE);
 		
-		FileSystem fs = LocalFileSystem.get(conf);
-		StorageManager sm = new StorageManager(conf, fs);
-		Store store = sm.create(meta);
+		Path tablePath = new Path(testDir.getAbsolutePath(), "table1");
+		FileSystem fs = FileSystem.get(conf);
 
 		int tupleNum = 10000;
 		VTuple tuple = null;
-		RawFileAppender appender = RawFile2.getAppender(conf, store);
+		RawFileAppender appender = RawFile2.getAppender(conf, tablePath, schema);
 		for (int i = 0; i < tupleNum; i++) {
 			tuple = new VTuple(2);
 			tuple.put(0, (Integer)(i+1));
@@ -79,21 +72,21 @@ public class TestRawFile2 {
 		appender.close();
 		
 		Random random = new Random(System.currentTimeMillis());
-		FileStatus status = fs.getFileStatus(new Path(store.getURI().toString(), "data/table.raw"));
+		FileStatus status = fs.getFileStatus(new Path(tablePath, "data/table.raw"));
 		long fileLen = status.getLen();
 		long midPos = random.nextInt((int)fileLen);
 
 		int tupleCnt = 0;
 		tuple = null;
-		RawFileScanner scanner = RawFile2.getScanner(conf, store, 0, midPos);
+		RawFileScanner scanner = RawFile2.getScanner(conf, tablePath, schema, 0, midPos);
 		do {
 			tuple = (VTuple)scanner.next();
 			tupleCnt++;
 		} while (tuple != null);
 		scanner.close();
 		--tupleCnt;
-		
-		scanner = RawFile2.getScanner(conf, store, midPos, fileLen);
+
+		scanner = RawFile2.getScanner(conf, tablePath, schema, midPos, fileLen-midPos);
 		do {
 			tuple = (VTuple)scanner.next();
 			tupleCnt++;
