@@ -59,6 +59,9 @@ public class TestRawFile2 {
 		
 		Path tablePath = new Path(testDir.getAbsolutePath(), "table1");
 		FileSystem fs = FileSystem.get(conf);
+		if (fs.exists(tablePath)) {
+			fs.delete(tablePath, true);
+		}
 
 		int tupleNum = 10000;
 		VTuple tuple = null;

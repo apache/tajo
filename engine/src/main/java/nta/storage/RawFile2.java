@@ -60,10 +60,10 @@ public class RawFile2 {
 			this.path = new Path(path, "data/table.raw");
 			this.fs = path.getFileSystem(conf);
 			this.start = start;
-			FileStatus status = fs.getFileStatus(path);
+			FileStatus status = fs.getFileStatus(this.path);
 			this.end = end > status.getLen() ? status.getLen() : end;
 
-			in = fs.open(path);
+			in = fs.open(this.path);
 			
 			sync = new byte[SYNC_HASH_SIZE];
 			checkSync = new byte[SYNC_HASH_SIZE];
