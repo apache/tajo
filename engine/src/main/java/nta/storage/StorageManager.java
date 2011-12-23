@@ -6,22 +6,19 @@ package nta.storage;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 
 import nta.catalog.TableInfo;
 import nta.catalog.proto.TableProtos.TableProto;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
-import nta.util.FileUtils;
+import nta.util.FileUtil;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 /**
  * TRID에 해당하는 파일의 Scanner를 생성해 준다.
@@ -91,7 +88,7 @@ public class StorageManager {
 		defaultFS.mkdirs(tablePath);
 		Path metaFile = new Path(tablePath, NConstants.ENGINE_TABLEMETA_FILENAME);
 		FSDataOutputStream out = defaultFS.create(metaFile);
-		FileUtils.writeProto(out, meta.getProto());
+		FileUtil.writeProto(out, meta.getProto());
 		out.flush();
 		out.close();
 		
@@ -111,7 +108,7 @@ public class StorageManager {
 		FSDataInputStream tableMetaIn = 
 			fs.open(tableMetaPath);
 
-		TableProto tableProto = (TableProto) FileUtils.loadProto(tableMetaIn, 
+		TableProto tableProto = (TableProto) FileUtil.loadProto(tableMetaIn, 
 			TableProto.getDefaultInstance());
 		meta = new TableInfo(tableProto);
 

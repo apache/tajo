@@ -18,7 +18,7 @@ public class MiniNtaEngineCluster {
 	
 	public MiniNtaEngineCluster(Configuration conf, int numLeafServers) {
 		this.conf = conf;
-		conf.set(NtaEngineConstants.MASTER_PORT, "0");		
+		conf.set(NConstants.MASTER_PORT, "0");		
 	}
 	
 	public void init(int numLeafServers) throws IOException {

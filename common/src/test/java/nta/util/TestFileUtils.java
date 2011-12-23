@@ -47,11 +47,11 @@ public class TestFileUtils {
 	public final void testWriteReadProtoFromFile() throws IOException {		
 		File file = new File(TEST_PATH+"/file.bin");
 		file.createNewFile();
-		FileUtils.writeProto(file, proto);
+		FileUtil.writeProto(file, proto);
 		
 		Message defaultInstance = TestMessageProto.getDefaultInstance();
 		TestMessageProto message = (TestMessageProto) 
-			FileUtils.loadProto(new File(TEST_PATH+"/file.bin"), defaultInstance);
+			FileUtil.loadProto(new File(TEST_PATH+"/file.bin"), defaultInstance);
 		
 		assertEquals(proto, message);
 	}
@@ -59,13 +59,13 @@ public class TestFileUtils {
 	@Test
 	public final void testWriteReadProtoFromStream() throws IOException {
 		FileOutputStream out = new FileOutputStream(new File(TEST_PATH+"/file.bin"));		
-		FileUtils.writeProto(out, proto);
+		FileUtil.writeProto(out, proto);
 		
 		
 		FileInputStream in = new FileInputStream(new File(TEST_PATH+"/file.bin"));
 		Message defaultInstance = TestMessageProto.getDefaultInstance();
 		TestMessageProto message = (TestMessageProto) 
-			FileUtils.loadProto(in, defaultInstance);
+			FileUtil.loadProto(in, defaultInstance);
 		
 		assertEquals(proto, message);
 	}

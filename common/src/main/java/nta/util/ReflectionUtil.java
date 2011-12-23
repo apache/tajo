@@ -1,6 +1,6 @@
 package nta.util;
 
-public class ReflectionUtils {
+public class ReflectionUtil {
 	public static Object newInstance(Class<?> clazz) 
 			throws InstantiationException, IllegalAccessException {         
 		return clazz.newInstance();
