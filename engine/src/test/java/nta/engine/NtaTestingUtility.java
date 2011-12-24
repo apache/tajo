@@ -8,12 +8,13 @@ import java.io.IOException;
 import java.util.UUID;
 
 import nta.conf.NtaConf;
-import nta.engine.zookeeper.MiniZooKeeperCluster;
+import nta.zookeeper.MiniZooKeeperCluster;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.mapred.MiniMRCluster;
@@ -121,7 +122,7 @@ public class NtaTestingUtility {
 		}
 
 		LOG.info("Starting up minicluster with 1 master(s) and " +
-			numSlaves + " regionserver(s) and " + numDataNodes + " datanode(s)");
+			numSlaves + " leafserver(s) and " + numDataNodes + " datanode(s)");
 
 		// If we already put up a cluster, fail.
 		String testBuildPath = conf.get(TEST_DIRECTORY_KEY, null);
@@ -144,18 +145,23 @@ public class NtaTestingUtility {
 	      startMiniZKCluster(this.clusterTestBuildDir);
 	    }
 		
+		// Start up a zk cluster.
+	    if (this.zkCluster == null) {
+	      startMiniZKCluster(this.clusterTestBuildDir);
+	    }
+		
 		return startMiniNtaEngineCluster(numSlaves);
 	}
 	
-	public MiniNtaEngineCluster startMiniNtaEngineCluster(final int numSlaves) {
+	public MiniNtaEngineCluster startMiniNtaEngineCluster(final int numSlaves) throws IOException {
 		Configuration c = new Configuration(this.conf);
-		this.engineCluster = new MiniNtaEngineCluster(c, numSlaves);
+		this.engineCluster = new MiniNtaEngineCluster(c, numSlaves);	
 		
 		LOG.info("Minicluster is up");		
 		return this.engineCluster;
 	}
 	
-	public void restartNtaEngineCluster(int numSlaves) {
+	public void restartNtaEngineCluster(int numSlaves) throws IOException {
 		this.engineCluster = new MiniNtaEngineCluster(new Configuration(this.conf), numSlaves);
 		
 		LOG.info("Minicluster has been restarted");
@@ -239,6 +245,10 @@ public class NtaTestingUtility {
 		}
 	}
 	
+	public MiniZooKeeperCluster startMiniZKCluster() throws Exception {
+		return startMiniZKCluster(1);
+	}
+	
 	public MiniZooKeeperCluster startMiniZKCluster(int zookeeperServerNum) throws Exception {
 		return startMiniZKCluster(setupClusterTestBuildDir(), zookeeperServerNum);
 	}
@@ -255,8 +265,13 @@ public class NtaTestingUtility {
 		}
 		this.zkCluster = new MiniZooKeeperCluster();
 		int clientPort = this.zkCluster.startup(dir, zookeeperServerNum);
-		this.conf.set("nta.zookeeper.property.clientPort",Integer.toString(clientPort));
+		this.conf.set(NConstants.ZOOKEEPER_HOST, "127.0.0.1");
+		this.conf.set(NConstants.ZOOKEEPER_PORT,Integer.toString(clientPort));
 		
+		return this.zkCluster;
+	}
+	
+	public MiniZooKeeperCluster getZKCluster() {
 		return this.zkCluster;
 	}
 	
@@ -311,6 +326,32 @@ public class NtaTestingUtility {
 		conf.set("mapred.job.tracker", "local");
 		LOG.info("Mini mapreduce cluster stopped");
 	}
+	
+	public void shutdownMiniNtaEngineCluster() {
+		if(engineCluster != null) {
+			engineCluster.shutdown();
+			
+			this.engineCluster.join();
+		}
+	}
+	
+	public void shutdownMiniCluster() throws IOException {
+		LOG.info("Shutting down minicluster");
+		shutdownMiniNtaEngineCluster();
+		if(!this.passedZkCluster) shutdownMiniZKCluster();
+		if(this.dfsCluster != null) {
+			this.dfsCluster.shutdown();
+		}
+		
+		if(this.clusterTestBuildDir != null && this.clusterTestBuildDir.exists()) {
+			LocalFileSystem localFS = LocalFileSystem.getLocal(conf);			
+			localFS.delete(
+				new Path(clusterTestBuildDir.toString()), true);
+			this.clusterTestBuildDir = null;
+		}
+		
+		LOG.info("Minicluster is down");
+	}
 
 	/**
 	 * @param args
@@ -320,5 +361,9 @@ public class NtaTestingUtility {
 	public static void main(String[] args) throws Exception {
 		NtaTestingUtility cluster = new NtaTestingUtility();
 		cluster.startMiniCluster(2);
+		
+		Thread.sleep(3000);
+		
+		cluster.shutdownMiniCluster();
 	}
 }

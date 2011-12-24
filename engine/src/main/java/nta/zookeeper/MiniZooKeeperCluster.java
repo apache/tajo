@@ -1,4 +1,4 @@
-package nta.engine.zookeeper;
+package nta.zookeeper;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -20,9 +20,7 @@ import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnLog;
 
 /**
- * TODO: Most of the code in this class is ripped from ZooKeeper tests. Instead
- * of redoing it, we should contribute updates to their code which let us more
- * easily access testing helper objects.
+ * This class is borrowed from HBase.
  */
 public class MiniZooKeeperCluster {
   private static final Log LOG = LogFactory.getLog(MiniZooKeeperCluster.class);
