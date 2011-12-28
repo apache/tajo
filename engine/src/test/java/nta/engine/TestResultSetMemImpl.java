@@ -10,11 +10,11 @@ import org.junit.Test;
 
 public class TestResultSetMemImpl {
 
-	ResultSetMemImpl res = null;
+	ResultSetMemImplOld res = null;
 	
 	@Before
 	public void setUp() throws Exception {
-		res = new ResultSetMemImpl(new Schema());
+		res = new ResultSetMemImplOld(new Schema());
 		res.columnMap.put("id", 1);
 		res.columnMap.put("age", 2);
 		res.columnMap.put("name", 3);

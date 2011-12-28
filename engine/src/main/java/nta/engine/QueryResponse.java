@@ -9,7 +9,7 @@ package nta.engine;
  * 
  */
 public interface QueryResponse {
-	public ResultSet get();
+	public ResultSetOld get();
 
 	public void cancel(boolean mayInterruptIfRunnging);
 

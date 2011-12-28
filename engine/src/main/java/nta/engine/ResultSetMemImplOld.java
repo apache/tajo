@@ -23,8 +23,8 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  *
  */
-public class ResultSetMemImpl implements ResultSet, SchemaObject {
-	private static Log LOG = LogFactory.getLog(ResultSetMemImpl.class);
+public class ResultSetMemImplOld implements ResultSetOld, SchemaObject {
+	private static Log LOG = LogFactory.getLog(ResultSetMemImplOld.class);
 	
 	List<Tuple> rows = new ArrayList<Tuple>();	
 	volatile int cursor;
@@ -35,7 +35,7 @@ public class ResultSetMemImpl implements ResultSet, SchemaObject {
 	/**
 	 * 
 	 */
-	public ResultSetMemImpl(Schema schema) {
+	public ResultSetMemImplOld(Schema schema) {
 		this.meta = schema;
 		
 		int i=0;

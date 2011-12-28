@@ -12,8 +12,8 @@ import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.conf.NtaConf;
 import nta.engine.EngineService;
-import nta.engine.ResultSet;
-import nta.engine.ResultSetMemImpl;
+import nta.engine.ResultSetOld;
+import nta.engine.ResultSetMemImplOld;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.PhysicalOp;
 import nta.engine.parser.NQL;
@@ -58,16 +58,16 @@ public class LocalEngine implements EngineService {
 		catalog.addTable(meta);
 	}
 	
-	public ResultSet executeQuery(String querystr) throws NTAQueryException {
+	public ResultSetOld executeQuery(String querystr) throws NTAQueryException {
 		Query query = parser.parse(querystr);
 		LogicalPlan rawPlan = loPlanner.compile(query);
 		LogicalPlan optimized = loOptimizer.optimize(rawPlan);
 		PhysicalOp plan = phyPlanner.compile(optimized);
 		
 		Schema meta = plan.getSchema();
-		ResultSetMemImpl rs = null;
+		ResultSetMemImplOld rs = null;
 		if(meta != null) {
-			rs = new ResultSetMemImpl(meta);
+			rs = new ResultSetMemImplOld(meta);
 			try {
 				execute(plan, rs);
 			} catch (IOException e) {
@@ -84,7 +84,7 @@ public class LocalEngine implements EngineService {
 		return rs;
 	}	
 	
-	public void execute(PhysicalOp op, ResultSetMemImpl result) throws IOException {
+	public void execute(PhysicalOp op, ResultSetMemImplOld result) throws IOException {
 		VTuple next = null;	
 		
 		if(stream != null) {
