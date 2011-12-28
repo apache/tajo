@@ -10,8 +10,7 @@ import java.util.Map.Entry;
 import nta.catalog.proto.TableProtos.KeyValueProto;
 import nta.catalog.proto.TableProtos.OptionsProto;
 import nta.catalog.proto.TableProtos.OptionsProtoOrBuilder;
-import nta.catalog.proto.TableProtos.SchemaProto;
-import nta.catalog.proto.TableProtos.TableProtoOrBuilder;
+import nta.common.ProtoObject;
 
 /**
  * @author hyunsik

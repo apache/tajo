@@ -15,6 +15,7 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableProto;
 import nta.catalog.proto.TableProtos.TableProtoOrBuilder;
 import nta.catalog.proto.TableProtos.TableType;
+import nta.common.ProtoObject;
 import nta.storage.Store;
 
 /**

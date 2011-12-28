@@ -7,11 +7,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import nta.conf.NtaConf;
+import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.ipc.LeafServerInterface;
 import nta.engine.ipc.protocolrecords.AssignTabletRequest;
 import nta.engine.ipc.protocolrecords.ReleaseTableRequest;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.SubQueryResponse;
+import nta.zookeeper.ZkClient;
+import nta.zookeeper.ZkUtil;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -19,6 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.RPC.Server;
 import org.apache.hadoop.net.DNS;
+import org.apache.zookeeper.KeeperException;
 
 /**
  * @author hyunsik
@@ -36,6 +40,9 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	private volatile boolean isOnline = false;
 
 	private final String serverName;
+	
+	private ZkClient zookeeper;
+	private MasterAddressTracker masterAddrTracker;
 
 	public LeafServer(final Configuration conf) throws IOException {
 		this.conf = conf;
@@ -61,12 +68,15 @@ public class LeafServer extends Thread implements LeafServerInterface {
 
 		// Set our address.
 	    this.isa = this.rpcServer.getListenerAddress();
-		this.serverName = this.isa.getHostName()+":"+this.isa.getPort();		
+		this.serverName = this.isa.getHostName()+":"+this.isa.getPort();
 	}
 
 	public void run() {
 		LOG.info("NtaLeafServer startup");
+		
 		try {
+			initializeZookeeper();
+			
 			if(!this.stopped) {
 				this.isOnline = true;
 				while(!this.stopped) {					
@@ -81,6 +91,16 @@ public class LeafServer extends Thread implements LeafServerInterface {
 		}
 
 		LOG.info("NtaLeafServer main thread exiting");
+	}
+	
+	private void initializeZookeeper() throws IOException, InterruptedException, KeeperException {
+		this.zookeeper = new ZkClient(conf);
+		this.masterAddrTracker = new MasterAddressTracker(zookeeper);
+		do {
+			Thread.sleep(200);
+		} while(zookeeper.exists(NConstants.ZNODE_LEAFSERVERS) == null);
+			zookeeper.createEphemeral(
+				ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName));			
 	}
 	
 	public String getServerName() {

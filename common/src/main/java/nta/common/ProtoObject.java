@@ -1,4 +1,4 @@
-package nta.catalog;
+package nta.common;
 
 import com.google.protobuf.Message;
 

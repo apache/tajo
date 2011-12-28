@@ -41,6 +41,8 @@ public final class NConstants {
 	
 	public static String ZNODE_BASE="/nta";
 	public static String ZNODE_MASTER="/nta/master";
+	public static String ZNODE_LEAFSERVERS="/nta/leafservers";
+	public static String ZNODE_QUERIES="/nta/queries";
 
 	public static String RAWFILE_SYNC_INTERVAL = "rawfile.sync.interval";	
 

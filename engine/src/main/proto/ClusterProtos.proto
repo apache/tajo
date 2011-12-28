@@ -1,0 +1,10 @@
+option java_package = "nta.engine.cluster";
+option java_outer_classname = "ClusterProtos";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
+
+message ServerNameProto {
+	required string serverName = 1;
+	required string hostName = 2;
+	required int32 port = 3;
+}

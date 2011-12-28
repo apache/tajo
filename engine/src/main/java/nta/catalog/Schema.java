@@ -11,6 +11,7 @@ import nta.catalog.proto.TableProtos.ColumnProto;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.SchemaProto;
 import nta.catalog.proto.TableProtos.SchemaProtoOrBuilder;
+import nta.common.ProtoObject;
 
 /**
  * 

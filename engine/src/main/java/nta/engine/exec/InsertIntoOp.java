@@ -4,7 +4,6 @@
 package nta.engine.exec;
 
 import java.io.IOException;
-import java.util.List;
 
 import nta.catalog.Catalog;
 import nta.catalog.Column;
@@ -12,7 +11,6 @@ import nta.catalog.Schema;
 import nta.catalog.TableInfo;
 import nta.engine.plan.logical.InsertIntoLO;
 import nta.engine.query.TargetEntry;
-import nta.engine.utils.TupleUtils;
 import nta.storage.StorageManager;
 import nta.storage.UpdatableScanner;
 import nta.storage.VTuple;

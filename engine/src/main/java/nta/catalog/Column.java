@@ -4,12 +4,13 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import org.apache.hadoop.io.Writable;
-
 import nta.catalog.proto.TableProtos.AttrType;
 import nta.catalog.proto.TableProtos.ColumnProto;
 import nta.catalog.proto.TableProtos.ColumnProtoOrBuilder;
 import nta.catalog.proto.TableProtos.DataType;
+import nta.common.ProtoObject;
+
+import org.apache.hadoop.io.Writable;
 
 /**
  * @author Hyunsik Choi
