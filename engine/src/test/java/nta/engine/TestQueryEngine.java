@@ -90,7 +90,7 @@ public class TestQueryEngine {
 		engine.updateQuery("insert into mod (id, age) values(1,2)");
 		engine.updateQuery("insert into mod (id, age) values(2,3)");
 		
-		ResultSet rs1 = engine.executeQuery("select id, age from mod");
+		ResultSetOld rs1 = engine.executeQuery("select id, age from mod");
 		assertTrue(rs1.next());
 		assertEquals(1, rs1.getInt("id"));
 		assertEquals(2, rs1.getInt("age"));
@@ -104,7 +104,7 @@ public class TestQueryEngine {
 	
 	@Test
 	public final void testSelectQuery() throws NTAQueryException {
-		ResultSet rs1 = engine.executeQuery(SELECTION_TEST[0]);
+		ResultSetOld rs1 = engine.executeQuery(SELECTION_TEST[0]);
 		
 		rs1.next();
 		assertEquals(1, rs1.getInt("id"));
@@ -135,7 +135,7 @@ public class TestQueryEngine {
 	
 	@Test
 	public final void testProjectionQuery() throws NTAQueryException {
-		ResultSet rs1 = engine.executeQuery(SELECTION_TEST[2]);
+		ResultSetOld rs1 = engine.executeQuery(SELECTION_TEST[2]);
 		
 		rs1.next();
 		assertEquals(1, rs1.getInt("id"));

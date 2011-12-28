@@ -9,7 +9,7 @@ import nta.engine.exception.NTAQueryException;
  * @author Hyunsik Choi
  *
  */
-public interface ResultSet {
+public interface ResultSetOld {
 	 
 	public boolean next();
 	 

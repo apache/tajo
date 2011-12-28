@@ -189,14 +189,14 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 		return 0;
 	}
 	
-	public ResultSet executeQuery(String query) throws NTAQueryException {
+	public ResultSetOld executeQuery(String query) throws NTAQueryException {
 		return queryEngine.executeQuery(query);
 	}
 
 	@Override
 	public String executeQueryC(String query) throws NTAQueryException {
 		try {
-		ResultSet res = queryEngine.executeQuery(query);
+		ResultSetOld res = queryEngine.executeQuery(query);
 		if(res == null)
 			return "";
 		else

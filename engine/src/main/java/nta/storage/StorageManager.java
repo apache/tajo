@@ -102,7 +102,7 @@ public class StorageManager {
 		FileSystem fs = tablePath.getFileSystem(conf);
 		
 		Path tableMetaPath = new Path(tablePath, ".meta");
-		if(!fs.exists(tablePath)) {
+		if(!fs.exists(tableMetaPath)) {
 			throw new FileNotFoundException(".meta file not found in "+tableUri.toString());
 		}
 		FSDataInputStream tableMetaIn = 
