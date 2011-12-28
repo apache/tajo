@@ -101,12 +101,14 @@ public class JVMClusterUtil {
 	}
 	
 	public static void shutdown(final MasterThread master, final List<LeafServerThread> leafServers) {
-		LOG.debug("Shutting down NtaEngine Cluster");
+		LOG.debug("Shutting down NtaEngine Cluster");		
 		
+		master.master.shutdown();
 		
-		for(Thread t: leafServers) {
+		for(LeafServerThread t: leafServers) {
 			if(t.isAlive()) {
 				try {
+					t.getLeafServer().stop("Shutdown");
 					t.join();
 				} catch (InterruptedException e) {
 					// continue

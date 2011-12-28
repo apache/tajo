@@ -80,6 +80,7 @@
 								<argument>src/main/proto/NtaClientProtos.proto</argument>
 								<argument>src/main/proto/NtaClientProtocol.proto</argument>
 								<argument>src/main/proto/TableProtos.proto</argument>
+								<argument>src/main/proto/ClusterProtos.proto</argument>
 							</arguments>
 						</configuration>
 						<goals>

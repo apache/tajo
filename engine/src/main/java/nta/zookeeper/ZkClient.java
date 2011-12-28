@@ -72,7 +72,7 @@ public class ZkClient implements Watcher {
 	}
 
 	public void createEphemeral(final String path, final byte [] data) 
-		throws Exception {
+		throws KeeperException, InterruptedException {
 		zk.create(path, data, Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
 	}
 

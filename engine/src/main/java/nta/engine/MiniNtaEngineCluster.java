@@ -16,19 +16,15 @@ public class MiniNtaEngineCluster {
 	public LocalNtaEngineCluster engineCluster;
 	private static int index;
 	
-	public MiniNtaEngineCluster(Configuration conf, int numLeafServers) {
+	public MiniNtaEngineCluster(Configuration conf, int numLeafServers) throws IOException {
 		this.conf = conf;
-		conf.set(NConstants.MASTER_PORT, "0");		
+		conf.set(NConstants.MASTER_PORT, "0");
+		init(numLeafServers);
 	}
 	
-	public void init(int numLeafServers) throws IOException {
+	private void init(int numLeafServers) throws IOException {
 		try {
 		engineCluster = new LocalNtaEngineCluster(conf,numLeafServers);
-		
-		for(int i=0; i < numLeafServers; i++) {
-			Configuration lsConf = new NtaConf(conf);
-			engineCluster.addRegionServer(lsConf, i);
-		}
 		
 		engineCluster.startup();
 		} catch (IOException e) {
@@ -81,11 +77,7 @@ public class MiniNtaEngineCluster {
 	}
 	
 	public NtaEngineMaster getMaster() {
-		return this.getMaster();
-	}
-	
-	public JVMClusterUtil.MasterThread getMasterThread() {
-		return this.getMasterThread();
+		return this.engineCluster.getMaster();
 	}
 	
 	public void join() {
