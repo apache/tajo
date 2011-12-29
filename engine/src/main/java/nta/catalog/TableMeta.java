@@ -93,6 +93,45 @@ public class TableMeta extends TableInfo {
 	}
 	
 	public boolean equals(Object object) {
-		return super.equals(object);
+    if(object instanceof TableMeta) {
+      TableMeta other = (TableMeta) object;
+      
+      if(this.tableId != other.tableId) {
+        return false;
+      }
+      if(this.name != null && other.name != null) {
+        if(!this.name.equals(other.name))
+          return false; 
+      } else if(this.name == null ^ other.name == null) {
+        return false;
+      }
+      
+      if(this.store != null && other.store != null) {
+        if(!this.store.equals(other.store))
+          return false; 
+      } else if(this.store == null ^ other.store == null) {
+        return false;
+      }
+      
+      //return true;
+      return this.getProto().equals(other.getProto());       
+    }
+    
+    return false;   
+  }
+	
+	public Object clone() {
+	  return super.clone();
+	}
+	
+	public String toString() {
+	  StringBuilder str = new StringBuilder();
+	  str.append("{")
+	  .append("tableId: "+this.tableId).append("\n")
+	  .append("name: "+this.name).append("\n")
+	  .append("store: "+this.store).append("\n")
+	  .append("proto: "+this.proto.toString()).append("\n}");
+	  
+	  return str.toString();
 	}
 }

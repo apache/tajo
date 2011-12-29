@@ -34,4 +34,11 @@ public class Store {
 	public String getOption(String key) {
 		return tableBase.getOption(key);
 	}
+	
+	public boolean equals(Object obj) {
+	  Store other = (Store) obj;
+	  
+	  return this.uri.equals(other.uri) &&
+	      this.tableBase.equals(other.tableBase);
+	}
 }
