@@ -29,6 +29,7 @@ import nta.engine.NConstants;
 import nta.engine.function.FuncType;
 import nta.engine.function.TestFunc;
 import nta.engine.function.UnixTimeFunc;
+import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.query.LocalEngine;
 import nta.storage.Store;
 
@@ -51,7 +52,7 @@ public class Catalog implements EngineService {
 
 	private AtomicInteger newRelId = new AtomicInteger(0);
 	private Map<Integer, TableMeta> tables = new HashMap<Integer, TableMeta>();
-	private Map<Integer, List<BlockInfo>> hostsByTable = new HashMap<Integer, List<BlockInfo>>();
+	private Map<Integer, List<TabletInfo>> tabletServingInfo = new HashMap<Integer, List<TabletInfo>>();
 	private Map<String, Integer> tablesByName = new HashMap<String, Integer>();	
 	private Map<String, FunctionMeta> functions = new HashMap<String, FunctionMeta>();	
 
@@ -127,22 +128,22 @@ public class Catalog implements EngineService {
 	}
 	
 	public void resetHostsByTable() {
-		this.hostsByTable.clear();
+		this.tabletServingInfo.clear();
 	}
 	
-	public List<BlockInfo> getHostByTable(String tableName) {
-		return hostsByTable.get(tablesByName.get(tableName));
+	public List<TabletInfo> getHostByTable(String tableName) {
+		return tabletServingInfo.get(tablesByName.get(tableName));
 	}
 	
-	public void updateHostsByAllTable() throws IOException {
+	public void updateAllTabletServingInfo() throws IOException {
 		Collection<TableMeta> tbs = tables.values();
 		Iterator<TableMeta> it = tbs.iterator();
 		while (it.hasNext()) {
-			updateHostsByTable(it.next());
+			updateTabletServingInfo(it.next());
 		}
 	}
 	
-	public void updateHostsByTable(TableInfo info) throws IOException {
+	public void updateTabletServingInfo(TableInfo info) throws IOException {
 		int fileIdx, blockIdx;
 		FileSystem fs = FileSystem.get(conf);
 		Store store = info.getStore();
@@ -151,12 +152,12 @@ public class Catalog implements EngineService {
 		FileStatus[] files = fs.listStatus(path);
 		BlockLocation[] blocks;
 		String[] hosts;
-		List<BlockInfo> blockInfoList;
+		List<TabletInfo> tabletInfoList;
 		int tid = tablesByName.get(info.getName());
-		if (hostsByTable.containsKey(tid)) {
-			blockInfoList = hostsByTable.get(tid);
+		if (tabletServingInfo.containsKey(tid)) {
+			tabletInfoList = tabletServingInfo.get(tid);
 		} else {
-			blockInfoList = new ArrayList<BlockInfo>();
+			tabletInfoList = new ArrayList<TabletInfo>();
 		}
 		
 		for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
@@ -169,10 +170,15 @@ public class Catalog implements EngineService {
 					blockInfoList = new ArrayList<BlockInfo>();
 				}
 				// TODO: select the proper serving node for block
+<<<<<<< HEAD
 				blockInfoList.add(new BlockInfo(hosts[0], blocks[blockIdx].getOffset(), blocks[blockIdx].getLength()));
 				hostsByTable.put(tid, blockInfoList);
+=======
+				tabletInfoList.add(new TabletInfo(hosts[0], new Tablet(files[fileIdx].getPath(), 
+						blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
+>>>>>>> 7817379... NTA-283: 카탈로그에 노드들의 Table Serving을 관리하는 기능 추가
 			}
-			hostsByTable.put(tid, blockInfoList);
+			tabletServingInfo.put(tid, tabletInfoList);
 		}
 	}
 

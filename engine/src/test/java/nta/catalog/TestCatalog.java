@@ -240,7 +240,7 @@ public class TestCatalog {
 			fos.close();
 			
 			fos = fs.create(new Path(tbPath, "data/table.csv"));
-			tupleNum = random.nextInt(49)+10000001;
+			tupleNum = random.nextInt(49)+100001;
 			for (j = 0; j < tupleNum; j++) {
 				fos.writeBytes(tuples[0]+"\n");
 			}
@@ -251,23 +251,23 @@ public class TestCatalog {
 			catalog.addTable(meta);
 		}
 		
-		catalog.updateHostsByAllTable();
+		catalog.updateAllTabletServingInfo();
 		
 		Collection<TableInfo> tables = catalog.getTableInfos();
 		Iterator<TableInfo> it = tables.iterator();
-		List<BlockInfo> blockInfoList;
+		List<TabletInfo> tabletInfoList;
 		int cnt = 0;
 		int len = 0;
 		TableInfo tableInfo;
 		FileStatus fileStatus;
 		while (it.hasNext()) {
 			tableInfo = it.next();
-			blockInfoList = catalog.getHostByTable(tableInfo.getName());
-			if (blockInfoList != null) {
+			tabletInfoList = catalog.getHostByTable(tableInfo.getName());
+			if (tabletInfoList != null) {
 				cnt++;
 				len = 0;
-				for (i = 0; i < blockInfoList.size(); i++) {
-					len += blockInfoList.get(i).getLength();
+				for (i = 0; i < tabletInfoList.size(); i++) {
+					len += tabletInfoList.get(i).getTablet().getLength();
 				}
 				fileStatus = fs.getFileStatus(new Path(tableInfo.getStore().getURI()+"/data/table.csv"));
 				assertEquals(len, fileStatus.getLen());
