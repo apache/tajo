@@ -11,8 +11,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 
+import nta.catalog.Schema;
 import nta.conf.NtaConf;
 import nta.engine.exception.NTAQueryException;
+import nta.engine.ipc.protocolrecords.Tablet;
 import nta.storage.FileScanner;
 import nta.storage.RawFile2;
 import nta.storage.RawFile2.RawFileScanner;
@@ -75,6 +77,13 @@ public class ResultSetWritable implements Writable, FileScanner {
 	@Override
 	public void close() throws IOException {
 		scanner.close();
+	}
+
+	@Override
+	public void init(NtaConf conf, Schema schema, Tablet[] tablets)
+			throws IOException {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
