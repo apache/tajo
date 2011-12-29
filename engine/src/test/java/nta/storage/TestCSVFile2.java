@@ -12,6 +12,7 @@ import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NConstants;
+import nta.engine.ipc.protocolrecords.Tablet;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -32,50 +33,56 @@ public class TestCSVFile2 {
 		EngineTestingUtils.buildTestDir(TEST_PATH);
 	}
 	
-	@Test
-	public void test() throws IOException {
-		Schema schema = new Schema();
-		schema.addColumn("string", DataType.STRING);
-		schema.addColumn("int", DataType.INT);
-		
-		TableMeta meta = new TableMeta();
-		meta.setSchema(schema);
-		meta.setStorageType(StoreType.CSV);
-		meta.setTableType(TableType.BASETABLE);
-		
-		Path path = new Path(TEST_PATH);
+//	@Test
+  public void test() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("string", DataType.STRING);
+    schema.addColumn("int", DataType.INT);
+    
+    TableMeta meta = new TableMeta();
+    meta.setSchema(schema);
+    meta.setStorageType(StoreType.CSV);
+    meta.setTableType(TableType.BASETABLE);
+    
+    Path path = new Path(TEST_PATH);
 
-		Appender appender = new CSVFile2.CSVAppender(conf, path, schema);
-		int tupleNum = 10000;
-		VTuple vTuple = null;
-		for(int i = 0; i < tupleNum; i++) {
-			vTuple = new VTuple(2);
-			vTuple.put(0, "abc");
-			vTuple.put(1, (Integer)(i+1));
-			appender.addTuple(vTuple);
-		}
-		appender.close();
+    Appender appender = new CSVFile2.CSVAppender(conf, path, schema);
+    int tupleNum = 10;
+    VTuple vTuple = null;
+    for(int i = 0; i < tupleNum; i++) {
+      vTuple = new VTuple(2);
+      vTuple.put(0, "abcdefg");
+      vTuple.put(1, (Integer)(i+1));
+      appender.addTuple(vTuple);
+    }
+    appender.close();
 
-		FileSystem fs = LocalFileSystem.get(conf);
-		FileStatus status = fs.getFileStatus(new Path(path, "data/table1.csv"));
-		long fileLen = status.getLen();		// 88894
-		long randomNum = (long) (Math.random() * fileLen) + 1;
-		
-		FileScanner fileScanner = new CSVFile2.CSVScanner(conf, path, schema, 0, randomNum);
-		int tupleCnt;
-		vTuple = (VTuple) fileScanner.next();
-		for (tupleCnt = 1; vTuple != null; tupleCnt++) {
-			vTuple = (VTuple) fileScanner.next();			
-		}
-		fileScanner.close();
-		
-		fileScanner = new CSVFile2.CSVScanner(conf, path, schema, randomNum, fileLen);
-		vTuple = (VTuple) fileScanner.next();
-		for (; vTuple != null; tupleCnt++) {
-			vTuple = (VTuple) fileScanner.next();
-		}		
-		fileScanner.close();		
-		
-		assertEquals(tupleCnt, tupleNum);
-	}
+    FileSystem fs = LocalFileSystem.get(conf);
+    FileStatus status = fs.getFileStatus(new Path(path, "data/table1.csv"));
+    long fileLen = status.getLen();   // 88894
+    long randomNum = (long) (Math.random() * fileLen) + 1;
+//    long randomNum = (long) (0.99999 * fileLen) + 1;
+//    long randomNum = 5l;
+    
+    Tablet[] tablets = new Tablet[1];
+    Tablet tablet = new Tablet(new Path(path, "data/table1.csv"), 0, randomNum);
+    tablets[0] = tablet;
+    
+    FileScanner fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
+    int tupleCnt = 0;
+    while((vTuple = (VTuple) fileScanner.next()) != null) {
+      tupleCnt++;
+    }
+    fileScanner.close();
+    
+    tablet = new Tablet(new Path(path, "data/table1.csv"), randomNum + 1, fileLen - randomNum);
+    tablets[0] = tablet;
+    fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
+    while((vTuple = (VTuple) fileScanner.next()) != null) {
+      tupleCnt++;
+    }
+    fileScanner.close();    
+    
+    assertEquals(tupleNum, tupleCnt);
+  }
 }
