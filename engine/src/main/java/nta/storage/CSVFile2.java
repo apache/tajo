@@ -5,6 +5,7 @@ import java.net.Inet4Address;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.conf.NtaConf;
+import nta.engine.ipc.protocolrecords.Tablet;
 import nta.storage.exception.ReadOnlyException;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -176,6 +177,13 @@ public class CSVFile2 {
 		@Override
 		public void close() throws IOException {
 			fis.close();
+		}
+
+		@Override
+		public void init(NtaConf conf, Schema schema, Tablet[] tablets)
+				throws IOException {
+			// TODO Auto-generated method stub
+			
 		}
 	}
 }
