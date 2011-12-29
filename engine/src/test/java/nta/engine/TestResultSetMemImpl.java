@@ -3,7 +3,8 @@ package nta.engine;
 import static org.junit.Assert.*;
 
 import nta.catalog.Schema;
-import nta.storage.MemTuple;
+import nta.storage.Tuple;
+import nta.storage.VTuple;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -19,41 +20,41 @@ public class TestResultSetMemImpl {
 		res.columnMap.put("age", 2);
 		res.columnMap.put("name", 3);
 		
-		MemTuple tuple = new MemTuple();
-		tuple.putInt(1, 1);
-		tuple.putInt(2, 32);
-		tuple.putString(3, "hyunsik");		
+		Tuple tuple = new VTuple(3);
+		tuple.put(0, 1);
+		tuple.put(1, 32);
+		tuple.put(2, "hyunsik");		
 		res.rows.add(tuple);
 		
-		tuple = new MemTuple();
-		tuple.putInt(1, 2);
-		tuple.putInt(2, 27);
-		tuple.putString(3, "jimin");
+		tuple = new VTuple(3);
+		tuple.put(0, 2);
+		tuple.put(1, 27);
+		tuple.put(2, "jimin");
 		res.rows.add(tuple);
 		
-		tuple = new MemTuple();
-		tuple.putInt(1, 3);
-		tuple.putInt(2, 50);
-		tuple.putString(3, "jone");
+		tuple = new VTuple(3);
+		tuple.put(0, 3);
+		tuple.put(1, 50);
+		tuple.put(2, "jone");
 		res.rows.add(tuple);		
 	}
 
 	@Test
 	public final void testNext() {
 		res.next();
-		assertEquals(res.getInt(1),1);
-		assertEquals(res.getInt(2),32);
-		assertEquals(res.getString(3),"hyunsik");
+		assertEquals(res.getInt(0),1);
+		assertEquals(res.getInt(1),32);
+		assertEquals(res.getString(2),"hyunsik");
 		
 		res.next();
-		assertEquals(res.getInt(1),2);
-		assertEquals(res.getInt(2),27);
-		assertEquals(res.getString(3),"jimin");
+		assertEquals(res.getInt(0),2);
+		assertEquals(res.getInt(1),27);
+		assertEquals(res.getString(2),"jimin");
 		
 		res.next();
-		assertEquals(res.getInt(1),3);
-		assertEquals(res.getInt(2),50);
-		assertEquals(res.getString(3),"jone");
+		assertEquals(res.getInt(0),3);
+		assertEquals(res.getInt(1),50);
+		assertEquals(res.getString(2),"jone");
 		
 		assertFalse(res.next());
 	}
@@ -63,19 +64,19 @@ public class TestResultSetMemImpl {
 		res.last();
 		
 		res.previous();
-		assertEquals(res.getInt(1),3);
-		assertEquals(res.getInt(2),50);
-		assertEquals(res.getString(3),"jone");
+		assertEquals(res.getInt(0),3);
+		assertEquals(res.getInt(1),50);
+		assertEquals(res.getString(2),"jone");
 		
 		res.previous();
-		assertEquals(res.getInt(1),2);
-		assertEquals(res.getInt(2),27);
-		assertEquals(res.getString(3),"jimin");
+		assertEquals(res.getInt(0),2);
+		assertEquals(res.getInt(1),27);
+		assertEquals(res.getString(2),"jimin");
 		
 		res.previous();
-		assertEquals(res.getInt(1),1);
-		assertEquals(res.getInt(2),32);
-		assertEquals(res.getString(3),"hyunsik");		
+		assertEquals(res.getInt(0),1);
+		assertEquals(res.getInt(1),32);
+		assertEquals(res.getString(2),"hyunsik");		
 	}
 
 	@Test
@@ -104,5 +105,4 @@ public class TestResultSetMemImpl {
 	public final void testGetRow() {
 		assertEquals(res.getRow(),-1);
 	}
-
 }

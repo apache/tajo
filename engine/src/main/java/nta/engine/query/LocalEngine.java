@@ -3,9 +3,6 @@ package nta.engine.query;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import nta.catalog.Catalog;
 import nta.catalog.Column;
 import nta.catalog.Schema;
@@ -20,7 +17,10 @@ import nta.engine.parser.NQL;
 import nta.engine.parser.NQL.Query;
 import nta.engine.plan.logical.LogicalPlan;
 import nta.storage.StorageManager;
-import nta.storage.VTuple;
+import nta.storage.Tuple;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * 
@@ -83,9 +83,9 @@ public class LocalEngine implements EngineService {
 		
 		return rs;
 	}	
-	
+
 	public void execute(PhysicalOp op, ResultSetMemImplOld result) throws IOException {
-		VTuple next = null;	
+		Tuple next = null;	
 		
 		if(stream != null) {
 			for(Column desc : result.getSchema().getColumns()) {
@@ -103,17 +103,17 @@ public class LocalEngine implements EngineService {
 		}
 	}
 	
-	private String tupleToString(VTuple t) {
+	private String tupleToString(Tuple t) {
 		boolean first = true;
 		StringBuilder sb = new StringBuilder();
-		for(int i=0; i < t.values.length; i++) {			
-			if(t.values[i] != null) {
+		for(int i=0; i < t.size(); i++) {			
+			if(t.get(i) != null) {
 				if(first) {
 					first = false;
 				} else {
 					sb.append("\t");
 				}
-				sb.append(t.values[i]);
+				sb.append(t.get(i));
 			}			
 		}
 		return sb.toString();

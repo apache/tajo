@@ -90,13 +90,7 @@ public class RawFile implements UpdatableScanner {
 	}
 
 	@Override
-	public Tuple next() throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public VTuple next2() throws IOException {
+	public VTuple next() throws IOException {
 		if (in.available() == 0) {
 			return null;
 		}

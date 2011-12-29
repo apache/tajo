@@ -4,11 +4,15 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
+import nta.engine.ipc.protocolrecords.Tablet;
 import nta.storage.exception.ReadOnlyException;
 
 import org.apache.commons.logging.Log;
@@ -27,8 +31,8 @@ public class RawFile2 {
 		
 	}
 	
-	public static RawFileScanner getScanner(NtaConf conf, final Path path, final Schema schema, long start, long length) throws IOException {
-		return new RawFileScanner(conf, path, schema, start, start+length);
+	public static RawFileScanner getScanner(NtaConf conf, final Schema schema, final Tablet[] tablets) throws IOException {
+		return new RawFileScanner(conf, schema, tablets);
 	}
 	
 	public static RawFileAppender getAppender(NtaConf conf, final Path path, final Schema schema) throws IOException {
@@ -44,51 +48,68 @@ public class RawFile2 {
 		
 		private NtaConf conf;
 		private Schema schema;
-		private Path path;
 		private FSDataInputStream in;
+		private SortedSet<Tablet> tabletSet;
+		private Iterator<Tablet> tableIter;
+		private Tablet curTablet;
 		private FileSystem fs;
 		private byte[] sync;
 		private byte[] checkSync;
-//		private int escape;
+
 		private long start, end;
 		private long lastSyncPos;
 		private long headerPos;
 		
-		public RawFileScanner(NtaConf conf, final Path path, final Schema schema, long start, long end) throws IOException {
-			this.conf = conf;
-			this.schema = schema;
-			this.path = new Path(path, "data/table.raw");
-			this.fs = path.getFileSystem(conf);
-			this.start = start;
-			FileStatus status = fs.getFileStatus(this.path);
-			this.end = end > status.getLen() ? status.getLen() : end;
-
-			in = fs.open(this.path);
-			
-			sync = new byte[SYNC_HASH_SIZE];
-			checkSync = new byte[SYNC_HASH_SIZE];
-			
-			init();
+		public RawFileScanner(NtaConf conf, final Schema schema, final Tablet[] tablets) throws IOException {
+			init(conf, schema, tablets);
 		}
 		
-		private void init() throws IOException {
-			readHeader();
-			headerPos = in.getPos();
-			if (start < headerPos) {
-				in.seek(headerPos);
-			} else {
-				in.seek(start);
+		public void init(NtaConf conf, final Schema schema, final Tablet[] tablets) throws IOException {
+			this.conf = conf;
+			this.schema = schema;
+			this.tabletSet = new TreeSet<Tablet>();
+			this.sync = new byte[SYNC_HASH_SIZE];
+			this.checkSync = new byte[SYNC_HASH_SIZE];
+			
+			for (Tablet t: tablets) {
+				this.tabletSet.add(t);
 			}
-			if (in.getPos() != headerPos) {
-				in.seek(in.getPos()-SYNC_SIZE);
-				while(in.getPos() < end) {
-					if (checkSync()) {
-						lastSyncPos = in.getPos();
-						break;
-					} else {
-						in.seek(in.getPos()+1);
+			this.tableIter = tabletSet.iterator();
+			openNextTablet();
+		}
+		
+		private boolean openNextTablet() throws IOException {
+			if (this.in != null) {
+				this.in.close();
+			}
+			if (tableIter.hasNext()) {
+				curTablet = tableIter.next();
+				this.fs = curTablet.getPath().getFileSystem(this.conf);
+				this.in = fs.open(curTablet.getPath());
+				this.start = curTablet.getStartOffset();
+				this.end = curTablet.getStartOffset() + curTablet.getLength();
+				
+				readHeader();
+				headerPos = in.getPos();
+				if (start < headerPos) {
+					in.seek(headerPos);
+				} else {
+					in.seek(start);
+				}
+				if (in.getPos() != headerPos) {
+					in.seek(in.getPos()-SYNC_SIZE);
+					while(in.getPos() < end) {
+						if (checkSync()) {
+							lastSyncPos = in.getPos();
+							break;
+						} else {
+							in.seek(in.getPos()+1);
+						}
 					}
 				}
+				return true;
+			} else {
+				return false;
 			}
 		}
 		
@@ -111,20 +132,30 @@ public class RawFile2 {
 
 		@Override
 		public Tuple next() throws IOException {
+			boolean checkSyncFlag = true;
 			if (in.available() == 0) {
-				return null;
+				// Open next tablet
+				if (!openNextTablet()) {
+					return null;
+				} else {
+					checkSyncFlag = false;
+				}
 			}
 			
 			// check sync
-			if (checkSync()) {
+			if (checkSyncFlag && checkSync()) {
 				if (in.getPos() >= end) {
-					return null;
+					if (!openNextTablet()) {
+						return null;
+					}
 				}
 				lastSyncPos = in.getPos();
 			}
 			
 			if (in.available() == 0) {
-				return null;
+				if (!openNextTablet()) {
+					return null;
+				}
 			}
 			
 			int i;
@@ -225,10 +256,14 @@ public class RawFile2 {
 			} catch (NoSuchAlgorithmException e) {
 				LOG.error(e);
 			}
-			if (fs.exists(new Path(path, "table.raw"))) {
-				throw new ReadOnlyException();
+			Path tablePath = null;
+			for (int i = 0; ; i++) {
+				tablePath = new Path(path, "table"+i+".raw");
+				if (!fs.exists(tablePath)) {
+					out = fs.create(tablePath);
+					break;
+				}
 			}
-			out = fs.create(new Path(path, "table.raw"));
 			writeHeader();
 		}
 		

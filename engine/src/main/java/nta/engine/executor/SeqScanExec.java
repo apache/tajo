@@ -4,15 +4,13 @@
 package nta.engine.executor;
 
 import java.io.IOException;
-import java.util.List;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.engine.executor.eval.Expr;
-import nta.engine.query.LocalEngine;
-import nta.storage.MemTuple;
 import nta.storage.Scanner;
 import nta.storage.Tuple;
+import nta.storage.VTuple;
 
 /**
  * @author Hyunsik Choi
@@ -42,7 +40,7 @@ public class SeqScanExec implements ScanExec {
 	}
 
 	public Tuple buildTuple(Tuple tuple) {
-		MemTuple t = new MemTuple();
+		Tuple t = new VTuple(tuple.size());
 		Column field = null;
 
 		if(cols != null) {		
@@ -50,22 +48,22 @@ public class SeqScanExec implements ScanExec {
 				field = schema.getColumn(i);
 				switch(field.getDataType()) {
 				case INT:
-					t.putInt(i, cols[i].eval(tuple).asInt());
+					t.put(i, cols[i].eval(tuple).asInt());
 					break;
 				case LONG:
-					t.putLong(i, cols[i].eval(tuple).asLong());
+					t.put(i, cols[i].eval(tuple).asLong());
 				case FLOAT:
-					t.putFloat(i, cols[i].eval(tuple).asFloat());
+					t.put(i, cols[i].eval(tuple).asFloat());
 				case DOUBLE:
-					t.putDouble(i, cols[i].eval(tuple).asDouble());
+					t.put(i, cols[i].eval(tuple).asDouble());
 					break;
 				case STRING:
-					t.putString(i, cols[i].eval(tuple).asChars());
+					t.put(i, cols[i].eval(tuple).asChars());
 					break;
 				case BOOLEAN:
-					t.putBoolean(i, cols[i].eval(tuple).asBool());
+					t.put(i, cols[i].eval(tuple).asBool());
 				case ANY:
-					t.putString(i, cols[i].eval(tuple).asChars());
+					t.put(i, cols[i].eval(tuple).asChars());
 				}
 			}
 			return t;
