@@ -164,19 +164,14 @@ public class Catalog implements EngineService {
 			blocks = fs.getFileBlockLocations(files[fileIdx], 0, files[fileIdx].getLen());
 			for (blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
 				hosts = blocks[blockIdx].getHosts();
-				if (hostsByTable.containsKey(tid)) {
-					blockInfoList = hostsByTable.get(tid);
+				if (tabletServingInfo.containsKey(tid)) {
+					tabletInfoList = tabletServingInfo.get(tid);
 				} else {
-					blockInfoList = new ArrayList<BlockInfo>();
+					tabletInfoList = new ArrayList<TabletInfo>();
 				}
 				// TODO: select the proper serving node for block
-<<<<<<< HEAD
-				blockInfoList.add(new BlockInfo(hosts[0], blocks[blockIdx].getOffset(), blocks[blockIdx].getLength()));
-				hostsByTable.put(tid, blockInfoList);
-=======
 				tabletInfoList.add(new TabletInfo(hosts[0], new Tablet(files[fileIdx].getPath(), 
 						blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
->>>>>>> 7817379... NTA-283: 카탈로그에 노드들의 Table Serving을 관리하는 기능 추가
 			}
 			tabletServingInfo.put(tid, tabletInfoList);
 		}
