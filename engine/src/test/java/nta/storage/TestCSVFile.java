@@ -61,23 +61,23 @@ public class TestCSVFile {
 		Store store = sm.open(new Path("file:///"+file.getAbsolutePath()).toUri());
 		Scanner scanner = sm.getScanner(store);
 		
-		VTuple tuple = null;
-		tuple = scanner.next2();
+		Tuple tuple = null;
+		tuple = scanner.next();
 		assertNotNull(tuple);
 		assertEquals("hyunsik",tuple.getString(0));
 		assertEquals(1,tuple.getInt(1));
 		
-		tuple = scanner.next2();
+		tuple = scanner.next();
 		assertNotNull(tuple);
 		assertEquals("jihoon",tuple.getString(0));
 		assertEquals(2,tuple.getInt(1));
 		
-		tuple = scanner.next2();
+		tuple = scanner.next();
 		assertNotNull(tuple);
 		assertEquals("jimin",tuple.getString(0));
 		assertEquals(3,tuple.getInt(1));
 		
-		tuple = scanner.next2();
+		tuple = scanner.next();
 		assertNotNull(tuple);
 		assertEquals("haemi",tuple.getString(0));
 		assertEquals(4,tuple.getInt(1));

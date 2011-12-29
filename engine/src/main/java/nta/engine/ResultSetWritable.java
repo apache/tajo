@@ -64,7 +64,7 @@ public class ResultSetWritable implements Writable, FileScanner {
 			sm = new StorageManager(conf, fs);
 			scanner = sm.getScanner(sm.open(resultPath.toUri()));
 		}
-		return scanner.next2();
+		return scanner.next();
 	}
 
 	@Override

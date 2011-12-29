@@ -64,8 +64,8 @@ public class TestStorageManager {
 		Scanner scanner = sm.getScanner(store);
 
 		int i=0;
-		VTuple tuple = null;		
-		while((tuple = scanner.next2()) != null) {
+		Tuple tuple = null;		
+		while((tuple = scanner.next()) != null) {
 			i++;
 		}
 		assertEquals(4,i);
