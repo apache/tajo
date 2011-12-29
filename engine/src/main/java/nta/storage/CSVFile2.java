@@ -2,20 +2,28 @@ package nta.storage;
 
 import java.io.IOException;
 import java.net.Inet4Address;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.TabletInfo;
 import nta.conf.NtaConf;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.storage.exception.ReadOnlyException;
+
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
+/**
+ * @author Haemi Yang
+ * @author Jimin Kim
+ *
+ */
 public class CSVFile2 {
   public static class CSVAppender implements Appender {
     private final Path path;
@@ -138,27 +146,35 @@ public class CSVFile2 {
         fs.mkdirs(tabletPath);
 
       fis = fs.open(tabletPath);
-
+      long available = fis.available();
       if (startOffset != 0) {
-        if (startOffset <= fis.available()) {
+        if (startOffset < available) {
           fis.seek(startOffset);
           while (fis.readByte() != LF)
             ;
         } else {
-          fis.seek(startOffset);
+          fis.seek(available);
         }
-
       }
-
     }
 
     @Override
     public Tuple next() throws IOException {
-      if ((line = fis.readLine()) == null)
-        return null;
+      if (fis.getPos() > startOffset + length) {
+        if(tabletIter.hasNext()) {
+          openTablet(tabletIter.next());
+        } else {
+          return null;
+        }
+      }
 
-      if (fis.getPos() > length)
-        return null;
+      if ((line = fis.readLine()) == null) {
+        if(tabletIter.hasNext()) {
+          openTablet(tabletIter.next());
+        } else {
+          return null;
+        }
+      }
 
       VTuple tuple = new VTuple(schema.getColumnNum());
       String[] cells = null;
