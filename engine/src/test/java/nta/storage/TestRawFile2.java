@@ -88,6 +88,7 @@ public class TestRawFile2 {
 		} while (tuple != null);
 		scanner.close();
 		--tupleCnt;
+		System.out.println(tupleCnt);
 
 		scanner = RawFile2.getScanner(conf, tablePath, schema, midPos, fileLen-midPos);
 		do {

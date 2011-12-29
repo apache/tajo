@@ -2,8 +2,13 @@ package nta.catalog;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 
 import nta.catalog.Catalog;
 import nta.catalog.Column;
@@ -14,12 +19,24 @@ import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
+import nta.engine.EngineTestingUtils;
+import nta.engine.MiniNtaEngineCluster;
+import nta.engine.NtaTestingUtility;
 import nta.engine.executor.eval.Expr;
 import nta.engine.executor.eval.FieldExpr;
 import nta.engine.function.FuncType;
 import nta.engine.function.Function;
+import nta.storage.CSVFile;
 import nta.storage.StorageManager;
+import nta.storage.Store;
+import nta.util.FileUtil;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -64,14 +81,23 @@ public class TestCatalog {
 	Schema schema1;
 	Schema schema2;
 	
+	NtaTestingUtility util;
+	
+	final static String TEST_PATH = "/TestCatalog";
+	
 	public TestCatalog() throws IOException, URISyntaxException {
 		
 	}
 	
 	@Before
-	public void setUp() throws IOException {
-		conf = new NtaConf();
+	public void setUp() throws Exception {
+		util = new NtaTestingUtility();
+		conf = new NtaConf(util.getConfiguration());
 		cat = new Catalog(conf);
+		util.startMiniZKCluster();
+
+		EngineTestingUtils.buildTestDir(TEST_PATH);
+		
 	}
 	
 	@Test
@@ -163,5 +189,92 @@ public class TestCatalog {
 		assertTrue(cat.containFunction("test"));
 		cat.unregisterFunction("test");
 		assertFalse(cat.containFunction("test"));
+	}
+	
+	@Test
+	public final void testHostsByTable() throws Exception {
+		int i, j;
+		FSDataOutputStream fos;
+		Path tbPath;
+		
+		util.startMiniCluster(3);
+		
+		Schema schema = new Schema();
+		schema.addColumn("id",DataType.INT);
+		schema.addColumn("age",DataType.INT);
+		schema.addColumn("name",DataType.STRING);
+
+		TableMeta meta;
+
+		String [] tuples = {
+				"1,32,hyunsik",
+				"2,29,jihoon",
+				"3,28,jimin",
+				"4,24,haemi"
+		};
+
+		FileSystem fs = util.getMiniDFSCluster().getFileSystem();
+		NtaConf conf = new NtaConf(util.getConfiguration());
+		Catalog catalog = new Catalog(conf);
+		StorageManager sm = new StorageManager(conf, fs);
+		Store store;
+
+		int tbNum = 100;
+		Random random = new Random();
+		int tupleNum;
+		
+		for (i = 0; i < tbNum; i++) {
+			tbPath = new Path(TEST_PATH+"/table"+i);
+			if (fs.exists(tbPath)){
+				fs.delete(tbPath, true);
+			}
+			fs.mkdirs(tbPath);
+			fos = fs.create(new Path(tbPath, ".meta"));
+			meta = new TableMeta();
+			meta.setSchema(schema);
+			meta.setStorageType(StoreType.CSV);
+			meta.setTableType(TableType.BASETABLE);
+			meta.putOption(CSVFile.DELIMITER, ",");
+			meta.setName("table"+i);
+			FileUtil.writeProto(fos, meta.getProto());
+			fos.close();
+			
+			fos = fs.create(new Path(tbPath, "data/table.csv"));
+			tupleNum = random.nextInt(49)+10000001;
+			for (j = 0; j < tupleNum; j++) {
+				fos.writeBytes(tuples[0]+"\n");
+			}
+			fos.close();
+
+			store = sm.open(tbPath.toUri());
+			meta.setStore(store);
+			catalog.addTable(meta);
+		}
+		
+		catalog.updateHostsByAllTable();
+		
+		Collection<TableInfo> tables = catalog.getTableInfos();
+		Iterator<TableInfo> it = tables.iterator();
+		List<BlockInfo> blockInfoList;
+		int cnt = 0;
+		int len = 0;
+		TableInfo tableInfo;
+		FileStatus fileStatus;
+		while (it.hasNext()) {
+			tableInfo = it.next();
+			blockInfoList = catalog.getHostByTable(tableInfo.getName());
+			if (blockInfoList != null) {
+				cnt++;
+				len = 0;
+				for (i = 0; i < blockInfoList.size(); i++) {
+					len += blockInfoList.get(i).getLength();
+				}
+				fileStatus = fs.getFileStatus(new Path(tableInfo.getStore().getURI()+"/data/table.csv"));
+				assertEquals(len, fileStatus.getLen());
+			}
+		}
+		
+		util.shutdownMiniCluster();
+		assertEquals(tbNum, cnt);
 	}
 }

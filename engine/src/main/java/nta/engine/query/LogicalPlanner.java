@@ -131,28 +131,6 @@ public class LogicalPlanner {
 				scanOps.add(new ScanOp(relInfo));
 			}
 
-//			TableDesc candidate;
-//			List<RelInfo> baseRelInfos = query.getBaseRels();
-//			List<TableDesc> rels = catalog.getRelations();
-//			
-//			for (RelInfo relInfo : baseRelInfos) {
-//				// for each query info
-//				TableDesc qtm = relInfo.getRelation();
-//				candidate = qtm;
-//				for (TableDesc rel : rels) {
-//					// check every tables whether each of them contains every fields of the query info
-//					if (rel.checkContainFields(qtm.getFields())) {
-//						// select the best one from candidates
-//						if (candidate.getRowSize() > rel.getRowSize()) {
-//							candidate = rel;
-//						}
-//					}
-//				}
-//				
-//				relInfo.setTableDesc(candidate);
-//				scanOps.add(new ScanOp(relInfo));
-//			}
-			
 			if(scanOps.size() == 2) {
 				JoinOp jOp = new JoinOp(JoinType.INNER);
 				jOp.setOuter(scanOps.get(0));
