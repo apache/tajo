@@ -8,6 +8,7 @@ import java.io.IOException;
 import nta.catalog.Schema;
 import nta.engine.plan.logical.ProjectLO;
 import nta.engine.query.TargetEntry;
+import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 /**
@@ -32,8 +33,8 @@ public class ProjectOp extends PhysicalOp {
 	 * @see nta.query.exec.PhysicalOp#next()
 	 */
 	@Override
-	public VTuple next() throws IOException {		
-		VTuple tuple = inner.next();
+	public Tuple next() throws IOException {		
+		Tuple tuple = inner.next();
 		if(tuple == null) {
 			return null;
 		}

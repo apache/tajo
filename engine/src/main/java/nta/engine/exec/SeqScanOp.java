@@ -7,10 +7,8 @@ import java.io.IOException;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
-import nta.engine.executor.ScanExec;
 import nta.engine.executor.eval.Expr;
 import nta.engine.query.TargetEntry;
-import nta.storage.MemTuple;
 import nta.storage.Scanner;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -51,8 +49,8 @@ public class SeqScanOp extends PhysicalOp {
 		return resTuple;
 	}
 
-	public VTuple buildTuple(VTuple tuple) {
-		VTuple t = new VTuple(tuple.values.length);
+	public Tuple buildTuple(Tuple tuple) {
+		VTuple t = new VTuple(tuple.size());
 		Column field = null;
 
 		if(tlist != null) {
@@ -96,16 +94,16 @@ public class SeqScanOp extends PhysicalOp {
 	 * @see nta.query.executor.ScanExec#hasNextTuple()
 	 */
 	@Override
-	public VTuple next() throws IOException {	
-		VTuple next = null;					
+	public Tuple next() throws IOException {	
+		Tuple next = null;					
 		if(qual == null) {
-			if((next = scanner.next2()) != null) {
+			if((next = scanner.next()) != null) {
 				return buildTuple(next);
 			} else {
 				return null;
 			}
 		} else {				
-			while ((next = scanner.next2()) != null) {				
+			while ((next = scanner.next()) != null) {				
 				next = buildTuple(next);
 				if(qual.eval(next).asBool()) {				
 					return next;

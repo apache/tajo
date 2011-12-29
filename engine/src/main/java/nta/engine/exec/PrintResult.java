@@ -6,7 +6,7 @@ package nta.engine.exec;
 import java.io.IOException;
 
 import nta.catalog.Schema;
-import nta.storage.VTuple;
+import nta.storage.Tuple;
 
 /**
  * @author Hyunsik Choi
@@ -21,8 +21,8 @@ public class PrintResult extends PhysicalOp {
 		this.sub = op;
 	}
 	
-	public VTuple next() throws IOException {
-		VTuple next = sub.next();
+	public Tuple next() throws IOException {
+		Tuple next = sub.next();
 		if(next == null)
 			return null;
 		else {

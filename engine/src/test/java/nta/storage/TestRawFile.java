@@ -118,26 +118,26 @@ public class TestRawFile {
 		
 		Scanner readonly = sm.getScanner(store);
 		
-		VTuple tuple = null;
-		tuple = readonly.next2();
+		Tuple tuple = null;
+		tuple = readonly.next();
 		assertNotNull(tuple);
 		assertEquals("hyunsik",tuple.getString(0));
 		assertEquals(1,tuple.getInt(1));
 		assertTrue(Arrays.equals(ips[0].getBytes(), tuple.getIPv4Bytes(2)));
 		
-		tuple = readonly.next2();
+		tuple = readonly.next();
 		assertNotNull(tuple);
 		assertEquals("jihoon",tuple.getString(0));
 		assertEquals(2,tuple.getInt(1));
 		assertTrue(Arrays.equals(ips[1].getBytes(), tuple.getIPv4Bytes(2)));
 		
-		tuple = readonly.next2();
+		tuple = readonly.next();
 		assertNotNull(tuple);
 		assertEquals("jimin",tuple.getString(0));
 		assertEquals(3,tuple.getInt(1));
 		assertTrue(Arrays.equals(ips[2].getBytes(), tuple.getIPv4Bytes(2)));
 		
-		tuple = readonly.next2();
+		tuple = readonly.next();
 		assertNotNull(tuple);
 		assertEquals("haemi",tuple.getString(0));
 		assertEquals(4,tuple.getInt(1));
