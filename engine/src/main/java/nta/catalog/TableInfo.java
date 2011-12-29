@@ -164,18 +164,33 @@ public class TableInfo implements ProtoObject<TableProto>, Writable, Comparable<
 		}
 		TableProtoOrBuilder p = viaProto ? proto : builder;
 		this.options = new Options(p.getOptions());
-	}
+	}	
 	
-	// TODO - to be completed
 	public boolean equals(Object object) {
 		if(object instanceof TableInfo) {
 			TableInfo other = (TableInfo) object;
 			
-			return this.getTableType() == other.getTableType() &&
-					this.getStoreType() == ((TableInfo)other).getStoreType();
-		} else {
-			return false;
+			if(this.tableId != other.tableId) {
+			  return false;
+			}
+			if(this.name != null && other.name != null) {
+			  if(!this.name.equals(other.name))
+			    return false; 
+			} else if(this.name == null ^ other.name == null) {
+			  return false;
+			}
+			
+			if(this.store != null && other.store != null) {
+        if(!this.name.equals(other.name))
+          return false; 
+      } else if(this.store == null ^ other.store == null) {
+        return false;
+      }
+			
+			return this.getProto().equals(other.getProto());	     
 		}
+		
+		return false;		
 	}
 	
 	////////////////////////////////////////////////////////////////////////
@@ -268,6 +283,16 @@ public class TableInfo implements ProtoObject<TableProto>, Writable, Comparable<
 			return 0;	
 		}
 	}
+	
+	@Override
+  public Object clone() {
+    TableMeta info = new TableMeta(getProto());
+    info.tableId = this.tableId;
+    info.name = this.name;
+    info.store = this.store;
+    
+    return info;
+  }
 	
 	public static class TableComparator implements Comparator<TableInfo> {
 
