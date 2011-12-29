@@ -18,12 +18,12 @@ public class TestNtaClient {
 	
 	@Before
 	public void setUp() throws Exception {
-		cli = new NtaClient("localhost", 10000);
+//		cli = new NtaClient("localhost", 10000);
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		cli.close();
+//		cli.close();
 	}
 
 	@Test
