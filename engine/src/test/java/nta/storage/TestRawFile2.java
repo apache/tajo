@@ -87,7 +87,7 @@ public class TestRawFile2 {
 		int tupleCnt = 0;
 		tuple = null;
 		Tablet[] tablets = new Tablet[1];
-		tablets[0] = new Tablet(dataPath, 0, midPos);
+		tablets[0] = new Tablet(tablePath, "table0.raw", 0, midPos);
 		RawFileScanner scanner = RawFile2.getScanner(conf, schema, tablets);
 		do {
 			tuple = (VTuple)scanner.next();
@@ -98,7 +98,7 @@ public class TestRawFile2 {
 //		System.out.println(tupleCnt);
 
 		tablets = new Tablet[1];
-		tablets[0] = new Tablet(dataPath, midPos, fileLen-midPos);
+		tablets[0] = new Tablet(tablePath, "table0.raw", midPos, fileLen-midPos);
 		scanner = RawFile2.getScanner(conf, schema, tablets);
 		do {
 			tuple = (VTuple)scanner.next();
@@ -111,8 +111,8 @@ public class TestRawFile2 {
 		// Read a table composed of multiple files
 		tupleCnt = 0;
 		tablets = new Tablet[2];
-		tablets[0] = new Tablet(dataPath, 0, midPos);
-		tablets[1] = new Tablet(dataPath, midPos, fileLen-midPos);
+		tablets[0] = new Tablet(tablePath, "table0.raw", 0, midPos);
+		tablets[1] = new Tablet(tablePath, "table0.raw", midPos, fileLen-midPos);
 		scanner = RawFile2.getScanner(conf, schema, tablets);
 		do {
 			tuple = (VTuple)scanner.next();
@@ -124,9 +124,9 @@ public class TestRawFile2 {
 		
 		tupleCnt = 0;
 		tablets = new Tablet[3];
-		tablets[0] = new Tablet(dataPath, 0, midPos/2);
-		tablets[1] = new Tablet(dataPath, midPos/2, midPos-midPos/2);
-		tablets[2] = new Tablet(dataPath, midPos, fileLen-midPos);
+		tablets[0] = new Tablet(tablePath, "table0.raw", 0, midPos/2);
+		tablets[1] = new Tablet(tablePath, "table0.raw", midPos/2, midPos-midPos/2);
+		tablets[2] = new Tablet(tablePath, "table0.raw", midPos, fileLen-midPos);
 		scanner = RawFile2.getScanner(conf, schema, tablets);
 		do {
 			tuple = (VTuple)scanner.next();
@@ -171,8 +171,8 @@ public class TestRawFile2 {
 		
 		FileStatus[] files = fs.listStatus(new Path(tablePath, "data"));
 		Tablet[] tablets = new Tablet[2];
-		tablets[0] = new Tablet(files[0].getPath(), 0, files[0].getLen());
-		tablets[1] = new Tablet(files[1].getPath(), 0, files[1].getLen());
+		tablets[0] = new Tablet(tablePath, files[0].getPath().getName(), 0, files[0].getLen());
+		tablets[1] = new Tablet(tablePath, files[1].getPath().getName(), 0, files[1].getLen());
 
 		RawFile2.RawFileScanner scanner = RawFile2.getScanner(conf, schema, tablets);
 		int tupleCnt = 0;

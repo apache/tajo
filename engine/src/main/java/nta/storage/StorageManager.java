@@ -11,6 +11,7 @@ import nta.catalog.TableInfo;
 import nta.catalog.proto.TableProtos.TableProto;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
+import nta.engine.ipc.protocolrecords.Tablet;
 import nta.util.FileUtil;
 
 import org.apache.commons.logging.Log;
@@ -77,7 +78,7 @@ public class StorageManager {
 		memStores.addMemStore(store, memTable);
 		return store;
 	}
-	
+	@Deprecated
 	public synchronized Store create(URI tableUri, TableInfo meta) throws IOException {
 		Path tablePath = new Path(tableUri);
 
@@ -95,6 +96,7 @@ public class StorageManager {
 		return new Store(tablePath.toUri(), meta);
 	}
 
+	@Deprecated
 	public synchronized Store open(URI tableUri) throws IOException {
 		TableInfo meta = null;
 
@@ -114,7 +116,7 @@ public class StorageManager {
 
 		return new Store(tablePath.toUri(), meta);
 	}
-	
+	@Deprecated
 	public synchronized void delete(Store store) throws IOException {
 		switch(store.getStoreType()) {
 		case RAW:
@@ -131,6 +133,7 @@ public class StorageManager {
 		}		
 	}
 
+	@Deprecated
 	public Scanner getScanner(Store store) throws IOException {
 		Scanner scanner = null;
 		
@@ -152,6 +155,66 @@ public class StorageManager {
 		return scanner;
 	}
 	
+	public FileScanner getScanner(Tablet [] tablets) throws IOException {
+	  //
+	  TableInfo meta = getTableMeta(tablets[0].getTablePath());
+	  
+	  FileScanner scanner = null;
+	  
+	  switch(meta.getStoreType()) {
+	  case RAW: {
+	    scanner = new RawFile2.RawFileScanner(conf, meta.getSchema(), tablets);	    
+	    break;
+	  }
+	  case CSV: {
+	    scanner = new CSVFile2.CSVScanner(conf, meta.getSchema(), tablets);
+	    break;
+	  }
+	  }
+	  
+	  return scanner;
+	}
+	
+	public Appender getAppender(TableInfo meta, Path outputPath) throws 
+	  IOException {
+	  
+	  Appender appender = null;	  
+	  
+	  switch(meta.getStoreType()) {
+	  case RAW: {
+	    appender = new RawFile2.RawFileAppender(conf, outputPath, 
+	        meta.getSchema());
+	    break;
+	  }
+	  case CSV: {
+	    appender = new CSVFile2.CSVAppender(conf, outputPath, meta.getSchema());
+	    break;
+	  }
+	  }
+	  
+	  return appender;
+	}
+	
+	public synchronized TableInfo getTableMeta(Path tablePath) throws IOException {
+    TableInfo meta = null;
+    
+    FileSystem fs = tablePath.getFileSystem(conf);
+    
+    Path tableMetaPath = new Path(tablePath, ".meta");
+    if(!fs.exists(tableMetaPath)) {
+      throw new FileNotFoundException(".meta file not found in "+tablePath.toString());
+    }
+    FSDataInputStream tableMetaIn = 
+      fs.open(tableMetaPath);
+
+    TableProto tableProto = (TableProto) FileUtil.loadProto(tableMetaIn, 
+      TableProto.getDefaultInstance());
+    meta = new TableInfo(tableProto);
+
+    return meta;
+  }
+	
+	@Deprecated
 	public UpdatableScanner getUpdatableScanner(Store store) throws IOException {
 		UpdatableScanner scanner = null;
 		

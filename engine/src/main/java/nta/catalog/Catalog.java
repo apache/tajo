@@ -170,7 +170,7 @@ public class Catalog implements EngineService {
 					tabletInfoList = new ArrayList<TabletInfo>();
 				}
 				// TODO: select the proper serving node for block
-				tabletInfoList.add(new TabletInfo(hosts[0], new Tablet(files[fileIdx].getPath(), 
+				tabletInfoList.add(new TabletInfo(hosts[0], new Tablet(path, files[fileIdx].getPath().getName(), 
 						blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
 			}
 			tabletServingInfo.put(tid, tabletInfoList);
