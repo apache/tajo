@@ -19,6 +19,7 @@ import org.apache.hadoop.fs.Path;
  * @author Hyunsik Choi
  *
  */
+@Deprecated
 public class CSVFile implements Scanner {
 	public static final String DELIMITER="csvfile.delimiter";
 	

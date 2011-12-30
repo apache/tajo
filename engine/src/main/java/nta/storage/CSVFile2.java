@@ -2,14 +2,12 @@ package nta.storage;
 
 import java.io.IOException;
 import java.net.Inet4Address;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
-import nta.catalog.TabletInfo;
 import nta.conf.NtaConf;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.storage.exception.ReadOnlyException;
@@ -138,14 +136,13 @@ public class CSVFile2 {
 
     private void openTablet(Tablet tablet) throws IOException {
       this.startOffset = tablet.getStartOffset();
-      this.length = tablet.getLength();
-      Path tabletPath = tablet.getPath();
-      this.fs = tabletPath.getFileSystem(conf);
+      this.length = tablet.getLength();      
+      this.fs = tablet.getFilePath().getFileSystem(conf);
 
-      if (!fs.exists(tabletPath))
-        fs.mkdirs(tabletPath);
+      if (!fs.exists(tablet.getFilePath()))
+        fs.mkdirs(tablet.getFilePath());
 
-      fis = fs.open(tabletPath);
+      fis = fs.open(tablet.getFilePath());
       long available = fis.available();
       if (startOffset != 0) {
         if (startOffset < available) {

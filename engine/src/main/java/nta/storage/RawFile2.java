@@ -84,8 +84,8 @@ public class RawFile2 {
 			}
 			if (tableIter.hasNext()) {
 				curTablet = tableIter.next();
-				this.fs = curTablet.getPath().getFileSystem(this.conf);
-				this.in = fs.open(curTablet.getPath());
+				this.fs = curTablet.getFilePath().getFileSystem(this.conf);
+				this.in = fs.open(curTablet.getFilePath());
 				this.start = curTablet.getStartOffset();
 				this.end = curTablet.getStartOffset() + curTablet.getLength();
 				

@@ -8,23 +8,33 @@ public class Tablet implements Comparable<Tablet> {
 	private long startOffset;
 	private long length;
 	private Path path;
+	private String filename;
 	
 	public Tablet() {
 		
 	}
 	
-	public Tablet(Path path, long start, long length) {
-		this.set(path, start, length);
+	public Tablet(Path tablePath, String filename, long start, long length) {
+		this.set(tablePath, filename, start, length);
 	}
 	
-	public void set(Path path, long start, long length) {
+	public void set(Path path, String filename, long start, long length) {
 		this.path = path;
+		this.filename = filename;
 		this.startOffset = start;
 		this.length = length;
 	}
 	
-	public Path getPath() {
+	public Path getTablePath() {
 		return this.path;
+	}
+	
+	public String getFileName() {
+	  return this.filename;
+	}
+	
+	public Path getFilePath() {
+	  return new Path(this.path, "data/"+this.filename);
 	}
 	
 	public long getStartOffset() {
@@ -43,7 +53,7 @@ public class Tablet implements Comparable<Tablet> {
 	 */
 	@Override
 	public int compareTo(Tablet t) {
-		if (t.getPath().equals(this.path)) {
+		if (getFilePath().equals(t.getFilePath())) {
 			return (int)(this.startOffset - t.getStartOffset());
 		} else {
 			return -1;
@@ -54,7 +64,7 @@ public class Tablet implements Comparable<Tablet> {
 	public boolean equals(Object o) {
 		if (o instanceof Tablet) {
 			Tablet t = (Tablet)o;
-			if (t.getPath().equals(this.path)
+			if (getFilePath().equals(t.getFilePath()) 			    
 					&& t.getStartOffset() == this.startOffset
 					&& t.getLength() == this.length) {
 				return true;
@@ -64,7 +74,12 @@ public class Tablet implements Comparable<Tablet> {
 	}
 	
 	@Override
+	public int hashCode() {
+	  return getFilePath().hashCode();
+	}
+	
+	@Override
 	public String toString() {
-		return new String("(" + path + " " + startOffset + " " + length + ")");
+		return new String("(" + getFilePath() + " " + startOffset + " " + length + ")");
 	}
 }
