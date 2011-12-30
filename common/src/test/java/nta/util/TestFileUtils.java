@@ -46,7 +46,7 @@ public class TestFileUtils {
 	}
 
 	@Test
-	public final void testWriteReadProtoFromFile() throws IOException {		
+	public final void testWriteLoadProtoFromFile() throws IOException {		
 		File file = new File(TEST_PATH+"/file.bin");
 		file.createNewFile();
 		FileUtil.writeProto(file, proto);
@@ -59,7 +59,7 @@ public class TestFileUtils {
 	}
 
 	@Test
-	public final void testWriteReadProtoFromStream() throws IOException {
+	public final void testWriteLoadProtoFromStream() throws IOException {
 		FileOutputStream out = new FileOutputStream(new File(TEST_PATH+"/file.bin"));		
 		FileUtil.writeProto(out, proto);
 		
@@ -73,7 +73,7 @@ public class TestFileUtils {
 	}
 
 	@Test
-	public final void testWriteReadProtoFromPath() throws IOException {	
+	public final void testWriteLoadProtoFromPath() throws IOException {	
 		Path path = new Path(TEST_PATH+"/file.bin");
 		FileUtil.writeProto(path, proto);
 		
