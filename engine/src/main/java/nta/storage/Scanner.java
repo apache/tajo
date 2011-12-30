@@ -14,11 +14,8 @@ import nta.engine.SchemaObject;
  */
 public interface Scanner extends SchemaObject {
 	public abstract void init() throws IOException;
-	
-	@Deprecated
-	abstract public Tuple next() throws IOException;
-	
-	abstract public VTuple next2() throws IOException;	
+
+	abstract public Tuple next() throws IOException;	
 	
 	abstract public void reset() throws IOException;
 	

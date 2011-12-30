@@ -2,9 +2,6 @@ package nta.storage;
 
 import java.net.InetAddress;
 
-import nta.datum.Datum;
-import nta.datum.IntDatum;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -19,10 +16,11 @@ public class VTuple implements Tuple {
 	
 	public VTuple(int size) {
 		values = new Object [size];
-	}
-	
-	public int getSize() {
-		return this.values.length;		
+	}	
+
+	@Override
+	public int size() {	
+		return values.length;
 	}
 	
 	public boolean contains(int fieldId) {

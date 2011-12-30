@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.nio.ByteBuffer;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -43,24 +42,10 @@ public class MemTable implements UpdatableScanner {
 	
 	@Override
 	public void init() throws IOException {
-	}
-
-	/* (non-Javadoc)
-	 * @see nta.query.executor.ScanExec#hasNextTuple()
-	 */
-	@Override
-	public Tuple next() throws IOException {	
-		cur++;
-		
-		if(cur < slots.size()) {
-			return slots.get(cur);
-		} else
-			return null;
-	}
-	
+	}	
 
 	@Override
-	public VTuple next2() throws IOException {
+	public VTuple next() throws IOException {
 		cur++;		
 		if(cur < slots.size()) {
 			Tuple t = slots.get(cur);

@@ -31,9 +31,21 @@ public class TestTableMeta {
 
 	@Test
 	public void testTableMetaTableProto() {
-		TableInfo meta2 = new TableInfo(meta.getProto());
+	  TableMeta meta1 = new TableMeta();
+    meta1.setStorageType(StoreType.CSV);
+    meta1.setTableType(TableType.BASETABLE);
+    Schema schema1 = new Schema();
+    schema1.addColumn("name", DataType.BYTE);
+    schema1.addColumn("addr", DataType.STRING);
+    meta1.setSchema(schema1);
+    meta1.setStartKey(100);
+    meta1.setEndKey(200);
+    
+    System.out.println(meta1);
+    
+		TableMeta meta2 = new TableMeta(meta1.getProto());
 		
-		assertEquals(meta, meta2);
+		assertEquals(meta1, meta2);
 	}
 
 	@Test
@@ -82,8 +94,10 @@ public class TestTableMeta {
 		schema2.addColumn("name", DataType.BYTE);
 		schema2.addColumn("addr", DataType.STRING);
 		meta2.setSchema(schema2);
+		meta2.setStartKey(100);
+    meta2.setEndKey(200);
 		
-		assertEquals(meta, meta2);
+		assertTrue(meta.equals(meta2));
 		
 		meta2.setTableType(TableType.CUBE);
 		assertNotSame(meta, meta2);
@@ -108,17 +122,44 @@ public class TestTableMeta {
 
 	@Test
 	public void testGetProto() {
-		TableProto proto = meta.getProto();
-		TableInfo newMeta = new TableInfo(proto);
+	  TableMeta meta1 = new TableMeta();
+    meta1.setStorageType(StoreType.CSV);
+    meta1.setTableType(TableType.BASETABLE);
+    Schema schema1 = new Schema();
+    schema1.addColumn("name", DataType.BYTE);
+    schema1.addColumn("addr", DataType.STRING);
+    meta1.setSchema(schema1);
+    meta1.setStartKey(100);
+    meta1.setEndKey(200);
+    
+		TableProto proto = meta1.getProto();
+		TableMeta newMeta = new TableMeta(proto);
 		
-		assertEquals(meta, newMeta);
-		assertTrue(100 == meta.getStartKey());
-		assertTrue(200 == meta.getEndKey());
+		assertTrue(meta1.equals(newMeta));
+		assertTrue(100 == newMeta.getStartKey());
+		assertTrue(200 == newMeta.getEndKey());
 	}
 	
 	@Test
 	public void testWritable() throws Exception {
 		TableMeta meta2 = (TableMeta) EngineTestingUtils.testWritable(meta);
-		assertEquals(meta, meta2);
+		assertTrue(meta.equals(meta2));
+	}
+	
+	@Test
+	public void testSchema() {
+	  TableMeta meta1 = new TableMeta();
+    meta1.setStorageType(StoreType.CSV);
+    meta1.setTableType(TableType.BASETABLE);
+    Schema schema1 = new Schema();
+    schema1.addColumn("name", DataType.BYTE);
+    schema1.addColumn("addr", DataType.STRING);
+    meta1.setSchema(schema1);
+    meta1.setStartKey(100);
+    meta1.setEndKey(200);
+    
+    TableMeta meta2 = (TableMeta) meta1.clone();
+    
+    assertEquals(meta1, meta2);
 	}
 }

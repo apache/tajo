@@ -1,26 +1,25 @@
 package nta.storage;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Inet4Address;
+
+import nta.catalog.Column;
+import nta.catalog.Schema;
+import nta.conf.NtaConf;
 
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import nta.catalog.Column;
-import nta.catalog.Schema;
-import nta.conf.NtaConf;
-
 /**
  * @author jimin
  * @author Hyunsik Choi
  *
  */
+@Deprecated
 public class CSVFile implements Scanner {
 	public static final String DELIMITER="csvfile.delimiter";
 	
@@ -34,7 +33,6 @@ public class CSVFile implements Scanner {
 	private int currentFileIdx;
 	private String line;
 	private String delimeter;
-	private MemTuple readTuple;
 	
 	
 	public CSVFile(NtaConf conf, Store store) throws IOException {
@@ -62,10 +60,11 @@ public class CSVFile implements Scanner {
 		}		
 	}
 
+	
 	/* (non-Javadoc)
 	 * @see nta.query.executor.ScanExec#hasNextTuple()
 	 */
-	@Override
+	/*
 	public Tuple next() throws IOException {		
 		if((this.line = in.readLine()) == null)
 			return null;
@@ -94,10 +93,10 @@ public class CSVFile implements Scanner {
 		}
 
 		return this.readTuple;
-	}	
+	}	*/
 	
 	@Override
-	public VTuple next2() throws IOException {
+	public Tuple next() throws IOException {
 		if((this.line = in.readLine()) == null)
 			return null;
 

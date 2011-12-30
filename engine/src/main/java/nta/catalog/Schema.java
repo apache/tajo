@@ -143,6 +143,8 @@ public class Schema implements ProtoObject<SchemaProto> {
 	}
 
 	private void mergeLocalToBuilder() {
+	  maybeInitBuilder();
+	  builder.clearFields();
 		if (this.fields  != null) {			
 			for(Column col : fields.values()) {
 				builder.addFields(col.getProto());
@@ -151,11 +153,12 @@ public class Schema implements ProtoObject<SchemaProto> {
 	}
 
 	private void mergeLocalToProto() {
-		if(viaProto) {
+		if(viaProto)
 			maybeInitBuilder();
-		}
+		
 		mergeLocalToBuilder();
 		proto = builder.build();
 		viaProto = true;
+		
 	}
 }

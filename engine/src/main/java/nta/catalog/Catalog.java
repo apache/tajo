@@ -9,7 +9,10 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -26,10 +29,16 @@ import nta.engine.NConstants;
 import nta.engine.function.FuncType;
 import nta.engine.function.TestFunc;
 import nta.engine.function.UnixTimeFunc;
+import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.query.LocalEngine;
+import nta.storage.Store;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.BlockLocation;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 /**
  * @author Hyunsik Choi
@@ -43,6 +52,7 @@ public class Catalog implements EngineService {
 
 	private AtomicInteger newRelId = new AtomicInteger(0);
 	private Map<Integer, TableMeta> tables = new HashMap<Integer, TableMeta>();
+	private Map<Integer, List<TabletInfo>> tabletServingInfo = new HashMap<Integer, List<TabletInfo>>();
 	private Map<String, Integer> tablesByName = new HashMap<String, Integer>();	
 	private Map<String, FunctionMeta> functions = new HashMap<String, FunctionMeta>();	
 
@@ -114,6 +124,56 @@ public class Catalog implements EngineService {
 			return new ArrayList<TableInfo>(tables.values());
 		} finally {
 			wlock.unlock();
+		}
+	}
+	
+	public void resetHostsByTable() {
+		this.tabletServingInfo.clear();
+	}
+	
+	public List<TabletInfo> getHostByTable(String tableName) {
+		return tabletServingInfo.get(tablesByName.get(tableName));
+	}
+	
+	public void updateAllTabletServingInfo() throws IOException {
+		Collection<TableMeta> tbs = tables.values();
+		Iterator<TableMeta> it = tbs.iterator();
+		while (it.hasNext()) {
+			updateTabletServingInfo(it.next());
+		}
+	}
+	
+	public void updateTabletServingInfo(TableInfo info) throws IOException {
+		int fileIdx, blockIdx;
+		FileSystem fs = FileSystem.get(conf);
+		Store store = info.getStore();
+		Path path = new Path(store.getURI()+"/data");
+		
+		FileStatus[] files = fs.listStatus(path);
+		BlockLocation[] blocks;
+		String[] hosts;
+		List<TabletInfo> tabletInfoList;
+		int tid = tablesByName.get(info.getName());
+		if (tabletServingInfo.containsKey(tid)) {
+			tabletInfoList = tabletServingInfo.get(tid);
+		} else {
+			tabletInfoList = new ArrayList<TabletInfo>();
+		}
+		
+		for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
+			blocks = fs.getFileBlockLocations(files[fileIdx], 0, files[fileIdx].getLen());
+			for (blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
+				hosts = blocks[blockIdx].getHosts();
+				if (tabletServingInfo.containsKey(tid)) {
+					tabletInfoList = tabletServingInfo.get(tid);
+				} else {
+					tabletInfoList = new ArrayList<TabletInfo>();
+				}
+				// TODO: select the proper serving node for block
+				tabletInfoList.add(new TabletInfo(hosts[0], new Tablet(path, files[fileIdx].getPath().getName(), 
+						blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
+			}
+			tabletServingInfo.put(tid, tabletInfoList);
 		}
 	}
 
