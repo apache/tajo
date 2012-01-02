@@ -20,12 +20,13 @@ import nta.storage.RawFile2;
 import nta.storage.RawFile2.RawFileScanner;
 import nta.storage.Scanner;
 import nta.storage.StorageManager;
+import nta.storage.StorageUtils;
 import nta.storage.Tuple;
 
 public class ResultSetWritable implements Writable, FileScanner {
 
 	private Path resultPath = null;
-	private Scanner scanner = null;
+	private FileScanner scanner = null;
 	private FileSystem fs = null;
 	private NtaConf conf = null;
 	private StorageManager sm = null;
@@ -64,7 +65,7 @@ public class ResultSetWritable implements Writable, FileScanner {
 			this.conf = new NtaConf();
 			fs = FileSystem.get(conf);
 			sm = new StorageManager(conf, fs);
-			scanner = sm.getScanner(sm.open(resultPath.toUri()));
+			scanner = sm.getScanner(StorageUtils.reconstructTablets(conf, resultPath));
 		}
 		return scanner.next();
 	}

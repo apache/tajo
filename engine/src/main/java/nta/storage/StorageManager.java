@@ -64,6 +64,10 @@ public class StorageManager {
 				tableUri = new Path(dataRootPath, meta.getName());
 				return create(tableUri.toUri(), meta);
 			}
+			case CSV: {
+        Path tableUri = new Path(dataRootPath, meta.getName());
+        return create(tableUri.toUri(), meta);
+      }
 			default : return null;
 			}
 		} catch (Exception e) {
