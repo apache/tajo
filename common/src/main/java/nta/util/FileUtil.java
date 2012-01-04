@@ -7,6 +7,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import com.google.protobuf.Message;
@@ -21,9 +25,11 @@ public class FileUtil {
 		out.write(proto.toByteArray());
 	}
 	
-	public static void writeProto(Path path, Message proto) throws IOException {
-		File file = getFile(path.getName());
-		writeProto(file, proto);
+	public static void writeProto(Configuration conf, Path path, Message proto) throws IOException {
+		FileSystem fs = path.getFileSystem(conf);
+		FSDataOutputStream stream = fs.create(path);
+		stream.write(proto.toByteArray());
+		stream.close();
 	}
 	
 	public static Message loadProto(File file, Message proto) throws IOException {
@@ -37,9 +43,11 @@ public class FileUtil {
 		return builder.build();
 	}
 	
-	public static Message loadProto(Path path, Message proto) throws IOException {
-		File file = getFile(path.getName());
-		return loadProto(file, proto);
+	public static Message loadProto(Configuration conf, Path path, Message proto) throws IOException {
+		FileSystem fs = path.getFileSystem(conf);
+		FSDataInputStream in = new FSDataInputStream(fs.open(path));
+		Message.Builder builder = proto.newBuilderForType().mergeFrom(in);
+		return builder.build();
 	}
 	
 	public static File getFile(String path) {

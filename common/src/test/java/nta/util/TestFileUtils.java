@@ -13,6 +13,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
 import com.google.protobuf.Message;
@@ -75,11 +76,12 @@ public class TestFileUtils {
 	@Test
 	public final void testWriteLoadProtoFromPath() throws IOException {	
 		Path path = new Path(TEST_PATH+"/file.bin");
-		FileUtil.writeProto(path, proto);
+		Configuration conf = new Configuration();
+		FileUtil.writeProto(conf, path, proto);
 		
 		Message defaultInstance = TestMessageProto.getDefaultInstance();
 		TestMessageProto message = (TestMessageProto) 
-			FileUtil.loadProto(new Path(TEST_PATH+"/file.bin"), defaultInstance);
+			FileUtil.loadProto(conf, new Path(TEST_PATH+"/file.bin"), defaultInstance);
 		
 		assertEquals(proto, message);
 	}
