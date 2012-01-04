@@ -3,7 +3,9 @@
  */
 package nta.engine;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,13 +18,12 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableType;
 import nta.common.type.IPv4;
 import nta.conf.NtaConf;
-import nta.storage.RawFile2;
+import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.Store;
 import nta.storage.Tuple;
 import nta.storage.UpdatableScanner;
 import nta.storage.VTuple;
-import nta.storage.RawFile2.RawFileAppender;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
@@ -73,7 +74,7 @@ public class TestResultSetWritable {
 		FileSystem fs = LocalFileSystem.get(conf);
 		StorageManager sm = new StorageManager(conf, fs);
 		Store store = sm.create(meta);
-		UpdatableScanner scanner = sm.getUpdatableScanner(store);
+		Appender appender = sm.getAppender(meta, tablePath);
 
 		ips = new IPv4[4];
 		for (int i = 1; i <= ips.length; i++) {
@@ -84,26 +85,26 @@ public class TestResultSetWritable {
 		t1.put(0, "hyunsik");
 		t1.put(1, (Integer) 1);
 		t1.put(2, ips[0].getBytes());
-		scanner.addTuple(t1);
+		appender.addTuple(t1);
 
 		VTuple t2 = new VTuple(3);
 		t2.put(0, "jihoon");
 		t2.put(1, (Integer) 2);
 		t2.put(2, ips[1].getBytes());
-		scanner.addTuple(t2);
+		appender.addTuple(t2);
 
 		VTuple t3 = new VTuple(3);
 		t3.put(0, "jimin");
 		t3.put(1, (Integer) 3);
 		t3.put(2, ips[2].getBytes());
-		scanner.addTuple(t3);
+		appender.addTuple(t3);
 
 		VTuple t4 = new VTuple(3);
 		t4.put(0, "haemi");
 		t4.put(1, (Integer) 4);
 		t4.put(2, ips[3].getBytes());
-		scanner.addTuple(t4);
-		scanner.close();
+		appender.addTuple(t4);
+		appender.close();
 
 		result = new ResultSetWritable();
 		result.setResult(tablePath);
