@@ -13,6 +13,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+
 import com.google.protobuf.Message;
 
 public class TestFileUtils {
@@ -44,7 +47,7 @@ public class TestFileUtils {
 	}
 
 	@Test
-	public final void testWriteReadProtoFromFile() throws IOException {		
+	public final void testWriteLoadProtoFromFile() throws IOException {		
 		File file = new File(TEST_PATH+"/file.bin");
 		file.createNewFile();
 		FileUtil.writeProto(file, proto);
@@ -57,7 +60,7 @@ public class TestFileUtils {
 	}
 
 	@Test
-	public final void testWriteReadProtoFromStream() throws IOException {
+	public final void testWriteLoadProtoFromStream() throws IOException {
 		FileOutputStream out = new FileOutputStream(new File(TEST_PATH+"/file.bin"));		
 		FileUtil.writeProto(out, proto);
 		
@@ -69,4 +72,18 @@ public class TestFileUtils {
 		
 		assertEquals(proto, message);
 	}
+
+	@Test
+	public final void testWriteLoadProtoFromPath() throws IOException {	
+		Path path = new Path(TEST_PATH+"/file.bin");
+		Configuration conf = new Configuration();
+		FileUtil.writeProto(conf, path, proto);
+		
+		Message defaultInstance = TestMessageProto.getDefaultInstance();
+		TestMessageProto message = (TestMessageProto) 
+			FileUtil.loadProto(conf, new Path(TEST_PATH+"/file.bin"), defaultInstance);
+		
+		assertEquals(proto, message);
+	}
+	
 }
