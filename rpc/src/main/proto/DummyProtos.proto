@@ -1,0 +1,19 @@
+option java_package = "nta.rpc.test";
+option java_outer_classname = "DummyProtos";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
+
+message EchoMessage {
+	required string message = 1;
+}
+
+message SumRequest {
+	required int32 x1 = 1;
+	required int64 x2 = 2;
+	required double x3 = 3;
+	required float x4 = 4;
+}
+
+message SumResponse {
+	required double result = 1;
+}

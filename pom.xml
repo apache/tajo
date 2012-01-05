@@ -160,6 +160,13 @@
 				<scope>compile</scope>
 			</dependency>
 			<dependency>
+				<groupId>kr.ac.korea.dbserver</groupId>
+				<artifactId>nta-rpc</artifactId>
+				<version>${nta.version}</version>
+				<type>jar</type>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
 				<groupId>commons-logging</groupId>
 				<artifactId>commons-logging</artifactId>
 				<version>1.1.1</version>
@@ -191,5 +198,6 @@
 		<module>engine</module>
 		<module>logserver</module>
 		<module>etl</module>
+		<module>rpc</module>
 	</modules>
 </project>
