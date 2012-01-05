@@ -6,7 +6,9 @@ package nta.engine.ipc.protocolrecords;
  *
  */
 
-public interface SubQueryResponse {
+public enum QueryStatus {
 
-	public QueryStatus getStatus();
+	FINISHED,
+	FAILED,
+	ABORT
 }
