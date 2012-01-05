@@ -4,7 +4,7 @@
 package nta.engine.plan.logical;
 
 import nta.catalog.Schema;
-import nta.engine.parser.NQL.RelInfo;
+import nta.engine.parser.RelInfo;
 
 /**
  * @author Hyunsik Choi

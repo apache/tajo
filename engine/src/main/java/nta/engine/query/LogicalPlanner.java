@@ -9,7 +9,7 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.NotSupportQueryException;
 import nta.engine.parser.NQL.Query;
-import nta.engine.parser.NQL.RelInfo;
+import nta.engine.parser.RelInfo;
 import nta.engine.plan.JoinType;
 import nta.engine.plan.logical.ControlLO;
 import nta.engine.plan.logical.CreateTableLO;
