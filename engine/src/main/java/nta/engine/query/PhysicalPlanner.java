@@ -8,9 +8,7 @@ import java.io.IOException;
 import nta.catalog.Catalog;
 import nta.catalog.TableDesc;
 import nta.engine.exception.InternalProblemException;
-import nta.engine.exec.CreateTableOp;
 import nta.engine.exec.DescTableOp;
-import nta.engine.exec.InsertIntoOp;
 import nta.engine.exec.PhysicalOp;
 import nta.engine.exec.ProjectOp;
 import nta.engine.exec.SelOp;
@@ -18,9 +16,7 @@ import nta.engine.exec.SeqScanOp;
 import nta.engine.exec.ShowFunctionOp;
 import nta.engine.exec.ShowTableOp;
 import nta.engine.plan.logical.ControlLO;
-import nta.engine.plan.logical.CreateTableLO;
 import nta.engine.plan.logical.DescTableLO;
-import nta.engine.plan.logical.InsertIntoLO;
 import nta.engine.plan.logical.JoinOp;
 import nta.engine.plan.logical.LogicalOp;
 import nta.engine.plan.logical.LogicalPlan;
@@ -86,17 +82,10 @@ public class PhysicalPlanner {
 		case SET_DIFF:;
 		case SET_INTERSECT:;
 		
-		case CREATE_TABLE:
-			CreateTableLO createTableOp = (CreateTableLO) op;
-			if(createTableOp.hasSubQuery()) {
-				cur = buildPlan(createTableOp.getSubQuery());
-			}
-			cur = new CreateTableOp(createTableOp, cat, sm);
+		case CREATE_TABLE:		
 			break;
 			
 		case INSERT_INTO:
-			InsertIntoLO insertLo = (InsertIntoLO) op;
-			cur = new InsertIntoOp(cat, sm, insertLo);
 			break;
 
 		case SHOW_TABLE:

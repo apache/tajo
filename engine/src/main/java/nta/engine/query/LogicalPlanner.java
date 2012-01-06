@@ -3,19 +3,17 @@ package nta.engine.query;
 import java.util.ArrayList;
 import java.util.List;
 
+import nta.catalog.Catalog;
 import nta.catalog.Schema;
 import nta.catalog.exception.NoSuchTableException;
-import nta.catalog.proto.TableProtos.StoreType;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.NotSupportQueryException;
 import nta.engine.parser.NQL.Query;
 import nta.engine.parser.RelInfo;
 import nta.engine.plan.JoinType;
 import nta.engine.plan.logical.ControlLO;
-import nta.engine.plan.logical.CreateTableLO;
 import nta.engine.plan.logical.DescTableLO;
 import nta.engine.plan.logical.GroupByOp;
-import nta.engine.plan.logical.InsertIntoLO;
 import nta.engine.plan.logical.JoinOp;
 import nta.engine.plan.logical.LogicalOp;
 import nta.engine.plan.logical.LogicalPlan;
@@ -26,7 +24,6 @@ import nta.engine.plan.logical.SelectionOp;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import nta.catalog.Catalog;
 
 public class LogicalPlanner {
 	private Log LOG = LogFactory.getLog(LogicalPlanner.class);	
@@ -47,29 +44,8 @@ public class LogicalPlanner {
 		switch(query.getCmdType()) {		
 		
 		case CREATE_TABLE:
-			CreateTableLO lo = new CreateTableLO(query.getTargetTable(), 
-				query.getTableDef());
-			
-			if(query.hasStoreType()) {
-				if(query.getStoreName().equalsIgnoreCase("mem")) {
-					lo.setStoreType(StoreType.MEM);
-				} else if(query.getStoreName().equalsIgnoreCase("raw")) {
-					lo.setStoreType(StoreType.RAW);
-				} else {
-					throw new NTAQueryException("Not supported Store Type: "+query.getStoreName());
-				}
-			} else {
-				lo.setStoreType(StoreType.MEM);
-			}
-			
-			if(query.hasSubQuery()) {
-				lo.setSubQuery(build(query.getSubQuery()));
-			}
-			op = lo;
-			
 			break;
 		case INSERT:
-			op = buildInsertInto(query);
 			break;
 		
 		case SELECT:
@@ -92,11 +68,6 @@ public class LogicalPlanner {
 		}
 		
 		return op;
-	}
-	
-	public LogicalOp buildInsertInto(Query query) throws NoSuchTableException {
-		int targetTableId = this.catalog.getTableId(query.getTargetTable());
-		return new InsertIntoLO(targetTableId, query.getTargetList(), query.getValues());
 	}
 	
 	/**
