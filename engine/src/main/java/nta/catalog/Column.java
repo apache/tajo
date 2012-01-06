@@ -1,21 +1,15 @@
 package nta.catalog;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import nta.catalog.proto.TableProtos.AttrType;
 import nta.catalog.proto.TableProtos.ColumnProto;
 import nta.catalog.proto.TableProtos.ColumnProtoOrBuilder;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.common.ProtoObject;
 
-import org.apache.hadoop.io.Writable;
-
 /**
  * @author Hyunsik Choi
  */
-public class Column extends ColumnBase implements ProtoObject<ColumnProto>, Writable {
+public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 	private ColumnProto proto = ColumnProto.getDefaultInstance();
 	private ColumnProto.Builder builder = null;
 	private boolean viaProto = false;
@@ -170,23 +164,6 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto>, Writ
 			maybeInitBuilder();
 		}
 		mergeLocalToBuilder();
-		proto = builder.build();
-		viaProto = true;
-	}
-
-	@Override
-	public void write(DataOutput out) throws IOException {
-		byte [] bytes = getProto().toByteArray();
-		out.writeInt(bytes.length);
-		out.write(bytes);
-	}
-
-	@Override
-	public void readFields(DataInput in) throws IOException {
-		int len = in.readInt();
-		byte [] bytes = new byte[len];
-		in.readFully(bytes);
-		builder.mergeFrom(bytes);
 		proto = builder.build();
 		viaProto = true;
 	}

@@ -6,6 +6,7 @@ import java.util.List;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableType;
@@ -40,10 +41,7 @@ public class BaseTableSchema {
 		schema.addColumn("tos", DataType.BYTE);
 		schema.addColumn("tag", DataType.LONG);
 		
-		tableMeta = new TableMeta();
-		tableMeta.setSchema(schema);
-		tableMeta.setTableType(TableType.BASETABLE);
-		tableMeta.setStorageType(StoreType.CSV);
+		tableMeta = new TableMetaImpl(schema, StoreType.CSV);
 	}
 	
 	public TableMeta getSchema() {

@@ -5,7 +5,10 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.net.URI;
 
-import nta.catalog.TableInfo;
+import nta.catalog.Schema;
+import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
+import nta.catalog.proto.TableProtos.StoreType;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -16,15 +19,13 @@ import org.junit.Test;
  *
  */
 public class TestMemTupleSlots {
-	TableInfo meta;
-	Store store;
+	TableMeta meta;
 	MemTable slots;
 	
 	@Before
-	public void setUp() throws Exception {
-		meta = new TableInfo();
-		store = new Store(new URI("mem://TestMemTupleSlot"), meta);
-		slots = new MemTable(store);
+	public void setUp() throws Exception {	  
+	  meta = new TableMetaImpl(new Schema(), StoreType.MEM);	  
+		slots = new MemTable(meta, URI.create("mem://memtable1"));
 		
 		slots.addTuple(new VTuple(1));
 		slots.addTuple(new VTuple(1));

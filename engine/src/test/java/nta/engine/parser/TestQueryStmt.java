@@ -4,9 +4,18 @@
 package nta.engine.parser;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.net.URI;
+
 import nta.catalog.Catalog;
 import nta.catalog.Schema;
+import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableType;
@@ -15,13 +24,11 @@ import nta.datum.DatumType;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.executor.eval.Expr;
 import nta.engine.executor.eval.ExprType;
-import nta.engine.parser.NQL;
 import nta.engine.parser.NQL.Query;
 import nta.storage.CSVFile;
 
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  * @author Hyunsik Choi
@@ -46,13 +53,14 @@ public class TestQueryStmt {
 		schema.addColumn("age", DataType.INT);
 		schema.addColumn("id", DataType.INT);
 		
-		TableMeta meta = new TableMeta();		
-		meta.setName("test");
+		TableMeta meta = new TableMetaImpl();		
 		meta.setSchema(schema);
 		meta.setStorageType(StoreType.CSV);
-		meta.setTableType(TableType.BASETABLE);
-		meta.putOption(CSVFile.DELIMITER, ",");
-		cat.addTable(meta);
+		meta.putOption(CSVFile.DELIMITER, ",");		
+		
+		TableDesc desc = new TableDescImpl("test", meta);
+		desc.setURI(URI.create("/table/test"));
+		cat.addTable(desc);
 	}
 	
 	String [] queries = {

@@ -8,7 +8,7 @@ import java.io.IOException;
 import nta.catalog.Catalog;
 import nta.catalog.Column;
 import nta.catalog.Schema;
-import nta.catalog.TableInfo;
+import nta.catalog.TableDesc;
 import nta.engine.plan.logical.InsertIntoLO;
 import nta.engine.query.TargetEntry;
 import nta.storage.StorageManager;
@@ -19,6 +19,7 @@ import nta.storage.VTuple;
  * @author hyunsik
  *
  */
+@Deprecated
 public class InsertIntoOp extends PhysicalOp {
 	final Catalog cat;
 	final StorageManager sm;
@@ -42,13 +43,13 @@ public class InsertIntoOp extends PhysicalOp {
 	 */
 	@Override
 	public VTuple next() throws IOException {		
-		TableInfo info = cat.getTableInfo(lo.getTableId());
-		UpdatableScanner sc = sm.getUpdatableScanner(info.getStore()); 
-		VTuple tuple = new VTuple(info.getSchema().getColumnNum());
+		TableDesc info = cat.getTableDesc(lo.getTableId());
+		UpdatableScanner sc = sm.getUpdatableScanner(null); 
+		VTuple tuple = new VTuple(info.getInfo().getSchema().getColumnNum());
 		
 		TargetEntry [] targets = lo.getTargets();
 		
-		Schema schema = info.getSchema();
+		Schema schema = info.getInfo().getSchema();
 		for(int i=0; i < targets.length; i++) {
 			Column col = schema.getColumn(targets[i].colName);
 			switch(col.getDataType()) {

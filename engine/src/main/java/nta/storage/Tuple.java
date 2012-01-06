@@ -15,6 +15,8 @@ public interface Tuple {
 	
 	public boolean contains(int fieldid);
 	
+	public void clear();
+	
 	public void put(int fieldId, Object value);
 	
 	public Object get(int fieldId);

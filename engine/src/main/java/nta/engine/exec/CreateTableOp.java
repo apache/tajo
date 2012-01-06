@@ -6,15 +6,13 @@ package nta.engine.exec;
 import java.io.IOException;
 
 import nta.catalog.Catalog;
-import nta.catalog.RelationType;
 import nta.catalog.Schema;
+import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
 import nta.catalog.exception.AlreadyExistsTableException;
-import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableType;
 import nta.engine.plan.logical.CreateTableLO;
-import nta.engine.query.DBContext;
-import nta.storage.Store;
 import nta.storage.StorageManager;
 import nta.storage.VTuple;
 
@@ -52,16 +50,16 @@ public class CreateTableOp extends PhysicalOp {
 			throw new AlreadyExistsTableException(tableName);
 		} else {
 			
-			TableMeta meta = new TableMeta();
-			meta.setName(tableName);
+			TableMeta meta = new TableMetaImpl();			
 			meta.setSchema(logicalOp.getTableMeta());
 			meta.setStorageType(logicalOp.getStoreType());
-			meta.setTableType(TableType.BASETABLE);
 			
-			Store store = sm.create(meta);
-			meta.setStore(store);
+			TableDesc desc = new TableDescImpl(tableName, meta);
 			
-			cat.addTable(meta);
+//			Store store = sm.create(meta);
+//			meta.setStore(store);
+			
+			cat.addTable(desc);
 		}
 		
 		return null;

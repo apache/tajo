@@ -8,17 +8,17 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import nta.catalog.proto.TableProtos.KeyValueProto;
-import nta.catalog.proto.TableProtos.OptionsProto;
-import nta.catalog.proto.TableProtos.OptionsProtoOrBuilder;
+import nta.catalog.proto.TableProtos.KeyValueSetProto;
+import nta.catalog.proto.TableProtos.KeyValueSetProtoOrBuilder;
 import nta.common.ProtoObject;
 
 /**
- * @author hyunsik
+ * @author Hyunsik Choi
  *
  */
-public class Options implements ProtoObject<OptionsProto> {
-	private OptionsProto proto = OptionsProto.getDefaultInstance();
-	private OptionsProto.Builder builder = null;
+public class Options implements ProtoObject<KeyValueSetProto> {
+	private KeyValueSetProto proto = KeyValueSetProto.getDefaultInstance();
+	private KeyValueSetProto.Builder builder = null;
 	private boolean viaProto = false;
 	
 	private Map<String,String> keyVals;
@@ -27,10 +27,10 @@ public class Options implements ProtoObject<OptionsProto> {
 	 * 
 	 */
 	public Options() {
-		builder = OptionsProto.newBuilder();		
+		builder = KeyValueSetProto.newBuilder();		
 	}
 	
-	public Options(OptionsProto proto) {
+	public Options(KeyValueSetProto proto) {
 		this.proto = proto;
 		viaProto = true;
 	}
@@ -67,7 +67,7 @@ public class Options implements ProtoObject<OptionsProto> {
 	}
 	
 	@Override
-	public OptionsProto getProto() {
+	public KeyValueSetProto getProto() {
 		mergeLocalToProto();
 		proto = viaProto ? proto : builder.build();
 		viaProto = true;
@@ -78,7 +78,7 @@ public class Options implements ProtoObject<OptionsProto> {
 		if (this.keyVals != null) {
 			return;
 		}
-		OptionsProtoOrBuilder p = viaProto ? proto : builder;
+		KeyValueSetProtoOrBuilder p = viaProto ? proto : builder;
 		this.keyVals = new HashMap<String, String>();
 		for(KeyValueProto keyval:p.getKeyvalList()) {
 			this.keyVals.put(keyval.getKey(), keyval.getValue());
@@ -87,7 +87,7 @@ public class Options implements ProtoObject<OptionsProto> {
 	
 	private void maybeInitBuilder() {
 		if (viaProto || builder == null) {
-			builder = OptionsProto.newBuilder(proto);
+			builder = KeyValueSetProto.newBuilder(proto);
 		}
 		viaProto = false;
 	}

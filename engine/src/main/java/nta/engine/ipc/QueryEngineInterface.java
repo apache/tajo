@@ -3,7 +3,7 @@
  */
 package nta.engine.ipc;
 
-import nta.catalog.TableMeta;
+import nta.catalog.TableDescImpl;
 import nta.engine.QueryResponse;
 import nta.engine.ResultSetWritable;
 
@@ -20,7 +20,7 @@ public interface QueryEngineInterface extends VersionedProtocol{
 
 	QueryResponse executeQueryAsync(String query);
 
-	void createTable(TableMeta meta);
+	void createTable(TableDescImpl meta);
 
 	void dropTable(String name);
 

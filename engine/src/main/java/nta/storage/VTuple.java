@@ -27,6 +27,13 @@ public class VTuple implements Tuple {
 		return values[fieldId] != null;
 	}
 	
+  @Override
+  public void clear() {   
+    for (int i=0; i < values.length; i++) {
+      values[i] = null;
+    }
+  }
+	
 	//////////////////////////////////////////////////////
 	// Setter
 	//////////////////////////////////////////////////////	

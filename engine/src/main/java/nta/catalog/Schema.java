@@ -30,17 +30,24 @@ public class Schema implements ProtoObject<SchemaProto> {
 	public Schema() {
 		builder = SchemaProto.newBuilder();
 	}
+	
+	public Schema(SchemaProto proto) {
+    this.proto = proto;
+    this.viaProto = true;
+  }
 
 	public Schema(Schema schema) {
 		this.newFieldId = schema.newFieldId;
 		this.fields = new TreeMap<Integer,Column>(schema.fields);
 		this.fieldsByName = new HashMap<String, Integer>(schema.fieldsByName);
 	}
-
-	public Schema(SchemaProto proto) {
-		this.proto = proto;
-		this.viaProto = true;
-	}
+	
+	public Schema(Column [] columns) {
+    this();
+    for(Column c : columns) {
+      addColumn(c);
+    }
+  }
 	
 	public int getColumnNum() {
 		initColumns();
@@ -144,7 +151,9 @@ public class Schema implements ProtoObject<SchemaProto> {
 
 	private void mergeLocalToBuilder() {
 	  maybeInitBuilder();
-	  builder.clearFields();
+	  if (fields != null)
+	    builder.clearFields();
+	  
 		if (this.fields  != null) {			
 			for(Column col : fields.values()) {
 				builder.addFields(col.getProto());
@@ -153,12 +162,25 @@ public class Schema implements ProtoObject<SchemaProto> {
 	}
 
 	private void mergeLocalToProto() {
-		if(viaProto)
+		if(viaProto) {
 			maybeInitBuilder();
+		}
 		
 		mergeLocalToBuilder();
 		proto = builder.build();
 		viaProto = true;
 		
+	}
+	
+	public String toString() {
+	  initColumns();
+	  StringBuilder sb = new StringBuilder();
+	  sb.append("{");
+	  for(Column col : fields.values()) {
+	    sb.append(col).append(",");
+	  }
+	  sb.append("}");
+	  
+	  return sb.toString();
 	}
 }

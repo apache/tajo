@@ -6,7 +6,7 @@ package nta.catalog;
 import org.antlr.runtime.tree.Tree;
 
 /**
- * @author hyunsik
+ * @author Hyunsik Choi
  *
  */
 public class FieldName {

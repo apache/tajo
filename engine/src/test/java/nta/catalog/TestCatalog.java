@@ -1,26 +1,23 @@
 package nta.catalog;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-import nta.catalog.Catalog;
-import nta.catalog.Column;
-import nta.catalog.Schema;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
-import nta.engine.MiniNtaEngineCluster;
 import nta.engine.NtaTestingUtility;
 import nta.engine.executor.eval.Expr;
 import nta.engine.executor.eval.FieldExpr;
@@ -31,11 +28,9 @@ import nta.storage.StorageManager;
 import nta.storage.Store;
 import nta.util.FileUtil;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,8 +63,8 @@ public class TestCatalog {
 	static final String RelName1="rel1";
 	static final String RelName2="rel2";
 	
-	TableMeta rel1;
-	TableMeta rel2;
+	TableDescImpl rel1;
+	TableDescImpl rel2;
 	
 	int fid1;
 	int fid2;
@@ -101,22 +96,34 @@ public class TestCatalog {
 	}
 	
 	@Test
-	public void testGetTable() throws IOException {		
+	public void testGetTable() throws Exception {		
 		schema1 = new Schema();
 		fid1 = schema1.addColumn(FieldName1, DataType.BYTE);
 		fid2 = schema1.addColumn(FieldName2, DataType.INT);
 		fid3 = schema1.addColumn(FieldName3, DataType.LONG);
 		
-		TableMeta meta = new TableMeta("table1");
-		meta.setSchema(schema1);
-		meta.setStorageType(StoreType.MEM);
-		meta.setTableType(TableType.BASETABLE);
+		TableDesc meta = new TableDescImpl("table1", schema1, StoreType.MEM);
+		meta.setURI(URI.create("/table1"));
 		
 		assertFalse(cat.existsTable("table1"));
 		cat.addTable(meta);
 		assertTrue(cat.existsTable("table1"));		
 		cat.deleteTable("table1");
 		assertFalse(cat.existsTable("table1"));		
+	}
+	
+	@Test(expected = Throwable.class)
+	public void testAddTableNoName() throws Exception {
+	  schema1 = new Schema();
+    fid1 = schema1.addColumn(FieldName1, DataType.BYTE);
+    fid2 = schema1.addColumn(FieldName2, DataType.INT);
+    fid3 = schema1.addColumn(FieldName3, DataType.LONG);
+    
+	  TableMeta info = new TableMetaImpl(schema1, StoreType.CSV);
+	  TableDesc desc = new TableDescImpl();
+	  desc.setInfo(info);
+	  
+	  cat.addTable(desc);
 	}
 
 /*
@@ -230,12 +237,8 @@ public class TestCatalog {
 			}
 			fs.mkdirs(tbPath);
 			fos = fs.create(new Path(tbPath, ".meta"));
-			meta = new TableMeta();
-			meta.setSchema(schema);
-			meta.setStorageType(StoreType.CSV);
-			meta.setTableType(TableType.BASETABLE);
-			meta.putOption(CSVFile.DELIMITER, ",");
-			meta.setName("table"+i);
+			meta = new TableMetaImpl(schema, StoreType.CSV);
+			meta.putOption(CSVFile.DELIMITER, ",");			
 			FileUtil.writeProto(fos, meta.getProto());
 			fos.close();
 			
@@ -246,19 +249,19 @@ public class TestCatalog {
 			}
 			fos.close();
 
-			store = sm.open(tbPath.toUri());
-			meta.setStore(store);
-			catalog.addTable(meta);
+			TableDesc desc = new TableDescImpl("table"+i, meta);
+			desc.setURI(tbPath);
+			catalog.addTable(desc);
 		}
 		
 		catalog.updateAllTabletServingInfo();
 		
-		Collection<TableInfo> tables = catalog.getTableInfos();
-		Iterator<TableInfo> it = tables.iterator();
+		Collection<TableDesc> tables = catalog.getAllTableDescs();
+		Iterator<TableDesc> it = tables.iterator();
 		List<TabletInfo> tabletInfoList;
 		int cnt = 0;
 		int len = 0;
-		TableInfo tableInfo;
+		TableDesc tableInfo;
 		FileStatus fileStatus;
 		while (it.hasNext()) {
 			tableInfo = it.next();
@@ -269,7 +272,7 @@ public class TestCatalog {
 				for (i = 0; i < tabletInfoList.size(); i++) {
 					len += tabletInfoList.get(i).getTablet().getLength();
 				}
-				fileStatus = fs.getFileStatus(new Path(tableInfo.getStore().getURI()+"/data/table.csv"));
+				fileStatus = fs.getFileStatus(new Path(tableInfo.getURI()+"/data/table.csv"));
 				assertEquals(len, fileStatus.getLen());
 			}
 		}

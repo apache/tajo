@@ -1,13 +1,12 @@
 package nta.catalog.exception;
 
-import nta.engine.exception.NTAQueryException;
 
 /**
  * 
  * @author Hyunsik Choi
  *
  */
-public class AlreadyExistsTableException extends NTAQueryException {
+public class AlreadyExistsTableException extends CatalogException {
 	private static final long serialVersionUID = -641623770742392865L;
 
 	public AlreadyExistsTableException() {		

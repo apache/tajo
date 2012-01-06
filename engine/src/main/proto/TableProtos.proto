@@ -1,6 +1,7 @@
 option java_package = "nta.catalog.proto";
 option java_outer_classname = "TableProtos";
-option java_generic_services = true;
+option optimize_for = SPEED;
+option java_generic_services = false;
 option java_generate_equals_and_hash = true;
 
 enum DataType {
@@ -17,18 +18,6 @@ enum DataType {
 	IPv4 = 10;
 	IPv6 = 11;
 	ANY = 12;
-}
-
-enum AttrType {
-	NORMAL = 0;
-	AGGREGATED = 1;
-	GROUPBY = 2;
-}
-
-enum TableType {
-	BASETABLE = 0;
-	CUBE = 1;
-	TEMPORAL = 2;
 }
 
 enum StoreType {
@@ -53,20 +42,40 @@ message KeyValueProto {
 	required string value = 2;
 }
 
-message OptionsProto {
+message KeyValueSetProto {
 	repeated KeyValueProto keyval = 1;
 }
 
+message TabletProto {
+
+}
+
+message TableDescProto {
+	required int32 id = 1;
+	required string name = 2;
+	required string path = 3;
+	optional TableProto desc = 4;
+}
+
 message TableProto {
-	required TableType tableType = 1;
+	required SchemaProto schema = 1;
 	required StoreType storeType = 2;
-	required SchemaProto schema = 3;
-	optional OptionsProto options = 4;
-	optional int64 startKey = 5;
-	optional int64 endKey = 6;
-	optional int64 unit = 7;
+	optional KeyValueSetProto params = 3;
 }
 
 message TableStatisticProto {
 	required int32 rowNum = 1;
+}
+
+/* To be removed */
+enum AttrType {
+	NORMAL = 0;
+	AGGREGATED = 1;
+	GROUPBY = 2;
+}
+
+enum TableType {
+	BASETABLE = 0;
+	CUBE = 1;
+	TEMPORAL = 2;
 }

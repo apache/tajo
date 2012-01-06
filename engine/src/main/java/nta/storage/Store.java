@@ -3,14 +3,14 @@ package nta.storage;
 import java.net.URI;
 
 import nta.catalog.Schema;
-import nta.catalog.TableInfo;
+import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.StoreType;
 
 public class Store {
 	private final URI uri;
-	private final TableInfo tableBase;
+	private final TableMetaImpl tableBase;
 	
-	Store(URI uri, TableInfo table) {			
+	Store(URI uri, TableMetaImpl table) {			
 		this.uri = uri;
 		this.tableBase = table;
 	}
@@ -19,7 +19,7 @@ public class Store {
 		return this.uri;
 	}
 	
-	public TableInfo getTableBase() {
+	public TableMetaImpl getTableBase() {
 		return this.tableBase;
 	}
 	

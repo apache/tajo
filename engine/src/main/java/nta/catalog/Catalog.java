@@ -9,7 +9,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,7 +30,6 @@ import nta.engine.function.TestFunc;
 import nta.engine.function.UnixTimeFunc;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.query.LocalEngine;
-import nta.storage.Store;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -40,10 +38,12 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
+import com.google.common.base.Preconditions;
+
 /**
  * @author Hyunsik Choi
  */
-public class Catalog implements EngineService {
+public class Catalog implements CatalogService, EngineService {
 	private static Log LOG = LogFactory.getLog(Catalog.class);
 	private NtaConf conf;	
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -51,7 +51,7 @@ public class Catalog implements EngineService {
 	private Lock wlock = lock.writeLock();
 
 	private AtomicInteger newRelId = new AtomicInteger(0);
-	private Map<Integer, TableMeta> tables = new HashMap<Integer, TableMeta>();
+	private Map<Integer, TableDesc> tables = new HashMap<Integer, TableDesc>();
 	private Map<Integer, List<TabletInfo>> tabletServingInfo = new HashMap<Integer, List<TabletInfo>>();
 	private Map<String, Integer> tablesByName = new HashMap<String, Integer>();	
 	private Map<String, FunctionMeta> functions = new HashMap<String, FunctionMeta>();	
@@ -60,9 +60,6 @@ public class Catalog implements EngineService {
 	private Logger logger;
 	private String catalogDirPath;
 	private File walFile;
-
-	TimeseriesRelations baseRelations;
-	TimeseriesRelations cubeRelations;
 
 	public Catalog(NtaConf conf) {
 		this.conf = conf;
@@ -86,17 +83,17 @@ public class Catalog implements EngineService {
 		this.logger = new Logger(wal);
 	}
 	
-	private static void writeMetaToFile(Writer writer, TableMeta meta) throws IOException {
+	private static void writeMetaToFile(Writer writer, TableDesc meta) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		sb.append("+t\t");
 		sb.append(meta.getName()).append("\t");
-		sb.append(meta.getStore().getURI().toString());
+		sb.append(meta.getURI().toString());
 		sb.append("\n");
 		
 		writer.append(sb.toString());
 	}
 
-	public TableInfo getTableInfo(int relationId) {
+	public TableDesc getTableDesc(int relationId) {
 		rlock.lock();
 		try {
 			return this.tables.get(relationId);
@@ -105,7 +102,7 @@ public class Catalog implements EngineService {
 		}		
 	}
 
-	public TableInfo getTableInfo(String relationName) throws NoSuchTableException {
+	public TableDesc getTableDesc(String relationName) throws NoSuchTableException {
 		rlock.lock();
 		try {
 			if (!this.tablesByName.containsKey(relationName)) {
@@ -118,10 +115,10 @@ public class Catalog implements EngineService {
 		}
 	}
 
-	public Collection<TableInfo> getTableInfos() {
+	public Collection<TableDesc> getAllTableDescs() {
 		wlock.lock();
 		try {
-			return new ArrayList<TableInfo>(tables.values());
+			return new ArrayList<TableDesc>(tables.values());
 		} finally {
 			wlock.unlock();
 		}
@@ -136,24 +133,23 @@ public class Catalog implements EngineService {
 	}
 	
 	public void updateAllTabletServingInfo() throws IOException {
-		Collection<TableMeta> tbs = tables.values();
-		Iterator<TableMeta> it = tbs.iterator();
+		Collection<TableDesc> tbs = tables.values();
+		Iterator<TableDesc> it = tbs.iterator();
 		while (it.hasNext()) {
 			updateTabletServingInfo(it.next());
 		}
 	}
 	
-	public void updateTabletServingInfo(TableInfo info) throws IOException {
+	public void updateTabletServingInfo(TableDesc desc) throws IOException {
 		int fileIdx, blockIdx;
 		FileSystem fs = FileSystem.get(conf);
-		Store store = info.getStore();
-		Path path = new Path(store.getURI()+"/data");
+		Path path = new Path(desc.getURI()+"/data");
 		
 		FileStatus[] files = fs.listStatus(path);
 		BlockLocation[] blocks;
 		String[] hosts;
 		List<TabletInfo> tabletInfoList;
-		int tid = tablesByName.get(info.getName());
+		int tid = tablesByName.get(desc.getName());
 		if (tabletServingInfo.containsKey(tid)) {
 			tabletInfoList = tabletServingInfo.get(tid);
 		} else {
@@ -176,10 +172,16 @@ public class Catalog implements EngineService {
 			tabletServingInfo.put(tid, tabletInfoList);
 		}
 	}
+	
+	public void addTable(String name, TableMetaImpl info) throws AlreadyExistsTableException {	  
+	  addTable(new TableDescImpl(name, info));
+	}
 
-	public void addTable(TableMeta meta) throws AlreadyExistsTableException {
-		wlock.lock();
-
+	public void addTable(TableDesc meta) throws AlreadyExistsTableException {
+		Preconditions.checkNotNull(meta.getURI(), "Must be set to the table URI");
+		Preconditions.checkNotNull(meta.getName(), "Must be set to the table name");
+	  wlock.lock();
+		
 		try {
 			if (tablesByName.containsKey(meta.getName())) {
 				throw new AlreadyExistsTableException(meta.getName());
@@ -189,7 +191,7 @@ public class Catalog implements EngineService {
 			this.tables.put(newTableId, meta);
 			this.tablesByName.put(meta.getName(), newTableId);
 
-			if(this.logger != null && (meta.getStoreType() != StoreType.MEM))
+			if(this.logger != null && (meta.getInfo().getStoreType() != StoreType.MEM))
 				this.logger.appendAddTable(meta);
 			
 		} catch (IOException e) {
@@ -200,7 +202,7 @@ public class Catalog implements EngineService {
 		}
 	}
 
-	public TableInfo deleteTable(String name) throws NoSuchTableException {
+	public void deleteTable(String name) throws NoSuchTableException {
 		wlock.lock();
 		try {
 			if (!tablesByName.containsKey(name)) {
@@ -210,12 +212,10 @@ public class Catalog implements EngineService {
 			if(this.logger != null)
 				this.logger.appendDelTable(name);
 
-			int id = tablesByName.remove(name);
-			return tables.remove(id);
+			tablesByName.remove(name);
 		} catch (IOException e) {
 			LOG.error(e.getMessage());
 			e.printStackTrace();
-			return null;
 		}
 		finally {
 			wlock.unlock();
@@ -293,11 +293,11 @@ public class Catalog implements EngineService {
 		public Logger(SimpleWAL wal) {
 			this.wal = wal;
 		}
-		public void appendAddTable(TableMeta meta) throws IOException {
+		public void appendAddTable(TableDesc meta) throws IOException {
 			StringBuilder sb = new StringBuilder();
 			sb.append("+t\t");
 			sb.append(meta.getName()).append("\t");
-			sb.append(meta.getStore().getURI().toString());
+			sb.append(meta.getURI().toString());
 
 			wal.append(sb.toString());
 		}
@@ -340,7 +340,7 @@ public class Catalog implements EngineService {
 		OutputStreamWriter osw = new OutputStreamWriter(os);
 		BufferedWriter writer = new BufferedWriter(osw);
 		
-		for(TableMeta meta : tables.values()) {
+		for(TableDesc meta : tables.values()) {
 			writeMetaToFile(writer, meta);
 		}
 		
@@ -353,5 +353,5 @@ public class Catalog implements EngineService {
 		if(walFile.exists()) {
 			walFile.delete();
 		}
-	} 
+	}
 }

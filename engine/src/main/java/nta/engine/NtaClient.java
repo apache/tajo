@@ -3,7 +3,7 @@ package nta.engine;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import nta.catalog.TableMeta;
+import nta.catalog.TableDescImpl;
 import nta.engine.ipc.QueryEngineInterface;
 
 import org.apache.hadoop.conf.Configuration;
@@ -51,7 +51,7 @@ public class NtaClient {
 		return protocol.executeQueryAsync(query);
 	}
 	
-	public void createTable(TableMeta meta) {
+	public void createTable(TableDescImpl meta) {
 		protocol.createTable(meta);
 	}
 	

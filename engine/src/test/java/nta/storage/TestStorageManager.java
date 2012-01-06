@@ -2,14 +2,13 @@ package nta.storage;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
 import java.io.IOException;
 
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
 import nta.engine.EngineTestingUtils;
 import nta.engine.ipc.protocolrecords.Tablet;
@@ -46,10 +45,9 @@ public class TestStorageManager {
 		schema.addColumn("age",DataType.INT);
 		schema.addColumn("name",DataType.STRING);
 
-		TableMeta meta = new TableMeta();
+		TableMeta meta = new TableMetaImpl();
 		meta.setSchema(schema);
 		meta.setStorageType(StoreType.CSV);
-		meta.setTableType(TableType.BASETABLE);
 		meta.putOption(CSVFile.DELIMITER, ",");
 		String [] tuples = {
 				"1,32,hyunsik",
@@ -59,13 +57,12 @@ public class TestStorageManager {
 		};
 
 		EngineTestingUtils.writeCSVTable(TEST_PATH+"/table1", meta, tuples);
-
 		FileSystem fs = LocalFileSystem.get(conf);
 		StorageManager sm = new StorageManager(conf, fs);
-		File file = new File(TEST_PATH+"/table1");
-		Store store = sm.open(new Path("file:///"+file.getAbsolutePath()).toUri());
+//		File file = new File(TEST_PATH+"/table1");
+//		Store store = sm.open(new Path("file:///"+file.getAbsolutePath()).toUri());
 
-		Scanner scanner = sm.getScanner(store);
+		FileScanner scanner = sm.getScanner(new Path(TEST_PATH+"/table1"));
 
 		int i=0;
 		Tuple tuple = null;		
@@ -84,10 +81,9 @@ public class TestStorageManager {
     schema.addColumn("string", DataType.STRING);
     schema.addColumn("int", DataType.INT);
     
-    TableMeta meta = new TableMeta();
+    TableMeta meta = new TableMetaImpl();
     meta.setSchema(schema);
     meta.setStorageType(StoreType.CSV);
-    meta.setTableType(TableType.BASETABLE);
     
     FSDataOutputStream out = fs.create(new Path(TEST_PATH, ".meta"));
     FileUtil.writeProto(out, meta.getProto());
@@ -114,7 +110,7 @@ public class TestStorageManager {
     Tablet tablet = new Tablet(path, "table1.csv", 0, randomNum);
     tablets[0] = tablet;    
     
-    FileScanner fileScanner = sm.getScanner(tablets);
+    FileScanner fileScanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;
     while((vTuple = (VTuple) fileScanner.next()) != null) {
       tupleCnt++;

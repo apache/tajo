@@ -6,7 +6,7 @@ import java.io.PrintStream;
 import nta.catalog.Catalog;
 import nta.catalog.Column;
 import nta.catalog.Schema;
-import nta.catalog.TableMeta;
+import nta.catalog.TableDescImpl;
 import nta.conf.NtaConf;
 import nta.engine.EngineService;
 import nta.engine.ResultSetOld;
@@ -54,7 +54,7 @@ public class LocalEngine implements EngineService {
 		this.stream = stream;
 	}
 	
-	public void createTable(TableMeta meta) throws IOException {
+	public void createTable(TableDescImpl meta) throws IOException {
 		catalog.addTable(meta);
 	}
 	

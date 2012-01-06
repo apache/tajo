@@ -9,8 +9,8 @@ import java.io.IOException;
  * @author hyunsik
  *
  */
-public interface CatalogWALService {
-	public void appendAddTable(TableMeta meta) throws IOException;
+interface CatalogWALService {
+	public void appendAddTable(TableDesc meta) throws IOException;
 	
 	public void appendDelTable(String name) throws IOException;
 	
