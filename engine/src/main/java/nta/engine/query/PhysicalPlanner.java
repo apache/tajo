@@ -4,16 +4,14 @@
 package nta.engine.query;
 
 import java.io.IOException;
-import java.net.URI;
 
 import nta.catalog.Catalog;
-import nta.catalog.TableInfo;
+import nta.catalog.TableDesc;
 import nta.engine.exception.InternalProblemException;
 import nta.engine.exec.CreateTableOp;
 import nta.engine.exec.DescTableOp;
 import nta.engine.exec.InsertIntoOp;
 import nta.engine.exec.PhysicalOp;
-import nta.engine.exec.PrintResult;
 import nta.engine.exec.ProjectOp;
 import nta.engine.exec.SelOp;
 import nta.engine.exec.SeqScanOp;
@@ -29,8 +27,6 @@ import nta.engine.plan.logical.LogicalPlan;
 import nta.engine.plan.logical.ProjectLO;
 import nta.engine.plan.logical.ScanOp;
 import nta.engine.plan.logical.SelectionOp;
-import nta.storage.Scanner;
-import nta.storage.Store;
 import nta.storage.StorageManager;
 
 /**
@@ -124,9 +120,9 @@ public class PhysicalPlanner {
 	public PhysicalOp buildScanPlan(LogicalOp op) throws IOException {
 		ScanOp sOp = (ScanOp) op;
 		
-		TableInfo info = cat.getTableInfo(sOp.getRelName()); 
-		Scanner scanner = sm.getScanner(info.getStore());		
+		TableDesc info = cat.getTableDesc(sOp.getRelName()); 
+		//Scanner scanner = sm.getScanner(info.getStore());
 		
-		return new SeqScanOp(scanner);
+		return new SeqScanOp(null);
 	}
 }

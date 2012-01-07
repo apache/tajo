@@ -2,7 +2,7 @@ package nta.catalog;
 
 import static org.junit.Assert.*;
 
-import nta.catalog.proto.TableProtos.OptionsProto;
+import nta.catalog.proto.TableProtos.KeyValueSetProto;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -24,7 +24,7 @@ public class TestOptions {
 		opts.put("name", "abc");
 		opts.put("delimiter", ",");
 		
-		OptionsProto proto = opts.getProto();
+		KeyValueSetProto proto = opts.getProto();
 		Options opts2 = new Options(proto);
 		
 		assertEquals(opts, opts2);

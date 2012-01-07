@@ -77,5 +77,16 @@ public class TestSchema {
 		assertEquals("age", proto.getFields(1).getColumnName());
 		assertEquals("addr", proto.getFields(2).getColumnName());
 	}
-
+	
+	@Test
+	public final void testClone() {
+	  Schema schema = new Schema();
+	  schema.addColumn("abc", DataType.DOUBLE);
+	  schema.addColumn("bbc", DataType.DOUBLE);
+	  
+	  Schema schema2 = new Schema(schema.getProto());
+	  assertEquals(schema.getProto(), schema2.getProto());
+	  assertEquals(schema.getColumn(0), schema2.getColumn(0));
+	  assertEquals(schema.getColumnNum(), schema2.getColumnNum());	  
+	}
 }

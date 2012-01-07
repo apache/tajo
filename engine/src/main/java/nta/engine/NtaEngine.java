@@ -12,8 +12,19 @@ import java.io.LineNumberReader;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+
+import nta.catalog.Catalog;
+import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
+import nta.catalog.TableMeta;
+import nta.catalog.TableUtil;
+import nta.catalog.exception.AlreadyExistsTableException;
+import nta.catalog.exception.NoSuchTableException;
+import nta.conf.NtaConf;
+import nta.engine.exception.NTAQueryException;
+import nta.engine.query.LocalEngine;
+import nta.storage.StorageManager;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -22,17 +33,6 @@ import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.DNS;
-
-import nta.catalog.Catalog;
-import nta.catalog.TableInfo;
-import nta.catalog.TableMeta;
-import nta.catalog.exception.AlreadyExistsTableException;
-import nta.catalog.exception.NoSuchTableException;
-import nta.conf.NtaConf;
-import nta.engine.exception.NTAQueryException;
-import nta.engine.query.LocalEngine;
-import nta.storage.Store;
-import nta.storage.StorageManager;
 
 /**
  * @author hyunsik
@@ -212,20 +212,19 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 	}
 
 	@Override
-	public void createTable(TableMeta meta) throws IOException {
+	public void createTable(TableDesc meta) throws IOException {
 		if(catalog.existsTable(meta.getName()))
 			throw new AlreadyExistsTableException(meta.getName());
-		
-		Store store = storeManager.create(meta);
-		meta.setStore(store);
+
 		catalog.addTable(meta);
-		LOG.info("Table "+meta.getName()+" ("+meta.getStoreType()+") is created.");
+		LOG.info("Table "+meta.getName()+" ("+meta.getInfo().getStoreType()+") is created.");
 	}
 
 	@Override
 	public void dropTable(String name) throws IOException {
-		TableInfo info = catalog.deleteTable(name);
-		storeManager.delete(info.getStore());
+		catalog.deleteTable(name);
+		// TODO - to be implemented
+		//storeManager.delete(info.getStore());
 		
 		LOG.info("Table "+name+" is dropped.");
 	}
@@ -236,11 +235,12 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 			throw new AlreadyExistsTableException(name);
 		
 		LOG.info(path.toUri());
-		Store store = storeManager.open(path.toUri());
-		TableMeta meta = new TableMeta(name, store);
 		
-		catalog.addTable(meta);
-		LOG.info("Table "+meta.getName()+" is attached.");
+		TableMeta meta = TableUtil.getTableMeta(conf, path);
+		TableDesc desc = new TableDescImpl(name, meta);
+		desc.setURI(path);
+		catalog.addTable(desc);
+		LOG.info("Table "+desc.getName()+" is attached.");
 	}
 
 	@Override
@@ -257,20 +257,20 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 		return catalog.existsTable(name);
 	}
 	
-	public TableInfo getTableInfo(String name) throws NoSuchTableException {
+	public TableDesc getTableDesc(String name) throws NoSuchTableException {
 		if(!catalog.existsTable(name)) {
 			throw new NoSuchTableException(name);
 		}
 		
-		return catalog.getTableInfo(name);
+		return catalog.getTableDesc(name);
 	}
-	
-	@Override
-	public TableInfo[] getTablesByOrder() throws Exception {
-		List<TableInfo> tables = new ArrayList<TableInfo>(catalog.getTableInfos());
-		Collections.sort(tables, new TableInfo.TableComparator());
-		return tables.toArray(new TableInfo[tables.size()]);
-	}
+//	
+//	@Override
+//	public TableInfo[] getTablesByOrder() throws Exception {
+//		List<TableInfo> tables = new ArrayList<TableInfo>(catalog.getTableInfos());
+//		Collections.sort(tables, new TableMeta.TableComparator());
+//		return tables.toArray(new TableInfo[tables.size()]);
+//	}
 	
 	/**
 	 * @param args

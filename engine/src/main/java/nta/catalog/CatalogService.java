@@ -13,18 +13,18 @@ public interface CatalogService {
    * Get a table description by name
    * @param name table name
    * @return a table description
-   * @see TableDesc
+   * @see TableDescImpl
    * @throws Throwable
    */
-  TableMeta getTableDesc(String name) throws CatalogException;
+  TableDesc getTableDesc(String name) throws CatalogException;
   
   /**
    * Add a table via table description
    * @param meta table meta
-   * @see TableDesc
+   * @see TableDescImpl
    * @throws Throwable
    */
-  void addTable(TableMeta desc) throws CatalogException;
+  void addTable(TableDesc desc) throws CatalogException;
   
   /**
    * Drop a table by name

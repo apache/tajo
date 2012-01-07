@@ -65,7 +65,7 @@ public class ResultSetWritable implements Writable, FileScanner {
 			this.conf = new NtaConf();
 			fs = FileSystem.get(conf);
 			sm = new StorageManager(conf, fs);
-			scanner = sm.getScanner(StorageUtils.reconstructTablets(conf, resultPath));
+			scanner = sm.getScanner(resultPath);
 		}
 		return scanner.next();
 	}

@@ -9,11 +9,12 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.conf.NtaConf;
+import nta.storage.Appender;
 import nta.storage.StorageManager;
-import nta.storage.Store;
-import nta.storage.UpdatableScanner;
 import nta.storage.VTuple;
 import nta.util.FileUtil;
 import nta.util.ReflectionUtil;
@@ -66,7 +67,7 @@ public class EngineTestingUtils {
 		writer.close();
 	}
 	
-	public static final void writeRawTable(NtaConf conf, TableMeta meta, VTuple [] tuples) throws IOException {
+	public static final void writeRawTable(NtaConf conf, TableDescImpl desc, VTuple [] tuples) throws IOException {
 //		File tableRoot = new File(tablePath);
 //		tableRoot.mkdir();
 		
@@ -75,15 +76,14 @@ public class EngineTestingUtils {
 		
 		FileSystem fs = LocalFileSystem.get(conf);
 		StorageManager sm = new StorageManager(conf, fs);
-		Store store = sm.create(meta);
 		//RawFile rf = new RawFile(conf, store);
 		//rf.init();
-		UpdatableScanner scanner = sm.getUpdatableScanner(store);
+		Appender appender = sm.getAppender(desc);
 
 		for (VTuple tuple : tuples) {
-			scanner.addTuple(tuple);
+			appender.addTuple(tuple);
 		}
-		scanner.close();
+		appender.close();
 
 //		File metaFile = new File(tablePath+"/.meta");
 //		FileUtils.writeProto(metaFile, meta.getProto());

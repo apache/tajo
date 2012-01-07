@@ -1,59 +1,57 @@
 package nta.storage;
 
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.nio.ByteBuffer;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.TableMeta;
+import nta.conf.NtaConf;
+import nta.engine.ipc.protocolrecords.Tablet;
 
 /**
  * @author Hyunsik Choi
  *
  */
-public class MemTable implements UpdatableScanner {
-	private final Store store;
+public class MemTable implements Appender, FileScanner {
+	private final TableMeta meta;
+  private final URI uri;
 	private List<VTuple> slots;
 	private int cur = -1;
 	private boolean hasRead = true;
 	
-	
 	/**
 	 * 
 	 */
-	public MemTable(Store store) {
-		this.store = store;
+	public MemTable(TableMeta info, URI uri) {
+	  this.meta = info;
+		this.uri = uri;
 		slots = new ArrayList<VTuple>();
 	}
 	
-	public MemTable(Store store, int initialCapacity) {
-		this(store);
+	public MemTable(TableMeta info, URI uri, int initialCapacity) {
+	  this(info, uri);
 		slots = new ArrayList<VTuple>(initialCapacity);
 	}
 	
-	public MemTable(MemTable memSlots) {
-		this(memSlots.store);
-		this.slots = memSlots.slots; 
+	public MemTable(TableMeta info, URI uri, MemTable memTable) {
+		this(info, uri);
+		this.slots = memTable.slots; 
 	}
-	
-	@Override
-	public void init() throws IOException {
-	}	
 
 	@Override
 	public VTuple next() throws IOException {
 		cur++;		
 		if(cur < slots.size()) {
 			Tuple t = slots.get(cur);
-			VTuple tuple = new VTuple(store.getSchema().getColumnNum());
+			VTuple tuple = new VTuple(meta.getSchema().getColumnNum());
 			
 			Column field = null;
-			for(int i=0; i < store.getSchema().getColumnNum(); i++) {
-				field = store.getSchema().getColumn(i);
+			for(int i=0; i < meta.getSchema().getColumnNum(); i++) {
+				field = meta.getSchema().getColumn(i);
 
 				switch (field.getDataType()) {
 				case BYTE:
@@ -104,105 +102,22 @@ public class MemTable implements UpdatableScanner {
 	}
 
 	@Override
-	public void putAsByte(int fieldId, byte value) {
-		slots.get(cur).put(fieldId, value);
-	}
-
-	@Override
-	public void putAsShort(int fieldId, short value) {
-		slots.get(cur).put(fieldId, value);
-	}
-
-	@Override
-	public void putAsInt(int fieldId, int value) {
-		slots.get(cur).put(fieldId, value);
-		
-	}
-
-	@Override
-	public void putAsLong(int fieldId, long value) {
-		slots.get(cur).put(fieldId, value);		
-	}
-
-	@Override
-	public void putAsFloat(int fieldId, float value) {
-		slots.get(cur).put(fieldId, value);
-	}
-
-	@Override
-	public void putAsDouble(int fieldId, double value) {
-		slots.get(cur).put(fieldId, value);		
-	}
-
-	@Override
-	public void putAsBytes(int fieldId, byte[] value) {
-		
-	}
-
-	@Override
-	public void putAsBytes(int fid, ByteBuffer val) {
-				
-	}
-
-	@Override
-	public void putAsIPv4(int fieldId, Inet4Address value) {
-		slots.get(cur).put(fieldId, value);		
-	}
-
-	@Override
-	public void putAsIPv4(int fid, byte[] val) {
-				
-	}
-
-	@Override
-	public void putAsIPv6(int fid, Inet6Address val) {
-				
-	}
-	
-	@Override
-	public void putAsChars(int fieldId, char [] value) {
-		slots.get(cur).put(fieldId, new String(value));
-	}
-
-	@Override
-	public void putAsChars(int fieldId, String value) {
-		slots.get(cur).put(fieldId, value);
-	}
-
-	@Override
-	public void putAsChars(int fieldId, byte[] value) {
-		slots.get(cur).put(fieldId, new String(value));
-	}
-
-	@Override
 	public void addTuple(Tuple tuple) throws IOException {
 		slots.add((VTuple) tuple);
-	}
-	
-	@Override
-	public Schema getSchema() {
-		return store.getSchema();
-	}
-	
-	////////////////////////////////////////////////////////////////
-	// Storage Implementation
-	////////////////////////////////////////////////////////////////
-	@Override
-	public boolean isLocalFile() {
-		return true;
-	}
-
-	@Override
-	public boolean readOnly() {
-		return false;
-	}
-
-	@Override
-	public boolean canRandomAccess() {
-		return true;
 	}
 
 	@Override
 	public void close() {
 	}
+
+  @Override
+  public void init(NtaConf conf, Schema schema, Tablet[] tablets)
+      throws IOException {
+    
+  }
+
+  @Override
+  public void flush() throws IOException {
+    // nothing    
+  }
 }

@@ -8,7 +8,9 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 
 import nta.catalog.Schema;
+import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableType;
@@ -53,10 +55,9 @@ public class TestStorageUtils {
     schema.addColumn("int", DataType.INT);
     
 
-    TableMeta meta = new TableMeta();
+    TableMeta meta = new TableMetaImpl();
     meta.setSchema(schema);
     meta.setStorageType(StoreType.CSV);
-    meta.setTableType(TableType.BASETABLE);
     
     Path path = new Path(TEST_PATH);
 

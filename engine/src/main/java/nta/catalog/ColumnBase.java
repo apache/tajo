@@ -3,6 +3,11 @@ package nta.catalog;
 import nta.catalog.proto.TableProtos.AttrType;
 import nta.catalog.proto.TableProtos.DataType;
 
+/**
+ * 
+ * @author Hyunsik Choi
+ *
+ */
 public class ColumnBase {
 	protected String name;
 	protected DataType dataType;

@@ -1,23 +1,24 @@
 package nta.engine.parser;
 
 import nta.catalog.Schema;
-import nta.catalog.TableInfo;
+import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
 import nta.engine.SchemaObject;
 
 public class RelInfo implements SchemaObject {
 	public String alias;
-	public TableInfo rel;
+	public TableDesc rel;
 	
-	public RelInfo(TableInfo rel) {
+	public RelInfo(TableDesc rel) {
 		this.rel = rel;
 	}
 	
-	public RelInfo(TableInfo rel, String alias) {
+	public RelInfo(TableDesc rel, String alias) {
 		this(rel);
 		this.alias = alias;
 	}
 	
-	public void setTableDesc(TableInfo rel) {
+	public void setTableDesc(TableDesc rel) {
 		this.rel = rel;
 	}
 	
@@ -26,10 +27,10 @@ public class RelInfo implements SchemaObject {
 	}
 	
 	public Schema getSchema() {
-		return this.rel.getSchema();
+		return this.rel.getInfo().getSchema();
 	}
 	
-	public TableInfo getRelation() {
+	public TableDesc getRelation() {
 		return this.rel;
 	}
 	

@@ -1,11 +1,10 @@
 package nta.catalog.exception;
 
-import nta.engine.exception.NTAQueryException;
 
 /**
  * @author Hyunsik Choi
  */
-public class NoSuchTableException extends NTAQueryException {
+public class NoSuchTableException extends CatalogException {
 	private static final long serialVersionUID = 277182608283894937L;
 
 	public NoSuchTableException() {}

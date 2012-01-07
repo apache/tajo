@@ -9,7 +9,7 @@ import java.io.IOException;
  * @author hyunsik
  *
  */
-public class CatalogException extends Throwable {
+public class CatalogException extends RuntimeException {
   private static final long serialVersionUID = -26362412527118618L;
 
   /**

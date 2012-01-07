@@ -4,22 +4,17 @@
 package nta.catalog;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
- * @author hyunsik
+ * @author Hyunsik Choi
  *
  */
 public class SimpleWAL {
-	private Log LOG = LogFactory.getLog(SimpleWAL.class);
 	private final RandomAccessFile raf;
 	private final FileChannel fc;
 	

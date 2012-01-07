@@ -8,7 +8,8 @@ import java.util.Iterator;
 
 import nta.catalog.Catalog;
 import nta.catalog.Schema;
-import nta.catalog.TableInfo;
+import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
 import nta.engine.plan.logical.ControlLO;
 import nta.storage.VTuple;
 
@@ -18,14 +19,14 @@ import nta.storage.VTuple;
  */
 public class ShowTableOp extends PhysicalOp {
 	ControlLO logicalOp;
-	Iterator<TableInfo> iterator;
+	Iterator<TableDesc> iterator;
 	
 	/**
 	 * 
 	 */
 	public ShowTableOp(ControlLO logicalOp, Catalog cat) {
 		this.logicalOp = logicalOp;
-		this.iterator = cat.getTableInfos().iterator();
+		this.iterator = cat.getAllTableDescs().iterator();
 	}
 
 	/* (non-Javadoc)
@@ -44,7 +45,7 @@ public class ShowTableOp extends PhysicalOp {
 		if(!this.iterator.hasNext())
 			return null;
 		
-		TableInfo desc = this.iterator.next();
+		TableDesc desc = this.iterator.next();
 		VTuple t = new VTuple(1);
 		t.put(0, desc.getName());
 		return t;

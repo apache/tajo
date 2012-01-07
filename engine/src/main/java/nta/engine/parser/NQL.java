@@ -16,12 +16,12 @@ import nta.catalog.ColumnBase;
 import nta.catalog.FieldName;
 import nta.catalog.FunctionMeta;
 import nta.catalog.Schema;
-import nta.catalog.TableInfo;
+import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
 import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
-import nta.engine.SchemaObject;
 import nta.engine.exception.AmbiguousFieldException;
 import nta.engine.exception.InvalidFunctionException;
 import nta.engine.exception.InvalidQueryException;
@@ -196,13 +196,13 @@ public class NQL {
 		stmt.hasFromClause = from.getChildCount() > 0;		
 		if(stmt.hasFromClause) {
 			CommonTree node = null;
-			TableInfo rel = null;
+			TableDesc rel = null;
 			stmt.numBaseRels = from.getChildCount();
 
 			for(int i=0; i < from.getChildCount(); i++) {
 				node = (CommonTree) from.getChild(i);
 				if(node.getType() == NQLParser.TABLE) {
-					rel = cat.getTableInfo(node.getChild(0).getText());												
+					rel = cat.getTableDesc(node.getChild(0).getText());												
 					if(node.getChildCount() > 1) {					
 						stmt.tableMap.put(node.getChild(1).getText(), 
 								new RelInfo(rel, node.getChild(1).getText()));
@@ -338,7 +338,7 @@ public class NQL {
 		case NQLParser.FIELD_NAME:
 			FieldName fieldName = new FieldName(tree);
 			Column field = null;
-			TableInfo rel = null;
+			TableDesc rel = null;
 			// when given a table name
 			if(fieldName.hasTableName()) {
 				RelInfo rInfo = stmt.getBaseRel(fieldName.getTableName());
@@ -346,10 +346,10 @@ public class NQL {
 				rel = rInfo.getRelation();
 			} else {			
 				for(RelInfo rInfo: stmt.getBaseRels()) {
-					rel = cat.getTableInfo(rInfo.getName());
-					if(rel.getSchema().getColumn(fieldName.getName()) != null) {
+					rel = cat.getTableDesc(rInfo.getName());
+					if(rel.getInfo().getSchema().getColumn(fieldName.getName()) != null) {
 						if(field == null) {
-							field = rel.getSchema().getColumn(fieldName.getName());								
+							field = rel.getInfo().getSchema().getColumn(fieldName.getName());								
 						} else 
 							throw new AmbiguousFieldException(field.getName());													
 					}
@@ -410,7 +410,7 @@ public class NQL {
 			switch(cols[i].getType()) {
 			case FIELD:			
 				FieldExpr fieldExpr = (FieldExpr)cols[i];
-				field = cat.getTableInfo(fieldExpr.tableId).getSchema().
+				field = cat.getTableDesc(fieldExpr.tableId).getInfo().getSchema().
 					getColumn(fieldExpr.fieldId);
 				break;
 			case FUNCTION:
@@ -462,8 +462,6 @@ public class NQL {
 		
 		return targetList.toArray(new TargetEntry[targetList.size()]);
 	}
-	
-	
 	
 	public class Query {
 		private String queryString;

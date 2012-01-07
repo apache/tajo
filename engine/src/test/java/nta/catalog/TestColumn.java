@@ -77,14 +77,4 @@ public class TestColumn {
 		assertEquals(AttrType.NORMAL, field2.getAttrType());
 		assertEquals(AttrType.AGGREGATED, field3.getAttrType());
 	}
-	
-	@Test
-	public final void testWritable() throws Exception {
-		Column t1 = (Column) EngineTestingUtils.testWritable(field1);
-		assertEquals(field1, t1);
-		Column t2 = (Column) EngineTestingUtils.testWritable(field2);
-		assertEquals(field2, t2);
-		Column t3 = (Column) EngineTestingUtils.testWritable(field3);
-		assertEquals(field3, t3);
-	}
 }

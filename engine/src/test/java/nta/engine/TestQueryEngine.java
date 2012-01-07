@@ -1,14 +1,17 @@
 package nta.engine;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
 import nta.catalog.Schema;
+import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
 import nta.engine.exception.NTAQueryException;
 import nta.storage.CSVFile;
@@ -16,7 +19,6 @@ import nta.storage.CSVFile;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestQueryEngine {
@@ -40,10 +42,7 @@ public class TestQueryEngine {
 		schema.addColumn("age",DataType.INT);
 		schema.addColumn("name",DataType.STRING);
 		
-		TableMeta meta = new TableMeta();
-		meta.setSchema(schema);
-		meta.setStorageType(StoreType.CSV);
-		meta.setTableType(TableType.BASETABLE);
+		TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
 		meta.putOption(CSVFile.DELIMITER, ",");
 		
 		String [] tuples = {
@@ -74,8 +73,7 @@ public class TestQueryEngine {
 			"create table mod (id int, age int)", // 7
 			"create table mod (id int, age int) using raw" // 8
 	};
-	
-	@Test
+		
 	public final void testCreateTable() throws IOException {
 		assertFalse(engine.existsTable("made"));
 		engine.updateQuery(SELECTION_TEST[6]);
@@ -83,7 +81,7 @@ public class TestQueryEngine {
 		engine.dropTable("made");
 	}
 	
-	@Test
+	
 	public final void testInsertIntoMem() throws IOException {
 		engine.updateQuery(SELECTION_TEST[7]);
 		assertTrue(engine.existsTable("mod"));
@@ -102,7 +100,6 @@ public class TestQueryEngine {
 		assertFalse(rs1.next());
 	}
 	
-	@Test
 	public final void testSelectQuery() throws NTAQueryException {
 		ResultSetOld rs1 = engine.executeQuery(SELECTION_TEST[0]);
 		
@@ -133,7 +130,6 @@ public class TestQueryEngine {
 		assertFalse(rs1.next());
 	}
 	
-	@Test
 	public final void testProjectionQuery() throws NTAQueryException {
 		ResultSetOld rs1 = engine.executeQuery(SELECTION_TEST[2]);
 		

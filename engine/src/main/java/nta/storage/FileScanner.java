@@ -3,8 +3,6 @@ package nta.storage;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.hadoop.fs.Path;
-
 import nta.catalog.Schema;
 import nta.conf.NtaConf;
 import nta.engine.ipc.protocolrecords.Tablet;
