@@ -6,12 +6,13 @@ import java.io.PrintStream;
 import nta.catalog.Catalog;
 import nta.catalog.Column;
 import nta.catalog.Schema;
-import nta.catalog.TableDescImpl;
+import nta.catalog.TableDesc;
 import nta.engine.EngineService;
 import nta.engine.ResultSetMemImplOld;
 import nta.engine.ResultSetOld;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.PhysicalOp;
+import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.parser.NQL;
 import nta.engine.parser.NQL.Query;
 import nta.engine.plan.logical.LogicalPlan;
@@ -27,8 +28,8 @@ import org.apache.hadoop.conf.Configuration;
  * @author Hyunsik Choi
  *
  */
-public class LocalEngine implements EngineService {
-	private Log LOG = LogFactory.getLog(LocalEngine.class);
+public class QueryEngine implements EngineService {
+	private Log LOG = LogFactory.getLog(QueryEngine.class);
 	
 	private final Configuration conf;
 	private final Catalog catalog;
@@ -41,7 +42,7 @@ public class LocalEngine implements EngineService {
 	
 	PrintStream stream;
 	
-	public LocalEngine(Configuration conf, Catalog cat, StorageManager sm, PrintStream stream) {
+	public QueryEngine(Configuration conf, Catalog cat, StorageManager sm, PrintStream stream) {
 		this.conf = conf;
 		this.catalog = cat;
 		this.storageManager = sm;
@@ -54,15 +55,15 @@ public class LocalEngine implements EngineService {
 		this.stream = stream;
 	}
 	
-	public void createTable(TableDescImpl meta) throws IOException {
+	public void createTable(TableDesc meta) throws IOException {
 		catalog.addTable(meta);
 	}
 	
-	public ResultSetOld executeQuery(String querystr) throws NTAQueryException {
+	public ResultSetOld executeQuery(String querystr, Tablet tablet) throws NTAQueryException {
 		Query query = parser.parse(querystr);
 		LogicalPlan rawPlan = loPlanner.compile(query);
 		LogicalPlan optimized = loOptimizer.optimize(rawPlan);
-		PhysicalOp plan = phyPlanner.compile(optimized, null);
+		PhysicalOp plan = phyPlanner.compile(optimized, tablet);
 		
 		Schema meta = plan.getSchema();
 		ResultSetMemImplOld rs = null;
@@ -95,7 +96,8 @@ public class LocalEngine implements EngineService {
 		}
 		
 		while((next = op.next()) != null) {
-			if(stream != null) {
+			System.out.println(next);
+		  if(stream != null) {
 				stream.println(tupleToString(next));
 			}
 			
@@ -139,6 +141,6 @@ public class LocalEngine implements EngineService {
 
 	@Override
 	public void shutdown() throws IOException {
-		LOG.info(LocalEngine.class.getName()+" is being stopped");		
+		LOG.info(QueryEngine.class.getName()+" is being stopped");		
 	}
 }

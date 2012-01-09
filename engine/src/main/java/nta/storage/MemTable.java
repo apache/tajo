@@ -9,8 +9,9 @@ import java.util.List;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
-import nta.conf.NtaConf;
 import nta.engine.ipc.protocolrecords.Tablet;
+
+import org.apache.hadoop.conf.Configuration;
 
 /**
  * @author Hyunsik Choi
@@ -111,13 +112,19 @@ public class MemTable implements Appender, FileScanner {
 	}
 
   @Override
-  public void init(NtaConf conf, Schema schema, Tablet[] tablets)
+  public void flush() throws IOException {
+    // nothing    
+  }
+
+  @Override
+  public void init(Configuration conf, Schema schema, Tablet[] tablets)
       throws IOException {
+    // TODO Auto-generated method stub
     
   }
 
   @Override
-  public void flush() throws IOException {
-    // nothing    
+  public Schema getSchema() {
+    return meta.getSchema();
   }
 }

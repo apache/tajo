@@ -1,10 +1,6 @@
 package nta.catalog;
-import static org.junit.Assert.*;
-
-import nta.catalog.Column;
-import nta.catalog.proto.TableProtos.AttrType;
+import static org.junit.Assert.assertEquals;
 import nta.catalog.proto.TableProtos.DataType;
-import nta.engine.EngineTestingUtils;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +31,6 @@ public class TestColumn {
 		field1 = new Column(1, FieldName1, DataType.BYTE);
 		field2 = new Column(2, FieldName2, DataType.INT );
 		field3 = new Column(3, FieldName3, DataType.LONG);
-		field3.setAttrType(AttrType.AGGREGATED);
 	}
 	
 	@Test
@@ -69,12 +64,5 @@ public class TestColumn {
 		assertEquals(field1.getDataType(),Type1);
 		assertEquals(field2.getDataType(),Type2);
 		assertEquals(field3.getDataType(),Type3);
-	}
-	
-	@Test
-	public final void testGetAttrType() {
-		assertEquals(AttrType.NORMAL, field1.getAttrType());
-		assertEquals(AttrType.NORMAL, field2.getAttrType());
-		assertEquals(AttrType.AGGREGATED, field3.getAttrType());
 	}
 }

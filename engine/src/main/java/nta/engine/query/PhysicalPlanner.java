@@ -15,6 +15,7 @@ import nta.engine.exec.SelOp;
 import nta.engine.exec.SeqScanOp;
 import nta.engine.exec.ShowFunctionOp;
 import nta.engine.exec.ShowTableOp;
+import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.plan.logical.ControlLO;
 import nta.engine.plan.logical.DescTableLO;
 import nta.engine.plan.logical.JoinOp;
@@ -23,6 +24,7 @@ import nta.engine.plan.logical.LogicalPlan;
 import nta.engine.plan.logical.ProjectLO;
 import nta.engine.plan.logical.ScanOp;
 import nta.engine.plan.logical.SelectionOp;
+import nta.storage.FileScanner;
 import nta.storage.StorageManager;
 
 /**
@@ -41,10 +43,10 @@ public class PhysicalPlanner {
 		this.sm = sm;
 	}
 	
-	public PhysicalOp compile(LogicalPlan plan) throws InternalProblemException {
+	public PhysicalOp compile(LogicalPlan plan, Tablet tablet) throws InternalProblemException {
 		PhysicalOp op = null;
 		try {
-			op = buildPlan(plan.getRoot());			
+			op = buildPlan(plan.getRoot(), tablet);
 		} catch (IOException ioe) {
 			throw new InternalProblemException(ioe);
 		}
@@ -52,7 +54,7 @@ public class PhysicalPlanner {
 		return op;
 	}
 	
-	public PhysicalOp buildPlan(LogicalOp op) throws IOException {		
+	public PhysicalOp buildPlan(LogicalOp op, Tablet tablet) throws IOException {		
 		PhysicalOp cur = null;
 		
 		PhysicalOp outer = null;
@@ -60,20 +62,20 @@ public class PhysicalPlanner {
 		
 		switch(op.getType()) {
 		case SCAN:
-			cur = buildScanPlan(op);
+			cur = buildScanPlan(op, tablet);
 			break;
 		case SELECTION:;
 			SelectionOp selOp = (SelectionOp) op;			
-			cur = new SelOp(buildPlan(selOp.getSubOp()), selOp.getQual());
+			cur = new SelOp(buildPlan(selOp.getSubOp(), tablet), selOp.getQual());
 			break;
 		case JOIN:
 			JoinOp jOp = (JoinOp) op;
-			outer = buildPlan(jOp.getOuter());
-			inner = buildPlan(jOp.getInner());		
+			outer = buildPlan(jOp.getOuter(), tablet);
+			inner = buildPlan(jOp.getInner(), tablet);		
 			break;
 		case PROJECTION:;
 			ProjectLO projectLO= (ProjectLO) op;
-			cur = new ProjectOp(buildPlan(projectLO.getSubOp()), projectLO);
+			cur = new ProjectOp(buildPlan(projectLO.getSubOp(), tablet), projectLO);
 			break;
 		case GROUP_BY:;
 		case RENAME:;
@@ -82,7 +84,7 @@ public class PhysicalPlanner {
 		case SET_DIFF:;
 		case SET_INTERSECT:;
 		
-		case CREATE_TABLE:		
+		case CREATE_TABLE:
 			break;
 			
 		case INSERT_INTO:
@@ -106,12 +108,12 @@ public class PhysicalPlanner {
 		return cur;
 	}
 	
-	public PhysicalOp buildScanPlan(LogicalOp op) throws IOException {
+	public PhysicalOp buildScanPlan(LogicalOp op, Tablet tablet) throws IOException {
 		ScanOp sOp = (ScanOp) op;
 		
 		TableDesc info = cat.getTableDesc(sOp.getRelName()); 
-		//Scanner scanner = sm.getScanner(info.getStore());
+		FileScanner scanner = sm.getScanner(info.getInfo(), new Tablet [] {tablet});
 		
-		return new SeqScanOp(null);
+		return new SeqScanOp(scanner);
 	}
 }

@@ -5,12 +5,10 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 
 import nta.catalog.Schema;
-import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NConstants;

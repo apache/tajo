@@ -1,10 +1,9 @@
 package nta.catalog;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import nta.catalog.proto.TableProtos.KeyValueSetProto;
 
-import org.junit.Before;
 import org.junit.Test;
 
 public class TestOptions {

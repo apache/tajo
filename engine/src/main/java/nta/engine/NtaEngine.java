@@ -25,6 +25,15 @@ import nta.conf.NtaConf;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.query.LocalEngine;
 import nta.storage.StorageManager;
+import nta.storage.Store;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.ipc.RPC;
+import org.apache.hadoop.net.DNS;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

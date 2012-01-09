@@ -7,8 +7,8 @@ import java.net.Inet4Address;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
-import nta.conf.NtaConf;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -35,7 +35,7 @@ public class CSVFile implements Scanner {
 	private String delimeter;
 	
 	
-	public CSVFile(NtaConf conf, Store store) throws IOException {
+	public CSVFile(Configuration conf, Store store) throws IOException {
 		this.tablePath = new Path(store.getURI());
 		this.schema = store.getSchema();		
 		this.fs = tablePath.getFileSystem(conf);

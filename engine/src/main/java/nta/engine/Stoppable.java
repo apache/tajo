@@ -1,5 +1,5 @@
 package nta.engine;
 
 public interface Stoppable {
-	public void stop(String why);
+	public void shutdown(String why);
 }

@@ -1,6 +1,5 @@
 package nta.catalog;
 
-import nta.catalog.proto.TableProtos.AttrType;
 import nta.catalog.proto.TableProtos.ColumnProto;
 import nta.catalog.proto.TableProtos.ColumnProtoOrBuilder;
 import nta.catalog.proto.TableProtos.DataType;
@@ -23,14 +22,9 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 	
 	public Column(int columnId, String columnName, DataType dataType) {		
 		this();
-		this.id = columnId;
-		this.name = columnName;
-		this.dataType = dataType;
-	}
-	
-	public Column(int columnId, String columnName, DataType dataType, AttrType attrType) {
-		this(columnId, columnName, dataType);
-		this.attrType = attrType;
+		setId(columnId);
+		setName(columnName);
+		setDataType(dataType);
 	}
 	
 	public Column(ColumnProto proto) {
@@ -92,24 +86,6 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 		this.dataType = dataType;
 	}
 	
-	public AttrType getAttrType() {
-		ColumnProtoOrBuilder p = viaProto ? proto : builder;
-		if(attrType != null) {
-			return this.attrType;
-		}
-		if(!proto.hasAttrType()) {
-			return AttrType.NORMAL;
-		}
-		this.attrType = p.getAttrType();
-		
-		return this.attrType;
-	}
-	
-	public void setAttrType(AttrType type) {
-		maybeInitBuilder();
-		this.attrType = type;
-	}
-	
 	public String toString() {
 		return "["+id+"] "+super.toString();
 	}
@@ -120,8 +96,7 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 			Column cd = (Column)o;
 			if (this.name.equals(cd.getName()) &&
 					this.getId() == cd.getId() &&
-					this.getDataType() == cd.getDataType() &&
-					this.getAttrType() == cd.getAttrType()
+					this.getDataType() == cd.getDataType()
 					) {
 				return true;
 			}
@@ -153,9 +128,6 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 		}
 		if (this.dataType != null) {
 			builder.setDataType(this.dataType);
-		}
-		if (this.attrType != null) {
-			builder.setAttrType(this.attrType);
 		}
 	}
 	

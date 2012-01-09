@@ -5,20 +5,21 @@ package nta.storage;
 
 import java.net.URI;
 import java.util.Map;
-import com.google.common.collect.Maps;
 
-import nta.conf.NtaConf;
+import org.apache.hadoop.conf.Configuration;
+
+import com.google.common.collect.Maps;
 
 /**
  * @author hyunsik
  *
  */
 public class MemStores {
-	private NtaConf conf;
+	private Configuration conf;
 	
 	private Map<URI, MemTable> slots = Maps.newHashMap();
 	
-	public MemStores(NtaConf conf) {
+	public MemStores(Configuration conf) {
 		this.conf = conf;
 	}
 	

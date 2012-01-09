@@ -30,7 +30,6 @@ message ColumnProto {
 	required int32 columnId = 1;
 	required string columnName = 2;
 	required DataType dataType = 3;
-	optional AttrType attrType = 4;
 }
 
 message SchemaProto {
@@ -65,17 +64,4 @@ message TableProto {
 
 message TableStatisticProto {
 	required int32 rowNum = 1;
-}
-
-/* To be removed */
-enum AttrType {
-	NORMAL = 0;
-	AGGREGATED = 1;
-	GROUPBY = 2;
-}
-
-enum TableType {
-	BASETABLE = 0;
-	CUBE = 1;
-	TEMPORAL = 2;
 }

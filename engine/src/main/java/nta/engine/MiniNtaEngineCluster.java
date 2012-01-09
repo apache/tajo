@@ -59,7 +59,7 @@ public class MiniNtaEngineCluster {
 	public JVMClusterUtil.LeafServerThread stopLeafServer(int index, final boolean shutdownFS) {
 		JVMClusterUtil.LeafServerThread server = engineCluster.getLeafServers().get(index);
 		LOG.info("Stopping " +  server.toString());
-		server.getLeafServer().stop("Stopping ls " + index);
+		server.getLeafServer().shutdown("Stopping ls " + index);
 		return server;
 	}
 	

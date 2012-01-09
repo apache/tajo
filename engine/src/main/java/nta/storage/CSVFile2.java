@@ -8,10 +8,10 @@ import java.util.TreeSet;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
-import nta.conf.NtaConf;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.storage.exception.ReadOnlyException;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -29,7 +29,7 @@ public class CSVFile2 {
     private final FileSystem fs;
     private FSDataOutputStream fos;
 
-    public CSVAppender(NtaConf conf, final Path path, final Schema schema)
+    public CSVAppender(Configuration conf, final Path path, final Schema schema)
         throws IOException {
       this.path = new Path(path, "data");
       this.fs = path.getFileSystem(conf);
@@ -101,7 +101,7 @@ public class CSVFile2 {
   }
 
   public static class CSVScanner implements FileScanner {
-    private NtaConf conf;
+    private Configuration conf;
     private Schema schema;
     private FileSystem fs;
     private FSDataInputStream fis;
@@ -113,13 +113,13 @@ public class CSVFile2 {
     private Iterator<Tablet> tabletIter;
     private static final byte LF = '\n';
 
-    public CSVScanner(NtaConf conf, final Schema schema, final Tablet[] tablets)
+    public CSVScanner(Configuration conf, final Schema schema, final Tablet[] tablets)
         throws IOException {
       init(conf, schema, tablets);
     }
 
     @Override
-    public void init(NtaConf conf, final Schema schema, final Tablet[] tablets)
+    public void init(Configuration conf, final Schema schema, final Tablet[] tablets)
         throws IOException {
       this.conf = conf;
       this.schema = schema;
@@ -214,6 +214,11 @@ public class CSVFile2 {
     @Override
     public void reset() throws IOException {
 
+    }
+    
+    @Override
+    public Schema getSchema() {     
+      return this.schema;
     }
 
     @Override
