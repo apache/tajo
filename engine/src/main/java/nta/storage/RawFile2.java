@@ -17,6 +17,7 @@ import nta.storage.exception.ReadOnlyException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -46,7 +47,7 @@ public class RawFile2 {
 	
 	public static class RawFileScanner implements FileScanner {
 		
-		private NtaConf conf;
+		private Configuration conf;
 		private Schema schema;
 		private FSDataInputStream in;
 		private SortedSet<Tablet> tabletSet;
@@ -60,11 +61,11 @@ public class RawFile2 {
 		private long lastSyncPos;
 		private long headerPos;
 		
-		public RawFileScanner(NtaConf conf, final Schema schema, final Tablet[] tablets) throws IOException {
+		public RawFileScanner(Configuration conf, final Schema schema, final Tablet[] tablets) throws IOException {
 			init(conf, schema, tablets);
 		}
 		
-		public void init(NtaConf conf, final Schema schema, final Tablet[] tablets) throws IOException {
+		public void init(Configuration conf, final Schema schema, final Tablet[] tablets) throws IOException {
 			this.conf = conf;
 			this.schema = schema;
 			this.tabletSet = new TreeSet<Tablet>();
@@ -213,19 +214,23 @@ public class RawFile2 {
 		public void reset() throws IOException {
 			in.reset();
 		}
+		
+    @Override
+    public Schema getSchema() {     
+      return this.schema;
+    }
 
 		@Override
 		public void close() throws IOException {
 			if (in != null) {
 				in.close();
 			}
-		}
-		
+		}		
 	}
 	
 	public static class RawFileAppender implements Appender {
 		
-		private NtaConf conf;
+		private Configuration conf;
 		private FSDataOutputStream out;
 		private long lastSyncPos;
 		private Path path;
@@ -233,7 +238,7 @@ public class RawFile2 {
 		private FileSystem fs;
 		private byte[] sync;
 		
-		public RawFileAppender(NtaConf conf, final Path path, final Schema schema) throws IOException {
+		public RawFileAppender(Configuration conf, final Path path, final Schema schema) throws IOException {
 			this.conf = conf;
 			SYNC_INTERVAL = conf.getInt(NConstants.RAWFILE_SYNC_INTERVAL, SYNC_SIZE*100);
 			this.schema = schema;

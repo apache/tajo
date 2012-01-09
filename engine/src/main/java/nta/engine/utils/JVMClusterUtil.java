@@ -108,7 +108,7 @@ public class JVMClusterUtil {
 		for(LeafServerThread t: leafServers) {
 			if(t.isAlive()) {
 				try {
-					t.getLeafServer().stop("Shutdown");
+					t.getLeafServer().shutdown("Shutdown");
 					t.join();
 				} catch (InterruptedException e) {
 					// continue

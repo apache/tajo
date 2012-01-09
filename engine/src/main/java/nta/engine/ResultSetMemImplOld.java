@@ -4,20 +4,19 @@
 package nta.engine;
 
 import java.net.InetAddress;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.common.type.IPv4;
 import nta.engine.exception.NTAQueryException;
 import nta.storage.Tuple;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Hyunsik Choi

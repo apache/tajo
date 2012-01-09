@@ -3,25 +3,21 @@ package nta.engine;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
 
 import nta.catalog.Schema;
 import nta.conf.NtaConf;
-import nta.engine.exception.NTAQueryException;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.storage.FileScanner;
-import nta.storage.RawFile2;
-import nta.storage.RawFile2.RawFileScanner;
 import nta.storage.Scanner;
 import nta.storage.StorageManager;
 import nta.storage.StorageUtils;
 import nta.storage.Tuple;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 
 public class ResultSetWritable implements Writable, FileScanner {
 
@@ -80,11 +76,16 @@ public class ResultSetWritable implements Writable, FileScanner {
 		scanner.close();
 	}
 
-	@Override
-	public void init(NtaConf conf, Schema schema, Tablet[] tablets)
-			throws IOException {
-		// TODO Auto-generated method stub
-		
-	}
+  @Override
+  public void init(Configuration conf, Schema schema, Tablet[] tablets)
+      throws IOException {
+    // TODO Auto-generated method stub
+    
+  }
 
+  @Override
+  public Schema getSchema() {
+    // TODO Auto-generated method stub
+    return null;
+  }
 }

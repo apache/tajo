@@ -1,6 +1,5 @@
 package nta.catalog;
 
-import nta.catalog.proto.TableProtos.AttrType;
 import nta.catalog.proto.TableProtos.DataType;
 
 /**
@@ -11,7 +10,6 @@ import nta.catalog.proto.TableProtos.DataType;
 public class ColumnBase {
 	protected String name;
 	protected DataType dataType;
-	protected AttrType attrType;
 	
 	public ColumnBase() {}
 	
@@ -34,14 +32,6 @@ public class ColumnBase {
 	
 	public void setDataType(DataType dataType) {
 		this.dataType = dataType;
-	}
-	
-	public AttrType getAttrType() {
-		return this.attrType;
-	}
-	
-	public void setAttrType(AttrType attrType) {
-		this.attrType = attrType;
 	}
 	
 	public String toString() {

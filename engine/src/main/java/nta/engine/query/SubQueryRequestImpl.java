@@ -3,35 +3,30 @@ package nta.engine.query;
 import java.net.URI;
 import java.util.List;
 
-import org.apache.hadoop.fs.Path;
-
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.Tablet;
-import nta.engine.parser.NQL.Query;
 
 /**
  * @author hyunsik
  * 
  */
-public class SubQueryRequestImpl implements SubQueryRequest {
+public class SubQueryRequestImpl implements SubQueryRequest {  
   private final List<Tablet> tablets;
   private final URI dest;
-//  private final String query;
-  private final Query query;
-
+  private final String query;
+  private final String tableName;
   /**
 	 * 
 	 */
-//  public SubQueryRequestImpl(List<Tablet> tablets, URI output, String query) {
-  public SubQueryRequestImpl(List<Tablet> tablets, URI output, Query query) {
+public SubQueryRequestImpl(List<Tablet> tablets, URI output, String query, String tableName) {
     this.tablets = tablets;
     this.dest = output;
     this.query = query;
+    this.tableName = tableName;
   }
 
   @Override
-//  public String getQuery() {
-  public Query getQuery() {
+  public String getQuery() {
     return this.query;
   }
 
@@ -43,5 +38,9 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   @Override
   public URI getOutputDest() {
     return this.dest;
+  }
+  
+  public String getTableName() {
+    return this.tableName;
   }
 }

@@ -1,19 +1,13 @@
 package nta.catalog;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import java.net.URI;
 
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableDescProto;
-import nta.catalog.proto.TableProtos.TableProto;
 
 import org.apache.hadoop.fs.Path;
-import org.junit.Before;
 import org.junit.Test;
 
 public class TestTableDesc {

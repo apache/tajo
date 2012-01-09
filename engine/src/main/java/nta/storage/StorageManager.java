@@ -10,13 +10,13 @@ import java.util.List;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.catalog.TableUtil;
-import nta.conf.NtaConf;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.util.FileUtil;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -31,13 +31,13 @@ import org.apache.hadoop.fs.Path;
 public class StorageManager {
 	private final Log LOG = LogFactory.getLog(StorageManager.class);
 
-	private final NtaConf conf;
+	private final Configuration conf;
 	private final FileSystem defaultFS;
 	private final Path dataRootPath;
 	
 	private final MemStores memStores;
 
-	public StorageManager(NtaConf conf, FileSystem defaultFS) {
+	public StorageManager(Configuration conf, FileSystem defaultFS) {
 		this.conf = conf;
 		this.defaultFS = defaultFS;
 		this.dataRootPath = new Path(conf.get(NConstants.ENGINE_DATA_DIR));

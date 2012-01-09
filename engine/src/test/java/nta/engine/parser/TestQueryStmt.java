@@ -18,7 +18,6 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
 import nta.datum.DatumType;
 import nta.engine.exception.NTAQueryException;

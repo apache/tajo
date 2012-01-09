@@ -12,6 +12,7 @@ import nta.catalog.Schema;
 import nta.conf.NtaConf;
 import nta.storage.exception.ReadOnlyException;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -36,7 +37,7 @@ public class RawFile implements UpdatableScanner {
 	private long syncInterval;
 	private long lastSyncPos;
 	
-	public RawFile(NtaConf conf, Store store) throws IOException {
+	public RawFile(Configuration conf, Store store) throws IOException {
 		this.schema = store.getSchema();
 		this.syncInterval = conf.getInt("file.sync.interval", (SYNC_ESCAPE+SYNC_SIZE)*100);
 		this.sync = new byte[SYNC_SIZE];

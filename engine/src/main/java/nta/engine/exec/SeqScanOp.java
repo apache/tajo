@@ -9,6 +9,7 @@ import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.engine.executor.eval.Expr;
 import nta.engine.query.TargetEntry;
+import nta.storage.FileScanner;
 import nta.storage.Scanner;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -18,7 +19,7 @@ import nta.storage.VTuple;
  *
  */
 public class SeqScanOp extends PhysicalOp {
-	Scanner scanner = null;
+	FileScanner scanner = null;
 	Expr qual = null;	
 	boolean hasRead = true;	
 	boolean nextAvail = false;	
@@ -28,12 +29,12 @@ public class SeqScanOp extends PhysicalOp {
 	/**
 	 * 
 	 */
-	public SeqScanOp(Scanner scanner) {
+	public SeqScanOp(FileScanner scanner) {
 		this.scanner = scanner;
 		this.schema = scanner.getSchema();
 	}
 
-	public SeqScanOp(Scanner scanner, TargetEntry [] tlist) {
+	public SeqScanOp(FileScanner scanner, TargetEntry [] tlist) {
 		this(scanner);
 		this.tlist = tlist;
 	}

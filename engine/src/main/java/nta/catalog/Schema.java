@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import nta.catalog.exception.AlreadyExistsFieldException;
-import nta.catalog.proto.TableProtos.AttrType;
 import nta.catalog.proto.TableProtos.ColumnProto;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.SchemaProto;
@@ -97,20 +96,6 @@ public class Schema implements ProtoObject<SchemaProto> {
 		maybeInitBuilder();		
 		int fid = newFieldId();
 		Column newCol = new Column(fid, name, dataType);
-		fields.put(fid, newCol);
-		fieldsByName.put(name, fid);
-
-		return fid;
-	}
-	
-	public synchronized int addColumn(String name, DataType dataType, AttrType attrType) {
-		initColumns();		
-		if(fieldsByName.containsKey(name)) {
-			throw new AlreadyExistsFieldException(name);
-		}
-		maybeInitBuilder();		
-		int fid = newFieldId();
-		Column newCol = new Column(fid, name, dataType, attrType);
 		fields.put(fid, newCol);
 		fieldsByName.put(name, fid);
 

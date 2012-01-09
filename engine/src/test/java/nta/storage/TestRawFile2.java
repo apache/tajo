@@ -7,10 +7,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import nta.catalog.Schema;
-import nta.catalog.TableDescImpl;
 import nta.catalog.proto.TableProtos.DataType;
-import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableType;
 import nta.common.exception.InvalidAddressException;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;

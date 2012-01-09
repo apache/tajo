@@ -3,25 +3,18 @@
  */
 package nta.storage;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 
 import nta.catalog.Schema;
-import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableType;
 import nta.conf.NtaConf;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NConstants;
-import nta.storage.Appender;
-import nta.storage.CSVFile2;
-import nta.storage.FileScanner;
-import nta.storage.StorageUtils;
-import nta.storage.VTuple;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.After;

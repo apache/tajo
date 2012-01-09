@@ -21,7 +21,7 @@ public interface LeafServerInterface extends Stoppable, Abortable {
 	 * @param request 질의 구문 및 질의 제어 정보
 	 * @return 서브 질의에 대한 응답
 	 */
-	public SubQueryResponse dissminateQuery(SubQueryRequest request);
+	public SubQueryResponse requestSubQuery(SubQueryRequest request) throws Exception;
 	
 	/**
 	 * LeafServer에게 테이블 서빙을 할당 함

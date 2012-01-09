@@ -22,7 +22,6 @@ import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchFunctionException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.TableProtos.StoreType;
-import nta.conf.NtaConf;
 import nta.engine.EngineService;
 import nta.engine.NConstants;
 import nta.engine.function.FuncType;
@@ -33,6 +32,7 @@ import nta.engine.query.LocalEngine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -45,7 +45,7 @@ import com.google.common.base.Preconditions;
  */
 public class Catalog implements CatalogService, EngineService {
 	private static Log LOG = LogFactory.getLog(Catalog.class);
-	private NtaConf conf;	
+	private Configuration conf;	
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	private Lock rlock = lock.readLock();
 	private Lock wlock = lock.writeLock();
@@ -61,7 +61,7 @@ public class Catalog implements CatalogService, EngineService {
 	private String catalogDirPath;
 	private File walFile;
 
-	public Catalog(NtaConf conf) {
+	public Catalog(Configuration conf) {
 		this.conf = conf;
 		
 		FunctionMeta funcMeta = new FunctionMeta("print", TestFunc.class, FuncType.GENERAL);
