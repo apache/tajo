@@ -23,7 +23,7 @@ import nta.engine.executor.eval.Expr;
 import nta.engine.executor.eval.FieldExpr;
 import nta.engine.function.FuncType;
 import nta.engine.function.Function;
-import nta.storage.CSVFile;
+import nta.storage.CSVFile2;
 import nta.storage.StorageManager;
 import nta.storage.Store;
 import nta.util.FileUtil;
@@ -238,7 +238,7 @@ public class TestCatalog {
 			fs.mkdirs(tbPath);
 			fos = fs.create(new Path(tbPath, ".meta"));
 			meta = new TableMetaImpl(schema, StoreType.CSV);
-			meta.putOption(CSVFile.DELIMITER, ",");			
+			meta.putOption(CSVFile2.DELIMITER, ",");			
 			FileUtil.writeProto(fos, meta.getProto());
 			fos.close();
 			

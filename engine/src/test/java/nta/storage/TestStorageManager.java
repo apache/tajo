@@ -48,7 +48,7 @@ public class TestStorageManager {
 		TableMeta meta = new TableMetaImpl();
 		meta.setSchema(schema);
 		meta.setStorageType(StoreType.CSV);
-		meta.putOption(CSVFile.DELIMITER, ",");
+		meta.putOption(CSVFile2.DELIMITER, ",");
 		String [] tuples = {
 				"1,32,hyunsik",
 				"2,29,jihoon",
