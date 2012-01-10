@@ -8,9 +8,7 @@ import nta.catalog.Schema;
 import nta.conf.NtaConf;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.storage.FileScanner;
-import nta.storage.Scanner;
 import nta.storage.StorageManager;
-import nta.storage.StorageUtils;
 import nta.storage.Tuple;
 
 import org.apache.hadoop.conf.Configuration;
