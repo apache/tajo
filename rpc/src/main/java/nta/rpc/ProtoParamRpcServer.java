@@ -1,10 +1,9 @@
 package nta.rpc;
 
 import java.io.ByteArrayInputStream;
-
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
@@ -12,9 +11,9 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import nta.rpc.WritableRpcProtos.Invocation;
-import nta.rpc.WritableRpcProtos.Response;
-import org.apache.hadoop.io.Writable;
+import nta.rpc.ProtoParamRpcProtos.Invocation;
+import nta.rpc.ProtoParamRpcProtos.Response;
+
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -23,20 +22,21 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 
 import com.google.protobuf.ByteString;
 
-public class WritableRpcServer extends NettyServerBase {
-  private static Log LOG = LogFactory.getLog(WritableRpcServer.class);
+public class ProtoParamRpcServer extends NettyServerBase {
+  private static Log LOG = LogFactory.getLog(ProtoParamRpcServer.class);
   private final Object instance;
   private final Class<?> clazz;
   private final ChannelPipelineFactory pipeline;
   private Map<String, Method> methods;
 
-  public WritableRpcServer(Object proxy, InetSocketAddress bindAddress) {
+  public ProtoParamRpcServer(Object proxy, InetSocketAddress bindAddress) {
     super(bindAddress);
     this.instance = proxy;
     this.clazz = instance.getClass();
     this.methods = new HashMap<String, Method>();
-    this.pipeline = new ProtoPipelineFactory(new ServerHandler(),
-        Invocation.getDefaultInstance());
+    this.pipeline =
+        new ProtoPipelineFactory(new ServerHandler(),
+            Invocation.getDefaultInstance());
 
     super.init(this.pipeline);
 
@@ -62,28 +62,31 @@ public class WritableRpcServer extends NettyServerBase {
       if (size > 0) {
         objs = new Object[size];
         for (int i = 0; i < size; i++) {
-          objs[i] = method.getParameterTypes()[i].newInstance();
-          ByteArrayInputStream bis = new ByteArrayInputStream(request.getParam(
-              i).toByteArray());
-          DataInputStream dis = new DataInputStream(bis);
-          ((Writable) objs[i]).readFields(dis);
+          // objs[i] = method.getParameterTypes()[i].newInstance();
+          ByteArrayInputStream bis =
+              new ByteArrayInputStream(request.getParam(i).toByteArray());
+          ObjectInputStream ois = new ObjectInputStream(bis);
+          objs[i] = ois.readObject();
         }
       }
 
-      Writable res = (Writable) method.invoke(instance, objs);
+      Object res = method.invoke(instance, objs);
       Response response = null;
       if (res == null) {
-        response = Response.newBuilder().setId(request.getId())
-            .setHasReturn(false).build();
+        response =
+            Response.newBuilder().setId(request.getId()).setHasReturn(false)
+                .build();
       } else {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
-        res.write(dos);
-        dos.flush();
-        baos.flush();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        oos.writeObject(res);
+        oos.flush();
+        oos.close();
+        baos.close();
         ByteString str = ByteString.copyFrom(baos.toByteArray());
-        response = Response.newBuilder().setId(request.getId())
-            .setHasReturn(true).setReturnValue(str).build();
+        response =
+            Response.newBuilder().setId(request.getId()).setHasReturn(true)
+                .setReturnValue(str).build();
       }
       e.getChannel().write(response);
     }

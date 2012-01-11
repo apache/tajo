@@ -31,8 +31,9 @@ public class NettyServerBase extends Thread {
   }
 
   public void init(ChannelPipelineFactory pipeline) {
-    this.factory = new NioServerSocketChannelFactory(
-        Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+    this.factory =
+        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
+            Executors.newCachedThreadPool());
 
     pipelineFactory = pipeline;
     bootstrap = new ServerBootstrap(factory);

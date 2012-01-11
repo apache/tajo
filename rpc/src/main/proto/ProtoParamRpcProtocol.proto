@@ -1,0 +1,9 @@
+option java_package = "nta.rpc";
+option java_outer_classname = "ProtoParamRpcProtocol";
+option java_generic_services = true;
+
+import "ProtoParamRpcProtos.proto";
+
+service ProtoParamRpcService {
+	rpc invoke (Invocation) returns (Response);
+}
