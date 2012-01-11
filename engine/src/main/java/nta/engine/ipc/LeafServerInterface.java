@@ -1,5 +1,7 @@
 package nta.engine.ipc;
 
+import org.apache.hadoop.ipc.VersionedProtocol;
+
 import nta.engine.Abortable;
 import nta.engine.Stoppable;
 import nta.engine.ipc.protocolrecords.AssignTabletRequest;
@@ -13,7 +15,9 @@ import nta.engine.ipc.protocolrecords.SubQueryResponse;
  * @author hyunsik
  *
  */
-public interface LeafServerInterface extends Stoppable, Abortable {
+public interface LeafServerInterface extends VersionedProtocol, Stoppable, Abortable {
+	
+	public final long versionID = 0;
 	
 	/**
 	 * 질의 구문 및 질의 제어 정보를 LeafServer에게 전달 

@@ -267,4 +267,10 @@ public class LeafServer extends Thread implements LeafServerInterface {
 
 		leafServer.start();
 	}
+
+	@Override
+	public long getProtocolVersion(String protocol, long clientVersion)
+			throws IOException {
+		return versionID;
+	}
 }

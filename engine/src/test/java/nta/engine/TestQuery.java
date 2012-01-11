@@ -39,9 +39,9 @@ public class TestQuery {
 
 	@Test
 	public void testSelect() {
-		NtaEngineMaster master = cluster.getMaster();
-		while (true) {
-			
-		}
+//		NtaEngineMaster master = cluster.getMaster();
+//		while (true) {
+//			
+//		}
 	}
 }
