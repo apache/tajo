@@ -8,6 +8,7 @@ import nta.engine.exception.NTAQueryException;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.VersionedProtocol;
 
+@Deprecated
 public interface NtaEngineInterface extends VersionedProtocol {
 	public void createTable(TableDesc meta) throws Exception;
 	public void dropTable(String name) throws Exception;

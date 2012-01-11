@@ -225,7 +225,7 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	  catalog.addTable(desc);
 	  
 	  for(Tablet tablet : request.getTablets()) {
-	    queryEngine.executeQuery(request.getQuery(), tablet);
+	    ResultSetOld result = queryEngine.executeQuery(request.getQuery(), tablet);
 	  }
 	  
 	  catalog.deleteTable(request.getTableName());

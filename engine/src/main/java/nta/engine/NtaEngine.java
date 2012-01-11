@@ -23,17 +23,8 @@ import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
 import nta.engine.exception.NTAQueryException;
-import nta.engine.query.LocalEngine;
+import nta.engine.query.GlobalEngine;
 import nta.storage.StorageManager;
-import nta.storage.Store;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.ipc.RPC;
-import org.apache.hadoop.net.DNS;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -55,7 +46,8 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 	
 	private Catalog catalog;
 	private StorageManager storeManager;
-	private LocalEngine queryEngine;
+//	private LocalEngine queryEngine;
+	private GlobalEngine queryEngine;
 	
 	private final Path basePath;
 	private final Path catalogPath;
@@ -66,7 +58,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 	 * This servers address.
 	 */
 	private final InetSocketAddress bindAddr;
-	private RPC.Server server;
+	private RPC.Server server;					// RPC between master and client
 	
 	ByteArrayOutputStream baos = new ByteArrayOutputStream();
 	PrintStream ps = new PrintStream(baos);
@@ -117,7 +109,8 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 			loadCatalog(catalogFile);
 		services.add(catalog);
 		
-		this.queryEngine = new LocalEngine(conf, catalog, storeManager, null);
+//		this.queryEngine = new LocalEngine(conf, catalog, storeManager, null);
+		this.queryEngine = new GlobalEngine(conf, catalog, storeManager);
 		this.queryEngine.init();
 		services.add(queryEngine);
 		
