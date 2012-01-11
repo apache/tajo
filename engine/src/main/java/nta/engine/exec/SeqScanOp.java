@@ -10,7 +10,6 @@ import nta.catalog.Schema;
 import nta.engine.executor.eval.Expr;
 import nta.engine.query.TargetEntry;
 import nta.storage.FileScanner;
-import nta.storage.Scanner;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
