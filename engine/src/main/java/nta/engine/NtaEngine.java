@@ -24,6 +24,7 @@ import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.query.GlobalEngine;
+import nta.engine.query.LocalEngine;
 import nta.storage.StorageManager;
 
 import org.apache.commons.logging.Log;
@@ -46,8 +47,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 	
 	private Catalog catalog;
 	private StorageManager storeManager;
-//	private LocalEngine queryEngine;
-	private GlobalEngine queryEngine;
+	private LocalEngine queryEngine;
 	
 	private final Path basePath;
 	private final Path catalogPath;
@@ -77,7 +77,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 			// remote mode
 			this.defaultFS = FileSystem.get(conf);	
 			LOG.info("FileSystem is initialized.");
-		}	
+		}
 		
 		this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
 		LOG.info("Base dir is set " + conf.get(NConstants.ENGINE_BASE_DIR));
@@ -109,8 +109,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 			loadCatalog(catalogFile);
 		services.add(catalog);
 		
-//		this.queryEngine = new LocalEngine(conf, catalog, storeManager, null);
-		this.queryEngine = new GlobalEngine(conf, catalog, storeManager);
+		this.queryEngine = new LocalEngine(conf, catalog, storeManager, null);
 		this.queryEngine.init();
 		services.add(queryEngine);
 		
@@ -190,11 +189,11 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 	public long getProtocolVersion(String arg0, long arg1) throws IOException {	
 		return 0;
 	}
-	
+
 	public ResultSetOld executeQuery(String query) throws NTAQueryException {
 		return queryEngine.executeQuery(query);
 	}
-
+	
 	@Override
 	public String executeQueryC(String query) throws NTAQueryException {
 		try {

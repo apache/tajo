@@ -29,7 +29,7 @@ import nta.engine.plan.logical.RootOp;
 import nta.engine.plan.logical.ScanOp;
 import nta.engine.plan.logical.SelectionOp;
 import nta.engine.query.GlobalQueryPlanner;
-import nta.storage.CSVFile;
+import nta.storage.CSVFile2;
 import nta.util.FileUtil;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -60,7 +60,6 @@ public class TestGlobalQueryPlanner {
 	@Before
 	public void setup() throws Exception {
 		util = new NtaTestingUtility();
-	    util.startMiniZKCluster();
 		
 	    int i, j;
 		FSDataOutputStream fos;
@@ -98,7 +97,7 @@ public class TestGlobalQueryPlanner {
 			fs.mkdirs(tbPath);
 			fos = fs.create(new Path(tbPath, ".meta"));
 			meta = new TableMetaImpl(schema, StoreType.CSV);
-			meta.putOption(CSVFile.DELIMITER, ",");			
+			meta.putOption(CSVFile2.DELIMITER, ",");			
 			FileUtil.writeProto(fos, meta.getProto());
 			fos.close();
 			
@@ -118,7 +117,6 @@ public class TestGlobalQueryPlanner {
 	@After
 	public void terminate() throws IOException {
 		util.shutdownMiniCluster();
-		util.shutdownMiniZKCluster();
 	}
 
 	@Test
