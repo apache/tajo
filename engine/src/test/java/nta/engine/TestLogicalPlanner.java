@@ -25,7 +25,7 @@ import nta.engine.plan.logical.ProjectLO;
 import nta.engine.plan.logical.ScanOp;
 import nta.engine.plan.logical.SelectionOp;
 import nta.engine.query.LogicalPlanner;
-import nta.storage.CSVFile;
+import nta.storage.CSVFile2;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class TestLogicalPlanner {
 		schema.addColumn("id", DataType.INT);
 		
 		TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);		
-		meta.putOption(CSVFile.DELIMITER, ",");  
+		meta.putOption(CSVFile2.DELIMITER, ",");  
 		TableDesc desc = new TableDescImpl("test", meta);
 		desc.setURI(URI.create("/table/test"));
 		cat.addTable(desc);

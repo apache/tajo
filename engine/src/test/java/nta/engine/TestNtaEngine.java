@@ -15,7 +15,7 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
-import nta.storage.CSVFile;
+import nta.storage.CSVFile2;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
@@ -82,7 +82,7 @@ public class TestNtaEngine {
 		schema.addColumn("id", DataType.INT);
 		
 		TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-		meta.putOption(CSVFile.DELIMITER, ",");
+		meta.putOption(CSVFile2.DELIMITER, ",");
 		
 		String [] tuples = new String[4];
 		tuples[0] = "hyunsik,32";
@@ -97,7 +97,7 @@ public class TestNtaEngine {
 		
 		TableDesc info = engine.getTableDesc("attach1");
 		assertEquals("attach1", info.getName());
-		assertEquals(",", info.getInfo().getOption(CSVFile.DELIMITER));
+		assertEquals(",", info.getInfo().getOption(CSVFile2.DELIMITER));
 		assertEquals(StoreType.CSV, info.getInfo().getStoreType());
 		
 		engine.detachTable("attach1");
@@ -113,7 +113,7 @@ public class TestNtaEngine {
 		schema.addColumn("id", DataType.INT);
 		
 		TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-		meta.putOption(CSVFile.DELIMITER, ",");
+		meta.putOption(CSVFile2.DELIMITER, ",");
 		
 		String [] tuples = new String[4];
 		tuples[0] = "hyunsik,32";
@@ -143,7 +143,7 @@ public class TestNtaEngine {
 		schema.addColumn("id", DataType.INT);
 		
 		TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);		
-		meta.putOption(CSVFile.DELIMITER, ",");
+		meta.putOption(CSVFile2.DELIMITER, ",");
 		
 		String [] tuples = new String[4];
 		tuples[0] = "hyunsik,32";

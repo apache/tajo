@@ -219,23 +219,4 @@ public class StorageManager {
 	  
 	  return appender;
 	}
-	
-	@Deprecated
-	public UpdatableScanner getUpdatableScanner(Store store) throws IOException {
-		UpdatableScanner scanner = null;
-		
-		switch(store.getStoreType()) {
-/*		case MEM:
-			scanner = memStores.getMemStore(store);
-			break;*/
-		case RAW:
-			scanner = new RawFile(conf, store);
-			break;				
-		default: return null;
-		}
-		
-		scanner.init();
-		
-		return scanner;
-	}
 }

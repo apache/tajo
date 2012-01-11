@@ -23,6 +23,8 @@ import org.apache.hadoop.fs.Path;
  *
  */
 public class CSVFile2 {
+  public static final String DELIMITER = "csvfile.delimiter";
+  
   public static class CSVAppender implements Appender {
     private final Path path;
     private final Schema schema;

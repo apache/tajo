@@ -24,7 +24,7 @@ import nta.engine.exception.NTAQueryException;
 import nta.engine.executor.eval.Expr;
 import nta.engine.executor.eval.ExprType;
 import nta.engine.parser.NQL.Query;
-import nta.storage.CSVFile;
+import nta.storage.CSVFile2;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -55,7 +55,7 @@ public class TestQueryStmt {
 		TableMeta meta = new TableMetaImpl();		
 		meta.setSchema(schema);
 		meta.setStorageType(StoreType.CSV);
-		meta.putOption(CSVFile.DELIMITER, ",");		
+		meta.putOption(CSVFile2.DELIMITER, ",");		
 		
 		TableDesc desc = new TableDescImpl("test", meta);
 		desc.setURI(URI.create("/table/test"));

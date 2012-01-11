@@ -7,19 +7,17 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 
 import nta.catalog.Schema;
-import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.engine.exception.NTAQueryException;
-import nta.storage.CSVFile;
+import nta.storage.CSVFile2;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
 public class TestQueryEngine {
 	private static final String TEST_DIR="target/test-data/TestQueryEngine";
@@ -43,7 +41,7 @@ public class TestQueryEngine {
 		schema.addColumn("name",DataType.STRING);
 		
 		TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-		meta.putOption(CSVFile.DELIMITER, ",");
+		meta.putOption(CSVFile2.DELIMITER, ",");
 		
 		String [] tuples = {
 		"1,32,hyunsik",
