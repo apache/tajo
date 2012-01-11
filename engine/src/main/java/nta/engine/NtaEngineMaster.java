@@ -34,7 +34,6 @@ public class NtaEngineMaster extends Thread {
 	private final ZkClient zkClient;
 	ZkServer zkServer = null;
 
-
 	public NtaEngineMaster(final Configuration conf) throws IOException {
 		this.conf = conf;
 
@@ -66,7 +65,6 @@ public class NtaEngineMaster extends Thread {
 			if(!this.stopped) {
 				while(!this.stopped) {					
 					Thread.sleep(1000);
-
 				}
 			}	
 		} catch (Throwable t) {

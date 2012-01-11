@@ -52,7 +52,7 @@ public class Catalog implements CatalogService, EngineService {
 
 	private AtomicInteger newRelId = new AtomicInteger(0);
 	private Map<Integer, TableDesc> tables = new HashMap<Integer, TableDesc>();
-	private Map<Integer, List<TabletInfo>> tabletServingInfo = new HashMap<Integer, List<TabletInfo>>();
+	private Map<Integer, List<TabletServInfo>> tabletServingInfo = new HashMap<Integer, List<TabletServInfo>>();
 	private Map<String, Integer> tablesByName = new HashMap<String, Integer>();	
 	private Map<String, FunctionMeta> functions = new HashMap<String, FunctionMeta>();	
 
@@ -128,7 +128,7 @@ public class Catalog implements CatalogService, EngineService {
 		this.tabletServingInfo.clear();
 	}
 	
-	public List<TabletInfo> getHostByTable(String tableName) {
+	public List<TabletServInfo> getHostByTable(String tableName) {
 		return tabletServingInfo.get(tablesByName.get(tableName));
 	}
 	
@@ -148,28 +148,29 @@ public class Catalog implements CatalogService, EngineService {
 		FileStatus[] files = fs.listStatus(path);
 		BlockLocation[] blocks;
 		String[] hosts;
-		List<TabletInfo> tabletInfoList;
+		List<TabletServInfo> tabletInfoList;
 		int tid = tablesByName.get(desc.getName());
 		if (tabletServingInfo.containsKey(tid)) {
 			tabletInfoList = tabletServingInfo.get(tid);
 		} else {
-			tabletInfoList = new ArrayList<TabletInfo>();
+			tabletInfoList = new ArrayList<TabletServInfo>();
 		}
 		
 		for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
 			blocks = fs.getFileBlockLocations(files[fileIdx], 0, files[fileIdx].getLen());
 			for (blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
-				hosts = blocks[blockIdx].getHosts();
+//				hosts = blocks[blockIdx].getHosts();
+				hosts = blocks[blockIdx].getNames();
 				if (tabletServingInfo.containsKey(tid)) {
 					tabletInfoList = tabletServingInfo.get(tid);
 				} else {
-					tabletInfoList = new ArrayList<TabletInfo>();
+					tabletInfoList = new ArrayList<TabletServInfo>();
+					tabletServingInfo.put(tid, tabletInfoList);
 				}
 				// TODO: select the proper serving node for block
-				tabletInfoList.add(new TabletInfo(hosts[0], new Tablet(path, files[fileIdx].getPath().getName(), 
+				tabletInfoList.add(new TabletServInfo(hosts[0], new Tablet(path, files[fileIdx].getPath().getName(), 
 						blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
 			}
-			tabletServingInfo.put(tid, tabletInfoList);
 		}
 	}
 	

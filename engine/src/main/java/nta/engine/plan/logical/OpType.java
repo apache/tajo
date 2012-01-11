@@ -22,5 +22,6 @@ public enum OpType {
 	INSERT_INTO,
 	SHOW_TABLE,
 	SHOW_FUNCTION,
-	DESC_TABLE
+	DESC_TABLE,
+	ROOT
 }

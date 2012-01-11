@@ -2,16 +2,16 @@ package nta.catalog;
 
 import nta.engine.ipc.protocolrecords.Tablet;
 
-public class TabletInfo {
+public class TabletServInfo {
 
 	private String hostName;
 	private Tablet tablet;
 	
-	public TabletInfo() {
+	public TabletServInfo() {
 		
 	}
 	
-	public TabletInfo(String hostName, Tablet tablet) {
+	public TabletServInfo(String hostName, Tablet tablet) {
 		this.set(hostName, tablet);
 	}
 	

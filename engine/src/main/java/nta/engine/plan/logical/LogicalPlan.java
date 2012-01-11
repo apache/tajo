@@ -10,7 +10,15 @@ package nta.engine.plan.logical;
 public class LogicalPlan {
 	LogicalOp root;
 	
+	public LogicalPlan() {
+		root = null;
+	}
+	
 	public LogicalPlan(LogicalOp op) {
+		this.root = op;
+	}
+	
+	public void setRoot(LogicalOp op) {
 		this.root = op;
 	}
 	

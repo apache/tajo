@@ -258,7 +258,7 @@ public class TestCatalog {
 		
 		Collection<TableDesc> tables = catalog.getAllTableDescs();
 		Iterator<TableDesc> it = tables.iterator();
-		List<TabletInfo> tabletInfoList;
+		List<TabletServInfo> tabletInfoList;
 		int cnt = 0;
 		int len = 0;
 		TableDesc tableInfo;
