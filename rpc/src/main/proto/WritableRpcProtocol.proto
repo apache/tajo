@@ -1,9 +1,0 @@
-option java_package = "nta.rpc";
-option java_outer_classname = "WritableRpcProtocol";
-option java_generic_services = true;
-
-import "WritableRpcProtos.proto";
-
-service WritableRpcService {
-	rpc invoke (Invocation) returns (Response);
-}

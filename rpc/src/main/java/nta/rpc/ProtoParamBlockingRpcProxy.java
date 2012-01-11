@@ -2,8 +2,8 @@ package nta.rpc;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -14,9 +14,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import nta.rpc.WritableRpcProtos.Invocation;
-import nta.rpc.WritableRpcProtos.Response;
-import org.apache.hadoop.io.Writable;
+import nta.rpc.ProtoParamRpcProtos.Invocation;
+import nta.rpc.ProtoParamRpcProtos.Response;
+import com.google.protobuf.ByteString;
+
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -24,22 +25,22 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 
-import com.google.protobuf.ByteString;
+public class ProtoParamBlockingRpcProxy extends NettyClientBase {
 
-public class WritableBlockingRpcProxy extends NettyClientBase {
-  private static Log LOG = LogFactory.getLog(WritableBlockingRpcProxy.class);
+  private static Log LOG = LogFactory.getLog(ProtoParamBlockingRpcProxy.class);
 
   private final Class<?> protocol;
   private final ChannelPipelineFactory pipeFactory;
   private final ClientHandler handler;
   private final AtomicInteger sequence = new AtomicInteger(0);
-  private Map<Integer, CallFuture> requests = new ConcurrentHashMap<Integer, CallFuture>();
+  private Map<Integer, CallFuture> requests =
+      new ConcurrentHashMap<Integer, CallFuture>();
 
-  public WritableBlockingRpcProxy(Class<?> protocol, InetSocketAddress addr) {
+  public ProtoParamBlockingRpcProxy(Class<?> protocol, InetSocketAddress addr) {
     this.protocol = protocol;
     this.handler = new ClientHandler();
-    this.pipeFactory = new ProtoPipelineFactory(handler,
-        Response.getDefaultInstance());
+    this.pipeFactory =
+        new ProtoPipelineFactory(handler, Response.getDefaultInstance());
     super.init(addr, pipeFactory);
   }
 
@@ -64,19 +65,19 @@ public class WritableBlockingRpcProxy extends NettyClientBase {
 
       if (args != null) {
         for (int i = 0; i < args.length; i++) {
-          Writable w = (Writable) args[i];
           ByteArrayOutputStream baos = new ByteArrayOutputStream();
-          DataOutputStream dos = new DataOutputStream(baos);
-          w.write(dos);
-          dos.flush();
-          baos.flush();
+          ObjectOutputStream oos = new ObjectOutputStream(baos);
+          oos.writeObject(args[i]);
+          oos.flush();
+          oos.close();
+          baos.close();
           ByteString str = ByteString.copyFrom(baos.toByteArray());
           builder.addParam(str);
         }
       }
 
-      Invocation request = builder.setId(nextSeqId)
-          .setMethodName(method.getName()).build();
+      Invocation request =
+          builder.setId(nextSeqId).setMethodName(method.getName()).build();
 
       CallFuture callFuture = new CallFuture(method.getReturnType());
       requests.put(nextSeqId, callFuture);
@@ -92,14 +93,16 @@ public class WritableBlockingRpcProxy extends NettyClientBase {
       Response response = (Response) e.getMessage();
       CallFuture callFuture = requests.get(response.getId());
 
-      Writable r = null;
+      Object r = null;
       if (response == null || !response.getHasReturn()) {
         response = null;
       } else {
-        ByteArrayInputStream bais = new ByteArrayInputStream(response
-            .getReturnValue().toByteArray());
-        r = (Writable) callFuture.getReturnType().newInstance();
-        r.readFields(new DataInputStream(bais));
+        ByteArrayInputStream bais =
+            new ByteArrayInputStream(response.getReturnValue().toByteArray());
+        // r = callFuture.getReturnType().newInstance();
+        ObjectInputStream ois = new ObjectInputStream(bais);
+        r = ois.readObject();
+
       }
 
       if (callFuture == null) {
@@ -116,4 +119,5 @@ public class WritableBlockingRpcProxy extends NettyClientBase {
       LOG.error(e.getCause());
     }
   }
+
 }

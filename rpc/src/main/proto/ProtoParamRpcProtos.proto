@@ -1,5 +1,5 @@
 option java_package = "nta.rpc";
-option java_outer_classname = "WritableRpcProtos";
+option java_outer_classname = "ProtoParamRpcProtos";
 
 message Invocation {
     required int32 id = 1;

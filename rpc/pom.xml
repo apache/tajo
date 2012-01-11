@@ -56,10 +56,8 @@
 							<arguments>
 								<argument>-Isrc/main/proto/</argument>
 								<argument>--java_out=target/generated-sources/proto</argument>
-								<argument>src/main/proto/RpCProtos.proto</argument>
-								<argument>src/main/proto/HeartbeatProtos.proto</argument>
-								<argument>src/main/proto/WritableRpcProtos.proto</argument>
-								<argument>src/main/proto/WritableRpcProtocol.proto</argument>
+								<argument>src/main/proto/ProtoParamRpcProtos.proto</argument>
+								<argument>src/main/proto/ProtoParamRpcProtocol.proto</argument>
 								<argument>src/main/proto/DummyProtos.proto</argument>
 							</arguments>
 						</configuration>

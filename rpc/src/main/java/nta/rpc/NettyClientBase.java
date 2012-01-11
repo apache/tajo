@@ -32,8 +32,9 @@ public class NettyClientBase {
   public void init(InetSocketAddress addr, ChannelPipelineFactory pipeFactory) {
     this.addr = addr;
 
-    this.factory = new NioClientSocketChannelFactory(
-        Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+    this.factory =
+        new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
+            Executors.newCachedThreadPool());
 
     this.bootstrap = new ClientBootstrap(factory);
     this.bootstrap.setPipelineFactory(pipeFactory);
