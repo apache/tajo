@@ -57,7 +57,7 @@ public class TestGlobalQueryPlanner {
 	
 	final String TEST_PATH = "";
 	
-//	@Before
+	@Before
 	public void setup() throws Exception {
 		util = new NtaTestingUtility();
 		
@@ -114,12 +114,12 @@ public class TestGlobalQueryPlanner {
 		}
 	}
 	
-//	@After
+	@After
 	public void terminate() throws IOException {
 		util.shutdownMiniCluster();
 	}
 
-//	@Test
+	@Test
 	public void testBuildGenericTaskTree() throws IOException {
 		ScanOp scan = new ScanOp(null);
 		SelectionOp sel = new SelectionOp();
@@ -186,7 +186,7 @@ public class TestGlobalQueryPlanner {
 		assertEquals(OpType.SCAN, task.getOp().getType());
 	}
 	
-//	@Test
+	@Test
 	public void testLocalizeSimpleOp() throws IOException {
 		catalog.updateAllTabletServingInfo();
 		TableProto tableProto = (TableProto) FileUtil.loadProto(conf, new Path(TEST_PATH+"/table0/.meta"), 
@@ -209,7 +209,7 @@ public class TestGlobalQueryPlanner {
 		assertEquals(fileStat.getLen(), len);
 	}
 	
-//	@Test
+	@Test
 	public void testDecompose() throws IOException {
 		TableProto tableProto = (TableProto) FileUtil.loadProto(conf, new Path(TEST_PATH+"/table0/.meta"), 
 			      TableProto.getDefaultInstance());
