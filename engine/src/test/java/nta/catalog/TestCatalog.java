@@ -25,7 +25,6 @@ import nta.engine.function.FuncType;
 import nta.engine.function.Function;
 import nta.storage.CSVFile2;
 import nta.storage.StorageManager;
-import nta.storage.Store;
 import nta.util.FileUtil;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -223,8 +222,7 @@ public class TestCatalog {
 		FileSystem fs = util.getMiniDFSCluster().getFileSystem();
 		NtaConf conf = new NtaConf(util.getConfiguration());
 		Catalog catalog = new Catalog(conf);
-		StorageManager sm = new StorageManager(conf, fs);
-		Store store;
+		StorageManager sm = new StorageManager(conf);
 
 		int tbNum = 100;
 		Random random = new Random();

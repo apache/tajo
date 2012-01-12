@@ -1,5 +1,6 @@
 package nta.storage;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.util.Iterator;
@@ -7,9 +8,10 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import nta.catalog.Column;
+import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.engine.ipc.protocolrecords.Tablet;
-import nta.storage.exception.ReadOnlyException;
+import nta.storage.exception.AlreadyExistsStorageException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -22,27 +24,45 @@ import org.apache.hadoop.fs.Path;
  * @author Jimin Kim
  *
  */
-public class CSVFile2 {
+public class CSVFile2 extends Storage {
   public static final String DELIMITER = "csvfile.delimiter";
+  public static final String DELIMITER_DEFAULT = ",";
   
-  public static class CSVAppender implements Appender {
-    private final Path path;
-    private final Schema schema;
+  public CSVFile2(Configuration conf) {
+    super(conf);
+  }
+
+  @Override
+  public Appender getAppender(Schema schema, Path path) 
+      throws IOException {
+    return new CSVAppender(getConf(), path, schema, false);
+  }
+
+  @Override
+  public Scanner openScanner(Schema schema, Tablet[] tablets) 
+      throws IOException {
+    return new CSVScanner(conf, schema, tablets);
+  }
+  
+  public static class CSVAppender extends FileAppender {    
     private final FileSystem fs;
     private FSDataOutputStream fos;
-
-    public CSVAppender(Configuration conf, final Path path, final Schema schema)
+    
+    public CSVAppender(Configuration conf, final Path path, 
+        final Schema schema, boolean tablewrite)    
         throws IOException {
-      this.path = new Path(path, "data");
+      super(conf, schema, path);      
       this.fs = path.getFileSystem(conf);
-      this.schema = schema;
-
-      if (!fs.exists(path))
-        fs.mkdirs(path);
-      if (fs.exists(new Path(path, "table1.csv")))
-        throw new ReadOnlyException();
-
-      fos = fs.create(new Path(this.path, "table1.csv"));
+      
+      if (!fs.exists(path.getParent())) {
+        throw new FileNotFoundException(path.toString());
+      }
+      
+      if (fs.exists(path)) {
+        throw new AlreadyExistsStorageException(path);
+      }
+      
+      fos = fs.create(path);
     }
 
     @Override
@@ -102,29 +122,40 @@ public class CSVFile2 {
     }
   }
 
-  public static class CSVScanner implements FileScanner {
-    private Configuration conf;
-    private Schema schema;
+  public static class CSVScanner extends FileScanner {
     private FileSystem fs;
     private FSDataInputStream fis;
+    
     private long startOffset;
     private long length;
     private String line;
     private byte[] sweep;
+    
     private SortedSet<Tablet> tabletSet;
     private Iterator<Tablet> tabletIter;
-    private static final byte LF = '\n';
+    
+    private static final byte LF = '\n';    
+    private String delimiter;
+    private Options option;
+    
 
     public CSVScanner(Configuration conf, final Schema schema, final Tablet[] tablets)
         throws IOException {
-      init(conf, schema, tablets);
+      super(conf, schema, tablets);
+      this.delimiter = DELIMITER_DEFAULT;
+      init();      
+    }
+    
+    public CSVScanner(Configuration conf, final Schema schema, 
+        final Tablet [] tablets, Options option) throws IOException {
+      this(conf, schema, tablets);
+      this.option = option;
+      this.delimiter = option.get(DELIMITER, DELIMITER_DEFAULT);
+      init();
     }
 
-    @Override
-    public void init(Configuration conf, final Schema schema, final Tablet[] tablets)
-        throws IOException {
-      this.conf = conf;
-      this.schema = schema;
+    private void init() throws IOException {
+      this.fs = FileSystem.get(conf);
       this.tabletSet = new TreeSet<Tablet>();
 
       for (Tablet t : tablets)
@@ -177,7 +208,7 @@ public class CSVFile2 {
 
       VTuple tuple = new VTuple(schema.getColumnNum());
       String[] cells = null;
-      cells = line.split(",");
+      cells = line.split(this.delimiter);
       Column field;
 
       for (int i = 0; i < cells.length; i++) {

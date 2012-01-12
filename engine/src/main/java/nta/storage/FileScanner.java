@@ -1,19 +1,25 @@
 package nta.storage;
 
-import java.io.Closeable;
-import java.io.IOException;
-
 import nta.catalog.Schema;
 import nta.engine.ipc.protocolrecords.Tablet;
 
 import org.apache.hadoop.conf.Configuration;
 
-public interface FileScanner extends Closeable {
+public abstract class FileScanner implements Scanner {
+  
+  protected final Configuration conf;
+  protected final Schema schema;
+  protected final Tablet [] tablets;
+  
+  public FileScanner(Configuration conf, final Schema schema, 
+      final Tablet [] tablets) {
+    this.conf = conf;
+    this.schema = schema;
+    this.tablets = tablets;
+  }
 
-	public void init(Configuration conf, final Schema schema, final Tablet[] 
-	    tablets) throws IOException;
-	public Schema getSchema();	
-	public Tuple next() throws IOException;
-	public void reset() throws IOException;
-	public void close() throws IOException;
+  @Override
+	public Schema getSchema() {
+	  return schema;
+	}
 }

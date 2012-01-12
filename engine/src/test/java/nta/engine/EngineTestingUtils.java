@@ -9,26 +9,19 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.conf.NtaConf;
-import nta.storage.Appender;
-import nta.storage.StorageManager;
-import nta.storage.VTuple;
 import nta.util.FileUtil;
 import nta.util.ReflectionUtil;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.Writable;
 
 /**
- * @author hyunsik
+ * @author Hyunsik Choi
  *
  */
 public class EngineTestingUtils {	
@@ -65,28 +58,6 @@ public class EngineTestingUtils {
 			writer.write(tuple+"\n");
 		}
 		writer.close();
-	}
-	
-	public static final void writeRawTable(NtaConf conf, TableDescImpl desc, VTuple [] tuples) throws IOException {
-//		File tableRoot = new File(tablePath);
-//		tableRoot.mkdir();
-		
-//		File dataDir = new File(tableRoot+"/data");
-//		dataDir.mkdir();
-		
-		FileSystem fs = LocalFileSystem.get(conf);
-		StorageManager sm = new StorageManager(conf, fs);
-		//RawFile rf = new RawFile(conf, store);
-		//rf.init();
-		Appender appender = sm.getAppender(desc);
-
-		for (VTuple tuple : tuples) {
-			appender.addTuple(tuple);
-		}
-		appender.close();
-
-//		File metaFile = new File(tablePath+"/.meta");
-//		FileUtils.writeProto(metaFile, meta.getProto());
 	}
 	
 	/** Utility method for testing writables. */

@@ -22,7 +22,6 @@ import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.SubQueryResponse;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.query.QueryEngine;
-import nta.engine.utils.TableUtil;
 import nta.storage.StorageManager;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkUtil;
@@ -128,7 +127,7 @@ public class LeafServer extends Thread implements LeafServerInterface {
 			defaultFS.mkdirs(dataPath);
 			LOG.info("Data dir ("+dataPath+") is created");
 		}		
-		this.storeManager = new StorageManager(conf, defaultFS);
+		this.storeManager = new StorageManager(conf);
 		
 		
 		this.catalogPath = new Path(conf.get(NConstants.ENGINE_CATALOG_DIR));
@@ -218,8 +217,7 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	@Override
 	public SubQueryResponse requestSubQuery(SubQueryRequest request) throws IOException {
 	  
-	  TableMeta meta = TableUtil.
-	      getTableMeta(conf, request.getTablets().get(0).getTablePath());
+	  TableMeta meta = storeManager.getTableMeta(request.getTablets().get(0).getTablePath());
 	  TableDesc desc = new TableDescImpl(request.getTableName(), meta);
 	  desc.setURI(request.getTablets().get(0).getTablePath());
 	  catalog.addTable(desc);

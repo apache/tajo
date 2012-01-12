@@ -19,6 +19,8 @@ public interface Tuple {
 	
 	public void put(int fieldId, Object value);
 	
+	public void put(Object...values);
+	
 	public Object get(int fieldId);
 
 	public boolean getBoolean(int fieldId);

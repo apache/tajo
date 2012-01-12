@@ -7,20 +7,16 @@ import java.util.Collection;
 import java.util.List;
 
 import nta.catalog.Column;
-import nta.catalog.Schema;
 import nta.catalog.TableMeta;
-import nta.engine.ipc.protocolrecords.Tablet;
-
-import org.apache.hadoop.conf.Configuration;
 
 /**
  * @author Hyunsik Choi
  *
  */
-public class MemTable implements Appender, FileScanner {
+public class MemTable {
 	private final TableMeta meta;
   private final URI uri;
-	private List<VTuple> slots;
+	List<VTuple> slots;
 	private int cur = -1;
 	private boolean hasRead = true;
 	
@@ -43,8 +39,7 @@ public class MemTable implements Appender, FileScanner {
 		this.slots = memTable.slots; 
 	}
 
-	@Override
-	public VTuple next() throws IOException {
+	public Tuple next() throws IOException {
 		cur++;		
 		if(cur < slots.size()) {
 			Tuple t = slots.get(cur);
@@ -92,7 +87,6 @@ public class MemTable implements Appender, FileScanner {
 			return null;
 	}
 
-	@Override
 	public void reset() {
 		hasRead = true;
 		cur=-1;
@@ -101,30 +95,4 @@ public class MemTable implements Appender, FileScanner {
 	public void copyFromCollection(Collection<VTuple> tuples) {
 		this.slots.addAll(tuples);
 	}
-
-	@Override
-	public void addTuple(Tuple tuple) throws IOException {
-		slots.add((VTuple) tuple);
-	}
-
-	@Override
-	public void close() {
-	}
-
-  @Override
-  public void flush() throws IOException {
-    // nothing    
-  }
-
-  @Override
-  public void init(Configuration conf, Schema schema, Tablet[] tablets)
-      throws IOException {
-    // TODO Auto-generated method stub
-    
-  }
-
-  @Override
-  public Schema getSchema() {
-    return meta.getSchema();
-  }
 }

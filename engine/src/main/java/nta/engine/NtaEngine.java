@@ -23,7 +23,6 @@ import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
 import nta.engine.exception.NTAQueryException;
-import nta.engine.query.GlobalEngine;
 import nta.engine.query.LocalEngine;
 import nta.storage.StorageManager;
 
@@ -93,7 +92,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 			defaultFS.mkdirs(dataPath);
 			LOG.info("Data dir ("+dataPath+") is created");
 		}		
-		this.storeManager = new StorageManager(conf, defaultFS);
+		this.storeManager = new StorageManager(conf);
 		
 		this.catalogPath = new Path(conf.get(NConstants.ENGINE_CATALOG_DIR));
 		LOG.info("Catalog dir is set to " + this.catalogPath);

@@ -14,7 +14,6 @@ import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.engine.EngineTestingUtils;
-import nta.engine.NConstants;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
@@ -23,9 +22,10 @@ import org.junit.Test;
 
 /**
  * @author Jimin Kim
+ * @author Hyunsik Choi
  * 
  */
-public class TestStorageUtils {
+public class TestStorageUtil {
 
   private NtaConf conf;
   private static String TEST_PATH = "target/test-data/TestStorageUtil";
@@ -33,6 +33,8 @@ public class TestStorageUtils {
   int tupleNum = 10000;
   Schema schema = null;
   Path path = null;
+  
+  StorageManager sm;
 
   /**
    * @throws java.lang.Exception
@@ -40,8 +42,8 @@ public class TestStorageUtils {
   @Before
   public void setUp() throws Exception {
     conf = new NtaConf();
-    conf.set(NConstants.ENGINE_DATA_DIR, TEST_PATH);
     EngineTestingUtils.buildTestDir(TEST_PATH);
+    sm = StorageManager.get(conf, TEST_PATH);
 
     schema = new Schema();
     schema.addColumn("string", DataType.STRING);
@@ -52,11 +54,7 @@ public class TestStorageUtils {
     meta.setSchema(schema);
     meta.setStorageType(StoreType.CSV);
     
-    Path path = new Path(TEST_PATH);
-
-    path = new Path(TEST_PATH);
-
-    Appender appender = new CSVFile2.CSVAppender(conf, path, schema);
+    Appender appender = sm.getTableAppender(meta, "table1");
     int tupleNum = 10000;
 
     VTuple vTuple = null;
@@ -78,8 +76,9 @@ public class TestStorageUtils {
   }
 
   @Test
-  public void test() throws IOException {
-    FileScanner csvscanner = new CSVFile2.CSVScanner(conf, schema, StorageUtils.reconstructTablets(conf, new Path(TEST_PATH)));
+  public void test() throws IOException {    
+    Scanner csvscanner = 
+        sm.getTableScanner("table1");
 
     int tupleCnt = 0;
     VTuple vTuple = null;
