@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import nta.catalog.Schema;
-import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
@@ -21,12 +20,10 @@ import nta.common.type.IPv4;
 import nta.conf.NtaConf;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
-import nta.storage.Store;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
@@ -44,6 +41,7 @@ public class TestResultSetWritable {
 	private FileSystem fs;
 	private ResultSetWritable result;
 	private IPv4[] ips;
+	private StorageManager sm;
 
 	/**
 	 * @throws java.lang.Exception
@@ -51,19 +49,17 @@ public class TestResultSetWritable {
 	@Before
 	public void setUp() throws Exception {
 		conf = new NtaConf();
-		fs = LocalFileSystem.get(conf);
 		EngineTestingUtils.buildTestDir(TEST_PATH);
+		sm = StorageManager.get(conf, TEST_PATH);
 		
-		Path tablePath = new Path(TEST_PATH, "table1");
 		Schema schema = new Schema();
 		schema.addColumn("name", DataType.STRING);
 		schema.addColumn("id", DataType.INT);
 		schema.addColumn("ip", DataType.IPv4);
 
 		TableMeta desc = new TableMetaImpl(schema, StoreType.RAW);
-		FileSystem fs = LocalFileSystem.get(conf);
-		StorageManager sm = new StorageManager(conf, fs);
-		Appender appender = sm.getAppender(desc, tablePath, true);
+
+		Appender appender = sm.getTableAppender(desc, "table1");
 
 		ips = new IPv4[4];
 		for (int i = 1; i <= ips.length; i++) {
@@ -96,7 +92,7 @@ public class TestResultSetWritable {
 		appender.close();
 
 		result = new ResultSetWritable();
-		result.setResult(tablePath);
+		result.setResult(sm.getTablePath("table1"));
 	}
 
 	/**

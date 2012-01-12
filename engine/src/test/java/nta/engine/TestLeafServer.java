@@ -9,50 +9,51 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
-import nta.conf.NtaConf;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.query.SubQueryRequestImpl;
 import nta.storage.Appender;
-import nta.storage.CSVFile2;
+import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
-import nta.util.FileUtil;
 
-import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * 
+ * @author Hyunsik Choi
+ *
+ */
 public class TestLeafServer {
 
+  private Configuration conf;
   private NtaTestingUtility util;
-  private NtaConf conf;
   private static String TEST_PATH = "target/test-data/TestLeafServer";
+  private StorageManager sm;
 
   @Before
   public void setUp() throws Exception {
-    conf = new NtaConf();
-    conf.set(NConstants.ENGINE_DATA_DIR, TEST_PATH);
     EngineTestingUtils.buildTestDir(TEST_PATH);
-
-    util = new NtaTestingUtility();
+    util = new NtaTestingUtility();    
     util.startMiniZKCluster();
+    util.startMiniNtaEngineCluster(2);
+    conf = util.getConfiguration();
+    sm = StorageManager.get(conf, TEST_PATH);
   }
 
   @After
   public void tearDown() throws Exception {
     util.shutdownMiniZKCluster();
+    util.shutdownMiniNtaEngineCluster();
   }
 
   @Test
   public final void testRequestSubQuery() throws IOException {
-    util.startMiniNtaEngineCluster(2);
-
     Schema schema = new Schema();
     schema.addColumn("name", DataType.STRING);
     schema.addColumn("id", DataType.INT);
@@ -60,15 +61,8 @@ public class TestLeafServer {
     TableMeta meta = new TableMetaImpl();
     meta.setSchema(schema);
     meta.setStorageType(StoreType.CSV);
-    Path path = new Path(TEST_PATH);
-
-    FSDataOutputStream out = FileSystem.get(conf).create(
-        new Path(path, ".meta"));
-    FileUtil.writeProto(out, meta.getProto());
-    out.flush();
-    out.close();
-
-    Appender appender = new CSVFile2.CSVAppender(conf, path, schema);
+    
+    Appender appender = sm.getTableAppender(meta, "table1");
     int tupleNum = 10000;
     Tuple tuple = null;
     for (int i = 0; i < tupleNum; i++) {
@@ -79,13 +73,13 @@ public class TestLeafServer {
     }
     appender.close();
 
-    // the total file size == 88894
+    FileStatus status = sm.listTableFiles("table1")[0];
     Tablet[] tablets1 = new Tablet[1];
-    tablets1[0] = new Tablet(path, "table1.csv", 0, 70000);
+    tablets1[0] = new Tablet(status.getPath(), 0, 70000);
     LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(0);
 
     Tablet[] tablets2 = new Tablet[1];
-    tablets2[0] = new Tablet(path, "table1.csv", 70000, 10000);
+    tablets2[0] = new Tablet(status.getPath(), 70000, 10000);
     LeafServer leaf2 = util.getMiniNtaEngineCluster().getLeafServer(1);
 
     SubQueryRequest req = new SubQueryRequestImpl(new ArrayList<Tablet>(

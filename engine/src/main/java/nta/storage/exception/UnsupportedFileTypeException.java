@@ -1,7 +1,7 @@
 /**
  * 
  */
-package nta.storage;
+package nta.storage.exception;
 
 /**
  * @author Hyunsik Choi

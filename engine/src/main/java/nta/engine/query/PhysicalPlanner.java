@@ -25,6 +25,7 @@ import nta.engine.plan.logical.ProjectLO;
 import nta.engine.plan.logical.ScanOp;
 import nta.engine.plan.logical.SelectionOp;
 import nta.storage.FileScanner;
+import nta.storage.Scanner;
 import nta.storage.StorageManager;
 
 /**
@@ -112,7 +113,7 @@ public class PhysicalPlanner {
 		ScanOp sOp = (ScanOp) op;
 		
 		TableDesc info = cat.getTableDesc(sOp.getRelName()); 
-		FileScanner scanner = sm.getScanner(info.getInfo(), new Tablet [] {tablet});
+		Scanner scanner = sm.getScanner(info.getInfo(), new Tablet [] {tablet});
 		
 		return new SeqScanOp(scanner);
 	}

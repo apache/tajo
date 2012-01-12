@@ -45,6 +45,15 @@ public class Options implements ProtoObject<KeyValueSetProto> {
 		return this.keyVals.get(key);
 	}
 	
+	public String get(String key, String defaultVal) {
+	  initOptions();
+	  if(keyVals.containsKey(key))
+	    return keyVals.get(key);
+	  else {
+	    return defaultVal;
+	  }
+	}
+	
 	public String delete(String key) {
 		initOptions();		
 		return keyVals.remove(key);

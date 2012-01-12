@@ -41,6 +41,12 @@ public class VTuple implements Tuple {
 		values[fieldId] = value;
 	}
 	
+	public void put(Object...values) {
+	  for(int i=0; i < values.length; i++) {
+	    values[i] = values[i];
+	  }
+	}
+	
 	//////////////////////////////////////////////////////
 	// Getter
 	//////////////////////////////////////////////////////

@@ -6,30 +6,33 @@ import java.io.IOException;
 
 import nta.catalog.Schema;
 import nta.conf.NtaConf;
-import nta.engine.ipc.protocolrecords.Tablet;
-import nta.storage.FileScanner;
+import nta.storage.Scanner;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 
-public class ResultSetWritable implements Writable, FileScanner {
+public class ResultSetWritable implements Scanner, Writable {
 
 	private Path resultPath = null;
-	private FileScanner scanner = null;
-	private FileSystem fs = null;
+	private Scanner scanner = null;
 	private NtaConf conf = null;
 	private StorageManager sm = null;
 	
 	public ResultSetWritable() {
+	  this.conf = new NtaConf();
+	  try {
+      sm = new StorageManager(conf);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
 	}
 
 	public ResultSetWritable(Path resultPath) {
-		this.resultPath = resultPath;
+		this();
+	  this.resultPath = resultPath;
 	}
 
 	public void setResult(Path resultPath) {
@@ -56,10 +59,8 @@ public class ResultSetWritable implements Writable, FileScanner {
 			return null;
 
 		if (scanner == null) {
-			this.conf = new NtaConf();
-			fs = FileSystem.get(conf);
-			sm = new StorageManager(conf, fs);
-			scanner = sm.getScanner(resultPath);
+			
+			scanner = sm.getTableScanner(resultPath);
 		}
 		return scanner.next();
 	}
@@ -68,18 +69,10 @@ public class ResultSetWritable implements Writable, FileScanner {
 	public void reset() throws IOException {
 		scanner.reset();
 	}
-
-	@Override
+	
 	public void close() throws IOException {
 		scanner.close();
 	}
-
-  @Override
-  public void init(Configuration conf, Schema schema, Tablet[] tablets)
-      throws IOException {
-    // TODO Auto-generated method stub
-    
-  }
 
   @Override
   public Schema getSchema() {

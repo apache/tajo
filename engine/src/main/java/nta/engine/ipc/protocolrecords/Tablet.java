@@ -15,7 +15,11 @@ public class Tablet implements Comparable<Tablet> {
 	}
 	
 	public Tablet(Path tablePath, String filename, long start, long length) {
-		this.set(tablePath, filename, start, length);
+		set(tablePath, filename, start, length);
+	}
+	
+	public Tablet(Path file, long start, long length) {
+	  set(file.getParent().getParent(), file.getName(), start, length);
 	}
 	
 	public void set(Path path, String filename, long start, long length) {

@@ -12,13 +12,8 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.engine.EngineTestingUtils;
 import nta.engine.ipc.protocolrecords.Tablet;
-import nta.util.FileUtil;
 
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
-import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,12 +21,12 @@ import org.junit.Test;
 public class TestStorageManager {
 	private NtaConf conf; 
 	private static String TEST_PATH = "target/test-data/TestStorageManager";
-
+	StorageManager sm = null;
 	@Before
 	public void setUp() throws Exception {
 		conf = new NtaConf();
-		
 		EngineTestingUtils.buildTestDir(TEST_PATH);
+    sm = StorageManager.get(conf, TEST_PATH);
 	}
 
 	@After
@@ -49,20 +44,20 @@ public class TestStorageManager {
 		meta.setSchema(schema);
 		meta.setStorageType(StoreType.CSV);
 		meta.putOption(CSVFile2.DELIMITER, ",");
-		String [] tuples = {
-				"1,32,hyunsik",
-				"2,29,jihoon",
-				"3,28,jimin",
-				"4,24,haemi"
-		};
+		
+		Tuple [] tuples = new Tuple[4];
+		for(int i=0; i < tuples.length; i++) {
+		  tuples[i] = new VTuple(3);
+		  tuples[i].put(i,i+32,"name"+i);
+		}
+		
+		Appender appender = sm.getTableAppender(meta, "table1");
+		for(Tuple t : tuples) {
+		  appender.addTuple(t);
+		}
+		appender.close();
 
-		EngineTestingUtils.writeCSVTable(TEST_PATH+"/table1", meta, tuples);
-		FileSystem fs = LocalFileSystem.get(conf);
-		StorageManager sm = new StorageManager(conf, fs);
-//		File file = new File(TEST_PATH+"/table1");
-//		Store store = sm.open(new Path("file:///"+file.getAbsolutePath()).toUri());
-
-		FileScanner scanner = sm.getScanner(new Path(TEST_PATH+"/table1"));
+		Scanner scanner = sm.getTableScanner("table1");
 
 		int i=0;
 		Tuple tuple = null;		
@@ -74,9 +69,6 @@ public class TestStorageManager {
 	
 	@Test
 	public void testGetFileScanner() throws IOException {	  
-	  FileSystem fs = LocalFileSystem.get(conf);
-	  StorageManager sm = new StorageManager(conf, fs);
-	  
 	  Schema schema = new Schema();
     schema.addColumn("string", DataType.STRING);
     schema.addColumn("int", DataType.INT);
@@ -85,13 +77,9 @@ public class TestStorageManager {
     meta.setSchema(schema);
     meta.setStorageType(StoreType.CSV);
     
-    FSDataOutputStream out = fs.create(new Path(TEST_PATH, ".meta"));
-    FileUtil.writeProto(out, meta.getProto());
-    out.flush();
-    out.close();
+    sm.initTableBase(meta, "table2");
+    Appender appender = sm.getAppender(meta, "table2", System.currentTimeMillis()+"");
     
-    Path path = new Path(TEST_PATH);    
-    Appender appender = sm.getAppender(meta, path);
     int tupleNum = 10000;
     VTuple vTuple = null;
     for(int i = 0; i < tupleNum; i++) {
@@ -102,22 +90,22 @@ public class TestStorageManager {
     }
     appender.close();
 
-    FileStatus status = fs.getFileStatus(new Path(path, "data/table1.csv"));
+    FileStatus status = sm.listTableFiles("table2")[0];
     long fileLen = status.getLen();   // 88894
     long randomNum = (long) (Math.random() * fileLen) + 1;
     
     Tablet[] tablets = new Tablet[1];
-    Tablet tablet = new Tablet(path, "table1.csv", 0, randomNum);
-    tablets[0] = tablet;    
+    Tablet tablet = new Tablet(status.getPath(), 0, randomNum);
+    tablets[0] = tablet;
     
-    FileScanner fileScanner = sm.getScanner(meta, tablets);
+    Scanner fileScanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;
     while((vTuple = (VTuple) fileScanner.next()) != null) {
       tupleCnt++;
     }
     fileScanner.close();
     
-    tablet = new Tablet(path, "table1.csv", randomNum, fileLen - randomNum);
+    tablet = new Tablet(status.getPath(), randomNum, fileLen - randomNum);
     tablets[0] = tablet;
     fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
     while((vTuple = (VTuple) fileScanner.next()) != null) {

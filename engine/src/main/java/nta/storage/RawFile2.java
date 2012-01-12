@@ -1,5 +1,6 @@
 package nta.storage;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -9,46 +10,46 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import nta.catalog.Column;
+import nta.catalog.Options;
 import nta.catalog.Schema;
-import nta.conf.NtaConf;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Tablet;
-import nta.storage.exception.ReadOnlyException;
+import nta.storage.exception.AlreadyExistsStorageException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-public class RawFile2 {
+public class RawFile2 extends Storage {
 	
 	public static final Log LOG = LogFactory.getLog(RawFile2.class);
 	
-	private RawFile2() {
-		
+	public RawFile2(Configuration conf) {
+		super(conf);
 	}
-	
-	public static RawFileScanner getScanner(NtaConf conf, final Schema schema, final Tablet[] tablets) throws IOException {
-		return new RawFileScanner(conf, schema, tablets);
-	}
-	
-	public static RawFileAppender getAppender(NtaConf conf, final Path path, final Schema schema) throws IOException {
-		return new RawFileAppender(conf, path, schema); 
-	}
+
+  @Override
+  public Appender getAppender(Schema schema, Path path)
+      throws IOException {
+    return new RawFileAppender(conf, schema, path);
+  }
+
+  @Override
+  public Scanner openScanner(Schema schema, Tablet[] tablets)
+      throws IOException {
+    return new RawFileScanner(conf, schema, tablets);
+  }
 
 	private static final int SYNC_ESCAPE = -1;
 	private static final int SYNC_HASH_SIZE = 16;
 	private static final int SYNC_SIZE = 4 + SYNC_HASH_SIZE;
 	public static int SYNC_INTERVAL;
 	
-	public static class RawFileScanner implements FileScanner {
-		
-		private Configuration conf;
-		private Schema schema;
+	public static class RawFileScanner extends FileScanner {
 		private FSDataInputStream in;
 		private SortedSet<Tablet> tabletSet;
 		private Iterator<Tablet> tableIter;
@@ -61,13 +62,22 @@ public class RawFile2 {
 		private long lastSyncPos;
 		private long headerPos;
 		
-		public RawFileScanner(Configuration conf, final Schema schema, final Tablet[] tablets) throws IOException {
-			init(conf, schema, tablets);
+		private Options option;
+		
+		public RawFileScanner(Configuration conf, final Schema schema, 
+		    final Tablet[] tablets) throws IOException {
+			super(conf, schema, tablets);
+		  init();
 		}
 		
-		public void init(Configuration conf, final Schema schema, final Tablet[] tablets) throws IOException {
-			this.conf = conf;
-			this.schema = schema;
+		public RawFileScanner(Configuration conf, final Schema schema, 
+		    final Tablet[] tablets, Options option) throws IOException {
+		  super(conf, schema, tablets);
+		  this.option = option;
+		  init();
+		}
+		
+		private void init() throws IOException {
 			this.tabletSet = new TreeSet<Tablet>();
 			this.sync = new byte[SYNC_HASH_SIZE];
 			this.checkSync = new byte[SYNC_HASH_SIZE];
@@ -228,48 +238,42 @@ public class RawFile2 {
 		}		
 	}
 	
-	public static class RawFileAppender implements Appender {
-		
-		private Configuration conf;
+	public static class RawFileAppender extends FileAppender {
 		private FSDataOutputStream out;
 		private long lastSyncPos;
-		private Path path;
-		private Schema schema;
 		private FileSystem fs;
 		private byte[] sync;
 		
-		public RawFileAppender(Configuration conf, final Path path, final Schema schema) throws IOException {
-			this.conf = conf;
-			SYNC_INTERVAL = conf.getInt(NConstants.RAWFILE_SYNC_INTERVAL, SYNC_SIZE*100);
-			this.schema = schema;
-			this.path = new Path(path, "data");
+		public RawFileAppender(Configuration conf, final Schema schema, 
+		    final Path path) throws IOException {
+		  super(conf, schema, path);			
+      
 			fs = path.getFileSystem(conf);
-			if (!fs.exists(path)) {
-				fs.mkdirs(path);
-			}
-			sync = new byte[SYNC_HASH_SIZE];
-			lastSyncPos = 0;
-			init();
-		}
-		
-		private void init() throws IOException {
-			MessageDigest md;
-			try {
-				md = MessageDigest.getInstance("MD5");
-				md.update((path.toString()+System.currentTimeMillis()).getBytes());
-				sync = md.digest();
-			} catch (NoSuchAlgorithmException e) {
-				LOG.error(e);
-			}
-			Path tablePath = null;
-			for (int i = 0; ; i++) {
-				tablePath = new Path(path, "table"+i+".raw");
-				if (!fs.exists(tablePath)) {
-					out = fs.create(tablePath);
-					break;
-				}
-			}
-			writeHeader();
+			
+			if (!fs.exists(path.getParent())) {
+        throw new FileNotFoundException(path.toString());
+      }
+      
+      if (fs.exists(path)) {
+        throw new AlreadyExistsStorageException(path);
+      }
+      
+      SYNC_INTERVAL = conf.getInt(NConstants.RAWFILE_SYNC_INTERVAL, SYNC_SIZE*100);     
+      sync = new byte[SYNC_HASH_SIZE];
+      lastSyncPos = 0;
+			
+      out = fs.create(path);
+			
+      MessageDigest md;
+      try {
+        md = MessageDigest.getInstance("MD5");
+        md.update((path.toString()+System.currentTimeMillis()).getBytes());
+        sync = md.digest();
+      } catch (NoSuchAlgorithmException e) {
+        LOG.error(e);
+      }
+      
+      writeHeader();
 		}
 		
 		private void writeHeader() throws IOException {
