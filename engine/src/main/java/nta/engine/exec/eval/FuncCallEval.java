@@ -13,14 +13,16 @@ import nta.storage.Tuple;
  *
  */
 public class FuncCallEval extends EvalNode {
-	Function instance;
+	private Function instance;
+	private EvalNode [] givenArgs;
 
 	/**
 	 * @param type
 	 */
-	public FuncCallEval(Function instance) {
+	public FuncCallEval(Function instance, EvalNode [] givenArgs) {
 		super(Type.FUNCTION);
 		this.instance = instance;
+		this.givenArgs = givenArgs;
 	}
 	
 	public DataType getValueType() {
@@ -31,15 +33,14 @@ public class FuncCallEval extends EvalNode {
 	 * @see nta.query.executor.eval.Expr#evalVal(nta.storage.Tuple)
 	 */
 	@Override
-	public Datum eval(Tuple tuple, Datum...args) {
-		EvalNode [] param = instance.getGivenArgs();
+	public Datum eval(Tuple tuple, Datum...args) {		
 		Datum [] data = null;
 		
-		if(param != null) {
-			data = new Datum[param.length];
+		if(givenArgs != null) {
+			data = new Datum[givenArgs.length];
 
-			for(int i=0;i < param.length; i++) {
-				data[i] = param[i].eval(tuple);
+			for(int i=0;i < givenArgs.length; i++) {
+				data[i] = givenArgs[i].eval(tuple);
 			}
 		}
 
@@ -53,11 +54,9 @@ public class FuncCallEval extends EvalNode {
 	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		boolean first = true;
-		EvalNode e = null;
-		for(int i=0; i < instance.getGivenArgs().length; i++) {
-			sb.append(instance.getGivenArgs()[i]);
-			if(i+1 < instance.getGivenArgs().length)
+		for(int i=0; i < givenArgs.length; i++) {
+			sb.append(givenArgs[i]);
+			if(i+1 < givenArgs.length)
 				sb.append(",");
 		}
 		return instance.getSignature()+"("+sb+")";

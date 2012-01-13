@@ -84,12 +84,12 @@ public class TestLeafServer {
 
     SubQueryRequest req = new SubQueryRequestImpl(new ArrayList<Tablet>(
         Arrays.asList(tablets1)), new Path(TEST_PATH, "out").toUri(),
-        "select * from test where id > 5100", "test");
+        "select * from test where id > 5100 and id < 6000", "test");
     leaf1.requestSubQuery(req);
 
     SubQueryRequest req2 = new SubQueryRequestImpl(new ArrayList<Tablet>(
         Arrays.asList(tablets2)), new Path(TEST_PATH, "out").toUri(),
-        "select * from test where id > 5100", "test");
+        "select * from test where id > 5100 and id < 6000", "test");
     leaf2.requestSubQuery(req2);
 
     leaf1.shutdown("Normally Shutdown");

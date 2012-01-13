@@ -33,6 +33,7 @@ import org.junit.Test;
  * @author Hyunsik Choi
  *
  */
+@Deprecated
 public class TestQueryStmt {
 	NtaConf conf;
 	Catalog cat = null;

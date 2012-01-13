@@ -42,16 +42,13 @@ public class FunctionDesc {
   
   /**
    * 
-   * 
-   * @param givenArgs 질의에서 주어진 함수의 파라메터
-   * @return
+   * @return 함수 인스턴스
    * @throws InternalException
    */
-  public Function newInstance(EvalNode [] givenArgs) throws InternalException {
+  public Function newInstance() throws InternalException {
     try {
       Constructor<? extends Function> cons = funcClass.getConstructor();
       Function f = (Function) cons.newInstance();
-      f.setGivenArgs(givenArgs);
       return f;
     } catch (Exception ioe) {
       throw new InternalException("Cannot initiate function " + signature);

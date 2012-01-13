@@ -27,14 +27,6 @@ public abstract class Function {
 	  return signature;
 	}
 	
-	public final void setGivenArgs(EvalNode [] givenArgs) {
-	  this.givenArgs = givenArgs;
-	}
-	
-	public final EvalNode [] getGivenArgs() {
-		return this.givenArgs;
-	}
-	
 	public abstract Datum invoke(Datum ... datums);
 	public abstract DataType getResType();
 	

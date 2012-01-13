@@ -30,7 +30,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
+ * 이 테스트는 NQLCompiler라 정확한 QueryBlock을 생성해 내는지 테스트한다.
+ * 
  * @author Hyunsik Choi
+ * 
+ * @see QueryBlock
  */
 public class TestNQLCompiler {
 
@@ -43,13 +47,17 @@ public class TestNQLCompiler {
   public void tearDown() throws Exception {
   }
 
-  private String[] QUERIES = { "select id, name, age, gender from people",
+  private String[] QUERIES = { 
+      "select id, name, age, gender from people",
       "select name, score, age from people where score > 30",
-      "select name, score, age from people where 3 + 5 * 3", };
+      "select name, score, age from people where 3 + 5 * 3", 
+      "select age, sum(score) as total from test group by age having sum(score) > 30" // 3
+  };
 
   private String[] EXPRS = { "3 + 5 * 3" };
 
-  public final void testLegacy() throws RecognitionException, 
+  // It's for benchmark of the evaluation tree methods.
+  public final void testLegacyEvalTree() throws RecognitionException, 
       NTAQueryException {
     NQLParser p = parseExpr(EXPRS[0]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
@@ -92,7 +100,7 @@ public class TestNQLCompiler {
     return parser;
   }
 
-  public final void test() throws NQLSyntaxException, InternalException {
+  public final void testNewEvalTree() throws NQLSyntaxException, InternalException {
     QueryBlock block = NQLCompiler.parse(QUERIES[0]);
 
     assertEquals(1, block.getNumFromTables());
@@ -153,11 +161,11 @@ public class TestNQLCompiler {
 
     assertEquals(18, expr.eval(tuple).asInt());
   }
-
-  /*
-  public void testGroupByClause() throws NTAQueryException {
-    Query stmt = null;
-    stmt = nql.parse(queries[4]);
-    System.out.println(stmt);
-  }*/
+  
+  @Test
+  public final void testGroupByClause() throws NQLSyntaxException {
+    QueryBlock block = NQLCompiler.parse(QUERIES[3]);
+    assertEquals("age", block.getGroupFields()[0]);    
+    assertEquals("total", block.getTargetList()[1].getAlias());
+  }
 }
