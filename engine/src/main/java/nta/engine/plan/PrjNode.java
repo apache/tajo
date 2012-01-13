@@ -6,7 +6,7 @@ package nta.engine.plan;
 import java.util.ArrayList;
 import java.util.List;
 
-import nta.engine.executor.eval.Expr;
+import nta.engine.exec.eval.EvalNode;
 
 /**
  * @author Hyunsik Choi
@@ -14,7 +14,7 @@ import nta.engine.executor.eval.Expr;
  */
 public class PrjNode extends PlanNode {
 	boolean asterik = false;
-	List<Expr> selList = new ArrayList<Expr>();
+	List<EvalNode> selList = new ArrayList<EvalNode>();
 
 	public PrjNode() {
 		super(NodeType.Project);
@@ -24,11 +24,11 @@ public class PrjNode extends PlanNode {
 		this.asterik = true;
 	}
 	
-	public void addExpr(Expr e) {
+	public void addExpr(EvalNode e) {
 		selList.add(e);
 	}
 	
-	public List<Expr> getSelList() {
+	public List<EvalNode> getSelList() {
 		return this.selList;
 	}
 }

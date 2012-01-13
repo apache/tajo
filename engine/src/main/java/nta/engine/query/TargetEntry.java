@@ -1,9 +1,9 @@
 package nta.engine.query;
 
-import nta.engine.executor.eval.Expr;
+import nta.engine.exec.eval.EvalNode;
 
 public class TargetEntry {
-	public Expr expr;
+	public EvalNode expr;
 	public int resId = -1;
 	public String qualifier;
 	public String colName;

@@ -21,8 +21,8 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.DatumType;
 import nta.engine.exception.NTAQueryException;
-import nta.engine.executor.eval.Expr;
-import nta.engine.executor.eval.ExprType;
+import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.parser.NQL.Query;
 import nta.storage.CSVFile2;
 
@@ -104,7 +104,7 @@ public class TestQueryStmt {
 		
 		stmt = nql.parse(queries[3]);
 		assertTrue(stmt.hasWhereClause);
-		assertEquals(stmt.whereCond.getType(), ExprType.GTH);
+		assertEquals(stmt.whereCond.getType(), Type.GTH);
 		System.out.println(stmt);
 	}
 	
@@ -116,23 +116,16 @@ public class TestQueryStmt {
 	}
 	
 	@Test
-	public void testGroupByClause() throws NTAQueryException {
-		Query stmt = null;
-		stmt = nql.parse(queries[4]);
-		System.out.println(stmt);
-	}
-	
-	@Test
 	public void testbuildExpr() throws NTAQueryException {
 		Query stmt = null;
 		stmt = nql.parse(queries[0]);
 		assertEquals(stmt.getTargetList().length,1);
-		Expr expr = stmt.getTargetList()[0].expr;
-		assertEquals(expr.getType(), ExprType.PLUS);
-		assertEquals(expr.getLeftExpr().getType(), ExprType.CONST);
+		EvalNode expr = stmt.getTargetList()[0].expr;
+		assertEquals(expr.getType(), Type.PLUS);
+		assertEquals(expr.getLeftExpr().getType(), Type.CONST);
 		assertEquals(expr.getLeftExpr().eval(null).type(), DatumType.INT);
 		assertEquals(expr.getLeftExpr().eval(null).asInt(), 2);
-		assertEquals(expr.getRightExpr().getType(), ExprType.CONST);
+		assertEquals(expr.getRightExpr().getType(), Type.CONST);
 		assertEquals(expr.getRightExpr().eval(null).type(), DatumType.INT);
 		assertEquals(expr.getRightExpr().eval(null).asInt(), 3);		
 	}

@@ -7,7 +7,7 @@ import java.io.IOException;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
-import nta.engine.executor.eval.Expr;
+import nta.engine.exec.eval.EvalNode;
 import nta.engine.query.TargetEntry;
 import nta.storage.Scanner;
 import nta.storage.Tuple;
@@ -19,7 +19,7 @@ import nta.storage.VTuple;
  */
 public class SeqScanOp extends PhysicalOp {
 	Scanner scanner = null;
-	Expr qual = null;	
+	EvalNode qual = null;	
 	boolean hasRead = true;	
 	boolean nextAvail = false;	
 	Schema schema = null;
@@ -54,7 +54,7 @@ public class SeqScanOp extends PhysicalOp {
 		Column field = null;
 
 		if(tlist != null) {
-			Expr expr;
+			EvalNode expr;
 			int resId;
 			for(int i=0; i < tlist.length; i++) {
 				expr = tlist[i].expr;
@@ -86,7 +86,7 @@ public class SeqScanOp extends PhysicalOp {
 		}
 	}
 
-	public void setQual(Expr qual) {
+	public void setQual(EvalNode qual) {
 		this.qual = qual;
 	}
 

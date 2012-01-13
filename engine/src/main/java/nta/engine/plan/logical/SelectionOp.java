@@ -1,20 +1,20 @@
 package nta.engine.plan.logical;
 
-import nta.engine.executor.eval.Expr;
+import nta.engine.exec.eval.EvalNode;
 
 public class SelectionOp extends UnaryOp {
 
-	private Expr qual;
+	private EvalNode qual;
 	
 	public SelectionOp() {
 		super(OpType.SELECTION);
 	}
 
-	public Expr getQual() {
+	public EvalNode getQual() {
 		return this.qual;
 	}
 
-	public void setQual(Expr value) {
+	public void setQual(EvalNode value) {
 		this.qual = value;
 	}
 }

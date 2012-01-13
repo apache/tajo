@@ -1,4 +1,4 @@
-package nta.engine.executor.eval;
+package nta.engine.exec.eval;
 
 import java.util.List;
 
@@ -7,22 +7,22 @@ import nta.datum.Datum;
 import nta.engine.function.Function;
 import nta.storage.Tuple;
 
-public class AggFuncExpr extends IncExpr {
+public class AggFuncEval extends EvalNode {
 	String funcName;
 	Function function;
-	List<Expr> paras = null;
+	EvalNode [] paras = null;
 
-	public AggFuncExpr(String funcName, Function instance) {
-		super(ExprType.FUNCTION);
+	public AggFuncEval(String funcName, Function instance) {
+		super(Type.FUNCTION);
 		this.funcName = funcName;
 		this.function = instance;
 	}
-	public AggFuncExpr(String funcName, Function instance, List<Expr> paras) {
+	public AggFuncEval(String funcName, Function instance, EvalNode [] paras) {
 		this(funcName, instance);
 		this.setParas(paras);
 	}
 	
-	public void setParas(List<Expr> paras) {
+	public void setParas(EvalNode [] paras) {
 		this.paras = paras;
 	}
 	
@@ -31,32 +31,26 @@ public class AggFuncExpr extends IncExpr {
 	}
 
 	@Override
-	public Datum eval(Datum cur, Tuple tuple) {
-		Datum data = null;
+	public Datum eval(Tuple tuple, Datum...args) {
+		Datum [] params = null;				
 		
 		if(paras != null) {
-
-			for(int i=0;i < paras.size(); i++) {
-				data = function.invoke(paras.get(i).eval(tuple));
+		  params = new Datum[args.length];
+			for(int i=0;i < paras.length; i++) {
+				params[i] = paras[i].eval(tuple);
 			}
 		}
-
-		return data;
+		
+		return function.invoke(params);
 	}
 
 	@Override
 	public String getName() {
 		return funcName;
 	}
-
-	@Override
-	public Datum eval(Tuple tuple) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	
 	@Override
 	public DataType getValueType() {
 		return DataType.ANY;
 	}
-
 }

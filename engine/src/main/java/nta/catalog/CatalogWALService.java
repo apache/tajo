@@ -14,7 +14,7 @@ interface CatalogWALService {
 	
 	public void appendDelTable(String name) throws IOException;
 	
-	public void appendAddFunction(FunctionMeta meta) throws IOException;
+	public void appendAddFunction(FunctionDesc meta) throws IOException;
 	
 	public void appendDelFunction(String name) throws IOException;
 }

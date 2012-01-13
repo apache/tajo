@@ -1,5 +1,6 @@
-package nta.engine.executor.eval;
+package nta.engine.exec.eval;
 
+import nta.catalog.Column;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
@@ -10,21 +11,30 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  * 
  */
-public class FieldExpr extends Expr {
-	DataType type;
+public class FieldEval extends EvalNode {
+	DataType dataType;
 	public int tableId;
 	public int fieldId;
+	public String columnName;
 	
-	public FieldExpr(DataType type, int tableId, int fieldId) {
-		super(ExprType.FIELD);
-		this.type = type;
+	public FieldEval(DataType type, int tableId, int fieldId, String columnName) {
+		super(Type.FIELD);
+		this.dataType = type;
 		this.tableId = tableId;
 		this.fieldId = fieldId;
 	}
+	
+	public FieldEval(int tableId, Column col) {
+	  super(Type.FIELD);
+	  this.dataType = col.getDataType();
+	  this.tableId = tableId;
+	  this.fieldId = col.getId();
+	  this.columnName = col.getName();
+	}
 
 	@Override
-	public Datum eval(Tuple tuple) {	
-		switch(type) {
+	public Datum eval(Tuple tuple, Datum...args) {	
+		switch(dataType) {
 		case INT: return DatumFactory.create(tuple.getInt(fieldId));
 		case LONG: return DatumFactory.create(tuple.getLong(fieldId));
 		case FLOAT: return DatumFactory.create(tuple.getFloat(fieldId));
@@ -35,15 +45,15 @@ public class FieldExpr extends Expr {
 	
 	@Override
 	public DataType getValueType() {
-		return type;
+		return dataType;
 	}
 
 	@Override
 	public String getName() {		
-		return "fieldName";
+		return columnName;
 	}
 	
 	public String toString() {
-		return "FIELD("+tableId+","+fieldId+")";
+		return "FIELD("+fieldId+")";
 	}
 }

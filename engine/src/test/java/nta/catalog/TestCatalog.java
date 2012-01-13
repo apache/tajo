@@ -17,11 +17,9 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
+import nta.datum.IntDatum;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NtaTestingUtility;
-import nta.engine.executor.eval.Expr;
-import nta.engine.executor.eval.FieldExpr;
-import nta.engine.function.FuncType;
 import nta.engine.function.Function;
 import nta.storage.CSVFile2;
 import nta.storage.StorageManager;
@@ -157,9 +155,6 @@ public class TestCatalog {
 			super(					
 					new Column [] {
 							new Column(1, "name", DataType.INT)
-					},
-					new Expr [] {
-							new FieldExpr(DataType.INT, 0, 0)	
 					}
 			);
 		}
@@ -178,19 +173,21 @@ public class TestCatalog {
 	@Test
 	public final void testRegisterFunc() {		
 		assertFalse(cat.containFunction("test"));
-		FunctionMeta meta = new FunctionMeta("test", TestFunc1.class, FuncType.GENERAL);
+		FunctionDesc meta = new FunctionDesc("test", TestFunc1.class, 
+		    Function.Type.GENERAL, DataType.INT, new Class [] {IntDatum.class});
 		cat.registerFunction(meta);
 		assertTrue(cat.containFunction("test"));
-		FunctionMeta retrived = cat.getFunctionMeta("test");
+		FunctionDesc retrived = cat.getFunctionMeta("test");
 		assertEquals(retrived.getName(),"test");
-		assertEquals(retrived.getFunctionClass(),TestFunc1.class);
-		assertEquals(retrived.getType(),FuncType.GENERAL);
+		assertEquals(retrived.getFuncClass(),TestFunc1.class);
+		assertEquals(retrived.getType(),Function.Type.GENERAL);
 	}
 
 	@Test
 	public final void testUnregisterFunc() {
 		assertFalse(cat.containFunction("test"));
-		FunctionMeta meta = new FunctionMeta("test", TestFunc1.class, FuncType.GENERAL);
+		FunctionDesc meta = new FunctionDesc("test", TestFunc1.class, 
+        Function.Type.GENERAL, DataType.INT, new Class [] {IntDatum.class});
 		cat.registerFunction(meta);
 		assertTrue(cat.containFunction("test"));
 		cat.unregisterFunction("test");
