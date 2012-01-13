@@ -6,7 +6,7 @@ package nta.engine.exec;
 import java.io.IOException;
 
 import nta.catalog.Schema;
-import nta.engine.executor.eval.Expr;
+import nta.engine.exec.eval.EvalNode;
 import nta.engine.query.TargetEntry;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -17,7 +17,7 @@ import nta.storage.VTuple;
  */
 public class SelOp extends PhysicalOp {
 	private PhysicalOp inner = null;
-	private Expr qual = null;
+	private EvalNode qual = null;
 	private Tuple tuple = null;
 	private Schema schema = null;
 	private TargetEntry [] tlist = null;
@@ -25,7 +25,7 @@ public class SelOp extends PhysicalOp {
 	/**
 	 * 
 	 */
-	public SelOp(PhysicalOp inner, Expr qual) {
+	public SelOp(PhysicalOp inner, EvalNode qual) {
 		this.inner = inner;
 		this.qual = qual;
 		this.schema = inner.getSchema();
@@ -35,7 +35,7 @@ public class SelOp extends PhysicalOp {
 		return tuple;
 	}
 
-	public void setQual(Expr qual) {
+	public void setQual(EvalNode qual) {
 		this.qual = qual;
 	}
 

@@ -16,11 +16,10 @@ import java.util.TreeSet;
 import nta.catalog.Catalog;
 import nta.catalog.TabletServInfo;
 import nta.engine.exec.SeqScanOp;
-import nta.engine.executor.eval.ConstExpr;
-import nta.engine.executor.eval.Expr;
-import nta.engine.executor.eval.ExprType;
-import nta.engine.executor.eval.FieldExpr;
-import nta.engine.executor.eval.FuncExpr;
+import nta.engine.exec.eval.ConstEval;
+import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.FieldEval;
+import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.parser.NQL;
 import nta.engine.parser.RelInfo;
@@ -321,11 +320,11 @@ public class GlobalQueryPlanner {
 		return strQuery;
 	}
 	
-	private String exprToString(Expr expr) {
+	private String exprToString(EvalNode expr) {
 		String str = "";
-		ArrayList<Expr> s = new ArrayList<Expr>();
-		HashSet<Expr> hs = new HashSet<Expr>();
-		Expr e;
+		ArrayList<EvalNode> s = new ArrayList<EvalNode>();
+		HashSet<EvalNode> hs = new HashSet<EvalNode>();
+		EvalNode e;
 		s.add(expr);
 		
 		while (!s.isEmpty()) {
@@ -355,15 +354,15 @@ public class GlobalQueryPlanner {
 		return str;
 	}
 	
-	private String getStringOfExpr(Expr expr) {
+	private String getStringOfExpr(EvalNode expr) {
 		String ret = null;
 		switch (expr.getType()) {
 		case FIELD:
-			FieldExpr field = (FieldExpr) expr;
+			FieldEval field = (FieldEval) expr;
 			ret = field.getName();
 			break;
 		case FUNCTION:
-			FuncExpr func = (FuncExpr) expr;
+			FuncCallEval func = (FuncCallEval) expr;
 			ret = func.getName();
 			break;
 		case AND:
@@ -373,7 +372,7 @@ public class GlobalQueryPlanner {
 			ret = "OR";
 			break;
 		case CONST:
-			ConstExpr con = (ConstExpr) expr;
+			ConstEval con = (ConstEval) expr;
 			ret = con.toString();
 			break;
 		case PLUS:

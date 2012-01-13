@@ -1,9 +1,7 @@
 /**
  * 
  */
-package nta.engine.executor.eval;
-
-import java.util.List;
+package nta.engine.exec.eval;
 
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
@@ -14,16 +12,14 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  *
  */
-public class FuncExpr extends Expr {
-	String funcName;
+public class FuncCallEval extends EvalNode {
 	Function instance;
 
 	/**
 	 * @param type
 	 */
-	public FuncExpr(String funcName, Function instance) {
-		super(ExprType.FUNCTION);
-		this.funcName = funcName;
+	public FuncCallEval(Function instance) {
+		super(Type.FUNCTION);
 		this.instance = instance;
 	}
 	
@@ -35,8 +31,8 @@ public class FuncExpr extends Expr {
 	 * @see nta.query.executor.eval.Expr#evalVal(nta.storage.Tuple)
 	 */
 	@Override
-	public Datum eval(Tuple tuple) {
-		Expr [] param = instance.getParams();
+	public Datum eval(Tuple tuple, Datum...args) {
+		EvalNode [] param = instance.getGivenArgs();
 		Datum [] data = null;
 		
 		if(param != null) {
@@ -52,18 +48,18 @@ public class FuncExpr extends Expr {
 
 	@Override
 	public String getName() {		
-		return funcName;
+		return instance.getSignature();
 	}
 	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
-		Expr e = null;
-		for(int i=0; i < instance.getParams().length; i++) {
-			sb.append(instance.getParams()[i]);
-			if(i+1 < instance.getParams().length)
+		EvalNode e = null;
+		for(int i=0; i < instance.getGivenArgs().length; i++) {
+			sb.append(instance.getGivenArgs()[i]);
+			if(i+1 < instance.getGivenArgs().length)
 				sb.append(",");
 		}
-		return funcName+"("+sb+")";
+		return instance.getSignature()+"("+sb+")";
 	}
 }

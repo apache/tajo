@@ -14,27 +14,24 @@ import nta.catalog.Catalog;
 import nta.catalog.Column;
 import nta.catalog.ColumnBase;
 import nta.catalog.FieldName;
-import nta.catalog.FunctionMeta;
+import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
 import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.exception.AmbiguousFieldException;
-import nta.engine.exception.InvalidFunctionException;
 import nta.engine.exception.InvalidQueryException;
 import nta.engine.exception.NQLSyntaxException;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exception.UnknownFunctionException;
-import nta.engine.executor.eval.BinaryExpr;
-import nta.engine.executor.eval.ConstExpr;
-import nta.engine.executor.eval.Expr;
-import nta.engine.executor.eval.ExprType;
-import nta.engine.executor.eval.FieldExpr;
-import nta.engine.executor.eval.FuncExpr;
-import nta.engine.function.Function;
+import nta.engine.exec.eval.BinaryEval;
+import nta.engine.exec.eval.ConstEval;
+import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.EvalNode.Type;
+import nta.engine.exec.eval.FieldEval;
+import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.query.TargetEntry;
 
 import org.antlr.runtime.ANTLRStringStream;
@@ -234,12 +231,14 @@ public class NQL {
 		}		
 	}
 		
-	private TargetEntry makeTargetEntry(Query stmt, Tree node, int resNum) throws NoSuchTableException {
+	private TargetEntry makeTargetEntry(Query stmt, Tree node, int resNum) 
+	    throws NoSuchTableException {
 		TargetEntry entry  = new TargetEntry();
 		
-		Expr expr = buildExpr(stmt, node);
+		EvalNode expr = buildExpr(stmt, node);
 				
-		if(stmt.getBaseRels().size() == 0 ||expr.getType() == ExprType.FUNCTION) {			
+		if(stmt.getBaseRels().size() == 0 ||expr.getType() == 
+		    Type.FUNCTION) {			
 			entry.relId = -1;
 			entry.resId = resNum;
 			entry.expr = expr;
@@ -250,7 +249,7 @@ public class NQL {
 				node = node.getChild(0);
 			
 			FieldName fieldName = new FieldName(node);
-			FieldExpr field = (FieldExpr) expr;
+			FieldEval field = (FieldEval) expr;
 			entry.relId = field.tableId;
 			entry.colId = field.fieldId;			
 			entry.resId = resNum;
@@ -290,47 +289,47 @@ public class NQL {
 		return ast;
 	}	
 	
-	public Expr buildExpr(Query stmt, Tree tree) throws NoSuchTableException {
+	public EvalNode buildExpr(Query stmt, Tree tree) throws NoSuchTableException {
 		switch(tree.getType()) {
 				
 		case NQLParser.DIGIT:
-			return new ConstExpr(DatumFactory.create(Integer.valueOf(tree.getText())));
+			return new ConstEval(DatumFactory.create(Integer.valueOf(tree.getText())));
 		
 		case NQLParser.AND:
-			return new BinaryExpr(ExprType.AND, buildExpr(stmt, tree.getChild(0)), 
+			return new BinaryEval(Type.AND, buildExpr(stmt, tree.getChild(0)), 
 					buildExpr(stmt,tree.getChild(1)));
 		case NQLParser.OR:
-			return new BinaryExpr(ExprType.OR, buildExpr(stmt, tree.getChild(0)), 
+			return new BinaryEval(Type.OR, buildExpr(stmt, tree.getChild(0)), 
 					buildExpr(stmt,tree.getChild(1)));
 			
 		case NQLParser.EQUAL:
-			return new BinaryExpr(ExprType.EQUAL, buildExpr(stmt, tree.getChild(0)), 
+			return new BinaryEval(Type.EQUAL, buildExpr(stmt, tree.getChild(0)), 
 					buildExpr(stmt,tree.getChild(1)));
 		case NQLParser.LTH: 
-			return new BinaryExpr(ExprType.LTH, buildExpr(stmt, tree.getChild(0)), 
+			return new BinaryEval(Type.LTH, buildExpr(stmt, tree.getChild(0)), 
 					buildExpr(stmt,tree.getChild(1)));
 		case NQLParser.LEQ: 
-			return new BinaryExpr(ExprType.LEQ, buildExpr(stmt, tree.getChild(0)), 
+			return new BinaryEval(Type.LEQ, buildExpr(stmt, tree.getChild(0)), 
 					buildExpr(stmt,tree.getChild(1)));
 		case NQLParser.GTH: 
-			return new BinaryExpr(ExprType.GTH, buildExpr(stmt, tree.getChild(0)), 
+			return new BinaryEval(Type.GTH, buildExpr(stmt, tree.getChild(0)), 
 					buildExpr(stmt,tree.getChild(1)));
 		case NQLParser.GEQ: 
-			return new BinaryExpr(ExprType.GEQ, buildExpr(stmt, tree.getChild(0)), 
+			return new BinaryEval(Type.GEQ, buildExpr(stmt, tree.getChild(0)), 
 					buildExpr(stmt,tree.getChild(1)));
 		
 			
 		case NQLParser.PLUS: 
-			return new BinaryExpr(ExprType.PLUS, buildExpr(stmt, tree.getChild(0)), 
+			return new BinaryEval(Type.PLUS, buildExpr(stmt, tree.getChild(0)), 
 					buildExpr(stmt,tree.getChild(1)));
 		case NQLParser.MINUS: 
-			return new BinaryExpr(ExprType.PLUS, buildExpr(stmt, tree.getChild(0)), 
+			return new BinaryEval(Type.PLUS, buildExpr(stmt, tree.getChild(0)), 
 					buildExpr(stmt,tree.getChild(1)));
 		case NQLParser.MULTIPLY: 
-			return new BinaryExpr(ExprType.PLUS, buildExpr(stmt, tree.getChild(0)), 
+			return new BinaryEval(Type.PLUS, buildExpr(stmt, tree.getChild(0)), 
 					buildExpr(stmt,tree.getChild(1)));
 		case NQLParser.DIVIDE: 
-			return new BinaryExpr(ExprType.PLUS, buildExpr(stmt, tree.getChild(0)), 
+			return new BinaryEval(Type.PLUS, buildExpr(stmt, tree.getChild(0)), 
 					buildExpr(stmt,tree.getChild(1)));
 			
 		case NQLParser.COLUMN:
@@ -358,28 +357,28 @@ public class NQL {
 			if(field == null)
 				throw new InvalidQueryException("No such field: "+fieldName.getName());
 			else {					
-				return new FieldExpr(field.getDataType(), rel.getId(), field.getId());
+				return new FieldEval(rel.getId(), field);
 			}			
 		case NQLParser.FUNCTION:
 			String funcName = tree.getText();
-			FunctionMeta func = cat.getFunctionMeta(funcName);
+			FunctionDesc func = cat.getFunctionMeta(funcName);
 			if(func == null) {
 				throw new UnknownFunctionException(funcName);
 			}
 			
-			Function fn = null;
-			try {
-				if(tree.getChildCount() == 0) {
-					fn = func.newInstance(new Column [] {}, new Expr [] {});
-				} else {
-					Expr [] params = makeColumnList(stmt, tree);
-					ColumnBase [] paramInfo = exprsToFields(stmt, params);
-					fn = func.newInstance(paramInfo, params);	
-				}
-				return new FuncExpr(funcName, fn);
-			} catch (Exception e) {
-				throw new InvalidFunctionException(funcName);
-			}
+//			Function fn = null;
+//			try {
+//				if(tree.getChildCount() == 0) {
+//					fn = func.newInstance(new EvalNode [] {});
+//				} else {
+//					EvalNode [] params = makeColumnList(stmt, tree);
+//					ColumnBase [] paramInfo = exprsToFields(stmt, params);
+//					fn = func.newInstance(paramInfo, params);	
+//				}
+//				return new FuncCallEval(funcName, fn);
+//			} catch (Exception e) {
+//				throw new InvalidFunctionException(funcName);
+//			}
 			
 //			try {
 //				Field [] paramInfo = exprsToFields(func);
@@ -393,8 +392,8 @@ public class NQL {
 		return null;
 	}	
 	
-	public Expr [] makeColumnList(Query stmt, Tree ast) throws NoSuchTableException {
-		Expr [] exprs = new Expr[ast.getChildCount()];
+	public EvalNode [] makeColumnList(Query stmt, Tree ast) throws NoSuchTableException {
+		EvalNode [] exprs = new EvalNode[ast.getChildCount()];
 		for(int i=0; i < ast.getChildCount(); i++) {
 			exprs[i] = buildExpr(stmt, ast.getChild(i));
 		}
@@ -402,23 +401,23 @@ public class NQL {
 		return exprs;
 	}
 	
-	public ColumnBase [] exprsToFields(Query stmt, Expr [] cols) {
+	public ColumnBase [] exprsToFields(Query stmt, EvalNode [] cols) {
 		ColumnBase [] fields = new Column[cols.length];
 		
 		ColumnBase field = null;
 		for(int i=0; i < cols.length; i++) {
 			switch(cols[i].getType()) {
 			case FIELD:			
-				FieldExpr fieldExpr = (FieldExpr)cols[i];
+				FieldEval fieldExpr = (FieldEval)cols[i];
 				field = cat.getTableDesc(fieldExpr.tableId).getInfo().getSchema().
 					getColumn(fieldExpr.fieldId);
 				break;
 			case FUNCTION:
-				FuncExpr funcExpr = (FuncExpr)cols[i];
+				FuncCallEval funcExpr = (FuncCallEval)cols[i];
 				field = new ColumnBase(funcExpr.getName(),funcExpr.getValueType());
 				break;
 			case CONST:
-				ConstExpr constExpr = (ConstExpr)cols[i];
+				ConstEval constExpr = (ConstEval)cols[i];
 				field = new ColumnBase(constExpr.toString(),constExpr.getValueType());
 				break;
 			case PLUS:
@@ -480,7 +479,7 @@ public class NQL {
 		
 		// Where
 		boolean hasWhereClause = false;
-		Expr whereCond;
+		EvalNode whereCond;
 		
 		// Target List
 		int targetCount = 0;
@@ -491,7 +490,7 @@ public class NQL {
 		private boolean hasGroupbyClause = false;
 		List<TargetEntry> groupByCols = new ArrayList<TargetEntry>();
 		private boolean hasHavingClause = false;
-		Expr havingCond;	
+		EvalNode havingCond;	
 		
 		// Sort
 		int [] sortFields;
@@ -577,7 +576,7 @@ public class NQL {
 			return this.hasWhereClause;
 		}
 		
-		public Expr getWhereCond() {
+		public EvalNode getWhereCond() {
 			return this.whereCond;
 		}
 		

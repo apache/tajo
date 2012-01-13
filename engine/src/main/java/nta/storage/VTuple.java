@@ -43,7 +43,7 @@ public class VTuple implements Tuple {
 	
 	public void put(Object...values) {
 	  for(int i=0; i < values.length; i++) {
-	    values[i] = values[i];
+	    this.values[i] = values[i];
 	  }
 	}
 	

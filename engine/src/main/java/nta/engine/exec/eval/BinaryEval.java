@@ -1,7 +1,7 @@
 /**
  * 
  */
-package nta.engine.executor.eval;
+package nta.engine.exec.eval;
 
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
@@ -12,30 +12,30 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  *
  */
-public class BinaryExpr extends Expr {
+public class BinaryEval extends EvalNode {
 	DataType returnType;
 
 	/**
 	 * @param type
 	 */
-	public BinaryExpr(ExprType type, Expr left, Expr right) {
+	public BinaryEval(Type type, EvalNode left, EvalNode right) {
 		super(type, left, right);
 		
 		if(
-			type == ExprType.AND ||
-			type == ExprType.OR ||
-			type == ExprType.EQUAL ||
-			type == ExprType.LTH ||
-			type == ExprType.GTH ||
-			type == ExprType.LEQ ||
-			type == ExprType.GEQ
+			type == Type.AND ||
+			type == Type.OR ||
+			type == Type.EQUAL ||
+			type == Type.LTH ||
+			type == Type.GTH ||
+			type == Type.LEQ ||
+			type == Type.GEQ
 		) {
 			this.returnType = DataType.BOOLEAN;
 		} else if (
-			type == ExprType.PLUS ||
-			type == ExprType.MINUS ||
-			type == ExprType.MULTIPLY ||
-			type == ExprType.DIVIDE
+			type == Type.PLUS ||
+			type == Type.MINUS ||
+			type == Type.MULTIPLY ||
+			type == Type.DIVIDE
 		) {
 			this.returnType = determineType(left.getValueType(), 
 				right.getValueType());
@@ -99,7 +99,7 @@ public class BinaryExpr extends Expr {
 	 * @see nta.query.executor.eval.Expr#evalBool(nta.storage.Tuple)
 	 */
 	@Override
-	public Datum eval(Tuple tuple) {
+	public Datum eval(Tuple tuple, Datum...args) {
 		switch(type) {
 		case AND:
 			return DatumFactory.create(leftExpr.eval(tuple).asBool() && rightExpr.eval(tuple).asBool());

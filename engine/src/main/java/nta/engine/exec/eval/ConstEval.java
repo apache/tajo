@@ -1,7 +1,7 @@
 /**
  * 
  */
-package nta.engine.executor.eval;
+package nta.engine.exec.eval;
 
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
@@ -12,17 +12,17 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  *
  */
-public class ConstExpr extends Expr {
+public class ConstEval extends EvalNode {
 	Datum datum = null;
 	/**
 	 * @param type
 	 */
-	public ConstExpr() {
-		super(ExprType.CONST);
+	public ConstEval() {
+		super(Type.CONST);
 	}
 	
-	public ConstExpr(Datum datum) {
-		super(ExprType.CONST);
+	public ConstEval(Datum datum) {
+		super(Type.CONST);
 		this.datum = datum;
 	}
 	
@@ -34,7 +34,7 @@ public class ConstExpr extends Expr {
 	 * @see nta.query.executor.expr.Expr#evalVal(nta.storage.Tuple)
 	 */
 	@Override
-	public Datum eval(Tuple tuple) {
+	public Datum eval(Tuple tuple, Datum...args) {
 		return this.datum;
 	}
 	

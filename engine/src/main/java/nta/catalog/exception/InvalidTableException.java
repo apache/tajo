@@ -22,20 +22,4 @@ public class InvalidTableException extends InternalException {
 	public InvalidTableException(String message) {
 		super(message);
 	}
-
-	/**
-	 * @param cause
-	 */
-	public InvalidTableException(Throwable cause) {
-		super(cause);
-	}
-
-	/**
-	 * @param message
-	 * @param cause
-	 */
-	public InvalidTableException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
 }

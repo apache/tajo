@@ -13,9 +13,10 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
+import nta.engine.exception.InternalException;
 import nta.engine.exception.NQLSyntaxException;
 import nta.engine.exception.NTAQueryException;
-import nta.engine.executor.eval.Expr;
+import nta.engine.exec.eval.EvalNode;
 import nta.engine.parser.NQL.Query;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -66,7 +67,7 @@ public class TestNQLCompiler {
 
     NQL nql = new NQL(cat);
     Query q = nql.parse(QUERIES[2]);
-    Expr expr = nql.buildExpr(q, node);
+    EvalNode expr = nql.buildExpr(q, node);
 
     Tuple tuples[] = new Tuple[1000000];
     for (int i = 0; i < 1000000; i++) {
@@ -91,7 +92,7 @@ public class TestNQLCompiler {
     return parser;
   }
 
-  public final void test() throws NQLSyntaxException {
+  public final void test() throws NQLSyntaxException, InternalException {
     QueryBlock block = NQLCompiler.parse(QUERIES[0]);
 
     assertEquals(1, block.getNumFromTables());
@@ -115,7 +116,7 @@ public class TestNQLCompiler {
     Catalog cat = new Catalog(new NtaConf());
     cat.addTable(desc);
 
-    Expr expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
+    EvalNode expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
 
     long start = System.currentTimeMillis();
     for (int i = 0; i < tuples.length; i++) {
@@ -127,7 +128,7 @@ public class TestNQLCompiler {
   }
 
   @Test
-  public final void testEvalExprTreeBin() throws NQLSyntaxException {
+  public final void testEvalExprTreeBin() throws NQLSyntaxException, InternalException {
     QueryBlock block = NQLCompiler.parse(QUERIES[0]);
 
     assertEquals(1, block.getNumFromTables());
@@ -148,8 +149,15 @@ public class TestNQLCompiler {
     Catalog cat = new Catalog(new NtaConf());
     cat.addTable(desc);
 
-    Expr expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
+    EvalNode expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
 
     assertEquals(18, expr.eval(tuple).asInt());
   }
+
+  /*
+  public void testGroupByClause() throws NTAQueryException {
+    Query stmt = null;
+    stmt = nql.parse(queries[4]);
+    System.out.println(stmt);
+  }*/
 }

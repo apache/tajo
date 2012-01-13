@@ -24,9 +24,6 @@ import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.engine.EngineService;
 import nta.engine.NConstants;
-import nta.engine.function.FuncType;
-import nta.engine.function.TestFunc;
-import nta.engine.function.UnixTimeFunc;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.query.LocalEngine;
 
@@ -54,7 +51,7 @@ public class Catalog implements CatalogService, EngineService {
 	private Map<Integer, TableDesc> tables = new HashMap<Integer, TableDesc>();
 	private Map<Integer, List<TabletServInfo>> tabletServingInfo = new HashMap<Integer, List<TabletServInfo>>();
 	private Map<String, Integer> tablesByName = new HashMap<String, Integer>();	
-	private Map<String, FunctionMeta> functions = new HashMap<String, FunctionMeta>();	
+	private Map<String, FunctionDesc> functions = new HashMap<String, FunctionDesc>();	
 
 	private SimpleWAL wal;
 	private Logger logger;
@@ -63,11 +60,6 @@ public class Catalog implements CatalogService, EngineService {
 
 	public Catalog(Configuration conf) {
 		this.conf = conf;
-		
-		FunctionMeta funcMeta = new FunctionMeta("print", TestFunc.class, FuncType.GENERAL);
-		registerFunction(funcMeta);
-		funcMeta = new FunctionMeta("time", UnixTimeFunc.class, FuncType.GENERAL);
-		registerFunction(funcMeta);	
 	}
 
 	public void init() throws IOException {		
@@ -244,12 +236,12 @@ public class Catalog implements CatalogService, EngineService {
 		}
 	}
 
-	public void registerFunction(FunctionMeta funcMeta) {
-		if (functions.containsKey(funcMeta.name)) {
-			throw new AlreadyExistsFunction(funcMeta.name);
+	public void registerFunction(FunctionDesc funcMeta) {
+		if (functions.containsKey(funcMeta.getName())) {
+			throw new AlreadyExistsFunction(funcMeta.getName());
 		}
 
-		functions.put(funcMeta.name, funcMeta);
+		functions.put(funcMeta.getName(), funcMeta);
 		if(this.logger != null) {
 			try {
 				this.logger.appendAddFunction(funcMeta);
@@ -277,7 +269,7 @@ public class Catalog implements CatalogService, EngineService {
 		functions.remove(funcName);
 	}
 
-	public FunctionMeta getFunctionMeta(String funcName) {
+	public FunctionDesc getFunctionMeta(String funcName) {
 		return this.functions.get(funcName);
 	}
 
@@ -285,7 +277,7 @@ public class Catalog implements CatalogService, EngineService {
 		return this.functions.containsKey(funcName);
 	}
 
-	public Collection<FunctionMeta> getFunctions() {
+	public Collection<FunctionDesc> getFunctions() {
 		return this.functions.values();
 	}
 
@@ -310,12 +302,12 @@ public class Catalog implements CatalogService, EngineService {
 			wal.append(sb.toString());
 		}
 
-		public void appendAddFunction(FunctionMeta meta) throws IOException {
+		public void appendAddFunction(FunctionDesc meta) throws IOException {
 			StringBuilder sb = new StringBuilder();
 			sb.append("+f\t");
 			sb.append(meta.getName()).append("\t");
 			sb.append(meta.getType()).append("\t");
-			sb.append(meta.getFunctionClass().getCanonicalName()).append("\t");
+			sb.append(meta.getFuncClass().getCanonicalName()).append("\t");
 
 			wal.append(sb.toString());
 		}

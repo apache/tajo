@@ -3,12 +3,17 @@ package nta.engine.parser;
 import java.nio.ByteBuffer;
 
 import nta.catalog.Catalog;
+import nta.catalog.FunctionDesc;
+import nta.catalog.TableDesc;
 import nta.datum.DatumFactory;
+import nta.engine.exception.InternalException;
 import nta.engine.exception.NQLSyntaxException;
-import nta.engine.executor.eval.BinaryExpr;
-import nta.engine.executor.eval.ConstExpr;
-import nta.engine.executor.eval.Expr;
-import nta.engine.executor.eval.ExprType;
+import nta.engine.exec.eval.BinaryEval;
+import nta.engine.exec.eval.ConstEval;
+import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.EvalNode.Type;
+import nta.engine.exec.eval.FieldEval;
+import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.parser.QueryBlock.FromTable;
 
 import org.antlr.runtime.ANTLRStringStream;
@@ -24,7 +29,7 @@ import org.apache.commons.logging.LogFactory;
  * @author hyunsik
  * @see QueryBlock
  */
-final class NQLCompiler {
+public final class NQLCompiler {
   private static final Log LOG = LogFactory.getLog(NQLCompiler.class);
   
   private static final int STACK_SIZE = 32;
@@ -64,6 +69,7 @@ final class NQLCompiler {
       case NQLParser.FROM:
         parseFromClause(block, node);
         break;
+        
       case NQLParser.WHERE:
         parseWhereClause(block, node);
         break;
@@ -87,13 +93,13 @@ final class NQLCompiler {
     block.setWhereCond(new EvalTreeBin(bb.array()));
   }
 
-  public static Expr evalExprTreeBin(final EvalTreeBin byteCode, 
-      final Catalog cat) {
-    Expr [] stack = new Expr[STACK_SIZE];
+  public static EvalNode evalExprTreeBin(final EvalTreeBin byteCode, 
+      final Catalog cat) throws InternalException {
+    EvalNode [] stack = new EvalNode[STACK_SIZE];
     int cur = 0;
 
     ByteBuffer bin = ByteBuffer.wrap(byteCode.getBinary());
-    Expr [] data = new Expr[ARG_SIZE];
+    EvalNode [] data = new EvalNode[ARG_SIZE];
 
     do {
       byte op = bin.get();
@@ -105,67 +111,67 @@ final class NQLCompiler {
       case OP.PLUS: // PLUS
         data[0] = stack[--cur];
         data[1] = stack[--cur];
-        stack[cur++] = new BinaryExpr(ExprType.PLUS, data[1], data[0]);
+        stack[cur++] = new BinaryEval(Type.PLUS, data[1], data[0]);
         break;
         
       case OP.MINUS: // MINUS
         data[0] = stack[--cur];
         data[1] = stack[--cur];
-        stack[cur++] = new BinaryExpr(ExprType.MINUS, data[1], data[0]);
+        stack[cur++] = new BinaryEval(Type.MINUS, data[1], data[0]);
         break;
 
       case OP.MULTI: // MULTIPLE
         data[0] = stack[--cur];
         data[1] = stack[--cur];
-        stack[cur++] = new BinaryExpr(ExprType.MULTIPLY, data[1], data[0]);
+        stack[cur++] = new BinaryEval(Type.MULTIPLY, data[1], data[0]);
         break;
 
       case OP.DIV: // DIVIDE
         data[0] = stack[--cur];
         data[1] = stack[--cur];
-        stack[cur++] = new BinaryExpr(ExprType.DIVIDE, data[1], data[0]);
+        stack[cur++] = new BinaryEval(Type.DIVIDE, data[1], data[0]);
         break;
 
       case OP.EQUAL: // EQUAL
         data[0] = stack[--cur];
         data[1] = stack[--cur];
-        stack[cur++] = new BinaryExpr(ExprType.EQUAL, data[1], data[0]);
+        stack[cur++] = new BinaryEval(Type.EQUAL, data[1], data[0]);
         break;
         
       case OP.LTH: // LESS THAN
         data[0] = stack[--cur];
         data[1] = stack[--cur];
-        stack[cur++] = new BinaryExpr(ExprType.LTH, data[1], data[0]);
+        stack[cur++] = new BinaryEval(Type.LTH, data[1], data[0]);
         break;
 
       case OP.LEQ: // LESS OR EQUAL
         data[0] = stack[--cur];
         data[1] = stack[--cur];
-        stack[cur++] = new BinaryExpr(ExprType.LEQ, data[1], data[0]);
+        stack[cur++] = new BinaryEval(Type.LEQ, data[1], data[0]);
         break;
         
       case OP.GTH: // GREATER THAN
         data[0] = stack[--cur];
         data[1] = stack[--cur];
-        stack[cur++] = new BinaryExpr(ExprType.GTH, data[1], data[0]);
+        stack[cur++] = new BinaryEval(Type.GTH, data[1], data[0]);
         break;
         
       case OP.GEQ: // GREATER OR EQUAL
         data[0] = stack[--cur];
         data[1] = stack[--cur];
-        stack[cur++] = new BinaryExpr(ExprType.GEQ, data[1], data[0]);
+        stack[cur++] = new BinaryEval(Type.GEQ, data[1], data[0]);
         break;
         
       case OP.OR: // OR
         data[0] = stack[--cur];
         data[1] = stack[--cur];
-        stack[cur++] = new BinaryExpr(ExprType.OR, data[1], data[0]);
+        stack[cur++] = new BinaryEval(Type.OR, data[1], data[0]);
         break;
         
       case OP.AND: // AND
         data[0] = stack[--cur];
         data[1] = stack[--cur];
-        stack[cur++] = new BinaryExpr(ExprType.AND, data[1], data[0]);
+        stack[cur++] = new BinaryEval(Type.AND, data[1], data[0]);
         break;
         
       case OP.FIELD: // FIELD
@@ -174,41 +180,60 @@ final class NQLCompiler {
         bin.get(fieldBytes);
         @SuppressWarnings("unused")
         String fieldName = new String(fieldBytes);
-        // TODO - to be implemented
+        
+        TableDesc desc = cat.getTableDesc(0);
+        stack[cur++] = new FieldEval(0, desc.getInfo().getSchema().getColumn(fieldName)); 
+        
         break;
       
       case OP.FUNCTION: // FUNCTION
-        // TODO - to be implemented
+        int numSig = bin.getInt();
+        byte [] sigBytes = new byte[numSig];
+        bin.get(sigBytes);
+        String signature = new String(sigBytes);
+        
+        FunctionDesc funcDesc = cat.getFunctionMeta(signature);
+                
+        int numArgs = funcDesc.getArgTypes().length;
+        EvalNode [] givenArgs = new EvalNode[numArgs];
+        for(int i = 0; i < numArgs; i++) {
+          givenArgs[i] = stack[--cur];
+        }
+        
+        stack[cur++] = new FuncCallEval(funcDesc.newInstance(givenArgs));            
+        
+        System.out.println("build func: "+signature);
+        break;
         
       case OP.BOOL: // BOOL
         byte bool = bin.get();
-        if ((bool & 0x01) == 0x01)
-          stack[cur++] = new ConstExpr(DatumFactory.create(true));
+        if ((bool & 0x01) == 0x01) // true - 0x01, false - 0x00
+          stack[cur++] = new ConstEval(DatumFactory.create(true));
         else
-          stack[cur++] = new ConstExpr(DatumFactory.create(false));
+          stack[cur++] = new ConstEval(DatumFactory.create(false));
 
         break;
       
       case OP.BYTE: // BYTE
 
       case OP.SHORT: // SHORT
-        stack[cur++] = new ConstExpr(DatumFactory.create(bin.getShort()));
+        stack[cur++] = new ConstEval(DatumFactory.create(bin.getShort()));
         break;
         
       case OP.INT: // INT
-        stack[cur++] = new ConstExpr(DatumFactory.create(bin.getInt()));
+        stack[cur++] = new ConstEval(DatumFactory.create(bin.getInt()));
         break;
       
       case OP.LONG: // LONG
-        stack[cur++] = new ConstExpr(DatumFactory.create(bin.getLong())); 
+        stack[cur++] = new ConstEval(DatumFactory.create(bin.getLong())); 
         break;      
 
       case OP.FLOAT: // FLOAT
-        stack[cur++] = new ConstExpr(DatumFactory.create(bin.getFloat()));
+        stack[cur++] = new ConstEval(DatumFactory.create(bin.getFloat()));
         break;
 
       case OP.DOUBLE: // DOUBLE
-        stack[cur++] = new ConstExpr(DatumFactory.create(bin.getDouble()));
+        stack[cur++] = new ConstEval(DatumFactory.create(bin.getDouble()));
         break;
 
 
@@ -228,7 +253,7 @@ final class NQLCompiler {
     }
 
     switch (ast.getType()) {
-    case NQLParser.PLUS: 
+    case NQLParser.PLUS:
       bin.put(OP_CODES[OP.PLUS]);
       //System.out.println(ast.toString());
       break;   
@@ -306,12 +331,17 @@ final class NQLCompiler {
       bin.putInt(fieldName.length());
       bin.put(fieldName.getBytes());
 
-      //System.out.println("FIELD: " + fieldName);
+      System.out.println("FIELD: " + fieldName);
       break;
 
     case NQLParser.FUNCTION:
-      @SuppressWarnings("unused")
-      String funcName = ast.getText();
+      String signature = ast.getText();
+      
+      bin.put(OP_CODES[OP.FUNCTION]);
+      bin.putInt(signature.length());
+      bin.put(signature.getBytes());
+      
+      System.out.println("Function: " + signature);
       break;
 
     default:

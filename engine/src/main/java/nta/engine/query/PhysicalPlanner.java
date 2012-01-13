@@ -7,7 +7,7 @@ import java.io.IOException;
 
 import nta.catalog.Catalog;
 import nta.catalog.TableDesc;
-import nta.engine.exception.InternalProblemException;
+import nta.engine.exception.InternalException;
 import nta.engine.exec.DescTableOp;
 import nta.engine.exec.PhysicalOp;
 import nta.engine.exec.ProjectOp;
@@ -24,7 +24,6 @@ import nta.engine.plan.logical.LogicalPlan;
 import nta.engine.plan.logical.ProjectLO;
 import nta.engine.plan.logical.ScanOp;
 import nta.engine.plan.logical.SelectionOp;
-import nta.storage.FileScanner;
 import nta.storage.Scanner;
 import nta.storage.StorageManager;
 
@@ -44,12 +43,12 @@ public class PhysicalPlanner {
 		this.sm = sm;
 	}
 	
-	public PhysicalOp compile(LogicalPlan plan, Tablet tablet) throws InternalProblemException {
+	public PhysicalOp compile(LogicalPlan plan, Tablet tablet) throws InternalException {
 		PhysicalOp op = null;
 		try {
 			op = buildPlan(plan.getRoot(), tablet);
 		} catch (IOException ioe) {
-			throw new InternalProblemException(ioe);
+			throw new InternalException(ioe.getMessage());
 		}
 		
 		return op;

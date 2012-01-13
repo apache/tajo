@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import nta.catalog.Catalog;
-import nta.catalog.FunctionMeta;
+import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.engine.function.Function;
 import nta.engine.plan.logical.ControlLO;
@@ -19,7 +19,7 @@ import nta.storage.VTuple;
  */
 public class ShowFunctionOp extends PhysicalOp {
 	ControlLO logicalOp;
-	Iterator<FunctionMeta> iterator;
+	Iterator<FunctionDesc> iterator;
 	
 	/**
 	 * 
@@ -45,11 +45,11 @@ public class ShowFunctionOp extends PhysicalOp {
 		if(!this.iterator.hasNext())
 			return null;
 		
-		FunctionMeta desc = this.iterator.next();
+		FunctionDesc desc = this.iterator.next();
 		VTuple t = new VTuple(3);
 		t.put(0, desc.getName());
 		t.put(1, desc.getType());
-		t.put(2, desc.getFunctionClass().getName());
+		t.put(2, desc.getFuncClass().getName());
 		return t;
 	}
 
