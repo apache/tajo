@@ -97,8 +97,8 @@ public class TestNtaEngine {
 		
 		TableDesc info = engine.getTableDesc("attach1");
 		assertEquals("attach1", info.getName());
-		assertEquals(",", info.getInfo().getOption(CSVFile2.DELIMITER));
-		assertEquals(StoreType.CSV, info.getInfo().getStoreType());
+		assertEquals(",", info.getMeta().getOption(CSVFile2.DELIMITER));
+		assertEquals(StoreType.CSV, info.getMeta().getStoreType());
 		
 		engine.detachTable("attach1");
 		assertFalse(engine.existsTable("attach1"));

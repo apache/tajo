@@ -166,26 +166,31 @@ public class Catalog implements CatalogService, EngineService {
 		}
 	}
 	
-	public void addTable(String name, TableMetaImpl info) throws AlreadyExistsTableException {	  
+	public void addTable(String name, TableMeta info) throws AlreadyExistsTableException {	  
 	  addTable(new TableDescImpl(name, info));
 	}
 
-	public void addTable(TableDesc meta) throws AlreadyExistsTableException {
-		Preconditions.checkNotNull(meta.getURI(), "Must be set to the table URI");
-		Preconditions.checkNotNull(meta.getName(), "Must be set to the table name");
+	public void addTable(TableDesc desc) throws AlreadyExistsTableException {
+		Preconditions.checkNotNull(desc.getURI(), "Must be set to the table URI");
+		Preconditions.checkNotNull(desc.getName(), "Must be set to the table name");
 	  wlock.lock();
 		
 		try {
-			if (tablesByName.containsKey(meta.getName())) {
-				throw new AlreadyExistsTableException(meta.getName());
+			if (tablesByName.containsKey(desc.getName())) {
+				throw new AlreadyExistsTableException(desc.getName());
 			}
 
-			int newTableId = newRelId.getAndIncrement();
-			this.tables.put(newTableId, meta);
-			this.tablesByName.put(meta.getName(), newTableId);
+			// get new relation id
+      int newTableId = newRelId.getAndIncrement();      
+      
+      // set the relation id to TableDesc and its columns
+      desc.setId(newTableId);
+      
+			this.tables.put(newTableId, desc);
+			this.tablesByName.put(desc.getName(), newTableId);
 
-			if(this.logger != null && (meta.getInfo().getStoreType() != StoreType.MEM))
-				this.logger.appendAddTable(meta);
+			if(this.logger != null && (desc.getMeta().getStoreType() != StoreType.MEM))
+				this.logger.appendAddTable(desc);
 			
 		} catch (IOException e) {
 			LOG.error(e.getMessage());

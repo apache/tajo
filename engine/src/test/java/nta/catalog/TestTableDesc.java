@@ -27,6 +27,6 @@ public class TestTableDesc {
     assertEquals(9, desc.getId());
     desc.setURI(new Path("/nta/data"));
     assertEquals(URI.create("/nta/data"), desc.getURI());    
-    assertEquals(info, desc.getInfo());
+    assertEquals(info, desc.getMeta());
   }
 }

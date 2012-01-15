@@ -346,9 +346,9 @@ public class NQL {
 			} else {			
 				for(RelInfo rInfo: stmt.getBaseRels()) {
 					rel = cat.getTableDesc(rInfo.getName());
-					if(rel.getInfo().getSchema().getColumn(fieldName.getName()) != null) {
+					if(rel.getMeta().getSchema().getColumn(fieldName.getName()) != null) {
 						if(field == null) {
-							field = rel.getInfo().getSchema().getColumn(fieldName.getName());								
+							field = rel.getMeta().getSchema().getColumn(fieldName.getName());								
 						} else 
 							throw new AmbiguousFieldException(field.getName());													
 					}
@@ -409,7 +409,7 @@ public class NQL {
 			switch(cols[i].getType()) {
 			case FIELD:			
 				FieldEval fieldExpr = (FieldEval)cols[i];
-				field = cat.getTableDesc(fieldExpr.tableId).getInfo().getSchema().
+				field = cat.getTableDesc(fieldExpr.tableId).getMeta().getSchema().
 					getColumn(fieldExpr.fieldId);
 				break;
 			case FUNCTION:

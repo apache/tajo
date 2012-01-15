@@ -36,7 +36,7 @@ public class TableDescImpl implements TableDesc {
 	
 	public TableDescImpl(String name, TableMeta info) {
 	  setName(name);
-	  setInfo(info);		
+	  setMeta(info);		
 	}
 	
 	public TableDescImpl(String name, Schema schema, StoreType type) {
@@ -107,12 +107,12 @@ public class TableDescImpl implements TableDesc {
   }
   
   @Override
-  public void setInfo(TableMeta info) {
+  public void setMeta(TableMeta info) {
     maybeInitBuilder();
     this.info = info;
   }
 	
-	public TableMeta getInfo() {
+	public TableMeta getMeta() {
 	  TableDescProtoOrBuilder p = viaProto ? proto : builder;
     
     if (info != null) {
