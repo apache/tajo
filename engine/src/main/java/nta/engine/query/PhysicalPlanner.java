@@ -112,7 +112,7 @@ public class PhysicalPlanner {
 		ScanOp sOp = (ScanOp) op;
 		
 		TableDesc info = cat.getTableDesc(sOp.getRelName()); 
-		Scanner scanner = sm.getScanner(info.getInfo(), new Tablet [] {tablet});
+		Scanner scanner = sm.getScanner(info.getMeta(), new Tablet [] {tablet});
 		
 		return new SeqScanOp(scanner);
 	}

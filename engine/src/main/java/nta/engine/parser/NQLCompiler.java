@@ -182,7 +182,7 @@ public final class NQLCompiler {
         String fieldName = new String(fieldBytes);
         
         TableDesc desc = cat.getTableDesc(0);
-        stack[cur++] = new FieldEval(0, desc.getInfo().getSchema().getColumn(fieldName)); 
+        stack[cur++] = new FieldEval(0, desc.getMeta().getSchema().getColumn(fieldName)); 
         
         break;
       

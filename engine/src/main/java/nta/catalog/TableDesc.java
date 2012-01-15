@@ -25,9 +25,9 @@ public interface TableDesc {
   
   URI getURI();
   
-  void setInfo(TableMeta info);
+  void setMeta(TableMeta info);
   
-  TableMeta getInfo();
+  TableMeta getMeta();
   
   Object clone();
 }

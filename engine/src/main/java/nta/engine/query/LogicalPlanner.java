@@ -79,7 +79,7 @@ public class LogicalPlanner {
 	public LogicalOp buildDescTable(Query query) throws NoSuchTableException {
 		Schema meta;
 		try {
-			meta = this.catalog.getTableDesc(query.getTargetTable()).getInfo().getSchema();
+			meta = this.catalog.getTableDesc(query.getTargetTable()).getMeta().getSchema();
 		} catch (NoSuchTableException e) {
 			throw new NoSuchTableException(query.getTargetTable());
 		}

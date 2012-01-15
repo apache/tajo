@@ -217,7 +217,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 			throw new AlreadyExistsTableException(meta.getName());
 
 		catalog.addTable(meta);
-		LOG.info("Table "+meta.getName()+" ("+meta.getInfo().getStoreType()+") is created.");
+		LOG.info("Table "+meta.getName()+" ("+meta.getMeta().getStoreType()+") is created.");
 	}
 
 	@Override

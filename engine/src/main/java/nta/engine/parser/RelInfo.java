@@ -27,7 +27,7 @@ public class RelInfo implements SchemaObject {
 	}
 	
 	public Schema getSchema() {
-		return this.rel.getInfo().getSchema();
+		return this.rel.getMeta().getSchema();
 	}
 	
 	public TableDesc getRelation() {
