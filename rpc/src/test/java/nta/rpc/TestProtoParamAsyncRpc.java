@@ -34,6 +34,7 @@ public class TestProtoParamAsyncRpc {
 
   MulResponse answer1 = null;
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testRpc() throws Exception {
     ProtoParamRpcServer server =
@@ -47,22 +48,16 @@ public class TestProtoParamAsyncRpc {
             new InetSocketAddress(10011));
 
     MulRequest req = MulRequest.newBuilder().setX1(10).setX2(20).build();
-
-    proxy.mul(new AnswerCallback(), req);
-
+    
+    @SuppressWarnings("rawtypes")
+    Callback cb = new Callback<MulResponse>();
+    proxy.mul(cb, req);
+    
+    System.out.println("Do whatever you want before get result!!");
+    MulResponse resp = (MulResponse) cb.get();
+    assertEquals(200, resp.getResult());
+    
     server.shutdown();
-  }
-
-  public class AnswerCallback implements Callback<MulResponse> {
-    @Override
-    public void onComplete(MulResponse response) {
-      answer1 = response;
-      assertEquals(200, answer1.getResult());
-    }
-
-    @Override
-    public void onFailure(Throwable error) {
-    }
   }
 
 }

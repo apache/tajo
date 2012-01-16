@@ -62,7 +62,6 @@ public class ProtoParamRpcServer extends NettyServerBase {
       if (size > 0) {
         objs = new Object[size];
         for (int i = 0; i < size; i++) {
-          // objs[i] = method.getParameterTypes()[i].newInstance();
           ByteArrayInputStream bis =
               new ByteArrayInputStream(request.getParam(i).toByteArray());
           ObjectInputStream ois = new ObjectInputStream(bis);
