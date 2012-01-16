@@ -33,7 +33,7 @@ public class TestProtoParamAsyncRpc {
   }
 
   MulResponse answer1 = null;
-
+  
   @SuppressWarnings("unchecked")
   @Test
   public void testRpc() throws Exception {
@@ -46,6 +46,34 @@ public class TestProtoParamAsyncRpc {
         (DummyClientInterface) NettyRpc.getProtoParamAsyncRpcProxy(
             DummyServerInterface.class, DummyClientInterface.class,
             new InetSocketAddress(10011));
+
+    MulRequest req = MulRequest.newBuilder().setX1(10).setX2(20).build();
+    
+    @SuppressWarnings("rawtypes")
+    Callback cb = new Callback<MulResponse>();
+    proxy.mul(cb, req);
+    
+    System.out.println("Do whatever you want before get result!!");
+    MulResponse resp = (MulResponse) cb.get();
+    assertEquals(200, resp.getResult());
+    
+    server.shutdown();
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testRpcRandomPort() throws Exception {
+    ProtoParamRpcServer server =
+        NettyRpc.getProtoParamRpcServer(new DummyServer(),
+            new InetSocketAddress(0));
+    server.start();
+
+    InetSocketAddress addr = server.getBindAddress();
+
+    DummyClientInterface proxy =
+        (DummyClientInterface) NettyRpc.getProtoParamAsyncRpcProxy(
+            DummyServerInterface.class, DummyClientInterface.class,
+            addr);
 
     MulRequest req = MulRequest.newBuilder().setX1(10).setX2(20).build();
     
