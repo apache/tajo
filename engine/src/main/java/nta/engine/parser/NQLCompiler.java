@@ -15,11 +15,13 @@ import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.parser.QueryBlock.FromTable;
+import nta.engine.parser.QueryBlock.Target;
 
 import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.tree.CommonTree;
+import org.antlr.runtime.tree.Tree;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -47,7 +49,7 @@ public final class NQLCompiler {
 
     switch (getCmdType(ast)) {
     case SELECT:
-      block = parseSelectClause(ast);
+      block = parseSelectStatement(ast);
     default:
       break;
     }
@@ -56,9 +58,7 @@ public final class NQLCompiler {
 
   }
 
-  public static QueryBlock parseSelectClause(final CommonTree ast) {
-    LOG.info("Begin to parse a select statement");
-
+  public static QueryBlock parseSelectStatement(final CommonTree ast) throws NQLSyntaxException {
     QueryBlock block = new QueryBlock();
 
     CommonTree node;
@@ -75,22 +75,100 @@ public final class NQLCompiler {
         break;
 
       case NQLParser.GROUP_BY:
-
-      case NQLParser.SEL_LIST:
-      default:
+        parseGroupByClause(block, node);
         break;
+        
+      case NQLParser.SEL_LIST:
+        parseSelectList(block, node);
+        break;
+        
+      default:
+        
       }
     }
 
     return block;
   }
+  
+  /**
+   * This method parses the select list of a query statement.<br />
+   * <br />
+   * EBNF: <br />
+   * 
+   * selectList <br />
+   * : MULTIPLY -> ^(SEL_LIST ALL) <br />
+   * | derivedColumn (COMMA derivedColumn)* -> ^(SEL_LIST derivedColumn+)
+   * ;  <br />
+   * <br />
+   * derivedColumn <br />
+   * : bool_expr asClause? -> ^(COLUMN bool_expr asClause?) <br />
+   * ; 
+   * 
+   * @param block
+   * @param ast
+   */
+  private static void parseSelectList(final QueryBlock block,
+      final CommonTree ast) {    
+  
+    if(ast.getChild(0).getType() == NQLParser.ALL) {
+      block.setProjectAll();
+    } else {
+      CommonTree node = null;
+      int numTargets = ast.getChildCount();
+      Target [] targets = new Target[numTargets];
+      EvalTreeBin evalTreeBin = null;
+      String alias = null;
+      
+      // the final one for each target is the alias
+      // EBNF: bool_expr AS? fieldName
+      for(int i=0; i < ast.getChildCount(); i++) {
+        
+        node = (CommonTree) ast.getChild(i);
+        evalTreeBin = compileEvalTree(node);
+        targets[i] = new Target(evalTreeBin);
+        if(node.getChildCount() > 1) {          
+          alias = node.getChild(node.getChildCount()-1).getChild(0).getText();
+          targets[i].setAlias(alias);
+        }        
+      }
+      
+      block.setTargetList(targets);
+    }    
+  }
 
-  public static void parseWhereClause(final QueryBlock block, 
+  private static void parseGroupByClause(final QueryBlock block,
       final CommonTree ast) {
-    ByteBuffer bb = ByteBuffer.allocate(BIN_CAPACITY);
-    compileEvalTree((CommonTree) ast.getChild(0), bb);
-    bb.flip();
-    block.setWhereCond(new EvalTreeBin(bb.array()));
+    int numFields = ast.getChildCount();
+    String [] groupFields = new String [numFields];
+    
+    int idx = 0;
+    if(ast.getChild(idx).getType() == NQLParser.HAVING) {      
+      EvalTreeBin evalTreeBin = 
+          compileEvalTree((CommonTree) ast.getChild(0).getChild(0));      
+      block.setHavingCond(evalTreeBin);
+      idx++;
+    }
+    
+    int i=0;
+    Tree fieldNode = null;
+    for(; idx < ast.getChildCount(); idx++) {
+      fieldNode = ast.getChild(idx);
+      if(ast.getChild(idx).getChildCount() > 1) {        
+        groupFields[i] = fieldNode.getChild(0).getText()+"."+
+            fieldNode.getChild(1); 
+      } else {
+        groupFields[i] = fieldNode.getChild(0).getText();
+      }
+      i++;
+    }
+    
+    block.setGroupingFields(groupFields);
+  }
+  
+  private static void parseWhereClause(final QueryBlock block, 
+      final CommonTree ast) {
+    EvalTreeBin evalTreeBin = compileEvalTree(ast);
+    block.setWhereCond(evalTreeBin);
   }
 
   public static EvalNode evalExprTreeBin(final EvalTreeBin byteCode, 
@@ -200,7 +278,7 @@ public final class NQLCompiler {
           givenArgs[i] = stack[--cur];
         }
         
-        stack[cur++] = new FuncCallEval(funcDesc.newInstance(givenArgs));            
+        stack[cur++] = new FuncCallEval(funcDesc.newInstance(), givenArgs);            
         
         System.out.println("build func: "+signature);
         break;
@@ -245,11 +323,18 @@ public final class NQLCompiler {
 
     return stack[0];
   }
+  
+  private static EvalTreeBin compileEvalTree(final CommonTree ast) {
+    ByteBuffer bb = ByteBuffer.allocate(BIN_CAPACITY);
+    _compileEvalTree((CommonTree) ast.getChild(0), bb);
+    bb.flip();    
+    return new EvalTreeBin(bb.array());
+  }
 
-  public static void compileEvalTree(final CommonTree ast, 
+  private static void _compileEvalTree(final CommonTree ast, 
       final ByteBuffer bin) {
     for (int i = 0; i < ast.getChildCount(); i++) {
-      compileEvalTree((CommonTree) ast.getChild(i), bin);
+      _compileEvalTree((CommonTree) ast.getChild(i), bin);
     }
 
     switch (ast.getType()) {
@@ -331,7 +416,6 @@ public final class NQLCompiler {
       bin.putInt(fieldName.length());
       bin.put(fieldName.getBytes());
 
-      System.out.println("FIELD: " + fieldName);
       break;
 
     case NQLParser.FUNCTION:
@@ -341,7 +425,6 @@ public final class NQLCompiler {
       bin.putInt(signature.length());
       bin.put(signature.getBytes());
       
-      System.out.println("Function: " + signature);
       break;
 
     default:
@@ -356,7 +439,8 @@ public final class NQLCompiler {
    * @param block
    * @param ast
    */
-  public static void parseFromClause(final QueryBlock block, final CommonTree ast) {
+  private static void parseFromClause(final QueryBlock block, 
+      final CommonTree ast) {
     int numTables = ast.getChildCount(); //
 
     if (numTables > 0) {
@@ -384,7 +468,7 @@ public final class NQLCompiler {
     } // if the number of tables is greater than 0
   }
 
-  public static CommonTree parseTree(final String query) throws NQLSyntaxException {
+  private static CommonTree parseTree(final String query) throws NQLSyntaxException {
     ANTLRStringStream input = new ANTLRStringStream(query);
     NQLLexer lexer = new NQLLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -404,7 +488,7 @@ public final class NQLCompiler {
     return ast;
   }
 
-  public static CommandType getCmdType(final CommonTree ast) {
+  private static CommandType getCmdType(final CommonTree ast) {
     switch (ast.getType()) {
     case NQLParser.SELECT:
       return CommandType.SELECT;
@@ -425,7 +509,7 @@ public final class NQLCompiler {
     }
   }
   
-  public static class OP {
+  private static class OP {
     public static final int PLUS = 1;
     public static final int MINUS = 2;
     public static final int MULTI = 3;

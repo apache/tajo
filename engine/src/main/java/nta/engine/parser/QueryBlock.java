@@ -8,17 +8,64 @@ package nta.engine.parser;
  */
 public class QueryBlock {
   
+  private boolean projectAll = false;
+  private boolean distinct = false;
+  private Target [] targetList = null;
   private FromTable [] fromTables = null;
   private EvalTreeBin whereCond = null;
+  String [] groupFields = null;
+  private EvalTreeBin havingCond = null;
   
-  public QueryBlock() {}
+  public QueryBlock() {
+    // nothing
+  }
+  
+  public final void setProjectAll() {
+    this.projectAll = true;
+  }
+  
+  public final boolean getProjectAll() {
+    return this.projectAll;
+  }
+  
+  public final void setDistinct() {
+    this.distinct = true;
+  }
+  
+  public final boolean getDistinct() {
+    return this.distinct;
+  }
+  
+  public final void setTargetList(Target [] targets) {
+    this.targetList = targets;
+  }
+  
+  public final Target [] getTargetList() {
+    return this.targetList;
+  }
+  
+  public final void setGroupingFields(final String [] groupFields) {
+    this.groupFields = groupFields;
+  }
+  
+  public final String [] getGroupFields() {
+    return this.groupFields;
+  }
+  
+  public final void setHavingCond(final EvalTreeBin havingCond) {
+    this.havingCond = havingCond;
+  }
+  
+  public final EvalTreeBin getHavingCond() {
+    return this.havingCond;
+  }
   
   // From Clause
   public final boolean hasFromClause() {
     return fromTables != null;
   }
   
-  public final void setFromTables(FromTable [] tables) {
+  public final void setFromTables(final FromTable [] tables) {
     this.fromTables = tables;
   }
   
@@ -31,7 +78,7 @@ public class QueryBlock {
   }
   
   // Where Clause
-  public final void setWhereCond(EvalTreeBin whereCond) {
+  public final void setWhereCond(final EvalTreeBin whereCond) {
     this.whereCond = whereCond;
   }
   
@@ -40,15 +87,19 @@ public class QueryBlock {
   }
   
   public static class Target {
-    private final String column;
-    private String alias = null;
+    private final EvalTreeBin evalBin;
+    private String alias = null;     
     
-    public Target(final String column) {
-      this.column = column;
+    public Target(final EvalTreeBin evalBin) {
+      this.evalBin = evalBin;
     }
     
-    public Target(final String column, String alias) {
-      this(column);
+    public Target(final EvalTreeBin evalBin, final String alias) {
+      this(evalBin);
+      this.alias = alias;
+    }
+    
+    public final void setAlias(String alias) {
       this.alias = alias;
     }
     
@@ -58,13 +109,6 @@ public class QueryBlock {
 
     public final boolean hasAlias() {
       return alias != null;
-    }
-
-    public final String toString() {
-      if (alias != null)
-        return column + " as " + alias;
-      else
-        return column;
     }
   }
   
