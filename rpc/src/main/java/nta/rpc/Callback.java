@@ -6,7 +6,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-
 public class Callback<T> implements Future<T> {
   public enum Status {
     READY, SUCCESS, FAILURE
@@ -35,7 +34,7 @@ public class Callback<T> implements Future<T> {
   }
 
   @Override
-  public T get()  throws InterruptedException, ExecutionException {
+  public T get() throws InterruptedException, ExecutionException {
     if (!didGetResponse()) {
       sem.acquire();
     }
@@ -54,21 +53,21 @@ public class Callback<T> implements Future<T> {
     }
     return result;
   }
-  
+
   public boolean didGetResponse() {
     return (isSuccess() || isFailure());
   }
-  
+
   public boolean isSuccess() {
     return (status == Status.SUCCESS);
   }
-  
+
   public boolean isFailure() {
     return (status == Status.FAILURE);
   }
-  
+
   public String getErrorMessage() {
-    if( status == Status.SUCCESS ) {
+    if (status == Status.SUCCESS) {
       return "";
     }
     return err.getMessage();
