@@ -1,14 +1,15 @@
 package nta.rpc;
 
 import java.io.IOException;
+import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
-import java.net.ConnectException;
-import java.net.Socket;
+import java.net.ServerSocket;
 
 public class NettyRpc {
 
   public static ProtoParamRpcServer getProtoParamRpcServer(Object instance,
       InetSocketAddress addr) {
+
     InetSocketAddress newAddress = null;
 
     if (addr.getPort() == 0) {
@@ -22,7 +23,7 @@ public class NettyRpc {
     } else {
       newAddress = addr;
     }
-    
+
     return new ProtoParamRpcServer(instance, newAddress);
   }
 
@@ -36,20 +37,44 @@ public class NettyRpc {
       InetSocketAddress addr) {
     return new ProtoParamBlockingRpcProxy(protocol, addr).getProxy();
   }
-  
+
   public static int getUnusedPort(String hostname) throws IOException {
     while (true) {
-        int port = (int) (45536 * Math.random() + 10000);
-        try {
-            Socket s = new Socket(hostname, port);
-            s.close();
-        } catch (ConnectException e) {
-            return port;
-        } catch (IOException e) {
-            if (e.getMessage().contains("refused"))
-                return port;
-            throw e;
-        }
+      int port = (int) (10000 * Math.random() + 10000);
+      if (available(port)) {
+        return port;
+      }
     }
+  }
+
+  public static boolean available(int port) {
+    if (port < 10000 || port > 20000) {
+      throw new IllegalArgumentException("Invalid start port: " + port);
+    }
+
+    ServerSocket ss = null;
+    DatagramSocket ds = null;
+    try {
+      ss = new ServerSocket(port);
+      ss.setReuseAddress(true);
+      ds = new DatagramSocket(port);
+      ds.setReuseAddress(true);
+      return true;
+    } catch (IOException e) {
+    } finally {
+      if (ds != null) {
+        ds.close();
+      }
+
+      if (ss != null) {
+        try {
+          ss.close();
+        } catch (IOException e) {
+          /* should not be thrown */
+        }
+      }
+    }
+
+    return false;
   }
 }

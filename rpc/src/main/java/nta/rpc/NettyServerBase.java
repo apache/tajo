@@ -9,11 +9,9 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
-public class NettyServerBase extends Thread {
+public class NettyServerBase {
   private static final Log LOG = LogFactory.getLog(NettyServerBase.class);
 
   protected final InetSocketAddress bindAddress;
@@ -21,13 +19,11 @@ public class NettyServerBase extends Thread {
   protected ChannelPipelineFactory pipelineFactory;
   protected ServerBootstrap bootstrap;
   private Channel channel;
-  private final ChannelGroup allChannels;
 
   protected volatile boolean stopped = false;
 
   public NettyServerBase(InetSocketAddress bindAddr) {
     this.bindAddress = bindAddr;
-    this.allChannels = new DefaultChannelGroup();
   }
 
   public void init(ChannelPipelineFactory pipeline) {
@@ -51,20 +47,9 @@ public class NettyServerBase extends Thread {
     return this.bindAddress;
   }
 
-  public void run() {
+  public void start() {
     LOG.info("RpcServer on " + this.bindAddress);
     this.channel = bootstrap.bind(bindAddress);
-    this.allChannels.add(channel);
-
-    while (!this.stopped) {
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        LOG.error(e);
-      }
-    }
-
-    LOG.info("RpcServer shutdown");
   }
 
   public Channel getChannel() {
@@ -72,12 +57,8 @@ public class NettyServerBase extends Thread {
   }
 
   public void shutdown() {
+    LOG.info("RpcServer shutdown");
     this.stopped = true;
-    try {
-      this.join();
-    } catch (InterruptedException e) {
-      e.getCause().printStackTrace();
-      LOG.error(e.getCause());
-    }
+    this.channel.close();
   }
 }
