@@ -57,5 +57,32 @@ public class TestProtoParamBlockingRpc {
 
     server.shutdown();
   }
+  
+  @Test
+  public void testRpcRandomPort() throws Exception {
+    
+    // 2. Write Server Part source code
+    ProtoParamRpcServer server =
+        NettyRpc.getProtoParamRpcServer(new DummyServer(),
+            new InetSocketAddress(0));
+    server.start();
+    
+    InetSocketAddress addr = server.getBindAddress();
+    
+    // 3. Write client Part source code
+    //  3.1 Make Proxy to make connection to server
+    DummyServerInterface proxy =
+        (DummyServerInterface) NettyRpc.getProtoParamBlockingRpcProxy(
+            DummyServerInterface.class, addr);
+
+    //  3.2 Fill request data
+    MulRequest req = MulRequest.newBuilder().setX1(10).setX2(20).build();
+
+    //  3.3 call procedure
+    MulResponse re = proxy.mul(req);
+    assertEquals(200, re.getResult());
+
+    server.shutdown();
+  }
 
 }
