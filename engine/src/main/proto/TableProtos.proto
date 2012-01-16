@@ -46,10 +46,11 @@ message KeyValueSetProto {
 }
 
 message TabletProto {
-	required int64 startOffset = 1;
-	required int64 length = 2;
-	required string filename = 3;
-	required string path = 4;
+	required string id = 1;
+	required string path = 2;
+	required int64 startOffset = 3;
+	required int64 length = 4;
+	required TableProto meta = 5;
 }
 
 message TableDescProto {

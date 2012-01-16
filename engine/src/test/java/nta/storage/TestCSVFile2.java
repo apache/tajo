@@ -62,7 +62,7 @@ public class TestCSVFile2 {
 		long randomNum = (long) (Math.random() * fileLen) + 1;
 		
 		Tablet[] tablets = new Tablet[1];
-		Tablet tablet = new Tablet(status.getPath(), 0, randomNum);
+		Tablet tablet = new Tablet("table1_1", status.getPath(), meta, 0, randomNum);
 		tablets[0] = tablet;
 		
 		FileScanner fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
@@ -72,7 +72,8 @@ public class TestCSVFile2 {
 		}
 		fileScanner.close();
 		
-		tablet = new Tablet(status.getPath(), randomNum, fileLen - randomNum);
+		tablet = new Tablet("table1_2", status.getPath(), meta, 
+		    randomNum, fileLen - randomNum);
 		tablets[0] = tablet;
 		fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
     while((vTuple = (VTuple) fileScanner.next()) != null) {

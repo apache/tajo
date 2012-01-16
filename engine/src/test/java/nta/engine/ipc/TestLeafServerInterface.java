@@ -9,6 +9,10 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
+import nta.catalog.Schema;
+import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
+import nta.catalog.proto.TableProtos.StoreType;
 import nta.engine.LeafServerProtos.AssignTabletRequestProto;
 import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
@@ -34,12 +38,14 @@ public class TestLeafServerInterface {
 	
 	@Before
 	public void setup() throws URISyntaxException {
+	  Schema schema = new Schema();
+    TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
 		ArrayList<Tablet> tablets = new ArrayList<Tablet>();
-		tablets.add(new Tablet(new Path("test1"), "test1", 0, 1));
-		tablets.add(new Tablet(new Path("test2"), "test2", 1, 2));
-		tablets.add(new Tablet(new Path("test3"), "test3", 2, 3));
-		tablets.add(new Tablet(new Path("test4"), "test4", 3, 4));
-		tablets.add(new Tablet(new Path("test5"), "test5", 4, 5));
+		tablets.add(new Tablet("test1_1",new Path("test1"), meta, 0, 1));
+    tablets.add(new Tablet("test1_2",new Path("test2"), meta, 1, 2));
+    tablets.add(new Tablet("test1_3",new Path("test3"), meta, 2, 3));
+    tablets.add(new Tablet("test1_4",new Path("test4"), meta, 3, 4));
+    tablets.add(new Tablet("test1_5",new Path("test5"), meta, 4, 5));
 		for (int i = 0; i < 10; i++) {
 			reqList.add(new SubQueryRequestImpl(tablets, new URI("out"+i), "query"+i, "table"+i));
 		}

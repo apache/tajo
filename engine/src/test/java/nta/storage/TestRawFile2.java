@@ -71,7 +71,7 @@ public class TestRawFile2 {
 		int tupleCnt = 0;
 		tuple = null;
 		Tablet[] tablets = new Tablet[1];
-		tablets[0] = new Tablet(status.getPath(), 0, midPos);
+		tablets[0] = new Tablet("table1_1", status.getPath(), meta, 0, midPos);
 		Scanner scanner = sm.getScanner(meta, tablets);
 		do {
 			tuple = (VTuple)scanner.next();
@@ -82,7 +82,7 @@ public class TestRawFile2 {
 //		System.out.println(tupleCnt);
 
 		tablets = new Tablet[1];
-		tablets[0] = new Tablet(status.getPath(), midPos, fileLen-midPos);
+		tablets[0] = new Tablet("table1_2", status.getPath(), meta, midPos, fileLen-midPos);
 		scanner = sm.getScanner(meta, tablets);
 		do {
 			tuple = (VTuple)scanner.next();
@@ -95,8 +95,8 @@ public class TestRawFile2 {
 		// Read a table composed of multiple files
 		tupleCnt = 0;
 		tablets = new Tablet[2];
-		tablets[0] = new Tablet(status.getPath(), 0, midPos);
-		tablets[1] = new Tablet(status.getPath(), midPos, fileLen-midPos);
+		tablets[0] = new Tablet("table1_1", status.getPath(), meta, 0, midPos);
+		tablets[1] = new Tablet("table1_2", status.getPath(), meta, midPos, fileLen-midPos);
 		scanner = sm.getScanner(meta, tablets);
 		do {
 			tuple = (VTuple)scanner.next();
@@ -108,9 +108,9 @@ public class TestRawFile2 {
 		
 		tupleCnt = 0;
 		tablets = new Tablet[3];
-		tablets[0] = new Tablet(status.getPath(), 0, midPos/2);
-		tablets[1] = new Tablet(status.getPath(), midPos/2, midPos-midPos/2);
-		tablets[2] = new Tablet(status.getPath(), midPos, fileLen-midPos);
+		tablets[0] = new Tablet("table1_1", status.getPath(), meta, 0, midPos/2);
+		tablets[1] = new Tablet("table1_2", status.getPath(), meta, midPos/2, midPos-midPos/2);
+		tablets[2] = new Tablet("table1_3", status.getPath(), meta, midPos, fileLen-midPos);
 		scanner = sm.getScanner(meta, tablets);
 		do {
 			tuple = (VTuple)scanner.next();

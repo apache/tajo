@@ -97,10 +97,13 @@ public class StorageManager {
 	
 	public Scanner getScanner(String tableName, String fileName) 
 	    throws IOException {
-	  Path filePath = StorageUtil.concatPath(dataRoot, tableName, "data", fileName);
-	  FileStatus status = fs.getFileStatus(filePath);
-	  Tablet tablet = new Tablet(status.getPath(), 0 , status.getLen());
 	  TableMeta meta = getTableMeta(getTablePath(tableName));
+	  Path filePath = StorageUtil.concatPath(dataRoot, tableName, 
+	      "data", fileName);	  
+	  FileStatus status = fs.getFileStatus(filePath);
+	  Tablet tablet = new Tablet(tableName+"_1", status.getPath(), 
+	      meta, 0l , status.getLen());
+	  
 	  return getScanner(meta, new Tablet[] {tablet});
 	}
 	
@@ -211,26 +214,31 @@ public class StorageManager {
 	
 	public Tablet[] split(Path tablePath)
       throws IOException {
-    long defaultBlockSize = fs.getDefaultBlockSize();
+    TableMeta meta = getTableMeta(tablePath);
+	  
+	  long defaultBlockSize = fs.getDefaultBlockSize();
 
     List<Tablet> listTablets = new ArrayList<Tablet>();
     Tablet tablet = null;
 
     FileStatus[] fileLists = fs.listStatus(new Path(tablePath, "data"));
+    int i=0;
     for (FileStatus file : fileLists) {
       long fileBlockSize = file.getLen();
       long start = 0;
       if (fileBlockSize > defaultBlockSize) {
         while (fileBlockSize > start) {
-          tablet = new Tablet(tablePath, file.getPath().getName(), start,
+          tablet = new Tablet(tablePath.getName()+"_"+i, file.getPath(), meta, start,
               defaultBlockSize);
           listTablets.add(tablet);
           start += defaultBlockSize;
+          i++;
         }
       } else {
-        listTablets.add(new Tablet(tablePath, file.getPath().getName(), 0,
+        listTablets.add(new Tablet(file.getPath().getName(), file.getPath(), meta, 0,
             fileBlockSize));
       }
+      i++;
     }
 
     Tablet[] tablets = new Tablet[listTablets.size()];

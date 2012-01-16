@@ -1,7 +1,5 @@
 package nta.engine;
 
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 import java.util.Random;
 
@@ -14,7 +12,6 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
-import nta.engine.query.GlobalQueryPlanner;
 import nta.storage.CSVFile2;
 import nta.util.FileUtil;
 
@@ -24,7 +21,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
 /**
  * 
@@ -105,14 +101,6 @@ public class TestQuery {
 
 	@After
 	public void terminate() throws IOException {
-		clusterMaster.shutdown();
 		util.shutdownMiniCluster();
-	}
-
-	@Test
-	public void testSelect() throws InterruptedException {
-//		while (clusterMaster.isMasterRunning()) {
-//			Thread.sleep(1000);
-//		}
 	}
 }

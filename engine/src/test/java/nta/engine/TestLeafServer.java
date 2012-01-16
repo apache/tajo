@@ -1,6 +1,5 @@
 package nta.engine;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -20,8 +19,8 @@ import nta.storage.VTuple;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -31,13 +30,13 @@ import org.junit.Test;
  */
 public class TestLeafServer {
 
-  private Configuration conf;
-  private NtaTestingUtility util;
+  private static Configuration conf;
+  private static NtaTestingUtility util;
   private static String TEST_PATH = "target/test-data/TestLeafServer";
-  private StorageManager sm;
+  private static StorageManager sm;
 
-  @Before
-  public void setUp() throws Exception {
+  @BeforeClass
+  public static void setUp() throws Exception {
     EngineTestingUtils.buildTestDir(TEST_PATH);
     util = new NtaTestingUtility();    
     util.startMiniZKCluster();
@@ -46,14 +45,14 @@ public class TestLeafServer {
     sm = StorageManager.get(conf, TEST_PATH);
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDown() throws Exception {
     util.shutdownMiniZKCluster();
     util.shutdownMiniNtaEngineCluster();
   }
 
   @Test
-  public final void testRequestSubQuery() throws IOException {
+  public final void testRequestSubQuery() throws Exception {
     Schema schema = new Schema();
     schema.addColumn("name", DataType.STRING);
     schema.addColumn("id", DataType.INT);
@@ -75,21 +74,21 @@ public class TestLeafServer {
 
     FileStatus status = sm.listTableFiles("table1")[0];
     Tablet[] tablets1 = new Tablet[1];
-    tablets1[0] = new Tablet(status.getPath(), 0, 70000);
+    tablets1[0] = new Tablet("table1_1", status.getPath(), meta, 0, 70000);
     LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(0);
 
     Tablet[] tablets2 = new Tablet[1];
-    tablets2[0] = new Tablet(status.getPath(), 70000, 10000);
+    tablets2[0] = new Tablet("table1_2", status.getPath(), meta, 70000, 10000);
     LeafServer leaf2 = util.getMiniNtaEngineCluster().getLeafServer(1);
 
     SubQueryRequest req = new SubQueryRequestImpl(new ArrayList<Tablet>(
         Arrays.asList(tablets1)), new Path(TEST_PATH, "out").toUri(),
-        "select * from test where id > 5100", "test");
+        "select * from table1_1 where id > 5100", "table1");
     leaf1.requestSubQuery(req.getProto());
 
     SubQueryRequest req2 = new SubQueryRequestImpl(new ArrayList<Tablet>(
         Arrays.asList(tablets2)), new Path(TEST_PATH, "out").toUri(),
-        "select * from test where id > 5100", "test");
+        "select * from table1_2 where id > 5100", "table1");
     leaf2.requestSubQuery(req2.getProto());
 
     leaf1.shutdown("Normally Shutdown");

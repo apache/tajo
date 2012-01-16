@@ -12,7 +12,6 @@ import java.util.List;
 import nta.catalog.Catalog;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
-import nta.catalog.TableMeta;
 import nta.conf.NtaConf;
 import nta.engine.LeafServerProtos.AssignTabletRequestProto;
 import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
@@ -20,10 +19,7 @@ import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.ipc.LeafServerInterface;
-import nta.engine.ipc.protocolrecords.AssignTabletRequest;
-import nta.engine.ipc.protocolrecords.ReleaseTableRequest;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
-import nta.engine.ipc.protocolrecords.SubQueryResponse;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.query.QueryEngine;
 import nta.engine.query.SubQueryRequestImpl;
@@ -39,8 +35,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.ipc.RPC;
-import org.apache.hadoop.ipc.RPC.Server;
 import org.apache.hadoop.net.DNS;
 import org.apache.zookeeper.KeeperException;
 
@@ -228,17 +222,14 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	public SubQueryResponseProto requestSubQuery(SubQueryRequestProto requestProto) throws IOException {
 	  SubQueryRequest request = new SubQueryRequestImpl(requestProto);
 	  
-	  TableMeta meta = storeManager.getTableMeta(request.getTablets().get(0).getTablePath());
-
-	  TableDesc desc = new TableDescImpl(request.getTableName(), meta);
-	  desc.setURI(request.getTablets().get(0).getTablePath());
-	  catalog.addTable(desc);
-	  
+	  TableDesc desc = null;
 	  for(Tablet tablet : request.getTablets()) {
+	    desc = new TableDescImpl(tablet.getId(), tablet.getMeta());
+	    desc.setURI(tablet.getPath());
+	    catalog.addTable(desc);
 	    ResultSetOld result = queryEngine.executeQuery(request.getQuery(), tablet);
+	    catalog.deleteTable(tablet.getId());
 	  }
-	  
-	  catalog.deleteTable(request.getTableName());
 	  
 	  return null;
 	}

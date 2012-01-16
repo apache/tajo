@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -30,6 +29,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,9 +39,8 @@ import org.junit.Test;
  *
  */
 public class TestCatalog {
-	NtaConf conf;
-	Catalog cat;
-	StorageManager manager;
+	private NtaConf conf;
+	private Catalog cat;
 	
 	static final String FieldName1="f1";
 	static final String FieldName2="f2";
@@ -74,23 +73,21 @@ public class TestCatalog {
 	Schema schema1;
 	Schema schema2;
 	
-	NtaTestingUtility util;
+	static NtaTestingUtility util;
 	
 	final static String TEST_PATH = "/TestCatalog";
 	
-	public TestCatalog() throws IOException, URISyntaxException {
-		
-	}
-	
 	@Before
 	public void setUp() throws Exception {
-		util = new NtaTestingUtility();
+		util = new NtaTestingUtility();		
 		conf = new NtaConf(util.getConfiguration());
 		cat = new Catalog(conf);
-		util.startMiniZKCluster();
-
 		EngineTestingUtils.buildTestDir(TEST_PATH);
-		
+	}
+	
+	@After
+	public void tearDown() throws IOException {
+	   
 	}
 	
 	@Test
@@ -218,11 +215,12 @@ public class TestCatalog {
 	
 	@Test
 	public final void testHostsByTable() throws Exception {
+	  util.startMiniCluster(3);
+	  
 		int i, j;
 		FSDataOutputStream fos;
 		Path tbPath;
 		
-		util.startMiniCluster(3);
 		NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
 		
 		Schema schema = new Schema();
@@ -295,7 +293,8 @@ public class TestCatalog {
 			}
 		}
 		
-		util.shutdownMiniCluster();
 		assertEquals(tbNum, cnt);
+		
+		util.shutdownMiniCluster();
 	}
 }

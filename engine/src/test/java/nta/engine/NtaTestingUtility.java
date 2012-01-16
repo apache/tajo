@@ -141,14 +141,9 @@ public class NtaTestingUtility {
 		this.dfsCluster.waitClusterUp();
 		
 		// Start up a zk cluster.
-	    if (this.zkCluster == null) {
-	      startMiniZKCluster(this.clusterTestBuildDir);
-	    }
-		
-		// Start up a zk cluster.
-	    if (this.zkCluster == null) {
-	      startMiniZKCluster(this.clusterTestBuildDir);
-	    }
+		if (this.zkCluster == null) {
+		  startMiniZKCluster(this.clusterTestBuildDir);
+		}
 		
 		return startMiniNtaEngineCluster(numSlaves);
 	}
