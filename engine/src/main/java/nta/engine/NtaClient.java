@@ -31,7 +31,7 @@ public class NtaClient {
 		this.conf = conf;
 		InetSocketAddress addr = new InetSocketAddress(ip, port);
 		try {
-			this.protocol = (QueryEngineInterface) RPC.waitForProxy(QueryEngineInterface.class, QueryEngineInterface.versionID, addr, conf);
+			this.protocol = (QueryEngineInterface) RPC.waitForProxy(QueryEngineInterface.class, 0l, addr, conf);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

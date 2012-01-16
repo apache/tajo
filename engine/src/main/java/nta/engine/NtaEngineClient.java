@@ -17,27 +17,32 @@ public class NtaEngineClient {
 
 	/**
 	 * @param args
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		NtaConf conf = new NtaConf();
 		FileSystem fs = FileSystem.get(conf);
 		NtaEngineInterface cli = 
 				(NtaEngineInterface) RPC.getProxy(NtaEngineInterface.class, 0l, 
-						new InetSocketAddress("localhost",9001), conf);
+						new InetSocketAddress("127.0.1.1",9001), conf);
 
 		Scanner in = new Scanner(System.in);
 		String query = null;
 		System.out.print("nta> ");
 		while((query = in.nextLine()).compareTo("exit") != 0) {
 			try {
-//			System.out.println(cli.executeQueryC(query));
-				cli.executeQueryC(query);
-				FileStatus[] outs = fs.listStatus(new Path("/out"));
-				for (FileStatus out : outs) {
-					FSDataInputStream ins = fs.open(out.getPath());
-					while (ins.available() > 0) {
-						System.out.println(ins.readLine());
+				//			System.out.println(cli.executeQueryC(query));
+				fs.delete(new Path("/out"), true);
+				String res = cli.executeQueryC(query);
+				if (!res.equals("")) {
+					System.out.println(res);
+				} else {
+					FileStatus[] outs = fs.listStatus(new Path("/out"));
+					for (FileStatus out : outs) {
+						FSDataInputStream ins = fs.open(out.getPath());
+						while (ins.available() > 0) {
+							System.out.println(ins.readLine());
+						}
 					}
 				}
 			} catch (NTAQueryException nqe) {

@@ -41,6 +41,7 @@ public class TestProtoParamAsyncRpc {
         NettyRpc.getProtoParamRpcServer(new DummyServer(),
             new InetSocketAddress(10011));
     server.start();
+    Thread.sleep(100);
 
     DummyClientInterface proxy =
         (DummyClientInterface) NettyRpc.getProtoParamAsyncRpcProxy(
@@ -67,6 +68,7 @@ public class TestProtoParamAsyncRpc {
         NettyRpc.getProtoParamRpcServer(new DummyServer(),
             new InetSocketAddress(0));
     server.start();
+    Thread.sleep(100);
 
     InetSocketAddress addr = server.getBindAddress();
 

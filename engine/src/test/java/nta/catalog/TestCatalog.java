@@ -19,6 +19,7 @@ import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.datum.IntDatum;
 import nta.engine.EngineTestingUtils;
+import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
 import nta.engine.function.Function;
 import nta.storage.CSVFile2;
@@ -222,6 +223,7 @@ public class TestCatalog {
 		Path tbPath;
 		
 		util.startMiniCluster(3);
+		NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
 		
 		Schema schema = new Schema();
 		schema.addColumn("id",DataType.INT);
@@ -270,7 +272,7 @@ public class TestCatalog {
 			catalog.addTable(desc);
 		}
 		
-		catalog.updateAllTabletServingInfo();
+		catalog.updateAllTabletServingInfo(master.getOnlineServer());
 		
 		Collection<TableDesc> tables = catalog.getAllTableDescs();
 		Iterator<TableDesc> it = tables.iterator();

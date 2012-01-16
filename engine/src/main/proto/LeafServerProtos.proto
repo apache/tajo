@@ -1,0 +1,32 @@
+option java_package = "nta.engine";
+option java_outer_classname = "LeafServerProtos";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+import "TableProtos.proto";
+
+enum QueryStatus {
+     FINISHED = 0;
+     FAILED = 1;
+     ABORD = 2;
+}
+
+message SubQueryRequestProto {
+	repeated TabletProto tablets = 1;
+	required string dest = 2;
+	required string query = 3;
+	required string tableName = 4;
+}
+
+message SubQueryResponseProto {
+	required QueryStatus status = 1;
+	required string outputPath = 2;
+}
+
+message AssignTabletRequestProto {
+	required TabletProto tablets = 1;
+}
+
+message ReleaseTabletRequestProto {
+	required TabletProto tablets = 1;
+}

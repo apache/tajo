@@ -1,6 +1,3 @@
-/**
- * 
- */
 package nta.catalog;
 
 import java.net.URI;
@@ -27,14 +24,16 @@ public class TableDescImpl implements TableDesc {
   protected TableMeta info;
   
 	public TableDescImpl() {
-		super();
+		builder = TableDescProto.newBuilder();
 	}
 	
 	public TableDescImpl(String name) {
+		this();
 		setName(name);
 	}
 	
 	public TableDescImpl(String name, TableMeta info) {
+		this();
 	  setName(name);
 	  setMeta(info);		
 	}

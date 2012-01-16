@@ -3,10 +3,25 @@ package nta.engine;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.util.Random;
 
+import nta.catalog.Catalog;
+import nta.catalog.Schema;
+import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
+import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
+import nta.catalog.proto.TableProtos.DataType;
+import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
+import nta.engine.query.GlobalQueryPlanner;
+import nta.storage.CSVFile2;
+import nta.util.FileUtil;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,31 +32,87 @@ import org.junit.Test;
  *
  */
 public class TestQuery {
-	
+
 	Configuration conf;
 	NtaTestingUtility util;
-	LocalNtaEngineCluster cluster;
-	NtaEngine engine;
+	NtaEngineMaster clusterMaster;
+	MiniNtaEngineCluster cluster;
+	Schema schema;
+	Catalog catalog;
 	
+	final String TEST_PATH = "";
+
 	@Before
 	public void setup() throws Exception {
 		// run cluster
 		util = new NtaTestingUtility();
 		util.startMiniCluster(10);
 		conf = util.getConfiguration();
-		cluster = new LocalNtaEngineCluster(conf, 10);
+		cluster = util.getMiniNtaEngineCluster();
+		FileSystem fs = util.getMiniDFSCluster().getFileSystem();
+
+		int i, j;
+		FSDataOutputStream fos;
+		Path tbPath;
+
+		schema = new Schema();
+		schema.addColumn("id",DataType.INT);
+		schema.addColumn("age",DataType.INT);
+		schema.addColumn("name",DataType.STRING);
+
+		TableMeta meta;
+
+		String [] tuples = {
+				"1,32,hyunsik",
+				"2,29,jihoon",
+				"3,28,jimin",
+				"4,24,haemi"
+		};
+
+		clusterMaster = cluster.getMaster();
+		clusterMaster.start();
+		conf = new NtaConf(util.getConfiguration());
+		catalog = clusterMaster.getCatalog();
+
+		int tbNum = 2;
+		int tupleNum;
+		Random rand = new Random();
+
+		for (i = 0; i < tbNum; i++) {
+			tbPath = new Path(TEST_PATH+"/table"+i);
+			if (fs.exists(tbPath)){
+				fs.delete(tbPath, true);
+			}
+			fs.mkdirs(tbPath);
+			fos = fs.create(new Path(tbPath, ".meta"));
+			meta = new TableMetaImpl(schema, StoreType.CSV);
+			meta.putOption(CSVFile2.DELIMITER, ",");			
+			FileUtil.writeProto(fos, meta.getProto());
+			fos.close();
+
+			fos = fs.create(new Path(tbPath, "data/table.csv"));
+			tupleNum = 100;
+			for (j = 0; j < tupleNum; j++) {
+				fos.writeBytes(tuples[rand.nextInt(4)]+"\n");
+			}
+			fos.close();
+
+			TableDesc desc = new TableDescImpl("table"+i, meta);
+			desc.setURI(tbPath);
+			catalog.addTable(desc);
+		}
 	}
-	
+
 	@After
 	public void terminate() throws IOException {
+		clusterMaster.shutdown();
 		util.shutdownMiniCluster();
 	}
 
 	@Test
-	public void testSelect() {
-//		NtaEngineMaster master = cluster.getMaster();
-//		while (true) {
-//			
+	public void testSelect() throws InterruptedException {
+//		while (clusterMaster.isMasterRunning()) {
+//			Thread.sleep(1000);
 //		}
 	}
 }

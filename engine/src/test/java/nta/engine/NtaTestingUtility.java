@@ -153,7 +153,7 @@ public class NtaTestingUtility {
 		return startMiniNtaEngineCluster(numSlaves);
 	}
 	
-	public MiniNtaEngineCluster startMiniNtaEngineCluster(final int numSlaves) throws IOException {
+	public MiniNtaEngineCluster startMiniNtaEngineCluster(final int numSlaves) throws Exception {
 		Configuration c = new Configuration(this.conf);
 		this.engineCluster = new MiniNtaEngineCluster(c, numSlaves);	
 		
@@ -161,7 +161,7 @@ public class NtaTestingUtility {
 		return this.engineCluster;
 	}
 	
-	public void restartNtaEngineCluster(int numSlaves) throws IOException {
+	public void restartNtaEngineCluster(int numSlaves) throws Exception {
 		this.engineCluster = new MiniNtaEngineCluster(new Configuration(this.conf), numSlaves);
 		
 		LOG.info("Minicluster has been restarted");

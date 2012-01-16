@@ -18,6 +18,7 @@ import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableProto;
 import nta.conf.NtaConf;
+import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.parser.RelInfo;
@@ -36,6 +37,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,6 +56,7 @@ public class TestGlobalQueryPlanner {
 	Catalog catalog;
 	GlobalQueryPlanner planner;
 	Schema schema;
+	NtaEngineMaster master;
 	
 	final String TEST_PATH = "";
 	
@@ -66,6 +69,7 @@ public class TestGlobalQueryPlanner {
 		Path tbPath;
 		
 		util.startMiniCluster(3);
+		master = util.getMiniNtaEngineCluster().getMaster();
 		
 		schema = new Schema();
 		schema.addColumn("id",DataType.INT);
@@ -187,8 +191,8 @@ public class TestGlobalQueryPlanner {
 	}
 	
 	@Test
-	public void testLocalizeSimpleOp() throws IOException {
-		catalog.updateAllTabletServingInfo();
+	public void testLocalizeSimpleOp() throws IOException, KeeperException, InterruptedException {
+		catalog.updateAllTabletServingInfo(master.getOnlineServer());
 		TableProto tableProto = (TableProto) FileUtil.loadProto(conf, new Path(TEST_PATH+"/table0/.meta"), 
 			      TableProto.getDefaultInstance());
 		TableMeta meta = new TableMetaImpl(tableProto);
@@ -210,7 +214,8 @@ public class TestGlobalQueryPlanner {
 	}
 	
 	@Test
-	public void testDecompose() throws IOException {
+	public void testDecompose() throws IOException, KeeperException, InterruptedException {
+		catalog.updateAllTabletServingInfo(master.getOnlineServer());
 		TableProto tableProto = (TableProto) FileUtil.loadProto(conf, new Path(TEST_PATH+"/table0/.meta"), 
 			      TableProto.getDefaultInstance());
 		TableMeta meta = new TableMetaImpl(tableProto);

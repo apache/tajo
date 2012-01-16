@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -124,46 +125,64 @@ public class Catalog implements CatalogService, EngineService {
 		return tabletServingInfo.get(tablesByName.get(tableName));
 	}
 	
-	public void updateAllTabletServingInfo() throws IOException {
+	public void updateAllTabletServingInfo(List<String> onlineServers) throws IOException {
+		tabletServingInfo.clear();
 		Collection<TableDesc> tbs = tables.values();
 		Iterator<TableDesc> it = tbs.iterator();
+		List<TabletServInfo> locInfos;
+		List<TabletServInfo> servInfos;
+		int index = 0;
+		StringTokenizer tokenizer;
 		while (it.hasNext()) {
-			updateTabletServingInfo(it.next());
+			TableDesc td = it.next();
+			locInfos = getTabletLocInfo(td);
+			servInfos = new ArrayList<TabletServInfo>();
+			// TODO: select the proper online server
+			for (TabletServInfo servInfo : locInfos) {
+				// round robin
+				if (index == onlineServers.size()) {
+					index = 0;
+				}
+				tokenizer = new StringTokenizer(onlineServers.get(index++), ":");
+				servInfo.setHost(tokenizer.nextToken(), Integer.valueOf(tokenizer.nextToken()));
+				servInfos.add(servInfo);
+			}
+			tabletServingInfo.put(td.getId(), servInfos);
 		}
 	}
 	
-	public void updateTabletServingInfo(TableDesc desc) throws IOException {
+	private List<TabletServInfo> getTabletLocInfo(TableDesc desc) throws IOException {
 		int fileIdx, blockIdx;
 		FileSystem fs = FileSystem.get(conf);
-		Path path = new Path(desc.getURI()+"/data");
+		Path path = new Path(desc.getURI());
 		
-		FileStatus[] files = fs.listStatus(path);
+		FileStatus[] files = fs.listStatus(new Path(path+"/data"));
 		BlockLocation[] blocks;
 		String[] hosts;
-		List<TabletServInfo> tabletInfoList;
+		List<TabletServInfo> tabletInfoList = new ArrayList<TabletServInfo>();
 		int tid = tablesByName.get(desc.getName());
-		if (tabletServingInfo.containsKey(tid)) {
-			tabletInfoList = tabletServingInfo.get(tid);
-		} else {
-			tabletInfoList = new ArrayList<TabletServInfo>();
-		}
+//		if (tabletServingInfo.containsKey(tid)) {
+//			tabletInfoList = tabletServingInfo.get(tid);
+//		} else {
+//			tabletInfoList = new ArrayList<TabletServInfo>();
+//		}
 		
 		for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
 			blocks = fs.getFileBlockLocations(files[fileIdx], 0, files[fileIdx].getLen());
 			for (blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
-//				hosts = blocks[blockIdx].getHosts();
-				hosts = blocks[blockIdx].getNames();
-				if (tabletServingInfo.containsKey(tid)) {
-					tabletInfoList = tabletServingInfo.get(tid);
-				} else {
-					tabletInfoList = new ArrayList<TabletServInfo>();
-					tabletServingInfo.put(tid, tabletInfoList);
-				}
+				hosts = blocks[blockIdx].getHosts();
+//				if (tabletServingInfo.containsKey(tid)) {
+//					tabletInfoList = tabletServingInfo.get(tid);
+//				} else {
+//					tabletInfoList = new ArrayList<TabletServInfo>();
+//					tabletServingInfo.put(tid, tabletInfoList);
+//				}
 				// TODO: select the proper serving node for block
-				tabletInfoList.add(new TabletServInfo(hosts[0], new Tablet(path, files[fileIdx].getPath().getName(), 
+				tabletInfoList.add(new TabletServInfo(hosts[0], -1, new Tablet(path, files[fileIdx].getPath().getName(), 
 						blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
 			}
 		}
+		return tabletInfoList;
 	}
 	
 	public void addTable(String name, TableMeta info) throws AlreadyExistsTableException {	  
