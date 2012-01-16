@@ -99,7 +99,6 @@ public class ProtoParamBlockingRpcProxy extends NettyClientBase {
       } else {
         ByteArrayInputStream bais =
             new ByteArrayInputStream(response.getReturnValue().toByteArray());
-        // r = callFuture.getReturnType().newInstance();
         ObjectInputStream ois = new ObjectInputStream(bais);
         r = ois.readObject();
 

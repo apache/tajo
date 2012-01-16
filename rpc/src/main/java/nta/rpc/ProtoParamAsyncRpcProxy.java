@@ -104,13 +104,10 @@ public class ProtoParamAsyncRpcProxy extends NettyClientBase {
   private class ResponseRpcCallback implements RpcCallback<Response> {
     @SuppressWarnings("rawtypes")
     private final Callback callback;
-    // @SuppressWarnings("rawtypes")
-    // private Class returnType;
     private Response response;
 
     @SuppressWarnings("rawtypes")
     public ResponseRpcCallback(Class clazz, Callback callback) {
-      // this.returnType = clazz;
       this.callback = callback;
     }
 
@@ -124,7 +121,6 @@ public class ProtoParamAsyncRpcProxy extends NettyClientBase {
         try {
           ByteArrayInputStream bais =
               new ByteArrayInputStream(response.getReturnValue().toByteArray());
-          // r = callFuture.getReturnType().newInstance();
           ObjectInputStream ois = new ObjectInputStream(bais);
           retObj = ois.readObject();
         } catch (Exception e) {
