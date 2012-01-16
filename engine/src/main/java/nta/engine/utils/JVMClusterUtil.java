@@ -71,7 +71,7 @@ public class JVMClusterUtil {
 	}
 
 	public static JVMClusterUtil.MasterThread createMasterThread(
-		final Configuration c, final int index) throws IOException {
+		final Configuration c, final int index) throws Exception {
 		NtaEngineMaster server;
 
 		server = new NtaEngineMaster(c);

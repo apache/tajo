@@ -1,46 +1,145 @@
 package nta.engine.query;
 
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
 
+import nta.engine.LeafServerProtos.SubQueryRequestProto;
+import nta.engine.LeafServerProtos.SubQueryRequestProtoOrBuilder;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.Tablet;
 
 /**
  * @author hyunsik
+ * @author jihoon
  * 
  */
-public class SubQueryRequestImpl implements SubQueryRequest {  
-  private final List<Tablet> tablets;
-  private final URI dest;
-  private final String query;
-  private final String tableName;
-  /**
-	 * 
-	 */
-public SubQueryRequestImpl(List<Tablet> tablets, URI output, String query, String tableName) {
+public class SubQueryRequestImpl implements SubQueryRequest {
+  private List<Tablet> tablets;
+  private URI dest;
+  private String query;
+  private String tableName;
+  
+  private SubQueryRequestProto proto = SubQueryRequestProto.getDefaultInstance();
+  private SubQueryRequestProto.Builder builder = null;
+  private boolean viaProto = false;
+  
+  public SubQueryRequestImpl() {
+	  builder = SubQueryRequestProto.newBuilder();
+  }
+  
+  public SubQueryRequestImpl(List<Tablet> tablets, URI output, String query, String tableName) {
+	  this();
     this.tablets = tablets;
     this.dest = output;
     this.query = query;
     this.tableName = tableName;
   }
 
+  public SubQueryRequestImpl(SubQueryRequestProto proto) {
+	  this.proto = proto;
+	  viaProto = true;
+  }
+
   @Override
   public String getQuery() {
-    return this.query;
+	  SubQueryRequestProtoOrBuilder p = viaProto ? proto : builder;
+	  
+	  if (query != null) {
+		  return this.query;
+	  }
+	  if (!proto.hasQuery()) {
+		  return null;
+	  }
+	  this.query = p.getQuery();
+	  return this.query;
   }
 
   @Override
   public List<Tablet> getTablets() {
-    return this.tablets;
+	  SubQueryRequestProtoOrBuilder p = viaProto ? proto : builder;
+	  if (tablets != null) {
+		  return this.tablets;
+	  }
+	  if (tablets == null) {
+		  tablets = new ArrayList<Tablet>();
+	  }
+	  for (int i = 0; i < p.getTabletsCount(); i++) {
+		  tablets.add(new Tablet(p.getTablets(i)));
+	  }
+	  return this.tablets;
   }
 
   @Override
   public URI getOutputDest() {
-    return this.dest;
+	  SubQueryRequestProtoOrBuilder p = viaProto ? proto : builder;
+	  if (dest != null) {
+		  return this.dest;
+	  }
+	  if (!proto.hasDest()) {
+		  return null;
+	  }
+	  try {
+		this.dest = new URI(p.getDest());
+	} catch (URISyntaxException e) {
+		e.printStackTrace();
+	}
+	  return this.dest;
   }
   
   public String getTableName() {
-    return this.tableName;
+	  SubQueryRequestProtoOrBuilder p = viaProto ? proto : builder;
+	  if (tableName != null) {
+		  return this.tableName;
+	  }
+	  if (!proto.hasTableName()) {
+		  return null;
+	  }
+	  this.tableName = p.getTableName();
+	  return this.tableName;
+  }
+  
+  public SubQueryRequestProto getProto() {
+	  mergeLocalToProto();
+	  proto = viaProto ? proto : builder.build();
+	  viaProto = true;
+	  return proto;
+  }
+  
+  private void maybeInitBuilder() {
+	  if (viaProto || builder == null) {
+		  builder = SubQueryRequestProto.newBuilder(proto);
+	  }
+	  viaProto = false;
+  }
+  
+  protected void mergeLocalToBuilder() {
+	  if (tablets != null) {
+		  for (int i = 0; i < tablets.size(); i++) {
+			  builder.addTablets(tablets.get(i).getProto());
+		  }
+	  }
+	  
+	  if (this.dest != null) {
+		  builder.setDest(this.dest.toString());
+	  }
+	  
+	  if (this.query != null) {
+		  builder.setQuery(this.query);
+	  }
+	  
+	  if (this.tableName != null) {
+		  builder.setTableName(this.tableName);
+	  }
+  }
+
+  private void mergeLocalToProto() {
+	  if(viaProto) {
+		  maybeInitBuilder();
+	  }
+	  mergeLocalToBuilder();
+	  proto = builder.build();
+	  viaProto = true;
   }
 }

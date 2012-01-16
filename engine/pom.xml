@@ -81,6 +81,7 @@
 								<argument>src/main/proto/NtaClientProtocol.proto</argument>
 								<argument>src/main/proto/TableProtos.proto</argument>
 								<argument>src/main/proto/ClusterProtos.proto</argument>
+								<argument>src/main/proto/LeafServerProtos.proto</argument>
 							</arguments>
 						</configuration>
 						<goals>
@@ -251,6 +252,13 @@
 			<artifactId>mockito-core</artifactId>
 			<version>1.9.0-rc1</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>kr.ac.korea.dbserver</groupId>
+			<artifactId>nta-rpc</artifactId>
+			<version>0.3.0-SNAPSHOT</version>
+			<type>jar</type>
+			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 

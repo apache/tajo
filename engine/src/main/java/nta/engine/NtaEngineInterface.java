@@ -10,11 +10,12 @@ import org.apache.hadoop.ipc.VersionedProtocol;
 
 @Deprecated
 public interface NtaEngineInterface extends VersionedProtocol {
+	public final long versionId=0;
 	public void createTable(TableDesc meta) throws Exception;
 	public void dropTable(String name) throws Exception;
 	public void attachTable(String name, Path path) throws Exception;
 	public void detachTable(String name) throws Exception;
-	public String executeQueryC(String query) throws NTAQueryException;
+	public String executeQueryC(String query) throws Exception;
 	public void updateQuery(String query) throws NTAQueryException;
 	public TableDesc getTableDesc(String name) throws NoSuchTableException;
 	public boolean existsTable(String name);

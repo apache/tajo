@@ -26,6 +26,7 @@ import nta.engine.plan.global.GenericTaskTree;
 import nta.engine.plan.logical.LogicalPlan;
 import nta.engine.plan.logical.OpType;
 import nta.engine.plan.logical.RootOp;
+import nta.rpc.NettyRpc;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
 
@@ -50,6 +51,7 @@ public class GlobalEngine implements EngineService {
 	GlobalQueryPlanner globalPlanner;
 	PhysicalPlanner phyPlanner;
 	// RPC interface list for leaf servers
+	LeafServerInterface leaf;
 	
 	public GlobalEngine(Configuration conf, Catalog cat, StorageManager sm) throws IOException {
 		this.conf = conf;
@@ -87,13 +89,14 @@ public class GlobalEngine implements EngineService {
 			GenericTaskTree optimized = globalPlanner.optimize(taskTree);
 			List<DecomposedQuery> queries = globalPlanner.decompose(optimized);
 			// execute sub queries via RPC
-			StringTokenizer tokenizer;
 			for (DecomposedQuery q : queries) {
-				tokenizer = new StringTokenizer(q.getHostName(), ":");
-				LeafServerInterface leaf = (LeafServerInterface) RPC.getProxy(LeafServerInterface.class, 
-						LeafServerInterface.versionID, new InetSocketAddress(tokenizer.nextToken(), 
-								Integer.valueOf(tokenizer.nextToken())), conf);
-				leaf.requestSubQuery(q.getQuery());
+//				LeafServerInterface leaf = (LeafServerInterface) RPC.getProxy(LeafServerInterface.class, 
+//						LeafServerInterface.versionID, new InetSocketAddress(tokenizer.nextToken(), 
+//								Integer.valueOf(tokenizer.nextToken())), conf);
+				LOG.error("Host: " + q.getHostName() + " port: " + q.getPort());
+				leaf = (LeafServerInterface) NettyRpc.getProtoParamBlockingRpcProxy(LeafServerInterface.class, 
+						new InetSocketAddress(q.getHostName(), q.getPort()));
+				leaf.requestSubQuery(((SubQueryRequestImpl)q.getQuery()).getProto());
 			}
 		}
 		

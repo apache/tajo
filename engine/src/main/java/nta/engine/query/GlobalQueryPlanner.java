@@ -48,7 +48,7 @@ public class GlobalQueryPlanner {
 	
 	public GlobalQueryPlanner(Catalog catalog) throws IOException {
 		this.catalog = catalog;
-		this.catalog.updateAllTabletServingInfo();
+//		this.catalog.updateAllTabletServingInfo();
 	}
 	
 	public GenericTaskTree buildPlan(LogicalPlan logicalPlan) throws IOException {
@@ -66,7 +66,7 @@ public class GlobalQueryPlanner {
 	public GenericTaskTree localize(LogicalPlan logicalPlan) throws IOException {
 		// Build the generic task tree
 		GenericTaskTree genericTree = buildGenericTaskTree(logicalPlan);
-		catalog.updateAllTabletServingInfo();
+//		catalog.updateAllTabletServingInfo();
 		
 		// For each level, localize each task
 		GenericTask task = genericTree.getRoot();
@@ -217,6 +217,7 @@ public class GlobalQueryPlanner {
 		DecomposedQuery query;
 		SubQueryRequest request;
 		String host = null;
+		int port = 0;
 		LogicalPlan lplan = new LogicalPlan();
 		ArrayList<GenericTask> s = new ArrayList<GenericTask>();
 		// remove root operator
@@ -241,9 +242,11 @@ public class GlobalQueryPlanner {
 				for (TabletServInfo servInfo : tabletServInfoList) {
 					if (servInfo.getTablet().equals(request.getTablets().get(0))) {
 						host = servInfo.getHostName();
+						port = servInfo.getPort();
+						break;
 					}
 				}
-				query = new DecomposedQuery(request, host);
+				query = new DecomposedQuery(request, port, host);
 				queryList.add(query);
 				lplan = new LogicalPlan();
 			}
@@ -316,7 +319,13 @@ public class GlobalQueryPlanner {
 			}
 		}
 		
-		strQuery = "SELECT " + proj + " " + from + " " + where;
+		strQuery = "select " + proj;
+		if (!from.equals("")) {
+			strQuery += " from " + from;
+		}
+		if (!where.equals("")) {
+			strQuery += " where " + where;
+		}
 		return strQuery;
 	}
 	

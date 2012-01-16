@@ -14,6 +14,10 @@ import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.conf.NtaConf;
+import nta.engine.LeafServerProtos.AssignTabletRequestProto;
+import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
+import nta.engine.LeafServerProtos.SubQueryRequestProto;
+import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.ipc.LeafServerInterface;
 import nta.engine.ipc.protocolrecords.AssignTabletRequest;
@@ -22,6 +26,9 @@ import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.SubQueryResponse;
 import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.query.QueryEngine;
+import nta.engine.query.SubQueryRequestImpl;
+import nta.rpc.NettyRpc;
+import nta.rpc.ProtoParamRpcServer;
 import nta.storage.StorageManager;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkUtil;
@@ -50,7 +57,8 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	/**
 	 * This servers address.
 	 */	
-	private final Server rpcServer;
+//	private final Server rpcServer;
+	private final ProtoParamRpcServer rpcServer;
 	private final InetSocketAddress isa;
 
 	private volatile boolean stopped = false;
@@ -89,17 +97,19 @@ public class LeafServer extends Thread implements LeafServerInterface {
 		}
 		int numHandlers = conf.getInt("nta.master.handler.count",
 			conf.getInt("nta.leafserver.handler.count", 25));
-		this.rpcServer = RPC.getServer(this,
-			initialIsa.getHostName(), // BindAddress is IP we got for this server.
-			initialIsa.getPort(),		        
-			numHandlers,
-			conf.getBoolean("nta.rpc.verbose", false), 
-			conf);
+//		this.rpcServer = RPC.getServer(this,
+//			initialIsa.getHostName(), // BindAddress is IP we got for this server.
+//			initialIsa.getPort(),		        
+//			numHandlers,
+//			conf.getBoolean("nta.rpc.verbose", false), 
+//			conf);
+		this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);
+		this.rpcServer.start();
 
 		// Set our address.
-	    this.isa = this.rpcServer.getListenerAddress();
+	    this.isa = this.rpcServer.getBindAddress();
 		this.serverName = this.isa.getHostName()+":"+this.isa.getPort();
-		
+		LOG.error("@@@@@@@@@ Server Name: " + this.serverName);
 		
 		// FileSystem initialization
 		String master = conf.get(NConstants.MASTER_HOST,"local");
@@ -215,9 +225,11 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	// LeafServerInterface
 	//////////////////////////////////////////////////////////////////////////////
 	@Override
-	public SubQueryResponse requestSubQuery(SubQueryRequest request) throws IOException {
+	public SubQueryResponseProto requestSubQuery(SubQueryRequestProto requestProto) throws IOException {
+	  SubQueryRequest request = new SubQueryRequestImpl(requestProto);
 	  
 	  TableMeta meta = storeManager.getTableMeta(request.getTablets().get(0).getTablePath());
+
 	  TableDesc desc = new TableDescImpl(request.getTableName(), meta);
 	  desc.setURI(request.getTablets().get(0).getTablePath());
 	  catalog.addTable(desc);
@@ -232,12 +244,12 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	}
 
 	@Override
-	public void assignTablets(AssignTabletRequest request) {
+	public void assignTablets(AssignTabletRequestProto request) {
 		// TODO - not implemented yet
 	}
 
 	@Override
-	public void releaseTablets(ReleaseTableRequest request) {
+	public void releaseTablets(ReleaseTabletRequestProto request) {
 		// TODO - not implemented yet
 	}
 	
@@ -264,11 +276,5 @@ public class LeafServer extends Thread implements LeafServerInterface {
 		LeafServer leafServer = new LeafServer(conf);
 
 		leafServer.start();
-	}
-
-	@Override
-	public long getProtocolVersion(String protocol, long clientVersion)
-			throws IOException {
-		return versionID;
 	}
 }

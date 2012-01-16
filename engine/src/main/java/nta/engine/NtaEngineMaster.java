@@ -3,17 +3,36 @@
  */
 package nta.engine;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 
+import nta.catalog.Catalog;
+import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
+import nta.catalog.TableMeta;
+import nta.catalog.TableUtil;
+import nta.catalog.exception.AlreadyExistsTableException;
+import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
+import nta.engine.exception.NTAQueryException;
+import nta.engine.query.GlobalEngine;
+import nta.storage.StorageManager;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkServer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.DNS;
 import org.apache.zookeeper.KeeperException;
 
@@ -21,10 +40,11 @@ import org.apache.zookeeper.KeeperException;
  * @author hyunsik
  *
  */
-public class NtaEngineMaster extends Thread {
+public class NtaEngineMaster extends Thread implements NtaEngineInterface {
 	private static final Log LOG = LogFactory.getLog(NtaEngineMaster.class);	
 
 	private final Configuration conf;
+	private FileSystem defaultFS;
 
 	private final InetSocketAddress isa;
 
@@ -33,8 +53,21 @@ public class NtaEngineMaster extends Thread {
 	private final String serverName;
 	private final ZkClient zkClient;
 	ZkServer zkServer = null;
+	
+	private Catalog catalog;
+	private StorageManager storeManager;
+	private GlobalEngine queryEngine;
+	
+	private final Path basePath;
+	private final Path catalogPath;
+	private final Path dataPath;
+	
+	private final InetSocketAddress bindAddr;
+	private RPC.Server server;					// RPC between master and client
+	
+	private List<EngineService> services = new ArrayList<EngineService>();
 
-	public NtaEngineMaster(final Configuration conf) throws IOException {
+	public NtaEngineMaster(final Configuration conf) throws Exception {
 		this.conf = conf;
 
 		// Server to handle client requests.
@@ -56,8 +89,80 @@ public class NtaEngineMaster extends Thread {
 		}
 
 		this.zkClient = new ZkClient(conf);
+		
+		String master = conf.get(NConstants.MASTER_HOST,"local");
+		if("local".equals(master)) {
+			// local mode
+			this.defaultFS = LocalFileSystem.get(conf);
+			LOG.info("LocalFileSystem is initialized.");
+		} else {
+			// remote mode
+			this.defaultFS = FileSystem.get(conf);	
+			LOG.info("FileSystem is initialized.");
+		}
+		
+		this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
+		LOG.info("Base dir is set " + conf.get(NConstants.ENGINE_BASE_DIR));
+		File baseDir = new File(this.basePath.toString());
+		if(baseDir.exists() == false) {
+			baseDir.mkdir();
+			LOG.info("Base dir ("+baseDir.getAbsolutePath()+") is created.");
+		}
+		
+		this.dataPath = new Path(conf.get(NConstants.ENGINE_DATA_DIR));
+		LOG.info("Data dir is set " + dataPath);		
+		if(!defaultFS.exists(dataPath)) {
+			defaultFS.mkdirs(dataPath);
+			LOG.info("Data dir ("+dataPath+") is created");
+		}		
+		this.storeManager = new StorageManager(conf);
+		
+		this.catalogPath = new Path(conf.get(NConstants.ENGINE_CATALOG_DIR));
+		LOG.info("Catalog dir is set to " + this.catalogPath);
+		File catalogDir = new File(this.catalogPath.toString());	
+		if(catalogDir.exists() == false) {
+			catalogDir.mkdir();
+			LOG.info("Catalog dir ("+catalogDir.getAbsolutePath()+") is created.");
+		}
+		this.catalog = new Catalog(conf);
+		this.catalog.init();
+		File catalogFile = new File(catalogPath+"/"+NConstants.ENGINE_CATALOG_FILENAME);
+		if(catalogFile.exists())		
+			loadCatalog(catalogFile);
+		services.add(catalog);
+		
+		this.queryEngine = new GlobalEngine(conf, catalog, storeManager);
+		this.queryEngine.init();
+		services.add(queryEngine);
+		
+		hostname = DNS.getDefaultHost(
+		      conf.get("engine.master.dns.interface", "default"),
+		      conf.get("engine.master.dns.nameserver", "default"));
+		port = conf.getInt(NConstants.MASTER_PORT, NConstants.DEFAULT_MASTER_PORT);
+		// Creation of a HSA will force a resolve.
+	    initialIsa = new InetSocketAddress(hostname, port);
+	    if (initialIsa.getAddress() == null) {
+	      throw new IllegalArgumentException("Failed resolve of " + this.bindAddr);
+	    }
+	    
+	    this.server = RPC.getServer(this, initialIsa.getHostName(), initialIsa.getPort(), conf);
+	    this.bindAddr = this.server.getListenerAddress();	    
+		LOG.info(NtaEngine.class.getSimpleName()+" is bind to "+bindAddr.getAddress()+":"+bindAddr.getPort());
+		
+		Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 	}
-
+	
+	private void loadCatalog(File catalogFile) throws Exception {
+		FileInputStream fis = new FileInputStream(catalogFile);	
+		LineNumberReader reader = new LineNumberReader(new InputStreamReader(fis));
+		String line = null;
+		
+		while((line = reader.readLine()) != null) {
+			String [] cols = line.split("\t");
+			attachTable(cols[1], new Path(cols[2]));
+		}
+	}
+	
 	public void run() {
 		LOG.info("NtaEngineMaster startup");
 		try {
@@ -90,19 +195,118 @@ public class NtaEngineMaster extends Thread {
 	public boolean isMasterRunning() {
 		return !this.stopped;
 	}
+	
+	public void init() {
+		
+	}
+	
+	public void start() {
+		this.server.start();
+	}
 
 	public void shutdown() {
 		this.stopped = true;
+		
+		for(EngineService service : services) {
+			try {
+				service.shutdown();
+			} catch (Exception e) {
+				LOG.error(e);
+			}
+		}
 	}
 	
-	List<String> getOnlineServer() throws KeeperException, InterruptedException {
+	public List<String> getOnlineServer() throws KeeperException, InterruptedException {
 		return zkClient.getChildren(NConstants.ZNODE_LEAFSERVERS);
 	}
 
-	public static void main(String [] args) throws IOException {
+	public static void main(String [] args) throws Exception {
 		NtaConf conf = new NtaConf();
 		NtaEngineMaster master = new NtaEngineMaster(conf);
 
 		master.start();
+	}
+
+	@Override
+	public long getProtocolVersion(String protocol, long clientVersion)
+			throws IOException {
+		return versionId;
+	}
+
+	@Override
+	public void createTable(TableDesc meta) throws Exception {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void dropTable(String name) throws Exception {
+
+	}
+
+	@Override
+	public void attachTable(String name, Path path) throws Exception {
+		if(catalog.existsTable(name))
+			throw new AlreadyExistsTableException(name);
+		
+		LOG.info(path.toUri());
+		
+		TableMeta meta = TableUtil.getTableMeta(conf, path);
+		TableDesc desc = new TableDescImpl(name, meta);
+		desc.setURI(path);
+		catalog.addTable(desc);
+		LOG.info("Table "+desc.getName()+" is attached.");
+	}
+
+	@Override
+	public void detachTable(String name) throws Exception {
+		if(!catalog.existsTable(name)) {
+			throw new NoSuchTableException(name);
+		}
+
+		catalog.deleteTable(name);
+		LOG.info("Table "+name+" is detached.");
+	}
+
+	@Override
+	public String executeQueryC(String query) throws Exception {
+		catalog.updateAllTabletServingInfo(getOnlineServer());
+		ResultSetOld rs = queryEngine.executeQuery(query);
+		if (rs == null) { 
+			return "";
+		} else {
+			return rs.toString();
+		}
+	}
+
+	@Override
+	public void updateQuery(String query) throws NTAQueryException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public TableDesc getTableDesc(String name) throws NoSuchTableException {
+		if(!catalog.existsTable(name)) {
+			throw new NoSuchTableException(name);
+		}
+		
+		return catalog.getTableDesc(name);
+	}
+
+	@Override
+	public boolean existsTable(String name) {
+		return catalog.existsTable(name);
+	}
+	
+	private class ShutdownHook implements Runnable {
+		@Override
+		public void run() {
+			shutdown();
+		}
+	}
+	
+	public Catalog getCatalog() {
+		return this.catalog;
 	}
 }

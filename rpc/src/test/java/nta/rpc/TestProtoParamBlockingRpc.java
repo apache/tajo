@@ -41,7 +41,8 @@ public class TestProtoParamBlockingRpc {
         NettyRpc.getProtoParamRpcServer(new DummyServer(),
             new InetSocketAddress(10010));
     server.start();
-    
+    Thread.sleep(100);
+
     // 3. Write client Part source code
     //  3.1 Make Proxy to make connection to server
     DummyServerInterface proxy =
@@ -68,7 +69,7 @@ public class TestProtoParamBlockingRpc {
     server.start();
     
     InetSocketAddress addr = server.getBindAddress();
-    
+    Thread.sleep(100);
     // 3. Write client Part source code
     //  3.1 Make Proxy to make connection to server
     DummyServerInterface proxy =

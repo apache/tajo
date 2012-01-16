@@ -14,8 +14,7 @@ import org.apache.hadoop.ipc.VersionedProtocol;
  * @author jimin
  * 
  */
-public interface QueryEngineInterface extends VersionedProtocol{
-	public long versionID = 0;
+public interface QueryEngineInterface extends VersionedProtocol {
 	ResultSetWritable executeQuery(String query);
 
 	QueryResponse executeQueryAsync(String query);

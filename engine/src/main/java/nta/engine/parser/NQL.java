@@ -271,6 +271,7 @@ public class NQL {
 	}
 	
 	public CommonTree parseTree(String query) throws NQLSyntaxException {
+		System.out.println("===================================== " + query);
 		ANTLRStringStream input = new ANTLRStringStream(query);
 		NQLLexer lexer = new NQLLexer(input);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);

@@ -26,13 +26,12 @@ public class LocalNtaEngineCluster {
 	private final Configuration conf;
 
 	public LocalNtaEngineCluster(final Configuration conf) 
-		throws IOException {
+		throws Exception {
 		this(conf, DEFAULT_NO);		
 	}
 
-	public LocalNtaEngineCluster(final Configuration conf, final int numLeafServers) throws IOException {
+	public LocalNtaEngineCluster(final Configuration conf, final int numLeafServers) throws Exception {
 		this.conf = conf;
-		conf.set(NConstants.MASTER_PORT, "0");
 		conf.set(NConstants.LEAFSERVER_PORT, "0");
 
 		addMaster(new Configuration(conf), 0);
@@ -43,7 +42,7 @@ public class LocalNtaEngineCluster {
 	}
 
 	public JVMClusterUtil.MasterThread addMaster(Configuration c, final int index)
-		throws IOException {
+		throws Exception {
 		// Create each master with its own Configuration instance so each has
 		// its HConnection instance rather than share (see HBASE_INSTANCES down in
 		// the guts of HConnectionManager.
@@ -180,10 +179,9 @@ public class LocalNtaEngineCluster {
 
 	/**
 	 * @param args
-	 * @throws IOException 
-	 * @throws InterruptedException 
+	 * @throws Exception 
 	 */
-	public static void main(String[] args) throws IOException, InterruptedException {
+	public static void main(String[] args) throws Exception {
 		Configuration conf = new NtaConf();
 	    LocalNtaEngineCluster cluster = new LocalNtaEngineCluster(conf,2);
 	    cluster.startup();
