@@ -170,12 +170,9 @@ public class CSVFile2 extends Storage {
     private void openTablet(Tablet tablet) throws IOException {
       this.startOffset = tablet.getStartOffset();
       this.length = tablet.getLength();      
-      this.fs = tablet.getFilePath().getFileSystem(conf);
+      this.fs = tablet.getPath().getFileSystem(conf);
 
-      if (!fs.exists(tablet.getFilePath()))
-        fs.mkdirs(tablet.getFilePath());
-
-      fis = fs.open(tablet.getFilePath());
+      fis = fs.open(tablet.getPath());
       long available = fis.available();
       if (startOffset != 0) {
         if (startOffset < available) {

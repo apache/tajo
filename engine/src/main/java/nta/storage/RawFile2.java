@@ -95,8 +95,8 @@ public class RawFile2 extends Storage {
 			}
 			if (tableIter.hasNext()) {
 				curTablet = tableIter.next();
-				this.fs = curTablet.getFilePath().getFileSystem(this.conf);
-				this.in = fs.open(curTablet.getFilePath());
+				this.fs = curTablet.getPath().getFileSystem(this.conf);
+				this.in = fs.open(curTablet.getPath());
 				this.start = curTablet.getStartOffset();
 				this.end = curTablet.getStartOffset() + curTablet.getLength();
 				

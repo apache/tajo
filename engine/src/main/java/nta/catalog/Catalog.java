@@ -167,6 +167,7 @@ public class Catalog implements CatalogService, EngineService {
 //			tabletInfoList = new ArrayList<TabletServInfo>();
 //		}
 		
+		int i=0;
 		for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
 			blocks = fs.getFileBlockLocations(files[fileIdx], 0, files[fileIdx].getLen());
 			for (blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
@@ -178,8 +179,10 @@ public class Catalog implements CatalogService, EngineService {
 //					tabletServingInfo.put(tid, tabletInfoList);
 //				}
 				// TODO: select the proper serving node for block
-				tabletInfoList.add(new TabletServInfo(hosts[0], -1, new Tablet(path, files[fileIdx].getPath().getName(), 
+				tabletInfoList.add(new TabletServInfo(hosts[0], -1, new Tablet(desc.getName()+"_"+i, 
+            files[fileIdx].getPath(), desc.getMeta(), 
 						blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
+				i++;
 			}
 		}
 		return tabletInfoList;

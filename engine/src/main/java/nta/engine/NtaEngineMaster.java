@@ -126,9 +126,9 @@ public class NtaEngineMaster extends Thread implements NtaEngineInterface {
 		}
 		this.catalog = new Catalog(conf);
 		this.catalog.init();
-		File catalogFile = new File(catalogPath+"/"+NConstants.ENGINE_CATALOG_FILENAME);
+		/*File catalogFile = new File(catalogPath+"/"+NConstants.ENGINE_CATALOG_FILENAME);
 		if(catalogFile.exists())		
-			loadCatalog(catalogFile);
+			loadCatalog(catalogFile);*/
 		services.add(catalog);
 		
 		this.queryEngine = new GlobalEngine(conf, catalog, storeManager);

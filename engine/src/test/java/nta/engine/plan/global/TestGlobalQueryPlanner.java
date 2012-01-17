@@ -38,8 +38,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -50,18 +50,16 @@ import org.junit.Test;
 
 public class TestGlobalQueryPlanner {
 	
-	private NtaTestingUtility util;
-	LogicalPlan lp;
-	NtaConf conf;
-	Catalog catalog;
-	GlobalQueryPlanner planner;
-	Schema schema;
-	NtaEngineMaster master;
+	private static NtaTestingUtility util;
+	private static LogicalPlan lp;
+	private static NtaConf conf;
+	private static Catalog catalog;
+	private static GlobalQueryPlanner planner;
+	private static Schema schema;
+	private static NtaEngineMaster master;
 	
-	final String TEST_PATH = "";
-	
-	@Before
-	public void setup() throws Exception {
+	@BeforeClass
+	public static void setup() throws Exception {
 		util = new NtaTestingUtility();
 		
 	    int i, j;
@@ -94,7 +92,7 @@ public class TestGlobalQueryPlanner {
 		int tupleNum;
 		
 		for (i = 0; i < tbNum; i++) {
-			tbPath = new Path(TEST_PATH+"/table"+i);
+			tbPath = new Path("/table"+i);
 			if (fs.exists(tbPath)){
 				fs.delete(tbPath, true);
 			}
@@ -118,8 +116,8 @@ public class TestGlobalQueryPlanner {
 		}
 	}
 	
-	@After
-	public void terminate() throws IOException {
+	@AfterClass
+	public static void terminate() throws IOException {
 		util.shutdownMiniCluster();
 	}
 
@@ -193,7 +191,7 @@ public class TestGlobalQueryPlanner {
 	@Test
 	public void testLocalizeSimpleOp() throws IOException, KeeperException, InterruptedException {
 		catalog.updateAllTabletServingInfo(master.getOnlineServer());
-		TableProto tableProto = (TableProto) FileUtil.loadProto(conf, new Path(TEST_PATH+"/table0/.meta"), 
+		TableProto tableProto = (TableProto) FileUtil.loadProto(conf, new Path("/table0/.meta"), 
 			      TableProto.getDefaultInstance());
 		TableMeta meta = new TableMetaImpl(tableProto);
 		ScanOp scan = new ScanOp(new RelInfo(new TableDescImpl("table0", meta)));
@@ -201,7 +199,7 @@ public class TestGlobalQueryPlanner {
 		GenericTaskTree genericTaskTree = planner.buildGenericTaskTree(plan);
 		GenericTask[] tasks = planner.localizeSimpleOp(genericTaskTree.getRoot());
 		FileSystem fs = util.getMiniDFSCluster().getFileSystem();
-		FileStatus fileStat = fs.getFileStatus(new Path(TEST_PATH+"/table0/data/table.csv"));
+		FileStatus fileStat = fs.getFileStatus(new Path("/table0/data/table.csv"));
 		List<Tablet> tablets;
 		int len = 0;
 		for (GenericTask task : tasks) {
@@ -216,7 +214,7 @@ public class TestGlobalQueryPlanner {
 	@Test
 	public void testDecompose() throws IOException, KeeperException, InterruptedException {
 		catalog.updateAllTabletServingInfo(master.getOnlineServer());
-		TableProto tableProto = (TableProto) FileUtil.loadProto(conf, new Path(TEST_PATH+"/table0/.meta"), 
+		TableProto tableProto = (TableProto) FileUtil.loadProto(conf, new Path("/table0/.meta"), 
 			      TableProto.getDefaultInstance());
 		TableMeta meta = new TableMetaImpl(tableProto);
 		ScanOp scan = new ScanOp(new RelInfo(new TableDescImpl("table0", meta)));
