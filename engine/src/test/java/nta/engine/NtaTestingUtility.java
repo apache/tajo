@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 import nta.conf.NtaConf;
+import nta.engine.utils.JVMClusterUtil.LeafServerThread;
 import nta.zookeeper.MiniZooKeeperCluster;
 
 import org.apache.commons.logging.Log;
@@ -157,6 +158,7 @@ public class NtaTestingUtility {
 	}
 	
 	public void restartNtaEngineCluster(int numSlaves) throws Exception {
+	  this.engineCluster.shutdown();
 		this.engineCluster = new MiniNtaEngineCluster(new Configuration(this.conf), numSlaves);
 		
 		LOG.info("Minicluster has been restarted");
@@ -358,7 +360,13 @@ public class NtaTestingUtility {
 		cluster.startMiniCluster(2);
 		
 		Thread.sleep(3000);
+		LeafServerThread t = cluster.getMiniNtaEngineCluster().addLeafServer();
+		t.getLeafServer().getServerName();
 		
+		Thread.sleep(3000);
+		cluster.getMiniNtaEngineCluster().shutdownLeafServer(0);
+		
+		Thread.sleep(3000);
 		cluster.shutdownMiniCluster();
 	}
 }

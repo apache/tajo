@@ -71,6 +71,10 @@ public class LocalNtaEngineCluster {
 	public List<JVMClusterUtil.LeafServerThread> getLeafServers() {
 		return Collections.unmodifiableList(this.leafThreads);
 	}
+	
+	public int getClusterSize() {
+	  return this.leafThreads.size();
+	}
 
 	public List<JVMClusterUtil.LeafServerThread> getLiveLeafServers() {
 		List<JVMClusterUtil.LeafServerThread> liveServers =
