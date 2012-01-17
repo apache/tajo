@@ -180,13 +180,13 @@ public class LeafServer extends Thread implements LeafServerInterface {
 			} 
 		}
 
-		LOG.info("NtaLeafServer main thread exiting");
+		LOG.info("NtaLeafServer ("+serverName+") main thread exiting");
 	}
 	
 	private class ShutdownHook implements Runnable {
 		@Override
 		public void run() {
-			shutdown("Shutting Down Normally!");
+			shutdown("Shutting Down Normally! ("+serverName+")");
 		}
 	}
 	

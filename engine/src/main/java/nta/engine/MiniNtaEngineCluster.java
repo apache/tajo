@@ -114,4 +114,12 @@ public class MiniNtaEngineCluster {
 		// TODO - to be implemented
 		return null;
 	}
+	
+	public JVMClusterUtil.LeafServerThread addLeafServer() throws IOException {
+	  return engineCluster.addRegionServer(conf, engineCluster.getClusterSize());
+	}
+	
+	public void shutdownLeafServer(int idx) {
+	  engineCluster.getLeafServer(idx).shutdown("Shutting down Normally");
+	}
 }
