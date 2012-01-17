@@ -9,15 +9,10 @@ import org.apache.hadoop.fs.Path;
  * @author Hyunsik Choi
  *
  */
-public interface TableDesc {
+public interface TableDesc {  
+  void setId(String tableId);
   
-  void setId(int id);
-  
-  int getId();
-  
-  void setName(String name);
-  
-  String getName();
+  String getId();
   
   void setURI(URI uri);
   

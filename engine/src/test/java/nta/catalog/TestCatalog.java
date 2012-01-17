@@ -107,27 +107,6 @@ public class TestCatalog {
 		assertFalse(cat.existsTable("table1"));		
 	}
 	
-	@Test
-  public void testCheckRelationId() throws Exception {   
-    Schema schema2 = new Schema();
-    schema2.addColumn(FieldName1, DataType.BYTE);
-    schema2.addColumn(FieldName2, DataType.INT);
-    schema2.addColumn(FieldName3, DataType.LONG);
-    
-    TableDesc meta1 = new TableDescImpl("table3", schema2, StoreType.MEM);
-    meta1.setURI(URI.create("/table1"));    
-    cat.addTable(meta1);
-    
-    TableDesc meta2 = new TableDescImpl("table4", schema2, StoreType.MEM);
-    meta2.setURI(URI.create("/table1"));    
-    cat.addTable(meta2);
-    
-    TableDesc first = cat.getTableDesc("table3");
-    TableDesc second = cat.getTableDesc("table4");
-    
-    assertEquals(first.getId()+1, second.getId());   
-  }
-	
 	@Test(expected = Throwable.class)
 	public void testAddTableNoName() throws Exception {
 	  schema1 = new Schema();
@@ -281,7 +260,7 @@ public class TestCatalog {
 		FileStatus fileStatus;
 		while (it.hasNext()) {
 			tableInfo = it.next();
-			tabletInfoList = catalog.getHostByTable(tableInfo.getName());
+			tabletInfoList = catalog.getHostByTable(tableInfo.getId());
 			if (tabletInfoList != null) {
 				cnt++;
 				len = 0;

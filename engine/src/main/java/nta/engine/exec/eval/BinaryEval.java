@@ -3,6 +3,7 @@
  */
 package nta.engine.exec.eval;
 
+import nta.catalog.Schema;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
@@ -99,32 +100,32 @@ public class BinaryEval extends EvalNode {
 	 * @see nta.query.executor.eval.Expr#evalBool(nta.storage.Tuple)
 	 */
 	@Override
-	public Datum eval(Tuple tuple, Datum...args) {
+	public Datum eval(Schema schema, Tuple tuple, Datum...args) {
 		switch(type) {
 		case AND:
-			return DatumFactory.create(leftExpr.eval(tuple).asBool() && rightExpr.eval(tuple).asBool());
+			return DatumFactory.create(leftExpr.eval(schema, tuple).asBool() && rightExpr.eval(schema, tuple).asBool());
 		case OR:
-			return DatumFactory.create(leftExpr.eval(tuple).asBool() || rightExpr.eval(tuple).asBool());
+			return DatumFactory.create(leftExpr.eval(schema, tuple).asBool() || rightExpr.eval(schema, tuple).asBool());
 		
 		case EQUAL:
-			return leftExpr.eval(tuple).equalTo(rightExpr.eval(tuple));
+			return leftExpr.eval(schema, tuple).equalTo(rightExpr.eval(schema, tuple));
 		case LTH:
-			return leftExpr.eval(tuple).lessThan(rightExpr.eval(tuple));
+			return leftExpr.eval(schema, tuple).lessThan(rightExpr.eval(schema, tuple));
 		case LEQ:
-			return leftExpr.eval(tuple).lessThanEqual(rightExpr.eval(tuple));
+			return leftExpr.eval(schema, tuple).lessThanEqual(rightExpr.eval(schema, tuple));
 		case GTH:
-			return leftExpr.eval(tuple).greaterThan(rightExpr.eval(tuple));
+			return leftExpr.eval(schema, tuple).greaterThan(rightExpr.eval(schema, tuple));
 		case GEQ:
-			return leftExpr.eval(tuple).greaterThanEqual(rightExpr.eval(tuple));			
+			return leftExpr.eval(schema, tuple).greaterThanEqual(rightExpr.eval(schema, tuple));			
 			
 		case PLUS:
-			return leftExpr.eval(tuple).plus(rightExpr.eval(tuple));			
+			return leftExpr.eval(schema, tuple).plus(rightExpr.eval(schema, tuple));			
 		case MINUS:
-			return leftExpr.eval(tuple).minus(rightExpr.eval(tuple));
+			return leftExpr.eval(schema, tuple).minus(rightExpr.eval(schema, tuple));
 		case MULTIPLY:
-			return leftExpr.eval(tuple).multiply(rightExpr.eval(tuple));
+			return leftExpr.eval(schema, tuple).multiply(rightExpr.eval(schema, tuple));
 		case DIVIDE:
-			return leftExpr.eval(tuple).divide(rightExpr.eval(tuple));
+			return leftExpr.eval(schema, tuple).divide(rightExpr.eval(schema, tuple));
 		default:
 			throw new InvalidEvalException();
 		}

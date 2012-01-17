@@ -255,7 +255,7 @@ public class NtaEngineMaster extends Thread implements NtaEngineInterface {
 		TableDesc desc = new TableDescImpl(name, meta);
 		desc.setURI(path);
 		catalog.addTable(desc);
-		LOG.info("Table "+desc.getName()+" is attached.");
+		LOG.info("Table "+desc.getId()+" is attached.");
 	}
 
 	@Override

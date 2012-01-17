@@ -259,8 +259,8 @@ public final class NQLCompiler {
         @SuppressWarnings("unused")
         String fieldName = new String(fieldBytes);
         
-        TableDesc desc = cat.getTableDesc(0);
-        stack[cur++] = new FieldEval(0, desc.getMeta().getSchema().getColumn(fieldName)); 
+        //TableDesc desc = cat.getTableDesc(0);
+        //stack[cur++] = new FieldEval(desc.getMeta().getSchema().getColumn(fieldName)); 
         
         break;
       

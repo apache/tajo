@@ -213,11 +213,11 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 
 	@Override
 	public void createTable(TableDesc meta) throws IOException {
-		if(catalog.existsTable(meta.getName()))
-			throw new AlreadyExistsTableException(meta.getName());
+		if(catalog.existsTable(meta.getId()))
+			throw new AlreadyExistsTableException(meta.getId());
 
 		catalog.addTable(meta);
-		LOG.info("Table "+meta.getName()+" ("+meta.getMeta().getStoreType()+") is created.");
+		LOG.info("Table "+meta.getId()+" ("+meta.getMeta().getStoreType()+") is created.");
 	}
 
 	@Override
@@ -240,7 +240,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 		TableDesc desc = new TableDescImpl(name, meta);
 		desc.setURI(path);
 		catalog.addTable(desc);
-		LOG.info("Table "+desc.getName()+" is attached.");
+		LOG.info("Table "+desc.getId()+" is attached.");
 	}
 
 	@Override

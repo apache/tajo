@@ -3,6 +3,7 @@
  */
 package nta.engine.exec.eval;
 
+import nta.catalog.Schema;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
 import nta.engine.function.Function;
@@ -33,14 +34,14 @@ public class FuncCallEval extends EvalNode {
 	 * @see nta.query.executor.eval.Expr#evalVal(nta.storage.Tuple)
 	 */
 	@Override
-	public Datum eval(Tuple tuple, Datum...args) {		
+	public Datum eval(Schema schema, Tuple tuple, Datum...args) {		
 		Datum [] data = null;
 		
 		if(givenArgs != null) {
 			data = new Datum[givenArgs.length];
 
 			for(int i=0;i < givenArgs.length; i++) {
-				data[i] = givenArgs[i].eval(tuple);
+				data[i] = givenArgs[i].eval(schema, tuple);
 			}
 		}
 

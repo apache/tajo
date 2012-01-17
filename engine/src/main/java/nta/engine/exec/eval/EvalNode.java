@@ -1,5 +1,6 @@
 package nta.engine.exec.eval;
 
+import nta.catalog.Schema;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
 import nta.storage.Tuple;
@@ -52,7 +53,7 @@ public abstract class EvalNode {
 		return "("+this.type+"("+leftExpr.toString()+" "+rightExpr.toString()+"))";
 	}
 	
-	public abstract Datum eval(Tuple tuple, Datum...args);
+	public abstract Datum eval(Schema schema, Tuple tuple, Datum...args);
 	
 	public static enum Type {
 	  FIELD,

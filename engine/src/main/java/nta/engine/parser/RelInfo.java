@@ -39,7 +39,7 @@ public class RelInfo implements SchemaObject {
 	}
 	
 	public String getName() {
-		return rel.getName();
+		return rel.getId();
 	}
 	
 	public String toString() {

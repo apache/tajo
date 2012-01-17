@@ -17,10 +17,6 @@ public class ScanOp extends LogicalOp {
 		super(OpType.SCAN);
 		this.relInfo = relInfo;
 	}
-
-	public int getRelId() {
-		return relInfo.getRelation().getId();
-	}
 	
 	public String getRelName() {
 		return relInfo.getName();

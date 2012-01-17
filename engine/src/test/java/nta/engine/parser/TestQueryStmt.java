@@ -91,12 +91,12 @@ public class TestQueryStmt {
 		
 		assertEquals(1, stmt.numBaseRels);
 		assertEquals("test", stmt.getBaseRelNames().get(0));
-		assertTrue(cat.getTableId("test") == stmt.getBaseRel("test").getRelation().getId());
+		assertTrue(cat.getTableDesc("test") .getId()== stmt.getBaseRel("test").getRelation().getId());
 		
 		stmt = nql.parse(queries[2]);
 		assertEquals(1, stmt.numBaseRels);
 		assertEquals("t1", stmt.getBaseRelNames().get(0));
-		assertTrue(cat.getTableId("test") == stmt.getBaseRel("t1").getRelation().getId());
+		assertTrue(cat.getTableDesc("test").getId() == stmt.getBaseRel("t1").getRelation().getId());
 	}
 	
 	@Test
@@ -124,11 +124,11 @@ public class TestQueryStmt {
 		EvalNode expr = stmt.getTargetList()[0].expr;
 		assertEquals(expr.getType(), Type.PLUS);
 		assertEquals(expr.getLeftExpr().getType(), Type.CONST);
-		assertEquals(expr.getLeftExpr().eval(null).type(), DatumType.INT);
-		assertEquals(expr.getLeftExpr().eval(null).asInt(), 2);
+		assertEquals(expr.getLeftExpr().eval(null, null).type(), DatumType.INT);
+		assertEquals(expr.getLeftExpr().eval(null, null).asInt(), 2);
 		assertEquals(expr.getRightExpr().getType(), Type.CONST);
-		assertEquals(expr.getRightExpr().eval(null).type(), DatumType.INT);
-		assertEquals(expr.getRightExpr().eval(null).asInt(), 3);		
+		assertEquals(expr.getRightExpr().eval(null, null).type(), DatumType.INT);
+		assertEquals(expr.getRightExpr().eval(null, null).asInt(), 3);		
 	}
 	
 	@Test

@@ -85,7 +85,7 @@ public class TestNQLCompiler {
 
     long start = System.currentTimeMillis();
     for (int i = 0; i < tuples.length; i++) {
-      expr.eval(tuples[i]);
+      expr.eval(schema, tuples[i]);
     }
     long end = System.currentTimeMillis();
 
@@ -128,7 +128,7 @@ public class TestNQLCompiler {
 
     long start = System.currentTimeMillis();
     for (int i = 0; i < tuples.length; i++) {
-      expr.eval(tuples[i]);
+      expr.eval(schema, tuples[i]);
     }
     long end = System.currentTimeMillis();
 
@@ -159,7 +159,7 @@ public class TestNQLCompiler {
 
     EvalNode expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
 
-    assertEquals(18, expr.eval(tuple).asInt());
+    assertEquals(18, expr.eval(schema, tuple).asInt());
   }
   
   @Test

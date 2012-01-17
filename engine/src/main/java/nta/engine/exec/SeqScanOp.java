@@ -62,22 +62,22 @@ public class SeqScanOp extends PhysicalOp {
 				field = schema.getColumn(tlist[i].colId);
 				switch(field.getDataType()) {
 				case INT:
-					t.put(resId, expr.eval(tuple).asInt());
+					t.put(resId, expr.eval(schema, tuple).asInt());
 					break;
 				case LONG:
-					t.put(resId, expr.eval(tuple).asLong());
+					t.put(resId, expr.eval(schema, tuple).asLong());
 				case FLOAT:
-					t.put(resId, expr.eval(tuple).asFloat());
+					t.put(resId, expr.eval(schema, tuple).asFloat());
 				case DOUBLE:
-					t.put(resId, expr.eval(tuple).asDouble());
+					t.put(resId, expr.eval(schema, tuple).asDouble());
 					break;
 				case STRING:
-					t.put(resId, expr.eval(tuple).asChars());
+					t.put(resId, expr.eval(schema, tuple).asChars());
 					break;
 				case BOOLEAN:
-					t.put(resId, expr.eval(tuple).asBool());
+					t.put(resId, expr.eval(schema, tuple).asBool());
 				case ANY:
-					t.put(resId, expr.eval(tuple).asChars());
+					t.put(resId, expr.eval(schema, tuple).asChars());
 				}
 			}
 			return t;
@@ -105,7 +105,7 @@ public class SeqScanOp extends PhysicalOp {
 		} else {				
 			while ((next = scanner.next()) != null) {				
 				next = buildTuple(next);
-				if(qual.eval(next).asBool()) {				
+				if(qual.eval(schema, next).asBool()) {				
 					return next;
 				}
 			}

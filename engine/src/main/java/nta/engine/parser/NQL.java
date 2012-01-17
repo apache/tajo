@@ -239,19 +239,19 @@ public class NQL {
 				
 		if(stmt.getBaseRels().size() == 0 ||expr.getType() == 
 		    Type.FUNCTION) {			
-			entry.relId = -1;
+			entry.relId = null;
 			entry.resId = resNum;
 			entry.expr = expr;
 			entry.colName = entry.expr.getName();
-			entry.colId = -1;
+			entry.colId = null;
 		} else {
 			if(node.getType() == NQLParser.COLUMN)
 				node = node.getChild(0);
 			
 			FieldName fieldName = new FieldName(node);
 			FieldEval field = (FieldEval) expr;
-			entry.relId = field.tableId;
-			entry.colId = field.fieldId;			
+			entry.relId = field.getTableId();
+			entry.colId = field.getColumnName();		
 			entry.resId = resNum;
 			entry.colName = fieldName.getName();
 			entry.expr = expr;
@@ -358,7 +358,7 @@ public class NQL {
 			if(field == null)
 				throw new InvalidQueryException("No such field: "+fieldName.getName());
 			else {					
-				return new FieldEval(rel.getId(), field);
+				return new FieldEval(field);
 			}			
 		case NQLParser.FUNCTION:
 			String funcName = tree.getText();
@@ -410,8 +410,8 @@ public class NQL {
 			switch(cols[i].getType()) {
 			case FIELD:			
 				FieldEval fieldExpr = (FieldEval)cols[i];
-				field = cat.getTableDesc(fieldExpr.tableId).getMeta().getSchema().
-					getColumn(fieldExpr.fieldId);
+				field = cat.getTableDesc(fieldExpr.getTableId()).getMeta().getSchema().
+					getColumn(fieldExpr.getColumnName());
 				break;
 			case FUNCTION:
 				FuncCallEval funcExpr = (FuncCallEval)cols[i];

@@ -3,6 +3,7 @@
  */
 package nta.engine.exec.eval;
 
+import nta.catalog.Schema;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumType;
@@ -34,7 +35,7 @@ public class ConstEval extends EvalNode {
 	 * @see nta.query.executor.expr.Expr#evalVal(nta.storage.Tuple)
 	 */
 	@Override
-	public Datum eval(Tuple tuple, Datum...args) {
+	public Datum eval(Schema schema, Tuple tuple, Datum...args) {
 		return this.datum;
 	}
 	
