@@ -52,8 +52,8 @@ public class NQL {
 		this.cat = cat;
 	}
 	
-	public Query parse(String query) throws NTAQueryException {
-		CommonTree ast = parseTree(query);
+	public Query parse(String query) throws NTAQueryException {	  
+		CommonTree ast = parseTree(query.toLowerCase());
 		Query stmt = new Query(query, ast);
 		
 		switch(stmt.getCmdType()) {
