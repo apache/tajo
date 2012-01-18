@@ -1,5 +1,6 @@
 package nta.rpc;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.junit.Test;
@@ -13,10 +14,15 @@ public class TestProtoParamAsyncRpc {
 
   public static interface DummyServerInterface {
     public MulResponse mul(MulRequest request);
+
+    public Object throwException(MulRequest request) throws IOException;
   }
 
   public static interface DummyClientInterface {
     public void mul(Callback<MulResponse> callback, MulRequest request);
+
+    public void throwException(Callback<Object> callback, MulRequest request)
+        throws IOException;
   }
 
   public static class DummyServer implements DummyServerInterface {
@@ -30,11 +36,16 @@ public class TestProtoParamAsyncRpc {
       MulResponse rst = MulResponse.newBuilder().setResult(result).build();
       return rst;
     }
+
+    @Override
+    public Object throwException(MulRequest request) throws IOException {
+      throw new IOException();
+    }
   }
 
   MulResponse answer1 = null;
 
-  // @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked")
   // @Test
   public void testRpc() throws Exception {
     ProtoParamRpcServer server =
@@ -78,13 +89,24 @@ public class TestProtoParamAsyncRpc {
 
     MulRequest req = MulRequest.newBuilder().setX1(10).setX2(20).build();
 
-    @SuppressWarnings("rawtypes")
-    Callback cb = new Callback<MulResponse>();
-    proxy.mul(cb, req);
-
     System.out.println("Do whatever you want before get result!!");
-    MulResponse resp = (MulResponse) cb.get();
-    assertEquals(200, resp.getResult());
+
+    try {
+      @SuppressWarnings("rawtypes")
+      Callback cb = new Callback<MulResponse>();
+      proxy.mul(cb, req);
+
+      MulResponse resp = (MulResponse) cb.get();
+      assertEquals(200, resp.getResult());
+
+      @SuppressWarnings("rawtypes")
+      Callback cb2 = new Callback<Object>();
+
+      proxy.throwException(cb2, req);
+      cb2.get();
+    } catch (RemoteException e) {
+      System.out.println(e.getMessage());
+    }
 
     server.shutdown();
   }

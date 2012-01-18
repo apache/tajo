@@ -11,4 +11,5 @@ message Response {
     required int32 id = 1;
     required bool has_return = 2;
     optional bytes return_value = 3;
+    optional string exception_message = 4;
 }

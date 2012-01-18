@@ -114,17 +114,27 @@ public class ProtoParamAsyncRpcProxy extends NettyClientBase {
     @SuppressWarnings("unchecked")
     public void run(Response message) {
       response = message;
+
       Object retObj = null;
-      if (message == null || !message.getHasReturn()) {
-        retObj = null;
-      } else {
-        try {
-          ByteArrayInputStream bais =
-              new ByteArrayInputStream(response.getReturnValue().toByteArray());
-          ObjectInputStream ois = new ObjectInputStream(bais);
-          retObj = ois.readObject();
-        } catch (Exception e) {
-          e.printStackTrace();
+      if (response != null) {
+        if (!response.getHasReturn()) {
+          if (response.hasExceptionMessage()) {
+            callback.onFailure(new RemoteException(response
+                .getExceptionMessage()));
+            return;
+          }
+          retObj = null;
+        } else {
+          try {
+            ByteArrayInputStream bais =
+                new ByteArrayInputStream(response.getReturnValue()
+                    .toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            retObj = ois.readObject();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+
         }
       }
 

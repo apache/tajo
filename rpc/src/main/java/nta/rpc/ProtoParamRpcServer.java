@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
@@ -50,27 +51,48 @@ public class ProtoParamRpcServer extends NettyServerBase {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
         throws Exception {
       final Invocation request = (Invocation) e.getMessage();
-      String methodName = request.getMethodName();
-
-      if (methods.containsKey(methodName) == false) {
-        throw new NoSuchMethodException(methodName);
-      }
-
-      Method method = methods.get(methodName);
-      Object[] objs = null;
-      int size = method.getParameterTypes().length;
-      if (size > 0) {
-        objs = new Object[size];
-        for (int i = 0; i < size; i++) {
-          ByteArrayInputStream bis =
-              new ByteArrayInputStream(request.getParam(i).toByteArray());
-          ObjectInputStream ois = new ObjectInputStream(bis);
-          objs[i] = ois.readObject();
-        }
-      }
-
-      Object res = method.invoke(instance, objs);
+      Object res = null;
       Response response = null;
+
+      try {
+        String methodName = request.getMethodName();
+        if (methods.containsKey(methodName) == false) {
+          throw new NoSuchMethodException(methodName);
+        }
+
+        Method method = methods.get(methodName);
+        Object[] objs = null;
+        int size = method.getParameterTypes().length;
+        if (size > 0) {
+          objs = new Object[size];
+          for (int i = 0; i < size; i++) {
+            ByteArrayInputStream bis =
+                new ByteArrayInputStream(request.getParam(i).toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(bis);
+            objs[i] = ois.readObject();
+          }
+        }
+
+        res = method.invoke(instance, objs);
+
+      } catch (InvocationTargetException internalException) {
+        response =
+            Response
+                .newBuilder()
+                .setId(request.getId())
+                .setHasReturn(false)
+                .setExceptionMessage(
+                    internalException.getTargetException().toString()).build();
+        e.getChannel().write(response);
+        return;
+      } catch (Exception otherException) {
+        response =
+            Response.newBuilder().setId(request.getId()).setHasReturn(false)
+                .setExceptionMessage(otherException.toString()).build();
+        e.getChannel().write(response);
+        return;
+      }
+
       if (res == null) {
         response =
             Response.newBuilder().setId(request.getId()).setHasReturn(false)
