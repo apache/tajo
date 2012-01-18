@@ -14,7 +14,7 @@ public class Callback<T> implements Future<T> {
   private Status status;
   private Semaphore sem = new Semaphore(0);
   private T result = null;
-  private Throwable err;
+  private RemoteException err;
 
   public Callback() {
     status = Status.READY;
@@ -26,7 +26,7 @@ public class Callback<T> implements Future<T> {
     sem.release();
   }
 
-  public void onFailure(Throwable error) {
+  public void onFailure(RemoteException error) {
     status = Status.FAILURE;
     result = null;
     err = error;
@@ -38,6 +38,10 @@ public class Callback<T> implements Future<T> {
     if (!didGetResponse()) {
       sem.acquire();
     }
+
+    if (isFailure()) {
+      throw err;
+    }
     return result;
   }
 
@@ -46,6 +50,9 @@ public class Callback<T> implements Future<T> {
       ExecutionException, TimeoutException {
     if (!didGetResponse()) {
       if (sem.tryAcquire(timeout, unit)) {
+        if (isFailure()) {
+          throw err;
+        }
         return result;
       } else {
         throw new TimeoutException();
@@ -55,7 +62,7 @@ public class Callback<T> implements Future<T> {
   }
 
   public boolean didGetResponse() {
-    return (isSuccess() || isFailure());
+    return (status != Status.READY);
   }
 
   public boolean isSuccess() {

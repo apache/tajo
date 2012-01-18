@@ -13,6 +13,7 @@ import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 
 public class NettyClientBase {
+  @SuppressWarnings("unused")
   private static Log LOG = LogFactory.getLog(NettyClientBase.class);
 
   private ClientSocketChannelFactory factory;

@@ -49,6 +49,10 @@ public class ProtoParamBlockingRpcProxy extends NettyClientBase {
         new Class[] { protocol }, new Invoker(getChannel()));
   }
 
+  public String getExceptionMessage() {
+    return handler.getExceptionMessage();
+  }
+
   private class Invoker implements InvocationHandler {
     private final Channel channel;
 
@@ -82,11 +86,20 @@ public class ProtoParamBlockingRpcProxy extends NettyClientBase {
       CallFuture callFuture = new CallFuture(method.getReturnType());
       requests.put(nextSeqId, callFuture);
       this.channel.write(request);
-      return callFuture.get();
+      Object retObj = callFuture.get();
+      String exceptionMessage = handler.getExceptionMessage();
+
+      if (exceptionMessage == "") {
+        return retObj;
+      } else {
+        throw new RemoteException(exceptionMessage);
+      }
     }
   }
 
   private class ClientHandler extends SimpleChannelUpstreamHandler {
+    private String exceptionMessage = "";
+
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
         throws Exception {
@@ -94,14 +107,19 @@ public class ProtoParamBlockingRpcProxy extends NettyClientBase {
       CallFuture callFuture = requests.get(response.getId());
 
       Object r = null;
-      if (response == null || !response.getHasReturn()) {
-        response = null;
-      } else {
-        ByteArrayInputStream bais =
-            new ByteArrayInputStream(response.getReturnValue().toByteArray());
-        ObjectInputStream ois = new ObjectInputStream(bais);
-        r = ois.readObject();
+      if (response != null) {
+        if (!response.getHasReturn()) {
+          if (response.hasExceptionMessage()) {
+            this.exceptionMessage = response.getExceptionMessage();
+          }
+          response = null;
+        } else {
+          ByteArrayInputStream bais =
+              new ByteArrayInputStream(response.getReturnValue().toByteArray());
+          ObjectInputStream ois = new ObjectInputStream(bais);
+          r = ois.readObject();
 
+        }
       }
 
       if (callFuture == null) {
@@ -116,6 +134,10 @@ public class ProtoParamBlockingRpcProxy extends NettyClientBase {
         throws Exception {
       e.getChannel().close();
       LOG.error(e.getCause());
+    }
+
+    public String getExceptionMessage() {
+      return this.exceptionMessage;
     }
   }
 

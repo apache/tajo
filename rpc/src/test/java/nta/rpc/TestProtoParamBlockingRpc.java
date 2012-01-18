@@ -1,5 +1,6 @@
 package nta.rpc;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import nta.rpc.test.DummyProtos.MulRequest;
@@ -14,10 +15,14 @@ public class TestProtoParamBlockingRpc {
   // !. Write Interface and implement class according to communication way
   public static interface DummyServerInterface {
     public MulResponse mul(MulRequest request);
+
+    public void throwException(MulRequest request) throws IOException;
   }
 
   public static interface DummyClientInterface {
-    public void mul(MulRequest request);
+    public MulResponse mul(MulRequest request) throws RemoteException;
+
+    public void throwException(MulRequest request) throws RemoteException;
   }
 
   public static class DummyServer implements DummyServerInterface {
@@ -30,6 +35,11 @@ public class TestProtoParamBlockingRpc {
 
       MulResponse rst = MulResponse.newBuilder().setResult(result).build();
       return rst;
+    }
+
+    @Override
+    public void throwException(MulRequest request) throws IOException {
+      throw new IOException();
     }
   }
 
@@ -73,16 +83,22 @@ public class TestProtoParamBlockingRpc {
 
     // 3. Write client Part source code
     // 3.1 Make Proxy to make connection to server
-    DummyServerInterface proxy =
-        (DummyServerInterface) NettyRpc.getProtoParamBlockingRpcProxy(
-            DummyServerInterface.class, addr);
+    DummyClientInterface proxy =
+        (DummyClientInterface) NettyRpc.getProtoParamBlockingRpcProxy(
+            DummyClientInterface.class, addr);
 
     // 3.2 Fill request data
     MulRequest req = MulRequest.newBuilder().setX1(10).setX2(20).build();
 
     // 3.3 call procedure
-    MulResponse re = proxy.mul(req);
-    assertEquals(200, re.getResult());
+    try {
+      MulResponse re = proxy.mul(req);
+      assertEquals(200, re.getResult());
+
+      proxy.throwException(req);
+    } catch (RemoteException e) {
+      System.out.println(e.getMessage());
+    }
 
     server.shutdown();
   }
