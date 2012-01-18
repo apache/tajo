@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.plan.logical.LogicalOp;
 import nta.engine.plan.logical.OpType;
 
@@ -13,13 +13,13 @@ public class GenericTask {
 
 	private LogicalOp op;
 	private String tableName;
-	private List<Tablet> tablets;
+	private List<Fragment> tablets;
 	private Set<GenericTask> prevTasks;
 	private Set<GenericTask> nextTasks;
 	private Annotation annotation;
 	
 	public GenericTask() {
-		tablets = new ArrayList<Tablet>();
+		tablets = new ArrayList<Fragment>();
 		prevTasks = new HashSet<GenericTask>();
 		nextTasks = new HashSet<GenericTask>();
 	}
@@ -41,7 +41,7 @@ public class GenericTask {
 		this.tableName = tableName;
 	}
 	
-	public void addTablet(Tablet t) {
+	public void addTablet(Fragment t) {
 		tablets.add(t);
 	}
 	
@@ -81,7 +81,7 @@ public class GenericTask {
 		return this.annotation;
 	}
 	
-	public List<Tablet> getTablets() {
+	public List<Fragment> getTablets() {
 		return this.tablets;
 	}
 	
@@ -92,7 +92,7 @@ public class GenericTask {
 	@Override
 	public String toString() {
 		String str = new String(op.getType() + " " + tableName + " ");
-		for (Tablet t : tablets) {
+		for (Fragment t : tablets) {
 			str += t + " ";
 		}
 		return str;

@@ -1,22 +1,22 @@
 package nta.catalog;
 
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 
 public class TabletServInfo {
 
 	private String hostName;
 	private int port;
-	private Tablet tablet;
+	private Fragment tablet;
 	
 	public TabletServInfo() {
 		
 	}
 	
-	public TabletServInfo(String hostName, int port, Tablet tablet) {
+	public TabletServInfo(String hostName, int port, Fragment tablet) {
 		this.set(hostName, port, tablet);
 	}
 	
-	public void set(String hostName, int port, Tablet tablet) {
+	public void set(String hostName, int port, Fragment tablet) {
 		this.hostName = hostName;
 		this.port = port;
 		this.tablet = tablet;
@@ -35,7 +35,7 @@ public class TabletServInfo {
 		return this.port;
 	}
 	
-	public Tablet getTablet() {
+	public Fragment getTablet() {
 		return this.tablet;
 	}
 	

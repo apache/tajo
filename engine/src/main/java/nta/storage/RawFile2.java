@@ -13,7 +13,7 @@ import nta.catalog.Column;
 import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.engine.NConstants;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
 
 import org.apache.commons.logging.Log;
@@ -39,7 +39,7 @@ public class RawFile2 extends Storage {
   }
 
   @Override
-  public Scanner openScanner(Schema schema, Tablet[] tablets)
+  public Scanner openScanner(Schema schema, Fragment[] tablets)
       throws IOException {
     return new RawFileScanner(conf, schema, tablets);
   }
@@ -51,9 +51,9 @@ public class RawFile2 extends Storage {
 	
 	public static class RawFileScanner extends FileScanner {
 		private FSDataInputStream in;
-		private SortedSet<Tablet> tabletSet;
-		private Iterator<Tablet> tableIter;
-		private Tablet curTablet;
+		private SortedSet<Fragment> tabletSet;
+		private Iterator<Fragment> tableIter;
+		private Fragment curTablet;
 		private FileSystem fs;
 		private byte[] sync;
 		private byte[] checkSync;
@@ -65,24 +65,24 @@ public class RawFile2 extends Storage {
 		private Options option;
 		
 		public RawFileScanner(Configuration conf, final Schema schema, 
-		    final Tablet[] tablets) throws IOException {
+		    final Fragment[] tablets) throws IOException {
 			super(conf, schema, tablets);
 		  init();
 		}
 		
 		public RawFileScanner(Configuration conf, final Schema schema, 
-		    final Tablet[] tablets, Options option) throws IOException {
+		    final Fragment[] tablets, Options option) throws IOException {
 		  super(conf, schema, tablets);
 		  this.option = option;
 		  init();
 		}
 		
 		private void init() throws IOException {
-			this.tabletSet = new TreeSet<Tablet>();
+			this.tabletSet = new TreeSet<Fragment>();
 			this.sync = new byte[SYNC_HASH_SIZE];
 			this.checkSync = new byte[SYNC_HASH_SIZE];
 			
-			for (Tablet t: tablets) {
+			for (Fragment t: tablets) {
 				this.tabletSet.add(t);
 			}
 			this.tableIter = tabletSet.iterator();

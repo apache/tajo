@@ -25,6 +25,7 @@ import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.tree.CommonTree;
+import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,7 +70,7 @@ public class TestNQLCompiler {
 
     TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
     TableDesc desc = new TableDescImpl("people", meta);
-    desc.setURI(URI.create("file:///"));
+    desc.setPath(new Path("file:///"));
     Catalog cat = new Catalog(new NtaConf());
     cat.addTable(desc);
 
@@ -120,7 +121,7 @@ public class TestNQLCompiler {
 
     TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
     TableDesc desc = new TableDescImpl("people", meta);
-    desc.setURI(URI.create("file:///"));
+    desc.setPath(new Path("file:///"));
     Catalog cat = new Catalog(new NtaConf());
     cat.addTable(desc);
 
@@ -153,7 +154,7 @@ public class TestNQLCompiler {
 
     TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
     TableDesc desc = new TableDescImpl("people", meta);
-    desc.setURI(URI.create("file:///"));
+    desc.setPath(new Path("file:///"));
     Catalog cat = new Catalog(new NtaConf());
     cat.addTable(desc);
 

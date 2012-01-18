@@ -15,7 +15,7 @@ import nta.engine.exec.SelOp;
 import nta.engine.exec.SeqScanOp;
 import nta.engine.exec.ShowFunctionOp;
 import nta.engine.exec.ShowTableOp;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.plan.logical.ControlLO;
 import nta.engine.plan.logical.DescTableLO;
 import nta.engine.plan.logical.JoinOp;
@@ -43,7 +43,7 @@ public class PhysicalPlanner {
 		this.sm = sm;
 	}
 	
-	public PhysicalOp compile(LogicalPlan plan, Tablet tablet) throws InternalException {
+	public PhysicalOp compile(LogicalPlan plan, Fragment tablet) throws InternalException {
 		PhysicalOp op = null;
 		try {
 			op = buildPlan(plan.getRoot(), tablet);
@@ -54,7 +54,7 @@ public class PhysicalPlanner {
 		return op;
 	}
 	
-	public PhysicalOp buildPlan(LogicalOp op, Tablet tablet) throws IOException {		
+	public PhysicalOp buildPlan(LogicalOp op, Fragment tablet) throws IOException {		
 		PhysicalOp cur = null;
 		
 		PhysicalOp outer = null;
@@ -108,11 +108,11 @@ public class PhysicalPlanner {
 		return cur;
 	}
 	
-	public PhysicalOp buildScanPlan(LogicalOp op, Tablet tablet) throws IOException {
+	public PhysicalOp buildScanPlan(LogicalOp op, Fragment tablet) throws IOException {
 		ScanOp sOp = (ScanOp) op;
 		
 		TableDesc info = cat.getTableDesc(sOp.getRelName()); 
-		Scanner scanner = sm.getScanner(info.getMeta(), new Tablet [] {tablet});
+		Scanner scanner = sm.getScanner(info.getMeta(), new Fragment [] {tablet});
 		
 		return new SeqScanOp(scanner);
 	}

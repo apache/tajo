@@ -19,7 +19,7 @@ public class TableDescImpl implements TableDesc {
   protected boolean viaProto = false;
   
   protected String tableId;
-  protected URI uri;
+  protected Path uri;
   protected TableMeta meta;
   
 	public TableDescImpl() {
@@ -64,15 +64,11 @@ public class TableDescImpl implements TableDesc {
     return this.tableId;
   }
 	
-	public void setURI(URI uri) {
+	public void setPath(Path uri) {
 		this.uri = uri;
 	}
 	
-	public void setURI(Path path) {
-	  this.uri = path.toUri();
-	}
-	
-  public URI getURI() {
+  public Path getPath() {
     TableDescProtoOrBuilder p = viaProto ? proto : builder;
     
     if (uri != null) {
@@ -81,7 +77,7 @@ public class TableDescImpl implements TableDesc {
     if (!proto.hasPath()) {
       return null;
     }
-    this.uri = URI.create(p.getPath());
+    this.uri = new Path(p.getPath());
     
     return this.uri;
   }

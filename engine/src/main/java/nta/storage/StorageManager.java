@@ -12,7 +12,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.TableProto;
 import nta.engine.NConstants;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
 import nta.util.FileUtil;
 
@@ -91,7 +91,7 @@ public class StorageManager {
 	
 	public Scanner getTableScanner(Path tablePath) throws IOException {
 	  TableMeta info = getTableMeta(tablePath);
-    Tablet [] tablets = split(tablePath);
+    Fragment [] tablets = split(tablePath);
     return getScanner(info, tablets);
 	}
 	
@@ -101,13 +101,13 @@ public class StorageManager {
 	  Path filePath = StorageUtil.concatPath(dataRoot, tableName, 
 	      "data", fileName);	  
 	  FileStatus status = fs.getFileStatus(filePath);
-	  Tablet tablet = new Tablet(tableName+"_1", status.getPath(), 
+	  Fragment tablet = new Fragment(tableName+"_1", status.getPath(), 
 	      meta, 0l , status.getLen());
 	  
-	  return getScanner(meta, new Tablet[] {tablet});
+	  return getScanner(meta, new Fragment[] {tablet});
 	}
 	
-	public Scanner getScanner(TableMeta meta, Tablet [] tablets) throws IOException {
+	public Scanner getScanner(TableMeta meta, Fragment [] tablets) throws IOException {
     Scanner scanner = null;
     
     switch(meta.getStoreType()) {
@@ -207,19 +207,19 @@ public class StorageManager {
 	  return fs.listStatus(new Path(dataPath, "data"));
 	}
 	
-	public Tablet[] split(String tableName) throws IOException {
+	public Fragment[] split(String tableName) throws IOException {
 	  Path tablePath = new Path(dataRoot, tableName);
 	  return split(tablePath);
 	}
 	
-	public Tablet[] split(Path tablePath)
+	public Fragment[] split(Path tablePath)
       throws IOException {
     TableMeta meta = getTableMeta(tablePath);
 	  
 	  long defaultBlockSize = fs.getDefaultBlockSize();
 
-    List<Tablet> listTablets = new ArrayList<Tablet>();
-    Tablet tablet = null;
+    List<Fragment> listTablets = new ArrayList<Fragment>();
+    Fragment tablet = null;
 
     FileStatus[] fileLists = fs.listStatus(new Path(tablePath, "data"));
     int i=0;
@@ -228,20 +228,20 @@ public class StorageManager {
       long start = 0;
       if (fileBlockSize > defaultBlockSize) {
         while (fileBlockSize > start) {
-          tablet = new Tablet(tablePath.getName()+"_"+i, file.getPath(), meta, start,
+          tablet = new Fragment(tablePath.getName()+"_"+i, file.getPath(), meta, start,
               defaultBlockSize);
           listTablets.add(tablet);
           start += defaultBlockSize;
           i++;
         }
       } else {
-        listTablets.add(new Tablet(file.getPath().getName(), file.getPath(), meta, 0,
+        listTablets.add(new Fragment(file.getPath().getName(), file.getPath(), meta, 0,
             fileBlockSize));
       }
       i++;
     }
 
-    Tablet[] tablets = new Tablet[listTablets.size()];
+    Fragment[] tablets = new Fragment[listTablets.size()];
     listTablets.toArray(tablets);
 
     return tablets;

@@ -24,7 +24,7 @@ import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.engine.EngineService;
 import nta.engine.NConstants;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.query.LocalEngine;
 
 import org.apache.commons.logging.Log;
@@ -77,7 +77,7 @@ public class Catalog implements CatalogService, EngineService {
 		StringBuilder sb = new StringBuilder();
 		sb.append("+t\t");
 		sb.append(meta.getId()).append("\t");
-		sb.append(meta.getURI().toString());
+		sb.append(meta.getPath().toString());
 		sb.append("\n");
 		
 		writer.append(sb.toString());
@@ -141,7 +141,7 @@ public class Catalog implements CatalogService, EngineService {
 	private List<TabletServInfo> getTabletLocInfo(TableDesc desc) throws IOException {
 		int fileIdx, blockIdx;
 		FileSystem fs = FileSystem.get(conf);
-		Path path = new Path(desc.getURI());
+		Path path = desc.getPath();
 		
 		FileStatus[] files = fs.listStatus(new Path(path+"/data"));
 		BlockLocation[] blocks;
@@ -165,7 +165,7 @@ public class Catalog implements CatalogService, EngineService {
 //					tabletServingInfo.put(tid, tabletInfoList);
 //				}
 				// TODO: select the proper serving node for block
-				tabletInfoList.add(new TabletServInfo(hosts[0], -1, new Tablet(desc.getId()+"_"+i, 
+				tabletInfoList.add(new TabletServInfo(hosts[0], -1, new Fragment(desc.getId()+"_"+i, 
             files[fileIdx].getPath(), desc.getMeta(), 
 						blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
 				i++;
@@ -179,7 +179,7 @@ public class Catalog implements CatalogService, EngineService {
 	}
 
 	public void addTable(TableDesc desc) throws AlreadyExistsTableException {
-		Preconditions.checkNotNull(desc.getURI(), "Must be set to the table URI");
+		Preconditions.checkNotNull(desc.getPath(), "Must be set to the table URI");
 		Preconditions.checkNotNull(desc.getId(), "Must be set to the table name");
 	  wlock.lock();
 		
@@ -284,7 +284,7 @@ public class Catalog implements CatalogService, EngineService {
 			StringBuilder sb = new StringBuilder();
 			sb.append("+t\t");
 			sb.append(meta.getId()).append("\t");
-			sb.append(meta.getURI().toString());
+			sb.append(meta.getPath().toString());
 
 			wal.append(sb.toString());
 		}

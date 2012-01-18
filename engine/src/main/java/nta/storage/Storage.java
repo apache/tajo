@@ -3,7 +3,7 @@ package nta.storage;
 import java.io.IOException;
 
 import nta.catalog.Schema;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -23,5 +23,5 @@ public abstract class Storage {
     throws IOException;
   
   public abstract Scanner openScanner(Schema schema,
-      Tablet [] tablets) throws IOException;
+      Fragment [] tablets) throws IOException;
 }

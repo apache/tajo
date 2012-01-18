@@ -9,7 +9,7 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.query.SubQueryRequestImpl;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
@@ -73,20 +73,20 @@ public class TestLeafServer {
     appender.close();
 
     FileStatus status = sm.listTableFiles("table1")[0];
-    Tablet[] tablets1 = new Tablet[1];
-    tablets1[0] = new Tablet("table1_1", status.getPath(), meta, 0, 70000);
+    Fragment[] tablets1 = new Fragment[1];
+    tablets1[0] = new Fragment("table1_1", status.getPath(), meta, 0, 70000);
     LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(0);
 
-    Tablet[] tablets2 = new Tablet[1];
-    tablets2[0] = new Tablet("table1_2", status.getPath(), meta, 70000, 10000);
+    Fragment[] tablets2 = new Fragment[1];
+    tablets2[0] = new Fragment("table1_2", status.getPath(), meta, 70000, 10000);
     LeafServer leaf2 = util.getMiniNtaEngineCluster().getLeafServer(1);
 
-    SubQueryRequest req = new SubQueryRequestImpl(new ArrayList<Tablet>(
+    SubQueryRequest req = new SubQueryRequestImpl(new ArrayList<Fragment>(
         Arrays.asList(tablets1)), new Path(TEST_PATH, "out").toUri(),
         "select * from table1_1 where id > 5100", "table1");
     leaf1.requestSubQuery(req.getProto());
 
-    SubQueryRequest req2 = new SubQueryRequestImpl(new ArrayList<Tablet>(
+    SubQueryRequest req2 = new SubQueryRequestImpl(new ArrayList<Fragment>(
         Arrays.asList(tablets2)), new Path(TEST_PATH, "out").toUri(),
         "select * from table1_2 where id > 5100", "table1");
     leaf2.requestSubQuery(req2.getProto());

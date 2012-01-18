@@ -1,7 +1,5 @@
 package nta.catalog;
 
-import java.net.URI;
-
 import org.apache.hadoop.fs.Path;
 
 /**
@@ -14,11 +12,9 @@ public interface TableDesc {
   
   String getId();
   
-  void setURI(URI uri);
+  void setPath(Path path);
   
-  void setURI(Path path);
-  
-  URI getURI();
+  Path getPath();
   
   void setMeta(TableMeta info);
   

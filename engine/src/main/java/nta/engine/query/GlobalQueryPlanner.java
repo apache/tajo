@@ -21,7 +21,7 @@ import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.NQL;
 import nta.engine.parser.RelInfo;
 import nta.engine.parser.NQL.Query;
@@ -240,8 +240,8 @@ public class GlobalQueryPlanner {
 					nextTaskSet.size() == 0) {
 				strQuery = generateQuery(lplan);
 				tabletServInfoList = catalog.getHostByTable(task.getTableName());
-				for (Tablet t : task.getTablets()) {
-					List<Tablet> tablets = new ArrayList<Tablet>();
+				for (Fragment t : task.getTablets()) {
+					List<Fragment> tablets = new ArrayList<Fragment>();
 					tablets.add(t);
 					request = new SubQueryRequestImpl(tablets, new Path("hdfs://out/"+System.currentTimeMillis()).toUri(), 
 							strQuery, t.getId());

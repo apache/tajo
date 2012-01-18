@@ -22,7 +22,7 @@ import nta.catalog.proto.TableProtos.TableProto;
 import nta.conf.NtaConf;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.RelInfo;
 import nta.engine.plan.JoinType;
 import nta.engine.plan.logical.JoinOp;
@@ -113,7 +113,7 @@ public class TestGlobalQueryPlanner {
 			fos.close();
 
 			TableDesc desc = new TableDescImpl("table"+i, meta);
-			desc.setURI(tbPath);
+			desc.setPath(tbPath);
 			catalog.addTable(desc);
 		}
 	}
@@ -202,11 +202,11 @@ public class TestGlobalQueryPlanner {
 		GenericTask[] tasks = planner.localizeSimpleOp(genericTaskTree.getRoot());
 		FileSystem fs = util.getMiniDFSCluster().getFileSystem();
 		FileStatus fileStat = fs.getFileStatus(new Path("/table0/data/table.csv"));
-		List<Tablet> tablets;
+		List<Fragment> tablets;
 		int len = 0;
 		for (GenericTask task : tasks) {
 			tablets = task.getTablets();
-			for (Tablet tablet : tablets) {
+			for (Fragment tablet : tablets) {
 				len += tablet.getLength();
 			}
 		}

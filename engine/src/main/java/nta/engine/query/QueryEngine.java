@@ -12,7 +12,7 @@ import nta.engine.ResultSetMemImplOld;
 import nta.engine.ResultSetOld;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.PhysicalOp;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.NQL;
 import nta.engine.parser.NQL.Query;
 import nta.engine.plan.logical.LogicalPlan;
@@ -59,7 +59,7 @@ public class QueryEngine implements EngineService {
 		catalog.addTable(meta);
 	}
 	
-	public ResultSetOld executeQuery(String querystr, Tablet tablet) throws NTAQueryException {
+	public ResultSetOld executeQuery(String querystr, Fragment tablet) throws NTAQueryException {
 		Query query = parser.parse(querystr);
 		LogicalPlan rawPlan = loPlanner.compile(query);
 		LogicalPlan optimized = loOptimizer.optimize(rawPlan);

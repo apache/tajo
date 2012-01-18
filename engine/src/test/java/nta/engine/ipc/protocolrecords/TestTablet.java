@@ -33,7 +33,7 @@ public class TestTablet {
 
   @Test
   public final void testGetAndSetFields() {    
-    Tablet tablet1 = new Tablet("table1_1", new Path("/table0"), meta1, 0, 500);
+    Fragment tablet1 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500);
 
     assertEquals("table1_1", tablet1.getId());
     assertEquals(new Path("/table0"), tablet1.getPath());
@@ -44,9 +44,9 @@ public class TestTablet {
 
   @Test
   public final void testTabletTabletProto() {
-    Tablet tablet1 = new Tablet("table1_1", new Path("/table0"), meta1, 0, 500);
+    Fragment tablet1 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500);
     
-    Tablet tablet2 = new Tablet(tablet1.getProto());
+    Fragment tablet2 = new Fragment(tablet1.getProto());
     assertEquals("table1_1", tablet2.getId());
     assertEquals(new Path("/table0"), tablet2.getPath());
     assertEquals(meta1, tablet2.getMeta());
@@ -57,10 +57,10 @@ public class TestTablet {
   @Test
   public final void testCompareTo() {
     final int num = 10;
-    Tablet [] tablets = new Tablet[num];
+    Fragment [] tablets = new Fragment[num];
     for (int i = num - 1; i >= 0; i--) {
       tablets[i]
-          = new Tablet("tablet1_"+i, new Path("tablet0"), meta1, i * 500, 
+          = new Fragment("tablet1_"+i, new Path("tablet0"), meta1, i * 500, 
               (i+1) * 500);
     }
     

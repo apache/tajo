@@ -238,7 +238,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 		
 		TableMeta meta = TableUtil.getTableMeta(conf, path);
 		TableDesc desc = new TableDescImpl(name, meta);
-		desc.setURI(path);
+		desc.setPath(path);
 		catalog.addTable(desc);
 		LOG.info("Table "+desc.getId()+" is attached.");
 	}

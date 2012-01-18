@@ -16,7 +16,7 @@ public interface SubQueryRequest extends ProtoObject<SubQueryRequestProto> {
 	
 	public String getTableName();
 
-  public List<Tablet> getTablets();
+  public List<Fragment> getTablets();
 
   public URI getOutputDest();
 }

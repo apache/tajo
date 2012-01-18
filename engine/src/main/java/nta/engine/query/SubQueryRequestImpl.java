@@ -8,7 +8,7 @@ import java.util.List;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProtoOrBuilder;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 
 /**
  * @author hyunsik
@@ -16,7 +16,7 @@ import nta.engine.ipc.protocolrecords.Tablet;
  * 
  */
 public class SubQueryRequestImpl implements SubQueryRequest {
-  private List<Tablet> tablets;
+  private List<Fragment> tablets;
   private URI dest;
   private String query;
   private String tableName;
@@ -29,7 +29,7 @@ public class SubQueryRequestImpl implements SubQueryRequest {
 	  builder = SubQueryRequestProto.newBuilder();
   }
   
-  public SubQueryRequestImpl(List<Tablet> tablets, URI output, String query, String tableName) {
+  public SubQueryRequestImpl(List<Fragment> tablets, URI output, String query, String tableName) {
 	  this();
     this.tablets = tablets;
     this.dest = output;
@@ -57,16 +57,16 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   }
 
   @Override
-  public List<Tablet> getTablets() {
+  public List<Fragment> getTablets() {
 	  SubQueryRequestProtoOrBuilder p = viaProto ? proto : builder;
 	  if (tablets != null) {
 		  return this.tablets;
 	  }
 	  if (tablets == null) {
-		  tablets = new ArrayList<Tablet>();
+		  tablets = new ArrayList<Fragment>();
 	  }
 	  for (int i = 0; i < p.getTabletsCount(); i++) {
-		  tablets.add(new Tablet(p.getTablets(i)));
+		  tablets.add(new Fragment(p.getTablets(i)));
 	  }
 	  return this.tablets;
   }

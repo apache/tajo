@@ -10,7 +10,7 @@ import java.util.TreeSet;
 import nta.catalog.Column;
 import nta.catalog.Options;
 import nta.catalog.Schema;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -39,7 +39,7 @@ public class CSVFile2 extends Storage {
   }
 
   @Override
-  public Scanner openScanner(Schema schema, Tablet[] tablets) 
+  public Scanner openScanner(Schema schema, Fragment[] tablets) 
       throws IOException {
     return new CSVScanner(conf, schema, tablets);
   }
@@ -131,15 +131,15 @@ public class CSVFile2 extends Storage {
     private String line;
     private byte[] sweep;
     
-    private SortedSet<Tablet> tabletSet;
-    private Iterator<Tablet> tabletIter;
+    private SortedSet<Fragment> tabletSet;
+    private Iterator<Fragment> tabletIter;
     
     private static final byte LF = '\n';    
     private String delimiter;
     private Options option;
     
 
-    public CSVScanner(Configuration conf, final Schema schema, final Tablet[] tablets)
+    public CSVScanner(Configuration conf, final Schema schema, final Fragment[] tablets)
         throws IOException {
       super(conf, schema, tablets);
       this.delimiter = DELIMITER_DEFAULT;
@@ -147,7 +147,7 @@ public class CSVFile2 extends Storage {
     }
     
     public CSVScanner(Configuration conf, final Schema schema, 
-        final Tablet [] tablets, Options option) throws IOException {
+        final Fragment [] tablets, Options option) throws IOException {
       this(conf, schema, tablets);
       this.option = option;
       this.delimiter = option.get(DELIMITER, DELIMITER_DEFAULT);
@@ -156,9 +156,9 @@ public class CSVFile2 extends Storage {
 
     private void init() throws IOException {
       this.fs = FileSystem.get(conf);
-      this.tabletSet = new TreeSet<Tablet>();
+      this.tabletSet = new TreeSet<Fragment>();
 
-      for (Tablet t : tablets)
+      for (Fragment t : tablets)
         this.tabletSet.add(t);
 
       this.tabletIter = tabletSet.iterator();
@@ -167,7 +167,7 @@ public class CSVFile2 extends Storage {
         openTablet(this.tabletIter.next());
     }
 
-    private void openTablet(Tablet tablet) throws IOException {
+    private void openTablet(Fragment tablet) throws IOException {
       this.startOffset = tablet.getStartOffset();
       this.length = tablet.getLength();      
       this.fs = tablet.getPath().getFileSystem(conf);
