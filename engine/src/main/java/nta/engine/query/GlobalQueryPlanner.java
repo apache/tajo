@@ -21,6 +21,7 @@ import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
+import nta.engine.ipc.protocolrecords.Tablet;
 import nta.engine.parser.NQL;
 import nta.engine.parser.RelInfo;
 import nta.engine.parser.NQL.Query;
@@ -226,6 +227,7 @@ public class GlobalQueryPlanner {
 			s.add(t);
 		}
 		
+		String strQuery = "";
 		while (!s.isEmpty()) {
 			task = s.remove(0);
 			if (lplan.getRoot() == null) {
@@ -236,18 +238,34 @@ public class GlobalQueryPlanner {
 			// if an n-ary operator or a leaf node is visited, cut its all edges
 			if ((nextTaskSet.size() > 1) ||
 					nextTaskSet.size() == 0) {
-				request = new SubQueryRequestImpl(task.getTablets(), new Path("hdfs://out/"+System.currentTimeMillis()).toUri(), 
-						generateQuery(lplan), task.getTableName());
+				strQuery = generateQuery(lplan);
 				tabletServInfoList = catalog.getHostByTable(task.getTableName());
-				for (TabletServInfo servInfo : tabletServInfoList) {
-					if (servInfo.getTablet().equals(request.getTablets().get(0))) {
-						host = servInfo.getHostName();
-						port = servInfo.getPort();
-						break;
+				for (Tablet t : task.getTablets()) {
+					List<Tablet> tablets = new ArrayList<Tablet>();
+					tablets.add(t);
+					request = new SubQueryRequestImpl(tablets, new Path("hdfs://out/"+System.currentTimeMillis()).toUri(), 
+							strQuery, t.getId());
+					for (TabletServInfo servInfo : tabletServInfoList) {
+						if (servInfo.getTablet().equals(request.getTablets().get(0))) {
+							host = servInfo.getHostName();
+							port = servInfo.getPort();
+							break;
+						}
 					}
+					query = new DecomposedQuery(request, port, host);
+					queryList.add(query);
 				}
-				query = new DecomposedQuery(request, port, host);
-				queryList.add(query);
+//				request = new SubQueryRequestImpl(task.getTablets(), new Path("hdfs://out/"+System.currentTimeMillis()).toUri(), 
+//						generateQuery(lplan), task.getTableName());
+//				for (TabletServInfo servInfo : tabletServInfoList) {
+//					if (servInfo.getTablet().equals(request.getTablets().get(0))) {
+//						host = servInfo.getHostName();
+//						port = servInfo.getPort();
+//						break;
+//					}
+//				}
+//				query = new DecomposedQuery(request, port, host);
+//				queryList.add(query);
 				lplan = new LogicalPlan();
 			}
 			
@@ -263,7 +281,6 @@ public class GlobalQueryPlanner {
 		ScanOp op = (ScanOp)task.getOp();
 		List<TabletServInfo> tablets = catalog.getHostByTable(op.getRelName());
 		GenericTask[] localized = new GenericTask[tablets.size()];
-		TabletServInfo tablet;
 
 		for (int i = 0; i < localized.length; i++) {
 			// TODO: make tableInfo from tablets.get(i)

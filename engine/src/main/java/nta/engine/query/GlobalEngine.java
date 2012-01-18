@@ -90,9 +90,6 @@ public class GlobalEngine implements EngineService {
 			List<DecomposedQuery> queries = globalPlanner.decompose(optimized);
 			// execute sub queries via RPC
 			for (DecomposedQuery q : queries) {
-//				LeafServerInterface leaf = (LeafServerInterface) RPC.getProxy(LeafServerInterface.class, 
-//						LeafServerInterface.versionID, new InetSocketAddress(tokenizer.nextToken(), 
-//								Integer.valueOf(tokenizer.nextToken())), conf);
 				LOG.error("Host: " + q.getHostName() + " port: " + q.getPort());
 				leaf = (LeafServerInterface) NettyRpc.getProtoParamBlockingRpcProxy(LeafServerInterface.class, 
 						new InetSocketAddress(q.getHostName(), q.getPort()));
