@@ -94,10 +94,10 @@ public class NQL {
                                 CommonTree value = (CommonTree) node.getChild(i);
                                 switch(value.getType()) {
                                 case NQLParser.STRING:
-                                        stmt.values[i] = DatumFactory.create(value.getText());
+                                        stmt.values[i] = DatumFactory.createString(value.getText());
                                         break;
                                 case NQLParser.DIGIT:
-                                        stmt.values[i] = DatumFactory.create(Integer.valueOf(value.getText()));
+                                        stmt.values[i] = DatumFactory.createInt(Integer.valueOf(value.getText()));
                                 }
                         }
                 default:;
@@ -294,7 +294,7 @@ public class NQL {
 		switch(tree.getType()) {
 				
 		case NQLParser.DIGIT:
-			return new ConstEval(DatumFactory.create(Integer.valueOf(tree.getText())));
+			return new ConstEval(DatumFactory.createInt(Integer.valueOf(tree.getText())));
 		
 		case NQLParser.AND:
 			return new BinaryEval(Type.AND, buildExpr(stmt, tree.getChild(0)), 

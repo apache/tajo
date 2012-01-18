@@ -159,7 +159,7 @@ public class TestCatalog {
 
 		@Override
 		public Datum invoke(Datum... datums) {
-			return DatumFactory.create(1);
+			return DatumFactory.createInt(1);
 		}
 
 		@Override

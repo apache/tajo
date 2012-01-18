@@ -103,9 +103,9 @@ public class BinaryEval extends EvalNode {
 	public Datum eval(Schema schema, Tuple tuple, Datum...args) {
 		switch(type) {
 		case AND:
-			return DatumFactory.create(leftExpr.eval(schema, tuple).asBool() && rightExpr.eval(schema, tuple).asBool());
+			return DatumFactory.createBool(leftExpr.eval(schema, tuple).asBool() && rightExpr.eval(schema, tuple).asBool());
 		case OR:
-			return DatumFactory.create(leftExpr.eval(schema, tuple).asBool() || rightExpr.eval(schema, tuple).asBool());
+			return DatumFactory.createBool(leftExpr.eval(schema, tuple).asBool() || rightExpr.eval(schema, tuple).asBool());
 		
 		case EQUAL:
 			return leftExpr.eval(schema, tuple).equalTo(rightExpr.eval(schema, tuple));

@@ -114,7 +114,7 @@ public class TestEvalTree {
 
   @Test
   public void testTupleEval() {
-    ConstEval e1 = new ConstEval(DatumFactory.create(1));
+    ConstEval e1 = new ConstEval(DatumFactory.createInt(1));
     FieldEval e2 = new FieldEval("table1", "score", DataType.INT); // it indicates
                                                                 // 4th field.
     Schema schema1 = new Schema();
@@ -138,7 +138,7 @@ public class TestEvalTree {
 
     @Override
     public Datum eval(Schema schema, Tuple tuple, Datum... args) {
-      return DatumFactory.create(true);
+      return DatumFactory.createBool(true);
     }
 
     @Override
@@ -161,7 +161,7 @@ public class TestEvalTree {
 
     @Override
     public Datum eval(Schema schema, Tuple tuple, Datum... args) {
-      return DatumFactory.create(false);
+      return DatumFactory.createBool(false);
     }
 
     @Override
@@ -218,8 +218,8 @@ public class TestEvalTree {
     BinaryEval expr = null;
 
     // Constant
-    e1 = new ConstEval(DatumFactory.create(9));
-    e2 = new ConstEval(DatumFactory.create(34));
+    e1 = new ConstEval(DatumFactory.createInt(9));
+    e2 = new ConstEval(DatumFactory.createInt(34));
     expr = new BinaryEval(Type.LTH, e1, e2);
     assertTrue(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.LEQ, e1, e2);
@@ -264,26 +264,26 @@ public class TestEvalTree {
     ConstEval e2 = null;
 
     // PLUS
-    e1 = new ConstEval(DatumFactory.create(9));
-    e2 = new ConstEval(DatumFactory.create(34));
+    e1 = new ConstEval(DatumFactory.createInt(9));
+    e2 = new ConstEval(DatumFactory.createInt(34));
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
     assertEquals(expr.eval(null, null).asInt(), 43);
 
     // MINUS
-    e1 = new ConstEval(DatumFactory.create(5));
-    e2 = new ConstEval(DatumFactory.create(2));
+    e1 = new ConstEval(DatumFactory.createInt(5));
+    e2 = new ConstEval(DatumFactory.createInt(2));
     expr = new BinaryEval(Type.MINUS, e1, e2);
     assertEquals(expr.eval(null, null).asInt(), 3);
 
     // MULTIPLY
-    e1 = new ConstEval(DatumFactory.create(5));
-    e2 = new ConstEval(DatumFactory.create(2));
+    e1 = new ConstEval(DatumFactory.createInt(5));
+    e2 = new ConstEval(DatumFactory.createInt(2));
     expr = new BinaryEval(Type.MULTIPLY, e1, e2);
     assertEquals(expr.eval(null, null).asInt(), 10);
 
     // DIVIDE
-    e1 = new ConstEval(DatumFactory.create(10));
-    e2 = new ConstEval(DatumFactory.create(5));
+    e1 = new ConstEval(DatumFactory.createInt(10));
+    e2 = new ConstEval(DatumFactory.createInt(5));
     expr = new BinaryEval(Type.DIVIDE, e1, e2);
     assertEquals(expr.eval(null, null).asInt(), 2);
   }
@@ -294,8 +294,8 @@ public class TestEvalTree {
     ConstEval e2 = null;
 
     // PLUS
-    e1 = new ConstEval(DatumFactory.create(9));
-    e2 = new ConstEval(DatumFactory.create(34));
+    e1 = new ConstEval(DatumFactory.createInt(9));
+    e2 = new ConstEval(DatumFactory.createInt(34));
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
     assertEquals(DataType.INT, expr.getValueType());
 
@@ -303,8 +303,8 @@ public class TestEvalTree {
     assertTrue(expr.eval(null, null).asBool());
     assertEquals(DataType.BOOLEAN, expr.getValueType());
 
-    e1 = new ConstEval(DatumFactory.create(9.3));
-    e2 = new ConstEval(DatumFactory.create(34.2));
+    e1 = new ConstEval(DatumFactory.createDouble(9.3));
+    e2 = new ConstEval(DatumFactory.createDouble(34.2));
     expr = new BinaryEval(Type.PLUS, e1, e2);
     assertEquals(DataType.DOUBLE, expr.getValueType());
   }

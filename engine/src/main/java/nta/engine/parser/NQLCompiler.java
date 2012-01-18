@@ -286,32 +286,32 @@ public final class NQLCompiler {
       case OP.BOOL: // BOOL
         byte bool = bin.get();
         if ((bool & 0x01) == 0x01) // true - 0x01, false - 0x00
-          stack[cur++] = new ConstEval(DatumFactory.create(true));
+          stack[cur++] = new ConstEval(DatumFactory.createBool(true));
         else
-          stack[cur++] = new ConstEval(DatumFactory.create(false));
+          stack[cur++] = new ConstEval(DatumFactory.createBool(false));
 
         break;
       
       case OP.BYTE: // BYTE
 
       case OP.SHORT: // SHORT
-        stack[cur++] = new ConstEval(DatumFactory.create(bin.getShort()));
+        stack[cur++] = new ConstEval(DatumFactory.createShort(bin.getShort()));
         break;
         
       case OP.INT: // INT
-        stack[cur++] = new ConstEval(DatumFactory.create(bin.getInt()));
+        stack[cur++] = new ConstEval(DatumFactory.createInt(bin.getInt()));
         break;
       
       case OP.LONG: // LONG
-        stack[cur++] = new ConstEval(DatumFactory.create(bin.getLong())); 
+        stack[cur++] = new ConstEval(DatumFactory.createLong(bin.getLong())); 
         break;      
 
       case OP.FLOAT: // FLOAT
-        stack[cur++] = new ConstEval(DatumFactory.create(bin.getFloat()));
+        stack[cur++] = new ConstEval(DatumFactory.createFloat(bin.getFloat()));
         break;
 
       case OP.DOUBLE: // DOUBLE
-        stack[cur++] = new ConstEval(DatumFactory.create(bin.getDouble()));
+        stack[cur++] = new ConstEval(DatumFactory.createDouble(bin.getDouble()));
         break;
 
 

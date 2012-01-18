@@ -68,37 +68,37 @@ public abstract class Datum implements Comparable<Datum> {
 		switch(d1.type()) {
 		case INT:		
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asInt() + d2.asInt());
-			case LONG: return DatumFactory.create(d1.asInt() + d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asInt() + d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asInt() + d2.asDouble());
+			case INT: return DatumFactory.createInt(d1.asInt() + d2.asInt());
+			case LONG: return DatumFactory.createLong(d1.asInt() + d2.asLong());
+			case FLOAT: return DatumFactory.createFloat(d1.asInt() + d2.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(d1.asInt() + d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case LONG:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asLong() + d2.asInt());
-			case LONG: return DatumFactory.create(d1.asLong() + d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asLong() + d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asLong() + d2.asDouble());
+			case INT: return DatumFactory.createLong(d1.asLong() + d2.asInt());
+			case LONG: return DatumFactory.createLong(d1.asLong() + d2.asLong());
+			case FLOAT: return DatumFactory.createFloat(d1.asLong() + d2.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(d1.asLong() + d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 		
 		case FLOAT:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asFloat() + d2.asInt());
-			case LONG: return DatumFactory.create(d1.asFloat() + d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asFloat() + d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asFloat() + d2.asDouble());
+			case INT: return DatumFactory.createFloat(d1.asFloat() + d2.asInt());
+			case LONG: return DatumFactory.createFloat(d1.asFloat() + d2.asLong());
+			case FLOAT: return DatumFactory.createFloat(d1.asFloat() + d2.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(d1.asFloat() + d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case DOUBLE:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asDouble() + d2.asInt());
-			case LONG: return DatumFactory.create(d1.asDouble() + d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asDouble() + d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asDouble() + d2.asDouble());
+			case INT: return DatumFactory.createDouble(d1.asDouble() + d2.asInt());
+			case LONG: return DatumFactory.createDouble(d1.asDouble() + d2.asLong());
+			case FLOAT: return DatumFactory.createDouble(d1.asDouble() + d2.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(d1.asDouble() + d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
@@ -110,37 +110,37 @@ public abstract class Datum implements Comparable<Datum> {
 		switch(d1.type()) {
 		case INT:		
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asInt() - d2.asInt());
-			case LONG: return DatumFactory.create(d1.asInt() - d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asInt() - d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asInt() - d2.asDouble());
+			case INT: return DatumFactory.createInt(d1.asInt() - d2.asInt());
+			case LONG: return DatumFactory.createLong(d1.asInt() - d2.asLong());
+			case FLOAT: return DatumFactory.createFloat(d1.asInt() - d2.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(d1.asInt() - d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case LONG:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asLong() - d2.asInt());
-			case LONG: return DatumFactory.create(d1.asLong() - d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asLong() - d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asLong() - d2.asDouble());
+			case INT: return DatumFactory.createLong(d1.asLong() - d2.asInt());
+			case LONG: return DatumFactory.createLong(d1.asLong() - d2.asLong());
+			case FLOAT: return DatumFactory.createFloat(d1.asLong() - d2.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(d1.asLong() - d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 		
 		case FLOAT:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asFloat() - d2.asInt());
-			case LONG: return DatumFactory.create(d1.asFloat() - d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asFloat() - d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asFloat() - d2.asDouble());
+			case INT: return DatumFactory.createFloat(d1.asFloat() - d2.asInt());
+			case LONG: return DatumFactory.createFloat(d1.asFloat() - d2.asLong());
+			case FLOAT: return DatumFactory.createFloat(d1.asFloat() - d2.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(d1.asFloat() - d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case DOUBLE:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asDouble() - d2.asInt());
-			case LONG: return DatumFactory.create(d1.asDouble() - d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asDouble() - d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asDouble() - d2.asDouble());
+			case INT: return DatumFactory.createDouble(d1.asDouble() - d2.asInt());
+			case LONG: return DatumFactory.createDouble(d1.asDouble() - d2.asLong());
+			case FLOAT: return DatumFactory.createDouble(d1.asDouble() - d2.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(d1.asDouble() - d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
@@ -152,37 +152,37 @@ public abstract class Datum implements Comparable<Datum> {
 		switch(one.type()) {
 		case INT:		
 			switch(by.type()) {
-			case INT: return DatumFactory.create(one.asInt() * by.asInt());
-			case LONG: return DatumFactory.create(one.asInt() * by.asLong());
-			case FLOAT: return DatumFactory.create(one.asInt() * by.asFloat());
-			case DOUBLE: return DatumFactory.create(one.asInt() * by.asDouble());
+			case INT: return DatumFactory.createInt(one.asInt() * by.asInt());
+			case LONG: return DatumFactory.createLong(one.asInt() * by.asLong());
+			case FLOAT: return DatumFactory.createFloat(one.asInt() * by.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(one.asInt() * by.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case LONG:
 			switch(by.type()) {
-			case INT: return DatumFactory.create(one.asLong() * by.asInt());
-			case LONG: return DatumFactory.create(one.asLong() * by.asLong());
-			case FLOAT: return DatumFactory.create(one.asLong() * by.asFloat());
-			case DOUBLE: return DatumFactory.create(one.asLong() * by.asDouble());
+			case INT: return DatumFactory.createLong(one.asLong() * by.asInt());
+			case LONG: return DatumFactory.createLong(one.asLong() * by.asLong());
+			case FLOAT: return DatumFactory.createFloat(one.asLong() * by.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(one.asLong() * by.asDouble());
 			default : throw new InvalidOperationException();
 			}
 		
 		case FLOAT:
 			switch(by.type()) {
-			case INT: return DatumFactory.create(one.asFloat() * by.asInt());
-			case LONG: return DatumFactory.create(one.asFloat() * by.asLong());
-			case FLOAT: return DatumFactory.create(one.asFloat() * by.asFloat());
-			case DOUBLE: return DatumFactory.create(one.asFloat() * by.asDouble());
+			case INT: return DatumFactory.createFloat(one.asFloat() * by.asInt());
+			case LONG: return DatumFactory.createFloat(one.asFloat() * by.asLong());
+			case FLOAT: return DatumFactory.createFloat(one.asFloat() * by.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(one.asFloat() * by.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case DOUBLE:
 			switch(by.type()) {
-			case INT: return DatumFactory.create(one.asDouble() * by.asInt());
-			case LONG: return DatumFactory.create(one.asDouble() * by.asLong());
-			case FLOAT: return DatumFactory.create(one.asDouble() * by.asFloat());
-			case DOUBLE: return DatumFactory.create(one.asDouble() * by.asDouble());
+			case INT: return DatumFactory.createDouble(one.asDouble() * by.asInt());
+			case LONG: return DatumFactory.createDouble(one.asDouble() * by.asLong());
+			case FLOAT: return DatumFactory.createDouble(one.asDouble() * by.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(one.asDouble() * by.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
@@ -194,37 +194,37 @@ public abstract class Datum implements Comparable<Datum> {
 		switch(one.type()) {
 		case INT:		
 			switch(by.type()) {
-			case INT: return DatumFactory.create(one.asInt() / by.asInt());
-			case LONG: return DatumFactory.create(one.asInt() / by.asLong());
-			case FLOAT: return DatumFactory.create(one.asInt() / by.asFloat());
-			case DOUBLE: return DatumFactory.create(one.asInt() / by.asDouble());
+			case INT: return DatumFactory.createInt(one.asInt() / by.asInt());
+			case LONG: return DatumFactory.createLong(one.asInt() / by.asLong());
+			case FLOAT: return DatumFactory.createFloat(one.asInt() / by.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(one.asInt() / by.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case LONG:
 			switch(by.type()) {
-			case INT: return DatumFactory.create(one.asLong() / by.asInt());
-			case LONG: return DatumFactory.create(one.asLong() / by.asLong());
-			case FLOAT: return DatumFactory.create(one.asLong() / by.asFloat());
-			case DOUBLE: return DatumFactory.create(one.asLong() / by.asDouble());
+			case INT: return DatumFactory.createLong(one.asLong() / by.asInt());
+			case LONG: return DatumFactory.createLong(one.asLong() / by.asLong());
+			case FLOAT: return DatumFactory.createFloat(one.asLong() / by.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(one.asLong() / by.asDouble());
 			default : throw new InvalidOperationException();
 			}
 		
 		case FLOAT:
 			switch(by.type()) {
-			case INT: return DatumFactory.create(one.asFloat() / by.asInt());
-			case LONG: return DatumFactory.create(one.asFloat() / by.asLong());
-			case FLOAT: return DatumFactory.create(one.asFloat() / by.asFloat());
-			case DOUBLE: return DatumFactory.create(one.asFloat() / by.asDouble());
+			case INT: return DatumFactory.createFloat(one.asFloat() / by.asInt());
+			case LONG: return DatumFactory.createFloat(one.asFloat() / by.asLong());
+			case FLOAT: return DatumFactory.createFloat(one.asFloat() / by.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(one.asFloat() / by.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case DOUBLE:
 			switch(by.type()) {
-			case INT: return DatumFactory.create(one.asDouble() / by.asInt());
-			case LONG: return DatumFactory.create(one.asDouble() / by.asLong());
-			case FLOAT: return DatumFactory.create(one.asDouble() / by.asFloat());
-			case DOUBLE: return DatumFactory.create(one.asDouble() / by.asDouble());
+			case INT: return DatumFactory.createDouble(one.asDouble() / by.asInt());
+			case LONG: return DatumFactory.createDouble(one.asDouble() / by.asLong());
+			case FLOAT: return DatumFactory.createDouble(one.asDouble() / by.asFloat());
+			case DOUBLE: return DatumFactory.createDouble(one.asDouble() / by.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
@@ -236,37 +236,37 @@ public abstract class Datum implements Comparable<Datum> {
 		switch(d1.type()) {
 		case INT:		
 			switch(d2.type()) { 
-			case INT: return DatumFactory.create(d1.asInt() == d2.asInt());
-			case LONG: return DatumFactory.create(d1.asInt() == d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asInt() == d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asInt() == d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asInt() == d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asInt() == d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asInt() == d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asInt() == d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case LONG:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asLong() == d2.asInt());
-			case LONG: return DatumFactory.create(d1.asLong() == d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asLong() == d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asLong() == d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asLong() == d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asLong() == d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asLong() == d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asLong() == d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 		
 		case FLOAT:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asFloat() == d2.asInt());
-			case LONG: return DatumFactory.create(d1.asFloat() == d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asFloat() == d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asFloat() == d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asFloat() == d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asFloat() == d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asFloat() == d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asFloat() == d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case DOUBLE:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asDouble() == d2.asInt());
-			case LONG: return DatumFactory.create(d1.asDouble() == d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asDouble() == d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asDouble() == d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asDouble() == d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asDouble() == d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asDouble() == d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asDouble() == d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
@@ -278,37 +278,37 @@ public abstract class Datum implements Comparable<Datum> {
 		switch(d1.type()) {
 		case INT:		
 			switch(d2.type()) { 
-			case INT: return DatumFactory.create(d1.asInt() < d2.asInt());
-			case LONG: return DatumFactory.create(d1.asInt() < d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asInt() < d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asInt() < d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asInt() < d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asInt() < d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asInt() < d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asInt() < d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case LONG:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asLong() < d2.asInt());
-			case LONG: return DatumFactory.create(d1.asLong() < d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asLong() < d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asLong() < d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asLong() < d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asLong() < d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asLong() < d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asLong() < d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 		
 		case FLOAT:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asFloat() < d2.asInt());
-			case LONG: return DatumFactory.create(d1.asFloat() < d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asFloat() < d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asFloat() < d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asFloat() < d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asFloat() < d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asFloat() < d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asFloat() < d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case DOUBLE:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asDouble() < d2.asInt());
-			case LONG: return DatumFactory.create(d1.asDouble() < d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asDouble() < d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asDouble() < d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asDouble() < d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asDouble() < d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asDouble() < d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asDouble() < d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
@@ -320,37 +320,37 @@ public abstract class Datum implements Comparable<Datum> {
 		switch(d1.type()) {
 		case INT:		
 			switch(d2.type()) { 
-			case INT: return DatumFactory.create(d1.asInt() <= d2.asInt());
-			case LONG: return DatumFactory.create(d1.asInt() <= d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asInt() <= d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asInt() <= d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asInt() <= d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asInt() <= d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asInt() <= d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asInt() <= d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case LONG:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asLong() <= d2.asInt());
-			case LONG: return DatumFactory.create(d1.asLong() <= d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asLong() <= d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asLong() <= d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asLong() <= d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asLong() <= d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asLong() <= d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asLong() <= d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 		
 		case FLOAT:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asFloat() <= d2.asInt());
-			case LONG: return DatumFactory.create(d1.asFloat() <= d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asFloat() <= d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asFloat() <= d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asFloat() <= d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asFloat() <= d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asFloat() <= d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asFloat() <= d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case DOUBLE:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asDouble() <= d2.asInt());
-			case LONG: return DatumFactory.create(d1.asDouble() <= d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asDouble() <= d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asDouble() <= d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asDouble() <= d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asDouble() <= d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asDouble() <= d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asDouble() <= d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
@@ -362,37 +362,37 @@ public abstract class Datum implements Comparable<Datum> {
 		switch(d1.type()) {
 		case INT:		
 			switch(d2.type()) { 
-			case INT: return DatumFactory.create(d1.asInt() > d2.asInt());
-			case LONG: return DatumFactory.create(d1.asInt() > d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asInt() > d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asInt() > d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asInt() > d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asInt() > d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asInt() > d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asInt() > d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case LONG:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asLong() > d2.asInt());
-			case LONG: return DatumFactory.create(d1.asLong() > d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asLong() > d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asLong() > d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asLong() > d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asLong() > d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asLong() > d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asLong() > d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 		
 		case FLOAT:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asFloat() > d2.asInt());
-			case LONG: return DatumFactory.create(d1.asFloat() > d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asFloat() > d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asFloat() > d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asFloat() > d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asFloat() > d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asFloat() > d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asFloat() > d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case DOUBLE:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asDouble() > d2.asInt());
-			case LONG: return DatumFactory.create(d1.asDouble() > d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asDouble() > d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asDouble() > d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asDouble() > d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asDouble() > d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asDouble() > d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asDouble() > d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
@@ -404,37 +404,37 @@ public abstract class Datum implements Comparable<Datum> {
 		switch(d1.type()) {
 		case INT:		
 			switch(d2.type()) { 
-			case INT: return DatumFactory.create(d1.asInt() >= d2.asInt());
-			case LONG: return DatumFactory.create(d1.asInt() >= d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asInt() >= d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asInt() >= d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asInt() >= d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asInt() >= d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asInt() >= d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asInt() >= d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case LONG:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asLong() >= d2.asInt());
-			case LONG: return DatumFactory.create(d1.asLong() >= d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asLong() >= d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asLong() >= d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asLong() >= d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asLong() >= d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asLong() >= d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asLong() >= d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 		
 		case FLOAT:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asFloat() >= d2.asInt());
-			case LONG: return DatumFactory.create(d1.asFloat() >= d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asFloat() >= d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asFloat() >= d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asFloat() >= d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asFloat() >= d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asFloat() >= d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asFloat() >= d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
 		case DOUBLE:
 			switch(d2.type()) {
-			case INT: return DatumFactory.create(d1.asDouble() >= d2.asInt());
-			case LONG: return DatumFactory.create(d1.asDouble() >= d2.asLong());
-			case FLOAT: return DatumFactory.create(d1.asDouble() >= d2.asFloat());
-			case DOUBLE: return DatumFactory.create(d1.asDouble() >= d2.asDouble());
+			case INT: return DatumFactory.createBool(d1.asDouble() >= d2.asInt());
+			case LONG: return DatumFactory.createBool(d1.asDouble() >= d2.asLong());
+			case FLOAT: return DatumFactory.createBool(d1.asDouble() >= d2.asFloat());
+			case DOUBLE: return DatumFactory.createBool(d1.asDouble() >= d2.asDouble());
 			default : throw new InvalidOperationException();
 			}
 			
