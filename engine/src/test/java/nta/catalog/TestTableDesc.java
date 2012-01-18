@@ -21,6 +21,7 @@ public class TestTableDesc {
     TableDesc desc = new TableDescImpl("table1", info);
     assertEquals("table1", desc.getId());
     desc.setPath(new Path("/nta/data"));
+    
     assertEquals(new Path("/nta/data"), desc.getPath());
     assertEquals(info, desc.getMeta());
   }

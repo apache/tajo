@@ -7,7 +7,6 @@ import java.lang.reflect.Constructor;
 
 import nta.catalog.proto.TableProtos.DataType;
 import nta.engine.exception.InternalException;
-import nta.engine.exec.eval.EvalNode;
 import nta.engine.function.Function;
 
 /**
@@ -19,13 +18,13 @@ public class FunctionDesc {
   private Class<? extends Function> funcClass;
   private Function.Type funcType;
   private DataType returnType;
-  private Class<?>[] argTypes;
+  private DataType [] argTypes;
 
   /**
 	 * 
 	 */
   public FunctionDesc(String signature, Class<? extends Function> clazz,
-      Function.Type funcType, DataType retType, Class<?>... argTypes) {
+      Function.Type funcType, DataType retType, DataType... argTypes) {
     this.signature = signature;
     this.funcClass = clazz;
     this.funcType = funcType;
@@ -35,7 +34,7 @@ public class FunctionDesc {
 
   @SuppressWarnings("unchecked")
   public FunctionDesc(String signature, String className, Function.Type type,
-      DataType retType, Class<?>... argTypes) throws ClassNotFoundException {
+      DataType retType, DataType... argTypes) throws ClassNotFoundException {
     this(signature, (Class<? extends Function>) Class.forName(className), type,
         retType, argTypes);
   }
@@ -55,7 +54,7 @@ public class FunctionDesc {
     }
   }
 
-  public String getName() {
+  public String getSignature() {
     return this.signature;
   }
 
@@ -63,11 +62,11 @@ public class FunctionDesc {
     return this.funcClass;
   }
 
-  public Function.Type getType() {
+  public Function.Type getFuncType() {
     return this.funcType;
   }
 
-  public Class<?>[] getArgTypes() {
+  public DataType [] getDefinedArgs() {
     return this.argTypes;
   }
 

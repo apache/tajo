@@ -9,24 +9,27 @@ options {
 }
 
 tokens {
-  FIELD_NAME;
+  ALL;
   COLUMN;
-  FUNCTION;
-  GROUP_BY;
-  SHOW_TABLE;
-  SHOW_FUNCTION;
   CREATE_TABLE;
   DROP_TABLE;
   DESC_TABLE;
-  SESSION_CLEAR;
-  SEL_LIST;
-  ALL;
-  VALUES;
-  TARGET_FIELDS;
-  TABLE_DEF;
+  FIELD_NAME;  
   FIELD_DEF;
+  FUNCTION;    
   FUNC_ARGS;
+  GROUP_BY;  
+  ORDER_BY;
+  SEL_LIST;
+  SESSION_CLEAR;
+  SET_QUALIFIER;
+  SHOW_TABLE;
+  SHOW_FUNCTION;
+  SORT_KEY;
   STORE_TYPE;
+  TABLE_DEF;
+  TARGET_FIELDS;  
+  VALUES;
 }
 
 @header {
@@ -34,17 +37,10 @@ package nta.engine.parser;
 
 import java.util.List;
 import java.util.ArrayList;
-
-import nta.engine.exception.NQLSyntaxException;
 }
 
 @lexer::header {
 package nta.engine.parser;
-
-import java.util.List;
-import java.util.ArrayList;
-
-import nta.engine.exception.NQLSyntaxException;
 }
 
 @lexer::members {
@@ -114,8 +110,8 @@ fieldType
   ;
   
 select_stmt
-  : SELECT selectList from_clause? where_clause? groupby_clause?
-  -> ^(SELECT from_clause? where_clause? groupby_clause? selectList)
+  : SELECT setQualifier? selectList from_clause? where_clause? groupby_clause? orderby_clause?
+  -> ^(SELECT from_clause? selectList where_clause? groupby_clause? orderby_clause?)
   ;
   
 insertStmt
@@ -126,6 +122,11 @@ insertStmt
 selectList
   : MULTIPLY -> ^(SEL_LIST ALL)
   | derivedColumn (COMMA derivedColumn)* -> ^(SEL_LIST derivedColumn+)
+  ;
+  
+setQualifier
+  : DISTINCT -> ^(SET_QUALIFIER DISTINCT) 
+  | ALL -> ^(SET_QUALIFIER ALL)
   ;
   
 derivedColumn
@@ -200,12 +201,29 @@ where_clause
   ;
   
 groupby_clause
-  : 'group' 'by' fieldList having_clause? -> ^(GROUP_BY having_clause? fieldList)
+  : GROUP BY fieldList having_clause? -> ^(GROUP_BY having_clause? fieldList)
   ;
   
 having_clause
   : HAVING^ bool_expr
   ;
+  
+orderby_clause
+  : ORDER BY sort_specifier_list -> ^(ORDER_BY sort_specifier_list)
+  ;
+  
+sort_specifier_list
+  : sort_specifier (COMMA sort_specifier)* -> sort_specifier+
+  ;
+  
+sort_specifier
+  : f=fieldName o=order_specification?  -> ^(SORT_KEY $f $o?)
+  ;
+  
+order_specification
+  : ASC | DESC
+  ;
+  
 	
 set_stmt
 	:	'set' ('union'|'intersect'|'diff') table
@@ -294,22 +312,29 @@ sign
 // Lexer Section  
 ////////////////////////////////
 // Keywords
-IN : 'in';
-NOT : 'not';
-AND : 'and';
-OR : 'or';
 AS : 'as';
+ALL : 'all';
+AND : 'and';
+ASC : 'asc';
+BY : 'by';
 CREATE : 'create';
-SELECT : 'select';
+DESC : 'desc';
+DISTINCT : 'distinct';
+DROP : 'drop';
+FROM : 'from';
+GROUP : 'group';
+HAVING : 'having';
+IN : 'in';
 INSERT : 'insert';
 INTO : 'into';
-VALUES : 'values';
-DROP : 'drop';
+NOT : 'not';
+OR : 'or';
+ORDER : 'order';
+SELECT : 'select';
 TABLE : 'table';
-FROM : 'from';
-WHERE : 'where';
-HAVING : 'having';
 USING : 'using';
+VALUES : 'values';
+WHERE : 'where';
 
 // column types
 BOOL : 'bool';

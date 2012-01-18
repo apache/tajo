@@ -246,7 +246,7 @@ public class GlobalQueryPlanner {
 					request = new SubQueryRequestImpl(tablets, new Path("hdfs://out/"+System.currentTimeMillis()).toUri(), 
 							strQuery, t.getId());
 					for (TabletServInfo servInfo : tabletServInfoList) {
-						if (servInfo.getTablet().equals(request.getTablets().get(0))) {
+						if (servInfo.getTablet().equals(request.getFragments().get(0))) {
 							host = servInfo.getHostName();
 							port = servInfo.getPort();
 							break;

@@ -72,8 +72,8 @@ public class TestLeafServerInterface {
 		}
 		
 		for (int i = 0; i < reqList.size(); i++) {
-			List<Fragment> t1 = reqList.get(i).getTablets();
-			List<Fragment> t2 = client.reqList.get(i).getTablets();
+			List<Fragment> t1 = reqList.get(i).getFragments();
+			List<Fragment> t2 = client.reqList.get(i).getFragments();
 			assertEquals(t1.size(), t2.size());
 			for (int j = 0; j < t1.size(); j++) {
 				assertEquals(t1.get(j), t2.get(j));

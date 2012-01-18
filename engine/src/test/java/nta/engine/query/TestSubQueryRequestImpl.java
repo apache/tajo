@@ -43,8 +43,8 @@ public class TestSubQueryRequestImpl {
 		builder.setTableName("table1");
 		SubQueryRequest req2 = new SubQueryRequestImpl(builder.build());
 		
-		List<Fragment> t1 = req1.getTablets();
-		List<Fragment> t2 = req2.getTablets();
+		List<Fragment> t1 = req1.getFragments();
+		List<Fragment> t2 = req2.getFragments();
 		assertEquals(t1.size(), t2.size());
 		
 		for (int i = 0; i < t1.size(); i++) {

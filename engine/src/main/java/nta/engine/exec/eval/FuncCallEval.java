@@ -3,6 +3,7 @@
  */
 package nta.engine.exec.eval;
 
+import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
@@ -14,20 +15,26 @@ import nta.storage.Tuple;
  *
  */
 public class FuncCallEval extends EvalNode {
-	private Function instance;
+	private FunctionDesc desc;
+  private Function instance;
 	private EvalNode [] givenArgs;
 
 	/**
 	 * @param type
 	 */
-	public FuncCallEval(Function instance, EvalNode [] givenArgs) {
+	public FuncCallEval(FunctionDesc desc, Function instance, EvalNode [] givenArgs) {
 		super(Type.FUNCTION);
+		this.desc = desc;
 		this.instance = instance;
 		this.givenArgs = givenArgs;
 	}
 	
+	public EvalNode [] getGivenArgs() {
+	  return this.givenArgs;
+	}
+	
 	public DataType getValueType() {
-		return instance.getResType();
+		return this.desc.getReturnType();
 	}
 
 	/* (non-Javadoc)
@@ -49,8 +56,8 @@ public class FuncCallEval extends EvalNode {
 	}
 
 	@Override
-	public String getName() {		
-		return instance.getSignature();
+	public String getName() {
+		return desc.getSignature();
 	}
 	
 	public String toString() {
@@ -60,6 +67,6 @@ public class FuncCallEval extends EvalNode {
 			if(i+1 < givenArgs.length)
 				sb.append(",");
 		}
-		return instance.getSignature()+"("+sb+")";
+		return desc.getSignature()+"("+sb+")";
 	}
 }

@@ -1,10 +1,8 @@
 package nta.engine.parser;
 
 import static org.junit.Assert.assertEquals;
-
-import java.net.URI;
-
 import nta.catalog.Catalog;
+import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -13,11 +11,13 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
-import nta.engine.exception.InternalException;
-import nta.engine.exception.NQLSyntaxException;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.expr.TestEvalTree.Sum;
+import nta.engine.function.Function;
 import nta.engine.parser.NQL.Query;
+import nta.engine.parser.QueryBlock.Target;
+import nta.engine.query.exception.InvalidQueryException;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
@@ -38,10 +38,38 @@ import org.junit.Test;
  * @see QueryBlock
  */
 public class TestNQLCompiler {
-
+  private Catalog cat = null;
+  private Schema schema1 = null;
+  
   @Before
   public void setUp() throws Exception {
+    schema1 = new Schema();
+    schema1.addColumn("id", DataType.INT);
+    schema1.addColumn("name", DataType.STRING);
+    schema1.addColumn("score", DataType.INT);
+    schema1.addColumn("age", DataType.INT);
+    
+    Schema schema2 = new Schema();
+    schema2.addColumn("id", DataType.INT);
+    schema2.addColumn("people_id", DataType.INT);
+    schema2.addColumn("dept", DataType.STRING);
+    schema2.addColumn("year", DataType.INT);
 
+    TableMeta meta = new TableMetaImpl(schema1, StoreType.CSV);
+    TableDesc people = new TableDescImpl("people", meta);
+    people.setPath(new Path("file:///"));
+    cat = new Catalog(new NtaConf());
+    cat.addTable(people);
+    
+    TableDesc student = new TableDescImpl("student", schema2, StoreType.CSV);
+    student.setPath(new Path("file:///"));
+    cat.addTable(student);
+    
+    FunctionDesc funcMeta = new FunctionDesc("sum", Sum.class,
+        Function.Type.GENERAL, DataType.INT, 
+        new DataType [] {DataType.INT, DataType.INT});
+
+    cat.registerFunction(funcMeta);
   }
 
   @After
@@ -49,10 +77,12 @@ public class TestNQLCompiler {
   }
 
   private String[] QUERIES = { 
-      "select id, name, age, gender from people",
+      "select id, name, score, age from people",
       "select name, score, age from people where score > 30",
       "select name, score, age from people where 3 + 5 * 3", 
-      "select age, sum(score) as total from test group by age having sum(score) > 30" // 3
+      "select age, sum(score) as total from people group by age having sum(score) > 30", // 3
+      "select p.id, s.id, score, dept from people as p, student as s where p.id = s.id", // 4
+      "select name, score from people order by score asc, age desc" // 5
   };
 
   private String[] EXPRS = { "3 + 5 * 3" };
@@ -101,72 +131,86 @@ public class TestNQLCompiler {
     return parser;
   }
 
-  public final void testNewEvalTree() throws NQLSyntaxException, InternalException {
-    QueryBlock block = NQLCompiler.parse(QUERIES[0]);
+  public final void testNewEvalTree() {    
+    Tuple tuples[] = new Tuple[1000000];
+    for (int i = 0; i < 1000000; i++) {
+      tuples[i] = new VTuple(4);
+      tuples[i].put(i, "hyunsik_" + i, i + 500, i);
+    }
+    
+    QueryBlock block = QueryAnalyzer.parse(QUERIES[0], cat);
 
     assertEquals(1, block.getNumFromTables());
 
-    block = NQLCompiler.parse(QUERIES[2]);
-
-    Schema schema = new Schema();
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("score", DataType.INT);
-    schema.addColumn("age", DataType.INT);
-
-    Tuple tuples[] = new Tuple[1000000];
-    for (int i = 0; i < 1000000; i++) {
-      tuples[i] = new VTuple(3);
-      tuples[i].put("hyunsik_" + i, i + 500, i);
-    }
-
-    TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl("people", meta);
-    desc.setPath(new Path("file:///"));
-    Catalog cat = new Catalog(new NtaConf());
-    cat.addTable(desc);
-
-    EvalNode expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
+    block = QueryAnalyzer.parse(QUERIES[2], cat);
+    EvalNode expr = block.getWhereCondition();
 
     long start = System.currentTimeMillis();
     for (int i = 0; i < tuples.length; i++) {
-      expr.eval(schema, tuples[i]);
+      expr.eval(schema1, tuples[i]);
     }
     long end = System.currentTimeMillis();
 
     System.out.println("elapsed time: " + (end - start));
   }
-
+ 
   @Test
-  public final void testEvalExprTreeBin() throws NQLSyntaxException, InternalException {
-    QueryBlock block = NQLCompiler.parse(QUERIES[0]);
-
-    assertEquals(1, block.getNumFromTables());
-
-    block = NQLCompiler.parse(QUERIES[2]);
-
-    Schema schema = new Schema();
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("score", DataType.INT);
-    schema.addColumn("age", DataType.INT);
-
-    Tuple tuple = new VTuple(3);
-    tuple.put("hyunsik", 500, 30);
-
-    TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl("people", meta);
-    desc.setPath(new Path("file:///"));
-    Catalog cat = new Catalog(new NtaConf());
-    cat.addTable(desc);
-
-    EvalNode expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
-
-    assertEquals(18, expr.eval(schema, tuple).asInt());
+  public final void testSelectStatement() {
+    QueryBlock block = QueryAnalyzer.parse(QUERIES[0], cat);
+    
+    assertEquals(1, block.getFromTables().length);
+    assertEquals("people", block.getFromTables()[0].getTableId());
+    
+    block = QueryAnalyzer.parse(QUERIES[3], cat);
+    for (Target t : block.getTargetList()) {
+      System.out.println(t.getColumnSchema());
+    }
+    
+    // TODO - to be more regressive
   }
   
   @Test
-  public final void testGroupByClause() throws NQLSyntaxException {
-    QueryBlock block = NQLCompiler.parse(QUERIES[3]);
-    assertEquals("age", block.getGroupFields()[0]);    
-    assertEquals("total", block.getTargetList()[1].getAlias());
+  public final void testSelectStatementWithAlias() {
+    QueryBlock block = QueryAnalyzer.parse(QUERIES[4], cat);
+    assertEquals(2, block.getFromTables().length);
+    assertEquals("people", block.getFromTables()[0].getTableId());
+    assertEquals("student", block.getFromTables()[1].getTableId());
+  }
+  
+  @Test
+  public final void testOrderByClause() {
+    QueryBlock block = QueryAnalyzer.parse(QUERIES[5], cat);
+    assertEquals(2, block.getSortKeys().length);
+    assertEquals("score", block.getSortKeys()[0].getSortKey().getName());
+    assertEquals(true, block.getSortKeys()[0].isAscending());    
+    assertEquals("age", block.getSortKeys()[1].getSortKey().getName());
+    assertEquals(false, block.getSortKeys()[1].isAscending());
+  }
+  
+  private String [] INVALID_QUERIES = {
+      "select * from invalid", // 0 - when a given table does not exist
+      "select time, age from people", // 1 - when a given column does not exist
+      "select age from people group by age2" // 2 - when a grouping field does not eixst
+  };
+  @Test(expected = InvalidQueryException.class)
+  public final void testNoSuchTables()  {
+    QueryAnalyzer.parse(INVALID_QUERIES[0], cat);
+  }
+  
+  @Test(expected = InvalidQueryException.class)
+  public final void testNoSuchFields()  {
+    QueryAnalyzer.parse(INVALID_QUERIES[1], cat);
+  }
+  
+  @Test
+  public final void testGroupByClause() {
+    QueryBlock block = QueryAnalyzer.parse(QUERIES[3], cat);
+    assertEquals("age", block.getGroupFields()[0].getName());
+  }
+  
+  @Test(expected = InvalidQueryException.class)
+  public final void testInvalidGroupFields() {
+    QueryBlock block = QueryAnalyzer.parse(INVALID_QUERIES[2], cat);
+    assertEquals("age", block.getGroupFields()[0].getName());
   }
 }
