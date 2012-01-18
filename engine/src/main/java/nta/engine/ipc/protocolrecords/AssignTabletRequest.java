@@ -7,5 +7,5 @@ package nta.engine.ipc.protocolrecords;
  *
  */
 public interface AssignTabletRequest {
-	Tablet [] getTablets();
+	Fragment [] getTablets();
 }

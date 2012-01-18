@@ -20,7 +20,7 @@ import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.ipc.LeafServerInterface;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.query.QueryEngine;
 import nta.engine.query.SubQueryRequestImpl;
 import nta.rpc.NettyRpc;
@@ -223,9 +223,9 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	  SubQueryRequest request = new SubQueryRequestImpl(requestProto);
 	  
 	  TableDesc desc = null;
-	  for(Tablet tablet : request.getTablets()) {
+	  for(Fragment tablet : request.getTablets()) {
 	    desc = new TableDescImpl(tablet.getId(), tablet.getMeta());
-	    desc.setURI(tablet.getPath());
+	    desc.setPath(tablet.getPath());
 	    catalog.addTable(desc);
 	    ResultSetOld result = queryEngine.executeQuery(request.getQuery(), tablet);
 	    catalog.deleteTable(tablet.getId());

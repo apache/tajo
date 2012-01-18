@@ -12,7 +12,7 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NConstants;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -61,8 +61,8 @@ public class TestCSVFile2 {
 		long fileLen = status.getLen();		// 88894
 		long randomNum = (long) (Math.random() * fileLen) + 1;
 		
-		Tablet[] tablets = new Tablet[1];
-		Tablet tablet = new Tablet("table1_1", status.getPath(), meta, 0, randomNum);
+		Fragment[] tablets = new Fragment[1];
+		Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, randomNum);
 		tablets[0] = tablet;
 		
 		FileScanner fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
@@ -72,7 +72,7 @@ public class TestCSVFile2 {
 		}
 		fileScanner.close();
 		
-		tablet = new Tablet("table1_2", status.getPath(), meta, 
+		tablet = new Fragment("table1_2", status.getPath(), meta, 
 		    randomNum, fileLen - randomNum);
 		tablets[0] = tablet;
 		fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);

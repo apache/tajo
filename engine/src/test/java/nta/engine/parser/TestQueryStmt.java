@@ -26,6 +26,7 @@ import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.parser.NQL.Query;
 import nta.storage.CSVFile2;
 
+import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,7 +60,7 @@ public class TestQueryStmt {
 		meta.putOption(CSVFile2.DELIMITER, ",");		
 		
 		TableDesc desc = new TableDescImpl("test", meta);
-		desc.setURI(URI.create("/table/test"));
+		desc.setPath(new Path("/table/test"));
 		cat.addTable(desc);
 	}
 	

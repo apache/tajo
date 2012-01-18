@@ -14,7 +14,7 @@ import nta.common.exception.InvalidAddressException;
 import nta.conf.NtaConf;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NConstants;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.junit.After;
@@ -70,8 +70,8 @@ public class TestRawFile2 {
 
 		int tupleCnt = 0;
 		tuple = null;
-		Tablet[] tablets = new Tablet[1];
-		tablets[0] = new Tablet("table1_1", status.getPath(), meta, 0, midPos);
+		Fragment[] tablets = new Fragment[1];
+		tablets[0] = new Fragment("table1_1", status.getPath(), meta, 0, midPos);
 		Scanner scanner = sm.getScanner(meta, tablets);
 		do {
 			tuple = (VTuple)scanner.next();
@@ -81,8 +81,8 @@ public class TestRawFile2 {
 		--tupleCnt;
 //		System.out.println(tupleCnt);
 
-		tablets = new Tablet[1];
-		tablets[0] = new Tablet("table1_2", status.getPath(), meta, midPos, fileLen-midPos);
+		tablets = new Fragment[1];
+		tablets[0] = new Fragment("table1_2", status.getPath(), meta, midPos, fileLen-midPos);
 		scanner = sm.getScanner(meta, tablets);
 		do {
 			tuple = (VTuple)scanner.next();
@@ -94,9 +94,9 @@ public class TestRawFile2 {
 		
 		// Read a table composed of multiple files
 		tupleCnt = 0;
-		tablets = new Tablet[2];
-		tablets[0] = new Tablet("table1_1", status.getPath(), meta, 0, midPos);
-		tablets[1] = new Tablet("table1_2", status.getPath(), meta, midPos, fileLen-midPos);
+		tablets = new Fragment[2];
+		tablets[0] = new Fragment("table1_1", status.getPath(), meta, 0, midPos);
+		tablets[1] = new Fragment("table1_2", status.getPath(), meta, midPos, fileLen-midPos);
 		scanner = sm.getScanner(meta, tablets);
 		do {
 			tuple = (VTuple)scanner.next();
@@ -107,10 +107,10 @@ public class TestRawFile2 {
 		assertEquals(tupleNum, --tupleCnt);
 		
 		tupleCnt = 0;
-		tablets = new Tablet[3];
-		tablets[0] = new Tablet("table1_1", status.getPath(), meta, 0, midPos/2);
-		tablets[1] = new Tablet("table1_2", status.getPath(), meta, midPos/2, midPos-midPos/2);
-		tablets[2] = new Tablet("table1_3", status.getPath(), meta, midPos, fileLen-midPos);
+		tablets = new Fragment[3];
+		tablets[0] = new Fragment("table1_1", status.getPath(), meta, 0, midPos/2);
+		tablets[1] = new Fragment("table1_2", status.getPath(), meta, midPos/2, midPos-midPos/2);
+		tablets[2] = new Fragment("table1_3", status.getPath(), meta, midPos, fileLen-midPos);
 		scanner = sm.getScanner(meta, tablets);
 		do {
 			tuple = (VTuple)scanner.next();
@@ -151,7 +151,7 @@ public class TestRawFile2 {
 		}
 		appender.close();
 		
-		Tablet[] tablets = sm.split("table2");
+		Fragment[] tablets = sm.split("table2");
 		Scanner scanner = sm.getScanner(meta, tablets);
 		int tupleCnt = 0;
 		do {

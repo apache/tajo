@@ -1,9 +1,6 @@
 package nta.catalog;
 
 import static org.junit.Assert.assertEquals;
-
-import java.net.URI;
-
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 
@@ -23,8 +20,8 @@ public class TestTableDesc {
 
     TableDesc desc = new TableDescImpl("table1", info);
     assertEquals("table1", desc.getId());
-    desc.setURI(new Path("/nta/data"));
-    assertEquals(URI.create("/nta/data"), desc.getURI());    
+    desc.setPath(new Path("/nta/data"));
+    assertEquals(new Path("/nta/data"), desc.getPath());
     assertEquals(info, desc.getMeta());
   }
 }

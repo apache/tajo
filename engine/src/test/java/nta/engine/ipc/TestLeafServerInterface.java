@@ -18,7 +18,7 @@ import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.query.SubQueryRequestImpl;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
@@ -40,12 +40,12 @@ public class TestLeafServerInterface {
 	public void setup() throws URISyntaxException {
 	  Schema schema = new Schema();
     TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-		ArrayList<Tablet> tablets = new ArrayList<Tablet>();
-		tablets.add(new Tablet("test1_1",new Path("test1"), meta, 0, 1));
-    tablets.add(new Tablet("test1_2",new Path("test2"), meta, 1, 2));
-    tablets.add(new Tablet("test1_3",new Path("test3"), meta, 2, 3));
-    tablets.add(new Tablet("test1_4",new Path("test4"), meta, 3, 4));
-    tablets.add(new Tablet("test1_5",new Path("test5"), meta, 4, 5));
+		ArrayList<Fragment> tablets = new ArrayList<Fragment>();
+		tablets.add(new Fragment("test1_1",new Path("test1"), meta, 0, 1));
+    tablets.add(new Fragment("test1_2",new Path("test2"), meta, 1, 2));
+    tablets.add(new Fragment("test1_3",new Path("test3"), meta, 2, 3));
+    tablets.add(new Fragment("test1_4",new Path("test4"), meta, 3, 4));
+    tablets.add(new Fragment("test1_5",new Path("test5"), meta, 4, 5));
 		for (int i = 0; i < 10; i++) {
 			reqList.add(new SubQueryRequestImpl(tablets, new URI("out"+i), "query"+i, "table"+i));
 		}
@@ -72,8 +72,8 @@ public class TestLeafServerInterface {
 		}
 		
 		for (int i = 0; i < reqList.size(); i++) {
-			List<Tablet> t1 = reqList.get(i).getTablets();
-			List<Tablet> t2 = client.reqList.get(i).getTablets();
+			List<Fragment> t1 = reqList.get(i).getTablets();
+			List<Fragment> t2 = client.reqList.get(i).getTablets();
 			assertEquals(t1.size(), t2.size());
 			for (int j = 0; j < t1.size(); j++) {
 				assertEquals(t1.get(j), t2.get(j));

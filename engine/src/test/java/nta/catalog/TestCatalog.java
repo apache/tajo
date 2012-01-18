@@ -98,7 +98,7 @@ public class TestCatalog {
 		fid3 = schema1.addColumn(FieldName3, DataType.LONG);
 		
 		TableDesc meta = new TableDescImpl("table1", schema1, StoreType.MEM);
-		meta.setURI(URI.create("/table1"));
+		meta.setPath(new Path("/table1"));
 		
 		assertFalse(cat.existsTable("table1"));
 		cat.addTable(meta);
@@ -245,7 +245,7 @@ public class TestCatalog {
 			fos.close();
 
 			TableDesc desc = new TableDescImpl("table"+i, meta);
-			desc.setURI(tbPath);
+			desc.setPath(tbPath);
 			catalog.addTable(desc);
 		}
 		
@@ -267,7 +267,7 @@ public class TestCatalog {
 				for (i = 0; i < tabletInfoList.size(); i++) {
 					len += tabletInfoList.get(i).getTablet().getLength();
 				}
-				fileStatus = fs.getFileStatus(new Path(tableInfo.getURI()+"/data/table.csv"));
+				fileStatus = fs.getFileStatus(new Path(tableInfo.getPath()+"/data/table.csv"));
 				assertEquals(len, fileStatus.getLen());
 			}
 		}

@@ -13,7 +13,7 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
-import nta.engine.ipc.protocolrecords.Tablet;
+import nta.engine.ipc.protocolrecords.Fragment;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
@@ -25,12 +25,12 @@ public class TestSubQueryRequestImpl {
 	  Schema schema = new Schema();
 	  TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
 	  
-		ArrayList<Tablet> tablets = new ArrayList<Tablet>();
-		tablets.add(new Tablet("test1_1",new Path("test1"), meta, 0, 1));
-		tablets.add(new Tablet("test1_2",new Path("test2"), meta, 1, 2));
-		tablets.add(new Tablet("test1_3",new Path("test3"), meta, 2, 3));
-		tablets.add(new Tablet("test1_4",new Path("test4"), meta, 3, 4));
-		tablets.add(new Tablet("test1_5",new Path("test5"), meta, 4, 5));
+		ArrayList<Fragment> tablets = new ArrayList<Fragment>();
+		tablets.add(new Fragment("test1_1",new Path("test1"), meta, 0, 1));
+		tablets.add(new Fragment("test1_2",new Path("test2"), meta, 1, 2));
+		tablets.add(new Fragment("test1_3",new Path("test3"), meta, 2, 3));
+		tablets.add(new Fragment("test1_4",new Path("test4"), meta, 3, 4));
+		tablets.add(new Fragment("test1_5",new Path("test5"), meta, 4, 5));
 		
 		SubQueryRequest req1 = new SubQueryRequestImpl(tablets, new URI("out1"), "select test1", "table1");
 		
@@ -43,8 +43,8 @@ public class TestSubQueryRequestImpl {
 		builder.setTableName("table1");
 		SubQueryRequest req2 = new SubQueryRequestImpl(builder.build());
 		
-		List<Tablet> t1 = req1.getTablets();
-		List<Tablet> t2 = req2.getTablets();
+		List<Fragment> t1 = req1.getTablets();
+		List<Fragment> t2 = req2.getTablets();
 		assertEquals(t1.size(), t2.size());
 		
 		for (int i = 0; i < t1.size(); i++) {

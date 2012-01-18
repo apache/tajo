@@ -32,6 +32,7 @@ import nta.engine.parser.QueryBlock;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
+import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -83,7 +84,7 @@ public class TestEvalTree {
 
     TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
     TableDesc desc = new TableDescImpl("people", meta);
-    desc.setURI(URI.create("file:///"));
+    desc.setPath(new Path("file:///"));
     Catalog cat = new Catalog(new NtaConf());
     cat.addTable(desc);
 

@@ -27,6 +27,7 @@ import nta.engine.plan.logical.SelectionOp;
 import nta.engine.query.LogicalPlanner;
 import nta.storage.CSVFile2;
 
+import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,7 +48,7 @@ public class TestLogicalPlanner {
 		TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);		
 		meta.putOption(CSVFile2.DELIMITER, ",");  
 		TableDesc desc = new TableDescImpl("test", meta);
-		desc.setURI(URI.create("/table/test"));
+		desc.setPath(new Path("/table/test"));
 		cat.addTable(desc);
 	}
 	

@@ -94,7 +94,7 @@ public class TestQuery {
 			fos.close();
 
 			TableDesc desc = new TableDescImpl("table"+i, meta);
-			desc.setURI(tbPath);
+			desc.setPath(tbPath);
 			catalog.addTable(desc);
 		}
 	}
