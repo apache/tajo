@@ -1,7 +1,6 @@
 package nta.engine.exec.eval;
 
-import java.util.List;
-
+import nta.catalog.Schema;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
 import nta.engine.function.Function;
@@ -31,13 +30,13 @@ public class AggFuncEval extends EvalNode {
 	}
 
 	@Override
-	public Datum eval(Tuple tuple, Datum...args) {
-		Datum [] params = null;				
+	public Datum eval(Schema schema, Tuple tuple, Datum...args) {
+		Datum [] params = null;
 		
 		if(paras != null) {
 		  params = new Datum[args.length];
 			for(int i=0;i < paras.length; i++) {
-				params[i] = paras[i].eval(tuple);
+				params[i] = paras[i].eval(schema, tuple);
 			}
 		}
 		

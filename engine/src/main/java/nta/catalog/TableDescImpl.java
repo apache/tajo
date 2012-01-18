@@ -18,28 +18,27 @@ public class TableDescImpl implements TableDesc {
   protected TableDescProto.Builder builder = null;
   protected boolean viaProto = false;
   
-  protected int id;
-  protected String name;
+  protected String tableId;
   protected URI uri;
-  protected TableMeta info;
+  protected TableMeta meta;
   
 	public TableDescImpl() {
 		builder = TableDescProto.newBuilder();
 	}
 	
-	public TableDescImpl(String name) {
+	public TableDescImpl(String tableId) {
 		this();
-		setName(name);
+		setId(tableId);
 	}
 	
-	public TableDescImpl(String name, TableMeta info) {
+	public TableDescImpl(String tableId, TableMeta info) {
 		this();
-	  setName(name);
+	  setId(tableId);
 	  setMeta(info);		
 	}
 	
-	public TableDescImpl(String name, Schema schema, StoreType type) {
-	  this(name, new TableMetaImpl(schema, type));
+	public TableDescImpl(String tableId, Schema schema, StoreType type) {
+	  this(tableId, new TableMetaImpl(schema, type));
 	}
 	
 	public TableDescImpl(TableDescProto proto) {
@@ -47,40 +46,22 @@ public class TableDescImpl implements TableDesc {
 	  viaProto = true;
 	}
 	
-	public void setId(int id) {
-		this.id = id;
+	public void setId(String tableId) {
+		this.tableId = tableId;
 	}
 	
-	public int getId() {
-	  TableDescProtoOrBuilder p = viaProto ? proto : builder;
-    
-    if (id > -1) {
-      return this.id;
-    }
-    if (!proto.hasId()) {
-      return id;
-    }
-    this.id = p.getId();
-    
-    return this.id;
-  }
-	
-	public void setName(String name) {
-		this.name = name;
-	}
-	
-  public String getName() {
+  public String getId() {
     TableDescProtoOrBuilder p = viaProto ? proto : builder;
     
-    if (name != null) {
-      return this.name;
+    if (tableId != null) {
+      return this.tableId;
     }
-    if (!proto.hasName()) {
+    if (!proto.hasId()) {
       return null;
     }
-    this.name = p.getName();
+    this.tableId = p.getId();
     
-    return this.name;
+    return this.tableId;
   }
 	
 	public void setURI(URI uri) {
@@ -108,20 +89,20 @@ public class TableDescImpl implements TableDesc {
   @Override
   public void setMeta(TableMeta info) {
     maybeInitBuilder();
-    this.info = info;
+    this.meta = info;
   }
 	
 	public TableMeta getMeta() {
 	  TableDescProtoOrBuilder p = viaProto ? proto : builder;
     
-    if (info != null) {
-      return this.info;
+    if (meta != null) {
+      return this.meta;
     }
-    if (!proto.hasDesc()) {
+    if (!proto.hasMeta()) {
       return null;
     }
-    this.info = new TableMetaImpl(p.getDesc());
-	  return this.info;
+    this.meta = new TableMetaImpl(p.getMeta());
+	  return this.meta;
 	}
 	
 	public boolean equals(Object object) {
@@ -141,8 +122,7 @@ public class TableDescImpl implements TableDesc {
 	public String toString() {
 	  StringBuilder str = new StringBuilder();
 	  str.append("{")
-	  .append("tableId: "+this.id).append("\n")
-	  .append("name: "+this.name).append("\n")
+	  .append("id: "+this.tableId).append("\n")
 	  .append("uri: "+this.uri).append("\n")
 	  .append("proto: "+this.proto.toString()).append("\n}");
 	  
@@ -165,20 +145,16 @@ public class TableDescImpl implements TableDesc {
   }
   
   protected void mergeLocalToBuilder() {    
-    if (this.id > 0) {
-      builder.setId(this.id);
-    }
-    
-    if (this.name != null) {
-      builder.setName(this.name);
+    if (this.tableId != null) {
+      builder.setId(this.tableId);
     }
     
     if (this.uri != null) {
       builder.setPath(this.uri.toString());
     }
     
-    if (this.info != null) {
-      builder.setDesc((TableProto) info.getProto());
+    if (this.meta != null) {
+      builder.setMeta((TableProto) meta.getProto());
     }
   }
   

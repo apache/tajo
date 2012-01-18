@@ -48,7 +48,7 @@ public class SelOp extends PhysicalOp {
 
 		while ((next = inner.next()) != null) {				
 			tuple = buildTuple(next);
-			if(qual.eval(tuple).asBool()) {				
+			if(qual.eval(schema, tuple).asBool()) {				
 				return tuple;
 			}
 		}

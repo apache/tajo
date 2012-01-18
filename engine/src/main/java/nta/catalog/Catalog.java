@@ -14,7 +14,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -48,10 +47,8 @@ public class Catalog implements CatalogService, EngineService {
 	private Lock rlock = lock.readLock();
 	private Lock wlock = lock.writeLock();
 
-	private AtomicInteger newRelId = new AtomicInteger(0);
-	private Map<Integer, TableDesc> tables = new HashMap<Integer, TableDesc>();
-	private Map<Integer, List<TabletServInfo>> tabletServingInfo = new HashMap<Integer, List<TabletServInfo>>();
-	private Map<String, Integer> tablesByName = new HashMap<String, Integer>();	
+	private Map<String, List<TabletServInfo>> tabletServingInfo = new HashMap<String, List<TabletServInfo>>();
+	private Map<String, TableDesc> tables = new HashMap<String, TableDesc>();	
 	private Map<String, FunctionDesc> functions = new HashMap<String, FunctionDesc>();	
 
 	private SimpleWAL wal;
@@ -79,30 +76,20 @@ public class Catalog implements CatalogService, EngineService {
 	private static void writeMetaToFile(Writer writer, TableDesc meta) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		sb.append("+t\t");
-		sb.append(meta.getName()).append("\t");
+		sb.append(meta.getId()).append("\t");
 		sb.append(meta.getURI().toString());
 		sb.append("\n");
 		
 		writer.append(sb.toString());
 	}
 
-	public TableDesc getTableDesc(int relationId) {
+	public TableDesc getTableDesc(String tableId) throws NoSuchTableException {
 		rlock.lock();
 		try {
-			return this.tables.get(relationId);
-		} finally { 
-			rlock.unlock(); 
-		}		
-	}
-
-	public TableDesc getTableDesc(String relationName) throws NoSuchTableException {
-		rlock.lock();
-		try {
-			if (!this.tablesByName.containsKey(relationName)) {
-				throw new NoSuchTableException(relationName);
+			if (!this.tables.containsKey(tableId)) {
+				throw new NoSuchTableException(tableId);
 			}
-			int rid = this.tablesByName.get(relationName);
-			return this.tables.get(rid);
+			return this.tables.get(tableId);
 		} finally {
 			rlock.unlock();
 		}
@@ -121,8 +108,8 @@ public class Catalog implements CatalogService, EngineService {
 		this.tabletServingInfo.clear();
 	}
 	
-	public List<TabletServInfo> getHostByTable(String tableName) {
-		return tabletServingInfo.get(tablesByName.get(tableName));
+	public List<TabletServInfo> getHostByTable(String tableId) {
+		return tabletServingInfo.get(tableId);
 	}
 	
 	public void updateAllTabletServingInfo(List<String> onlineServers) throws IOException {
@@ -160,7 +147,6 @@ public class Catalog implements CatalogService, EngineService {
 		BlockLocation[] blocks;
 		String[] hosts;
 		List<TabletServInfo> tabletInfoList = new ArrayList<TabletServInfo>();
-		int tid = tablesByName.get(desc.getName());
 //		if (tabletServingInfo.containsKey(tid)) {
 //			tabletInfoList = tabletServingInfo.get(tid);
 //		} else {
@@ -179,7 +165,7 @@ public class Catalog implements CatalogService, EngineService {
 //					tabletServingInfo.put(tid, tabletInfoList);
 //				}
 				// TODO: select the proper serving node for block
-				tabletInfoList.add(new TabletServInfo(hosts[0], -1, new Tablet(desc.getName()+"_"+i, 
+				tabletInfoList.add(new TabletServInfo(hosts[0], -1, new Tablet(desc.getId()+"_"+i, 
             files[fileIdx].getPath(), desc.getMeta(), 
 						blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
 				i++;
@@ -188,28 +174,21 @@ public class Catalog implements CatalogService, EngineService {
 		return tabletInfoList;
 	}
 	
-	public void addTable(String name, TableMeta info) throws AlreadyExistsTableException {	  
-	  addTable(new TableDescImpl(name, info));
+	public void addTable(String tableId, TableMeta info) throws AlreadyExistsTableException {	  
+	  addTable(new TableDescImpl(tableId, info));
 	}
 
 	public void addTable(TableDesc desc) throws AlreadyExistsTableException {
 		Preconditions.checkNotNull(desc.getURI(), "Must be set to the table URI");
-		Preconditions.checkNotNull(desc.getName(), "Must be set to the table name");
+		Preconditions.checkNotNull(desc.getId(), "Must be set to the table name");
 	  wlock.lock();
 		
 		try {
-			if (tablesByName.containsKey(desc.getName())) {
-				throw new AlreadyExistsTableException(desc.getName());
+			if (tables.containsKey(desc.getId())) {
+				throw new AlreadyExistsTableException(desc.getId());
 			}
 
-			// get new relation id
-      int newTableId = newRelId.getAndIncrement();      
-      
-      // set the relation id to TableDesc and its columns
-      desc.setId(newTableId);
-      
-			this.tables.put(newTableId, desc);
-			this.tablesByName.put(desc.getName(), newTableId);
+			this.tables.put(desc.getId(), desc);
 
 			if(this.logger != null && (desc.getMeta().getStoreType() != StoreType.MEM))
 				this.logger.appendAddTable(desc);
@@ -222,17 +201,17 @@ public class Catalog implements CatalogService, EngineService {
 		}
 	}
 
-	public void deleteTable(String name) throws NoSuchTableException {
+	public void deleteTable(String tableId) throws NoSuchTableException {
 		wlock.lock();
 		try {
-			if (!tablesByName.containsKey(name)) {
-				throw new NoSuchTableException(name);
+			if (!tables.containsKey(tableId)) {
+				throw new NoSuchTableException(tableId);
 			}
 
 			if(this.logger != null)
-				this.logger.appendDelTable(name);
+				this.logger.appendDelTable(tableId);
 
-			tablesByName.remove(name);
+			tables.remove(tableId);
 		} catch (IOException e) {
 			LOG.error(e.getMessage());
 			e.printStackTrace();
@@ -242,22 +221,10 @@ public class Catalog implements CatalogService, EngineService {
 		}
 	}
 
-	public boolean existsTable(String name) {
+	public boolean existsTable(String tableId) {
 		rlock.lock();
 		try {
-			return tablesByName.containsKey(name);
-		} finally {
-			rlock.unlock();
-		}
-	}
-
-	public synchronized int getTableId(String relName) throws NoSuchTableException {
-		rlock.lock();
-		try {
-			if (!tablesByName.containsKey(relName))
-				throw new NoSuchTableException(relName);
-
-			return tablesByName.get(relName);
+			return tables.containsKey(tableId);
 		} finally {
 			rlock.unlock();
 		}
@@ -279,29 +246,29 @@ public class Catalog implements CatalogService, EngineService {
 		}
 	}
 
-	public void unregisterFunction(String funcName) {
-		if (!functions.containsKey(funcName)) {
-			throw new NoSuchFunctionException(funcName);
+	public void unregisterFunction(String signature) {
+		if (!functions.containsKey(signature)) {
+			throw new NoSuchFunctionException(signature);
 		}
 
 		if(logger != null) {
 			try {
-				this.logger.appendDelFunction(funcName);
+				this.logger.appendDelFunction(signature);
 			} catch (IOException e) {
 				LOG.error(e.getMessage());
 				e.printStackTrace();
 			}
 		}
 		
-		functions.remove(funcName);
+		functions.remove(signature);
 	}
 
-	public FunctionDesc getFunctionMeta(String funcName) {
-		return this.functions.get(funcName);
+	public FunctionDesc getFunctionMeta(String signature) {
+		return this.functions.get(signature);
 	}
 
-	public boolean containFunction(String funcName) {
-		return this.functions.containsKey(funcName);
+	public boolean containFunction(String signature) {
+		return this.functions.containsKey(signature);
 	}
 
 	public Collection<FunctionDesc> getFunctions() {
@@ -316,16 +283,16 @@ public class Catalog implements CatalogService, EngineService {
 		public void appendAddTable(TableDesc meta) throws IOException {
 			StringBuilder sb = new StringBuilder();
 			sb.append("+t\t");
-			sb.append(meta.getName()).append("\t");
+			sb.append(meta.getId()).append("\t");
 			sb.append(meta.getURI().toString());
 
 			wal.append(sb.toString());
 		}
 
-		public void appendDelTable(String name) throws IOException {
+		public void appendDelTable(String tableId) throws IOException {
 			StringBuilder sb = new StringBuilder();
 			sb.append("-t\t");
-			sb.append(name);
+			sb.append(tableId);
 			wal.append(sb.toString());
 		}
 
@@ -339,10 +306,10 @@ public class Catalog implements CatalogService, EngineService {
 			wal.append(sb.toString());
 		}
 
-		public void appendDelFunction(String name) throws IOException {
+		public void appendDelFunction(String signature) throws IOException {
 			StringBuilder sb = new StringBuilder();
 			sb.append("-f\t");
-			sb.append(name);
+			sb.append(signature);
 			
 			wal.append(sb.toString());
 		}

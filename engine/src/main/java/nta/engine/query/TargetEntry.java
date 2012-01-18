@@ -8,8 +8,8 @@ public class TargetEntry {
 	public String qualifier;
 	public String colName;
 	
-	public int relId = -1;
-	public int colId = -1;
+	public String relId = null;
+	public String colId = null;
 	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

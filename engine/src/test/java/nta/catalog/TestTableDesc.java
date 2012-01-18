@@ -22,9 +22,7 @@ public class TestTableDesc {
     info.setSchema(schema);
 
     TableDesc desc = new TableDescImpl("table1", info);
-    assertEquals("table1", desc.getName());
-    desc.setId(9);
-    assertEquals(9, desc.getId());
+    assertEquals("table1", desc.getId());
     desc.setURI(new Path("/nta/data"));
     assertEquals(URI.create("/nta/data"), desc.getURI());    
     assertEquals(info, desc.getMeta());

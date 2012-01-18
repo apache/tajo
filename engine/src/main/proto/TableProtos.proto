@@ -54,10 +54,9 @@ message TabletProto {
 }
 
 message TableDescProto {
-	required int32 id = 1;
-	required string name = 2;
-	required string path = 3;
-	optional TableProto desc = 4;
+	required string id = 1;
+	required string path = 2;
+	optional TableProto meta = 3;
 }
 
 message TableProto {

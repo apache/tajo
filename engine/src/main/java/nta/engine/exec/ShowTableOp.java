@@ -47,7 +47,7 @@ public class ShowTableOp extends PhysicalOp {
 		
 		TableDesc desc = this.iterator.next();
 		VTuple t = new VTuple(1);
-		t.put(0, desc.getName());
+		t.put(0, desc.getId());
 		return t;
 	}
 

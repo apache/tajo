@@ -73,7 +73,6 @@ public class TestEvalTree {
       "select 2+3", // 3
   };
 
-  @Test
   public final void testEvalExprTreeBin() throws NQLSyntaxException,
       InternalException {
 
@@ -102,29 +101,33 @@ public class TestEvalTree {
 
     block = NQLCompiler.parse(QUERIES[0]);
     expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
-    assertEquals(true, expr.eval(tuple).asBool());
+    assertEquals(true, expr.eval(schema, tuple).asBool());
 
     block = NQLCompiler.parse(QUERIES[1]);
     expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
-    assertEquals(15000, expr.eval(tuple).asInt());
+    assertEquals(15000, expr.eval(schema, tuple).asInt());
 
     block = NQLCompiler.parse(QUERIES[2]);
     expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
-    assertEquals(15050, expr.eval(tuple).asInt());
+    assertEquals(15050, expr.eval(schema, tuple).asInt());
   }
 
   @Test
   public void testTupleEval() {
     ConstEval e1 = new ConstEval(DatumFactory.create(1));
-    FieldEval e2 = new FieldEval(DataType.INT, 1, 4, "field1"); // it indicates
+    FieldEval e2 = new FieldEval("table1", "score", DataType.INT); // it indicates
                                                                 // 4th field.
-
+    Schema schema1 = new Schema();
+    schema1.addColumn("id", DataType.INT);
+    schema1.addColumn("score", DataType.INT);
+    
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
-    VTuple tuple = new VTuple(6);
-    tuple.put(4, 99); // put 0th field
+    VTuple tuple = new VTuple(2);
+    tuple.put(0, 1); // put 0th field
+    tuple.put(1, 99); // put 0th field
 
     // the result of evaluation must be 100.
-    assertEquals(expr.eval(tuple).asInt(), 100);
+    assertEquals(expr.eval(schema1, tuple).asInt(), 100);
   }
 
   public static class MockTrueEval extends EvalNode {
@@ -134,7 +137,7 @@ public class TestEvalTree {
     }
 
     @Override
-    public Datum eval(Tuple tuple, Datum... args) {
+    public Datum eval(Schema schema, Tuple tuple, Datum... args) {
       return DatumFactory.create(true);
     }
 
@@ -157,7 +160,7 @@ public class TestEvalTree {
     }
 
     @Override
-    public Datum eval(Tuple tuple, Datum... args) {
+    public Datum eval(Schema schema, Tuple tuple, Datum... args) {
       return DatumFactory.create(false);
     }
 
@@ -178,16 +181,16 @@ public class TestEvalTree {
     MockFalseExpr falseExpr = new MockFalseExpr();
 
     BinaryEval andExpr = new BinaryEval(Type.AND, trueExpr, trueExpr);
-    assertTrue(andExpr.eval(null).asBool());
+    assertTrue(andExpr.eval(null, null).asBool());
 
     andExpr = new BinaryEval(Type.AND, falseExpr, trueExpr);
-    assertFalse(andExpr.eval(null).asBool());
+    assertFalse(andExpr.eval(null, null).asBool());
 
     andExpr = new BinaryEval(Type.AND, trueExpr, falseExpr);
-    assertFalse(andExpr.eval(null).asBool());
+    assertFalse(andExpr.eval(null, null).asBool());
 
     andExpr = new BinaryEval(Type.AND, falseExpr, falseExpr);
-    assertFalse(andExpr.eval(null).asBool());
+    assertFalse(andExpr.eval(null, null).asBool());
   }
 
   @Test
@@ -196,16 +199,16 @@ public class TestEvalTree {
     MockFalseExpr falseExpr = new MockFalseExpr();
 
     BinaryEval orExpr = new BinaryEval(Type.OR, trueExpr, trueExpr);
-    assertTrue(orExpr.eval(null).asBool());
+    assertTrue(orExpr.eval(null, null).asBool());
 
     orExpr = new BinaryEval(Type.OR, falseExpr, trueExpr);
-    assertTrue(orExpr.eval(null).asBool());
+    assertTrue(orExpr.eval(null, null).asBool());
 
     orExpr = new BinaryEval(Type.OR, trueExpr, falseExpr);
-    assertTrue(orExpr.eval(null).asBool());
+    assertTrue(orExpr.eval(null, null).asBool());
 
     orExpr = new BinaryEval(Type.OR, falseExpr, falseExpr);
-    assertFalse(orExpr.eval(null).asBool());
+    assertFalse(orExpr.eval(null, null).asBool());
   }
 
   @Test
@@ -218,41 +221,41 @@ public class TestEvalTree {
     e1 = new ConstEval(DatumFactory.create(9));
     e2 = new ConstEval(DatumFactory.create(34));
     expr = new BinaryEval(Type.LTH, e1, e2);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.LEQ, e1, e2);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.LTH, e2, e1);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.LEQ, e2, e1);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.eval(null, null).asBool());
 
     expr = new BinaryEval(Type.GTH, e2, e1);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.GEQ, e2, e1);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.GTH, e1, e2);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.GEQ, e1, e2);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.eval(null, null).asBool());
 
     BinaryEval plus = new BinaryEval(Type.PLUS, e1, e2);
     expr = new BinaryEval(Type.LTH, e1, plus);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.LEQ, e1, plus);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.LTH, plus, e1);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.LEQ, plus, e1);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.eval(null, null).asBool());
 
     expr = new BinaryEval(Type.GTH, plus, e1);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.GEQ, plus, e1);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.GTH, e1, plus);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.eval(null, null).asBool());
     expr = new BinaryEval(Type.GEQ, e1, plus);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.eval(null, null).asBool());
   }
 
   @Test
@@ -264,25 +267,25 @@ public class TestEvalTree {
     e1 = new ConstEval(DatumFactory.create(9));
     e2 = new ConstEval(DatumFactory.create(34));
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
-    assertEquals(expr.eval(null).asInt(), 43);
+    assertEquals(expr.eval(null, null).asInt(), 43);
 
     // MINUS
     e1 = new ConstEval(DatumFactory.create(5));
     e2 = new ConstEval(DatumFactory.create(2));
     expr = new BinaryEval(Type.MINUS, e1, e2);
-    assertEquals(expr.eval(null).asInt(), 3);
+    assertEquals(expr.eval(null, null).asInt(), 3);
 
     // MULTIPLY
     e1 = new ConstEval(DatumFactory.create(5));
     e2 = new ConstEval(DatumFactory.create(2));
     expr = new BinaryEval(Type.MULTIPLY, e1, e2);
-    assertEquals(expr.eval(null).asInt(), 10);
+    assertEquals(expr.eval(null, null).asInt(), 10);
 
     // DIVIDE
     e1 = new ConstEval(DatumFactory.create(10));
     e2 = new ConstEval(DatumFactory.create(5));
     expr = new BinaryEval(Type.DIVIDE, e1, e2);
-    assertEquals(expr.eval(null).asInt(), 2);
+    assertEquals(expr.eval(null, null).asInt(), 2);
   }
 
   @Test
@@ -297,7 +300,7 @@ public class TestEvalTree {
     assertEquals(DataType.INT, expr.getValueType());
 
     expr = new BinaryEval(Type.LTH, e1, e2);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.eval(null, null).asBool());
     assertEquals(DataType.BOOLEAN, expr.getValueType());
 
     e1 = new ConstEval(DatumFactory.create(9.3));
