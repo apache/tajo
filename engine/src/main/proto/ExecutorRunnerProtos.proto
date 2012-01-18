@@ -1,0 +1,40 @@
+option java_package = "nta.engine";
+option java_outer_classname = "ExecutorRunnerProtos";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+import "TableProtos.proto";
+
+enum ExecType {
+     SORT = 0;
+     GROUPBY = 1;
+     CUBEBY = 2;
+     JOIN = 3;
+}
+
+message DistSortPlanProto {
+}
+
+message DistGroupByPlanProto {
+}
+
+message DistCubeByPlanProto {
+}
+
+message DistJoinPlanProto {
+}
+
+message DistPlanContainerProto {
+	required ExecType type = 1;
+	optional DistSortPlanProto sortPlan = 2;
+	optional DistGroupByPlanProto groupByPlan = 3;
+	optional DistCubeByPlanProto cubeByPlan = 4;
+	optional DistJoinPlanProto joinPlan = 5;
+}
+
+message ExecutorRunRequestProto {
+	required DistPlanContainerProto distExecutor = 1;
+	repeated TabletProto tablets = 2;
+	required bool clusteredOutput = 3;
+	required string outputDest = 4;
+}
