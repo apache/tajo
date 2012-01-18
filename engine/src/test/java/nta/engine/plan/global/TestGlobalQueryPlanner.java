@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -14,6 +15,7 @@ import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
+import nta.catalog.TabletServInfo;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableProto;
@@ -223,11 +225,21 @@ public class TestGlobalQueryPlanner {
 		LogicalPlan plan = new LogicalPlan(root);
 		GenericTaskTree taskTree = planner.localize(plan);
 		List<DecomposedQuery> queries = planner.decompose(taskTree);
+		List<TabletServInfo> tabletServInfo = catalog.getHostByTable("table0");
+		assertEquals(tabletServInfo.size(), queries.size());
 
 		boolean same = true;
+		boolean exist = false;
 		for (int i = 0; i < queries.size()-1; i++) {
 			same = same && queries.get(i).getQuery().getQuery().equals(queries.get(i+1).getQuery().getQuery());
-			same = same && queries.get(i).getQuery().getTableName().equals(queries.get(i+1).getQuery().getTableName());
+			exist = false;
+			for (int j = 0; j < tabletServInfo.size(); j++) {
+				if (tabletServInfo.get(j).getTablet().getId().equals(queries.get(i).getQuery().getTableName())) {
+					exist = true;
+					break;
+				}
+			}
+			assertTrue(exist);
 		}
 		assertTrue(same);
 	}
