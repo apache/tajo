@@ -39,10 +39,15 @@ public class FieldEval extends EvalNode {
 	  }
 	  
 		switch(dataType) {
-		case INT: return DatumFactory.create(tuple.getInt(fieldId));
-		case LONG: return DatumFactory.create(tuple.getLong(fieldId));
-		case FLOAT: return DatumFactory.create(tuple.getFloat(fieldId));
-		case DOUBLE: return DatumFactory.create(tuple.getDouble(fieldId));
+		case BOOLEAN: return DatumFactory.createBool(tuple.getBoolean(fieldId));
+		case BYTE: return DatumFactory.createByte(tuple.getByte(fieldId));
+		case INT: return DatumFactory.createInt(tuple.getInt(fieldId));
+		case LONG: return DatumFactory.createLong(tuple.getLong(fieldId));
+		case FLOAT: return DatumFactory.createFloat(tuple.getFloat(fieldId));
+		case DOUBLE: return DatumFactory.createDouble(tuple.getDouble(fieldId));
+		case STRING: return DatumFactory.createString(tuple.getString(fieldId));
+		case BYTES: return DatumFactory.createBytes(tuple.getBytes(fieldId));
+		case IPv4: return DatumFactory.createIPv4(tuple.getIPv4Bytes(fieldId));
 		default: throw new InvalidEvalException();
 		}		
 	}

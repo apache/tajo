@@ -17,37 +17,37 @@ public class TestLongDatum {
 
 	@Test
 	public final void testType() {
-		Datum d = DatumFactory.create(1l);
+		Datum d = DatumFactory.createLong(1l);
 		assertEquals(d.type(),DatumType.LONG);
 	}
 
 	@Test
 	public final void testAsInt() {
-		Datum d = DatumFactory.create(5l);
+		Datum d = DatumFactory.createLong(5l);
 		assertEquals(5,d.asInt());
 	}
 
 	@Test
 	public final void testAsLong() {
-		Datum d = DatumFactory.create(5l);
+		Datum d = DatumFactory.createLong(5l);
 		assertEquals(5l,d.asLong());		
 	}
 
 	@Test
 	public final void testAsFloat() {
-		Datum d = DatumFactory.create(5l);
+		Datum d = DatumFactory.createLong(5l);
 		assertTrue(5.0f == d.asFloat());
 	}
 
 	@Test
 	public final void testAsDouble() {
-		Datum d = DatumFactory.create(5l);
+		Datum d = DatumFactory.createLong(5l);
 		assertTrue(5.0d == d.asDouble());
 	}
 
 	@Test
 	public final void testAsChars() {
-		Datum d = DatumFactory.create(5l);
+		Datum d = DatumFactory.createLong(5l);
 		assertEquals("5", d.asChars());
 	}
 }
