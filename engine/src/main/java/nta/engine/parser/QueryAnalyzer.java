@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import nta.catalog.Catalog;
 import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
