@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -16,7 +15,6 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
-import nta.datum.IntDatum;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
@@ -172,20 +170,22 @@ public class TestCatalog {
 	public final void testRegisterFunc() {		
 		assertFalse(cat.containFunction("test"));
 		FunctionDesc meta = new FunctionDesc("test", TestFunc1.class, 
-		    Function.Type.GENERAL, DataType.INT, new Class [] {IntDatum.class});
+		    Function.Type.GENERAL, DataType.INT, 
+		    new DataType [] {DataType.INT});
 		cat.registerFunction(meta);
 		assertTrue(cat.containFunction("test"));
 		FunctionDesc retrived = cat.getFunctionMeta("test");
-		assertEquals(retrived.getName(),"test");
+		assertEquals(retrived.getSignature(),"test");
 		assertEquals(retrived.getFuncClass(),TestFunc1.class);
-		assertEquals(retrived.getType(),Function.Type.GENERAL);
+		assertEquals(retrived.getFuncType(),Function.Type.GENERAL);
 	}
 
 	@Test
 	public final void testUnregisterFunc() {
 		assertFalse(cat.containFunction("test"));
 		FunctionDesc meta = new FunctionDesc("test", TestFunc1.class, 
-        Function.Type.GENERAL, DataType.INT, new Class [] {IntDatum.class});
+        Function.Type.GENERAL, DataType.INT, 
+        new DataType [] {DataType.INT});
 		cat.registerFunction(meta);
 		assertTrue(cat.containFunction("test"));
 		cat.unregisterFunction("test");

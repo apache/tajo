@@ -21,11 +21,7 @@ import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
-import nta.engine.exception.AmbiguousFieldException;
-import nta.engine.exception.InvalidQueryException;
-import nta.engine.exception.NQLSyntaxException;
 import nta.engine.exception.NTAQueryException;
-import nta.engine.exception.UnknownFunctionException;
 import nta.engine.exec.eval.BinaryEval;
 import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.EvalNode;
@@ -33,6 +29,10 @@ import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.query.TargetEntry;
+import nta.engine.query.exception.AmbiguousFieldException;
+import nta.engine.query.exception.InvalidQueryException;
+import nta.engine.query.exception.NQLSyntaxException;
+import nta.engine.query.exception.UndefinedFunctionException;
 
 import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.CommonTokenStream;
@@ -44,6 +44,7 @@ import org.antlr.runtime.tree.Tree;
  * @author Hyunsik Choi
  *
  */
+@Deprecated
 public class NQL {
 	Catalog cat;
 	
@@ -364,7 +365,7 @@ public class NQL {
 			String funcName = tree.getText();
 			FunctionDesc func = cat.getFunctionMeta(funcName);
 			if(func == null) {
-				throw new UnknownFunctionException(funcName);
+				throw new UndefinedFunctionException(funcName);
 			}
 			
 //			Function fn = null;
@@ -468,7 +469,7 @@ public class NQL {
 		private CommonTree ast;
 		
 		// Command
-		private CommandType cmdType;	
+		private StatementType cmdType;	
 		
 		// FROM
 		boolean hasFromClause = false;
@@ -528,16 +529,16 @@ public class NQL {
 			return this.ast;
 		}
 	
-		public CommandType getCmdType() {
+		public StatementType getCmdType() {
 			if(this.cmdType == null) {
 				switch(ast.getType()) {
-				case NQLParser.SELECT: this.cmdType = CommandType.SELECT; break;
-				case NQLParser.INSERT: this.cmdType = CommandType.INSERT; break;
-				case NQLParser.CREATE_TABLE: this.cmdType = CommandType.CREATE_TABLE; break;
-				case NQLParser.DROP_TABLE: this.cmdType = CommandType.DROP_TABLE; break;
-				case NQLParser.SHOW_TABLE: this.cmdType = CommandType.SHOW_TABLES; break;
-				case NQLParser.DESC_TABLE: this.cmdType = CommandType.DESC_TABLE; break;
-				case NQLParser.SHOW_FUNCTION: this.cmdType = CommandType.SHOW_FUNCTION; break;
+				case NQLParser.SELECT: this.cmdType = StatementType.SELECT; break;
+				case NQLParser.INSERT: this.cmdType = StatementType.INSERT; break;
+				case NQLParser.CREATE_TABLE: this.cmdType = StatementType.CREATE_TABLE; break;
+				case NQLParser.DROP_TABLE: this.cmdType = StatementType.DROP_TABLE; break;
+				case NQLParser.SHOW_TABLE: this.cmdType = StatementType.SHOW_TABLES; break;
+				case NQLParser.DESC_TABLE: this.cmdType = StatementType.DESC_TABLE; break;
+				case NQLParser.SHOW_FUNCTION: this.cmdType = StatementType.SHOW_FUNCTION; break;
 				default: return null;
 				}
 			}

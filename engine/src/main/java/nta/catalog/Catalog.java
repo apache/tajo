@@ -22,6 +22,7 @@ import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchFunctionException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.TableProtos.StoreType;
+import nta.engine.CatalogReader;
 import nta.engine.EngineService;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -40,7 +41,7 @@ import com.google.common.base.Preconditions;
 /**
  * @author Hyunsik Choi
  */
-public class Catalog implements CatalogService, EngineService {
+public class Catalog implements CatalogService, CatalogReader, EngineService {
 	private static Log LOG = LogFactory.getLog(Catalog.class);
 	private Configuration conf;	
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -231,11 +232,11 @@ public class Catalog implements CatalogService, EngineService {
 	}
 
 	public void registerFunction(FunctionDesc funcMeta) {
-		if (functions.containsKey(funcMeta.getName())) {
-			throw new AlreadyExistsFunction(funcMeta.getName());
+		if (functions.containsKey(funcMeta.getSignature())) {
+			throw new AlreadyExistsFunction(funcMeta.getSignature());
 		}
 
-		functions.put(funcMeta.getName(), funcMeta);
+		functions.put(funcMeta.getSignature(), funcMeta);
 		if(this.logger != null) {
 			try {
 				this.logger.appendAddFunction(funcMeta);
@@ -299,8 +300,8 @@ public class Catalog implements CatalogService, EngineService {
 		public void appendAddFunction(FunctionDesc meta) throws IOException {
 			StringBuilder sb = new StringBuilder();
 			sb.append("+f\t");
-			sb.append(meta.getName()).append("\t");
-			sb.append(meta.getType()).append("\t");
+			sb.append(meta.getSignature()).append("\t");
+			sb.append(meta.getFuncType()).append("\t");
 			sb.append(meta.getFuncClass().getCanonicalName()).append("\t");
 
 			wal.append(sb.toString());

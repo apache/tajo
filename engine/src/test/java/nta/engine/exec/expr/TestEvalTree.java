@@ -3,9 +3,6 @@ package nta.engine.exec.expr;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import java.net.URI;
-
 import nta.catalog.Catalog;
 import nta.catalog.ColumnBase;
 import nta.catalog.FunctionDesc;
@@ -20,15 +17,15 @@ import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.exception.InternalException;
-import nta.engine.exception.NQLSyntaxException;
 import nta.engine.exec.eval.BinaryEval;
 import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.function.Function;
-import nta.engine.parser.NQLCompiler;
+import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
+import nta.engine.query.exception.NQLSyntaxException;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
@@ -46,8 +43,6 @@ public class TestEvalTree {
   @After
   public void tearDown() throws Exception {
   }
-
-  
 
   public static class Sum extends Function {
 
@@ -89,8 +84,8 @@ public class TestEvalTree {
     cat.addTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("sum", Sum.class,
-        Function.Type.GENERAL, DataType.INT, new Class[] { EvalNode.class,
-            EvalNode.class });
+        Function.Type.GENERAL, DataType.INT, 
+        new DataType [] { DataType.INT, DataType.INT});
 
     cat.registerFunction(funcMeta);
 
@@ -100,16 +95,16 @@ public class TestEvalTree {
     QueryBlock block = null;
     EvalNode expr = null;
 
-    block = NQLCompiler.parse(QUERIES[0]);
-    expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
+    block = QueryAnalyzer.parse(QUERIES[0], cat);
+    expr = block.getWhereCondition();
     assertEquals(true, expr.eval(schema, tuple).asBool());
 
-    block = NQLCompiler.parse(QUERIES[1]);
-    expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
+    block = QueryAnalyzer.parse(QUERIES[1], cat);
+    expr = block.getWhereCondition();
     assertEquals(15000, expr.eval(schema, tuple).asInt());
 
-    block = NQLCompiler.parse(QUERIES[2]);
-    expr = NQLCompiler.evalExprTreeBin(block.getWhereCond(), cat);
+    block = QueryAnalyzer.parse(QUERIES[2], cat);
+    expr = block.getWhereCondition();
     assertEquals(15050, expr.eval(schema, tuple).asInt());
   }
 
@@ -117,7 +112,7 @@ public class TestEvalTree {
   public void testTupleEval() {
     ConstEval e1 = new ConstEval(DatumFactory.createInt(1));
     FieldEval e2 = new FieldEval("table1", "score", DataType.INT); // it indicates
-                                                                // 4th field.
+
     Schema schema1 = new Schema();
     schema1.addColumn("id", DataType.INT);
     schema1.addColumn("score", DataType.INT);

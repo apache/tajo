@@ -1,9 +1,6 @@
 package nta.engine;
 
 import static org.junit.Assert.assertEquals;
-
-import java.net.URI;
-
 import nta.catalog.Catalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;

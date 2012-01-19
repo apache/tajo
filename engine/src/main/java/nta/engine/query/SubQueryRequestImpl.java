@@ -57,7 +57,7 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   }
 
   @Override
-  public List<Fragment> getTablets() {
+  public List<Fragment> getFragments() {
 	  SubQueryRequestProtoOrBuilder p = viaProto ? proto : builder;
 	  if (tablets != null) {
 		  return this.tablets;

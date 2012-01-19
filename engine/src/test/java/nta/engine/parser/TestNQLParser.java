@@ -3,7 +3,7 @@ package nta.engine.parser;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import nta.catalog.FieldName;
-import nta.engine.exception.NQLSyntaxException;
+import nta.engine.query.exception.NQLSyntaxException;
 
 import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.CommonTokenStream;
@@ -86,7 +86,7 @@ public class TestNQLParser {
     Tree tree = parseQuery(selQueries[6]);
 
     assertEquals(tree.getType(), NQLParser.SELECT);
-    tree = tree.getChild(1).getChild(0);
+    tree = tree.getChild(2).getChild(0);
 
     assertEquals(tree.getType(), NQLParser.GTH);
     assertEquals(tree.getChild(0).getType(), NQLParser.FIELD_NAME);

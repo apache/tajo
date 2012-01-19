@@ -223,7 +223,7 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	  SubQueryRequest request = new SubQueryRequestImpl(requestProto);
 	  
 	  TableDesc desc = null;
-	  for(Fragment tablet : request.getTablets()) {
+	  for(Fragment tablet : request.getFragments()) {
 	    desc = new TableDescImpl(tablet.getId(), tablet.getMeta());
 	    desc.setPath(tablet.getPath());
 	    catalog.addTable(desc);

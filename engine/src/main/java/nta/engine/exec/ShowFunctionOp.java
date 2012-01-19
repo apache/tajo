@@ -47,8 +47,8 @@ public class ShowFunctionOp extends PhysicalOp {
 		
 		FunctionDesc desc = this.iterator.next();
 		VTuple t = new VTuple(3);
-		t.put(0, desc.getName());
-		t.put(1, desc.getType());
+		t.put(0, desc.getSignature());
+		t.put(1, desc.getFuncType());
 		t.put(2, desc.getFuncClass().getName());
 		return t;
 	}
