@@ -47,6 +47,7 @@ public class TableDescImpl implements TableDesc {
 	}
 	
 	public void setId(String tableId) {
+	  maybeInitBuilder();
 		this.tableId = tableId;
 	}
 	

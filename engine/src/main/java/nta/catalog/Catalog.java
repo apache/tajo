@@ -180,8 +180,8 @@ public class Catalog implements CatalogService, CatalogReader, EngineService {
 	}
 
 	public void addTable(TableDesc desc) throws AlreadyExistsTableException {
+	  Preconditions.checkNotNull(desc.getId(), "Must be set to the table name");
 		Preconditions.checkNotNull(desc.getPath(), "Must be set to the table URI");
-		Preconditions.checkNotNull(desc.getId(), "Must be set to the table name");
 	  wlock.lock();
 		
 		try {
@@ -231,15 +231,15 @@ public class Catalog implements CatalogService, CatalogReader, EngineService {
 		}
 	}
 
-	public void registerFunction(FunctionDesc funcMeta) {
-		if (functions.containsKey(funcMeta.getSignature())) {
-			throw new AlreadyExistsFunction(funcMeta.getSignature());
+	public void registerFunction(FunctionDesc funcDesc) {
+		if (functions.containsKey(funcDesc.getSignature())) {
+			throw new AlreadyExistsFunction(funcDesc.getSignature());
 		}
 
-		functions.put(funcMeta.getSignature(), funcMeta);
+		functions.put(funcDesc.getSignature(), funcDesc);
 		if(this.logger != null) {
 			try {
-				this.logger.appendAddFunction(funcMeta);
+				this.logger.appendAddFunction(funcDesc);
 			} catch (IOException e) {
 				LOG.error(e.getMessage());
 				e.printStackTrace();

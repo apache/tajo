@@ -35,6 +35,6 @@ public class ColumnBase {
 	}
 	
 	public String toString() {
-		return name+" ("+dataType.toString()+")";
+		return name+" "+dataType.toString();
 	}
 }
