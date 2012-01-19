@@ -31,13 +31,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * 이 테스트는 NQLCompiler라 정확한 QueryBlock을 생성해 내는지 테스트한다.
+ * 이 테스트는 QueryAnalyzer라 정확한 QueryBlock을 생성해 내는지 테스트한다.
  * 
  * @author Hyunsik Choi
  * 
  * @see QueryBlock
  */
-public class TestNQLCompiler {
+public class TestQueryAnalyzer {
   private Catalog cat = null;
   private Schema schema1 = null;
   
