@@ -4,6 +4,7 @@
 package nta.catalog;
 
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
 
 import nta.catalog.proto.TableProtos.DataType;
 import nta.engine.exception.InternalException;
@@ -72,5 +73,20 @@ public class FunctionDesc {
 
   public DataType getReturnType() {
     return this.returnType;
+  }
+  
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof FunctionDesc) {
+      FunctionDesc other = (FunctionDesc) obj;
+      if (this.funcClass.getClass().equals(other.funcClass) &&
+          this.signature.equals(other.signature) && 
+          Arrays.equals(this.argTypes, other.argTypes) &&
+          this.returnType.equals(other.returnType) &&
+          this.funcType.equals(other.funcType)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

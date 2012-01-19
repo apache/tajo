@@ -65,4 +65,16 @@ public class ConstEval extends EvalNode {
 	public String getName() {
 		return this.datum.toString();
 	}
+	
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof ConstEval) {
+      ConstEval other = (ConstEval) obj;
+
+      if (this.type == other.type && this.datum.equals(other.datum)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

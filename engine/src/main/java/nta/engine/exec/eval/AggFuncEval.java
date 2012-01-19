@@ -52,4 +52,8 @@ public class AggFuncEval extends EvalNode {
 	public DataType getValueType() {
 		return DataType.ANY;
 	}
+  @Override
+  public boolean equals(Object obj) {
+    return true; // TODO - to be implemented
+  }
 }
