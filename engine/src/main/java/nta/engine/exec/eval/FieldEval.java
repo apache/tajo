@@ -34,7 +34,7 @@ public class FieldEval extends EvalNode {
 
 	@Override
 	public Datum eval(Schema schema, Tuple tuple, Datum...args) {
-	  if(fieldId == -1) {
+	  if (fieldId == -1) {
 	    fieldId = schema.getColumn(columnName).getId();
 	  }
 	  
@@ -70,7 +70,11 @@ public class FieldEval extends EvalNode {
 		return columnName;
 	}
 	
+	public String getQualifiedName() {
+    return this.tableId + "." + columnName;
+  }
+	
 	public String toString() {
-		return "FIELD("+fieldId+")";
+	  return "(" + fieldId + ") " + tableId + "." + columnName + " " + dataType;
 	}
 }

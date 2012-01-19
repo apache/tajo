@@ -191,6 +191,10 @@ public class Catalog implements CatalogService, CatalogReader, EngineService {
 
 			this.tables.put(desc.getId(), desc);
 
+			for(Column col : desc.getMeta().getSchema().getColumns()) {
+			  col.setTableId(desc.getId());
+			}
+
 			if(this.logger != null && (desc.getMeta().getStoreType() != StoreType.MEM))
 				this.logger.appendAddTable(desc);
 			

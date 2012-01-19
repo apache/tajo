@@ -1,7 +1,5 @@
 package nta.catalog;
 
-import java.net.URI;
-
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.catalog.proto.TableProtos.TableDescProto;
 import nta.catalog.proto.TableProtos.TableDescProtoOrBuilder;
