@@ -96,7 +96,7 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 	}
 	
 	public String toString() {
-		return "["+id+"] "+super.toString();
+		return "("+id+") "+super.toString();
 	}
 	
 	@Override
