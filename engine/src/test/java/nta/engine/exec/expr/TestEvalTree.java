@@ -304,4 +304,34 @@ public class TestEvalTree {
     expr = new BinaryEval(Type.PLUS, e1, e2);
     assertEquals(DataType.DOUBLE, expr.getValueType());
   }
+  
+  @Test
+  public final void testEquals() {
+    ConstEval e1 = null;
+    ConstEval e2 = null;
+
+    // PLUS
+    e1 = new ConstEval(DatumFactory.createInt(34));
+    e2 = new ConstEval(DatumFactory.createInt(34));
+    assertEquals(e1, e2);
+    
+    BinaryEval plus1 = new BinaryEval(Type.PLUS, e1, e2);
+    BinaryEval plus2 = new BinaryEval(Type.PLUS, e2, e1);
+    assertEquals(plus1, plus2);
+    
+    ConstEval e3 = new ConstEval(DatumFactory.createInt(29));
+    BinaryEval plus3 = new BinaryEval(Type.PLUS, e1, e3);
+    assertFalse(plus1.equals(plus3));
+    
+    // LTH
+    ConstEval e4 = new ConstEval(DatumFactory.createInt(9));
+    ConstEval e5 = new ConstEval(DatumFactory.createInt(34));
+    BinaryEval compExpr1 = new BinaryEval(Type.LTH, e4, e5);
+    
+    ConstEval e6 = new ConstEval(DatumFactory.createInt(9));
+    ConstEval e7 = new ConstEval(DatumFactory.createInt(34));
+    BinaryEval compExpr2 = new BinaryEval(Type.LTH, e6, e7);
+    
+    assertTrue(compExpr1.equals(compExpr2));
+  }
 }

@@ -144,4 +144,17 @@ public class BinaryEval extends EvalNode {
 	public String toString() {
 		return leftExpr +" "+type+" "+rightExpr;
 	}
+	
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof BinaryEval) {
+      BinaryEval other = (BinaryEval) obj;
+
+      if (this.type == other.type && leftExpr.equals(other.leftExpr)
+          && rightExpr.equals(other.rightExpr)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

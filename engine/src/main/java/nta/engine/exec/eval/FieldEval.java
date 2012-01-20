@@ -77,4 +77,17 @@ public class FieldEval extends EvalNode {
 	public String toString() {
 	  return "(" + fieldId + ") " + tableId + "." + columnName + " " + dataType;
 	}
+	
+  public boolean equals(Object obj) {
+    if (obj instanceof FieldEval) {
+      FieldEval other = (FieldEval) obj;
+
+      if (this.type == other.type && this.columnName.equals(other.columnName)
+          && this.tableId.equals(other.tableId)
+          && this.dataType.equals(other.dataType)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

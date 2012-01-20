@@ -3,6 +3,8 @@
  */
 package nta.engine.exec.eval;
 
+import java.util.Arrays;
+
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.proto.TableProtos.DataType;
@@ -68,5 +70,19 @@ public class FuncCallEval extends EvalNode {
 				sb.append(",");
 		}
 		return desc.getSignature()+"("+sb+")";
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+	  if (obj instanceof FuncCallEval) {
+      FuncCallEval other = (FuncCallEval) obj;
+
+      if (this.type == other.type && this.desc.equals(other.desc) 
+          && Arrays.equals(givenArgs, other.givenArgs)) {
+        return true;
+      }
+	  }
+	  
+	  return false;
 	}
 }
