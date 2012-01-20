@@ -13,7 +13,7 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  *
  */
-public class ConstEval extends EvalNode {
+public class ConstEval extends EvalNode implements Comparable<ConstEval> {
 	Datum datum = null;
 	/**
 	 * @param type
@@ -76,5 +76,10 @@ public class ConstEval extends EvalNode {
       }
     }
     return false;
+  }
+
+  @Override
+  public int compareTo(ConstEval other) {    
+    return datum.compareTo(other.datum);
   }
 }
