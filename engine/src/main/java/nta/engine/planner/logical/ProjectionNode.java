@@ -1,6 +1,5 @@
 package nta.engine.planner.logical;
 
-import nta.catalog.Schema;
 import nta.engine.parser.QueryBlock.Target;
 
 /**
@@ -10,11 +9,9 @@ import nta.engine.parser.QueryBlock.Target;
  */
 public class ProjectionNode extends UnaryNode {
 	private Target [] targets;
-	private Schema schema;
 
 	public ProjectionNode(Target [] targets) {		
 		super(ExprType.PROJECTION);
-		this.schema = new Schema();
 		this.targets = targets;
 	}
 	

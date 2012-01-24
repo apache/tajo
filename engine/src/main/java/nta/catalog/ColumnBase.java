@@ -52,4 +52,17 @@ public class ColumnBase {
 	public String toString() {
 		return name+" "+dataType.toString();
 	}
+	
+	public int hashCode() {
+	  return this.name.hashCode() ^ (this.dataType.hashCode() * 17);
+	}
+	
+	public boolean equals(Object obj) {
+	  if(obj instanceof ColumnBase) {
+	    ColumnBase cb = (ColumnBase) obj;
+	    return this.name.equals(cb.name) && this.dataType.equals(cb.dataType);
+	  }
+	  
+	  return false;
+	}
 }

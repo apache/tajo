@@ -60,14 +60,25 @@ public class QueryContext implements Context {
   public CatalogReader getCatalog() {
     return this.catalog;
   }
+  
+
+  @Override
+  public boolean hasWhereClause() {
+    return block.hasWhereClause();
+  }
 
   @Override
   public boolean hasGroupByClause() {
     return block.hasGroupbyClause();
   }
+  
+  @Override
+  public boolean hasJoinClause() {    
+    return block.getFromTables().length > 1;
+  }
 
   @Override
-  public Target[] getTargetList() {    
+  public Target[] getTargetList() {
     return block.getTargetList();
   }
 }

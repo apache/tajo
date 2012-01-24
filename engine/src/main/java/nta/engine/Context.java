@@ -15,5 +15,7 @@ public interface Context {
   
   // Hints for planning and optimization
   Target [] getTargetList();
+  boolean hasWhereClause();
   boolean hasGroupByClause();
+  boolean hasJoinClause();
 }
