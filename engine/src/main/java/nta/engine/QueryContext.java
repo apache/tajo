@@ -9,6 +9,7 @@ import java.util.Map;
 import nta.catalog.TableDesc;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
+import nta.engine.parser.QueryBlock.Target;
 
 /**
  * 실행 중인 질의에 대한 정보를 담는다.
@@ -18,12 +19,14 @@ import nta.engine.parser.QueryBlock.FromTable;
 public class QueryContext implements Context {
   private final CatalogReader catalog;
   private final Map<String, TableDesc> tableMap = new HashMap<String, TableDesc>();
+  private final QueryBlock block;
 
-  private QueryContext(CatalogReader catalog, TableDesc[] tables) {
+  private QueryContext(CatalogReader catalog, TableDesc[] tables, QueryBlock block) {
     this.catalog = catalog;
     for (TableDesc table : tables) {
       tableMap.put(table.getId(), table);
     }
+    this.block = block;
   }
 
   public static class Factory {
@@ -33,10 +36,6 @@ public class QueryContext implements Context {
       this.catalog = catalog;
     }
 
-    public QueryContext create(TableDesc[] tables) {
-      return new QueryContext(catalog, tables);
-    }
-
     public QueryContext create(QueryBlock query) {
       TableDesc tables[] = new TableDesc[query.getFromTables().length];
       int i = 0;
@@ -44,7 +43,7 @@ public class QueryContext implements Context {
         tables[i++] = catalog.getTableDesc(from.getTableId());
       }
 
-      return new QueryContext(catalog, tables);
+      return new QueryContext(catalog, tables, query);
     }
   }
 
@@ -60,5 +59,15 @@ public class QueryContext implements Context {
 
   public CatalogReader getCatalog() {
     return this.catalog;
+  }
+
+  @Override
+  public boolean hasGroupByClause() {
+    return block.hasGroupbyClause();
+  }
+
+  @Override
+  public Target[] getTargetList() {    
+    return block.getTargetList();
   }
 }

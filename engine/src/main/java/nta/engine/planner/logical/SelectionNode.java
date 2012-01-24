@@ -1,6 +1,5 @@
 package nta.engine.planner.logical;
 
-import nta.catalog.Schema;
 import nta.engine.exec.eval.EvalNode;
 
 /**
@@ -24,14 +23,14 @@ public class SelectionNode extends UnaryNode {
 	public void setQual(EvalNode qual) {
 		this.qual = qual;
 	}
-
-  @Override
-  public Schema getOutputSchema() {
-    return getSubNode().getOutputSchema();
-  }
   
   public String toString() {
-    return "Selection ("+qual.toString()+")\n"
-        + getSubNode().toString();
+    StringBuilder sb = new StringBuilder();
+    sb.append("\"Selection\": {\"qual\": \"").append(qual.toString()).append("\",");
+    sb.append("\n  \"out schema\": ").append(getOutputSchema()).append(",");
+    sb.append("\n  \"in schema\": ").append(getInputSchema()).append("}");
+    
+    return sb.toString()+"\n"
+    + getSubNode().toString();
   }
 }

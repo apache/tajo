@@ -20,7 +20,7 @@ public class QueryBlock {
   private Target [] targetList = null;
   private FromTable [] fromTables = null;
   private EvalNode whereCond = null;
-  private Column [] groupFields = null;
+  private EvalNode [] groupFields = null;
   private EvalNode havingCond = null;
   private SortKey [] sortKeys = null;
   
@@ -60,11 +60,11 @@ public class QueryBlock {
     return this.groupFields != null;
   }
   
-  public final void setGroupingFields(final Column [] groupFields) {
+  public final void setGroupingFields(final EvalNode [] groupFields) {
     this.groupFields = groupFields;
   }
   
-  public final Column [] getGroupFields() {
+  public final EvalNode [] getGroupFields() {
     return this.groupFields;
   }
   

@@ -14,21 +14,18 @@ import nta.storage.Tuple;
  */
 public class FieldEval extends EvalNode {
 	DataType dataType;
-	private String tableId;
 	private String columnName;
 	private int fieldId = -1;
 	
-	public FieldEval(String tableName, String columnName, DataType domain) {
+	public FieldEval(String columnName, DataType domain) {
 		super(Type.FIELD);
 		this.dataType = domain;
-		this.tableId = tableName;
 		this.columnName = columnName;
 	}
 	
 	public FieldEval(Column col) {
 	  super(Type.FIELD);
 	  this.dataType = col.getDataType();
-	  this.tableId = col.getTableId();
 	  this.columnName = col.getName();
 	}
 
@@ -57,25 +54,21 @@ public class FieldEval extends EvalNode {
 		return dataType;
 	}
 	
-	public String getTableId() {
-	  return this.tableId;
+	public String getTableId() {	  
+	  return columnName.split("\\.")[0];
 	}
 	
 	public String getColumnName() {
-	  return this.columnName;
+	  return columnName.split("\\.")[1];
 	}
 
 	@Override
-	public String getName() {		
+	public String getName() {
 		return columnName;
 	}
 	
-	public String getQualifiedName() {
-    return this.tableId + "." + columnName;
-  }
-	
 	public String toString() {
-	  return "(" + fieldId + ") " + tableId + "." + columnName + " " + dataType;
+	  return columnName + " " + dataType;
 	}
 	
   public boolean equals(Object obj) {
@@ -83,7 +76,6 @@ public class FieldEval extends EvalNode {
       FieldEval other = (FieldEval) obj;
 
       if (this.type == other.type && this.columnName.equals(other.columnName)
-          && this.tableId.equals(other.tableId)
           && this.dataType.equals(other.dataType)) {
         return true;
       }

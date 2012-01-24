@@ -3,7 +3,6 @@
  */
 package nta.engine.planner.logical;
 
-import nta.catalog.Schema;
 import nta.engine.parser.QueryBlock.SortKey;
 
 /**
@@ -23,14 +22,6 @@ public final class SortNode extends UnaryNode {
   
   public SortKey [] getSortKeys() {
     return this.sortKeys;
-  }
-
-  /* (non-Javadoc)
-   * @see nta.engina.planner.logical.LogicalNode#getSchema()
-   */
-  @Override
-  public Schema getOutputSchema() {
-    return getSubNode().getOutputSchema();
   }
   
   public String toString() {

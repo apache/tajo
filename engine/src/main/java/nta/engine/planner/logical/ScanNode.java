@@ -3,7 +3,6 @@
  */
 package nta.engine.planner.logical;
 
-import nta.catalog.Schema;
 import nta.engine.parser.QueryBlock.FromTable;
 
 /**
@@ -11,7 +10,7 @@ import nta.engine.parser.QueryBlock.FromTable;
  *
  */
 public class ScanNode extends LogicalNode {
-  FromTable table;
+  private FromTable table;
   
 	public ScanNode(FromTable table) {
 		super(ExprType.SCAN);
@@ -31,19 +30,15 @@ public class ScanNode extends LogicalNode {
 	}
 	
 	public String toString() {
-	  StringBuilder sb = new StringBuilder();
-	  sb.append("Table scan (id=")
-	  .append(table.getTableId()).append(", name=").append(table.getTableId());
+	  StringBuilder sb = new StringBuilder();	  
+	  sb.append("\"Scan\" : {\"table\":\"")
+	  .append(table.getTableId()).append("\"");
 	  if(hasAlias()) {
-	    sb.append(", alias=").append(table.getAlias());
+	    sb.append(",\"alias\": \"").append(table.getAlias()).append("\",");
 	  }
-	  sb.append(")");
 	  
+	  sb.append("\n  \"out schema\": ").append(getOutputSchema());
+	  sb.append("\n  \"in schema\": ").append(getInputSchema());    	  
 	  return sb.toString();
 	}
-
-  @Override
-  public Schema getOutputSchema() {    
-    return table.getSchema();
-  }
 }

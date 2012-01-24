@@ -343,16 +343,20 @@ public class NQL {
 			// when given a table name
 			if(fieldName.hasTableName()) {
 				RelInfo rInfo = stmt.getBaseRel(fieldName.getTableName());
-				field = rInfo.getSchema().getColumn(fieldName.getName());
+				if(rInfo.hasAlias()) {
+				  field = rInfo.getSchema().getColumn(rInfo.getName()+"."+fieldName.getName());
+				} else {
+				  field = rInfo.getSchema().getColumn(fieldName.getFullName());
+				}
 				rel = rInfo.getRelation();
 			} else {			
 				for(RelInfo rInfo: stmt.getBaseRels()) {
 					rel = cat.getTableDesc(rInfo.getName());
-					if(rel.getMeta().getSchema().getColumn(fieldName.getName()) != null) {
+					if(rel.getMeta().getSchema().getColumn(rInfo.getName()+"."+fieldName.getName()) != null) {
 						if(field == null) {
-							field = rel.getMeta().getSchema().getColumn(fieldName.getName());								
+							field = rel.getMeta().getSchema().getColumn(rInfo.getName()+"."+fieldName.getName());								
 						} else 
-							throw new AmbiguousFieldException(field.getName());													
+							throw new AmbiguousFieldException(field.getName());											
 					}
 				}
 			}

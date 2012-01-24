@@ -9,6 +9,7 @@ import java.util.Map;
 import nta.catalog.TableDesc;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
+import nta.engine.parser.QueryBlock.Target;
 
 
 /**
@@ -20,7 +21,7 @@ import nta.engine.ipc.protocolrecords.SubQueryRequest;
 public class SubqueryContext implements Context {
   private final CatalogReader catalog;
   private final Map<String, Fragment> fragmentMap
-    = new HashMap<String, Fragment>(); 
+    = new HashMap<String, Fragment>();
   
   private SubqueryContext(CatalogReader catalog, Fragment [] fragments) {
     this.catalog = catalog;
@@ -54,5 +55,17 @@ public class SubqueryContext implements Context {
   @Override
   public CatalogReader getCatalog() {
     return this.catalog;
+  }
+
+  @Override
+  public boolean hasGroupByClause() {
+    // TODO - before it, SubqueryContext should be improved to
+    // include some query optimization hints.
+    return false;  
+  }
+
+  @Override
+  public Target[] getTargetList() {
+    return null;
   }
 }

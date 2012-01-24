@@ -18,7 +18,7 @@ public abstract class BinaryNode extends LogicalNode {
 		super(opType);
 	}
 	
-	public LogicalNode getOuter() {
+	public LogicalNode getRightSubNode() {
 		return this.outer;
 	}
 	
@@ -26,7 +26,7 @@ public abstract class BinaryNode extends LogicalNode {
 		this.outer = op;
 	}
 
-	public LogicalNode getInner() {
+	public LogicalNode getLeftSubNode() {
 		return this.inner;
 	}
 

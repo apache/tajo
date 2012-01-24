@@ -26,6 +26,21 @@ public class ColumnBase {
 		this.name = name;
 	}
 	
+	public boolean isQualifiedName() {
+	  return this.name.split(".").length == 2;
+	}
+	
+	public String getTableName() {
+	  return this.name.split(".")[0];
+	}
+	
+	public String getColumnName() {
+	  if(isQualifiedName())
+	    return this.name.split(".")[1];
+	  else
+	    return name;
+  }
+	
 	public DataType getDataType() {
 		return this.dataType;
 	}

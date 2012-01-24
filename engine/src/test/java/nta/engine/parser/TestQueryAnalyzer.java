@@ -13,10 +13,9 @@ import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.eval.EvalNode;
-import nta.engine.exec.expr.TestEvalTree.Sum;
+import nta.engine.exec.eval.TestEvalTree.Sum;
 import nta.engine.function.Function;
 import nta.engine.parser.NQL.Query;
-import nta.engine.parser.QueryBlock.Target;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -162,9 +161,6 @@ public class TestQueryAnalyzer {
     assertEquals("people", block.getFromTables()[0].getTableId());
     
     block = QueryAnalyzer.parse(QUERIES[3], cat);
-    for (Target t : block.getTargetList()) {
-      System.out.println(t.getColumnSchema());
-    }
     
     // TODO - to be more regressive
   }
@@ -181,9 +177,9 @@ public class TestQueryAnalyzer {
   public final void testOrderByClause() {
     QueryBlock block = QueryAnalyzer.parse(QUERIES[5], cat);
     assertEquals(2, block.getSortKeys().length);
-    assertEquals("score", block.getSortKeys()[0].getSortKey().getName());
+    assertEquals("people.score", block.getSortKeys()[0].getSortKey().getName());
     assertEquals(true, block.getSortKeys()[0].isAscending());    
-    assertEquals("age", block.getSortKeys()[1].getSortKey().getName());
+    assertEquals("people.age", block.getSortKeys()[1].getSortKey().getName());
     assertEquals(false, block.getSortKeys()[1].isAscending());
   }
   
@@ -205,7 +201,7 @@ public class TestQueryAnalyzer {
   @Test
   public final void testGroupByClause() {
     QueryBlock block = QueryAnalyzer.parse(QUERIES[3], cat);
-    assertEquals("age", block.getGroupFields()[0].getName());
+    assertEquals("people.age", block.getGroupFields()[0].getName());
   }
   
   @Test(expected = InvalidQueryException.class)
