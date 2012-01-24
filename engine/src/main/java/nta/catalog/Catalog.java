@@ -188,12 +188,14 @@ public class Catalog implements CatalogService, CatalogReader, EngineService {
 			if (tables.containsKey(desc.getId())) {
 				throw new AlreadyExistsTableException(desc.getId());
 			}
-
-			this.tables.put(desc.getId(), desc);
-
+			
+			Schema newSchema = new Schema();
 			for(Column col : desc.getMeta().getSchema().getColumns()) {
-			  col.setTableId(desc.getId());
+			  newSchema.addColumn(desc.getId()+"."+col.getName(), col.getDataType());
 			}
+			desc.getMeta().setSchema(newSchema);
+			
+	    this.tables.put(desc.getId(), desc);
 
 			if(this.logger != null && (desc.getMeta().getStoreType() != StoreType.MEM))
 				this.logger.appendAddTable(desc);

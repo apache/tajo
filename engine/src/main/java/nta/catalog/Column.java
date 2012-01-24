@@ -14,7 +14,6 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 	private boolean viaProto = false;
 	
 	// volatile variable
-	private String tableId;
 	private Integer id;
 	
 	public Column() {
@@ -51,14 +50,6 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 		this.id = columnId;
 	}
 	
-	public void setTableId(String tableId) {
-	  this.tableId = tableId;
-	}
-	
-	public String getTableId() {
-	  return this.tableId;
-	}
-	
 	public String getName() {
 		ColumnProtoOrBuilder p = viaProto ? proto : builder;
 		if(name != null) {
@@ -93,10 +84,6 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 	public void setDataType(DataType dataType) {
 		maybeInitBuilder();
 		this.dataType = dataType;
-	}
-	
-	public String toString() {
-		return "("+id+") "+super.toString();
 	}
 	
 	@Override

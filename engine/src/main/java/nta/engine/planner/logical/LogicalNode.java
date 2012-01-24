@@ -3,15 +3,16 @@
  */
 package nta.engine.planner.logical;
 
-import nta.catalog.Schema;
+import nta.engine.planner.LogicalPlanner.TargetList;
 
 /**
  * @author Hyunsik Choi
  *
  */
 public abstract class LogicalNode {
-
 	private ExprType type;
+	private TargetList inputSchema;
+	private TargetList outputSchema;
 
 	private double cost = 0;
 
@@ -35,5 +36,19 @@ public abstract class LogicalNode {
 		this.cost = cost;
 	}
 	
-	public abstract Schema getOutputSchema();
+	public void setInputSchema(TargetList inSchema) {
+	  this.inputSchema = inSchema;
+	}
+	
+	public TargetList getInputSchema() {
+	  return this.inputSchema;
+	}
+	
+	public void setOutputSchema(TargetList outSchema) {
+	  this.outputSchema = outSchema;
+	}
+	
+	public TargetList getOutputSchema() {
+	  return this.outputSchema;
+	}
 }

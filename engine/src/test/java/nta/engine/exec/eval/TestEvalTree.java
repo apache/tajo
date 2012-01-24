@@ -1,4 +1,4 @@
-package nta.engine.exec.expr;
+package nta.engine.exec.eval;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -111,11 +111,11 @@ public class TestEvalTree {
   @Test
   public void testTupleEval() {
     ConstEval e1 = new ConstEval(DatumFactory.createInt(1));
-    FieldEval e2 = new FieldEval("table1", "score", DataType.INT); // it indicates
+    FieldEval e2 = new FieldEval("table1.score", DataType.INT); // it indicates
 
     Schema schema1 = new Schema();
-    schema1.addColumn("id", DataType.INT);
-    schema1.addColumn("score", DataType.INT);
+    schema1.addColumn("table1.id", DataType.INT);
+    schema1.addColumn("table1.score", DataType.INT);
     
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
     VTuple tuple = new VTuple(2);

@@ -83,7 +83,7 @@ public final class QueryAnalyzer {
       case NQLParser.FROM:
         parseFromClause(ctx, block, node);
         break;
-        
+              
       case NQLParser.SET_QUALIFIER:
         
       case NQLParser.SEL_LIST:
@@ -100,7 +100,7 @@ public final class QueryAnalyzer {
         
       case NQLParser.ORDER_BY:
         parseOrderByClause(ctx, block, node);
-        break;
+        break;        
         
       default:
         
@@ -156,18 +156,18 @@ public final class QueryAnalyzer {
   }
   
   /**
-   * This method parses the select list of a query statement.<br />
-   * <br />
-   * EBNF: <br />
+   * This method parses the select list of a query statement.
+   * <pre>
+   * EBNF: 
    * 
-   * selectList <br />
-   * : MULTIPLY -> ^(SEL_LIST ALL) <br />
+   * selectList
+   * : MULTIPLY -> ^(SEL_LIST ALL)
    * | derivedColumn (COMMA derivedColumn)* -> ^(SEL_LIST derivedColumn+)
-   * ;  <br />
-   * <br />
-   * derivedColumn <br />
-   * : bool_expr asClause? -> ^(COLUMN bool_expr asClause?) <br />
-   * ; 
+   * ;
+   * 
+   * derivedColumn
+   * : bool_expr asClause? -> ^(COLUMN bool_expr asClause?)
+   * ;
    * 
    * @param block
    * @param ast
@@ -222,6 +222,7 @@ public final class QueryAnalyzer {
    */
   private static void parseGroupByClause(final ParseContext ctx, 
       final QueryBlock block, final CommonTree ast) {
+    
     int numFields = ast.getChildCount();
     
     // the first child is having clause, but it is optional.
@@ -237,11 +238,12 @@ public final class QueryAnalyzer {
     // the remain ones are grouping fields.
     int i = 0;
     Tree fieldNode = null;
-    Column [] groupingColumns = new Column [numFields];
+    EvalNode [] groupingColumns = new EvalNode [numFields];
     for (; idx < ast.getChildCount(); idx++) {
       fieldNode = ast.getChild(idx);                  
-      Column column = checkAndGetColumnByAST(ctx, (CommonTree) fieldNode);
-      groupingColumns[i] = column;     
+      EvalNode evalTree = 
+          createEvalTree(ctx, (CommonTree) fieldNode);
+      groupingColumns[i] = evalTree;     
       i++;
     }
     
@@ -314,7 +316,7 @@ public final class QueryAnalyzer {
       final String columnName) {
     Column column = null;
     
-    column = desc.getMeta().getSchema().getColumn(columnName);
+    column = desc.getMeta().getSchema().getColumn(desc.getId()+"."+columnName);
     if(column == null) {
       throw new InvalidQueryException("ERROR: column \"" + columnName
           + "\" does not exist");
@@ -339,8 +341,8 @@ public final class QueryAnalyzer {
       desc = ctx.getCatalog().getTableDesc(table);
       schema = desc.getMeta().getSchema();
       
-      if(schema.contains(columnName)) {
-        column = schema.getColumn(columnName);
+      if(schema.contains(table+"."+columnName)) {
+        column = schema.getColumn(table+"."+columnName);
         count++;
       }      
       

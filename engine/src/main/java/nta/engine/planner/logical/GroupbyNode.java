@@ -1,7 +1,5 @@
 package nta.engine.planner.logical;
 
-import nta.catalog.Column;
-import nta.catalog.Schema;
 import nta.engine.exec.eval.EvalNode;
 
 /**
@@ -10,21 +8,21 @@ import nta.engine.exec.eval.EvalNode;
  *
  */
 public class GroupbyNode extends UnaryNode {
-	private final Column [] columns;
+	private final EvalNode [] columns;
 	private EvalNode havingCondition = null;
 	
-	public GroupbyNode(final Column [] groupingColumns) {
+	public GroupbyNode(final EvalNode [] groupingColumns) {
 		super(ExprType.GROUP_BY);
 		this.columns = groupingColumns;
 	}
 	
-	public GroupbyNode(final Column [] columns, 
+	public GroupbyNode(final EvalNode [] columns, 
 	    final EvalNode havingCondition) {
     this(columns);
     this.havingCondition = havingCondition;
   }
 	
-	public final Column [] getGroupingColumns() {
+	public final EvalNode [] getGroupingColumns() {
 	  return this.columns;
 	}
 	
@@ -39,24 +37,21 @@ public class GroupbyNode extends UnaryNode {
 	public final void setHavingCondition(final EvalNode evalTree) {
 	  this.havingCondition = evalTree;
 	}
-
-  @Override
-  public Schema getOutputSchema() {
-    // TODO - to be completed
-    return getSubNode().getOutputSchema();
-  }
   
   public String toString() {
-    StringBuilder sb = new StringBuilder("Group By: fields");
+    StringBuilder sb = new StringBuilder("\"GroupBy\": {\"fields\":[");
     for (int i=0; i < columns.length; i++) {
-      sb.append(columns[i]);
+      sb.append("\"").append(columns[i]).append("\"");
       if(i < columns.length - 1)
-        sb.append(", ");
+        sb.append(",");
     }
     
     if(hasHavingCondition()) {
-      sb.append(" with Having "+havingCondition);
+      sb.append("], \"having qual\": \""+havingCondition+"\"");
     }
+    sb.append("\n  \"out schema\": ").append(getOutputSchema()).append(",");
+    sb.append("\n  \"in schema\": ").append(getInputSchema());
+    sb.append("}");
     
     return sb.toString() + "\n"
         + getSubNode().toString();
