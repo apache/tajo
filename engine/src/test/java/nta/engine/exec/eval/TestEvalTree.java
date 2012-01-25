@@ -3,6 +3,9 @@ package nta.engine.exec.eval;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+
 import nta.catalog.Catalog;
 import nta.catalog.ColumnBase;
 import nta.catalog.FunctionDesc;
@@ -11,12 +14,12 @@ import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.TableProtos.DataType;
-import nta.catalog.proto.TableProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.FunctionType;
+import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
-import nta.engine.exception.InternalException;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.function.Function;
 import nta.engine.parser.QueryAnalyzer;
@@ -30,6 +33,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * @author Hyunsik Choi
+ */
 public class TestEvalTree {
 
   @Before
@@ -66,7 +72,7 @@ public class TestEvalTree {
   };
 
   public final void testEvalExprTreeBin() throws NQLSyntaxException,
-      InternalException {
+      IOException {
 
     Schema schema = new Schema();
     schema.addColumn("name", DataType.STRING);
@@ -80,7 +86,7 @@ public class TestEvalTree {
     cat.addTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("sum", Sum.class,
-        Function.Type.GENERAL, DataType.INT, 
+        FunctionType.GENERAL, DataType.INT, 
         new DataType [] { DataType.INT, DataType.INT});
 
     cat.registerFunction(funcMeta);

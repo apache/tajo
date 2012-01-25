@@ -1,8 +1,8 @@
 package nta.catalog;
 
-import nta.catalog.proto.TableProtos.ColumnProto;
-import nta.catalog.proto.TableProtos.ColumnProtoOrBuilder;
-import nta.catalog.proto.TableProtos.DataType;
+import nta.catalog.proto.CatalogProtos.ColumnProto;
+import nta.catalog.proto.CatalogProtos.ColumnProtoOrBuilder;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.common.ProtoObject;
 
 /**
@@ -37,7 +37,7 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 		if(id != null) {
 			return this.id;
 		}
-		if(!proto.hasColumnId()) {
+		if(!p.hasColumnId()) {
 			return null;
 		}
 		this.id = p.getColumnId();
@@ -55,7 +55,7 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 		if(name != null) {
 			return this.name;
 		}
-		if(!proto.hasColumnName()) {
+		if(!p.hasColumnName()) {
 			return null;			
 		}		
 		this.name = p.getColumnName();
@@ -73,7 +73,7 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 		if(dataType != null) {
 			return this.dataType;
 		}
-		if(!proto.hasDataType()) {
+		if(!p.hasDataType()) {
 			return null;
 		}
 		this.dataType = p.getDataType();

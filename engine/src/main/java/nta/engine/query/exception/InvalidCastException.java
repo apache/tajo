@@ -3,7 +3,7 @@
  */
 package nta.engine.query.exception;
 
-import nta.catalog.proto.TableProtos.DataType;
+import nta.catalog.proto.CatalogProtos.DataType;
 
 /**
  * @author Hyunsik Choi

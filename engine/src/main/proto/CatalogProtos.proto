@@ -1,0 +1,83 @@
+option java_package = "nta.catalog.proto";
+option java_outer_classname = "CatalogProtos";
+option optimize_for = SPEED;
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+enum DataType {
+	BOOLEAN = 0;
+	BYTE = 1;
+	BYTES = 2;
+	SHORT = 3;
+	INT = 4;
+	LONG = 5;
+	FLOAT = 6;
+	DOUBLE = 7;
+	STRING = 8;
+	ENUM = 9;
+	IPv4 = 10;
+	IPv6 = 11;
+	ANY = 12;
+}
+
+enum StoreType {
+	MEM = 0;
+	CSV = 1;
+	RAW = 2;
+}
+
+message ColumnProto {
+	required int32 columnId = 1;
+	required string columnName = 2;
+	required DataType dataType = 3;
+}
+
+message SchemaProto {
+	repeated ColumnProto fields = 1;
+}
+
+message KeyValueProto {
+	required string key = 1;
+	required string value = 2;
+}
+
+message KeyValueSetProto {
+	repeated KeyValueProto keyval = 1;
+}
+
+message TabletProto {
+	required string id = 1;
+	required string path = 2;
+	required int64 startOffset = 3;
+	required int64 length = 4;
+	required TableProto meta = 5;
+}
+
+message TableDescProto {
+	required string id = 1;
+	required string path = 2;
+	optional TableProto meta = 3;
+}
+
+message TableProto {
+	required SchemaProto schema = 1;
+	required StoreType storeType = 2;
+	optional KeyValueSetProto params = 3;
+}
+
+enum FunctionType {
+	GENERAL = 0;
+	AGGREGATION = 1;
+}
+
+message FunctionDescProto {
+	required string signature = 1 ;
+	required string className = 2;
+	required FunctionType type = 3;
+	repeated DataType parameterTypes = 4;
+	required DataType returnType = 5;
+}
+
+message TableStatisticProto {
+	required int32 rowNum = 1;
+}

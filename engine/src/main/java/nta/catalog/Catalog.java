@@ -1,12 +1,9 @@
 package nta.catalog;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -21,12 +18,14 @@ import nta.catalog.exception.AlreadyExistsFunction;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchFunctionException;
 import nta.catalog.exception.NoSuchTableException;
-import nta.catalog.proto.TableProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.conf.NtaConf;
 import nta.engine.CatalogReader;
 import nta.engine.EngineService;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.query.LocalEngine;
+import nta.rpc.NettyRpc;
+import nta.rpc.ProtoParamRpcServer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,13 +34,14 @@ import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.net.DNS;
 
 import com.google.common.base.Preconditions;
 
 /**
  * @author Hyunsik Choi
  */
-public class Catalog implements CatalogService, CatalogReader, EngineService {
+public class Catalog extends Thread implements CatalogService, CatalogReader, EngineService {
 	private static Log LOG = LogFactory.getLog(Catalog.class);
 	private Configuration conf;	
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -56,13 +56,38 @@ public class Catalog implements CatalogService, CatalogReader, EngineService {
 	private Logger logger;
 	private String catalogDirPath;
 	private File walFile;
+	
+	private final ProtoParamRpcServer rpcServer;
+  private final InetSocketAddress isa;
 
-	public Catalog(Configuration conf) {
+  private volatile boolean stopped = false;
+  private volatile boolean isOnline = false;
+
+  private final String serverName;
+
+	public Catalog(Configuration conf) throws IOException {
 		this.conf = conf;
+		
+		// Server to handle client requests.
+    String hostname = DNS.getDefaultHost(
+      conf.get("nta.master.dns.interface", "default"),
+      conf.get("nta.master.dns.nameserver", "default"));
+    int port = conf.getInt(NConstants.CATALOG_MASTER_PORT, 
+        NConstants.DEFAULT_CATALOG_MASTER_PORT);
+    // Creation of a HSA will force a resolve.
+    InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
+    if (initialIsa.getAddress() == null) {
+      throw new IllegalArgumentException("Failed resolve of " + this.isa);
+    }
+    
+    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);
+    
+    this.isa = this.rpcServer.getBindAddress();
+    this.serverName = this.isa.getHostName()+":"+this.isa.getPort();
 	}
 
-	public void init() throws IOException {		
-		catalogDirPath = conf.get(NConstants.ENGINE_CATALOG_DIR);		
+	public void init() throws IOException {
+		/*catalogDirPath = conf.get(NConstants.ENGINE_CATALOG_DIR);		
 		
 		File catalogDir = new File(catalogDirPath);
 		if(!catalogDir.exists()) {
@@ -71,8 +96,33 @@ public class Catalog implements CatalogService, CatalogReader, EngineService {
 		
 		walFile = new File(catalogDir+"/"+NConstants.ENGINE_CATALOG_WALFILE);
 		wal = new SimpleWAL(walFile);
-		this.logger = new Logger(wal);
+		this.logger = new Logger(wal);*/
 	}
+	
+	public void run() {
+    try {
+      LOG.info("Catalog Server startup ("+serverName+")");
+      this.rpcServer.start();      
+      
+      if(!this.stopped) {
+        this.isOnline = true;
+        while(!this.stopped) {          
+          Thread.sleep(1000);
+
+        }
+      } 
+    } catch (Throwable t) {
+      LOG.fatal("Unhandled exception. Starting shutdown.", t);
+    } finally {
+      try {
+        shutdown();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    LOG.info("Catalog Server ("+serverName+") main thread exiting");
+  }
 	
 	private static void writeMetaToFile(Writer writer, TableDesc meta) throws IOException {
 		StringBuilder sb = new StringBuilder();
@@ -321,12 +371,19 @@ public class Catalog implements CatalogService, CatalogReader, EngineService {
 			wal.append(sb.toString());
 		}
 	}
+	
+	public void stop(String message) {
+	   this.stopped = true;    
+	    synchronized (this) {
+	      notifyAll();
+	    }
+	    LOG.info(Catalog.class.getName()+" is being stopped");
+	}
 
 	@Override
-	public void shutdown() throws IOException {
-		LOG.info(LocalEngine.class.getName()+" is being stopped");
-		
-		File catalogFile = new File(catalogDirPath+"/"+NConstants.ENGINE_CATALOG_FILENAME);
+	public void shutdown() throws IOException {		
+		// TODO
+		/*File catalogFile = new File(catalogDirPath+"/"+NConstants.ENGINE_CATALOG_FILENAME);
 		if(catalogFile.exists()) {
 			catalogFile.delete();
 		}
@@ -346,6 +403,12 @@ public class Catalog implements CatalogService, CatalogReader, EngineService {
 
 		if(walFile.exists()) {
 			walFile.delete();
-		}
+		}*/
+	}
+	
+	public static void main(String [] args) throws IOException {
+	  NtaConf conf = new NtaConf();
+	  Catalog catalog = new Catalog(conf);
+	  catalog.start();
 	}
 }

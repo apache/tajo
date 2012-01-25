@@ -3,7 +3,7 @@ option java_outer_classname = "LeafServerProtos";
 option java_generic_services = false;
 option java_generate_equals_and_hash = true;
 
-import "TableProtos.proto";
+import "CatalogProtos.proto";
 
 enum QueryStatus {
      FINISHED = 0;

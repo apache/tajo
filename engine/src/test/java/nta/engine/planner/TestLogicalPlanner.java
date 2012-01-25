@@ -1,6 +1,6 @@
 package nta.engine.planner;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import nta.catalog.Catalog;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
@@ -8,15 +8,14 @@ import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.TableProtos.DataType;
-import nta.catalog.proto.TableProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.FunctionType;
+import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.engine.QueryContext;
 import nta.engine.exec.eval.TestEvalTree.Sum;
-import nta.engine.function.Function;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
-import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
@@ -32,6 +31,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * @author Hyunsik Choi
+ */
 public class TestLogicalPlanner {
   private Catalog catalog;
   private QueryContext.Factory factory;
@@ -66,7 +68,7 @@ public class TestLogicalPlanner {
     catalog.addTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sum", Sum.class,
-        Function.Type.GENERAL, DataType.INT, new DataType[] { DataType.INT });
+        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
 
     catalog.registerFunction(funcDesc);
 

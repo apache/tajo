@@ -1,6 +1,6 @@
 package nta.catalog;
 import static org.junit.Assert.assertEquals;
-import nta.catalog.proto.TableProtos.DataType;
+import nta.catalog.proto.CatalogProtos.DataType;
 
 import org.junit.Before;
 import org.junit.Test;

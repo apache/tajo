@@ -39,7 +39,7 @@ import org.apache.hadoop.net.DNS;
 import org.apache.zookeeper.KeeperException;
 
 /**
- * @author hyunsik
+ * @author Hyunsik Choi
  *
  */
 public class LeafServer extends Thread implements LeafServerInterface {
@@ -51,7 +51,7 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	/**
 	 * This servers address.
 	 */	
-//	private final Server rpcServer;
+	//	private final Server rpcServer;
 	private final ProtoParamRpcServer rpcServer;
 	private final InetSocketAddress isa;
 
@@ -101,7 +101,7 @@ public class LeafServer extends Thread implements LeafServerInterface {
 		this.rpcServer.start();
 
 		// Set our address.
-	    this.isa = this.rpcServer.getBindAddress();
+	  this.isa = this.rpcServer.getBindAddress();
 		this.serverName = this.isa.getHostName()+":"+this.isa.getPort();
 		LOG.error("@@@@@@@@@ Server Name: " + this.serverName);
 		

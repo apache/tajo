@@ -19,7 +19,7 @@ import org.junit.Test;
  * @author Hyunsik Choi
  *
  */
-public class TestTablet {
+public class TestFragment {
   private Schema schema1;
   private TableMeta meta1;
   

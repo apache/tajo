@@ -10,7 +10,7 @@ import java.util.List;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.TableProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -18,6 +18,9 @@ import nta.engine.ipc.protocolrecords.Fragment;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
+/**
+ * @author Hyunsik Choi
+ */
 public class TestSubQueryRequestImpl {
 
 	@Test

@@ -79,7 +79,7 @@
 								<argument>--java_out=target/generated-sources/proto</argument>
 								<argument>src/main/proto/NtaClientProtos.proto</argument>
 								<argument>src/main/proto/NtaClientProtocol.proto</argument>
-								<argument>src/main/proto/TableProtos.proto</argument>
+								<argument>src/main/proto/CatalogProtos.proto</argument>
 								<argument>src/main/proto/ClusterProtos.proto</argument>
 								<argument>src/main/proto/LeafServerProtos.proto</argument>
 								<argument>src/main/proto/ExecutorRunnerProtos.proto</argument>

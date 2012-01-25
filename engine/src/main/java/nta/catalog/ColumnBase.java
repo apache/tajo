@@ -1,6 +1,6 @@
 package nta.catalog;
 
-import nta.catalog.proto.TableProtos.DataType;
+import nta.catalog.proto.CatalogProtos.DataType;
 
 /**
  * 

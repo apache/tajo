@@ -11,7 +11,7 @@ import java.util.TreeMap;
 import nta.catalog.Column;
 import nta.catalog.ColumnBase;
 import nta.catalog.Schema;
-import nta.catalog.proto.TableProtos.DataType;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.engine.Context;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.FieldEval;

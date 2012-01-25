@@ -3,8 +3,8 @@ package nta.engine.ipc.protocolrecords;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.TableProtos.TabletProto;
-import nta.catalog.proto.TableProtos.TabletProtoOrBuilder;
+import nta.catalog.proto.CatalogProtos.TabletProto;
+import nta.catalog.proto.CatalogProtos.TabletProtoOrBuilder;
 
 import org.apache.hadoop.fs.Path;
 

@@ -1,13 +1,14 @@
 package nta.catalog;
 
 import nta.catalog.exception.CatalogException;
+import nta.engine.CatalogReader;
 
 /**
  * 
  * @author hyunsik
  *
  */
-public interface CatalogService {
+public interface CatalogService extends CatalogReader {
   
   /**
    * Get a table description by name

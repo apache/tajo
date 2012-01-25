@@ -3,9 +3,9 @@
  */
 package nta.catalog;
 
-import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableProto;
-import nta.catalog.proto.TableProtos.TableProtoOrBuilder;
+import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.TableProto;
+import nta.catalog.proto.CatalogProtos.TableProtoOrBuilder;
 
 /**
  * @author Hyunsik Choi
@@ -116,9 +116,9 @@ public class TableMetaImpl implements TableMeta {
 	
 	public boolean equals(Object object) {
 		if(object instanceof TableMetaImpl) {
-			TableMetaImpl other = (TableMetaImpl) object;			
+			TableMetaImpl other = (TableMetaImpl) object;
 			
-			return this.getProto().equals(other.getProto());	     
+			return this.getProto().equals(other.getProto());
 		}
 		
 		return false;		

@@ -6,10 +6,10 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import nta.catalog.exception.AlreadyExistsFieldException;
-import nta.catalog.proto.TableProtos.ColumnProto;
-import nta.catalog.proto.TableProtos.DataType;
-import nta.catalog.proto.TableProtos.SchemaProto;
-import nta.catalog.proto.TableProtos.SchemaProtoOrBuilder;
+import nta.catalog.proto.CatalogProtos.ColumnProto;
+import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.SchemaProto;
+import nta.catalog.proto.CatalogProtos.SchemaProtoOrBuilder;
 import nta.common.ProtoObject;
 
 /**
@@ -84,7 +84,7 @@ public class Schema implements ProtoObject<SchemaProto> {
 		for(ColumnProto colProto : p.getFieldsList()) {
 			newFieldId++;
 			fields.put(colProto.getColumnId(), new Column(colProto));
-			fieldsByName.put(colProto.getColumnName(), colProto.getColumnId());			
+			fieldsByName.put(colProto.getColumnName(), colProto.getColumnId());
 		}
 	}
 

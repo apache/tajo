@@ -7,9 +7,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import nta.catalog.proto.TableProtos.KeyValueProto;
-import nta.catalog.proto.TableProtos.KeyValueSetProto;
-import nta.catalog.proto.TableProtos.KeyValueSetProtoOrBuilder;
+import nta.catalog.proto.CatalogProtos.KeyValueProto;
+import nta.catalog.proto.CatalogProtos.KeyValueSetProto;
+import nta.catalog.proto.CatalogProtos.KeyValueSetProtoOrBuilder;
 import nta.common.ProtoObject;
 
 /**
