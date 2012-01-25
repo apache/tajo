@@ -8,6 +8,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
+import nta.datum.DatumFactory;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.query.SubQueryRequestImpl;
@@ -66,8 +67,8 @@ public class TestLeafServer {
     Tuple tuple = null;
     for (int i = 0; i < tupleNum; i++) {
       tuple = new VTuple(2);
-      tuple.put(0, "abc");
-      tuple.put(1, (Integer) (i + 1));
+      tuple.put(0, DatumFactory.createString("abc"));
+      tuple.put(1, DatumFactory.createInt(i + 1));
       appender.addTuple(tuple);
     }
     appender.close();

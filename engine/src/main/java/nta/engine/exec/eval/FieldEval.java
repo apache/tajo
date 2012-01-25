@@ -4,7 +4,6 @@ import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.datum.Datum;
-import nta.datum.DatumFactory;
 import nta.storage.Tuple;
 
 /**
@@ -36,15 +35,15 @@ public class FieldEval extends EvalNode {
 	  }
 	  
 		switch(dataType) {
-		case BOOLEAN: return DatumFactory.createBool(tuple.getBoolean(fieldId));
-		case BYTE: return DatumFactory.createByte(tuple.getByte(fieldId));
-		case INT: return DatumFactory.createInt(tuple.getInt(fieldId));
-		case LONG: return DatumFactory.createLong(tuple.getLong(fieldId));
-		case FLOAT: return DatumFactory.createFloat(tuple.getFloat(fieldId));
-		case DOUBLE: return DatumFactory.createDouble(tuple.getDouble(fieldId));
-		case STRING: return DatumFactory.createString(tuple.getString(fieldId));
-		case BYTES: return DatumFactory.createBytes(tuple.getBytes(fieldId));
-		case IPv4: return DatumFactory.createIPv4(tuple.getIPv4Bytes(fieldId));
+		case BOOLEAN: return tuple.getBoolean(fieldId);
+		case BYTE: return tuple.getByte(fieldId);
+		case INT: return tuple.getInt(fieldId);
+		case LONG: return tuple.getLong(fieldId);
+		case FLOAT: return tuple.getFloat(fieldId);
+		case DOUBLE: return tuple.getDouble(fieldId);
+		case STRING: return tuple.getString(fieldId);
+		case BYTES: return tuple.getBytes(fieldId);
+		case IPv4: return tuple.getIPv4(fieldId);
 		default: throw new InvalidEvalException();
 		}		
 	}

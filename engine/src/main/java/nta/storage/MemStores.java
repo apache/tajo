@@ -9,6 +9,7 @@ import java.util.Map;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.datum.exception.InvalidCastException;
 
 import org.apache.hadoop.conf.Configuration;
 
@@ -110,8 +111,8 @@ public class MemStores {
             tuple.put(i, t.getIPv4(i));
             break;
           case IPv6:
-            tuple.put(i, t.getIPv6(i));
-            break;
+            throw new InvalidCastException("IPv6 is unsupported yet");
+            
           default:
             ;
           }       

@@ -9,6 +9,7 @@ import java.util.Iterator;
 import nta.catalog.Catalog;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
+import nta.datum.DatumFactory;
 import nta.engine.function.Function;
 import nta.engine.plan.logical.ControlLO;
 import nta.storage.VTuple;
@@ -47,9 +48,9 @@ public class ShowFunctionOp extends PhysicalOp {
 		
 		FunctionDesc desc = this.iterator.next();
 		VTuple t = new VTuple(3);
-		t.put(0, desc.getSignature());
-		t.put(1, desc.getFuncType());
-		t.put(2, desc.getFuncClass().getName());
+		t.put(0, DatumFactory.createString(desc.getSignature()));
+		t.put(1, DatumFactory.createString(desc.getFuncType().toString()));
+		t.put(2, DatumFactory.createString(desc.getFuncClass().getName()));
 		return t;
 	}
 

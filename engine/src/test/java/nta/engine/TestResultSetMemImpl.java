@@ -3,6 +3,7 @@ package nta.engine;
 import static org.junit.Assert.*;
 
 import nta.catalog.Schema;
+import nta.datum.DatumFactory;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
@@ -21,22 +22,22 @@ public class TestResultSetMemImpl {
 		res.columnMap.put("name", 3);
 		
 		Tuple tuple = new VTuple(3);
-		tuple.put(0, 1);
-		tuple.put(1, 32);
-		tuple.put(2, "hyunsik");		
+		tuple.put(0, DatumFactory.createInt(1));
+		tuple.put(1, DatumFactory.createInt(32));
+		tuple.put(2, DatumFactory.createString("hyunsik"));		
 		res.rows.add(tuple);
 		
 		tuple = new VTuple(3);
-		tuple.put(0, 2);
-		tuple.put(1, 27);
-		tuple.put(2, "jimin");
+		tuple.put(0, DatumFactory.createInt(2));
+		tuple.put(1, DatumFactory.createInt(27));
+		tuple.put(2, DatumFactory.createString("jimin"));
 		res.rows.add(tuple);
 		
 		tuple = new VTuple(3);
-		tuple.put(0, 3);
-		tuple.put(1, 50);
-		tuple.put(2, "jone");
-		res.rows.add(tuple);		
+		tuple.put(0, DatumFactory.createInt(3));
+		tuple.put(1, DatumFactory.createInt(50));
+		tuple.put(2, DatumFactory.createString("jone"));
+		res.rows.add(tuple);
 	}
 
 	@Test

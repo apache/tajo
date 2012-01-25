@@ -8,6 +8,7 @@ import java.util.List;
 
 import nta.catalog.Column;
 import nta.catalog.TableMeta;
+import nta.datum.exception.InvalidCastException;
 
 /**
  * @author Hyunsik Choi
@@ -75,8 +76,8 @@ public class MemTable {
 					tuple.put(i, t.getIPv4(i));
 					break;
 				case IPv6:
-					tuple.put(i, t.getIPv6(i));
-					break;
+					throw new InvalidCastException("IPv6 is unsupported yet");
+					
 				default:
 					;
 				}				

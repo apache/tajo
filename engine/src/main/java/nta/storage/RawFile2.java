@@ -12,6 +12,7 @@ import java.util.TreeSet;
 import nta.catalog.Column;
 import nta.catalog.Options;
 import nta.catalog.Schema;
+import nta.datum.DatumFactory;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
@@ -183,33 +184,33 @@ public class RawFile2 extends Storage {
 					col = schema.getColumn(i);
 					switch (col.getDataType()) {
 					case BYTE:
-						tuple.put(i, in.readByte());
+						tuple.put(i, DatumFactory.createByte(in.readByte()));
 						break;
 					case SHORT:
-						tuple.put(i, in.readShort());
+						tuple.put(i, DatumFactory.createShort(in.readShort()));
 						break;
 					case INT:
-						tuple.put(i, in.readInt());
+						tuple.put(i, DatumFactory.createInt(in.readInt()));
 						break;
 					case LONG:
-						tuple.put(i, in.readLong());
+						tuple.put(i, DatumFactory.createLong(in.readLong()));
 						break;
 					case FLOAT:
-						tuple.put(i, in.readFloat());
+						tuple.put(i, DatumFactory.createFloat(in.readFloat()));
 						break;
 					case DOUBLE:
-						tuple.put(i, in.readDouble());
+						tuple.put(i, DatumFactory.createDouble(in.readDouble()));
 						break;
 					case STRING:
 						short len = in.readShort();
 						byte[] buf = new byte[len];
 						in.read(buf, 0, len);
-						tuple.put(i, new String(buf));
+						tuple.put(i, DatumFactory.createString(new String(buf)));
 						break;
 					case IPv4:
 						byte[] ipv4 = new byte[4];
 						in.read(ipv4, 0, 4);
-						tuple.put(i, ipv4);
+						tuple.put(i, DatumFactory.createIPv4(ipv4));
 						break;
 					default:
 						break;
@@ -295,32 +296,32 @@ public class RawFile2 extends Storage {
 					col = schema.getColumn(i);
 					switch (col.getDataType()) {
 					case BYTE:
-						out.writeByte(t.getByte(i));
+						out.writeByte(t.getByte(i).asByte());
 						break;
 					case STRING:
-						byte[] buf = t.getString(i).getBytes();
+						byte[] buf = t.getString(i).asByteArray();
 						if (buf.length > 256) {
 							buf = new byte[256];
-							byte[] str = t.getString(i).getBytes();
+							byte[] str = t.getString(i).asByteArray();
 							System.arraycopy(str, 0, buf, 0, 256);
 						} 
 						out.writeShort(buf.length);
 						out.write(buf, 0, buf.length);
 						break;
 					case SHORT:
-						out.writeShort(t.getShort(i));
+						out.writeShort(t.getShort(i).asShort());
 						break;
 					case INT:
-						out.writeInt(t.getInt(i));
+						out.writeInt(t.getInt(i).asInt());
 						break;
 					case LONG:
-						out.writeLong(t.getLong(i));
+						out.writeLong(t.getLong(i).asLong());
 						break;
 					case FLOAT:
-						out.writeFloat(t.getFloat(i));
+						out.writeFloat(t.getFloat(i).asFloat());
 						break;
 					case DOUBLE:
-						out.writeDouble(t.getDouble(i));
+						out.writeDouble(t.getDouble(i).asDouble());
 						break;
 					case IPv4:
 						out.write(t.getIPv4Bytes(i));

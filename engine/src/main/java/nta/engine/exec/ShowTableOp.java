@@ -10,6 +10,7 @@ import nta.catalog.Catalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
+import nta.datum.DatumFactory;
 import nta.engine.plan.logical.ControlLO;
 import nta.storage.VTuple;
 
@@ -47,7 +48,7 @@ public class ShowTableOp extends PhysicalOp {
 		
 		TableDesc desc = this.iterator.next();
 		VTuple t = new VTuple(1);
-		t.put(0, desc.getId());
+		t.put(0, DatumFactory.createString(desc.getId()));
 		return t;
 	}
 

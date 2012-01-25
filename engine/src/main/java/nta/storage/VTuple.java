@@ -2,6 +2,19 @@ package nta.storage;
 
 import java.net.InetAddress;
 
+import nta.datum.BoolDatum;
+import nta.datum.ByteDatum;
+import nta.datum.BytesDatum;
+import nta.datum.Datum;
+import nta.datum.DoubleDatum;
+import nta.datum.FloatDatum;
+import nta.datum.IPv4Datum;
+import nta.datum.IntDatum;
+import nta.datum.LongDatum;
+import nta.datum.ShortDatum;
+import nta.datum.StringDatum;
+import nta.datum.exception.InvalidCastException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -12,10 +25,10 @@ import org.apache.commons.logging.LogFactory;
 public class VTuple implements Tuple {
 	private static Log LOG = LogFactory.getLog(VTuple.class);
 	
-	public Object [] values;
+	public Datum [] values;
 	
 	public VTuple(int size) {
-		values = new Object [size];
+		values = new Datum [size];
 	}	
 
 	@Override
@@ -37,11 +50,11 @@ public class VTuple implements Tuple {
 	//////////////////////////////////////////////////////
 	// Setter
 	//////////////////////////////////////////////////////	
-	public void put(int fieldId, Object value) {
+	public void put(int fieldId, Datum value) {
 		values[fieldId] = value;
 	}
 	
-	public void put(Object...values) {
+	public void put(Datum...values) {
 	  for(int i=0; i < values.length; i++) {
 	    this.values[i] = values[i];
 	  }
@@ -50,65 +63,61 @@ public class VTuple implements Tuple {
 	//////////////////////////////////////////////////////
 	// Getter
 	//////////////////////////////////////////////////////
-	public Object get(int fieldId) {
+	public Datum get(int fieldId) {
 		return this.values[fieldId];
 	}
 	
 	@Override
-	public boolean getBoolean(int fieldId) {
-		return (Boolean) values[fieldId];
+	public BoolDatum getBoolean(int fieldId) {
+		return (BoolDatum) values[fieldId];
 	}
 
-	public byte getByte(int fieldId) {
-		return (Byte) values[fieldId];
+	public ByteDatum getByte(int fieldId) {
+		return (ByteDatum) values[fieldId];
 	}
 
-	public byte[] getBytes(int fieldId) {
-		return (byte[]) values[fieldId];
+	public BytesDatum getBytes(int fieldId) {
+		return (BytesDatum) values[fieldId];
 	}
 
-	public short getShort(int fieldId) {
-		return (Short) values[fieldId];
+	public ShortDatum getShort(int fieldId) {
+		return (ShortDatum) values[fieldId];
 	}
 
-	public int getInt(int fieldId) {		
-		return (Integer) values[fieldId];			
+	public IntDatum getInt(int fieldId) {
+		return (IntDatum) values[fieldId];			
 	}
 
-	public long getLong(int fieldId) {
-		return (Long) values[fieldId];
+	public LongDatum getLong(int fieldId) {
+		return (LongDatum) values[fieldId];
 	}
 
-	public float getFloat(int fieldId) {
-		return (Float) values[fieldId];
+	public FloatDatum getFloat(int fieldId) {
+		return (FloatDatum) values[fieldId];
 	}
 
-	public double getDouble(int fieldId) {
-		return (Double) values[fieldId];
+	public DoubleDatum getDouble(int fieldId) {
+		return (DoubleDatum) values[fieldId];
 	}
 
-	public InetAddress getIPv4(int fieldId) {
-//		return (InetAddress) values[fieldId];
-		return null;
+	public IPv4Datum getIPv4(int fieldId) {
+		return (IPv4Datum) values[fieldId];
 	}
 
 	public byte[] getIPv4Bytes(int fieldId) {
-//		return ((InetAddress) values[fieldId]).getAddress();
-		return (byte[])values[fieldId];
+		return ((IPv4Datum)values[fieldId]).asByteArray();
 	}
 
 	public InetAddress getIPv6(int fieldId) {
-//		return (InetAddress) values[fieldId];
-		return null;
+		throw new InvalidCastException("IPv6 is unsupported yet");
 	}
 
 	public byte[] getIPv6Bytes(int fieldId) {
-//		return ((InetAddress) values[fieldId]).getAddress();
-		return (byte[])values[fieldId];
+	  throw new InvalidCastException("IPv6 is unsupported yet");
 	}
 
-	public String getString(int fieldId) {
-		return (String) values[fieldId];
+	public StringDatum getString(int fieldId) {
+		return (StringDatum) values[fieldId];
 	}
 
 	public String toString() {
