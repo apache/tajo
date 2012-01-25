@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
+import java.util.Set;
+import java.util.Stack;
 import java.util.TreeMap;
 
 import nta.catalog.Column;
@@ -17,14 +19,18 @@ import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
+import nta.engine.parser.QueryBlock.SortKey;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
+import nta.engine.planner.logical.UnaryNode;
+import nta.engine.query.exception.InvalidQueryException;
 import nta.engine.query.exception.NotSupportQueryException;
 
 import org.apache.commons.logging.Log;
@@ -64,9 +70,11 @@ public class LogicalPlanner {
     throw new NotSupportQueryException(query.toString());
     }
     
-    annotateInOutSchemas(ctx, plan);
+    LogicalRootNode root = new LogicalRootNode();
+    root.setSubNode(plan);
+    annotateInOutSchemas(ctx, root);
     
-    return plan;
+    return root;
   }
   
   /**
@@ -103,13 +111,11 @@ public class LogicalPlanner {
       subroot = sortNode;
     }
     
-    if(!query.hasGroupbyClause()) {
-      if(query.getProjectAll()) {
-      } else {
+    if(query.getProjectAll()) {
+    } else {
         ProjectionNode prjNode = new ProjectionNode(query.getTargetList());
         prjNode.setSubNode(subroot);
         subroot = prjNode;
-      }
     }
     
     return subroot;  
@@ -136,23 +142,20 @@ public class LogicalPlanner {
    * @param logicalPlan
    * @return a result target list 
    */
-  public static TargetList annotateInOutSchemas(Context ctx, 
+  public static void annotateInOutSchemas(Context ctx, 
       LogicalNode logicalPlan) {
-    TargetList targetList = new TargetList();
-    
-    traverseLogicalNode(ctx, logicalPlan, targetList);
-    
-    return targetList;
+    Stack<LogicalNode> stack = new Stack<LogicalNode>();
+    refineInOutSchama(ctx, logicalPlan, null, stack);
   }
   
-  private static void getTargetListFromEvalTree(TargetList inputSchema, 
-      EvalNode evalTree, TargetList targetList) {
+  static void getTargetListFromEvalTree(TargetList inputSchema, 
+      EvalNode evalTree, Set<ColumnBase> targetList) {
     
     switch(evalTree.getType()) {
     case FIELD:
       FieldEval fieldEval = (FieldEval) evalTree;
-      ColumnBase col = inputSchema.getColumn(fieldEval.getName());          
-      targetList.put(col);
+      ColumnBase col = inputSchema.getColumn(fieldEval.getName());
+      targetList.add(col);
       
       break;
     
@@ -168,7 +171,6 @@ public class LogicalPlanner {
     case LEQ:
     case GTH:   
     case GEQ:
-    case JOIN:
       getTargetListFromEvalTree(inputSchema, evalTree.getLeftExpr(), targetList);
       getTargetListFromEvalTree(inputSchema, evalTree.getRightExpr(), targetList);
       
@@ -182,48 +184,93 @@ public class LogicalPlanner {
     }
   }
   
-  private static void traverseLogicalNode(Context ctx,
-      LogicalNode logicalNode, TargetList targetList) {
+  static void refineInOutSchama(Context ctx,
+      LogicalNode logicalNode, Set<ColumnBase> necessaryTargets, 
+      Stack<LogicalNode> stack) {
     TargetList inputSchema = null;
+    TargetList outputSchema = null;
     
     switch(logicalNode.getType()) {
+    case ROOT:
+      LogicalRootNode root = (LogicalRootNode) logicalNode;
+      stack.push(root);
+      refineInOutSchama(ctx, root.getSubNode(), necessaryTargets, stack);
+      stack.pop();
+      break;
     
     case PROJECTION:
       ProjectionNode projNode = ((ProjectionNode)logicalNode);
-      traverseLogicalNode(ctx, projNode.getSubNode(), targetList);      
-      projNode.setInputSchema(projNode.getSubNode().getOutputSchema());
-
-      TargetList resultList = new TargetList();
-      for(Target target : projNode.getTargetList()) {
-        getTargetListFromEvalTree(projNode.getInputSchema(), target.getEvalTree(), resultList);         
+      if(necessaryTargets != null) {
+        for(Target t : projNode.getTargetList()) {
+          getTargetListFromEvalTree(projNode.getInputSchema(), t.getEvalTree(), 
+              necessaryTargets);
+        }
+        
+        stack.push(projNode);
+        refineInOutSchama(ctx, projNode.getSubNode(), necessaryTargets, stack);
+        stack.pop();
+        
+        LogicalNode parent = stack.peek();
+        if(parent instanceof UnaryNode) {
+          ((UnaryNode) parent).setSubNode(((UnaryNode) projNode).getSubNode());
+        } else {
+          throw new InvalidQueryException("Unexpected Logical Query Plan");
+        }
+      } else {
+        stack.push(projNode);
+        refineInOutSchama(ctx, projNode.getSubNode(), necessaryTargets, stack);
+        stack.pop();
       }
-      projNode.setOutputSchema(resultList);
+      
+      projNode.setInputSchema(projNode.getSubNode().getOutputSchema());
+      TargetList prjTargets = new TargetList();
+      for(Target t : projNode.getTargetList()) {
+        DataType type = t.getEvalTree().getValueType();
+        String name = t.getEvalTree().getName();
+        prjTargets.put(new ColumnBase(name,type));
+      }
+      projNode.setOutputSchema(prjTargets);
       
       break;
       
     case SELECTION:
-      SelectionNode selNode = ((SelectionNode)logicalNode);      
-      traverseLogicalNode(ctx, selNode.getSubNode(), targetList);
+      SelectionNode selNode = ((SelectionNode)logicalNode);
+      if(necessaryTargets != null) {
+        getTargetListFromEvalTree(selNode.getInputSchema(), selNode.getQual(), 
+            necessaryTargets);
+      }
+      stack.push(selNode);
+      refineInOutSchama(ctx, selNode.getSubNode(), necessaryTargets, stack);
+      stack.pop();
       inputSchema = selNode.getSubNode().getOutputSchema();
       selNode.setInputSchema(inputSchema);
       selNode.setOutputSchema(inputSchema);
       
-      getTargetListFromEvalTree(inputSchema, selNode.getQual(), targetList);
       break;
       
     case GROUP_BY:
       GroupbyNode groupByNode = ((GroupbyNode)logicalNode);
-      traverseLogicalNode(ctx, groupByNode.getSubNode(), targetList);
+      if(necessaryTargets != null && groupByNode.hasHavingCondition()) {
+        getTargetListFromEvalTree(groupByNode.getInputSchema(),
+            groupByNode.getHavingCondition(), necessaryTargets);
+        for(EvalNode grpField : groupByNode.getGroupingColumns()) {
+          getTargetListFromEvalTree(groupByNode.getInputSchema(),
+              grpField, necessaryTargets);
+        }
+      }
+      stack.push(groupByNode);
+      refineInOutSchama(ctx, groupByNode.getSubNode(), necessaryTargets, stack);
+      stack.pop();
       groupByNode.setInputSchema(groupByNode.getSubNode().getOutputSchema());
       
-      TargetList groupByResult = new TargetList();
+      TargetList grpTargets = new TargetList();
       for(Target t : ctx.getTargetList()) {
         DataType type = t.getEvalTree().getValueType();
         String name = t.getEvalTree().getName();
-        groupByResult.put(new ColumnBase(name,type));
+        grpTargets.put(new ColumnBase(name,type));
       }
       
-      groupByNode.setOutputSchema(groupByResult);
+      groupByNode.setOutputSchema(grpTargets);
       
       break;
       
@@ -231,16 +278,42 @@ public class LogicalPlanner {
       ScanNode scanNode = ((ScanNode)logicalNode);
       Schema scanSchema = 
           ctx.getInputTable(scanNode.getTableId()).getMeta().getSchema();
-      TargetList tlist = new TargetList();
-      tlist.put(scanSchema);
-      scanNode.setInputSchema(tlist);
-      scanNode.setOutputSchema(tlist);
+      TargetList scanTargetList = new TargetList();
+      scanTargetList.put(scanSchema);
+      scanNode.setInputSchema(scanTargetList);
+      if(necessaryTargets != null) {
+        outputSchema = new TargetList();
+        for(ColumnBase col : scanTargetList.targetList.values()) {
+          if(necessaryTargets.contains(col)) {
+            outputSchema.put(col);
+          }
+        }
+        scanNode.setOutputSchema(outputSchema);
+        
+        TargetList projectedList = new TargetList();
+        if(scanNode.hasQual()) {
+          getTargetListFromEvalTree(scanTargetList, scanNode.getQual(), 
+              necessaryTargets);
+        }
+        for(ColumnBase col : scanTargetList.targetList.values()) {
+          if(necessaryTargets.contains(col)) {
+            projectedList.put(col);
+          }
+        }
+        
+        scanNode.setTargetList(projectedList);
+      } else {
+        scanNode.setOutputSchema(scanTargetList); 
+      }
       
       break;
       
     case SORT:
       SortNode sortNode = ((SortNode)logicalNode);
-      traverseLogicalNode(ctx, sortNode.getSubNode(), targetList);
+      // TODO - before this, should modify sort keys to eval trees.
+      stack.push(sortNode);
+      refineInOutSchama(ctx, sortNode.getSubNode(), necessaryTargets, stack);
+      stack.pop();
       inputSchema = sortNode.getSubNode().getOutputSchema();
       sortNode.setInputSchema(inputSchema);
       sortNode.setOutputSchema(inputSchema);
@@ -249,16 +322,19 @@ public class LogicalPlanner {
     
     case JOIN:
       JoinNode joinNode = (JoinNode) logicalNode;
-      
-      traverseLogicalNode(ctx, joinNode.getLeftSubNode(), targetList);
-      traverseLogicalNode(ctx, joinNode.getRightSubNode(), targetList);
+      stack.push(joinNode);
+      refineInOutSchama(ctx, joinNode.getLeftSubNode(), necessaryTargets, 
+          stack);
+      refineInOutSchama(ctx, joinNode.getRightSubNode(), necessaryTargets,
+          stack);
+      stack.pop();
       
       inputSchema = merge(joinNode.getLeftSubNode().getInputSchema(), 
           joinNode.getRightSubNode().getInputSchema());
       joinNode.setInputSchema(inputSchema);
       joinNode.setOutputSchema(inputSchema);
             
-      default: return;      
+      default: return;
     }
   }
   
@@ -267,7 +343,13 @@ public class LogicalPlanner {
     Map<String,ColumnBase> targetListByName = new HashMap<String, ColumnBase>();
     private volatile int id = 0;
     
-    public TargetList() {     
+    public TargetList() {
+    }
+    
+    public TargetList(TargetList targets) {
+      this.targetList = new TreeMap<Integer, ColumnBase>(targets.targetList);
+      this.targetListByName = new HashMap<String, ColumnBase>(targets.targetListByName);
+      this.id = targets.id;
     }
     
     public void put(ColumnBase column) {
@@ -314,6 +396,10 @@ public class LogicalPlanner {
       }
       sb.append("]");
       return sb.toString();
+    }
+    
+    public Object clone() {
+      return new TargetList(this);
     }
   }
   

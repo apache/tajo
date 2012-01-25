@@ -56,6 +56,13 @@ public class SubqueryContext implements Context {
   public CatalogReader getCatalog() {
     return this.catalog;
   }
+  
+  @Override
+  public boolean hasWhereClause() {
+    // TODO - before it, SubqueryContext should be improved to
+    // include some query optimization hints.
+    return false;
+  }
 
   @Override
   public boolean hasGroupByClause() {
@@ -67,5 +74,12 @@ public class SubqueryContext implements Context {
   @Override
   public Target[] getTargetList() {
     return null;
+  }
+
+  @Override
+  public boolean hasJoinClause() {
+    // TODO - before it, SubqueryContext should be improved to
+    // include some query optimization hints.
+    return false;
   }
 }

@@ -21,6 +21,7 @@ import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
@@ -38,12 +39,12 @@ public class TestLogicalPlanner {
   @Before
   public void setUp() throws Exception {
     Schema schema = new Schema();
-    schema.addColumn("name", DataType.INT);
+    schema.addColumn("name", DataType.STRING);
     schema.addColumn("empId", DataType.INT);
     schema.addColumn("deptName", DataType.STRING);
 
     Schema schema2 = new Schema();
-    schema2.addColumn("deptName", DataType.INT);
+    schema2.addColumn("deptName", DataType.STRING);
     schema2.addColumn("manager", DataType.STRING);
 
     Schema schema3 = new Schema();
@@ -82,6 +83,8 @@ public class TestLogicalPlanner {
       "select name, empId, e.deptName, manager, score from employee as e, dept, score", // 2
       "select p.deptName, sum(score) from dept as p, score group by p.deptName having sum(score) > 30", // 3
       "select p.deptName, score from dept as p, score order by score asc", // 4
+      "select name from employee where empId = 100", // 5
+      "select name, score from employee, score" // 6
   };
 
   @Test
@@ -89,8 +92,11 @@ public class TestLogicalPlanner {
     QueryBlock block = QueryAnalyzer.parse(QUERIES[0], catalog);
     QueryContext ctx = factory.create(block);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
-    assertEquals(ExprType.PROJECTION, plan.getType());
-    ProjectionNode projNode = (ProjectionNode) plan;
+    assertEquals(ExprType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
 
     assertEquals(ExprType.SELECTION, projNode.getSubNode().getType());
     SelectionNode selNode = (SelectionNode) projNode.getSubNode();
@@ -107,8 +113,11 @@ public class TestLogicalPlanner {
     QueryContext ctx = factory.create(block);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 
-    assertEquals(ExprType.PROJECTION, plan.getType());
-    ProjectionNode projNode = (ProjectionNode) plan;
+    assertEquals(ExprType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
 
     assertEquals(ExprType.JOIN, projNode.getSubNode().getType());
     JoinNode joinNode = (JoinNode) projNode.getSubNode();
@@ -125,8 +134,11 @@ public class TestLogicalPlanner {
     ctx = factory.create(block);
     plan = LogicalPlanner.createPlan(ctx, block);
 
-    assertEquals(ExprType.PROJECTION, plan.getType());
-    projNode = (ProjectionNode) plan;
+    assertEquals(ExprType.ROOT, plan.getType());
+    root = (LogicalRootNode) plan;
+
+    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
+    projNode = (ProjectionNode) root.getSubNode();
 
     assertEquals(ExprType.JOIN, projNode.getSubNode().getType());
     joinNode = (JoinNode) projNode.getSubNode();
@@ -152,8 +164,14 @@ public class TestLogicalPlanner {
     QueryContext ctx = factory.create(block);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 
-    assertEquals(ExprType.GROUP_BY, plan.getType());
-    GroupbyNode groupByNode = (GroupbyNode) plan;
+    assertEquals(ExprType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
+
+    assertEquals(ExprType.GROUP_BY, projNode.getSubNode().getType());
+    GroupbyNode groupByNode = (GroupbyNode) projNode.getSubNode();
 
     assertEquals(ExprType.JOIN, groupByNode.getSubNode().getType());
     JoinNode joinNode = (JoinNode) groupByNode.getSubNode();
@@ -172,8 +190,12 @@ public class TestLogicalPlanner {
     QueryBlock block = QueryAnalyzer.parse(QUERIES[4], catalog);
     QueryContext ctx = factory.create(block);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
-    assertEquals(ExprType.PROJECTION, plan.getType());
-    ProjectionNode projNode = (ProjectionNode) plan;
+
+    assertEquals(ExprType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
 
     assertEquals(ExprType.SORT, projNode.getSubNode().getType());
     SortNode sortNode = (SortNode) projNode.getSubNode();
@@ -187,5 +209,38 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.SCAN, joinNode.getRightSubNode().getType());
     ScanNode rightNode = (ScanNode) joinNode.getRightSubNode();
     assertEquals("score", rightNode.getTableId());
+  }
+
+  @Test
+  public final void testSPJPush() {
+    QueryBlock block = QueryAnalyzer.parse(QUERIES[5], catalog);
+    QueryContext ctx = factory.create(block);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    assertEquals(ExprType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
+    assertEquals(ExprType.SELECTION, projNode.getSubNode().getType());
+    SelectionNode selNode = (SelectionNode) projNode.getSubNode();    
+    assertEquals(ExprType.SCAN, selNode.getSubNode().getType());
+    ScanNode scanNode = (ScanNode) selNode.getSubNode();
+    
+    LogicalOptimizer.optimize(ctx, plan);
+    assertEquals(ExprType.ROOT, plan.getType());
+    root = (LogicalRootNode) plan;
+    assertEquals(ExprType.SCAN, root.getSubNode().getType());
+    scanNode = (ScanNode) root.getSubNode();
+    assertEquals("employee", scanNode.getTableId());
+  }
+  
+  @Test
+  public final void testSPJ() {
+    QueryBlock block = QueryAnalyzer.parse(QUERIES[6], catalog);
+    QueryContext ctx = factory.create(block);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    System.out.println(plan);
+    System.out.println("-------------------");
+    LogicalOptimizer.optimize(ctx, plan);
+    System.out.println(plan);
   }
 }
