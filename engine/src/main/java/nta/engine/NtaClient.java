@@ -1,73 +1,78 @@
 package nta.engine;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import nta.catalog.TableDescImpl;
-import nta.engine.ipc.QueryEngineInterface;
+import nta.engine.ipc.QueryClientInterface;
+
+import nta.rpc.Callback;
+import nta.rpc.NettyRpc;
+import nta.rpc.RemoteException;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.ipc.RPC;
 
 public class NtaClient {
-	private Configuration conf = null;
-	private QueryEngineInterface protocol = null;
-	
-	public NtaClient(String ip, int port) {
-		this(new Configuration(), ip, port);
-	}
-	
-	public NtaClient(Configuration conf, String ip, int port) {
-		init(conf, ip, port);
-	}
-	
-	/**
-	 * NTA 마스터 생성 및 초기화
-	 * 
-	 * @param conf
-	 */
-	public void init(Configuration conf, String ip, int port) {
-		this.conf = conf;
-		InetSocketAddress addr = new InetSocketAddress(ip, port);
-		try {
-			this.protocol = (QueryEngineInterface) RPC.waitForProxy(QueryEngineInterface.class, 0l, addr, conf);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	/**
-	 * NTA 마스터 종료
-	 */
-	public void close() {
-	}
-	
-	public ResultSetWritable executeQuery(String query) {
-		return protocol.executeQuery(query);
-	}
-	
-	public QueryResponse executeQueryAsync(String query) {
-		return protocol.executeQueryAsync(query);
-	}
-	
-	public void createTable(TableDescImpl meta) {
-		protocol.createTable(meta);
-	}
-	
-	public void dropTable(String name) {
-		protocol.dropTable(name);
-	}
-	
-	public void attachTable(String name, Path path) {
-		protocol.attachTable(name, path);
-	}
-	
-	public void detachTable(String name) {
-		protocol.detachTable(name);
-	}
-	
-	public boolean existsTable(String name) {
-		return protocol.existsTable(name);
-	}
+  private Configuration conf = null;
+  private QueryClientInterface asyncProtocol = null;
+  private QueryClientInterface blockingProtocol = null;
+
+  public NtaClient(String ip, int port) {
+    this(new Configuration(), ip, port);
+  }
+
+  public NtaClient(Configuration conf, String ip, int port) {
+    init(conf, ip, port);
+  }
+
+  /**
+   * NTA 마스터 생성 및 초기화
+   * 
+   * @param conf
+   */
+  public void init(Configuration conf, String ip, int port) {
+    this.conf = conf;
+    InetSocketAddress addr = new InetSocketAddress(ip, port);
+    this.blockingProtocol =
+        (QueryClientInterface) NettyRpc.getProtoParamBlockingRpcProxy(
+            QueryClientInterface.class, addr);
+    this.asyncProtocol =
+        (QueryClientInterface) NettyRpc.getProtoParamAsyncRpcProxy(
+            NtaEngineMaster.class, QueryClientInterface.class, addr);
+  }
+
+  /**
+   * NTA 마스터 종료
+   */
+  public void close() {
+  }
+
+  public String executeQuery(String query) throws RemoteException {
+    return blockingProtocol.executeQuery(query);
+  }
+
+  public void executeQueryAsync(Callback<String> callback, String query) {
+    asyncProtocol.executeQueryAsync(callback, query);
+  }
+
+  @SuppressWarnings("deprecation")
+  public void createTable(TableDescImpl meta) {
+    blockingProtocol.createTable(meta);
+  }
+
+  @SuppressWarnings("deprecation")
+  public void dropTable(String name) {
+    blockingProtocol.dropTable(name);
+  }
+
+  public void attachTable(String name, String path) throws RemoteException {
+    blockingProtocol.attachTable(name, path);
+  }
+
+  public void detachTable(String name) throws RemoteException {
+    blockingProtocol.detachTable(name);
+  }
+
+  public boolean existsTable(String name) throws RemoteException {
+    return blockingProtocol.existsTable(name);
+  }
 }
