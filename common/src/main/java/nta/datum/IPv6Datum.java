@@ -3,7 +3,7 @@ package nta.datum;
 import nta.datum.exception.InvalidCastException;
 
 public class IPv6Datum extends Datum {
-
+  
 	public IPv6Datum(DatumType type) {
 		super(type);
 	}
@@ -53,4 +53,8 @@ public class IPv6Datum extends Datum {
 		return null;
 	}
 
+  @Override
+  public int size() {
+    return 16;
+  }
 }

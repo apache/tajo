@@ -50,4 +50,10 @@ public class TestLongDatum {
 		Datum d = DatumFactory.createLong(5l);
 		assertEquals("5", d.asChars());
 	}
+	
+	@Test
+  public final void testSize() {
+    Datum d = DatumFactory.createLong(5l);
+    assertEquals(8, d.size());
+  }
 }

@@ -3,6 +3,8 @@
  */
 package nta.datum;
 
+import java.nio.ByteBuffer;
+
 import nta.datum.exception.InvalidCastException;
 
 /**
@@ -57,7 +59,9 @@ public class BoolDatum extends Datum {
 	 */
 	@Override
 	public byte[] asByteArray() {
-		throw new InvalidCastException();
+	  ByteBuffer bb = ByteBuffer.allocate(1);
+	  bb.put(asByte());
+	  return bb.array();
 	}
 
 	/* (non-Javadoc)
@@ -83,4 +87,9 @@ public class BoolDatum extends Datum {
 	public String asChars() {
 		return val == true ? "true" : "false";
 	}
+
+  @Override
+  public int size() {
+    return 1;
+  }
 }

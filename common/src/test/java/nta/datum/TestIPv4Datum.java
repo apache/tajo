@@ -28,8 +28,12 @@ public class TestIPv4Datum {
 	@Test
 	public final void testAsChars() {
 		IPv4Datum ip = new IPv4Datum("163.152.23.222");
-//		System.out.println(ip.asChars());
-		assertEquals(ip.asChars(), "163.152.23.222");
+		assertEquals("163.152.23.222", ip.asChars());
 	}
-
+	
+	@Test
+  public final void testSize() {
+    Datum d = DatumFactory.createIPv4("163.152.23.222");
+    assertEquals(4, d.size());
+  }
 }

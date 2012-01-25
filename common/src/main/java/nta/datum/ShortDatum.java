@@ -5,7 +5,10 @@ import java.nio.ByteBuffer;
 import nta.datum.exception.InvalidCastException;
 
 public class ShortDatum extends Datum {
+  private static final int size = 2;
+  
 	int val;
+	
 	public ShortDatum(short val) {
 		super(DatumType.SHORT);
 		this.val = val;		
@@ -57,5 +60,10 @@ public class ShortDatum extends Datum {
 	public String asChars() {
 		return ""+val;
 	}
+
+  @Override
+  public int size() {
+    return size;
+  }
 
 }

@@ -18,7 +18,7 @@ public class TestFloatDatum {
 	@Test
 	public final void testType() {
 		Datum d = DatumFactory.createFloat(1f);
-		assertEquals(d.type(),DatumType.FLOAT);
+		assertEquals(DatumType.FLOAT, d.type());
 	}
 
 	@Test
@@ -50,4 +50,10 @@ public class TestFloatDatum {
 		Datum d = DatumFactory.createFloat(5f);
 		assertEquals("5.0", d.asChars());
 	}
+	
+	@Test
+  public final void testSize() {
+    Datum d = DatumFactory.createFloat(5f);
+    assertEquals(4, d.size());
+  }
 }

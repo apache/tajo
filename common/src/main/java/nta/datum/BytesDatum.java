@@ -13,27 +13,30 @@ import nta.datum.exception.InvalidCastException;
  *
  */
 public class BytesDatum extends Datum {
+  private int size;
 	ByteBuffer bb = null;
 	
 	/**
 	 * 
 	 */
 	public BytesDatum() {
-		super(DatumType.BYTEARRAY);
+		super(DatumType.BYTES);
 	}
 	
 	public BytesDatum(byte [] val) {
 		this();
-		bb = ByteBuffer.wrap(val);
+		this.size = val.length;
+		this.bb = ByteBuffer.wrap(val);		
 	}
 	
 	public BytesDatum(ByteBuffer val) {
 		this();
-		bb = val.duplicate();
+		this.size = val.limit();
+		this.bb = val.duplicate();
 	}
 	
 	public boolean asBool() {
-		throw new InvalidCastException();
+		throw new InvalidCastException("Cannot cast bytes into boolean");
 	}
 	
 	@Override
@@ -94,4 +97,9 @@ public class BytesDatum extends Datum {
 	public String asChars() {
 		return new String(bb.array(), Charset.defaultCharset());
 	}
+
+  @Override
+  public int size() {
+    return size;
+  }
 }

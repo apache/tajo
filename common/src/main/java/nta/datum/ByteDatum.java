@@ -12,6 +12,8 @@ import nta.datum.exception.InvalidCastException;
  *
  */
 public class ByteDatum extends Datum {
+  private static final int size = 1;
+  
 	byte val;
 	
 	/**
@@ -90,4 +92,9 @@ public class ByteDatum extends Datum {
 	public String asChars() {
 		return "0x"+val;
 	}
+
+  @Override
+  public int size() {
+    return size;
+  }
 }

@@ -51,4 +51,10 @@ public class EnumDatum extends Datum {
 	public String asChars() {
 		return null;
 	}
+
+  @Override
+  public int size() {
+    // TODO - to be improved
+    return 1;
+  }
 }

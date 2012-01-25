@@ -49,7 +49,7 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval> {
 		switch(this.datum.type()) {
 		case BOOLEAN: return DataType.BOOLEAN;
 		case BYTE: return DataType.BYTE;
-		case BYTEARRAY : return DataType.BYTES;
+		case BYTES : return DataType.BYTES;
 		case DOUBLE : return DataType.DOUBLE;
 		case FLOAT: return DataType.FLOAT;
 		case INT: return DataType.INT;

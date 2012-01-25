@@ -8,54 +8,48 @@ public class TestBoolDatum {
 	@Test
 	public final void testType() {
 		Datum d = DatumFactory.createBool(true);
-		assertEquals(d.type(), DatumType.BOOLEAN);	
+		assertEquals(DatumType.BOOLEAN, d.type());	
 	}
 	
 	@Test
 	public final void testAsBool() {
 		Datum d = DatumFactory.createBool(false);
-		assertEquals(d.asBool(), false);
+		assertEquals(false, d.asBool());
 	}
 	
 	@Test
 	public final void testAsShort() {
 		Datum d = DatumFactory.createBool(true);
-		assertEquals(d.asShort(), 1);
+		assertEquals(1, d.asShort());
 	}
 	
 	@Test
 	public final void testAsInt() {
 		Datum d = DatumFactory.createBool(true);
-		assertEquals(d.asInt(), 1);
+		assertEquals(1, d.asInt());
 	}
 	
 	@Test
 	public final void testAsLong() {
 		Datum d = DatumFactory.createBool(false);
-		assertEquals(d.asLong(), 0);
+		assertEquals(0, d.asLong());
 	}
 	
 	@Test
 	public final void testAsByte() {
 		Datum d = DatumFactory.createBool(true);
-		assertEquals(d.asByte(), 0x01);
+		assertEquals(0x01, d.asByte());
 	}
-	
-//	@Test
-//	public final void testAsFloat() {
-//		Datum d = DatumFactory.create(true);
-//		assertEquals(d.asFloat(), 1);
-//	}
-//	
-//	@Test
-//	public final void testAsDouble() {
-//		Datum d = DatumFactory.create(true);
-//		assertEquals(d.asDouble(), 1);
-//	}
 	
 	@Test
 	public final void testAsChars() {
 		Datum d = DatumFactory.createBool(true);
-		assertEquals(d.asChars(), "true");
+		assertEquals("true", d.asChars());
 	}
+	
+	@Test
+  public final void testSize() {
+    Datum d = DatumFactory.createBool(true);
+    assertEquals(1, d.size());
+  }
 }

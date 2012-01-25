@@ -10,7 +10,7 @@ package nta.datum;
 public enum DatumType {
 	BOOLEAN,
 	BYTE,
-	BYTEARRAY,
+	BYTES,
 	SHORT,
 	INT,
 	LONG,

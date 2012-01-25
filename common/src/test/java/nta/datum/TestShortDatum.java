@@ -29,25 +29,31 @@ public class TestShortDatum {
 
 	@Test
 	public final void testAsLong() {
-		Datum d = DatumFactory.createInt(5);
+		Datum d = DatumFactory.createShort((short) 5);
 		assertEquals(5,d.asLong());
 	}
 
 	@Test
 	public final void testAsFloat() {
-		Datum d = DatumFactory.createInt(5);
+		Datum d = DatumFactory.createShort((short) 5);
 		assertTrue(5.0f == d.asFloat());
 	}
 
 	@Test
 	public final void testAsDouble() {
-		Datum d = DatumFactory.createInt(5);
+		Datum d = DatumFactory.createShort((short) 5);
 		assertTrue(5.0d == d.asDouble());
 	}
 
 	@Test
 	public final void testAsChars() {
-		Datum d = DatumFactory.createInt(5);
+		Datum d = DatumFactory.createShort((short) 5);
 		assertEquals("5", d.asChars());
 	}
+	
+	@Test
+  public final void testSize() {
+    Datum d = DatumFactory.createShort((short) 5);
+    assertEquals(2, d.size());
+  }
 }
