@@ -12,6 +12,7 @@ import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.common.exception.InvalidAddressException;
 import nta.conf.NtaConf;
+import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -54,8 +55,8 @@ public class TestRawFile2 {
 		Appender appender = sm.getAppender(meta, "table1","file1");
 		for (int i = 0; i < tupleNum; i++) {
 			tuple = new VTuple(2);
-			tuple.put(0, (Integer)(i+1));
-			tuple.put(1, (Long)(i+20l));
+			tuple.put(0, DatumFactory.createInt((i+1)));
+			tuple.put(1, DatumFactory.createLong((i+20l)));
 			appender.addTuple(tuple);
 		}
 		appender.close();		
@@ -136,8 +137,8 @@ public class TestRawFile2 {
 		Appender appender = sm.getAppender(meta, "table2", "file1");
 		for (int i = 0; i < tupleNum; i++) {
 			tuple = new VTuple(2);
-			tuple.put(0, (Integer)(i+1));
-			tuple.put(1, (Long)(i+20l));
+			tuple.put(0, DatumFactory.createInt(i+1));
+			tuple.put(1, DatumFactory.createLong(i+20l));
 			appender.addTuple(tuple);
 		}
 		appender.close();		
@@ -145,8 +146,8 @@ public class TestRawFile2 {
 		appender = sm.getAppender(meta, "table2", "file2");
 		for (int i = 0; i < tupleNum; i++) {
 			tuple = new VTuple(2);
-			tuple.put(0, (Integer)(i+1));
-			tuple.put(1, (Long)(i+20l));
+			tuple.put(0, DatumFactory.createInt(i+1));
+			tuple.put(1, DatumFactory.createLong(i+20l));
 			appender.addTuple(tuple);
 		}
 		appender.close();

@@ -26,6 +26,11 @@ public class ByteDatum extends Datum {
 		this.val = val;
 	}
 	
+	public ByteDatum(char val) {
+	  this();
+	  this.val = (byte) val;
+	}
+	
 	public boolean asBool() {
 		throw new InvalidCastException();
 	}

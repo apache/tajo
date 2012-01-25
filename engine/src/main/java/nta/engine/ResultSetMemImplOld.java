@@ -3,7 +3,6 @@
  */
 package nta.engine;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -111,7 +110,7 @@ public class ResultSetMemImplOld implements ResultSetOld, SchemaObject {
 	 * @see nta.query.ResultSet#getString(int)
 	 */
 	public String getString(int columnIndex) {		
-		return rows.get(cur).getString(columnIndex);
+		return rows.get(cur).getString(columnIndex).asChars();
 	}
 
 	/* (non-Javadoc)
@@ -125,81 +124,81 @@ public class ResultSetMemImplOld implements ResultSetOld, SchemaObject {
 	 * @see nta.query.ResultSet#getByte(int)
 	 */
 	public byte getByte(int columnIndex) {
-		return rows.get(cur).getByte(columnIndex);
+		return rows.get(cur).getByte(columnIndex).asByte();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getShort(int)
 	 */
 	public short getShort(int columnIndex) {
-		return rows.get(cur).getShort(columnIndex);
+		return rows.get(cur).getShort(columnIndex).asShort();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getInt(int)
 	 */
 	public int getInt(int columnIndex) {
-		return rows.get(cur).getInt(columnIndex);
+		return rows.get(cur).getInt(columnIndex).asInt();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getLong(int)
 	 */
 	public long getLong(int columnIndex) {
-		return rows.get(cur).getLong(columnIndex);
+		return rows.get(cur).getLong(columnIndex).asLong();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getFloat(int)
 	 */
 	public float getFloat(int columnIndex) {
-		return rows.get(cur).getFloat(columnIndex);
+		return rows.get(cur).getFloat(columnIndex).asFloat();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getDouble(int)
 	 */
 	public double getDouble(int columnIndex) {
-		return rows.get(cur).getDouble(columnIndex);
+		return rows.get(cur).getDouble(columnIndex).asDouble();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getBytes(int)
 	 */
 	public byte[] getBytes(int columnIndex) {
-		return rows.get(cur).getBytes(columnIndex);
+		return rows.get(cur).getBytes(columnIndex).asByteArray();
 	}
 	
-	public InetAddress getIPv4(int columnIndex) {
-		return rows.get(cur).getIPv4(columnIndex);
+	public String getIPv4(int columnIndex) {
+		return rows.get(cur).getIPv4(columnIndex).toString();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getString(java.lang.String)
 	 */
 	public String getString(String columnLabel) {
-		return rows.get(cur).getString(columnMap.get(columnLabel));
+		return rows.get(cur).getString(columnMap.get(columnLabel)).asChars();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getBoolean(java.lang.String)
 	 */
 	public boolean getBoolean(String columnLabel) {
-		return rows.get(cur).getBoolean(columnMap.get(columnLabel));
+		return rows.get(cur).getBoolean(columnMap.get(columnLabel)).asBool();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getByte(java.lang.String)
 	 */
 	public byte getByte(String columnLabel) {
-		return rows.get(cur).getByte(columnMap.get(columnLabel));
+		return rows.get(cur).getByte(columnMap.get(columnLabel)).asByte();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getShort(java.lang.String)
 	 */
 	public short getShort(String columnLabel) {
-		return rows.get(cur).getShort(columnMap.get(columnLabel));
+		return rows.get(cur).getShort(columnMap.get(columnLabel)).asShort();
 	}
 
 	/* (non-Javadoc)
@@ -207,7 +206,7 @@ public class ResultSetMemImplOld implements ResultSetOld, SchemaObject {
 	 */
 	public int getInt(String columnLabel) throws NTAQueryException {
 		try {
-			return rows.get(cur).getInt(columnMap.get(columnLabel));
+			return rows.get(cur).getInt(columnMap.get(columnLabel)).asInt();
 		} catch (NullPointerException npe) {
 			throw new NTAQueryException();
 		}		
@@ -217,32 +216,32 @@ public class ResultSetMemImplOld implements ResultSetOld, SchemaObject {
 	 * @see nta.query.ResultSet#getLong(java.lang.String)
 	 */
 	public long getLong(String columnLabel) {
-		return rows.get(cur).getLong(columnMap.get(columnLabel));
+		return rows.get(cur).getLong(columnMap.get(columnLabel)).asLong();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getFloat(java.lang.String)
 	 */
 	public float getFloat(String columnLabel) {
-		return rows.get(cur).getFloat(columnMap.get(columnLabel));
+		return rows.get(cur).getFloat(columnMap.get(columnLabel)).asFloat();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getDouble(java.lang.String)
 	 */
 	public double getDouble(String columnLabel) {
-		return rows.get(cur).getDouble(columnMap.get(columnLabel));
+		return rows.get(cur).getDouble(columnMap.get(columnLabel)).asDouble();
 	}
 
 	/* (non-Javadoc)
 	 * @see nta.query.ResultSet#getBytes(java.lang.String)
 	 */
 	public byte[] getBytes(String columnLabel) {
-		return rows.get(cur).getBytes(columnMap.get(columnLabel));
+		return rows.get(cur).getBytes(columnMap.get(columnLabel)).asByteArray();
 	}
 	
-	public InetAddress getIPv4(String columnLabel) {
-		return rows.get(cur).getIPv4(columnMap.get(columnLabel));
+	public String getIPv4(String columnLabel) {
+		return rows.get(cur).getIPv4(columnMap.get(columnLabel)).toString();
 	}
 	
 	public void addTuple(Tuple tuple) {

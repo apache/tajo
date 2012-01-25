@@ -62,22 +62,22 @@ public class SeqScanOp extends PhysicalOp {
 				field = schema.getColumn(tlist[i].colId);
 				switch(field.getDataType()) {
 				case INT:
-					t.put(resId, expr.eval(schema, tuple).asInt());
+					t.put(resId, expr.eval(schema, tuple));
 					break;
 				case LONG:
-					t.put(resId, expr.eval(schema, tuple).asLong());
+					t.put(resId, expr.eval(schema, tuple));
 				case FLOAT:
-					t.put(resId, expr.eval(schema, tuple).asFloat());
+					t.put(resId, expr.eval(schema, tuple));
 				case DOUBLE:
-					t.put(resId, expr.eval(schema, tuple).asDouble());
+					t.put(resId, expr.eval(schema, tuple));
 					break;
 				case STRING:
-					t.put(resId, expr.eval(schema, tuple).asChars());
+					t.put(resId, expr.eval(schema, tuple));
 					break;
 				case BOOLEAN:
-					t.put(resId, expr.eval(schema, tuple).asBool());
+					t.put(resId, expr.eval(schema, tuple));
 				case ANY:
-					t.put(resId, expr.eval(schema, tuple).asChars());
+					t.put(resId, expr.eval(schema, tuple));
 				}
 			}
 			return t;

@@ -17,11 +17,7 @@ import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.exception.InternalException;
-import nta.engine.exec.eval.BinaryEval;
-import nta.engine.exec.eval.ConstEval;
-import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalNode.Type;
-import nta.engine.exec.eval.FieldEval;
 import nta.engine.function.Function;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
@@ -90,7 +86,9 @@ public class TestEvalTree {
     cat.registerFunction(funcMeta);
 
     Tuple tuple = new VTuple(3);
-    tuple.put("hyunsik", 500, 30);
+    tuple.put(DatumFactory.createString("hyunsik"), 
+        DatumFactory.createInt(500), 
+        DatumFactory.createInt(30));
 
     QueryBlock block = null;
     EvalNode expr = null;
@@ -119,8 +117,8 @@ public class TestEvalTree {
     
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
     VTuple tuple = new VTuple(2);
-    tuple.put(0, 1); // put 0th field
-    tuple.put(1, 99); // put 0th field
+    tuple.put(0, DatumFactory.createInt(1)); // put 0th field
+    tuple.put(1, DatumFactory.createInt(99)); // put 0th field
 
     // the result of evaluation must be 100.
     assertEquals(expr.eval(schema1, tuple).asInt(), 100);

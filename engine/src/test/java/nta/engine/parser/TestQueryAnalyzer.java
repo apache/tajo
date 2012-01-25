@@ -11,6 +11,7 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
+import nta.datum.DatumFactory;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.TestEvalTree.Sum;
@@ -110,7 +111,10 @@ public class TestQueryAnalyzer {
     Tuple tuples[] = new Tuple[1000000];
     for (int i = 0; i < 1000000; i++) {
       tuples[i] = new VTuple(3);
-      tuples[i].put("hyunsik_" + i, i + 500, i);
+      tuples[i].put(
+          DatumFactory.createString("hyunsik_" + i), 
+          DatumFactory.createInt(i + 500),
+          DatumFactory.createInt(i));
     }
 
     long start = System.currentTimeMillis();
@@ -134,7 +138,11 @@ public class TestQueryAnalyzer {
     Tuple tuples[] = new Tuple[1000000];
     for (int i = 0; i < 1000000; i++) {
       tuples[i] = new VTuple(4);
-      tuples[i].put(i, "hyunsik_" + i, i + 500, i);
+      tuples[i].put(
+          DatumFactory.createInt(i),
+          DatumFactory.createString("hyunsik_" + i),
+          DatumFactory.createInt(i + 500),
+          DatumFactory.createInt(i));
     }
     
     QueryBlock block = QueryAnalyzer.parse(QUERIES[0], cat);

@@ -18,13 +18,13 @@ import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.common.type.IPv4;
 import nta.conf.NtaConf;
+import nta.datum.DatumFactory;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -67,27 +67,27 @@ public class TestResultSetWritable {
 		}
 
 		VTuple t1 = new VTuple(3);
-		t1.put(0, "hyunsik");
-		t1.put(1, (Integer) 1);
-		t1.put(2, ips[0].getBytes());
+		t1.put(0, DatumFactory.createString("hyunsik"));
+		t1.put(1, DatumFactory.createInt(1));
+		t1.put(2, DatumFactory.createIPv4(ips[0].getBytes()));
 		appender.addTuple(t1);
 
 		VTuple t2 = new VTuple(3);
-		t2.put(0, "jihoon");
-		t2.put(1, (Integer) 2);
-		t2.put(2, ips[1].getBytes());
+		t2.put(0, DatumFactory.createString("jihoon"));
+		t2.put(1, DatumFactory.createInt(2));
+		t2.put(2, DatumFactory.createIPv4(ips[1].getBytes()));
 		appender.addTuple(t2);
 
 		VTuple t3 = new VTuple(3);
-		t3.put(0, "jimin");
-		t3.put(1, (Integer) 3);
-		t3.put(2, ips[2].getBytes());
+		t3.put(0, DatumFactory.createString("jimin"));
+		t3.put(1, DatumFactory.createInt(3));
+		t3.put(2, DatumFactory.createIPv4(ips[2].getBytes()));
 		appender.addTuple(t3);
 
 		VTuple t4 = new VTuple(3);
-		t4.put(0, "haemi");
-		t4.put(1, (Integer) 4);
-		t4.put(2, ips[3].getBytes());
+		t4.put(0, DatumFactory.createString("haemi"));
+		t4.put(1, DatumFactory.createInt(4));
+		t4.put(2, DatumFactory.createIPv4(ips[3].getBytes()));
 		appender.addTuple(t4);
 		appender.close();
 
@@ -108,26 +108,26 @@ public class TestResultSetWritable {
 		
 		tuple = result.next();
 		assertNotNull(tuple);
-		assertEquals("hyunsik",tuple.getString(0));
-		assertEquals(1,tuple.getInt(1));
+		assertEquals("hyunsik",tuple.getString(0).asChars());
+		assertEquals(1,tuple.getInt(1).asInt());
 		assertTrue(Arrays.equals(ips[0].getBytes(), tuple.getIPv4Bytes(2)));
 		
 		tuple = result.next();
 		assertNotNull(tuple);
-		assertEquals("jihoon",tuple.getString(0));
-		assertEquals(2,tuple.getInt(1));
+		assertEquals("jihoon",tuple.getString(0).asChars());
+		assertEquals(2,tuple.getInt(1).asInt());
 		assertTrue(Arrays.equals(ips[1].getBytes(), tuple.getIPv4Bytes(2)));
 		
 		tuple = result.next();
 		assertNotNull(tuple);
-		assertEquals("jimin",tuple.getString(0));
-		assertEquals(3,tuple.getInt(1));
+		assertEquals("jimin",tuple.getString(0).asChars());
+		assertEquals(3,tuple.getInt(1).asInt());
 		assertTrue(Arrays.equals(ips[2].getBytes(), tuple.getIPv4Bytes(2)));
 		
 		tuple = result.next();
 		assertNotNull(tuple);
-		assertEquals("haemi",tuple.getString(0));
-		assertEquals(4,tuple.getInt(1));
+		assertEquals("haemi",tuple.getString(0).asChars());
+		assertEquals(4,tuple.getInt(1).asInt());
 		assertTrue(Arrays.equals(ips[3].getBytes(), tuple.getIPv4Bytes(2)));
 	}
 }

@@ -10,6 +10,7 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.TableProtos.DataType;
 import nta.catalog.proto.TableProtos.StoreType;
 import nta.conf.NtaConf;
+import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
 import nta.engine.ipc.protocolrecords.Fragment;
 
@@ -48,7 +49,9 @@ public class TestStorageManager {
 		Tuple [] tuples = new Tuple[4];
 		for(int i=0; i < tuples.length; i++) {
 		  tuples[i] = new VTuple(3);
-		  tuples[i].put(i,i+32,"name"+i);
+		  tuples[i].put(DatumFactory.createInt(i),
+		      DatumFactory.createInt(i+32),
+		      DatumFactory.createString("name"+i));
 		}
 		
 		Appender appender = sm.getTableAppender(meta, "table1");
@@ -84,8 +87,8 @@ public class TestStorageManager {
     VTuple vTuple = null;
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(2);
-      vTuple.put(0, "abc");
-      vTuple.put(1, (Integer)(i+1));
+      vTuple.put(0, DatumFactory.createString("abc"));
+      vTuple.put(1, DatumFactory.createInt(i+1));
       appender.addTuple(vTuple);
     }
     appender.close();

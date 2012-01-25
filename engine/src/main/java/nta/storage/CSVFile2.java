@@ -2,7 +2,6 @@ package nta.storage;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -10,6 +9,7 @@ import java.util.TreeSet;
 import nta.catalog.Column;
 import nta.catalog.Options;
 import nta.catalog.Schema;
+import nta.datum.DatumFactory;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
 
@@ -213,27 +213,27 @@ public class CSVFile2 extends Storage {
         String cell = cells[i].trim();
         switch (field.getDataType()) {
         case SHORT:
-          tuple.put(i, Short.valueOf(cell));
+          tuple.put(i, DatumFactory.createShort(cell));
           break;
         case INT:
-          tuple.put(i, Integer.valueOf(cell));
+          tuple.put(i, DatumFactory.createInt(cell));
           break;
         case LONG:
-          tuple.put(i, Long.valueOf(cell));
+          tuple.put(i, DatumFactory.createLong(cell));
           break;
         case FLOAT:
-          tuple.put(i, Float.valueOf(cell));
+          tuple.put(i, DatumFactory.createFloat(cell));
           break;
         case DOUBLE:
-          tuple.put(i, Double.valueOf(cell));
+          tuple.put(i, DatumFactory.createDouble(cell));
           break;
         case STRING:
-          tuple.put(i, cell);
+          tuple.put(i, DatumFactory.createString(cell));
           break;
         case IPv4:
           if (cells[i].charAt(0) == '/') {
             tuple.put(i,
-                Inet4Address.getByName(cells[i].substring(1, cell.length())));
+                DatumFactory.createIPv4(cells[i].substring(1, cell.length())));
           }
           break;
         }

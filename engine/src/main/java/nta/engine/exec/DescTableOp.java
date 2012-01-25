@@ -9,6 +9,7 @@ import java.util.Iterator;
 import nta.catalog.Catalog;
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.datum.DatumFactory;
 import nta.engine.plan.logical.DescTableLO;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -46,9 +47,9 @@ public class DescTableOp extends PhysicalOp {
 		
 		Column desc = it.next();
 		VTuple tuple = new VTuple(3);
-		tuple.put(0, desc.getId());
-		tuple.put(1, desc.getName());
-		tuple.put(2, desc.getDataType().toString());
+		tuple.put(0, DatumFactory.createInt(desc.getId()));
+		tuple.put(1, DatumFactory.createString(desc.getName()));
+		tuple.put(2, DatumFactory.createString(desc.getDataType().toString()));
 		return tuple;
 	}
 
