@@ -1,7 +1,7 @@
 package nta.engine.function;
 
 import nta.catalog.ColumnBase;
-import nta.catalog.proto.TableProtos.DataType;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.engine.exec.eval.EvalNode;
 
@@ -11,7 +11,7 @@ public abstract class Function {
   protected ColumnBase [] definedArgs;
 	protected EvalNode [] givenArgs;
 	
-	public Function(ColumnBase [] definedArgs) {		
+	public Function(ColumnBase [] definedArgs) {
 		this.definedArgs = definedArgs;
 	}
 	

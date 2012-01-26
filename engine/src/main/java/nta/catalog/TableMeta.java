@@ -1,7 +1,7 @@
 package nta.catalog;
 
-import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableProto;
+import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.common.ProtoObject;
 
 /**

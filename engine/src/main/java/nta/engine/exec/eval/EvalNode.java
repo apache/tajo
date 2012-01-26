@@ -1,7 +1,7 @@
 package nta.engine.exec.eval;
 
 import nta.catalog.Schema;
-import nta.catalog.proto.TableProtos.DataType;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.storage.Tuple;
 

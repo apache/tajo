@@ -10,8 +10,14 @@ public final class NConstants {
 	public static String LEAFSERVER_HOST="engine.leafserver.addr";
 	public static String DEFAULT_LEAFSERVER_HOST="0.0.0.0";
 	
+  public static String CATALOG_MASTER_HOST = "catalog.master.addr";
+  public static String DEFAULT_CATALOG_MASTER_HOST = "0.0.0.0";
+
+  public static String CATALOG_MASTER_PORT = "catalog.master.port";
+  public static int DEFAULT_CATALOG_MASTER_PORT = 9002;
+	
 	public static String LEAFSERVER_PORT="engine.leafserver.port";
-	public static int DEFAULT_LEAFSERVER_PORT=10001;
+	public static int DEFAULT_LEAFSERVER_PORT=9010;
 	
 	public static String ZOOKEEPER_HOST="zookeeper.server.addr";
 	public static String DEFAULT_ZOOKEEPER_HOST="localhost";	

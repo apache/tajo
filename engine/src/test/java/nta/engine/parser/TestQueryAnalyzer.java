@@ -1,6 +1,9 @@
 package nta.engine.parser;
 
 import static org.junit.Assert.assertEquals;
+
+import java.io.IOException;
+
 import nta.catalog.Catalog;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
@@ -8,14 +11,13 @@ import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.TableProtos.DataType;
-import nta.catalog.proto.TableProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.FunctionType;
+import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
-import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.TestEvalTree.Sum;
-import nta.engine.function.Function;
 import nta.engine.parser.NQL.Query;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.storage.Tuple;
@@ -66,7 +68,7 @@ public class TestQueryAnalyzer {
     cat.addTable(student);
     
     FunctionDesc funcMeta = new FunctionDesc("sum", Sum.class,
-        Function.Type.GENERAL, DataType.INT, 
+        FunctionType.GENERAL, DataType.INT, 
         new DataType [] {DataType.INT, DataType.INT});
 
     cat.registerFunction(funcMeta);
@@ -89,7 +91,7 @@ public class TestQueryAnalyzer {
 
   // It's for benchmark of the evaluation tree methods.
   public final void testLegacyEvalTree() throws RecognitionException, 
-      NTAQueryException {
+      IOException {
     NQLParser p = parseExpr(EXPRS[0]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
 

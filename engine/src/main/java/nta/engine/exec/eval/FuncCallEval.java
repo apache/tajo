@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
-import nta.catalog.proto.TableProtos.DataType;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.engine.function.Function;
 import nta.storage.Tuple;

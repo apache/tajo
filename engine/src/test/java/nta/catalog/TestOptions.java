@@ -2,7 +2,7 @@ package nta.catalog;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import nta.catalog.proto.TableProtos.KeyValueSetProto;
+import nta.catalog.proto.CatalogProtos.KeyValueSetProto;
 
 import org.junit.Test;
 

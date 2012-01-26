@@ -4,7 +4,7 @@ import nta.catalog.Column;
 import nta.catalog.ColumnBase;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
-import nta.catalog.proto.TableProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.exec.eval.EvalNode;
 
 /**

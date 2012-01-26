@@ -1,8 +1,8 @@
 package nta.catalog;
 
 import static org.junit.Assert.assertEquals;
-import nta.catalog.proto.TableProtos.DataType;
-import nta.catalog.proto.TableProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.StoreType;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;

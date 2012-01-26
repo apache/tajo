@@ -8,7 +8,7 @@ import java.net.URI;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.TableProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.StoreType;
 
 import org.junit.Before;
 import org.junit.Test;

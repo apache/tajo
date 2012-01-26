@@ -3,10 +3,9 @@ package nta.catalog;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
-import nta.catalog.proto.TableProtos.DataType;
-import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableDescProto;
-import nta.catalog.proto.TableProtos.TableProto;
+import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.TableProto;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -49,7 +48,7 @@ public class TestTableInfo {
     
     TableMetaImpl info = (TableMetaImpl) meta1;
     
-    TableMetaImpl info2 = (TableMetaImpl) info.clone();    
+    TableMetaImpl info2 = (TableMetaImpl) info.clone();
     assertEquals(info.getSchema(), info2.getSchema());
     assertEquals(info.getStoreType(), info2.getStoreType());
     assertEquals(info.getOptions(), info2.getOptions());

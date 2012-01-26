@@ -3,7 +3,7 @@ package nta.catalog;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import nta.catalog.proto.TableProtos.TableProto;
+import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.util.FileUtil;
 
 import org.apache.hadoop.conf.Configuration;
@@ -17,7 +17,8 @@ import org.apache.hadoop.fs.Path;
  *
  */
 public class TableUtil {
-  public static TableMeta getTableMeta(Configuration conf, Path tablePath) throws IOException {
+  public static TableMeta getTableMeta(Configuration conf, Path tablePath) 
+      throws IOException {
     TableMetaImpl meta = null;
     
     FileSystem fs = tablePath.getFileSystem(conf);

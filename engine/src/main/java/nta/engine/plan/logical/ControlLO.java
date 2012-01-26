@@ -4,7 +4,7 @@
 package nta.engine.plan.logical;
 
 import nta.catalog.Schema;
-import nta.catalog.proto.TableProtos.DataType;
+import nta.catalog.proto.CatalogProtos.DataType;
 
 /**
  * @author hyunsik

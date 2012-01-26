@@ -10,12 +10,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-import nta.catalog.proto.TableProtos.DataType;
-import nta.catalog.proto.TableProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.FunctionType;
+import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
+import nta.engine.NConstants;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
 import nta.engine.function.Function;
@@ -38,7 +40,7 @@ import org.junit.Test;
  */
 public class TestCatalog {
 	private NtaConf conf;
-	private Catalog cat;
+	private Catalog cat = null;
 	
 	static final String FieldName1="f1";
 	static final String FieldName2="f2";
@@ -79,17 +81,20 @@ public class TestCatalog {
 	public void setUp() throws Exception {
 		util = new NtaTestingUtility();		
 		conf = new NtaConf(util.getConfiguration());
-		cat = new Catalog(conf);
 		EngineTestingUtils.buildTestDir(TEST_PATH);
 	}
 	
 	@After
 	public void tearDown() throws IOException {
-	   
+	   cat.shutdown();
 	}
 	
 	@Test
-	public void testGetTable() throws Exception {		
+	public void testGetTable() throws Exception {	
+	  conf.setInt(NConstants.CATALOG_MASTER_PORT, 0);
+    cat = new Catalog(conf);
+    cat.start();
+	    
 		schema1 = new Schema();
 		fid1 = schema1.addColumn(FieldName1, DataType.BYTE);
 		fid2 = schema1.addColumn(FieldName2, DataType.INT);
@@ -103,10 +108,15 @@ public class TestCatalog {
 		assertTrue(cat.existsTable("table1"));		
 		cat.deleteTable("table1");
 		assertFalse(cat.existsTable("table1"));		
+		
+		cat.stop("nomally shuting down");
 	}
 	
 	@Test(expected = Throwable.class)
 	public void testAddTableNoName() throws Exception {
+	  cat = new Catalog(conf);
+    cat.start();
+    
 	  schema1 = new Schema();
     fid1 = schema1.addColumn(FieldName1, DataType.BYTE);
     fid2 = schema1.addColumn(FieldName2, DataType.INT);
@@ -117,6 +127,8 @@ public class TestCatalog {
 	  desc.setMeta(info);
 	  
 	  cat.addTable(desc);
+	  
+	  cat.stop("nomally shuting down");
 	}
 
 /*
@@ -167,33 +179,46 @@ public class TestCatalog {
 	}	
 
 	@Test
-	public final void testRegisterFunc() {		
+	public final void testRegisterFunc() throws IOException {
+	  cat = new Catalog(conf);
+    cat.start();
+	  
 		assertFalse(cat.containFunction("test"));
 		FunctionDesc meta = new FunctionDesc("test", TestFunc1.class, 
-		    Function.Type.GENERAL, DataType.INT, 
+		    FunctionType.GENERAL, DataType.INT, 
 		    new DataType [] {DataType.INT});
 		cat.registerFunction(meta);
 		assertTrue(cat.containFunction("test"));
 		FunctionDesc retrived = cat.getFunctionMeta("test");
 		assertEquals(retrived.getSignature(),"test");
 		assertEquals(retrived.getFuncClass(),TestFunc1.class);
-		assertEquals(retrived.getFuncType(),Function.Type.GENERAL);
+		assertEquals(retrived.getFuncType(),FunctionType.GENERAL);
+		
+		cat.stop("nomally shuting down");
 	}
 
 	@Test
-	public final void testUnregisterFunc() {
+	public final void testUnregisterFunc() throws IOException {
+	  cat = new Catalog(conf);
+    cat.start();
+	  
 		assertFalse(cat.containFunction("test"));
 		FunctionDesc meta = new FunctionDesc("test", TestFunc1.class, 
-        Function.Type.GENERAL, DataType.INT, 
+        FunctionType.GENERAL, DataType.INT, 
         new DataType [] {DataType.INT});
 		cat.registerFunction(meta);
 		assertTrue(cat.containFunction("test"));
 		cat.unregisterFunction("test");
 		assertFalse(cat.containFunction("test"));
+		
+		cat.stop("nomally shuting down");
 	}
 	
 	@Test
 	public final void testHostsByTable() throws Exception {
+	  cat = new Catalog(conf);
+    cat.start();
+	  
 	  util.startMiniCluster(3);
 	  
 		int i, j;
@@ -275,5 +300,6 @@ public class TestCatalog {
 		assertEquals(tbNum, cnt);
 		
 		util.shutdownMiniCluster();
+		cat.stop("nomally shuting down");
 	}
 }

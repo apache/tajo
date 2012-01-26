@@ -1,9 +1,9 @@
 package nta.catalog;
 
-import nta.catalog.proto.TableProtos.StoreType;
-import nta.catalog.proto.TableProtos.TableDescProto;
-import nta.catalog.proto.TableProtos.TableDescProtoOrBuilder;
-import nta.catalog.proto.TableProtos.TableProto;
+import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.TableDescProto;
+import nta.catalog.proto.CatalogProtos.TableDescProtoOrBuilder;
+import nta.catalog.proto.CatalogProtos.TableProto;
 
 import org.apache.hadoop.fs.Path;
 

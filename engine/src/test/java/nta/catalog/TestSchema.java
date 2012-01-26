@@ -2,8 +2,8 @@ package nta.catalog;
 
 import static org.junit.Assert.*;
 
-import nta.catalog.proto.TableProtos.DataType;
-import nta.catalog.proto.TableProtos.SchemaProto;
+import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.SchemaProto;
 
 import org.junit.Before;
 import org.junit.Test;

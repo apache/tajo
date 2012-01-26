@@ -9,8 +9,8 @@ import java.io.IOException;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.TableProtos.DataType;
-import nta.catalog.proto.TableProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.engine.exception.NTAQueryException;
 import nta.storage.CSVFile2;
@@ -19,6 +19,9 @@ import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 
+/**
+ * @author Hyunsik Choi
+ */
 public class TestQueryEngine {
 	private static final String TEST_DIR="target/test-data/TestQueryEngine";
 	static NtaConf conf;

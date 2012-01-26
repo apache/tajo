@@ -10,7 +10,7 @@ import java.util.List;
 
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.TableProtos.TableProto;
+import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
