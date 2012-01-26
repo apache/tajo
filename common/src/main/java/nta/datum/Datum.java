@@ -272,6 +272,12 @@ public abstract class Datum implements Comparable<Datum> {
 			default : throw new InvalidOperationException();
 			}
 			
+		case STRING:
+		  switch(d2.type) {
+		  case STRING: return DatumFactory.createBool(d1.equals(d2));
+		  default : throw new InvalidOperationException();
+		  }
+			
 		default: throw new InvalidOperationException();
 		}
 	}

@@ -257,9 +257,6 @@
 		<dependency>
 			<groupId>kr.ac.korea.dbserver</groupId>
 			<artifactId>nta-rpc</artifactId>
-			<version>0.3.0-SNAPSHOT</version>
-			<type>jar</type>
-			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 

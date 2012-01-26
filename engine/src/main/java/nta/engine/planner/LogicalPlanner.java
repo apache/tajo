@@ -19,8 +19,8 @@ import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
-import nta.engine.parser.QueryBlock.SortKey;
 import nta.engine.parser.QueryBlock.Target;
+import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
@@ -200,7 +200,7 @@ public class LogicalPlanner {
     
     case PROJECTION:
       ProjectionNode projNode = ((ProjectionNode)logicalNode);
-      if(necessaryTargets != null) {
+      if(necessaryTargets != null) { // optimization phase
         for(Target t : projNode.getTargetList()) {
           getTargetListFromEvalTree(projNode.getInputSchema(), t.getEvalTree(), 
               necessaryTargets);
@@ -235,7 +235,7 @@ public class LogicalPlanner {
       
     case SELECTION:
       SelectionNode selNode = ((SelectionNode)logicalNode);
-      if(necessaryTargets != null) {
+      if(necessaryTargets != null) { // optimization phase
         getTargetListFromEvalTree(selNode.getInputSchema(), selNode.getQual(), 
             necessaryTargets);
       }
@@ -250,12 +250,24 @@ public class LogicalPlanner {
       
     case GROUP_BY:
       GroupbyNode groupByNode = ((GroupbyNode)logicalNode);
-      if(necessaryTargets != null && groupByNode.hasHavingCondition()) {
+      
+      if(necessaryTargets != null) { // projection push phase
         getTargetListFromEvalTree(groupByNode.getInputSchema(),
             groupByNode.getHavingCondition(), necessaryTargets);
-        for(EvalNode grpField : groupByNode.getGroupingColumns()) {
-          getTargetListFromEvalTree(groupByNode.getInputSchema(),
-              grpField, necessaryTargets);
+        
+        for(ColumnBase grpField : groupByNode.getGroupingColumns()) {
+          necessaryTargets.add(grpField);
+        }
+        
+        Target [] grpTargetList = null;
+        for(LogicalNode node : stack) {
+          if(node.getType() == ExprType.PROJECTION) {
+            ProjectionNode prjNode = (ProjectionNode) node;
+            grpTargetList = prjNode.getTargetList();
+          }
+        }
+        if(grpTargetList != null) {
+          groupByNode.setTargetList(grpTargetList);
         }
       }
       stack.push(groupByNode);
@@ -281,7 +293,8 @@ public class LogicalPlanner {
       TargetList scanTargetList = new TargetList();
       scanTargetList.put(scanSchema);
       scanNode.setInputSchema(scanTargetList);
-      if(necessaryTargets != null) {
+      
+      if(necessaryTargets != null) { // projection push phase
         outputSchema = new TargetList();
         for(ColumnBase col : scanTargetList.targetList.values()) {
           if(necessaryTargets.contains(col)) {
@@ -303,7 +316,7 @@ public class LogicalPlanner {
         
         scanNode.setTargetList(projectedList);
       } else {
-        scanNode.setOutputSchema(scanTargetList); 
+        scanNode.setOutputSchema(scanTargetList);
       }
       
       break;
@@ -329,8 +342,8 @@ public class LogicalPlanner {
           stack);
       stack.pop();
       
-      inputSchema = merge(joinNode.getLeftSubNode().getInputSchema(), 
-          joinNode.getRightSubNode().getInputSchema());
+      inputSchema = merge(joinNode.getLeftSubNode().getOutputSchema(), 
+          joinNode.getRightSubNode().getOutputSchema());
       joinNode.setInputSchema(inputSchema);
       joinNode.setOutputSchema(inputSchema);
             

@@ -13,6 +13,7 @@ import nta.datum.DatumFactory;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -27,6 +28,7 @@ import org.apache.hadoop.fs.Path;
 public class CSVFile2 extends Storage {
   public static final String DELIMITER = "csvfile.delimiter";
   public static final String DELIMITER_DEFAULT = ",";
+  //public static final Base64 base64 = new Base64(0, new byte[0]);
   
   public CSVFile2(Configuration conf) {
     super(conf);
@@ -73,8 +75,11 @@ public class CSVFile2 extends Storage {
         if (tuple.contains(i)) {
           col = schema.getColumn(i);
           switch (col.getDataType()) {
-          case BYTE:
-            sb.append(tuple.getByte(i));
+          case BYTE:            
+            sb.append(new String(Base64.encodeBase64(tuple.getByte(i).asByteArray(),false)));
+            break;
+          case BYTES:
+            sb.append(new String(Base64.encodeBase64(tuple.getBytes(i).asByteArray(),false)));
             break;
           case STRING:
             sb.append(tuple.getString(i));
@@ -212,6 +217,12 @@ public class CSVFile2 extends Storage {
         field = schema.getColumn(i);
         String cell = cells[i].trim();
         switch (field.getDataType()) {
+        case BYTE:          
+          tuple.put(i, DatumFactory.createByte(Base64.decodeBase64(cell)[0]));
+          break;
+        case BYTES:
+          tuple.put(i, DatumFactory.createBytes(Base64.decodeBase64(cell)));
+          break;
         case SHORT:
           tuple.put(i, DatumFactory.createShort(cell));
           break;

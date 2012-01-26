@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import nta.catalog.Column;
+import nta.catalog.ColumnBase;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
@@ -238,12 +239,12 @@ public final class QueryAnalyzer {
     // the remain ones are grouping fields.
     int i = 0;
     Tree fieldNode = null;
-    EvalNode [] groupingColumns = new EvalNode [numFields];
+    ColumnBase [] groupingColumns = new ColumnBase [numFields];
     for (; idx < ast.getChildCount(); idx++) {
       fieldNode = ast.getChild(idx);                  
-      EvalNode evalTree = 
-          createEvalTree(ctx, (CommonTree) fieldNode);
-      groupingColumns[i] = evalTree;     
+      ColumnBase column =
+          checkAndGetColumnByAST(ctx,(CommonTree) fieldNode);
+      groupingColumns[i] = column;     
       i++;
     }
     

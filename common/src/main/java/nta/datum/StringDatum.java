@@ -117,4 +117,12 @@ public class StringDatum extends Datum {
   public int size() {
     return val.getBytes().length;
   }
+	
+	public boolean equals(Object obj) {
+	  if (obj instanceof StringDatum) {
+	    return this.val.equals(((StringDatum) obj).val);
+	  }
+	  
+	  return false;
+	}
 }

@@ -1,6 +1,8 @@
 package nta.engine.planner.logical;
 
+import nta.catalog.ColumnBase;
 import nta.engine.exec.eval.EvalNode;
+import nta.engine.parser.QueryBlock.Target;
 
 /**
  * 
@@ -8,21 +10,22 @@ import nta.engine.exec.eval.EvalNode;
  *
  */
 public class GroupbyNode extends UnaryNode {
-	private final EvalNode [] columns;
+	private final ColumnBase [] columns;
 	private EvalNode havingCondition = null;
+	private Target [] targets;
 	
-	public GroupbyNode(final EvalNode [] groupingColumns) {
+	public GroupbyNode(final ColumnBase [] groupingColumns) {
 		super(ExprType.GROUP_BY);
 		this.columns = groupingColumns;
 	}
 	
-	public GroupbyNode(final EvalNode [] columns, 
+	public GroupbyNode(final ColumnBase [] columns, 
 	    final EvalNode havingCondition) {
     this(columns);
     this.havingCondition = havingCondition;
   }
 	
-	public final EvalNode [] getGroupingColumns() {
+	public final ColumnBase [] getGroupingColumns() {
 	  return this.columns;
 	}
 	
@@ -37,6 +40,18 @@ public class GroupbyNode extends UnaryNode {
 	public final void setHavingCondition(final EvalNode evalTree) {
 	  this.havingCondition = evalTree;
 	}
+	
+  public boolean hasTargetList() {
+    return this.targets != null;
+  }
+
+  public Target[] getTargetList() {
+    return this.targets;
+  }
+
+  public void setTargetList(Target[] targets) {
+    this.targets = targets;
+  }
   
   public String toString() {
     StringBuilder sb = new StringBuilder("\"GroupBy\": {\"fields\":[");
@@ -48,6 +63,16 @@ public class GroupbyNode extends UnaryNode {
     
     if(hasHavingCondition()) {
       sb.append("], \"having qual\": \""+havingCondition+"\"");
+    }
+    if(hasTargetList()) {
+      sb.append("\"target\": [");
+      for (int i = 0; i < targets.length; i++) {
+        sb.append("\"").append(targets[i]).append("\"");
+        if( i < targets.length - 1) {
+          sb.append(",");
+        }
+      }
+      sb.append("],");
     }
     sb.append("\n  \"out schema\": ").append(getOutputSchema()).append(",");
     sb.append("\n  \"in schema\": ").append(getInputSchema());
