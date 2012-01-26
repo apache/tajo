@@ -112,6 +112,14 @@ public class StringDatum extends Datum {
 	public String asChars() {
 		return val;
 	}
+	
+	public boolean equals(Object obj) {
+	  if (obj instanceof StringDatum) {
+	    return this.val.equals(((StringDatum) obj).val);
+	  }
+	  
+	  return false;
+	}
 
   @Override
   public int size() {
