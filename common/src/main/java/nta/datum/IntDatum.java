@@ -12,6 +12,8 @@ import nta.datum.exception.InvalidCastException;
  *
  */
 public class IntDatum extends Datum {
+  private static final int size = 4;
+  
 	int val;
 	
 	IntDatum() {
@@ -82,4 +84,9 @@ public class IntDatum extends Datum {
 	public String asChars() {
 		return ""+val;
 	}
+
+  @Override
+  public int size() {
+    return size;
+  }
 }

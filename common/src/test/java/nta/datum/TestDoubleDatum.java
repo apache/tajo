@@ -18,7 +18,7 @@ public class TestDoubleDatum {
 	@Test
 	public final void testType() {
 		Datum d = DatumFactory.createDouble(1d);
-		assertEquals(d.type(),DatumType.DOUBLE);
+		assertEquals(DatumType.DOUBLE, d.type());
 	}
 
 	@Test
@@ -49,5 +49,11 @@ public class TestDoubleDatum {
 	public final void testAsChars() {
 		Datum d = DatumFactory.createDouble(5d);
 		assertEquals("5.0", d.asChars());
+	}
+	
+	@Test
+  public final void testSize() {
+	  Datum d = DatumFactory.createDouble(5d);
+	  assertEquals(8, d.size());
 	}
 }

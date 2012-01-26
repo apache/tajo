@@ -12,6 +12,8 @@ import nta.datum.exception.InvalidCastException;
  *
  */
 public class IPv4Datum extends Datum {
+  private static final int size = 4;
+  
 	ByteBuffer bb;
 	
 	/**
@@ -132,4 +134,9 @@ public class IPv4Datum extends Datum {
 		}
 		return n;
 	}
+
+  @Override
+  public int size() {
+    return size;
+  }
 }

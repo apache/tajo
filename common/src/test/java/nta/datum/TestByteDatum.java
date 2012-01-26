@@ -9,7 +9,7 @@ public class TestByteDatum {
 	@Test
 	public final void testType() {
 		Datum d = DatumFactory.createByte((byte)1);
-		assertEquals(d.type(),DatumType.BYTE);
+		assertEquals(DatumType.BYTE, d.type());
 	}
 
 	@Test
@@ -41,4 +41,10 @@ public class TestByteDatum {
 		Datum d = DatumFactory.createByte((byte)5);
 		assertTrue(5.0d == d.asDouble());
 	}
+	
+	@Test
+  public final void testSize() {
+    Datum d = DatumFactory.createByte((byte) 1);
+    assertEquals(1, d.size());
+  }
 }

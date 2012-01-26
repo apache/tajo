@@ -41,4 +41,10 @@ public class TestStringDatum {
 		Datum d = DatumFactory.createString("12345");
 		assertEquals("12345", d.asChars());
 	}
+	
+	@Test
+  public final void testSize() {
+	  Datum d = DatumFactory.createString("12345");
+    assertEquals(5, d.size());
+  }
 }

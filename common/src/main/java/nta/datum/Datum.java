@@ -26,6 +26,8 @@ public abstract class Datum implements Comparable<Datum> {
 	public abstract double asDouble();
 	public abstract String asChars();
 	
+	public abstract int size();
+	
 	@Override
 	public String toString() {
 		return asChars();

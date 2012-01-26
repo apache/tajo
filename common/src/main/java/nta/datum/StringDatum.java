@@ -9,7 +9,7 @@ import nta.datum.exception.InvalidCastException;
  * @author Hyunsik Choi
  *
  */
-public class StringDatum extends Datum {
+public class StringDatum extends Datum {  
 	String val;
 	
 	/**
@@ -112,4 +112,9 @@ public class StringDatum extends Datum {
 	public String asChars() {
 		return val;
 	}
+
+  @Override
+  public int size() {
+    return val.getBytes().length;
+  }
 }
