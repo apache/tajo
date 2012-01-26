@@ -3,6 +3,7 @@ package nta.engine.planner;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Collection;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.Stack;
@@ -227,7 +228,7 @@ public class LogicalPlanner {
       for(Target t : projNode.getTargetList()) {
         DataType type = t.getEvalTree().getValueType();
         String name = t.getEvalTree().getName();
-        prjTargets.put(new ColumnBase(name,type));
+        prjTargets.put(new Column(-1, name,type));
       }
       projNode.setOutputSchema(prjTargets);
       
@@ -267,7 +268,7 @@ public class LogicalPlanner {
       for(Target t : ctx.getTargetList()) {
         DataType type = t.getEvalTree().getValueType();
         String name = t.getEvalTree().getName();
-        grpTargets.put(new ColumnBase(name,type));
+        grpTargets.put(new Column(-1, name,type));
       }
       
       groupByNode.setOutputSchema(grpTargets);
@@ -283,7 +284,7 @@ public class LogicalPlanner {
       scanNode.setInputSchema(scanTargetList);
       if(necessaryTargets != null) {
         outputSchema = new TargetList();
-        for(ColumnBase col : scanTargetList.targetList.values()) {
+        for(Column col : scanTargetList.targetList.values()) {
           if(necessaryTargets.contains(col)) {
             outputSchema.put(col);
           }
@@ -295,7 +296,7 @@ public class LogicalPlanner {
           getTargetListFromEvalTree(scanTargetList, scanNode.getQual(), 
               necessaryTargets);
         }
-        for(ColumnBase col : scanTargetList.targetList.values()) {
+        for(Column col : scanTargetList.targetList.values()) {
           if(necessaryTargets.contains(col)) {
             projectedList.put(col);
           }
@@ -339,29 +340,31 @@ public class LogicalPlanner {
   }
   
   public static class TargetList {
-    NavigableMap<Integer,ColumnBase> targetList = new TreeMap<Integer,ColumnBase>();
-    Map<String,ColumnBase> targetListByName = new HashMap<String, ColumnBase>();
+    NavigableMap<Integer,Column> targetList = new TreeMap<Integer,Column>();
+    Map<String,Column> targetListByName = new HashMap<String, Column>();
     private volatile int id = 0;
     
     public TargetList() {
     }
     
     public TargetList(TargetList targets) {
-      this.targetList = new TreeMap<Integer, ColumnBase>(targets.targetList);
-      this.targetListByName = new HashMap<String, ColumnBase>(targets.targetListByName);
+      this.targetList = new TreeMap<Integer, Column>(targets.targetList);
+      this.targetListByName = new HashMap<String, Column>(targets.targetListByName);
       this.id = targets.id;
     }
     
-    public void put(ColumnBase column) {
+    public void put(Column column) {
       int newId = id++;
+      column.setId(newId);
       targetList.put(newId, column);
       targetListByName.put(column.getName(), column);
     }
     
-    public void put(ColumnBase [] columns) {
+    public void put(Column [] columns) {
       int newId;
-      for(ColumnBase column : columns) {
+      for(Column column : columns) {
         newId = id++;
+        column.setId(newId);
         targetList.put(newId, column);
         targetListByName.put(column.getName(), column);
       }
@@ -377,15 +380,27 @@ public class LogicalPlanner {
       }
     }
     
-    public ColumnBase getColumn(String qualifiedName) {
+    public Column getColumn(String qualifiedName) {
       return targetListByName.get(qualifiedName);
-    }    
+    }
+    
+    public Collection<Column> getColumns() {
+      return this.targetList.values();
+    }
+    
+    public Schema toSchema() {
+      Schema newSchema = new Schema();
+      for(Entry<Integer,Column> entry : targetList.entrySet()) {
+        newSchema.addColumn(entry.getValue());
+      }
+      return newSchema;
+    }
     
     public String toString() {
       StringBuilder sb = new StringBuilder("[");
       ColumnBase col = null;
       int i=0;  
-      for(Entry<Integer,ColumnBase> entry : targetList.entrySet()) {
+      for(Entry<Integer,Column> entry : targetList.entrySet()) {
         col = entry.getValue();
         sb.append("\"").append(col.getName());
         sb.append(" ").append(col.getDataType()).append("\"");
@@ -398,6 +413,10 @@ public class LogicalPlanner {
       return sb.toString();
     }
     
+    public int size() {
+      return targetListByName.size();
+    }
+    
     public Object clone() {
       return new TargetList(this);
     }
@@ -405,10 +424,10 @@ public class LogicalPlanner {
   
   public static TargetList merge(TargetList left, TargetList right) {
     TargetList merged = new TargetList();
-    for(Entry<Integer,ColumnBase> entry : left.targetList.entrySet()) {
+    for(Entry<Integer,Column> entry : left.targetList.entrySet()) {
       merged.put(entry.getValue());
     }
-    for(Entry<Integer,ColumnBase> entry : right.targetList.entrySet()) {
+    for(Entry<Integer,Column> entry : right.targetList.entrySet()) {
       merged.put(entry.getValue());
     }
     
