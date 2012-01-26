@@ -3,7 +3,7 @@ package nta.engine.query;
 import java.util.ArrayList;
 import java.util.List;
 
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.catalog.Schema;
 import nta.catalog.exception.NoSuchTableException;
 import nta.engine.exception.NTAQueryException;
@@ -28,9 +28,9 @@ import org.apache.commons.logging.LogFactory;
 public class LogicalPlanner {
 	private Log LOG = LogFactory.getLog(LogicalPlanner.class);	
 	
-	private final Catalog catalog;
+	private final CatalogServer catalog;
 	
-	public LogicalPlanner(Catalog cat) {
+	public LogicalPlanner(CatalogServer cat) {
 		this.catalog = cat;
 	}
 	

@@ -1,7 +1,7 @@
 package nta.engine;
 
 import static org.junit.Assert.assertEquals;
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -30,12 +30,12 @@ import org.junit.Test;
 
 public class TestLogicalPlanner {	
 	NtaConf conf;
-	Catalog cat;
+	CatalogServer cat;
 
 	@Before
 	public void setUp() throws Exception {
 		conf = new NtaConf();
-		cat = new Catalog(conf);
+		cat = new CatalogServer(conf);
 		
 		Schema schema = new Schema();
 		schema.addColumn("name", DataType.STRING);

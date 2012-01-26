@@ -40,7 +40,7 @@ import org.junit.Test;
  */
 public class TestCatalog {
 	private NtaConf conf;
-	private Catalog cat = null;
+	private CatalogServer cat = null;
 	
 	static final String FieldName1="f1";
 	static final String FieldName2="f2";
@@ -92,7 +92,7 @@ public class TestCatalog {
 	@Test
 	public void testGetTable() throws Exception {	
 	  conf.setInt(NConstants.CATALOG_MASTER_PORT, 0);
-    cat = new Catalog(conf);
+    cat = new CatalogServer(conf);
     cat.start();
 	    
 		schema1 = new Schema();
@@ -114,7 +114,7 @@ public class TestCatalog {
 	
 	@Test(expected = Throwable.class)
 	public void testAddTableNoName() throws Exception {
-	  cat = new Catalog(conf);
+	  cat = new CatalogServer(conf);
     cat.start();
     
 	  schema1 = new Schema();
@@ -180,7 +180,7 @@ public class TestCatalog {
 
 	@Test
 	public final void testRegisterFunc() throws IOException {
-	  cat = new Catalog(conf);
+	  cat = new CatalogServer(conf);
     cat.start();
 	  
 		assertFalse(cat.containFunction("test"));
@@ -199,7 +199,7 @@ public class TestCatalog {
 
 	@Test
 	public final void testUnregisterFunc() throws IOException {
-	  cat = new Catalog(conf);
+	  cat = new CatalogServer(conf);
     cat.start();
 	  
 		assertFalse(cat.containFunction("test"));
@@ -216,7 +216,7 @@ public class TestCatalog {
 	
 	@Test
 	public final void testHostsByTable() throws Exception {
-	  cat = new Catalog(conf);
+	  cat = new CatalogServer(conf);
     cat.start();
 	  
 	  util.startMiniCluster(3);
@@ -243,7 +243,7 @@ public class TestCatalog {
 
 		FileSystem fs = util.getMiniDFSCluster().getFileSystem();
 		NtaConf conf = new NtaConf(util.getConfiguration());
-		Catalog catalog = new Catalog(conf);
+		CatalogServer catalog = new CatalogServer(conf);
 		StorageManager sm = new StorageManager(conf);
 
 		int tbNum = 100;

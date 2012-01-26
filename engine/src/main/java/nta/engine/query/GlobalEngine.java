@@ -9,7 +9,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableDescImpl;
@@ -43,7 +43,7 @@ public class GlobalEngine implements EngineService {
 	private Log LOG = LogFactory.getLog(GlobalEngine.class);
 	
 	private final Configuration conf;
-	private final Catalog catalog;
+	private final CatalogServer catalog;
 	private final StorageManager storageManager;
 	private final NQL parser;
 	
@@ -53,7 +53,7 @@ public class GlobalEngine implements EngineService {
 	// RPC interface list for leaf servers
 	LeafServerInterface leaf;
 	
-	public GlobalEngine(Configuration conf, Catalog cat, StorageManager sm) throws IOException {
+	public GlobalEngine(Configuration conf, CatalogServer cat, StorageManager sm) throws IOException {
 		this.conf = conf;
 		this.catalog = cat;
 		this.storageManager = sm;

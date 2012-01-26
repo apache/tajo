@@ -9,7 +9,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.conf.NtaConf;
 import nta.storage.StorageManager;
 
@@ -20,17 +20,17 @@ import nta.storage.StorageManager;
  */
 public class DBContext {
 	private final NtaConf conf;
-	private final Catalog catalog;
+	private final CatalogServer catalog;
 	private final StorageManager storageMamager;
 	private PrintStream output = null;	
 	
-	public DBContext(NtaConf conf, StorageManager storageManager, Catalog catlog) throws IOException, URISyntaxException {
+	public DBContext(NtaConf conf, StorageManager storageManager, CatalogServer catlog) throws IOException, URISyntaxException {
 		this.conf = conf;
 		this.storageMamager = storageManager;
 		this.catalog = catlog;
 	}
 	
-	public Catalog getCatalog() {
+	public CatalogServer getCatalog() {
 		return this.catalog;
 	}
 	

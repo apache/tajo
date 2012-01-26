@@ -3,7 +3,7 @@ package nta.engine;
 import java.io.IOException;
 import java.util.Random;
 
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -34,7 +34,7 @@ public class TestQuery {
 	NtaEngineMaster clusterMaster;
 	MiniNtaEngineCluster cluster;
 	Schema schema;
-	Catalog catalog;
+	CatalogServer catalog;
 	
 	final String TEST_PATH = "";
 

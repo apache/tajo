@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.catalog.Column;
 import nta.catalog.ColumnBase;
 import nta.catalog.FieldName;
@@ -46,10 +46,10 @@ import org.antlr.runtime.tree.Tree;
  */
 @Deprecated
 public class NQL {
-	Catalog cat;
+	CatalogServer cat;
 	
 	
-	public NQL(Catalog cat) {
+	public NQL(CatalogServer cat) {
 		this.cat = cat;
 	}
 	

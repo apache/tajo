@@ -3,7 +3,7 @@ package nta.engine.query;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
@@ -32,7 +32,7 @@ public class QueryEngine implements EngineService {
 	private Log LOG = LogFactory.getLog(QueryEngine.class);
 	
 	private final Configuration conf;
-	private final Catalog catalog;
+	private final CatalogServer catalog;
 	private final StorageManager storageManager;
 	private final NQL parser;
 	
@@ -42,7 +42,7 @@ public class QueryEngine implements EngineService {
 	
 	PrintStream stream;
 	
-	public QueryEngine(Configuration conf, Catalog cat, StorageManager sm, PrintStream stream) {
+	public QueryEngine(Configuration conf, CatalogServer cat, StorageManager sm, PrintStream stream) {
 		this.conf = conf;
 		this.catalog = cat;
 		this.storageManager = sm;

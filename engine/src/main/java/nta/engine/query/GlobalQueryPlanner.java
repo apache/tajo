@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.catalog.TabletServInfo;
 import nta.engine.exec.SeqScanOp;
 import nta.engine.exec.eval.ConstEval;
@@ -45,9 +45,9 @@ import org.apache.hadoop.fs.Path;
 public class GlobalQueryPlanner {
 	private static Log LOG = LogFactory.getLog(GlobalQueryPlanner.class);
 	
-	private Catalog catalog;
+	private CatalogServer catalog;
 	
-	public GlobalQueryPlanner(Catalog catalog) throws IOException {
+	public GlobalQueryPlanner(CatalogServer catalog) throws IOException {
 		this.catalog = catalog;
 //		this.catalog.updateAllTabletServingInfo();
 	}
