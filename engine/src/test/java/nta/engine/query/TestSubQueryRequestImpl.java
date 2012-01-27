@@ -35,9 +35,10 @@ public class TestSubQueryRequestImpl {
 		tablets.add(new Fragment("test1_4",new Path("test4"), meta, 3, 4));
 		tablets.add(new Fragment("test1_5",new Path("test5"), meta, 4, 5));
 		
-		SubQueryRequest req1 = new SubQueryRequestImpl(tablets, new URI("out1"), "select test1", "table1");
+		SubQueryRequest req1 = new SubQueryRequestImpl(0, tablets, new URI("out1"), "select test1", "table1");
 		
 		SubQueryRequestProto.Builder builder = SubQueryRequestProto.newBuilder();
+		builder.setId(0);
 		for (int i = 0; i < tablets.size(); i++) {
 			builder.addTablets(tablets.get(i).getProto());
 		}

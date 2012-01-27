@@ -12,10 +12,11 @@ enum QueryStatus {
 }
 
 message SubQueryRequestProto {
-	repeated TabletProto tablets = 1;
-	required string dest = 2;
-	required string query = 3;
-	required string tableName = 4;
+	required int32 id = 1;
+	repeated TabletProto tablets = 2;
+	required string dest = 3;
+	required string query = 4;
+	required string tableName = 5;
 }
 
 message SubQueryResponseProto {

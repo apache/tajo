@@ -9,6 +9,7 @@ import nta.engine.ExecutorRunnerProtos.ExecutorRunRequestProto;
 
 public interface ExecutorRunRequest extends ProtoObject<ExecutorRunRequestProto>{
 
+	public int getId();
 	public DistPlanContainer getDistPlanContainer();
 	public List<Fragment> getFragments();
 	public boolean isClusteredOutput();

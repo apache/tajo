@@ -33,8 +33,9 @@ message DistPlanContainerProto {
 }
 
 message ExecutorRunRequestProto {
-	required DistPlanContainerProto distExecutor = 1;
-	repeated TabletProto tablets = 2;
-	required bool clusteredOutput = 3;
-	required string outputDest = 4;
+	required int32 id = 1;
+	required DistPlanContainerProto distExecutor = 2;
+	repeated TabletProto tablets = 3;
+	required bool clusteredOutput = 4;
+	required string outputDest = 5;
 }
