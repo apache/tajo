@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -24,6 +25,7 @@ import nta.engine.function.Function;
 import nta.storage.CSVFile2;
 import nta.storage.StorageManager;
 import nta.util.FileUtil;
+import nta.zookeeper.ZkClient;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -246,7 +248,7 @@ public class TestCatalog {
 		CatalogServer catalog = new CatalogServer(conf);
 		StorageManager sm = new StorageManager(conf);
 
-		int tbNum = 100;
+		int tbNum = 5;
 		Random random = new Random();
 		int tupleNum;
 		
@@ -301,5 +303,25 @@ public class TestCatalog {
 		
 		util.shutdownMiniCluster();
 		cat.stop("nomally shuting down");
+	}
+	
+	@Test
+	public void testInitializeZookeeper() throws Exception {
+	  util.startMiniZKCluster();
+	  
+	  cat = new CatalogServer(util.getConfiguration());
+    cat.start();
+    
+    Thread.sleep(1000);
+    
+    ZkClient zkClient = new ZkClient(util.getConfiguration());
+    assertTrue(zkClient.exists("/catalog") != null);
+    
+    InetSocketAddress addr = cat.getBindAddress();
+    String serverName = addr.getHostName()+":"+addr.getPort();
+    assertEquals(serverName, new String(zkClient.getData("/catalog", 
+        null, null)));
+    
+    util.shutdownMiniZKCluster();
 	}
 }

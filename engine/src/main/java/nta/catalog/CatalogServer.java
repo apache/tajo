@@ -26,6 +26,7 @@ import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
+import nta.zookeeper.ZkClient;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,6 +36,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.DNS;
+import org.apache.zookeeper.KeeperException;
 
 import com.google.common.base.Preconditions;
 
@@ -60,6 +62,8 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 	private final ProtoParamRpcServer rpcServer;
   private final InetSocketAddress isa;
   private final String serverName;
+  
+  private ZkClient zkClient;
 
   private volatile boolean stopped = false;
   private volatile boolean isOnline = false;
@@ -100,8 +104,13 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 	public void run() {
     try {
       LOG.info("Catalog Server startup ("+serverName+")");
+      
+      // initialize area
+      this.zkClient = new ZkClient(conf);
+      initializeZookeeper();
       this.rpcServer.start();      
       
+      // loop area
       if(!this.stopped) {
         this.isOnline = true;
         while(!this.stopped) {          
@@ -112,6 +121,7 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
     } catch (Throwable t) {
       LOG.fatal("Unhandled exception. Starting shutdown.", t);
     } finally {
+      // finalize area regardless of either normal or abnormal shutdown
       try {
         shutdown();
       } catch (IOException e) {
@@ -121,6 +131,10 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 
     LOG.info("Catalog Server ("+serverName+") main thread exiting");
   }
+	
+	private void initializeZookeeper() throws KeeperException, InterruptedException {	
+    zkClient.createEphemeral(NConstants.ZNODE_CATALOG, serverName.getBytes());
+	}
 	
 	private static void writeMetaToFile(Writer writer, TableDesc meta) throws IOException {
 		StringBuilder sb = new StringBuilder();
