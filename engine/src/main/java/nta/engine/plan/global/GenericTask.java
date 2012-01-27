@@ -6,30 +6,31 @@ import java.util.List;
 import java.util.Set;
 
 import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.plan.logical.LogicalOp;
-import nta.engine.plan.logical.OpType;
+import nta.engine.planner.logical.ExprType;
+import nta.engine.planner.logical.LogicalNode;
 
 public class GenericTask {
 
-	private LogicalOp op;
+	private LogicalNode op;
 	private String tableName;
-	private List<Fragment> tablets;
+	private List<Fragment> fragments;
 	private Set<GenericTask> prevTasks;
 	private Set<GenericTask> nextTasks;
 	private Annotation annotation;
 	
 	public GenericTask() {
-		tablets = new ArrayList<Fragment>();
+		fragments = new ArrayList<Fragment>();
 		prevTasks = new HashSet<GenericTask>();
 		nextTasks = new HashSet<GenericTask>();
 	}
 	
-	public GenericTask(LogicalOp op, Annotation annotation) {
+	public GenericTask(LogicalNode op, Annotation annotation) {
 		this();
 		setOp(op);
+		setAnnotation(annotation);
 	}
 	
-	public void setOp(LogicalOp op) {
+	public void setOp(LogicalNode op) {
 		this.op = op;
 	}
 	
@@ -41,8 +42,8 @@ public class GenericTask {
 		this.tableName = tableName;
 	}
 	
-	public void addTablet(Fragment t) {
-		tablets.add(t);
+	public void addFragment(Fragment t) {
+		fragments.add(t);
 	}
 	
 	public void addPrevTask(GenericTask t) {
@@ -61,7 +62,7 @@ public class GenericTask {
 		nextTasks.remove(t);
 	}
 	
-	public OpType getType() {
+	public ExprType getType() {
 		return this.op.getType();
 	}
 	
@@ -73,7 +74,7 @@ public class GenericTask {
 		return this.nextTasks;
 	}
 	
-	public LogicalOp getOp() {
+	public LogicalNode getOp() {
 		return this.op;
 	}
 
@@ -81,18 +82,22 @@ public class GenericTask {
 		return this.annotation;
 	}
 	
-	public List<Fragment> getTablets() {
-		return this.tablets;
+	public List<Fragment> getFragments() {
+		return this.fragments;
 	}
 	
 	public String getTableName() {
 		return this.tableName;
 	}
 	
+	public boolean hasFragments() {
+		return this.fragments.size() > 0;
+	}
+	
 	@Override
 	public String toString() {
 		String str = new String(op.getType() + " " + tableName + " ");
-		for (Fragment t : tablets) {
+		for (Fragment t : fragments) {
 			str += t + " ";
 		}
 		return str;
