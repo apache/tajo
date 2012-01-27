@@ -184,7 +184,11 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.SCAN, joinNode.getRightSubNode().getType());
     ScanNode rightNode = (ScanNode) joinNode.getRightSubNode();
     assertEquals("score", rightNode.getTableId());
-
+    
+    System.out.println(plan);
+    System.out.println("-------------------");
+    LogicalOptimizer.optimize(ctx, plan);
+    System.out.println(plan);
   }
 
   @Test
@@ -240,9 +244,9 @@ public class TestLogicalPlanner {
     QueryBlock block = QueryAnalyzer.parse(QUERIES[6], catalog);
     QueryContext ctx = factory.create(block);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
-    System.out.println(plan);
+/*    System.out.println(plan);
     System.out.println("-------------------");
     LogicalOptimizer.optimize(ctx, plan);
-    System.out.println(plan);
+    System.out.println(plan);*/
   }
 }
