@@ -4,12 +4,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import nta.catalog.CatalogUtil;
 import nta.catalog.Column;
 import nta.catalog.ColumnBase;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.exception.NoSuchTableException;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.datum.DatumFactory;
 import nta.engine.CatalogReader;
@@ -462,19 +464,19 @@ public final class QueryAnalyzer {
       
     case NQLParser.FUNCTION:
       String signature = ast.getText();
-      
-      if (!ctx.getCatalog().containFunction(signature)) {
-        throw new UndefinedFunctionException(signature);
-      }
-      
-      FunctionDesc funcDesc = ctx.getCatalog().getFunctionMeta(signature);
-      
-      int numArgs = funcDesc.getDefinedArgs().length;
-      EvalNode [] givenArgs = new EvalNode[numArgs];
-      
+            
+      EvalNode [] givenArgs = new EvalNode[ast.getChildCount()];
+      DataType [] paramTypes = new DataType[ast.getChildCount()];
       for (int i = 0; i < ast.getChildCount(); i++) {
-        givenArgs[i] = createEvalTree(ctx, ast.getChild(i)); 
+        givenArgs[i] = createEvalTree(ctx, ast.getChild(i));
+        paramTypes[i] = givenArgs[i].getValueType();
       }
+      if (!ctx.getCatalog().containFunction(signature, paramTypes)) {
+        throw new UndefinedFunctionException(CatalogUtil.
+            getCanonicalName(signature, paramTypes));
+      }
+      FunctionDesc funcDesc = ctx.getCatalog().
+          getFunctionMeta(signature, paramTypes);
       try {
         if (funcDesc.getFuncType() == FunctionType.GENERAL)
           return new FuncCallEval(funcDesc, funcDesc.newInstance(), givenArgs);

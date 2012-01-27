@@ -18,6 +18,7 @@ import nta.catalog.exception.AlreadyExistsFunction;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchFunctionException;
 import nta.catalog.exception.NoSuchTableException;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.engine.CatalogReader;
@@ -300,11 +301,13 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 	}
 
 	public void registerFunction(FunctionDesc funcDesc) {
-		if (functions.containsKey(funcDesc.getSignature())) {
-			throw new AlreadyExistsFunction(funcDesc.getSignature());
+	  String canonicalName = CatalogUtil.getCanonicalName(funcDesc.getSignature(), 
+	      funcDesc.getDefinedArgs());
+		if (functions.containsKey(canonicalName)) {
+			throw new AlreadyExistsFunction(canonicalName);
 		}
 
-		functions.put(funcDesc.getSignature(), funcDesc);
+		functions.put(canonicalName, funcDesc);
 		if(this.logger != null) {
 			try {
 				this.logger.appendAddFunction(funcDesc);
@@ -315,29 +318,33 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 		}
 	}
 
-	public void unregisterFunction(String signature) {
-		if (!functions.containsKey(signature)) {
-			throw new NoSuchFunctionException(signature);
+	public void unregisterFunction(String signature, DataType...paramTypes) {
+	  String canonicalName = CatalogUtil.getCanonicalName(signature, paramTypes);
+		if (!functions.containsKey(canonicalName)) {
+			throw new NoSuchFunctionException(canonicalName);
 		}
 
 		if(logger != null) {
 			try {
-				this.logger.appendDelFunction(signature);
+				this.logger.appendDelFunction(canonicalName);
 			} catch (IOException e) {
 				LOG.error(e.getMessage());
 				e.printStackTrace();
 			}
 		}
 		
-		functions.remove(signature);
+		functions.remove(canonicalName);
 	}
 
-	public FunctionDesc getFunctionMeta(String signature) {
-		return this.functions.get(signature);
+	public FunctionDesc getFunctionMeta(String signature, 
+	    DataType...paramTypes) {
+		return this.functions.get(CatalogUtil.getCanonicalName(signature, 
+		    paramTypes));
 	}
 
-	public boolean containFunction(String signature) {
-		return this.functions.containsKey(signature);
+	public boolean containFunction(String signature, DataType...paramTypes) {
+		return this.functions.containsKey(CatalogUtil.getCanonicalName(signature, 
+		    paramTypes));
 	}
 
 	public Collection<FunctionDesc> getFunctions() {
@@ -393,29 +400,7 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 	}
 
 	@Override
-	public void shutdown() throws IOException {		
-		// TODO
-		/*File catalogFile = new File(catalogDirPath+"/"+NConstants.ENGINE_CATALOG_FILENAME);
-		if(catalogFile.exists()) {
-			catalogFile.delete();
-		}
-		OutputStream os = new FileOutputStream(catalogFile);
-		OutputStreamWriter osw = new OutputStreamWriter(os);
-		BufferedWriter writer = new BufferedWriter(osw);
-		
-		for(TableDesc meta : tables.values()) {
-			writeMetaToFile(writer, meta);
-		}
-		
-		writer.flush();
-		osw.flush();
-		os.flush();
-		os.close();		
-		wal.close();
-
-		if(walFile.exists()) {
-			walFile.delete();
-		}*/
+	public void shutdown() throws IOException {
 	}
 	
 	public static void main(String [] args) throws IOException {

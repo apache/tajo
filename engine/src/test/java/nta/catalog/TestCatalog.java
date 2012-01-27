@@ -178,7 +178,28 @@ public class TestCatalog {
 		public DataType getResType() {
 			return DataType.INT;
 		}
-	}	
+	}
+	
+	 public static class TestFunc2 extends Function {
+	    public TestFunc2() {
+	      super(          
+	          new ColumnBase [] {
+	              new ColumnBase("name", DataType.INT),
+	              new ColumnBase("bytes", DataType.BYTES)
+	          }
+	      );
+	    }
+
+	    @Override
+	    public Datum invoke(Datum... datums) {
+	      return DatumFactory.createInt(1);
+	    }
+
+	    @Override
+	    public DataType getResType() {
+	      return DataType.INT;
+	    }
+	  } 
 
 	@Test
 	public final void testRegisterFunc() throws IOException {
@@ -190,8 +211,8 @@ public class TestCatalog {
 		    FunctionType.GENERAL, DataType.INT, 
 		    new DataType [] {DataType.INT});
 		cat.registerFunction(meta);
-		assertTrue(cat.containFunction("test"));
-		FunctionDesc retrived = cat.getFunctionMeta("test");
+		assertTrue(cat.containFunction("test", DataType.INT));
+		FunctionDesc retrived = cat.getFunctionMeta("test", DataType.INT);
 		assertEquals(retrived.getSignature(),"test");
 		assertEquals(retrived.getFuncClass(),TestFunc1.class);
 		assertEquals(retrived.getFuncType(),FunctionType.GENERAL);
@@ -204,14 +225,21 @@ public class TestCatalog {
 	  cat = new CatalogServer(conf);
     cat.start();
 	  
-		assertFalse(cat.containFunction("test"));
+		assertFalse(cat.containFunction("test", new DataType [] {DataType.INT}));
 		FunctionDesc meta = new FunctionDesc("test", TestFunc1.class, 
         FunctionType.GENERAL, DataType.INT, 
         new DataType [] {DataType.INT});
 		cat.registerFunction(meta);
-		assertTrue(cat.containFunction("test"));
-		cat.unregisterFunction("test");
-		assertFalse(cat.containFunction("test"));
+		assertTrue(cat.containFunction("test", new DataType [] {DataType.INT}));
+		cat.unregisterFunction("test", new DataType [] {DataType.INT});
+		assertFalse(cat.containFunction("test", new DataType [] {DataType.INT}));
+		
+		assertFalse(cat.containFunction("test", DataType.INT, DataType.BYTES));
+		FunctionDesc overload = new FunctionDesc("test", TestFunc2.class, 
+        FunctionType.GENERAL, DataType.INT, 
+        new DataType [] {DataType.INT, DataType.BYTES});
+		cat.registerFunction(overload);
+		assertTrue(cat.containFunction("test", DataType.INT, DataType.BYTES));
 		
 		cat.stop("nomally shuting down");
 	}

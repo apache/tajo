@@ -69,7 +69,7 @@ public class TestQueryAnalyzer {
     
     FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
         FunctionType.GENERAL, DataType.INT, 
-        new DataType [] {DataType.INT, DataType.INT});
+        new DataType [] {DataType.INT});
 
     cat.registerFunction(funcMeta);
   }
