@@ -86,7 +86,8 @@ public class TestLogicalPlanner {
       "select p.deptName, sum(score) from dept as p, score group by p.deptName having sum(score) > 30", // 3
       "select p.deptName, score from dept as p, score order by score asc", // 4
       "select name from employee where empId = 100", // 5
-      "select name, score from employee, score" // 6
+      "select name, score from employee, score", // 6
+      "select p.deptName, sum(score) from dept as p, score group by p.deptName", // 7
   };
 
   @Test
@@ -162,7 +163,9 @@ public class TestLogicalPlanner {
 
   @Test
   public final void testGroupby() {
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[3], catalog);
+    // without 'having clause'
+    QueryBlock block = QueryAnalyzer.parse(QUERIES[7], catalog);
+    
     QueryContext ctx = factory.create(block);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 
@@ -183,6 +186,30 @@ public class TestLogicalPlanner {
     assertEquals("dept", leftNode.getTableId());
     assertEquals(ExprType.SCAN, joinNode.getRightSubNode().getType());
     ScanNode rightNode = (ScanNode) joinNode.getRightSubNode();
+    assertEquals("score", rightNode.getTableId());
+    
+    // with having clause
+    block = QueryAnalyzer.parse(QUERIES[3], catalog);
+    ctx = factory.create(block);
+    plan = LogicalPlanner.createPlan(ctx, block);
+
+    assertEquals(ExprType.ROOT, plan.getType());
+    root = (LogicalRootNode) plan;
+
+    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
+    projNode = (ProjectionNode) root.getSubNode();
+
+    assertEquals(ExprType.GROUP_BY, projNode.getSubNode().getType());
+    groupByNode = (GroupbyNode) projNode.getSubNode();
+
+    assertEquals(ExprType.JOIN, groupByNode.getSubNode().getType());
+    joinNode = (JoinNode) groupByNode.getSubNode();
+
+    assertEquals(ExprType.SCAN, joinNode.getLeftSubNode().getType());
+    leftNode = (ScanNode) joinNode.getLeftSubNode();
+    assertEquals("dept", leftNode.getTableId());
+    assertEquals(ExprType.SCAN, joinNode.getRightSubNode().getType());
+    rightNode = (ScanNode) joinNode.getRightSubNode();
     assertEquals("score", rightNode.getTableId());
     
     System.out.println(plan);

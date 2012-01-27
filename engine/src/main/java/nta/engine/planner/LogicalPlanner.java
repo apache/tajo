@@ -253,8 +253,10 @@ public class LogicalPlanner {
       GroupbyNode groupByNode = ((GroupbyNode)logicalNode);
       
       if(necessaryTargets != null) { // projection push phase
-        getTargetListFromEvalTree(groupByNode.getInputSchema(),
-            groupByNode.getHavingCondition(), necessaryTargets);
+        if(groupByNode.hasHavingCondition()) {
+          getTargetListFromEvalTree(groupByNode.getInputSchema(),
+              groupByNode.getHavingCondition(), necessaryTargets);
+        }
         
         for(ColumnBase grpField : groupByNode.getGroupingColumns()) {
           necessaryTargets.add(grpField);
