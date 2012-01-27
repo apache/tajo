@@ -7,36 +7,27 @@ package nta.engine.query;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import nta.catalog.CatalogServer;
 import nta.catalog.TabletServInfo;
-import nta.engine.exec.SeqScanOp;
 import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
-import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.parser.NQL;
-import nta.engine.parser.RelInfo;
-import nta.engine.parser.NQL.Query;
+import nta.engine.ipc.protocolrecords.SubQueryRequest;
+import nta.engine.parser.QueryBlock.Target;
 import nta.engine.plan.global.DecomposedQuery;
 import nta.engine.plan.global.GenericTask;
-import nta.engine.plan.global.GenericTaskTree;
-import nta.engine.plan.logical.BinaryOp;
-import nta.engine.plan.logical.LogicalOp;
-import nta.engine.plan.logical.LogicalPlan;
-import nta.engine.plan.logical.OpType;
-import nta.engine.plan.logical.ProjectLO;
-import nta.engine.plan.logical.RootOp;
-import nta.engine.plan.logical.ScanOp;
-import nta.engine.plan.logical.SelectionOp;
-import nta.engine.plan.logical.UnaryOp;
+import nta.engine.plan.global.GenericTaskGraph;
+import nta.engine.planner.logical.BinaryNode;
+import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.ProjectionNode;
+import nta.engine.planner.logical.ScanNode;
+import nta.engine.planner.logical.SelectionNode;
+import nta.engine.planner.logical.UnaryNode;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -49,25 +40,19 @@ public class GlobalQueryPlanner {
 	
 	public GlobalQueryPlanner(CatalogServer catalog) throws IOException {
 		this.catalog = catalog;
-//		this.catalog.updateAllTabletServingInfo();
 	}
 	
-	public GenericTaskTree buildPlan(LogicalPlan logicalPlan) throws IOException {
-		LogicalPlan plan = logicalPlan;
-		if (plan.getRoot().getType() != OpType.ROOT) {
-			RootOp root = new RootOp();
-			root.setSubOp(logicalPlan.getRoot());
-			plan = new LogicalPlan(root);
-		}
-		GenericTaskTree localized = localize(plan);
-		GenericTaskTree optimize = optimize(localized);
+	public GenericTaskGraph buildPlan(LogicalNode logicalPlan) throws IOException {
+		LogicalNode plan = logicalPlan;
+		// add union
+		GenericTaskGraph localized = localize(plan);
+		GenericTaskGraph optimize = optimize(localized);
 		return optimize;
 	}
 	
-	public GenericTaskTree localize(LogicalPlan logicalPlan) throws IOException {
+	public GenericTaskGraph localize(LogicalNode logicalPlan) throws IOException {
 		// Build the generic task tree
-		GenericTaskTree genericTree = buildGenericTaskTree(logicalPlan);
-//		catalog.updateAllTabletServingInfo();
+		GenericTaskGraph genericTree = buildGenericTaskGraph(logicalPlan);
 		
 		// For each level, localize each task
 		GenericTask task = genericTree.getRoot();
@@ -84,10 +69,10 @@ public class GlobalQueryPlanner {
 		return genericTree;
 	}
 	
-	public GenericTaskTree buildGenericTaskTree(LogicalPlan logicalPlan) {
-		GenericTaskTree tree = new GenericTaskTree();
+	public GenericTaskGraph buildGenericTaskGraph(LogicalNode logicalPlan) {
+		GenericTaskGraph tree = new GenericTaskGraph();
 		GenericTask parent = null, child = null;
-		LogicalOp op = logicalPlan.getRoot();
+		LogicalNode op = logicalPlan;
 		ArrayList<GenericTask> q = new ArrayList<GenericTask>();
 		parent = new GenericTask(op, null);
 		tree.setRoot(parent);
@@ -99,30 +84,24 @@ public class GlobalQueryPlanner {
 			op = parent.getOp();
 			
 			switch (op.getType()) {
-			case ROOT:
-				child = new GenericTask(((RootOp)op).getSubOp(), null);
-				parent.addNextTask(child);
-				child.addPrevTask(parent);
-				q.add(child);
-				break;
 			case SCAN:
 				// leaf
 				break;
 			case SELECTION:
 			case PROJECTION:
 				// intermediate, unary
-				child = new GenericTask(((UnaryOp)op).getSubOp(), null);
+				child = new GenericTask(((UnaryNode)op).getSubNode(), null);
 				parent.addNextTask(child);
 				child.addPrevTask(parent);
 				q.add(child);
 				break;
 			case JOIN:
 				// intermediate, binary
-				child = new GenericTask(((BinaryOp)op).getInner(), null);
+				child = new GenericTask(((BinaryNode)op).getLeftSubNode(), null);
 				parent.addNextTask(child);
 				child.addPrevTask(parent);
 				q.add(child);
-				child = new GenericTask(((BinaryOp)op).getOuter(), null);
+				child = new GenericTask(((BinaryNode)op).getRightSubNode(), null);
 				parent.addNextTask(child);
 				child.addPrevTask(parent);
 				q.add(child);
@@ -154,7 +133,7 @@ public class GlobalQueryPlanner {
 	}
 	
 	public void localizeTask(GenericTask task) {
-		LogicalOp op = task.getOp();
+		LogicalNode op = task.getOp();
 		GenericTask[] localizedTasks;
 		Set<GenericTask> prevTaskSet = task.getPrevTasks();
 		Set<GenericTask> nextTaskSet = task.getNextTasks();
@@ -206,11 +185,11 @@ public class GlobalQueryPlanner {
 		}
 	}
 	
-	public GenericTaskTree optimize(GenericTaskTree tree) {
+	public GenericTaskGraph optimize(GenericTaskGraph tree) {
 		return tree;
 	}
 	
-	public List<DecomposedQuery> decompose(GenericTaskTree tree) {
+	public List<DecomposedQuery> decompose(GenericTaskGraph tree) {
 		Set<GenericTask> nextTaskSet;
 		GenericTask task = tree.getRoot();
 		ArrayList<DecomposedQuery> queryList = new ArrayList<DecomposedQuery>();
@@ -219,7 +198,6 @@ public class GlobalQueryPlanner {
 		SubQueryRequest request;
 		String host = null;
 		int port = 0;
-		LogicalPlan lplan = new LogicalPlan();
 		ArrayList<GenericTask> s = new ArrayList<GenericTask>();
 		// remove root operator
 		nextTaskSet = task.getNextTasks();
@@ -230,20 +208,17 @@ public class GlobalQueryPlanner {
 		String strQuery = "";
 		while (!s.isEmpty()) {
 			task = s.remove(0);
-			if (lplan.getRoot() == null) {
-				lplan.setRoot(task.getOp());
-			}
 			nextTaskSet = task.getNextTasks();
 			
 			// if an n-ary operator or a leaf node is visited, cut its all edges
 			if ((nextTaskSet.size() > 1) ||
 					nextTaskSet.size() == 0) {
-				strQuery = generateQuery(lplan);
+				strQuery = generateQuery(task.getOp());
 				tabletServInfoList = catalog.getHostByTable(task.getTableName());
-				for (Fragment t : task.getTablets()) {
+				for (Fragment t : task.getFragments()) {
 					List<Fragment> tablets = new ArrayList<Fragment>();
 					tablets.add(t);
-					request = new SubQueryRequestImpl(tablets, new Path("hdfs://out/"+System.currentTimeMillis()).toUri(), 
+					request = new SubQueryRequestImpl(0, tablets, new Path("hdfs://out/"+System.currentTimeMillis()).toUri(), 
 							strQuery, t.getId());
 					for (TabletServInfo servInfo : tabletServInfoList) {
 						if (servInfo.getTablet().equals(request.getFragments().get(0))) {
@@ -266,7 +241,6 @@ public class GlobalQueryPlanner {
 //				}
 //				query = new DecomposedQuery(request, port, host);
 //				queryList.add(query);
-				lplan = new LogicalPlan();
 			}
 			
 			for (GenericTask t: nextTaskSet) {
@@ -278,8 +252,8 @@ public class GlobalQueryPlanner {
 	}
 	
 	public GenericTask[] localizeSimpleOp(GenericTask task) {
-		ScanOp op = (ScanOp)task.getOp();
-		List<TabletServInfo> tablets = catalog.getHostByTable(op.getRelName());
+		ScanNode op = (ScanNode)task.getOp();
+		List<TabletServInfo> tablets = catalog.getHostByTable(op.getTableId());
 		GenericTask[] localized = new GenericTask[tablets.size()];
 
 		for (int i = 0; i < localized.length; i++) {
@@ -287,49 +261,49 @@ public class GlobalQueryPlanner {
 			localized[i] = new GenericTask();
 			localized[i].setOp(task.getOp());
 			localized[i].setAnnotation(task.getAnnotation());
-			localized[i].setTableName(op.getRelName());
+			localized[i].setTableName(op.getTableId());
 			
 			// TODO: keep the alias
 			// TODO: set startKey and endKey of TableInfo
-			localized[i].addTablet(tablets.get(i).getTablet());
+			localized[i].addFragment(tablets.get(i).getTablet());
 		}
 		
 		return localized;
 	}
 	
-	private String selectHost(LogicalPlan plan) {
+	private String selectHost(LogicalNode plan) {
 		// select the host which serves most tablets in the oplist
 		return null;
 	}
 	
-	public String generateQuery(LogicalPlan plan) {
-		LogicalOp op = plan.getRoot();
+	public String generateQuery(LogicalNode plan) {
+		LogicalNode op = plan;
 		String strQuery = "";
 		String from = "";
 		String where = "";
 		String proj = "*";
-		ArrayList<LogicalOp> q = new ArrayList<LogicalOp>();
+		ArrayList<LogicalNode> q = new ArrayList<LogicalNode>();
 		q.add(op);
 		
 		while (!q.isEmpty()) {
 			op = q.remove(0);
 			switch (op.getType()) {
 			case SCAN:
-				ScanOp scan = (ScanOp)op;
-				from = scan.getRelName();
+				ScanNode scan = (ScanNode)op;
+				from = scan.getTableId();
 				break;
 			case SELECTION:
-				SelectionOp sel = (SelectionOp)op;
+				SelectionNode sel = (SelectionNode)op;
 				where = exprToString(sel.getQual());
-				q.add(sel.getSubOp());
+				q.add(sel.getSubNode());
 				break;
 			case PROJECTION:
-				ProjectLO projop = (ProjectLO)op;
+				ProjectionNode projop = (ProjectionNode)op;
 				proj = "";
-				for (TargetEntry te : projop.getTargetList()) {
-					proj += te.colName + " ";
+				for (Target te : projop.getTargetList()) {
+					proj += te.getColumnSchema().getColumnName() + " ";
 				}
-				q.add(projop.getSubOp());
+				q.add(projop.getSubNode());
 				break;
 			default:
 				break;

@@ -1,13 +1,13 @@
 package nta.engine.plan.global;
 
-public class GenericTaskTree {
+public class GenericTaskGraph {
 	private GenericTask root;
 
-	public GenericTaskTree() {
+	public GenericTaskGraph() {
 		
 	}
 	
-	public GenericTaskTree(GenericTask root) {
+	public GenericTaskGraph(GenericTask root) {
 		setRoot(root);
 	}
 	
