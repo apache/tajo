@@ -112,8 +112,7 @@ public class LogicalPlanner {
       subroot = sortNode;
     }
     
-    if(query.getProjectAll()) {
-    } else {
+    if (!query.getProjectAll() && !query.hasGroupbyClause()) {
         ProjectionNode prjNode = new ProjectionNode(query.getTargetList());
         prjNode.setSubNode(subroot);
         subroot = prjNode;
@@ -262,7 +261,7 @@ public class LogicalPlanner {
           necessaryTargets.add(grpField);
         }
         
-        Target [] grpTargetList = null;
+/*        Target [] grpTargetList = null;
         for(LogicalNode node : stack) {
           if(node.getType() == ExprType.PROJECTION) {
             ProjectionNode prjNode = (ProjectionNode) node;
@@ -271,6 +270,11 @@ public class LogicalPlanner {
         }
         if(grpTargetList != null) {
           groupByNode.setTargetList(grpTargetList);
+        }*/
+        
+        for (Target t : groupByNode.getTargetList()) {
+          getTargetListFromEvalTree(groupByNode.getInputSchema(),
+              t.getEvalTree(), necessaryTargets);
         }
       }
       stack.push(groupByNode);
@@ -284,7 +288,7 @@ public class LogicalPlanner {
         String name = t.getEvalTree().getName();
         grpTargets.put(new Column(-1, name,type));
       }
-      
+      groupByNode.setTargetList(ctx.getTargetList());
       groupByNode.setOutputSchema(grpTargets);
       
       break;
