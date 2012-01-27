@@ -10,9 +10,11 @@ import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.exception.NoSuchTableException;
+import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.datum.DatumFactory;
 import nta.engine.CatalogReader;
 import nta.engine.exception.InternalException;
+import nta.engine.exec.eval.AggFuncCallEval;
 import nta.engine.exec.eval.BinaryEval;
 import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.EvalNode;
@@ -474,7 +476,10 @@ public final class QueryAnalyzer {
         givenArgs[i] = createEvalTree(ctx, ast.getChild(i)); 
       }
       try {
-        return new FuncCallEval(funcDesc, funcDesc.newInstance(), givenArgs);
+        if (funcDesc.getFuncType() == FunctionType.GENERAL)
+          return new FuncCallEval(funcDesc, funcDesc.newInstance(), givenArgs);
+        else
+          return new AggFuncCallEval(funcDesc, funcDesc.newInstance(), givenArgs);
       } catch (InternalException e) {
         e.printStackTrace();
       }

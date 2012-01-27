@@ -20,6 +20,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
+import nta.datum.IntDatum;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.function.Function;
 import nta.engine.parser.QueryAnalyzer;
@@ -46,9 +47,9 @@ public class TestEvalTree {
   public void tearDown() throws Exception {
   }
 
-  public static class Sum extends Function {
+  public static class TestSum extends Function {
 
-    public Sum() {
+    public TestSum() {
       super(new ColumnBase[] { new ColumnBase("arg1", DataType.INT),
           new ColumnBase("arg2", DataType.INT) });
     }
@@ -63,15 +64,34 @@ public class TestEvalTree {
       return DataType.ANY;
     }
   }
+  
+  public static class TestAggSum extends Function {
+
+    public TestAggSum() {
+      super(new ColumnBase[] { new ColumnBase("arg1", DataType.INT)});
+    }
+
+    @Override
+    public Datum invoke(Datum... data) {
+      return data[0].plus(data[1]);
+    }
+
+    @Override
+    public DataType getResType() {
+      return DataType.INT;
+    }
+  }
 
   private String[] QUERIES = {
       "select name, score, age from people where score > 30", // 0
       "select name, score, age from people where score * age", // 1
       "select name, score, age from people where sum(score * age, 50)", // 2
       "select 2+3", // 3
+      "select aggsum(score) from people" // 4
   };
 
-  public final void testEvalExprTreeBin() throws NQLSyntaxException,
+  @Test
+  public final void testFunctionEval() throws NQLSyntaxException,
       IOException {
 
     Schema schema = new Schema();
@@ -85,10 +105,14 @@ public class TestEvalTree {
     CatalogServer cat = new CatalogServer(new NtaConf());
     cat.addTable(desc);
 
-    FunctionDesc funcMeta = new FunctionDesc("sum", Sum.class,
+    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
         FunctionType.GENERAL, DataType.INT, 
         new DataType [] { DataType.INT, DataType.INT});
-
+    cat.registerFunction(funcMeta);
+    
+    funcMeta = new FunctionDesc("aggsum", TestAggSum.class,
+        FunctionType.AGGREGATION, DataType.INT, 
+        new DataType [] { DataType.INT});
     cat.registerFunction(funcMeta);
 
     Tuple tuple = new VTuple(3);
@@ -99,19 +123,48 @@ public class TestEvalTree {
     QueryBlock block = null;
     EvalNode expr = null;
 
+    Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
+    
     block = QueryAnalyzer.parse(QUERIES[0], cat);
     expr = block.getWhereCondition();
-    assertEquals(true, expr.eval(schema, tuple).asBool());
+    assertEquals(true, expr.eval(peopleSchema, tuple)
+        .asBool());
 
     block = QueryAnalyzer.parse(QUERIES[1], cat);
     expr = block.getWhereCondition();
-    assertEquals(15000, expr.eval(schema, tuple).asInt());
+    assertEquals(15000, expr.eval(peopleSchema, tuple).asInt());
 
     block = QueryAnalyzer.parse(QUERIES[2], cat);
     expr = block.getWhereCondition();
-    assertEquals(15050, expr.eval(schema, tuple).asInt());
+    assertEquals(15050, expr.eval(peopleSchema, tuple).asInt());
+    
+    block = QueryAnalyzer.parse(QUERIES[2], cat);
+    expr = block.getWhereCondition();
+    assertEquals(15050, expr.eval(peopleSchema, tuple).asInt());
+    
+    // Aggregation function test
+    block = QueryAnalyzer.parse(QUERIES[4], cat);
+    expr = block.getTargetList()[0].getEvalTree();
+    Datum accumulated = DatumFactory.createInt(0);
+    
+    final int tuplenum = 10;
+    Tuple [] tuples = new Tuple[tuplenum];
+    for (int i=0; i < tuplenum; i++) {
+      tuples[i] = new VTuple(3);
+      tuples[i].put(DatumFactory.createString("hyunsik")); 
+      tuples[i].put(1,DatumFactory.createInt(i+1)); 
+      tuples[i].put(2, DatumFactory.createInt(30));
+    }
+    
+    int sum = 0;
+    for (int i=0; i < tuplenum; i++) {
+      accumulated = expr.eval(peopleSchema, tuples[i], accumulated);
+      sum = sum + (i+1);
+      assertEquals(sum, accumulated.asInt());
+    }
   }
-
+  
+  
   @Test
   public void testTupleEval() {
     ConstEval e1 = new ConstEval(DatumFactory.createInt(1));

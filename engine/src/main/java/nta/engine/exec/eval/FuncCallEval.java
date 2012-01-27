@@ -17,9 +17,9 @@ import nta.storage.Tuple;
  *
  */
 public class FuncCallEval extends EvalNode {
-	private FunctionDesc desc;
-  private Function instance;
-	private EvalNode [] givenArgs;
+	protected FunctionDesc desc;
+  protected Function instance;
+	protected EvalNode [] givenArgs;
 
 	/**
 	 * @param type
