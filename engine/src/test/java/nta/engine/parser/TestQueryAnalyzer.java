@@ -17,7 +17,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
 import nta.engine.exec.eval.EvalNode;
-import nta.engine.exec.eval.TestEvalTree.Sum;
+import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.parser.NQL.Query;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.storage.Tuple;
@@ -67,7 +67,7 @@ public class TestQueryAnalyzer {
     student.setPath(new Path("file:///"));
     cat.addTable(student);
     
-    FunctionDesc funcMeta = new FunctionDesc("sum", Sum.class,
+    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
         FunctionType.GENERAL, DataType.INT, 
         new DataType [] {DataType.INT, DataType.INT});
 

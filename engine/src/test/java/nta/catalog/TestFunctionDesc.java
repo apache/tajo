@@ -10,7 +10,7 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.engine.EngineTestingUtils;
-import nta.engine.exec.eval.TestEvalTree.Sum;
+import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.util.FileUtil;
 
 import org.junit.Test;
@@ -20,11 +20,11 @@ public class TestFunctionDesc {
 
   @Test
   public void testGetSignature() throws IOException {
-    FunctionDesc desc = new FunctionDesc("sum", Sum.class,
+    FunctionDesc desc = new FunctionDesc("sum", TestSum.class,
         FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT,
             DataType.LONG });
     assertEquals("sum", desc.getSignature());
-    assertEquals(Sum.class, desc.getFuncClass());
+    assertEquals(TestSum.class, desc.getFuncClass());
     assertEquals(FunctionType.GENERAL, desc.getFuncType());
     assertEquals(DataType.INT, desc.getReturnType());
     assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
@@ -39,7 +39,7 @@ public class TestFunctionDesc {
 
     FunctionDesc newDesc = new FunctionDesc(proto);
     assertEquals("sum", newDesc.getSignature());
-    assertEquals(Sum.class, newDesc.getFuncClass());
+    assertEquals(TestSum.class, newDesc.getFuncClass());
     assertEquals(FunctionType.GENERAL, newDesc.getFuncType());
     assertEquals(DataType.INT, newDesc.getReturnType());
     assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },

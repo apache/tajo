@@ -13,7 +13,7 @@ import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.engine.QueryContext;
-import nta.engine.exec.eval.TestEvalTree.Sum;
+import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.ExprType;
@@ -67,7 +67,7 @@ public class TestLogicalPlanner {
     score.setPath(new Path("file:///"));
     catalog.addTable(score);
 
-    FunctionDesc funcDesc = new FunctionDesc("sum", Sum.class,
+    FunctionDesc funcDesc = new FunctionDesc("sum", TestSum.class,
         FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
 
     catalog.registerFunction(funcDesc);
