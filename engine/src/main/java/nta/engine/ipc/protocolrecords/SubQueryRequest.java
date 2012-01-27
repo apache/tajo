@@ -12,6 +12,8 @@ import nta.engine.LeafServerProtos.SubQueryRequestProto;
  * @author hyunsik
  */
 public interface SubQueryRequest extends ProtoObject<SubQueryRequestProto> {
+	public int getId();
+	
 	public String getQuery();
 	
 	public String getTableName();

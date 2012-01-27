@@ -16,6 +16,7 @@ import nta.engine.ipc.protocolrecords.Fragment;
  * 
  */
 public class SubQueryRequestImpl implements SubQueryRequest {
+	private int id;
   private List<Fragment> tablets;
   private URI dest;
   private String query;
@@ -27,10 +28,12 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   
   public SubQueryRequestImpl() {
 	  builder = SubQueryRequestProto.newBuilder();
+	  this.id = -1;
   }
   
-  public SubQueryRequestImpl(List<Fragment> tablets, URI output, String query, String tableName) {
+  public SubQueryRequestImpl(int id, List<Fragment> tablets, URI output, String query, String tableName) {
 	  this();
+	  this.id = id;
     this.tablets = tablets;
     this.dest = output;
     this.query = query;
@@ -115,6 +118,9 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   }
   
   protected void mergeLocalToBuilder() {
+	  if (id != -1) {
+		  builder.setId(this.id);
+	  }
 	  if (tablets != null) {
 		  for (int i = 0; i < tablets.size(); i++) {
 			  builder.addTablets(tablets.get(i).getProto());
@@ -141,5 +147,18 @@ public class SubQueryRequestImpl implements SubQueryRequest {
 	  mergeLocalToBuilder();
 	  proto = builder.build();
 	  viaProto = true;
+  }
+
+  @Override
+  public int getId() {
+	  SubQueryRequestProtoOrBuilder p = viaProto ? proto : builder;
+	  if (id != -1) {
+		  return this.id;
+	  }
+	  if (proto.hasId()) {
+		  return -1;
+	  }
+	  this.id = p.getId();
+	  return this.id;
   }
 }

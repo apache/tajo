@@ -47,7 +47,7 @@ public class TestLeafServerInterface {
     tablets.add(new Fragment("test1_4",new Path("test4"), meta, 3, 4));
     tablets.add(new Fragment("test1_5",new Path("test5"), meta, 4, 5));
 		for (int i = 0; i < 10; i++) {
-			reqList.add(new SubQueryRequestImpl(tablets, new URI("out"+i), "query"+i, "table"+i));
+			reqList.add(new SubQueryRequestImpl(i, tablets, new URI("out"+i), "query"+i, "table"+i));
 		}
 	}
 	
