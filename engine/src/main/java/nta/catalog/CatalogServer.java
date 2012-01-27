@@ -41,8 +41,8 @@ import com.google.common.base.Preconditions;
 /**
  * @author Hyunsik Choi
  */
-public class Catalog extends Thread implements CatalogService, CatalogReader, EngineService {
-	private static Log LOG = LogFactory.getLog(Catalog.class);
+public class CatalogServer extends Thread implements CatalogService, CatalogReader, EngineService {
+	private static Log LOG = LogFactory.getLog(CatalogServer.class);
 	private Configuration conf;	
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	private Lock rlock = lock.readLock();
@@ -59,13 +59,12 @@ public class Catalog extends Thread implements CatalogService, CatalogReader, En
 	
 	private final ProtoParamRpcServer rpcServer;
   private final InetSocketAddress isa;
+  private final String serverName;
 
   private volatile boolean stopped = false;
   private volatile boolean isOnline = false;
 
-  private final String serverName;
-
-	public Catalog(Configuration conf) throws IOException {
+	public CatalogServer(Configuration conf) throws IOException {
 		this.conf = conf;
 		
 		// Server to handle client requests.
@@ -76,14 +75,9 @@ public class Catalog extends Thread implements CatalogService, CatalogReader, En
         NConstants.DEFAULT_CATALOG_MASTER_PORT);
     // Creation of a HSA will force a resolve.
     InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
-    if (initialIsa.getAddress() == null) {
-      throw new IllegalArgumentException("Failed resolve of " + this.isa);
-    }
-    
     this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);
-    
     this.isa = this.rpcServer.getBindAddress();
-    this.serverName = this.isa.getHostName()+":"+this.isa.getPort();
+    this.serverName = this.isa.getHostName() + ":" + this.isa.getPort();
 	}
 
 	public void init() throws IOException {
@@ -97,6 +91,10 @@ public class Catalog extends Thread implements CatalogService, CatalogReader, En
 		walFile = new File(catalogDir+"/"+NConstants.ENGINE_CATALOG_WALFILE);
 		wal = new SimpleWAL(walFile);
 		this.logger = new Logger(wal);*/
+	}
+	
+	public InetSocketAddress getBindAddress() {
+	  return this.isa;
 	}
 	
 	public void run() {
@@ -377,7 +375,7 @@ public class Catalog extends Thread implements CatalogService, CatalogReader, En
 	    synchronized (this) {
 	      notifyAll();
 	    }
-	    LOG.info(Catalog.class.getName()+" is being stopped");
+	    LOG.info(CatalogServer.class.getName()+" is being stopped");
 	}
 
 	@Override
@@ -408,7 +406,7 @@ public class Catalog extends Thread implements CatalogService, CatalogReader, En
 	
 	public static void main(String [] args) throws IOException {
 	  NtaConf conf = new NtaConf();
-	  Catalog catalog = new Catalog(conf);
+	  CatalogServer catalog = new CatalogServer(conf);
 	  catalog.start();
 	}
 }

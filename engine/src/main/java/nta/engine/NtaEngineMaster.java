@@ -12,7 +12,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
@@ -57,7 +57,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   private final ZkClient zkClient;
   ZkServer zkServer = null;
 
-  private Catalog catalog;
+  private CatalogServer catalog;
   private StorageManager storeManager;
   private GlobalEngine queryEngine;
 
@@ -128,7 +128,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
       catalogDir.mkdir();
       LOG.info("Catalog dir (" + catalogDir.getAbsolutePath() + ") is created.");
     }
-    this.catalog = new Catalog(conf);
+    this.catalog = new CatalogServer(conf);
     this.catalog.init();
     /*
      * File catalogFile = new
@@ -344,7 +344,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     }
   }
 
-  public Catalog getCatalog() {
+  public CatalogServer getCatalog() {
     return this.catalog;
   }
 

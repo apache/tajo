@@ -14,7 +14,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
@@ -44,7 +44,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 	private NtaConf conf;
 	private FileSystem defaultFS;
 	
-	private Catalog catalog;
+	private CatalogServer catalog;
 	private StorageManager storeManager;
 	private LocalEngine queryEngine;
 	
@@ -101,7 +101,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 			catalogDir.mkdir();
 			LOG.info("Catalog dir ("+catalogDir.getAbsolutePath()+") is created.");
 		}
-		this.catalog = new Catalog(conf);
+		this.catalog = new CatalogServer(conf);
 		this.catalog.init();
 		File catalogFile = new File(catalogPath+"/"+NConstants.ENGINE_CATALOG_FILENAME);
 		if(catalogFile.exists())		

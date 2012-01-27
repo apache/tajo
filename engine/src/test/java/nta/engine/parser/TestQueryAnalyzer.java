@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
@@ -40,7 +40,7 @@ import org.junit.Test;
  * @see QueryBlock
  */
 public class TestQueryAnalyzer {
-  private Catalog cat = null;
+  private CatalogServer cat = null;
   private Schema schema1 = null;
   
   @Before
@@ -60,7 +60,7 @@ public class TestQueryAnalyzer {
     TableMeta meta = new TableMetaImpl(schema1, StoreType.CSV);
     TableDesc people = new TableDescImpl("people", meta);
     people.setPath(new Path("file:///"));
-    cat = new Catalog(new NtaConf());
+    cat = new CatalogServer(new NtaConf());
     cat.addTable(people);
     
     TableDesc student = new TableDescImpl("student", schema2, StoreType.CSV);
@@ -103,7 +103,7 @@ public class TestQueryAnalyzer {
     TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
     TableDesc desc = new TableDescImpl("people", meta);
     desc.setPath(new Path("file:///"));
-    Catalog cat = new Catalog(new NtaConf());
+    CatalogServer cat = new CatalogServer(new NtaConf());
     cat.addTable(desc);
 
     NQL nql = new NQL(cat);

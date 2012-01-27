@@ -8,7 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import nta.catalog.Catalog;
+import nta.catalog.CatalogServer;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -54,7 +54,7 @@ public class TestGlobalQueryPlanner {
 	private static NtaTestingUtility util;
 	private static LogicalPlan lp;
 	private static NtaConf conf;
-	private static Catalog catalog;
+	private static CatalogServer catalog;
 	private static GlobalQueryPlanner planner;
 	private static Schema schema;
 	private static NtaEngineMaster master;
@@ -86,7 +86,7 @@ public class TestGlobalQueryPlanner {
 
 		FileSystem fs = util.getMiniDFSCluster().getFileSystem();
 		conf = new NtaConf(util.getConfiguration());
-		catalog = new Catalog(conf);
+		catalog = new CatalogServer(conf);
 		planner = new GlobalQueryPlanner(catalog);
 
 		int tbNum = 2;

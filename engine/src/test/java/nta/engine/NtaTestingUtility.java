@@ -5,8 +5,11 @@ package nta.engine;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.UUID;
 
+import nta.catalog.CatalogServer;
+import nta.catalog.MiniCatalogServer;
 import nta.conf.NtaConf;
 import nta.engine.utils.JVMClusterUtil.LeafServerThread;
 import nta.zookeeper.MiniZooKeeperCluster;
@@ -21,7 +24,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.mapred.MiniMRCluster;
 
 /**
- * @author hyunsik
+ * @author Hyunsik Choi
  *
  */
 public class NtaTestingUtility {
@@ -39,6 +42,7 @@ public class NtaTestingUtility {
 	private MiniMRCluster mrCluster;
 	private MiniZooKeeperCluster zkCluster = null;
 	private MiniNtaEngineCluster engineCluster;
+	private MiniCatalogServer catalogCluster;
 
 	// If non-null, then already a cluster running.
 	private File clusterTestBuildDir = null;
@@ -145,6 +149,8 @@ public class NtaTestingUtility {
 		if (this.zkCluster == null) {
 		  startMiniZKCluster(this.clusterTestBuildDir);
 		}
+		
+		startCatalogCluster();
 		
 		return startMiniNtaEngineCluster(numSlaves);
 	}
@@ -346,9 +352,31 @@ public class NtaTestingUtility {
 				new Path(clusterTestBuildDir.toString()), true);
 			this.clusterTestBuildDir = null;
 		}
+		if(this.catalogCluster != null) {
+		  shutdownCatalogCluster();
+		}
 		
 		LOG.info("Minicluster is down");
 	}
+	
+	public MiniCatalogServer startCatalogCluster() throws IOException {
+	  Configuration c = getConfiguration();
+	  c.setInt(NConstants.CATALOG_MASTER_PORT, 0);
+	  this.catalogCluster = new MiniCatalogServer(conf);
+	  CatalogServer catServer = this.catalogCluster.getCatalogServer();
+	  InetSocketAddress sockAddr = catServer.getBindAddress();
+	  c.setInt(NConstants.CATALOG_MASTER_PORT, sockAddr.getPort());
+	  
+	  return this.catalogCluster;
+	}
+	
+	public void shutdownCatalogCluster() {
+	  this.catalogCluster.shutdown();
+	}
+	
+  public MiniCatalogServer getCatalog() {
+    return this.catalogCluster;
+  }
 
 	/**
 	 * @param args
