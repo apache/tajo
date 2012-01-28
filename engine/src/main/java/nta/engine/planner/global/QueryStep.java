@@ -25,4 +25,8 @@ public class QueryStep {
 	public UnitQuery getQuery(int index) {
 		return this.queries.get(index);
 	}
+	
+	public int size() {
+		return queries.size();
+	}
 }
