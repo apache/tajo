@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
 import nta.catalog.Column;
 import nta.catalog.ColumnBase;
 import nta.catalog.FieldName;
@@ -46,10 +47,10 @@ import org.antlr.runtime.tree.Tree;
  */
 @Deprecated
 public class NQL {
-	CatalogServer cat;
+	CatalogService cat;
 	
 	
-	public NQL(CatalogServer cat) {
+	public NQL(CatalogService cat) {
 		this.cat = cat;
 	}
 	

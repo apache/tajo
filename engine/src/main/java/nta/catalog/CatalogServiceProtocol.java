@@ -1,18 +1,17 @@
 package nta.catalog;
 
-import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 
-import nta.catalog.exception.CatalogException;
 import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.FunctionDescProto;
+import nta.catalog.proto.CatalogProtos.TableDescProto;
 
 /**
  * 
  * @author Hyunsik Choi
  *
  */
-public interface CatalogService {
+public interface CatalogServiceProtocol {
   
   /**
    * Get a table description by name
@@ -21,21 +20,21 @@ public interface CatalogService {
    * @see TableDescImpl
    * @throws Throwable
    */
-  TableDesc getTableDesc(String name) throws CatalogException;
+  TableDescProto getTableDesc(String name);
   
   /**
    * 
    * @return
    * @throws CatalogException
    */
-  Collection<TableDesc> getAllTableDescs() throws CatalogException;
+  Collection<TableDescProto> getAllTableDescs();
   
   /**
    * 
    * @return
    * @throws CatalogException
    */
-  Collection<FunctionDesc> getFunctions() throws CatalogException;
+  Collection<FunctionDescProto> getFunctions();
   
   /**
    * Add a table via table description
@@ -43,27 +42,35 @@ public interface CatalogService {
    * @see TableDescImpl
    * @throws Throwable
    */
-  void addTable(TableDesc desc) throws CatalogException;
+  void addTable(TableDescProto desc);
   
   /**
    * Drop a table by name
    * @param name table name
    * @throws Throwable
    */
-  void deleteTable(String name) throws CatalogException;
+  void deleteTable(String name);
   
   boolean existsTable(String tableId);
   
-  void registerFunction(FunctionDesc funcDesc) throws CatalogException;
- 
-  void unregisterFunction(String signature, DataType...paramTypes) throws CatalogException;
+  /**
+   * 
+   * @param funcDesc
+   */
+  void registerFunction(FunctionDescProto funcDesc);
+  
+  /**
+   * 
+   * @param signature
+   */
+  void unregisterFunction(String signature, DataType...paramTypes);
   
   /**
    * 
    * @param signature
    * @return
    */
-  FunctionDesc getFunctionMeta(String signature, DataType...paramTypes);
+  FunctionDescProto getFunctionMeta(String signature, DataType...paramTypes);
   
   /**
    * 
@@ -71,8 +78,4 @@ public interface CatalogService {
    * @return
    */
   boolean containFunction(String signature, DataType...paramTypes);
-  
-  List<TabletServInfo> getHostByTable(String tableId);
-  
-  void updateAllTabletServingInfo(List<String> onlineServers) throws IOException;
 }

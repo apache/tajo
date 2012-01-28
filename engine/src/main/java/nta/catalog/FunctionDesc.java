@@ -14,16 +14,11 @@ import nta.common.ProtoObject;
 import nta.engine.exception.InternalException;
 import nta.engine.function.Function;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
  * @author Hyunsik Choi
  * 
  */
-public class FunctionDesc implements ProtoObject<FunctionDescProto> {
-  private final Log LOG = LogFactory.getLog(FunctionDesc.class);
-  
+public class FunctionDesc implements ProtoObject<FunctionDescProto> { 
   private FunctionDescProto proto = FunctionDescProto.getDefaultInstance();
   private FunctionDescProto.Builder builder = null;
   private boolean viaProto = false;
@@ -60,6 +55,10 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
         retType, argTypes);
   }
   
+  public static FunctionDesc create(FunctionDescProto proto) {
+    return new FunctionDesc(proto);
+  }
+  
   /**
    * 
    * @return 함수 인스턴스
@@ -67,7 +66,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
    */
   public Function newInstance() throws InternalException {
     try {
-      Constructor<? extends Function> cons = funcClass.getConstructor();
+      Constructor<? extends Function> cons = getFuncClass().getConstructor();
       Function f = (Function) cons.newInstance();
       return f;
     } catch (Exception ioe) {

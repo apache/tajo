@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.datum.DatumFactory;
@@ -25,7 +26,7 @@ public class ShowFunctionOp extends PhysicalOp {
 	/**
 	 * 
 	 */
-	public ShowFunctionOp(ControlLO logicalOp, CatalogServer cat) {
+	public ShowFunctionOp(ControlLO logicalOp, CatalogService cat) {
 		this.logicalOp = logicalOp;
 		this.iterator = cat.getFunctions().iterator();
 	}

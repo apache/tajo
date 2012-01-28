@@ -41,6 +41,7 @@ public class TestLeafServer {
     EngineTestingUtils.buildTestDir(TEST_PATH);
     util = new NtaTestingUtility();    
     util.startMiniZKCluster();
+    util.startCatalogCluster();
     util.startMiniNtaEngineCluster(2);
     conf = util.getConfiguration();
     sm = StorageManager.get(conf, TEST_PATH);

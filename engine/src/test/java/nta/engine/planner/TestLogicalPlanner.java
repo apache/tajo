@@ -1,8 +1,9 @@
 package nta.engine.planner;
 
 import static org.junit.Assert.assertEquals;
-import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
+import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -35,7 +36,7 @@ import org.junit.Test;
  * @author Hyunsik Choi
  */
 public class TestLogicalPlanner {
-  private CatalogServer catalog;
+  private CatalogService catalog;
   private QueryContext.Factory factory;
 
   @Before
@@ -56,7 +57,7 @@ public class TestLogicalPlanner {
     TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
     TableDesc people = new TableDescImpl("employee", meta);
     people.setPath(new Path("file:///"));
-    catalog = new CatalogServer(new NtaConf());
+    catalog = new LocalCatalog(new NtaConf());
     catalog.addTable(people);
 
     TableDesc student = new TableDescImpl("dept", schema2, StoreType.CSV);

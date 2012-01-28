@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
 import nta.catalog.TabletServInfo;
 import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.EvalNode;
@@ -36,9 +36,9 @@ import org.apache.hadoop.fs.Path;
 public class GlobalQueryPlanner {
 	private static Log LOG = LogFactory.getLog(GlobalQueryPlanner.class);
 	
-	private CatalogServer catalog;
+	private CatalogService catalog;
 	
-	public GlobalQueryPlanner(CatalogServer catalog) throws IOException {
+	public GlobalQueryPlanner(CatalogService catalog) throws IOException {
 		this.catalog = catalog;
 	}
 	

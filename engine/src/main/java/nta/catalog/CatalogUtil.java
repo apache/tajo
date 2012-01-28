@@ -1,9 +1,17 @@
 package nta.catalog;
 
+import java.util.Collection;
+
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.engine.query.exception.InvalidQueryException;
 
 public class CatalogUtil {
+  public static String getCanonicalName(String signature,
+      Collection<DataType> paramTypes) {
+    DataType [] types = paramTypes.toArray(
+        new DataType[paramTypes.size()]);
+    return getCanonicalName(signature, types);
+  }
   public static String getCanonicalName(String signature,
       DataType...paramTypes) {
     StringBuilder sb = new StringBuilder(signature);

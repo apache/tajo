@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import nta.catalog.CatalogService;
 import nta.catalog.CatalogUtil;
 import nta.catalog.Column;
 import nta.catalog.ColumnBase;
@@ -14,7 +15,6 @@ import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.datum.DatumFactory;
-import nta.engine.CatalogReader;
 import nta.engine.exception.InternalException;
 import nta.engine.exec.eval.AggFuncCallEval;
 import nta.engine.exec.eval.BinaryEval;
@@ -56,7 +56,7 @@ public final class QueryAnalyzer {
   }
 
   public static QueryBlock parse(final String query, 
-      final CatalogReader catalog) {
+      final CatalogService catalog) {
     CommonTree ast = parseTree(query);
 
     QueryBlock block = null;
@@ -308,7 +308,8 @@ public final class QueryAnalyzer {
     TableDesc desc = null;
 
     try {
-      desc = ctx.getCatalog().getTableDesc(tableName);
+      desc =
+          ctx.getCatalog().getTableDesc(tableName);
     } catch (NoSuchTableException nst) {
       throw new InvalidQueryException("ERROR: table \"" + tableName
           + "\" does not exist");
@@ -343,7 +344,8 @@ public final class QueryAnalyzer {
     Column column = null;    
     int count = 0;
     for(String table : ctx.getTables()) {
-      desc = ctx.getCatalog().getTableDesc(table);
+      desc =
+          ctx.getCatalog().getTableDesc(table);
       schema = desc.getMeta().getSchema();
       
       if(schema.contains(table+"."+columnName)) {
@@ -467,6 +469,7 @@ public final class QueryAnalyzer {
             
       EvalNode [] givenArgs = new EvalNode[ast.getChildCount()];
       DataType [] paramTypes = new DataType[ast.getChildCount()];
+
       for (int i = 0; i < ast.getChildCount(); i++) {
         givenArgs[i] = createEvalTree(ctx, ast.getChild(i));
         paramTypes[i] = givenArgs[i].getValueType();
@@ -492,14 +495,14 @@ public final class QueryAnalyzer {
   }
   
   private static class ParseContext {
-    private final CatalogReader catalog;
+    private final CatalogService catalog;
     private final Map<String, String> tableMap = new HashMap<String, String>();
     
-    public ParseContext(final CatalogReader catalog) {
+    public ParseContext(final CatalogService catalog) {
       this.catalog = catalog;
     }
     
-    public CatalogReader getCatalog() {
+    public CatalogService getCatalog() {
       return this.catalog;
     }
     

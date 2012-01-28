@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
 import nta.catalog.Schema;
 import nta.catalog.exception.NoSuchTableException;
 import nta.engine.exception.NTAQueryException;
@@ -28,9 +29,9 @@ import org.apache.commons.logging.LogFactory;
 public class LogicalPlanner {
 	private Log LOG = LogFactory.getLog(LogicalPlanner.class);	
 	
-	private final CatalogServer catalog;
+	private final CatalogService catalog;
 	
-	public LogicalPlanner(CatalogServer cat) {
+	public LogicalPlanner(CatalogService cat) {
 		this.catalog = cat;
 	}
 	
@@ -79,7 +80,11 @@ public class LogicalPlanner {
 	public LogicalOp buildDescTable(Query query) throws NoSuchTableException {
 		Schema meta;
 		try {
-			meta = this.catalog.getTableDesc(query.getTargetTable()).getMeta().getSchema();
+			meta = 
+			    new Schema(
+			        this.catalog.getTableDesc(query.getTargetTable()).
+			        getMeta().getSchema()
+			    );
 		} catch (NoSuchTableException e) {
 			throw new NoSuchTableException(query.getTargetTable());
 		}

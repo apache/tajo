@@ -6,6 +6,7 @@ package nta.engine;
 import java.util.HashMap;
 import java.util.Map;
 
+import nta.catalog.CatalogService;
 import nta.catalog.TableDesc;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
@@ -19,11 +20,11 @@ import nta.engine.parser.QueryBlock.Target;
  *
  */
 public class SubqueryContext implements Context {
-  private final CatalogReader catalog;
+  private final CatalogService catalog;
   private final Map<String, Fragment> fragmentMap
     = new HashMap<String, Fragment>();
   
-  private SubqueryContext(CatalogReader catalog, Fragment [] fragments) {
+  private SubqueryContext(CatalogService catalog, Fragment [] fragments) {
     this.catalog = catalog;
     
     for(Fragment t : fragments) {
@@ -32,8 +33,8 @@ public class SubqueryContext implements Context {
   }
   
   public static class Factory {
-    private final CatalogReader catalog;
-    public Factory(CatalogReader catalog) {
+    private final CatalogService catalog;
+    public Factory(CatalogService catalog) {
       this.catalog = catalog;
     }
     
@@ -53,7 +54,7 @@ public class SubqueryContext implements Context {
   }
 
   @Override
-  public CatalogReader getCatalog() {
+  public CatalogService getCatalog() {
     return this.catalog;
   }
   

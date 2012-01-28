@@ -7,8 +7,10 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 
 import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
 import nta.catalog.ColumnBase;
 import nta.catalog.FunctionDesc;
+import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -102,7 +104,7 @@ public class TestEvalTree {
     TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
     TableDesc desc = new TableDescImpl("people", meta);
     desc.setPath(new Path("file:///"));
-    CatalogServer cat = new CatalogServer(new NtaConf());
+    CatalogService cat = new LocalCatalog(new NtaConf());
     cat.addTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,

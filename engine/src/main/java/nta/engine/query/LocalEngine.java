@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.engine.EngineService;
 import nta.engine.ResultSetMemImplOld;
@@ -31,7 +33,7 @@ public class LocalEngine implements EngineService {
 	private Log LOG = LogFactory.getLog(LocalEngine.class);
 	
 	private final Configuration conf;
-	private final CatalogServer catalog;
+	private final CatalogService catalog;
 	private final StorageManager storageManager;
 	private final NQL parser;
 	
@@ -41,7 +43,7 @@ public class LocalEngine implements EngineService {
 	
 	PrintStream stream;
 	
-	public LocalEngine(Configuration conf, CatalogServer cat, StorageManager sm, PrintStream stream) {
+	public LocalEngine(Configuration conf, CatalogService cat, StorageManager sm, PrintStream stream) {
 		this.conf = conf;
 		this.catalog = cat;
 		this.storageManager = sm;
@@ -54,7 +56,7 @@ public class LocalEngine implements EngineService {
 		this.stream = stream;
 	}
 	
-	public void createTable(TableDescImpl meta) throws IOException {
+	public void createTable(TableDesc meta) throws IOException {
 		catalog.addTable(meta);
 	}
 	

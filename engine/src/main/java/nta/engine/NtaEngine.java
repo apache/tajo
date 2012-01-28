@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
+import nta.catalog.LocalCatalog;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
@@ -44,7 +46,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 	private NtaConf conf;
 	private FileSystem defaultFS;
 	
-	private CatalogServer catalog;
+	private CatalogService catalog;
 	private StorageManager storeManager;
 	private LocalEngine queryEngine;
 	
@@ -101,12 +103,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 			catalogDir.mkdir();
 			LOG.info("Catalog dir ("+catalogDir.getAbsolutePath()+") is created.");
 		}
-		this.catalog = new CatalogServer(conf);
-		this.catalog.init();
-		File catalogFile = new File(catalogPath+"/"+NConstants.ENGINE_CATALOG_FILENAME);
-		if(catalogFile.exists())		
-			loadCatalog(catalogFile);
-		services.add(catalog);
+		this.catalog = new LocalCatalog(conf);
 		
 		this.queryEngine = new LocalEngine(conf, catalog, storeManager, null);
 		this.queryEngine.init();
@@ -264,13 +261,6 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 		
 		return catalog.getTableDesc(name);
 	}
-//	
-//	@Override
-//	public TableInfo[] getTablesByOrder() throws Exception {
-//		List<TableInfo> tables = new ArrayList<TableInfo>(catalog.getTableInfos());
-//		Collections.sort(tables, new TableMeta.TableComparator());
-//		return tables.toArray(new TableInfo[tables.size()]);
-//	}
 	
 	/**
 	 * @param args

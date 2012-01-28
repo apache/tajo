@@ -11,8 +11,6 @@ public class ColumnBase {
 	protected String name;
 	protected DataType dataType;
 	
-	public ColumnBase() {}
-	
 	public ColumnBase(String columnName, DataType dataType) {
 		this.name = columnName;
 		this.dataType = dataType;
@@ -54,7 +52,7 @@ public class ColumnBase {
 	}
 	
 	public int hashCode() {
-	  return this.name.hashCode() ^ (this.dataType.hashCode() * 17);
+	  return name.hashCode() ^ (dataType.hashCode() * 17);
 	}
 	
 	public boolean equals(Object obj) {
