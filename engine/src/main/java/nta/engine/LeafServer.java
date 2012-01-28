@@ -9,7 +9,8 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import nta.catalog.CatalogServer;
+import nta.catalog.CatalogClient;
+import nta.catalog.CatalogService;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.conf.NtaConf;
@@ -18,9 +19,10 @@ import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.cluster.MasterAddressTracker;
+import nta.engine.cluster.ServerNodeTracker;
 import nta.engine.ipc.LeafServerInterface;
-import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.query.QueryEngine;
 import nta.engine.query.SubQueryRequestImpl;
 import nta.rpc.NettyRpc;
@@ -36,6 +38,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.DNS;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
 
 /**
@@ -63,17 +66,17 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	// Cluster Management
 	private ZkClient zookeeper;
 	private MasterAddressTracker masterAddrTracker;
+	private ServerNodeTracker catalogAddrTracker;
 	
 	// Query Processing
 	private FileSystem defaultFS;
 	
-	private CatalogServer catalog;
+	private CatalogService catalog;
 	private StorageManager storeManager;
 	private QueryEngine queryEngine;
 	private List<EngineService> services = new ArrayList<EngineService>();
 	
 	private final Path basePath;
-	private final Path catalogPath;
 	private final Path dataPath;
 
 	public LeafServer(final Configuration conf) throws IOException {
@@ -103,7 +106,6 @@ public class LeafServer extends Thread implements LeafServerInterface {
 		// Set our address.
 	  this.isa = this.rpcServer.getBindAddress();
 		this.serverName = this.isa.getHostName()+":"+this.isa.getPort();
-		LOG.error("@@@@@@@@@ Server Name: " + this.serverName);
 		
 		// FileSystem initialization
 		String master = conf.get(NConstants.MASTER_HOST,"local");
@@ -130,27 +132,10 @@ public class LeafServer extends Thread implements LeafServerInterface {
 		if(!defaultFS.exists(dataPath)) {
 			defaultFS.mkdirs(dataPath);
 			LOG.info("Data dir ("+dataPath+") is created");
-		}		
-		this.storeManager = new StorageManager(conf);
-		
-		
-		this.catalogPath = new Path(conf.get(NConstants.ENGINE_CATALOG_DIR));
-		LOG.info("Catalog dir is set to " + this.catalogPath);
-		File catalogDir = new File(this.catalogPath.toString());	
-		if(catalogDir.exists() == false) {
-			catalogDir.mkdir();
-			LOG.info("Catalog dir ("+catalogDir.getAbsolutePath()+") is created.");
 		}
-		this.catalog = new CatalogServer(conf);
-		this.catalog.init();
-		//File catalogFile = new File(catalogPath+"/"+NConstants.ENGINE_CATALOG_FILENAME);
-//		if(catalogFile.exists())		
-//			loadCatalog(catalogFile);
-		services.add(catalog);
 		
-		this.queryEngine = new QueryEngine(conf, catalog, storeManager, null);
-		this.queryEngine.init();
-		services.add(queryEngine);
+		this.catalog = new CatalogClient(conf);		
+		this.storeManager = new StorageManager(conf);
 
 		Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 	}
@@ -160,6 +145,10 @@ public class LeafServer extends Thread implements LeafServerInterface {
 		
 		try {
 			initializeZookeeper();
+			
+      this.queryEngine = new QueryEngine(conf, catalog, storeManager, null);
+      this.queryEngine.init();
+      services.add(queryEngine);
 			
 			if(!this.stopped) {
 				this.isOnline = true;
@@ -193,11 +182,12 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	private void initializeZookeeper() throws IOException, InterruptedException, KeeperException {
 		this.zookeeper = new ZkClient(conf);
 		this.masterAddrTracker = new MasterAddressTracker(zookeeper);
-		do {
-			Thread.sleep(200);
-		} while(zookeeper.exists(NConstants.ZNODE_LEAFSERVERS) == null);
-			zookeeper.createEphemeral(
-				ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName));			
+		this.masterAddrTracker.start();
+		
+		masterAddrTracker.blockUntilAvailable();
+		
+		zookeeper.createEphemeral(
+		    ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName));			
 	}
 	
 	public String getServerName() {

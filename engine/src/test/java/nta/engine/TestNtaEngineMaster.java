@@ -18,11 +18,13 @@ public class TestNtaEngineMaster {
 	public static void setUp() throws Exception {
 		util = new NtaTestingUtility();
 		util.startMiniZKCluster(1);
+		util.startCatalogCluster();
 		conf = util.getConfiguration();
 	}
 
 	@AfterClass
 	public static void tearDown() throws Exception {
+	  util.shutdownCatalogCluster();
 		util.shutdownMiniZKCluster();
 	}
 

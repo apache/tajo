@@ -8,8 +8,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
+import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -19,7 +20,6 @@ import nta.catalog.TabletServInfo;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.conf.NtaConf;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
@@ -28,8 +28,6 @@ import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
-import nta.engine.parser.RelInfo;
-import nta.engine.plan.JoinType;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.JoinNode;
@@ -47,7 +45,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * 
@@ -59,7 +56,7 @@ public class TestGlobalQueryPlanner {
 	
 	private static NtaTestingUtility util;
 	private static NtaConf conf;
-	private static CatalogServer catalog;
+	private static CatalogService catalog;
 	private static GlobalQueryPlanner planner;
 	private static Schema schema;
 	private static NtaEngineMaster master;
@@ -94,7 +91,7 @@ public class TestGlobalQueryPlanner {
 		FileSystem fs = util.getMiniDFSCluster().getFileSystem();
 		
 		conf = new NtaConf(util.getConfiguration());
-		catalog = new CatalogServer(conf);
+		catalog = new LocalCatalog(conf);
 		FunctionDesc funcDesc = new FunctionDesc("sum", TestSum.class,
 		        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
 		catalog.registerFunction(funcDesc);

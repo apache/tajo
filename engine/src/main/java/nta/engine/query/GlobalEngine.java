@@ -8,7 +8,9 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
 import nta.catalog.Schema;
+import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.engine.EngineService;
 import nta.engine.QueryContext;
@@ -40,7 +42,7 @@ public class GlobalEngine implements EngineService {
 	private Log LOG = LogFactory.getLog(GlobalEngine.class);
 	
 	private final Configuration conf;
-	private final CatalogServer catalog;
+	private final CatalogService catalog;
 	private final StorageManager storageManager;
 	private QueryContext.Factory factory;
 	
@@ -49,7 +51,7 @@ public class GlobalEngine implements EngineService {
 	// RPC interface list for leaf servers
 	LeafServerInterface leaf;
 	
-	public GlobalEngine(Configuration conf, CatalogServer cat, StorageManager sm) throws IOException {
+	public GlobalEngine(Configuration conf, CatalogService cat, StorageManager sm) throws IOException {
 		this.conf = conf;
 		this.catalog = cat;
 		this.storageManager = sm;
@@ -60,7 +62,7 @@ public class GlobalEngine implements EngineService {
 		phyPlanner = new PhysicalPlanner(this.catalog, this.storageManager);
 	}
 	
-	public void createTable(TableDescImpl meta) throws IOException {
+	public void createTable(TableDesc meta) throws IOException {
 		catalog.addTable(meta);
 	}
 	

@@ -6,6 +6,7 @@ package nta.engine;
 import java.util.HashMap;
 import java.util.Map;
 
+import nta.catalog.CatalogService;
 import nta.catalog.TableDesc;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
@@ -17,11 +18,11 @@ import nta.engine.parser.QueryBlock.Target;
  * @author Hyunsik Choi
  */
 public class QueryContext implements Context {
-  private final CatalogReader catalog;
+  private final CatalogService catalog;
   private final Map<String, TableDesc> tableMap = new HashMap<String, TableDesc>();
   private final QueryBlock block;
 
-  private QueryContext(CatalogReader catalog, TableDesc[] tables, QueryBlock block) {
+  private QueryContext(CatalogService catalog, TableDesc[] tables, QueryBlock block) {
     this.catalog = catalog;
     for (TableDesc table : tables) {
       tableMap.put(table.getId(), table);
@@ -30,9 +31,9 @@ public class QueryContext implements Context {
   }
 
   public static class Factory {
-    private final CatalogReader catalog;
+    private final CatalogService catalog;
 
-    public Factory(CatalogReader catalog) {
+    public Factory(CatalogService catalog) {
       this.catalog = catalog;
     }
 
@@ -40,7 +41,8 @@ public class QueryContext implements Context {
       TableDesc tables[] = new TableDesc[query.getFromTables().length];
       int i = 0;
       for (FromTable from : query.getFromTables()) {
-        tables[i++] = catalog.getTableDesc(from.getTableId());
+        tables[i++] =
+            catalog.getTableDesc(from.getTableId());
       }
 
       return new QueryContext(catalog, tables, query);
@@ -57,7 +59,7 @@ public class QueryContext implements Context {
     return tableMap.get(id);
   }
 
-  public CatalogReader getCatalog() {
+  public CatalogService getCatalog() {
     return this.catalog;
   }
   

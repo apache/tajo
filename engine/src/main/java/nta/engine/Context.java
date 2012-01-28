@@ -1,5 +1,6 @@
 package nta.engine;
 
+import nta.catalog.CatalogService;
 import nta.catalog.TableDesc;
 import nta.engine.parser.QueryBlock.Target;
 
@@ -11,7 +12,7 @@ import nta.engine.parser.QueryBlock.Target;
 public interface Context {  
   TableDesc getInputTable(String id);
 
-  CatalogReader getCatalog();
+  CatalogService getCatalog();
   
   // Hints for planning and optimization
   Target [] getTargetList();

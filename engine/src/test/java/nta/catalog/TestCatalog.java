@@ -14,16 +14,13 @@ import java.util.Random;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
-import nta.engine.NConstants;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
 import nta.engine.function.Function;
 import nta.storage.CSVFile2;
-import nta.storage.StorageManager;
 import nta.util.FileUtil;
 import nta.zookeeper.ZkClient;
 
@@ -41,8 +38,7 @@ import org.junit.Test;
  *
  */
 public class TestCatalog {
-	private NtaConf conf;
-	private CatalogServer cat = null;
+	private CatalogService catalog = null;
 	
 	static final String FieldName1="f1";
 	static final String FieldName2="f2";
@@ -81,22 +77,22 @@ public class TestCatalog {
 	
 	@Before
 	public void setUp() throws Exception {
-		util = new NtaTestingUtility();		
-		conf = new NtaConf(util.getConfiguration());
+		util = new NtaTestingUtility();
 		EngineTestingUtils.buildTestDir(TEST_PATH);
+    
+		util.startMiniZKCluster();
+		util.startCatalogCluster();
+		this.catalog = new CatalogClient(util.getConfiguration());
 	}
 	
 	@After
 	public void tearDown() throws IOException {
-	   cat.shutdown();
+    util.shutdownCatalogCluster();
+    util.shutdownMiniCluster();
 	}
 	
 	@Test
-	public void testGetTable() throws Exception {	
-	  conf.setInt(NConstants.CATALOG_MASTER_PORT, 0);
-    cat = new CatalogServer(conf);
-    cat.start();
-	    
+	public void testGetTable() throws Exception {
 		schema1 = new Schema();
 		fid1 = schema1.addColumn(FieldName1, DataType.BYTE);
 		fid2 = schema1.addColumn(FieldName2, DataType.INT);
@@ -105,20 +101,19 @@ public class TestCatalog {
 		TableDesc meta = new TableDescImpl("table1", schema1, StoreType.MEM);
 		meta.setPath(new Path("/table1"));
 		
-		assertFalse(cat.existsTable("table1"));
-		cat.addTable(meta);
-		assertTrue(cat.existsTable("table1"));		
-		cat.deleteTable("table1");
-		assertFalse(cat.existsTable("table1"));		
+		assertFalse(catalog.existsTable("table1"));
+		catalog.addTable(meta);
+		assertTrue(catalog.existsTable("table1"));		
 		
-		cat.stop("nomally shuting down");
+		TableDesc meta2 = catalog.getTableDesc("table1");
+		System.out.println(meta2);
+		
+		catalog.deleteTable("table1");
+		assertFalse(catalog.existsTable("table1"));
 	}
 	
 	@Test(expected = Throwable.class)
 	public void testAddTableNoName() throws Exception {
-	  cat = new CatalogServer(conf);
-    cat.start();
-    
 	  schema1 = new Schema();
     fid1 = schema1.addColumn(FieldName1, DataType.BYTE);
     fid2 = schema1.addColumn(FieldName2, DataType.INT);
@@ -128,37 +123,8 @@ public class TestCatalog {
 	  TableDesc desc = new TableDescImpl();
 	  desc.setMeta(info);
 	  
-	  cat.addTable(desc);
-	  
-	  cat.stop("nomally shuting down");
+	  catalog.addTable(desc);
 	}
-
-/*
-	@Test
-	public final void testGetRelationString() throws NoSuchTableException {
-		assertEquals(catalog.getTableInfo(RelName1).getRelId(),rid1);
-		assertEquals(catalog.getTableInfo(RelName2).getRelId(),rid2);
-	}
-
-	@Test
-	public final void testAddRelation() throws IOException {
-		int rid;
-		
-		Schema s = new Schema();
-		s.addField(new Column("age",ColumnType.INT));
-		rid = catalog.addRelation("TestCatalog",s, RelationType.BASETABLE, 0, "TestCatalog");
-		
-		assertEquals(rid,catalog.getTableInfo(rid).getRelId());
-		assertEquals("TestCatalog",catalog.getTableInfo(rid).getName());
-	}
-
-	@Test
-	public final void testDelRelation() throws NoSuchTableException {
-		assertNotNull(catalog.getTableInfo(RelName2));
-		catalog.deleteRelation(RelName2);
-//		assertNull(catalog.getRelation(RelName2));
-	}
-*/
 	
 	public static class TestFunc1 extends Function {
 		public TestFunc1() {
@@ -203,53 +169,45 @@ public class TestCatalog {
 
 	@Test
 	public final void testRegisterFunc() throws IOException {
-	  cat = new CatalogServer(conf);
-    cat.start();
-	  
-		assertFalse(cat.containFunction("test"));
-		FunctionDesc meta = new FunctionDesc("test", TestFunc1.class, 
+		assertFalse(catalog.containFunction("test2"));
+		FunctionDesc meta = new FunctionDesc("test2", TestFunc1.class, 
 		    FunctionType.GENERAL, DataType.INT, 
 		    new DataType [] {DataType.INT});
-		cat.registerFunction(meta);
-		assertTrue(cat.containFunction("test", DataType.INT));
-		FunctionDesc retrived = cat.getFunctionMeta("test", DataType.INT);
-		assertEquals(retrived.getSignature(),"test");
+
+    catalog.registerFunction(meta);
+		assertTrue(catalog.containFunction("test2", DataType.INT));
+		FunctionDesc retrived = catalog.getFunctionMeta("test2", DataType.INT);
+
+		assertEquals(retrived.getSignature(),"test2");
 		assertEquals(retrived.getFuncClass(),TestFunc1.class);
 		assertEquals(retrived.getFuncType(),FunctionType.GENERAL);
-		
-		cat.stop("nomally shuting down");
 	}
 
-	@Test
-	public final void testUnregisterFunc() throws IOException {
-	  cat = new CatalogServer(conf);
-    cat.start();
-	  
-		assertFalse(cat.containFunction("test", new DataType [] {DataType.INT}));
-		FunctionDesc meta = new FunctionDesc("test", TestFunc1.class, 
-        FunctionType.GENERAL, DataType.INT, 
-        new DataType [] {DataType.INT});
-		cat.registerFunction(meta);
-		assertTrue(cat.containFunction("test", new DataType [] {DataType.INT}));
-		cat.unregisterFunction("test", new DataType [] {DataType.INT});
-		assertFalse(cat.containFunction("test", new DataType [] {DataType.INT}));
-		
-		assertFalse(cat.containFunction("test", DataType.INT, DataType.BYTES));
-		FunctionDesc overload = new FunctionDesc("test", TestFunc2.class, 
-        FunctionType.GENERAL, DataType.INT, 
-        new DataType [] {DataType.INT, DataType.BYTES});
-		cat.registerFunction(overload);
-		assertTrue(cat.containFunction("test", DataType.INT, DataType.BYTES));
-		
-		cat.stop("nomally shuting down");
-	}
+  @Test
+  public final void testUnregisterFunc() throws IOException {
+    assertFalse(catalog
+        .containFunction("test3", new DataType[] { DataType.INT }));
+    FunctionDesc meta = new FunctionDesc("test3", TestFunc1.class,
+        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
+    catalog.registerFunction(meta);
+    assertTrue(catalog.containFunction("test3", DataType.INT));
+    catalog.unregisterFunction("test3", DataType.INT);
+    assertFalse(catalog
+        .containFunction("test3", new DataType[] { DataType.INT }));
+
+    assertFalse(catalog.containFunction("test3", DataType.INT, DataType.BYTES));
+    FunctionDesc overload = new FunctionDesc("test3", TestFunc2.class,
+        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT,
+            DataType.BYTES });
+    catalog.registerFunction(overload);
+    assertTrue(catalog.containFunction("test3", DataType.INT, DataType.BYTES));
+  }
 	
 	@Test
 	public final void testHostsByTable() throws Exception {
-	  cat = new CatalogServer(conf);
-    cat.start();
-	  
 	  util.startMiniCluster(3);
+	  
+	  LocalCatalog local = new LocalCatalog(util.getConfiguration());
 	  
 		int i, j;
 		FSDataOutputStream fos;
@@ -272,9 +230,6 @@ public class TestCatalog {
 		};
 
 		FileSystem fs = util.getMiniDFSCluster().getFileSystem();
-		NtaConf conf = new NtaConf(util.getConfiguration());
-		CatalogServer catalog = new CatalogServer(conf);
-		StorageManager sm = new StorageManager(conf);
 
 		int tbNum = 5;
 		Random random = new Random();
@@ -301,12 +256,12 @@ public class TestCatalog {
 
 			TableDesc desc = new TableDescImpl("table"+i, meta);
 			desc.setPath(tbPath);
-			catalog.addTable(desc);
+			local.addTable(desc);
 		}
 		
-		catalog.updateAllTabletServingInfo(master.getOnlineServer());
+		local.updateAllTabletServingInfo(master.getOnlineServer());
 		
-		Collection<TableDesc> tables = catalog.getAllTableDescs();
+		Collection<TableDesc> tables = local.getAllTableDescs();
 		Iterator<TableDesc> it = tables.iterator();
 		List<TabletServInfo> tabletInfoList;
 		int cnt = 0;
@@ -315,14 +270,15 @@ public class TestCatalog {
 		FileStatus fileStatus;
 		while (it.hasNext()) {
 			tableInfo = it.next();
-			tabletInfoList = catalog.getHostByTable(tableInfo.getId());
+			tabletInfoList = local.getHostByTable(tableInfo.getId());
 			if (tabletInfoList != null) {
 				cnt++;
 				len = 0;
 				for (i = 0; i < tabletInfoList.size(); i++) {
 					len += tabletInfoList.get(i).getTablet().getLength();
 				}
-				fileStatus = fs.getFileStatus(new Path(tableInfo.getPath()+"/data/table.csv"));
+				fileStatus = fs.getFileStatus(new Path(tableInfo.
+				    getPath()+"/data/table.csv"));
 				assertEquals(len, fileStatus.getLen());
 			}
 		}
@@ -330,26 +286,17 @@ public class TestCatalog {
 		assertEquals(tbNum, cnt);
 		
 		util.shutdownMiniCluster();
-		cat.stop("nomally shuting down");
 	}
 	
 	@Test
-	public void testInitializeZookeeper() throws Exception {
-	  util.startMiniZKCluster();
-	  
-	  cat = new CatalogServer(util.getConfiguration());
-    cat.start();
-    
-    Thread.sleep(1000);
-    
+	public void testInitializeZookeeper() throws Exception {    
     ZkClient zkClient = new ZkClient(util.getConfiguration());
     assertTrue(zkClient.exists("/catalog") != null);
     
-    InetSocketAddress addr = cat.getBindAddress();
+    InetSocketAddress addr = util.getCatalog().getCatalogServer().
+        getBindAddress();
     String serverName = addr.getHostName()+":"+addr.getPort();
     assertEquals(serverName, new String(zkClient.getData("/catalog", 
         null, null)));
-    
-    util.shutdownMiniZKCluster();
 	}
 }

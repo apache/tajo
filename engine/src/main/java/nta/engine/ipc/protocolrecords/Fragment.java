@@ -5,6 +5,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.TabletProto;
 import nta.catalog.proto.CatalogProtos.TabletProtoOrBuilder;
+import nta.common.ProtoObject;
 
 import org.apache.hadoop.fs.Path;
 

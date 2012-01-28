@@ -6,7 +6,9 @@ package nta.engine.query;
 import java.io.IOException;
 
 import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
 import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
 import nta.engine.exception.InternalException;
 import nta.engine.exec.DescTableOp;
 import nta.engine.exec.PhysicalOp;
@@ -32,13 +34,13 @@ import nta.storage.StorageManager;
  *
  */
 public class PhysicalPlanner {
-	CatalogServer cat;
+	CatalogService cat;
 	StorageManager sm;
 	
 	/**
 	 * 
 	 */
-	public PhysicalPlanner(CatalogServer cat, StorageManager sm) {
+	public PhysicalPlanner(CatalogService cat, StorageManager sm) {
 		this.cat = cat;
 		this.sm = sm;
 	}

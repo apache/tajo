@@ -7,7 +7,8 @@ package nta.engine.parser;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
+import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -34,7 +35,7 @@ import org.junit.Test;
 @Deprecated
 public class TestQueryStmt {
   NtaConf conf;
-  CatalogServer cat = null;
+  CatalogService cat = null;
   NQL nql = null;
   
   /**
@@ -43,7 +44,7 @@ public class TestQueryStmt {
   @Before
   public void setUp() throws Exception {
     conf = new NtaConf();
-    this.cat = new CatalogServer(conf);   
+    this.cat = new LocalCatalog(conf);
     nql = new NQL(cat);
     
     Schema schema = new Schema();

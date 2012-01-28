@@ -116,10 +116,10 @@ public class TableDescImpl implements TableDesc {
 	
 	public String toString() {
 	  StringBuilder str = new StringBuilder();
-	  str.append("{")
-	  .append("id: "+this.tableId).append("\n")
-	  .append("uri: "+this.uri).append("\n")
-	  .append("proto: "+this.proto.toString()).append("\n}");
+	  str.append("\"table\": {")
+	  .append("\"id\": \""+getId()).append("\",")
+	  .append("\"path\": \""+getPath()).append("\",")
+	  .append("\"meta\": \""+this.proto.getMeta().toString()).append("\"}");
 	  
 	  return str.toString();
 	}

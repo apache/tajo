@@ -8,7 +8,7 @@ import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkNodeTracker;
 
 /**
- * @author hyunsik
+ * @author Hyunsik Choi
  *
  */
 public class MasterAddressTracker extends ZkNodeTracker {

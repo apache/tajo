@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import nta.catalog.CatalogServer;
+import nta.catalog.CatalogService;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -25,7 +26,7 @@ public class ShowTableOp extends PhysicalOp {
 	/**
 	 * 
 	 */
-	public ShowTableOp(ControlLO logicalOp, CatalogServer cat) {
+	public ShowTableOp(ControlLO logicalOp, CatalogService cat) {
 		this.logicalOp = logicalOp;
 		this.iterator = cat.getAllTableDescs().iterator();
 	}

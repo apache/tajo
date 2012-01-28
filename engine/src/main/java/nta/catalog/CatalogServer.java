@@ -1,8 +1,6 @@
 package nta.catalog;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,10 +16,14 @@ import nta.catalog.exception.AlreadyExistsFunction;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchFunctionException;
 import nta.catalog.exception.NoSuchTableException;
+import nta.catalog.proto.CatalogProtos.ColumnProto;
+import nta.catalog.proto.CatalogProtos.FunctionDescProto;
+import nta.catalog.proto.CatalogProtos.SchemaProto;
+import nta.catalog.proto.CatalogProtos.TableDescProto;
+import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
-import nta.engine.CatalogReader;
 import nta.engine.EngineService;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -42,30 +44,33 @@ import org.apache.zookeeper.KeeperException;
 import com.google.common.base.Preconditions;
 
 /**
+ * This class provides the catalog service. 
+ * The catalog service enables clients to register, unregister and access 
+ * information about tables, functions, and cluster information.  
+ * 
  * @author Hyunsik Choi
  */
-public class CatalogServer extends Thread implements CatalogService, CatalogReader, EngineService {
+public class CatalogServer extends Thread implements CatalogServiceProtocol, EngineService {
 	private static Log LOG = LogFactory.getLog(CatalogServer.class);
-	private Configuration conf;	
+	private Configuration conf;
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	private Lock rlock = lock.readLock();
 	private Lock wlock = lock.writeLock();
 
-	private Map<String, List<TabletServInfo>> tabletServingInfo = new HashMap<String, List<TabletServInfo>>();
-	private Map<String, TableDesc> tables = new HashMap<String, TableDesc>();	
-	private Map<String, FunctionDesc> functions = new HashMap<String, FunctionDesc>();	
-
-	private SimpleWAL wal;
-	private Logger logger;
-	private String catalogDirPath;
-	private File walFile;
+	private Map<String, TableDescProto> tables = 
+	    new HashMap<String, TableDescProto>();	
+	private Map<String, FunctionDescProto> functions = 
+	    new HashMap<String, FunctionDescProto>();
+  private Map<String, List<TabletServInfo>> tabletServingInfo 
+  = new HashMap<String, List<TabletServInfo>>();
 	
+  // RPC variables
 	private final ProtoParamRpcServer rpcServer;
   private final InetSocketAddress isa;
-  private final String serverName;
-  
+  private final String serverName;  
   private ZkClient zkClient;
 
+  // Server status variables
   private volatile boolean stopped = false;
   private volatile boolean isOnline = false;
 
@@ -133,21 +138,15 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
     LOG.info("Catalog Server ("+serverName+") main thread exiting");
   }
 	
+	public void stop(String message) {
+	  this.stopped = true;
+	}
+	
 	private void initializeZookeeper() throws KeeperException, InterruptedException {	
     zkClient.createEphemeral(NConstants.ZNODE_CATALOG, serverName.getBytes());
 	}
-	
-	private static void writeMetaToFile(Writer writer, TableDesc meta) throws IOException {
-		StringBuilder sb = new StringBuilder();
-		sb.append("+t\t");
-		sb.append(meta.getId()).append("\t");
-		sb.append(meta.getPath().toString());
-		sb.append("\n");
-		
-		writer.append(sb.toString());
-	}
 
-	public TableDesc getTableDesc(String tableId) throws NoSuchTableException {
+	public TableDescProto getTableDesc(String tableId) throws NoSuchTableException {
 		rlock.lock();
 		try {
 			if (!this.tables.containsKey(tableId)) {
@@ -159,10 +158,10 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 		}
 	}
 
-	public Collection<TableDesc> getAllTableDescs() {
+	public Collection<TableDescProto> getAllTableDescs() {
 		wlock.lock();
 		try {
-			return new ArrayList<TableDesc>(tables.values());
+			return tables.values();			
 		} finally {
 			wlock.unlock();
 		}
@@ -178,14 +177,14 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 	
 	public void updateAllTabletServingInfo(List<String> onlineServers) throws IOException {
 		tabletServingInfo.clear();
-		Collection<TableDesc> tbs = tables.values();
-		Iterator<TableDesc> it = tbs.iterator();
+		Collection<TableDescProto> tbs = tables.values();
+		Iterator<TableDescProto> it = tbs.iterator();
 		List<TabletServInfo> locInfos;
 		List<TabletServInfo> servInfos;
 		int index = 0;
 		StringTokenizer tokenizer;
 		while (it.hasNext()) {
-			TableDesc td = it.next();
+			TableDescProto td = it.next();
 			locInfos = getTabletLocInfo(td);
 			servInfos = new ArrayList<TabletServInfo>();
 			// TODO: select the proper online server
@@ -202,10 +201,10 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 		}
 	}
 	
-	private List<TabletServInfo> getTabletLocInfo(TableDesc desc) throws IOException {
+	private List<TabletServInfo> getTabletLocInfo(TableDescProto desc) throws IOException {
 		int fileIdx, blockIdx;
 		FileSystem fs = FileSystem.get(conf);
-		Path path = desc.getPath();
+		Path path = new Path(desc.getPath());
 		
 		FileStatus[] files = fs.listStatus(new Path(path+"/data"));
 		BlockLocation[] blocks;
@@ -230,7 +229,7 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 //				}
 				// TODO: select the proper serving node for block
 				tabletInfoList.add(new TabletServInfo(hosts[0], -1, new Fragment(desc.getId()+"_"+i, 
-            files[fileIdx].getPath(), desc.getMeta(), 
+            files[fileIdx].getPath(), new TableMetaImpl(desc.getMeta()), 
 						blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
 				i++;
 			}
@@ -239,33 +238,43 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 	}
 	
 	public void addTable(String tableId, TableMeta info) throws AlreadyExistsTableException {	  
-	  addTable(new TableDescImpl(tableId, info));
+	  addTable(new TableDescImpl(tableId, info).proto);
 	}
 
-	public void addTable(TableDesc desc) throws AlreadyExistsTableException {
-	  Preconditions.checkNotNull(desc.getId(), "Must be set to the table name");
-		Preconditions.checkNotNull(desc.getPath(), "Must be set to the table URI");
+	public void addTable(final TableDescProto proto) throws AlreadyExistsTableException {
+	  Preconditions.checkArgument(proto.hasId() == true, 
+	      "Must be set to the table name");
+		Preconditions.checkArgument(proto.hasPath() == true, 
+		    "Must be set to the table URI");
 	  wlock.lock();
 		
 		try {
-			if (tables.containsKey(desc.getId())) {
-				throw new AlreadyExistsTableException(desc.getId());
+			if (tables.containsKey(proto.getId())) {
+				throw new AlreadyExistsTableException(proto.getId());
 			}
-			
-			Schema newSchema = new Schema();
-			for(Column col : desc.getMeta().getSchema().getColumns()) {
-			  newSchema.addColumn(desc.getId()+"."+col.getName(), col.getDataType());
-			}
-			desc.getMeta().setSchema(newSchema);
-			
-	    this.tables.put(desc.getId(), desc);
 
-			if(this.logger != null && (desc.getMeta().getStoreType() != StoreType.MEM))
-				this.logger.appendAddTable(desc);
+			// rewrite schema
+			SchemaProto.Builder revisedSchema = 
+			    SchemaProto.newBuilder(proto.getMeta().getSchema());
+			revisedSchema.clearFields();
+			for(ColumnProto col : proto.getMeta().getSchema().getFieldsList()) {			  
+			  if(col.getColumnName().split(".").length < 2) { // if not qualified name
+			    // rewrite the column
+			    ColumnProto.Builder builder = ColumnProto.newBuilder(col);		    
+			    builder.setColumnName(proto.getId()+"."+col.getColumnName());
+			    col = builder.build();
+			  }
+			  
+			  revisedSchema.addFields(col);
+			}
 			
-		} catch (IOException e) {
-			LOG.error(e.getMessage());
-			e.printStackTrace();
+			TableProto.Builder metaBuilder = TableProto.newBuilder(proto.getMeta());
+			metaBuilder.setSchema(revisedSchema);
+			TableDescProto.Builder descBuilder = TableDescProto.newBuilder(proto);
+			descBuilder.setMeta(metaBuilder.build());
+			
+	    this.tables.put(proto.getId(), descBuilder.build());
+	    
 		} finally {
 			wlock.unlock();
 		}
@@ -277,14 +286,7 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 			if (!tables.containsKey(tableId)) {
 				throw new NoSuchTableException(tableId);
 			}
-
-			if(this.logger != null)
-				this.logger.appendDelTable(tableId);
-
 			tables.remove(tableId);
-		} catch (IOException e) {
-			LOG.error(e.getMessage());
-			e.printStackTrace();
 		}
 		finally {
 			wlock.unlock();
@@ -300,22 +302,15 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 		}
 	}
 
-	public void registerFunction(FunctionDesc funcDesc) {
+	@Override
+	public void registerFunction(FunctionDescProto funcDesc) {
 	  String canonicalName = CatalogUtil.getCanonicalName(funcDesc.getSignature(), 
-	      funcDesc.getDefinedArgs());
+	      funcDesc.getParameterTypesList());
 		if (functions.containsKey(canonicalName)) {
 			throw new AlreadyExistsFunction(canonicalName);
 		}
-
+		
 		functions.put(canonicalName, funcDesc);
-		if(this.logger != null) {
-			try {
-				this.logger.appendAddFunction(funcDesc);
-			} catch (IOException e) {
-				LOG.error(e.getMessage());
-				e.printStackTrace();
-			}
-		}
 	}
 
 	public void unregisterFunction(String signature, DataType...paramTypes) {
@@ -323,20 +318,11 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 		if (!functions.containsKey(canonicalName)) {
 			throw new NoSuchFunctionException(canonicalName);
 		}
-
-		if(logger != null) {
-			try {
-				this.logger.appendDelFunction(canonicalName);
-			} catch (IOException e) {
-				LOG.error(e.getMessage());
-				e.printStackTrace();
-			}
-		}
 		
 		functions.remove(canonicalName);
 	}
 
-	public FunctionDesc getFunctionMeta(String signature, 
+	public FunctionDescProto getFunctionMeta(String signature, 
 	    DataType...paramTypes) {
 		return this.functions.get(CatalogUtil.getCanonicalName(signature, 
 		    paramTypes));
@@ -347,58 +333,10 @@ public class CatalogServer extends Thread implements CatalogService, CatalogRead
 		    paramTypes));
 	}
 
-	public Collection<FunctionDesc> getFunctions() {
-		return this.functions.values();
-	}
-
-	private static class Logger implements CatalogWALService {
-		SimpleWAL wal;
-		public Logger(SimpleWAL wal) {
-			this.wal = wal;
-		}
-		public void appendAddTable(TableDesc meta) throws IOException {
-			StringBuilder sb = new StringBuilder();
-			sb.append("+t\t");
-			sb.append(meta.getId()).append("\t");
-			sb.append(meta.getPath().toString());
-
-			wal.append(sb.toString());
-		}
-
-		public void appendDelTable(String tableId) throws IOException {
-			StringBuilder sb = new StringBuilder();
-			sb.append("-t\t");
-			sb.append(tableId);
-			wal.append(sb.toString());
-		}
-
-		public void appendAddFunction(FunctionDesc meta) throws IOException {
-			StringBuilder sb = new StringBuilder();
-			sb.append("+f\t");
-			sb.append(meta.getSignature()).append("\t");
-			sb.append(meta.getFuncType()).append("\t");
-			sb.append(meta.getFuncClass().getCanonicalName()).append("\t");
-
-			wal.append(sb.toString());
-		}
-
-		public void appendDelFunction(String signature) throws IOException {
-			StringBuilder sb = new StringBuilder();
-			sb.append("-f\t");
-			sb.append(signature);
-			
-			wal.append(sb.toString());
-		}
+	public Collection<FunctionDescProto> getFunctions() {
+		return functions.values();
 	}
 	
-	public void stop(String message) {
-	   this.stopped = true;    
-	    synchronized (this) {
-	      notifyAll();
-	    }
-	    LOG.info(CatalogServer.class.getName()+" is being stopped");
-	}
-
 	@Override
 	public void shutdown() throws IOException {
 	}
