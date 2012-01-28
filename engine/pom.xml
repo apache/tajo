@@ -83,6 +83,7 @@
 								<argument>src/main/proto/ClusterProtos.proto</argument>
 								<argument>src/main/proto/LeafServerProtos.proto</argument>
 								<argument>src/main/proto/ExecutorRunnerProtos.proto</argument>
+								<argument>src/main/proto/QueryUnitProtos.proto</argument>
 							</arguments>
 						</configuration>
 						<goals>
@@ -257,6 +258,13 @@
 		<dependency>
 			<groupId>kr.ac.korea.dbserver</groupId>
 			<artifactId>nta-rpc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.1</version>
+			<type>jar</type>
+			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 

@@ -1,0 +1,22 @@
+option java_package = "nta.engine";
+option java_outer_classname = "QueryUnitProtos";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+import "CatalogProtos.proto";
+import "LeafServerProtos.proto";
+
+message QueryUnitRequestProto {
+	required int32 id = 1;
+	repeated TabletProto fragments = 2;
+	required string outputTable = 3;
+	required bool clusteredOutput = 4;
+	required string serializedClassName = 5;
+	required string serializedData = 6;
+}
+
+message QueryUnitResponseProto {
+	required int32 id = 1;
+	required QueryStatus status = 2;
+	required string outputPath = 3;
+}
