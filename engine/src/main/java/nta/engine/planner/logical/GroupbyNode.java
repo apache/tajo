@@ -65,7 +65,7 @@ public class GroupbyNode extends UnaryNode {
       sb.append("], \"having qual\": \""+havingCondition+"\"");
     }
     if(hasTargetList()) {
-      sb.append("\"target\": [");
+      sb.append(", \"target\": [");
       for (int i = 0; i < targets.length; i++) {
         sb.append("\"").append(targets[i]).append("\"");
         if( i < targets.length - 1) {

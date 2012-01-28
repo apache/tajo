@@ -172,11 +172,8 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
 
-    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
-    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
-
-    assertEquals(ExprType.GROUP_BY, projNode.getSubNode().getType());
-    GroupbyNode groupByNode = (GroupbyNode) projNode.getSubNode();
+    assertEquals(ExprType.GROUP_BY, root.getSubNode().getType());
+    GroupbyNode groupByNode = (GroupbyNode) root.getSubNode();
 
     assertEquals(ExprType.JOIN, groupByNode.getSubNode().getType());
     JoinNode joinNode = (JoinNode) groupByNode.getSubNode();
@@ -196,11 +193,8 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.ROOT, plan.getType());
     root = (LogicalRootNode) plan;
 
-    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
-    projNode = (ProjectionNode) root.getSubNode();
-
-    assertEquals(ExprType.GROUP_BY, projNode.getSubNode().getType());
-    groupByNode = (GroupbyNode) projNode.getSubNode();
+    assertEquals(ExprType.GROUP_BY, root.getSubNode().getType());
+    groupByNode = (GroupbyNode) root.getSubNode();
 
     assertEquals(ExprType.JOIN, groupByNode.getSubNode().getType());
     joinNode = (JoinNode) groupByNode.getSubNode();
