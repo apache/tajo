@@ -7,7 +7,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import nta.catalog.Column;
-import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.datum.DatumFactory;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -33,29 +32,31 @@ public class CSVFile2 extends Storage {
   public CSVFile2(Configuration conf) {
     super(conf);
   }
-
+  
   @Override
-  public Appender getAppender(Schema schema, Path path) 
-      throws IOException {
-    return new CSVAppender(getConf(), path, schema, false);
+  public Appender getAppender(Schema schema, Path path) throws IOException {
+    return new CSVAppender(conf, path, schema, false);
   }
 
   @Override
-  public Scanner openScanner(Schema schema, Fragment[] tablets) 
+  public Scanner openScanner(Schema schema, Fragment[] tablets)
       throws IOException {
     return new CSVScanner(conf, schema, tablets);
-  }
+ }
   
-  public static class CSVAppender extends FileAppender {    
+  public static class CSVAppender implements Appender {
+    
+    private final Path path;
+    private final Schema schema;
     private final FileSystem fs;
     private FSDataOutputStream fos;
-    
-    public CSVAppender(Configuration conf, final Path path, 
-        final Schema schema, boolean tablewrite)    
+
+    public CSVAppender(Configuration conf, final Path path, final Schema schema, boolean tablewrite)   
         throws IOException {
-      super(conf, schema, path);      
+      this.path = new Path(path, "data");
       this.fs = path.getFileSystem(conf);
-      
+      this.schema = schema;
+
       if (!fs.exists(path.getParent())) {
         throw new FileNotFoundException(path.toString());
       }
@@ -130,37 +131,27 @@ public class CSVFile2 extends Storage {
   public static class CSVScanner extends FileScanner {
     private FileSystem fs;
     private FSDataInputStream fis;
-    
-    private long startOffset;
-    private long length;
-    private String line;
-    private byte[] sweep;
-    
     private SortedSet<Fragment> tabletSet;
     private Iterator<Fragment> tabletIter;
-    
-    private static final byte LF = '\n';    
-    private String delimiter;
-    private Options option;
-    
+    private long startOffset;
+    private long length;
+    private long tabletstart;
+    private static final byte LF = '\n';
 
+    private byte[] buffer = null;
+    private byte[] piece = null;
+    private String[] tupleList;
+    private int curIndex = 0;
+    private int checkTupleList, bufferSize = 65536;
+    
     public CSVScanner(Configuration conf, final Schema schema, final Fragment[] tablets)
         throws IOException {
       super(conf, schema, tablets);
-      this.delimiter = DELIMITER_DEFAULT;
-      init();      
-    }
-    
-    public CSVScanner(Configuration conf, final Schema schema, 
-        final Fragment [] tablets, Options option) throws IOException {
-      this(conf, schema, tablets);
-      this.option = option;
-      this.delimiter = option.get(DELIMITER, DELIMITER_DEFAULT);
-      init();
+      init(conf, schema, tablets);
     }
 
-    private void init() throws IOException {
-      this.fs = FileSystem.get(conf);
+    public void init(Configuration conf, final Schema schema, final Fragment[] tablets)
+        throws IOException {
       this.tabletSet = new TreeSet<Fragment>();
 
       for (Fragment t : tablets)
@@ -171,7 +162,7 @@ public class CSVFile2 extends Storage {
       if (tabletIter.hasNext())
         openTablet(this.tabletIter.next());
     }
-
+    
     private void openTablet(Fragment tablet) throws IOException {
       this.startOffset = tablet.getStartOffset();
       this.length = tablet.getLength();      
@@ -179,40 +170,85 @@ public class CSVFile2 extends Storage {
 
       fis = fs.open(tablet.getPath());
       long available = fis.available();
+            
       if (startOffset != 0) {
         if (startOffset < available) {
-          fis.seek(startOffset);
-          while (fis.readByte() != LF)
-            ;
-        } else {
-          fis.seek(available);
+          fis.seek(startOffset-1);
+          if (fis.readByte() == LF) {
+            fis.seek(startOffset);
+          } else {
+            while (fis.readByte() != LF) ;
+            fis.seek(fis.getPos());
+          }
+        } else fis.seek(available);
+      }
+      tabletstart = fis.getPos();
+      pageBuffer();
+    }
+    
+    private boolean pageBuffer() throws IOException {
+      if (fis.available() == 0) {
+        return false;
+      }
+      if (fis.available() <= bufferSize) {
+        bufferSize = fis.available();
+      }
+      
+      if (fis.getPos() == 0 || fis.getPos() == tabletstart) {  // first.
+        buffer = new byte[bufferSize];
+        fis.read(buffer);
+      } else if (fis.available() <= (buffer.length-piece.length)) { // last.
+        bufferSize = piece.length + fis.available();
+        buffer = new byte[bufferSize];
+        System.arraycopy(piece, 0, buffer, 0, piece.length);
+        fis.read(buffer, piece.length, (buffer.length-piece.length));
+      } else {
+        buffer = new byte[bufferSize];
+        System.arraycopy(piece, 0, buffer, 0, piece.length);
+        fis.read(buffer, piece.length, (buffer.length-piece.length));
+      }
+      tupleList = new String(buffer).split("\n");
+      
+      if ((char) buffer[buffer.length - 1] != LF) { // check \n.
+        checkTupleList = tupleList.length - 1;
+        piece = tupleList[tupleList.length -1].getBytes();
+      } else {
+        checkTupleList = tupleList.length;
+        piece = new byte[bufferSize];
+        fis.read(piece);
+      }
+
+      checkLastPos();
+      return true;
+    }
+    
+    private void checkLastPos() throws IOException {
+      if (fis.getPos() >= startOffset + length) {
+        int i, pos = (int) fis.getPos();
+        for (i = tupleList.length - 1; i >= 0; i--) {
+          pos -= (tupleList[i].length() + 1);
+          if (pos < startOffset + length) break;
         }
+        checkTupleList = i + 1;
       }
     }
 
     @Override
     public Tuple next() throws IOException {
-      if (fis.getPos() > startOffset + length) {
-        if(tabletIter.hasNext()) {
-          openTablet(tabletIter.next());
-        } else {
+      if (curIndex == checkTupleList) { // tuple list end.
+        curIndex = 0;
+        if (fis.getPos() >= startOffset + length) {
           return null;
         }
-      }
-
-      if ((line = fis.readLine()) == null) {
-        if(tabletIter.hasNext()) {
-          openTablet(tabletIter.next());
-        } else {
+        if (!pageBuffer()) {
           return null;
         }
       }
 
       VTuple tuple = new VTuple(schema.getColumnNum());
-      String[] cells = null;
-      cells = line.split(this.delimiter);
+      String[] cells = tupleList[curIndex++].split(",");
       Column field;
-
+      
       for (int i = 0; i < cells.length; i++) {
         field = schema.getColumn(i);
         String cell = cells[i].trim();
@@ -256,16 +292,10 @@ public class CSVFile2 extends Storage {
     public void reset() throws IOException {
 
     }
-    
-    @Override
-    public Schema getSchema() {     
-      return this.schema;
-    }
 
     @Override
     public void close() throws IOException {
       fis.close();
     }
-
   }
 }

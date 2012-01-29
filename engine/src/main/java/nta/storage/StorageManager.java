@@ -127,8 +127,7 @@ public class StorageManager {
       break;
     }
     case CSV: {
-      scanner = new CSVFile2(conf).
-          openScanner(meta.getSchema(), tablets);
+      scanner = new CSVFile2(conf).openScanner(meta.getSchema(), tablets);
       break;
     }
     }
@@ -155,8 +154,7 @@ public class StorageManager {
       break;
     }
     case CSV: {
-      appender = new CSVFile2(conf).getAppender(meta.getSchema(),
-          filename);
+      appender = new CSVFile2(conf).getAppender(meta.getSchema(), filename);
       break;
     }
     }

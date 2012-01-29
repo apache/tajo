@@ -44,7 +44,7 @@ public class TestStorageManager {
 		TableMeta meta = new TableMetaImpl();
 		meta.setSchema(schema);
 		meta.setStorageType(StoreType.CSV);
-		meta.putOption(CSVFile2.DELIMITER, ",");
+//		meta.putOption(CSVFile2.DELIMITER, ",");
 		
 		Tuple [] tuples = new Tuple[4];
 		for(int i=0; i < tuples.length; i++) {
@@ -86,6 +86,7 @@ public class TestStorageManager {
     int tupleNum = 10000;
     VTuple vTuple = null;
     for(int i = 0; i < tupleNum; i++) {
+      System.out.println(i);
       vTuple = new VTuple(2);
       vTuple.put(0, DatumFactory.createString("abc"));
       vTuple.put(1, DatumFactory.createInt(i+1));
