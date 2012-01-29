@@ -8,7 +8,9 @@ package nta.engine.parser;
  *
  */
 public enum StatementType {
-	// Select
+	// Store
+  STORE,
+  // Select
 	SELECT,
 	
 	// Update

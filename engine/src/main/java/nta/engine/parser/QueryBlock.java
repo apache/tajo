@@ -15,6 +15,7 @@ import nta.engine.exec.eval.EvalNode;
  */
 public class QueryBlock {
   private StatementType type;
+  private String storeTable = null;
   private boolean projectAll = false;
   private boolean distinct = false;
   private Target [] targetList = null;
@@ -30,6 +31,14 @@ public class QueryBlock {
   
   public StatementType getStatementType() {
     return this.type;
+  }
+  
+  public void setStoreTable(String storeTable) {
+    this.storeTable = storeTable;
+  }
+  
+  public String getStoreTable() {
+    return this.storeTable;
   }
   
   public final void setProjectAll() {

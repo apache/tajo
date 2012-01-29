@@ -26,6 +26,7 @@ import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
+import nta.engine.planner.logical.StoreTableNode;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
@@ -90,6 +91,7 @@ public class TestLogicalPlanner {
       "select name from employee where empId = 100", // 5
       "select name, score from employee, score", // 6
       "select p.deptName, sum(score) from dept as p, score group by p.deptName", // 7
+      "store1 := select p.deptName, sum(score) from dept as p, score group by p.deptName", // 8
   };
 
   @Test
@@ -172,6 +174,15 @@ public class TestLogicalPlanner {
 
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
+    testQuery7(root.getSubNode());
+    
+    // with having clause
+    ctx = factory.create();
+    block = analyzer.parse(ctx, QUERIES[3]);
+    plan = LogicalPlanner.createPlan(ctx, block);
+
+    assertEquals(ExprType.ROOT, plan.getType());
+    root = (LogicalRootNode) plan;
 
     assertEquals(ExprType.GROUP_BY, root.getSubNode().getType());
     GroupbyNode groupByNode = (GroupbyNode) root.getSubNode();
@@ -186,31 +197,39 @@ public class TestLogicalPlanner {
     ScanNode rightNode = (ScanNode) joinNode.getRightSubNode();
     assertEquals("score", rightNode.getTableId());
     
-    // with having clause
-    ctx = factory.create();
-    block = analyzer.parse(ctx, QUERIES[3]);
-    plan = LogicalPlanner.createPlan(ctx, block);
-
-    assertEquals(ExprType.ROOT, plan.getType());
-    root = (LogicalRootNode) plan;
-
-    assertEquals(ExprType.GROUP_BY, root.getSubNode().getType());
-    groupByNode = (GroupbyNode) root.getSubNode();
-
-    assertEquals(ExprType.JOIN, groupByNode.getSubNode().getType());
-    joinNode = (JoinNode) groupByNode.getSubNode();
-
-    assertEquals(ExprType.SCAN, joinNode.getLeftSubNode().getType());
-    leftNode = (ScanNode) joinNode.getLeftSubNode();
-    assertEquals("dept", leftNode.getTableId());
-    assertEquals(ExprType.SCAN, joinNode.getRightSubNode().getType());
-    rightNode = (ScanNode) joinNode.getRightSubNode();
-    assertEquals("score", rightNode.getTableId());
-    
     System.out.println(plan);
     System.out.println("-------------------");
     LogicalOptimizer.optimize(ctx, plan);
     System.out.println(plan);
+  }
+  
+  private static void testQuery7(LogicalNode plan) {
+    assertEquals(ExprType.GROUP_BY, plan.getType());
+    GroupbyNode groupByNode = (GroupbyNode) plan;
+
+    assertEquals(ExprType.JOIN, groupByNode.getSubNode().getType());
+    JoinNode joinNode = (JoinNode) groupByNode.getSubNode();
+
+    assertEquals(ExprType.SCAN, joinNode.getLeftSubNode().getType());
+    ScanNode leftNode = (ScanNode) joinNode.getLeftSubNode();
+    assertEquals("dept", leftNode.getTableId());
+    assertEquals(ExprType.SCAN, joinNode.getRightSubNode().getType());
+    ScanNode rightNode = (ScanNode) joinNode.getRightSubNode();
+    assertEquals("score", rightNode.getTableId());
+  }
+  
+  @Test
+  public final void testStoreTable() {
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[8]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    
+    assertEquals(ExprType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+    
+    assertEquals(ExprType.STORE, root.getSubNode().getType());
+    StoreTableNode storeNode = (StoreTableNode) root.getSubNode();
+    testQuery7(storeNode.getSubNode());
   }
 
   @Test

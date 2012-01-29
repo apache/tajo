@@ -21,7 +21,6 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
 import nta.engine.parser.QueryBlock.Target;
-import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
@@ -30,6 +29,7 @@ import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.UnaryNode;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.engine.query.exception.NotSupportQueryException;
@@ -66,6 +66,10 @@ public class LogicalPlanner {
     case SELECT:
       plan = createSelectPlan(ctx, query);
       break;
+      
+    case STORE:
+      plan = createStorePlan(ctx, query);
+      break;
 
     default:;
     throw new NotSupportQueryException(query.toString());
@@ -76,6 +80,15 @@ public class LogicalPlanner {
     annotateInOutSchemas(ctx, root);
     
     return root;
+  }
+  
+  private static LogicalNode createStorePlan(Context ctx, QueryBlock query) {
+    LogicalNode subNode = createSelectPlan(ctx, query);
+    
+    StoreTableNode storeNode = new StoreTableNode(query.getStoreTable());
+    storeNode.setSubNode(subNode);
+    
+    return storeNode;
   }
   
   /**
