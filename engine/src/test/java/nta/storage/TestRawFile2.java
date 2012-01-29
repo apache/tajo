@@ -3,7 +3,6 @@ package nta.storage;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
-import java.util.Random;
 
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
@@ -23,7 +22,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestRawFile2 {
-
 	private NtaConf conf;
 	private static String TEST_PATH = "target/test-data/TestRawFile2";
 	private StorageManager sm;
@@ -35,132 +33,51 @@ public class TestRawFile2 {
 		EngineTestingUtils.buildTestDir(TEST_PATH);
 		sm = StorageManager.get(conf, TEST_PATH);
 	}
-	
-	@After
-	public void tearDown() throws Exception {		
-	}
-	
+		
 	@Test
-	public void testForSingleFile() throws IOException, InvalidAddressException {
-		Schema schema = new Schema();
-		schema.addColumn("id", DataType.INT);
-		schema.addColumn("age", DataType.LONG);
-		
-		TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-
-		sm.initTableBase(meta, "table1");
-		
-		int tupleNum = 10000;
-		VTuple tuple = null;
-		Appender appender = sm.getAppender(meta, "table1","file1");
-		for (int i = 0; i < tupleNum; i++) {
-			tuple = new VTuple(2);
-			tuple.put(0, DatumFactory.createInt((i+1)));
-			tuple.put(1, DatumFactory.createLong((i+20l)));
-			appender.addTuple(tuple);
-		}
-		appender.close();		
-		
-		Random random = new Random(System.currentTimeMillis());
-		FileStatus status = sm.listTableFiles("table1")[0];
-		long fileLen = status.getLen();
-		long midPos = 0;
-		while (midPos < 2) {
-			midPos = random.nextInt((int)fileLen);
-		}
-
-		int tupleCnt = 0;
-		tuple = null;
-		Fragment[] tablets = new Fragment[1];
-		tablets[0] = new Fragment("table1_1", status.getPath(), meta, 0, midPos);
-		Scanner scanner = sm.getScanner(meta, tablets);
-		do {
-			tuple = (VTuple)scanner.next();
-			tupleCnt++;
-		} while (tuple != null);
-		scanner.close();
-		--tupleCnt;
-//		System.out.println(tupleCnt);
-
-		tablets = new Fragment[1];
-		tablets[0] = new Fragment("table1_2", status.getPath(), meta, midPos, fileLen-midPos);
-		scanner = sm.getScanner(meta, tablets);
-		do {
-			tuple = (VTuple)scanner.next();
-			tupleCnt++;
-		} while (tuple != null);
-		scanner.close();
-		
-		assertEquals(tupleNum, --tupleCnt);
-		
-		// Read a table composed of multiple files
-		tupleCnt = 0;
-		tablets = new Fragment[2];
-		tablets[0] = new Fragment("table1_1", status.getPath(), meta, 0, midPos);
-		tablets[1] = new Fragment("table1_2", status.getPath(), meta, midPos, fileLen-midPos);
-		scanner = sm.getScanner(meta, tablets);
-		do {
-			tuple = (VTuple)scanner.next();
-			tupleCnt++;
-		} while (tuple != null);
-		scanner.close();
-		
-		assertEquals(tupleNum, --tupleCnt);
-		
-		tupleCnt = 0;
-		tablets = new Fragment[3];
-		tablets[0] = new Fragment("table1_1", status.getPath(), meta, 0, midPos/2);
-		tablets[1] = new Fragment("table1_2", status.getPath(), meta, midPos/2, midPos-midPos/2);
-		tablets[2] = new Fragment("table1_3", status.getPath(), meta, midPos, fileLen-midPos);
-		scanner = sm.getScanner(meta, tablets);
-		do {
-			tuple = (VTuple)scanner.next();
-			tupleCnt++;
-		} while (tuple != null);
-		scanner.close();
-		
-		assertEquals(tupleNum, --tupleCnt);
-	}
-	
-	@Test
-	public void testForMultiFile() throws IOException {
-		Schema schema = new Schema();
-		schema.addColumn("id", DataType.INT);
-		schema.addColumn("age", DataType.LONG);
-		
-		TableMeta meta = new TableMetaImpl(schema, StoreType.RAW);
-
-    sm.initTableBase(meta, "table2");
-
-		int tupleNum = 10000;
-		VTuple tuple = null;
-		Appender appender = sm.getAppender(meta, "table2", "file1");
-		for (int i = 0; i < tupleNum; i++) {
-			tuple = new VTuple(2);
-			tuple.put(0, DatumFactory.createInt(i+1));
-			tuple.put(1, DatumFactory.createLong(i+20l));
-			appender.addTuple(tuple);
-		}
-		appender.close();		
-		
-		appender = sm.getAppender(meta, "table2", "file2");
-		for (int i = 0; i < tupleNum; i++) {
-			tuple = new VTuple(2);
-			tuple.put(0, DatumFactory.createInt(i+1));
-			tuple.put(1, DatumFactory.createLong(i+20l));
-			appender.addTuple(tuple);
-		}
-		appender.close();
-		
-		Fragment[] tablets = sm.split("table2");
-		Scanner scanner = sm.getScanner(meta, tablets);
-		int tupleCnt = 0;
-		do {
-			tuple = (VTuple)scanner.next();
-			tupleCnt++;
-		} while (tuple != null);
-		scanner.close();
-		
-		assertEquals(tupleNum*2, --tupleCnt);
+  public void testRawFile() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("id", DataType.INT);
+    schema.addColumn("name", DataType.STRING);
+    schema.addColumn("age", DataType.INT);
+    schema.addColumn("blood", DataType.STRING);
+    schema.addColumn("country", DataType.STRING);
+    schema.addColumn("region", DataType.STRING);
+    
+    TableMeta meta = new TableMetaImpl();
+    meta.setSchema(schema);
+    meta.setStorageType(StoreType.RAW);
+    
+    sm.initTableBase(meta, "table1");
+    
+    int tupleNum = 10000;
+    VTuple tuple = null;
+    Appender appender = sm.getAppender(meta, "table1","file1");
+    for (int i = 0; i < tupleNum; i++) {
+      tuple = new VTuple(6);
+      tuple.put(0, DatumFactory.createInt((Integer)(i+1)));
+      tuple.put(1, DatumFactory.createString("haemi"));
+      tuple.put(2, DatumFactory.createInt(25));
+      tuple.put(3, DatumFactory.createString("a"));
+      tuple.put(4, DatumFactory.createString("korea"));
+      tuple.put(5, DatumFactory.createString("sanbon"));
+      appender.addTuple(tuple);
+    }
+    appender.close();
+    
+    FileStatus status = sm.listTableFiles("table1")[0];
+    long fileLen = status.getLen();
+  
+    Fragment[] tablets = new Fragment[1];
+    tablets[0] = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);    
+    
+    Scanner scanner = sm.getScanner(meta, tablets);
+    int tupleCnt = 0;
+    while ((tuple = (VTuple) scanner.next()) != null) {
+      tupleCnt++;
+    }
+    scanner.close();    
+    
+    assertEquals(tupleNum, tupleCnt);
 	}
 }

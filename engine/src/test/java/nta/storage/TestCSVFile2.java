@@ -17,75 +17,84 @@ import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
+//import nta.engine.ipc.protocolrecords.Tablet;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestCSVFile2 {
-	
-	private NtaConf conf;
-	StorageManager sm;
-	private static String TEST_PATH = "target/test-data/TestCSVFile2";
-	
-	@Before
-	public void setup() throws Exception {
-		conf = new NtaConf();
-		conf.set(NConstants.ENGINE_DATA_DIR, TEST_PATH);
-		EngineTestingUtils.buildTestDir(TEST_PATH);		
-		sm = StorageManager.get(conf, TEST_PATH);
-	}
-	
-	@Test
-  public void test() throws IOException {
+public class TestCSVFile2 { 
+  private NtaConf conf;
+  StorageManager sm;
+  private static String TEST_PATH = "target/test-data/TestCSVFile2";
+  
+  @Before
+  public void setup() throws Exception {
+    conf = new NtaConf();
+    conf.set(NConstants.ENGINE_DATA_DIR, TEST_PATH);
+    EngineTestingUtils.buildTestDir(TEST_PATH);
+    sm = StorageManager.get(conf, TEST_PATH);
+  }
+  
+  @Test
+  public void testCSVFile() throws IOException {
     Schema schema = new Schema();
-    schema.addColumn("string", DataType.STRING);
-    schema.addColumn("int", DataType.INT);
+    schema.addColumn("id", DataType.INT);
+    schema.addColumn("name", DataType.STRING);
+    schema.addColumn("age", DataType.INT);
+    schema.addColumn("blood", DataType.STRING);
+    schema.addColumn("country", DataType.STRING);
+    schema.addColumn("region", DataType.STRING);
     
     TableMeta meta = new TableMetaImpl();
     meta.setSchema(schema);
-    meta.setStorageType(StoreType.CSV);    
+    meta.setStorageType(StoreType.CSV);
     
+    Path path = new Path(TEST_PATH);
+
     sm.initTableBase(meta, "table1");
-    Appender appender = sm.getAppender(meta, "table1", "table1.csv");
+    Appender appender = sm.getAppender(meta, "table1","file1");
     int tupleNum = 10000;
     VTuple vTuple = null;
+
     for(int i = 0; i < tupleNum; i++) {
-      vTuple = new VTuple(2);
-      vTuple.put(0, DatumFactory.createString("abc"));
-      vTuple.put(1, DatumFactory.createInt((i+1)));
-      appender.addTuple(vTuple);
+      vTuple = new VTuple(6);
+      vTuple.put(0, DatumFactory.createInt((Integer)(i+1)));
+      vTuple.put(1, DatumFactory.createString("haemi"));
+      vTuple.put(2, DatumFactory.createInt(25));
+      vTuple.put(3, DatumFactory.createString("a"));
+      vTuple.put(4, DatumFactory.createString("korea"));
+      vTuple.put(5, DatumFactory.createString("sanbon"));
+      appender.addTuple(vTuple);      
     }
     appender.close();
 
-		FileSystem fs = LocalFileSystem.get(conf);
-		FileStatus status = sm.listTableFiles("table1")[0];		    
-		long fileLen = status.getLen();		// 88894
-		long randomNum = (long) (Math.random() * fileLen) + 1;
-		
-		Fragment[] tablets = new Fragment[1];
-		Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, randomNum);
-		tablets[0] = tablet;
-		
-		FileScanner fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
-		int tupleCnt = 0;
-		while((vTuple = (VTuple) fileScanner.next()) != null) {
-		  tupleCnt++;
-		}
-		fileScanner.close();
-		
-		tablet = new Fragment("table1_2", status.getPath(), meta, 
-		    randomNum, fileLen - randomNum);
-		tablets[0] = tablet;
-		fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
+    FileSystem fs = LocalFileSystem.get(conf);
+    FileStatus status = fs.getFileStatus(new Path(path, "table1/data/file1"));
+    long fileLen = status.getLen();
+    long midLen = 288894;
+
+    Fragment[] tablets = new Fragment[1];  
+    tablets[0] = new Fragment("frag1", new Path(path, "table1/data/file1"), meta, 0, midLen);
+    
+    FileScanner fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
+    int tupleCnt = 0;
+    while ((vTuple = (VTuple) fileScanner.next()) != null) {
+      tupleCnt++;
+    }
+    fileScanner.close();
+    
+    tablets[0] = new Fragment("frag2", new Path(path, "table1/data/file1"), meta, midLen, fileLen - midLen);
+    fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
     while((vTuple = (VTuple) fileScanner.next()) != null) {
       tupleCnt++;
     }
-		fileScanner.close();		
-		
-		assertEquals(tupleNum, tupleCnt);
+    fileScanner.close();
+    
+    assertEquals(tupleNum, tupleCnt);
 	}
 	
 	@Test
@@ -102,8 +111,8 @@ public class TestCSVFile2 {
     meta.setSchema(schema);
     meta.setStorageType(StoreType.CSV); 
     
-    sm.initTableBase(meta, "table1");
-    Appender appender = sm.getAppender(meta, "table1", "table1.csv");
+    sm.initTableBase(meta, "table2");
+    Appender appender = sm.getAppender(meta, "table2", "table1.csv");
     
     byte [] image1 = new byte[32];
     
@@ -127,7 +136,7 @@ public class TestCSVFile2 {
     appender.flush();
     appender.close();
     
-    Scanner scanner = sm.getScanner("table1", "table1.csv");
+    Scanner scanner = sm.getScanner("table2", "table1.csv");
     Tuple tuple = scanner.next();    
     assertEquals(DatumFactory.createString("hyunsik"), tuple.get(0));
     assertEquals(DatumFactory.createInt(33), tuple.get(1));

@@ -79,8 +79,9 @@ public class TestLeafServer {
     tablets1[0] = new Fragment("table1_1", status.getPath(), meta, 0, 70000);
     LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(0);
 
+    long test = status.getLen();
     Fragment[] tablets2 = new Fragment[1];
-    tablets2[0] = new Fragment("table1_2", status.getPath(), meta, 70000, 10000);
+    tablets2[0] = new Fragment("table1_2", status.getPath(), meta, 70000, 1000);
     LeafServer leaf2 = util.getMiniNtaEngineCluster().getLeafServer(1);
 
     SubQueryRequest req = new SubQueryRequestImpl(0, new ArrayList<Fragment>(

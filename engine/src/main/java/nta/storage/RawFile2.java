@@ -1,5 +1,7 @@
 package nta.storage;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -26,245 +28,328 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 public class RawFile2 extends Storage {
-	
-	public static final Log LOG = LogFactory.getLog(RawFile2.class);
-	
-	public RawFile2(Configuration conf) {
-		super(conf);
-	}
+
+  public static final Log LOG = LogFactory.getLog(RawFile2.class);
+
+  public RawFile2(Configuration conf) {
+    super(conf);
+  }
 
   @Override
   public Appender getAppender(Schema schema, Path path)
-      throws IOException {
+  throws IOException {
     return new RawFileAppender(conf, schema, path);
   }
 
   @Override
   public Scanner openScanner(Schema schema, Fragment[] tablets)
-      throws IOException {
+  throws IOException {
     return new RawFileScanner(conf, schema, tablets);
   }
 
-	private static final int SYNC_ESCAPE = -1;
-	private static final int SYNC_HASH_SIZE = 16;
-	private static final int SYNC_SIZE = 4 + SYNC_HASH_SIZE;
-	public static int SYNC_INTERVAL;
-	
-	public static class RawFileScanner extends FileScanner {
-		private FSDataInputStream in;
-		private SortedSet<Fragment> tabletSet;
-		private Iterator<Fragment> tableIter;
-		private Fragment curTablet;
-		private FileSystem fs;
-		private byte[] sync;
-		private byte[] checkSync;
+  private static final int SYNC_ESCAPE = -1;
+  private static final int SYNC_HASH_SIZE = 16;
+  private static final int SYNC_SIZE = 4 + SYNC_HASH_SIZE;
+  public static int SYNC_INTERVAL;
 
-		private long start, end;
-		private long lastSyncPos;
-		private long headerPos;
-		
-		private Options option;
-		
-		public RawFileScanner(Configuration conf, final Schema schema, 
-		    final Fragment[] tablets) throws IOException {
-			super(conf, schema, tablets);
-		  init();
-		}
-		
-		public RawFileScanner(Configuration conf, final Schema schema, 
-		    final Fragment[] tablets, Options option) throws IOException {
-		  super(conf, schema, tablets);
-		  this.option = option;
-		  init();
-		}
-		
-		private void init() throws IOException {
-			this.tabletSet = new TreeSet<Fragment>();
-			this.sync = new byte[SYNC_HASH_SIZE];
-			this.checkSync = new byte[SYNC_HASH_SIZE];
-			
-			for (Fragment t: tablets) {
-				this.tabletSet.add(t);
-			}
-			this.tableIter = tabletSet.iterator();
-			openNextTablet();
-		}
-		
-		private boolean openNextTablet() throws IOException {
-			if (this.in != null) {
-				this.in.close();
-			}
-			if (tableIter.hasNext()) {
-				curTablet = tableIter.next();
-				this.fs = curTablet.getPath().getFileSystem(this.conf);
-				this.in = fs.open(curTablet.getPath());
-				this.start = curTablet.getStartOffset();
-				this.end = curTablet.getStartOffset() + curTablet.getLength();
-				
-				readHeader();
-				headerPos = in.getPos();
-				if (start < headerPos) {
-					in.seek(headerPos);
-				} else {
-					in.seek(start);
-				}
-				if (in.getPos() != headerPos) {
-					in.seek(in.getPos()-SYNC_SIZE);
-					while(in.getPos() < end) {
-						if (checkSync()) {
-							lastSyncPos = in.getPos();
-							break;
-						} else {
-							in.seek(in.getPos()+1);
-						}
-					}
-				}
-				return true;
-			} else {
-				return false;
-			}
-		}
-		
-		private void readHeader() throws IOException {
-			SYNC_INTERVAL = in.readInt();
-			in.read(this.sync, 0, SYNC_HASH_SIZE);
-			lastSyncPos = in.getPos();
-		}
-		
-		private boolean checkSync() throws IOException {
-			in.readInt();							// escape
-			in.read(checkSync, 0, SYNC_HASH_SIZE);	// sync
-			if (!Arrays.equals(checkSync, sync)) {
-				in.seek(in.getPos()-SYNC_SIZE);
-				return false;
-			} else {
-				return true;
-			}
-		}
+  public static class RawFileScanner extends FileScanner {
+    private FSDataInputStream in;
+    private SortedSet<Fragment> tabletSet;
+    private Iterator<Fragment> tableIter;
+    private Fragment curTablet;
+    private FileSystem fs;
+    private byte[] sync;
+    private byte[] checkSync;
+    private long start, end, headerPos, lastSyncPos; 
+    private Options option;
 
-		@Override
-		public Tuple next() throws IOException {
-			boolean checkSyncFlag = true;
-			if (in.available() == 0) {
-				// Open next tablet
-				if (!openNextTablet()) {
-					return null;
-				} else {
-					checkSyncFlag = false;
-				}
-			}
-			
-			// check sync
-			if (checkSyncFlag && checkSync()) {
-				if (in.getPos() >= end) {
-					if (!openNextTablet()) {
-						return null;
-					}
-				}
-				lastSyncPos = in.getPos();
-			}
-			
-			if (in.available() == 0) {
-				if (!openNextTablet()) {
-					return null;
-				}
-			}
-			
-			int i;
-			VTuple tuple = new VTuple(schema.getColumnNum());
+    public RawFileScanner(Configuration conf, final Schema schema, 
+        final Fragment[] tablets) throws IOException {
+      super(conf, schema, tablets);
+      init();
+    }
 
-			boolean [] contains = new boolean[schema.getColumnNum()];
-			for (i = 0; i < schema.getColumnNum(); i++) {
-				contains[i] = in.readBoolean();
-			}
+    public RawFileScanner(Configuration conf, final Schema schema, 
+        final Fragment[] tablets, Options option) throws IOException {
+      super(conf, schema, tablets);
+      this.option = option;
+      init();
+    }
 
-			Column col = null;
-			for (i = 0; i < schema.getColumnNum(); i++) {
-				if (contains[i]) {
-					col = schema.getColumn(i);
-					switch (col.getDataType()) {
-					case BYTE:
-						tuple.put(i, DatumFactory.createByte(in.readByte()));
-						break;
-					case SHORT:
-						tuple.put(i, DatumFactory.createShort(in.readShort()));
-						break;
-					case INT:
-						tuple.put(i, DatumFactory.createInt(in.readInt()));
-						break;
-					case LONG:
-						tuple.put(i, DatumFactory.createLong(in.readLong()));
-						break;
-					case FLOAT:
-						tuple.put(i, DatumFactory.createFloat(in.readFloat()));
-						break;
-					case DOUBLE:
-						tuple.put(i, DatumFactory.createDouble(in.readDouble()));
-						break;
-					case STRING:
-						short len = in.readShort();
-						byte[] buf = new byte[len];
-						in.read(buf, 0, len);
-						tuple.put(i, DatumFactory.createString(new String(buf)));
-						break;
-					case IPv4:
-						byte[] ipv4 = new byte[4];
-						in.read(ipv4, 0, 4);
-						tuple.put(i, DatumFactory.createIPv4(ipv4));
-						break;
-					default:
-						break;
-					}
-				}
-			}
+    private void init() throws IOException {
+      this.tabletSet = new TreeSet<Fragment>();
+      this.sync = new byte[SYNC_HASH_SIZE];
+      this.checkSync = new byte[SYNC_HASH_SIZE];
 
-			return tuple;
-		}
+      for (Fragment t: tablets) {
+        this.tabletSet.add(t);
+      }
+      this.tableIter = tabletSet.iterator();
+      openNextTablet();
+    }
 
-		@Override
-		public void reset() throws IOException {
-			in.reset();
-		}
+    private boolean openNextTablet() throws IOException {
+      if (this.in != null) {
+        this.in.close();
+      }
+      if (tableIter.hasNext()) {
+        curTablet = tableIter.next();
+        this.fs = curTablet.getPath().getFileSystem(this.conf);
+        this.in = fs.open(curTablet.getPath());
+        this.start = curTablet.getStartOffset();
+        this.end = curTablet.getStartOffset() + curTablet.getLength();
+
+        if (start == 0) { // read sync maker.
+          readHeader();
+        }
+        if (!pageBuffer()) {
+          return false;
+        }
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    private void readHeader() throws IOException {
+      SYNC_INTERVAL = in.readInt();
+      in.read(this.sync, 0, SYNC_HASH_SIZE);
+      lastSyncPos = in.getPos();
+    }
+
+    private boolean checkSync() throws IOException {
+      in.readInt(); // escape
+      in.read(checkSync, 0, SYNC_HASH_SIZE);  // sync
+      if (!Arrays.equals(checkSync, sync)) {
+        in.seek(in.getPos()-SYNC_SIZE);
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    private long pageStart, pageLen;
+    private int tupleSize, pieceSize1, pieceSize2, bufferSize, defaultSize = 65536;
+    private byte[] buffer;
+    ByteArrayInputStream in_byte;
+    DataInputStream in_buffer;     
+    private boolean pageBuffer() throws IOException {
+      if (in.getPos() - SYNC_SIZE == start) { // first.
+        tupleSize = checkTupleSize();
+        buffer = new byte[defaultSize];
+        pageStart = in.getPos();
+        in.read(buffer);
+      } else if (in_buffer.available() > 0 || in.available() > 0) { // tuple 이 잘림.
+        pieceSize1 = in_buffer.available();      
+        pieceSize2 = in.available();
+
+        if (pieceSize1 + pieceSize2 < defaultSize) {
+          bufferSize = pieceSize1 + pieceSize2;
+          buffer = new byte[bufferSize];
+          in_buffer.read(buffer, 0, pieceSize1);
+          pageStart = in.getPos() - pieceSize1;
+          in.read(buffer, pieceSize1, pieceSize2);
+        } else {
+          bufferSize = defaultSize;
+          buffer = new byte[bufferSize];
+          in_buffer.read(buffer, 0, pieceSize1);
+          pageStart = in.getPos() - pieceSize1;
+          in.read(buffer, pieceSize1, (bufferSize - pieceSize1));
+        }
+      } else {
+        if (!openNextTablet()) {  // last.
+          return false;
+        }
+      }
+      pageLen = buffer.length;
+      in_byte = new ByteArrayInputStream(buffer);
+      in_buffer = new DataInputStream(in_byte);
+//      checkSyncinPage();
+      return true;
+    }
+
+    private boolean checkSyncinPage() throws IOException {  // page buffer 안의 sync maker 를 확인.
+      in_buffer.mark(1);
+      in_buffer.readInt();  // escape
+      in_buffer.read(checkSync, 0, SYNC_HASH_SIZE);  // sync
+      if (!Arrays.equals(checkSync, sync)) {
+        in_buffer.reset();
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    private int checkTupleSize() throws IOException { // raw type 은 tuple 사이를 구분 할 수 없으므로, tuple size 를 예측해서 tuple 구분을 함.
+      int i;
+      long before = in.getPos();
+
+      boolean [] contains = new boolean[schema.getColumnNum()];
+      for (i = 0; i < schema.getColumnNum(); i++) {
+        contains[i] = in.readBoolean();
+      }
+
+      Column col = null;
+      for (i = 0; i < schema.getColumnNum(); i++) {
+        if (contains[i]) {
+          col = schema.getColumn(i);
+          switch (col.getDataType()) {
+          case BYTE:
+            in.readByte();
+            break;
+          case SHORT:
+            in.readShort();
+            break;
+          case INT:
+            in.readInt();
+            break;
+          case LONG:
+            in.readLong();
+            break;
+          case FLOAT:
+            in.readFloat();
+            break;
+          case DOUBLE:
+            in.readDouble();
+            break;
+          case STRING:
+            short len = in.readShort();
+            byte[] buf = new byte[len];
+            in.read(buf, 0, len);
+            break;
+          case IPv4:
+            byte[] ipv4 = new byte[4];
+            in.read(ipv4, 0, 4);
+            break;
+          default:
+            break;
+          }
+        }
+      }
+      long after = in.getPos();
+      in.seek(before);
+      return (int) (after - before);
+    }
+
+    @Override
+    public Tuple next() throws IOException {
+      if (in_buffer.available() == 0) { // page buffer 다 읽음.
+        if (!pageBuffer()) {
+          return null;
+        }       
+      }
+      if (in_buffer.available() < tupleSize) {  // tuple 잘릴 것임. 
+        if (!pageBuffer()) {
+          return null;
+        }
+      }
+      if (checkSyncinPage()) {  // page buffer 에 sync maker 가 있는지 확인.
+        if (in_buffer.available() == 0) { // sync maker 읽었더니 page buffer 다 읽음.
+          if (!pageBuffer()) {
+            return null;
+          }
+        }
+        if (in_buffer.available() < tupleSize) { // sync maker 읽었더니 tuple 잘릴 것임.
+          if (!pageBuffer()) {
+            return null;
+          }
+        }
+      }
+
+      int i;
+      VTuple tuple = new VTuple(schema.getColumnNum());
+
+      boolean [] contains = new boolean[schema.getColumnNum()];
+      for (i = 0; i < schema.getColumnNum(); i++) {
+        contains[i] = in_buffer.readBoolean();
+      }
+
+      Column col = null;
+      for (i = 0; i < schema.getColumnNum(); i++) {
+        if (contains[i]) {
+          col = schema.getColumn(i);
+          switch (col.getDataType()) {
+          case BYTE:
+            tuple.put(i, DatumFactory.createByte(in_buffer.readByte()));
+            break;
+          case SHORT:
+            tuple.put(i, DatumFactory.createShort(in_buffer.readShort()));
+            break;
+          case INT:
+            tuple.put(i, DatumFactory.createInt(in_buffer.readInt()));
+            break;
+          case LONG:
+            tuple.put(i, DatumFactory.createLong(in_buffer.readLong()));
+            break;
+          case FLOAT:
+            tuple.put(i, DatumFactory.createFloat(in_buffer.readFloat()));
+            break;
+          case DOUBLE:
+            tuple.put(i, DatumFactory.createDouble(in_buffer.readDouble()));
+            break;
+          case STRING:
+            short len = in_buffer.readShort();
+            byte[] buf = new byte[len];
+            in_buffer.read(buf, 0, len);
+            tuple.put(i, DatumFactory.createString(new String(buf)));
+            break;
+          case IPv4:
+            byte[] ipv4 = new byte[4];
+            in_buffer.read(ipv4, 0, 4);
+            tuple.put(i, DatumFactory.createIPv4(ipv4));
+            break;
+          default:
+            break;
+          }
+        }
+      }
+      return tuple;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      in.reset();
+    }
 		
     @Override
     public Schema getSchema() {     
       return this.schema;
     }
 
-		@Override
-		public void close() throws IOException {
-			if (in != null) {
-				in.close();
-			}
-		}		
-	}
-	
-	public static class RawFileAppender extends FileAppender {
-		private FSDataOutputStream out;
-		private long lastSyncPos;
-		private FileSystem fs;
-		private byte[] sync;
-		
-		public RawFileAppender(Configuration conf, final Schema schema, 
-		    final Path path) throws IOException {
-		  super(conf, schema, path);			
-      
-			fs = path.getFileSystem(conf);
-			
-			if (!fs.exists(path.getParent())) {
+    @Override
+    public void close() throws IOException {
+      if (in != null) {
+        in.close();
+      }
+    }   
+  }
+
+  public static class RawFileAppender extends FileAppender {
+    private FSDataOutputStream out;
+    private long lastSyncPos;
+    private FileSystem fs;
+    private byte[] sync;
+
+    public RawFileAppender(Configuration conf, final Schema schema, 
+        final Path path) throws IOException {
+      super(conf, schema, path);      
+
+      fs = path.getFileSystem(conf);
+
+      if (!fs.exists(path.getParent())) {
         throw new FileNotFoundException(path.toString());
       }
-      
+
       if (fs.exists(path)) {
         throw new AlreadyExistsStorageException(path);
       }
-      
+
       SYNC_INTERVAL = conf.getInt(NConstants.RAWFILE_SYNC_INTERVAL, SYNC_SIZE*100);     
       sync = new byte[SYNC_HASH_SIZE];
       lastSyncPos = 0;
-			
+
       out = fs.create(path);
-			
+
       MessageDigest md;
       try {
         md = MessageDigest.getInstance("MD5");
@@ -273,7 +358,7 @@ public class RawFile2 extends Storage {
       } catch (NoSuchAlgorithmException e) {
         LOG.error(e);
       }
-      
+
       writeHeader();
 		}
 		
@@ -363,6 +448,6 @@ public class RawFile2 extends Storage {
 				sync();
 			}
 		}
-		
 	}
 }
+
