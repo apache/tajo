@@ -29,6 +29,7 @@ import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.storage.Appender;
+import nta.storage.Scanner;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -142,6 +143,7 @@ public class TestPhysicalPlanner {
       "select name from employee where empId = 100", // 5
       "select deptName, class, score from score_1", // 6
       "select deptName, class, sum(score), max(score), min(score) from score_1 group by deptName, class", // 7
+      "grouped := select deptName, class, sum(score), max(score), min(score) from score_1 group by deptName, class", // 8
   };
 
   public final void testCreateScanPlan() throws IOException {
@@ -177,7 +179,6 @@ public class TestPhysicalPlanner {
     SubqueryContext ctx = factory.create(new Fragment[] {frags[0]});
     QueryBlock query = analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    
     LogicalOptimizer.optimize(ctx, plan);
     
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
@@ -195,5 +196,32 @@ public class TestPhysicalPlanner {
     assertEquals(10, i);
     long end = System.currentTimeMillis();
     //System.out.println((end - start)+" msc");
+  }
+  
+  @Test
+  public final void testStorePlan() throws IOException {
+    Fragment [] frags = sm.split("score"); 
+    factory = new SubqueryContext.Factory(catalog);
+    SubqueryContext ctx = factory.create(new Fragment[] {frags[0]});
+    QueryBlock query = analyzer.parse(ctx, QUERIES[8]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    
+    LogicalOptimizer.optimize(ctx, plan);
+    
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    exec.next();
+    
+    Scanner scanner = sm.getScanner("grouped", "grouped_0");
+    Tuple tuple = null;
+    int i=0;
+    while((tuple = scanner.next()) != null) {
+      assertEquals(6, tuple.getInt(2).asInt()); // sum
+      assertEquals(3, tuple.getInt(3).asInt()); // max
+      assertEquals(1, tuple.getInt(4).asInt()); // min
+      i++;
+    }
+    assertEquals(10, i);
+    scanner.close();
   }
 }

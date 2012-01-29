@@ -23,9 +23,11 @@ public class SubqueryContext extends Context {
   private final CatalogService catalog;
   private final Map<String, Fragment> fragmentMap
     = new HashMap<String, Fragment>();
+  
+  private int queryId;
   private QueryBlock query;
   
-  private SubqueryContext(CatalogService catalog, Fragment [] fragments) {
+  private SubqueryContext(CatalogService catalog, int queryId, Fragment [] fragments) {
     this.catalog = catalog;
     
     for(Fragment t : fragments) {
@@ -44,13 +46,18 @@ public class SubqueryContext extends Context {
     }
     
     public SubqueryContext create(Fragment [] fragments) {
-      return new SubqueryContext(catalog, fragments);
+      return new SubqueryContext(catalog, 0, fragments);
     }
     
     public SubqueryContext create(SubQueryRequest request) {
-      return new SubqueryContext(catalog, request.getFragments().
-          toArray(new Fragment [request.getFragments().size()]));
+      return new SubqueryContext(catalog, request.getId(), 
+          request.getFragments().toArray(
+              new Fragment [request.getFragments().size()]));
     }
+  }
+  
+  public int getQueryId() {
+    return this.queryId;
   }
 
   @Override

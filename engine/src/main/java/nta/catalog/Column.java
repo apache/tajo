@@ -86,14 +86,18 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 	public boolean equals(Object o) {
 		if (o instanceof Column) {
 			Column cd = (Column)o;
-			if (this.name.equals(cd.getName()) &&
-					this.getId() == cd.getId() &&
+			if (this.getName().equals(cd.getName()) &&
 					this.getDataType() == cd.getDataType()
 					) {
 				return true;
 			}
 		}
 		return false;
+	}
+	
+	@Override
+	public int hashCode() {
+	  return this.getName().hashCode();
 	}
 
 	@Override

@@ -86,6 +86,8 @@ public class LogicalPlanner {
     LogicalNode subNode = createSelectPlan(ctx, query);
     
     StoreTableNode storeNode = new StoreTableNode(query.getStoreTable());
+    storeNode.setInputSchema(subNode.getOutputSchema());
+    storeNode.setOutputSchema(subNode.getOutputSchema());
     storeNode.setSubNode(subNode);
     
     return storeNode;
@@ -211,6 +213,16 @@ public class LogicalPlanner {
       stack.pop();
       break;
     
+    case STORE:
+      StoreTableNode storeNode = (StoreTableNode) logicalNode;
+      stack.push(storeNode);
+      refineInOutSchama(ctx, storeNode.getSubNode(), necessaryTargets, stack);
+      stack.pop();
+      inputSchema = storeNode.getSubNode().getOutputSchema();
+      storeNode.setInputSchema(inputSchema);
+      storeNode.setOutputSchema(inputSchema);
+      break;
+      
     case PROJECTION:
       ProjectionNode projNode = ((ProjectionNode)logicalNode);
       if(necessaryTargets != null) {

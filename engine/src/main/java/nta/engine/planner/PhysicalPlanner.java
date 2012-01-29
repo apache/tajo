@@ -14,9 +14,11 @@ import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.physical.GroupByExec;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.engine.planner.physical.SeqScanExec;
+import nta.engine.planner.physical.StoreTableExec;
 import nta.storage.StorageManager;
 
 /**
@@ -53,7 +55,12 @@ public class PhysicalPlanner {
     case ROOT:
       LogicalRootNode rootNode = (LogicalRootNode) logicalNode;
       return createPlanRecursive(ctx, rootNode.getSubNode());
-
+    
+    case STORE:
+      StoreTableNode storeNode = (StoreTableNode) logicalNode;
+      inner = createPlanRecursive(ctx, storeNode.getSubNode());
+      return createStorePlan(ctx, storeNode, inner);
+      
     case SELECTION:
       SelectionNode selNode = (SelectionNode) logicalNode;
       return createPlanRecursive(ctx, selNode.getSubNode());
@@ -68,8 +75,8 @@ public class PhysicalPlanner {
 
     case GROUP_BY:
       GroupbyNode grpNode = (GroupbyNode) logicalNode;
-      PhysicalExec subOp = createPlanRecursive(ctx, grpNode.getSubNode());   
-      return createGroupByPlan(ctx, grpNode, subOp);
+      inner = createPlanRecursive(ctx, grpNode.getSubNode());
+      return createGroupByPlan(ctx, grpNode, inner);
       
     case JOIN:   
     case RENAME:
@@ -85,6 +92,12 @@ public class PhysicalPlanner {
     default:
       return null;
     }
+  }
+  
+  public PhysicalExec createStorePlan(SubqueryContext ctx, StoreTableNode annotation,
+      PhysicalExec subOp) throws IOException {
+    StoreTableExec store = new StoreTableExec(sm, ctx.getQueryId(), annotation, subOp);
+    return store;
   }
 
   public PhysicalExec createScanPlan(SubqueryContext ctx, ScanNode scanNode)
