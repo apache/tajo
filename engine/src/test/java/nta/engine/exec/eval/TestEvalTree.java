@@ -57,12 +57,14 @@ public class TestEvalTree {
 
     @Override
     public Datum invoke(Datum... data) {
+      if(data[1] == null)
+        return data[0];
       return data[0].plus(data[1]);
     }
 
     @Override
     public DataType getResType() {
-      return DataType.ANY;
+      return DataType.INT;
     }
   }
   

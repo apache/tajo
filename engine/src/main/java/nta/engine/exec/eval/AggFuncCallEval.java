@@ -16,7 +16,7 @@ public class AggFuncCallEval extends FuncCallEval {
     Datum[] data = null;
 
     if (givenArgs != null) {
-      data = new Datum[givenArgs.length+1];
+      data = new Datum[givenArgs.length+args.length];
 
       for (int i = 0; i < givenArgs.length; i++) {
         data[i] = givenArgs[i].eval(schema, tuple);
@@ -25,7 +25,9 @@ public class AggFuncCallEval extends FuncCallEval {
       data = new Datum[1];
     }
     
-    data[data.length-1] = args[0];
+    // TODO - should consider multiple variables
+    if(args.length > 0)
+      data[data.length-1] = args[0];
 
     return instance.invoke(data);
   }

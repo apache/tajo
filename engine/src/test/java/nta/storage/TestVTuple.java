@@ -92,10 +92,12 @@ public class TestVTuple {
     t1.put(0, DatumFactory.createInt(1));
     t1.put(1, DatumFactory.createInt(2));
     t1.put(3, DatumFactory.createInt(2));
+    t1.put(4, DatumFactory.createString("hyunsik"));
     
     t2.put(0, DatumFactory.createInt(1));
     t2.put(1, DatumFactory.createInt(2));
     t2.put(3, DatumFactory.createInt(2));
+    t2.put(4, DatumFactory.createString("hyunsik"));
     
     assertEquals(t1.hashCode(),t2.hashCode());
     
