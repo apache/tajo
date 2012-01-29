@@ -92,4 +92,9 @@ public class BoolDatum extends Datum {
   public int size() {
     return 1;
   }
+  
+  @Override
+  public int hashCode() {
+    return val == true ? 1 : 0;
+  }
 }

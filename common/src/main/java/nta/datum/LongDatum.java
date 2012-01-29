@@ -92,4 +92,9 @@ public class LongDatum extends Datum {
   public int size() {
     return size;
   }
+  
+  @Override
+  public int hashCode() {
+    return (int) val;
+  }
 }

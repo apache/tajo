@@ -1,6 +1,7 @@
 package nta.storage;
 
 import java.net.InetAddress;
+import java.util.Arrays;
 
 import nta.datum.BoolDatum;
 import nta.datum.ByteDatum;
@@ -139,16 +140,28 @@ public class VTuple implements Tuple {
 		str.append(")");
 		return str.toString();
 	}
+	
+	@Override
+	public int hashCode() {
+	  int hashCode = 37;
+	  for (int i=0; i < values.length; i++) {
+	    if(values[i] != null) {
+        hashCode ^= (values[i].hashCode() * 41);
+	    } else {
+	      hashCode = hashCode ^ (i + 17);
+	    }
+	  }
+	  
+	  return hashCode;
+	}
 
-	public boolean equals(Object o) {
-		VTuple other = (VTuple) o;
-		
-		for(int i=0; i < values.length; i++) {
-			if(values[i] != other.values[i] ||
-					(values[i].equals(other.values[i]) == false))
-					return false;			                       
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof VTuple) {
+	    VTuple other = (VTuple) obj;
+	    return Arrays.equals(values, other.values);
 		}
-
-		return true;
+		
+		return false;
 	}
 }

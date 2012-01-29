@@ -66,4 +66,8 @@ public class ShortDatum extends Datum {
     return size;
   }
 
+  @Override
+  public int hashCode() {
+    return val;
+  }
 }

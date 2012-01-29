@@ -45,7 +45,6 @@ public class TestVTuple {
 		assertTrue(t1.contains(96));
 		assertFalse(t1.contains(97));
 		assertTrue(t1.contains(257));
-		System.out.println(t1);
 	}
 	
 	@Test
@@ -60,7 +59,51 @@ public class TestVTuple {
 		
 		assertEquals(t1.getString(0).toString(),"str");
 		assertEquals(t1.getInt(1).asInt(),2);
-		assertTrue(t1.getFloat(257).asFloat() == 0.76f);
-		
+		assertTrue(t1.getFloat(257).asFloat() == 0.76f);		
+	}
+	
+	public void testEquals() {
+	  Tuple t1 = new VTuple(5);
+	  Tuple t2 = new VTuple(5);
+	  
+	  t1.put(0, DatumFactory.createInt(1));
+	  t1.put(1, DatumFactory.createInt(2));
+	  t1.put(3, DatumFactory.createInt(2));
+	  
+	  t2.put(0, DatumFactory.createInt(1));
+    t2.put(1, DatumFactory.createInt(2));
+    t2.put(3, DatumFactory.createInt(2));
+    
+    assertEquals(t1,t2);
+    
+    Tuple t3 = new VTuple(5);
+    t2.put(0, DatumFactory.createInt(1));
+    t2.put(1, DatumFactory.createInt(2));
+    t2.put(4, DatumFactory.createInt(2));
+    
+    assertNotSame(t1,t3);
+	}
+	
+	@Test
+	public void testHashCode() {
+	  Tuple t1 = new VTuple(5);
+    Tuple t2 = new VTuple(5);
+    
+    t1.put(0, DatumFactory.createInt(1));
+    t1.put(1, DatumFactory.createInt(2));
+    t1.put(3, DatumFactory.createInt(2));
+    
+    t2.put(0, DatumFactory.createInt(1));
+    t2.put(1, DatumFactory.createInt(2));
+    t2.put(3, DatumFactory.createInt(2));
+    
+    assertEquals(t1.hashCode(),t2.hashCode());
+    
+    Tuple t3 = new VTuple(5);
+    t3.put(0, DatumFactory.createInt(1));
+    t3.put(1, DatumFactory.createInt(2));
+    t3.put(4, DatumFactory.createInt(2));
+    
+    assertNotSame(t1.hashCode(),t3.hashCode());
 	}
 }
