@@ -26,6 +26,7 @@ tokens {
   SHOW_TABLE;
   SHOW_FUNCTION;
   SORT_KEY;
+  STORE;
   STORE_TYPE;
   TABLE_DEF;
   TARGET_FIELDS;  
@@ -62,6 +63,7 @@ statement
   | dataStatement 
   | dataChangeStatement
   | schemaStatement 
+  | storeStatement
   ;
   
 controlStatement
@@ -82,6 +84,10 @@ dataChangeStatement
 schemaStatement
   : createTable
   | DROP TABLE table -> ^(DROP_TABLE table)
+  ;
+  
+storeStatement
+  : ID ASSIGN select_stmt -> ^(STORE ID select_stmt)
   ;
   
 createTable

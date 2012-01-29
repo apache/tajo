@@ -54,12 +54,21 @@ public final class QueryAnalyzer {
 
   public QueryBlock parse(final Context ctx, final String query) {
     CommonTree ast = parseTree(query);
-
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Analyzer: " + ast.toStringTree());
+    }
+    
     QueryBlock block = null;
 
     switch (getCmdType(ast)) {
     case SELECT:
-      block = parseSelectStatement(ctx, ast);
+      block = new QueryBlock(StatementType.SELECT);
+      parseSelectStatement(ctx, ast, block);
+      break;
+    case STORE:
+      block = new QueryBlock(StatementType.STORE);
+      block = parseStoreStatement(ctx, ast, block);
+      break;
     default:
       break;
     }
@@ -68,13 +77,22 @@ public final class QueryAnalyzer {
     return block;
 
   }
+  
+  public QueryBlock parseStoreStatement(final Context ctx,
+      final CommonTree ast, QueryBlock block) {
+    CommonTree node;
+    
+    node = (CommonTree) ast.getChild(0);
+    block.setStoreTable(node.getText());
+    
+    node = (CommonTree) ast.getChild(1);
+    parseSelectStatement(ctx, node, block);
+    
+    return block;
+  }
 
   public QueryBlock parseSelectStatement(final Context ctx,
-      final CommonTree ast) {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Parse: " + ast.toStringTree());
-    }
-    QueryBlock block = new QueryBlock(StatementType.SELECT);
+      final CommonTree ast, QueryBlock block) {
 
     CommonTree node;
     for (int cur = 0; cur < ast.getChildCount(); cur++) {
@@ -385,6 +403,8 @@ public final class QueryAnalyzer {
 
   private static StatementType getCmdType(final CommonTree ast) {
     switch (ast.getType()) {
+    case NQLParser.STORE:
+      return StatementType.STORE;
     case NQLParser.SELECT:
       return StatementType.SELECT;
     case NQLParser.INSERT:

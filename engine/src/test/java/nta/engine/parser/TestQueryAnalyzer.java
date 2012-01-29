@@ -92,7 +92,8 @@ public class TestQueryAnalyzer {
       "select name, score, age from people where 3 + 5 * 3", 
       "select age, sum(score) as total from people group by age having sum(score) > 30", // 3
       "select p.id, s.id, score, dept from people as p, student as s where p.id = s.id", // 4
-      "select name, score from people order by score asc, age desc" // 5
+      "select name, score from people order by score asc, age desc", // 5
+      "store1 := select name, score from people order by score asc, age desc",// 6
   };
 
   private String[] EXPRS = { "3 + 5 * 3" };
@@ -199,11 +200,23 @@ public class TestQueryAnalyzer {
   public final void testOrderByClause() {
     Context ctx = factory.create();
     QueryBlock block = analyzer.parse(ctx, QUERIES[5]);
+    testOrderByCluse(block);
+  }
+  
+  private static final void testOrderByCluse(QueryBlock block) {
     assertEquals(2, block.getSortKeys().length);
     assertEquals("people.score", block.getSortKeys()[0].getSortKey().getName());
     assertEquals(true, block.getSortKeys()[0].isAscending());    
     assertEquals("people.age", block.getSortKeys()[1].getSortKey().getName());
     assertEquals(false, block.getSortKeys()[1].isAscending());
+  }
+  
+  @Test
+  public final void testStoreTable() {
+    Context ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[6]);
+    assertEquals("store1", block.getStoreTable());
+    testOrderByCluse(block);
   }
   
   private String [] INVALID_QUERIES = {
