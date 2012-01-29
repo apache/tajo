@@ -60,9 +60,9 @@ public class GroupbyNode extends UnaryNode {
       if(i < columns.length - 1)
         sb.append(",");
     }
-    
+    sb.append("],");
     if(hasHavingCondition()) {
-      sb.append("], \"having qual\": \""+havingCondition+"\"");
+      sb.append("\"having qual\": \""+havingCondition+"\"");
     }
     if(hasTargetList()) {
       sb.append(", \"target\": [");
