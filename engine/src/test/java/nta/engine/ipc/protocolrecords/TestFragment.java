@@ -33,25 +33,42 @@ public class TestFragment {
 
   @Test
   public final void testGetAndSetFields() {    
-    Fragment tablet1 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500);
+    Fragment fragment1 = new Fragment("table1_1", new Path("/table0"), 
+        meta1, 0, 500);
 
-    assertEquals("table1_1", tablet1.getId());
-    assertEquals(new Path("/table0"), tablet1.getPath());
-    assertEquals(meta1, tablet1.getMeta());
-    assertEquals(0, tablet1.getStartOffset());
-    assertEquals(500, tablet1.getLength());
+    assertEquals("table1_1", fragment1.getId());
+    assertEquals(new Path("/table0"), fragment1.getPath());
+    assertEquals(meta1.getStoreType(), fragment1.getMeta().getStoreType());
+    assertEquals(meta1.getSchema().getColumnNum(), 
+        fragment1.getMeta().getSchema().getColumnNum());
+    for(int i=0; i < meta1.getSchema().getColumnNum(); i++) {
+      assertEquals(meta1.getSchema().getColumn(i).getColumnName(), 
+          fragment1.getMeta().getSchema().getColumn(i).getColumnName());
+      assertEquals(meta1.getSchema().getColumn(i).getDataType(), 
+          fragment1.getMeta().getSchema().getColumn(i).getDataType());
+    }
+    assertEquals(0, fragment1.getStartOffset());
+    assertEquals(500, fragment1.getLength());
   }
 
   @Test
   public final void testTabletTabletProto() {
-    Fragment tablet1 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500);
+    Fragment fragment0 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500);
     
-    Fragment tablet2 = new Fragment(tablet1.getProto());
-    assertEquals("table1_1", tablet2.getId());
-    assertEquals(new Path("/table0"), tablet2.getPath());
-    assertEquals(meta1, tablet2.getMeta());
-    assertEquals(0, tablet2.getStartOffset());
-    assertEquals(500, tablet2.getLength());
+    Fragment fragment1 = new Fragment(fragment0.getProto());
+    assertEquals("table1_1", fragment1.getId());
+    assertEquals(new Path("/table0"), fragment1.getPath());
+    assertEquals(meta1.getStoreType(), fragment1.getMeta().getStoreType());
+    assertEquals(meta1.getSchema().getColumnNum(), 
+        fragment1.getMeta().getSchema().getColumnNum());
+    for(int i=0; i < meta1.getSchema().getColumnNum(); i++) {
+      assertEquals(meta1.getSchema().getColumn(i).getColumnName(), 
+          fragment1.getMeta().getSchema().getColumn(i).getColumnName());
+      assertEquals(meta1.getSchema().getColumn(i).getDataType(), 
+          fragment1.getMeta().getSchema().getColumn(i).getDataType());
+    }
+    assertEquals(0, fragment1.getStartOffset());
+    assertEquals(500, fragment1.getLength());
   }
 
   @Test

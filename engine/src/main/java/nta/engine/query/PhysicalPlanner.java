@@ -5,10 +5,8 @@ package nta.engine.query;
 
 import java.io.IOException;
 
-import nta.catalog.CatalogServer;
 import nta.catalog.CatalogService;
 import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
 import nta.engine.exception.InternalException;
 import nta.engine.exec.DescTableOp;
 import nta.engine.exec.PhysicalOp;

@@ -1,5 +1,5 @@
 package nta.catalog;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 
 import org.junit.Before;
@@ -64,5 +64,15 @@ public class TestColumn {
 		assertEquals(field1.getDataType(),Type1);
 		assertEquals(field2.getDataType(),Type2);
 		assertEquals(field3.getDataType(),Type3);
+	}
+	
+	@Test
+	public final void testQualifiedName() {
+	  ColumnBase col = new ColumnBase("table_1.id", DataType.INT);
+	  
+	  assertTrue(col.isQualifiedName());
+	  assertEquals("id", col.getColumnName());
+	  assertEquals("table_1.id", col.getName());
+	  assertEquals("table_1", col.getTableName());
 	}
 }

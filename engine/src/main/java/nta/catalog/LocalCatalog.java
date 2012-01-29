@@ -82,7 +82,7 @@ public class LocalCatalog implements CatalogService {
   }
 
   @Override
-  public final FunctionDesc getFunctionMeta(final String signature,
+  public final FunctionDesc getFunction(final String signature,
       DataType...paramTypes) {
     return FunctionDesc.create(catalog.getFunctionMeta(signature, paramTypes));
   }

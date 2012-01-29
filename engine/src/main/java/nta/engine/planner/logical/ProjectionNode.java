@@ -8,8 +8,12 @@ import nta.engine.parser.QueryBlock.Target;
  *
  */
 public class ProjectionNode extends UnaryNode {
-	private Target [] targets;
-
+  private Target [] targets;
+	
+  public ProjectionNode() {
+    super(ExprType.PROJECTION);
+  }
+  
 	public ProjectionNode(Target [] targets) {		
 		super(ExprType.PROJECTION);
 		this.targets = targets;
@@ -17,6 +21,10 @@ public class ProjectionNode extends UnaryNode {
 	
 	public Target [] getTargetList() {
 	  return this.targets;
+	}
+	
+	public boolean isAll() {
+	  return targets == null;
 	}
 	
 	public String toString() {

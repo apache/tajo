@@ -9,8 +9,8 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
-import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.query.SubQueryRequestImpl;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
@@ -85,12 +85,12 @@ public class TestLeafServer {
 
     SubQueryRequest req = new SubQueryRequestImpl(0, new ArrayList<Fragment>(
         Arrays.asList(tablets1)), new Path(TEST_PATH, "out").toUri(),
-        "select * from table1_1 where id > 5100", "table1");
+        "select * from table1_1 where id > 5100");
     leaf1.requestSubQuery(req.getProto());
 
     SubQueryRequest req2 = new SubQueryRequestImpl(1, new ArrayList<Fragment>(
         Arrays.asList(tablets2)), new Path(TEST_PATH, "out").toUri(),
-        "select * from table1_2 where id > 5100", "table1");
+        "select * from table1_2 where id > 5100");
     leaf2.requestSubQuery(req2.getProto());
 
     leaf1.shutdown("Normally Shutdown");

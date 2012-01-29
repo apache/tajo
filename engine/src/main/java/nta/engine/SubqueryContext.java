@@ -7,9 +7,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import nta.catalog.CatalogService;
-import nta.catalog.TableDesc;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
+import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.Target;
 
 
@@ -19,10 +19,11 @@ import nta.engine.parser.QueryBlock.Target;
  * @author Hyunsik Choi
  *
  */
-public class SubqueryContext implements Context {
+public class SubqueryContext extends Context {
   private final CatalogService catalog;
   private final Map<String, Fragment> fragmentMap
     = new HashMap<String, Fragment>();
+  private QueryBlock query;
   
   private SubqueryContext(CatalogService catalog, Fragment [] fragments) {
     this.catalog = catalog;
@@ -30,6 +31,10 @@ public class SubqueryContext implements Context {
     for(Fragment t : fragments) {
       fragmentMap.put(t.getId(), t);
     }
+  }
+  
+  public void setParseTree(QueryBlock query) {
+    this.query = query;
   }
   
   public static class Factory {
@@ -44,43 +49,32 @@ public class SubqueryContext implements Context {
     
     public SubqueryContext create(SubQueryRequest request) {
       return new SubqueryContext(catalog, request.getFragments().
-          toArray(new Fragment [request.getTableName().length()]));
+          toArray(new Fragment [request.getFragments().size()]));
     }
   }
 
   @Override
-  public TableDesc getInputTable(String id) {
+  public Fragment getTable(String id) {
     return fragmentMap.get(id);
-  }
-
-  @Override
-  public CatalogService getCatalog() {
-    return this.catalog;
   }
   
   @Override
   public boolean hasWhereClause() {
-    // TODO - before it, SubqueryContext should be improved to
-    // include some query optimization hints.
-    return false;
+    return query.hasWhereClause();
   }
 
   @Override
   public boolean hasGroupByClause() {
-    // TODO - before it, SubqueryContext should be improved to
-    // include some query optimization hints.
-    return false;  
+    return query.hasGroupbyClause();
   }
 
   @Override
   public Target[] getTargetList() {
-    return null;
+    return query.getTargetList();
   }
 
   @Override
   public boolean hasJoinClause() {
-    // TODO - before it, SubqueryContext should be improved to
-    // include some query optimization hints.
-    return false;
+    return query.getFromTables().length > 1;
   }
 }

@@ -16,7 +16,6 @@ message SubQueryRequestProto {
 	repeated TabletProto tablets = 2;
 	required string dest = 3;
 	required string query = 4;
-	required string tableName = 5;
 }
 
 message SubQueryResponseProto {

@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
-import nta.catalog.CatalogServer;
 import nta.catalog.CatalogService;
 import nta.catalog.ColumnBase;
 import nta.catalog.FunctionDesc;
@@ -22,7 +21,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
-import nta.datum.IntDatum;
+import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.function.Function;
 import nta.engine.parser.QueryAnalyzer;
@@ -122,30 +121,33 @@ public class TestEvalTree {
         DatumFactory.createInt(500), 
         DatumFactory.createInt(30));
 
+    QueryContext.Factory factory = new QueryContext.Factory(cat);
+    QueryAnalyzer analyzer = new QueryAnalyzer(cat);
+    
     QueryBlock block = null;
     EvalNode expr = null;
 
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
-    
-    block = QueryAnalyzer.parse(QUERIES[0], cat);
+    QueryContext ctx = factory.create();
+    block = analyzer.parse(ctx, QUERIES[0]);
     expr = block.getWhereCondition();
     assertEquals(true, expr.eval(peopleSchema, tuple)
         .asBool());
 
-    block = QueryAnalyzer.parse(QUERIES[1], cat);
+    block = analyzer.parse(ctx, QUERIES[1]);
     expr = block.getWhereCondition();
     assertEquals(15000, expr.eval(peopleSchema, tuple).asInt());
 
-    block = QueryAnalyzer.parse(QUERIES[2], cat);
+    block = analyzer.parse(ctx, QUERIES[2]);
     expr = block.getWhereCondition();
     assertEquals(15050, expr.eval(peopleSchema, tuple).asInt());
     
-    block = QueryAnalyzer.parse(QUERIES[2], cat);
+    block = analyzer.parse(ctx, QUERIES[2]);
     expr = block.getWhereCondition();
     assertEquals(15050, expr.eval(peopleSchema, tuple).asInt());
     
     // Aggregation function test
-    block = QueryAnalyzer.parse(QUERIES[4], cat);
+    block = analyzer.parse(ctx, QUERIES[4]);
     expr = block.getTargetList()[0].getEvalTree();
     Datum accumulated = DatumFactory.createInt(0);
     

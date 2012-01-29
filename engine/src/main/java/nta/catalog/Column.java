@@ -15,10 +15,11 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 	
 	// volatile variable
 	private Integer id;
-	
+	  
 	public Column(int columnId, String columnName, DataType dataType) {		
 	  super(columnName, dataType);
 		setId(columnId);
+		this.builder = ColumnProto.newBuilder();
 	}
 	
 	public Column(ColumnProto proto) {

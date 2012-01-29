@@ -1,9 +1,9 @@
 package nta.engine.planner;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Collection;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.Stack;
@@ -200,10 +200,16 @@ public class LogicalPlanner {
     
     case PROJECTION:
       ProjectionNode projNode = ((ProjectionNode)logicalNode);
-      if(necessaryTargets != null) { // optimization phase
-        for(Target t : projNode.getTargetList()) {
-          getTargetListFromEvalTree(projNode.getInputSchema(), t.getEvalTree(), 
-              necessaryTargets);
+      if(necessaryTargets != null) {
+        if(projNode.isAll()) {
+          for(Column column : projNode.getOutputSchema().targetList.values()) {
+            necessaryTargets.add(column);
+          }          
+        } else {
+          for(Target t : projNode.getTargetList()) {
+            getTargetListFromEvalTree(projNode.getInputSchema(), t.getEvalTree(), 
+                necessaryTargets);
+          }
         }
         
         stack.push(projNode);
@@ -223,13 +229,17 @@ public class LogicalPlanner {
       }
       
       projNode.setInputSchema(projNode.getSubNode().getOutputSchema());
-      TargetList prjTargets = new TargetList();
-      for(Target t : projNode.getTargetList()) {
-        DataType type = t.getEvalTree().getValueType();
-        String name = t.getEvalTree().getName();
-        prjTargets.put(new Column(-1, name,type));
+      if(projNode.isAll()) {
+        projNode.setOutputSchema(projNode.getInputSchema());  
+      } else {
+        TargetList prjTargets = new TargetList();
+        for(Target t : projNode.getTargetList()) {
+          DataType type = t.getEvalTree().getValueType();
+          String name = t.getEvalTree().getName();
+          prjTargets.put(new Column(-1, name,type));
+        }
+        projNode.setOutputSchema(prjTargets);
       }
-      projNode.setOutputSchema(prjTargets);
       
       break;
       
@@ -296,7 +306,7 @@ public class LogicalPlanner {
     case SCAN:
       ScanNode scanNode = ((ScanNode)logicalNode);
       Schema scanSchema = 
-          ctx.getInputTable(scanNode.getTableId()).getMeta().getSchema();
+          ctx.getTable(scanNode.getTableId()).getMeta().getSchema();
       TargetList scanTargetList = new TargetList();
       scanTargetList.put(scanSchema);
       scanNode.setInputSchema(scanTargetList);

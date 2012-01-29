@@ -38,6 +38,7 @@ import org.junit.Test;
 public class TestLogicalPlanner {
   private CatalogService catalog;
   private QueryContext.Factory factory;
+  private QueryAnalyzer analyzer;
 
   @Before
   public void setUp() throws Exception {
@@ -72,7 +73,7 @@ public class TestLogicalPlanner {
         FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
 
     catalog.registerFunction(funcDesc);
-
+    analyzer = new QueryAnalyzer(catalog);
     factory = new QueryContext.Factory(catalog);
   }
 
@@ -93,8 +94,8 @@ public class TestLogicalPlanner {
 
   @Test
   public final void testSingleRelation() {
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[0], catalog);
-    QueryContext ctx = factory.create(block);
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -113,8 +114,8 @@ public class TestLogicalPlanner {
   @Test
   public final void testMultiRelations() {
     // two relations
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[1], catalog);
-    QueryContext ctx = factory.create(block);
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[1]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 
     assertEquals(ExprType.ROOT, plan.getType());
@@ -134,8 +135,8 @@ public class TestLogicalPlanner {
     assertEquals("dept", rightNode.getTableId());
 
     // three relations
-    block = QueryAnalyzer.parse(QUERIES[2], catalog);
-    ctx = factory.create(block);
+    ctx = factory.create();
+    block = analyzer.parse(ctx, QUERIES[2]);
     plan = LogicalPlanner.createPlan(ctx, block);
 
     assertEquals(ExprType.ROOT, plan.getType());
@@ -165,9 +166,8 @@ public class TestLogicalPlanner {
   @Test
   public final void testGroupby() {
     // without 'having clause'
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[7], catalog);
-    
-    QueryContext ctx = factory.create(block);
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 
     assertEquals(ExprType.ROOT, plan.getType());
@@ -187,8 +187,8 @@ public class TestLogicalPlanner {
     assertEquals("score", rightNode.getTableId());
     
     // with having clause
-    block = QueryAnalyzer.parse(QUERIES[3], catalog);
-    ctx = factory.create(block);
+    ctx = factory.create();
+    block = analyzer.parse(ctx, QUERIES[3]);
     plan = LogicalPlanner.createPlan(ctx, block);
 
     assertEquals(ExprType.ROOT, plan.getType());
@@ -215,8 +215,8 @@ public class TestLogicalPlanner {
 
   @Test
   public final void testOrderBy() {
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[4], catalog);
-    QueryContext ctx = factory.create(block);
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[4]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 
     assertEquals(ExprType.ROOT, plan.getType());
@@ -241,9 +241,10 @@ public class TestLogicalPlanner {
 
   @Test
   public final void testSPJPush() {
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[5], catalog);
-    QueryContext ctx = factory.create(block);
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[5]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
@@ -263,8 +264,8 @@ public class TestLogicalPlanner {
   
   @Test
   public final void testSPJ() {
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[6], catalog);
-    QueryContext ctx = factory.create(block);
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[6]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 /*    System.out.println(plan);
     System.out.println("-------------------");

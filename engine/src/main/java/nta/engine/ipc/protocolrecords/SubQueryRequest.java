@@ -7,18 +7,16 @@ import nta.common.ProtoObject;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 
 /**
- * This contains the rewrote query and its global query plan. 
+ * This contains the rewrote query and a part of a global query plan. 
  * 
- * @author hyunsik
+ * @author Hyunsik Choi
  */
 public interface SubQueryRequest extends ProtoObject<SubQueryRequestProto> {
 	public int getId();
 	
 	public String getQuery();
-	
-	public String getTableName();
 
   public List<Fragment> getFragments();
 
-  public URI getOutputDest();
+  public URI getOutputPath();
 }

@@ -368,7 +368,7 @@ public class NQL {
 			}			
 		case NQLParser.FUNCTION:
 			String funcName = tree.getText();
-			FunctionDesc func = cat.getFunctionMeta(funcName);
+			FunctionDesc func = cat.getFunction(funcName);
 			if(func == null) {
 				throw new UndefinedFunctionException(funcName);
 			}

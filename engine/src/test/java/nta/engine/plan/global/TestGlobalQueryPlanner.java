@@ -61,6 +61,7 @@ public class TestGlobalQueryPlanner {
 	private static Schema schema;
 	private static NtaEngineMaster master;
 	private static QueryContext.Factory factory;
+	private static QueryAnalyzer analyzer;
 	
 	@BeforeClass
 	public static void setup() throws Exception {
@@ -97,6 +98,7 @@ public class TestGlobalQueryPlanner {
 		catalog.registerFunction(funcDesc);
 		    
 		planner = new GlobalQueryPlanner(catalog);
+		analyzer = new QueryAnalyzer(catalog);
 		factory = new QueryContext.Factory(catalog);
 
 		int tbNum = 2;
@@ -189,10 +191,11 @@ public class TestGlobalQueryPlanner {
 //	@Test
 	public void testLocalizeSimpleOp() throws IOException, KeeperException, InterruptedException {
 		catalog.updateAllTabletServingInfo(master.getOnlineServer());
-		
-		QueryBlock block = QueryAnalyzer.parse("select age, sum(salary) from table0 group by age", catalog);
-	    QueryContext ctx = factory.create(block);
-	    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+		  
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx,
+        "select age, sum(salary) from table0 group by age");
+	  LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 		
 //		TableProto tableProto = (TableProto) FileUtil.loadProto(conf, new Path("/table0/.meta"), 
 //			      TableProto.getDefaultInstance());
@@ -218,10 +221,10 @@ public class TestGlobalQueryPlanner {
 //	@Test
 	public void testDecompose() throws IOException, KeeperException, InterruptedException {
 		catalog.updateAllTabletServingInfo(master.getOnlineServer());
-		
-		QueryBlock block = QueryAnalyzer.parse("select age, sum(salary) from table0 group by age", catalog);
-	    QueryContext ctx = factory.create(block);
-	    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    QueryContext ctx = factory.create();
+		QueryBlock block = analyzer.parse(ctx, 
+		    "select age, sum(salary) from table0 group by age");
+	  LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 		
 		GenericTaskGraph taskTree = planner.localize(plan);
 		List<DecomposedQuery> queries = planner.decompose(taskTree);
@@ -234,7 +237,7 @@ public class TestGlobalQueryPlanner {
 			same = same && queries.get(i).getQuery().getQuery().equals(queries.get(i+1).getQuery().getQuery());
 			exist = false;
 			for (int j = 0; j < tabletServInfo.size(); j++) {
-				if (tabletServInfo.get(j).getTablet().getId().equals(queries.get(i).getQuery().getTableName())) {
+				if (tabletServInfo.get(j).getTablet().equals(queries.get(i).getQuery().getFragments().get(0))) {
 					exist = true;
 					break;
 				}

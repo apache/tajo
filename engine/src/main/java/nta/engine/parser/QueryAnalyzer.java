@@ -1,9 +1,5 @@
 package nta.engine.parser;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import nta.catalog.CatalogService;
 import nta.catalog.CatalogUtil;
 import nta.catalog.Column;
@@ -15,6 +11,7 @@ import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.datum.DatumFactory;
+import nta.engine.Context;
 import nta.engine.exception.InternalException;
 import nta.engine.exec.eval.AggFuncCallEval;
 import nta.engine.exec.eval.BinaryEval;
@@ -44,36 +41,35 @@ import com.google.common.base.Preconditions;
 /**
  * This class transforms a query statement into a QueryBlock. 
  * 
- * @author hyunsik
+ * @author Hyunsik Choi
  * 
  * @see QueryBlock
  */
 public final class QueryAnalyzer {
   private static final Log LOG = LogFactory.getLog(QueryAnalyzer.class);
-  
-  private QueryAnalyzer() {
-    // nothing
+  private final CatalogService catalog;
+  public QueryAnalyzer(CatalogService catalog) {
+    this.catalog = catalog;
   }
 
-  public static QueryBlock parse(final String query, 
-      final CatalogService catalog) {
+  public QueryBlock parse(final Context ctx, final String query) {
     CommonTree ast = parseTree(query);
 
     QueryBlock block = null;
-    ParseContext context = new ParseContext(catalog);
 
     switch (getCmdType(ast)) {
     case SELECT:
-      block = parseSelectStatement(context, ast);
+      block = parseSelectStatement(ctx, ast);
     default:
       break;
     }
 
+    ctx.setParseTree(block);
     return block;
 
   }
 
-  public static QueryBlock parseSelectStatement(final ParseContext ctx,
+  public QueryBlock parseSelectStatement(final Context ctx,
       final CommonTree ast) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Parse: " + ast.toStringTree());
@@ -121,7 +117,7 @@ public final class QueryAnalyzer {
    * @param block
    * @param ast
    */
-  private static void parseFromClause(final ParseContext ctx, 
+  private static void parseFromClause(final Context ctx, 
       final QueryBlock block, final CommonTree ast) {
     int numTables = ast.getChildCount(); //
 
@@ -142,10 +138,10 @@ public final class QueryAnalyzer {
           if (node.getChildCount() > 1) {
             table = new FromTable(desc, 
                 node.getChild(1).getText());
-            ctx.mapTables(table.getTableId(), table.getAlias());
+            ctx.renameTable(table.getTableId(), table.getAlias());
           } else {
             table = new FromTable(desc);
-            ctx.mapTables(table.getTableId(), table.getTableId());
+            ctx.renameTable(table.getTableId(), table.getTableId());
           }
           
           tables[i] = table;
@@ -177,7 +173,7 @@ public final class QueryAnalyzer {
    * @param block
    * @param ast
    */
-  private static void parseSelectList(final ParseContext ctx, 
+  private void parseSelectList(final Context ctx, 
       final QueryBlock block, final CommonTree ast) {    
   
     if (ast.getChild(0).getType() == NQLParser.ALL) {
@@ -208,7 +204,7 @@ public final class QueryAnalyzer {
     }    
   }
   
-  private static void parseWhereClause(final ParseContext ctx, 
+  private void parseWhereClause(final Context ctx, 
       final QueryBlock block, final CommonTree ast) {
     EvalNode evalTree = createEvalTree(ctx, ast.getChild(0));
     block.setWhereCondition(evalTree);
@@ -225,7 +221,7 @@ public final class QueryAnalyzer {
    * @param block
    * @param ast
    */
-  private static void parseGroupByClause(final ParseContext ctx, 
+  private void parseGroupByClause(final Context ctx, 
       final QueryBlock block, final CommonTree ast) {
     
     int numFields = ast.getChildCount();
@@ -256,7 +252,7 @@ public final class QueryAnalyzer {
   }
   
 
-  private static void parseOrderByClause(final ParseContext ctx,
+  private static void parseOrderByClause(final Context ctx,
       final QueryBlock block, final CommonTree ast) {
     int numSortKeys = ast.getChildCount();
     SortKey[] sortKeys = new SortKey[numSortKeys];
@@ -275,7 +271,7 @@ public final class QueryAnalyzer {
     block.setSortKeys(sortKeys);
   }
   
-  private static Column checkAndGetColumnByAST(final ParseContext ctx,
+  private static Column checkAndGetColumnByAST(final Context ctx,
       final CommonTree fieldNode) {
     Preconditions.checkArgument(NQLParser.FIELD_NAME == fieldNode.getType());
     
@@ -297,19 +293,19 @@ public final class QueryAnalyzer {
     return column;
   }
   
-  private static TableDesc checkAndGetTableByMappedName(final ParseContext ctx,
+  private static TableDesc checkAndGetTableByMappedName(final Context ctx,
       final String tableName) {
-      String realName = ctx.getMappedName(tableName);
+      String realName = ctx.getActualTableName(tableName);
       return checkAndGetTableByName(ctx, realName);
   }
   
-  private static TableDesc checkAndGetTableByName(final ParseContext ctx,
+  private static TableDesc checkAndGetTableByName(final Context ctx,
       final String tableName) {
     TableDesc desc = null;
 
     try {
       desc =
-          ctx.getCatalog().getTableDesc(tableName);
+          ctx.getTable(tableName);
     } catch (NoSuchTableException nst) {
       throw new InvalidQueryException("ERROR: table \"" + tableName
           + "\" does not exist");
@@ -338,14 +334,14 @@ public final class QueryAnalyzer {
    * @param columnName field name to be find
    * @return a found column
    */
-  private static Column expectTableByField(ParseContext ctx, String columnName) {
+  private static Column expectTableByField(Context ctx, String columnName) {
     TableDesc desc = null;
     Schema schema = null;
     Column column = null;    
     int count = 0;
-    for(String table : ctx.getTables()) {
+    for(String table : ctx.getInputTables()) {
       desc =
-          ctx.getCatalog().getTableDesc(table);
+          ctx.getTable(table);
       schema = desc.getMeta().getSchema();
       
       if(schema.contains(table+"."+columnName)) {
@@ -408,7 +404,7 @@ public final class QueryAnalyzer {
     }
   }
   
-  public static EvalNode createEvalTree(final ParseContext ctx, 
+  public EvalNode createEvalTree(final Context ctx, 
       final Tree ast) {
     switch(ast.getType()) {
         
@@ -474,12 +470,11 @@ public final class QueryAnalyzer {
         givenArgs[i] = createEvalTree(ctx, ast.getChild(i));
         paramTypes[i] = givenArgs[i].getValueType();
       }
-      if (!ctx.getCatalog().containFunction(signature, paramTypes)) {
+      if (!catalog.containFunction(signature, paramTypes)) {
         throw new UndefinedFunctionException(CatalogUtil.
             getCanonicalName(signature, paramTypes));
       }
-      FunctionDesc funcDesc = ctx.getCatalog().
-          getFunctionMeta(signature, paramTypes);
+      FunctionDesc funcDesc = catalog.getFunction(signature, paramTypes);
       try {
         if (funcDesc.getFuncType() == FunctionType.GENERAL)
           return new FuncCallEval(funcDesc, funcDesc.newInstance(), givenArgs);
@@ -492,30 +487,5 @@ public final class QueryAnalyzer {
     default:
     }
     return null;
-  }
-  
-  private static class ParseContext {
-    private final CatalogService catalog;
-    private final Map<String, String> tableMap = new HashMap<String, String>();
-    
-    public ParseContext(final CatalogService catalog) {
-      this.catalog = catalog;
-    }
-    
-    public CatalogService getCatalog() {
-      return this.catalog;
-    }
-    
-    public void mapTables(final String tableName, final String aliasName) {
-      tableMap.put(aliasName, tableName);
-    }
-    
-    public String getMappedName(final String givenName) {
-      return this.tableMap.get(givenName);
-    }
-    
-    public Collection<String> getTables() {
-      return tableMap.values();
-    }
   }
 }

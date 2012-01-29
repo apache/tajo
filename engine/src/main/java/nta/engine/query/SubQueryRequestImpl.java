@@ -11,16 +11,15 @@ import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.Fragment;
 
 /**
- * @author hyunsik
+ * @author Hyunsik Choi
  * @author jihoon
  * 
  */
 public class SubQueryRequestImpl implements SubQueryRequest {
+  private List<Fragment> fragments;
 	private int id;
-  private List<Fragment> tablets;
   private URI dest;
   private String query;
-  private String tableName;
   
   private SubQueryRequestProto proto = SubQueryRequestProto.getDefaultInstance();
   private SubQueryRequestProto.Builder builder = null;
@@ -31,13 +30,12 @@ public class SubQueryRequestImpl implements SubQueryRequest {
 	  this.id = -1;
   }
   
-  public SubQueryRequestImpl(int id, List<Fragment> tablets, URI output, String query, String tableName) {
+  public SubQueryRequestImpl(int id, List<Fragment> fragments, URI output, String query) {
 	  this();
 	  this.id = id;
-    this.tablets = tablets;
+    this.fragments = fragments;
     this.dest = output;
     this.query = query;
-    this.tableName = tableName;
   }
 
   public SubQueryRequestImpl(SubQueryRequestProto proto) {
@@ -62,20 +60,20 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   @Override
   public List<Fragment> getFragments() {
 	  SubQueryRequestProtoOrBuilder p = viaProto ? proto : builder;
-	  if (tablets != null) {
-		  return this.tablets;
+	  if (fragments != null) {
+		  return this.fragments;
 	  }
-	  if (tablets == null) {
-		  tablets = new ArrayList<Fragment>();
+	  if (fragments == null) {
+		  fragments = new ArrayList<Fragment>();
 	  }
 	  for (int i = 0; i < p.getTabletsCount(); i++) {
-		  tablets.add(new Fragment(p.getTablets(i)));
+		  fragments.add(new Fragment(p.getTablets(i)));
 	  }
-	  return this.tablets;
+	  return this.fragments;
   }
 
   @Override
-  public URI getOutputDest() {
+  public URI getOutputPath() {
 	  SubQueryRequestProtoOrBuilder p = viaProto ? proto : builder;
 	  if (dest != null) {
 		  return this.dest;
@@ -89,18 +87,6 @@ public class SubQueryRequestImpl implements SubQueryRequest {
 		e.printStackTrace();
 	}
 	  return this.dest;
-  }
-  
-  public String getTableName() {
-	  SubQueryRequestProtoOrBuilder p = viaProto ? proto : builder;
-	  if (tableName != null) {
-		  return this.tableName;
-	  }
-	  if (!proto.hasTableName()) {
-		  return null;
-	  }
-	  this.tableName = p.getTableName();
-	  return this.tableName;
   }
   
   public SubQueryRequestProto getProto() {
@@ -118,26 +104,22 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   }
   
   protected void mergeLocalToBuilder() {
-	  if (id != -1) {
-		  builder.setId(this.id);
-	  }
-	  if (tablets != null) {
-		  for (int i = 0; i < tablets.size(); i++) {
-			  builder.addTablets(tablets.get(i).getProto());
-		  }
-	  }
-	  
-	  if (this.dest != null) {
-		  builder.setDest(this.dest.toString());
-	  }
-	  
-	  if (this.query != null) {
-		  builder.setQuery(this.query);
-	  }
-	  
-	  if (this.tableName != null) {
-		  builder.setTableName(this.tableName);
-	  }
+    if (id != -1) {
+      builder.setId(this.id);
+    }
+    if (fragments != null) {
+      for (int i = 0; i < fragments.size(); i++) {
+        builder.addTablets(fragments.get(i).getProto());
+      }
+    }
+
+    if (this.dest != null) {
+      builder.setDest(this.dest.toString());
+    }
+
+    if (this.query != null) {
+      builder.setQuery(this.query);
+    }
   }
 
   private void mergeLocalToProto() {
