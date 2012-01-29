@@ -7,12 +7,15 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import nta.catalog.CatalogClient;
 import nta.catalog.CatalogService;
+import nta.catalog.FunctionDesc;
 import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
 import nta.conf.NtaConf;
 import nta.engine.LeafServerProtos.AssignTabletRequestProto;
 import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
@@ -23,11 +26,19 @@ import nta.engine.cluster.ServerNodeTracker;
 import nta.engine.ipc.LeafServerInterface;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
+import nta.engine.parser.QueryAnalyzer;
+import nta.engine.parser.QueryBlock;
+import nta.engine.planner.LogicalOptimizer;
+import nta.engine.planner.LogicalPlanner;
+import nta.engine.planner.PhysicalPlanner;
+import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.physical.PhysicalExec;
 import nta.engine.query.QueryEngine;
 import nta.engine.query.SubQueryRequestImpl;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
 import nta.storage.StorageManager;
+import nta.storage.Tuple;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkUtil;
 
@@ -38,7 +49,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.DNS;
-import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
 
 /**
@@ -78,6 +88,9 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	
 	private final Path basePath;
 	private final Path dataPath;
+	
+	private final QueryAnalyzer analyzer;
+	private final SubqueryContext.Factory ctxFactory;
 
 	public LeafServer(final Configuration conf) throws IOException {
 		this.conf = conf;
@@ -92,14 +105,7 @@ public class LeafServer extends Thread implements LeafServerInterface {
 		if (initialIsa.getAddress() == null) {
 			throw new IllegalArgumentException("Failed resolve of " + this.isa);
 		}
-		int numHandlers = conf.getInt("nta.master.handler.count",
-			conf.getInt("nta.leafserver.handler.count", 25));
-//		this.rpcServer = RPC.getServer(this,
-//			initialIsa.getHostName(), // BindAddress is IP we got for this server.
-//			initialIsa.getPort(),		        
-//			numHandlers,
-//			conf.getBoolean("nta.rpc.verbose", false), 
-//			conf);
+		
 		this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);
 		this.rpcServer.start();
 
@@ -134,8 +140,10 @@ public class LeafServer extends Thread implements LeafServerInterface {
 			LOG.info("Data dir ("+dataPath+") is created");
 		}
 		
-		this.catalog = new CatalogClient(conf);		
+		this.catalog = new CatalogClient(conf);
+		this.analyzer = new QueryAnalyzer(catalog);
 		this.storeManager = new StorageManager(conf);
+		this.ctxFactory = new SubqueryContext.Factory(catalog);
 
 		Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 	}
@@ -211,15 +219,23 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	@Override
 	public SubQueryResponseProto requestSubQuery(SubQueryRequestProto requestProto) throws IOException {
 	  SubQueryRequest request = new SubQueryRequestImpl(requestProto);
-	  
-	  TableDesc desc = null;
-	  for(Fragment tablet : request.getFragments()) {
-	    desc = new TableDescImpl(tablet.getId(), tablet.getMeta());
-	    desc.setPath(tablet.getPath());
-	    catalog.addTable(desc);
-	    ResultSetOld result = queryEngine.executeQuery(request.getQuery(), tablet);
-	    catalog.deleteTable(tablet.getId());
-	  }
+	  SubqueryContext ctx = ctxFactory.create(request);	  
+	  QueryBlock query = analyzer.parse(ctx, request.getQuery());
+	  LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+	  LogicalOptimizer.optimize(ctx, plan);
+    
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(storeManager);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    
+    Tuple tuple = null;
+    int i=0;
+    long start = System.currentTimeMillis();
+    while((tuple = exec.next()) != null) {
+      System.out.println(tuple);
+      i++;
+    }
+    long end = System.currentTimeMillis();
+    System.out.println((end - start)+" msc");
 	  
 	  return null;
 	}

@@ -1,5 +1,7 @@
 package nta.engine.ipc.protocolrecords;
 
+import nta.catalog.Column;
+import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
@@ -33,7 +35,18 @@ public class Fragment implements TableDesc, Comparable<Fragment> {
   public Fragment(String tabletId, Path path, TableMeta meta, long start,
       long length) {
     this();
-    this.set(tabletId, path, meta, start, length);
+    TableMeta newMeta = new TableMetaImpl(meta.getProto());
+    Schema newSchema = new Schema();
+    Column newColumn = null;
+    for(Column col : meta.getSchema().getColumns()) {
+      if(col.isQualifiedName() == false) {
+        newColumn = new Column(col.getProto());
+        newColumn.setName(tabletId+"."+col.getName());
+        newSchema.addColumn(newColumn);
+      }
+    }
+    newMeta.setSchema(newSchema);
+    this.set(tabletId, path, newMeta, start, length);
   }
 
   public Fragment(TabletProto proto) {
@@ -174,8 +187,9 @@ public class Fragment implements TableDesc, Comparable<Fragment> {
 
   @Override
   public String toString() {
-    return getPath() + "(start=" + this.getStartOffset() + ",length="
-        + getLength() + ")";
+    return "\"tablet\": {\"id\": \""+tabletId+"\", \"path\": "
+    		+getPath() + "\", \"start\": " + this.getStartOffset() + ",\"length\": "
+        + getLength() + "}";
   }
 
   public TabletProto getProto() {

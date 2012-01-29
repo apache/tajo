@@ -21,21 +21,21 @@ public interface CatalogService {
    * @see TableDescImpl
    * @throws Throwable
    */
-  TableDesc getTableDesc(String name) throws CatalogException;
+  TableDesc getTableDesc(String name);
   
   /**
    * 
    * @return
    * @throws CatalogException
    */
-  Collection<TableDesc> getAllTableDescs() throws CatalogException;
+  Collection<TableDesc> getAllTableDescs();
   
   /**
    * 
    * @return
    * @throws CatalogException
    */
-  Collection<FunctionDesc> getFunctions() throws CatalogException;
+  Collection<FunctionDesc> getFunctions();
   
   /**
    * Add a table via table description
@@ -43,27 +43,27 @@ public interface CatalogService {
    * @see TableDescImpl
    * @throws Throwable
    */
-  void addTable(TableDesc desc) throws CatalogException;
+  void addTable(TableDesc desc);
   
   /**
    * Drop a table by name
    * @param name table name
    * @throws Throwable
    */
-  void deleteTable(String name) throws CatalogException;
+  void deleteTable(String name);
   
   boolean existsTable(String tableId);
   
-  void registerFunction(FunctionDesc funcDesc) throws CatalogException;
+  void registerFunction(FunctionDesc funcDesc);
  
-  void unregisterFunction(String signature, DataType...paramTypes) throws CatalogException;
+  void unregisterFunction(String signature, DataType...paramTypes);
   
   /**
    * 
    * @param signature
    * @return
    */
-  FunctionDesc getFunctionMeta(String signature, DataType...paramTypes);
+  FunctionDesc getFunction(String signature, DataType...paramTypes);
   
   /**
    * 

@@ -25,16 +25,16 @@ public class ColumnBase {
 	}
 	
 	public boolean isQualifiedName() {
-	  return this.name.split(".").length == 2;
+	  return this.name.split("\\.").length == 2;
 	}
 	
 	public String getTableName() {
-	  return this.name.split(".")[0];
+	  return this.name.split("\\.")[0];
 	}
 	
 	public String getColumnName() {
 	  if(isQualifiedName())
-	    return this.name.split(".")[1];
+	    return this.name.split("\\.")[1];
 	  else
 	    return name;
   }

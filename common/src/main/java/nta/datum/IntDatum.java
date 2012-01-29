@@ -89,4 +89,9 @@ public class IntDatum extends Datum {
   public int size() {
     return size;
   }
+  
+  @Override
+  public int hashCode() {
+    return val;
+  }
 }

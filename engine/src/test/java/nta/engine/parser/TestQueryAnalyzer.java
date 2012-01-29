@@ -17,6 +17,8 @@ import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
+import nta.engine.Context;
+import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.parser.NQL.Query;
@@ -43,6 +45,8 @@ import org.junit.Test;
 public class TestQueryAnalyzer {
   private CatalogService cat = null;
   private Schema schema1 = null;
+  private QueryAnalyzer analyzer = null;
+  private QueryContext.Factory factory = null;
   
   @Before
   public void setUp() throws Exception {
@@ -73,6 +77,9 @@ public class TestQueryAnalyzer {
         new DataType [] {DataType.INT});
 
     cat.registerFunction(funcMeta);
+    
+    analyzer = new QueryAnalyzer(cat);
+    factory = new QueryContext.Factory(cat);
   }
 
   @After
@@ -148,11 +155,13 @@ public class TestQueryAnalyzer {
           DatumFactory.createInt(i));
     }
     
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[0], cat);
+    Context ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[0]);
 
     assertEquals(1, block.getNumFromTables());
 
-    block = QueryAnalyzer.parse(QUERIES[2], cat);
+    ctx = factory.create();
+    block = analyzer.parse(ctx, QUERIES[2]);
     EvalNode expr = block.getWhereCondition();
 
     long start = System.currentTimeMillis();
@@ -166,19 +175,21 @@ public class TestQueryAnalyzer {
  
   @Test
   public final void testSelectStatement() {
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[0], cat);
+    Context ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[0]);
     
     assertEquals(1, block.getFromTables().length);
     assertEquals("people", block.getFromTables()[0].getTableId());
-    
-    block = QueryAnalyzer.parse(QUERIES[3], cat);
+    ctx = factory.create();
+    block = analyzer.parse(ctx, QUERIES[3]);
     
     // TODO - to be more regressive
   }
   
   @Test
   public final void testSelectStatementWithAlias() {
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[4], cat);
+    Context ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[4]);
     assertEquals(2, block.getFromTables().length);
     assertEquals("people", block.getFromTables()[0].getTableId());
     assertEquals("student", block.getFromTables()[1].getTableId());
@@ -186,7 +197,8 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testOrderByClause() {
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[5], cat);
+    Context ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[5]);
     assertEquals(2, block.getSortKeys().length);
     assertEquals("people.score", block.getSortKeys()[0].getSortKey().getName());
     assertEquals(true, block.getSortKeys()[0].isAscending());    
@@ -201,23 +213,27 @@ public class TestQueryAnalyzer {
   };
   @Test(expected = InvalidQueryException.class)
   public final void testNoSuchTables()  {
-    QueryAnalyzer.parse(INVALID_QUERIES[0], cat);
+    Context ctx = factory.create();
+    analyzer.parse(ctx, INVALID_QUERIES[0]);
   }
   
   @Test(expected = InvalidQueryException.class)
   public final void testNoSuchFields()  {
-    QueryAnalyzer.parse(INVALID_QUERIES[1], cat);
+    Context ctx = factory.create();
+    analyzer.parse(ctx, INVALID_QUERIES[1]);
   }
   
   @Test
   public final void testGroupByClause() {
-    QueryBlock block = QueryAnalyzer.parse(QUERIES[3], cat);
+    Context ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[3]);
     assertEquals("people.age", block.getGroupFields()[0].getName());
   }
   
   @Test(expected = InvalidQueryException.class)
   public final void testInvalidGroupFields() {
-    QueryBlock block = QueryAnalyzer.parse(INVALID_QUERIES[2], cat);
+    Context ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, INVALID_QUERIES[2]);
     assertEquals("age", block.getGroupFields()[0].getName());
   }
 }

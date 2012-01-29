@@ -1,7 +1,11 @@
 package nta.engine;
 
-import nta.catalog.CatalogService;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import nta.catalog.TableDesc;
+import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.Target;
 
 /**
@@ -9,14 +13,42 @@ import nta.engine.parser.QueryBlock.Target;
  * 
  * @author Hyunsik Choi
  */
-public interface Context {  
-  TableDesc getInputTable(String id);
-
-  CatalogService getCatalog();
+public abstract class Context {
+  private Map<String, String> aliasMap = new HashMap<String, String>();
+  private QueryBlock query;
+  
+  public abstract TableDesc getTable(String id);
+  
+  public Collection<String> getInputTables() {
+    return aliasMap.values();
+  }
+  
+  public void renameTable(final String tableName, final String aliasName) {
+    aliasMap.put(aliasName, tableName);
+  }
+  
+  public String getActualTableName(final String aliasName) {
+    return this.aliasMap.get(aliasName);
+  }
+  
+  public void setParseTree(QueryBlock query) {
+    this.query = query;
+  }
   
   // Hints for planning and optimization
-  Target [] getTargetList();
-  boolean hasWhereClause();
-  boolean hasGroupByClause();
-  boolean hasJoinClause();
+  public boolean hasWhereClause() {
+    return query.hasWhereClause();
+  }
+
+  public boolean hasGroupByClause() {
+    return query.hasGroupbyClause();
+  }
+  
+  public boolean hasJoinClause() {    
+    return query.getFromTables().length > 1;
+  }
+
+  public Target[] getTargetList() {
+    return query.getTargetList();
+  }
 }

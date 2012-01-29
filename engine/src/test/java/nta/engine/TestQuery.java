@@ -3,7 +3,6 @@ package nta.engine;
 import java.io.IOException;
 import java.util.Random;
 
-import nta.catalog.CatalogServer;
 import nta.catalog.CatalogService;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;

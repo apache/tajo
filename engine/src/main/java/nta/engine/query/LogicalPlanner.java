@@ -3,7 +3,6 @@ package nta.engine.query;
 import java.util.ArrayList;
 import java.util.List;
 
-import nta.catalog.CatalogServer;
 import nta.catalog.CatalogService;
 import nta.catalog.Schema;
 import nta.catalog.exception.NoSuchTableException;

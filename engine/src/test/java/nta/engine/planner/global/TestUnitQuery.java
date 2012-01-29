@@ -3,13 +3,9 @@
  */
 package nta.engine.planner.global;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import nta.engine.ipc.protocolrecords.Fragment;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  * @author jihoon

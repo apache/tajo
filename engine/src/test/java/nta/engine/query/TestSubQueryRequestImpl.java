@@ -35,7 +35,7 @@ public class TestSubQueryRequestImpl {
 		tablets.add(new Fragment("test1_4",new Path("test4"), meta, 3, 4));
 		tablets.add(new Fragment("test1_5",new Path("test5"), meta, 4, 5));
 		
-		SubQueryRequest req1 = new SubQueryRequestImpl(0, tablets, new URI("out1"), "select test1", "table1");
+		SubQueryRequest req1 = new SubQueryRequestImpl(0, tablets, new URI("out1"), "select test1");
 		
 		SubQueryRequestProto.Builder builder = SubQueryRequestProto.newBuilder();
 		builder.setId(0);
@@ -44,7 +44,6 @@ public class TestSubQueryRequestImpl {
 		}
 		builder.setDest("out1");
 		builder.setQuery("select test1");
-		builder.setTableName("table1");
 		SubQueryRequest req2 = new SubQueryRequestImpl(builder.build());
 		
 		List<Fragment> t1 = req1.getFragments();
@@ -54,8 +53,7 @@ public class TestSubQueryRequestImpl {
 		for (int i = 0; i < t1.size(); i++) {
 			assertEquals(t1.get(i), t2.get(i));
 		}
-		assertEquals(req1.getOutputDest(), req2.getOutputDest());
+		assertEquals(req1.getOutputPath(), req2.getOutputPath());
 		assertEquals(req1.getQuery(), req2.getQuery());
-		assertEquals(req1.getTableName(), req2.getTableName());
 	}
 }

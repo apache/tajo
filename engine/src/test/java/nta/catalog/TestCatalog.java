@@ -176,7 +176,7 @@ public class TestCatalog {
 
     catalog.registerFunction(meta);
 		assertTrue(catalog.containFunction("test2", DataType.INT));
-		FunctionDesc retrived = catalog.getFunctionMeta("test2", DataType.INT);
+		FunctionDesc retrived = catalog.getFunction("test2", DataType.INT);
 
 		assertEquals(retrived.getSignature(),"test2");
 		assertEquals(retrived.getFuncClass(),TestFunc1.class);

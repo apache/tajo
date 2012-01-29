@@ -7,11 +7,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import nta.catalog.CatalogServer;
 import nta.catalog.CatalogService;
-import nta.catalog.Schema;
 import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
 import nta.engine.EngineService;
 import nta.engine.QueryContext;
 import nta.engine.ResultSetMemImplOld;
@@ -24,7 +21,6 @@ import nta.engine.parser.QueryBlock;
 import nta.engine.plan.global.DecomposedQuery;
 import nta.engine.plan.global.GenericTaskGraph;
 import nta.engine.planner.LogicalPlanner;
-import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.rpc.NettyRpc;
 import nta.storage.StorageManager;
@@ -43,6 +39,7 @@ public class GlobalEngine implements EngineService {
 	
 	private final Configuration conf;
 	private final CatalogService catalog;
+	private final QueryAnalyzer analyzer;
 	private final StorageManager storageManager;
 	private QueryContext.Factory factory;
 	
@@ -55,7 +52,8 @@ public class GlobalEngine implements EngineService {
 		this.conf = conf;
 		this.catalog = cat;
 		this.storageManager = sm;
-		factory = new QueryContext.Factory(catalog);
+		this.analyzer = new QueryAnalyzer(cat);
+		this.factory = new QueryContext.Factory(catalog);
 		
 //		loPlanner = new LogicalPlanner(this.catalog);
 		globalPlanner = new GlobalQueryPlanner(this.catalog);
@@ -67,8 +65,8 @@ public class GlobalEngine implements EngineService {
 	}
 	
 	public ResultSetOld executeQuery(String querystr) throws Exception {
-		QueryBlock block = QueryAnalyzer.parse(querystr, catalog);
-	    QueryContext ctx = factory.create(block);
+	  QueryContext ctx = factory.create();
+	  QueryBlock block = analyzer.parse(ctx, querystr);	    
 	    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 
 	    GenericTaskGraph taskTree = globalPlanner.localize(plan);

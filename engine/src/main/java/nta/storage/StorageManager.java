@@ -48,11 +48,21 @@ public class StorageManager {
 		LOG.info("Storage Manager initialized");
 	}
 	
+	public static StorageManager get(Configuration conf) throws IOException {
+	  return new StorageManager(conf);
+	}
+	
 	public static StorageManager get(Configuration conf, String dataRoot) 
 	    throws IOException {
 	  conf.set(NConstants.ENGINE_DATA_DIR, dataRoot);
     return new StorageManager(conf);
 	}
+	
+	public static StorageManager get(Configuration conf, Path dataRoot) 
+      throws IOException {
+    conf.set(NConstants.ENGINE_DATA_DIR, dataRoot.toString());
+    return new StorageManager(conf);
+  }
 	
 	public Path initTableBase(TableMeta meta, String tableName) 
 	    throws IOException {
@@ -235,7 +245,7 @@ public class StorageManager {
           i++;
         }
       } else {
-        listTablets.add(new Fragment(file.getPath().getName(), file.getPath(), meta, 0,
+        listTablets.add(new Fragment(tablePath.getName()+"_1", file.getPath(), meta, 0,
             fileBlockSize));
       }
       i++;

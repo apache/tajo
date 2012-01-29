@@ -3,12 +3,10 @@ package nta.engine.query;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import nta.catalog.CatalogServer;
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
 import nta.engine.EngineService;
 import nta.engine.ResultSetMemImplOld;
 import nta.engine.ResultSetOld;

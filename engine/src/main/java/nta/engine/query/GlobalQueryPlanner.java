@@ -219,7 +219,7 @@ public class GlobalQueryPlanner {
 					List<Fragment> tablets = new ArrayList<Fragment>();
 					tablets.add(t);
 					request = new SubQueryRequestImpl(0, tablets, new Path("hdfs://out/"+System.currentTimeMillis()).toUri(), 
-							strQuery, t.getId());
+							strQuery);
 					for (TabletServInfo servInfo : tabletServInfoList) {
 						if (servInfo.getTablet().equals(request.getFragments().get(0))) {
 							host = servInfo.getHostName();
