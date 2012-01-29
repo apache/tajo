@@ -125,4 +125,8 @@ public class StringDatum extends Datum {
   public int size() {
     return val.getBytes().length;
   }
+  
+  public int hashCode() {
+    return val.hashCode();
+  }
 }

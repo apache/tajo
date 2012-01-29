@@ -45,7 +45,7 @@ public class SeqScanExec extends PhysicalExec {
         
     int i=0;
     for (Column target : annotation.getTargetList().getColumns()) {
-      targetIds[i] = annotation.getInputSchema().getColumn(target.getName()).getId();
+      targetIds[i] = inputSchema.getColumn(target.getName()).getId();
       i++;
     }
     
@@ -54,17 +54,28 @@ public class SeqScanExec extends PhysicalExec {
 
   @Override
   public Tuple next() throws IOException {
-    
     if (!annotation.hasQual()) {
       if ((tuple = scanner.next()) != null) {
-        return tuple;
+        Tuple newTuple = new VTuple(outputSchema.getColumnNum());
+        int i=0;
+        for(int cid : targetIds) {
+          newTuple.put(i, tuple.get(cid));
+          i++;
+        }
+        return newTuple;
       } else {
         return null;
       }
     } else {
       while ((tuple = scanner.next()) != null) {        
         if (qual.eval(inputSchema, tuple).asBool()) {
-          return tuple;
+          Tuple newTuple = new VTuple(outputSchema.getColumnNum());
+          int i=0;
+          for(int cid : targetIds) {
+            newTuple.put(i, tuple.get(cid));
+            i++;
+          }
+          return newTuple;
         }
       }
       return null;
