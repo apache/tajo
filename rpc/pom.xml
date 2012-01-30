@@ -4,7 +4,7 @@
 	<groupId>kr.ac.korea.dbserver</groupId>
 	<artifactId>nta-rpc</artifactId>
 	<version>0.3.0-SNAPSHOT</version>
-	<name>rpc</name>
+	<name>Nta Rpc</name>
 	<description>RPC Server/Client Implementation based on Netty and Protocol Buffer</description>
 
 	<build>
