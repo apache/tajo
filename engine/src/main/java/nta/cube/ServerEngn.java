@@ -59,5 +59,7 @@ public class ServerEngn {
     /* 4. write to hdfs */
     Write.write(conf, big_cuboid, conf.getGlobalOutput());
 
+//    System.out.println("WriteFin");
+    
   }
 }
