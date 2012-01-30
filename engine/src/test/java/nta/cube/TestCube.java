@@ -47,7 +47,7 @@ public class TestCube {
     /* test input generate */
     
 
-    Cons.datapath = new String("/home/lbn0216/workspace/data");
+    Cons.datapath = new String("target/test-data/Cubetest/");
 
     Schema_cube.SetOriginSchema();
     Cons.datagen();
@@ -144,6 +144,8 @@ public class TestCube {
     conf.setNodenum(2);
     ServerEngn se = new ServerEngn();
     se.run(conf);
+    
+    System.out.println("server fin");
   }
 
   public class testThread extends Thread {
@@ -156,9 +158,9 @@ public class TestCube {
     public void run() {
       LocalEngn le = new LocalEngn();
       try {
-        // System.out.println("thread" + conf.getNodenum() + " start");
+         System.out.println("thread" + conf.getNodenum() + " start");
         le.run(conf);
-        // System.out.println("thread" + conf.getNodenum() + " end");
+         System.out.println("thread" + conf.getNodenum() + " end");
       } catch (IOException e) {
         e.printStackTrace();
       } catch (InterruptedException e) {
