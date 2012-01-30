@@ -57,7 +57,10 @@ public class ServerEngn {
     big_cuboid.cuboid.add(summarytable);
 
     /* 4. write to hdfs */
-    Write.write(conf, big_cuboid, conf.getGlobalOutput());
+    Write w = new Write();
+    w.write(conf, big_cuboid, conf.getGlobalOutput());
+
+    // System.out.println("WriteFin5");
 
 //    System.out.println("WriteFin");
     
