@@ -1,10 +1,26 @@
 package nta.cube;
 
+import java.io.IOException;
+
 import nta.catalog.Schema;
+import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.datum.DatumFactory;
+import nta.engine.EngineTestingUtils;
+import nta.storage.Appender;
+import nta.storage.StorageManager;
+import nta.storage.VTuple;
+
+import org.apache.hadoop.conf.Configuration;
 
 /* test용 schema */
-public class Schema_cube {
+public class TestCubeSchema {
+
+  public static int data = 10;
+  public static Schema TEST_SCHEMA;
+  public static String datapath;
 
   public static void SetOriginSchema() {
     Schema schema = new Schema();
@@ -35,7 +51,31 @@ public class Schema_cube {
     schema.addColumn("dst_net", DataType.INT);
     schema.addColumn("dst_net2", DataType.INT);
     schema.addColumn("dst_net3", DataType.INT);
+    
+    TEST_SCHEMA = schema;
+  }
 
-    Cons.ORIGIN_SCHEMA = schema;
+  public static void datagen() throws IOException {
+
+    String TEST_PATH = datapath;
+    EngineTestingUtils.buildTestDir(TEST_PATH);
+
+    StorageManager sm = StorageManager.get(new Configuration(), datapath);
+    TableMeta meta = new TableMetaImpl();
+    meta.setSchema(TEST_SCHEMA);
+    meta.setStorageType(StoreType.CSV);
+
+    Appender appender = sm.getTableAppender(meta, "origin");
+    int tupleNum = data;
+    VTuple vTuple = null;
+    for (int i = 0; i < tupleNum; i++) {
+      vTuple = new VTuple(TEST_SCHEMA.getColumnNum());
+      vTuple.put(0, DatumFactory.createInt(i%3));
+      vTuple.put(1, DatumFactory.createInt(i));
+      vTuple.put(2, DatumFactory.createInt(50-i));
+      vTuple.put(3, DatumFactory.createInt(65535));
+      appender.addTuple(vTuple);
+    }
+    appender.close();
   }
 }

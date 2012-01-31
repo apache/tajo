@@ -40,7 +40,8 @@ public class LocalEngn {
 
     /* 5. make cuboid */
     cuboid.cuboid.add(tablelist);
-    Write.write(conf, cuboid, Cons.immediatepath);
+    Write w = new Write();
+    w.write(conf, cuboid, Cons.immediatepath);
 
     ClientInterface proxy = (ClientInterface) NettyRpc
         .getProtoParamAsyncRpcProxy(ServerInterface.class,

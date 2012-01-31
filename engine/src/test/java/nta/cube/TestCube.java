@@ -1,6 +1,13 @@
 package nta.cube;
 
+import static org.junit.Assert.assertEquals;
+
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.concurrent.ExecutionException;
 
 import nta.catalog.FunctionDesc;
@@ -13,8 +20,6 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
-import nta.engine.EngineTestingUtils;
-import nta.engine.NConstants;
 import nta.engine.QueryContext;
 import nta.engine.function.Aggavg;
 import nta.engine.function.Aggcount;
@@ -28,7 +33,6 @@ import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalRootNode;
-import nta.storage.StorageManager;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
@@ -41,22 +45,23 @@ public class TestCube {
   String inputpath;
   String outputpath;
   public static String[] QUERIES = { "select src_net, aggsum(dst_net + dst_net2) from nta group by src_net" };
-  
+
   @Before
   public void setUp() throws Exception {
     /* test input generate */
-    
 
-    Cons.datapath = new String("target/test-data/Cubetest/");
+    TestCubeSchema.datapath = new String("target/test-data/TestCube");
+    Cons.datapath = TestCubeSchema.datapath;
 
-    Schema_cube.SetOriginSchema();
-    Cons.datagen();
+    TestCubeSchema.SetOriginSchema();
+    TestCubeSchema.datagen();
     Cons.immediatepath = new String("immediate");
 
     LocalCatalog catalog;
     QueryContext.Factory factory;
 
-    TableMeta meta = new TableMetaImpl(Cons.ORIGIN_SCHEMA, StoreType.CSV);
+    TableMeta meta = new TableMetaImpl(TestCubeSchema.TEST_SCHEMA,
+        StoreType.CSV);
     TableDesc people = new TableDescImpl("nta", meta);
     people.setPath(new Path("file:///"));
     catalog = new LocalCatalog(new NtaConf());
@@ -107,7 +112,8 @@ public class TestCube {
   }
 
   @Test
-  public void test() throws IOException, InterruptedException {
+  public void test() throws IOException, InterruptedException,
+      ExecutionException {
     Cons.gnode = gnode;
 
     Cons.groupnum = Cons.gnode.getGroupingColumns().length;
@@ -124,17 +130,27 @@ public class TestCube {
     // conf.setGlobalOutput(new String("cuboid" + Cons.cubenum));
     conf.setNodenum(0);
 
+    // LocalEngn l1 = new LocalEngn();
+    // l1.run(conf);
+
     testThread t1 = (new TestCube()).new testThread(conf);
     t1.start();
 
-    conf = new CubeConf();
-    conf.setInschema(Cons.gnode.getInputSchema().toSchema());
-    conf.setOutschema(Cons.gnode.getOutputSchema().toSchema());
-    conf.setLocalInput(inputpath);
+    // conf = new CubeConf();
+    // conf.setInschema(Cons.gnode.getInputSchema().toSchema());
+    // conf.setOutschema(Cons.gnode.getOutputSchema().toSchema());
+    // conf.setLocalInput(inputpath);
     // conf.setGlobalOutput(new String("cuboid" + Cons.cubenum));
-    conf.setNodenum(1);
-    testThread t2 = (new TestCube()).new testThread(conf);
-    t2.start();
+    // conf.setNodenum(1);
+    // testThread t2 = (new TestCube()).new testThread(conf);
+    // t2.start();
+
+    // LocalEngn l2 = new LocalEngn();
+    // l2.run(conf);
+
+    System.out.println("server start");
+
+    Cons.totalnodes = 1;
 
     conf = new CubeConf();
     conf.setInschema(Cons.gnode.getOutputSchema().toSchema());
@@ -146,6 +162,29 @@ public class TestCube {
     se.run(conf);
     
     System.out.println("server fin");
+
+    t1.stop();
+    // t2.stop();
+    System.out.println("server fin");
+    
+    File f = new File(TestCubeSchema.datapath+"/cuboid/data/node2");
+    FileInputStream fstream = new FileInputStream(f);
+    DataInputStream in = new DataInputStream(fstream);
+    BufferedReader br = new BufferedReader(new InputStreamReader(in));
+    String strLine;
+    
+    String[] result= {
+        "1,150,3",
+        "0,200,4",
+        "2,150,3"
+        };
+    
+    int rs = 0;
+    while ((strLine = br.readLine()) != null)   {
+      assertEquals(strLine,result[rs]);
+      rs++;
+    }
+
   }
 
   public class testThread extends Thread {
@@ -158,9 +197,9 @@ public class TestCube {
     public void run() {
       LocalEngn le = new LocalEngn();
       try {
-         System.out.println("thread" + conf.getNodenum() + " start");
+        System.out.println("thread" + conf.getNodenum() + " start");
         le.run(conf);
-         System.out.println("thread" + conf.getNodenum() + " end");
+        System.out.println("thread" + conf.getNodenum() + " end");
       } catch (IOException e) {
         e.printStackTrace();
       } catch (InterruptedException e) {

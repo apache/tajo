@@ -20,7 +20,7 @@ import org.apache.hadoop.conf.Configuration;
 /* hdfs에 cuboid를 write */
 public class Write {
 
-  public static void write(CubeConf conf, Cuboid cuboidin, String tableName)
+  public void write(CubeConf conf, Cuboid cuboidin, String tableName)
       throws IOException {
     GroupbyNode gnode = Cons.gnode;
     Schema schema = conf.getOutschema();
@@ -40,6 +40,11 @@ public class Write {
       lock.writeLock().lock();
       if (!folder.exists()) {
         sm.initTableBase(meta, tableName);
+        // if (folder.exists()) {
+        // System.out.println("exist " + conf.getNodenum());
+        // } else {
+        // System.out.println("not exist " + conf.getNodenum());
+        // }
       }
       lock.writeLock().unlock();
     }
