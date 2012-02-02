@@ -38,6 +38,8 @@ public class TestNtaClient {
     String ip = serverAddr.getAddress().getHostAddress();
     int port = serverAddr.getPort();
     cli = new NtaClient(ip, port);
+    
+    
   }
 
   @After

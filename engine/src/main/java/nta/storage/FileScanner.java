@@ -1,5 +1,7 @@
 package nta.storage;
 
+import java.io.IOException;
+
 import nta.catalog.Schema;
 import nta.engine.ipc.protocolrecords.Fragment;
 
@@ -18,6 +20,9 @@ public abstract class FileScanner implements Scanner {
     this.tablets = tablets;
   }
 
+  public abstract void seek(long offset) throws IOException;
+  public abstract long getNextOffset();
+  public abstract long available() throws IOException;
   @Override
 	public Schema getSchema() {
 	  return schema;
