@@ -1,6 +1,8 @@
 package nta.datum;
 
+import nta.common.exception.NotImplementedException;
 import nta.datum.exception.InvalidCastException;
+import nta.datum.exception.InvalidOperationException;
 
 public class IPv6Datum extends Datum {
   
@@ -56,5 +58,15 @@ public class IPv6Datum extends Datum {
   @Override
   public int size() {
     return 16;
+  }
+  
+  // Datum Comparable
+  public BoolDatum equalsTo(Datum datum) {
+    throw new NotImplementedException();
+  }
+  
+  @Override
+  public int compareTo(Datum datum) {
+    throw new NotImplementedException();
   }
 }

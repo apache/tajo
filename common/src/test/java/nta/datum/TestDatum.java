@@ -184,28 +184,28 @@ public class TestDatum {
 		
 		x = DatumFactory.createInt(6);
 		y = DatumFactory.createInt(3);
-		z = x.equalTo(y);
+		z = x.equalsTo(y);
 		assertEquals(z.type(),DatumType.BOOLEAN);
 		assertEquals(z.asBool(),false);		
-		z = y.equalTo(x);
+		z = y.equalsTo(x);
 		assertEquals(z.type(),DatumType.BOOLEAN);
 		assertEquals(z.asBool(), false);
 		
 		x = DatumFactory.createFloat(3.27f);
 		y = DatumFactory.createFloat(3.27f);
-		z = x.equalTo(y);
+		z = x.equalsTo(y);
 		assertEquals(z.type(),DatumType.BOOLEAN);
 		assertEquals(z.asBool(),true);		
-		z = y.equalTo(x);
+		z = y.equalsTo(x);
 		assertEquals(z.type(),DatumType.BOOLEAN);
 		assertEquals(z.asBool(), true);
 		
 		x = DatumFactory.createLong(123456789012345l);
 		y = DatumFactory.createLong(123456789012345l);
-		z = x.equalTo(y);
+		z = x.equalsTo(y);
 		assertEquals(z.type(),DatumType.BOOLEAN);
 		assertEquals(z.asBool(),true);		
-		z = y.equalTo(x);
+		z = y.equalsTo(x);
 		assertEquals(z.type(),DatumType.BOOLEAN);
 		assertEquals(z.asBool(), true);
 	}

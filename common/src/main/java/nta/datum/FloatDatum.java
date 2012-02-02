@@ -6,6 +6,7 @@ package nta.datum;
 import java.nio.ByteBuffer;
 
 import nta.datum.exception.InvalidCastException;
+import nta.datum.exception.InvalidOperationException;
 
 /**
  * @author Hyunsik Choi
@@ -96,5 +97,168 @@ public class FloatDatum extends Datum {
   @Override
   public int hashCode() {
     return (int) val;
+  }
+  
+  public boolean equals(Object obj) {
+    if (obj instanceof FloatDatum) {
+      FloatDatum other = (FloatDatum) obj;
+      return val == other.val;
+    }
+    
+    return false;
+  }
+  
+  // Datum Comparable
+  public BoolDatum equalsTo(Datum datum) {
+    switch (datum.type()) {
+    case SHORT:
+      return DatumFactory.createBool(val == datum.asShort());
+    case INT:
+      return DatumFactory.createBool(val == datum.asInt());
+    case LONG:
+      return DatumFactory.createBool(val == datum.asLong());
+    case FLOAT:
+      return DatumFactory.createBool(val == datum.asFloat());
+    case DOUBLE:
+      return DatumFactory.createBool(val == datum.asDouble());
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
+  }
+  
+  public BoolDatum lessThan(Datum datum) {
+    switch (datum.type()) {
+    case SHORT:
+      return DatumFactory.createBool(val < datum.asShort());
+    case INT:
+      return DatumFactory.createBool(val < datum.asInt());
+    case LONG:
+      return DatumFactory.createBool(val < datum.asLong());
+    case FLOAT:
+      return DatumFactory.createBool(val < datum.asFloat());
+    case DOUBLE:
+      return DatumFactory.createBool(val < datum.asDouble());
+    default:
+      throw new InvalidOperationException();
+    }
+  }
+  
+  public BoolDatum lessThanEqual(Datum datum) {
+    switch (datum.type()) {
+    case SHORT:
+      return DatumFactory.createBool(val <= datum.asShort());
+    case INT:
+      return DatumFactory.createBool(val <= datum.asInt());
+    case LONG:
+      return DatumFactory.createBool(val <= datum.asLong());
+    case FLOAT:
+      return DatumFactory.createBool(val <= datum.asFloat());
+    case DOUBLE:
+      return DatumFactory.createBool(val <= datum.asDouble());
+    default:
+      throw new InvalidOperationException(datum.toString());
+    }
+  }
+  
+  public BoolDatum greaterThan(Datum datum) {
+    switch (datum.type()) {
+    case SHORT:
+      return DatumFactory.createBool(val > datum.asShort());
+    case INT:
+      return DatumFactory.createBool(val > datum.asInt());
+    case LONG:
+      return DatumFactory.createBool(val > datum.asLong());
+    case FLOAT:
+      return DatumFactory.createBool(val > datum.asFloat());
+    case DOUBLE:
+      return DatumFactory.createBool(val > datum.asDouble());
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
+  }
+  
+  public BoolDatum greaterThanEqual(Datum datum) {
+    switch (datum.type()) {
+    case SHORT:
+      return DatumFactory.createBool(val >= datum.asShort());
+    case INT:
+      return DatumFactory.createBool(val >= datum.asInt());
+    case LONG:
+      return DatumFactory.createBool(val >= datum.asLong());
+    case FLOAT:
+      return DatumFactory.createBool(val >= datum.asFloat());
+    case DOUBLE:
+      return DatumFactory.createBool(val >= datum.asDouble());
+    default:
+      throw new InvalidOperationException();
+    }
+  }
+  
+  public Datum plus(Datum datum) {
+    switch (datum.type()) {
+    case SHORT:
+      return DatumFactory.createFloat(val + datum.asShort());
+    case INT:
+      return DatumFactory.createFloat(val + datum.asInt());
+    case LONG:
+      return DatumFactory.createFloat(val + datum.asLong());
+    case FLOAT:
+      return DatumFactory.createFloat(val + datum.asFloat());
+    case DOUBLE:
+      return DatumFactory.createDouble(val + datum.asDouble());
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
+  }
+  
+  public Datum minus(Datum datum) {
+    switch (datum.type()) {
+    case SHORT:
+      return DatumFactory.createFloat(val - datum.asShort());
+    case INT:
+      return DatumFactory.createFloat(val - datum.asInt());
+    case LONG:
+      return DatumFactory.createDouble(val - datum.asLong());
+    case FLOAT:
+      return DatumFactory.createFloat(val - datum.asFloat());
+    case DOUBLE:
+      return DatumFactory.createDouble(val - datum.asDouble());
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
+  }
+  
+  public Datum multiply(Datum datum) {
+    switch (datum.type()) {
+    case SHORT:
+      return DatumFactory.createFloat(val * datum.asShort());
+    case INT:
+      return DatumFactory.createFloat(val * datum.asInt());
+    case LONG:
+      return DatumFactory.createDouble(val * datum.asLong());
+    case FLOAT:
+      return DatumFactory.createFloat(val * datum.asFloat());
+    case DOUBLE:
+      return DatumFactory.createDouble(val * datum.asDouble());
+    default:
+      throw new InvalidOperationException();
+    }
+  }
+  
+  public Datum divide(Datum datum) {
+    switch (datum.type()) {
+    case SHORT:
+      return DatumFactory.createFloat(val / datum.asShort());
+    case INT:
+      return DatumFactory.createFloat(val / datum.asInt());
+    case LONG:
+      return DatumFactory.createDouble(val / datum.asLong());
+    case FLOAT:
+      return DatumFactory.createFloat(val / datum.asFloat());
+    case DOUBLE:
+      return DatumFactory.createDouble(val / datum.asDouble());
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
   }
 }

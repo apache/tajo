@@ -108,7 +108,7 @@ public class BinaryEval extends EvalNode {
 			return DatumFactory.createBool(leftExpr.eval(schema, tuple).asBool() || rightExpr.eval(schema, tuple).asBool());
 		
 		case EQUAL:
-			return leftExpr.eval(schema, tuple).equalTo(rightExpr.eval(schema, tuple));
+			return leftExpr.eval(schema, tuple).equalsTo(rightExpr.eval(schema, tuple));
 		case LTH:
 			return leftExpr.eval(schema, tuple).lessThan(rightExpr.eval(schema, tuple));
 		case LEQ:
