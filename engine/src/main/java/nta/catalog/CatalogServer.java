@@ -254,19 +254,9 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol, Eng
 			}
 
 			// rewrite schema
-			SchemaProto.Builder revisedSchema = 
-			    SchemaProto.newBuilder(proto.getMeta().getSchema());
-			revisedSchema.clearFields();
-			for(ColumnProto col : proto.getMeta().getSchema().getFieldsList()) {			  
-			  if(col.getColumnName().split(".").length < 2) { // if not qualified name
-			    // rewrite the column
-			    ColumnProto.Builder builder = ColumnProto.newBuilder(col);		    
-			    builder.setColumnName(proto.getId()+"."+col.getColumnName());
-			    col = builder.build();
-			  }
-			  
-			  revisedSchema.addFields(col);
-			}
+			SchemaProto revisedSchema = 
+			    CatalogUtil.getQualfiedSchema(proto.getId(), 
+			        proto.getMeta().getSchema());
 			
 			TableProto.Builder metaBuilder = TableProto.newBuilder(proto.getMeta());
 			metaBuilder.setSchema(revisedSchema);
