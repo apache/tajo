@@ -8,45 +8,54 @@ import nta.datum.exception.InvalidCastException;
  *
  */
 public class DatumFactory {
-	public static Datum createByte(byte val) {
+  public static BoolDatum createBool(String val) {
+    boolean boolVal = val.equals("true") ? true : false;
+    return new BoolDatum(boolVal);
+  }
+  
+  public static BoolDatum createBool(boolean val) {
+    return new BoolDatum(val);
+  }
+  
+	public static ByteDatum createByte(byte val) {
 		return new ByteDatum(val);
 	}
 	
-	public static Datum createByte(String val) {
+	public static ByteDatum createByte(String val) {
 	  if(val.length() > 1)
 	    throw new InvalidCastException("Cannot cast byte from a multi bytes");
     return new ByteDatum(val.charAt(0));
   }
 	
-	public static Datum createShort(short val) {
+	public static ShortDatum createShort(short val) {
 		return new ShortDatum(val);
 	}
 	
-	public static Datum createShort(String val) {
+	public static ShortDatum createShort(String val) {
 	  return new ShortDatum(Short.valueOf(val));
 	}
 	
-	public static Datum createInt(int val) {
+	public static IntDatum createInt(int val) {
 		return new IntDatum(val);
 	}
 	
-	public static Datum createInt(String val) {
+	public static IntDatum createInt(String val) {
 	  return new IntDatum(Integer.valueOf(val));
 	}
 	
-	public static Datum createLong(long val) {
+	public static LongDatum createLong(long val) {
 		return new LongDatum(val);
 	}
 	
-	public static Datum createLong(String val) {
+	public static LongDatum createLong(String val) {
 	  return new LongDatum(Long.valueOf(val));
 	}
 	
-	public static Datum createFloat(float val) {
+	public static FloatDatum createFloat(float val) {
 		return new FloatDatum(val);
 	}
 	
-	public static Datum createFloat(String val) {
+	public static FloatDatum createFloat(String val) {
 	  return new FloatDatum(Float.valueOf(val));
 	}
 	
@@ -58,32 +67,23 @@ public class DatumFactory {
 	  return new DoubleDatum(Double.valueOf(val));
 	}
 	
-	public static Datum createBool(boolean val) {
-		return new BoolDatum(val);
-	}
+  public static StringDatum createString(String val) {
+    return new StringDatum(val);
+  }
 	
-	public static Datum createBool(String val) {
-	  boolean boolVal = val.equals("true") ? true : false;
-	  return new BoolDatum(boolVal);
-	}
-	
-	public static Datum createBytes(byte [] val) {
+	public static BytesDatum createBytes(byte [] val) {
     return new BytesDatum(val);
   }
 	
-	public static Datum createBytes(String val) {
-	  throw new InvalidCastException("Cannot cast bytes from a literal string");
+	public static BytesDatum createBytes(String val) {
+	  return new BytesDatum(val.getBytes());
 	}
 	
-	public static Datum createString(String val) {
-		return new StringDatum(val);
-	}
-	
-	public static Datum createIPv4(byte [] val) {
+	public static IPv4Datum createIPv4(byte [] val) {
 	  return new IPv4Datum(val);
 	}
 	
-	public static Datum createIPv4(String val) {
+	public static IPv4Datum createIPv4(String val) {
 	  return new IPv4Datum(val);
 	}
 }

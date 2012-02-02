@@ -1,5 +1,7 @@
 package nta.datum;
 
+import nta.common.exception.NotImplementedException;
+
 public class EnumDatum extends Datum {
 
 	public EnumDatum(DatumType type) {
@@ -56,5 +58,15 @@ public class EnumDatum extends Datum {
   public int size() {
     // TODO - to be improved
     return 1;
+  }
+
+  // Datum Comparable
+  public BoolDatum equalsTo(Datum datum) {
+    throw new NotImplementedException();
+  }
+
+  @Override
+  public int compareTo(Datum datum) {
+    throw new NotImplementedException();
   }
 }

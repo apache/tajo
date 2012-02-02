@@ -5,7 +5,7 @@ package nta.datum;
 
 import java.nio.ByteBuffer;
 
-import nta.datum.exception.InvalidCastException;
+import nta.datum.exception.InvalidOperationException;
 
 /**
  * @author Hyunsik Choi
@@ -13,9 +13,7 @@ import nta.datum.exception.InvalidCastException;
  */
 public class BoolDatum extends Datum {
 	final boolean val;
-	/**
-	 * @param type
-	 */
+
 	public BoolDatum(boolean val) {
 		super(DatumType.BOOLEAN);
 		this.val = val;
@@ -96,5 +94,41 @@ public class BoolDatum extends Datum {
   @Override
   public int hashCode() {
     return val == true ? 1 : 0;
+  }
+  
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof BoolDatum) {
+      BoolDatum other = (BoolDatum) obj;
+      return val == other.val;
+    }
+    
+    return false;
+  }
+  
+  // Datum Comparator
+  public BoolDatum equalsTo(Datum datum) {
+    switch(datum.type()) {
+      case BOOLEAN: return DatumFactory.createBool(this.val == 
+          ((BoolDatum)datum).val);
+      default:
+        throw new InvalidOperationException(datum.type());
+    }
+  }
+
+  @Override
+  public int compareTo(Datum datum) {
+    switch (datum.type()) {
+    case BOOLEAN:
+      if (val == true && datum.asBool() == false) {
+        return -1;
+      } else if (val == false && datum.asBool() == true) {
+        return 1;
+      } else {
+        return 0;
+      }
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
   }
 }

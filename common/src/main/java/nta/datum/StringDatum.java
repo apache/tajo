@@ -4,6 +4,7 @@
 package nta.datum;
 
 import nta.datum.exception.InvalidCastException;
+import nta.datum.exception.InvalidOperationException;
 
 /**
  * @author Hyunsik Choi
@@ -126,7 +127,29 @@ public class StringDatum extends Datum {
     return val.getBytes().length;
   }
   
+  @Override
   public int hashCode() {
     return val.hashCode();
+  }
+  
+  // Datum Comparable
+  public BoolDatum equalsTo(Datum datum) {
+    switch (datum.type()) {
+    case STRING:
+      return DatumFactory
+          .createBool(this.val.equals(((StringDatum) datum).val));
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
+  }
+
+  @Override
+  public int compareTo(Datum datum) {
+    switch (datum.type()) {
+    case STRING:
+      return this.val.compareTo(((StringDatum) datum).val);
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
   }
 }

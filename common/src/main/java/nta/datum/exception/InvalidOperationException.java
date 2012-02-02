@@ -3,6 +3,8 @@
  */
 package nta.datum.exception;
 
+import nta.datum.DatumType;
+
 /**
  * @author Hyunsik Choi
  *
@@ -21,5 +23,9 @@ public class InvalidOperationException extends RuntimeException {
 	 */
 	public InvalidOperationException(String message) {
 		super(message);
+	}
+	
+	public InvalidOperationException(DatumType type) {
+	  super("Cannot compare to " + type + " type datum");
 	}
 }

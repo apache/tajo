@@ -6,6 +6,7 @@ package nta.datum;
 import java.nio.ByteBuffer;
 
 import nta.datum.exception.InvalidCastException;
+import nta.datum.exception.InvalidOperationException;
 
 /**
  * @author Hyunsik Choi
@@ -104,15 +105,6 @@ public class IPv4Datum extends Datum {
 	public String asChars() {
 		StringBuilder sb = new StringBuilder();
 		bb.flip();
-
-//		short elem = (short)bb.get();
-//		sb.append(elem).append(".");		
-//		elem = (short)bb.get();
-//		sb.append(elem).append(".");
-//		elem = (short)bb.get();
-//		sb.append(elem).append(".");
-//		elem = (short)bb.get();
-//		sb.append(elem);
 		
 		Byte b = bb.get();
 		
@@ -143,5 +135,34 @@ public class IPv4Datum extends Datum {
   @Override
   public int hashCode() {
     return bb.hashCode();
+  }
+  
+  public boolean equals(Object obj) {
+    if (obj instanceof IPv4Datum) {
+      IPv4Datum other = (IPv4Datum) obj;
+      return bb.equals(other.bb);
+    }
+    
+    return false;
+  }
+  
+  // Datum Comparable
+  public BoolDatum equalsTo(Datum datum) {
+    switch (datum.type()) {
+    case IPv4:
+      return DatumFactory.createBool(this.bb.equals(((IPv4Datum) datum).bb));
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
+  }
+  
+  @Override
+  public int compareTo(Datum datum) {
+    switch (datum.type()) {
+    case IPv4:
+      return bb.compareTo(((BytesDatum)datum).bb);
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
   }
 }

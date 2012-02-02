@@ -6,6 +6,7 @@ package nta.datum;
 import java.nio.ByteBuffer;
 
 import nta.datum.exception.InvalidCastException;
+import nta.datum.exception.InvalidOperationException;
 
 /**
  * @author Hyunsik Choi
@@ -101,5 +102,40 @@ public class ByteDatum extends Datum {
   @Override
   public int hashCode() {
     return val;
+  }
+  
+  public boolean equals(Object obj) {
+    if (obj instanceof ByteDatum) {
+      ByteDatum other = (ByteDatum) obj;
+      return val == other.val;
+    }
+    
+    return false;
+  }
+  
+  // Datum Comparable
+  public BoolDatum equalsTo(Datum datum) {
+    switch (datum.type()) {
+    case BYTE:
+      return DatumFactory.createBool(this.val == (((ByteDatum) datum).val));
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
+  }
+  
+  @Override
+  public int compareTo(Datum datum) {
+    switch (datum.type()) {
+    case BYTE:
+      if (val > datum.asByte() ) {
+        return -1;
+      } else if (val < datum.asByte()) {
+        return 1;
+      } else {
+        return 0;
+      }
+    default:
+      throw new InvalidOperationException(datum.type());
+    }
   }
 }
