@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import nta.catalog.Column;
 import nta.catalog.Options;
 import nta.catalog.Schema;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -53,6 +54,7 @@ public class RawFile2 extends Storage {
   public static int SYNC_INTERVAL;
 
   public static class RawFileScanner extends FileScanner {
+	  
     private FSDataInputStream in;
     private SortedSet<Fragment> tabletSet;
     private Iterator<Fragment> tableIter;
@@ -62,6 +64,7 @@ public class RawFile2 extends Storage {
     private byte[] checkSync;
     private long start, end, headerPos, lastSyncPos; 
     private Options option;
+    private long currentTupleOffset;
 
     public RawFileScanner(Configuration conf, final Schema schema, 
         final Fragment[] tablets) throws IOException {
@@ -136,12 +139,16 @@ public class RawFile2 extends Storage {
     private boolean pageBuffer() throws IOException {
       if (in.getPos() - SYNC_SIZE == start) { // first.
         tupleSize = checkTupleSize();
-        buffer = new byte[defaultSize];
+        if(defaultSize > available()) {
+        	buffer = new byte[(int)(available())];
+        } else {
+        	buffer = new byte[defaultSize];
+        }
         pageStart = in.getPos();
         in.read(buffer);
-      } else if (in_buffer.available() > 0 || in.available() > 0) { // tuple 이 잘림.
+      } else if (in_buffer.available() > 0 || available() > 0) { // tuple 이 잘림.
         pieceSize1 = in_buffer.available();      
-        pieceSize2 = in.available();
+        pieceSize2 = (int)available();
 
         if (pieceSize1 + pieceSize2 < defaultSize) {
           bufferSize = pieceSize1 + pieceSize2;
@@ -164,6 +171,7 @@ public class RawFile2 extends Storage {
       pageLen = buffer.length;
       in_byte = new ByteArrayInputStream(buffer);
       in_buffer = new DataInputStream(in_byte);
+      this.currentTupleOffset = 0;
 //      checkSyncinPage();
       return true;
     }
@@ -232,6 +240,41 @@ public class RawFile2 extends Storage {
     }
 
     @Override
+    public void seek(long offset) throws IOException {
+    	if ( offset >= this.pageStart + this.pageLen  ||
+    			offset < this.pageStart) {
+    		in.seek(offset);
+    		in_byte.close();
+    		in_buffer.close();
+    		in_byte = new ByteArrayInputStream(new byte[0]);
+    	    in_buffer = new DataInputStream(in_byte);
+    		pageBuffer();
+    	} else {
+    		long bufferOffset = offset - this.pageStart;
+    		if(this.currentTupleOffset == bufferOffset) {
+    			
+    		} else if( this.currentTupleOffset < bufferOffset) {
+    			in_buffer.skip(bufferOffset - this.currentTupleOffset);
+    			this.currentTupleOffset = bufferOffset;
+    		} else {
+    			in_buffer.close();
+    			in_buffer = new DataInputStream(in_byte);
+    			this.currentTupleOffset = bufferOffset;
+    		}
+    	}
+    }
+    
+    @Override
+    public long getNextOffset() {
+    	return this.pageStart + this.currentTupleOffset;
+    }
+    
+    @Override
+    public long available() throws IOException{
+      return this.end - in.getPos();
+    }
+    
+    @Override
     public Tuple next() throws IOException {
       if (in_buffer.available() == 0) { // page buffer 다 읽음.
         if (!pageBuffer()) {
@@ -244,6 +287,7 @@ public class RawFile2 extends Storage {
         }
       }
       if (checkSyncinPage()) {  // page buffer 에 sync maker 가 있는지 확인.
+    	this.currentTupleOffset += SYNC_SIZE;  
         if (in_buffer.available() == 0) { // sync maker 읽었더니 page buffer 다 읽음.
           if (!pageBuffer()) {
             return null;
@@ -262,41 +306,59 @@ public class RawFile2 extends Storage {
       boolean [] contains = new boolean[schema.getColumnNum()];
       for (i = 0; i < schema.getColumnNum(); i++) {
         contains[i] = in_buffer.readBoolean();
+        this.currentTupleOffset += DatumFactory.createBool(true).size();
       }
-
       Column col = null;
       for (i = 0; i < schema.getColumnNum(); i++) {
+    	Datum datum;
         if (contains[i]) {
           col = schema.getColumn(i);
           switch (col.getDataType()) {
           case BYTE:
-            tuple.put(i, DatumFactory.createByte(in_buffer.readByte()));
+        	datum = DatumFactory.createByte(in_buffer.readByte());
+        	this.currentTupleOffset += datum.size();
+            tuple.put(i, datum );
             break;
           case SHORT:
-            tuple.put(i, DatumFactory.createShort(in_buffer.readShort()));
+        	datum = DatumFactory.createShort(in_buffer.readShort());
+        	this.currentTupleOffset += datum.size();
+            tuple.put(i, datum );
             break;
           case INT:
-            tuple.put(i, DatumFactory.createInt(in_buffer.readInt()));
+            datum = DatumFactory.createInt(in_buffer.readInt());
+        	this.currentTupleOffset += datum.size();
+            tuple.put(i, datum );
             break;
           case LONG:
-            tuple.put(i, DatumFactory.createLong(in_buffer.readLong()));
+        	datum = DatumFactory.createLong(in_buffer.readLong());   
+        	this.currentTupleOffset += datum.size();  
+            tuple.put(i, datum );
             break;
           case FLOAT:
-            tuple.put(i, DatumFactory.createFloat(in_buffer.readFloat()));
+        	datum = DatumFactory.createFloat(in_buffer.readFloat());  
+        	this.currentTupleOffset += datum.size();  
+            tuple.put(i, datum);
             break;
           case DOUBLE:
-            tuple.put(i, DatumFactory.createDouble(in_buffer.readDouble()));
+        	datum = DatumFactory.createDouble(in_buffer.readDouble());
+        	this.currentTupleOffset += datum.size();
+            tuple.put(i, datum);
             break;
           case STRING:
+        	this.currentTupleOffset += DatumFactory.createShort((short)0).size();  
             short len = in_buffer.readShort();
             byte[] buf = new byte[len];
             in_buffer.read(buf, 0, len);
-            tuple.put(i, DatumFactory.createString(new String(buf)));
+            datum = DatumFactory.createString(new String(buf));
+            this.currentTupleOffset += datum.size();
+            tuple.put(i, datum);
             break;
           case IPv4:
-            byte[] ipv4 = new byte[4];
+        	byte[] ipv4 = new byte[4];
             in_buffer.read(ipv4, 0, 4);
-            tuple.put(i, DatumFactory.createIPv4(ipv4));
+            datum = DatumFactory.createIPv4(ipv4);
+            this.currentTupleOffset += datum.size();
+            tuple.put(i, datum);
             break;
           default:
             break;
