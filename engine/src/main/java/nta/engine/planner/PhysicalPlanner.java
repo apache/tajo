@@ -14,10 +14,12 @@ import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
+import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.physical.GroupByExec;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.engine.planner.physical.SeqScanExec;
+import nta.engine.planner.physical.SortExec;
 import nta.engine.planner.physical.StoreTableExec;
 import nta.storage.StorageManager;
 
@@ -78,9 +80,13 @@ public class PhysicalPlanner {
       inner = createPlanRecursive(ctx, grpNode.getSubNode());
       return createGroupByPlan(ctx, grpNode, inner);
       
+    case SORT:
+      SortNode sortNode = (SortNode) logicalNode;
+      inner = createPlanRecursive(ctx, sortNode.getSubNode());
+      return createSortPlan(ctx, sortNode, inner);          
+    
     case JOIN:   
     case RENAME:
-    case SORT:
     case SET_UNION:
     case SET_DIFF:
     case SET_INTERSECT:
@@ -110,8 +116,15 @@ public class PhysicalPlanner {
   
   public PhysicalExec createGroupByPlan(SubqueryContext ctx, 
       GroupbyNode groupbyNode, PhysicalExec subOp) throws IOException {
-    GroupByExec groupby = new GroupByExec(sm, groupbyNode, subOp);
+    GroupByExec groupby = new GroupByExec(groupbyNode, subOp);
     
     return groupby;
+  }
+  
+  public PhysicalExec createSortPlan(SubqueryContext ctx,
+      SortNode sortNode, PhysicalExec subOp) throws IOException {
+    SortExec sort = new SortExec(sortNode, subOp);
+    
+    return sort;
   }
 }

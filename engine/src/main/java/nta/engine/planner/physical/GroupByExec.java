@@ -45,8 +45,7 @@ public class GroupByExec extends PhysicalExec {
    * @throws IOException 
 	 * 
 	 */
-  public GroupByExec(StorageManager sm, GroupbyNode annotation,
-      PhysicalExec subOp) throws IOException {
+  public GroupByExec(GroupbyNode annotation, PhysicalExec subOp) throws IOException {
     this.annotation = annotation;
     this.subOp = subOp;
     this.havingQual = annotation.getHavingCondition();
