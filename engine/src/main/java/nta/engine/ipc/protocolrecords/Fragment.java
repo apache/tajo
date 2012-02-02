@@ -1,13 +1,13 @@
 package nta.engine.ipc.protocolrecords;
 
-import nta.catalog.Column;
+import nta.catalog.CatalogUtil;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
+import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.catalog.proto.CatalogProtos.TabletProto;
 import nta.catalog.proto.CatalogProtos.TabletProtoOrBuilder;
-import nta.common.ProtoObject;
 
 import org.apache.hadoop.fs.Path;
 
@@ -21,7 +21,7 @@ public class Fragment implements TableDesc, Comparable<Fragment> {
   protected TabletProto.Builder builder = null;
   protected boolean viaProto = false;
 
-  private String tabletId;
+  private String fragmentId;
   private Path path;
   private TableMeta meta;
   private long startOffset;
@@ -32,33 +32,25 @@ public class Fragment implements TableDesc, Comparable<Fragment> {
     startOffset = length = -1;
   }
 
-  public Fragment(String tabletId, Path path, TableMeta meta, long start,
+  public Fragment(String fragmentId, Path path, TableMeta meta, long start,
       long length) {
     this();
     TableMeta newMeta = new TableMetaImpl(meta.getProto());
-    Schema newSchema = new Schema();
-    Column newColumn = null;
-    for(Column col : meta.getSchema().getColumns()) {
-      if(col.isQualifiedName() == false) {
-        newColumn = new Column(col.getProto());
-        newColumn.setName(tabletId+"."+col.getName());
-        newSchema.addColumn(newColumn);
-      }
-    }
-    newMeta.setSchema(newSchema);
-    this.set(tabletId, path, newMeta, start, length);
+    SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(fragmentId, meta
+        .getSchema().getProto());
+    newMeta.setSchema(new Schema(newSchemaProto));
+    this.set(fragmentId, path, newMeta, start, length);
   }
 
   public Fragment(TabletProto proto) {
-    startOffset = length = -1;
-    this.proto = proto;
-    this.viaProto = true;
+    this(proto.getId(), new Path(proto.getPath()), new TableMetaImpl(
+        proto.getMeta()), proto.getStartOffset(), proto.getLength());
   }
 
-  public void set(String tabletId, Path path, TableMeta meta, long start,
+  public void set(String fragmentId, Path path, TableMeta meta, long start,
       long length) {
     maybeInitBuilder();
-    this.tabletId = tabletId;
+    this.fragmentId = fragmentId;
     this.path = path;
     this.meta = meta;
     this.startOffset = start;
@@ -68,22 +60,22 @@ public class Fragment implements TableDesc, Comparable<Fragment> {
   public String getId() {
     TabletProtoOrBuilder p = viaProto ? proto : builder;
 
-    if (this.tabletId != null) {
-      return this.tabletId;
+    if (this.fragmentId != null) {
+      return this.fragmentId;
     }
 
     if (!proto.hasId()) {
       return null;
     }
-    this.tabletId = p.getId();
+    this.fragmentId = p.getId();
 
-    return this.tabletId;
+    return this.fragmentId;
   }
 
   @Override
-  public void setId(String tabletId) {
+  public void setId(String fragmentId) {
     maybeInitBuilder();
-    this.tabletId = tabletId;
+    this.fragmentId = fragmentId;
   }
   
   @Override
@@ -187,7 +179,7 @@ public class Fragment implements TableDesc, Comparable<Fragment> {
 
   @Override
   public String toString() {
-    return "\"tablet\": {\"id\": \""+tabletId+"\", \"path\": "
+    return "\"fragment\": {\"id\": \""+fragmentId+"\", \"path\": "
     		+getPath() + "\", \"start\": " + this.getStartOffset() + ",\"length\": "
         + getLength() + "}";
   }
@@ -208,8 +200,8 @@ public class Fragment implements TableDesc, Comparable<Fragment> {
   }
 
   protected void mergeLocalToBuilder() {
-    if (this.tabletId != null) {
-      builder.setId(this.tabletId);
+    if (this.fragmentId != null) {
+      builder.setId(this.fragmentId);
     }
 
     if (this.startOffset > -1) {

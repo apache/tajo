@@ -2,7 +2,9 @@ package nta.catalog;
 
 import java.util.Collection;
 
+import nta.catalog.proto.CatalogProtos.ColumnProto;
 import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.engine.query.exception.InvalidQueryException;
 
 public class CatalogUtil {
@@ -43,5 +45,40 @@ public class CatalogUtil {
     case IPv6: return '6';
     default: throw new InvalidQueryException("Unsupported type exception");
     }
+  }
+  
+  /**
+   * This method transforms the unqualified names of a given schema into
+   * the qualified names.
+   * 
+   * @param tableName a table name to be prefixed
+   * @param schema a schema to be transformed
+   * 
+   * @return
+   */
+  public static SchemaProto getQualfiedSchema(String tableName,
+      SchemaProto schema) {
+    SchemaProto.Builder revisedSchema = SchemaProto.newBuilder(schema);
+    revisedSchema.clearFields();
+    String[] split = null;
+    for (ColumnProto col : schema.getFieldsList()) {
+      split = col.getColumnName().split("\\.");
+      if (split.length == 1) { // if not qualified name
+        // rewrite the column
+        ColumnProto.Builder builder = ColumnProto.newBuilder(col);
+        builder.setColumnName(tableName + "." + col.getColumnName());
+        col = builder.build();
+      } else if (split.length == 2) {
+        ColumnProto.Builder builder = ColumnProto.newBuilder(col);
+        builder.setColumnName(tableName + "." + split[1]);
+        col = builder.build();
+      } else {
+        throw new InvalidQueryException("Unaccetable field name "
+            + col.getColumnName());
+      }
+      revisedSchema.addFields(col);
+    }
+
+    return revisedSchema.build();
   }
 }
