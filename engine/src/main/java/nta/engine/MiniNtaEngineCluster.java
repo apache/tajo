@@ -18,7 +18,7 @@ public class MiniNtaEngineCluster {
 	
 	public MiniNtaEngineCluster(Configuration conf, int numLeafServers) throws Exception {
 		this.conf = conf;
-		conf.set(NConstants.MASTER_PORT, "0");
+		conf.set(NConstants.MASTER_ADDRESS, "localhost:0");
 		init(numLeafServers);
 	}
 	

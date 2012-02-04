@@ -104,7 +104,7 @@ public class TestZkNodeTracker {
 		// Create a completely separate zk connection for test triggers and avoid
 		// any weird watcher interactions from the test
 		final ZooKeeper zkconn = new ZooKeeper(
-			conf.get(NConstants.ZOOKEEPER_HOST)+":"+conf.getInt(NConstants.ZOOKEEPER_PORT, 2180),
+			conf.get(NConstants.ZOOKEEPER_ADDRESS),
 			NConstants.DEFAULT_ZOOKEEPER_SESSION_TIMEOUT, new StubWatcher()); 
 
 		// Add the node with data one

@@ -198,4 +198,34 @@ public class ZkUtil {
 		}
 		return children;
 	}
+	
+  public static void upsertEphemeralNode(ZkClient zk, String znode)
+      throws KeeperException, InterruptedException {
+    if (zk.exists(znode) != null) {
+      zk.delete(znode);
+    }
+    zk.createEphemeral(znode);
+  }	
+	
+	public static void upsertEphemeralNode(ZkClient zk, String znode, byte[] data) 
+      throws KeeperException, InterruptedException {
+    if (zk.exists(znode) != null) {
+      zk.delete(znode);
+    }
+    zk.createEphemeral(znode, data);
+  }
+  
+  public static void createPersistentNodeIfNotExist(ZkClient zk, String znode) 
+      throws KeeperException, InterruptedException {
+    if (zk.exists(znode) == null) {
+      zk.createPersistent(znode);
+    }
+  }
+  
+  public static void createPersistentNodeIfNotExist(ZkClient zk, String znode, byte [] data) 
+      throws KeeperException, InterruptedException {
+    if (zk.exists(znode) == null) {
+      zk.createPersistent(znode, data);
+    }
+  }
 }

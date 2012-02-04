@@ -6,33 +6,32 @@ import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkUtil;
 
 import org.apache.hadoop.conf.Configuration;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestNtaEngineMaster {
-	private static NtaTestingUtility util;
-	private static Configuration conf;
+	private NtaTestingUtility util;
+	private Configuration conf;
+	
+	private final int numLeafs = 3;
 
-	@BeforeClass
-	public static void setUp() throws Exception {
+	@Before
+	public void setUp() throws Exception {
 		util = new NtaTestingUtility();
-		util.startMiniZKCluster(1);
-		util.startCatalogCluster();
+    util.startMiniCluster(numLeafs);
 		conf = util.getConfiguration();
 	}
 
-	@AfterClass
-	public static void tearDown() throws Exception {
-	  util.shutdownCatalogCluster();
-		util.shutdownMiniZKCluster();
+	@After
+	public void tearDown() throws Exception {
+		util.shutdownMiniCluster();
 	}
 
 	@Test
 	public void testBecomeMaster() throws Exception {	  
-	  final int numLeafs = 3;
-		util.startMiniNtaEngineCluster(numLeafs);		
-		Thread.sleep(1000);
+		Thread.sleep(3000);
+		
 		ZkClient zkClient = new ZkClient(conf);
 		assertNotNull(zkClient.exists(NConstants.ZNODE_BASE));
 		assertNotNull(zkClient.exists(NConstants.ZNODE_MASTER));
@@ -45,7 +44,5 @@ public class TestNtaEngineMaster {
 		assertEquals(master.getServerName(), new String(data));
 		assertEquals(numLeafs, master.getOnlineServer().size());
 		assertEquals(numLeafs, util.getMiniNtaEngineCluster().getLeafServerThreads().size());
-				
-		util.shutdownMiniNtaEngineCluster();
 	}
 }

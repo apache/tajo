@@ -3,19 +3,13 @@
  */
 package nta.engine;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import nta.catalog.CatalogClient;
 import nta.catalog.CatalogService;
-import nta.catalog.FunctionDesc;
-import nta.catalog.TableDesc;
 import nta.conf.NtaConf;
 import nta.engine.LeafServerProtos.AssignTabletRequestProto;
 import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
@@ -24,7 +18,6 @@ import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.cluster.ServerNodeTracker;
 import nta.engine.ipc.LeafServerInterface;
-import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
@@ -46,7 +39,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.DNS;
 import org.apache.zookeeper.KeeperException;
@@ -81,7 +73,7 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	// Query Processing
 	private FileSystem defaultFS;
 	
-	private CatalogService catalog;
+	private CatalogClient catalog;
 	private StorageManager storeManager;
 	private QueryEngine queryEngine;
 	private List<EngineService> services = new ArrayList<EngineService>();
@@ -99,7 +91,8 @@ public class LeafServer extends Thread implements LeafServerInterface {
 		String hostname = DNS.getDefaultHost(
 			conf.get("nta.master.dns.interface", "default"),
 			conf.get("nta.master.dns.nameserver", "default"));
-		int port = conf.getInt(NConstants.LEAFSERVER_PORT, NConstants.DEFAULT_LEAFSERVER_PORT);
+		int port = conf.getInt(NConstants.LEAFSERVER_PORT, 
+		    NConstants.DEFAULT_LEAFSERVER_PORT);
 		// Creation of a HSA will force a resolve.
 		InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
 		if (initialIsa.getAddress() == null) {
@@ -113,32 +106,24 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	  this.isa = this.rpcServer.getBindAddress();
 		this.serverName = this.isa.getHostName()+":"+this.isa.getPort();
 		
-		// FileSystem initialization
-		String master = conf.get(NConstants.MASTER_HOST,"local");
-		if("local".equals(master)) {
-			// local mode
-			this.defaultFS = LocalFileSystem.get(conf);
-			LOG.info("LocalFileSystem is initialized.");
-		} else {
-			// remote mode
-			this.defaultFS = FileSystem.get(conf);	
-			LOG.info("FileSystem is initialized.");
-		}
-		
-		this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
-		LOG.info("Base dir is set " + conf.get(NConstants.ENGINE_BASE_DIR));
-		File baseDir = new File(this.basePath.toString());
-		if(baseDir.exists() == false) {
-			baseDir.mkdir();
-			LOG.info("Base dir ("+baseDir.getAbsolutePath()+") is created.");
-		}
-		
-		this.dataPath = new Path(conf.get(NConstants.ENGINE_DATA_DIR));
-		LOG.info("Data dir is set " + dataPath);		
-		if(!defaultFS.exists(dataPath)) {
-			defaultFS.mkdirs(dataPath);
-			LOG.info("Data dir ("+dataPath+") is created");
-		}
+		 // Get the tajo base dir
+    this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
+    LOG.info("Base dir is set " + conf.get(NConstants.ENGINE_BASE_DIR));
+    // Get default DFS uri from the base dir
+    this.defaultFS = basePath.getFileSystem(conf);
+    LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");    
+        
+    if (defaultFS.exists(basePath) == false) {
+      defaultFS.mkdirs(basePath);
+      LOG.info("Tajo Base dir (" + basePath + ") is created.");
+    }
+
+    this.dataPath = new Path(conf.get(NConstants.ENGINE_DATA_DIR));
+    LOG.info("Tajo data dir is set " + dataPath);
+    if (!defaultFS.exists(dataPath)) {
+      defaultFS.mkdirs(dataPath);
+      LOG.info("Data dir (" + dataPath + ") is created");
+    }
 		
 		this.catalog = new CatalogClient(conf);
 		this.analyzer = new QueryAnalyzer(catalog);
@@ -147,12 +132,16 @@ public class LeafServer extends Thread implements LeafServerInterface {
 
 		Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 	}
+	
+	private void initLeafServer() throws IOException, InterruptedException, KeeperException {
+	  initializeZookeeper();
+	}
 
 	public void run() {
 		LOG.info("NtaLeafServer startup");
 		
 		try {
-			initializeZookeeper();
+			initLeafServer();
 			
       this.queryEngine = new QueryEngine(conf, catalog, storeManager, null);
       this.queryEngine.init();
@@ -183,19 +172,29 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	private class ShutdownHook implements Runnable {
 		@Override
 		public void run() {
+		  masterAddrTracker.stop();
+		  zookeeper.close();
+		  catalog.close();
 			shutdown("Shutting Down Normally! ("+serverName+")");
 		}
 	}
 	
 	private void initializeZookeeper() throws IOException, InterruptedException, KeeperException {
-		this.zookeeper = new ZkClient(conf);
-		this.masterAddrTracker = new MasterAddressTracker(zookeeper);
-		this.masterAddrTracker.start();
-		
-		masterAddrTracker.blockUntilAvailable();
-		
-		zookeeper.createEphemeral(
-		    ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName));			
+    this.zookeeper = new ZkClient(conf);
+    this.masterAddrTracker = new MasterAddressTracker(zookeeper);
+    this.masterAddrTracker.start();
+    
+    byte [] master = null;
+    while(master == null) {
+      master = masterAddrTracker.blockUntilAvailable(1000);
+      LOG.info("Waiting for the Tajo master.....");
+    }
+    
+    LOG.info("Got the master address (" + new String(master) + ")");
+    // if the znode already exists, it will be updated for notification.
+    ZkUtil.upsertEphemeralNode(zookeeper,
+        ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName));
+    LOG.info("Write the znode nta/leafservers/" + serverName);
 	}
 	
 	public String getServerName() {

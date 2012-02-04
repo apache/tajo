@@ -60,14 +60,14 @@ public class TestLeafServerInterface {
 	public void testSubQueryRequest() throws Exception {
 		TestClient client = new TestClient();
 		ProtoParamRpcServer server = NettyRpc.getProtoParamRpcServer(client, 
-				new InetSocketAddress("localhost", 9001));
+				new InetSocketAddress("localhost", 0));
+		int port = server.getBindAddress().getPort();
 		server.start();
 		
 		LeafServerInterface leaf;
 		for (SubQueryRequest req : reqList) {
 			leaf = (LeafServerInterface) NettyRpc.getProtoParamBlockingRpcProxy(LeafServerInterface.class, 
-					new InetSocketAddress("localhost", 9001));
-			System.out.print("send request -> ");
+					new InetSocketAddress("localhost", port));
 			leaf.requestSubQuery(req.getProto());
 		}
 		
@@ -81,6 +81,8 @@ public class TestLeafServerInterface {
 			assertEquals(reqList.get(i).getOutputPath(), client.reqList.get(i).getOutputPath());
 			assertEquals(reqList.get(i).getQuery(), client.reqList.get(i).getQuery());			
 		}
+		
+		server.shutdown();
 	}
 	
 	public class TestClient implements LeafServerInterface {
@@ -102,9 +104,9 @@ public class TestLeafServerInterface {
 
 		@Override
 		public SubQueryResponseProto requestSubQuery(
-				SubQueryRequestProto request) throws Exception {
-			System.out.println("Receive Success!!!!!!!");
+				SubQueryRequestProto request) throws Exception {			
 			SubQueryRequestImpl req = new SubQueryRequestImpl(request);
+			assertNotNull(req);
 			reqList.add(req);
 			return null;
 		}

@@ -30,9 +30,8 @@ public class ZkClient implements Watcher {
 	private final List<ZkListener> listeners = new CopyOnWriteArrayList<ZkListener>();	
 
 	public ZkClient(Configuration conf) throws IOException {
-		this(conf.get(NConstants.ZOOKEEPER_HOST)+":"+
-			conf.getInt(NConstants.ZOOKEEPER_PORT, 
-				NConstants.DEFAULT_ZOOKEEPER_PORT),
+		this(conf.get(NConstants.ZOOKEEPER_ADDRESS,
+        NConstants.DEFAULT_ZOOKEEPER_ADDRESS),			
 				conf.getInt(NConstants.ZOOKEEPER_SESSION_TIMEOUT, 
 					NConstants.DEFAULT_ZOOKEEPER_SESSION_TIMEOUT));
 	}
@@ -89,7 +88,7 @@ public class ZkClient implements Watcher {
 		return zk.exists(path, watch);
 	}
 
-	public void delete(final String path) throws Exception {
+	public void delete(final String path) throws InterruptedException, KeeperException {
 		zk.delete(path, -1);
 	}
 
