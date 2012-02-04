@@ -31,7 +31,7 @@ public class TestQueryEngine {
 	public void setUp() throws Exception {
 		conf = new NtaConf();
 		conf.set(NConstants.ENGINE_BASE_DIR, TEST_DIR);
-		conf.setInt(NConstants.MASTER_PORT, 0);
+		conf.set(NConstants.MASTER_ADDRESS, "localhost:0");
 		engine = new NtaEngine(conf);
 		engine.init();
 		engine.start();

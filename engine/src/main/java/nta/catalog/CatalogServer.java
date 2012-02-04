@@ -17,19 +17,18 @@ import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchFunctionException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.CatalogProtos.ColumnProto;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
 import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.catalog.proto.CatalogProtos.TableProto;
-import nta.catalog.proto.CatalogProtos.DataType;
-import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
-import nta.engine.EngineService;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
 import nta.zookeeper.ZkClient;
+import nta.zookeeper.ZkUtil;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -39,6 +38,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.DNS;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
 
 import com.google.common.base.Preconditions;
@@ -50,7 +50,7 @@ import com.google.common.base.Preconditions;
  * 
  * @author Hyunsik Choi
  */
-public class CatalogServer extends Thread implements CatalogServiceProtocol, EngineService {
+public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	private static Log LOG = LogFactory.getLog(CatalogServer.class);
 	private Configuration conf;
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -78,29 +78,24 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol, Eng
 		this.conf = conf;
 		
 		// Server to handle client requests.
-    String hostname = DNS.getDefaultHost(
-      conf.get("nta.master.dns.interface", "default"),
-      conf.get("nta.master.dns.nameserver", "default"));
-    int port = conf.getInt(NConstants.CATALOG_MASTER_PORT, 
-        NConstants.DEFAULT_CATALOG_MASTER_PORT);
+    String serverAddr = conf.get(NConstants.CATALOG_ADDRESS, 
+        NConstants.DEFAULT_CATALOG_ADDRESS);
     // Creation of a HSA will force a resolve.
-    InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
-    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);
+    InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
+    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initIsa);
     this.isa = this.rpcServer.getBindAddress();
     this.serverName = this.isa.getHostName() + ":" + this.isa.getPort();
 	}
+	
+  public void shutdown() throws IOException {
+    this.rpcServer.shutdown();
+    this.zkClient.close();
+  }
 
-	public void init() throws IOException {
-		/*catalogDirPath = conf.get(NConstants.ENGINE_CATALOG_DIR);		
-		
-		File catalogDir = new File(catalogDirPath);
-		if(!catalogDir.exists()) {
-			catalogDir.mkdirs();
-		}
-		
-		walFile = new File(catalogDir+"/"+NConstants.ENGINE_CATALOG_WALFILE);
-		wal = new SimpleWAL(walFile);
-		this.logger = new Logger(wal);*/
+	private void initCatalogServer() throws IOException, 
+	    KeeperException, InterruptedException {
+    initializeZookeeper();
+    this.rpcServer.start();
 	}
 	
 	public InetSocketAddress getBindAddress() {
@@ -111,10 +106,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol, Eng
     try {
       LOG.info("Catalog Server startup ("+serverName+")");
       
-      // initialize area
-      this.zkClient = new ZkClient(conf);
-      initializeZookeeper();
-      this.rpcServer.start();      
+      initCatalogServer();
       
       // loop area
       if(!this.stopped) {
@@ -142,8 +134,11 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol, Eng
 	  this.stopped = true;
 	}
 	
-	private void initializeZookeeper() throws KeeperException, InterruptedException {	
-    zkClient.createEphemeral(NConstants.ZNODE_CATALOG, serverName.getBytes());
+	private void initializeZookeeper() throws KeeperException, 
+	    InterruptedException, IOException {
+	  this.zkClient = new ZkClient(conf);
+    ZkUtil.upsertEphemeralNode(zkClient, NConstants.ZNODE_CATALOG, 
+        serverName.getBytes());
 	}
 
 	public TableDescProto getTableDesc(String tableId) throws NoSuchTableException {
@@ -325,10 +320,6 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol, Eng
 
 	public Collection<FunctionDescProto> getFunctions() {
 		return functions.values();
-	}
-	
-	@Override
-	public void shutdown() throws IOException {
 	}
 	
 	public static void main(String [] args) throws IOException {

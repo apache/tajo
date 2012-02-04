@@ -39,17 +39,14 @@ public class TestLeafServer {
   @BeforeClass
   public static void setUp() throws Exception {
     EngineTestingUtils.buildTestDir(TEST_PATH);
-    util = new NtaTestingUtility();    
-    util.startMiniZKCluster();
-    util.startCatalogCluster();
-    util.startMiniNtaEngineCluster(2);
+    util = new NtaTestingUtility();
+    util.startMiniCluster(2);
     conf = util.getConfiguration();
     sm = StorageManager.get(conf, TEST_PATH);
   }
 
   @AfterClass
   public static void tearDown() throws Exception {
-    util.shutdownMiniZKCluster();
     util.shutdownMiniNtaEngineCluster();
   }
 

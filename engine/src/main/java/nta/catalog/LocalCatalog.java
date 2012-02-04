@@ -25,7 +25,8 @@ public class LocalCatalog implements CatalogService {
   private CatalogServer catalog;
   
   public LocalCatalog(final Configuration conf) throws IOException {
-    this.catalog = new CatalogServer(conf);    
+    this.catalog = new CatalogServer(conf);
+    this.catalog.start();
   }
 
   @Override

@@ -30,7 +30,7 @@ import org.apache.hadoop.net.NetUtils;
  */
 public class CatalogClient implements CatalogService {
   private final Log LOG = LogFactory.getLog(CatalogClient.class);
-  private static final int waitTime = 60 * 1000;
+  private static final int waitTime = 5 * 1000;
 
   @SuppressWarnings("unused")
   private final Configuration conf;
@@ -59,10 +59,15 @@ public class CatalogClient implements CatalogService {
       throw new IOException(e);
     }
 
+    LOG.info("Trying to connect the catalog (" + serverName + ")");
     InetSocketAddress addr = NetUtils.createSocketAddr(serverName);
     proxy = (CatalogServiceProtocol) NettyRpc.getProtoParamBlockingRpcProxy(
         CatalogServiceProtocol.class, addr);
     LOG.info("Connected to the catalog server (" + serverName + ")");
+  }
+  
+  public void close() {
+    this.zkClient.close();
   }
 
   @Override

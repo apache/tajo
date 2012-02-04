@@ -11,7 +11,6 @@ import java.util.UUID;
 import nta.catalog.CatalogServer;
 import nta.catalog.MiniCatalogServer;
 import nta.conf.NtaConf;
-import nta.engine.utils.JVMClusterUtil.LeafServerThread;
 import nta.zookeeper.MiniZooKeeperCluster;
 
 import org.apache.commons.logging.Log;
@@ -39,7 +38,6 @@ public class NtaTestingUtility {
 	
 	private FileSystem defaultFS = null;
 	private MiniDFSCluster dfsCluster;
-	private MiniMRCluster mrCluster;
 	private MiniZooKeeperCluster zkCluster = null;
 	private MiniNtaEngineCluster engineCluster;
 	private MiniCatalogServer catalogCluster;
@@ -114,13 +112,25 @@ public class NtaTestingUtility {
 		throw new IOException("Cluster already running at " +
 			this.clusterTestBuildDir);
 	}
-	
+
+	/**
+	 * This method starts up a tajo cluster with a given number of clusters in
+	 * distributed mode.
+	 * 
+	 * @param numSlaves the number of tajo cluster to start up
+	 * @return a mini tajo cluster
+	 * @throws Exception
+	 */
 	public MiniNtaEngineCluster startMiniCluster(final int numSlaves) throws Exception {
 		return startMiniCluster(numSlaves, null);
 	}
 
 	public MiniNtaEngineCluster startMiniCluster(final int numSlaves, final String [] dataNodeHosts) 
-		throws Exception {
+	    throws Exception {
+	  Configuration c = getConfiguration();
+	  // the conf is set to the distributed mode.
+	  c.set(NConstants.CLUSTER_DISTRIBUTED, "true");
+	  
 		int numDataNodes = numSlaves;
 		if(dataNodeHosts != null && dataNodeHosts.length != 0) {
 			numDataNodes = dataNodeHosts.length;
@@ -138,7 +148,7 @@ public class NtaTestingUtility {
 
 		// Make a new random dir to home everything in.  Set it as system property.
 		// minidfs reads home from system property.
-		this.clusterTestBuildDir = testBuildPath == null?setupClusterTestBuildDir() : new File(testBuildPath);
+		this.clusterTestBuildDir = testBuildPath == null? setupClusterTestBuildDir() : new File(testBuildPath);
 
 		System.setProperty(TEST_DIRECTORY_KEY, this.clusterTestBuildDir.getPath());
 
@@ -150,16 +160,20 @@ public class NtaTestingUtility {
 		  startMiniZKCluster(this.clusterTestBuildDir);
 		}
 		
-		startCatalogCluster();
+		if (this.catalogCluster == null) {
+		  startCatalogCluster();
+		}
 		
-		return startMiniNtaEngineCluster(numSlaves);
+		return startMiniTajoCluster(this.clusterTestBuildDir, numSlaves);
 	}
 	
-	public MiniNtaEngineCluster startMiniNtaEngineCluster(final int numSlaves) throws Exception {
-		Configuration c = new Configuration(this.conf);
-		this.engineCluster = new MiniNtaEngineCluster(c, numSlaves);	
+	private MiniNtaEngineCluster startMiniTajoCluster(File testBuildDir,
+	    final int numSlaves) throws Exception {
+	  Configuration c = getConfiguration();
+		c.set(NConstants.ENGINE_BASE_DIR, getTestDir("tajo").toString());		
+		this.engineCluster = new MiniNtaEngineCluster(c, numSlaves);
 		
-		LOG.info("Minicluster is up");		
+		LOG.info("Mini Tajo cluster is up");
 		return this.engineCluster;
 	}
 	
@@ -178,7 +192,7 @@ public class NtaTestingUtility {
 		if(this.engineCluster != null) {
 			this.engineCluster.shutdown();
 			this.engineCluster.join();
-		}		
+		}
 		this.engineCluster = null;
 	}
 	
@@ -268,8 +282,7 @@ public class NtaTestingUtility {
 		}
 		this.zkCluster = new MiniZooKeeperCluster();
 		int clientPort = this.zkCluster.startup(dir, zookeeperServerNum);
-		this.conf.set(NConstants.ZOOKEEPER_HOST, "127.0.0.1");
-		this.conf.set(NConstants.ZOOKEEPER_PORT,Integer.toString(clientPort));
+		this.conf.set(NConstants.ZOOKEEPER_ADDRESS, "127.0.0.1:"+clientPort);
 		
 		return this.zkCluster;
 	}
@@ -291,43 +304,6 @@ public class NtaTestingUtility {
 
 	public MiniDFSCluster getMiniDFSCluster() {
 		return this.dfsCluster;
-	}
-
-	/**
-	 * Starts a <code>MiniMRCluster</code>.
-	 *
-	 * @param servers  The number of <code>TaskTracker</code>'s to start.
-	 * @throws IOException When starting the cluster fails.
-	 */
-	public void startMiniMapReduceCluster(final int servers) throws IOException {		
-		LOG.info("Starting mini mapreduce cluster...");		
-		// These are needed for the new and improved Map/Reduce framework
-		Configuration c = getConfiguration();
-		
-		c.set("hadoop.log.dir","target/test-data/logs");
-		c.set("hadoop.tmp.dir","target/test-data/mapred");
-		c.set("mapred.job.tracker", "localhost:21987");
-		
-		System.setProperty("hadoop.log.dir", c.get("hadoop.log.dir"));
-		c.set("mapred.output.dir", c.get("hadoop.tmp.dir"));
-		mrCluster = new MiniMRCluster(servers,
-			FileSystem.get(c).getUri().toString(), 1);
-		LOG.info("Mini mapreduce cluster started");
-		c.set("mapred.job.tracker",
-			mrCluster.createJobConf().get("mapred.job.tracker"));
-	}
-
-	/**
-	 * Stops the previously started <code>MiniMRCluster</code>.
-	 */
-	public void shutdownMiniMapReduceCluster() {
-		LOG.info("Stopping mini mapreduce cluster...");
-		if (mrCluster != null) {
-			mrCluster.shutdown();
-		}
-		// Restore configuration to point to local jobtracker
-		conf.set("mapred.job.tracker", "local");
-		LOG.info("Mini mapreduce cluster stopped");
 	}
 	
 	public void shutdownMiniNtaEngineCluster() {
@@ -361,11 +337,12 @@ public class NtaTestingUtility {
 	
 	public MiniCatalogServer startCatalogCluster() throws IOException {
 	  Configuration c = getConfiguration();
-	  c.setInt(NConstants.CATALOG_MASTER_PORT, 0);
+	  c.set(NConstants.CATALOG_ADDRESS, "localhost:0");
 	  this.catalogCluster = new MiniCatalogServer(conf);
 	  CatalogServer catServer = this.catalogCluster.getCatalogServer();
 	  InetSocketAddress sockAddr = catServer.getBindAddress();
-	  c.setInt(NConstants.CATALOG_MASTER_PORT, sockAddr.getPort());
+	  c.set(NConstants.CATALOG_ADDRESS, 
+	      sockAddr.getHostName()+":"+sockAddr.getPort());
 	  
 	  return this.catalogCluster;
 	}
@@ -385,16 +362,6 @@ public class NtaTestingUtility {
 	 */
 	public static void main(String[] args) throws Exception {
 		NtaTestingUtility cluster = new NtaTestingUtility();
-		cluster.startMiniCluster(2);
-		
-		Thread.sleep(3000);
-		LeafServerThread t = cluster.getMiniNtaEngineCluster().addLeafServer();
-		t.getLeafServer().getServerName();
-		
-		Thread.sleep(3000);
-		cluster.getMiniNtaEngineCluster().shutdownLeafServer(0);
-		
-		Thread.sleep(3000);
-		cluster.shutdownMiniCluster();
+		cluster.startMiniCluster(1);
 	}
 }

@@ -1,28 +1,20 @@
 package nta.engine;
 
 public final class NConstants {
-	public static String MASTER_HOST="engine.master.addr";
-	public static String DEFAULT_MASTER_HOST="local";
-	
-	public static String MASTER_PORT="engine.master.port";
-	public static int DEFAULT_MASTER_PORT=9001;
+	public static String MASTER_ADDRESS="engine.master.addr";
+	public static String DEFAULT_MASTER_ADDRESS="localhost:9001";
 	
 	public static String LEAFSERVER_HOST="engine.leafserver.addr";
 	public static String DEFAULT_LEAFSERVER_HOST="0.0.0.0";
 	
-  public static String CATALOG_MASTER_HOST = "catalog.master.addr";
-  public static String DEFAULT_CATALOG_MASTER_HOST = "0.0.0.0";
-
-  public static String CATALOG_MASTER_PORT = "catalog.master.port";
-  public static int DEFAULT_CATALOG_MASTER_PORT = 9002;
+  public static String CATALOG_ADDRESS = "catalog.master.addr";
+  public static String DEFAULT_CATALOG_ADDRESS = "0.0.0.0:9002";
 	
 	public static String LEAFSERVER_PORT="engine.leafserver.port";
-	public static int DEFAULT_LEAFSERVER_PORT=9010;
+	public static int DEFAULT_LEAFSERVER_PORT=9003;
 	
-	public static String ZOOKEEPER_HOST="zookeeper.server.addr";
-	public static String DEFAULT_ZOOKEEPER_HOST="localhost";	
-	public static String ZOOKEEPER_PORT="zookeeper.server.port";
-	public static int DEFAULT_ZOOKEEPER_PORT=2181;	
+	public static String ZOOKEEPER_ADDRESS="zookeeper.server.addr";
+	public static String DEFAULT_ZOOKEEPER_ADDRESS="localhost:2181";		
 	
 	public static String ZOOKEEPER_TICK_TIME="zookeeper.server.ticktime";
 	public static int DEFAULT_ZOOKEEPER_TICK_TIME=5000;

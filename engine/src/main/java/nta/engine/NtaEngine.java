@@ -35,6 +35,7 @@ import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.DNS;
+import org.apache.hadoop.net.NetUtils;
 
 /**
  * @author hyunsik
@@ -69,7 +70,7 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 	public NtaEngine(NtaConf conf) throws IOException {
 		this.conf = conf;	
 		
-		String master = conf.get(NConstants.MASTER_HOST,"local");
+		String master = conf.get(NConstants.MASTER_ADDRESS,"local");
 		if("local".equals(master)) {
 			// local mode
 			this.defaultFS = LocalFileSystem.get(conf);
@@ -109,19 +110,16 @@ public class NtaEngine implements NtaEngineInterface, Runnable {
 		this.queryEngine.init();
 		services.add(queryEngine);
 		
-		String hostname = DNS.getDefaultHost(
-		      conf.get("engine.master.dns.interface", "default"),
-		      conf.get("engine.master.dns.nameserver", "default"));
-		int port = conf.getInt(NConstants.MASTER_PORT, NConstants.DEFAULT_MASTER_PORT);
-		// Creation of a HSA will force a resolve.
-	    InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
-	    if (initialIsa.getAddress() == null) {
-	      throw new IllegalArgumentException("Failed resolve of " + this.bindAddr);
-	    }
-	    
-	    this.server = RPC.getServer(this, initialIsa.getHostName(), initialIsa.getPort(), conf);
-	    this.bindAddr = this.server.getListenerAddress();	    
-		LOG.info(NtaEngine.class.getSimpleName()+" is bind to "+bindAddr.getAddress()+":"+bindAddr.getPort());
+    String masterAddr = conf.get(NConstants.MASTER_ADDRESS,
+        NConstants.DEFAULT_MASTER_ADDRESS);
+    InetSocketAddress initIsa = NetUtils.createSocketAddr(masterAddr);
+    // Creation of a HSA will force a resolve.
+
+    this.server = RPC.getServer(this, initIsa.getHostName(), initIsa.getPort(),
+        conf);
+    this.bindAddr = this.server.getListenerAddress();
+    LOG.info(NtaEngine.class.getSimpleName() + " is bind to "
+        + bindAddr.getAddress() + ":" + bindAddr.getPort());
 		
 		Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 	}
