@@ -21,11 +21,13 @@ import nta.storage.Tuple;
  *
  */
 public class StoreTableExec extends PhysicalExec {
+  @SuppressWarnings("unused")
   private final StoreTableNode annotation;
   private final PhysicalExec subOp;
   private final Appender appender;
   
-  private final Tuple tuple = null;
+  private Tuple tuple;
+  @SuppressWarnings("unused")
   private final Schema inputSchema;
   private final Schema outputSchema;
   
@@ -37,8 +39,8 @@ public class StoreTableExec extends PhysicalExec {
       StoreTableNode annotation, PhysicalExec subOp) throws IOException {
     this.annotation = annotation;
     this.subOp = subOp;
-    this.inputSchema = annotation.getInputSchema().toSchema();
-    this.outputSchema = annotation.getOutputSchema().toSchema();
+    this.inputSchema = annotation.getInputSchema();
+    this.outputSchema = annotation.getOutputSchema();
     
     TableMeta meta = new TableMetaImpl(this.outputSchema, StoreType.CSV);
     sm.initTableBase(meta, annotation.getTableName());
@@ -59,7 +61,6 @@ public class StoreTableExec extends PhysicalExec {
    */
   @Override
   public Tuple next() throws IOException {
-    Tuple tuple = null;
     while((tuple = subOp.next()) != null) {
       appender.addTuple(tuple);
     }

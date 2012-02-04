@@ -100,6 +100,11 @@ public class TableDescImpl implements TableDesc {
 	  return this.meta;
 	}
 	
+  @Override
+  public Schema getSchema() {
+    return getMeta().getSchema();
+  }
+	
 	public boolean equals(Object object) {
     if(object instanceof TableDescImpl) {
       TableDescImpl other = (TableDescImpl) object;

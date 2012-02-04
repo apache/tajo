@@ -40,10 +40,10 @@ public class TestIndex {
 		sm = StorageManager.get(conf, TEST_PATH);
 		
 		schema = new Schema();
-		schema.addColumn(new Column(0, "int" , DataType.INT));
-		schema.addColumn(new Column(1, "long" , DataType.LONG));
-		schema.addColumn(new Column(2, "double",DataType.DOUBLE));
-		schema.addColumn(new Column(3, "float" , DataType.FLOAT));
+		schema.addColumn(new Column("int" , DataType.INT));
+		schema.addColumn(new Column("long" , DataType.LONG));
+		schema.addColumn(new Column("double",DataType.DOUBLE));
+		schema.addColumn(new Column("float" , DataType.FLOAT));
 		
 		
 	}
@@ -75,9 +75,9 @@ public class TestIndex {
 		IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
 		
 		creater.setLoadNum(LOAD_NUM);
-		creater.createIndex(tablet, schema.getColumn(0));
+		creater.createIndex(tablet, tablet.getSchema().getColumn(0));
  
-		IndexScanner scanner = new IndexScanner(conf, tablet, schema.getColumn(0));
+		IndexScanner scanner = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(0));
 		FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
 	
 		for(int i = 0 ; i < TUPLE_NUM ; i ++) {
@@ -114,9 +114,9 @@ public class TestIndex {
 		IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
 		
 		creater.setLoadNum(LOAD_NUM);
-		creater.createIndex(tablet, schema.getColumn(1));
+		creater.createIndex(tablet, tablet.getSchema().getColumn(1));
  
-		IndexScanner scanner = new IndexScanner(conf, tablet, schema.getColumn(1));
+		IndexScanner scanner = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(1));
 		FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
 		for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
 			long[] offsets = scanner.seekGTH(DatumFactory.createLong(i));
@@ -152,9 +152,9 @@ public class TestIndex {
 		IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
 		
 		creater.setLoadNum(LOAD_NUM);
-		creater.createIndex(tablet, schema.getColumn(2));
+		creater.createIndex(tablet, tablet.getMeta().getSchema().getColumn(2));
  
-		IndexScanner scanner = new IndexScanner(conf, tablet, schema.getColumn(2));
+		IndexScanner scanner = new IndexScanner(conf, tablet, tablet.getMeta().getSchema().getColumn(2));
 		FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
 		for(int i = 0 ; i < TUPLE_NUM ; i ++) {
 			long[] offsets = scanner.seekEQL(DatumFactory.createDouble(i));
@@ -190,9 +190,9 @@ public class TestIndex {
 		IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
 		
 		creater.setLoadNum(LOAD_NUM);
-		creater.createIndex(tablet, schema.getColumn(3));
+		creater.createIndex(tablet, tablet.getSchema().getColumn(3));
  
-		IndexScanner scanner = new IndexScanner(conf, tablet, schema.getColumn(3));
+		IndexScanner scanner = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(3));
 		FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
 		for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
 			long[] offsets = scanner.seekGTH(DatumFactory.createFloat(i));
@@ -231,9 +231,9 @@ public class TestIndex {
     IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
     
     creater.setLoadNum(LOAD_NUM);
-    creater.createIndex(tablet, schema.getColumn(0));
+    creater.createIndex(tablet, tablet.getSchema().getColumn(0));
  
-    IndexScanner scanner = new IndexScanner(conf, tablet, schema.getColumn(0));
+    IndexScanner scanner = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(0));
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     for (int i = 0 ; i < range ; i ++ ) {
       long[] offsets = scanner.seekEQL(DatumFactory.createInt(i));
@@ -278,9 +278,9 @@ public class TestIndex {
 		IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
 		
 		creater.setLoadNum(LOAD_NUM);
-		creater.createIndex(tablet, schema.getColumn(0));
+		creater.createIndex(tablet, tablet.getSchema().getColumn(0));
  
-		IndexScanner scanner = new IndexScanner(conf, tablet, schema.getColumn(0));
+		IndexScanner scanner = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(0));
 		FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
 	  
     for(int i = 0 ; i < TUPLE_NUM ; i ++) {
@@ -318,9 +318,9 @@ public class TestIndex {
 		IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
 		
 		creater.setLoadNum(LOAD_NUM);
-		creater.createIndex(tablet, schema.getColumn(1));
+		creater.createIndex(tablet, tablet.getSchema().getColumn(1));
  
-		IndexScanner scanner = new IndexScanner(conf, tablet, schema.getColumn(1));
+		IndexScanner scanner = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(1));
 		FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       long[] offsets = scanner.seekGTH(DatumFactory.createDouble(i));
@@ -358,9 +358,9 @@ public class TestIndex {
 		IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
 		
 		creater.setLoadNum(LOAD_NUM);
-		creater.createIndex(tablet, schema.getColumn(2));
+		creater.createIndex(tablet, tablet.getSchema().getColumn(2));
  
-		IndexScanner scanner = new IndexScanner(conf, tablet, schema.getColumn(2));
+		IndexScanner scanner = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(2));
 		FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     
     for(int i = 0 ; i < TUPLE_NUM ; i ++) {
@@ -398,9 +398,9 @@ public class TestIndex {
 		IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
 		
 		creater.setLoadNum(LOAD_NUM);
-		creater.createIndex(tablet, schema.getColumn(3));
+		creater.createIndex(tablet, tablet.getSchema().getColumn(3));
  
-		IndexScanner scanner = new IndexScanner(conf, tablet, schema.getColumn(3));
+		IndexScanner scanner = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(3));
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       long[] offsets = scanner.seekGTH(DatumFactory.createDouble(i));
@@ -440,9 +440,9 @@ public class TestIndex {
     IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
     
     creater.setLoadNum(LOAD_NUM);
-    creater.createIndex(tablet, schema.getColumn(0));
+    creater.createIndex(tablet, tablet.getSchema().getColumn(0));
  
-    IndexScanner scanner = new IndexScanner(conf, tablet, schema.getColumn(0));
+    IndexScanner scanner = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(0));
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     for (int i = 0 ; i < range ; i ++ ) {
       long[] offsets = scanner.seekEQL(DatumFactory.createInt(i));
@@ -486,11 +486,11 @@ public class TestIndex {
 		
 		Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
 		IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
-		creater.createIndex(tablet, schema.getColumn(0));
-		creater.createIndex(tablet, schema.getColumn(1));
+		creater.createIndex(tablet, tablet.getSchema().getColumn(0));
+		creater.createIndex(tablet, tablet.getSchema().getColumn(1));
 		
-		IndexScanner scanner_1 = new IndexScanner(conf, tablet, schema.getColumn(0));
-		IndexScanner scanner_2 = new IndexScanner(conf, tablet, schema.getColumn(1));
+		IndexScanner scanner_1 = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(0));
+		IndexScanner scanner_2 = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(1));
 		for(int i = 0 ; i < TUPLE_NUM/5 ; i ++) {
 			long[] offsets_1 = scanner_1.seekEQL(DatumFactory.createInt(i));
 			long[] offsets_2 = scanner_2.seekEQL(DatumFactory.createLong(i));

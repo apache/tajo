@@ -8,6 +8,7 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.catalog.proto.CatalogProtos.TabletProto;
 import nta.catalog.proto.CatalogProtos.TabletProtoOrBuilder;
+import nta.engine.SchemaObject;
 
 import org.apache.hadoop.fs.Path;
 
@@ -15,7 +16,7 @@ import org.apache.hadoop.fs.Path;
  * @author jihoon
  * @author Hyunsik Choi
  */
-public class Fragment implements TableDesc, Comparable<Fragment> {
+public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 
   protected TabletProto proto = TabletProto.getDefaultInstance();
   protected TabletProto.Builder builder = null;
@@ -96,6 +97,10 @@ public class Fragment implements TableDesc, Comparable<Fragment> {
   public void setPath(Path path) {
     maybeInitBuilder();
     this.path = path;
+  }
+  
+  public Schema getSchema() {
+    return getMeta().getSchema();
   }
 
   public TableMeta getMeta() {

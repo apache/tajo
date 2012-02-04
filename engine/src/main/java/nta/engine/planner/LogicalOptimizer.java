@@ -6,7 +6,7 @@ package nta.engine.planner;
 import java.util.HashSet;
 import java.util.Stack;
 
-import nta.catalog.ColumnBase;
+import nta.catalog.Column;
 import nta.engine.Context;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.planner.logical.BinaryNode;
@@ -43,7 +43,7 @@ public class LogicalOptimizer {
    * @param plan
    */
   private static void pushProjection(Context ctx, LogicalNode plan) {
-    HashSet<ColumnBase> targetList = new HashSet<ColumnBase>();
+    HashSet<Column> targetList = new HashSet<Column>();
     Stack<LogicalNode> stack = new Stack<LogicalNode>();
     LogicalPlanner.refineInOutSchama(ctx, plan, targetList, stack);
   }

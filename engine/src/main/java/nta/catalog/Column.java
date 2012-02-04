@@ -8,42 +8,23 @@ import nta.common.ProtoObject;
 /**
  * @author Hyunsik Choi
  */
-public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
+public class Column implements ProtoObject<ColumnProto> {
 	private ColumnProto proto = ColumnProto.getDefaultInstance();
 	private ColumnProto.Builder builder = null;
 	private boolean viaProto = false;
 	
-	// volatile variable
-	private Integer id;
+  protected String name;
+  protected DataType dataType;
 	  
-	public Column(int columnId, String columnName, DataType dataType) {		
-	  super(columnName, dataType);
-		setId(columnId);
+	public Column(String columnName, DataType dataType) {
+		this.name = columnName;
+		this.dataType = dataType;
 		this.builder = ColumnProto.newBuilder();
 	}
 	
 	public Column(ColumnProto proto) {
-	  super(proto.getColumnName(), proto.getDataType());
 		this.proto = proto;
 		this.viaProto = true;
-	}
-	
-	public Integer getId() {
-		ColumnProtoOrBuilder p = viaProto ? proto : builder;
-		if(id != null) {
-			return this.id;
-		}
-		if(!p.hasColumnId()) {
-			return null;
-		}
-		this.id = p.getColumnId();
-		
-		return this.id;
-	}
-	
-	public void setId(int columnId) {
-		maybeInitBuilder();
-		this.id = columnId;
 	}
 	
 	public String getName() {
@@ -58,6 +39,21 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 		
 		return this.name;
 	}
+	
+  public boolean isQualifiedName() {
+    return getName().split("\\.").length == 2;
+  }
+
+  public String getTableName() {
+    return getName().split("\\.")[0];
+  }
+
+  public String getColumnName() {
+    if (isQualifiedName())
+      return this.name.split("\\.")[1];
+    else
+      return name;
+  }
 	
 	public void setName(String name) {
 		maybeInitBuilder();
@@ -95,10 +91,9 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 		return false;
 	}
 	
-	@Override
-	public int hashCode() {
-	  return this.getName().hashCode();
-	}
+  public int hashCode() {
+    return getName().hashCode() ^ (getDataType().hashCode() * 17);
+  }
 
 	@Override
 	public ColumnProto getProto() {
@@ -116,9 +111,6 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 	}
 	
 	private void mergeLocalToBuilder() {
-		if (this.id  != null) {			
-			builder.setColumnId(this.id);
-		}
 		if (this.name != null) {
 			builder.setColumnName(this.name);			
 		}
@@ -134,5 +126,9 @@ public class Column extends ColumnBase implements ProtoObject<ColumnProto> {
 		mergeLocalToBuilder();
 		proto = builder.build();
 		viaProto = true;
+	}
+	
+	public String toString() {
+	  return getName() +" " + getDataType();
 	}
 }

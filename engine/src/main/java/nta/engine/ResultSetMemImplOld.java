@@ -257,32 +257,33 @@ public class ResultSetMemImplOld implements ResultSetOld, SchemaObject {
 		sb.append("\n----------------------------------\n");
 		first();
 		while (next()) {
-			for (Column cd : meta.getColumns()) {
-				switch (cd.getDataType()) {
+		  for (int i = 0; i < meta.getColumnNum(); i++) {
+		    Column col = meta.getColumn(i);
+				switch (col.getDataType()) {
 				case BOOLEAN:
-					sb.append(rows.get(cur).getBoolean(cd.getId()));
+					sb.append(rows.get(cur).getBoolean(i));
 					break;
 				case DOUBLE:
-					sb.append(rows.get(cur).getDouble(cd.getId()));
+					sb.append(rows.get(cur).getDouble(i));
 					break;
 				case INT:
-					sb.append(rows.get(cur).getInt(cd.getId()));
+					sb.append(rows.get(cur).getInt(i));
 					break;
 				case LONG:
-					sb.append(rows.get(cur).getLong(cd.getId()));
+					sb.append(rows.get(cur).getLong(i));
 					break;
 				case SHORT:
-					sb.append(rows.get(cur).getShort(cd.getId()));
+					sb.append(rows.get(cur).getShort(i));
 					break;
 				case STRING:
-					sb.append(rows.get(cur).getString(cd.getId()));
+					sb.append(rows.get(cur).getString(i));
 					break;
 				case IPv4:
-					sb.append(new IPv4(rows.get(cur).getIPv4Bytes(cd.getId())).toString());
+					sb.append(new IPv4(rows.get(cur).getIPv4Bytes(i)).toString());
 					break;
 				default:
 					if(LOG.isDebugEnabled())
-						LOG.debug("Type " + cd.getDataType() + " is not implemented!!!!!!!!!!!!!!");
+						LOG.debug("Type " + col.getDataType() + " is not implemented!!!!!!!!!!!!!!");
 				
 					break;
 				}

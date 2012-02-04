@@ -7,7 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 
 import nta.catalog.CatalogService;
-import nta.catalog.ColumnBase;
+import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
 import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
@@ -51,8 +51,8 @@ public class TestEvalTree {
   public static class TestSum extends Function {
 
     public TestSum() {
-      super(new ColumnBase[] { new ColumnBase("arg1", DataType.INT),
-          new ColumnBase("arg2", DataType.INT) });
+      super(new Column[] { new Column("arg1", DataType.INT),
+          new Column("arg2", DataType.INT) });
     }
 
     @Override
@@ -71,7 +71,7 @@ public class TestEvalTree {
   public static class TestAggSum extends Function {
 
     public TestAggSum() {
-      super(new ColumnBase[] { new ColumnBase("arg1", DataType.INT)});
+      super(new Column[] { new Column("arg1", DataType.INT)});
     }
 
     @Override

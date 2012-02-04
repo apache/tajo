@@ -60,16 +60,16 @@ public class Write {
             vTuple.put(
                 gnode
                     .getOutputSchema()
-                    .getColumn(
+                    .getColumnId(
                         gnode.getTargetList()[z].getColumnSchema().getName())
-                    .getId(), kvpair.key[z]);
+                    , kvpair.key[z]);
           } else {
             vTuple.put(
                 gnode
                     .getOutputSchema()
-                    .getColumn(
+                    .getColumnId(
                         gnode.getTargetList()[z].getColumnSchema().getName())
-                    .getId(), kvpair.val[z - kvpair.key.length]);
+                    , kvpair.val[z - kvpair.key.length]);
           }
         }
 

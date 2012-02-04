@@ -92,9 +92,9 @@ public class TestCatalog {
 	  CatalogService catalog = new LocalCatalog(conf);
 	  
 		schema1 = new Schema();
-		fid1 = schema1.addColumn(FieldName1, DataType.BYTE);
-		fid2 = schema1.addColumn(FieldName2, DataType.INT);
-		fid3 = schema1.addColumn(FieldName3, DataType.LONG);
+		schema1.addColumn(FieldName1, DataType.BYTE);
+		schema1.addColumn(FieldName2, DataType.INT);
+		schema1.addColumn(FieldName3, DataType.LONG);
 		
 		TableDesc meta = new TableDescImpl("table1", schema1, StoreType.MEM);
 		meta.setPath(new Path("/table1"));
@@ -116,9 +116,9 @@ public class TestCatalog {
     CatalogService catalog = new LocalCatalog(conf);
     
 	  schema1 = new Schema();
-    fid1 = schema1.addColumn(FieldName1, DataType.BYTE);
-    fid2 = schema1.addColumn(FieldName2, DataType.INT);
-    fid3 = schema1.addColumn(FieldName3, DataType.LONG);
+    schema1.addColumn(FieldName1, DataType.BYTE);
+    schema1.addColumn(FieldName2, DataType.INT);
+    schema1.addColumn(FieldName3, DataType.LONG);
     
 	  TableMeta info = new TableMetaImpl(schema1, StoreType.CSV);
 	  TableDesc desc = new TableDescImpl();
@@ -131,7 +131,7 @@ public class TestCatalog {
 		public TestFunc1() {
 			super(					
 					new Column [] {
-							new Column(1, "name", DataType.INT)
+							new Column("name", DataType.INT)
 					}
 			);
 		}
@@ -150,9 +150,9 @@ public class TestCatalog {
 	 public static class TestFunc2 extends Function {
 	    public TestFunc2() {
 	      super(          
-	          new ColumnBase [] {
-	              new ColumnBase("name", DataType.INT),
-	              new ColumnBase("bytes", DataType.BYTES)
+	          new Column [] {
+	              new Column("name", DataType.INT),
+	              new Column("bytes", DataType.BYTES)
 	          }
 	      );
 	    }

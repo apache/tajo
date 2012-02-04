@@ -42,7 +42,7 @@ public class ProjectOp extends PhysicalOp {
 		VTuple t = new VTuple(logicalOp.getSchema().getColumns().size());
 		TargetEntry [] entries = logicalOp.getTargetList();
 		for(TargetEntry entry : entries) {
-		  int id = this.logicalOp.getSchema().getColumn(entry.colId).getId();
+		  int id = this.logicalOp.getSchema().getColumnId(entry.colId);
 			t.put(entry.resId, tuple.get(id));			
 		}
 		

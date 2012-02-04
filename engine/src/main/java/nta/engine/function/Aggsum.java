@@ -1,13 +1,13 @@
 package nta.engine.function;
 
-import nta.catalog.ColumnBase;
+import nta.catalog.Column;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 
 public class Aggsum extends Function {
 
   public Aggsum() {
-    super(new ColumnBase[] { new ColumnBase("arg1", DataType.INT) });
+    super(new Column[] { new Column("arg1", DataType.INT) });
   }
 
   @Override

@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 
-import nta.catalog.ColumnBase;
+import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
@@ -27,7 +27,7 @@ public class Groupby {
       LinkedList<KVpair> outputKVlist) {
 
     GroupbyNode gnode = Cons.gnode;
-    Schema outschema = new Schema(gnode.getOutputSchema().toSchema());
+    Schema outschema = new Schema(gnode.getOutputSchema());
     outschema.addColumn("count", DataType.INT);
 
     tupleSlots = new HashMap<Tuple, Tuple>(10000);
@@ -37,8 +37,8 @@ public class Groupby {
         - gnode.getGroupingColumns().length];
 
     int i = 0;
-    for (ColumnBase col : gnode.getGroupingColumns()) {
-      groupf[i] = gnode.getInputSchema().getColumn(col.getName()).getId();
+    for (Column col : gnode.getGroupingColumns()) {
+      groupf[i] = gnode.getInputSchema().getColumnId(col.getName());
       i++;
     }
 
@@ -65,28 +65,28 @@ public class Groupby {
       keyTuple = new VTuple(groupf.length);
       for (int z = 0; z < groupf.length; z++) {
         keyTuple.put(z,
-            evals[groupf[z]].eval(gnode.getInputSchema().toSchema(), row));
+            evals[groupf[z]].eval(gnode.getInputSchema(), row));
       }
 
       if (tupleSlots.containsKey(keyTuple)) { // if key found
         Tuple tmpTuple = tupleSlots.get(keyTuple);
         for (int z = 0; z < measuref.length; z++) {
-          Datum datum = evals[measuref[z]].eval(gnode.getInputSchema()
-              .toSchema(), row, tmpTuple.get(measuref[z]));
+          Datum datum = evals[measuref[z]].eval(gnode.getInputSchema(), 
+              row, tmpTuple.get(measuref[z]));
           tmpTuple.put(measuref[z], datum);
           tmpTuple.put(
-              outschema.getColumn("count").getId(),
-              tmpTuple.get(outschema.getColumn("count").getId()).plus(
+              outschema.getColumnId("count"),
+              tmpTuple.get(outschema.getColumnId("count")).plus(
                   DatumFactory.createInt(row.count)));
           tupleSlots.put(keyTuple, tmpTuple);
         }
       } else { // if the key occurs firstly
         VTuple tuple = new VTuple(outschema.getColumnNum());
-        for (int z = 0; z < gnode.getOutputSchema().toSchema().getColumnNum(); z++) {
-          Datum datum = evals[z].eval(gnode.getInputSchema().toSchema(), row);
+        for (int z = 0; z < gnode.getOutputSchema().getColumnNum(); z++) {
+          Datum datum = evals[z].eval(gnode.getInputSchema(), row);
           tuple.put(z, datum);
         }
-        tuple.put(gnode.getOutputSchema().toSchema().getColumnNum(),
+        tuple.put(gnode.getOutputSchema().getColumnNum(),
             DatumFactory.createInt(row.count));
         tupleSlots.put(keyTuple, tuple);
       }
@@ -104,7 +104,7 @@ public class Groupby {
         kvpair.val[z] = hashmap.getValue().get(measuref[z]);
       }
       kvpair.count = hashmap.getValue()
-          .getInt(gnode.getOutputSchema().toSchema().getColumnNum()).asInt();
+          .getInt(gnode.getOutputSchema().getColumnNum()).asInt();
       outputKVlist.add(kvpair);
     }
   }
@@ -114,7 +114,7 @@ public class Groupby {
       LinkedList<KVpair> outputKVlist) {
 
     GroupbyNode gnode = Cons.gnode;
-    Schema outschema = new Schema(gnode.getOutputSchema().toSchema());
+    Schema outschema = new Schema(gnode.getOutputSchema());
     outschema.addColumn("count", DataType.INT);
 
     tupleSlots = new HashMap<Tuple, Tuple>(1000);
@@ -124,8 +124,8 @@ public class Groupby {
         - gnode.getGroupingColumns().length];
 
     int i = 0;
-    for (ColumnBase col : gnode.getGroupingColumns()) {
-      groupf[i] = gnode.getInputSchema().getColumn(col.getName()).getId();
+    for (Column col : gnode.getGroupingColumns()) {
+      groupf[i] = gnode.getInputSchema().getColumnId(col.getName());
       i++;
     }
 
@@ -153,18 +153,18 @@ public class Groupby {
           Datum datum = row.values[measuref[z]];
           tmpTuple.put(measuref[z], datum);
           tmpTuple.put(
-              outschema.getColumn("count").getId(),
-              tmpTuple.get(outschema.getColumn("count").getId()).plus(
+              outschema.getColumnId("count"),
+              tmpTuple.get(outschema.getColumnId("count")).plus(
                   DatumFactory.createInt(row.count)));
           tupleSlots.put(keyTuple, tmpTuple);
         }
       } else { // if the key occurs firstly
         VTuple tuple = new VTuple(outschema.getColumnNum());
-        for (int z = 0; z < gnode.getOutputSchema().toSchema().getColumnNum(); z++) {
+        for (int z = 0; z < gnode.getOutputSchema().getColumnNum(); z++) {
           Datum datum = row.values[z];
           tuple.put(z, datum);
         }
-        tuple.put(gnode.getOutputSchema().toSchema().getColumnNum(),
+        tuple.put(gnode.getOutputSchema().getColumnNum(),
             DatumFactory.createInt(row.count));
         tupleSlots.put(keyTuple, tuple);
       }
@@ -182,7 +182,7 @@ public class Groupby {
         kvpair.val[z] = hashmap.getValue().get(measuref[z]);
       }
       kvpair.count = hashmap.getValue()
-          .getInt(gnode.getOutputSchema().toSchema().getColumnNum()).asInt();
+          .getInt(gnode.getOutputSchema().getColumnNum()).asInt();
       outputKVlist.add(kvpair);
     }
   }

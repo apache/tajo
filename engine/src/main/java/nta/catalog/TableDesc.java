@@ -2,6 +2,7 @@ package nta.catalog;
 
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
+import nta.engine.SchemaObject;
 
 import org.apache.hadoop.fs.Path;
 
@@ -12,7 +13,7 @@ import com.google.protobuf.Message;
  * @author Hyunsik Choi
  *
  */
-public interface TableDesc {
+public interface TableDesc extends SchemaObject {
   void setId(String tableId);
   
   String getId();

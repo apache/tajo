@@ -8,7 +8,6 @@ import java.io.IOException;
 import nta.catalog.CatalogService;
 import nta.catalog.TableDesc;
 import nta.engine.exception.InternalException;
-import nta.engine.exec.DescTableOp;
 import nta.engine.exec.PhysicalOp;
 import nta.engine.exec.ProjectOp;
 import nta.engine.exec.SelOp;
@@ -17,7 +16,6 @@ import nta.engine.exec.ShowFunctionOp;
 import nta.engine.exec.ShowTableOp;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.plan.logical.ControlLO;
-import nta.engine.plan.logical.DescTableLO;
 import nta.engine.plan.logical.JoinOp;
 import nta.engine.plan.logical.LogicalOp;
 import nta.engine.plan.logical.LogicalPlan;
@@ -96,8 +94,6 @@ public class PhysicalPlanner {
 			break;
 			
 		case DESC_TABLE:
-			DescTableLO lo = (DescTableLO) op;
-			cur = new DescTableOp(lo);
 			break;
 			
 		case SHOW_FUNCTION:

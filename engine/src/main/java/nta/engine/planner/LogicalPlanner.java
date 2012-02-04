@@ -1,17 +1,11 @@
 package nta.engine.planner;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.Set;
 import java.util.Stack;
-import java.util.TreeMap;
 
 import nta.catalog.Column;
-import nta.catalog.ColumnBase;
 import nta.catalog.Schema;
+import nta.catalog.SchemaUtil;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.engine.Context;
 import nta.engine.exec.eval.EvalNode;
@@ -163,13 +157,13 @@ public class LogicalPlanner {
     refineInOutSchama(ctx, logicalPlan, null, stack);
   }
   
-  static void getTargetListFromEvalTree(TargetList inputSchema, 
-      EvalNode evalTree, Set<ColumnBase> targetList) {
+  static void getTargetListFromEvalTree(Schema inputSchema, 
+      EvalNode evalTree, Set<Column> targetList) {
     
     switch(evalTree.getType()) {
     case FIELD:
       FieldEval fieldEval = (FieldEval) evalTree;
-      ColumnBase col = inputSchema.getColumn(fieldEval.getName());
+      Column col = inputSchema.getColumn(fieldEval.getName());
       targetList.add(col);
       
       break;
@@ -200,10 +194,10 @@ public class LogicalPlanner {
   }
   
   static void refineInOutSchama(Context ctx,
-      LogicalNode logicalNode, Set<ColumnBase> necessaryTargets, 
+      LogicalNode logicalNode, Set<Column> necessaryTargets, 
       Stack<LogicalNode> stack) {
-    TargetList inputSchema = null;
-    TargetList outputSchema = null;
+    Schema inputSchema = null;
+    Schema outputSchema = null;
     
     switch(logicalNode.getType()) {
     case ROOT:
@@ -227,7 +221,7 @@ public class LogicalPlanner {
       ProjectionNode projNode = ((ProjectionNode)logicalNode);
       if(necessaryTargets != null) {
         if(projNode.isAll()) {
-          for(Column column : projNode.getOutputSchema().targetList.values()) {
+          for(Column column : projNode.getOutputSchema().getColumns()) {
             necessaryTargets.add(column);
           }          
         } else {
@@ -257,11 +251,11 @@ public class LogicalPlanner {
       if(projNode.isAll()) {
         projNode.setOutputSchema(projNode.getInputSchema());  
       } else {
-        TargetList prjTargets = new TargetList();
+        Schema prjTargets = new Schema();
         for(Target t : projNode.getTargetList()) {
           DataType type = t.getEvalTree().getValueType();
           String name = t.getEvalTree().getName();
-          prjTargets.put(new Column(-1, name,type));
+          prjTargets.addColumn(name,type);
         }
         projNode.setOutputSchema(prjTargets);
       }
@@ -292,7 +286,7 @@ public class LogicalPlanner {
               groupByNode.getHavingCondition(), necessaryTargets);
         }
         
-        for(ColumnBase grpField : groupByNode.getGroupingColumns()) {
+        for(Column grpField : groupByNode.getGroupingColumns()) {
           necessaryTargets.add(grpField);
         }
         
@@ -317,11 +311,11 @@ public class LogicalPlanner {
       stack.pop();
       groupByNode.setInputSchema(groupByNode.getSubNode().getOutputSchema());
       
-      TargetList grpTargets = new TargetList();
+      Schema grpTargets = new Schema();
       for(Target t : ctx.getTargetList()) {
         DataType type = t.getEvalTree().getValueType();
         String name = t.getEvalTree().getName();
-        grpTargets.put(new Column(-1, name,type));
+        grpTargets.addColumn(name,type);
       }
       groupByNode.setTargetList(ctx.getTargetList());
       groupByNode.setOutputSchema(grpTargets);
@@ -332,27 +326,27 @@ public class LogicalPlanner {
       ScanNode scanNode = ((ScanNode)logicalNode);
       Schema scanSchema = 
           ctx.getTable(scanNode.getTableId()).getMeta().getSchema();
-      TargetList scanTargetList = new TargetList();
-      scanTargetList.put(scanSchema);
+      Schema scanTargetList = new Schema();
+      scanTargetList.addColumns(scanSchema);
       scanNode.setInputSchema(scanTargetList);
       
       if(necessaryTargets != null) { // projection push phase
-        outputSchema = new TargetList();
-        for(Column col : scanTargetList.targetList.values()) {
+        outputSchema = new Schema();
+        for(Column col : scanTargetList.getColumns()) {
           if(necessaryTargets.contains(col)) {
-            outputSchema.put(col);
+            outputSchema.addColumn(col);
           }
         }
         scanNode.setOutputSchema(outputSchema);
         
-        TargetList projectedList = new TargetList();
+        Schema projectedList = new Schema();
         if(scanNode.hasQual()) {
           getTargetListFromEvalTree(scanTargetList, scanNode.getQual(), 
               necessaryTargets);
         }
-        for(Column col : scanTargetList.targetList.values()) {
+        for(Column col : scanTargetList.getColumns()) {
           if(necessaryTargets.contains(col)) {
-            projectedList.put(col);
+            projectedList.addColumn(col);
           }
         }
         
@@ -384,7 +378,7 @@ public class LogicalPlanner {
           stack);
       stack.pop();
       
-      inputSchema = merge(joinNode.getLeftSubNode().getOutputSchema(), 
+      inputSchema = SchemaUtil.merge(joinNode.getLeftSubNode().getOutputSchema(), 
           joinNode.getRightSubNode().getOutputSchema());
       joinNode.setInputSchema(inputSchema);
       joinNode.setOutputSchema(inputSchema);
@@ -393,7 +387,7 @@ public class LogicalPlanner {
     }
   }
   
-  public static class TargetList {
+/*  public static class TargetList {
     NavigableMap<Integer,Column> targetList = new TreeMap<Integer,Column>();
     Map<String,Column> targetListByName = new HashMap<String, Column>();
     private volatile int id = 0;
@@ -452,7 +446,7 @@ public class LogicalPlanner {
     
     public String toString() {
       StringBuilder sb = new StringBuilder("[");
-      ColumnBase col = null;
+      Column col = null;
       int i=0;  
       for(Entry<Integer,Column> entry : targetList.entrySet()) {
         col = entry.getValue();
@@ -486,5 +480,5 @@ public class LogicalPlanner {
     }
     
     return merged;
-  }
+  }*/
 }

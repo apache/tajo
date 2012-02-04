@@ -10,10 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import nta.catalog.CatalogServer;
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
-import nta.catalog.ColumnBase;
 import nta.catalog.FieldName;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
@@ -407,10 +405,10 @@ public class NQL {
 		return exprs;
 	}
 	
-	public ColumnBase [] exprsToFields(Query stmt, EvalNode [] cols) {
-		ColumnBase [] fields = new Column[cols.length];
+	public Column [] exprsToFields(Query stmt, EvalNode [] cols) {
+		Column[] fields = new Column[cols.length];
 		
-		ColumnBase field = null;
+		Column field = null;
 		for(int i=0; i < cols.length; i++) {
 			switch(cols[i].getType()) {
 			case FIELD:			
@@ -420,17 +418,17 @@ public class NQL {
 				break;
 			case FUNCTION:
 				FuncCallEval funcExpr = (FuncCallEval)cols[i];
-				field = new ColumnBase(funcExpr.getName(),funcExpr.getValueType());
+				field = new Column(funcExpr.getName(),funcExpr.getValueType());
 				break;
 			case CONST:
 				ConstEval constExpr = (ConstEval)cols[i];
-				field = new ColumnBase(constExpr.toString(),constExpr.getValueType());
+				field = new Column(constExpr.toString(),constExpr.getValueType());
 				break;
 			case PLUS:
 			case MINUS:
 			case MULTIPLY:
 			case DIVIDE:
-				field = new ColumnBase(cols[i].toString(), DataType.INT);
+				field = new Column(cols[i].toString(), DataType.INT);
 				break;
 			case AND:
 			case OR:
@@ -440,7 +438,7 @@ public class NQL {
 			case GTH:
 			case GEQ:
 			case NOT_EQUAL:
-				field = new ColumnBase(cols[i].getName(), DataType.BOOLEAN);
+				field = new Column(cols[i].getName(), DataType.BOOLEAN);
 				break;
 			}
 			
