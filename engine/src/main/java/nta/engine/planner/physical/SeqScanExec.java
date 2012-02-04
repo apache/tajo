@@ -37,15 +37,15 @@ public class SeqScanExec extends PhysicalExec {
       Fragment fragment) throws IOException {
     this.annotation = annotation;
     this.qual = annotation.getQual();
-    this.inputSchema = annotation.getInputSchema().toSchema();
-    this.outputSchema = annotation.getOutputSchema().toSchema();
+    this.inputSchema = annotation.getInputSchema();
+    this.outputSchema = annotation.getOutputSchema();
     
     this.scanner = sm.getScanner(fragment.getMeta(), new Fragment[] {fragment});    
-    this.targetIds = new int[annotation.getTargetList().size()];
+    this.targetIds = new int[annotation.getTargetList().getColumnNum()];
         
     int i=0;
     for (Column target : annotation.getTargetList().getColumns()) {
-      targetIds[i] = inputSchema.getColumn(target.getName()).getId();
+      targetIds[i] = inputSchema.getColumnId(target.getName());
       i++;
     }
     

@@ -1,6 +1,6 @@
 package nta.engine.function;
 
-import nta.catalog.ColumnBase;
+import nta.catalog.Column;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
@@ -8,7 +8,7 @@ import nta.datum.DatumFactory;
 public class Aggcount extends Function {
 
   public Aggcount() {
-    super(new ColumnBase[] { new ColumnBase("arg1", DataType.INT) });
+    super(new Column[] { new Column("arg1", DataType.INT) });
   }
 
   @Override

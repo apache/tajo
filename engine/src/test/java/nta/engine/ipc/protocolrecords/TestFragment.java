@@ -25,7 +25,7 @@ public class TestFragment {
   
   @Before
   public final void setUp() throws Exception {
-    schema1 = new Schema(); 
+    schema1 = new Schema();
     schema1.addColumn("id", DataType.INT);
     schema1.addColumn("name", DataType.STRING);
     meta1 = new TableMetaImpl(schema1, StoreType.CSV);

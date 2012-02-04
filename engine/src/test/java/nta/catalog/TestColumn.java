@@ -28,28 +28,20 @@ public class TestColumn {
 	
 	@Before
 	public void setUp() {
-		field1 = new Column(1, FieldName1, DataType.BYTE);
-		field2 = new Column(2, FieldName2, DataType.INT );
-		field3 = new Column(3, FieldName3, DataType.LONG);
+		field1 = new Column(FieldName1, DataType.BYTE);
+		field2 = new Column(FieldName2, DataType.INT );
+		field3 = new Column(FieldName3, DataType.LONG);
 	}
 	
 	@Test
 	public final void testFieldType() {
-		Column field1 = new Column(1, FieldName1, Type1);
-		Column field2 = new Column(2, FieldName2, Type2);
-		Column field3 = new Column(3, FieldName3, Type3);
+		Column field1 = new Column(FieldName1, Type1);
+		Column field2 = new Column(FieldName2, Type2);
+		Column field3 = new Column(FieldName3, Type3);
 		
 		assertEquals(field1.getDataType(), Type1);		
 		assertEquals(field2.getDataType(), Type2);
 		assertEquals(field3.getDataType(), Type3);		
-	}
-
-	@Test
-	public final void testSetFieldId() {
-		field1.setId(0);
-		assertEquals((Integer)0, field1.getId());
-		field1.setId(1);
-		assertEquals((Integer)1, field1.getId());
 	}
 
 	@Test
@@ -68,7 +60,7 @@ public class TestColumn {
 	
 	@Test
 	public final void testQualifiedName() {
-	  ColumnBase col = new ColumnBase("table_1.id", DataType.INT);
+	  Column col = new Column("table_1.id", DataType.INT);
 	  
 	  assertTrue(col.isQualifiedName());
 	  assertEquals("id", col.getColumnName());

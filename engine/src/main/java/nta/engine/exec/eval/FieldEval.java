@@ -31,7 +31,7 @@ public class FieldEval extends EvalNode {
 	@Override
 	public Datum eval(Schema schema, Tuple tuple, Datum...args) {
 	  if (fieldId == -1) {
-	    fieldId = schema.getColumn(columnName).getId();
+	    fieldId = schema.getColumnId(columnName);
 	  }
 	  
 		switch(dataType) {

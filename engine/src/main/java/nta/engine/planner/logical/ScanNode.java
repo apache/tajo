@@ -3,9 +3,9 @@
  */
 package nta.engine.planner.logical;
 
+import nta.catalog.Schema;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.parser.QueryBlock.FromTable;
-import nta.engine.planner.LogicalPlanner.TargetList;
 
 /**
  * @author Hyunsik Choi
@@ -14,7 +14,7 @@ import nta.engine.planner.LogicalPlanner.TargetList;
 public class ScanNode extends LogicalNode {
   private FromTable table;
   private EvalNode qual;
-  private TargetList targetList;
+  private Schema targetList;
   
 	public ScanNode(FromTable table) {
 		super(ExprType.SCAN);
@@ -49,11 +49,11 @@ public class ScanNode extends LogicalNode {
 	  return this.targetList != null;
 	}
 	
-	public void setTargetList(TargetList targets) {
+	public void setTargetList(Schema targets) {
 	  this.targetList = targets;
 	}
 	
-	public TargetList getTargetList() {
+	public Schema getTargetList() {
 	  return this.targetList;
 	}
 	

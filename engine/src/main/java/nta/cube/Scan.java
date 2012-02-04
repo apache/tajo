@@ -33,7 +33,7 @@ public class Scan {
         for (int w = 0; w < schema.getColumnNum() - 1; w++) {
           row.values[w] = t.get(w);
         }
-        row.count = t.get(schema.getColumn("count").getId() - 1).asInt();
+        row.count = t.get(schema.getColumnId("count") - 1).asInt();
       }
 
       rowlist.add(row);
@@ -58,7 +58,7 @@ public class Scan {
       for (int w = 0; w < schema.getColumnNum() - 1; w++) {
         row.values[w] = t.get(w);
       }
-      row.count = t.get(schema.getColumn("count").getId()).asInt();
+      row.count = t.get(schema.getColumnId("count")).asInt();
       rowlist.add(row);
     }
     scanner.close();

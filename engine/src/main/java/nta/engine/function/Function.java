@@ -1,6 +1,6 @@
 package nta.engine.function;
 
-import nta.catalog.ColumnBase;
+import nta.catalog.Column;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.engine.exec.eval.EvalNode;
@@ -8,14 +8,14 @@ import nta.engine.exec.eval.EvalNode;
 
 public abstract class Function {
 	protected String signature;
-  protected ColumnBase [] definedArgs;
+  protected Column [] definedArgs;
 	protected EvalNode [] givenArgs;
 	
-	public Function(ColumnBase [] definedArgs) {
+	public Function(Column [] definedArgs) {
 		this.definedArgs = definedArgs;
 	}
 	
-	public final ColumnBase [] getDefinedArgs() {
+	public final Column [] getDefinedArgs() {
 		return this.definedArgs;
 	}
 	

@@ -1,6 +1,6 @@
 package nta.engine.planner.logical;
 
-import nta.catalog.ColumnBase;
+import nta.catalog.Column;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.parser.QueryBlock.Target;
 
@@ -10,22 +10,22 @@ import nta.engine.parser.QueryBlock.Target;
  *
  */
 public class GroupbyNode extends UnaryNode {
-	private final ColumnBase [] columns;
+	private final Column [] columns;
 	private EvalNode havingCondition = null;
 	private Target [] targets;
 	
-	public GroupbyNode(final ColumnBase [] groupingColumns) {
+	public GroupbyNode(final Column [] groupingColumns) {
 		super(ExprType.GROUP_BY);
 		this.columns = groupingColumns;
 	}
 	
-	public GroupbyNode(final ColumnBase [] columns, 
+	public GroupbyNode(final Column [] columns, 
 	    final EvalNode havingCondition) {
     this(columns);
     this.havingCondition = havingCondition;
   }
 	
-	public final ColumnBase [] getGroupingColumns() {
+	public final Column [] getGroupingColumns() {
 	  return this.columns;
 	}
 	

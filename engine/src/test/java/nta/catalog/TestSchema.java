@@ -2,6 +2,7 @@ package nta.catalog;
 
 import static org.junit.Assert.*;
 
+import nta.catalog.exception.AlreadyExistsFieldException;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.SchemaProto;
 
@@ -11,16 +12,19 @@ import org.junit.Test;
 public class TestSchema {
 	
 	Schema schema;
-	int cid1;
-	int cid2;
-	int cid3;
+	Column col1;
+	Column col2;
+	Column col3;
 
 	@Before
 	public void setUp() throws Exception {
 		schema = new Schema();
-		cid1 = schema.addColumn("name", DataType.STRING);
-		cid2 = schema.addColumn("age", DataType.INT);
-		cid3 = schema.addColumn("addr", DataType.STRING);
+		col1 = new Column("name", DataType.STRING);
+		schema.addColumn(col1);
+		col2 = new Column("age", DataType.INT);
+		schema.addColumn(col2);
+		col3 = new Column("addr", DataType.STRING);
+		schema.addColumn(col3);
 	}
 
 	@Test
@@ -38,17 +42,10 @@ public class TestSchema {
 	}
 
 	@Test
-	public final void testGetColumnInt() {
-		assertTrue(0 == schema.getColumn(0).getId());
-		assertTrue(1 == schema.getColumn(1).getId());
-		assertTrue(2 == schema.getColumn(2).getId());
-	}
-
-	@Test
 	public final void testGetColumnString() {
-		assertTrue(0 == schema.getColumn("name").getId());
-		assertTrue(1 == schema.getColumn("age").getId());
-		assertTrue(2 == schema.getColumn("addr").getId());
+		assertEquals(col1, schema.getColumn("name"));
+		assertEquals(col2, schema.getColumn("age"));
+		assertEquals(col3, schema.getColumn("addr"));
 	}
 
 	@Test
@@ -62,9 +59,9 @@ public class TestSchema {
 	@Test
 	public final void testEqualsObject() {
 		Schema schema2 = new Schema();
-		cid1 = schema2.addColumn("name", DataType.STRING);
-		cid2 = schema2.addColumn("age", DataType.INT);
-		cid3 = schema2.addColumn("addr", DataType.STRING);
+		schema2.addColumn("name", DataType.STRING);
+		schema2.addColumn("age", DataType.INT);
+		schema2.addColumn("addr", DataType.STRING);
 		
 		assertEquals(schema, schema2);
 	}
@@ -88,5 +85,13 @@ public class TestSchema {
 	  assertEquals(schema.getProto(), schema2.getProto());
 	  assertEquals(schema.getColumn(0), schema2.getColumn(0));
 	  assertEquals(schema.getColumnNum(), schema2.getColumnNum());	  
+	}
+	
+	@Test(expected = AlreadyExistsFieldException.class)
+	public final void testAddExistColumn() {
+    Schema schema = new Schema();
+    schema.addColumn("abc", DataType.DOUBLE);
+    schema.addColumn("bbc", DataType.DOUBLE);
+    schema.addColumn("abc", DataType.INT);
 	}
 }

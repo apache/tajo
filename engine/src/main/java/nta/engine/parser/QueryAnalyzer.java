@@ -3,7 +3,6 @@ package nta.engine.parser;
 import nta.catalog.CatalogService;
 import nta.catalog.CatalogUtil;
 import nta.catalog.Column;
-import nta.catalog.ColumnBase;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
@@ -257,10 +256,10 @@ public final class QueryAnalyzer {
     // the remain ones are grouping fields.
     int i = 0;
     Tree fieldNode = null;
-    ColumnBase [] groupingColumns = new ColumnBase [numFields];
+    Column [] groupingColumns = new Column [numFields];
     for (; idx < ast.getChildCount(); idx++) {
       fieldNode = ast.getChild(idx);                  
-      ColumnBase column =
+      Column column =
           checkAndGetColumnByAST(ctx,(CommonTree) fieldNode);
       groupingColumns[i] = column;     
       i++;

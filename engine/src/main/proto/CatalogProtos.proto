@@ -27,9 +27,8 @@ enum StoreType {
 }
 
 message ColumnProto {
-	required int32 columnId = 1;
-	required string columnName = 2;
-	required DataType dataType = 3;
+	required string columnName = 1;
+	required DataType dataType = 2;
 }
 
 message SchemaProto {

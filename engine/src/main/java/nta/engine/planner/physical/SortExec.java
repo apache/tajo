@@ -27,8 +27,8 @@ public class SortExec extends PhysicalExec {
   public SortExec(SortNode annotation, PhysicalExec subOp) {
     this.subOp = subOp;
     
-    this.inputSchema = annotation.getInputSchema().toSchema();
-    this.outputSchema = annotation.getOutputSchema().toSchema();
+    this.inputSchema = annotation.getInputSchema();
+    this.outputSchema = annotation.getOutputSchema();
     
     this.comparator =
         new TupleComparator(inputSchema, annotation.getSortKeys(), null);    

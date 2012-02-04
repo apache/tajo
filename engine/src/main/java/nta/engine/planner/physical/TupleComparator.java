@@ -31,8 +31,8 @@ public class TupleComparator implements Comparator<Tuple> {
     this.sortKeyIds = new int[sortKeys.length];
     this.asc = new boolean[sortKeys.length];
     for (int i = 0; i < sortKeys.length; i++) {
-      this.sortKeyIds[i] = schema.getColumn(sortKeys[i].getSortKey().getName())
-          .getId();
+      this.sortKeyIds[i] = schema.getColumnId(sortKeys[i].getSortKey().getName());
+          
       this.asc[i] = sortKeys[i].isAscending() == true ? true : false;
     }
     this.nullFirsts = nullFirst;

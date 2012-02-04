@@ -1,7 +1,6 @@
 package nta.engine.parser;
 
 import nta.catalog.Column;
-import nta.catalog.ColumnBase;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.proto.CatalogProtos.StoreType;
@@ -21,7 +20,7 @@ public class QueryBlock {
   private Target [] targetList = null;
   private FromTable [] fromTables = null;
   private EvalNode whereCond = null;
-  private ColumnBase [] groupFields = null;
+  private Column [] groupFields = null;
   private EvalNode havingCond = null;
   private SortKey [] sortKeys = null;
   
@@ -69,11 +68,11 @@ public class QueryBlock {
     return this.groupFields != null;
   }
   
-  public final void setGroupingFields(final ColumnBase [] groupFields) {
+  public final void setGroupingFields(final Column [] groupFields) {
     this.groupFields = groupFields;
   }
   
-  public final ColumnBase [] getGroupFields() {
+  public final Column [] getGroupFields() {
     return this.groupFields;
   }
   
@@ -132,12 +131,12 @@ public class QueryBlock {
   
   public static class Target {
     private final EvalNode eval;
-    private ColumnBase column;
+    private Column column;
     private String alias = null;
     
     public Target(EvalNode eval) {
       this.eval = eval;
-      this.column = new ColumnBase(eval.getName(), eval.getValueType());
+      this.column = new Column(eval.getName(), eval.getValueType());
     }
     
     public Target(final EvalNode eval, final String alias) {
@@ -161,7 +160,7 @@ public class QueryBlock {
       return this.eval;
     }
     
-    public ColumnBase getColumnSchema() {
+    public Column getColumnSchema() {
       return this.column;
     }
     

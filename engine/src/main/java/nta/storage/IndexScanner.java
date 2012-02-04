@@ -77,14 +77,14 @@ public class IndexScanner {
 			for (int i = 0 ; i < schema.getColumnNum() ; i ++ ) {
 				col = schema.getColumn(i);
 				this.fileName =  tablets.getId() + "." + tablets.getStartOffset()
-						+ "." + col.getId() + "." + col.getName() +  ".index";
+						+ "." + col.getName() +  ".index";
 				if(fs.exists(new Path(parentPath, this.fileName ))) {
 					break;
 				}
 			}
 		} else {
 			this.fileName = tablets.getId() + "." + tablets.getStartOffset()
-					+ "." + col.getId() + "." + col.getName() +  ".index";
+					+ "." + col.getName() +  ".index";
 		}
 		indexIn = fs.open(new Path(parentPath, this.fileName));
 		/*read header*/

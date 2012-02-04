@@ -20,6 +20,7 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
+import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.function.Aggavg;
 import nta.engine.function.Aggcount;
@@ -41,6 +42,7 @@ import org.junit.Test;
 
 public class TestCube {
 
+  NtaTestingUtility util;
   GroupbyNode gnode;
   String inputpath;
   String outputpath;
@@ -48,6 +50,8 @@ public class TestCube {
 
   @Before
   public void setUp() throws Exception {
+    util = new NtaTestingUtility();
+    util.startMiniZKCluster();
     /* test input generate */
 
     TestCubeSchema.datapath = new String("target/test-data/TestCube");
@@ -108,10 +112,11 @@ public class TestCube {
 
   @After
   public void tearDown() throws Exception {
+    util.shutdownMiniZKCluster();
     Delete.delete();
   }
 
-  @Test
+  //@Test
   public void test() throws IOException, InterruptedException,
       ExecutionException {
     Cons.gnode = gnode;
@@ -124,8 +129,8 @@ public class TestCube {
     CubeConf conf;
 
     conf = new CubeConf();
-    conf.setInschema(Cons.gnode.getInputSchema().toSchema());
-    conf.setOutschema(Cons.gnode.getOutputSchema().toSchema());
+    conf.setInschema(Cons.gnode.getInputSchema());
+    conf.setOutschema(Cons.gnode.getOutputSchema());
     conf.setLocalInput(inputpath);
     // conf.setGlobalOutput(new String("cuboid" + Cons.cubenum));
     conf.setNodenum(0);
@@ -153,8 +158,8 @@ public class TestCube {
     Cons.totalnodes = 1;
 
     conf = new CubeConf();
-    conf.setInschema(Cons.gnode.getOutputSchema().toSchema());
-    conf.setOutschema(Cons.gnode.getOutputSchema().toSchema());
+    conf.setInschema(Cons.gnode.getOutputSchema());
+    conf.setOutschema(Cons.gnode.getOutputSchema());
     // conf.setLocalInput(new String("origin"));
     conf.setGlobalOutput(outputpath);
     conf.setNodenum(2);

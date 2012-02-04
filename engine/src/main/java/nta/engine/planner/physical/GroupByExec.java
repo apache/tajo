@@ -9,13 +9,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import nta.catalog.ColumnBase;
+import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.datum.Datum;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.GroupbyNode;
-import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
@@ -49,16 +48,16 @@ public class GroupByExec extends PhysicalExec {
     this.annotation = annotation;
     this.subOp = subOp;
     this.havingQual = annotation.getHavingCondition();
-    this.inputSchema = annotation.getInputSchema().toSchema();
-    this.outputSchema = annotation.getOutputSchema().toSchema();
+    this.inputSchema = annotation.getInputSchema();
+    this.outputSchema = annotation.getOutputSchema();
     
     tupleSlots = new HashMap<Tuple, Tuple>(1000);
 
     // getting key list
     keylist = new int[annotation.getGroupingColumns().length];
     int idx = 0;
-    for (ColumnBase col : annotation.getGroupingColumns()) {
-      keylist[idx] = inputSchema.getColumn(col.getName()).getId();
+    for (Column col : annotation.getGroupingColumns()) {
+      keylist[idx] = inputSchema.getColumnId(col.getName());
       idx++;
     }
     

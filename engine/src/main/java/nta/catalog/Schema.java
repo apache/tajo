@@ -1,9 +1,13 @@
 package nta.catalog;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import nta.catalog.exception.AlreadyExistsFieldException;
 import nta.catalog.proto.CatalogProtos.ColumnProto;
@@ -18,12 +22,13 @@ import nta.common.ProtoObject;
  *
  */
 public class Schema implements ProtoObject<SchemaProto> {
+  private static final Log LOG = LogFactory.getLog(Schema.class);
+  
 	private SchemaProto proto = SchemaProto.getDefaultInstance();
 	private	SchemaProto.Builder builder = null;
 	boolean viaProto = false;
 
-	protected volatile int newFieldId = 0;
-	protected Map<Integer,Column> fields = null;
+	protected List<Column> fields = null;
 	protected Map<String,Integer> fieldsByName = null;
 
 	public Schema() {
@@ -36,8 +41,8 @@ public class Schema implements ProtoObject<SchemaProto> {
   }
 
 	public Schema(Schema schema) {
-		this.newFieldId = schema.newFieldId;
-		this.fields = new TreeMap<Integer,Column>(schema.fields);
+	  this();
+		this.fields = new ArrayList<Column>(schema.fields);
 		this.fieldsByName = new HashMap<String, Integer>(schema.fieldsByName);
 	}
 	
@@ -53,20 +58,25 @@ public class Schema implements ProtoObject<SchemaProto> {
 		return this.fields.size();
 	}
 
-	public Column getColumn(int colId) {
-		initColumns();		
-		return fields.get(colId);
-	}
-
 	public Column getColumn(String colName) {
 		initColumns();
 		Integer cid = fieldsByName.get(colName);
 		return cid != null ? fields.get(cid) : null;
 	}
 	
+	public Column getColumn(int id) {
+	  initColumns();
+	  return fields.get(id);
+	}
+	
+	public int getColumnId(String colName) {
+	  initColumns();
+	  return fieldsByName.get(colName);
+	}
+	
 	public Collection<Column> getColumns() {
 		initColumns();
-		return fields.values();
+		return fields;
 	}
 	
 	public boolean contains(String colName) {
@@ -79,36 +89,37 @@ public class Schema implements ProtoObject<SchemaProto> {
 			return;
 		}
 		SchemaProtoOrBuilder p = viaProto ? proto : builder;
-		this.fields = new HashMap<Integer, Column>();
+		this.fields = new ArrayList<Column>();
 		this.fieldsByName = new HashMap<String, Integer>();
 		for(ColumnProto colProto : p.getFieldsList()) {
-			newFieldId++;
-			fields.put(colProto.getColumnId(), new Column(colProto));
-			fieldsByName.put(colProto.getColumnName(), colProto.getColumnId());
+			fields.add(new Column(colProto));
+			fieldsByName.put(colProto.getColumnName(), fields.size() - 1);
 		}
 	}
 
-	public synchronized int addColumn(String name, DataType dataType) {
+	public synchronized Schema addColumn(String name, DataType dataType) {
 		initColumns();		
 		if(fieldsByName.containsKey(name)) {
+		  LOG.error("Already exists column " + name);
 			throw new AlreadyExistsFieldException(name);
 		}
 		maybeInitBuilder();		
-		int fid = newFieldId();
-		Column newCol = new Column(fid, name, dataType);
-		fields.put(fid, newCol);
-		fieldsByName.put(name, fid);
-
-		return fid;
+		Column newCol = new Column(name, dataType);
+		fields.add(newCol);
+		fieldsByName.put(name, fields.size() - 1);
+		
+		return this;
 	}
 	
-	public synchronized int addColumn(Column column) {
-		return addColumn(column.getName(), column.getDataType());		
+	public synchronized void addColumn(Column column) {
+		addColumn(column.getName(), column.getDataType());		
 	}
-
-	private int newFieldId() {
-		return newFieldId++;
-	}
+	
+	public synchronized void addColumns(Schema schema) {
+    for(Column column : schema.getColumns()) {
+      addColumn(column);
+    }
+  }
 
 	// TODO - to be implemented
 	@Override
@@ -140,7 +151,7 @@ public class Schema implements ProtoObject<SchemaProto> {
 	    builder.clearFields();
 	  
 		if (this.fields  != null) {			
-			for(Column col : fields.values()) {
+			for(Column col : fields) {
 				builder.addFields(col.getProto());
 			}
 		}
@@ -161,7 +172,7 @@ public class Schema implements ProtoObject<SchemaProto> {
 	  initColumns();
 	  StringBuilder sb = new StringBuilder();
 	  sb.append("{");
-	  for(Column col : fields.values()) {
+	  for(Column col : fields) {
 	    sb.append(col).append(",");
 	  }
 	  sb.append("}");
