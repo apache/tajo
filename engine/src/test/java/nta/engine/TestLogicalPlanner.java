@@ -31,7 +31,6 @@ import org.junit.Test;
 
 public class TestLogicalPlanner {	
 	private NtaTestingUtility util;
-  private Configuration conf;
 	private CatalogService cat;
 
 	@Before
@@ -39,7 +38,7 @@ public class TestLogicalPlanner {
 	  util = new NtaTestingUtility();
 		util.startMiniZKCluster();
 		util.startCatalogCluster();
-		conf = util.getConfiguration();
+		Configuration conf = util.getConfiguration();
 		cat = util.getMiniCatalogCluster().getCatalog();
 		
 		Schema schema = new Schema();

@@ -15,6 +15,7 @@ import nta.engine.exception.InternalException;
 import nta.engine.exec.eval.AggFuncCallEval;
 import nta.engine.exec.eval.BinaryEval;
 import nta.engine.exec.eval.ConstEval;
+import nta.engine.exec.eval.CountRowEval;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.FieldEval;
@@ -209,7 +210,7 @@ public final class QueryAnalyzer {
         
         node = (CommonTree) ast.getChild(i);
         //evalTreeBin = compileEvalTree(node);
-        evalTree = createEvalTree(ctx, node);
+        evalTree = createEvalTree(ctx, node, block);
         // TODO - the rettype should be expected
         targets[i] = new Target(evalTree); 
         if (node.getChildCount() > 1) {          
@@ -224,7 +225,7 @@ public final class QueryAnalyzer {
   
   private void parseWhereClause(final Context ctx, 
       final QueryBlock block, final CommonTree ast) {
-    EvalNode evalTree = createEvalTree(ctx, ast.getChild(0));
+    EvalNode evalTree = createEvalTree(ctx, ast.getChild(0), block);
     block.setWhereCondition(evalTree);
   }
 
@@ -248,7 +249,7 @@ public final class QueryAnalyzer {
     int idx = 0;
     if (ast.getChild(idx).getType() == NQLParser.HAVING) {      
       EvalNode evalTree = 
-          createEvalTree(ctx, (CommonTree) ast.getChild(0).getChild(0));      
+          createEvalTree(ctx, (CommonTree) ast.getChild(0).getChild(0), block);      
       block.setHavingCond(evalTree);
       idx++;
       numFields--; // because one children is this having clause.
@@ -425,55 +426,55 @@ public final class QueryAnalyzer {
   }
   
   public EvalNode createEvalTree(final Context ctx, 
-      final Tree ast) {
+      final Tree ast, QueryBlock query) {
     switch(ast.getType()) {
         
     case NQLParser.DIGIT:
       return new ConstEval(DatumFactory.createInt(Integer.valueOf(ast.getText())));
     
     case NQLParser.AND:
-      return new BinaryEval(Type.AND, createEvalTree(ctx, ast.getChild(0)), 
-          createEvalTree(ctx, ast.getChild(1)));
+      return new BinaryEval(Type.AND, createEvalTree(ctx, ast.getChild(0), query), 
+          createEvalTree(ctx, ast.getChild(1), query));
     case NQLParser.OR:
-      return new BinaryEval(Type.OR, createEvalTree(ctx, ast.getChild(0)), 
-          createEvalTree(ctx, ast.getChild(1)));
+      return new BinaryEval(Type.OR, createEvalTree(ctx, ast.getChild(0), query), 
+          createEvalTree(ctx, ast.getChild(1), query));
       
       
     case NQLParser.EQUAL:
-      return new BinaryEval(Type.EQUAL, createEvalTree(ctx, ast.getChild(0)), 
-          createEvalTree(ctx, ast.getChild(1)));
+      return new BinaryEval(Type.EQUAL, createEvalTree(ctx, ast.getChild(0), query), 
+          createEvalTree(ctx, ast.getChild(1), query));
     case NQLParser.LTH: 
-      return new BinaryEval(Type.LTH, createEvalTree(ctx, ast.getChild(0)), 
-          createEvalTree(ctx, ast.getChild(1)));
+      return new BinaryEval(Type.LTH, createEvalTree(ctx, ast.getChild(0), query), 
+          createEvalTree(ctx, ast.getChild(1), query));
     case NQLParser.LEQ: 
-      return new BinaryEval(Type.LEQ, createEvalTree(ctx, ast.getChild(0)), 
-          createEvalTree(ctx, ast.getChild(1)));
+      return new BinaryEval(Type.LEQ, createEvalTree(ctx, ast.getChild(0), query), 
+          createEvalTree(ctx, ast.getChild(1), query));
     case NQLParser.GTH: 
-      return new BinaryEval(Type.GTH, createEvalTree(ctx, ast.getChild(0)), 
-          createEvalTree(ctx, ast.getChild(1)));
+      return new BinaryEval(Type.GTH, createEvalTree(ctx, ast.getChild(0), query), 
+          createEvalTree(ctx, ast.getChild(1), query));
     case NQLParser.GEQ: 
-      return new BinaryEval(Type.GEQ, createEvalTree(ctx, ast.getChild(0)), 
-          createEvalTree(ctx, ast.getChild(1)));
+      return new BinaryEval(Type.GEQ, createEvalTree(ctx, ast.getChild(0), query), 
+          createEvalTree(ctx, ast.getChild(1), query));
     
       
     case NQLParser.PLUS: 
-      return new BinaryEval(Type.PLUS, createEvalTree(ctx, ast.getChild(0)), 
-          createEvalTree(ctx, ast.getChild(1)));
+      return new BinaryEval(Type.PLUS, createEvalTree(ctx, ast.getChild(0), query), 
+          createEvalTree(ctx, ast.getChild(1), query));
     case NQLParser.MINUS: 
-      return new BinaryEval(Type.MINUS, createEvalTree(ctx, ast.getChild(0)), 
-          createEvalTree(ctx, ast.getChild(1)));
+      return new BinaryEval(Type.MINUS, createEvalTree(ctx, ast.getChild(0), query), 
+          createEvalTree(ctx, ast.getChild(1), query));
     case NQLParser.MULTIPLY: 
       return new BinaryEval(Type.MULTIPLY, 
-          createEvalTree(ctx, ast.getChild(0)),
-          createEvalTree(ctx, ast.getChild(1)));
+          createEvalTree(ctx, ast.getChild(0), query),
+          createEvalTree(ctx, ast.getChild(1), query));
       
     case NQLParser.DIVIDE: 
-      return new BinaryEval(Type.DIVIDE, createEvalTree(ctx, ast.getChild(0)), 
-          createEvalTree(ctx, ast.getChild(1)));
+      return new BinaryEval(Type.DIVIDE, createEvalTree(ctx, ast.getChild(0), query), 
+          createEvalTree(ctx, ast.getChild(1), query));
       
     case NQLParser.COLUMN:
       // TODO - support column alias
-      return createEvalTree(ctx, ast.getChild(0));
+      return createEvalTree(ctx, ast.getChild(0), query);
       
     case NQLParser.FIELD_NAME:              
       Column column = checkAndGetColumnByAST(ctx, (CommonTree) ast);     
@@ -487,7 +488,7 @@ public final class QueryAnalyzer {
       DataType [] paramTypes = new DataType[ast.getChildCount()];
 
       for (int i = 0; i < ast.getChildCount(); i++) {
-        givenArgs[i] = createEvalTree(ctx, ast.getChild(i));
+        givenArgs[i] = createEvalTree(ctx, ast.getChild(i), query);
         paramTypes[i] = givenArgs[i].getValueType();
       }
       if (!catalog.containFunction(signature, paramTypes)) {
@@ -498,11 +499,40 @@ public final class QueryAnalyzer {
       try {
         if (funcDesc.getFuncType() == FunctionType.GENERAL)
           return new FuncCallEval(funcDesc, funcDesc.newInstance(), givenArgs);
-        else
+        else {
+          query.setAggregation();
           return new AggFuncCallEval(funcDesc, funcDesc.newInstance(), givenArgs);
+        }
       } catch (InternalException e) {
         e.printStackTrace();
       }
+      
+      break;
+    case NQLParser.COUNT_VAL:
+      // Getting the first argument
+      EvalNode colRef = createEvalTree(ctx, ast.getChild(0), query);
+      
+      FunctionDesc countVals = catalog.getFunction("count", 
+          new DataType [] {DataType.ANY});
+      query.setAggregation();
+      try {
+        return new AggFuncCallEval(countVals, countVals.newInstance(), 
+            new EvalNode [] {colRef});
+      } catch (InternalException e1) {
+        e1.printStackTrace();
+      }
+      break;
+      
+    case NQLParser.COUNT_ROWS:
+      FunctionDesc countRows = catalog.getFunction("count", new DataType [] {});
+      query.setAggregation();
+      try {
+        return new CountRowEval(countRows, countRows.newInstance(),
+            new EvalNode [] {});
+      } catch (InternalException e) {
+        e.printStackTrace();
+      }
+      break;
       
     default:
     }

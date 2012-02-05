@@ -1,29 +1,22 @@
 package nta.engine.planner;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
 import nta.catalog.CatalogService;
-import nta.catalog.FunctionDesc;
-import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
-import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
-import nta.engine.EngineTestingUtils;
 import nta.engine.NtaTestingUtility;
 import nta.engine.SubqueryContext;
-import nta.engine.function.MaxInt;
-import nta.engine.function.MinInt;
-import nta.engine.function.SumInt;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
@@ -41,10 +34,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * @author Hyunsik Choi
+ */
 public class TestPhysicalPlanner {
   private NtaTestingUtility util;
   private Configuration conf;
-  private final String TEST_PATH="target/test-data/TestPhysicalPlanner";
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
   private SubqueryContext.Factory factory;
@@ -121,18 +116,6 @@ public class TestPhysicalPlanner {
     score.setPath(sm.getTablePath("score"));
     catalog.addTable(score);
     
-    FunctionDesc funcDesc = new FunctionDesc("sum", SumInt.class,
-        FunctionType.AGGREGATION, DataType.INT, new DataType[] { DataType.INT });
-    catalog.registerFunction(funcDesc);
-    
-    funcDesc = new FunctionDesc("max", MaxInt.class,
-        FunctionType.AGGREGATION, DataType.INT, new DataType[] { DataType.INT });
-    catalog.registerFunction(funcDesc);
-    
-    funcDesc = new FunctionDesc("min", MinInt.class,
-        FunctionType.AGGREGATION, DataType.INT, new DataType[] { DataType.INT });
-    catalog.registerFunction(funcDesc);
-    
     analyzer = new QueryAnalyzer(catalog);
   }
 
@@ -152,6 +135,8 @@ public class TestPhysicalPlanner {
       "select deptName, class, score from score_1", // 6
       "select deptName, class, sum(score), max(score), min(score) from score_1 group by deptName, class", // 7
       "grouped := select deptName, class, sum(score), max(score), min(score) from score_1 group by deptName, class", // 8
+      "select count(*), max(score), min(score) from score_1", // 9
+      "select count(deptName) from score_1" // 10
   };
 
   public final void testCreateScanPlan() throws IOException {
@@ -194,7 +179,6 @@ public class TestPhysicalPlanner {
         
     int i=0;
     Tuple tuple = null;
-    //long start = System.currentTimeMillis();
     while((tuple = exec.next()) != null) {
       assertEquals(6, tuple.getInt(2).asInt()); // sum
       assertEquals(3, tuple.getInt(3).asInt()); // max
@@ -202,8 +186,6 @@ public class TestPhysicalPlanner {
       i++;
     }
     assertEquals(10, i);
-    long end = System.currentTimeMillis();
-    //System.out.println((end - start)+" msc");
   }
   
   @Test
@@ -231,5 +213,45 @@ public class TestPhysicalPlanner {
     }
     assertEquals(10, i);
     scanner.close();
+  }
+  
+  @Test
+  public final void testAggregationFunction() throws IOException {
+    Fragment [] frags = sm.split("score"); 
+    factory = new SubqueryContext.Factory(catalog);
+    SubqueryContext ctx = factory.create(new Fragment[] {frags[0]});
+    QueryBlock query = analyzer.parse(ctx, QUERIES[9]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    LogicalOptimizer.optimize(ctx, plan);
+    
+    System.out.println(plan);
+    
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);    
+    
+    Tuple tuple = exec.next();
+    assertEquals(30, tuple.get(0).asLong());
+    assertEquals(3, tuple.get(1).asInt());
+    assertEquals(1, tuple.get(2).asInt());
+    assertNull(exec.next());
+  }
+  
+  @Test
+  public final void testCountFunction() throws IOException {
+    Fragment [] frags = sm.split("score"); 
+    factory = new SubqueryContext.Factory(catalog);
+    SubqueryContext ctx = factory.create(new Fragment[] {frags[0]});
+    QueryBlock query = analyzer.parse(ctx, QUERIES[10]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    LogicalOptimizer.optimize(ctx, plan);
+    
+    System.out.println(plan);
+    
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+        
+    Tuple tuple = exec.next();
+    assertEquals(30, tuple.get(0).asLong());
+    assertNull(exec.next());
   }
 }

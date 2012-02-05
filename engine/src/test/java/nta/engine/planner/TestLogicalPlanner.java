@@ -77,7 +77,7 @@ public class TestLogicalPlanner {
     score.setPath(new Path("file:///"));
     catalog.addTable(score);
 
-    FunctionDesc funcDesc = new FunctionDesc("sum", SumInt.class,
+    FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class,
         FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
 
     catalog.registerFunction(funcDesc);
@@ -95,13 +95,13 @@ public class TestLogicalPlanner {
       "select name, empId, deptName from employee where empId > 500", // 0
       "select name, empId, e.deptName, manager from employee as e, dept as dp", // 1
       "select name, empId, e.deptName, manager, score from employee as e, dept, score", // 2
-      "select p.deptName, sum(score) from dept as p, score group by p.deptName having sum(score) > 30", // 3
+      "select p.deptName, sumtest(score) from dept as p, score group by p.deptName having sumtest(score) > 30", // 3
       "select p.deptName, score from dept as p, score order by score asc", // 4
       "select name from employee where empId = 100", // 5
       "select name, score from employee, score", // 6
-      "select p.deptName, sum(score) from dept as p, score group by p.deptName", // 7
-      "store1 := select p.deptName, sum(score) from dept as p, score group by p.deptName", // 8
-      "select deptName, sum(score) from score group by deptName having sum(score) > 30", // 9
+      "select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 7
+      "store1 := select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 8
+      "select deptName, sumtest(score) from score group by deptName having sumtest(score) > 30", // 9
   };
 
   @Test

@@ -16,7 +16,7 @@ public class NullDatum extends Datum {
   
   public static NullDatum get() {
     return instance;
-  }  
+  }
   
   @Override
   public boolean asBool() {

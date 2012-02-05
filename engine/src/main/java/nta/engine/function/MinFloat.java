@@ -8,9 +8,9 @@ import nta.datum.DatumFactory;
 /**
  * @author Hyunsik Choi
  */
-public final class MaxInt extends Function {
-  public MaxInt() {
-    super(new Column[] { new Column("arg1", DataType.INT)});
+public final class MinFloat extends Function {
+  public MinFloat() {
+    super(new Column[] { new Column("arg1", DataType.FLOAT)});
   }
 
   @Override
@@ -19,11 +19,11 @@ public final class MaxInt extends Function {
       return datums[0];
     }
     return DatumFactory
-        .createInt(Math.max(datums[0].asInt(), datums[1].asInt()));
+        .createFloat(Math.min(datums[0].asFloat(), datums[1].asFloat()));
   }
 
   @Override
   public DataType getResType() {
-    return DataType.INT;
+    return DataType.FLOAT;
   }
 }

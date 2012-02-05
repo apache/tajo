@@ -22,11 +22,19 @@ public class QueryBlock {
   private String storeTable = null;
   private boolean projectAll = false;
   private boolean distinct = false;
+  /* select target list */
   private Target [] targetList = null;
+  /* from clause */
   private FromTable [] fromTables = null;
+  /* where clause */
   private EvalNode whereCond = null;
+  /* if true, there is at least one aggregation function. */
+  private boolean aggregation = false;
+  /* if true, there is at least grouping field. */
   private Column [] groupFields = null;
+  /* having condition */
   private EvalNode havingCond = null;
+  /* keys for ordering */
   private SortKey [] sortKeys = null;
   
   public QueryBlock(StatementType type) {
@@ -67,6 +75,14 @@ public class QueryBlock {
   
   public final Target [] getTargetList() {
     return this.targetList;
+  }
+  
+  public final boolean hasAggregation() {
+    return this.aggregation || hasGroupbyClause();
+  }
+  
+  public final void setAggregation() {
+    this.aggregation = true;
   }
   
   public final boolean hasGroupbyClause() {

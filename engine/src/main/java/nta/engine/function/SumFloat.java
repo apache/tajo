@@ -7,9 +7,9 @@ import nta.datum.Datum;
 /**
  * @author Hyunsik Choi
  */
-public final class SumInt extends Function {
-  public SumInt() {
-    super(new Column[] { new Column("arg1", DataType.INT)});
+public final class SumFloat extends Function {
+  public SumFloat() {
+    super(new Column[] { new Column("arg1", DataType.FLOAT)});
   }
 
   @Override
@@ -23,6 +23,6 @@ public final class SumInt extends Function {
 
   @Override
   public DataType getResType() {
-    return DataType.INT;
+    return DataType.FLOAT;
   }
 }

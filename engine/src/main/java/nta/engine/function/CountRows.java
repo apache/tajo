@@ -8,22 +8,23 @@ import nta.datum.DatumFactory;
 /**
  * @author Hyunsik Choi
  */
-public final class MaxInt extends Function {
-  public MaxInt() {
-    super(new Column[] { new Column("arg1", DataType.INT)});
+public final class CountRows extends Function {
+  private static final Datum one = DatumFactory.createLong(1);
+  
+  public CountRows() {
+    super(new Column[] {});
   }
 
   @Override
   public Datum invoke(final Datum... datums) {
-    if (datums.length == 1) {
-      return datums[0];
-    }
-    return DatumFactory
-        .createInt(Math.max(datums[0].asInt(), datums[1].asInt()));
+    if(datums.length == 0)
+      return one;
+    else
+      return datums[0].plus(one);
   }
 
   @Override
   public DataType getResType() {
-    return DataType.INT;
+    return DataType.LONG;
   }
 }
