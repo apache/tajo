@@ -1,9 +1,14 @@
 package nta.catalog;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Expose;
+
 import nta.catalog.proto.CatalogProtos.ColumnProto;
 import nta.catalog.proto.CatalogProtos.ColumnProtoOrBuilder;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.common.ProtoObject;
+import nta.engine.json.GsonCreator;
 
 /**
  * @author Hyunsik Choi
@@ -13,8 +18,14 @@ public class Column implements ProtoObject<ColumnProto> {
 	private ColumnProto.Builder builder = null;
 	private boolean viaProto = false;
 	
+	@Expose
   protected String name;
+	@Expose
   protected DataType dataType;
+	
+	public Column() {
+		this.builder = ColumnProto.newBuilder();
+	}
 	  
 	public Column(String columnName, DataType dataType) {
 		this.name = columnName;
@@ -27,6 +38,7 @@ public class Column implements ProtoObject<ColumnProto> {
 		this.viaProto = true;
 	}
 	
+
 	public String getName() {
 		ColumnProtoOrBuilder p = viaProto ? proto : builder;
 		if(name != null) {
@@ -130,5 +142,21 @@ public class Column implements ProtoObject<ColumnProto> {
 	
 	public String toString() {
 	  return getName() +" " + getDataType();
+	}
+	
+	public String toJSON() {
+		initFromProto();
+		return GsonCreator.getInstance().toJson(this);
+	}
+
+	@Override
+	public void initFromProto() {
+		ColumnProtoOrBuilder p = viaProto ? proto : builder;
+		if (this.name == null && p.hasColumnName()) {
+			this.name = p.getColumnName();
+		}
+		if (this.dataType == null && p.hasDataType()) {
+			this.dataType = p.getDataType();
+		}
 	}
 }

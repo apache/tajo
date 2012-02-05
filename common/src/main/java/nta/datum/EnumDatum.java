@@ -69,4 +69,10 @@ public class EnumDatum extends Datum {
   public int compareTo(Datum datum) {
     throw new NotImplementedException();
   }
+
+@Override
+public String toJSON() {
+	// TODO Auto-generated method stub
+	return null;
+}
 }

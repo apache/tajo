@@ -7,20 +7,27 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.google.gson.annotations.Expose;
+
 import nta.catalog.proto.CatalogProtos.KeyValueProto;
 import nta.catalog.proto.CatalogProtos.KeyValueSetProto;
 import nta.catalog.proto.CatalogProtos.KeyValueSetProtoOrBuilder;
 import nta.common.ProtoObject;
+import nta.engine.json.GsonCreator;
 
 /**
  * @author Hyunsik Choi
  *
  */
 public class Options implements ProtoObject<KeyValueSetProto> {
+	@Expose(serialize=false,deserialize=false)
 	private KeyValueSetProto proto = KeyValueSetProto.getDefaultInstance();
+	@Expose(serialize=false,deserialize=false)
 	private KeyValueSetProto.Builder builder = null;
+	@Expose(serialize=false,deserialize=false)
 	private boolean viaProto = false;
 	
+	@Expose
 	private Map<String,String> keyVals;
 	
 	/**
@@ -121,4 +128,14 @@ public class Options implements ProtoObject<KeyValueSetProto> {
 		proto = builder.build();
 		viaProto = true;
 	}
+
+  @Override
+  public void initFromProto() {
+    initOptions();
+  }
+  
+  public String toJSON() {
+    initFromProto();
+    return GsonCreator.getInstance().toJson(this, Options.class);
+  }
 }

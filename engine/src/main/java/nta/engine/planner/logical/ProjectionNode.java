@@ -1,5 +1,8 @@
 package nta.engine.planner.logical;
 
+import com.google.gson.annotations.Expose;
+
+import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryBlock.Target;
 
 /**
@@ -8,12 +11,13 @@ import nta.engine.parser.QueryBlock.Target;
  *
  */
 public class ProjectionNode extends UnaryNode {
-  private Target [] targets;
+	@Expose
+	private Target [] targets;
 	
-  public ProjectionNode() {
-    super(ExprType.PROJECTION);
-  }
-  
+	public ProjectionNode() {
+		super();
+	}
+
 	public ProjectionNode(Target [] targets) {		
 		super(ExprType.PROJECTION);
 		this.targets = targets;
@@ -43,5 +47,9 @@ public class ProjectionNode extends UnaryNode {
 	  sb.append("}");
 	  return sb.toString()+"\n"
 	      + getSubNode().toString();
+	}
+	
+	public String toJSON() {
+	  return GsonCreator.getInstance().toJson(this, LogicalNode.class);
 	}
 }

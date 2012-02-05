@@ -9,10 +9,13 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.engine.json.GsonCreator;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.gson.Gson;
 
 /**
  * 
@@ -86,5 +89,19 @@ public class TestFragment {
     for(int i = 0; i < num; i++) {
       assertEquals("tablet1_"+i, tablets[i].getId());
     }
+  }
+  
+//  @Test
+  public final void testJson() {
+	  Fragment frag1 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500);
+	  String json = frag1.toString();
+	  System.out.println(json);
+	  Gson gson = GsonCreator.getInstance();
+	  Fragment fromJson = gson.fromJson(json, Fragment.class);
+	  assertEquals(frag1.getId(), fromJson.getId());
+	  assertEquals(frag1.getPath(), fromJson.getPath());
+	  assertEquals(frag1.getStartOffset(), fromJson.getStartOffset());
+	  assertEquals(frag1.getLength(), fromJson.getLength());
+	  assertEquals(frag1.getMeta(), fromJson.getMeta());
   }
 }

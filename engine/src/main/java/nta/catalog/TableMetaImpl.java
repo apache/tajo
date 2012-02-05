@@ -6,6 +6,10 @@ package nta.catalog;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.catalog.proto.CatalogProtos.TableProtoOrBuilder;
+import nta.engine.json.GsonCreator;
+
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
@@ -17,8 +21,11 @@ public class TableMetaImpl implements TableMeta {
 	protected boolean viaProto = false;	
 	
 	// materialized variables
+	@Expose
 	protected Schema schema;
+	@Expose
 	protected StoreType storeType;
+	@Expose
 	protected Options options;
 	
 	public TableMetaImpl() {
@@ -170,6 +177,24 @@ public class TableMetaImpl implements TableMeta {
 	  return new TableMetaImpl(this.getProto());
 	}
 	
+	private void mergeProtoToLocal() {
+		TableProtoOrBuilder p = viaProto ? proto : builder;
+		if (schema == null && p.hasSchema()) {
+			schema = new Schema(p.getSchema());
+		}
+		if (storeType == null && p.hasStoreType()) {
+			storeType = p.getStoreType();
+		}
+		if (options == null && p.hasParams()) {
+			options = new Options(p.getParams());
+		}
+	}
+	
+	public void initFromProto() {
+		mergeProtoToLocal();
+    schema.initFromProto();
+	}
+	
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();
 	  if(viaProto) {
@@ -196,5 +221,11 @@ public class TableMetaImpl implements TableMeta {
 	  }
 	  
 	  return sb.toString();
+	}
+	
+	public String toJSON() {
+		initFromProto();
+		Gson gson = GsonCreator.getInstance();
+		return gson.toJson(this, TableMeta.class);
 	}
 }

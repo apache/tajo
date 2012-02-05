@@ -1,10 +1,15 @@
 package nta.engine.planner.logical;
 
+import com.google.gson.annotations.Expose;
+
+import nta.engine.json.GsonCreator;
+
 /**
  * @author Hyunsik Choi
  * 
  */
 public class StoreTableNode extends UnaryNode {
+  @Expose
   private String tableName;
 
   public StoreTableNode(String tableName) {
@@ -25,7 +30,9 @@ public class StoreTableNode extends UnaryNode {
     
     return sb.toString() + "\n"
         + getSubNode().toString();
-    
-    
+  }
+  
+  public String toJSON() {
+    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

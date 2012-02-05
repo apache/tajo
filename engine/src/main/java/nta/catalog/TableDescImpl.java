@@ -4,20 +4,31 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.catalog.proto.CatalogProtos.TableDescProtoOrBuilder;
 import nta.catalog.proto.CatalogProtos.TableProto;
+import nta.common.ProtoObject;
+import nta.engine.json.GsonCreator;
+import nta.engine.json.PathDeserializer;
+import nta.engine.json.PathSerializer;
 
 import org.apache.hadoop.fs.Path;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
  *
  */
-public class TableDescImpl implements TableDesc {
+public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto> {
   protected TableDescProto proto = TableDescProto.getDefaultInstance();
   protected TableDescProto.Builder builder = null;
   protected boolean viaProto = false;
   
+	@Expose
   protected String tableId;
+	@Expose
   protected Path uri;
+	@Expose
   protected TableMeta meta;
   
 	public TableDescImpl() {
@@ -128,6 +139,13 @@ public class TableDescImpl implements TableDesc {
 	  
 	  return str.toString();
 	}
+	
+	public String toJSON() {
+		initFromProto();
+		Gson gson = GsonCreator.getInstance();
+		
+		return gson.toJson(this, TableDesc.class);
+	}
 
   public TableDescProto getProto() {
     mergeLocalToProto();
@@ -165,5 +183,24 @@ public class TableDescImpl implements TableDesc {
     mergeLocalToBuilder();
     proto = builder.build();
     viaProto = true;
+  }
+  
+  private void mergeProtoToLocal() {
+	  TableDescProtoOrBuilder p = viaProto ? proto : builder;
+	  if (tableId == null && p.hasId()) {
+		  tableId = p.getId();
+	  }
+	  if (uri == null && p.hasPath()) {
+		  uri = new Path(p.getPath());
+	  }
+	  if (meta == null && p.hasMeta()) {
+		  meta = new TableMetaImpl(p.getMeta());
+	  }
+  }
+
+  @Override
+  public void initFromProto() {
+	  mergeProtoToLocal();
+    meta.initFromProto();
   }
 }

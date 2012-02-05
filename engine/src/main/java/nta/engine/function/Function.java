@@ -5,10 +5,15 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.engine.exec.eval.EvalNode;
 
+import com.google.gson.annotations.Expose;
+
 
 public abstract class Function {
+	@Expose
 	protected String signature;
+	@Expose
   protected Column [] definedArgs;
+	@Expose
 	protected EvalNode [] givenArgs;
 	
 	public Function(Column [] definedArgs) {

@@ -2,12 +2,16 @@ package nta.datum;
 
 import java.nio.ByteBuffer;
 
+import com.google.gson.annotations.Expose;
+
 import nta.datum.exception.InvalidCastException;
 import nta.datum.exception.InvalidOperationException;
+import nta.datum.json.GsonCreator;
 
 public class ShortDatum extends Datum {
   private static final int size = 2;
   
+  @Expose
 	int val;
 	
 	public ShortDatum(short val) {
@@ -60,6 +64,10 @@ public class ShortDatum extends Datum {
 	@Override
 	public String asChars() {
 		return ""+val;
+	}
+	
+	public String toJSON() {
+		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
 
   @Override

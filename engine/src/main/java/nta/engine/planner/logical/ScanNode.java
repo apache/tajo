@@ -4,7 +4,10 @@
 package nta.engine.planner.logical;
 
 import nta.catalog.Schema;
+import com.google.gson.annotations.Expose;
+
 import nta.engine.exec.eval.EvalNode;
+import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryBlock.FromTable;
 
 /**
@@ -12,9 +15,16 @@ import nta.engine.parser.QueryBlock.FromTable;
  *
  */
 public class ScanNode extends LogicalNode {
+	@Expose
   private FromTable table;
+	@Expose
   private EvalNode qual;
+	@Expose
   private Schema targetList;
+	
+	public ScanNode() {
+		super();
+	}
   
 	public ScanNode(FromTable table) {
 		super(ExprType.SCAN);
@@ -77,6 +87,10 @@ public class ScanNode extends LogicalNode {
 	  sb.append("\n  \"out schema\": ").append(getOutputSchema());
 	  sb.append("\n  \"in schema\": ").append(getInputSchema());    	  
 	  return sb.toString();
+	}
+	
+	public String toJSON() {
+	  return GsonCreator.getInstance().toJson(this, LogicalNode.class);
 	}
 	
 	public Object clone() {

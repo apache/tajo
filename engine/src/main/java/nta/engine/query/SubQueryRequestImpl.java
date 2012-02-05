@@ -41,6 +41,7 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   public SubQueryRequestImpl(SubQueryRequestProto proto) {
 	  this.proto = proto;
 	  viaProto = true;
+	  id = -1;
   }
 
   @Override
@@ -142,5 +143,11 @@ public class SubQueryRequestImpl implements SubQueryRequest {
 	  }
 	  this.id = p.getId();
 	  return this.id;
+  }
+
+  @Override
+  public void initFromProto() {
+    // TODO Auto-generated method stub
+    
   }
 }
