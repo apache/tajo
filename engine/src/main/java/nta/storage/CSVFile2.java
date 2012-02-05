@@ -2,6 +2,7 @@ package nta.storage;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.SortedSet;
@@ -201,22 +202,22 @@ public class CSVFile2 extends Storage {
 
     private boolean pageBuffer() throws IOException {
       this.offsetCurIndexMap.clear();
-      long length = this.startOffset + this.length;
-      long available = length - fis.getPos();
-      if (available < 1) {
+      if (available() < 1) {
+        this.curIndex = 0;
+        this.checkTupleList = 0;
+        this.currentTupleOffset = 0;
         return false;
       }
-
-      if (available <= bufferSize) {
-        bufferSize = (int) available;
+      if (available() <= bufferSize) {
+        bufferSize = (int) available();
       }
 
       if (fis.getPos() == 0 || fis.getPos() == tabletstart) { // first.
         buffer = new byte[bufferSize];
         this.pageStart = fis.getPos();
         fis.read(buffer);
-      } else if (available <= (buffer.length - piece.length)) { // last.
-        bufferSize = piece.length + (int) available;
+      } else if (available() <= bufferSize) { // last.
+        bufferSize = piece.length + (int) available();
         buffer = new byte[bufferSize];
         this.pageStart = fis.getPos() - piece.length;
         System.arraycopy(piece, 0, buffer, 0, piece.length);
@@ -271,6 +272,7 @@ public class CSVFile2 extends Storage {
         fis.seek(offset);
         piece = new byte[0];
         buffer = new byte[DEFAULT_BUFFER_SIZE];
+        bufferSize = DEFAULT_BUFFER_SIZE;
         curIndex = 0;
         checkTupleList = 0;
         // pageBuffer();
@@ -280,9 +282,10 @@ public class CSVFile2 extends Storage {
     }
 
     @Override
-    public long getNextOffset() {
-      if (curIndex == tupleList.length)
-        return -1;
+    public long getNextOffset() throws IOException {
+      if (curIndex == tupleList.length) {
+        pageBuffer();
+      }
       return this.tupleOffsets[curIndex];
     }
 
