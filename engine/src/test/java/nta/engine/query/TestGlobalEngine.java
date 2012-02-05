@@ -5,27 +5,18 @@ package nta.engine.query;
 
 import java.io.IOException;
 
-import nta.catalog.CatalogClient;
-import nta.catalog.CatalogServer;
 import nta.catalog.CatalogService;
-import nta.catalog.FunctionDesc;
-import nta.catalog.MiniCatalogServer;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
-import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
 import nta.engine.NConstants;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
-import nta.engine.QueryContext;
-import nta.engine.exec.eval.TestEvalTree.TestSum;
-import nta.engine.function.SumInt;
-import nta.engine.parser.QueryAnalyzer;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
@@ -36,8 +27,6 @@ import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * @author jihoon
@@ -85,11 +74,6 @@ public class TestGlobalEngine {
 	    TableDesc score = new TableDescImpl("score", schema3, StoreType.CSV);
 	    score.setPath(new Path(conf.get(NConstants.ENGINE_DATA_DIR), "score"));
 	    catalog.addTable(score);
-
-	    FunctionDesc funcDesc = new FunctionDesc("sum", SumInt.class,
-	    		FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
-
-	    catalog.registerFunction(funcDesc);
 	}
 	
 	@After

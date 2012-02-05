@@ -11,6 +11,8 @@ options {
 tokens {
   ALL;
   COLUMN;
+  COUNT_VAL;
+  COUNT_ROWS;
   CREATE_TABLE;
   DROP_TABLE;
   DESC_TABLE;
@@ -155,8 +157,11 @@ table
   : ID
   ;
 
+// TODO - to be improved
 funcCall
 	:	ID LEFT_PAREN funcArgs? RIGHT_PAREN -> ^(FUNCTION[$ID.text] funcArgs?)
+	| COUNT LEFT_PAREN funcArgs RIGHT_PAREN -> ^(COUNT_VAL funcArgs)
+	| COUNT LEFT_PAREN MULTIPLY RIGHT_PAREN -> ^(COUNT_ROWS)
 	;
 	
 funcArgs
@@ -284,7 +289,6 @@ array
   ;
 	
 atom
-//  @init { CommonTreeAdaptor adaptor = new CommonTreeAdaptor(); }
   :	literal
 	| fieldName
 	|	LEFT_PAREN! expr RIGHT_PAREN!
@@ -323,6 +327,7 @@ ALL : 'all';
 AND : 'and';
 ASC : 'asc';
 BY : 'by';
+COUNT : 'count';
 CREATE : 'create';
 DESC : 'desc';
 DISTINCT : 'distinct';

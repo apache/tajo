@@ -6,7 +6,6 @@ import java.io.IOException;
 
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
-import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -15,7 +14,6 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
 import nta.engine.Context;
 import nta.engine.NtaTestingUtility;
@@ -78,7 +76,7 @@ public class TestQueryAnalyzer {
     student.setPath(new Path("file:///"));
     cat.addTable(student);
     
-    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
+    FunctionDesc funcMeta = new FunctionDesc("sumtest", TestSum.class,
         FunctionType.GENERAL, DataType.INT, 
         new DataType [] {DataType.INT});
 
@@ -98,7 +96,7 @@ public class TestQueryAnalyzer {
       "select id, name, score, age from people",
       "select name, score, age from people where score > 30",
       "select name, score, age from people where 3 + 5 * 3", 
-      "select age, sum(score) as total from people group by age having sum(score) > 30", // 3
+      "select age, sumtest(score) as total from people group by age having sumtest(score) > 30", // 3
       "select p.id, s.id, score, dept from people as p, student as s where p.id = s.id", // 4
       "select name, score from people order by score asc, age desc", // 5
       "store1 := select name, score from people order by score asc, age desc",// 6

@@ -41,7 +41,7 @@ public class FieldEval extends EvalNode {
 	    fieldId = schema.getColumnId(columnName);
 	  }
 	  
-		switch(dataType) {
+/*		switch(dataType) {
 		case BOOLEAN: return tuple.getBoolean(fieldId);
 		case BYTE: return tuple.getByte(fieldId);
 		case INT: return tuple.getInt(fieldId);
@@ -52,7 +52,8 @@ public class FieldEval extends EvalNode {
 		case BYTES: return tuple.getBytes(fieldId);
 		case IPv4: return tuple.getIPv4(fieldId);
 		default: throw new InvalidEvalException();
-		}		
+		}*/
+	  return tuple.get(fieldId);
 	}
 	
 	@Override

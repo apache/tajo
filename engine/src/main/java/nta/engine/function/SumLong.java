@@ -1,3 +1,6 @@
+/**
+ * 
+ */
 package nta.engine.function;
 
 import nta.catalog.Column;
@@ -7,9 +10,9 @@ import nta.datum.Datum;
 /**
  * @author Hyunsik Choi
  */
-public final class SumInt extends Function {
-  public SumInt() {
-    super(new Column[] { new Column("arg1", DataType.INT)});
+public final class SumLong extends Function {
+  public SumLong() {
+    super(new Column[] { new Column("arg1", DataType.LONG)});
   }
 
   @Override
@@ -23,6 +26,6 @@ public final class SumInt extends Function {
 
   @Override
   public DataType getResType() {
-    return DataType.INT;
+    return DataType.LONG;
   }
 }

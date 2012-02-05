@@ -110,13 +110,20 @@ public class LogicalPlanner {
       subroot = selNode;
     }
     
-    if(query.hasGroupbyClause()) {
-      GroupbyNode groupbyNode = new GroupbyNode(query.getGroupFields());
-      if(query.hasHavingCond())
-        groupbyNode.setHavingCondition(query.getHavingCond());
-      
-      groupbyNode.setSubNode(subroot);
-      subroot = groupbyNode;
+    if(query.hasAggregation()) {
+      if (query.hasGroupbyClause()) {
+        GroupbyNode groupbyNode = new GroupbyNode(query.getGroupFields());
+        if(query.hasHavingCond())
+          groupbyNode.setHavingCondition(query.getHavingCond());
+        
+        groupbyNode.setSubNode(subroot);
+        subroot = groupbyNode;
+      } else {
+        // when aggregation functions are used without grouping fields
+        GroupbyNode groupbyNode = new GroupbyNode(new Column [] {});
+        groupbyNode.setSubNode(subroot);
+        subroot = groupbyNode;
+      }
     }
     
     if(query.hasOrderByClause()) {

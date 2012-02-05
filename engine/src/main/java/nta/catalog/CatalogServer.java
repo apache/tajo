@@ -16,14 +16,28 @@ import nta.catalog.exception.AlreadyExistsFunction;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchFunctionException;
 import nta.catalog.exception.NoSuchTableException;
-import nta.catalog.proto.CatalogProtos.ColumnProto;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
+import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
+import nta.engine.function.CountRows;
+import nta.engine.function.CountValue;
+import nta.engine.function.MaxDouble;
+import nta.engine.function.MaxFloat;
+import nta.engine.function.MaxInt;
+import nta.engine.function.MaxLong;
+import nta.engine.function.MinDouble;
+import nta.engine.function.MinFloat;
+import nta.engine.function.MinInt;
+import nta.engine.function.MinLong;
+import nta.engine.function.SumDouble;
+import nta.engine.function.SumFloat;
+import nta.engine.function.SumInt;
+import nta.engine.function.SumLong;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
@@ -37,7 +51,6 @@ import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
 
@@ -46,7 +59,7 @@ import com.google.common.base.Preconditions;
 /**
  * This class provides the catalog service. 
  * The catalog service enables clients to register, unregister and access 
- * information about tables, functions, and cluster information.  
+ * information about tables, functions, and cluster information.
  * 
  * @author Hyunsik Choi
  */
@@ -58,10 +71,10 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	private Lock wlock = lock.writeLock();
 
 	private Map<String, TableDescProto> tables = 
-	    new HashMap<String, TableDescProto>();	
+	    new HashMap<String, TableDescProto>();
 	private Map<String, FunctionDescProto> functions = 
 	    new HashMap<String, FunctionDescProto>();
-  private Map<String, List<HostInfo>> tabletServingInfo 
+  private Map<String, List<HostInfo>> tabletServingInfo
   = new HashMap<String, List<HostInfo>>();
 	
   // RPC variables
@@ -72,6 +85,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 
   // Server status variables
   private volatile boolean stopped = false;
+  @SuppressWarnings("unused")
   private volatile boolean isOnline = false;
 
 	public CatalogServer(Configuration conf) throws IOException {
@@ -85,6 +99,8 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initIsa);
     this.isa = this.rpcServer.getBindAddress();
     this.serverName = this.isa.getHostName() + ":" + this.isa.getPort();
+    
+    initBuiltinFunctions();
 	}
 	
   public void shutdown() throws IOException {
@@ -94,7 +110,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 
 	private void initCatalogServer() throws IOException, 
 	    KeeperException, InterruptedException {
-    initializeZookeeper();
+	  initializeZookeeper();
     this.rpcServer.start();
 	}
 	
@@ -262,7 +278,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	    
 		} finally {
 			wlock.unlock();
-			LOG.info(proto.getId() + " is added");
+			LOG.info("Table " + proto.getId() + " is added to the catalog (" + serverName +")");
 		}
 	}
 
@@ -297,6 +313,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 		}
 		
 		functions.put(canonicalName, funcDesc);
+		LOG.info("Function " + canonicalName + " is registered.");
 	}
 
 	public void unregisterFunction(String signature, DataType...paramTypes) {
@@ -306,6 +323,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 		}
 		
 		functions.remove(canonicalName);
+		LOG.info("Function " + canonicalName + " is unregistered.");
 	}
 
 	public FunctionDescProto getFunctionMeta(String signature, 
@@ -322,6 +340,64 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	public Collection<FunctionDescProto> getFunctions() {
 		return functions.values();
 	}
+	
+  private void initBuiltinFunctions() {
+    List<FunctionDesc> sqlFuncs = new ArrayList<FunctionDesc>();
+    
+    // Sum
+    sqlFuncs.add(new FunctionDesc("sum", SumInt.class,
+            FunctionType.AGGREGATION, DataType.INT,
+            new DataType[] { DataType.INT }));
+    sqlFuncs.add(new FunctionDesc("sum", SumLong.class,
+        FunctionType.AGGREGATION, DataType.LONG,
+        new DataType[] { DataType.LONG }));
+    sqlFuncs.add(new FunctionDesc("sum", SumFloat.class,
+        FunctionType.AGGREGATION, DataType.FLOAT,
+        new DataType[] { DataType.FLOAT }));
+    sqlFuncs.add(new FunctionDesc("sum", SumDouble.class,
+        FunctionType.AGGREGATION, DataType.DOUBLE,
+        new DataType[] { DataType.DOUBLE }));
+    
+    // Max
+    sqlFuncs.add(new FunctionDesc("max", MaxInt.class,
+            FunctionType.AGGREGATION, DataType.INT,
+            new DataType[] { DataType.INT }));
+    sqlFuncs.add(new FunctionDesc("max", MaxLong.class,
+        FunctionType.AGGREGATION, DataType.LONG,
+        new DataType[] { DataType.LONG }));
+    sqlFuncs.add(new FunctionDesc("max", MaxFloat.class,
+        FunctionType.AGGREGATION, DataType.FLOAT,
+        new DataType[] { DataType.FLOAT }));
+    sqlFuncs.add(new FunctionDesc("max", MaxDouble.class,
+        FunctionType.AGGREGATION, DataType.DOUBLE,
+        new DataType[] { DataType.DOUBLE }));
+    
+    // Min
+    sqlFuncs.add(new FunctionDesc("min", MinInt.class,
+            FunctionType.AGGREGATION, DataType.INT,
+            new DataType[] { DataType.INT }));
+    sqlFuncs.add(new FunctionDesc("min", MinLong.class,
+        FunctionType.AGGREGATION, DataType.LONG,
+        new DataType[] { DataType.LONG }));
+    sqlFuncs.add(new FunctionDesc("min", MinFloat.class,
+        FunctionType.AGGREGATION, DataType.FLOAT,
+        new DataType[] { DataType.FLOAT }));
+    sqlFuncs.add(new FunctionDesc("min", MinDouble.class,
+        FunctionType.AGGREGATION, DataType.DOUBLE,
+        new DataType[] { DataType.DOUBLE }));
+
+    // Count
+    sqlFuncs.add(new FunctionDesc("count", CountValue.class,
+        FunctionType.AGGREGATION, DataType.LONG,
+        new DataType[] {DataType.ANY}));
+    sqlFuncs.add(new FunctionDesc("count", CountRows.class,
+        FunctionType.AGGREGATION, DataType.LONG,
+        new DataType[] {}));
+
+    for (FunctionDesc func : sqlFuncs) {
+      registerFunction(func.getProto());
+    }
+  }
 	
 	public static void main(String [] args) throws IOException {
 	  NtaConf conf = new NtaConf();

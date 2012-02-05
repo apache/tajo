@@ -82,7 +82,7 @@ public class TestGlobalQueryPlanner {
 		
 		conf = new NtaConf(util.getConfiguration());
 		catalog = master.getCatalog();
-		FunctionDesc funcDesc = new FunctionDesc("sum", TestSum.class,
+		FunctionDesc funcDesc = new FunctionDesc("sumtest", TestSum.class,
 		        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
 		catalog.registerFunction(funcDesc);
 		    
@@ -128,7 +128,7 @@ public class TestGlobalQueryPlanner {
 		catalog.updateAllTabletServingInfo(master.getOnlineServer());
 		
 	    QueryContext ctx = factory.create();
-	    QueryBlock block = analyzer.parse(ctx, "store1 := select age, sum(salary) from table0 group by age");
+	    QueryBlock block = analyzer.parse(ctx, "store1 := select age, sumtest(salary) from table0 group by age");
 	    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, block);
 		
 		GlobalQueryPlan globalPlan = planner.build(logicalPlan);
