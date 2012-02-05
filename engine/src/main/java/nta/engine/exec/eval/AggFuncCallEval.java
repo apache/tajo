@@ -3,6 +3,7 @@ package nta.engine.exec.eval;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.datum.Datum;
+import nta.engine.json.GsonCreator;
 import nta.engine.function.Function;
 import nta.storage.Tuple;
 
@@ -30,5 +31,9 @@ public class AggFuncCallEval extends FuncCallEval {
       data[data.length-1] = args[0];
 
     return instance.invoke(data);
+  }
+  
+  public String toJSON() {
+	  return GsonCreator.getInstance().toJson(this, EvalNode.class);
   }
 }

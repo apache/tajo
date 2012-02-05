@@ -25,6 +25,7 @@ import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.function.Function;
+import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.query.exception.NQLSyntaxException;
@@ -35,6 +36,8 @@ import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.gson.Gson;
 
 /**
  * @author Hyunsik Choi
@@ -67,6 +70,10 @@ public class TestEvalTree {
     public DataType getResType() {
       return DataType.INT;
     }
+    
+    public String toJSON() {
+    	return GsonCreator.getInstance().toJson(this, Function.class);
+    }
   }
   
   public static class TestAggSum extends Function {
@@ -83,6 +90,11 @@ public class TestEvalTree {
     @Override
     public DataType getResType() {
       return DataType.INT;
+    }
+    
+    public String toJSON() {
+    	Gson gson = GsonCreator.getInstance();
+    	return gson.toJson(this, Function.class);
     }
   }
 
@@ -402,5 +414,36 @@ public class TestEvalTree {
     BinaryEval compExpr2 = new BinaryEval(Type.LTH, e6, e7);
     
     assertTrue(compExpr1.equals(compExpr2));
+  }
+  
+  @Test
+  public final void testJson() {
+    ConstEval e1 = null;
+    ConstEval e2 = null;
+
+    // 29 > (34 + 5) + (5 + 34)
+    e1 = new ConstEval(DatumFactory.createInt(34));
+    e2 = new ConstEval(DatumFactory.createInt(5));
+    
+    BinaryEval plus1 = new BinaryEval(Type.PLUS, e1, e2);
+    BinaryEval plus2 = new BinaryEval(Type.PLUS, e2, e1);
+    BinaryEval plus3 = new BinaryEval(Type.PLUS, plus2, plus1);
+    
+    ConstEval e3 = new ConstEval(DatumFactory.createInt(29));
+    BinaryEval gth = new BinaryEval(Type.GTH, e3, plus3);
+    
+    String json = gth.toJSON();
+    System.out.println(json);
+    EvalNode eval = GsonCreator.getInstance().fromJson(json, EvalNode.class);
+    
+    assertEquals(gth.getType(), eval.getType());
+    assertEquals(e3.getType(), eval.getLeftExpr().getType());
+    assertEquals(plus3.getType(), eval.getRightExpr().getType());
+    assertEquals(plus3.getLeftExpr(), eval.getRightExpr().getLeftExpr());
+    assertEquals(plus3.getRightExpr(), eval.getRightExpr().getRightExpr());
+    assertEquals(plus2.getLeftExpr(), eval.getRightExpr().getLeftExpr().getLeftExpr());
+    assertEquals(plus2.getRightExpr(), eval.getRightExpr().getLeftExpr().getRightExpr());
+    assertEquals(plus1.getLeftExpr(), eval.getRightExpr().getRightExpr().getLeftExpr());
+    assertEquals(plus1.getRightExpr(), eval.getRightExpr().getRightExpr().getRightExpr());
   }
 }

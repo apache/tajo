@@ -3,13 +3,21 @@
  */
 package nta.engine.planner.logical;
 
+import com.google.gson.annotations.Expose;
+
 /**
  * @author Hyunsik Choi
  *
  */
 public abstract class BinaryNode extends LogicalNode {
+	@Expose
 	LogicalNode outer = null;
+	@Expose
 	LogicalNode inner = null;
+	
+	public BinaryNode() {
+		super();
+	}
 	
 	/**
 	 * @param opType

@@ -4,17 +4,26 @@
 package nta.engine.planner.logical;
 
 import nta.catalog.Schema;
+import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
  *
  */
 public abstract class LogicalNode {
+	@Expose
 	private ExprType type;
+	@Expose
 	private Schema inputSchema;
+	@Expose
 	private Schema outputSchema;
 
+	@Expose
 	private double cost = 0;
+	
+	public LogicalNode() {
+		
+	}
 
 	public LogicalNode(ExprType type) {
 		this.type = type;
@@ -51,4 +60,6 @@ public abstract class LogicalNode {
 	public Schema getOutputSchema() {
 	  return this.outputSchema;
 	}
+	
+	public abstract String toJSON();
 }

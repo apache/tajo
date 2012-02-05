@@ -43,6 +43,12 @@ public class TestByteDatum {
 	}
 	
 	@Test
+	public final void testAsChars() {
+		Datum d = DatumFactory.createByte((byte)5);
+		System.out.println(d.asChars());
+	}
+	
+	@Test
   public final void testSize() {
     Datum d = DatumFactory.createByte((byte) 1);
     assertEquals(1, d.size());

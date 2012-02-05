@@ -102,4 +102,10 @@ public class SubQueryResponseImpl implements SubQueryResponse {
 		proto = builder.build();
 		viaProto = true;
 	}
+
+  @Override
+  public void initFromProto() {
+    // TODO Auto-generated method stub
+    
+  }
 }

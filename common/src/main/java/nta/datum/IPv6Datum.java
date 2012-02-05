@@ -3,6 +3,7 @@ package nta.datum;
 import nta.common.exception.NotImplementedException;
 import nta.datum.exception.InvalidCastException;
 import nta.datum.exception.InvalidOperationException;
+import nta.datum.json.GsonCreator;
 
 public class IPv6Datum extends Datum {
   
@@ -68,5 +69,9 @@ public class IPv6Datum extends Datum {
   @Override
   public int compareTo(Datum datum) {
     throw new NotImplementedException();
+  }
+  
+  public String toJSON() {
+	  return GsonCreator.getInstance().toJson(this, Datum.class);
   }
 }

@@ -9,8 +9,13 @@ import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.catalog.proto.CatalogProtos.TabletProto;
 import nta.catalog.proto.CatalogProtos.TabletProtoOrBuilder;
 import nta.engine.SchemaObject;
+import nta.common.ProtoObject;
+import nta.engine.json.GsonCreator;
 
 import org.apache.hadoop.fs.Path;
+
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
 
 /**
  * @author jihoon
@@ -22,10 +27,15 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   protected TabletProto.Builder builder = null;
   protected boolean viaProto = false;
 
+  @Expose
   private String fragmentId;
+  @Expose
   private Path path;
+  @Expose
   private TableMeta meta;
+  @Expose
   private long startOffset;
+  @Expose
   private long length;
 
   public Fragment() {
@@ -189,6 +199,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
         + getLength() + "}";
   }
 
+  @Override
   public TabletProto getProto() {
     mergeLocalToProto();
 
@@ -225,6 +236,25 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
       builder.setPath(this.path.toString());
     }
   }
+  
+  private void mergeProtoToLocal() {
+	  TabletProtoOrBuilder p = viaProto ? proto : builder;
+	  if (fragmentId == null && p.hasId()) {
+	    fragmentId = p.getId();
+	  }
+	  if (path == null && p.hasPath()) {
+		  path = new Path(p.getPath());
+	  }
+	  if (meta == null && p.hasMeta()) {
+		  meta = new TableMetaImpl(p.getMeta());
+	  }
+	  if (startOffset == -1 && p.hasStartOffset()) {
+		  startOffset = p.getStartOffset();
+	  }
+	  if (length == -1 && p.hasLength()) {
+		  length = p.getLength();
+	  }
+  }
 
   private void mergeLocalToProto() {
     if (viaProto) {
@@ -237,5 +267,18 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   
   public Object clone() {
     return new Fragment(this.proto);
+  }
+
+  @Override
+  public String toJSON() {
+	  initFromProto();
+	  Gson gson = GsonCreator.getInstance();
+	  return gson.toJson(this, TableDesc.class);
+  }
+
+  @Override
+  public void initFromProto() {
+	  mergeProtoToLocal();
+    meta.initFromProto();
   }
 }

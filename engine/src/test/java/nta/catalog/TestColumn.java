@@ -1,9 +1,13 @@
 package nta.catalog;
 import static org.junit.Assert.*;
 import nta.catalog.proto.CatalogProtos.DataType;
+import nta.engine.json.GsonCreator;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * 
@@ -66,5 +70,16 @@ public class TestColumn {
 	  assertEquals("id", col.getColumnName());
 	  assertEquals("table_1.id", col.getName());
 	  assertEquals("table_1", col.getTableName());
+	}
+
+	@Test
+	public final void testToSon() {
+		Column col = new Column(field1.getProto());
+		String json = col.toJSON();
+		System.out.println(json);
+		Gson gson = GsonCreator.getInstance();
+		Column fromJson = gson.fromJson(json, Column.class);
+		assertEquals(col.getColumnName(), fromJson.getColumnName());
+		assertEquals(col.getDataType(), fromJson.getDataType());
 	}
 }

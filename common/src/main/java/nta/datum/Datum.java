@@ -1,5 +1,7 @@
 package nta.datum;
 
+import com.google.gson.annotations.Expose;
+
 import nta.datum.exception.InvalidOperationException;
 
 /**
@@ -7,7 +9,13 @@ import nta.datum.exception.InvalidOperationException;
  *
  */
 public abstract class Datum implements Comparable<Datum> {
+	@Expose
 	private DatumType type;
+	
+	private Datum() {
+		
+	}
+	
 	public Datum(DatumType type) {
 		this.type = type;
 	}
@@ -27,6 +35,8 @@ public abstract class Datum implements Comparable<Datum> {
 	public abstract String asChars();
 	
 	public abstract int size();
+	
+	public abstract String toJSON();
 	
 	@Override
 	public String toString() {

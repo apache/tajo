@@ -6,6 +6,9 @@ package nta.catalog;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
+
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
 import nta.catalog.proto.CatalogProtos.FunctionDescProtoOrBuilder;
@@ -13,6 +16,7 @@ import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.common.ProtoObject;
 import nta.engine.exception.InternalException;
 import nta.engine.function.Function;
+import nta.engine.json.GsonCreator;
 
 /**
  * @author Hyunsik Choi
@@ -23,10 +27,15 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
   private FunctionDescProto.Builder builder = null;
   private boolean viaProto = false;
   
+  @Expose
   private String signature;
+  @Expose
   private Class<? extends Function> funcClass;
+  @Expose
   private FunctionType funcType;
+  @Expose
   private DataType returnType;
+  @Expose
   private DataType [] parameterTypes;
 
   public FunctionDesc() {
@@ -197,5 +206,51 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
     mergeLocalToBuilder();
     proto = builder.build();
     viaProto = true;
+  }
+  
+  private void mergeProtoToLocal() throws InternalException {
+	  FunctionDescProtoOrBuilder p = viaProto ? proto : builder;
+	  if (signature == null && p.hasSignature()) {
+		  signature = p.getSignature();
+	  }
+	  if (funcClass == null && p.hasClassName()) {
+		  try {
+			  this.funcClass = (Class<? extends Function>)Class.forName(p.getClassName());
+		  } catch (ClassNotFoundException e) {
+			  throw new InternalException("The function class ("+p.getClassName()+") cannot be loaded");
+		  }
+	  }
+	  if (funcType == null && p.hasType()) {
+		  funcType = p.getType();
+	  }
+	  if (returnType == null && p.hasReturnType()) {
+		  returnType = p.getReturnType();
+	  }
+	  if (parameterTypes == null && p.getParameterTypesCount() > 0) {
+		  parameterTypes = new DataType[p.getParameterTypesCount()];
+		  for (int i = 0; i < p.getParameterTypesCount(); i++) {
+			  parameterTypes[i] = p.getParameterTypes(i);
+		  }
+	  }
+  }
+  
+  @Override
+  public String toString() {
+	  return null;
+  }
+
+  @Override
+  public void initFromProto() {
+    try {
+      mergeProtoToLocal();
+    } catch (InternalException e) {
+      e.printStackTrace();
+    }
+  }
+  
+  public String toJSON() {
+    initFromProto();
+    Gson gson = GsonCreator.getInstance();
+    return gson.toJson(this, FunctionDesc.class);
   }
 }

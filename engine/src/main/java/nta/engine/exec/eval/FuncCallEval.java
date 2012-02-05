@@ -5,11 +5,15 @@ package nta.engine.exec.eval;
 
 import java.util.Arrays;
 
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
+
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.engine.function.Function;
+import nta.engine.json.GsonCreator;
 import nta.storage.Tuple;
 
 /**
@@ -17,8 +21,11 @@ import nta.storage.Tuple;
  *
  */
 public class FuncCallEval extends EvalNode {
+	@Expose
 	protected FunctionDesc desc;
+	@Expose
   protected Function instance;
+	@Expose
 	protected EvalNode [] givenArgs;
 
 	/**
@@ -70,6 +77,11 @@ public class FuncCallEval extends EvalNode {
 				sb.append(",");
 		}
 		return desc.getSignature()+"("+sb+")";
+	}
+	
+	public String toJSON() {
+	  Gson gson = GsonCreator.getInstance();
+    return gson.toJson(this, EvalNode.class);
 	}
 	
 	@Override

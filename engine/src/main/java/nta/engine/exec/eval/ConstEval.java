@@ -3,10 +3,14 @@
  */
 package nta.engine.exec.eval;
 
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
+
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumType;
+import nta.engine.json.GsonCreator;
 import nta.storage.Tuple;
 
 /**
@@ -14,6 +18,7 @@ import nta.storage.Tuple;
  *
  */
 public class ConstEval extends EvalNode implements Comparable<ConstEval> {
+	@Expose
 	Datum datum = null;
 	/**
 	 * @param type
@@ -41,6 +46,11 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval> {
 	
 	public String toString() {
 		return datum.toString();
+	}
+	
+	public String toJSON() {
+		Gson gson = GsonCreator.getInstance();
+		return gson.toJson(this, EvalNode.class);
 	}
 	
 

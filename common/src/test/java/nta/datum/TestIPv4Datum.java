@@ -3,6 +3,7 @@ package nta.datum;
 import static org.junit.Assert.*;
 
 import nta.datum.IPv4Datum;
+import nta.datum.json.GsonCreator;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -36,4 +37,12 @@ public class TestIPv4Datum {
     Datum d = DatumFactory.createIPv4("163.152.23.222");
     assertEquals(4, d.size());
   }
+	
+	@Test
+	public final void testJson() {
+		Datum d = DatumFactory.createIPv4("163.152.163.152");
+		String json = d.toJSON();
+		Datum fromJson = GsonCreator.getInstance().fromJson(json, Datum.class);
+		assertTrue(d.equalsTo(fromJson).asBool());
+	}
 }

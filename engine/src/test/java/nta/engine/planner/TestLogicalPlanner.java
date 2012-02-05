@@ -13,7 +13,8 @@ import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
-import nta.engine.exec.eval.TestEvalTree.TestSum;
+import nta.engine.function.SumInt;
+import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.ExprType;
@@ -31,6 +32,8 @@ import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.gson.Gson;
 
 /**
  * @author Hyunsik Choi
@@ -74,7 +77,7 @@ public class TestLogicalPlanner {
     score.setPath(new Path("file:///"));
     catalog.addTable(score);
 
-    FunctionDesc funcDesc = new FunctionDesc("sum", TestSum.class,
+    FunctionDesc funcDesc = new FunctionDesc("sum", SumInt.class,
         FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
 
     catalog.registerFunction(funcDesc);
@@ -98,6 +101,7 @@ public class TestLogicalPlanner {
       "select name, score from employee, score", // 6
       "select p.deptName, sum(score) from dept as p, score group by p.deptName", // 7
       "store1 := select p.deptName, sum(score) from dept as p, score group by p.deptName", // 8
+      "select deptName, sum(score) from score group by deptName having sum(score) > 30", // 9
   };
 
   @Test
@@ -236,6 +240,10 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.STORE, root.getSubNode().getType());
     StoreTableNode storeNode = (StoreTableNode) root.getSubNode();
     testQuery7(storeNode.getSubNode());
+//    System.out.println(plan);
+//    System.out.println("-------------------");
+    LogicalOptimizer.optimize(ctx, plan);
+//    System.out.println(plan);
   }
 
   @Test
@@ -296,5 +304,24 @@ public class TestLogicalPlanner {
     System.out.println("-------------------");
     LogicalOptimizer.optimize(ctx, plan);
     System.out.println(plan);*/
+  }
+  
+  @Test
+  public final void testJson() {
+    QueryContext ctx = factory.create();
+	  QueryBlock block = analyzer.parse(ctx, QUERIES[9]);
+	  LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+	  LogicalOptimizer.optimize(ctx, plan);
+	    
+	  String json = plan.toJSON();
+	  System.out.println(json);
+	  Gson gson = GsonCreator.getInstance();
+	  LogicalNode fromJson = gson.fromJson(json, LogicalNode.class);
+	  System.out.println(fromJson.toJSON());
+	  assertEquals(ExprType.ROOT, fromJson.getType());
+	  LogicalNode groupby = ((LogicalRootNode)fromJson).getSubNode();
+	  assertEquals(ExprType.GROUP_BY, groupby.getType());
+	  LogicalNode scan = ((GroupbyNode)groupby).getSubNode();
+	  assertEquals(ExprType.SCAN, scan.getType());
   }
 }

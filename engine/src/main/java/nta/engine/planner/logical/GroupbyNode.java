@@ -2,7 +2,10 @@ package nta.engine.planner.logical;
 
 import nta.catalog.Column;
 import nta.engine.exec.eval.EvalNode;
+import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryBlock.Target;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * 
@@ -10,9 +13,16 @@ import nta.engine.parser.QueryBlock.Target;
  *
  */
 public class GroupbyNode extends UnaryNode {
-	private final Column [] columns;
+	@Expose
+	private Column [] columns;
+	@Expose
 	private EvalNode havingCondition = null;
+	@Expose
 	private Target [] targets;
+	
+	public GroupbyNode() {
+		super();
+	}
 	
 	public GroupbyNode(final Column [] groupingColumns) {
 		super(ExprType.GROUP_BY);
@@ -60,9 +70,9 @@ public class GroupbyNode extends UnaryNode {
       if(i < columns.length - 1)
         sb.append(",");
     }
-    sb.append("],");
+    
     if(hasHavingCondition()) {
-      sb.append("\"having qual\": \""+havingCondition+"\"");
+      sb.append("], \"having qual\": \""+havingCondition+"\"");
     }
     if(hasTargetList()) {
       sb.append(", \"target\": [");
@@ -80,5 +90,9 @@ public class GroupbyNode extends UnaryNode {
     
     return sb.toString() + "\n"
         + getSubNode().toString();
+  }
+  
+  public String toJSON() {
+    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

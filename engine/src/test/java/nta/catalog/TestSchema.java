@@ -5,9 +5,13 @@ import static org.junit.Assert.*;
 import nta.catalog.exception.AlreadyExistsFieldException;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.SchemaProto;
+import nta.engine.json.GsonCreator;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class TestSchema {
 	
@@ -93,5 +97,17 @@ public class TestSchema {
     schema.addColumn("abc", DataType.DOUBLE);
     schema.addColumn("bbc", DataType.DOUBLE);
     schema.addColumn("abc", DataType.INT);
+	}
+
+	@Test
+	public final void testJson() {
+		Schema schema2 = new Schema(schema.getProto());
+		String json = schema2.toJson();
+		System.out.println(json);
+		Gson gson = GsonCreator.getInstance();
+		Schema fromJson = gson.fromJson(json, Schema.class);
+		assertEquals(schema2.getProto(), fromJson.getProto());
+		assertEquals(schema2.getColumn(0), fromJson.getColumn(0));
+		assertEquals(schema2.getColumnNum(), fromJson.getColumnNum());
 	}
 }

@@ -10,10 +10,14 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.engine.EngineTestingUtils;
+import nta.engine.exception.InternalException;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
+import nta.engine.json.GsonCreator;
 import nta.util.FileUtil;
 
 import org.junit.Test;
+
+import com.google.gson.Gson;
 
 public class TestFunctionDesc {
   private static final String TEST_PATH = "target/test-data/TestFunctionDesc";
@@ -46,5 +50,25 @@ public class TestFunctionDesc {
         newDesc.getDefinedArgs());
 
     assertEquals(desc.getProto(), newDesc.getProto());
+  }
+  
+  @Test
+  public void testJson() throws InternalException {
+	  FunctionDesc desc = new FunctionDesc("sum", TestSum.class,
+		        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT,
+		            DataType.LONG });
+	  String json = desc.toJSON();
+	  System.out.println(json);
+	  Gson gson = GsonCreator.getInstance();
+	  FunctionDesc fromJson = gson.fromJson(json, FunctionDesc.class);
+	  
+	  assertEquals("sum", fromJson.getSignature());
+	    assertEquals(TestSum.class, fromJson.getFuncClass());
+	    assertEquals(FunctionType.GENERAL, fromJson.getFuncType());
+	    assertEquals(DataType.INT, fromJson.getReturnType());
+	    assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
+	    		fromJson.getDefinedArgs());
+
+	    assertEquals(desc.getProto(), fromJson.getProto());
   }
 }

@@ -1,9 +1,13 @@
 package nta.engine.exec.eval;
 
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
+
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
+import nta.engine.json.GsonCreator;
 import nta.storage.Tuple;
 
 /**
@@ -12,8 +16,11 @@ import nta.storage.Tuple;
  * 
  */
 public class FieldEval extends EvalNode {
+	@Expose
 	DataType dataType;
+	@Expose
 	private String columnName;
+	@Expose
 	private int fieldId = -1;
 	
 	public FieldEval(String columnName, DataType domain) {
@@ -68,6 +75,11 @@ public class FieldEval extends EvalNode {
 	
 	public String toString() {
 	  return columnName + " " + dataType;
+	}
+	
+	public String toJSON() {
+	  Gson gson = GsonCreator.getInstance();
+    return gson.toJson(this, EvalNode.class);
 	}
 	
   public boolean equals(Object obj) {

@@ -121,4 +121,18 @@ public class QueryUnitResponseImpl implements QueryUnitResponse {
 		proto = builder.build();
 		viaProto = true;
 	}
+
+  @Override
+  public void initFromProto() {
+    QueryUnitResponseProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.id == -1 && p.hasId()) {
+      this.id = p.getId();
+    }
+    if (this.status == null && p.hasStatus()) {
+      this.status = p.getStatus();
+    }
+    if (this.outputPath == null && p.hasOutputPath()) {
+      this.outputPath = p.getOutputPath();
+    }
+  }
 }

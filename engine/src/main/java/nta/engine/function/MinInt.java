@@ -7,6 +7,7 @@ import nta.catalog.Column;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
+import nta.engine.json.GsonCreator;
 
 /**
  * @author hyunsik
@@ -39,6 +40,10 @@ public class MinInt extends Function {
   @Override
   public DataType getResType() {
     return DataType.INT;
+  }
+  
+  public String toJSON() {
+    return GsonCreator.getInstance().toJson(this, Function.class);
   }
 
 }

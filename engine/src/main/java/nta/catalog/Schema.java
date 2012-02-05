@@ -9,12 +9,17 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Expose;
+
 import nta.catalog.exception.AlreadyExistsFieldException;
 import nta.catalog.proto.CatalogProtos.ColumnProto;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.catalog.proto.CatalogProtos.SchemaProtoOrBuilder;
 import nta.common.ProtoObject;
+import nta.engine.json.GsonCreator;
 
 /**
  * 
@@ -28,7 +33,9 @@ public class Schema implements ProtoObject<SchemaProto> {
 	private	SchemaProto.Builder builder = null;
 	boolean viaProto = false;
 
+	@Expose
 	protected List<Column> fields = null;
+	@Expose
 	protected Map<String,Integer> fieldsByName = null;
 
 	public Schema() {
@@ -82,6 +89,13 @@ public class Schema implements ProtoObject<SchemaProto> {
 	public boolean contains(String colName) {
 		initColumns();
 		return fieldsByName.containsKey(colName);
+	}
+	
+	public void initFromProto() {
+		initColumns();
+		for (Column col : fields) {
+		  col.initFromProto();
+		}
 	}
 
 	private void initColumns() {
@@ -146,7 +160,7 @@ public class Schema implements ProtoObject<SchemaProto> {
 	}
 
 	private void mergeLocalToBuilder() {
-	  maybeInitBuilder();
+//	  maybeInitBuilder();
 	  if (fields != null)
 	    builder.clearFields();
 	  
@@ -169,7 +183,6 @@ public class Schema implements ProtoObject<SchemaProto> {
 	}
 	
 	public String toString() {
-	  initColumns();
 	  StringBuilder sb = new StringBuilder();
 	  sb.append("{");
 	  for(Column col : fields) {
@@ -178,5 +191,12 @@ public class Schema implements ProtoObject<SchemaProto> {
 	  sb.append("}");
 	  
 	  return sb.toString();
+	}
+	
+	public String toJson() {
+	  initFromProto();
+	  Gson gson = GsonCreator.getInstance();
+	  return gson.toJson(this, Schema.class);
+		
 	}
 }

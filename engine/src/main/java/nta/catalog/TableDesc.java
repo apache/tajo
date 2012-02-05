@@ -3,6 +3,7 @@ package nta.catalog;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.engine.SchemaObject;
+import nta.common.ProtoObject;
 
 import org.apache.hadoop.fs.Path;
 
@@ -29,6 +30,10 @@ public interface TableDesc extends SchemaObject {
   Object clone();
   
   Message getProto();
+  
+  public void initFromProto();
+  
+  public String toJSON();
   
   public static class Factory {
     public static TableDesc create(String tableId, Schema schema, 

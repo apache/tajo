@@ -132,4 +132,10 @@ public class ServerName2 implements ProtoObject<ServerNameProto> {
 	public int hashCode() {
 		return getServerName().hashCode();
 	}
+
+  @Override
+  public void initFromProto() {
+    // TODO Auto-generated method stub
+    
+  }
 }

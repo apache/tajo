@@ -6,12 +6,17 @@ package nta.datum;
 import java.nio.ByteBuffer;
 
 import nta.datum.exception.InvalidOperationException;
+import com.google.gson.annotations.Expose;
+
+import nta.datum.exception.InvalidCastException;
+import nta.datum.json.GsonCreator;
 
 /**
  * @author Hyunsik Choi
  *
  */
 public class BoolDatum extends Datum {
+	@Expose
 	final boolean val;
 
 	public BoolDatum(boolean val) {
@@ -84,6 +89,10 @@ public class BoolDatum extends Datum {
 	@Override
 	public String asChars() {
 		return val == true ? "true" : "false";
+	}
+	
+	public String toJSON() {
+		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
 
   @Override

@@ -1,6 +1,9 @@
 package nta.engine.planner.logical;
 
+import com.google.gson.annotations.Expose;
+
 import nta.engine.exec.eval.EvalNode;
+import nta.engine.json.GsonCreator;
 
 /**
  * 
@@ -9,7 +12,12 @@ import nta.engine.exec.eval.EvalNode;
  */
 public class SelectionNode extends UnaryNode {
 
+	@Expose
 	private EvalNode qual;
+	
+	public SelectionNode() {
+		super();
+	}
 	
 	public SelectionNode(EvalNode qual) {
 		super(ExprType.SELECTION);
@@ -32,5 +40,9 @@ public class SelectionNode extends UnaryNode {
     
     return sb.toString()+"\n"
     + getSubNode().toString();
+  }
+  
+  public String toJSON() {
+    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

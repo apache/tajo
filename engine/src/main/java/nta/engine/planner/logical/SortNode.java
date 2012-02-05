@@ -3,6 +3,9 @@
  */
 package nta.engine.planner.logical;
 
+import com.google.gson.annotations.Expose;
+
+import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryBlock.SortKey;
 
 /**
@@ -10,7 +13,12 @@ import nta.engine.parser.QueryBlock.SortKey;
  *
  */
 public final class SortNode extends UnaryNode {
-  private final SortKey [] sortKeys;
+	@Expose
+  private SortKey [] sortKeys;
+	
+	public SortNode() {
+		super();
+	}
   
   /**
    * @param opType
@@ -35,5 +43,9 @@ public final class SortNode extends UnaryNode {
     }
     return sb.toString()+"\n"
         + getSubNode().toString();
+  }
+  
+  public String toJSON() {
+    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

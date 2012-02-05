@@ -5,8 +5,11 @@ package nta.datum;
 
 import java.nio.ByteBuffer;
 
+import com.google.gson.annotations.Expose;
+
 import nta.datum.exception.InvalidCastException;
 import nta.datum.exception.InvalidOperationException;
+import nta.datum.json.GsonCreator;
 
 /**
  * @author Hyunsik Choi
@@ -15,6 +18,7 @@ import nta.datum.exception.InvalidOperationException;
 public class FloatDatum extends Datum {
   private static final int size = 4;
   
+  @Expose
 	float val;
 	
 	/**
@@ -87,6 +91,10 @@ public class FloatDatum extends Datum {
 	 */
 	public String asChars() {
 		return ""+val;
+	}
+	
+	public String toJSON() {
+		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
 
   @Override

@@ -28,4 +28,6 @@ public interface TableMeta extends ProtoObject<TableProto> {
   void putOption(String key, String value);
   
   Object clone();
+  
+  public String toJSON();
 }

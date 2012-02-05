@@ -4,6 +4,8 @@ import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
 
+import nta.datum.json.GsonCreator;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,5 +28,13 @@ public class TestBytesDatum {
   public final void testSize() {
     Datum d = DatumFactory.createBytes("12345".getBytes());
     assertEquals(5, d.size());
+  }
+  
+  @Test
+  public final void testJson() {
+	  Datum d = DatumFactory.createBytes("12345".getBytes());
+	  String json = d.toJSON();
+	  Datum fromJson = GsonCreator.getInstance().fromJson(json, Datum.class);
+	  assertTrue(d.equalsTo(fromJson).asBool());
   }
 }

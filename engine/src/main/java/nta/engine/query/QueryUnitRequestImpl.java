@@ -6,10 +6,13 @@ package nta.engine.query;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.annotations.Expose;
+
 import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProtoOrBuilder;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
+import nta.engine.json.GsonCreator;
 
 /**
  * @author jihoon
@@ -17,12 +20,18 @@ import nta.engine.ipc.protocolrecords.QueryUnitRequest;
  */
 public class QueryUnitRequestImpl implements QueryUnitRequest{
 	
+  @Expose
 	private int id;
+  @Expose
 	private List<Fragment> fragments;
+  @Expose
 	private String outputTable;
 	private boolean isUpdated;
+	@Expose
 	private boolean clusteredOutput;
+	@Expose
 	private String serializedClassName;
+	@Expose
 	private String serializedData;
 	
 	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
@@ -45,6 +54,8 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	public QueryUnitRequestImpl(QueryUnitRequestProto proto) {
 		this.proto = proto;
 		viaProto = true;
+		id = -1;
+		isUpdated = false;
 	}
 	
 	public void set(int id, List<Fragment> fragments, 
@@ -186,4 +197,31 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 		proto = builder.build();
 		viaProto = true;
 	}
+
+  @Override
+  public void initFromProto() {
+    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    if (id == -1 && p.hasId()) {
+      this.id = p.getId();
+    }
+    if (fragments == null && p.getFragmentsCount() > 0) {
+      this.fragments = new ArrayList<Fragment>();
+      for (int i = 0; i < p.getFragmentsCount(); i++) {
+        this.fragments.add(new Fragment(p.getFragments(i)));
+      }
+    }
+    if (outputTable == null && p.hasOutputTable()) {
+      this.outputTable = p.getOutputTable();
+    }
+    if (isUpdated == false && p.hasClusteredOutput()) {
+      this.clusteredOutput = p.getClusteredOutput();
+    }
+    if (serializedClassName == null && p.hasSerializedClassName()) {
+      this.serializedClassName = p.getSerializedClassName();
+    }
+    if (serializedData == null && p.hasSerializedData()) {
+      this.serializedData = p.getSerializedData();
+    }
+  }
+  
 }
