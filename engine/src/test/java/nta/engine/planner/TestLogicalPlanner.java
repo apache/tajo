@@ -3,7 +3,6 @@ package nta.engine.planner;
 import static org.junit.Assert.assertEquals;
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
-import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -12,7 +11,7 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.conf.NtaConf;
+import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.parser.QueryAnalyzer;
@@ -37,12 +36,18 @@ import org.junit.Test;
  * @author Hyunsik Choi
  */
 public class TestLogicalPlanner {
+  private NtaTestingUtility util;
   private CatalogService catalog;
   private QueryContext.Factory factory;
   private QueryAnalyzer analyzer;
 
   @Before
   public void setUp() throws Exception {
+    util = new NtaTestingUtility();
+    util.startMiniZKCluster();
+    util.startCatalogCluster();
+    catalog = util.getMiniCatalogCluster().getCatalog();
+    
     Schema schema = new Schema();
     schema.addColumn("name", DataType.STRING);
     schema.addColumn("empId", DataType.INT);
@@ -59,7 +64,6 @@ public class TestLogicalPlanner {
     TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
     TableDesc people = new TableDescImpl("employee", meta);
     people.setPath(new Path("file:///"));
-    catalog = new LocalCatalog(new NtaConf());
     catalog.addTable(people);
 
     TableDesc student = new TableDescImpl("dept", schema2, StoreType.CSV);
@@ -80,6 +84,8 @@ public class TestLogicalPlanner {
 
   @After
   public void tearDown() throws Exception {
+    util.shutdownCatalogCluster();
+    util.shutdownMiniZKCluster();
   }
 
   private String[] QUERIES = {

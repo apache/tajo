@@ -87,7 +87,7 @@ public class TestCatalog {
 	  util = new NtaTestingUtility();
 	  util.startMiniZKCluster();
 	  util.startCatalogCluster();
-	  CatalogService catalog = util.getCatalog().getCatalog();
+	  CatalogService catalog = util.getMiniCatalogCluster().getCatalog();
 	  
 		schema1 = new Schema();
 		schema1.addColumn(FieldName1, DataType.BYTE);
@@ -116,7 +116,7 @@ public class TestCatalog {
 	  util = new NtaTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
-    CatalogService catalog = util.getCatalog().getCatalog();
+    CatalogService catalog = util.getMiniCatalogCluster().getCatalog();
     
 	  schema1 = new Schema();
     schema1.addColumn(FieldName1, DataType.BYTE);
@@ -179,7 +179,7 @@ public class TestCatalog {
 	  util = new NtaTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
-    CatalogService catalog = util.getCatalog().getCatalog();
+    CatalogService catalog = util.getMiniCatalogCluster().getCatalog();
     
 		assertFalse(catalog.containFunction("test2"));
 		FunctionDesc meta = new FunctionDesc("test2", TestFunc1.class, 
@@ -203,7 +203,7 @@ public class TestCatalog {
     util = new NtaTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
-    CatalogService catalog = util.getCatalog().getCatalog();
+    CatalogService catalog = util.getMiniCatalogCluster().getCatalog();
     
     assertFalse(catalog
         .containFunction("test3", new DataType[] { DataType.INT }));
@@ -320,7 +320,7 @@ public class TestCatalog {
     ZkClient zkClient = new ZkClient(util.getConfiguration());
     assertTrue(zkClient.exists("/catalog") != null);
     
-    InetSocketAddress addr = util.getCatalog().getCatalogServer().
+    InetSocketAddress addr = util.getMiniCatalogCluster().getCatalogServer().
         getBindAddress();
     String serverName = addr.getHostName()+":"+addr.getPort();
     assertEquals(serverName, new String(zkClient.getData("/catalog", 

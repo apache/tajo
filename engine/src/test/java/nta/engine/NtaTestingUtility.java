@@ -358,7 +358,7 @@ public class NtaTestingUtility {
 	  this.catalogCluster.shutdown();
 	}
 	
-  public MiniCatalogServer getCatalog() {
+  public MiniCatalogServer getMiniCatalogCluster() {
     return this.catalogCluster;
   }
 

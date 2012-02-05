@@ -92,7 +92,7 @@ public class TestGlobalQueryPlanner {
 		FileSystem fs = util.getMiniDFSCluster().getFileSystem();
 		
 		conf = new NtaConf(util.getConfiguration());
-		catalog = new LocalCatalog(conf);
+		catalog = util.getMiniCatalogCluster().getCatalog();
 		FunctionDesc funcDesc = new FunctionDesc("sum", TestSum.class,
 		        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
 		catalog.registerFunction(funcDesc);

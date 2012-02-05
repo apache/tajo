@@ -21,6 +21,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
+import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.function.Function;
@@ -94,8 +95,11 @@ public class TestEvalTree {
   };
 
   @Test
-  public final void testFunctionEval() throws NQLSyntaxException,
-      IOException {
+  public final void testFunctionEval() throws Exception {
+    NtaTestingUtility util = new NtaTestingUtility();
+    util.startMiniZKCluster();
+    util.startCatalogCluster();
+    CatalogService cat = util.getMiniCatalogCluster().getCatalog();
 
     Schema schema = new Schema();
     schema.addColumn("name", DataType.STRING);
@@ -105,7 +109,6 @@ public class TestEvalTree {
     TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
     TableDesc desc = new TableDescImpl("people", meta);
     desc.setPath(new Path("file:///"));
-    CatalogService cat = new LocalCatalog(new NtaConf());
     cat.addTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
@@ -168,6 +171,9 @@ public class TestEvalTree {
       sum = sum + (i+1);
       assertEquals(sum, accumulated.asInt());
     }
+    
+    util.shutdownCatalogCluster();
+    util.shutdownMiniZKCluster();
   }
   
   

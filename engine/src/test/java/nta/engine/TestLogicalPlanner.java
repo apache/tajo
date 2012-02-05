@@ -2,7 +2,6 @@ package nta.engine;
 
 import static org.junit.Assert.assertEquals;
 import nta.catalog.CatalogService;
-import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -10,7 +9,6 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.conf.NtaConf;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.parser.NQL;
 import nta.engine.parser.NQL.Query;
@@ -25,18 +23,24 @@ import nta.engine.plan.logical.SelectionOp;
 import nta.engine.query.LogicalPlanner;
 import nta.storage.CSVFile2;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class TestLogicalPlanner {	
-	NtaConf conf;
-	CatalogService cat;
+	private NtaTestingUtility util;
+  private Configuration conf;
+	private CatalogService cat;
 
 	@Before
 	public void setUp() throws Exception {
-		conf = new NtaConf();
-		cat = new LocalCatalog(conf);
+	  util = new NtaTestingUtility();
+		util.startMiniZKCluster();
+		util.startCatalogCluster();
+		conf = util.getConfiguration();
+		cat = util.getMiniCatalogCluster().getCatalog();
 		
 		Schema schema = new Schema();
 		schema.addColumn("name", DataType.STRING);
@@ -48,6 +52,12 @@ public class TestLogicalPlanner {
 		TableDesc desc = new TableDescImpl("test", meta);
 		desc.setPath(new Path("/table/test"));
 		cat.addTable(desc);
+	}
+	
+	@After
+	public void tearDown() throws Exception {
+	  util.shutdownCatalogCluster();
+	  util.shutdownMiniZKCluster();
 	}
 	
 	String [] SELECTION_TEST = {
