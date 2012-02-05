@@ -11,6 +11,6 @@ import nta.engine.LeafServerProtos.SubQueryResponseProto;
 
 public interface SubQueryResponse extends ProtoObject<SubQueryResponseProto> {
 
+  public int getId();
 	public nta.engine.LeafServerProtos.QueryStatus getStatus();
-	public String getOutputPath();
 }

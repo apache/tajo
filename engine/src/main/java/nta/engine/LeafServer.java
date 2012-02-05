@@ -42,8 +42,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.DNS;
 import org.apache.zookeeper.KeeperException;
 
-import com.google.protobuf.ByteString;
-
 /**
  * @author Hyunsik Choi
  *
@@ -220,7 +218,9 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	//////////////////////////////////////////////////////////////////////////////
 	@Override
 	public SubQueryResponseProto requestSubQuery(SubQueryRequestProto requestProto) throws IOException {
+	  long before = System.currentTimeMillis();
 	  SubQueryRequest request = new SubQueryRequestImpl(requestProto);
+	  System.out.println("================================!! " + request.getFragments().get(0));
 	  SubqueryContext ctx = ctxFactory.create(request);
 	  QueryBlock query = analyzer.parse(ctx, request.getQuery());
 	  LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
@@ -229,7 +229,10 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	  System.out.println("==================\n" + plan);
     
     PhysicalPlanner phyPlanner = new PhysicalPlanner(storeManager);
+    long after = System.currentTimeMillis();
+    LOG.info("====================> processing time1: " + (after-before) + "msc");
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    before = System.currentTimeMillis();
     
     @SuppressWarnings("unused")
     Tuple tuple = null;
@@ -237,8 +240,10 @@ public class LeafServer extends Thread implements LeafServerInterface {
     }
 	  
     SubQueryResponseProto.Builder res = SubQueryResponseProto.newBuilder();
+    res.setId(request.getId());
     res.setStatus(QueryStatus.FINISHED);
-    res.setOutputPath(ByteString.copyFrom("".getBytes()));
+    after = System.currentTimeMillis();
+    LOG.info("====================> processing time2: " + (after-before) + "msc");
     return res.build();
 	}
 
