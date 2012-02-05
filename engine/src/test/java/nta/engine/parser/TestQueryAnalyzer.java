@@ -18,6 +18,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
 import nta.engine.Context;
+import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
@@ -43,6 +44,7 @@ import org.junit.Test;
  * @see QueryBlock
  */
 public class TestQueryAnalyzer {
+  private NtaTestingUtility util;
   private CatalogService cat = null;
   private Schema schema1 = null;
   private QueryAnalyzer analyzer = null;
@@ -50,6 +52,11 @@ public class TestQueryAnalyzer {
   
   @Before
   public void setUp() throws Exception {
+    util = new NtaTestingUtility();
+    util.startMiniZKCluster();
+    util.startCatalogCluster();
+    cat = util.getMiniCatalogCluster().getCatalog();
+    
     schema1 = new Schema();
     schema1.addColumn("id", DataType.INT);
     schema1.addColumn("name", DataType.STRING);
@@ -65,7 +72,6 @@ public class TestQueryAnalyzer {
     TableMeta meta = new TableMetaImpl(schema1, StoreType.CSV);
     TableDesc people = new TableDescImpl("people", meta);
     people.setPath(new Path("file:///"));
-    cat = new LocalCatalog(new NtaConf());
     cat.addTable(people);
     
     TableDesc student = new TableDescImpl("student", schema2, StoreType.CSV);
@@ -84,6 +90,8 @@ public class TestQueryAnalyzer {
 
   @After
   public void tearDown() throws Exception {
+    util.shutdownCatalogCluster();
+    util.shutdownMiniZKCluster();
   }
 
   private String[] QUERIES = { 
@@ -111,8 +119,7 @@ public class TestQueryAnalyzer {
 
     TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
     TableDesc desc = new TableDescImpl("people", meta);
-    desc.setPath(new Path("file:///"));
-    CatalogService cat = new LocalCatalog(new NtaConf());
+    desc.setPath(new Path("file:///"));    
     cat.addTable(desc);
 
     NQL nql = new NQL(cat);
@@ -133,8 +140,6 @@ public class TestQueryAnalyzer {
       expr.eval(schema, tuples[i]);
     }
     long end = System.currentTimeMillis();
-
-    System.out.println("legacy elapsed time: " + (end - start));
   }
 
   public static NQLParser parseExpr(final String expr) {

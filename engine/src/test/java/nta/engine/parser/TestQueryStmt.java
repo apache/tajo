@@ -7,8 +7,10 @@ package nta.engine.parser;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+
 import nta.catalog.CatalogService;
-import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -16,15 +18,17 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.conf.NtaConf;
 import nta.datum.DatumType;
+import nta.engine.NtaTestingUtility;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.parser.NQL.Query;
 import nta.storage.CSVFile2;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,17 +38,21 @@ import org.junit.Test;
  */
 @Deprecated
 public class TestQueryStmt {
-  NtaConf conf;
-  CatalogService cat = null;
-  NQL nql = null;
+  private NtaTestingUtility util;
+  private Configuration conf;
+  private CatalogService cat = null;
+  private NQL nql = null;
   
   /**
    * @throws java.lang.Exception
    */
   @Before
   public void setUp() throws Exception {
-    conf = new NtaConf();
-    this.cat = new LocalCatalog(conf);
+    util = new NtaTestingUtility();
+    util.startMiniZKCluster();
+    util.startCatalogCluster();    
+    cat = util.getMiniCatalogCluster().getCatalog();
+    conf = util.getConfiguration();
     nql = new NQL(cat);
     
     Schema schema = new Schema();
@@ -60,6 +68,12 @@ public class TestQueryStmt {
     TableDesc desc = new TableDescImpl("test", meta);
     desc.setPath(new Path("/table/test"));
     cat.addTable(desc);
+  }
+  
+  @After
+  public final void tearDown() throws IOException {
+    util.shutdownCatalogCluster();
+    util.shutdownMiniZKCluster();
   }
   
   String [] queries = {

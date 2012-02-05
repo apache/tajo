@@ -19,6 +19,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
+import nta.engine.NtaTestingUtility;
 import nta.engine.SubqueryContext;
 import nta.engine.function.MaxInt;
 import nta.engine.function.MinInt;
@@ -34,13 +35,15 @@ import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class TestPhysicalPlanner {
-  private NtaConf conf;
+  private NtaTestingUtility util;
+  private Configuration conf;
   private final String TEST_PATH="target/test-data/TestPhysicalPlanner";
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
@@ -53,9 +56,13 @@ public class TestPhysicalPlanner {
 
   @Before
   public void setUp() throws Exception {
-    this.conf = new NtaConf();
-    EngineTestingUtils.buildTestDir(TEST_PATH);
-    sm = StorageManager.get(conf, TEST_PATH);
+    util = new NtaTestingUtility();    
+    util.startMiniZKCluster();
+    util.startCatalogCluster();
+    conf = util.getConfiguration();
+    sm = StorageManager.get(conf, 
+        util.setupClusterTestBuildDir().getAbsolutePath());
+    catalog = util.getMiniCatalogCluster().getCatalog();
     
     Schema schema = new Schema();
     schema.addColumn("name", DataType.STRING);
@@ -88,7 +95,6 @@ public class TestPhysicalPlanner {
     
     employee = new TableDescImpl("employee", employeeMeta);
     employee.setPath(sm.getTablePath("employee"));
-    catalog = new LocalCatalog(new NtaConf());
     catalog.addTable(employee);
 
     student = new TableDescImpl("dept", schema2, StoreType.CSV);
@@ -132,6 +138,8 @@ public class TestPhysicalPlanner {
 
   @After
   public void tearDown() throws Exception {
+    util.shutdownCatalogCluster();
+    util.shutdownMiniZKCluster();
   }
   
   private String[] QUERIES = {

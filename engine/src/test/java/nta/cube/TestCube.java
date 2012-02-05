@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.ExecutionException;
 
+import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
 import nta.catalog.LocalCatalog;
 import nta.catalog.TableDesc;
@@ -52,6 +53,9 @@ public class TestCube {
   public void setUp() throws Exception {
     util = new NtaTestingUtility();
     util.startMiniZKCluster();
+    util.startCatalogCluster();
+    CatalogService catalog;
+    catalog = util.getMiniCatalogCluster().getCatalog();
     /* test input generate */
 
     TestCubeSchema.datapath = new String("target/test-data/TestCube");
@@ -61,14 +65,12 @@ public class TestCube {
     TestCubeSchema.datagen();
     Cons.immediatepath = new String("immediate");
 
-    LocalCatalog catalog;
     QueryContext.Factory factory;
 
     TableMeta meta = new TableMetaImpl(TestCubeSchema.TEST_SCHEMA,
         StoreType.CSV);
     TableDesc people = new TableDescImpl("nta", meta);
-    people.setPath(new Path("file:///"));
-    catalog = new LocalCatalog(new NtaConf());
+    people.setPath(new Path("file:///"));    
     catalog.addTable(people);
 
     factory = new QueryContext.Factory(catalog);
