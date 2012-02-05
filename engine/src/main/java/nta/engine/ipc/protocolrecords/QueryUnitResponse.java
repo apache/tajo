@@ -15,5 +15,4 @@ public interface QueryUnitResponse extends ProtoObject<QueryUnitResponseProto> {
 
 	public int getId();
 	public QueryStatus getStatus();
-	public String getOutputPath();
 }

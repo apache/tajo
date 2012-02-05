@@ -15,8 +15,9 @@ import nta.engine.LeafServerProtos.QueryStatus;
 import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
+import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
 import nta.engine.cluster.MasterAddressTracker;
-import nta.engine.ipc.LeafServerInterface;
+import nta.engine.ipc.AsyncWorkerInterface;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
@@ -46,7 +47,8 @@ import org.apache.zookeeper.KeeperException;
  * @author Hyunsik Choi
  *
  */
-public class LeafServer extends Thread implements LeafServerInterface {
+//public class LeafServer extends Thread implements LeafServerInterface {
+public class LeafServer extends Thread implements AsyncWorkerInterface {
 	private static final Log LOG = LogFactory.getLog(LeafServer.class);	
 
 	private final Configuration conf;
@@ -246,6 +248,13 @@ public class LeafServer extends Thread implements LeafServerInterface {
     LOG.info("====================> processing time2: " + (after-before) + "msc");
     return res.build();
 	}
+
+  @Override
+  public SubQueryResponseProto requestQueryUnit(QueryUnitRequestProto request)
+      throws Exception {
+    // TODO Auto-generated method stub
+    return null;
+  }
 
 	@Override
 	public void assignTablets(AssignTabletRequestProto request) {

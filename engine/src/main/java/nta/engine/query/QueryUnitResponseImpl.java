@@ -16,7 +16,6 @@ public class QueryUnitResponseImpl implements QueryUnitResponse {
 	
 	private int id;
 	private QueryStatus status;
-	private String outputPath;
 	
 	private QueryUnitResponseProto proto = QueryUnitResponseProto.getDefaultInstance();
 	private QueryUnitResponseProto.Builder builder = null;
@@ -27,10 +26,9 @@ public class QueryUnitResponseImpl implements QueryUnitResponse {
 		this.id = -1;
 	}
 	
-	public QueryUnitResponseImpl(int id, QueryStatus status, String outputPath) {
+	public QueryUnitResponseImpl(int id, QueryStatus status) {
 		this.id = id;
 		this.status = status;
-		this.outputPath = outputPath;
 	}
 	
 	public QueryUnitResponseImpl(QueryUnitResponseProto proto) {
@@ -65,22 +63,6 @@ public class QueryUnitResponseImpl implements QueryUnitResponse {
 		return this.status;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.engine.ipc.protocolrecords.QueryUnitResponse#getOutputPath()
-	 */
-	@Override
-	public String getOutputPath() {
-		QueryUnitResponseProtoOrBuilder p = viaProto ? proto : builder;
-		if (this.outputPath != null) {
-			return this.outputPath;
-		}
-		if (!proto.hasOutputPath()) {
-			return null;
-		}
-		this.outputPath = p.getOutputPath();
-		return this.outputPath;
-	}
-
 	@Override
 	public int getId() {
 		QueryUnitResponseProtoOrBuilder p = viaProto ? proto : builder;
@@ -108,9 +90,6 @@ public class QueryUnitResponseImpl implements QueryUnitResponse {
 		if (this.status != null) {
 			builder.setStatus(this.status);
 		}
-		if (this.outputPath != null) {
-			builder.setOutputPath(this.outputPath);
-		}
 	}
 	
 	private void mergeLocalToProto() {
@@ -130,9 +109,6 @@ public class QueryUnitResponseImpl implements QueryUnitResponse {
     }
     if (this.status == null && p.hasStatus()) {
       this.status = p.getStatus();
-    }
-    if (this.outputPath == null && p.hasOutputPath()) {
-      this.outputPath = p.getOutputPath();
     }
   }
 }

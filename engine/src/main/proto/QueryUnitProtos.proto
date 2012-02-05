@@ -11,12 +11,11 @@ message QueryUnitRequestProto {
 	repeated TabletProto fragments = 2;
 	required string outputTable = 3;
 	required bool clusteredOutput = 4;
-	required string serializedClassName = 5;
-	required string serializedData = 6;
+	required string serializedData = 5;
+	required string planName = 6;
 }
 
 message QueryUnitResponseProto {
 	required int32 id = 1;
 	required QueryStatus status = 2;
-	required string outputPath = 3;
 }
