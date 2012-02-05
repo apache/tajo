@@ -141,7 +141,7 @@ public class IndexCreater implements Closeable{
 		KeyOffsetCollector rootCollector = null;
 		
 		/*data reading phase*/
-		
+
 		while ( true) {
 			long offset = scanner.getNextOffset();
 			tuple = scanner.next();
@@ -164,7 +164,7 @@ public class IndexCreater implements Closeable{
 				
 			}
 		}
-		
+
 		/*two level initialize*/
 		if ( this.level == IndexCreater.TWO_LEVEL_INDEX ) {
 			rootCollector = new KeyOffsetCollector(dataType);

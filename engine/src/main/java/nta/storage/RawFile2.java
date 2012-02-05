@@ -258,6 +258,8 @@ public class RawFile2 extends Storage {
     			this.currentTupleOffset = bufferOffset;
     		} else {
     			in_buffer.close();
+    			in_byte.close();
+    			in_byte = new ByteArrayInputStream(buffer);
     			in_buffer = new DataInputStream(in_byte);
     			this.currentTupleOffset = bufferOffset;
     		}

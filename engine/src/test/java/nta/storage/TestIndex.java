@@ -208,7 +208,7 @@ public class TestIndex {
     meta.setStorageType(StoreType.CSV);
         
     sm.initTableBase(meta, "table1");
-    Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
+    Appender appender  = sm.getAppender(meta, "table1" , "table1.csv");
     Random rnd  = new Random();
     int range = 300;
     
@@ -229,16 +229,16 @@ public class TestIndex {
     
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     IndexCreater creater = new IndexCreater(conf, IndexCreater.TWO_LEVEL_INDEX);
-    
+
     creater.setLoadNum(LOAD_NUM);
     creater.createIndex(tablet, tablet.getSchema().getColumn(0));
- 
+
     IndexScanner scanner = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(0));
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+
     for (int i = 0 ; i < range ; i ++ ) {
       long[] offsets = scanner.seekEQL(DatumFactory.createInt(i));
       if(offsets == null) {
-        System.out.println( i +  "  value is not in the file ");
       } else {
         for(int j = 0 ; j < offsets.length ; j ++ ) {
           fileScanner.seek(offsets[j]);
@@ -447,7 +447,6 @@ public class TestIndex {
     for (int i = 0 ; i < range ; i ++ ) {
       long[] offsets = scanner.seekEQL(DatumFactory.createInt(i));
       if(offsets == null) {
-        System.out.println( i +  "  value is not in the file ");
       } else {
         for(int j = 0 ; j < offsets.length ; j ++ ) {
           fileScanner.seek(offsets[j]);
@@ -491,11 +490,19 @@ public class TestIndex {
 		
 		IndexScanner scanner_1 = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(0));
 		IndexScanner scanner_2 = new IndexScanner(conf, tablet, tablet.getSchema().getColumn(1));
+
+		FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
 		for(int i = 0 ; i < TUPLE_NUM/5 ; i ++) {
 			long[] offsets_1 = scanner_1.seekEQL(DatumFactory.createInt(i));
 			long[] offsets_2 = scanner_2.seekEQL(DatumFactory.createLong(i));
-			System.out.print(i + " , " + offsets_1.length + " , ");
-			System.out.println(i + " , " + offsets_2.length);
+			
+			fileScanner.seek(offsets_1[0]);
+			tuple = (VTuple) fileScanner.next();
+      assertTrue("[seek check " + i + " ]" , i == (tuple.get(0).asInt()));
+      fileScanner.seek(offsets_2[0]);
+      tuple = (VTuple) fileScanner.next();
+      assertTrue("[seek check " + i + " ]" , i == (tuple.get(1).asLong()));
+			
 		}
 	}
 }
