@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.google.gson.annotations.Expose;
 
+import nta.distexec.DistPlan;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProtoOrBuilder;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -30,9 +31,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	@Expose
 	private boolean clusteredOutput;
 	@Expose
-	private String serializedClassName;
+	private String serializedData;     // logical node
 	@Expose
-	private String serializedData;
+	private String planName;
 	
 	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
 	private QueryUnitRequestProto.Builder builder = null;
@@ -46,9 +47,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	
 	public QueryUnitRequestImpl(int id, List<Fragment> fragments, 
 			String outputTable, boolean clusteredOutput, 
-			String serializedClassName, String serializedData) {
+			String serializedData, String planName) {
 		this();
-		this.set(id, fragments, outputTable, clusteredOutput, serializedClassName, serializedData);
+		this.set(id, fragments, outputTable, clusteredOutput, serializedData, planName);
 	}
 	
 	public QueryUnitRequestImpl(QueryUnitRequestProto proto) {
@@ -60,13 +61,13 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	
 	public void set(int id, List<Fragment> fragments, 
 			String outputTable, boolean clusteredOutput, 
-			String serializedClassName, String serializedData) {
+			String serializedData, String planName) {
 		this.id = id;
 		this.fragments = fragments;
 		this.outputTable = outputTable;
 		this.clusteredOutput = clusteredOutput;
-		this.serializedClassName = serializedClassName;
 		this.serializedData = serializedData;
+		this.planName = planName;
 		this.isUpdated = true;
 	}
 
@@ -134,19 +135,6 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	}
 
 	@Override
-	public String getSerializedClassName() {
-		QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
-		if (this.serializedClassName != null) {
-			return this.serializedClassName;
-		}
-		if (!proto.hasSerializedClassName()) {
-			return null;
-		}
-		this.serializedClassName = p.getSerializedClassName();
-		return this.serializedClassName;
-	}
-
-	@Override
 	public String getSerializedData() {
 		QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
 		if (this.serializedData != null) {
@@ -157,6 +145,19 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 		}
 		this.serializedData = p.getSerializedData();
 		return this.serializedData;
+	}
+	
+	@Override
+	public String getPlanName() {
+	  QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+	  if (this.planName != null) {
+	    return this.planName;
+	  }
+	  if (!proto.hasPlanName()) {
+	    return null;
+	  }
+	  this.planName = p.getPlanName();
+	  return this.planName;
 	}
 
 	private void maybeInitBuilder() {
@@ -181,8 +182,8 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 		if (this.isUpdated) {
 			builder.setClusteredOutput(this.clusteredOutput);
 		}
-		if (this.serializedClassName != null) {
-			builder.setSerializedClassName(this.serializedClassName);
+		if (this.planName != null) {
+			builder.setPlanName(this.planName);
 		}
 		if (this.serializedData != null) {
 			builder.setSerializedData(this.serializedData);
@@ -216,8 +217,8 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
     if (isUpdated == false && p.hasClusteredOutput()) {
       this.clusteredOutput = p.getClusteredOutput();
     }
-    if (serializedClassName == null && p.hasSerializedClassName()) {
-      this.serializedClassName = p.getSerializedClassName();
+    if (planName == null && p.hasPlanName()) {
+      this.planName = p.getPlanName();
     }
     if (serializedData == null && p.hasSerializedData()) {
       this.serializedData = p.getSerializedData();
