@@ -14,7 +14,6 @@ import java.util.Random;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
@@ -25,7 +24,6 @@ import nta.storage.CSVFile2;
 import nta.util.FileUtil;
 import nta.zookeeper.ZkClient;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -40,8 +38,6 @@ import org.junit.Test;
  *
  */
 public class TestCatalog {	
-  private Configuration conf;
-  
 	static final String FieldName1="f1";
 	static final String FieldName2="f2";
 	static final String FieldName3="f3";	
@@ -88,8 +84,10 @@ public class TestCatalog {
 	
 	@Test
 	public void testGetTable() throws Exception {
-	  Configuration conf = NtaConf.create();
-	  CatalogService catalog = new LocalCatalog(conf);
+	  util = new NtaTestingUtility();
+	  util.startMiniZKCluster();
+	  util.startCatalogCluster();
+	  CatalogService catalog = util.getCatalog().getCatalog();
 	  
 		schema1 = new Schema();
 		schema1.addColumn(FieldName1, DataType.BYTE);
@@ -108,12 +106,17 @@ public class TestCatalog {
 		
 		catalog.deleteTable("table1");
 		assertFalse(catalog.existsTable("table1"));
+				
+		util.shutdownCatalogCluster();
+		util.shutdownMiniZKCluster();
 	}
 	
 	@Test(expected = Throwable.class)
 	public void testAddTableNoName() throws Exception {
-	  Configuration conf = NtaConf.create();
-    CatalogService catalog = new LocalCatalog(conf);
+	  util = new NtaTestingUtility();
+    util.startMiniZKCluster();
+    util.startCatalogCluster();
+    CatalogService catalog = util.getCatalog().getCatalog();
     
 	  schema1 = new Schema();
     schema1.addColumn(FieldName1, DataType.BYTE);
@@ -125,6 +128,9 @@ public class TestCatalog {
 	  desc.setMeta(info);
 	  
 	  catalog.addTable(desc);
+	  
+	  util.shutdownCatalogCluster();
+    util.shutdownMiniZKCluster();
 	}
 	
 	public static class TestFunc1 extends Function {
@@ -169,9 +175,11 @@ public class TestCatalog {
 	  } 
 
 	@Test
-	public final void testRegisterFunc() throws IOException {
-	  Configuration conf = NtaConf.create();
-    CatalogService catalog = new LocalCatalog(conf);
+	public final void testRegisterFunc() throws Exception {
+	  util = new NtaTestingUtility();
+    util.startMiniZKCluster();
+    util.startCatalogCluster();
+    CatalogService catalog = util.getCatalog().getCatalog();
     
 		assertFalse(catalog.containFunction("test2"));
 		FunctionDesc meta = new FunctionDesc("test2", TestFunc1.class, 
@@ -185,12 +193,17 @@ public class TestCatalog {
 		assertEquals(retrived.getSignature(),"test2");
 		assertEquals(retrived.getFuncClass(),TestFunc1.class);
 		assertEquals(retrived.getFuncType(),FunctionType.GENERAL);
+		
+		util.shutdownCatalogCluster();
+    util.shutdownMiniZKCluster();
 	}
 
   @Test
-  public final void testUnregisterFunc() throws IOException {
-    Configuration conf = NtaConf.create();
-    CatalogService catalog = new LocalCatalog(conf);
+  public final void testUnregisterFunc() throws Exception {
+    util = new NtaTestingUtility();
+    util.startMiniZKCluster();
+    util.startCatalogCluster();
+    CatalogService catalog = util.getCatalog().getCatalog();
     
     assertFalse(catalog
         .containFunction("test3", new DataType[] { DataType.INT }));
@@ -208,6 +221,9 @@ public class TestCatalog {
             DataType.BYTES });
     catalog.registerFunction(overload);
     assertTrue(catalog.containFunction("test3", DataType.INT, DataType.BYTES));
+    
+    util.shutdownCatalogCluster();
+    util.shutdownMiniZKCluster();
   }
 	
 	@Test

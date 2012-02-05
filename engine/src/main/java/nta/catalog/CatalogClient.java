@@ -32,10 +32,8 @@ public class CatalogClient implements CatalogService {
   private final Log LOG = LogFactory.getLog(CatalogClient.class);
   private static final int waitTime = 5 * 1000;
 
-  @SuppressWarnings("unused")
-  private final Configuration conf;
   private final ZkClient zkClient;
-  private final ServerNodeTracker tracker;
+  private ServerNodeTracker tracker;
   private CatalogServiceProtocol proxy;
 
   /**
@@ -43,8 +41,17 @@ public class CatalogClient implements CatalogService {
    * 
    */
   public CatalogClient(final Configuration conf) throws IOException {
-    this.conf = conf;
     this.zkClient = new ZkClient(conf);
+    init();    
+  }
+  
+  public CatalogClient(final ZkClient zkClient) 
+      throws IOException {
+    this.zkClient = zkClient;
+    init();
+  }
+  
+  private void init() throws IOException {
     this.tracker = new ServerNodeTracker(zkClient, NConstants.ZNODE_CATALOG);
     this.tracker.start();
     String serverName = null;

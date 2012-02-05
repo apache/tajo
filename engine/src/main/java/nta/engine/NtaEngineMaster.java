@@ -3,16 +3,11 @@
  */
 package nta.engine;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import nta.catalog.CatalogClient;
 import nta.catalog.CatalogService;
 import nta.catalog.LocalCatalog;
 import nta.catalog.TableDesc;
