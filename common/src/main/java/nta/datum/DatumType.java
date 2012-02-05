@@ -8,6 +8,7 @@ package nta.datum;
  *
  */
 public enum DatumType {
+  NULL,
 	BOOLEAN,
 	BYTE,
 	BYTES,

@@ -17,7 +17,9 @@ enum DataType {
 	ENUM = 9;
 	IPv4 = 10;
 	IPv6 = 11;
-	ANY = 12;
+	NULL = 12;
+	ANY = 13;
+	ALL = 14;
 }
 
 enum StoreType {
