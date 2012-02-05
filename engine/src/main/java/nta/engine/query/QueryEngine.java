@@ -140,7 +140,7 @@ public class QueryEngine implements EngineService {
 	}
 
 	@Override
-	public void shutdown() throws IOException {
+	public void shutdown() {
 		LOG.info(QueryEngine.class.getName()+" is being stopped");		
 	}
 }

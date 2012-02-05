@@ -28,4 +28,8 @@ public class MiniCatalogServer {
   public CatalogServer getCatalogServer() {
     return this.catalogServers;
   }
+  
+  public CatalogService getCatalog() {
+    return new LocalCatalog(this.catalogServers);
+  }
 }

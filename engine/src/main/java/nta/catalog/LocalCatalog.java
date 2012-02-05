@@ -28,6 +28,10 @@ public class LocalCatalog implements CatalogService {
     this.catalog = new CatalogServer(conf);
     this.catalog.start();
   }
+  
+  public LocalCatalog(final CatalogServer server) {
+    this.catalog = server;
+  }
 
   @Override
   public final TableDesc getTableDesc(final String name) {

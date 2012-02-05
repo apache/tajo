@@ -20,7 +20,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.hadoop.mapred.MiniMRCluster;
 
 /**
  * @author Hyunsik Choi
@@ -121,12 +120,13 @@ public class NtaTestingUtility {
 	 * @return a mini tajo cluster
 	 * @throws Exception
 	 */
-	public MiniNtaEngineCluster startMiniCluster(final int numSlaves) throws Exception {
+	public MiniNtaEngineCluster startMiniCluster(final int numSlaves) 
+	    throws Exception {
 		return startMiniCluster(numSlaves, null);
 	}
 
-	public MiniNtaEngineCluster startMiniCluster(final int numSlaves, final String [] dataNodeHosts) 
-	    throws Exception {
+	public MiniNtaEngineCluster startMiniCluster(final int numSlaves, 
+	    final String [] dataNodeHosts) throws Exception {
 	  Configuration c = getConfiguration();
 	  // the conf is set to the distributed mode.
 	  c.set(NConstants.CLUSTER_DISTRIBUTED, "true");
@@ -148,7 +148,8 @@ public class NtaTestingUtility {
 
 		// Make a new random dir to home everything in.  Set it as system property.
 		// minidfs reads home from system property.
-		this.clusterTestBuildDir = testBuildPath == null? setupClusterTestBuildDir() : new File(testBuildPath);
+		this.clusterTestBuildDir = testBuildPath == null? 
+		    setupClusterTestBuildDir() : new File(testBuildPath);
 
 		System.setProperty(TEST_DIRECTORY_KEY, this.clusterTestBuildDir.getPath());
 
@@ -170,7 +171,8 @@ public class NtaTestingUtility {
 	private MiniNtaEngineCluster startMiniTajoCluster(File testBuildDir,
 	    final int numSlaves) throws Exception {
 	  Configuration c = getConfiguration();
-		c.set(NConstants.ENGINE_BASE_DIR, getTestDir("tajo").toString());		
+		c.set(NConstants.ENGINE_BASE_DIR, 
+		    getMiniDFSCluster().getFileSystem().getUri()+"/tajo");		
 		this.engineCluster = new MiniNtaEngineCluster(c, numSlaves);
 		
 		LOG.info("Mini Tajo cluster is up");
@@ -179,7 +181,8 @@ public class NtaTestingUtility {
 	
 	public void restartNtaEngineCluster(int numSlaves) throws Exception {
 	  this.engineCluster.shutdown();
-		this.engineCluster = new MiniNtaEngineCluster(new Configuration(this.conf), numSlaves);
+		this.engineCluster = 
+		    new MiniNtaEngineCluster(new Configuration(this.conf), numSlaves);
 		
 		LOG.info("Minicluster has been restarted");
 	}
@@ -226,7 +229,8 @@ public class NtaTestingUtility {
 	 * @return The mini dfs cluster created.
 	 * @throws IOException 
 	 */
-	public MiniDFSCluster startMiniDFSCluster(int servers, final File dir, final String hosts[]) throws IOException {
+	public MiniDFSCluster startMiniDFSCluster(int servers, 
+	    final File dir, final String hosts[]) throws IOException {
 		// This does the following to home the minidfscluster
 		// base_dir = new File(System.getProperty("test.build.data", "build/test/data"), "dfs/");
 		// Some tests also do this:
@@ -266,11 +270,13 @@ public class NtaTestingUtility {
 		return startMiniZKCluster(1);
 	}
 	
-	public MiniZooKeeperCluster startMiniZKCluster(int zookeeperServerNum) throws Exception {
+	public MiniZooKeeperCluster startMiniZKCluster(int zookeeperServerNum) 
+	    throws Exception {
 		return startMiniZKCluster(setupClusterTestBuildDir(), zookeeperServerNum);
 	}
 	
-	private MiniZooKeeperCluster startMiniZKCluster(final File dir) throws Exception {
+	private MiniZooKeeperCluster startMiniZKCluster(final File dir) 
+	    throws Exception {
 		return startMiniZKCluster(dir, 1);
 	}
 	
@@ -317,6 +323,7 @@ public class NtaTestingUtility {
 	public void shutdownMiniCluster() throws IOException {
 		LOG.info("Shutting down minicluster");
 		shutdownMiniNtaEngineCluster();
+		
 		if(!this.passedZkCluster) shutdownMiniZKCluster();
 		if(this.dfsCluster != null) {
 			this.dfsCluster.shutdown();
@@ -335,7 +342,7 @@ public class NtaTestingUtility {
 		LOG.info("Minicluster is down");
 	}
 	
-	public MiniCatalogServer startCatalogCluster() throws IOException {
+	public MiniCatalogServer startCatalogCluster() throws Exception {
 	  Configuration c = getConfiguration();
 	  c.set(NConstants.CATALOG_ADDRESS, "localhost:0");
 	  this.catalogCluster = new MiniCatalogServer(conf);

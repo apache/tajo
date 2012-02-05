@@ -9,14 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nta.catalog.CatalogClient;
-import nta.catalog.CatalogService;
 import nta.conf.NtaConf;
 import nta.engine.LeafServerProtos.AssignTabletRequestProto;
+import nta.engine.LeafServerProtos.QueryStatus;
 import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.cluster.MasterAddressTracker;
-import nta.engine.cluster.ServerNodeTracker;
 import nta.engine.ipc.LeafServerInterface;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.parser.QueryAnalyzer;
@@ -43,6 +42,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.DNS;
 import org.apache.zookeeper.KeeperException;
 
+import com.google.protobuf.ByteString;
+
 /**
  * @author Hyunsik Choi
  *
@@ -60,15 +61,14 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	private final ProtoParamRpcServer rpcServer;
 	private final InetSocketAddress isa;
 
-	private volatile boolean stopped = false;
+	private volatile boolean stopped = false;	
 	private volatile boolean isOnline = false;
 
 	private final String serverName;
 	
 	// Cluster Management
-	private ZkClient zookeeper;
+	private ZkClient zkClient;
 	private MasterAddressTracker masterAddrTracker;
-	private ServerNodeTracker catalogAddrTracker;
 	
 	// Query Processing
 	private FileSystem defaultFS;
@@ -125,7 +125,8 @@ public class LeafServer extends Thread implements LeafServerInterface {
       LOG.info("Data dir (" + dataPath + ") is created");
     }
 		
-		this.catalog = new CatalogClient(conf);
+    this.zkClient = new ZkClient(conf);
+		this.catalog = new CatalogClient(zkClient);
 		this.analyzer = new QueryAnalyzer(catalog);
 		this.storeManager = new StorageManager(conf);
 		this.ctxFactory = new SubqueryContext.Factory(catalog);
@@ -133,55 +134,9 @@ public class LeafServer extends Thread implements LeafServerInterface {
 		Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 	}
 	
-	private void initLeafServer() throws IOException, InterruptedException, KeeperException {
-	  initializeZookeeper();
-	}
-
-	public void run() {
-		LOG.info("NtaLeafServer startup");
-		
-		try {
-			initLeafServer();
-			
-      this.queryEngine = new QueryEngine(conf, catalog, storeManager, null);
-      this.queryEngine.init();
-      services.add(queryEngine);
-			
-			if(!this.stopped) {
-				this.isOnline = true;
-				while(!this.stopped) {					
-					Thread.sleep(1000);
-
-				}
-			}	
-		} catch (Throwable t) {
-			LOG.fatal("Unhandled exception. Starting shutdown.", t);
-		} finally {
-			for(EngineService service : services) {
-				try {
-					service.shutdown();
-				} catch (Exception e) {
-					LOG.error(e);
-				}
-			} 
-		}
-
-		LOG.info("NtaLeafServer ("+serverName+") main thread exiting");
-	}
-	
-	private class ShutdownHook implements Runnable {
-		@Override
-		public void run() {
-		  masterAddrTracker.stop();
-		  zookeeper.close();
-		  catalog.close();
-			shutdown("Shutting Down Normally! ("+serverName+")");
-		}
-	}
-	
-	private void initializeZookeeper() throws IOException, InterruptedException, KeeperException {
-    this.zookeeper = new ZkClient(conf);
-    this.masterAddrTracker = new MasterAddressTracker(zookeeper);
+	private void participateCluster() throws IOException, InterruptedException, 
+	    KeeperException {
+    this.masterAddrTracker = new MasterAddressTracker(zkClient);
     this.masterAddrTracker.start();
     
     byte [] master = null;
@@ -192,9 +147,57 @@ public class LeafServer extends Thread implements LeafServerInterface {
     
     LOG.info("Got the master address (" + new String(master) + ")");
     // if the znode already exists, it will be updated for notification.
-    ZkUtil.upsertEphemeralNode(zookeeper,
+    ZkUtil.upsertEphemeralNode(zkClient,
         ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName));
     LOG.info("Write the znode nta/leafservers/" + serverName);
+	}
+
+	public void run() {
+		LOG.info("NtaLeafServer startup");
+		
+		try {
+		  try {
+		    participateCluster();
+		  } catch (Exception e) {
+		    abort(e.getMessage(), e);
+		  }
+			
+      this.queryEngine = new QueryEngine(conf, catalog, storeManager, null);
+      this.queryEngine.init();
+			
+			if(!this.stopped) {
+				this.isOnline = true;
+				while(!this.stopped) {					
+					Thread.sleep(1000);
+
+				}
+			}	
+		} catch (Throwable t) {
+			LOG.fatal("Unhandled exception. Starting shutdown.", t);
+		} finally {		  
+			for(EngineService service : services) {
+				try {
+					service.shutdown();
+		      shutdown("Shutting Down ("+serverName+")");
+				} catch (Exception e) {
+					LOG.error(e);
+				}
+			}
+			
+      this.queryEngine.shutdown();
+      masterAddrTracker.stop();
+      catalog.close();
+      zkClient.close();
+		}
+
+		LOG.info("LeafServer ("+serverName+") main thread exiting");
+	}
+	
+	private class ShutdownHook implements Runnable {
+		@Override
+		public void run() {
+		  shutdown("Shutdown Hook");
+		}
 	}
 	
 	public String getServerName() {
@@ -226,17 +229,15 @@ public class LeafServer extends Thread implements LeafServerInterface {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(storeManager);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
+    @SuppressWarnings("unused")
     Tuple tuple = null;
-    int i=0;
-    long start = System.currentTimeMillis();
     while((tuple = exec.next()) != null) {
-      System.out.println(tuple);
-      i++;
     }
-    long end = System.currentTimeMillis();
-    System.out.println((end - start)+" msc");
 	  
-	  return null;
+    SubQueryResponseProto.Builder res = SubQueryResponseProto.newBuilder();
+    res.setStatus(QueryStatus.FINISHED);
+    res.setOutputPath(ByteString.copyFrom("".getBytes()));
+    return res.build();
 	}
 
 	@Override
