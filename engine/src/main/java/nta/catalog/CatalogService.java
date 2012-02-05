@@ -72,7 +72,7 @@ public interface CatalogService {
    */
   boolean containFunction(String signature, DataType...paramTypes);
   
-  List<TabletServInfo> getHostByTable(String tableId);
+  List<HostInfo> getHostByTable(String tableId);
   
   void updateAllTabletServingInfo(List<String> onlineServers) throws IOException;
 }

@@ -61,8 +61,8 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	    new HashMap<String, TableDescProto>();	
 	private Map<String, FunctionDescProto> functions = 
 	    new HashMap<String, FunctionDescProto>();
-  private Map<String, List<TabletServInfo>> tabletServingInfo 
-  = new HashMap<String, List<TabletServInfo>>();
+  private Map<String, List<HostInfo>> tabletServingInfo 
+  = new HashMap<String, List<HostInfo>>();
 	
   // RPC variables
 	private final ProtoParamRpcServer rpcServer;
@@ -166,7 +166,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 		this.tabletServingInfo.clear();
 	}
 	
-	public List<TabletServInfo> getHostByTable(String tableId) {
+	public List<HostInfo> getHostByTable(String tableId) {
 		return tabletServingInfo.get(tableId);
 	}
 	
@@ -174,16 +174,16 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 		tabletServingInfo.clear();
 		Collection<TableDescProto> tbs = tables.values();
 		Iterator<TableDescProto> it = tbs.iterator();
-		List<TabletServInfo> locInfos;
-		List<TabletServInfo> servInfos;
+		List<HostInfo> locInfos;
+		List<HostInfo> servInfos;
 		int index = 0;
 		StringTokenizer tokenizer;
 		while (it.hasNext()) {
 			TableDescProto td = it.next();
 			locInfos = getTabletLocInfo(td);
-			servInfos = new ArrayList<TabletServInfo>();
+			servInfos = new ArrayList<HostInfo>();
 			// TODO: select the proper online server
-			for (TabletServInfo servInfo : locInfos) {
+			for (HostInfo servInfo : locInfos) {
 				// round robin
 				if (index == onlineServers.size()) {
 					index = 0;
@@ -196,7 +196,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 		}
 	}
 	
-	private List<TabletServInfo> getTabletLocInfo(TableDescProto desc) throws IOException {
+	private List<HostInfo> getTabletLocInfo(TableDescProto desc) throws IOException {
 		int fileIdx, blockIdx;
 		FileSystem fs = FileSystem.get(conf);
 		Path path = new Path(desc.getPath());
@@ -204,11 +204,11 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 		FileStatus[] files = fs.listStatus(new Path(path+"/data"));
 		BlockLocation[] blocks;
 		String[] hosts;
-		List<TabletServInfo> tabletInfoList = new ArrayList<TabletServInfo>();
+		List<HostInfo> tabletInfoList = new ArrayList<HostInfo>();
 //		if (tabletServingInfo.containsKey(tid)) {
 //			tabletInfoList = tabletServingInfo.get(tid);
 //		} else {
-//			tabletInfoList = new ArrayList<TabletServInfo>();
+//			tabletInfoList = new ArrayList<HostInfo>();
 //		}
 		
 		int i=0;
@@ -219,11 +219,11 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 //				if (tabletServingInfo.containsKey(tid)) {
 //					tabletInfoList = tabletServingInfo.get(tid);
 //				} else {
-//					tabletInfoList = new ArrayList<TabletServInfo>();
+//					tabletInfoList = new ArrayList<HostInfo>();
 //					tabletServingInfo.put(tid, tabletInfoList);
 //				}
 				// TODO: select the proper serving node for block
-				tabletInfoList.add(new TabletServInfo(hosts[0], -1, new Fragment(desc.getId()+"_"+i, 
+				tabletInfoList.add(new HostInfo(hosts[0], -1, new Fragment(desc.getId()+"_"+i, 
             files[fileIdx].getPath(), new TableMetaImpl(desc.getMeta()), 
 						blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
 				i++;
@@ -262,6 +262,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	    
 		} finally {
 			wlock.unlock();
+			LOG.info(proto.getId() + " is added");
 		}
 	}
 

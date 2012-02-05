@@ -6,76 +6,80 @@ package nta.engine.query;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import nta.catalog.CatalogService;
-import nta.catalog.TabletServInfo;
-import nta.engine.exec.eval.ConstEval;
-import nta.engine.exec.eval.EvalNode;
-import nta.engine.exec.eval.FieldEval;
-import nta.engine.exec.eval.FuncCallEval;
-import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.ipc.protocolrecords.SubQueryRequest;
-import nta.engine.parser.QueryBlock.Target;
-import nta.engine.plan.global.DecomposedQuery;
-import nta.engine.plan.global.GenericTask;
-import nta.engine.plan.global.GenericTaskGraph;
+import nta.catalog.HostInfo;
+import nta.engine.planner.global.GlobalOptimizer;
+import nta.engine.planner.global.GlobalQueryPlan;
+import nta.engine.planner.global.MappingType;
+import nta.engine.planner.global.OptimizationPlan;
+import nta.engine.planner.global.QueryStep;
+import nta.engine.planner.global.UnitQuery;
+import nta.engine.planner.global.UnitQueryGraph;
 import nta.engine.planner.logical.BinaryNode;
+import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.ProjectionNode;
+import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.UnaryNode;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 
 public class GlobalQueryPlanner {
 	private static Log LOG = LogFactory.getLog(GlobalQueryPlanner.class);
 	
+	private GlobalOptimizer optimizer;
 	private CatalogService catalog;
 	
 	public GlobalQueryPlanner(CatalogService catalog) throws IOException {
 		this.catalog = catalog;
+		this.optimizer = new GlobalOptimizer();
+		
+		String[] plans = {"merge", "local"};
+		int[] nodeNum = {1, 1};
+		MappingType[] mappings = {MappingType.ONE_TO_ONE, MappingType.ONE_TO_ONE};
+		OptimizationPlan plan = new OptimizationPlan(2, plans, nodeNum, mappings);
+		this.optimizer.addOptimizationPlan(ExprType.GROUP_BY, plan);
 	}
 	
-	public GenericTaskGraph buildPlan(LogicalNode logicalPlan) throws IOException {
-		LogicalNode plan = logicalPlan;
-		// add union
-		GenericTaskGraph localized = localize(plan);
-		GenericTaskGraph optimize = optimize(localized);
-		return optimize;
+	public GlobalQueryPlan build(LogicalNode logicalPlan) throws IOException {
+		UnitQueryGraph localized = localize(logicalPlan);
+		UnitQueryGraph optimized = optimize(localized);
+		GlobalQueryPlan plan = breakup(optimized);
+		return plan;
 	}
 	
-	public GenericTaskGraph localize(LogicalNode logicalPlan) throws IOException {
-		// Build the generic task tree
-		GenericTaskGraph genericTree = buildGenericTaskGraph(logicalPlan);
+	private UnitQueryGraph localize(LogicalNode logicalPlan) throws IOException {
+		// add union if necessary
+
+		// Build the unit query graph
+		UnitQueryGraph queryGraph = buildUnitQueryGraph(logicalPlan);
+		UnitQuery query = queryGraph.getRoot();
 		
 		// For each level, localize each task
-		GenericTask task = genericTree.getRoot();
-		ArrayList<GenericTask> q = new ArrayList<GenericTask>();
-		q.add(task);
+		ArrayList<UnitQuery> q = new ArrayList<UnitQuery>();
+		q.add(query);
 		
 		while (!q.isEmpty()) {
-			task = q.remove(0);
-			localizeTask(task);
-			for (GenericTask t: task.getNextTasks()) {
-				q.add(t);
+			query = q.remove(0);
+
+			localizeQuery(query);
+			for (UnitQuery uq: query.getNextQueries()) {
+				q.add(uq);
 			}
 		}
-		return genericTree;
+		return queryGraph;
 	}
 	
-	public GenericTaskGraph buildGenericTaskGraph(LogicalNode logicalPlan) {
-		GenericTaskGraph tree = new GenericTaskGraph();
-		GenericTask parent = null, child = null;
+	private UnitQueryGraph buildUnitQueryGraph(LogicalNode logicalPlan) {
+		UnitQuery parent = null, child = null;
 		LogicalNode op = logicalPlan;
-		ArrayList<GenericTask> q = new ArrayList<GenericTask>();
-		parent = new GenericTask(op, null);
-		tree.setRoot(parent);
+		ArrayList<UnitQuery> q = new ArrayList<UnitQuery>();
+		parent = new UnitQuery(op);
+		UnitQueryGraph graph = new UnitQueryGraph(parent);
 		q.add(parent);
 
 		// Depth-first traverse
@@ -84,33 +88,48 @@ public class GlobalQueryPlanner {
 			op = parent.getOp();
 			
 			switch (op.getType()) {
+			case ROOT:
+				LogicalRootNode root = (LogicalRootNode)op;
+				child = new UnitQuery(root.getSubNode());
+				parent.addNextQuery(child);
+				child.addPrevQuery(parent);
+				q.add(child);
+				break;
 			case SCAN:
 				// leaf
+				ScanNode scan = (ScanNode)op;
+				parent.setTableName(scan.getTableId());
 				break;
 			case SELECTION:
 			case PROJECTION:
 				// intermediate, unary
-				child = new GenericTask(((UnaryNode)op).getSubNode(), null);
-				parent.addNextTask(child);
-				child.addPrevTask(parent);
+				child = new UnitQuery(((UnaryNode)op).getSubNode());
+				parent.addNextQuery(child);
+				child.addPrevQuery(parent);
 				q.add(child);
 				break;
 			case JOIN:
 				// intermediate, binary
-				child = new GenericTask(((BinaryNode)op).getLeftSubNode(), null);
-				parent.addNextTask(child);
-				child.addPrevTask(parent);
+				child = new UnitQuery(((BinaryNode)op).getLeftSubNode());
+				parent.addNextQuery(child);
+				child.addPrevQuery(parent);
 				q.add(child);
-				child = new GenericTask(((BinaryNode)op).getRightSubNode(), null);
-				parent.addNextTask(child);
-				child.addPrevTask(parent);
+				child = new UnitQuery(((BinaryNode)op).getRightSubNode());
+				parent.addNextQuery(child);
+				child.addPrevQuery(parent);
 				q.add(child);
 				break;
 			case GROUP_BY:
-				break;
-			case RENAME:
+				child = new UnitQuery(((UnaryNode)op).getSubNode());
+				parent.addNextQuery(child);
+				child.addPrevQuery(parent);
+				q.add(child);
 				break;
 			case SORT:
+				child = new UnitQuery(((UnaryNode)op).getSubNode());
+				parent.addNextQuery(child);
+				child.addPrevQuery(parent);
+				q.add(child);
 				break;
 			case SET_UNION:
 				break;
@@ -118,51 +137,50 @@ public class GlobalQueryPlanner {
 				break;
 			case SET_INTERSECT:
 				break;
-			case INSERT_INTO:
-				break;
-			case CREATE_TABLE:
-			case SHOW_TABLE:
-			case DESC_TABLE:
-			case SHOW_FUNCTION:
-				// leaf
+			case STORE:
+				child = new UnitQuery(((UnaryNode)op).getSubNode());
+				parent.addNextQuery(child);
+				child.addPrevQuery(parent);
+				q.add(child);
 				break;
 			}
 			
 		}
-		return tree;
+		return graph;
 	}
 	
-	public void localizeTask(GenericTask task) {
-		LogicalNode op = task.getOp();
-		GenericTask[] localizedTasks;
-		Set<GenericTask> prevTaskSet = task.getPrevTasks();
-		Set<GenericTask> nextTaskSet = task.getNextTasks();
+	private void localizeQuery(UnitQuery query) {
+		LogicalNode op = query.getOp();
+		UnitQuery[] localizedQueries;
+		Set<UnitQuery> prevQuerySet = query.getPrevQueries();
+		Set<UnitQuery> nextQuerySet = query.getNextQueries();
 		
 		switch (op.getType()) {
-		case ROOT:
-			break;
 		case SCAN:
 		case SELECTION:
 		case PROJECTION:
-			localizedTasks = localizeSimpleOp(task);
-			for (GenericTask prev: prevTaskSet) {
-				prev.removeNextTask(task);
-				for (GenericTask localize: localizedTasks) {
-					prev.addNextTask(localize);
+			localizedQueries = localizeSimpleQuery(query);
+			// if prev exist, it is still not be localized
+			if (prevQuerySet.size() > 0) {
+				UnitQuery prev = prevQuerySet.iterator().next();
+				prev.removeNextQuery(query);
+				for (UnitQuery localize : localizedQueries) {
+					prev.addNextQuery(localize);
 				}
 			}
-			for (GenericTask next: nextTaskSet) {
-				next.removePrevTask(task);
-				for (GenericTask localize: localizedTasks) {
-					next.addPrevTask(localize);
-				}
-			}
+			
+			// if next exist..?
+			
+//			for (UnitQuery next: nextQuerySet) {
+//				next.removePrevQuery(query);
+//				for (UnitQuery localize: localizedQueries) {
+//					next.addPrevQuery(localize);
+//				}
+//			}
 			break;
 		case JOIN:
 			break;
 		case GROUP_BY:
-			break;
-		case RENAME:
 			break;
 		case SORT:
 			break;
@@ -172,102 +190,91 @@ public class GlobalQueryPlanner {
 			break;
 		case SET_INTERSECT:
 			break;
-		case INSERT_INTO:
-			break;
-		case CREATE_TABLE:
-			break;
-		case SHOW_TABLE:
-			break;
-		case DESC_TABLE:
-			break;
-		case SHOW_FUNCTION:
-			break;
 		}
 	}
 	
-	public GenericTaskGraph optimize(GenericTaskGraph tree) {
-		return tree;
+	private UnitQueryGraph optimize(UnitQueryGraph graph) {
+		return optimizer.optimize(graph);
 	}
 	
-	public List<DecomposedQuery> decompose(GenericTaskGraph tree) {
-		Set<GenericTask> nextTaskSet;
-		GenericTask task = tree.getRoot();
-		ArrayList<DecomposedQuery> queryList = new ArrayList<DecomposedQuery>();
-		List<TabletServInfo> tabletServInfoList;
-		DecomposedQuery query;
-		SubQueryRequest request;
-		String host = null;
-		int port = 0;
-		ArrayList<GenericTask> s = new ArrayList<GenericTask>();
-		// remove root operator
-		nextTaskSet = task.getNextTasks();
-		for (GenericTask t: nextTaskSet) {
-			s.add(t);
-		}
+	class LevelLabeledUnitQuery {
+		int level;
+		UnitQuery query;
 		
-		String strQuery = "";
+		public LevelLabeledUnitQuery(int level, UnitQuery query) {
+			this.level = level;
+			this.query = query;
+		}
+	}
+	
+	private GlobalQueryPlan breakup(UnitQueryGraph graph) {
+		Set<UnitQuery> nextQuerySet;
+		LevelLabeledUnitQuery e;
+		int curLevel = 0;
+		GlobalQueryPlan globalPlan = new GlobalQueryPlan();
+		ArrayList<LevelLabeledUnitQuery> s = new ArrayList<GlobalQueryPlanner.LevelLabeledUnitQuery>();
+		QueryStep queryStep = new QueryStep();
+		s.add(new LevelLabeledUnitQuery(0, graph.getRoot()));
+		
 		while (!s.isEmpty()) {
-			task = s.remove(0);
-			nextTaskSet = task.getNextTasks();
-			
-			// if an n-ary operator or a leaf node is visited, cut its all edges
-			if ((nextTaskSet.size() > 1) ||
-					nextTaskSet.size() == 0) {
-				strQuery = generateQuery(task.getOp());
-				tabletServInfoList = catalog.getHostByTable(task.getTableName());
-				for (Fragment t : task.getFragments()) {
-					List<Fragment> tablets = new ArrayList<Fragment>();
-					tablets.add(t);
-					request = new SubQueryRequestImpl(0, tablets, new Path("hdfs://out/"+System.currentTimeMillis()).toUri(), 
-							strQuery);
-					for (TabletServInfo servInfo : tabletServInfoList) {
-						if (servInfo.getTablet().equals(request.getFragments().get(0))) {
-							host = servInfo.getHostName();
-							port = servInfo.getPort();
-							break;
-						}
-					}
-					query = new DecomposedQuery(request, port, host);
-					queryList.add(query);
+			e = s.remove(0);
+			nextQuerySet = e.query.getNextQueries();
+			if (e.query.getOp().getType() != ExprType.ROOT) {
+				// remove root operator
+
+				if (curLevel != e.level) {
+					globalPlan.addQueryStep(queryStep);
+					queryStep = new QueryStep();
+					curLevel = e.level;
 				}
-//				request = new SubQueryRequestImpl(task.getTablets(), new Path("hdfs://out/"+System.currentTimeMillis()).toUri(), 
-//						generateQuery(lplan), task.getTableName());
-//				for (TabletServInfo servInfo : tabletServInfoList) {
-//					if (servInfo.getTablet().equals(request.getTablets().get(0))) {
-//						host = servInfo.getHostName();
-//						port = servInfo.getPort();
-//						break;
-//					}
+
+				// if an n-ary node or a leaf node is visited, break up the graph
+//				if ((nextQuerySet.size() > 1) ||
+//						nextQuerySet.size() == 0) {
+					queryStep.addQuery(e.query);
+//				} else {
+//
 //				}
-//				query = new DecomposedQuery(request, port, host);
-//				queryList.add(query);
 			}
-			
-			for (GenericTask t: nextTaskSet) {
-				s.add(t);
+			nextQuerySet = e.query.getNextQueries();
+			for (UnitQuery t: nextQuerySet) {
+				s.add(new LevelLabeledUnitQuery(e.level+1, t));
 			}
 		}
 		
-		return queryList;
+		if (queryStep.size() > 0) {
+			globalPlan.addQueryStep(queryStep);
+		}
+		
+		return globalPlan;
 	}
 	
-	public GenericTask[] localizeSimpleOp(GenericTask task) {
-		ScanNode op = (ScanNode)task.getOp();
-		List<TabletServInfo> tablets = catalog.getHostByTable(op.getTableId());
-		GenericTask[] localized = new GenericTask[tablets.size()];
+	private UnitQuery[] localizeSimpleQuery(UnitQuery query) {
+		ScanNode op = (ScanNode)query.getOp();
+		List<HostInfo> fragments = catalog.getHostByTable(op.getTableId());
+		UnitQuery[] localized = new UnitQuery[fragments.size()];
 
 		for (int i = 0; i < localized.length; i++) {
 			// TODO: make tableInfo from tablets.get(i)
-			localized[i] = new GenericTask();
-			localized[i].setOp(task.getOp());
-			localized[i].setAnnotation(task.getAnnotation());
+			localized[i] = new UnitQuery(query.getOp(), query.getAnnotation());
 			localized[i].setTableName(op.getTableId());
 			
 			// TODO: keep the alias
 			// TODO: set startKey and endKey of TableInfo
-			localized[i].addFragment(tablets.get(i).getTablet());
+			localized[i].addFragment(fragments.get(i).getFragment());
 		}
 		
+		return localized;
+	}
+	
+	private UnitQuery[] localizeComplexQuery(UnitQuery query) {
+		Set<UnitQuery> nextQuerySet = query.getNextQueries();
+		// TODO: localize시킬 unit query의 수를 결정하는 것이 필요
+		// TODO: 한 스텝으로 끝나지 않을 수도 있음
+		UnitQuery[] localized = new UnitQuery[nextQuerySet.size()];
+		for (int i = 0; i < localized.length; i++) {
+			localized[i] = new UnitQuery(query.getOp(), query.getAnnotation());
+		}
 		return localized;
 	}
 	
@@ -276,136 +283,4 @@ public class GlobalQueryPlanner {
 		return null;
 	}
 	
-	public String generateQuery(LogicalNode plan) {
-		LogicalNode op = plan;
-		String strQuery = "";
-		String from = "";
-		String where = "";
-		String proj = "*";
-		ArrayList<LogicalNode> q = new ArrayList<LogicalNode>();
-		q.add(op);
-		
-		while (!q.isEmpty()) {
-			op = q.remove(0);
-			switch (op.getType()) {
-			case SCAN:
-				ScanNode scan = (ScanNode)op;
-				from = scan.getTableId();
-				break;
-			case SELECTION:
-				SelectionNode sel = (SelectionNode)op;
-				where = exprToString(sel.getQual());
-				q.add(sel.getSubNode());
-				break;
-			case PROJECTION:
-				ProjectionNode projop = (ProjectionNode)op;
-				proj = "";
-				for (Target te : projop.getTargetList()) {
-					proj += te.getColumnSchema().getColumnName() + " ";
-				}
-				q.add(projop.getSubNode());
-				break;
-			default:
-				break;
-			}
-		}
-		
-		strQuery = "select " + proj;
-		if (!from.equals("")) {
-			strQuery += " from " + from;
-		}
-		if (!where.equals("")) {
-			strQuery += " where " + where;
-		}
-		return strQuery;
-	}
-	
-	private String exprToString(EvalNode expr) {
-		String str = "";
-		ArrayList<EvalNode> s = new ArrayList<EvalNode>();
-		HashSet<EvalNode> hs = new HashSet<EvalNode>();
-		EvalNode e;
-		s.add(expr);
-		
-		while (!s.isEmpty()) {
-			e = s.remove(0);
-			hs.add(e);
-			if (e.getLeftExpr() == null && e.getRightExpr() == null) {
-				// leaf
-				str += getStringOfExpr(e) + " ";
-			} else {
-				if (e.getRightExpr() != null) {
-					if (!hs.contains(e.getRightExpr())) {
-						s.add(0, e.getRightExpr());
-					}
-				}
-				s.add(e);
-				if (e.getLeftExpr() != null) {
-					if (!hs.contains(e.getLeftExpr())) {
-						s.add(0, e.getLeftExpr());
-					} else {
-						// finished the left traverse
-						str += getStringOfExpr(e) + " ";
-					}
-				}
-			}
-		}
-		
-		return str;
-	}
-	
-	private String getStringOfExpr(EvalNode expr) {
-		String ret = null;
-		switch (expr.getType()) {
-		case FIELD:
-			FieldEval field = (FieldEval) expr;
-			ret = field.getName();
-			break;
-		case FUNCTION:
-			FuncCallEval func = (FuncCallEval) expr;
-			ret = func.getName();
-			break;
-		case AND:
-			ret = "AND";
-			break;
-		case OR:
-			ret = "OR";
-			break;
-		case CONST:
-			ConstEval con = (ConstEval) expr;
-			ret = con.toString();
-			break;
-		case PLUS:
-			ret = "+";
-			break;
-		case MINUS:
-			ret = "-";
-			break;
-		case MULTIPLY:
-			ret = "*";
-			break;
-		case DIVIDE:
-			ret = "/";
-			break;
-		case EQUAL:
-			ret = "=";
-			break;
-		case NOT_EQUAL:
-			ret = "!=";
-			break;
-		case LTH:
-			ret = "<";
-			break;
-		case LEQ:
-			ret = "<=";
-			break;
-		case GTH:
-			ret = ">";
-			break;
-		case GEQ:
-			ret = ">=";
-			break;
-		}
-		return ret;
-	}
 }

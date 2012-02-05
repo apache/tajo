@@ -9,6 +9,7 @@ import java.net.InetSocketAddress;
 import java.util.UUID;
 
 import nta.catalog.CatalogServer;
+import nta.catalog.LocalCatalog;
 import nta.catalog.MiniCatalogServer;
 import nta.conf.NtaConf;
 import nta.zookeeper.MiniZooKeeperCluster;
@@ -160,10 +161,12 @@ public class NtaTestingUtility {
 		if (this.zkCluster == null) {
 		  startMiniZKCluster(this.clusterTestBuildDir);
 		}
-		
+		// TODO: to be fixed
+		/*
 		if (this.catalogCluster == null) {
 		  startCatalogCluster();
 		}
+		*/
 		
 		return startMiniTajoCluster(this.clusterTestBuildDir, numSlaves);
 	}
@@ -171,6 +174,7 @@ public class NtaTestingUtility {
 	private MiniNtaEngineCluster startMiniTajoCluster(File testBuildDir,
 	    final int numSlaves) throws Exception {
 	  Configuration c = getConfiguration();
+	  c.set(NConstants.CATALOG_ADDRESS, "localhost:0");
 		c.set(NConstants.ENGINE_BASE_DIR, 
 		    getMiniDFSCluster().getFileSystem().getUri()+"/tajo");		
 		this.engineCluster = new MiniNtaEngineCluster(c, numSlaves);

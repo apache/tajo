@@ -10,12 +10,6 @@ public interface QueryClientInterface {
 
   void executeQueryAsync(Callback<String> callback, String query);
 
-  @Deprecated
-  void createTable(TableDescImpl meta);
-
-  @Deprecated
-  void dropTable(String name);
-
   void attachTable(String name, String path) throws RemoteException;
 
   void detachTable(String name) throws RemoteException;

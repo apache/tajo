@@ -3,6 +3,7 @@
  */
 package nta.engine.planner.global;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +28,7 @@ public class UnitQuery {
 	private int id;
 	private LogicalNode op;
 	private String tableName;
+	private String outputName;
 	private List<Fragment> fragments;
 	private Set<UnitQuery> prevQueries;
 	private Set<UnitQuery> nextQueries;
@@ -40,6 +42,7 @@ public class UnitQuery {
 		this.id = getNextId();
 		prevQueries = new HashSet<UnitQuery>();
 		nextQueries = new HashSet<UnitQuery>();
+		fragments = new ArrayList<Fragment>();
 	}
 	
 	public UnitQuery(LogicalNode op) {
@@ -76,6 +79,10 @@ public class UnitQuery {
 	
 	public void setTableName(String tableName) {
 		this.tableName = tableName;
+	}
+	
+	public void setOutputName(String outputName) {
+		this.outputName = outputName;
 	}
 	
 	public void addFragment(Fragment fragment) {
@@ -136,6 +143,10 @@ public class UnitQuery {
 	
 	public String getTableName() {
 		return this.tableName;
+	}
+	
+	public String getOutputName() {
+		return this.outputName;
 	}
 	
 	@Override

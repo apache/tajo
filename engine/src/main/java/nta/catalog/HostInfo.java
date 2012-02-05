@@ -2,24 +2,25 @@ package nta.catalog;
 
 import nta.engine.ipc.protocolrecords.Fragment;
 
-public class TabletServInfo {
+
+public class HostInfo {
 
 	private String hostName;
 	private int port;
-	private Fragment tablet;
+	private Fragment fragment;
 	
-	public TabletServInfo() {
+	public HostInfo() {
 		
 	}
 	
-	public TabletServInfo(String hostName, int port, Fragment tablet) {
-		this.set(hostName, port, tablet);
+	public HostInfo(String hostName, int port, Fragment fragment) {
+		this.set(hostName, port, fragment);
 	}
 	
-	public void set(String hostName, int port, Fragment tablet) {
+	public void set(String hostName, int port, Fragment fragment) {
 		this.hostName = hostName;
 		this.port = port;
-		this.tablet = tablet;
+		this.fragment = fragment;
 	}
 	
 	public void setHost(String host, int port) {
@@ -35,11 +36,11 @@ public class TabletServInfo {
 		return this.port;
 	}
 	
-	public Fragment getTablet() {
-		return this.tablet;
+	public Fragment getFragment() {
+		return this.fragment;
 	}
 	
 	public String toString() {
-		return new String("HostName: " + hostName + " port: " + port + " tablet: " + tablet);
+		return new String("HostName: " + hostName + " port: " + port);
 	}
 }

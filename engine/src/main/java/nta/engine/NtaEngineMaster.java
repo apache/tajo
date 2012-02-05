@@ -6,6 +6,7 @@ package nta.engine;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import nta.catalog.CatalogService;
@@ -17,7 +18,7 @@ import nta.catalog.TableUtil;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
-import nta.engine.exception.NTAQueryException;
+import nta.engine.json.GsonCreator;
 import nta.engine.ipc.QueryEngineInterface;
 import nta.engine.query.GlobalEngine;
 import nta.rpc.NettyRpc;
@@ -33,6 +34,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.hadoop.ipc.RPC;
+import org.apache.hadoop.net.DNS;
 import org.apache.zookeeper.KeeperException;
 
 /**
@@ -40,10 +43,10 @@ import org.apache.zookeeper.KeeperException;
  * 
  */
 public class NtaEngineMaster extends Thread implements QueryEngineInterface {
-  private static final Log LOG = LogFactory.getLog(NtaEngineMaster.class);
+	private static final Log LOG = LogFactory.getLog(NtaEngineMaster.class);
 
-  private final Configuration conf;
-  private FileSystem defaultFS;
+	private final Configuration conf;
+	private FileSystem defaultFS;
 
   private volatile boolean stopped = false;
 
@@ -51,20 +54,21 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   private final ZkClient zkClient;
   private ZkServer zkServer;
 
-  private CatalogService catalog;
-  private StorageManager storeManager;
-  private GlobalEngine queryEngine;
+	private CatalogService catalog;
+	private StorageManager storeManager;
+	private GlobalEngine queryEngine;
 
   private final Path basePath;
   private final Path dataPath;
 
-  private final InetSocketAddress bindAddr;
-  private ProtoParamRpcServer server; // RPC between master and client
+	private final InetSocketAddress bindAddr;
+	private ProtoParamRpcServer server; // RPC between master and client
+//	private RPC.Server server;
 
-  private List<EngineService> services = new ArrayList<EngineService>();
+	private List<EngineService> services = new ArrayList<EngineService>();
 
-  public NtaEngineMaster(final Configuration conf) throws Exception {
-    this.conf = conf;
+	public NtaEngineMaster(final Configuration conf) throws Exception {
+		this.conf = conf;
 
     // Get the tajo base dir
     this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
@@ -87,10 +91,6 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     
     this.storeManager = new StorageManager(conf);
 
-    this.queryEngine = new GlobalEngine(conf, catalog, storeManager);
-    this.queryEngine.init();
-    services.add(queryEngine);
-    
     // The below is some mode-dependent codes
     // If tajo is local mode
     if (conf.get(NConstants.CLUSTER_DISTRIBUTED, 
@@ -109,6 +109,10 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     // This is temporal solution of the above problem.
     this.catalog = new LocalCatalog(conf);
 
+    this.queryEngine = new GlobalEngine(conf, catalog, storeManager);
+    this.queryEngine.init();
+    services.add(queryEngine);
+    
     // connect the zkserver
     this.zkClient = new ZkClient(conf);
 
@@ -212,34 +216,6 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   }
 
   @Override
-  @Deprecated
-  public void createTable(TableDescImpl meta) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  @Deprecated
-  public void dropTable(String name) {
-
-  }
-
-  @Deprecated
-  @Override
-  public void attachTable(String name, Path path) throws Exception {
-    if (catalog.existsTable(name))
-      throw new AlreadyExistsTableException(name);
-
-    LOG.info(path.toUri());
-
-    TableMeta meta = TableUtil.getTableMeta(conf, path);
-    TableDesc desc = new TableDescImpl(name, meta);
-    desc.setPath(path);
-    catalog.addTable(desc);
-    LOG.info("Table " + desc.getId() + " is attached.");
-  }
-
-  @Override
   public void attachTable(String name, String strPath) throws Exception {
 
     if (catalog.existsTable(name))
@@ -273,7 +249,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 
   public String executeQueryC(String query) throws Exception {
     catalog.updateAllTabletServingInfo(getOnlineServer());
-    ResultSetOld rs = queryEngine.executeQuery(query);
+    String rs = queryEngine.executeQuery(query);
     if (rs == null) {
       return "";
     } else {
@@ -281,17 +257,12 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     }
   }
 
-  public void updateQuery(String query) throws NTAQueryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  public TableDesc getTableDesc(String name) throws NoSuchTableException {
+  public String getTableDesc(String name) throws NoSuchTableException {
     if (!catalog.existsTable(name)) {
       throw new NoSuchTableException(name);
     }
 
-    return catalog.getTableDesc(name);
+    return catalog.getTableDesc(name).toJSON();
   }
 
   private class ShutdownHook implements Runnable {
@@ -304,4 +275,26 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   public CatalogService getCatalog() {
     return this.catalog;
   }
+
+	public String getClusterInfo() throws KeeperException, InterruptedException {
+		List<String> onlineServers = getOnlineServer();
+		String json = GsonCreator.getInstance().toJson(onlineServers);
+		return json;
+	}
+
+	@Override
+	public long getProtocolVersion(String protocol, long clientVersion)
+			throws IOException {
+		return 0l;
+	}
+
+	@Override
+	public String getTableList() {
+		Collection<TableDesc> tableDescs = catalog.getAllTableDescs();
+		List<String> tableNames = new ArrayList<String>();
+		for (TableDesc desc : tableDescs) {
+			tableNames.add(desc.getId());
+		}
+		return GsonCreator.getInstance().toJson(tableNames);
+	}
 }

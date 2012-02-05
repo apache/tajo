@@ -99,7 +99,7 @@ public class LocalCatalog implements CatalogService {
   }
 
   @Override
-  public final List<TabletServInfo> getHostByTable(final String tableId) {    
+  public final List<HostInfo> getHostByTable(final String tableId) {    
     return catalog.getHostByTable(tableId);
   }
   
@@ -107,5 +107,9 @@ public class LocalCatalog implements CatalogService {
   public final void updateAllTabletServingInfo(final List<String> onlineServers)
       throws IOException {
     catalog.updateAllTabletServingInfo(onlineServers);
+  }
+  
+  public CatalogServer getServer() {
+	  return this.catalog;
   }
 }

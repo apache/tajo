@@ -12,29 +12,14 @@ enum ExecType {
      JOIN = 3;
 }
 
-message DistSortPlanProto {
-}
-
-message DistGroupByPlanProto {
-}
-
-message DistCubeByPlanProto {
-}
-
-message DistJoinPlanProto {
-}
-
-message DistPlanContainerProto {
-	required ExecType type = 1;
-	optional DistSortPlanProto sortPlan = 2;
-	optional DistGroupByPlanProto groupByPlan = 3;
-	optional DistCubeByPlanProto cubeByPlan = 4;
-	optional DistJoinPlanProto joinPlan = 5;
+message DistPlanProto {
+	required string planName = 1;
+	required int32 outputNum = 2;
 }
 
 message ExecutorRunRequestProto {
 	required int32 id = 1;
-	required DistPlanContainerProto distExecutor = 2;
+	required DistPlanProto distExecutor = 2;
 	repeated TabletProto tablets = 3;
 	required bool clusteredOutput = 4;
 	required string outputDest = 5;
