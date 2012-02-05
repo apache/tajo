@@ -7,7 +7,11 @@ import nta.datum.exception.InvalidCastException;
  * @author Hyunsik Choi
  *
  */
-public class DatumFactory {
+public class DatumFactory {  
+  public static NullDatum createNullDatum() {
+    return NullDatum.get();
+  }
+  
   public static BoolDatum createBool(String val) {
     boolean boolVal = val.equals("true") ? true : false;
     return new BoolDatum(boolVal);
