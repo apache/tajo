@@ -13,9 +13,9 @@ import nta.engine.ipc.protocolrecords.SubQueryResponse;
  *
  */
 public class SubQueryResponseImpl implements SubQueryResponse {
-	
+
+  private int id;
 	private QueryStatus status;
-	private String outputPath;
 	
 	private SubQueryResponseProto proto = SubQueryResponseProto.getDefaultInstance();
 	private SubQueryResponseProto.Builder builder = null;
@@ -23,11 +23,12 @@ public class SubQueryResponseImpl implements SubQueryResponse {
 	
 	public SubQueryResponseImpl() {
 		builder = SubQueryResponseProto.newBuilder();
+		id = -1;
 	}
 	
-	public SubQueryResponseImpl(QueryStatus status, String outputPath) {
+	public SubQueryResponseImpl(int id, QueryStatus status) {
 		this();
-		set(status, outputPath);
+		set(id, status);
 	}
 	
 	public SubQueryResponseImpl(SubQueryResponseProto proto) {
@@ -35,9 +36,9 @@ public class SubQueryResponseImpl implements SubQueryResponse {
 		viaProto = true;
 	}
 	
-	public void set(QueryStatus status, String outputPath) {
+	public void set(int id, QueryStatus status) {
+    this.id = id;
 		this.status = status;
-		this.outputPath = outputPath;
 	}
 
 	/* (non-Javadoc)
@@ -55,20 +56,6 @@ public class SubQueryResponseImpl implements SubQueryResponse {
 		}
 		this.status = p.getStatus();
 		return this.status;
-	}
-
-	@Override
-	public String getOutputPath() {
-		SubQueryResponseProtoOrBuilder p = viaProto ? proto : builder;
-		
-		if (outputPath != null) {
-			return this.outputPath;
-		}
-		if (!proto.hasOutputPath()) {
-			return null;
-		}
-		this.outputPath = p.getOutputPath();
-		return outputPath;
 	}
 
 	public SubQueryResponseProto getProto() {
@@ -89,8 +76,8 @@ public class SubQueryResponseImpl implements SubQueryResponse {
 		if (status != null) {
 			builder.setStatus(status);
 		}
-		if (outputPath != null) {
-			builder.setOutputPath(outputPath);
+		if (id != -1) {
+			builder.setId(id);
 		}
 	}
 	
@@ -107,5 +94,18 @@ public class SubQueryResponseImpl implements SubQueryResponse {
   public void initFromProto() {
     // TODO Auto-generated method stub
     
+  }
+
+  @Override
+  public int getId() {
+    SubQueryResponseProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.id != -1) {
+      return this.id;
+    }
+    if (!p.hasId()) {
+      return -1;
+    }
+    this.id = p.getId();
+    return this.id;
   }
 }

@@ -19,8 +19,8 @@ message SubQueryRequestProto {
 }
 
 message SubQueryResponseProto {
-	required QueryStatus status = 1;
-	required string outputPath = 2;
+	required int32 id = 1;
+	required QueryStatus status = 2;
 }
 
 message AssignTabletRequestProto {
