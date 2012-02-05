@@ -11,6 +11,7 @@ import nta.engine.Context;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
+import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
@@ -30,6 +31,9 @@ import nta.engine.query.exception.NotSupportQueryException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
 
 /**
  * This class creates a logical plan from a parse tree ({@link QueryBlock})
@@ -387,9 +391,18 @@ public class LogicalPlanner {
     }
   }
   
+
 /*  public static class TargetList {
     NavigableMap<Integer,Column> targetList = new TreeMap<Integer,Column>();
+=======
+  public static class TargetList {
+	  @Expose
+//    NavigableMap<Integer,Column> targetList = new TreeMap<Integer,Column>();
+	  Map<Integer,Column> targetList = new TreeMap<Integer,Column>();
+	  @Expose
+>>>>>>> 7737b3e378ec82c00f8dcd59a3880054dd131d90
     Map<String,Column> targetListByName = new HashMap<String, Column>();
+	  @Expose
     private volatile int id = 0;
     
     public TargetList() {
@@ -459,6 +472,11 @@ public class LogicalPlanner {
       }
       sb.append("]");
       return sb.toString();
+    }
+    
+    public String toJSON() {
+      Gson gson = GsonCreator.getInstance();
+      return gson.toJson(this, LogicalPlanner.class);
     }
     
     public int size() {

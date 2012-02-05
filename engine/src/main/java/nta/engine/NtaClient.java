@@ -54,16 +54,6 @@ public class NtaClient {
     asyncProtocol.executeQueryAsync(callback, query);
   }
 
-  @SuppressWarnings("deprecation")
-  public void createTable(TableDescImpl meta) {
-    blockingProtocol.createTable(meta);
-  }
-
-  @SuppressWarnings("deprecation")
-  public void dropTable(String name) {
-    blockingProtocol.dropTable(name);
-  }
-
   public void attachTable(String name, String path) throws RemoteException {
     blockingProtocol.attachTable(name, path);
   }

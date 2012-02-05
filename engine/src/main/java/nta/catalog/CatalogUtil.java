@@ -46,8 +46,8 @@ public class CatalogUtil {
     default: throw new InvalidQueryException("Unsupported type exception");
     }
   }
-  
-  /**
+
+    /**
    * This method transforms the unqualified names of a given schema into
    * the qualified names.
    * 
@@ -56,6 +56,7 @@ public class CatalogUtil {
    * 
    * @return
    */
+
   public static SchemaProto getQualfiedSchema(String tableName,
       SchemaProto schema) {
     SchemaProto.Builder revisedSchema = SchemaProto.newBuilder(schema);

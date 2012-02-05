@@ -47,6 +47,7 @@ import com.google.common.base.Preconditions;
 public final class QueryAnalyzer {
   private static final Log LOG = LogFactory.getLog(QueryAnalyzer.class);
   private final CatalogService catalog;
+  
   public QueryAnalyzer(CatalogService catalog) {
     this.catalog = catalog;
   }

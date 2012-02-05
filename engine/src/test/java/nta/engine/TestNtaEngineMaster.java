@@ -30,7 +30,7 @@ public class TestNtaEngineMaster {
 
 	@Test
 	public void testBecomeMaster() throws Exception {	  
-		Thread.sleep(3000);
+		Thread.sleep(5000);
 		
 		ZkClient zkClient = new ZkClient(conf);
 		assertNotNull(zkClient.exists(NConstants.ZNODE_BASE));

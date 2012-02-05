@@ -289,7 +289,7 @@ public class TestCatalog {
 		
 		Collection<TableDesc> tables = local.getAllTableDescs();
 		Iterator<TableDesc> it = tables.iterator();
-		List<TabletServInfo> tabletInfoList;
+		List<HostInfo> tabletInfoList;
 		int cnt = 0;
 		int len = 0;
 		TableDesc tableInfo;
@@ -301,7 +301,7 @@ public class TestCatalog {
 				cnt++;
 				len = 0;
 				for (i = 0; i < tabletInfoList.size(); i++) {
-					len += tabletInfoList.get(i).getTablet().getLength();
+					len += tabletInfoList.get(i).getFragment().getLength();
 				}
 				fileStatus = fs.getFileStatus(new Path(tableInfo.
 				    getPath()+"/data/table.csv"));

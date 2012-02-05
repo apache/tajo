@@ -1,10 +1,15 @@
 package nta.engine.parser;
 
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
+
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.exec.eval.EvalNode;
+import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.json.GsonCreator;
 
 /**
  * This class contains a set of meta data about a query statement.
@@ -130,8 +135,11 @@ public class QueryBlock {
   }
   
   public static class Target {
+	  @Expose
     private final EvalNode eval;
+	  @Expose
     private Column column;
+	  @Expose
     private String alias = null;
     
     public Target(EvalNode eval) {
@@ -172,6 +180,10 @@ public class QueryBlock {
       return sb.toString();
     }
     
+    public String toJSON() {
+      return GsonCreator.getInstance().toJson(this, Target.class);
+    }
+    
     public int hashCode() {
       return this.eval.getName().hashCode();
     }
@@ -186,11 +198,16 @@ public class QueryBlock {
   }
   
   public static class FromTable {
-    private final TableDesc desc;
+    @Expose
+	private final TableDesc desc;
+    @Expose
     private String alias = null;
+    @Expose
+    private boolean isFragment;
 
     public FromTable(final TableDesc desc) {
       this.desc = desc;
+      isFragment = desc.getClass().getName().equals(Fragment.class.getName());
     }
 
     public FromTable(final TableDesc desc, final String alias) {
@@ -227,6 +244,12 @@ public class QueryBlock {
         return desc.getId() + " as " + alias;
       else
         return desc.getId();
+    }
+    
+    public String toJSON() {
+      desc.initFromProto();
+      Gson gson = GsonCreator.getInstance();
+      return gson.toJson(this, FromTable.class);
     }
   }
   

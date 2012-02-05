@@ -221,10 +221,12 @@ public class LeafServer extends Thread implements LeafServerInterface {
 	@Override
 	public SubQueryResponseProto requestSubQuery(SubQueryRequestProto requestProto) throws IOException {
 	  SubQueryRequest request = new SubQueryRequestImpl(requestProto);
-	  SubqueryContext ctx = ctxFactory.create(request);	  
+	  SubqueryContext ctx = ctxFactory.create(request);
 	  QueryBlock query = analyzer.parse(ctx, request.getQuery());
 	  LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+	  System.out.println(plan);
 	  LogicalOptimizer.optimize(ctx, plan);
+	  System.out.println("==================\n" + plan);
     
     PhysicalPlanner phyPlanner = new PhysicalPlanner(storeManager);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
