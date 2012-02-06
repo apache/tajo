@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>kr.ac.korea.dbserver</groupId>
 	<artifactId>nta</artifactId>
-	<version>0.3.0-SNAPSHOT</version>
+	<version>0.4.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>Nta</name>
 	<description>Network Traffic Analyzer</description>
@@ -16,7 +16,7 @@
 		<url>https://dbserver.korea.ac.kr/jenkins</url>
 	</ciManagement>
 	<scm>
-		<url>ssh://dbserver.korea.ac.kr/git/nta.git</url>
+		<url>git@bitbucket.org:dblab/nta.git</url>
 	</scm>
 	<organization>
 		<name>Database Laboratory, Korea University</name>

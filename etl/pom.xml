@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>kr.ac.korea.dbserver</groupId>
 	<artifactId>nta-etl</artifactId>
-	<version>0.3.0-SNAPSHOT</version>
+	<version>0.4.0-SNAPSHOT</version>
 	<name>Nta ETL</name>
 	<build>
 		<plugins>
@@ -62,17 +62,17 @@
 		<dependency>
 			<groupId>kr.ac.korea.dbserver</groupId>
 			<artifactId>nta-common</artifactId>
-			<version>0.3.0-SNAPSHOT</version>
+			<version>0.4.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>kr.ac.korea.dbserver</groupId>
 			<artifactId>nta-engine</artifactId>
-			<version>0.3.0-SNAPSHOT</version>
+			<version>0.4.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>kr.ac.korea.dbserver</groupId>
 			<artifactId>nta-logserver</artifactId>
-			<version>0.3.0-SNAPSHOT</version>
+			<version>0.4.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 </project>

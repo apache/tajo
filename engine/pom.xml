@@ -4,14 +4,14 @@
 	<parent>
 		<artifactId>nta</artifactId>
 		<groupId>kr.ac.korea.dbserver</groupId>
-		<version>0.3.0-SNAPSHOT</version>
+		<version>0.4.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>nta-engine</artifactId>
 	<packaging>jar</packaging>
 	<name>Nta Engine</name>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<nta.version>0.3.0-SNAPSHOT</nta.version>
+		<nta.version>0.4.0-SNAPSHOT</nta.version>
 		<yarn.version>0.24.0-SNAPSHOT</yarn.version>
 	</properties>
 
