@@ -18,6 +18,7 @@ import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.query.SubQueryRequestImpl;
 import nta.storage.Appender;
+import nta.storage.CSVFile2;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;

@@ -22,7 +22,7 @@ public abstract class FileScanner implements Scanner {
 
   public abstract void seek(long offset) throws IOException;
   public abstract long getNextOffset() throws IOException;
-  public abstract long available() throws IOException;
+  public abstract long tabletable() throws IOException;
   @Override
 	public Schema getSchema() {
 	  return schema;
