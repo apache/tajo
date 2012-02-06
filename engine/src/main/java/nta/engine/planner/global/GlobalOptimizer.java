@@ -38,9 +38,9 @@ public class GlobalOptimizer {
 		}
 	}
 	
-	public UnitQueryGraph optimize(UnitQueryGraph graph) {
-		UnitQuery query = graph.getRoot();
-		List<UnitQuery> q = new ArrayList<UnitQuery>();
+	public QueryUnitGraph optimize(QueryUnitGraph graph) {
+		QueryUnit query = graph.getRoot();
+		List<QueryUnit> q = new ArrayList<QueryUnit>();
 		q.add(query);	// in
 		q.add(query);	// out
 		
@@ -48,7 +48,7 @@ public class GlobalOptimizer {
 			query = q.remove(0);
 			if (q.size() > 0 && query.getId() == q.get(0).getId()) {
 				// in
-				for (UnitQuery uq: query.getNextQueries()) {
+				for (QueryUnit uq: query.getNextQueries()) {
 					q.add(0, uq);	// in
 					q.add(0, uq);	// out
 				}
@@ -66,16 +66,16 @@ public class GlobalOptimizer {
 		return graph;
 	}
 	
-	 private void optimizeUnitQuery(UnitQuery query) {
+	 private void optimizeUnitQuery(QueryUnit query) {
 		 List<OptimizationPlan> plans;
 		 OptimizationPlan bestPlan;
 		 int i, j, k;
-		 UnitQuery curQuery, prevQuery;
+		 QueryUnit curQuery, prevQuery;
 		 DistPlan distPlan;
-		 Set<UnitQuery> prevList = new HashSet<UnitQuery>();
-		 Set<UnitQuery> curList = new HashSet<UnitQuery>();
-		 Set<UnitQuery> tmpList;
-		 Iterator<UnitQuery> prevIt, curIt;
+		 Set<QueryUnit> prevList = new HashSet<QueryUnit>();
+		 Set<QueryUnit> curList = new HashSet<QueryUnit>();
+		 Set<QueryUnit> tmpList;
+		 Iterator<QueryUnit> prevIt, curIt;
 		 int outputNum = -1, maxOutputNum = query.getNextQueries().size();
 		 
 		 plans = planMap.get(query.getOp().getType());
@@ -92,7 +92,7 @@ public class GlobalOptimizer {
 					 curList.add(prevQuery);
 				 }
 			 } else {
-				 curList.add(new UnitQuery(new LogicalRootNode()));
+				 curList.add(new QueryUnit(new LogicalRootNode()));
 			 }
 		 }
 		 
@@ -107,7 +107,7 @@ public class GlobalOptimizer {
 				 prevIt = prevList.iterator();
 				 curList.clear();
 				 for (j = 0; j < bestPlan.getNodeNum()[i]; j++) {
-					 curQuery = new UnitQuery(query.getOp());
+					 curQuery = new QueryUnit(query.getOp());
 					 distPlan = new DistPlan();
 					 distPlan.setPlanName(bestPlan.getExecPlan()[i]);
 					 // set output number according to the mapping type
@@ -142,7 +142,7 @@ public class GlobalOptimizer {
          prevIt = prevList.iterator();
          curList.clear();
          for (j = 0; j < bestPlan.getNodeNum()[i]; j++) {
-           curQuery = new UnitQuery(query.getOp());
+           curQuery = new QueryUnit(query.getOp());
            distPlan = new DistPlan();
            distPlan.setPlanName(bestPlan.getExecPlan()[i]);
            // set output number according to the mapping type

@@ -1,8 +1,10 @@
 package nta.engine.plan.global;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import nta.catalog.CatalogService;
+import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
 import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
@@ -22,6 +24,10 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.GlobalQueryPlan;
+import nta.engine.planner.global.QueryStep;
+import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.logical.ExprType;
+import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.query.GlobalQueryPlanner;
 import nta.storage.CSVFile2;
@@ -34,6 +40,8 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * 
@@ -124,14 +132,42 @@ public class TestGlobalQueryPlanner {
 	}
 	
 	@Test
-	public void testDecompose() throws IOException, KeeperException, InterruptedException {
+	public void test() throws IOException, KeeperException, InterruptedException {
 		catalog.updateAllTabletServingInfo(master.getOnlineServer());
 		
-	    QueryContext ctx = factory.create();
-	    QueryBlock block = analyzer.parse(ctx, "store1 := select age, sumtest(salary) from table0 group by age");
-	    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, block);
+		QueryContext ctx = factory.create();
+		QueryBlock block = analyzer.parse(ctx, "store1 := select age, sumtest(salary) from table0 group by age");
+		LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, block);
 		
 		GlobalQueryPlan globalPlan = planner.build(logicalPlan);
-		System.out.println(globalPlan.size());
+		assertTrue(globalPlan.size() > 0);
+		
+		QueryStep step = globalPlan.getQueryStep(0);
+		assertTrue(step.size() > 0);
+		QueryUnit q = step.getQuery(0);
+		assertEquals(q.getOp().getType(), ExprType.STORE);
+		
+		step = globalPlan.getQueryStep(1);
+		assertTrue(step.size() > 0);
+		q = step.getQuery(0);
+		assertEquals(q.getOp().getType(), ExprType.GROUP_BY);
+		assertEquals("merge", q.getDistPlan().getPlanName());
+		GroupbyNode groupby = (GroupbyNode)q.getOp();
+		assertTrue(Arrays.equals(new Column[]{new Column("table0.age", DataType.INT)}, groupby.getGroupingColumns()));
+		
+		step = globalPlan.getQueryStep(2);
+		assertTrue(step.size() > 0);
+		for (int i = 0; i < step.size(); i++) {
+		  q = step.getQuery(i);
+		  assertEquals(q.getOp().getType(), ExprType.GROUP_BY);
+		  assertEquals("local", q.getDistPlan().getPlanName());
+		}
+    
+    step = globalPlan.getQueryStep(3);
+    assertTrue(step.size() > 0);
+    for (int i = 0; i < step.size(); i++) {
+      q = step.getQuery(i);
+      assertEquals(q.getOp().getType(), ExprType.SCAN);
+    }
 	}
 }

@@ -8,12 +8,11 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.StringTokenizer;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
@@ -28,7 +27,6 @@ import nta.engine.LeafServerProtos.QueryStatus;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.QueryContext;
 import nta.engine.ResultSetMemImplOld;
-import nta.engine.ResultSetOld;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.PhysicalOp;
 import nta.engine.exec.eval.ConstEval;
@@ -37,8 +35,8 @@ import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.ipc.AsyncWorkerClientInterface;
 import nta.engine.ipc.AsyncWorkerInterface;
-import nta.engine.ipc.LeafServerInterface;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.SubQueryResponse;
 import nta.engine.parser.QueryAnalyzer;
@@ -48,15 +46,13 @@ import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.GlobalQueryPlan;
 import nta.engine.planner.global.QueryStep;
-import nta.engine.planner.global.UnitQuery;
+import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.logical.ExprType;
-import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
-import nta.engine.planner.logical.StoreTableNode;
 import nta.rpc.Callback;
 import nta.rpc.NettyRpc;
 import nta.storage.StorageManager;
@@ -82,11 +78,9 @@ public class GlobalEngine implements EngineService {
 
   GlobalQueryPlanner globalPlanner;
   PhysicalPlanner phyPlanner;
-  // RPC interface list for leaf servers
-  // LeafServerInterface leaf;
-  AsyncWorkerClientInterface leaf;
+  AsyncWorkerClientInterface leaf;      // RPC interface list for leaf servers
 
-  private Map<UnitQuery, Callback<SubQueryResponseProto>> unitQueryMap;
+  private Map<QueryUnit, Callback<SubQueryResponseProto>> unitQueryMap;
 
   public GlobalEngine(Configuration conf, CatalogService cat, StorageManager sm)
       throws IOException {
@@ -101,7 +95,7 @@ public class GlobalEngine implements EngineService {
     globalPlanner = new GlobalQueryPlanner(this.catalog);
     phyPlanner = new PhysicalPlanner(this.catalog, this.storageManager);
 
-    this.unitQueryMap = new HashMap<UnitQuery, Callback<SubQueryResponseProto>>();
+    this.unitQueryMap = new HashMap<QueryUnit, Callback<SubQueryResponseProto>>();
   }
 
   public void createTable(TableDesc meta) throws IOException {
@@ -111,8 +105,8 @@ public class GlobalEngine implements EngineService {
   public String executeQuery(String querystr) throws Exception {
     String[] tokens = querystr.split(" ");
     String subqueryStr = null;
-    String storeName = "t_"+System.currentTimeMillis();
-    String formatStr = storeName+ " := ";
+    String storeName = "t_" + System.currentTimeMillis();
+    String formatStr = storeName + " := ";
     for (int i = 0; i < tokens.length; i++) {
       if (tokens[i].equals("from")) {
         formatStr += "from %s ";
@@ -128,28 +122,23 @@ public class GlobalEngine implements EngineService {
     LogicalOptimizer.optimize(ctx, plan);
     GlobalQueryPlan globalPlan = globalPlanner.build(plan);
     TableMeta meta = null;
-/*    for (int i = 0; i < globalPlan.size(); i++) {
-      QueryStep queryStep = globalPlan.getQueryStep(i);
-      for (int j = 0; j < queryStep.size(); j++) {
-        UnitQuery q = queryStep.getQuery(j);
-        if (storeName != null && q.getOp().getType() == ExprType.STORE) {
-          storeName = ((StoreTableNode) q.getOp()).getTableName();
-        } else if (meta != null && q.getOp().getType() == ExprType.GROUP_BY) {
-          meta = new TableMetaImpl(((GroupbyNode) q.getOp()).getOutputSchema(),
-              StoreType.CSV);
-        }
-        if (storeName != null && meta != null) {
-          StorageManager sm = new StorageManager(conf);
-          sm.initTableBase(meta, storeName);
-          break;
-        }
-      }
-    }*/
+    /*
+     * for (int i = 0; i < globalPlan.size(); i++) { QueryStep queryStep =
+     * globalPlan.getQueryStep(i); for (int j = 0; j < queryStep.size(); j++) {
+     * QueryUnit q = queryStep.getQuery(j); if (storeName != null &&
+     * q.getOp().getType() == ExprType.STORE) { storeName = ((StoreTableNode)
+     * q.getOp()).getTableName(); } else if (meta != null && q.getOp().getType()
+     * == ExprType.GROUP_BY) { meta = new TableMetaImpl(((GroupbyNode)
+     * q.getOp()).getOutputSchema(), StoreType.CSV); } if (storeName != null &&
+     * meta != null) { StorageManager sm = new StorageManager(conf);
+     * sm.initTableBase(meta, storeName); break; } } }
+     */
 
-    Schema outSchema = ((LogicalRootNode) plan).getSubNode().getOutputSchema();        
+    Schema outSchema = ((LogicalRootNode) plan).getSubNode().getOutputSchema();
     meta = new TableMetaImpl(outSchema, StoreType.CSV);
     sm.initTableBase(meta, storeName);
-    LOG.info(">>>>> Output directory ("+sm.getTablePath(storeName)+") is created");
+    LOG.info(">>>>> Output directory (" + sm.getTablePath(storeName)
+        + ") is created");
     if (storeName == null) {
       storeName = "/" + System.currentTimeMillis();
     }
@@ -159,14 +148,13 @@ public class GlobalEngine implements EngineService {
     long before = System.currentTimeMillis();
 
     // execute sub queries via RPC
-    UnitQuery q = null;
-    SubQueryResponse response;
+    QueryUnit q = null;
     Callback<SubQueryResponseProto> cb;
     for (int i = 0; i < globalPlan.size(); i++) {
       QueryStep queryStep = globalPlan.getQueryStep(i);
       for (int j = 0; j < queryStep.size(); j++) {
         q = queryStep.getQuery(j);
-        if (q.getTableName() == null) {
+        if (q.getFragments() == null) {
           // fill table name
           // fill fragments
         }
@@ -181,17 +169,18 @@ public class GlobalEngine implements EngineService {
           }
           // fill host and port
           LOG.info("Host: " + q.getHost() + " port: " + q.getPort());
+          q.setOutputName(storeName);
 
           if (q.getOp().getType() == ExprType.SCAN) {
             // make SubQueryRequest
-            q.setOutputName(storeName);
             subqueryStr = String.format(formatStr, q.getFragments().get(0)
                 .getId());
-            LOG.info(">>>>> issued fragment id: " + q.getFragments().get(0).getId());
-            LOG.info(">>>>> issued query: "+subqueryStr);
+            LOG.info(">>>>> issued fragment id: "
+                + q.getFragments().get(0).getId());
+            LOG.info(">>>>> issued query: " + subqueryStr);
             SubQueryRequest request = new SubQueryRequestImpl(q.getId(),
                 q.getFragments(), new URI(q.getOutputName()), subqueryStr);
-            LOG.info(">>>>> issued query id: "+request.getId());
+            LOG.info(">>>>> issued query id: " + request.getId());
             cb = new Callback<SubQueryResponseProto>();
             unitQueryMap.put(q, cb);
             leaf = (AsyncWorkerClientInterface) NettyRpc
@@ -200,13 +189,16 @@ public class GlobalEngine implements EngineService {
                     new InetSocketAddress(q.getHost(), q.getPort()));
 
             leaf.requestSubQuery(cb, request.getProto());
+            LOG.info("Issued sub query request");
           } else {
             // make UnitQueryRequest
+            
           }
         }
       }
       // wait for finishing the query step
-      Iterator<UnitQuery> it = unitQueryMap.keySet().iterator();
+      Iterator<QueryUnit> it = unitQueryMap.keySet().iterator();
+      SubQueryResponse response;
       while (it.hasNext()) {
         q = it.next();
         cb = unitQueryMap.get(q);
@@ -215,6 +207,7 @@ public class GlobalEngine implements EngineService {
           // TODO: failure handling
         }
       }
+      unitQueryMap.clear();
     }
     long after = System.currentTimeMillis();
     LOG.info("executeQuery processing time: " + (after - before) + "msc");
