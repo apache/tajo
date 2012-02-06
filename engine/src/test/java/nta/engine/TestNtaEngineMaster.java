@@ -2,15 +2,19 @@ package nta.engine;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import nta.engine.cluster.ServerNodeTracker;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkUtil;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class TestNtaEngineMaster {
+  private Log LOG = LogFactory.getLog(TestNtaEngineMaster.class);
 	private NtaTestingUtility util;
 	private Configuration conf;
 	
@@ -28,21 +32,20 @@ public class TestNtaEngineMaster {
 		util.shutdownMiniCluster();
 	}
 
-	@Test
-	public void testBecomeMaster() throws Exception {	  
-		Thread.sleep(5000);
-		
-		ZkClient zkClient = new ZkClient(conf);
-		assertNotNull(zkClient.exists(NConstants.ZNODE_BASE));
-		assertNotNull(zkClient.exists(NConstants.ZNODE_MASTER));
-		assertNotNull(zkClient.exists(NConstants.ZNODE_LEAFSERVERS));
-		assertNotNull(zkClient.exists(NConstants.ZNODE_QUERIES));
-		
-		byte [] data = ZkUtil.getDataAndWatch(zkClient, NConstants.ZNODE_MASTER); 
-		
-		NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
-		assertEquals(master.getServerName(), new String(data));
-		assertEquals(numLeafs, master.getOnlineServer().size());
-		assertEquals(numLeafs, util.getMiniNtaEngineCluster().getLeafServerThreads().size());
-	}
+  public void testBecomeMaster() throws Exception {
+    ZkClient zkClient = new ZkClient(conf);
+    ServerNodeTracker tracker = new ServerNodeTracker(zkClient,
+        NConstants.ZNODE_BASE);
+    LOG.info("Waiting for the participation of leafservers");
+    tracker.blockUntilAvailable(3000);
+    assertNotNull(zkClient.exists(NConstants.ZNODE_BASE));
+    assertNotNull(zkClient.exists(NConstants.ZNODE_MASTER));
+    assertNotNull(zkClient.exists(NConstants.ZNODE_LEAFSERVERS));
+    assertNotNull(zkClient.exists(NConstants.ZNODE_QUERIES));
+
+    byte[] data = ZkUtil.getDataAndWatch(zkClient, NConstants.ZNODE_MASTER);
+
+    NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
+    assertEquals(master.getServerName(), new String(data));
+  }
 }
