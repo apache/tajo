@@ -43,7 +43,6 @@ public class StoreTableExec extends PhysicalExec {
     this.outputSchema = annotation.getOutputSchema();
     
     TableMeta meta = new TableMetaImpl(this.outputSchema, StoreType.CSV);
-    sm.initTableBase(meta, annotation.getTableName());
     this.appender = sm.getAppender(meta,annotation.getTableName(),
         annotation.getTableName()+"_"+queryId);
   }

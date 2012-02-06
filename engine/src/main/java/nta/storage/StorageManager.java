@@ -78,8 +78,8 @@ public class StorageManager {
     fs.mkdirs(tablePath);
     Path dataDir = new Path(tablePath,"data");
     fs.mkdirs(dataDir);
-
-    writeTableMeta(tablePath, meta);
+    if (meta != null)
+      writeTableMeta(tablePath, meta);
     return dataDir;
 	}
 	

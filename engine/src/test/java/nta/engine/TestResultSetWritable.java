@@ -7,7 +7,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -24,7 +23,6 @@ import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
-import org.apache.hadoop.fs.FileSystem;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,8 +35,6 @@ public class TestResultSetWritable {
 
 	private NtaConf conf;
 	private static String TEST_PATH = "target/test-data/TestResultSetWritable";
-	private File testDir;
-	private FileSystem fs;
 	private ResultSetWritable result;
 	private IPv4[] ips;
 	private StorageManager sm;

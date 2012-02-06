@@ -45,9 +45,7 @@ import org.apache.zookeeper.KeeperException;
 
 /**
  * @author Hyunsik Choi
- *
  */
-//public class LeafServer extends Thread implements LeafServerInterface {
 public class LeafServer extends Thread implements AsyncWorkerInterface {
 	private static final Log LOG = LogFactory.getLog(LeafServer.class);	
 
@@ -149,7 +147,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     // if the znode already exists, it will be updated for notification.
     ZkUtil.upsertEphemeralNode(zkClient,
         ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName));
-    LOG.info("Write the znode nta/leafservers/" + serverName);
+    LOG.info("Created the znode nta/leafservers/" + serverName);
 	}
 
 	public void run() {
@@ -215,26 +213,42 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
 		return this.isOnline;
 	}
 
+  public void shutdown(final String msg) {
+    this.stopped = true;
+    LOG.info("STOPPED: " + msg);
+    synchronized (this) {
+      notifyAll();
+    }
+  }
+
+  public void abort(String reason, Throwable cause) {
+    if (cause != null) {
+      LOG.fatal("ABORTING leaf server " + this + ": " + reason, cause);
+    } else {
+      LOG.fatal("ABORTING leaf server " + this + ": " + reason);
+    }
+    // TODO - abortRequest : to be implemented
+    shutdown(reason);
+  }
+
 	//////////////////////////////////////////////////////////////////////////////
 	// LeafServerInterface
 	//////////////////////////////////////////////////////////////////////////////
 	@Override
-	public SubQueryResponseProto requestSubQuery(SubQueryRequestProto requestProto) throws IOException {
-	  long before = System.currentTimeMillis();
+	public SubQueryResponseProto requestSubQuery(SubQueryRequestProto requestProto) 
+	    throws IOException { 
 	  SubQueryRequest request = new SubQueryRequestImpl(requestProto);
-	  System.out.println("================================!! " + request.getFragments().get(0));
 	  SubqueryContext ctx = ctxFactory.create(request);
 	  QueryBlock query = analyzer.parse(ctx, request.getQuery());
 	  LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-	  System.out.println(plan);
 	  LogicalOptimizer.optimize(ctx, plan);
-	  System.out.println("==================\n" + plan);
+    LOG.info("Assigned task: (" + request.getId()+") start:" 
+        + request.getFragments().get(0).getStartOffset()
+        +" end: " + request.getFragments()+"\nquery: "
+        + request.getQuery());
     
     PhysicalPlanner phyPlanner = new PhysicalPlanner(storeManager);
-    long after = System.currentTimeMillis();
-    LOG.info("====================> processing time1: " + (after-before) + "msc");
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-    before = System.currentTimeMillis();
     
     @SuppressWarnings("unused")
     Tuple tuple = null;
@@ -244,8 +258,6 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     SubQueryResponseProto.Builder res = SubQueryResponseProto.newBuilder();
     res.setId(request.getId());
     res.setStatus(QueryStatus.FINISHED);
-    after = System.currentTimeMillis();
-    LOG.info("====================> processing time2: " + (after-before) + "msc");
     return res.build();
 	}
 
@@ -264,24 +276,6 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
 	@Override
 	public void releaseTablets(ReleaseTabletRequestProto request) {
 		// TODO - not implemented yet
-	}
-	
-	public void shutdown(final String msg) {
-		this.stopped = true;
-		LOG.info("STOPPED: "+msg);
-		synchronized (this) {
-			notifyAll();
-		}
-	}
-	
-	public void abort(String reason, Throwable cause) {
-		if(cause != null) {
-			LOG.fatal("ABORTING leaf server " + this + ": " + reason, cause);			
-		} else {
-			LOG.fatal("ABORTING leaf server " + this +": " + reason);
-		}
-		// TODO - abortRequest : to be implemented
-		shutdown(reason);
 	}
 
 	public static void main(String [] args) throws IOException {

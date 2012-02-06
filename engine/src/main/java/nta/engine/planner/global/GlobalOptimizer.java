@@ -133,6 +133,39 @@ public class GlobalOptimizer {
 			 }
 			 break;
 		 case SORT:
+		// TODO: select the best plan
+       bestPlan = plans.get(0);
+       for (i = 0; i < bestPlan.getStepNum(); i++) {
+         tmpList = prevList;
+         prevList = curList;
+         curList = tmpList;
+         prevIt = prevList.iterator();
+         curList.clear();
+         for (j = 0; j < bestPlan.getNodeNum()[i]; j++) {
+           curQuery = new UnitQuery(query.getOp());
+           distPlan = new DistPlan();
+           distPlan.setPlanName(bestPlan.getExecPlan()[i]);
+           // set output number according to the mapping type
+           if (bestPlan.getMappingType()[i] == MappingType.ONE_TO_MANY) {
+             // TODO: choose the # of output
+             outputNum = maxOutputNum;
+           } else if (bestPlan.getMappingType()[i] == MappingType.ONE_TO_ONE) {
+             outputNum = 1;
+           }
+           distPlan.setOutputNum(outputNum);
+           curQuery.setDistPlan(distPlan);
+           // TODO: connect with the prev list
+           for (k = 0; k < outputNum; k++) {
+             if (!prevIt.hasNext()) {
+               prevIt = prevList.iterator();
+             }
+             prevQuery = prevIt.next();
+             curQuery.addPrevQuery(prevQuery);
+             prevQuery.addNextQuery(curQuery);
+           }
+           curList.add(curQuery);
+         }
+       }
 			 break;
 		 case JOIN:
 			 break;

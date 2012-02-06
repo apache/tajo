@@ -1,21 +1,16 @@
 package nta.engine;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Scanner;
 
+import nta.catalog.Column;
 import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
 import nta.conf.NtaConf;
-import nta.engine.json.GsonCreator;
-import nta.engine.exception.NTAQueryException;
 import nta.engine.ipc.QueryEngineInterface;
+import nta.engine.json.GsonCreator;
 
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.RPC;
 
 import com.google.gson.Gson;
@@ -28,6 +23,7 @@ public class NtaEngineClient {
    * @param args
    * @throws Exception 
    */
+  @SuppressWarnings("unchecked")
   public static void main(String[] args) throws Exception {
 	  String masterHost = null;
 	  int masterPort = -1;
@@ -41,7 +37,7 @@ public class NtaEngineClient {
 	  }
 	  
 	  if (masterHost == null) {
-		  masterHost = "127.0.1.1";
+		  masterHost = "127.0.0.1";
 	  }
 	  if (masterPort == -1) {
 		  masterPort = 9001;
@@ -56,7 +52,7 @@ public class NtaEngineClient {
 
     Scanner in = new Scanner(System.in);
     String query = null;
-    System.out.print("tazo> ");
+    System.out.print("tajo> ");
     while((query = in.nextLine()).compareTo("exit") != 0) {
       
       String [] cmds = query.split(" ");
@@ -77,13 +73,13 @@ public class NtaEngineClient {
     	  if (cmds.length > 1) {
     		  String json = cli.getTableDesc(cmds[1]);
     		  Gson gson = GsonCreator.getInstance();
-    		  TableDesc desc = gson.fromJson(json, TableDescImpl.class);
-    		  System.out.println(desc);
+    		  TableDesc desc = gson.fromJson(json, TableDesc.class);
+    		  System.out.println(toFormattedString(desc));
     	  } else {
     		  System.out.println("Table name is required");
     	  }
       } else if (cmds[0].equalsIgnoreCase("attach")){
-        if(cmds.length != 2) {
+        if(cmds.length != 3) {
           System.out.println("usage: attach tablename path");
         }
         cli.attachTable(cmds[1], cmds[2]);
@@ -94,19 +90,33 @@ public class NtaEngineClient {
       } else {
         // query execute
         try {
+          long start = System.currentTimeMillis();
           String tablePath = cli.executeQuery(query);
-          FileStatus[] outs = fs.listStatus(new Path(tablePath));
-          for (FileStatus out : outs) {
-            FSDataInputStream ins = fs.open(out.getPath());
-            while (ins.available() > 0) {
-              System.out.println(ins.readLine());
-            }
-          }
-        } catch (NTAQueryException nqe) {
-          System.err.println(nqe.getMessage());
+          long end = System.currentTimeMillis();
+          System.out.println("write the result into " + tablePath 
+              + " (" + (end - start) +"msc)");
+          
+        // TODO - the result should be printed.
+        } catch (Throwable t) {
+          System.err.println(t.getMessage());
         }
       }
-      System.out.print("tazo> ");
+      System.out.print("tajo> ");
     }
+  }
+  
+  private static String toFormattedString(TableDesc desc) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("\ntable name: " + desc.getId()).append("\n");
+    sb.append("table path: " + desc.getPath()).append("\n");
+    sb.append("store type: " + desc.getMeta().getStoreType()).append("\n");
+    sb.append("schema: \n");
+    
+    for(int i = 0; i < desc.getMeta().getSchema().getColumnNum(); i++) {
+      Column col = desc.getMeta().getSchema().getColumn(i);
+      sb.append(col.getColumnName()).append("\t").append(col.getDataType());
+      sb.append("\n");      
+    }
+    return sb.toString();
   }
 }

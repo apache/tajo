@@ -138,7 +138,7 @@ public class SubQueryRequestImpl implements SubQueryRequest {
 	  if (id != -1) {
 		  return this.id;
 	  }
-	  if (proto.hasId()) {
+	  if (!p.hasId()) {
 		  return -1;
 	  }
 	  this.id = p.getId();

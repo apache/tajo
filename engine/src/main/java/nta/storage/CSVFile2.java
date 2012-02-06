@@ -11,6 +11,7 @@ import java.util.TreeSet;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.datum.DatumFactory;
+import nta.datum.NullDatum;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
 
@@ -142,6 +143,7 @@ public class CSVFile2 extends Storage {
     private long length;
     private long tabletstart;
     private static final byte LF = '\n';
+    private String delimiter;
 
     private byte[] buffer = null;
     private byte[] piece = null;
@@ -176,6 +178,8 @@ public class CSVFile2 extends Storage {
     }
 
     private void openTablet(Fragment tablet) throws IOException {
+      this.delimiter =
+          tablet.getMeta().getOptions().get(DELIMITER, DELIMITER_DEFAULT);
       this.startOffset = tablet.getStartOffset();
       this.length = tablet.getLength();
       this.fs = tablet.getPath().getFileSystem(conf);
@@ -308,43 +312,50 @@ public class CSVFile2 extends Storage {
       }
 
       VTuple tuple = new VTuple(schema.getColumnNum());
-      String[] cells = tupleList[curIndex++].split(",");
+      String[] cells = tupleList[curIndex++].split(delimiter);
       Column field;
 
       for (int i = 0; i < cells.length; i++) {
         field = schema.getColumn(i);
         String cell = cells[i].trim();
-        switch (field.getDataType()) {
-        case BYTE:
-          tuple.put(i, DatumFactory.createByte(Base64.decodeBase64(cell)[0]));
-          break;
-        case BYTES:
-          tuple.put(i, DatumFactory.createBytes(Base64.decodeBase64(cell)));
-          break;
-        case SHORT:
-          tuple.put(i, DatumFactory.createShort(cell));
-          break;
-        case INT:
-          tuple.put(i, DatumFactory.createInt(cell));
-          break;
-        case LONG:
-          tuple.put(i, DatumFactory.createLong(cell));
-          break;
-        case FLOAT:
-          tuple.put(i, DatumFactory.createFloat(cell));
-          break;
-        case DOUBLE:
-          tuple.put(i, DatumFactory.createDouble(cell));
-          break;
-        case STRING:
-          tuple.put(i, DatumFactory.createString(cell));
-          break;
-        case IPv4:
-          if (cells[i].charAt(0) == '/') {
-            tuple.put(i,
-                DatumFactory.createIPv4(cells[i].substring(1, cell.length())));
+        if (cell.equals("")) {
+          tuple.put(i, DatumFactory.createNullDatum());
+        } else {
+          switch (field.getDataType()) {
+          case BYTE:
+            tuple.put(i, DatumFactory.createByte(Base64.decodeBase64(cell)[0]));
+            break;
+          case BYTES:
+            tuple.put(i, DatumFactory.createBytes(Base64.decodeBase64(cell)));
+            break;
+          case SHORT:
+            tuple.put(i, DatumFactory.createShort(cell));
+            break;
+          case INT:
+            tuple.put(i, DatumFactory.createInt(cell));
+            break;
+          case LONG:
+            tuple.put(i, DatumFactory.createLong(cell));
+            break;
+          case FLOAT:
+            tuple.put(i, DatumFactory.createFloat(cell));
+            break;
+          case DOUBLE:
+            tuple.put(i, DatumFactory.createDouble(cell));
+            break;
+          case STRING:
+            tuple.put(i, DatumFactory.createString(cell));
+            break;
+          case IPv4:
+            if (cells[i].charAt(0) == '/') {
+              tuple
+                  .put(
+                      i,
+                      DatumFactory.createIPv4(cells[i].substring(1,
+                          cell.length())));
+            }
+            break;
           }
-          break;
         }
       }
       return tuple;

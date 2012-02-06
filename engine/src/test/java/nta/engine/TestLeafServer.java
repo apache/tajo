@@ -119,9 +119,15 @@ public class TestLeafServer {
       tuple.put(1, DatumFactory.createInt(i + 1));
       appender.addTuple(tuple);
     }
-    appender.close();
+    appender.close(); 
     
     Fragment [] frags = sm.split("table2");
+    
+    Schema outputSchema = new Schema();
+    outputSchema.addColumn("name", DataType.STRING);
+    outputSchema.addColumn("id", DataType.INT);
+    TableMeta outputMeta = new TableMetaImpl(outputSchema, StoreType.CSV);    
+    sm.initTableBase(outputMeta, "table120205");
     System.out.println("Table2: "+frags[0]);
     LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(0);
     SubQueryRequest req1 = new SubQueryRequestImpl(0, new ArrayList<Fragment>(
@@ -131,9 +137,9 @@ public class TestLeafServer {
         leaf1.requestSubQuery(req1.getProto()).getStatus());
     assertNotNull(sm.getTableMeta(sm.getTablePath("table120205")));
     frags = sm.split("table120205");
-    SubQueryRequest req2 = new SubQueryRequestImpl(0, new ArrayList<Fragment>(
+    SubQueryRequest req2 = new SubQueryRequestImpl(1, new ArrayList<Fragment>(
         Arrays.asList(frags)), new Path(TEST_PATH, "out").toUri(),
-        "table2nd := select name, id from table120205_1");
+        "table120205 := select name, id from table120205_1");
     assertEquals(QueryStatus.FINISHED,
         leaf1.requestSubQuery(req2.getProto()).getStatus());
   }

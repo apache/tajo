@@ -83,7 +83,7 @@ public class TestGlobalEngine {
 	
 	@Test
 	public void test() throws Exception {
-		master.executeQueryC(query);
+		master.executeQuery(query);
 //		while (true) {
 //			Thread.sleep(1000);
 //		}

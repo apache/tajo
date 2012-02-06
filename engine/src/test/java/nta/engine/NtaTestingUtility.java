@@ -9,7 +9,6 @@ import java.net.InetSocketAddress;
 import java.util.UUID;
 
 import nta.catalog.CatalogServer;
-import nta.catalog.LocalCatalog;
 import nta.catalog.MiniCatalogServer;
 import nta.conf.NtaConf;
 import nta.zookeeper.MiniZooKeeperCluster;

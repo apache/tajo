@@ -39,10 +39,11 @@ public class GlobalQueryPlanner {
 		this.optimizer = new GlobalOptimizer();
 		
 		String[] plans = {"merge", "local"};
-		int[] nodeNum = {1, 1};
+		int[] nodeNum = {1, 12};
 		MappingType[] mappings = {MappingType.ONE_TO_ONE, MappingType.ONE_TO_ONE};
 		OptimizationPlan plan = new OptimizationPlan(2, plans, nodeNum, mappings);
 		this.optimizer.addOptimizationPlan(ExprType.GROUP_BY, plan);
+		this.optimizer.addOptimizationPlan(ExprType.SORT, plan);
 	}
 	
 	public GlobalQueryPlan build(LogicalNode logicalPlan) throws IOException {
