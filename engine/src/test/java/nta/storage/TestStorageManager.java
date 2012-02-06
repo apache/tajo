@@ -44,7 +44,6 @@ public class TestStorageManager {
 		TableMeta meta = new TableMetaImpl();
 		meta.setSchema(schema);
 		meta.setStorageType(StoreType.CSV);
-//		meta.putOption(CSVFile2.DELIMITER, ",");
 		
 		Tuple [] tuples = new Tuple[4];
 		for(int i=0; i < tuples.length; i++) {
@@ -79,6 +78,7 @@ public class TestStorageManager {
     TableMeta meta = new TableMetaImpl();
     meta.setSchema(schema);
     meta.setStorageType(StoreType.CSV);
+    meta.putOption(CSVFile2.DELIMITER, ",");
     
     sm.initTableBase(meta, "table2");
     Appender appender = sm.getAppender(meta, "table2", System.currentTimeMillis()+"");
@@ -86,7 +86,6 @@ public class TestStorageManager {
     int tupleNum = 10000;
     VTuple vTuple = null;
     for(int i = 0; i < tupleNum; i++) {
-      System.out.println(i);
       vTuple = new VTuple(2);
       vTuple.put(0, DatumFactory.createString("abc"));
       vTuple.put(1, DatumFactory.createInt(i+1));
@@ -97,10 +96,10 @@ public class TestStorageManager {
     FileStatus status = sm.listTableFiles("table2")[0];
     long fileLen = status.getLen();   // 88894
     long randomNum = (long) (Math.random() * fileLen) + 1;
+    System.out.println("fileLen: " + fileLen + ", randomNum: " + randomNum);
     
     Fragment[] tablets = new Fragment[1];
-    Fragment tablet = new Fragment("table2_1", status.getPath(), meta, 0, randomNum);
-    tablets[0] = tablet;
+    tablets[0] = new Fragment("table2_1", status.getPath(), meta, 0, randomNum);
     
     Scanner fileScanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;
@@ -109,8 +108,8 @@ public class TestStorageManager {
     }
     fileScanner.close();
     
-    tablet = new Fragment("table2_2", status.getPath(), meta, randomNum, fileLen - randomNum);
-    tablets[0] = tablet;
+    tablets[0] = new Fragment("table2_2", status.getPath(), meta, randomNum, fileLen - randomNum);
+
     fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
     while((vTuple = (VTuple) fileScanner.next()) != null) {
       tupleCnt++;

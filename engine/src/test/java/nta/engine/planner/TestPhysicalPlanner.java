@@ -23,6 +23,7 @@ import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.storage.Appender;
+import nta.storage.CSVFile2;
 import nta.storage.Scanner;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;

@@ -136,19 +136,19 @@ public class RawFile2 extends Storage {
     private byte[] buffer;
     ByteArrayInputStream in_byte;
     DataInputStream in_buffer;     
-    private boolean pageBuffer() throws IOException {
+    private boolean pageBuffer() throws IOException {      
       if (in.getPos() - SYNC_SIZE == start) { // first.
         tupleSize = checkTupleSize();
-        if(defaultSize > available()) {
-        	buffer = new byte[(int)(available())];
+        if(defaultSize > tabletable()) {
+        	buffer = new byte[(int)(tabletable())];
         } else {
         	buffer = new byte[defaultSize];
         }
         pageStart = in.getPos();
         in.read(buffer);
-      } else if (in_buffer.available() > 0 || available() > 0) { // tuple 이 잘림.
+      } else if (in_buffer.available() > 0 || tabletable() > 0) { // tuple 이 잘림.
         pieceSize1 = in_buffer.available();      
-        pieceSize2 = (int)available();
+        pieceSize2 = (int)tabletable();
 
         if (pieceSize1 + pieceSize2 < defaultSize) {
           bufferSize = pieceSize1 + pieceSize2;
@@ -272,7 +272,7 @@ public class RawFile2 extends Storage {
     }
     
     @Override
-    public long available() throws IOException{
+    public long tabletable() throws IOException{
       return this.end - in.getPos();
     }
     
