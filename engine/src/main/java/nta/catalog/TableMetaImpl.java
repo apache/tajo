@@ -91,7 +91,8 @@ public class TableMetaImpl implements TableMeta {
       return this.options;
     }
     if(!p.hasParams()) {
-      return null;
+      this.options = new Options();
+      return this.options;
     }
     this.options = new Options(p.getParams());
     
@@ -187,6 +188,8 @@ public class TableMetaImpl implements TableMeta {
 		}
 		if (options == null && p.hasParams()) {
 			options = new Options(p.getParams());
+		} else {
+		  options = new Options();
 		}
 	}
 	

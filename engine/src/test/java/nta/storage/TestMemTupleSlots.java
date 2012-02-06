@@ -1,17 +1,6 @@
 package nta.storage;
 
-import static org.junit.Assert.*;
-
-import java.io.IOException;
-import java.net.URI;
-
-import nta.catalog.Schema;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.CatalogProtos.StoreType;
-
-import org.junit.Before;
-import org.junit.Test;
 
 /**
  * 

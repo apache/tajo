@@ -9,7 +9,6 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.common.exception.InvalidAddressException;
 import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
@@ -17,7 +16,6 @@ import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
 
 import org.apache.hadoop.fs.FileStatus;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 

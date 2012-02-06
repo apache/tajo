@@ -12,6 +12,8 @@ import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.Target;
 
+import com.google.common.annotations.VisibleForTesting;
+
 
 /**
  * 실행 중인 subquery에 대한 정보를 담는다. 
@@ -20,15 +22,14 @@ import nta.engine.parser.QueryBlock.Target;
  *
  */
 public class SubqueryContext extends Context {
-  private final CatalogService catalog;
   private final Map<String, Fragment> fragmentMap
     = new HashMap<String, Fragment>();
   
   private int queryId;
   private QueryBlock query;
   
-  private SubqueryContext(CatalogService catalog, int queryId, Fragment [] fragments) {
-    this.catalog = catalog;
+  private SubqueryContext(int queryId, Fragment [] fragments) {
+    this.queryId = queryId;
     
     for(Fragment t : fragments) {
       fragmentMap.put(t.getId(), t);
@@ -45,12 +46,13 @@ public class SubqueryContext extends Context {
       this.catalog = catalog;
     }
     
-    public SubqueryContext create(Fragment [] fragments) {
-      return new SubqueryContext(catalog, 0, fragments);
+    @VisibleForTesting
+    public SubqueryContext create(Fragment [] frags) {
+      return new SubqueryContext(0, frags);
     }
     
     public SubqueryContext create(SubQueryRequest request) {
-      return new SubqueryContext(catalog, request.getId(), 
+      return new SubqueryContext(request.getId(), 
           request.getFragments().toArray(
               new Fragment [request.getFragments().size()]));
     }

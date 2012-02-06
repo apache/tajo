@@ -3,13 +3,9 @@ package nta.engine.exec.eval;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
-import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -18,7 +14,6 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.NtaTestingUtility;
@@ -28,7 +23,6 @@ import nta.engine.function.Function;
 import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
-import nta.engine.query.exception.NQLSyntaxException;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 

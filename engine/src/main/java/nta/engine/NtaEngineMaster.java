@@ -18,11 +18,9 @@ import nta.catalog.TableUtil;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
-import nta.engine.json.GsonCreator;
 import nta.engine.ipc.QueryEngineInterface;
+import nta.engine.json.GsonCreator;
 import nta.engine.query.GlobalEngine;
-import nta.rpc.NettyRpc;
-import nta.rpc.ProtoParamRpcServer;
 import nta.storage.StorageManager;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkServer;
@@ -33,9 +31,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.ipc.RPC;
-import org.apache.hadoop.net.DNS;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
 
 /**
@@ -62,8 +59,8 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   private final Path dataPath;
 
 	private final InetSocketAddress bindAddr;
-	private ProtoParamRpcServer server; // RPC between master and client
-//	private RPC.Server server;
+	//private ProtoParamRpcServer server; // RPC between master and client
+  private RPC.Server server;
 
 	private List<EngineService> services = new ArrayList<EngineService>();
 
@@ -95,8 +92,9 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     // If tajo is local mode
     if (conf.get(NConstants.CLUSTER_DISTRIBUTED, 
         NConstants.CLUSTER_IS_LOCAL).equals("false")) {
-      this.zkServer = new ZkServer(conf);
-      this.zkServer.start();
+      LOG.info("Enabled Pseudo Distributed Mode");
+/*      this.zkServer = new ZkServer(conf);
+      this.zkServer.start();*/
       
       // TODO - When the RPC framework supports all methods of the catalog 
       // server, the below comments should be eliminated.
@@ -122,9 +120,13 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
         conf.get(NConstants.MASTER_ADDRESS, NConstants.DEFAULT_MASTER_ADDRESS);
     InetSocketAddress initIsa = 
         NetUtils.createSocketAddr(masterAddr);
-    this.server = NettyRpc.getProtoParamRpcServer(this, initIsa);
+/*    this.server = NettyRpc.getProtoParamRpcServer(this, initIsa);
     this.server.start();
-    this.bindAddr = this.server.getBindAddress();    
+    this.bindAddr = this.server.getBindAddress();*/
+    this.server =
+        RPC.getServer(this, initIsa.getHostName(), initIsa.getPort(), conf);
+    this.server.start();
+    this.bindAddr = this.server.getListenerAddress();
     this.serverName = bindAddr.getHostName() + ":" + bindAddr.getPort();
     LOG.info(NtaEngineMaster.class.getSimpleName() + " is bind to "
         + serverName);
@@ -180,7 +182,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 
   public void shutdown() {
     this.stopped = true;
-    this.server.shutdown();
+    this.server.stop();
 
     for (EngineService service : services) {
       try {
@@ -196,17 +198,15 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     return zkClient.getChildren(NConstants.ZNODE_LEAFSERVERS);
   }
 
-  public static void main(String[] args) throws Exception {
-    NtaConf conf = new NtaConf();
-    NtaEngineMaster master = new NtaEngineMaster(conf);
-
-    master.start();
-  }
-
   @Override
-  public String executeQuery(String query) {
-    // TODO Auto-generated method stub
-    return "Path String should be returned";
+  public String executeQuery(String query) throws Exception {
+    catalog.updateAllTabletServingInfo(getOnlineServer());
+    String rs = queryEngine.executeQuery(query);
+    if (rs == null) {
+      return "";
+    } else {
+      return rs.toString();
+    }
   }
 
   @Override
@@ -245,16 +245,6 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   @Override
   public boolean existsTable(String name) {
     return catalog.existsTable(name);
-  }
-
-  public String executeQueryC(String query) throws Exception {
-    catalog.updateAllTabletServingInfo(getOnlineServer());
-    String rs = queryEngine.executeQuery(query);
-    if (rs == null) {
-      return "";
-    } else {
-      return rs.toString();
-    }
   }
 
   public String getTableDesc(String name) throws NoSuchTableException {
@@ -297,4 +287,11 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 		}
 		return GsonCreator.getInstance().toJson(tableNames);
 	}
+	
+  public static void main(String[] args) throws Exception {
+    Configuration conf = new NtaConf();
+    NtaEngineMaster master = new NtaEngineMaster(conf);
+
+    master.start();
+  }
 }

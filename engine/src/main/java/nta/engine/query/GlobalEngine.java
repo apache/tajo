@@ -18,6 +18,7 @@ import java.util.StringTokenizer;
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
 import nta.catalog.HostInfo;
+import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
@@ -51,6 +52,7 @@ import nta.engine.planner.global.UnitQuery;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
@@ -75,7 +77,8 @@ public class GlobalEngine implements EngineService {
   private final CatalogService catalog;
   private final QueryAnalyzer analyzer;
   private final StorageManager storageManager;
-  private QueryContext.Factory factory;
+  private final QueryContext.Factory factory;
+  private final StorageManager sm;
 
   GlobalQueryPlanner globalPlanner;
   PhysicalPlanner phyPlanner;
@@ -92,6 +95,7 @@ public class GlobalEngine implements EngineService {
     this.storageManager = sm;
     this.analyzer = new QueryAnalyzer(cat);
     this.factory = new QueryContext.Factory(catalog);
+    this.sm = new StorageManager(conf);
 
     // loPlanner = new LogicalPlanner(this.catalog);
     globalPlanner = new GlobalQueryPlanner(this.catalog);
@@ -107,7 +111,8 @@ public class GlobalEngine implements EngineService {
   public String executeQuery(String querystr) throws Exception {
     String[] tokens = querystr.split(" ");
     String subqueryStr = null;
-    String formatStr = "";
+    String storeName = "t_"+System.currentTimeMillis();
+    String formatStr = storeName+ " := ";
     for (int i = 0; i < tokens.length; i++) {
       if (tokens[i].equals("from")) {
         formatStr += "from %s ";
@@ -122,9 +127,8 @@ public class GlobalEngine implements EngineService {
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
     LogicalOptimizer.optimize(ctx, plan);
     GlobalQueryPlan globalPlan = globalPlanner.build(plan);
-    String storeName = null;
     TableMeta meta = null;
-    for (int i = 0; i < globalPlan.size(); i++) {
+/*    for (int i = 0; i < globalPlan.size(); i++) {
       QueryStep queryStep = globalPlan.getQueryStep(i);
       for (int j = 0; j < queryStep.size(); j++) {
         UnitQuery q = queryStep.getQuery(j);
@@ -140,8 +144,12 @@ public class GlobalEngine implements EngineService {
           break;
         }
       }
-    }
+    }*/
 
+    Schema outSchema = ((LogicalRootNode) plan).getSubNode().getOutputSchema();        
+    meta = new TableMetaImpl(outSchema, StoreType.CSV);
+    sm.initTableBase(meta, storeName);
+    LOG.info(">>>>> Output directory ("+sm.getTablePath(storeName)+") is created");
     if (storeName == null) {
       storeName = "/" + System.currentTimeMillis();
     }
@@ -179,9 +187,11 @@ public class GlobalEngine implements EngineService {
             q.setOutputName(storeName);
             subqueryStr = String.format(formatStr, q.getFragments().get(0)
                 .getId());
+            LOG.info(">>>>> issued fragment id: " + q.getFragments().get(0).getId());
+            LOG.info(">>>>> issued query: "+subqueryStr);
             SubQueryRequest request = new SubQueryRequestImpl(q.getId(),
                 q.getFragments(), new URI(q.getOutputName()), subqueryStr);
-
+            LOG.info(">>>>> issued query id: "+request.getId());
             cb = new Callback<SubQueryResponseProto>();
             unitQueryMap.put(q, cb);
             leaf = (AsyncWorkerClientInterface) NettyRpc

@@ -198,6 +198,9 @@ public class TestPhysicalPlanner {
     
     LogicalOptimizer.optimize(ctx, plan);
     
+    TableMeta outputMeta = new TableMetaImpl(plan.getOutputSchema(), StoreType.CSV);
+    sm.initTableBase(outputMeta, "grouped");
+    
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     exec.next();

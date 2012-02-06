@@ -74,6 +74,8 @@ public class LogicalPlanner {
     }
     
     LogicalRootNode root = new LogicalRootNode();
+    root.setInputSchema(plan.getOutputSchema());
+    root.setOutputSchema(plan.getOutputSchema());
     root.setSubNode(plan);
     annotateInOutSchemas(ctx, root);
     
@@ -216,6 +218,9 @@ public class LogicalPlanner {
       stack.push(root);
       refineInOutSchama(ctx, root.getSubNode(), necessaryTargets, stack);
       stack.pop();
+      
+      root.setInputSchema(root.getSubNode().getOutputSchema());
+      root.setOutputSchema(root.getSubNode().getOutputSchema());
       break;
     
     case STORE:
