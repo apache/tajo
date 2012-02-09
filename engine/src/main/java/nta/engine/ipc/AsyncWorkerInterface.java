@@ -41,11 +41,11 @@ public interface AsyncWorkerInterface extends Stoppable, Abortable {
 	 */	
 	public void releaseTablets(ReleaseTabletRequestProto request);
 	
-	/**
-	 * LeafServer의 상태 정보를 가져옴
-	 * @param serverName
-	 * @return ServerStatus (protocol buffer)
-	 * @throws 
-	 */
-	public ServerStatusProto getServerStatus();
+	 /**
+   * LeafServer의 상태 정보를 가져옴
+   * @param serverName
+   * @return ServerStatus (protocol buffer)
+   * @throws 
+   */
+  public ServerStatusProto getServerStatus();
 }

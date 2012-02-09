@@ -39,7 +39,8 @@ public class TestWorkerCommunicator {
     List<String> servers = tracker.getMembers();
     for (String server : servers) {
       try {
-        ServerStatusProto status = wc.getServerStatus(server);
+        ServerStatusProto status; 
+        status = wc.getServerStatus(server).get();
 
         assertNotNull(status.getSystem().getAvailableProcessors());
         assertNotNull(status.getSystem().getFreeMemory());

@@ -8,6 +8,7 @@ import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
+import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.rpc.Callback;
 
 /**
@@ -36,4 +37,13 @@ public interface AsyncWorkerClientInterface {
 	 * @param request
 	 */	
 	public void releaseTablets(ReleaseTabletRequestProto request);
+	
+  /**
+   * LeafServer의 상태 정보를 가져옴
+   * 
+   * @param callback
+   * @return ServerStatus (protocol buffer)
+   * @throws
+   */
+  public void getServerStatus(Callback<ServerStatusProto> callback);
 }
