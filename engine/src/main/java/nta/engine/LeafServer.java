@@ -3,6 +3,7 @@
  */
 package nta.engine;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
+import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.ipc.AsyncWorkerInterface;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
@@ -47,70 +49,70 @@ import org.apache.zookeeper.KeeperException;
  * @author Hyunsik Choi
  */
 public class LeafServer extends Thread implements AsyncWorkerInterface {
-	private static final Log LOG = LogFactory.getLog(LeafServer.class);	
+  private static final Log LOG = LogFactory.getLog(LeafServer.class);
 
-	private final Configuration conf;
+  private final Configuration conf;
 
-	// Server States
-	/**
-	 * This servers address.
-	 */	
-	//	private final Server rpcServer;
-	private final ProtoParamRpcServer rpcServer;
-	private final InetSocketAddress isa;
+  // Server States
+  /**
+   * This servers address.
+   */
+  // private final Server rpcServer;
+  private final ProtoParamRpcServer rpcServer;
+  private final InetSocketAddress isa;
 
-	private volatile boolean stopped = false;	
-	private volatile boolean isOnline = false;
+  private volatile boolean stopped = false;
+  private volatile boolean isOnline = false;
 
-	private final String serverName;
-	
-	// Cluster Management
-	private ZkClient zkClient;
-	private MasterAddressTracker masterAddrTracker;
-	
-	// Query Processing
-	private FileSystem defaultFS;
-	
-	private CatalogClient catalog;
-	private StorageManager storeManager;
-	private QueryEngine queryEngine;
-	private List<EngineService> services = new ArrayList<EngineService>();
-	
-	private final Path basePath;
-	private final Path dataPath;
-	
-	private final QueryAnalyzer analyzer;
-	private final SubqueryContext.Factory ctxFactory;
+  private final String serverName;
 
-	public LeafServer(final Configuration conf) throws IOException {
-		this.conf = conf;
+  // Cluster Management
+  private ZkClient zkClient;
+  private MasterAddressTracker masterAddrTracker;
 
-		// Server to handle client requests.
-		String hostname = DNS.getDefaultHost(
-			conf.get("nta.master.dns.interface", "default"),
-			conf.get("nta.master.dns.nameserver", "default"));
-		int port = conf.getInt(NConstants.LEAFSERVER_PORT, 
-		    NConstants.DEFAULT_LEAFSERVER_PORT);
-		// Creation of a HSA will force a resolve.
-		InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
-		if (initialIsa.getAddress() == null) {
-			throw new IllegalArgumentException("Failed resolve of " + this.isa);
-		}
-		
-		this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);
-		this.rpcServer.start();
+  // Query Processing
+  private FileSystem defaultFS;
 
-		// Set our address.
-	  this.isa = this.rpcServer.getBindAddress();
-		this.serverName = this.isa.getHostName()+":"+this.isa.getPort();
-		
-		 // Get the tajo base dir
+  private CatalogClient catalog;
+  private StorageManager storeManager;
+  private QueryEngine queryEngine;
+  private List<EngineService> services = new ArrayList<EngineService>();
+
+  private final Path basePath;
+  private final Path dataPath;
+
+  private final QueryAnalyzer analyzer;
+  private final SubqueryContext.Factory ctxFactory;
+
+  public LeafServer(final Configuration conf) throws IOException {
+    this.conf = conf;
+
+    // Server to handle client requests.
+    String hostname = DNS.getDefaultHost(
+        conf.get("nta.master.dns.interface", "default"),
+        conf.get("nta.master.dns.nameserver", "default"));
+    int port = conf.getInt(NConstants.LEAFSERVER_PORT,
+        NConstants.DEFAULT_LEAFSERVER_PORT);
+    // Creation of a HSA will force a resolve.
+    InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
+    if (initialIsa.getAddress() == null) {
+      throw new IllegalArgumentException("Failed resolve of " + this.isa);
+    }
+
+    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);
+    this.rpcServer.start();
+
+    // Set our address.
+    this.isa = this.rpcServer.getBindAddress();
+    this.serverName = this.isa.getHostName() + ":" + this.isa.getPort();
+
+    // Get the tajo base dir
     this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
     LOG.info("Base dir is set " + conf.get(NConstants.ENGINE_BASE_DIR));
     // Get default DFS uri from the base dir
     this.defaultFS = basePath.getFileSystem(conf);
-    LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");    
-        
+    LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
+
     if (defaultFS.exists(basePath) == false) {
       defaultFS.mkdirs(basePath);
       LOG.info("Tajo Base dir (" + basePath + ") is created.");
@@ -122,96 +124,96 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       defaultFS.mkdirs(dataPath);
       LOG.info("Data dir (" + dataPath + ") is created");
     }
-		
-    this.zkClient = new ZkClient(conf);
-		this.catalog = new CatalogClient(zkClient);
-		this.analyzer = new QueryAnalyzer(catalog);
-		this.storeManager = new StorageManager(conf);
-		this.ctxFactory = new SubqueryContext.Factory(catalog);
 
-		Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
-	}
-	
-	private void participateCluster() throws IOException, InterruptedException, 
-	    KeeperException {
+    this.zkClient = new ZkClient(conf);
+    this.catalog = new CatalogClient(zkClient);
+    this.analyzer = new QueryAnalyzer(catalog);
+    this.storeManager = new StorageManager(conf);
+    this.ctxFactory = new SubqueryContext.Factory(catalog);
+
+    Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
+  }
+
+  private void participateCluster() throws IOException, InterruptedException,
+      KeeperException {
     this.masterAddrTracker = new MasterAddressTracker(zkClient);
     this.masterAddrTracker.start();
-    
-    byte [] master = null;
-    while(master == null) {
+
+    byte[] master = null;
+    while (master == null) {
       master = masterAddrTracker.blockUntilAvailable(1000);
       LOG.info("Waiting for the Tajo master.....");
     }
-    
+
     LOG.info("Got the master address (" + new String(master) + ")");
     // if the znode already exists, it will be updated for notification.
     ZkUtil.upsertEphemeralNode(zkClient,
         ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName));
     LOG.info("Created the znode nta/leafservers/" + serverName);
-	}
+  }
 
-	public void run() {
-		LOG.info("NtaLeafServer startup");
-		
-		try {
-		  try {
-		    participateCluster();
-		  } catch (Exception e) {
-		    abort(e.getMessage(), e);
-		  }
-			
+  public void run() {
+    LOG.info("NtaLeafServer startup");
+
+    try {
+      try {
+        participateCluster();
+      } catch (Exception e) {
+        abort(e.getMessage(), e);
+      }
+
       this.queryEngine = new QueryEngine(conf, catalog, storeManager, null);
       this.queryEngine.init();
-			
-			if(!this.stopped) {
-				this.isOnline = true;
-				while(!this.stopped) {					
-					Thread.sleep(1000);
 
-				}
-			}	
-		} catch (Throwable t) {
-			LOG.fatal("Unhandled exception. Starting shutdown.", t);
-		} finally {		  
-			for(EngineService service : services) {
-				try {
-					service.shutdown();
-		      shutdown("Shutting Down ("+serverName+")");
-				} catch (Exception e) {
-					LOG.error(e);
-				}
-			}
-			
+      if (!this.stopped) {
+        this.isOnline = true;
+        while (!this.stopped) {
+          Thread.sleep(1000);
+
+        }
+      }
+    } catch (Throwable t) {
+      LOG.fatal("Unhandled exception. Starting shutdown.", t);
+    } finally {
+      for (EngineService service : services) {
+        try {
+          service.shutdown();
+          shutdown("Shutting Down (" + serverName + ")");
+        } catch (Exception e) {
+          LOG.error(e);
+        }
+      }
+
       this.queryEngine.shutdown();
       masterAddrTracker.stop();
       catalog.close();
       zkClient.close();
-		}
+    }
 
-		LOG.info("LeafServer ("+serverName+") main thread exiting");
-	}
-	
-	private class ShutdownHook implements Runnable {
-		@Override
-		public void run() {
-		  shutdown("Shutdown Hook");
-		}
-	}
-	
-	public String getServerName() {
-		return this.serverName;
-	}
-	
-	/**
-	 * @return true if a stop has been requested.
-	 */
-	public boolean isStopped() {
-		return this.stopped;
-	}
-	
-	public boolean isOnline() {
-		return this.isOnline;
-	}
+    LOG.info("LeafServer (" + serverName + ") main thread exiting");
+  }
+
+  private class ShutdownHook implements Runnable {
+    @Override
+    public void run() {
+      shutdown("Shutdown Hook");
+    }
+  }
+
+  public String getServerName() {
+    return this.serverName;
+  }
+
+  /**
+   * @return true if a stop has been requested.
+   */
+  public boolean isStopped() {
+    return this.stopped;
+  }
+
+  public boolean isOnline() {
+    return this.isOnline;
+  }
 
   public void shutdown(final String msg) {
     this.stopped = true;
@@ -231,35 +233,34 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     shutdown(reason);
   }
 
-	//////////////////////////////////////////////////////////////////////////////
-	// LeafServerInterface
-	//////////////////////////////////////////////////////////////////////////////
-	@Override
-	public SubQueryResponseProto requestSubQuery(SubQueryRequestProto requestProto) 
-	    throws IOException { 
-	  SubQueryRequest request = new SubQueryRequestImpl(requestProto);
-	  SubqueryContext ctx = ctxFactory.create(request);
-	  QueryBlock query = analyzer.parse(ctx, request.getQuery());
-	  LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-	  LogicalOptimizer.optimize(ctx, plan);
-    LOG.info("Assigned task: (" + request.getId()+") start:" 
-        + request.getFragments().get(0).getStartOffset()
-        +" end: " + request.getFragments()+"\nquery: "
-        + request.getQuery());
-    
+  // ////////////////////////////////////////////////////////////////////////////
+  // LeafServerInterface
+  // ////////////////////////////////////////////////////////////////////////////
+  @Override
+  public SubQueryResponseProto requestSubQuery(SubQueryRequestProto requestProto)
+      throws IOException {
+    SubQueryRequest request = new SubQueryRequestImpl(requestProto);
+    SubqueryContext ctx = ctxFactory.create(request);
+    QueryBlock query = analyzer.parse(ctx, request.getQuery());
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    LogicalOptimizer.optimize(ctx, plan);
+    LOG.info("Assigned task: (" + request.getId() + ") start:"
+        + request.getFragments().get(0).getStartOffset() + " end: "
+        + request.getFragments() + "\nquery: " + request.getQuery());
+
     PhysicalPlanner phyPlanner = new PhysicalPlanner(storeManager);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-    
+
     @SuppressWarnings("unused")
     Tuple tuple = null;
-    while((tuple = exec.next()) != null) {
+    while ((tuple = exec.next()) != null) {
     }
-	  
+
     SubQueryResponseProto.Builder res = SubQueryResponseProto.newBuilder();
     res.setId(request.getId());
     res.setStatus(QueryStatus.FINISHED);
     return res.build();
-	}
+  }
 
   @Override
   public SubQueryResponseProto requestQueryUnit(QueryUnitRequestProto request)
@@ -268,20 +269,53 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     return null;
   }
 
-	@Override
-	public void assignTablets(AssignTabletRequestProto request) {
-		// TODO - not implemented yet
-	}
+  @Override
+  public void assignTablets(AssignTabletRequestProto request) {
+    // TODO - not implemented yet
+  }
 
-	@Override
-	public void releaseTablets(ReleaseTabletRequestProto request) {
-		// TODO - not implemented yet
-	}
+  @Override
+  public void releaseTablets(ReleaseTabletRequestProto request) {
+    // TODO - not implemented yet
+  }
 
-	public static void main(String [] args) throws IOException {
-		NtaConf conf = new NtaConf();
-		LeafServer leafServer = new LeafServer(conf);
+  @Override
+  public ServerStatusProto getServerStatus() {
+    // serverStatus builder
+    ServerStatusProto.Builder serverStatus = ServerStatusProto.newBuilder();
 
-		leafServer.start();
-	}
+    // system(CPU, memory) status builder
+    ServerStatusProto.System.Builder systemStatus = ServerStatusProto.System
+        .newBuilder();
+
+    systemStatus.setAvailableProcessors(Runtime.getRuntime()
+        .availableProcessors());
+    systemStatus.setFreeMemory(Runtime.getRuntime().freeMemory());
+    systemStatus.setMaxMemory(Runtime.getRuntime().maxMemory());
+    systemStatus.setTotalMemory(Runtime.getRuntime().totalMemory());
+
+    serverStatus.setSystem(systemStatus);
+
+    // disk status builder
+    File[] roots = File.listRoots();
+    for (File root : roots) {
+      ServerStatusProto.Disk.Builder diskStatus = ServerStatusProto.Disk
+          .newBuilder();
+
+      diskStatus.setAbsolutePath(root.getAbsolutePath());
+      diskStatus.setTotalSpace(root.getTotalSpace());
+      diskStatus.setFreeSpace(root.getFreeSpace());
+      diskStatus.setUsableSpace(root.getUsableSpace());
+
+      serverStatus.addDisk(diskStatus);
+    }
+    return serverStatus.build();
+  }
+
+  public static void main(String[] args) throws IOException {
+    NtaConf conf = new NtaConf();
+    LeafServer leafServer = new LeafServer(conf);
+
+    leafServer.start();
+  }
 }

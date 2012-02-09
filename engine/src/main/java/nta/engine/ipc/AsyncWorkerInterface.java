@@ -10,6 +10,7 @@ import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
 import nta.engine.QueryUnitProtos.QueryUnitResponseProto;
+import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.engine.Stoppable;
 
 /**
@@ -39,4 +40,12 @@ public interface AsyncWorkerInterface extends Stoppable, Abortable {
 	 * @param request
 	 */	
 	public void releaseTablets(ReleaseTabletRequestProto request);
+	
+	/**
+	 * LeafServer의 상태 정보를 가져옴
+	 * @param serverName
+	 * @return ServerStatus (protocol buffer)
+	 * @throws 
+	 */
+	public ServerStatusProto getServerStatus();
 }
