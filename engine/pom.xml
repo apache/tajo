@@ -84,6 +84,7 @@
 								<argument>src/main/proto/LeafServerProtos.proto</argument>
 								<argument>src/main/proto/ExecutorRunnerProtos.proto</argument>
 								<argument>src/main/proto/QueryUnitProtos.proto</argument>
+								<argument>src/main/proto/LeafServerStatusProtos.proto</argument>
 							</arguments>
 						</configuration>
 						<goals>
