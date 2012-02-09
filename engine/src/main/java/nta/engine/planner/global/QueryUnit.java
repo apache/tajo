@@ -17,7 +17,7 @@ import nta.engine.planner.logical.LogicalNode;
  * @author jihoon
  *
  */
-public class UnitQuery {
+public class QueryUnit {
 
 	private static int nextId = -1;
 
@@ -30,27 +30,27 @@ public class UnitQuery {
 	private String tableName;
 	private String outputName;
 	private List<Fragment> fragments;
-	private Set<UnitQuery> prevQueries;
-	private Set<UnitQuery> nextQueries;
+	private Set<QueryUnit> prevQueries;
+	private Set<QueryUnit> nextQueries;
 	private Annotation annotaion;
 	private DistPlan distPlan;
 	
 	private String hostName;
 	private int port;
 	
-	public UnitQuery() {
+	public QueryUnit() {
 		this.id = getNextId();
-		prevQueries = new HashSet<UnitQuery>();
-		nextQueries = new HashSet<UnitQuery>();
+		prevQueries = new HashSet<QueryUnit>();
+		nextQueries = new HashSet<QueryUnit>();
 		fragments = new ArrayList<Fragment>();
 	}
 	
-	public UnitQuery(LogicalNode op) {
+	public QueryUnit(LogicalNode op) {
 		this();
 		set(op, null);
 	}
 	
-	public UnitQuery(LogicalNode op, Annotation annotation) {
+	public QueryUnit(LogicalNode op, Annotation annotation) {
 		this();
 		set(op, annotation);
 	}
@@ -89,19 +89,26 @@ public class UnitQuery {
 		this.fragments.add(fragment);
 	}
 	
-	public void addPrevQuery(UnitQuery query) {
+	public void setFragments(Fragment[] fragments) {
+	  this.fragments.clear();
+	  for (Fragment frag : fragments) {
+	    this.fragments.add(frag);
+	  }
+	}
+	
+	public void addPrevQuery(QueryUnit query) {
 		prevQueries.add(query);
 	}
 	
-	public void addNextQuery(UnitQuery query) {
+	public void addNextQuery(QueryUnit query) {
 		nextQueries.add(query);
 	}
 	
-	public void removePrevQuery(UnitQuery query) {
+	public void removePrevQuery(QueryUnit query) {
 		prevQueries.remove(query);
 	}
 	
-	public void removeNextQuery(UnitQuery query) {
+	public void removeNextQuery(QueryUnit query) {
 		nextQueries.remove(query);
 	}
 	
@@ -113,11 +120,11 @@ public class UnitQuery {
 		return this.fragments;
 	}
 	
-	public Set<UnitQuery> getPrevQueries() {
+	public Set<QueryUnit> getPrevQueries() {
 		return this.prevQueries;
 	}
 	
-	public Set<UnitQuery> getNextQueries() {
+	public Set<QueryUnit> getNextQueries() {
 		return this.nextQueries;
 	}
 	

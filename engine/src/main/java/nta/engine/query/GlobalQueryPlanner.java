@@ -16,8 +16,8 @@ import nta.engine.planner.global.GlobalQueryPlan;
 import nta.engine.planner.global.MappingType;
 import nta.engine.planner.global.OptimizationPlan;
 import nta.engine.planner.global.QueryStep;
-import nta.engine.planner.global.UnitQuery;
-import nta.engine.planner.global.UnitQueryGraph;
+import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.global.QueryUnitGraph;
 import nta.engine.planner.logical.BinaryNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
@@ -47,40 +47,40 @@ public class GlobalQueryPlanner {
 	}
 	
 	public GlobalQueryPlan build(LogicalNode logicalPlan) throws IOException {
-		UnitQueryGraph localized = localize(logicalPlan);
-		UnitQueryGraph optimized = optimize(localized);
+		QueryUnitGraph localized = localize(logicalPlan);
+		QueryUnitGraph optimized = optimize(localized);
 		GlobalQueryPlan plan = breakup(optimized);
 		return plan;
 	}
 	
-	private UnitQueryGraph localize(LogicalNode logicalPlan) throws IOException {
+	private QueryUnitGraph localize(LogicalNode logicalPlan) throws IOException {
 		// add union if necessary
 
 		// Build the unit query graph
-		UnitQueryGraph queryGraph = buildUnitQueryGraph(logicalPlan);
-		UnitQuery query = queryGraph.getRoot();
+		QueryUnitGraph queryGraph = buildUnitQueryGraph(logicalPlan);
+		QueryUnit query = queryGraph.getRoot();
 		
 		// For each level, localize each task
-		ArrayList<UnitQuery> q = new ArrayList<UnitQuery>();
+		ArrayList<QueryUnit> q = new ArrayList<QueryUnit>();
 		q.add(query);
 		
 		while (!q.isEmpty()) {
 			query = q.remove(0);
 
 			localizeQuery(query);
-			for (UnitQuery uq: query.getNextQueries()) {
+			for (QueryUnit uq: query.getNextQueries()) {
 				q.add(uq);
 			}
 		}
 		return queryGraph;
 	}
 	
-	private UnitQueryGraph buildUnitQueryGraph(LogicalNode logicalPlan) {
-		UnitQuery parent = null, child = null;
+	private QueryUnitGraph buildUnitQueryGraph(LogicalNode logicalPlan) {
+		QueryUnit parent = null, child = null;
 		LogicalNode op = logicalPlan;
-		ArrayList<UnitQuery> q = new ArrayList<UnitQuery>();
-		parent = new UnitQuery(op);
-		UnitQueryGraph graph = new UnitQueryGraph(parent);
+		ArrayList<QueryUnit> q = new ArrayList<QueryUnit>();
+		parent = new QueryUnit(op);
+		QueryUnitGraph graph = new QueryUnitGraph(parent);
 		q.add(parent);
 
 		// Depth-first traverse
@@ -91,7 +91,7 @@ public class GlobalQueryPlanner {
 			switch (op.getType()) {
 			case ROOT:
 				LogicalRootNode root = (LogicalRootNode)op;
-				child = new UnitQuery(root.getSubNode());
+				child = new QueryUnit(root.getSubNode());
 				parent.addNextQuery(child);
 				child.addPrevQuery(parent);
 				q.add(child);
@@ -104,30 +104,30 @@ public class GlobalQueryPlanner {
 			case SELECTION:
 			case PROJECTION:
 				// intermediate, unary
-				child = new UnitQuery(((UnaryNode)op).getSubNode());
+				child = new QueryUnit(((UnaryNode)op).getSubNode());
 				parent.addNextQuery(child);
 				child.addPrevQuery(parent);
 				q.add(child);
 				break;
 			case JOIN:
 				// intermediate, binary
-				child = new UnitQuery(((BinaryNode)op).getLeftSubNode());
+				child = new QueryUnit(((BinaryNode)op).getLeftSubNode());
 				parent.addNextQuery(child);
 				child.addPrevQuery(parent);
 				q.add(child);
-				child = new UnitQuery(((BinaryNode)op).getRightSubNode());
+				child = new QueryUnit(((BinaryNode)op).getRightSubNode());
 				parent.addNextQuery(child);
 				child.addPrevQuery(parent);
 				q.add(child);
 				break;
 			case GROUP_BY:
-				child = new UnitQuery(((UnaryNode)op).getSubNode());
+				child = new QueryUnit(((UnaryNode)op).getSubNode());
 				parent.addNextQuery(child);
 				child.addPrevQuery(parent);
 				q.add(child);
 				break;
 			case SORT:
-				child = new UnitQuery(((UnaryNode)op).getSubNode());
+				child = new QueryUnit(((UnaryNode)op).getSubNode());
 				parent.addNextQuery(child);
 				child.addPrevQuery(parent);
 				q.add(child);
@@ -139,7 +139,7 @@ public class GlobalQueryPlanner {
 			case SET_INTERSECT:
 				break;
 			case STORE:
-				child = new UnitQuery(((UnaryNode)op).getSubNode());
+				child = new QueryUnit(((UnaryNode)op).getSubNode());
 				parent.addNextQuery(child);
 				child.addPrevQuery(parent);
 				q.add(child);
@@ -150,11 +150,11 @@ public class GlobalQueryPlanner {
 		return graph;
 	}
 	
-	private void localizeQuery(UnitQuery query) {
+	private void localizeQuery(QueryUnit query) {
 		LogicalNode op = query.getOp();
-		UnitQuery[] localizedQueries;
-		Set<UnitQuery> prevQuerySet = query.getPrevQueries();
-		Set<UnitQuery> nextQuerySet = query.getNextQueries();
+		QueryUnit[] localizedQueries;
+		Set<QueryUnit> prevQuerySet = query.getPrevQueries();
+		Set<QueryUnit> nextQuerySet = query.getNextQueries();
 		
 		switch (op.getType()) {
 		case SCAN:
@@ -163,9 +163,9 @@ public class GlobalQueryPlanner {
 			localizedQueries = localizeSimpleQuery(query);
 			// if prev exist, it is still not be localized
 			if (prevQuerySet.size() > 0) {
-				UnitQuery prev = prevQuerySet.iterator().next();
+				QueryUnit prev = prevQuerySet.iterator().next();
 				prev.removeNextQuery(query);
-				for (UnitQuery localize : localizedQueries) {
+				for (QueryUnit localize : localizedQueries) {
 					prev.addNextQuery(localize);
 				}
 			}
@@ -194,22 +194,22 @@ public class GlobalQueryPlanner {
 		}
 	}
 	
-	private UnitQueryGraph optimize(UnitQueryGraph graph) {
+	private QueryUnitGraph optimize(QueryUnitGraph graph) {
 		return optimizer.optimize(graph);
 	}
 	
 	class LevelLabeledUnitQuery {
 		int level;
-		UnitQuery query;
+		QueryUnit query;
 		
-		public LevelLabeledUnitQuery(int level, UnitQuery query) {
+		public LevelLabeledUnitQuery(int level, QueryUnit query) {
 			this.level = level;
 			this.query = query;
 		}
 	}
 	
-	private GlobalQueryPlan breakup(UnitQueryGraph graph) {
-		Set<UnitQuery> nextQuerySet;
+	private GlobalQueryPlan breakup(QueryUnitGraph graph) {
+		Set<QueryUnit> nextQuerySet;
 		LevelLabeledUnitQuery e;
 		int curLevel = 0;
 		GlobalQueryPlan globalPlan = new GlobalQueryPlan();
@@ -224,8 +224,10 @@ public class GlobalQueryPlanner {
 				// remove root operator
 
 				if (curLevel != e.level) {
-					globalPlan.addQueryStep(queryStep);
-					queryStep = new QueryStep();
+				  if (queryStep.size() > 0) {
+				    globalPlan.addQueryStep(queryStep);
+	          queryStep = new QueryStep();
+				  }
 					curLevel = e.level;
 				}
 
@@ -238,7 +240,7 @@ public class GlobalQueryPlanner {
 //				}
 			}
 			nextQuerySet = e.query.getNextQueries();
-			for (UnitQuery t: nextQuerySet) {
+			for (QueryUnit t: nextQuerySet) {
 				s.add(new LevelLabeledUnitQuery(e.level+1, t));
 			}
 		}
@@ -250,14 +252,14 @@ public class GlobalQueryPlanner {
 		return globalPlan;
 	}
 	
-	private UnitQuery[] localizeSimpleQuery(UnitQuery query) {
+	private QueryUnit[] localizeSimpleQuery(QueryUnit query) {
 		ScanNode op = (ScanNode)query.getOp();
 		List<HostInfo> fragments = catalog.getHostByTable(op.getTableId());
-		UnitQuery[] localized = new UnitQuery[fragments.size()];
+		QueryUnit[] localized = new QueryUnit[fragments.size()];
 
 		for (int i = 0; i < localized.length; i++) {
 			// TODO: make tableInfo from tablets.get(i)
-			localized[i] = new UnitQuery(query.getOp(), query.getAnnotation());
+			localized[i] = new QueryUnit(query.getOp(), query.getAnnotation());
 			localized[i].setTableName(op.getTableId());
 			
 			// TODO: keep the alias
@@ -268,20 +270,19 @@ public class GlobalQueryPlanner {
 		return localized;
 	}
 	
-	private UnitQuery[] localizeComplexQuery(UnitQuery query) {
-		Set<UnitQuery> nextQuerySet = query.getNextQueries();
-		// TODO: localize시킬 unit query의 수를 결정하는 것이 필요
-		// TODO: 한 스텝으로 끝나지 않을 수도 있음
-		UnitQuery[] localized = new UnitQuery[nextQuerySet.size()];
-		for (int i = 0; i < localized.length; i++) {
-			localized[i] = new UnitQuery(query.getOp(), query.getAnnotation());
-		}
-		return localized;
+	private QueryUnit[] localizedCompexQuery(QueryUnit query) {
+	  Set<QueryUnit> nextQuerySet = query.getNextQueries();    
+	  // TODO: localize시킬 unit query의 수를 결정하는 것이 필요   
+	  // TODO: 한 스텝으로 끝나지 않을 수도 있음    
+	  QueryUnit[] localized = new QueryUnit[nextQuerySet.size()];   
+	  for (int i = 0; i < localized.length; i++) {    
+	    localized[i] = new QueryUnit(query.getOp(), query.getAnnotation());   
+	  }   
+	  return localized;
 	}
 	
 	private String selectHost(LogicalNode plan) {
-		// select the host which serves most tablets in the oplist
-		return null;
+	  // select the host which serves most tablets in the oplist
+	  return null;
 	}
-	
 }

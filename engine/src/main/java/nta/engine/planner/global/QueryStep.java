@@ -12,17 +12,17 @@ import java.util.List;
  */
 public class QueryStep {
 
-	private List<UnitQuery> queries;
+	private List<QueryUnit> queries;
 	
 	public QueryStep() {
-		queries = new ArrayList<UnitQuery>();
+		queries = new ArrayList<QueryUnit>();
 	}
 	
-	public void addQuery(UnitQuery q) {
+	public void addQuery(QueryUnit q) {
 		this.queries.add(q);
 	}
 	
-	public UnitQuery getQuery(int index) {
+	public QueryUnit getQuery(int index) {
 		return this.queries.get(index);
 	}
 	

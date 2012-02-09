@@ -23,7 +23,7 @@ import static org.junit.Assert.*;
  */
 public class TestGlobalOptimizer {
 	GlobalOptimizer optimizer;
-	UnitQueryGraph queryGraph;
+	QueryUnitGraph queryGraph;
 	
 	@Before
 	public void setup() {
@@ -34,28 +34,28 @@ public class TestGlobalOptimizer {
 		OptimizationPlan plan = new OptimizationPlan(2, plans, nodeNum, mappings);
 		optimizer.addOptimizationPlan(ExprType.GROUP_BY, plan);
 		
-		UnitQuery root = new UnitQuery();
+		QueryUnit root = new QueryUnit();
 		root.set(new LogicalRootNode(), null);
-		UnitQuery groupby = new UnitQuery();
+		QueryUnit groupby = new QueryUnit();
 		groupby.set(new GroupbyNode(null), null);
 		root.addNextQuery(groupby);
 		groupby.addPrevQuery(root);
-		UnitQuery[] scans = new UnitQuery[5];
+		QueryUnit[] scans = new QueryUnit[5];
 		for (int i = 0; i < 5; i++) {
-			scans[i] = new UnitQuery();
+			scans[i] = new QueryUnit();
 			scans[i].set(new ScanNode(null), null);
 			groupby.addNextQuery(scans[i]);
 			scans[i].addPrevQuery(groupby);
 		}
 		
-		queryGraph = new UnitQueryGraph(root);
+		queryGraph = new QueryUnitGraph(root);
 	}
 
 	@Test
 	public void test() {
-		UnitQueryGraph optimizedGraph = optimizer.optimize(queryGraph);
-		List<UnitQuery> q = new ArrayList<UnitQuery>();
-		UnitQuery query = optimizedGraph.getRoot();
+		QueryUnitGraph optimizedGraph = optimizer.optimize(queryGraph);
+		List<QueryUnit> q = new ArrayList<QueryUnit>();
+		QueryUnit query = optimizedGraph.getRoot();
 		assertEquals(ExprType.ROOT, query.getOp().getType());
 		assertEquals(1, query.getNextQueries().size());
 		
@@ -66,14 +66,14 @@ public class TestGlobalOptimizer {
 		assertEquals(1, plan.getOutputNum());
 		assertEquals(3, query.getNextQueries().size());
 		
-		for (UnitQuery uq : query.getNextQueries()) {
+		for (QueryUnit uq : query.getNextQueries()) {
 			assertEquals(ExprType.GROUP_BY, uq.getOp().getType());
 			plan = uq.getDistPlan();
 			assertEquals("local", plan.getPlanName());
 			assertEquals(1, plan.getOutputNum());
 			assertTrue(uq.getNextQueries().size() > 0);
 			
-			for (UnitQuery scan: uq.getNextQueries()) {
+			for (QueryUnit scan: uq.getNextQueries()) {
 				assertEquals(ExprType.SCAN, scan.getOp().getType());
 			}
 		}

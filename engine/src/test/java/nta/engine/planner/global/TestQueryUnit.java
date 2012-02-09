@@ -11,13 +11,13 @@ import org.junit.Test;
  * @author jihoon
  *
  */
-public class TestUnitQuery {
+public class TestQueryUnit {
 
 	@Test
 	public void testCreate() {
-		UnitQuery q1 = new UnitQuery();
-		UnitQuery q2 = new UnitQuery();
-		UnitQuery q3 = new UnitQuery();
+		QueryUnit q1 = new QueryUnit();
+		QueryUnit q2 = new QueryUnit();
+		QueryUnit q3 = new QueryUnit();
 		
 		assertEquals(q1.getId()+1, q2.getId());
 		assertEquals(q2.getId()+1, q3.getId());
