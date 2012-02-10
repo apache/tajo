@@ -94,7 +94,7 @@ public class TestStorageManager {
     appender.close();
 
     FileStatus status = sm.listTableFiles("table2")[0];
-    long fileLen = status.getLen();   // 88894
+    long fileLen = status.getLen();
     long randomNum = (long) (Math.random() * fileLen) + 1;
     System.out.println("fileLen: " + fileLen + ", randomNum: " + randomNum);
     

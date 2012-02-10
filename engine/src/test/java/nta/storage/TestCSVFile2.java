@@ -60,7 +60,7 @@ public class TestCSVFile2 {
     VTuple vTuple = null;
 
     for(int i = 0; i < tupleNum; i++) {
-      vTuple = new VTuple(6);
+      vTuple = new VTuple(4);
       vTuple.put(0, DatumFactory.createInt((Integer)(i+1)));
       vTuple.put(1, DatumFactory.createString("file1"));
       vTuple.put(2, DatumFactory.createString("haemi"));
