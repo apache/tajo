@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.TimerTask;
 
 import nta.conf.NtaConf;
-import nta.engine.NtaEngineInterface;
+import nta.engine.ipc.QueryEngineInterface;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -15,7 +15,7 @@ import org.apache.hadoop.fs.Path;
 public class TableUpdator extends TimerTask {
 	private static final Log LOG = LogFactory.getLog(TableUpdator.class);
 
-	private NtaEngineInterface engine;
+	private QueryEngineInterface engine;
 	private String[] commands;
 
 	public static final String BASETABLE_DIR = "basetable.dir";
@@ -45,7 +45,7 @@ public class TableUpdator extends TimerTask {
 	final String tablebuilderJar;
 	final String storeType;
 	
-	public TableUpdator(NtaConf conf, NtaEngineInterface engine) 
+	public TableUpdator(NtaConf conf, QueryEngineInterface engine) 
 			throws IOException {
 		this.hdfsAddr = conf.get(TableUpdator.HDFS_NAME, TableUpdator.DEFAULT_HDFS_NAME);
 		this.basetableDir = conf.get(TableUpdator.BASETABLE_DIR, 
@@ -88,6 +88,6 @@ public class TableUpdator extends TimerTask {
 	}
 
 	private void registerTable(Path tbPath) throws Exception {
-		this.engine.attachTable(tbPath.getName(), tbPath);
+		this.engine.attachTable(tbPath.getName(), tbPath.toString());
 	}
 }

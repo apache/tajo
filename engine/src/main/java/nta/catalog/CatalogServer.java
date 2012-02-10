@@ -89,8 +89,8 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   private volatile boolean isOnline = false;
 
 	public CatalogServer(Configuration conf) throws IOException {
-		this.conf = conf;
-		
+		this.conf = conf;		
+    
 		// Server to handle client requests.
     String serverAddr = conf.get(NConstants.CATALOG_ADDRESS, 
         NConstants.DEFAULT_CATALOG_ADDRESS);
@@ -99,20 +99,20 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initIsa);
     this.isa = this.rpcServer.getBindAddress();
     this.serverName = this.isa.getHostName() + ":" + this.isa.getPort();
+    this.zkClient = new ZkClient(conf);
     
     initBuiltinFunctions();
 	}
 	
-  public void shutdown() throws IOException {
+  private void prepareServing() throws IOException, KeeperException,
+      InterruptedException {    
+    this.rpcServer.start();
+  }
+	
+  private void cleanUp() throws IOException {
     this.rpcServer.shutdown();
     this.zkClient.close();
   }
-
-	private void initCatalogServer() throws IOException, 
-	    KeeperException, InterruptedException {
-	  initializeZookeeper();
-    this.rpcServer.start();
-	}
 	
 	public InetSocketAddress getBindAddress() {
 	  return this.isa;
@@ -121,8 +121,12 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	public void run() {
     try {
       LOG.info("Catalog Server startup ("+serverName+")");
-      
-      initCatalogServer();
+      try {
+        prepareServing();
+        participateCluster();
+      } catch (Exception e) {
+        abort(e.getMessage(), e);
+      }
       
       // loop area
       if(!this.stopped) {
@@ -137,7 +141,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     } finally {
       // finalize area regardless of either normal or abnormal shutdown
       try {
-        shutdown();
+        cleanUp();
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -146,13 +150,26 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     LOG.info("Catalog Server ("+serverName+") main thread exiting");
   }
 	
-	public void stop(String message) {
-	  this.stopped = true;
-	}
+	public void shutdown(final String msg) {
+    this.stopped = true;
+    LOG.info("STOPPED: " + msg);
+    synchronized (this) {
+      notifyAll();
+    }
+  }
 	
-	private void initializeZookeeper() throws KeeperException, 
+	public void abort(String reason, Throwable cause) {
+    if (cause != null) {
+      LOG.fatal("ABORTING leaf server " + this + ": " + reason, cause);
+    } else {
+      LOG.fatal("ABORTING leaf server " + this + ": " + reason);
+    }
+    // TODO - abortRequest : to be implemented
+    shutdown(reason);
+  }
+	
+	private void participateCluster() throws KeeperException, 
 	    InterruptedException, IOException {
-	  this.zkClient = new ZkClient(conf);
     ZkUtil.upsertEphemeralNode(zkClient, NConstants.ZNODE_CATALOG, 
         serverName.getBytes());
 	}

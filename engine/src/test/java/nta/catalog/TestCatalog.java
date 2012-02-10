@@ -17,6 +17,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
+import nta.engine.NConstants;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
 import nta.engine.function.Function;
@@ -231,7 +232,6 @@ public class TestCatalog {
 	  util = new NtaTestingUtility();
 	  util.startMiniCluster(3);
 	  
-	  //LocalCatalog local = new LocalCatalog(util.getConfiguration());
 	  CatalogService local = util.getMiniNtaEngineCluster().
 	      getMaster().getCatalog();
 	  
@@ -314,16 +314,23 @@ public class TestCatalog {
 		util.shutdownMiniCluster();
 	}
 	
-	//@Test
-	// TODO - to be tested
+	@Test	
 	public void testInitializeZookeeper() throws Exception {
+	  util = new NtaTestingUtility();
+    util.startMiniCluster(0);
+	  
     ZkClient zkClient = new ZkClient(util.getConfiguration());
-    assertTrue(zkClient.exists("/catalog") != null);
+    Thread.sleep(10);
+    assertTrue(zkClient.exists(NConstants.ZNODE_CATALOG) != null);
     
-    InetSocketAddress addr = util.getMiniCatalogCluster().getCatalogServer().
+    // TODO - to be commented out
+/*    InetSocketAddress addr = util.getMiniCatalogCluster().getCatalogServer().
         getBindAddress();
     String serverName = addr.getHostName()+":"+addr.getPort();
     assertEquals(serverName, new String(zkClient.getData("/catalog", 
-        null, null)));
+        null, null)));*/
+    
+    
+    util.shutdownMiniCluster();
 	}
 }

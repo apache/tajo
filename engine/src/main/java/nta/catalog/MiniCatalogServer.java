@@ -22,7 +22,7 @@ public class MiniCatalogServer {
   }
   
   public void shutdown() {
-    this.catalogServers.stop("Normally shuting down");
+    this.catalogServers.shutdown("Normally shuting down");
   }
   
   public CatalogServer getCatalogServer() {

@@ -3,10 +3,8 @@ package nta;
 import java.io.IOException;
 import java.util.Timer;
 
-import org.apache.hadoop.conf.Configuration;
-
 import nta.conf.NtaConf;
-import nta.engine.NtaEngineInterface;
+import nta.engine.ipc.QueryEngineInterface;
 
 
 public class ETL {
@@ -16,7 +14,7 @@ public class ETL {
 	private TableUpdator receiver;
 	private Timer scheduler;
 	
-	public ETL(NtaConf conf, NtaEngineInterface engine) throws IOException {
+	public ETL(NtaConf conf, QueryEngineInterface engine) throws IOException {
 		receiver = new TableUpdator(conf, engine);
 		scheduler = new Timer();
 	}

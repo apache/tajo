@@ -3,17 +3,9 @@ package nta;
 import java.io.IOException;
 
 import nta.conf.NtaConf;
-import nta.engine.NtaEngine;
-import nta.engine.NtaEngineInterface;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.BytesWritable;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
