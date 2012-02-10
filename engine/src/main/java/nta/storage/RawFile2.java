@@ -54,7 +54,6 @@ public class RawFile2 extends Storage {
   public static int SYNC_INTERVAL;
 
   public static class RawFileScanner extends FileScanner {
-	  
     private FSDataInputStream in;
     private SortedSet<Fragment> tabletSet;
     private Iterator<Fragment> tableIter;
@@ -62,9 +61,20 @@ public class RawFile2 extends Storage {
     private FileSystem fs;
     private byte[] sync;
     private byte[] checkSync;
-    private long start, end, headerPos, lastSyncPos; 
+    private long start, end;
+    private long startPos, headerPos, lastSyncPos; 
+    private long pageStart, pageLen;
+    private long curTupleOffset;
     private Options option;
-    private long currentTupleOffset;
+    
+    private byte[] buf;
+    private byte[] extra;
+    private byte[] bufextra;
+    private int bufSize, extraSize;
+    private final static int DEFAULT_BUFFER_SIZE = 65536;
+    
+    private ByteArrayInputStream bin;
+    private DataInputStream din;     
 
     public RawFileScanner(Configuration conf, final Schema schema, 
         final Fragment[] tablets) throws IOException {
@@ -80,10 +90,14 @@ public class RawFile2 extends Storage {
     }
 
     private void init() throws IOException {
-      this.tabletSet = new TreeSet<Fragment>();
+      // set default page size.
+      this.bufSize = DEFAULT_BUFFER_SIZE;
+      
       this.sync = new byte[SYNC_HASH_SIZE];
       this.checkSync = new byte[SYNC_HASH_SIZE];
 
+      // set tablet iterator.
+      this.tabletSet = new TreeSet<Fragment>();
       for (Fragment t: tablets) {
         this.tabletSet.add(t);
       }
@@ -95,19 +109,41 @@ public class RawFile2 extends Storage {
       if (this.in != null) {
         this.in.close();
       }
+      
+      // set tablet information.
       if (tableIter.hasNext()) {
         curTablet = tableIter.next();
         this.fs = curTablet.getPath().getFileSystem(this.conf);
         this.in = fs.open(curTablet.getPath());
         this.start = curTablet.getStartOffset();
         this.end = curTablet.getStartOffset() + curTablet.getLength();
-
-        if (start == 0) { // read sync maker.
-          readHeader();
+        
+        readHeader();
+        // set correct start offset.
+        headerPos = in.getPos();
+        if (start < headerPos) {
+          in.seek(headerPos);
+        } else {
+          in.seek(start);
         }
-        if (!pageBuffer()) {
-          return false;
+        if (in.getPos() != headerPos) {
+          in.seek(in.getPos()-SYNC_SIZE);
+          while(in.getPos() < end) {
+            if (checkSync()) {
+              lastSyncPos = in.getPos();
+              break;
+            } else {
+              in.seek(in.getPos()+1);
+            }
+          }
         }
+        startPos = in.getPos();
+        
+        if (in.getPos() >= end)
+          if (!openNextTablet())
+            return false;
+        
+        pageBuffer();
         return true;
       } else {
         return false;
@@ -121,7 +157,7 @@ public class RawFile2 extends Storage {
     }
 
     private boolean checkSync() throws IOException {
-      in.readInt(); // escape
+      in.readInt();                           // escape
       in.read(checkSync, 0, SYNC_HASH_SIZE);  // sync
       if (!Arrays.equals(checkSync, sync)) {
         in.seek(in.getPos()-SYNC_SIZE);
@@ -130,145 +166,100 @@ public class RawFile2 extends Storage {
         return true;
       }
     }
-
-    private long pageStart, pageLen;
-    private int tupleSize, pieceSize1, pieceSize2, bufferSize, defaultSize = 65536;
-    private byte[] buffer;
-    ByteArrayInputStream in_byte;
-    DataInputStream in_buffer;     
-    private boolean pageBuffer() throws IOException {      
-      if (in.getPos() - SYNC_SIZE == start) { // first.
-        tupleSize = checkTupleSize();
-        if(defaultSize > tabletable()) {
-        	buffer = new byte[(int)(tabletable())];
-        } else {
-        	buffer = new byte[defaultSize];
-        }
-        pageStart = in.getPos();
-        in.read(buffer);
-      } else if (in_buffer.available() > 0 || tabletable() > 0) { // tuple 이 잘림.
-        pieceSize1 = in_buffer.available();      
-        pieceSize2 = (int)tabletable();
-
-        if (pieceSize1 + pieceSize2 < defaultSize) {
-          bufferSize = pieceSize1 + pieceSize2;
-          buffer = new byte[bufferSize];
-          in_buffer.read(buffer, 0, pieceSize1);
-          pageStart = in.getPos() - pieceSize1;
-          in.read(buffer, pieceSize1, pieceSize2);
-        } else {
-          bufferSize = defaultSize;
-          buffer = new byte[bufferSize];
-          in_buffer.read(buffer, 0, pieceSize1);
-          pageStart = in.getPos() - pieceSize1;
-          in.read(buffer, pieceSize1, (bufferSize - pieceSize1));
-        }
-      } else {
-        if (!openNextTablet()) {  // last.
-          return false;
-        }
-      }
-      pageLen = buffer.length;
-      in_byte = new ByteArrayInputStream(buffer);
-      in_buffer = new DataInputStream(in_byte);
-      this.currentTupleOffset = 0;
-//      checkSyncinPage();
-      return true;
-    }
-
-    private boolean checkSyncinPage() throws IOException {  // page buffer 안의 sync maker 를 확인.
-      in_buffer.mark(1);
-      in_buffer.readInt();  // escape
-      in_buffer.read(checkSync, 0, SYNC_HASH_SIZE);  // sync
+    
+    private boolean checkSyncinPage() throws IOException {
+      din.mark(1);
+      din.readInt();                           // escape
+      din.read(checkSync, 0, SYNC_HASH_SIZE);  // sync
       if (!Arrays.equals(checkSync, sync)) {
-        in_buffer.reset();
+        din.reset();
         return false;
       } else {
         return true;
       }
     }
-
-    private int checkTupleSize() throws IOException { // raw type 은 tuple 사이를 구분 할 수 없으므로, tuple size 를 예측해서 tuple 구분을 함.
+    
+    private boolean pageBuffer() throws IOException {
+      if (tabletable() < 1) {
+        // initialize.
+        this.curTupleOffset = 0;
+        this.bufSize = DEFAULT_BUFFER_SIZE;
+        return false;
+      }
+      
+      // set buffer size.
+      if (tabletable() <= bufSize) {
+        bufSize = (int) tabletable();
+      } else {
+        bufSize = DEFAULT_BUFFER_SIZE;
+      }
+      
+      buf = new byte[bufSize];
+      pageStart = in.getPos();
+      in.read(buf);
+      
+      checkSyncMarker();
+      bufextra = new byte[bufSize + extraSize];
+      System.arraycopy(buf, 0, bufextra, 0, bufSize);
+      if (extraSize > 0)
+        System.arraycopy(extra, 0, bufextra, bufSize, extraSize);
+      
+      pageLen = bufextra.length;
+      bin = new ByteArrayInputStream(bufextra);
+      din = new DataInputStream(bin);
+      this.curTupleOffset = 0;
+     
+      return true;
+    }
+    
+    private void checkSyncMarker() throws IOException {
+      long mark = in.getPos();
       int i;
-      long before = in.getPos();
-
-      boolean [] contains = new boolean[schema.getColumnNum()];
-      for (i = 0; i < schema.getColumnNum(); i++) {
-        contains[i] = in.readBoolean();
+      in.seek(in.getPos()-SYNC_SIZE);
+      for (i = 1; in.available() != 0; i++) {
+        if (!checkSync())
+          in.seek(in.getPos()+1);
+        else break;
       }
 
-      Column col = null;
-      for (i = 0; i < schema.getColumnNum(); i++) {
-        if (contains[i]) {
-          col = schema.getColumn(i);
-          switch (col.getDataType()) {
-          case BYTE:
-            in.readByte();
-            break;
-          case SHORT:
-            in.readShort();
-            break;
-          case INT:
-            in.readInt();
-            break;
-          case LONG:
-            in.readLong();
-            break;
-          case FLOAT:
-            in.readFloat();
-            break;
-          case DOUBLE:
-            in.readDouble();
-            break;
-          case STRING:
-            short len = in.readShort();
-            byte[] buf = new byte[len];
-            in.read(buf, 0, len);
-            break;
-          case IPv4:
-            byte[] ipv4 = new byte[4];
-            in.read(ipv4, 0, 4);
-            break;
-          default:
-            break;
-          }
-        }
-      }
-      long after = in.getPos();
-      in.seek(before);
-      return (int) (after - before);
+      in.seek(mark);
+      if (i > 1) {
+        extra = new byte[i - 1];
+        in.read(extra);
+        extraSize = extra.length;
+      } else extraSize = 0;
     }
 
     @Override
     public void seek(long offset) throws IOException {
-    	if ( offset >= this.pageStart + this.pageLen  ||
+    	if (offset >= this.pageStart + this.pageLen  ||
     			offset < this.pageStart) {
     		in.seek(offset);
-    		in_byte.close();
-    		in_buffer.close();
-    		in_byte = new ByteArrayInputStream(new byte[0]);
-    	    in_buffer = new DataInputStream(in_byte);
+    		bin.close();
+    		din.close();
+    		bin = new ByteArrayInputStream(new byte[0]);
+    		din = new DataInputStream(bin);
     		pageBuffer();
     	} else {
     		long bufferOffset = offset - this.pageStart;
-    		if(this.currentTupleOffset == bufferOffset) {
+    		if(this.curTupleOffset == bufferOffset) {
     			
-    		} else if( this.currentTupleOffset < bufferOffset) {
-    			in_buffer.skip(bufferOffset - this.currentTupleOffset);
-    			this.currentTupleOffset = bufferOffset;
+    		} else if( this.curTupleOffset < bufferOffset) {
+    		  din.skip(bufferOffset - this.curTupleOffset);
+    			this.curTupleOffset = bufferOffset;
     		} else {
-    			in_buffer.close();
-    			in_byte.close();
-    			in_byte = new ByteArrayInputStream(buffer);
-    			in_buffer = new DataInputStream(in_byte);
-    			this.currentTupleOffset = bufferOffset;
+    		  din.close();
+    			bin.close();
+    			bin = new ByteArrayInputStream(bufextra);
+    			din = new DataInputStream(bin);
+    			this.curTupleOffset = bufferOffset;
     		}
     	}
     }
     
     @Override
     public long getNextOffset() {
-    	return this.pageStart + this.currentTupleOffset;
+    	return this.pageStart + this.curTupleOffset;
     }
     
     @Override
@@ -278,37 +269,26 @@ public class RawFile2 extends Storage {
     
     @Override
     public Tuple next() throws IOException {
-      if (in_buffer.available() == 0) { // page buffer 다 읽음.
-        if (!pageBuffer()) {
-          return null;
-        }       
-      }
-      if (in_buffer.available() < tupleSize) {  // tuple 잘릴 것임. 
-        if (!pageBuffer()) {
-          return null;
-        }
-      }
-      if (checkSyncinPage()) {  // page buffer 에 sync maker 가 있는지 확인.
-    	this.currentTupleOffset += SYNC_SIZE;  
-        if (in_buffer.available() == 0) { // sync maker 읽었더니 page buffer 다 읽음.
-          if (!pageBuffer()) {
+      if (din.available() < 1) {
+        if (!pageBuffer()) 
+          if (!openNextTablet())
             return null;
-          }
-        }
-        if (in_buffer.available() < tupleSize) { // sync maker 읽었더니 tuple 잘릴 것임.
-          if (!pageBuffer()) {
-            return null;
-          }
-        }
       }
-
+      if (checkSyncinPage())
+        this.curTupleOffset += SYNC_SIZE;
+      if (din.available() < 1) {
+        if (!pageBuffer()) 
+          if (!openNextTablet())
+            return null;
+      }
+      
       int i;
       VTuple tuple = new VTuple(schema.getColumnNum());
 
       boolean [] contains = new boolean[schema.getColumnNum()];
       for (i = 0; i < schema.getColumnNum(); i++) {
-        contains[i] = in_buffer.readBoolean();
-        this.currentTupleOffset += DatumFactory.createBool(true).size();
+        contains[i] = din.readBoolean();
+        this.curTupleOffset += DatumFactory.createBool(true).size();
       }
       Column col = null;
       for (i = 0; i < schema.getColumnNum(); i++) {
@@ -317,49 +297,49 @@ public class RawFile2 extends Storage {
           col = schema.getColumn(i);
           switch (col.getDataType()) {
           case BYTE:
-        	datum = DatumFactory.createByte(in_buffer.readByte());
-        	this.currentTupleOffset += datum.size();
+        	datum = DatumFactory.createByte(din.readByte());
+        	this.curTupleOffset += datum.size();
             tuple.put(i, datum );
             break;
           case SHORT:
-        	datum = DatumFactory.createShort(in_buffer.readShort());
-        	this.currentTupleOffset += datum.size();
+        	datum = DatumFactory.createShort(din.readShort());
+        	this.curTupleOffset += datum.size();
             tuple.put(i, datum );
             break;
           case INT:
-            datum = DatumFactory.createInt(in_buffer.readInt());
-        	this.currentTupleOffset += datum.size();
+            datum = DatumFactory.createInt(din.readInt());
+        	this.curTupleOffset += datum.size();
             tuple.put(i, datum );
             break;
           case LONG:
-        	datum = DatumFactory.createLong(in_buffer.readLong());   
-        	this.currentTupleOffset += datum.size();  
+        	datum = DatumFactory.createLong(din.readLong());   
+        	this.curTupleOffset += datum.size();  
             tuple.put(i, datum );
             break;
           case FLOAT:
-        	datum = DatumFactory.createFloat(in_buffer.readFloat());  
-        	this.currentTupleOffset += datum.size();  
+        	datum = DatumFactory.createFloat(din.readFloat());  
+        	this.curTupleOffset += datum.size();  
             tuple.put(i, datum);
             break;
           case DOUBLE:
-        	datum = DatumFactory.createDouble(in_buffer.readDouble());
-        	this.currentTupleOffset += datum.size();
+        	datum = DatumFactory.createDouble(din.readDouble());
+        	this.curTupleOffset += datum.size();
             tuple.put(i, datum);
             break;
           case STRING:
-        	this.currentTupleOffset += DatumFactory.createShort((short)0).size();  
-            short len = in_buffer.readShort();
+        	this.curTupleOffset += DatumFactory.createShort((short)0).size();  
+            short len = din.readShort();
             byte[] buf = new byte[len];
-            in_buffer.read(buf, 0, len);
+            din.read(buf, 0, len);
             datum = DatumFactory.createString(new String(buf));
-            this.currentTupleOffset += datum.size();
+            this.curTupleOffset += datum.size();
             tuple.put(i, datum);
             break;
           case IPv4:
         	byte[] ipv4 = new byte[4];
-            in_buffer.read(ipv4, 0, 4);
+            din.read(ipv4, 0, 4);
             datum = DatumFactory.createIPv4(ipv4);
-            this.currentTupleOffset += datum.size();
+            this.curTupleOffset += datum.size();
             tuple.put(i, datum);
             break;
           default:

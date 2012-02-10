@@ -87,6 +87,7 @@ public class TestIndex {
 			assertTrue("[seek check " + i + " ]" , i == (tuple.get(0).asInt()));
 		}
 	}
+	
 	@Test
 	public void testsearchGTHValueInCSVcol1() throws IOException {
 		
@@ -125,6 +126,7 @@ public class TestIndex {
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (tuple.get(1).asLong()));
 		}
 	}
+	
 	@Test
 	public void testsearchEQLValueInCSVcol2() throws IOException {
 		
@@ -163,6 +165,7 @@ public class TestIndex {
       assertTrue("[seek check " + i + " ]" , i  == (tuple.get(2).asDouble()));
 		}
 	}
+	
 	@Test
 	public void testsearchGTHValueInCSVcol3() throws IOException {
 		
@@ -201,6 +204,7 @@ public class TestIndex {
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1 ) == (tuple.get(3).asFloat()));
 		}
 	}
+	
 	@Test
 	public void testRandomSearchEQLValueInCSVCol0 () throws IOException {
 	  meta = new TableMetaImpl();
@@ -251,6 +255,7 @@ public class TestIndex {
     }
 	  
 	}
+	
 	@Test
 	public void testSearchEQLValueInRawCol0() throws IOException {
 		meta = new TableMetaImpl();
