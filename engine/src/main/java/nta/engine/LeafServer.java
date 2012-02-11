@@ -8,6 +8,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import nta.catalog.CatalogClient;
 import nta.conf.NtaConf;
@@ -20,20 +24,14 @@ import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
 import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.ipc.AsyncWorkerInterface;
+import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
-import nta.engine.parser.QueryAnalyzer;
-import nta.engine.parser.QueryBlock;
-import nta.engine.planner.LogicalOptimizer;
-import nta.engine.planner.LogicalPlanner;
-import nta.engine.planner.PhysicalPlanner;
-import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.physical.PhysicalExec;
-import nta.engine.query.QueryEngine;
+import nta.engine.query.QueryUnitRequestImpl;
 import nta.engine.query.SubQueryRequestImpl;
+import nta.engine.query.TQueryEngine;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
-import nta.storage.StorageManager;
-import nta.storage.Tuple;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkUtil;
 
@@ -41,7 +39,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.DNS;
 import org.apache.zookeeper.KeeperException;
 
@@ -58,13 +55,13 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
    * This servers address.
    */
   // private final Server rpcServer;
-  private final ProtoParamRpcServer rpcServer;
-  private final InetSocketAddress isa;
+  private ProtoParamRpcServer rpcServer;
+  private InetSocketAddress isa;
 
   private volatile boolean stopped = false;
   private volatile boolean isOnline = false;
 
-  private final String serverName;
+  private String serverName;
 
   // Cluster Management
   private ZkClient zkClient;
@@ -74,63 +71,39 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   private FileSystem defaultFS;
 
   private CatalogClient catalog;
-  private StorageManager storeManager;
-  private QueryEngine queryEngine;
+  private TQueryEngine queryEngine;
+  private QueryLauncher queryLauncher;
   private List<EngineService> services = new ArrayList<EngineService>();
 
-  private final Path basePath;
-  private final Path dataPath;
-
-  private final QueryAnalyzer analyzer;
-  private final SubqueryContext.Factory ctxFactory;
-
-  public LeafServer(final Configuration conf) throws IOException {
+  public LeafServer(final Configuration conf) {
     this.conf = conf;
-
+  }
+  
+  private void prepareServing() throws IOException {
     // Server to handle client requests.
     String hostname = DNS.getDefaultHost(
         conf.get("nta.master.dns.interface", "default"),
         conf.get("nta.master.dns.nameserver", "default"));
-    int port = conf.getInt(NConstants.LEAFSERVER_PORT,
+    int port = this.conf.getInt(NConstants.LEAFSERVER_PORT,
         NConstants.DEFAULT_LEAFSERVER_PORT);
     // Creation of a HSA will force a resolve.
     InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
     if (initialIsa.getAddress() == null) {
       throw new IllegalArgumentException("Failed resolve of " + this.isa);
     }
-
-    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);
+    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);    
     this.rpcServer.start();
-
+    
     // Set our address.
     this.isa = this.rpcServer.getBindAddress();
     this.serverName = this.isa.getHostName() + ":" + this.isa.getPort();
-
-    // Get the tajo base dir
-    this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
-    LOG.info("Base dir is set " + conf.get(NConstants.ENGINE_BASE_DIR));
-    // Get default DFS uri from the base dir
-    this.defaultFS = basePath.getFileSystem(conf);
-    LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
-
-    if (defaultFS.exists(basePath) == false) {
-      defaultFS.mkdirs(basePath);
-      LOG.info("Tajo Base dir (" + basePath + ") is created.");
-    }
-
-    this.dataPath = new Path(conf.get(NConstants.ENGINE_DATA_DIR));
-    LOG.info("Tajo data dir is set " + dataPath);
-    if (!defaultFS.exists(dataPath)) {
-      defaultFS.mkdirs(dataPath);
-      LOG.info("Data dir (" + dataPath + ") is created");
-    }
-
-    this.zkClient = new ZkClient(conf);
+    
+    this.zkClient = new ZkClient(this.conf);
     this.catalog = new CatalogClient(zkClient);
-    this.analyzer = new QueryAnalyzer(catalog);
-    this.storeManager = new StorageManager(conf);
-    this.ctxFactory = new SubqueryContext.Factory(catalog);
-
+    this.queryLauncher = new QueryLauncher();
+    this.queryLauncher.start();
+    this.queryEngine = new TQueryEngine(conf, catalog, zkClient);
+    
     Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
   }
 
@@ -140,16 +113,17 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     this.masterAddrTracker.start();
 
     byte[] master = null;
-    while (master == null) {
+    do {    
       master = masterAddrTracker.blockUntilAvailable(1000);
       LOG.info("Waiting for the Tajo master.....");
-    }
+    } while (master == null);
 
     LOG.info("Got the master address (" + new String(master) + ")");
     // if the znode already exists, it will be updated for notification.
     ZkUtil.upsertEphemeralNode(zkClient,
         ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName));
-    LOG.info("Created the znode nta/leafservers/" + serverName);
+    LOG.info("Created the znode " + NConstants.ZNODE_LEAFSERVERS + "/" 
+        + serverName);
   }
 
   public void run() {
@@ -157,13 +131,11 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
 
     try {
       try {
+        prepareServing();
         participateCluster();
       } catch (Exception e) {
         abort(e.getMessage(), e);
       }
-
-      this.queryEngine = new QueryEngine(conf, catalog, storeManager, null);
-      this.queryEngine.init();
 
       if (!this.stopped) {
         this.isOnline = true;
@@ -184,7 +156,6 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         }
       }
 
-      this.queryEngine.shutdown();
       masterAddrTracker.stop();
       catalog.close();
       zkClient.close();
@@ -237,24 +208,12 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   // LeafServerInterface
   // ////////////////////////////////////////////////////////////////////////////
   @Override
-  public SubQueryResponseProto requestSubQuery(SubQueryRequestProto requestProto)
+  public SubQueryResponseProto requestSubQuery(SubQueryRequestProto proto)
       throws IOException {
-    SubQueryRequest request = new SubQueryRequestImpl(requestProto);
-    SubqueryContext ctx = ctxFactory.create(request);
-    QueryBlock query = analyzer.parse(ctx, request.getQuery());
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    LogicalOptimizer.optimize(ctx, plan);
-    LOG.info("Assigned task: (" + request.getId() + ") start:"
-        + request.getFragments().get(0).getStartOffset() + " end: "
-        + request.getFragments() + "\nquery: " + request.getQuery());
-
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(storeManager);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-
-    @SuppressWarnings("unused")
-    Tuple tuple = null;
-    while ((tuple = exec.next()) != null) {
-    }
+    SubQueryRequest request = new SubQueryRequestImpl(proto);
+    PhysicalExec executor = queryEngine.createPlan(request);    
+    InProgressQuery newQuery = new InProgressQuery(request.getId(), executor);
+    queryLauncher.addSubQuery(newQuery);
 
     SubQueryResponseProto.Builder res = SubQueryResponseProto.newBuilder();
     res.setId(request.getId());
@@ -263,9 +222,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   }
 
   @Override
-  public SubQueryResponseProto requestQueryUnit(QueryUnitRequestProto request)
+  public SubQueryResponseProto requestQueryUnit(QueryUnitRequestProto proto)
       throws Exception {
-    // TODO Auto-generated method stub
+    QueryUnitRequest request = new QueryUnitRequestImpl(proto);
     return null;
   }
 
@@ -310,6 +269,58 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       serverStatus.addDisk(diskStatus);
     }
     return serverStatus.build();
+  }
+  
+  private static class QueryLauncher extends Thread {
+    private final int coreNum = Runtime.getRuntime().availableProcessors();
+    private final BlockingQueue<InProgressQuery> queriesToLaunch
+      = new ArrayBlockingQueue<InProgressQuery>(coreNum);
+    private final ExecutorService executor
+      = Executors.newFixedThreadPool(coreNum);
+    
+    public void addSubQuery(InProgressQuery query) {
+      this.queriesToLaunch.add(query);
+    }
+    
+    @Override
+    public void run() {
+      try {
+        while (!Thread.interrupted()) {
+          // wait for add
+          InProgressQuery q = queriesToLaunch.take();          
+          executor.submit(new SubQuery(q));
+        }
+      } catch (Throwable t) {
+        LOG.error(t);
+      }
+    }
+  }
+  
+  private static class SubQuery implements Runnable {
+    private final InProgressQuery query;
+    public SubQuery(InProgressQuery query) {
+      this.query = query;
+    }
+    @Override
+    public void run() {
+      query.execute();
+    }
+  }
+  
+  private static class InProgressQuery {
+    PhysicalExec executor;
+    
+    private InProgressQuery(int qid, PhysicalExec exec) {
+      this.executor = exec;
+    }
+    
+    public void execute() {
+      try {
+        while(executor.next() != null) {}
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   public static void main(String[] args) throws IOException {
