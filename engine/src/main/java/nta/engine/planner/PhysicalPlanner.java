@@ -17,6 +17,7 @@ import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.physical.GroupByExec;
+import nta.engine.planner.physical.PartitionedStoreExec;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.engine.planner.physical.SeqScanExec;
 import nta.engine.planner.physical.SortExec;
@@ -102,7 +103,12 @@ public class PhysicalPlanner {
   
   public PhysicalExec createStorePlan(SubqueryContext ctx, StoreTableNode annotation,
       PhysicalExec subOp) throws IOException {
-    StoreTableExec store = new StoreTableExec(sm, ctx.getQueryId(), annotation, subOp);
+    PhysicalExec store = null;
+    if (annotation.hasPartitionKey()) {
+      store = new PartitionedStoreExec(sm, ctx.getQueryId(), annotation, subOp);
+    } else {
+      store = new StoreTableExec(sm, ctx.getQueryId(), annotation, subOp);
+    }
     return store;
   }
 

@@ -47,6 +47,10 @@ public class StorageUtil {
     out.close();
   }
   
+  public static Path concatPath(String parent, String...childs) {
+    return concatPath(new Path(parent), childs);
+  }
+  
   public static Path concatPath(Path parent, String...childs) {
     StringBuilder sb = new StringBuilder();
     

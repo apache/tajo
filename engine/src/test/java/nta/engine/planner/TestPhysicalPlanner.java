@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 
 import nta.catalog.CatalogService;
+import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
@@ -21,15 +22,19 @@ import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.storage.Appender;
-import nta.storage.CSVFile2;
 import nta.storage.Scanner;
 import nta.storage.StorageManager;
+import nta.storage.StorageUtil;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
@@ -39,6 +44,8 @@ import org.junit.Test;
  * @author Hyunsik Choi
  */
 public class TestPhysicalPlanner {
+  private static final Log LOG = LogFactory.getLog(TestPhysicalPlanner.class);
+  
   private NtaTestingUtility util;
   private Configuration conf;
   private CatalogService catalog;
@@ -51,7 +58,7 @@ public class TestPhysicalPlanner {
   private TableDesc score = null;
 
   @Before
-  public void setUp() throws Exception {
+  public final void setUp() throws Exception {
     util = new NtaTestingUtility();    
     util.startMiniZKCluster();
     util.startCatalogCluster();
@@ -79,11 +86,11 @@ public class TestPhysicalPlanner {
     sm.initTableBase(employeeMeta, "employee");
     Appender appender = sm.getAppender(employeeMeta, "employee", "employee_1");
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
-    for(int i=0; i < 100; i++) {
+    for (int i = 0; i < 100; i++) {
       tuple.put(
-          DatumFactory.createString("name_"+i),
+          DatumFactory.createString("name_" + i),
           DatumFactory.createInt(i),
-          DatumFactory.createString("dept_"+i));
+          DatumFactory.createString("dept_" + i));
       appender.addTuple(tuple);
     }
     appender.flush();
@@ -101,12 +108,12 @@ public class TestPhysicalPlanner {
     sm.initTableBase(score.getMeta(), "score");
     appender = sm.getAppender(score.getMeta(), "score", "score_1");
     tuple = new VTuple(score.getMeta().getSchema().getColumnNum());
-    for(int i=1; i <= 5; i++) {
-      for(int k = 3; k < 5; k++) {
-        for(int j = 1; j <= 3; j++) {
+    for (int i = 1; i <= 5; i++) {
+      for (int k = 3; k < 5; k++) {
+        for (int j = 1; j <= 3; j++) {
           tuple.put(
-              DatumFactory.createString("name_"+i), // name_1 ~ 5 (cad: 5)
-              DatumFactory.createString(k+"rd"), // 3 or 4rd (cad: 2)
+              DatumFactory.createString("name_" + i), // name_1 ~ 5 (cad: 5)
+              DatumFactory.createString(k + "rd"), // 3 or 4rd (cad: 2)
               DatumFactory.createInt(j)); // 1 ~ 3
           appender.addTuple(tuple);
         } 
@@ -121,7 +128,7 @@ public class TestPhysicalPlanner {
   }
 
   @After
-  public void tearDown() throws Exception {
+  public final void tearDown() throws Exception {
     util.shutdownCatalogCluster();
     util.shutdownMiniZKCluster();
   }
@@ -137,7 +144,8 @@ public class TestPhysicalPlanner {
       "select deptName, class, sum(score), max(score), min(score) from score_1 group by deptName, class", // 7
       "grouped := select deptName, class, sum(score), max(score), min(score) from score_1 group by deptName, class", // 8
       "select count(*), max(score), min(score) from score_1", // 9
-      "select count(deptName) from score_1" // 10
+      "select count(deptName) from score_1", // 10
+      "select managerId, empId, deptName from employee_1 order by managerId, empId desc" // 11
   };
 
   public final void testCreateScanPlan() throws IOException {
@@ -153,9 +161,9 @@ public class TestPhysicalPlanner {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
     Tuple tuple = null;
-    int i=0;
+    int i = 0;
     long start = System.currentTimeMillis();
-    while((tuple = exec.next()) != null) {
+    while ((tuple = exec.next()) != null) {
       assertTrue(tuple.contains(0));
       assertTrue(tuple.contains(1));
       assertTrue(tuple.contains(2));
@@ -163,7 +171,7 @@ public class TestPhysicalPlanner {
     }
     assertEquals(100, i);
     long end = System.currentTimeMillis();
-    System.out.println((end - start)+" msc");
+    System.out.println((end - start) + " msc");
   }
   
   @Test
@@ -178,9 +186,9 @@ public class TestPhysicalPlanner {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
         
-    int i=0;
+    int i = 0;
     Tuple tuple = null;
-    while((tuple = exec.next()) != null) {
+    while ((tuple = exec.next()) != null) {
       assertEquals(6, tuple.getInt(2).asInt()); // sum
       assertEquals(3, tuple.getInt(3).asInt()); // max
       assertEquals(1, tuple.getInt(4).asInt()); // min
@@ -199,7 +207,8 @@ public class TestPhysicalPlanner {
     
     LogicalOptimizer.optimize(ctx, plan);
     
-    TableMeta outputMeta = new TableMetaImpl(plan.getOutputSchema(), StoreType.CSV);
+    TableMeta outputMeta = 
+        new TableMetaImpl(plan.getOutputSchema(), StoreType.CSV);
     sm.initTableBase(outputMeta, "grouped");
     
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
@@ -208,8 +217,52 @@ public class TestPhysicalPlanner {
     
     Scanner scanner = sm.getScanner("grouped", "grouped_0");
     Tuple tuple = null;
-    int i=0;
-    while((tuple = scanner.next()) != null) {
+    int i = 0;
+    while ((tuple = scanner.next()) != null) {
+      assertEquals(6, tuple.getInt(2).asInt()); // sum
+      assertEquals(3, tuple.getInt(3).asInt()); // max
+      assertEquals(1, tuple.getInt(4).asInt()); // min
+      i++;
+    }
+    assertEquals(10, i);
+    scanner.close();
+  }
+  
+  @Test
+  public final void testPartitionedStorePlan() throws IOException {
+    Fragment [] frags = sm.split("score"); 
+    factory = new SubqueryContext.Factory(catalog);
+    SubqueryContext ctx = factory.create(new Fragment[] {frags[0]});
+    QueryBlock query = analyzer.parse(ctx, QUERIES[7]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    
+    int numPartitions = 3;
+    Column key1 = new Column("score_1.deptName", DataType.STRING);
+    Column key2 = new Column("score_1.class", DataType.STRING);
+    StoreTableNode storeNode = new StoreTableNode("partition");
+    storeNode.setPartitions(new Column [] {key1, key2}, numPartitions);
+    PlannerUtil.insertNode(plan, storeNode);
+    LogicalOptimizer.optimize(ctx, plan);
+    
+    TableMeta outputMeta 
+      = new TableMetaImpl(plan.getOutputSchema(), StoreType.CSV);
+    sm.initTableBase(outputMeta, "partition");
+    
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    exec.next();
+    
+    LOG.info("The table partition_000000 is stored into " 
+        + sm.getTablePath("partition_000000"));
+    FileSystem fs = sm.getFileSystem();
+    Path path = sm.getTablePath("partition_000000");
+    assertEquals(numPartitions, fs.listStatus(
+        StorageUtil.concatPath(path, "data")).length);
+    
+    Scanner scanner = sm.getTableScanner("partition_000000");
+    Tuple tuple = null;
+    int i = 0;
+    while ((tuple = scanner.next()) != null) {
       assertEquals(6, tuple.getInt(2).asInt()); // sum
       assertEquals(3, tuple.getInt(3).asInt()); // max
       assertEquals(1, tuple.getInt(4).asInt()); // min

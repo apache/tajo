@@ -64,6 +64,10 @@ public class StorageManager {
     return new StorageManager(conf);
   }
 	
+	public FileSystem getFileSystem() {
+	  return this.fs;	    
+	}
+	
 	public Path initTableBase(TableMeta meta, String tableName) 
 	    throws IOException {
 	  return initTableBase(new Path(dataRoot,tableName), meta);
