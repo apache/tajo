@@ -9,6 +9,7 @@ import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.engine.QueryUnitId;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
@@ -35,7 +36,7 @@ public class StoreTableExec extends PhysicalExec {
    * @throws IOException 
    * 
    */
-  public StoreTableExec(StorageManager sm, int queryId,
+  public StoreTableExec(StorageManager sm, QueryUnitId queryId,
       StoreTableNode annotation, PhysicalExec subOp) throws IOException {
     this.annotation = annotation;
     this.subOp = subOp;
@@ -44,7 +45,7 @@ public class StoreTableExec extends PhysicalExec {
     
     TableMeta meta = new TableMetaImpl(this.outputSchema, StoreType.CSV);
     this.appender = sm.getAppender(meta,annotation.getTableName(),
-        annotation.getTableName()+"_"+queryId);
+        queryId.toString());
   }
 
   /* (non-Javadoc)

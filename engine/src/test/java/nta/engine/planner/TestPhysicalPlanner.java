@@ -17,6 +17,8 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
 import nta.engine.NtaTestingUtility;
+import nta.engine.QueryIdFactory;
+import nta.engine.QueryUnitId;
 import nta.engine.SubqueryContext;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryAnalyzer;
@@ -45,28 +47,29 @@ import org.junit.Test;
  */
 public class TestPhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(TestPhysicalPlanner.class);
-  
+
   private NtaTestingUtility util;
   private Configuration conf;
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
   private SubqueryContext.Factory factory;
   private StorageManager sm;
-  
+
   private TableDesc employee = null;
   private TableDesc student = null;
   private TableDesc score = null;
 
   @Before
   public final void setUp() throws Exception {
-    util = new NtaTestingUtility();    
+    QueryIdFactory.reset();
+    util = new NtaTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
     conf = util.getConfiguration();
-    sm = StorageManager.get(conf, 
-        util.setupClusterTestBuildDir().getAbsolutePath());
+    sm = StorageManager.get(conf, util.setupClusterTestBuildDir()
+        .getAbsolutePath());
     catalog = util.getMiniCatalogCluster().getCatalog();
-    
+
     Schema schema = new Schema();
     schema.addColumn("name", DataType.STRING);
     schema.addColumn("empId", DataType.INT);
@@ -82,20 +85,18 @@ public class TestPhysicalPlanner {
     schema3.addColumn("score", DataType.INT);
 
     TableMeta employeeMeta = new TableMetaImpl(schema, StoreType.CSV);
-    
+
     sm.initTableBase(employeeMeta, "employee");
     Appender appender = sm.getAppender(employeeMeta, "employee", "employee_1");
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
-      tuple.put(
-          DatumFactory.createString("name_" + i),
-          DatumFactory.createInt(i),
-          DatumFactory.createString("dept_" + i));
+      tuple.put(DatumFactory.createString("name_" + i),
+          DatumFactory.createInt(i), DatumFactory.createString("dept_" + i));
       appender.addTuple(tuple);
     }
     appender.flush();
     appender.close();
-    
+
     employee = new TableDescImpl("employee", employeeMeta);
     employee.setPath(sm.getTablePath("employee"));
     catalog.addTable(employee);
@@ -111,19 +112,19 @@ public class TestPhysicalPlanner {
     for (int i = 1; i <= 5; i++) {
       for (int k = 3; k < 5; k++) {
         for (int j = 1; j <= 3; j++) {
-          tuple.put(
-              DatumFactory.createString("name_" + i), // name_1 ~ 5 (cad: 5)
+          tuple.put(DatumFactory.createString("name_" + i), // name_1 ~ 5 (cad:
+                                                            // 5)
               DatumFactory.createString(k + "rd"), // 3 or 4rd (cad: 2)
               DatumFactory.createInt(j)); // 1 ~ 3
           appender.addTuple(tuple);
-        } 
-      }      
+        }
+      }
     }
     appender.flush();
-    appender.close();    
+    appender.close();
     score.setPath(sm.getTablePath("score"));
     catalog.addTable(score);
-    
+
     analyzer = new QueryAnalyzer(catalog);
   }
 
@@ -132,7 +133,7 @@ public class TestPhysicalPlanner {
     util.shutdownCatalogCluster();
     util.shutdownMiniZKCluster();
   }
-  
+
   private String[] QUERIES = {
       "select name, empId, deptName from employee_1 where empId", // 0
       "select name, empId, e.deptName, manager from employee as e, dept as dp", // 1
@@ -149,17 +150,18 @@ public class TestPhysicalPlanner {
   };
 
   public final void testCreateScanPlan() throws IOException {
-    Fragment [] frags = sm.split("employee");    
+    Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory(catalog);
-    SubqueryContext ctx = factory.create(new Fragment[] {frags[0]});
+    QueryUnitId id = QueryIdFactory.newQueryUnitId();
+    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] });
     QueryBlock query = analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    
+
     LogicalOptimizer.optimize(ctx, plan);
-    
+
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-    
+
     Tuple tuple = null;
     int i = 0;
     long start = System.currentTimeMillis();
@@ -173,19 +175,20 @@ public class TestPhysicalPlanner {
     long end = System.currentTimeMillis();
     System.out.println((end - start) + " msc");
   }
-  
+
   @Test
   public final void testGroupByPlan() throws IOException {
-    Fragment [] frags = sm.split("score"); 
+    Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    SubqueryContext ctx = factory.create(new Fragment[] {frags[0]});
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+        new Fragment[] { frags[0] });
     QueryBlock query = analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
-    
+
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-        
+
     int i = 0;
     Tuple tuple = null;
     while ((tuple = exec.next()) != null) {
@@ -196,26 +199,27 @@ public class TestPhysicalPlanner {
     }
     assertEquals(10, i);
   }
-  
+
   @Test
   public final void testStorePlan() throws IOException {
-    Fragment [] frags = sm.split("score"); 
+    Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    SubqueryContext ctx = factory.create(new Fragment[] {frags[0]});
+    QueryUnitId id = QueryIdFactory.newQueryUnitId();
+    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] });
     QueryBlock query = analyzer.parse(ctx, QUERIES[8]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    
+
     LogicalOptimizer.optimize(ctx, plan);
-    
-    TableMeta outputMeta = 
-        new TableMetaImpl(plan.getOutputSchema(), StoreType.CSV);
+
+    TableMeta outputMeta = new TableMetaImpl(plan.getOutputSchema(),
+        StoreType.CSV);
     sm.initTableBase(outputMeta, "grouped");
-    
+
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     exec.next();
-    
-    Scanner scanner = sm.getScanner("grouped", "grouped_0");
+
+    Scanner scanner = sm.getScanner("grouped", id.toString());
     Tuple tuple = null;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
@@ -227,39 +231,40 @@ public class TestPhysicalPlanner {
     assertEquals(10, i);
     scanner.close();
   }
-  
+
   @Test
   public final void testPartitionedStorePlan() throws IOException {
-    Fragment [] frags = sm.split("score"); 
+    Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    SubqueryContext ctx = factory.create(new Fragment[] {frags[0]});
+    QueryUnitId id = QueryIdFactory.newQueryUnitId();
+    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] });
     QueryBlock query = analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    
+
     int numPartitions = 3;
     Column key1 = new Column("score_1.deptName", DataType.STRING);
     Column key2 = new Column("score_1.class", DataType.STRING);
     StoreTableNode storeNode = new StoreTableNode("partition");
-    storeNode.setPartitions(new Column [] {key1, key2}, numPartitions);
+    storeNode.setPartitions(new Column[] { key1, key2 }, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     LogicalOptimizer.optimize(ctx, plan);
-    
-    TableMeta outputMeta 
-      = new TableMetaImpl(plan.getOutputSchema(), StoreType.CSV);
+
+    TableMeta outputMeta = new TableMetaImpl(plan.getOutputSchema(),
+        StoreType.CSV);
     sm.initTableBase(outputMeta, "partition");
-    
+
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     exec.next();
-    
-    LOG.info("The table partition_000000 is stored into " 
-        + sm.getTablePath("partition_000000"));
+
+    LOG.info("The table partition_000000 is stored into "
+        + sm.getTablePath("partition_" + id));
     FileSystem fs = sm.getFileSystem();
-    Path path = sm.getTablePath("partition_000000");
-    assertEquals(numPartitions, fs.listStatus(
-        StorageUtil.concatPath(path, "data")).length);
-    
-    Scanner scanner = sm.getTableScanner("partition_000000");
+    Path path = sm.getTablePath("partition_" + id);
+    assertEquals(numPartitions,
+        fs.listStatus(StorageUtil.concatPath(path, "data")).length);
+
+    Scanner scanner = sm.getTableScanner("partition_" + id);
     Tuple tuple = null;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
@@ -271,42 +276,44 @@ public class TestPhysicalPlanner {
     assertEquals(10, i);
     scanner.close();
   }
-  
+
   @Test
   public final void testAggregationFunction() throws IOException {
-    Fragment [] frags = sm.split("score"); 
+    Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    SubqueryContext ctx = factory.create(new Fragment[] {frags[0]});
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+        new Fragment[] { frags[0] });
     QueryBlock query = analyzer.parse(ctx, QUERIES[9]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
-    
+
     System.out.println(plan);
-    
+
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);    
-    
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+
     Tuple tuple = exec.next();
     assertEquals(30, tuple.get(0).asLong());
     assertEquals(3, tuple.get(1).asInt());
     assertEquals(1, tuple.get(2).asInt());
     assertNull(exec.next());
   }
-  
+
   @Test
   public final void testCountFunction() throws IOException {
-    Fragment [] frags = sm.split("score"); 
+    Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    SubqueryContext ctx = factory.create(new Fragment[] {frags[0]});
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+        new Fragment[] { frags[0] });
     QueryBlock query = analyzer.parse(ctx, QUERIES[10]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
-    
+
     System.out.println(plan);
-    
+
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-        
+
     Tuple tuple = exec.next();
     assertEquals(30, tuple.get(0).asLong());
     assertNull(exec.next());

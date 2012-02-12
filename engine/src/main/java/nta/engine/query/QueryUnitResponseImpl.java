@@ -4,6 +4,7 @@
 package nta.engine.query;
 
 import nta.engine.LeafServerProtos.QueryStatus;
+import nta.engine.QueryUnitId;
 import nta.engine.QueryUnitProtos.QueryUnitResponseProto;
 import nta.engine.QueryUnitProtos.QueryUnitResponseProtoOrBuilder;
 import nta.engine.ipc.protocolrecords.QueryUnitResponse;
@@ -14,7 +15,7 @@ import nta.engine.ipc.protocolrecords.QueryUnitResponse;
  */
 public class QueryUnitResponseImpl implements QueryUnitResponse {
 	
-	private int id;
+	private QueryUnitId id;
 	private QueryStatus status;
 	
 	private QueryUnitResponseProto proto = QueryUnitResponseProto.getDefaultInstance();
@@ -23,10 +24,10 @@ public class QueryUnitResponseImpl implements QueryUnitResponse {
 	
 	public QueryUnitResponseImpl() {
 		builder = QueryUnitResponseProto.newBuilder();
-		this.id = -1;
+		this.id = null;
 	}
 	
-	public QueryUnitResponseImpl(int id, QueryStatus status) {
+	public QueryUnitResponseImpl(QueryUnitId id, QueryStatus status) {
 		this.id = id;
 		this.status = status;
 	}
@@ -64,15 +65,15 @@ public class QueryUnitResponseImpl implements QueryUnitResponse {
 	}
 
 	@Override
-	public int getId() {
+	public QueryUnitId getId() {
 		QueryUnitResponseProtoOrBuilder p = viaProto ? proto : builder;
-		if (id != -1) {
+		if (id != null) {
 			return this.id;
 		}
 		if (!proto.hasId()) {
-			return -1;
+			return null;
 		}
-		this.id = p.getId();
+		this.id = new QueryUnitId(p.getId());
 		return this.id;
 	}
 
@@ -84,8 +85,8 @@ public class QueryUnitResponseImpl implements QueryUnitResponse {
 	}
 	
 	private void mergeLocalToBuilder() {
-		if (id != -1) {
-			builder.setId(this.id);
+		if (id != null) {
+			builder.setId(this.id.toString());
 		}
 		if (this.status != null) {
 			builder.setStatus(this.status);
@@ -104,8 +105,8 @@ public class QueryUnitResponseImpl implements QueryUnitResponse {
   @Override
   public void initFromProto() {
     QueryUnitResponseProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.id == -1 && p.hasId()) {
-      this.id = p.getId();
+    if (this.id == null && p.hasId()) {
+      this.id = new QueryUnitId(p.getId());
     }
     if (this.status == null && p.hasStatus()) {
       this.status = p.getStatus();

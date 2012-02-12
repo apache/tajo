@@ -7,7 +7,7 @@ import "CatalogProtos.proto";
 import "LeafServerProtos.proto";
 
 message QueryUnitRequestProto {
-	required int32 id = 1;
+	required string id = 1;
 	repeated TabletProto fragments = 2;
 	required string outputTable = 3;
 	required bool clusteredOutput = 4;
@@ -16,6 +16,6 @@ message QueryUnitRequestProto {
 }
 
 message QueryUnitResponseProto {
-	required int32 id = 1;
+	required string id = 1;
 	required QueryStatus status = 2;
 }

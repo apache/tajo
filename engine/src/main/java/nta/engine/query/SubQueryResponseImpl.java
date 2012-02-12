@@ -3,6 +3,7 @@
  */
 package nta.engine.query;
 
+import nta.engine.QueryUnitId;
 import nta.engine.LeafServerProtos.QueryStatus;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProtoOrBuilder;
@@ -14,7 +15,7 @@ import nta.engine.ipc.protocolrecords.SubQueryResponse;
  */
 public class SubQueryResponseImpl implements SubQueryResponse {
 
-  private int id;
+  private QueryUnitId id;
 	private QueryStatus status;
 	
 	private SubQueryResponseProto proto = SubQueryResponseProto.getDefaultInstance();
@@ -23,10 +24,10 @@ public class SubQueryResponseImpl implements SubQueryResponse {
 	
 	public SubQueryResponseImpl() {
 		builder = SubQueryResponseProto.newBuilder();
-		id = -1;
+		id = null;
 	}
 	
-	public SubQueryResponseImpl(int id, QueryStatus status) {
+	public SubQueryResponseImpl(QueryUnitId id, QueryStatus status) {
 		this();
 		set(id, status);
 	}
@@ -36,7 +37,7 @@ public class SubQueryResponseImpl implements SubQueryResponse {
 		viaProto = true;
 	}
 	
-	public void set(int id, QueryStatus status) {
+	public void set(QueryUnitId id, QueryStatus status) {
     this.id = id;
 		this.status = status;
 	}
@@ -76,8 +77,8 @@ public class SubQueryResponseImpl implements SubQueryResponse {
 		if (status != null) {
 			builder.setStatus(status);
 		}
-		if (id != -1) {
-			builder.setId(id);
+		if (id != null) {
+			builder.setId(id.toString());
 		}
 	}
 	
@@ -97,15 +98,15 @@ public class SubQueryResponseImpl implements SubQueryResponse {
   }
 
   @Override
-  public int getId() {
+  public QueryUnitId getId() {
     SubQueryResponseProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.id != -1) {
+    if (this.id != null) {
       return this.id;
     }
     if (!p.hasId()) {
-      return -1;
+      return null;
     }
-    this.id = p.getId();
+    this.id = new QueryUnitId(p.getId());
     return this.id;
   }
 }

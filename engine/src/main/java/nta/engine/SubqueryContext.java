@@ -25,10 +25,10 @@ public class SubqueryContext extends Context {
   private final Map<String, Fragment> fragmentMap
     = new HashMap<String, Fragment>();
   
-  private int queryId;
+  private QueryUnitId queryId;
   private QueryBlock query;
   
-  private SubqueryContext(int queryId, Fragment [] fragments) {
+  private SubqueryContext(QueryUnitId queryId, Fragment [] fragments) {
     this.queryId = queryId;
     
     for(Fragment t : fragments) {
@@ -47,8 +47,8 @@ public class SubqueryContext extends Context {
     }
     
     @VisibleForTesting
-    public SubqueryContext create(Fragment [] frags) {
-      return new SubqueryContext(0, frags);
+    public SubqueryContext create(QueryUnitId id, Fragment [] frags) {
+      return new SubqueryContext(id, frags);
     }
     
     public SubqueryContext create(SubQueryRequest request) {
@@ -58,7 +58,7 @@ public class SubqueryContext extends Context {
     }
   }
   
-  public int getQueryId() {
+  public QueryUnitId getQueryId() {
     return this.queryId;
   }
 

@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
+import nta.engine.QueryUnitId;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProtoOrBuilder;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
@@ -17,7 +18,7 @@ import nta.engine.ipc.protocolrecords.Fragment;
  */
 public class SubQueryRequestImpl implements SubQueryRequest {
   private List<Fragment> fragments;
-	private int id;
+	private QueryUnitId id;
   private URI dest;
   private String query;
   
@@ -27,10 +28,10 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   
   public SubQueryRequestImpl() {
 	  builder = SubQueryRequestProto.newBuilder();
-	  this.id = -1;
+	  this.id = null;
   }
   
-  public SubQueryRequestImpl(int id, List<Fragment> fragments, URI output, String query) {
+  public SubQueryRequestImpl(QueryUnitId id, List<Fragment> fragments, URI output, String query) {
 	  this();
 	  this.id = id;
     this.fragments = fragments;
@@ -41,7 +42,7 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   public SubQueryRequestImpl(SubQueryRequestProto proto) {
 	  this.proto = proto;
 	  viaProto = true;
-	  id = -1;
+	  id = null;
   }
 
   @Override
@@ -105,8 +106,8 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   }
   
   protected void mergeLocalToBuilder() {
-    if (id != -1) {
-      builder.setId(this.id);
+    if (id != null) {
+      builder.setId(this.id.toString());
     }
     if (fragments != null) {
       for (int i = 0; i < fragments.size(); i++) {
@@ -133,15 +134,15 @@ public class SubQueryRequestImpl implements SubQueryRequest {
   }
 
   @Override
-  public int getId() {
+  public QueryUnitId getId() {
 	  SubQueryRequestProtoOrBuilder p = viaProto ? proto : builder;
-	  if (id != -1) {
+	  if (id != null) {
 		  return this.id;
 	  }
 	  if (!p.hasId()) {
-		  return -1;
+		  return null;
 	  }
-	  this.id = p.getId();
+	  this.id = new QueryUnitId(p.getId());
 	  return this.id;
   }
 

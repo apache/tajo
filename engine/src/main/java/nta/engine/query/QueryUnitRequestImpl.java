@@ -9,6 +9,7 @@ import java.util.List;
 import com.google.gson.annotations.Expose;
 
 import nta.distexec.DistPlan;
+import nta.engine.QueryUnitId;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProtoOrBuilder;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -22,7 +23,7 @@ import nta.engine.json.GsonCreator;
 public class QueryUnitRequestImpl implements QueryUnitRequest{
 	
   @Expose
-	private int id;
+	private QueryUnitId id;
   @Expose
 	private List<Fragment> fragments;
   @Expose
@@ -41,11 +42,11 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	
 	public QueryUnitRequestImpl() {
 		builder = QueryUnitRequestProto.newBuilder();
-		this.id = -1;
+		this.id = null;
 		this.isUpdated = false;
 	}
 	
-	public QueryUnitRequestImpl(int id, List<Fragment> fragments, 
+	public QueryUnitRequestImpl(QueryUnitId id, List<Fragment> fragments, 
 			String outputTable, boolean clusteredOutput, 
 			String serializedData, String planName) {
 		this();
@@ -55,11 +56,11 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	public QueryUnitRequestImpl(QueryUnitRequestProto proto) {
 		this.proto = proto;
 		viaProto = true;
-		id = -1;
+		id = null;
 		isUpdated = false;
 	}
 	
-	public void set(int id, List<Fragment> fragments, 
+	public void set(QueryUnitId id, List<Fragment> fragments, 
 			String outputTable, boolean clusteredOutput, 
 			String serializedData, String planName) {
 		this.id = id;
@@ -80,15 +81,15 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	}
 
 	@Override
-	public int getId() {
+	public QueryUnitId getId() {
 		QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
-		if (id != -1) {
+		if (id != null) {
 			return this.id;
 		}
 		if (!proto.hasId()) {
-			return -1;
+			return null;
 		}
-		this.id = p.getId();
+		this.id = new QueryUnitId(p.getId());
 		return this.id;
 	}
 
@@ -168,8 +169,8 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	}
 	
 	private void mergeLocalToBuilder() {
-		if (id != -1) {
-			builder.setId(this.id);
+		if (id != null) {
+			builder.setId(this.id.toString());
 		}
 		if (fragments != null) {
 			for (int i = 0; i < fragments.size(); i++) {
@@ -202,8 +203,8 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
   @Override
   public void initFromProto() {
     QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
-    if (id == -1 && p.hasId()) {
-      this.id = p.getId();
+    if (id == null && p.hasId()) {
+      this.id = new QueryUnitId(p.getId());
     }
     if (fragments == null && p.getFragmentsCount() > 0) {
       this.fragments = new ArrayList<Fragment>();

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 import nta.distexec.DistPlan;
+import nta.engine.QueryUnitId;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.plan.global.Annotation;
 import nta.engine.planner.logical.LogicalNode;
@@ -19,13 +20,7 @@ import nta.engine.planner.logical.LogicalNode;
  */
 public class QueryUnit {
 
-	private static int nextId = -1;
-
-	private static int getNextId() {
-		return ++nextId;
-	}
-	
-	private int id;
+	private QueryUnitId id;
 	private LogicalNode op;
 	private String tableName;
 	private String outputName;
@@ -38,20 +33,20 @@ public class QueryUnit {
 	private String hostName;
 	private int port;
 	
-	public QueryUnit() {
-		this.id = getNextId();
+	public QueryUnit(QueryUnitId id) {
+		this.id = id;
 		prevQueries = new HashSet<QueryUnit>();
 		nextQueries = new HashSet<QueryUnit>();
 		fragments = new ArrayList<Fragment>();
 	}
 	
-	public QueryUnit(LogicalNode op) {
-		this();
+	public QueryUnit(QueryUnitId id, LogicalNode op) {
+		this(id);
 		set(op, null);
 	}
 	
-	public QueryUnit(LogicalNode op, Annotation annotation) {
-		this();
+	public QueryUnit(QueryUnitId id, LogicalNode op, Annotation annotation) {
+		this(id);
 		set(op, annotation);
 	}
 	
@@ -132,7 +127,7 @@ public class QueryUnit {
 		return this.annotaion;
 	}
 	
-	public int getId() {
+	public QueryUnitId getId() {
 		return id;
 	}
 	

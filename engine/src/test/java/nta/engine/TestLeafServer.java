@@ -32,7 +32,7 @@ import org.junit.Test;
 /**
  * 
  * @author Hyunsik Choi
- *
+ * 
  */
 public class TestLeafServer {
 
@@ -48,6 +48,7 @@ public class TestLeafServer {
     util.startMiniCluster(2);
     conf = util.getConfiguration();
     sm = StorageManager.get(conf);
+    QueryIdFactory.reset();
   }
 
   @AfterClass
@@ -64,7 +65,7 @@ public class TestLeafServer {
     TableMeta meta = new TableMetaImpl();
     meta.setSchema(schema);
     meta.setStorageType(StoreType.CSV);
-    
+
     Appender appender = sm.getTableAppender(meta, "table1");
     int tupleNum = 10000;
     Tuple tuple = null;
@@ -85,21 +86,23 @@ public class TestLeafServer {
     tablets2[0] = new Fragment("table1_2", status.getPath(), meta, 70000, 1000);
     LeafServer leaf2 = util.getMiniNtaEngineCluster().getLeafServer(1);
 
-    SubQueryRequest req = new SubQueryRequestImpl(0, new ArrayList<Fragment>(
-        Arrays.asList(tablets1)), new Path(TEST_PATH, "out").toUri(),
+    SubQueryRequest req = new SubQueryRequestImpl(
+        QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
+            Arrays.asList(tablets1)), new Path(TEST_PATH, "out").toUri(),
         "select name, id from table1_1 where id > 5100");
-    assertEquals(QueryStatus.FINISHED, 
-        leaf1.requestSubQuery(req.getProto()).getStatus());
+    assertEquals(QueryStatus.FINISHED, leaf1.requestSubQuery(req.getProto())
+        .getStatus());
 
-    SubQueryRequest req2 = new SubQueryRequestImpl(1, new ArrayList<Fragment>(
-        Arrays.asList(tablets2)), new Path(TEST_PATH, "out").toUri(),
+    SubQueryRequest req2 = new SubQueryRequestImpl(
+        QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
+            Arrays.asList(tablets2)), new Path(TEST_PATH, "out").toUri(),
         "select name, id from table1_2 where id > 5100");
-    assertEquals(QueryStatus.FINISHED, 
-        leaf2.requestSubQuery(req2.getProto()).getStatus());
+    assertEquals(QueryStatus.FINISHED, leaf2.requestSubQuery(req2.getProto())
+        .getStatus());
 
     leaf1.shutdown("Normally Shutdown");
   }
-  
+
   @Test
   public final void testStoreResult() throws IOException {
     Schema schema = new Schema();
@@ -109,7 +112,7 @@ public class TestLeafServer {
     TableMeta meta = new TableMetaImpl();
     meta.setSchema(schema);
     meta.setStorageType(StoreType.CSV);
-    
+
     Appender appender = sm.getTableAppender(meta, "table2");
     int tupleNum = 10000;
     Tuple tuple = null;
@@ -119,28 +122,30 @@ public class TestLeafServer {
       tuple.put(1, DatumFactory.createInt(i + 1));
       appender.addTuple(tuple);
     }
-    appender.close(); 
-    
-    Fragment [] frags = sm.split("table2");
-    
+    appender.close();
+
+    Fragment[] frags = sm.split("table2");
+
     Schema outputSchema = new Schema();
     outputSchema.addColumn("name", DataType.STRING);
     outputSchema.addColumn("id", DataType.INT);
-    TableMeta outputMeta = new TableMetaImpl(outputSchema, StoreType.CSV);    
+    TableMeta outputMeta = new TableMetaImpl(outputSchema, StoreType.CSV);
     sm.initTableBase(outputMeta, "table120205");
-    System.out.println("Table2: "+frags[0]);
+    System.out.println("Table2: " + frags[0]);
     LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(0);
-    SubQueryRequest req1 = new SubQueryRequestImpl(0, new ArrayList<Fragment>(
-        Arrays.asList(frags)), new Path(TEST_PATH, "out").toUri(),
+    SubQueryRequest req1 = new SubQueryRequestImpl(
+        QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
+            Arrays.asList(frags)), new Path(TEST_PATH, "out").toUri(),
         "table120205 := select name, id from table2_1 where id > 5100");
-    assertEquals(QueryStatus.FINISHED, 
-        leaf1.requestSubQuery(req1.getProto()).getStatus());
+    assertEquals(QueryStatus.FINISHED, leaf1.requestSubQuery(req1.getProto())
+        .getStatus());
     assertNotNull(sm.getTableMeta(sm.getTablePath("table120205")));
     frags = sm.split("table120205");
-    SubQueryRequest req2 = new SubQueryRequestImpl(1, new ArrayList<Fragment>(
-        Arrays.asList(frags)), new Path(TEST_PATH, "out").toUri(),
+    SubQueryRequest req2 = new SubQueryRequestImpl(
+        QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
+            Arrays.asList(frags)), new Path(TEST_PATH, "out").toUri(),
         "table120205 := select name, id from table120205_1");
-    assertEquals(QueryStatus.FINISHED,
-        leaf1.requestSubQuery(req2.getProto()).getStatus());
+    assertEquals(QueryStatus.FINISHED, leaf1.requestSubQuery(req2.getProto())
+        .getStatus());
   }
 }

@@ -11,8 +11,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
@@ -26,7 +24,10 @@ import nta.engine.EngineService;
 import nta.engine.LeafServerProtos.QueryStatus;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.QueryContext;
+import nta.engine.QueryId;
+import nta.engine.QueryIdFactory;
 import nta.engine.ResultSetMemImplOld;
+import nta.engine.SubQueryId;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.PhysicalOp;
 import nta.engine.exec.eval.ConstEval;
@@ -36,7 +37,6 @@ import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.ipc.AsyncWorkerClientInterface;
 import nta.engine.ipc.AsyncWorkerInterface;
 import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.SubQueryResponse;
 import nta.engine.parser.QueryAnalyzer;
@@ -96,6 +96,7 @@ public class GlobalEngine implements EngineService {
     phyPlanner = new PhysicalPlanner(this.catalog, this.storageManager);
 
     this.unitQueryMap = new HashMap<QueryUnit, Callback<SubQueryResponseProto>>();
+    QueryIdFactory.reset();
   }
 
   public void createTable(TableDesc meta) throws IOException {
@@ -120,6 +121,8 @@ public class GlobalEngine implements EngineService {
     QueryBlock block = analyzer.parse(ctx, querystr);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
     LogicalOptimizer.optimize(ctx, plan);
+    QueryId queryId = QueryIdFactory.newQueryId();
+    SubQueryId subQueryId = QueryIdFactory.newSubQueryId();
     GlobalQueryPlan globalPlan = globalPlanner.build(plan);
     TableMeta meta = null;
     /*

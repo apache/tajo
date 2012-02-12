@@ -12,6 +12,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
+import nta.engine.QueryIdFactory;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.Fragment;
 
@@ -25,6 +26,7 @@ public class TestSubQueryRequestImpl {
 
 	@Test
 	public void test() throws URISyntaxException {
+	  QueryIdFactory.reset();
 	  Schema schema = new Schema();
 	  TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
 	  
@@ -35,10 +37,10 @@ public class TestSubQueryRequestImpl {
 		tablets.add(new Fragment("test1_4",new Path("test4"), meta, 3, 4));
 		tablets.add(new Fragment("test1_5",new Path("test5"), meta, 4, 5));
 		
-		SubQueryRequest req1 = new SubQueryRequestImpl(0, tablets, new URI("out1"), "select test1");
+		SubQueryRequest req1 = new SubQueryRequestImpl(QueryIdFactory.newQueryUnitId(), tablets, new URI("out1"), "select test1");
 		
 		SubQueryRequestProto.Builder builder = SubQueryRequestProto.newBuilder();
-		builder.setId(0);
+		builder.setId(req1.getId().toString());
 		for (int i = 0; i < tablets.size(); i++) {
 			builder.addTablets(tablets.get(i).getProto());
 		}

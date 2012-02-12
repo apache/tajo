@@ -1,6 +1,7 @@
 package nta.engine.ipc.protocolrecords;
 
 import nta.common.ProtoObject;
+import nta.engine.QueryUnitId;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 
 /**
@@ -11,6 +12,6 @@ import nta.engine.LeafServerProtos.SubQueryResponseProto;
 
 public interface SubQueryResponse extends ProtoObject<SubQueryResponseProto> {
 
-  public int getId();
+  public QueryUnitId getId();
 	public nta.engine.LeafServerProtos.QueryStatus getStatus();
 }

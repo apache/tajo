@@ -13,6 +13,7 @@ import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.engine.QueryUnitId;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
@@ -49,7 +50,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
     = new HashMap<Integer, String>();
   private Integer incNum = 0;
   
-  public PartitionedStoreExec(final StorageManager sm, final int queryId,
+  public PartitionedStoreExec(final StorageManager sm, final QueryUnitId queryId,
       final StoreTableNode annotation, final PhysicalExec subOp) throws IOException {
     Preconditions.checkArgument(annotation.hasPartitionKey());
     
@@ -69,7 +70,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
       i++;
     }
     this.partitioner = new HashPartitioner(partitionKeys, numPartitions);
-    this.storeTable = annotation.getTableName() + "_" + numFormat.format(queryId);
+    this.storeTable = annotation.getTableName() + "_" + queryId;
     sm.initTableBase(meta, storeTable);    
   }
 

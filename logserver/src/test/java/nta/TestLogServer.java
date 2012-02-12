@@ -30,7 +30,7 @@ public class TestLogServer {
 		filelist = fs.listStatus(path);
 	}
 	
-	@Test
+//	@Test
 	public void test() throws Exception {
 		// This comment is a temporal solution during the version 0.3.
 		/*

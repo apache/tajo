@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 
 import nta.common.ProtoObject;
+import nta.engine.QueryUnitId;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 
 /**
@@ -12,7 +13,7 @@ import nta.engine.LeafServerProtos.SubQueryRequestProto;
  * @author Hyunsik Choi
  */
 public interface SubQueryRequest extends ProtoObject<SubQueryRequestProto> {
-	public int getId();
+	public QueryUnitId getId();
 	
 	public String getQuery();
 

@@ -22,6 +22,12 @@ public class QueryUnitId implements Comparable<QueryUnitId> {
     this.finalId = this.subQueryId + QueryId.SEPERATOR + format.format(id);
   }
   
+  public QueryUnitId(final String finalId) {
+    this.subQueryId = null;
+    this.id = -1;
+    this.finalId = finalId;
+  }
+  
   @Override
   public final String toString() {
     return this.finalId;

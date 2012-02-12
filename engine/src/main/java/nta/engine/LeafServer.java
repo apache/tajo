@@ -216,7 +216,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     queryLauncher.addSubQuery(newQuery);
 
     SubQueryResponseProto.Builder res = SubQueryResponseProto.newBuilder();
-    res.setId(request.getId());
+    res.setId(request.getId().toString());
     res.setStatus(QueryStatus.FINISHED);
     return res.build();
   }
@@ -310,7 +310,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   private static class InProgressQuery {
     PhysicalExec executor;
     
-    private InProgressQuery(int qid, PhysicalExec exec) {
+    private InProgressQuery(QueryUnitId qid, PhysicalExec exec) {
       this.executor = exec;
     }
     
