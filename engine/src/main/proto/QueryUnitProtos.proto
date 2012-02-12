@@ -19,3 +19,8 @@ message QueryUnitResponseProto {
 	required string id = 1;
 	required QueryStatus status = 2;
 }
+
+message QueryUnitReportProto {
+	required string id = 1;
+	required float progress = 2;
+}
