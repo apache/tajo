@@ -174,6 +174,7 @@ public class NtaTestingUtility {
 	private MiniNtaEngineCluster startMiniTajoCluster(File testBuildDir,
 	    final int numSlaves) throws Exception {
 	  Configuration c = getConfiguration();
+	  c.set(NConstants.MASTER_ADDRESS, "localhost:0");
 	  c.set(NConstants.CATALOG_ADDRESS, "localhost:0");
 	  conf.set(TConstants.JDBC_URI, 
         "jdbc:derby:"+clusterTestBuildDir.getAbsolutePath()+"/db");

@@ -9,7 +9,7 @@ import nta.engine.QueryUnitProtos.QueryUnitReportProto;
  * @author jihoon
  *
  */
-public interface AsyncMasterInterface {
+public interface MasterInterface {
 
   /**
    * Worker들의 질의 수행 경과를 Master에게 전달

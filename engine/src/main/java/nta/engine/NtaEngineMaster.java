@@ -7,8 +7,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import nta.catalog.CatalogService;
 import nta.catalog.LocalCatalog;
@@ -19,13 +19,12 @@ import nta.catalog.TableUtil;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
+import nta.engine.QueryUnitProtos.InProgressStatus;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.cluster.WorkerListener;
 import nta.engine.ipc.QueryEngineInterface;
 import nta.engine.json.GsonCreator;
 import nta.engine.query.GlobalEngine;
-import nta.rpc.NettyRpc;
-import nta.rpc.ProtoParamRpcServer;
 import nta.storage.StorageManager;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkServer;
@@ -39,6 +38,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
+
+import com.google.common.collect.MapMaker;
 
 /**
  * @author Hyunsik Choi
@@ -70,6 +71,10 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   private WorkerListener wl;
 
   private List<EngineService> services = new ArrayList<EngineService>();
+  
+  private Map<QueryUnitId, InProgressStatus> inProgressQueries = new MapMaker()
+      .concurrencyLevel(4)
+      .makeMap();
   
   public NtaEngineMaster(final Configuration conf) throws Exception {
     this.conf = conf;
@@ -118,7 +123,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     // connect the zkserver
     this.zkClient = new ZkClient(conf);
 
-    this.wl = new WorkerListener(conf, new HashMap<QueryUnitId, Float>());
+    this.wl = new WorkerListener(conf, inProgressQueries);
     this.wl.start();
     // Setup RPC server
     // Get the master address
@@ -148,9 +153,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     
     this.queryEngine = new GlobalEngine(conf, catalog, storeManager);
     this.queryEngine.init();
-    services.add(queryEngine);
-
-    
+    services.add(queryEngine); 
   }
 
   private void becomeMaster() throws IOException, KeeperException,
@@ -304,6 +307,11 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 	public String getTableList() {		
 		Collection<String> tableNames = catalog.getAllTableNames();		
 		return GsonCreator.getInstance().toJson(tableNames);
+	}
+	
+	// TODO - to be improved
+	public Collection<InProgressStatus> getProgressQueries() {
+	  return this.inProgressQueries.values();
 	}
 
   public static void main(String[] args) throws Exception {

@@ -6,13 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.Expose;
-
 import nta.catalog.exception.AlreadyExistsFieldException;
 import nta.catalog.proto.CatalogProtos.ColumnProto;
 import nta.catalog.proto.CatalogProtos.DataType;
@@ -20,6 +13,12 @@ import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.catalog.proto.CatalogProtos.SchemaProtoOrBuilder;
 import nta.common.ProtoObject;
 import nta.engine.json.GsonCreator;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
 
 /**
  * 

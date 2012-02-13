@@ -3,10 +3,9 @@
  */
 package nta.engine.query;
 
-import nta.engine.QueryUnitId;
 import nta.engine.LeafServerProtos.QueryStatus;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
-import nta.engine.LeafServerProtos.SubQueryResponseProtoOrBuilder;
+import nta.engine.QueryUnitId;
 import nta.engine.ipc.protocolrecords.SubQueryResponse;
 
 /**
@@ -42,23 +41,6 @@ public class SubQueryResponseImpl implements SubQueryResponse {
 		this.status = status;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.engine.ipc.protocolrecords.SubQueryResponse#getStatus()
-	 */
-	@Override
-	public QueryStatus getStatus() {
-		SubQueryResponseProtoOrBuilder p = viaProto ? proto : builder;
-		
-		if (status != null) {
-			return this.status;
-		}
-		if (!proto.hasStatus()) {
-			return null;
-		}
-		this.status = p.getStatus();
-		return this.status;
-	}
-
 	public SubQueryResponseProto getProto() {
 		mergeLocalToProto();
 		proto = viaProto ? proto : builder.build();
@@ -74,12 +56,6 @@ public class SubQueryResponseImpl implements SubQueryResponse {
 	}
 	
 	private void mergeLocalToBuilder() {
-		if (status != null) {
-			builder.setStatus(status);
-		}
-		if (id != null) {
-			builder.setId(id.toString());
-		}
 	}
 	
 	private void mergeLocalToProto() {
@@ -95,18 +71,5 @@ public class SubQueryResponseImpl implements SubQueryResponse {
   public void initFromProto() {
     // TODO Auto-generated method stub
     
-  }
-
-  @Override
-  public QueryUnitId getId() {
-    SubQueryResponseProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.id != null) {
-      return this.id;
-    }
-    if (!p.hasId()) {
-      return null;
-    }
-    this.id = new QueryUnitId(p.getId());
-    return this.id;
   }
 }

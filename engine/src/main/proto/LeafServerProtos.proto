@@ -6,9 +6,11 @@ option java_generate_equals_and_hash = true;
 import "CatalogProtos.proto";
 
 enum QueryStatus {
-     FINISHED = 0;
-     FAILED = 1;
-     ABORD = 2;
+     PENDING = 0;
+     INPROGRESS = 1;
+     FINISHED = 2;
+     FAILED = 3;
+     ABORTED = 4;
 }
 
 message SubQueryRequestProto {
@@ -19,8 +21,6 @@ message SubQueryRequestProto {
 }
 
 message SubQueryResponseProto {
-	required string id = 1;
-	required QueryStatus status = 2;
 }
 
 message AssignTabletRequestProto {

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -20,10 +21,13 @@ import nta.engine.LeafServerProtos.QueryStatus;
 import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
+import nta.engine.QueryUnitProtos.InProgressStatus;
+import nta.engine.QueryUnitProtos.QueryUnitReportProto;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
 import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.ipc.AsyncWorkerInterface;
+import nta.engine.ipc.MasterInterface;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.planner.physical.PhysicalExec;
@@ -40,7 +44,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.net.DNS;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
+
+import com.google.common.collect.MapMaker;
 
 /**
  * @author Hyunsik Choi
@@ -66,6 +73,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   // Cluster Management
   private ZkClient zkClient;
   private MasterAddressTracker masterAddrTracker;
+  private MasterInterface master;
 
   // Query Processing
   private FileSystem defaultFS;
@@ -74,6 +82,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   private TQueryEngine queryEngine;
   private QueryLauncher queryLauncher;
   private List<EngineService> services = new ArrayList<EngineService>();
+  
+  Map<QueryUnitId, InProgressQuery> queries = new MapMaker()
+    .concurrencyLevel(4)
+    .makeMap();
 
   public LeafServer(final Configuration conf) {
     this.conf = conf;
@@ -124,6 +136,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName));
     LOG.info("Created the znode " + NConstants.ZNODE_LEAFSERVERS + "/" 
         + serverName);
+    
+    InetSocketAddress addr = NetUtils.createSocketAddr(new String(master));
+    this.master = (MasterInterface) NettyRpc.getProtoParamBlockingRpcProxy(
+        MasterInterface.class, addr);
   }
 
   public void run() {
@@ -141,7 +157,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         this.isOnline = true;
         while (!this.stopped) {
           Thread.sleep(1000);
-
+          sendHeartbeat();
         }
       }
     } catch (Throwable t) {
@@ -162,6 +178,44 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     }
 
     LOG.info("LeafServer (" + serverName + ") main thread exiting");
+  }
+  
+  private void sendHeartbeat() throws IOException {
+    QueryUnitReportProto.Builder report = QueryUnitReportProto.newBuilder();
+    
+    // to send
+    List<InProgressStatus> list 
+      = new ArrayList<QueryUnitProtos.InProgressStatus>();
+    InProgressStatus status = null;
+    // to be removed
+    List<QueryUnitId> tobeRemoved = new ArrayList<QueryUnitId>();
+    
+    // builds one status for each in-progress query
+    for (InProgressQuery ipq : queries.values()) {
+      if (ipq.status == QueryStatus.FAILED 
+          || ipq.status == QueryStatus.FAILED
+          || ipq.status == QueryStatus.FINISHED) {
+        // TODO - in-progress queries should be kept until this leafserver 
+        // ensures that this report is deliveried.
+        tobeRemoved.add(ipq.getId());
+      }
+      
+      status = InProgressStatus.newBuilder()
+        .setId(ipq.getId().toString())
+        .setProgress(ipq.progress)
+        .setStatus(ipq.status)
+        .build();      
+      
+      list.add(status);
+    }
+    
+    report.addAllStatus(list);
+    // eliminates aborted, failed, finished queries
+    for (QueryUnitId rid : tobeRemoved) {
+      this.queries.remove(rid);
+    }
+    
+    master.reportQueryUnit(report.build());
   }
 
   private class ShutdownHook implements Runnable {
@@ -216,8 +270,6 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     queryLauncher.addSubQuery(newQuery);
 
     SubQueryResponseProto.Builder res = SubQueryResponseProto.newBuilder();
-    res.setId(request.getId().toString());
-    res.setStatus(QueryStatus.FINISHED);
     return res.build();
   }
 
@@ -271,7 +323,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     return serverStatus.build();
   }
   
-  private static class QueryLauncher extends Thread {
+  private class QueryLauncher extends Thread {
     private final int coreNum = Runtime.getRuntime().availableProcessors();
     private final BlockingQueue<InProgressQuery> queriesToLaunch
       = new ArrayBlockingQueue<InProgressQuery>(coreNum);
@@ -288,7 +340,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         while (!Thread.interrupted()) {
           // wait for add
           InProgressQuery q = queriesToLaunch.take();          
-          executor.submit(new SubQuery(q));
+          queries.put(q.qid, q);
+          executor.submit(q);
         }
       } catch (Throwable t) {
         LOG.error(t);
@@ -296,29 +349,42 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     }
   }
   
-  private static class SubQuery implements Runnable {
-    private final InProgressQuery query;
-    public SubQuery(InProgressQuery query) {
-      this.query = query;
-    }
-    @Override
-    public void run() {
-      query.execute();
-    }
-  }
-  
-  private static class InProgressQuery {
-    PhysicalExec executor;
+  private static class InProgressQuery implements Runnable {
+    private final QueryUnitId qid;
+    private final PhysicalExec executor;
+    private float progress;
+    private QueryStatus status;
     
     private InProgressQuery(QueryUnitId qid, PhysicalExec exec) {
+      this.qid = qid;
       this.executor = exec;
+      this.progress = 0;
+      this.status = QueryStatus.PENDING;
     }
     
-    public void execute() {
+    public QueryUnitId getId() {
+      return this.qid;
+    }
+    
+    public float getProgress() {
+      return this.progress;
+    }
+    
+    public QueryStatus getStatus() {
+      return this.status;
+    }
+
+    @Override
+    public void run() {
       try {
+        this.status = QueryStatus.INPROGRESS;
+        
         while(executor.next() != null) {}
       } catch (IOException e) {
         e.printStackTrace();
+      } finally {
+        this.progress = 1.0f;
+        this.status = QueryStatus.FINISHED;
       }
     }
   }

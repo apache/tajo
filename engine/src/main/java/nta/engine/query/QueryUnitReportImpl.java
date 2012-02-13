@@ -1,78 +1,56 @@
-/**
- * 
- */
 package nta.engine.query;
 
-import nta.engine.QueryUnitId;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import nta.engine.QueryUnitProtos.InProgressStatus;
 import nta.engine.QueryUnitProtos.QueryUnitReportProto;
 import nta.engine.QueryUnitProtos.QueryUnitReportProtoOrBuilder;
 import nta.engine.ipc.QueryUnitReport;
 
 /**
  * @author jihoon
- *
+ * @author Hyunsik Choi
+ * 
  */
 public class QueryUnitReportImpl implements QueryUnitReport {
-  
-  private QueryUnitId id;
-  private float progress;
-  
   private QueryUnitReportProto proto;
   private QueryUnitReportProto.Builder builder;
   private boolean viaProto;
+  private List<InProgressStatus> inProgressQueries;
   
   public QueryUnitReportImpl() {
     builder = QueryUnitReportProto.newBuilder();
-    viaProto = false;
-    progress = -1.f;
   }
   
-  public QueryUnitReportImpl(QueryUnitId id, float progress) {
+  public QueryUnitReportImpl(List<InProgressStatus> inProgress) {
     this();
-    this.set(id, progress);
+    this.inProgressQueries = 
+        new ArrayList<InProgressStatus>(inProgress);
   }
   
   public QueryUnitReportImpl(QueryUnitReportProto proto) {
     this.proto = proto;
     viaProto = true;
-    progress = -1.f;
   }
   
-  public void set(QueryUnitId id, float progress) {
-    this.id = id;
-    this.progress = progress;
-  }
-
-  @Override
-  public QueryUnitId getId() {
+  private void initProgress() {
+    if (this.inProgressQueries != null) {
+      return;
+    }
     QueryUnitReportProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.id != null) {
-      return this.id;
-    }
-    if (!p.hasId()) {
-      return null;
-    }
-    this.id = new QueryUnitId(p.getId());
-    return this.id;
+    this.inProgressQueries = p.getStatusList();
   }
 
   @Override
-  public float getProgress() {
-    QueryUnitReportProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.progress != -1) {
-      return this.progress;
-    }
-    if (!p.hasProgress()) {
-      return -1.f;
-    }
-    this.progress = p.getProgress();
-    return this.progress;
+  public Collection<InProgressStatus> getProgressList() {
+    initProgress();
+    return inProgressQueries;
   }
 
   @Override
-  public void initFromProto() {
-    // TODO Auto-generated method stub
-    
+  public void initFromProto() {    
   }
 
   @Override
@@ -94,18 +72,16 @@ public class QueryUnitReportImpl implements QueryUnitReport {
   private void mergeLocalToProto() {
     if (viaProto) {
       maybeInitBuilder();
-    }
+    }    
     mergeLocalToBuilder();
     proto = builder.build();
     viaProto = true;
   }
   
   private void mergeLocalToBuilder() {
-    if (this.id != null) {
-      builder.setId(this.id.toString());
-    }
-    if (this.progress != -1.f) {
-      builder.setProgress(this.progress);
+    if (this.inProgressQueries != null) {
+      builder.clearStatus();
+      builder.addAllStatus(this.inProgressQueries);
     }
   }
 }

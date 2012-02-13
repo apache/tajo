@@ -21,7 +21,6 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.EngineService;
-import nta.engine.LeafServerProtos.QueryStatus;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.QueryContext;
 import nta.engine.QueryId;
@@ -61,6 +60,8 @@ import nta.storage.Tuple;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+
+import com.google.common.base.Preconditions;
 
 /**
  * @author jihoon
@@ -206,9 +207,7 @@ public class GlobalEngine implements EngineService {
         q = it.next();
         cb = unitQueryMap.get(q);
         response = new SubQueryResponseImpl(cb.get());
-        if (response.getStatus() != QueryStatus.FINISHED) {
-          // TODO: failure handling
-        }
+        Preconditions.checkNotNull(response);
       }
       unitQueryMap.clear();
     }

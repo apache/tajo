@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
@@ -13,7 +14,7 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
-import nta.engine.LeafServerProtos.QueryStatus;
+import nta.engine.QueryUnitProtos.InProgressStatus;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.query.SubQueryRequestImpl;
@@ -28,6 +29,7 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mortbay.log.Log;
 
 /**
  * 
@@ -53,7 +55,7 @@ public class TestLeafServer {
 
   @AfterClass
   public static void tearDown() throws Exception {
-    util.shutdownMiniNtaEngineCluster();
+    util.shutdownMiniCluster();
   }
 
   @Test
@@ -90,21 +92,31 @@ public class TestLeafServer {
         QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
             Arrays.asList(tablets1)), new Path(TEST_PATH, "out").toUri(),
         "select name, id from table1_1 where id > 5100");
-    assertEquals(QueryStatus.FINISHED, leaf1.requestSubQuery(req.getProto())
-        .getStatus());
+    assertNotNull(leaf1.requestSubQuery(req.getProto()));
 
     SubQueryRequest req2 = new SubQueryRequestImpl(
         QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
             Arrays.asList(tablets2)), new Path(TEST_PATH, "out").toUri(),
         "select name, id from table1_2 where id > 5100");
-    assertEquals(QueryStatus.FINISHED, leaf2.requestSubQuery(req2.getProto())
-        .getStatus());
+    assertNotNull(leaf2.requestSubQuery(req2.getProto()));
+    
+    // for the report sending test
+    NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
+    Collection<InProgressStatus> list = master.getProgressQueries();
+    int i = 0;
+    while (list.size() < 2 && i < 10) {
+      Log.info("Waiting for receiving the report messages");
+      Thread.sleep(1000);
+      list = master.getProgressQueries();
+      i++;
+    }    
+    assertEquals(2, list.size());
 
     leaf1.shutdown("Normally Shutdown");
   }
 
   @Test
-  public final void testStoreResult() throws IOException {
+  public final void testStoreResult() throws IOException, InterruptedException {
     Schema schema = new Schema();
     schema.addColumn("name", DataType.STRING);
     schema.addColumn("id", DataType.INT);
@@ -137,15 +149,25 @@ public class TestLeafServer {
         QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
             Arrays.asList(frags)), new Path(TEST_PATH, "out").toUri(),
         "table120205 := select name, id from table2_1 where id > 5100");
-    assertEquals(QueryStatus.FINISHED, leaf1.requestSubQuery(req1.getProto())
-        .getStatus());
+    assertNotNull(leaf1.requestSubQuery(req1.getProto()));
     assertNotNull(sm.getTableMeta(sm.getTablePath("table120205")));
     frags = sm.split("table120205");
     SubQueryRequest req2 = new SubQueryRequestImpl(
         QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
             Arrays.asList(frags)), new Path(TEST_PATH, "out").toUri(),
         "table120205 := select name, id from table120205_1");
-    assertEquals(QueryStatus.FINISHED, leaf1.requestSubQuery(req2.getProto())
-        .getStatus());
+    assertNotNull(leaf1.requestSubQuery(req2.getProto()));
+    
+    // for the report sending test
+    NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
+    Collection<InProgressStatus> list = master.getProgressQueries();
+    int i = 0;
+    while (list.size() < 4 && i < 10) { // waiting for the report messages 
+      Log.info("Waiting for receiving the report messages");
+      Thread.sleep(1000);
+      list = master.getProgressQueries();
+      i++;
+    }    
+    assertEquals(4, list.size());
   }
 }

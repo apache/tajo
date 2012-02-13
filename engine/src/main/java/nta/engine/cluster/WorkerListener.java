@@ -4,36 +4,37 @@
 package nta.engine.cluster;
 
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.Map;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.net.DNS;
-import org.apache.hadoop.net.NetUtils;
 
 import nta.engine.NConstants;
 import nta.engine.QueryUnitId;
+import nta.engine.QueryUnitProtos.InProgressStatus;
 import nta.engine.QueryUnitProtos.QueryUnitReportProto;
-import nta.engine.ipc.AsyncMasterInterface;
+import nta.engine.ipc.MasterInterface;
 import nta.engine.ipc.QueryUnitReport;
 import nta.engine.query.QueryUnitReportImpl;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.net.NetUtils;
+import org.mortbay.log.Log;
+
 /**
  * @author jihoon
  *
  */
-public class WorkerListener implements Runnable, AsyncMasterInterface {
+public class WorkerListener implements Runnable, MasterInterface {
   
-  private Map<QueryUnitId, Float> progressMap;
+  private Map<QueryUnitId, InProgressStatus> progressMap;
   
   private final ProtoParamRpcServer rpcServer;
   private InetSocketAddress bindAddr;
   private String addr;
   private volatile boolean stopped = false;
   
-  public WorkerListener(Configuration conf, Map<QueryUnitId, Float> progressMap) {
+  public WorkerListener(Configuration conf, Map<QueryUnitId, 
+      InProgressStatus> progressMap) {
     String confMasterAddr = conf.get(NConstants.MASTER_ADDRESS,
         NConstants.DEFAULT_MASTER_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterAddr);
@@ -74,7 +75,10 @@ public class WorkerListener implements Runnable, AsyncMasterInterface {
   @Override
   public void reportQueryUnit(QueryUnitReportProto proto) {
     QueryUnitReport report = new QueryUnitReportImpl(proto);
-    progressMap.put(report.getId(), report.getProgress());
+    for (InProgressStatus status : report.getProgressList()) {
+      progressMap.put(new QueryUnitId(status.getId()), status);
+    }
+    Log.info("Received the report :" + report.getProto());
   }
 
   @Override
