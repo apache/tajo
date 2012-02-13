@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 import nta.catalog.CatalogService;
@@ -19,6 +20,7 @@ import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
 import nta.engine.cluster.WorkerCommunicator;
+import nta.engine.cluster.WorkerListener;
 import nta.engine.ipc.QueryEngineInterface;
 import nta.engine.json.GsonCreator;
 import nta.engine.query.GlobalEngine;
@@ -51,7 +53,6 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   private volatile boolean stopped = false;
 
   private final String clientServiceAddr;
-  private final String masterAddr;
   private final ZkClient zkClient;
   private ZkServer zkServer;
 
@@ -63,11 +64,10 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   private final Path dataPath;
 
   private final InetSocketAddress clientServiceBindAddr;
-  private final InetSocketAddress masterBindAddr;
 
   private RPC.Server clientServiceServer;
   private WorkerCommunicator wc;
-  private ProtoParamRpcServer masterServer;
+  private WorkerListener wl;
 
   private List<EngineService> services = new ArrayList<EngineService>();
   
@@ -117,27 +117,18 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 
     // connect the zkserver
     this.zkClient = new ZkClient(conf);
-    
+
+    this.wl = new WorkerListener(conf, new HashMap<QueryUnitId, Float>());
+    this.wl.start();
     // Setup RPC server
     // Get the master address
-    String confMasterAddr = conf.get(NConstants.MASTER_ADDRESS,
-        NConstants.DEFAULT_MASTER_ADDRESS);
-    InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterAddr);
-    /*
-     * this.server = NettyRpc.getProtoParamRpcServer(this, initIsa);
-     * this.server.start(); this.bindAddr = this.server.getBindAddress();
-     */
-    this.masterServer = NettyRpc.getProtoParamRpcServer(this, initIsa);
-    this.masterServer.start();
-    this.masterBindAddr = this.masterServer.getBindAddress();
-    this.masterAddr = masterBindAddr.getHostName() + ":" + masterBindAddr.getPort();
     LOG.info(NtaEngineMaster.class.getSimpleName() + " is bind to "
-        + this.masterAddr);
-    this.conf.set(NConstants.MASTER_ADDRESS, this.masterAddr);
+        + wl.getAddress());
+    this.conf.set(NConstants.MASTER_ADDRESS, wl.getAddress());
     
     String confClientServiceAddr = conf.get(NConstants.CLIENT_SERVICE_ADDRESS, 
         NConstants.DEFAULT_CLIENT_SERVICE_ADDRESS);
-    initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
+    InetSocketAddress initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
     this.clientServiceServer = RPC.getServer(this, initIsa.getHostName(), 
         initIsa.getPort(), conf);
     this.clientServiceServer.start();
@@ -154,6 +145,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     becomeMaster();
     this.wc = new WorkerCommunicator(conf);
     this.wc.start();
+    
     this.queryEngine = new GlobalEngine(conf, catalog, storeManager);
     this.queryEngine.init();
     services.add(queryEngine);
@@ -165,7 +157,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
       InterruptedException {
     ZkUtil.createPersistentNodeIfNotExist(zkClient, NConstants.ZNODE_BASE);
     ZkUtil.upsertEphemeralNode(zkClient, NConstants.ZNODE_MASTER,
-        masterAddr.getBytes());
+        wl.getAddress().getBytes());
     ZkUtil.createPersistentNodeIfNotExist(zkClient,
         NConstants.ZNODE_LEAFSERVERS);
     ZkUtil.createPersistentNodeIfNotExist(zkClient, NConstants.ZNODE_QUERIES);
@@ -193,7 +185,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   }
 
   public String getMasterServerName() {
-    return this.masterAddr;
+    return this.wl.getAddress();
   }
   
   public String getClientServiceServerName() {
@@ -212,6 +204,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     this.stopped = true;
     this.clientServiceServer.stop();
     this.wc.close();
+    this.wl.stop();
 
     for (EngineService service : services) {
       try {
