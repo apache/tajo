@@ -1,12 +1,14 @@
 package nta.engine;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
@@ -88,11 +90,11 @@ public class TestLeafServer {
     tablets2[0] = new Fragment("table1_2", status.getPath(), meta, 70000, 1000);
     LeafServer leaf2 = util.getMiniNtaEngineCluster().getLeafServer(1);
 
-    SubQueryRequest req = new SubQueryRequestImpl(
+    SubQueryRequest req1 = new SubQueryRequestImpl(
         QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
             Arrays.asList(tablets1)), new Path(TEST_PATH, "out").toUri(),
         "select name, id from table1_1 where id > 5100");
-    assertNotNull(leaf1.requestSubQuery(req.getProto()));
+    assertNotNull(leaf1.requestSubQuery(req1.getProto()));
 
     SubQueryRequest req2 = new SubQueryRequestImpl(
         QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
@@ -103,16 +105,28 @@ public class TestLeafServer {
     // for the report sending test
     NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
     Collection<InProgressStatus> list = master.getProgressQueries();
+    Set<QueryUnitId> reported = new HashSet<QueryUnitId>();
+    Set<QueryUnitId> submitted = new HashSet<QueryUnitId>();
+    submitted.add(req1.getId());
+    submitted.add(req2.getId());
+
     int i = 0;
-    while (list.size() < 2 && i < 10) {
+    while (i < 10) { // waiting for the report messages 
       Log.info("Waiting for receiving the report messages");
       Thread.sleep(1000);
       list = master.getProgressQueries();
+      reported.clear();
+      for (InProgressStatus ips : list) {
+        reported.add(new QueryUnitId(ips.getId()));
+      }
+      if (reported.containsAll(submitted))
+        break;
+      
       i++;
-    }    
-    assertEquals(2, list.size());
+    }
+    assertTrue(reported.containsAll(submitted));
 
-    leaf1.shutdown("Normally Shutdown");
+    //leaf1.shutdown("Normally Shutdown");
   }
 
   @Test
@@ -161,13 +175,25 @@ public class TestLeafServer {
     // for the report sending test
     NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
     Collection<InProgressStatus> list = master.getProgressQueries();
+    Set<QueryUnitId> reported = new HashSet<QueryUnitId>();
+    Set<QueryUnitId> submitted = new HashSet<QueryUnitId>();
+    submitted.add(req1.getId());
+    submitted.add(req2.getId());
+
     int i = 0;
-    while (list.size() < 4 && i < 10) { // waiting for the report messages 
+    while (i < 10) { // waiting for the report messages 
       Log.info("Waiting for receiving the report messages");
       Thread.sleep(1000);
       list = master.getProgressQueries();
+      reported.clear();
+      for (InProgressStatus ips : list) {
+        reported.add(new QueryUnitId(ips.getId()));
+      }
+      if (reported.containsAll(submitted))
+        break;
+      
       i++;
-    }    
-    assertEquals(4, list.size());
+    }
+    assertTrue(reported.containsAll(submitted));
   }
 }
