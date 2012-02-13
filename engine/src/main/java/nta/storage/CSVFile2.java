@@ -203,7 +203,7 @@ public class CSVFile2 extends Storage {
         // set correct start offset.
         if (startOffset != 0) {
           if (startOffset < available) {  
-            fis.seek(startOffset);
+            fis.seek(startOffset - 1);
             while ( (fis.readByte()) != LF) {
             }
             // fis.seek(fis.getPos());
