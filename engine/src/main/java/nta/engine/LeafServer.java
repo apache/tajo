@@ -91,7 +91,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     if (initialIsa.getAddress() == null) {
       throw new IllegalArgumentException("Failed resolve of " + this.isa);
     }
-    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);    
+    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);
     this.rpcServer.start();
     
     // Set our address.

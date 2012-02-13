@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import nta.catalog.CatalogServer;
 import nta.catalog.MiniCatalogServer;
+import nta.catalog.TConstants;
 import nta.conf.NtaConf;
 import nta.zookeeper.MiniZooKeeperCluster;
 
@@ -174,6 +175,9 @@ public class NtaTestingUtility {
 	    final int numSlaves) throws Exception {
 	  Configuration c = getConfiguration();
 	  c.set(NConstants.CATALOG_ADDRESS, "localhost:0");
+	  conf.set(TConstants.JDBC_URI, 
+        "jdbc:derby:"+clusterTestBuildDir.getAbsolutePath()+"/db");
+    LOG.info("derby repository is set to "+conf.get(TConstants.JDBC_URI));
 		c.set(NConstants.ENGINE_BASE_DIR, 
 		    getMiniDFSCluster().getFileSystem().getUri()+"/tajo");		
 		this.engineCluster = new MiniNtaEngineCluster(c, numSlaves);
@@ -348,6 +352,16 @@ public class NtaTestingUtility {
 	public MiniCatalogServer startCatalogCluster() throws Exception {
 	  Configuration c = getConfiguration();
 	  c.set(NConstants.CATALOG_ADDRESS, "localhost:0");
+	  
+	  if(clusterTestBuildDir == null) {
+	    clusterTestBuildDir = setupClusterTestBuildDir();
+	  }
+	  String testDir = clusterTestBuildDir.getAbsolutePath();
+	  
+	  conf.set(TConstants.JDBC_URI, 
+        "jdbc:derby:"+testDir+"/db");
+    LOG.info("derby repository is set to "+conf.get(TConstants.JDBC_URI));
+    
 	  this.catalogCluster = new MiniCatalogServer(conf);
 	  CatalogServer catServer = this.catalogCluster.getCatalogServer();
 	  InetSocketAddress sockAddr = catServer.getBindAddress();

@@ -29,7 +29,9 @@ import nta.storage.CSVFile2;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -38,16 +40,16 @@ import org.junit.Test;
  */
 @Deprecated
 public class TestQueryStmt {
-  private NtaTestingUtility util;
-  private Configuration conf;
-  private CatalogService cat = null;
-  private NQL nql = null;
+  private static NtaTestingUtility util;
+  private static Configuration conf;
+  private static CatalogService cat = null;
+  private static NQL nql = null;
   
   /**
    * @throws java.lang.Exception
    */
-  @Before
-  public void setUp() throws Exception {
+  @BeforeClass
+  public static void setUp() throws Exception {
     util = new NtaTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();    
@@ -70,8 +72,8 @@ public class TestQueryStmt {
     cat.addTable(desc);
   }
   
-  @After
-  public final void tearDown() throws IOException {
+  @AfterClass
+  public static final void tearDown() throws IOException {
     util.shutdownCatalogCluster();
     util.shutdownMiniZKCluster();
   }
@@ -104,12 +106,12 @@ public class TestQueryStmt {
     
     assertEquals(1, stmt.numBaseRels);
     assertEquals("test", stmt.getBaseRelNames().get(0));
-    assertTrue(cat.getTableDesc("test") .getId()== stmt.getBaseRel("test").getRelation().getId());
+    assertTrue(cat.getTableDesc("test").getId().equals(stmt.getBaseRel("test").getRelation().getId()));
     
     stmt = nql.parse(queries[2]);
     assertEquals(1, stmt.numBaseRels);
     assertEquals("t1", stmt.getBaseRelNames().get(0));
-    assertTrue(cat.getTableDesc("test").getId() == stmt.getBaseRel("t1").getRelation().getId());
+    assertTrue(cat.getTableDesc("test").getId().equals(stmt.getBaseRel("t1").getRelation().getId()));
   }
   
   @Test

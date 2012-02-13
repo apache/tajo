@@ -31,7 +31,9 @@ import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.tree.CommonTree;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -42,14 +44,14 @@ import org.junit.Test;
  * @see QueryBlock
  */
 public class TestQueryAnalyzer {
-  private NtaTestingUtility util;
-  private CatalogService cat = null;
-  private Schema schema1 = null;
-  private QueryAnalyzer analyzer = null;
-  private QueryContext.Factory factory = null;
+  private static NtaTestingUtility util;
+  private static CatalogService cat = null;
+  private static Schema schema1 = null;
+  private static QueryAnalyzer analyzer = null;
+  private static QueryContext.Factory factory = null;
   
-  @Before
-  public void setUp() throws Exception {
+  @BeforeClass
+  public static void setUp() throws Exception {
     util = new NtaTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
@@ -86,8 +88,8 @@ public class TestQueryAnalyzer {
     factory = new QueryContext.Factory(cat);
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDown() throws Exception {
     util.shutdownCatalogCluster();
     util.shutdownMiniZKCluster();
   }

@@ -25,20 +25,19 @@ import nta.storage.CSVFile2;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestLogicalPlanner {	
-	private NtaTestingUtility util;
-	private CatalogService cat;
+	private static NtaTestingUtility util;
+	private static CatalogService cat;
 
-	@Before
-	public void setUp() throws Exception {
+	@BeforeClass
+	public static void setUp() throws Exception {
 	  util = new NtaTestingUtility();
 		util.startMiniZKCluster();
 		util.startCatalogCluster();
-		Configuration conf = util.getConfiguration();
 		cat = util.getMiniCatalogCluster().getCatalog();
 		
 		Schema schema = new Schema();
@@ -53,8 +52,8 @@ public class TestLogicalPlanner {
 		cat.addTable(desc);
 	}
 	
-	@After
-	public void tearDown() throws Exception {
+	@AfterClass
+	public static void tearDown() throws Exception {
 	  util.shutdownCatalogCluster();
 	  util.shutdownMiniZKCluster();
 	}

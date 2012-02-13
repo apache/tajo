@@ -39,14 +39,8 @@ public class LocalCatalog implements CatalogService {
   }
 
   @Override
-  public final Collection<TableDesc> getAllTableDescs() {
-    List<TableDesc> list = new ArrayList<TableDesc>();
-    Collection<TableDescProto> protos
-      = catalog.getAllTableDescs();
-    for (TableDescProto proto : protos) {
-      list.add(TableDesc.Factory.create(proto));
-    }
-    return list;
+  public final Collection<String> getAllTableNames() {
+    return catalog.getAllTableNames();
   }
 
   @Override

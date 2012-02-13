@@ -10,6 +10,7 @@ import nta.catalog.TableDesc;
 import nta.engine.EngineService;
 import nta.engine.ResultSetMemImplOld;
 import nta.engine.ResultSetOld;
+import nta.engine.exception.InternalException;
 import nta.engine.exception.NTAQueryException;
 import nta.engine.exec.PhysicalOp;
 import nta.engine.parser.NQL;
@@ -62,7 +63,13 @@ public class LocalEngine implements EngineService {
 		Query query = parser.parse(querystr);
 		LogicalPlan rawPlan = loPlanner.compile(query);
 		LogicalPlan optimized = loOptimizer.optimize(rawPlan);
-		PhysicalOp plan = phyPlanner.compile(optimized, null);
+		PhysicalOp plan = null;
+    try {
+      plan = phyPlanner.compile(optimized, null);
+    } catch (InternalException e1) {
+      // TODO Auto-generated catch block
+      e1.printStackTrace();
+    }
 		
 		Schema meta = plan.getSchema();
 		ResultSetMemImplOld rs = null;
@@ -123,7 +130,12 @@ public class LocalEngine implements EngineService {
 		Query query = parser.parse(nql);
 		LogicalPlan rawPlan = loPlanner.compile(query);
 		LogicalPlan optimized = loOptimizer.optimize(rawPlan);
-		PhysicalOp plan = phyPlanner.compile(optimized, null);
+		PhysicalOp plan = null;
+    try {
+      plan = phyPlanner.compile(optimized, null);
+    } catch (InternalException e) {
+      e.printStackTrace();
+    }
 		try {
 			plan.next();
 		} catch (IOException ioe) {

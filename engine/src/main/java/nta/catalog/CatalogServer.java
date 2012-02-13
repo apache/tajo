@@ -22,6 +22,8 @@ import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.catalog.proto.CatalogProtos.TableProto;
+import nta.catalog.store.CatalogStore;
+import nta.catalog.store.DBStore;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
 import nta.engine.function.CountRows;
@@ -64,14 +66,16 @@ import com.google.common.base.Preconditions;
  * @author Hyunsik Choi
  */
 public class CatalogServer extends Thread implements CatalogServiceProtocol {
-	private static Log LOG = LogFactory.getLog(CatalogServer.class);
-	private Configuration conf;
-	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-	private Lock rlock = lock.readLock();
-	private Lock wlock = lock.writeLock();
+	private final static Log LOG = LogFactory.getLog(CatalogServer.class);
+	private final Configuration conf;
+	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+	private final Lock rlock = lock.readLock();
+	private final Lock wlock = lock.writeLock();
 
-	private Map<String, TableDescProto> tables = 
-	    new HashMap<String, TableDescProto>();
+	/*private Map<String, TableDescProto> tables = 
+	    new HashMap<String, TableDescProto>();*/
+	private final CatalogStore store;
+	  
 	private Map<String, FunctionDescProto> functions = 
 	    new HashMap<String, FunctionDescProto>();
   private Map<String, List<HostInfo>> tabletServingInfo
@@ -81,32 +85,33 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	private final ProtoParamRpcServer rpcServer;
   private final InetSocketAddress isa;
   private final String serverName;  
-  private ZkClient zkClient;
+  private final ZkClient zkClient;
 
   // Server status variables
   private volatile boolean stopped = false;
   @SuppressWarnings("unused")
   private volatile boolean isOnline = false;
 
-	public CatalogServer(Configuration conf) throws IOException {
-		this.conf = conf;		
+	public CatalogServer(final Configuration conf) throws IOException {
+		this.conf = conf;
+		
+		this.store = new DBStore(conf);
+    initBuiltinFunctions();
     
-		// Server to handle client requests.
+    // Server to handle client requests.
     String serverAddr = conf.get(NConstants.CATALOG_ADDRESS, 
         NConstants.DEFAULT_CATALOG_ADDRESS);
     // Creation of a HSA will force a resolve.
     InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
     this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initIsa);
+    this.rpcServer.start();
     this.isa = this.rpcServer.getBindAddress();
     this.serverName = this.isa.getHostName() + ":" + this.isa.getPort();
     this.zkClient = new ZkClient(conf);
-    
-    initBuiltinFunctions();
 	}
 	
   private void prepareServing() throws IOException, KeeperException,
-      InterruptedException {    
-    this.rpcServer.start();
+      InterruptedException {
   }
 	
   private void cleanUp() throws IOException {
@@ -120,7 +125,6 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	
 	public void run() {
     try {
-      LOG.info("Catalog Server startup ("+serverName+")");
       try {
         prepareServing();
         participateCluster();
@@ -128,10 +132,12 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
         abort(e.getMessage(), e);
       }
       
+      LOG.info("Catalog Server startup ("+serverName+")");
+      
       // loop area
       if(!this.stopped) {
         this.isOnline = true;
-        while(!this.stopped) {          
+        while(!this.stopped) {
           Thread.sleep(1000);
 
         }
@@ -172,26 +178,31 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	    InterruptedException, IOException {
     ZkUtil.upsertEphemeralNode(zkClient, NConstants.ZNODE_CATALOG, 
         serverName.getBytes());
+    LOG.info("Created the znode " + NConstants.ZNODE_CATALOG + " with " 
+        + serverName);
 	}
 
 	public TableDescProto getTableDesc(String tableId) throws NoSuchTableException {
 		rlock.lock();
 		try {
-			if (!this.tables.containsKey(tableId)) {
+			if (!this.store.existTable(tableId)) {
 				throw new NoSuchTableException(tableId);
 			}
-			return this.tables.get(tableId);
+			return (TableDescProto) this.store.getTable(tableId).getProto();
+		} catch (IOException ioe) {
+		  // TODO - handle exception
+		  return null;
 		} finally {
 			rlock.unlock();
 		}
 	}
 
-	public Collection<TableDescProto> getAllTableDescs() {
-		wlock.lock();
+	public Collection<String> getAllTableNames() {
 		try {
-			return tables.values();			
-		} finally {
-			wlock.unlock();
+			return store.getAllTableNames();	
+		} catch (IOException ioe) {
+		  // TODO - handle exception
+		  return null;
 		}
 	}
 	
@@ -205,14 +216,14 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	
 	public void updateAllTabletServingInfo(List<String> onlineServers) throws IOException {
 		tabletServingInfo.clear();
-		Collection<TableDescProto> tbs = tables.values();
-		Iterator<TableDescProto> it = tbs.iterator();
+		Collection<String> tbs = store.getAllTableNames();
+		Iterator<String> it = tbs.iterator();
 		List<HostInfo> locInfos;
 		List<HostInfo> servInfos;
 		int index = 0;
 		StringTokenizer tokenizer;
 		while (it.hasNext()) {
-			TableDescProto td = it.next();
+			TableDescProto td = (TableDescProto) store.getTable(it.next()).getProto();
 			locInfos = getTabletLocInfo(td);
 			servInfos = new ArrayList<HostInfo>();
 			// TODO: select the proper online server
@@ -274,10 +285,10 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	      "Must be set to the table name");
 		Preconditions.checkArgument(proto.hasPath() == true, 
 		    "Must be set to the table URI");
-	  wlock.lock();
-		
+	  
+		wlock.lock();		
 		try {
-			if (tables.containsKey(proto.getId())) {
+			if (store.existTable(proto.getId())) {
 				throw new AlreadyExistsTableException(proto.getId());
 			}
 
@@ -291,8 +302,11 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 			TableDescProto.Builder descBuilder = TableDescProto.newBuilder(proto);
 			descBuilder.setMeta(metaBuilder.build());
 			
-	    this.tables.put(proto.getId(), descBuilder.build());
+	    store.addTable(new TableDescImpl(descBuilder.build()));
 	    
+		} catch (IOException ioe) {
+		  LOG.error(ioe);
+		  return;
 		} finally {
 			wlock.unlock();
 			LOG.info("Table " + proto.getId() + " is added to the catalog (" + serverName +")");
@@ -302,23 +316,24 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	public void deleteTable(String tableId) throws NoSuchTableException {
 		wlock.lock();
 		try {
-			if (!tables.containsKey(tableId)) {
+			if (!store.existTable(tableId)) {
 				throw new NoSuchTableException(tableId);
 			}
-			tables.remove(tableId);
-		}
-		finally {
+			store.deleteTable(tableId);
+		} catch (IOException ioe) {
+		  LOG.error(ioe);
+		} finally {
 			wlock.unlock();
 		}
 	}
 
 	public boolean existsTable(String tableId) {
-		rlock.lock();
-		try {
-			return tables.containsKey(tableId);
-		} finally {
-			rlock.unlock();
-		}
+	  try {
+      return store.existTable(tableId);
+    } catch (IOException e) {
+      LOG.error(e);
+      return false;
+    }
 	}
 
 	@Override

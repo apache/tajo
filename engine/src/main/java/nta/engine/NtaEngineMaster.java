@@ -279,12 +279,8 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 	}
 
 	@Override
-	public String getTableList() {
-		Collection<TableDesc> tableDescs = catalog.getAllTableDescs();
-		List<String> tableNames = new ArrayList<String>();
-		for (TableDesc desc : tableDescs) {
-			tableNames.add(desc.getId());
-		}
+	public String getTableList() {		
+		Collection<String> tableNames = catalog.getAllTableNames();		
 		return GsonCreator.getInstance().toJson(tableNames);
 	}
 	

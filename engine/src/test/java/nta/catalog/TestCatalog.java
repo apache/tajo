@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -16,7 +15,6 @@ import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
-import nta.engine.EngineTestingUtils;
 import nta.engine.NConstants;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
@@ -29,8 +27,8 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -71,54 +69,45 @@ public class TestCatalog {
 	Schema schema2;
 	
 	static NtaTestingUtility util;
+	static CatalogService catalog;
 	
-	final static String TEST_PATH = "/TestCatalog";
+	static String TEST_PATH = "target/test-data/TestCatalog";
 	
-	@Before
-	public void setUp() throws Exception {
-		EngineTestingUtils.buildTestDir(TEST_PATH);
+	@BeforeClass
+	public static void setUp() throws Exception {
+	  util = new NtaTestingUtility();
+    util.startMiniCluster(3);
+    catalog = util.getMiniNtaEngineCluster().getMaster().getCatalog();
 	}
 	
-	@After
-	public void tearDown() throws IOException {
+	@AfterClass
+	public static void tearDown() throws IOException {
+	  util.shutdownMiniCluster();
 	}
 	
 	@Test
 	public void testGetTable() throws Exception {
-	  util = new NtaTestingUtility();
-	  util.startMiniZKCluster();
-	  util.startCatalogCluster();
-	  CatalogService catalog = util.getMiniCatalogCluster().getCatalog();
-	  
 		schema1 = new Schema();
 		schema1.addColumn(FieldName1, DataType.BYTE);
 		schema1.addColumn(FieldName2, DataType.INT);
 		schema1.addColumn(FieldName3, DataType.LONG);
 		
-		TableDesc meta = new TableDescImpl("table1", schema1, StoreType.MEM);
+		TableDesc meta = new TableDescImpl("getTable", schema1, StoreType.CSV);
 		meta.setPath(new Path("/table1"));
 		
-		assertFalse(catalog.existsTable("table1"));
+		assertFalse(catalog.existsTable("getTable"));
 		catalog.addTable(meta);
-		assertTrue(catalog.existsTable("table1"));		
+		assertTrue(catalog.existsTable("getTable"));
 		
-		TableDesc meta2 = catalog.getTableDesc("table1");
+		TableDesc meta2 = catalog.getTableDesc("getTable");
 		System.out.println(meta2);
 		
-		catalog.deleteTable("table1");
-		assertFalse(catalog.existsTable("table1"));
-				
-		util.shutdownCatalogCluster();
-		util.shutdownMiniZKCluster();
+		catalog.deleteTable("getTable");
+		assertFalse(catalog.existsTable("getTable"));
 	}
 	
 	@Test(expected = Throwable.class)
-	public void testAddTableNoName() throws Exception {
-	  util = new NtaTestingUtility();
-    util.startMiniZKCluster();
-    util.startCatalogCluster();
-    CatalogService catalog = util.getMiniCatalogCluster().getCatalog();
-    
+	public void testAddTableNoName() throws Exception {    
 	  schema1 = new Schema();
     schema1.addColumn(FieldName1, DataType.BYTE);
     schema1.addColumn(FieldName2, DataType.INT);
@@ -176,12 +165,7 @@ public class TestCatalog {
 	  } 
 
 	@Test
-	public final void testRegisterFunc() throws Exception {
-	  util = new NtaTestingUtility();
-    util.startMiniZKCluster();
-    util.startCatalogCluster();
-    CatalogService catalog = util.getMiniCatalogCluster().getCatalog();
-    
+	public final void testRegisterFunc() throws Exception { 
 		assertFalse(catalog.containFunction("test2"));
 		FunctionDesc meta = new FunctionDesc("test2", TestFunc1.class, 
 		    FunctionType.GENERAL, DataType.INT, 
@@ -194,18 +178,10 @@ public class TestCatalog {
 		assertEquals(retrived.getSignature(),"test2");
 		assertEquals(retrived.getFuncClass(),TestFunc1.class);
 		assertEquals(retrived.getFuncType(),FunctionType.GENERAL);
-		
-		util.shutdownCatalogCluster();
-    util.shutdownMiniZKCluster();
 	}
 
   @Test
-  public final void testUnregisterFunc() throws Exception {
-    util = new NtaTestingUtility();
-    util.startMiniZKCluster();
-    util.startCatalogCluster();
-    CatalogService catalog = util.getMiniCatalogCluster().getCatalog();
-    
+  public final void testUnregisterFunc() throws Exception {    
     assertFalse(catalog
         .containFunction("test3", new DataType[] { DataType.INT }));
     FunctionDesc meta = new FunctionDesc("test3", TestFunc1.class,
@@ -222,16 +198,10 @@ public class TestCatalog {
             DataType.BYTES });
     catalog.registerFunction(overload);
     assertTrue(catalog.containFunction("test3", DataType.INT, DataType.BYTES));
-    
-    util.shutdownCatalogCluster();
-    util.shutdownMiniZKCluster();
   }
 	
 	@Test
-	public final void testHostsByTable() throws Exception {
-	  util = new NtaTestingUtility();
-	  util.startMiniCluster(3);
-	  
+	public final void testHostsByTable() throws Exception {  
 	  CatalogService local = util.getMiniNtaEngineCluster().
 	      getMaster().getCatalog();
 	  
@@ -262,7 +232,7 @@ public class TestCatalog {
 		int tupleNum;
 		
 		for (i = 0; i < tbNum; i++) {
-			tbPath = new Path(TEST_PATH+"/table"+i);
+			tbPath = new Path(TEST_PATH+"/HostsByTable"+i);
 			if (fs.exists(tbPath)){
 				fs.delete(tbPath, true);
 			}
@@ -280,22 +250,22 @@ public class TestCatalog {
 			}
 			fos.close();
 
-			TableDesc desc = new TableDescImpl("table"+i, meta);
+			TableDesc desc = new TableDescImpl("HostsByTable"+i, meta);
 			desc.setPath(tbPath);
 			local.addTable(desc);
 		}
 		
 		local.updateAllTabletServingInfo(master.getOnlineServer());
 		
-		Collection<TableDesc> tables = local.getAllTableDescs();
-		Iterator<TableDesc> it = tables.iterator();
+		Collection<String> tables = local.getAllTableNames();
+		Iterator<String> it = tables.iterator();
 		List<HostInfo> tabletInfoList;
 		int cnt = 0;
 		int len = 0;
 		TableDesc tableInfo;
 		FileStatus fileStatus;
 		while (it.hasNext()) {
-			tableInfo = it.next();
+			tableInfo = local.getTableDesc(it.next());
 			tabletInfoList = local.getHostByTable(tableInfo.getId());
 			if (tabletInfoList != null) {
 				cnt++;
@@ -310,17 +280,11 @@ public class TestCatalog {
 		}
 		
 		assertEquals(tbNum, cnt);
-		
-		util.shutdownMiniCluster();
 	}
 	
 	@Test	
-	public void testInitializeZookeeper() throws Exception {
-	  util = new NtaTestingUtility();
-    util.startMiniCluster(0);
-	  
+	public void testInitializeZookeeper() throws Exception { 
     ZkClient zkClient = new ZkClient(util.getConfiguration());
-    Thread.sleep(10);
     assertTrue(zkClient.exists(NConstants.ZNODE_CATALOG) != null);
     
     // TODO - to be commented out
@@ -329,8 +293,5 @@ public class TestCatalog {
     String serverName = addr.getHostName()+":"+addr.getPort();
     assertEquals(serverName, new String(zkClient.getData("/catalog", 
         null, null)));*/
-    
-    
-    util.shutdownMiniCluster();
 	}
 }

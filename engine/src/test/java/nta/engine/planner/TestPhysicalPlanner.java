@@ -38,8 +38,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -48,19 +48,19 @@ import org.junit.Test;
 public class TestPhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(TestPhysicalPlanner.class);
 
-  private NtaTestingUtility util;
-  private Configuration conf;
-  private CatalogService catalog;
-  private QueryAnalyzer analyzer;
-  private SubqueryContext.Factory factory;
-  private StorageManager sm;
+  private static NtaTestingUtility util;
+  private static Configuration conf;
+  private static CatalogService catalog;
+  private static QueryAnalyzer analyzer;
+  private static SubqueryContext.Factory factory;
+  private static StorageManager sm;
 
-  private TableDesc employee = null;
-  private TableDesc student = null;
-  private TableDesc score = null;
+  private static TableDesc employee = null;
+  private static TableDesc student = null;
+  private static TableDesc score = null;
 
-  @Before
-  public final void setUp() throws Exception {
+  @BeforeClass
+  public static final void setUp() throws Exception {
     QueryIdFactory.reset();
     util = new NtaTestingUtility();
     util.startMiniZKCluster();
@@ -128,8 +128,8 @@ public class TestPhysicalPlanner {
     analyzer = new QueryAnalyzer(catalog);
   }
 
-  @After
-  public final void tearDown() throws Exception {
+  @AfterClass
+  public static final void tearDown() throws Exception {
     util.shutdownCatalogCluster();
     util.shutdownMiniZKCluster();
   }

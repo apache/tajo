@@ -21,14 +21,14 @@ import nta.storage.VTuple;
  */
 public class ShowTableOp extends PhysicalOp {
 	ControlLO logicalOp;
-	Iterator<TableDesc> iterator;
+	Iterator<String> iterator;
 	
 	/**
 	 * 
 	 */
 	public ShowTableOp(ControlLO logicalOp, CatalogService cat) {
 		this.logicalOp = logicalOp;
-		this.iterator = cat.getAllTableDescs().iterator();
+		this.iterator = cat.getAllTableNames().iterator();
 	}
 
 	/* (non-Javadoc)
@@ -47,9 +47,9 @@ public class ShowTableOp extends PhysicalOp {
 		if(!this.iterator.hasNext())
 			return null;
 		
-		TableDesc desc = this.iterator.next();
+		String tableName = this.iterator.next();
 		VTuple t = new VTuple(1);
-		t.put(0, DatumFactory.createString(desc.getId()));
+		t.put(0, DatumFactory.createString(tableName));
 		return t;
 	}
 

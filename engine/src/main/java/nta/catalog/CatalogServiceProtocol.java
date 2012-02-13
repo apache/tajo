@@ -27,7 +27,7 @@ public interface CatalogServiceProtocol {
    * @return
    * @throws CatalogException
    */
-  Collection<TableDescProto> getAllTableDescs();
+  Collection<String> getAllTableNames();
   
   /**
    * 

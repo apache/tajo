@@ -21,7 +21,9 @@ import nta.storage.VTuple;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -31,18 +33,18 @@ import org.junit.Test;
  *
  */
 public class TestBuiltinFunction {
-  private NtaTestingUtility util;
-  private CatalogService cat;
-  private Schema schema;
+  private static NtaTestingUtility util;
+  private static CatalogService cat;
+  private static Schema schema;
 
-  private QueryContext.Factory factory;
-  private QueryAnalyzer analyzer;
+  private static QueryContext.Factory factory;
+  private static QueryAnalyzer analyzer;
 
-  private final int tuplenum = 10;
-  private Tuple[] tuples;
+  private static final int tuplenum = 10;
+  private static Tuple [] tuples;
 
-  @Before
-  public void setUp() throws Exception {
+  @BeforeClass
+  public static void setUp() throws Exception {
     util = new NtaTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
@@ -82,8 +84,8 @@ public class TestBuiltinFunction {
     analyzer = new QueryAnalyzer(cat);
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDown() throws Exception {
     util.shutdownCatalogCluster();
     util.shutdownCatalogCluster();
   }

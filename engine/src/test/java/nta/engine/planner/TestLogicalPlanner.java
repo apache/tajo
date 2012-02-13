@@ -30,7 +30,9 @@ import nta.engine.planner.logical.StoreTableNode;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.gson.Gson;
@@ -39,13 +41,13 @@ import com.google.gson.Gson;
  * @author Hyunsik Choi
  */
 public class TestLogicalPlanner {
-  private NtaTestingUtility util;
-  private CatalogService catalog;
-  private QueryContext.Factory factory;
-  private QueryAnalyzer analyzer;
+  private static NtaTestingUtility util;
+  private static CatalogService catalog;
+  private static QueryContext.Factory factory;
+  private static QueryAnalyzer analyzer;
 
-  @Before
-  public void setUp() throws Exception {
+  @BeforeClass
+  public static void setUp() throws Exception {
     util = new NtaTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
@@ -85,8 +87,8 @@ public class TestLogicalPlanner {
     factory = new QueryContext.Factory(catalog);
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDown() throws Exception {
     util.shutdownCatalogCluster();
     util.shutdownMiniZKCluster();
   }

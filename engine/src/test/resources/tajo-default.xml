@@ -30,6 +30,11 @@
 </property>
 
 <property>
+  <name>catalog.jdbc.uri</name>
+  <value>jdbc:derby:target/test-data/tcat/db</value>
+</property>
+
+<property>
   <name>engine.leafserver.port</name>
   <value>9003</value>
 </property>
