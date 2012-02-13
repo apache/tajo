@@ -18,9 +18,12 @@ import nta.catalog.TableUtil;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
+import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.ipc.QueryEngineInterface;
 import nta.engine.json.GsonCreator;
 import nta.engine.query.GlobalEngine;
+import nta.rpc.NettyRpc;
+import nta.rpc.ProtoParamRpcServer;
 import nta.storage.StorageManager;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkServer;
@@ -40,40 +43,44 @@ import org.apache.zookeeper.KeeperException;
  * 
  */
 public class NtaEngineMaster extends Thread implements QueryEngineInterface {
-	private static final Log LOG = LogFactory.getLog(NtaEngineMaster.class);
+  private static final Log LOG = LogFactory.getLog(NtaEngineMaster.class);
 
-	private final Configuration conf;
-	private FileSystem defaultFS;
+  private final Configuration conf;
+  private FileSystem defaultFS;
 
   private volatile boolean stopped = false;
 
-  private final String serverName;
+  private final String clientServiceAddr;
+  private final String masterAddr;
   private final ZkClient zkClient;
   private ZkServer zkServer;
 
-	private CatalogService catalog;
-	private StorageManager storeManager;
-	private GlobalEngine queryEngine;
+  private CatalogService catalog;
+  private StorageManager storeManager;
+  private GlobalEngine queryEngine;
 
   private final Path basePath;
   private final Path dataPath;
 
-	private final InetSocketAddress bindAddr;
-	//private ProtoParamRpcServer server; // RPC between master and client
-  private RPC.Server server;
+  private final InetSocketAddress clientServiceBindAddr;
+  private final InetSocketAddress masterBindAddr;
 
-	private List<EngineService> services = new ArrayList<EngineService>();
+  private RPC.Server clientServiceServer;
+  private WorkerCommunicator wc;
+  private ProtoParamRpcServer masterServer;
 
-	public NtaEngineMaster(final Configuration conf) throws Exception {
-		this.conf = conf;
+  private List<EngineService> services = new ArrayList<EngineService>();
+  
+  public NtaEngineMaster(final Configuration conf) throws Exception {
+    this.conf = conf;
 
     // Get the tajo base dir
     this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
     LOG.info("Base dir is set " + conf.get(NConstants.ENGINE_BASE_DIR));
     // Get default DFS uri from the base dir
     this.defaultFS = basePath.getFileSystem(conf);
-    LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");    
-        
+    LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
+
     if (defaultFS.exists(basePath) == false) {
       defaultFS.mkdirs(basePath);
       LOG.info("Tajo Base dir (" + basePath + ") is created.");
@@ -85,75 +92,92 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
       defaultFS.mkdirs(dataPath);
       LOG.info("Data dir (" + dataPath + ") is created");
     }
-    
+
     this.storeManager = new StorageManager(conf);
 
     // The below is some mode-dependent codes
     // If tajo is local mode
-    if (conf.get(NConstants.CLUSTER_DISTRIBUTED, 
-        NConstants.CLUSTER_IS_LOCAL).equals("false")) {
+    if (conf.get(NConstants.CLUSTER_DISTRIBUTED, NConstants.CLUSTER_IS_LOCAL)
+        .equals("false")) {
       LOG.info("Enabled Pseudo Distributed Mode");
-/*      this.zkServer = new ZkServer(conf);
-      this.zkServer.start();*/
-      
-      // TODO - When the RPC framework supports all methods of the catalog 
+      /*
+       * this.zkServer = new ZkServer(conf); this.zkServer.start();
+       */
+
+      // TODO - When the RPC framework supports all methods of the catalog
       // server, the below comments should be eliminated.
-      //this.catalog = new LocalCatalog(conf);
+      // this.catalog = new LocalCatalog(conf);
     } else { // if tajo is distributed mode
-      
+
       // connect to the catalog server
-      //this.catalog = new CatalogClient(conf);
+      // this.catalog = new CatalogClient(conf);
     }
     // This is temporal solution of the above problem.
     this.catalog = new LocalCatalog(conf);
 
+    // connect the zkserver
+    this.zkClient = new ZkClient(conf);
+    
+    // Setup RPC server
+    // Get the master address
+    String confMasterAddr = conf.get(NConstants.MASTER_ADDRESS,
+        NConstants.DEFAULT_MASTER_ADDRESS);
+    InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterAddr);
+    /*
+     * this.server = NettyRpc.getProtoParamRpcServer(this, initIsa);
+     * this.server.start(); this.bindAddr = this.server.getBindAddress();
+     */
+    this.masterServer = NettyRpc.getProtoParamRpcServer(this, initIsa);
+    this.masterServer.start();
+    this.masterBindAddr = this.masterServer.getBindAddress();
+    this.masterAddr = masterBindAddr.getHostName() + ":" + masterBindAddr.getPort();
+    LOG.info(NtaEngineMaster.class.getSimpleName() + " is bind to "
+        + this.masterAddr);
+    this.conf.set(NConstants.MASTER_ADDRESS, this.masterAddr);
+    
+    String confClientServiceAddr = conf.get(NConstants.CLIENT_SERVICE_ADDRESS, 
+        NConstants.DEFAULT_CLIENT_SERVICE_ADDRESS);
+    initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
+    this.clientServiceServer = RPC.getServer(this, initIsa.getHostName(), 
+        initIsa.getPort(), conf);
+    this.clientServiceServer.start();
+    this.clientServiceBindAddr = this.clientServiceServer.getListenerAddress();
+    this.clientServiceAddr = clientServiceBindAddr.getHostName() + ":" +
+        clientServiceBindAddr.getPort();
+    LOG.info("Tajo client service master is bind to " + this.clientServiceAddr);
+    this.conf.set(NConstants.CLIENT_SERVICE_ADDRESS, this.clientServiceAddr);
+    
+    Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
+  }
+
+  private void initMaster() throws Exception {
+    becomeMaster();
+    this.wc = new WorkerCommunicator(conf);
+    this.wc.start();
     this.queryEngine = new GlobalEngine(conf, catalog, storeManager);
     this.queryEngine.init();
     services.add(queryEngine);
-    
-    // connect the zkserver
-    this.zkClient = new ZkClient(conf);
 
-    // Setup RPC server
-    // Get the master address
-    String masterAddr =
-        conf.get(NConstants.MASTER_ADDRESS, NConstants.DEFAULT_MASTER_ADDRESS);
-    InetSocketAddress initIsa = 
-        NetUtils.createSocketAddr(masterAddr);
-/*    this.server = NettyRpc.getProtoParamRpcServer(this, initIsa);
-    this.server.start();
-    this.bindAddr = this.server.getBindAddress();*/
-    this.server =
-        RPC.getServer(this, initIsa.getHostName(), initIsa.getPort(), conf);
-    this.server.start();
-    this.bindAddr = this.server.getListenerAddress();
-    this.serverName = bindAddr.getHostName() + ":" + bindAddr.getPort();
-    LOG.info(NtaEngineMaster.class.getSimpleName() + " is bind to "
-        + serverName);
-    this.conf.set(NConstants.MASTER_ADDRESS, this.serverName);
-    Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
+    
   }
-  
-  private void initMaster() throws IOException, KeeperException, 
-      InterruptedException {    
-    becomeMaster();
-  }
-  
+
   private void becomeMaster() throws IOException, KeeperException,
       InterruptedException {
     ZkUtil.createPersistentNodeIfNotExist(zkClient, NConstants.ZNODE_BASE);
-    ZkUtil.upsertEphemeralNode(zkClient, NConstants.ZNODE_MASTER, 
-        serverName.getBytes());
-    ZkUtil.createPersistentNodeIfNotExist(zkClient, 
+    ZkUtil.upsertEphemeralNode(zkClient, NConstants.ZNODE_MASTER,
+        masterAddr.getBytes());
+    ZkUtil.createPersistentNodeIfNotExist(zkClient,
         NConstants.ZNODE_LEAFSERVERS);
     ZkUtil.createPersistentNodeIfNotExist(zkClient, NConstants.ZNODE_QUERIES);
+    ZkUtil.upsertEphemeralNode(zkClient, NConstants.ZNODE_CLIENTSERVICE,
+        clientServiceAddr.getBytes());
   }
 
   public void run() {
     LOG.info("NtaEngineMaster startup");
     try {
       initMaster();
-      
+
       if (!this.stopped) {
         while (!this.stopped) {
           Thread.sleep(1000);
@@ -168,12 +192,16 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     LOG.info("NtaEngineMaster main thread exiting");
   }
 
-  public String getServerName() {
-    return this.serverName;
+  public String getMasterServerName() {
+    return this.masterAddr;
+  }
+  
+  public String getClientServiceServerName() {
+    return this.clientServiceAddr;
   }
 
   public InetSocketAddress getRpcServerAddr() {
-    return this.bindAddr;
+    return this.clientServiceBindAddr;
   }
 
   public boolean isMasterRunning() {
@@ -182,7 +210,8 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 
   public void shutdown() {
     this.stopped = true;
-    this.server.stop();
+    this.clientServiceServer.stop();
+    this.wc.close();
 
     for (EngineService service : services) {
       try {
@@ -197,7 +226,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
       InterruptedException {
     return zkClient.getChildren(NConstants.ZNODE_LEAFSERVERS);
   }
-
+  
   @Override
   public String executeQuery(String query) throws Exception {
     catalog.updateAllTabletServingInfo(getOnlineServer());
@@ -283,7 +312,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 		Collection<String> tableNames = catalog.getAllTableNames();		
 		return GsonCreator.getInstance().toJson(tableNames);
 	}
-	
+
   public static void main(String[] args) throws Exception {
     Configuration conf = new NtaConf();
     NtaEngineMaster master = new NtaEngineMaster(conf);

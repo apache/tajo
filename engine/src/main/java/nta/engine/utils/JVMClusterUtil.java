@@ -51,7 +51,7 @@ public class JVMClusterUtil {
 		private final NtaEngineMaster master;
 
 		public MasterThread(final NtaEngineMaster m, final int index) {
-			super(m, "Master:" + index + ";" + m.getServerName());
+			super(m, "Master:" + index + ";" + m.getMasterServerName());
 			this.master = m;
 		}
 
@@ -95,7 +95,7 @@ public class JVMClusterUtil {
 
 		while(true) {
 			if(masters.master.isMasterRunning()) {
-				return masters.master.getServerName();
+				return masters.master.getMasterServerName();
 			}
 		}
 	}

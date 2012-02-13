@@ -32,6 +32,7 @@ public class TestNtaEngineMaster {
 		util.shutdownMiniCluster();
 	}
 
+	@Test
   public void testBecomeMaster() throws Exception {
     ZkClient zkClient = new ZkClient(conf);
     ServerNodeTracker tracker = new ServerNodeTracker(zkClient,
@@ -40,12 +41,16 @@ public class TestNtaEngineMaster {
     tracker.blockUntilAvailable(3000);
     assertNotNull(zkClient.exists(NConstants.ZNODE_BASE));
     assertNotNull(zkClient.exists(NConstants.ZNODE_MASTER));
+    assertNotNull(zkClient.exists(NConstants.ZNODE_CLIENTSERVICE));
     assertNotNull(zkClient.exists(NConstants.ZNODE_LEAFSERVERS));
     assertNotNull(zkClient.exists(NConstants.ZNODE_QUERIES));
 
     byte[] data = ZkUtil.getDataAndWatch(zkClient, NConstants.ZNODE_MASTER);
 
     NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
-    assertEquals(master.getServerName(), new String(data));
+    assertEquals(master.getMasterServerName(), new String(data));
+    
+    data = ZkUtil.getDataAndWatch(zkClient, NConstants.ZNODE_CLIENTSERVICE);
+    assertEquals(master.getClientServiceServerName(), new String(data));
   }
 }

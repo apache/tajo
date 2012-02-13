@@ -4,6 +4,9 @@ public final class NConstants {
 	public static String MASTER_ADDRESS="engine.master.addr";
 	public static String DEFAULT_MASTER_ADDRESS="localhost:9001";
 	
+	public static String MASTER_PORT="engine.master.port";
+	public static int DEFAULT_MASTER_PORT=9001;
+	
 	public static String LEAFSERVER_HOST="engine.leafserver.addr";
 	public static String DEFAULT_LEAFSERVER_HOST="0.0.0.0";
 	
@@ -12,6 +15,12 @@ public final class NConstants {
 	
 	public static String LEAFSERVER_PORT="engine.leafserver.port";
 	public static int DEFAULT_LEAFSERVER_PORT=9003;
+	
+	public static String CLIENT_SERVICE_ADDRESS="client.service.addr";
+	public static String DEFAULT_CLIENT_SERVICE_ADDRESS="localhost:9004";
+	
+	public static String CLIENT_SERVICE_PORT="client.service.port";
+	public static int DEFAULT_CLIENT_SERVICE_PORT=9004;
 	
 	public static String ZOOKEEPER_ADDRESS="zookeeper.server.addr";
 	public static String DEFAULT_ZOOKEEPER_ADDRESS="localhost:2181";		
@@ -41,6 +50,7 @@ public final class NConstants {
 	public static String ZNODE_MASTER="/nta/master";
 	public static String ZNODE_LEAFSERVERS="/nta/leafservers";
 	public static String ZNODE_QUERIES="/nta/queries";
+	public static String ZNODE_CLIENTSERVICE="/nta/clientservice";
 	
 	public static String ZNODE_CATALOG="/catalog";
 
