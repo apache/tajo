@@ -202,28 +202,25 @@ public class CSVFile2 extends Storage {
         
         // set correct start offset.
         if (startOffset != 0) {
-          if (startOffset < available) {
-            fis.seek(startOffset - 1);
-            if (fis.readByte() == LF) {
-              fis.seek(startOffset);
-            } else {
-              while (fis.readByte() != LF)
-                ;
-              fis.seek(fis.getPos());
+          if (startOffset < available) {  
+            fis.seek(startOffset);
+            while ( (fis.readByte()) != LF) {
             }
-          } else
+            // fis.seek(fis.getPos());
+          } else {
             fis.seek(available);
+          }
         }
         startPos = fis.getPos();
-        pageBuffer();
-        
-        return true;
+
+        return pageBuffer();
       } else {
         return false;
       }
     }
 
     private boolean pageBuffer() throws IOException {
+      
       this.offsetCurIndexMap.clear();
       if (tabletable() < 1) {
         // initialize.
@@ -246,14 +243,16 @@ public class CSVFile2 extends Storage {
         buffer = new byte[bufferSize];
         this.pageStart = fis.getPos();
         fis.read(buffer);
+        piece = new byte[0];
       } else {
         if (tabletable() <= bufferSize) 
           bufferSize = piece.length + (int) tabletable();
         buffer = new byte[bufferSize];
         this.pageStart = fis.getPos() - piece.length;
         System.arraycopy(piece, 0, buffer, 0, piece.length);
-        if (tabletable() != 0) 
+        if (tabletable() != 0) {
           fis.read(buffer, piece.length, (buffer.length - piece.length));
+        }
       }
       tupleList = new String(buffer).split("\n");
       checkLineFeed();
@@ -289,8 +288,10 @@ public class CSVFile2 extends Storage {
           bufferSize = DEFAULT_BUFFER_SIZE;
         }
         if (bufferSize > 0) {
-          piece = new byte[bufferSize - 1];
-          fis.read(piece);
+       // piece = new byte[bufferSize - 1];
+          // fis.read(piece);
+          // fis.seek(fis.getPos()-piece.length);
+          piece = new byte[0];
         }
         validIndex = tupleList.length;
       }

@@ -236,19 +236,22 @@ public class StorageManager {
     FileStatus[] fileLists = fs.listStatus(new Path(tablePath, "data"));
     int i=0;
     for (FileStatus file : fileLists) {
-      long fileBlockSize = file.getLen();
+      long remainFileSize = file.getLen();
       long start = 0;
-      if (fileBlockSize > defaultBlockSize) {
-        while (fileBlockSize > start) {
+      if (remainFileSize > defaultBlockSize) {
+        while (remainFileSize > defaultBlockSize) {
           tablet = new Fragment(tablePath.getName()+"_"+i, file.getPath(), meta, start,
               defaultBlockSize);
           listTablets.add(tablet);
           start += defaultBlockSize;
+          remainFileSize -= defaultBlockSize;
           i++;
         }
+        listTablets.add(new Fragment(tablePath.getName()+"_1", file.getPath(), meta, start,
+            remainFileSize));
       } else {
         listTablets.add(new Fragment(tablePath.getName()+"_1", file.getPath(), meta, 0,
-            fileBlockSize));
+            remainFileSize));
       }
       i++;
     }
