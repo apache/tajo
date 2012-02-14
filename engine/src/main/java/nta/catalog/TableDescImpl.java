@@ -16,7 +16,8 @@ import com.google.gson.annotations.Expose;
  * @author Hyunsik Choi
  *
  */
-public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto> {
+public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
+    Cloneable {
   protected TableDescProto proto = TableDescProto.getDefaultInstance();
   protected TableDescProto.Builder builder = null;
   protected boolean viaProto = false;
@@ -108,7 +109,6 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto> {
 	  return this.meta;
 	}
 	
-  @Override
   public Schema getSchema() {
     return getMeta().getSchema();
   }
@@ -123,8 +123,17 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto> {
     return false;   
   }
 	
-	public Object clone() {
-	  return new TableDescImpl(this.getProto());
+	public Object clone() throws CloneNotSupportedException {	  
+	  TableDescImpl desc = (TableDescImpl) super.clone();
+	  initFromProto();
+	  desc.proto = null;
+	  desc.builder = TableDescProto.newBuilder();
+	  desc.viaProto = false;
+	  desc.tableId = tableId;
+	  desc.uri = uri;
+	  desc.meta = (TableMeta) meta.clone();
+	  
+	  return desc;
 	}
 	
 	public String toString() {

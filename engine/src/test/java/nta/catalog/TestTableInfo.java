@@ -38,7 +38,7 @@ public class TestTableInfo {
   }
   
   @Test
-  public final void testClone() {
+  public final void testClone() throws CloneNotSupportedException {
     TableMetaImpl meta1 = new TableMetaImpl();
     meta1.setStorageType(StoreType.CSV);
     Schema schema1 = new Schema();
@@ -56,7 +56,7 @@ public class TestTableInfo {
   }
   
   @Test
-  public void testSchema() {
+  public void testSchema() throws CloneNotSupportedException {
     TableMeta meta1 = new TableMetaImpl();
     meta1.setStorageType(StoreType.CSV);
     Schema schema1 = new Schema();

@@ -9,7 +9,7 @@ import nta.common.ProtoObject;
  * @author Hyunsik Choi
  *
  */
-public interface TableMeta extends ProtoObject<TableProto> {
+public interface TableMeta extends ProtoObject<TableProto>, Cloneable {
   
   void setStorageType(StoreType storeType);
   
@@ -27,7 +27,7 @@ public interface TableMeta extends ProtoObject<TableProto> {
   
   void putOption(String key, String value);
   
-  Object clone();
+  Object clone() throws CloneNotSupportedException;
   
   public String toJSON();
 }

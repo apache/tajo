@@ -11,7 +11,7 @@ import com.google.gson.annotations.Expose;
 /**
  * @author Hyunsik Choi
  */
-public class Column implements ProtoObject<ColumnProto> {
+public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	private ColumnProto proto = ColumnProto.getDefaultInstance();
 	private ColumnProto.Builder builder = null;
 	private boolean viaProto = false;
@@ -106,8 +106,15 @@ public class Column implements ProtoObject<ColumnProto> {
   }
   
   @Override
-  public Object clone() {
-    return new Column(getProto());
+  public Object clone() throws CloneNotSupportedException {
+    Column column = (Column) super.clone();
+    initFromProto();
+    column.proto = null;
+    column.viaProto = false;
+    column.builder = ColumnProto.newBuilder();
+    column.name = name;
+    column.dataType = dataType;
+    return column;
   }
 
 	@Override

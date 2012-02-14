@@ -1,7 +1,8 @@
 package nta.catalog;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import nta.catalog.exception.AlreadyExistsFieldException;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.SchemaProto;
@@ -11,7 +12,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 public class TestSchema {
 	

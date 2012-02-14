@@ -25,7 +25,7 @@ import com.google.gson.annotations.Expose;
  * @author Hyunsik Choi
  *
  */
-public class Schema implements ProtoObject<SchemaProto> {
+public class Schema implements ProtoObject<SchemaProto>, Cloneable {
   private static final Log LOG = LogFactory.getLog(Schema.class);
   
 	private SchemaProto proto = SchemaProto.getDefaultInstance();
@@ -134,14 +134,27 @@ public class Schema implements ProtoObject<SchemaProto> {
     }
   }
 
-	// TODO - to be implemented
 	@Override
 	public boolean equals(Object o) {
-		if (o instanceof Schema) {			
-			return true;
+		if (o instanceof Schema) {
+		  Schema other = (Schema) o;
+		  return getProto().equals(other.getProto());
 		}
 		return false;
 	}
+	
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    Schema schema = (Schema) super.clone();
+    initFromProto();
+    schema.viaProto = false;
+    schema.builder = SchemaProto.newBuilder();
+    schema.fields = fields != null ? new ArrayList<Column>(fields) : null;
+    schema.fieldsByName = fieldsByName != null ? new HashMap<String, Integer>(
+        fieldsByName) : null;
+
+    return schema;
+  }
 
 	@Override
 	public SchemaProto getProto() {
@@ -191,11 +204,6 @@ public class Schema implements ProtoObject<SchemaProto> {
 	  sb.append("}");
 	  
 	  return sb.toString();
-	}
-	
-	@Override
-  public Object clone() {
-	  return new Schema(getProto());
 	}
 	
 	public String toJson() {

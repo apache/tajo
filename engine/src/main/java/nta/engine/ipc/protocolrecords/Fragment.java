@@ -9,7 +9,6 @@ import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.catalog.proto.CatalogProtos.TabletProto;
 import nta.catalog.proto.CatalogProtos.TabletProtoOrBuilder;
 import nta.engine.SchemaObject;
-import nta.common.ProtoObject;
 import nta.engine.json.GsonCreator;
 
 import org.apache.hadoop.fs.Path;
@@ -191,6 +190,19 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   public int hashCode() {
     return (int) (getPath().hashCode() << 16 | getStartOffset() >> 16);
   }
+  
+  public Object clone() throws CloneNotSupportedException {
+    Fragment frag = (Fragment) super.clone();
+    initFromProto();
+    frag.proto = null;
+    frag.viaProto = false;
+    frag.builder = TabletProto.newBuilder();
+    frag.fragmentId = fragmentId;
+    frag.path = path;
+    frag.meta = (TableMeta) (meta != null ? meta.clone() : null);
+    
+    return frag;
+  }
 
   @Override
   public String toString() {
@@ -263,10 +275,6 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
     mergeLocalToBuilder();
     proto = builder.build();
     viaProto = true;
-  }
-  
-  public Object clone() {
-    return new Fragment(this.proto);
   }
 
   @Override

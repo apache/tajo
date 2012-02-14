@@ -2,7 +2,6 @@ package nta.catalog;
 
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
-import nta.engine.SchemaObject;
 
 import org.apache.hadoop.fs.Path;
 
@@ -13,7 +12,7 @@ import com.google.protobuf.Message;
  * @author Hyunsik Choi
  *
  */
-public interface TableDesc extends SchemaObject {
+public interface TableDesc extends Cloneable {
   void setId(String tableId);
   
   String getId();
@@ -26,13 +25,13 @@ public interface TableDesc extends SchemaObject {
   
   TableMeta getMeta();
   
-  Object clone();
-  
   Message getProto();
   
   public void initFromProto();
   
   public String toJSON();
+  
+  public Object clone() throws CloneNotSupportedException;
   
   public static class Factory {
     public static TableDesc create(String tableId, Schema schema, 

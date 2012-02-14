@@ -132,6 +132,20 @@ public class TableMetaImpl implements TableMeta {
 		return false;		
 	}
 	
+	@Override
+	public Object clone() throws CloneNotSupportedException {    
+	  TableMetaImpl meta = (TableMetaImpl) super.clone();
+	  initFromProto();
+	  meta.proto = null;
+    meta.viaProto = false;
+    meta.builder = TableProto.newBuilder();
+    meta.schema = (Schema) schema.clone();
+    meta.storeType = storeType;
+    meta.options = (Options) (options != null ? options.clone() : null);
+    
+    return meta;
+	}
+	
 	////////////////////////////////////////////////////////////////////////
 	// ProtoObject
 	////////////////////////////////////////////////////////////////////////
@@ -172,10 +186,6 @@ public class TableMetaImpl implements TableMeta {
 		mergeLocalToBuilder();
 		proto = builder.build();
 		viaProto = true;
-	}
-	
-	public Object clone() {
-	  return new TableMetaImpl(this.getProto());
 	}
 	
 	private void mergeProtoToLocal() {

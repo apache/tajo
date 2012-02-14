@@ -7,19 +7,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.google.gson.annotations.Expose;
-
 import nta.catalog.proto.CatalogProtos.KeyValueProto;
 import nta.catalog.proto.CatalogProtos.KeyValueSetProto;
 import nta.catalog.proto.CatalogProtos.KeyValueSetProtoOrBuilder;
 import nta.common.ProtoObject;
 import nta.engine.json.GsonCreator;
 
+import com.google.gson.annotations.Expose;
+
 /**
  * @author Hyunsik Choi
  *
  */
-public class Options implements ProtoObject<KeyValueSetProto> {
+public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 	@Expose(serialize=false,deserialize=false)
 	private KeyValueSetProto proto = KeyValueSetProto.getDefaultInstance();
 	@Expose(serialize=false,deserialize=false)
@@ -80,6 +80,18 @@ public class Options implements ProtoObject<KeyValueSetProto> {
 		}
 		
 		return false;
+	}
+	
+	@Override
+  public Object clone() throws CloneNotSupportedException {    
+    Options options = (Options) super.clone();
+    initFromProto();
+    options.proto = null;
+    options.viaProto = false;
+    options.builder = KeyValueSetProto.newBuilder();
+    options.keyVals = keyVals != null ? new HashMap<String, String>(keyVals) :
+      null;    
+    return options;
 	}
 	
 	@Override
