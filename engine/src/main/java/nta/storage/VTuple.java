@@ -135,7 +135,7 @@ public class VTuple implements Tuple {
 				str.append(i)
 				.append("=>")
 				.append(values[i]);
-			}			
+			}
 		}
 		str.append(")");
 		return str.toString();

@@ -60,7 +60,7 @@ public class NullDatum extends Datum {
 
   @Override
   public String asChars() {
-    return "";
+    return "null";
   }
 
   @Override
@@ -74,6 +74,10 @@ public class NullDatum extends Datum {
     } else {
       return false;
     }
+  }
+  
+  public int hashCode() {
+    return 23244; // one of the prime number
   }
 
   @Override

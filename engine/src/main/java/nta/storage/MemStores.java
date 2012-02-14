@@ -9,6 +9,7 @@ import java.util.Map;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.TableMeta;
 import nta.datum.exception.InvalidCastException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -45,8 +46,9 @@ public class MemStores {
 	
 	public class MemTableAppender extends FileAppender {
 	  MemTable table;
-	  public MemTableAppender(Configuration conf, MemTable table, Schema schema) {
-	    super(conf, schema, null);
+	  public MemTableAppender(Configuration conf, MemTable table, 
+	      TableMeta meta) {
+	    super(conf, meta, null);
 	  }
 
 	  @Override

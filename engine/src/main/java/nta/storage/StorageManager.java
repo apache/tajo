@@ -153,12 +153,12 @@ public class StorageManager {
 	  Appender appender = null;
     switch(meta.getStoreType()) {
     case RAW: {
-      appender = new RawFile2(conf).getAppender(meta.getSchema(),
+      appender = new RawFile2(conf).getAppender(meta,
           filename);
       break;
     }
     case CSV: {
-      appender = new CSVFile2(conf).getAppender(meta.getSchema(), filename);
+      appender = new CSVFile2(conf).getAppender(meta, filename);
       break;
     }
     }

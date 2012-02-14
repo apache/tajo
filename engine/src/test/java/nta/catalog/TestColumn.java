@@ -1,5 +1,6 @@
 package nta.catalog;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.engine.json.GsonCreator;
 
@@ -7,7 +8,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 /**
  * 

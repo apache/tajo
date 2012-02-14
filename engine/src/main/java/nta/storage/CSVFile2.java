@@ -2,17 +2,17 @@ package nta.storage;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import nta.catalog.Column;
-import nta.catalog.Options;
 import nta.catalog.Schema;
+import nta.catalog.TableMeta;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
-import nta.datum.NullDatum;
+import nta.datum.DatumType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
 
@@ -24,7 +24,6 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.mortbay.io.Buffers;
 
 /**
  * @author Haemi Yang
@@ -41,8 +40,8 @@ public class CSVFile2 extends Storage {
   }
 
   @Override
-  public Appender getAppender(Schema schema, Path path) throws IOException {
-    return new CSVAppender(conf, path, schema, false);
+  public Appender getAppender(TableMeta meta, Path path) throws IOException {
+    return new CSVAppender(conf, path, meta, false);
   }
 
   @Override
@@ -53,15 +52,18 @@ public class CSVFile2 extends Storage {
 
   public static class CSVAppender implements Appender {
     private final Path path;
+    private final TableMeta meta;
     private final Schema schema;
     private final FileSystem fs;
     private FSDataOutputStream fos;
+    private String delimiter;
 
     public CSVAppender(Configuration conf, final Path path,
-        final Schema schema, boolean tablewrite) throws IOException {
+        final TableMeta meta, boolean tablewrite) throws IOException {
       this.path = new Path(path, "data");
       this.fs = path.getFileSystem(conf);
-      this.schema = schema;
+      this.meta = meta;
+      this.schema = meta.getSchema();
 
       if (!fs.exists(path.getParent())) {
         throw new FileNotFoundException(path.toString());
@@ -72,14 +74,24 @@ public class CSVFile2 extends Storage {
       }
 
       fos = fs.create(path);
+      
+      // set delimiter.
+      if (meta.getOptions() == null) {
+        this.delimiter = ",";
+      } else {
+        this.delimiter = meta.getOptions().get(DELIMITER, DELIMITER_DEFAULT);        
+      }
     }
 
     @Override
     public void addTuple(Tuple tuple) throws IOException {
       StringBuilder sb = new StringBuilder();
       Column col = null;
+      Datum datum = null;
       for (int i = 0; i < schema.getColumnNum(); i++) {
-        if (tuple.contains(i)) {
+        datum = tuple.get(i);
+        if (datum.type() == DatumType.NULL) {          
+        } else {
           col = schema.getColumn(i);
           switch (col.getDataType()) {
           case BYTE:
@@ -118,7 +130,7 @@ public class CSVFile2 extends Storage {
             break;
           }
         }
-        sb.append(',');
+        sb.append(delimiter);
       }
       sb.deleteCharAt(sb.length() - 1);
       sb.append('\n');
@@ -353,42 +365,52 @@ public class CSVFile2 extends Storage {
         String[] cells = tupleList[curIndex++].split(delimiter);
         Column field;
 
-        for (int i = 0; i < cells.length; i++) {
+        for (int i = 0; i < schema.getColumnNum(); i++) {
           field = schema.getColumn(i);
-          String cell = cells[i].trim();
-          if (cell.equals("")) {
+          if (cells.length <= i) {
             tuple.put(i, DatumFactory.createNullDatum());
           } else {
-            switch (field.getDataType()) {
-            case BYTE:
-              tuple.put(i, DatumFactory.createByte(Base64.decodeBase64(cell)[0]));
-              break;
-            case BYTES:
-              tuple.put(i, DatumFactory.createBytes(Base64.decodeBase64(cell)));
-              break;
-            case SHORT:
-              tuple.put(i, DatumFactory.createShort(cell));
-              break;
-            case INT:
-              tuple.put(i, DatumFactory.createInt(cell));
-              break;
-            case LONG:
-              tuple.put(i, DatumFactory.createLong(cell));
-              break;
-            case FLOAT:
-              tuple.put(i, DatumFactory.createFloat(cell));
-              break;
-            case DOUBLE:
-              tuple.put(i, DatumFactory.createDouble(cell));
-              break;
-            case STRING:
-              tuple.put(i, DatumFactory.createString(cell));
-              break;
-            case IPv4:
-              if (cells[i].charAt(0) == '/') {
-                tuple.put(i, DatumFactory.createIPv4(cells[i].substring(1, cell.length())));
+            String cell = cells[i].trim();
+
+            if (cell.equals("")) {
+              tuple.put(i, DatumFactory.createNullDatum());
+            } else {
+              switch (field.getDataType()) {
+              case BYTE:
+                tuple.put(i,
+                    DatumFactory.createByte(Base64.decodeBase64(cell)[0]));
+                break;
+              case BYTES:
+                tuple.put(i,
+                    DatumFactory.createBytes(Base64.decodeBase64(cell)));
+                break;
+              case SHORT:
+                tuple.put(i, DatumFactory.createShort(cell));
+                break;
+              case INT:
+                tuple.put(i, DatumFactory.createInt(cell));
+                break;
+              case LONG:
+                tuple.put(i, DatumFactory.createLong(cell));
+                break;
+              case FLOAT:
+                tuple.put(i, DatumFactory.createFloat(cell));
+                break;
+              case DOUBLE:
+                tuple.put(i, DatumFactory.createDouble(cell));
+                break;
+              case STRING:
+                tuple.put(i, DatumFactory.createString(cell));
+                break;
+              case IPv4:
+                if (cells[i].charAt(0) == '/') {
+                  tuple.put(
+                      i,
+                      DatumFactory.createIPv4(cells[i].substring(1,
+                          cell.length())));
+                }
+                break;
               }
-              break;
             }
           }
         }

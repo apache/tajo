@@ -40,6 +40,6 @@ public class TestOptions {
 		assertNull(opts.get("name"));
 		
 		Options opts2 = new Options(opts.getProto());
-		assertNull(opts.get("name"));
+		assertNull(opts2.get("name"));
 	}
 }

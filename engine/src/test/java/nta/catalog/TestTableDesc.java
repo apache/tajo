@@ -31,13 +31,14 @@ public class TestTableDesc {
 	}
 
   @Test
-  public void test() {
+  public void test() throws CloneNotSupportedException {
     TableMeta info = new TableMetaImpl();  
     info.setStorageType(StoreType.CSV);
     Schema schema = new Schema();
     schema.addColumn("name", DataType.BYTE);
     schema.addColumn("addr", DataType.STRING);
     info.setSchema(schema);
+    testClone(info);
 
     TableDesc desc = new TableDescImpl("table1", info);
     assertEquals("table1", desc.getId());
@@ -45,39 +46,45 @@ public class TestTableDesc {
     
     assertEquals(new Path("/nta/data"), desc.getPath());
     assertEquals(info, desc.getMeta());
+    testClone(desc);
   }
   
   @Test
-  public void testTableMetaToJson() {
-	  TableMeta meta = new TableMetaImpl(info.getProto());
-	  Gson gson = GsonCreator.getInstance();
-	    String json = meta.toJSON();
-	    System.out.println(json);
-	    TableMeta jsonMeta = gson.fromJson(json, TableMeta.class);
-	    assertEquals(meta.getSchema(), jsonMeta.getSchema());
-	    assertEquals(meta.getStoreType(), jsonMeta.getStoreType());
-	    assertEquals(meta.getOptions(), jsonMeta.getOptions());
+  public void testTableMetaToJson() throws CloneNotSupportedException {
+    TableMeta meta = new TableMetaImpl(info.getProto());
+    Gson gson = GsonCreator.getInstance();
+    String json = meta.toJSON();
+    System.out.println(json);
+    TableMeta jsonMeta = gson.fromJson(json, TableMeta.class);
+    assertEquals(meta.getSchema(), jsonMeta.getSchema());
+    assertEquals(meta.getStoreType(), jsonMeta.getStoreType());
+    assertEquals(meta.getOptions(), jsonMeta.getOptions());
+    testClone(meta);
   }
   
   @Test
-  public void testTableDescToJson() {
-	  Gson gson = GsonCreator.getInstance();
+  public void testTableDescToJson() throws CloneNotSupportedException {
+    Gson gson = GsonCreator.getInstance();
 
-	    TableDesc desc = new TableDescImpl("table1", info);
-	    desc.setPath(new Path("/nta/data"));
-	    
-	    String json = desc.toJSON();
-	    System.out.println(json);
-	    TableDesc fromJson = gson.fromJson(json, TableDesc.class);
-	    assertEquals(desc.getId(), fromJson.getId());
-	    assertEquals(desc.getPath(), fromJson.getPath());
-	    assertEquals(desc.getMeta(), fromJson.getMeta());
+    TableDesc desc = new TableDescImpl("table1", info);
+    desc.setPath(new Path("/nta/data"));
+    testClone(desc);
+
+    String json = desc.toJSON();
+    System.out.println(json);
+    TableDesc fromJson = gson.fromJson(json, TableDesc.class);
+    assertEquals(desc.getId(), fromJson.getId());
+    assertEquals(desc.getPath(), fromJson.getPath());
+    assertEquals(desc.getMeta(), fromJson.getMeta());
+    testClone(fromJson);
   }
   
   @Test
-  public void testFragmentToJson() {
+  public void testFragmentToJson() throws CloneNotSupportedException {
 	  TableDesc tmp = new Fragment("frag1", new Path("/"), info, 0, 10);
+	  testClone(tmp);
 	  Fragment frag = new Fragment((TabletProto)tmp.getProto());
+	  testClone(frag);
 	  String json = frag.toJSON();
 	  System.out.println(json);
 	  Fragment fromJson = (Fragment)GsonCreator.getInstance().fromJson(json, TableDesc.class);
@@ -87,5 +94,16 @@ public class TestTableDesc {
 	  assertEquals(frag.getMeta(), fromJson.getMeta());
 	  assertEquals(frag.getStartOffset(), fromJson.getStartOffset());
 	  assertEquals(frag.getLength(), fromJson.getLength());
+	  testClone(fromJson);
+  }
+
+  public void testClone(TableDesc desc) throws CloneNotSupportedException {
+    TableDesc copy = (TableDesc) desc.clone();
+    assertEquals(desc, copy);
+  }
+  
+  public void testClone(TableMeta meta) throws CloneNotSupportedException {
+    TableMeta copy = (TableMeta) meta.clone();
+    assertEquals(meta, copy);
   }
 }

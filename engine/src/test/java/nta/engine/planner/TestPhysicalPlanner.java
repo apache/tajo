@@ -16,6 +16,7 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
+import nta.datum.NullDatum;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
@@ -79,10 +80,11 @@ public class TestPhysicalPlanner {
     schema2.addColumn("deptName", DataType.STRING);
     schema2.addColumn("manager", DataType.STRING);
 
-    Schema schema3 = new Schema();
-    schema3.addColumn("deptName", DataType.STRING);
-    schema3.addColumn("class", DataType.STRING);
-    schema3.addColumn("score", DataType.INT);
+    Schema scoreSchema = new Schema();
+    scoreSchema.addColumn("deptName", DataType.STRING);
+    scoreSchema.addColumn("class", DataType.STRING);
+    scoreSchema.addColumn("score", DataType.INT);
+    scoreSchema.addColumn("nullable", DataType.STRING);
 
     TableMeta employeeMeta = new TableMetaImpl(schema, StoreType.CSV);
 
@@ -105,18 +107,21 @@ public class TestPhysicalPlanner {
     student.setPath(new Path("file:///"));
     catalog.addTable(student);
 
-    score = new TableDescImpl("score", schema3, StoreType.CSV);
+    score = new TableDescImpl("score", scoreSchema, StoreType.CSV);
     sm.initTableBase(score.getMeta(), "score");
     appender = sm.getAppender(score.getMeta(), "score", "score_1");
     tuple = new VTuple(score.getMeta().getSchema().getColumnNum());
+    int m = 0;
     for (int i = 1; i <= 5; i++) {
       for (int k = 3; k < 5; k++) {
         for (int j = 1; j <= 3; j++) {
           tuple.put(DatumFactory.createString("name_" + i), // name_1 ~ 5 (cad:
                                                             // 5)
               DatumFactory.createString(k + "rd"), // 3 or 4rd (cad: 2)
-              DatumFactory.createInt(j)); // 1 ~ 3
+              DatumFactory.createInt(j), // 1 ~ 3
+              m % 3 == 1 ? DatumFactory.createString("one") : NullDatum.get()); 
           appender.addTuple(tuple);
+          m++;
         }
       }
     }
@@ -146,7 +151,8 @@ public class TestPhysicalPlanner {
       "grouped := select deptName, class, sum(score), max(score), min(score) from score_1 group by deptName, class", // 8
       "select count(*), max(score), min(score) from score_1", // 9
       "select count(deptName) from score_1", // 10
-      "select managerId, empId, deptName from employee_1 order by managerId, empId desc" // 11
+      "select managerId, empId, deptName from employee_1 order by managerId, empId desc", // 11
+      "select deptName, nullable from score_1 group by deptName, nullable", // 12
   };
 
   public final void testCreateScanPlan() throws IOException {
@@ -317,5 +323,29 @@ public class TestPhysicalPlanner {
     Tuple tuple = exec.next();
     assertEquals(30, tuple.get(0).asLong());
     assertNull(exec.next());
+  }
+  
+  @Test
+  public final void testGroupByWithNullValue() throws IOException {
+    Fragment[] frags = sm.split("score");
+    factory = new SubqueryContext.Factory(catalog);
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+        new Fragment[] { frags[0] });
+    QueryBlock query = analyzer.parse(ctx, QUERIES[12]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    LogicalOptimizer.optimize(ctx, plan);
+
+    System.out.println(plan);
+
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+
+    @SuppressWarnings("unused")
+    Tuple tuple = null;    
+    int count = 0;
+    while((tuple = exec.next()) != null) {
+      count++;
+    }
+    assertEquals(10, count);
   }
 }

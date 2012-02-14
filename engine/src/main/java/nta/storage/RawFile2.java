@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import nta.catalog.Column;
 import nta.catalog.Options;
 import nta.catalog.Schema;
+import nta.catalog.TableMeta;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.NConstants;
@@ -37,9 +38,9 @@ public class RawFile2 extends Storage {
   }
 
   @Override
-  public Appender getAppender(Schema schema, Path path)
+  public Appender getAppender(TableMeta meta, Path path)
   throws IOException {
-    return new RawFileAppender(conf, schema, path);
+    return new RawFileAppender(conf, meta, path);
   }
 
   @Override
@@ -374,9 +375,9 @@ public class RawFile2 extends Storage {
     private FileSystem fs;
     private byte[] sync;
 
-    public RawFileAppender(Configuration conf, final Schema schema, 
+    public RawFileAppender(Configuration conf, final TableMeta meta, 
         final Path path) throws IOException {
-      super(conf, schema, path);      
+      super(conf, meta, path);      
 
       fs = path.getFileSystem(conf);
 

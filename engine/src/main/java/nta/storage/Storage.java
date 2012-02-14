@@ -3,6 +3,7 @@ package nta.storage;
 import java.io.IOException;
 
 import nta.catalog.Schema;
+import nta.catalog.TableMeta;
 import nta.engine.ipc.protocolrecords.Fragment;
 
 import org.apache.hadoop.conf.Configuration;
@@ -19,7 +20,7 @@ public abstract class Storage {
     return this.conf;
   }
   
-  public abstract Appender getAppender(Schema schema, Path path)
+  public abstract Appender getAppender(TableMeta meta, Path path)
     throws IOException;
   
   public abstract Scanner openScanner(Schema schema,
