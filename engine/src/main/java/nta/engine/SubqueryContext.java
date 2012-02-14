@@ -3,7 +3,9 @@
  */
 package nta.engine;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import nta.catalog.CatalogService;
@@ -22,8 +24,8 @@ import com.google.common.annotations.VisibleForTesting;
  *
  */
 public class SubqueryContext extends Context {
-  private final Map<String, Fragment> fragmentMap
-    = new HashMap<String, Fragment>();
+  private final Map<String, List<Fragment>> fragmentMap
+    = new HashMap<String, List<Fragment>>();
   
   private QueryUnitId queryId;
   private QueryBlock query;
@@ -32,7 +34,13 @@ public class SubqueryContext extends Context {
     this.queryId = queryId;
     
     for(Fragment t : fragments) {
-      fragmentMap.put(t.getId(), t);
+      if (fragmentMap.containsKey(t.getId())) {
+        fragmentMap.get(t.getId()).add(t);
+      } else {
+        List<Fragment> frags = new ArrayList<Fragment>();
+        frags.add(t);
+        fragmentMap.put(t.getId(), frags);
+      }
     }
   }
   
@@ -64,7 +72,11 @@ public class SubqueryContext extends Context {
 
   @Override
   public Fragment getTable(String id) {
-    return fragmentMap.get(id);
+    return fragmentMap.get(id).get(0);
+  }
+  
+  public Fragment [] getTables(String id) {
+    return fragmentMap.get(id).toArray(new Fragment[fragmentMap.size()]);
   }
   
   @Override

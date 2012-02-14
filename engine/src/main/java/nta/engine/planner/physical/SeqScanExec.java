@@ -34,13 +34,13 @@ public class SeqScanExec extends PhysicalExec {
 	 * 
 	 */
   public SeqScanExec(StorageManager sm, ScanNode annotation,
-      Fragment fragment) throws IOException {
+      Fragment [] fragments) throws IOException {
     this.annotation = annotation;
     this.qual = annotation.getQual();
     this.inputSchema = annotation.getInputSchema();
     this.outputSchema = annotation.getOutputSchema();
     
-    this.scanner = sm.getScanner(fragment.getMeta(), new Fragment[] {fragment});    
+    this.scanner = sm.getScanner(fragments[0].getMeta(), fragments);    
     this.targetIds = new int[annotation.getTargetList().getColumnNum()];
         
     int i=0;

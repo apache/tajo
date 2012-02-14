@@ -114,8 +114,8 @@ public class PhysicalPlanner {
 
   public PhysicalExec createScanPlan(SubqueryContext ctx, ScanNode scanNode)
       throws IOException {
-    Fragment fragment = ctx.getTable(scanNode.getTableId());
-    SeqScanExec scan = new SeqScanExec(sm, scanNode, fragment);
+    Fragment [] fragments = ctx.getTables(scanNode.getTableId());
+    SeqScanExec scan = new SeqScanExec(sm, scanNode, fragments);
 
     return scan;
   }
