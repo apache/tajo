@@ -277,7 +277,12 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   public SubQueryResponseProto requestQueryUnit(QueryUnitRequestProto proto)
       throws Exception {
     QueryUnitRequest request = new QueryUnitRequestImpl(proto);
-    return null;
+    PhysicalExec executor = queryEngine.createPlan(request);    
+    InProgressQuery newQuery = new InProgressQuery(request.getId(), executor);
+    queryLauncher.addSubQuery(newQuery);
+
+    SubQueryResponseProto.Builder res = SubQueryResponseProto.newBuilder();
+    return res.build();
   }
 
   @Override

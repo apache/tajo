@@ -6,7 +6,9 @@ import nta.catalog.CatalogService;
 import nta.engine.NConstants;
 import nta.engine.SubqueryContext;
 import nta.engine.exception.InternalException;
+import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
+import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalOptimizer;
@@ -70,6 +72,20 @@ public class TQueryEngine {
     LOG.info("Assigned task: (" + request.getId() + ") start:"
         + request.getFragments().get(0).getStartOffset() + " end: "
         + request.getFragments() + "\nquery: " + request.getQuery());
+
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(storageManager);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    
+    return exec;
+  }
+  
+  public PhysicalExec createPlan(QueryUnitRequest request) throws InternalException {
+    SubqueryContext ctx = ctxFactory.create(request);
+    LogicalNode plan = GsonCreator.getInstance().
+        fromJson(request.getSerializedData(), LogicalNode.class);
+    LOG.info("Assigned task: (" + request.getId() + ") start:"
+        + request.getFragments().get(0).getStartOffset() + " end: "
+        + request.getFragments() + "\nplan:\n" + plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(storageManager);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);

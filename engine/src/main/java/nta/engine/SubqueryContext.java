@@ -10,6 +10,7 @@ import java.util.Map;
 
 import nta.catalog.CatalogService;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.Target;
@@ -63,6 +64,12 @@ public class SubqueryContext extends Context {
       return new SubqueryContext(request.getId(), 
           request.getFragments().toArray(
               new Fragment [request.getFragments().size()]));
+    }
+    
+    public SubqueryContext create(QueryUnitRequest request) {
+      return new SubqueryContext(request.getId(), 
+          request.getFragments().toArray(
+              new Fragment [request.getFragments().size()]));          
     }
   }
   
