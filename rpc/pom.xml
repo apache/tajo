@@ -59,6 +59,7 @@
 								<argument>src/main/proto/ProtoParamRpcProtos.proto</argument>
 								<argument>src/main/proto/ProtoParamRpcProtocol.proto</argument>
 								<argument>src/main/proto/DummyProtos.proto</argument>
+								<argument>src/main/proto/PrimitiveProtos.proto</argument>
 							</arguments>
 						</configuration>
 						<goals>

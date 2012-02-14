@@ -10,6 +10,7 @@ import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
 import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.rpc.Callback;
+import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
 
 /**
  * @author jihoon
@@ -45,5 +46,5 @@ public interface AsyncWorkerClientInterface {
    * @return ServerStatus (protocol buffer)
    * @throws
    */
-  public void getServerStatus(Callback<ServerStatusProto> callback);
+  public void getServerStatus(Callback<ServerStatusProto> callback, NullProto request);
 }

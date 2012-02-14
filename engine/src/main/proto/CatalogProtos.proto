@@ -60,6 +60,10 @@ message TableDescProto {
 	optional TableProto meta = 3;
 }
 
+message GetAllTableNamesResponse {
+	repeated string tableName = 1;
+}
+
 message TableProto {
 	required SchemaProto schema = 1;
 	required StoreType storeType = 2;
@@ -72,11 +76,30 @@ enum FunctionType {
 }
 
 message FunctionDescProto {
-	required string signature = 1 ;
+	required string signature = 1;
 	required string className = 2;
 	required FunctionType type = 3;
 	repeated DataType parameterTypes = 4;
 	required DataType returnType = 5;
+}
+
+message GetFunctionsResponse {
+	repeated FunctionDescProto functionDesc = 1;
+}
+
+message UnregisterFunctionRequest {
+	required string signature = 1;
+	repeated DataType parameterTypes = 2;
+}
+
+message GetFunctionMetaRequest {
+	required string signature = 1;
+	repeated DataType parameterTypes = 2;
+}
+
+message ContainFunctionRequest {
+	required string signature = 1;
+	repeated DataType parameterTypes = 2;
 }
 
 message TableStatisticProto {

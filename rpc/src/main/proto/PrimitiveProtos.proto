@@ -1,0 +1,23 @@
+option java_package = "nta.rpc.protocolrecords";
+option java_outer_classname = "PrimitiveProtos";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
+
+message StringProto {
+	required string value = 1;
+}
+
+message IntProto {
+	required int32 value = 1;
+}
+
+message LongProto {
+	required int64 value = 1;
+}
+
+message BoolProto {
+	required bool value = 1;
+}
+
+message NullProto {
+}

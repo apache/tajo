@@ -1,12 +1,12 @@
 package nta.rpc.benchmark;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import nta.rpc.Callback;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
 import nta.rpc.RemoteException;
+import nta.rpc.protocolrecords.PrimitiveProtos.StringProto;
 
 public class BenchmarkAsyncRPC {
 
@@ -19,52 +19,40 @@ public class BenchmarkAsyncRPC {
               new InetSocketAddress(15010));
 
       long start = System.currentTimeMillis();
-      Callback<Long> cb = new Callback<Long>();
-      for (int i = 0; i < 10000; i++) {
-        service.shoot(cb, System.currentTimeMillis());
+      Callback<StringProto> cb = new Callback<StringProto>();
+      StringProto ps = StringProto.newBuilder().setValue("ABCD").build();
+      for (int i = 0; i < 100000; i++) {
+        service.shoot(cb, ps);
       }
       long end = System.currentTimeMillis();
-      Callback<Integer> cbCount = new Callback<Integer>();
-      service.getCount(cbCount);
-
+      
       System.out.println("elapsed time: " + (end - start) + "msc");
     }
   }
 
   public static interface BenchmarkClientInterface {
-    public void shoot(Callback<Long> ret, long l) throws RemoteException;
-
-    public void getCount(Callback<Integer> ret) throws RemoteException;
+    public void shoot(Callback<StringProto> ret, StringProto l) throws RemoteException;
   }
 
   public static interface BenchmarkServerInterface {
-    public Long shoot(long l) throws RemoteException;
-
-    public Integer getCount() throws RemoteException;
+    public StringProto shoot(StringProto l) throws RemoteException;
   }
 
   public static class BenchmarkImpl implements BenchmarkServerInterface {
-    AtomicInteger count = new AtomicInteger();
-
     @Override
-    public Long shoot(long l) {
-      count.addAndGet(1);
-      return System.currentTimeMillis();
-    }
-
-    public Integer getCount() {
-      return count.get();
+    public StringProto shoot(StringProto l) {
+      return l;
     }
   }
 
   public static void main(String[] args) throws Exception {
     ProtoParamRpcServer rpcServer =
-        NettyRpc.getProtoParamRpcServer(new BenchmarkImpl(),
+        NettyRpc.getProtoParamRpcServer(new BenchmarkImpl(), BenchmarkServerInterface.class,
             new InetSocketAddress(15010));
     rpcServer.start();
     Thread.sleep(1000);
 
-    int numThreads = 5;
+    int numThreads = 1;
     ClientWrapper client[] = new ClientWrapper[numThreads];
     for (int i = 0; i < numThreads; i++) {
       client[i] = new ClientWrapper();

@@ -36,6 +36,7 @@ import nta.engine.query.SubQueryRequestImpl;
 import nta.engine.query.TQueryEngine;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
+import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkUtil;
 
@@ -103,7 +104,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     if (initialIsa.getAddress() == null) {
       throw new IllegalArgumentException("Failed resolve of " + this.isa);
     }
-    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initialIsa);
+    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, AsyncWorkerInterface.class, initialIsa);
     this.rpcServer.start();
     
     // Set our address.
@@ -296,7 +297,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   }
 
   @Override
-  public ServerStatusProto getServerStatus() {
+  public ServerStatusProto getServerStatus(NullProto request) {
     // serverStatus builder
     ServerStatusProto.Builder serverStatus = ServerStatusProto.newBuilder();
 

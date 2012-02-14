@@ -62,7 +62,7 @@ public class TestLeafServerInterface {
   @Test
   public void testSubQueryRequest() throws Exception {
     TestClient client = new TestClient();
-    ProtoParamRpcServer server = NettyRpc.getProtoParamRpcServer(client,
+    ProtoParamRpcServer server = NettyRpc.getProtoParamRpcServer(client, LeafServerInterface.class,
         new InetSocketAddress("localhost", 0));
     int port = server.getBindAddress().getPort();
     server.start();

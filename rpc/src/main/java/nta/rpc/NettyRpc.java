@@ -7,6 +7,26 @@ import java.net.ServerSocket;
 
 public class NettyRpc {
 
+  public static ProtoParamRpcServer getProtoParamRpcServer(Object instance, Class<?> interfaceClass,
+      InetSocketAddress addr) {
+
+    InetSocketAddress newAddress = null;
+
+    if (addr.getPort() == 0) {
+      try {
+        int port = getUnusedPort(addr.getHostName());
+        newAddress = new InetSocketAddress(addr.getHostName(), port);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
+    } else {
+      newAddress = addr;
+    }
+
+    return new ProtoParamRpcServer(instance, interfaceClass, newAddress);
+  }
+
   public static ProtoParamRpcServer getProtoParamRpcServer(Object instance,
       InetSocketAddress addr) {
 

@@ -12,6 +12,7 @@ import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
 import nta.engine.QueryUnitProtos.QueryUnitResponseProto;
 import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.engine.Stoppable;
+import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
 
 /**
  * @author jihoon
@@ -47,5 +48,5 @@ public interface AsyncWorkerInterface extends Stoppable, Abortable {
    * @return ServerStatus (protocol buffer)
    * @throws 
    */
-  public ServerStatusProto getServerStatus();
+  public ServerStatusProto getServerStatus(NullProto request);
 }

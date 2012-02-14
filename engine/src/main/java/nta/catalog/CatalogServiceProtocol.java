@@ -1,10 +1,15 @@
 package nta.catalog;
 
-import java.util.Collection;
-
-import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.ContainFunctionRequest;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
+import nta.catalog.proto.CatalogProtos.GetAllTableNamesResponse;
+import nta.catalog.proto.CatalogProtos.GetFunctionMetaRequest;
+import nta.catalog.proto.CatalogProtos.GetFunctionsResponse;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
+import nta.catalog.proto.CatalogProtos.UnregisterFunctionRequest;
+import nta.rpc.protocolrecords.PrimitiveProtos.BoolProto;
+import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
+import nta.rpc.protocolrecords.PrimitiveProtos.StringProto;
 
 /**
  * 
@@ -20,21 +25,21 @@ public interface CatalogServiceProtocol {
    * @see TableDescImpl
    * @throws Throwable
    */
-  TableDescProto getTableDesc(String name);
+  TableDescProto getTableDesc(StringProto name);
   
   /**
    * 
    * @return
    * @throws CatalogException
    */
-  Collection<String> getAllTableNames();
+  GetAllTableNamesResponse getAllTableNames(NullProto request);
   
   /**
    * 
    * @return
    * @throws CatalogException
    */
-  Collection<FunctionDescProto> getFunctions();
+  GetFunctionsResponse getFunctions(NullProto request);
   
   /**
    * Add a table via table description
@@ -49,9 +54,9 @@ public interface CatalogServiceProtocol {
    * @param name table name
    * @throws Throwable
    */
-  void deleteTable(String name);
+  void deleteTable(StringProto name);
   
-  boolean existsTable(String tableId);
+  BoolProto existsTable(StringProto tableId);
   
   /**
    * 
@@ -63,19 +68,19 @@ public interface CatalogServiceProtocol {
    * 
    * @param signature
    */
-  void unregisterFunction(String signature, DataType...paramTypes);
+  void unregisterFunction(UnregisterFunctionRequest request);
   
   /**
    * 
    * @param signature
    * @return
    */
-  FunctionDescProto getFunctionMeta(String signature, DataType...paramTypes);
+  FunctionDescProto getFunctionMeta(GetFunctionMetaRequest request);
   
   /**
    * 
    * @param signature
    * @return
    */
-  boolean containFunction(String signature, DataType...paramTypes);
+  BoolProto containFunction(ContainFunctionRequest request);
 }

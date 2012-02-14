@@ -17,10 +17,10 @@ public class NettyClientBase {
   private static Log LOG = LogFactory.getLog(NettyClientBase.class);
 
   private ClientSocketChannelFactory factory;
-  private ClientBootstrap bootstrap;
+  protected ClientBootstrap bootstrap;
   private ChannelFuture channelFuture;
   private Channel channel;
-  private InetSocketAddress addr;
+  protected InetSocketAddress addr;
 
   public NettyClientBase() {
   }

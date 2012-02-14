@@ -22,6 +22,7 @@ import nta.engine.ipc.AsyncWorkerInterface;
 import nta.rpc.Callback;
 import nta.rpc.NettyRpc;
 import nta.rpc.RemoteException;
+import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkListener;
 import nta.zookeeper.ZkUtil;
@@ -108,7 +109,7 @@ public class WorkerCommunicator extends ZkListener {
     Callback<ServerStatusProto> cb;
     cb = new Callback<ServerStatusProto>();
     AsyncWorkerClientInterface leaf = hm.get(serverName);
-    leaf.getServerStatus(cb);
+    leaf.getServerStatus(cb, NullProto.newBuilder().build());
     return cb;
   }
 

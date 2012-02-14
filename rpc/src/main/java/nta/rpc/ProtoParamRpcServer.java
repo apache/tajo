@@ -1,9 +1,5 @@
 package nta.rpc;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -12,16 +8,18 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import nta.rpc.ProtoParamRpcProtos.Invocation;
-import nta.rpc.ProtoParamRpcProtos.Response;
-
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 
+import nta.rpc.ProtoParamRpcProtos.Invocation;
+import nta.rpc.ProtoParamRpcProtos.Response;
+
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Message;
+import com.google.protobuf.Message.Builder;
 
 public class ProtoParamRpcServer extends NettyServerBase {
   private static Log LOG = LogFactory.getLog(ProtoParamRpcServer.class);
@@ -29,20 +27,61 @@ public class ProtoParamRpcServer extends NettyServerBase {
   private final Class<?> clazz;
   private final ChannelPipelineFactory pipeline;
   private Map<String, Method> methods;
+  private Map<String, Builder> builders;
 
-  public ProtoParamRpcServer(Object proxy, InetSocketAddress bindAddress) {
+  public ProtoParamRpcServer(Object proxy,
+      InetSocketAddress bindAddress) {
     super(bindAddress);
     this.instance = proxy;
     this.clazz = instance.getClass();
     this.methods = new HashMap<String, Method>();
+    this.builders = new HashMap<String, Builder>();
     this.pipeline =
         new ProtoPipelineFactory(new ServerHandler(),
             Invocation.getDefaultInstance());
 
     super.init(this.pipeline);
+    for (Method m : this.clazz.getDeclaredMethods()) {
+      String methodName = m.getName();
+      Class<?> params[] = m.getParameterTypes();
+      try {
+        methods.put(methodName, m);
 
-    for (Method m : this.clazz.getMethods()) {
-      methods.put(m.getName(), m);
+        Method mtd = params[0].getMethod("newBuilder", new Class[] {});
+        Builder builder = (Builder) mtd.invoke(null, new Object[] {});
+        builders.put(methodName, builder);
+      } catch (Exception e) {
+        e.printStackTrace();
+        continue;
+      }
+    }
+  }
+  
+  public ProtoParamRpcServer(Object proxy, Class<?> interfaceClass,
+      InetSocketAddress bindAddress) {
+    super(bindAddress);
+    this.instance = proxy;
+    this.clazz = instance.getClass();
+    this.methods = new HashMap<String, Method>();
+    this.builders = new HashMap<String, Builder>();
+    this.pipeline =
+        new ProtoPipelineFactory(new ServerHandler(),
+            Invocation.getDefaultInstance());
+
+    super.init(this.pipeline);
+    for (Method m : interfaceClass.getDeclaredMethods()) {
+      String methodName = m.getName();
+      Class<?> params[] = m.getParameterTypes();
+      try {
+        methods.put(methodName, this.clazz.getMethod(methodName, params));
+
+        Method mtd = params[0].getMethod("newBuilder", new Class[] {});
+        Builder builder = (Builder) mtd.invoke(null, new Object[] {});
+        builders.put(methodName, builder);
+      } catch (Exception e) {
+        e.printStackTrace();
+        continue;
+      }
     }
   }
 
@@ -61,21 +100,12 @@ public class ProtoParamRpcServer extends NettyServerBase {
         }
 
         Method method = methods.get(methodName);
-        Object[] objs = null;
-        int size = method.getParameterTypes().length;
-        if (size > 0) {
-          objs = new Object[size];
-          for (int i = 0; i < size; i++) {
-            ByteArrayInputStream bis =
-                new ByteArrayInputStream(request.getParam(i).toByteArray());
-            ObjectInputStream ois = new ObjectInputStream(bis);
-            objs[i] = ois.readObject();
-          }
-        }
-
-        res = method.invoke(instance, objs);
+        Message.Builder builder = builders.get(methodName).clear();
+        Message msg = builder.mergeFrom(request.getParam(0)).build();
+        res = method.invoke(instance, msg);
 
       } catch (InvocationTargetException internalException) {
+        internalException.printStackTrace();
         response =
             Response
                 .newBuilder()
@@ -86,6 +116,7 @@ public class ProtoParamRpcServer extends NettyServerBase {
         e.getChannel().write(response);
         return;
       } catch (Exception otherException) {
+        otherException.printStackTrace();
         response =
             Response.newBuilder().setId(request.getId()).setHasReturn(false)
                 .setExceptionMessage(otherException.toString()).build();
@@ -98,13 +129,7 @@ public class ProtoParamRpcServer extends NettyServerBase {
             Response.newBuilder().setId(request.getId()).setHasReturn(false)
                 .build();
       } else {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
-        oos.writeObject(res);
-        oos.flush();
-        oos.close();
-        baos.close();
-        ByteString str = ByteString.copyFrom(baos.toByteArray());
+        ByteString str = ((Message) res).toByteString();
         response =
             Response.newBuilder().setId(request.getId()).setHasReturn(true)
                 .setReturnValue(str).build();

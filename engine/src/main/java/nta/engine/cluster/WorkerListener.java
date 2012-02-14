@@ -41,7 +41,7 @@ public class WorkerListener implements Runnable, MasterInterface {
     if (initIsa.getAddress() == null) {
       throw new IllegalArgumentException("Failed resolve of " + initIsa);
     }
-    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, initIsa);
+    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, MasterInterface.class, initIsa);
     this.progressMap = progressMap;
   }
   

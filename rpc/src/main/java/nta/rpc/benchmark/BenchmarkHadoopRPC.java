@@ -2,10 +2,8 @@ package nta.rpc.benchmark;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.VersionedProtocol;
 import org.apache.hadoop.ipc.RPC.Server;
@@ -27,32 +25,21 @@ public class BenchmarkHadoopRPC {
 
       long start = System.currentTimeMillis();
       for (int i = 0; i < 100000; i++) {
-        LongWritable response =
-            proxy.shoot(new LongWritable(System.currentTimeMillis()));
+        String response = proxy.shoot("ABCD");
       }
       long end = System.currentTimeMillis();
-      System.out.println("Total Count: " + proxy.getCount());
       System.out.println("elapsed time: " + (end - start) + "msc");
     }
   }
 
   public static interface BenchmarkInterface extends VersionedProtocol {
-    public LongWritable shoot(LongWritable l);
-
-    public LongWritable getCount();
+    public String shoot(String l);
   }
 
   public static class BenchmarkImpl implements BenchmarkInterface {
-    AtomicInteger count = new AtomicInteger();
-
     @Override
-    public LongWritable shoot(LongWritable l) {
-      count.addAndGet(1);
-      return new LongWritable(System.currentTimeMillis());
-    }
-
-    public LongWritable getCount() {
-      return new LongWritable(count.get());
+    public String shoot(String l) {
+      return l;
     }
 
     @Override
@@ -69,7 +56,7 @@ public class BenchmarkHadoopRPC {
     server.start();
     Thread.sleep(100);
 
-    int numThreads = 10;
+    int numThreads = 1;
     ClientWrapper client[] = new ClientWrapper[numThreads];
     for (int i = 0; i < numThreads; i++) {
       client[i] = new ClientWrapper();
@@ -82,7 +69,7 @@ public class BenchmarkHadoopRPC {
     for (int i = 0; i < numThreads; i++) {
       client[i].join();
     }
-    
+
     server.stop();
   }
 }

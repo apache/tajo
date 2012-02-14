@@ -1,9 +1,5 @@
 package nta.rpc;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -14,9 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import nta.rpc.ProtoParamRpcProtos.Invocation;
-import nta.rpc.ProtoParamRpcProtos.Response;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Message;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -24,6 +19,9 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+
+import nta.rpc.ProtoParamRpcProtos.Invocation;
+import nta.rpc.ProtoParamRpcProtos.Response;
 
 public class ProtoParamBlockingRpcProxy extends NettyClientBase {
 
@@ -53,7 +51,7 @@ public class ProtoParamBlockingRpcProxy extends NettyClientBase {
     return handler.getExceptionMessage();
   }
 
-  private class Invoker implements InvocationHandler {
+  public class Invoker implements InvocationHandler {
     private final Channel channel;
 
     public Invoker(Channel channel) {
@@ -69,13 +67,7 @@ public class ProtoParamBlockingRpcProxy extends NettyClientBase {
 
       if (args != null) {
         for (int i = 0; i < args.length; i++) {
-          ByteArrayOutputStream baos = new ByteArrayOutputStream();
-          ObjectOutputStream oos = new ObjectOutputStream(baos);
-          oos.writeObject(args[i]);
-          oos.flush();
-          oos.close();
-          baos.close();
-          ByteString str = ByteString.copyFrom(baos.toByteArray());
+          ByteString str = ((Message)args[i]).toByteString();
           builder.addParam(str);
         }
       }
@@ -94,6 +86,12 @@ public class ProtoParamBlockingRpcProxy extends NettyClientBase {
       } else {
         throw new RemoteException(exceptionMessage);
       }
+    }
+
+    public void shutdown() {
+      LOG.info("[RPC] Client terminates connection " + channel.getRemoteAddress());
+      this.channel.close().awaitUninterruptibly();
+      bootstrap.releaseExternalResources();
     }
   }
 
@@ -114,11 +112,10 @@ public class ProtoParamBlockingRpcProxy extends NettyClientBase {
           }
           response = null;
         } else {
-          ByteArrayInputStream bais =
-              new ByteArrayInputStream(response.getReturnValue().toByteArray());
-          ObjectInputStream ois = new ObjectInputStream(bais);
-          r = ois.readObject();
-
+          @SuppressWarnings("unchecked")
+          Method mtd = callFuture.getReturnType().getMethod("parseFrom", new Class[] { ByteString.class } );
+          r = mtd.invoke(null, response.getReturnValue());
+          
         }
       }
 
@@ -132,8 +129,8 @@ public class ProtoParamBlockingRpcProxy extends NettyClientBase {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
         throws Exception {
+      LOG.error("[RPC] ERROR " + e.getChannel().getRemoteAddress() + " " + e.getCause());
       e.getChannel().close();
-      LOG.error(e.getCause());
     }
 
     public String getExceptionMessage() {

@@ -3,12 +3,9 @@ package nta.rpc;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import nta.rpc.test.DummyProtos.MulRequest1;
-import nta.rpc.test.DummyProtos.MulRequest2;
 import nta.rpc.test.DummyProtos.MulResponse;
-import nta.rpc.test.DummyProtos.InnerRequest;
-import nta.rpc.test.DummyProtos.InnerResponse;
-import nta.rpc.test.DummyProtos.InnerNode;
 
 import org.junit.After;
 import org.junit.Before;
@@ -24,16 +21,14 @@ public class TestProtoParamBlockingRpc {
   // !. Write Interface and implement class according to communication way
   public static interface DummyServerInterface {
     public void throwException(MulRequest1 request) throws IOException;
-    public MulResponse mul(MulRequest1 req1, MulRequest2 req2);
-    public int primitiveTypeTest(String inStr, int value);
-    public InnerResponse innerProtocolbufferTest(InnerRequest in);
+    public MulResponse mul(MulRequest1 req1);
+    public void nullParameterTest(NullProto proto);
   }
 
   public static interface DummyClientInterface {
     public void throwException(MulRequest1 request) throws RemoteException;
-    public MulResponse mul(MulRequest1 req1, MulRequest2 req2) throws RemoteException;
-    public int primitiveTypeTest(String inStr, int value);
-    public InnerResponse innerProtocolbufferTest(InnerRequest in);
+    public MulResponse mul(MulRequest1 req1) throws RemoteException;
+    public void nullParameterTest(NullProto proto) throws RemoteException;
   }
 
   public static class DummyServer implements DummyServerInterface {
@@ -43,34 +38,18 @@ public class TestProtoParamBlockingRpc {
     }
     
     @Override
-    public MulResponse mul(MulRequest1 req1, MulRequest2 req2) {
+    public MulResponse mul(MulRequest1 req1) {
       int x1_1 = req1.getX1();
       int x1_2 = req1.getX2();
-      int x2_1 = req2.getX1();
-      int x2_2 = req2.getX2();
 
-      int result1 = x1_1 * x2_1;
-      int result2 = x1_2 * x2_2;
+      int result1 = x1_1 * x1_2;
 
-      MulResponse rst = MulResponse.newBuilder().setResult1(result1).setResult2(result2).build();
+      MulResponse rst = MulResponse.newBuilder().setResult1(result1).setResult2(400).build();
       return rst;
     }
-    
-    @Override
-    public int primitiveTypeTest(String inStr, int value) {
-      System.out.println("Server" + inStr);
-      return value;
-    }
-    
-    @Override
-    public InnerResponse innerProtocolbufferTest(InnerRequest in) {
-      InnerResponse res = null;
-      InnerResponse.Builder builder = InnerResponse.newBuilder();
-      for( InnerNode node : in.getNodesList() ) {
-        builder.addNodes(node);
-      }
-      res = builder.build();
-      return res;
+
+    public void nullParameterTest(NullProto proto) {
+      System.out.println("NULL PARAMETER TEST");
     }
   }
 
@@ -78,7 +57,7 @@ public class TestProtoParamBlockingRpc {
   public void setUp() throws Exception {
     // 2. Write Server Part source code
     server =
-        NettyRpc.getProtoParamRpcServer(new DummyServer(),
+        NettyRpc.getProtoParamRpcServer(new DummyServer(), DummyServerInterface.class,
             new InetSocketAddress(0));
     server.start();
 
@@ -115,12 +94,11 @@ public class TestProtoParamBlockingRpc {
 
     // 3.2 Fill request data
     MulRequest1 req1 = MulRequest1.newBuilder().setX1(10).setX2(20).build();
-    MulRequest2 req2 = MulRequest2.newBuilder().setX1(10).setX2(20).build();
 
     // 3.3 call procedure
     try {
-      MulResponse re = proxy.mul(req1, req2);
-      assertEquals(100, re.getResult1());
+      MulResponse re = proxy.mul(req1);
+      assertEquals(200, re.getResult1());
       assertEquals(400, re.getResult2());
       
     } catch (RemoteException e) {
@@ -129,32 +107,13 @@ public class TestProtoParamBlockingRpc {
   }
 
   @Test
-  public void testRpcPrimitiveType() throws Exception {
+  public void testNullParameter() throws Exception {
+    NullProto np = NullProto.newBuilder().build();
 
+    // 3.3 call procedure
     try {
-      int retValue = proxy.primitiveTypeTest("TEST STRING", 10);
-      assertEquals(10, retValue);
+      proxy.nullParameterTest(np);
       
-    } catch (RemoteException e) {
-      System.out.println(e.getMessage());
-    }
-  }
-
-  @Test
-  public void testInnerProtocolBuffer() throws Exception {
-    String strs[] = {"SUN", "MON", "TUE", "WED", "THR", "FRI", "SAT"};
-    InnerRequest.Builder builder = InnerRequest.newBuilder();
-
-    try {
-      for( String str : strs) {
-        InnerNode node = InnerNode.newBuilder().setInstr(str).build();
-        builder.addNodes(node);
-      }
-      InnerRequest req = builder.build();
-      InnerResponse resp = proxy.innerProtocolbufferTest(req);
-      for( InnerNode node :resp.getNodesList() ) {
-        System.out.println(node.getInstr());
-      }
     } catch (RemoteException e) {
       System.out.println(e.getMessage());
     }

@@ -9,12 +9,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import nta.catalog.proto.CatalogProtos.ContainFunctionRequest;
 import nta.catalog.proto.CatalogProtos.DataType;
-import nta.catalog.proto.CatalogProtos.FunctionDescProto;
+import nta.catalog.proto.CatalogProtos.GetAllTableNamesResponse;
+import nta.catalog.proto.CatalogProtos.GetFunctionMetaRequest;
+import nta.catalog.proto.CatalogProtos.GetFunctionsResponse;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
+import nta.catalog.proto.CatalogProtos.UnregisterFunctionRequest;
 import nta.engine.NConstants;
 import nta.engine.cluster.ServerNodeTracker;
 import nta.rpc.NettyRpc;
+import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
+import nta.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import nta.zookeeper.ZkClient;
 
 import org.apache.commons.logging.Log;
@@ -42,15 +48,14 @@ public class CatalogClient implements CatalogService {
    */
   public CatalogClient(final Configuration conf) throws IOException {
     this.zkClient = new ZkClient(conf);
-    init();    
+    init();
   }
-  
-  public CatalogClient(final ZkClient zkClient) 
-      throws IOException {
+
+  public CatalogClient(final ZkClient zkClient) throws IOException {
     this.zkClient = zkClient;
     init();
   }
-  
+
   private void init() throws IOException {
     this.tracker = new ServerNodeTracker(zkClient, NConstants.ZNODE_CATALOG);
     this.tracker.start();
@@ -68,32 +73,42 @@ public class CatalogClient implements CatalogService {
 
     LOG.info("Trying to connect the catalog (" + serverName + ")");
     InetSocketAddress addr = NetUtils.createSocketAddr(serverName);
-    proxy = (CatalogServiceProtocol) NettyRpc.getProtoParamBlockingRpcProxy(
-        CatalogServiceProtocol.class, addr);
+    proxy =
+        (CatalogServiceProtocol) NettyRpc.getProtoParamBlockingRpcProxy(
+            CatalogServiceProtocol.class, addr);
     LOG.info("Connected to the catalog server (" + serverName + ")");
   }
-  
+
   public void close() {
     this.zkClient.close();
   }
 
   @Override
   public final TableDesc getTableDesc(final String name) {
-    return TableDesc.Factory.create(proxy.getTableDesc(name));
+    return TableDesc.Factory.create(proxy.getTableDesc(StringProto.newBuilder()
+        .setValue(name).build()));
   }
 
   @Override
   public final Collection<String> getAllTableNames() {
-    Collection<String> protos = proxy.getAllTableNames();
+    List<String> protos = new ArrayList<String>();
+    GetAllTableNamesResponse response =
+        proxy.getAllTableNames(NullProto.newBuilder().build());
+    int size = response.getTableNameCount();
+    for (int i = 0; i < size; i++) {
+      protos.add(response.getTableName(i));
+    }
     return protos;
   }
 
   @Override
   public final Collection<FunctionDesc> getFunctions() {
     List<FunctionDesc> list = new ArrayList<FunctionDesc>();
-    Collection<FunctionDescProto> protos = proxy.getFunctions();
-    for (FunctionDescProto proto : protos) {
-      list.add(new FunctionDesc(proto));
+    GetFunctionsResponse response =
+        proxy.getFunctions(NullProto.newBuilder().build());
+    int size = response.getFunctionDescCount();
+    for (int i = 0; i < size; i++) {
+      list.add(new FunctionDesc(response.getFunctionDesc(i)));
     }
     return list;
   }
@@ -105,12 +120,14 @@ public class CatalogClient implements CatalogService {
 
   @Override
   public final void deleteTable(final String name) {
-    proxy.deleteTable(name);
+    proxy.deleteTable(StringProto.newBuilder().setValue(name).build());
   }
 
   @Override
   public final boolean existsTable(final String tableId) {
-    return proxy.existsTable(tableId);
+    return proxy
+        .existsTable(StringProto.newBuilder().setValue(tableId).build())
+        .getValue();
   }
 
   @Override
@@ -120,20 +137,41 @@ public class CatalogClient implements CatalogService {
 
   @Override
   public final void unregisterFunction(final String signature,
-      DataType...paramTypes) {      
-    proxy.unregisterFunction(signature, paramTypes);
+      DataType... paramTypes) {
+    UnregisterFunctionRequest.Builder builder =
+        UnregisterFunctionRequest.newBuilder();
+    builder.setSignature(signature);
+    int size = paramTypes.length;
+    for (int i = 0; i < size; i++) {
+      builder.addParameterTypes(paramTypes[i]);
+    }
+    proxy.unregisterFunction(builder.build());
   }
 
   @Override
   public final FunctionDesc getFunction(final String signature,
-      DataType...paramTypes) {
-    return FunctionDesc.create(proxy.getFunctionMeta(signature,paramTypes));
+      DataType... paramTypes) {
+    GetFunctionMetaRequest.Builder builder =
+        GetFunctionMetaRequest.newBuilder();
+    builder.setSignature(signature);
+    int size = paramTypes.length;
+    for (int i = 0; i < size; i++) {
+      builder.addParameterTypes(paramTypes[i]);
+    }
+    return FunctionDesc.create(proxy.getFunctionMeta(builder.build()));
   }
 
   @Override
   public final boolean containFunction(final String signature,
-      DataType...paramTypes) {
-    return proxy.containFunction(signature, paramTypes);
+      DataType... paramTypes) {
+    ContainFunctionRequest.Builder builder =
+        ContainFunctionRequest.newBuilder();
+    builder.setSignature(signature);
+    int size = paramTypes.length;
+    for (int i = 0; i < size; i++) {
+      builder.addParameterTypes(paramTypes[i]);
+    }
+    return proxy.containFunction(builder.build()).getValue();
   }
 
   @Override
