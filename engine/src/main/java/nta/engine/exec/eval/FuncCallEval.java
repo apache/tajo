@@ -3,18 +3,17 @@
  */
 package nta.engine.exec.eval;
 
-import java.util.Arrays;
-
-import com.google.gson.Gson;
-import com.google.gson.annotations.Expose;
-
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.engine.function.Function;
 import nta.engine.json.GsonCreator;
+import nta.engine.utils.TUtil;
 import nta.storage.Tuple;
+
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
@@ -31,7 +30,8 @@ public class FuncCallEval extends EvalNode {
 	/**
 	 * @param type
 	 */
-	public FuncCallEval(FunctionDesc desc, Function instance, EvalNode [] givenArgs) {
+	public FuncCallEval(FunctionDesc desc, Function instance, 
+	    EvalNode [] givenArgs) {
 		super(Type.FUNCTION);
 		this.desc = desc;
 		this.instance = instance;
@@ -89,12 +89,23 @@ public class FuncCallEval extends EvalNode {
 	  if (obj instanceof FuncCallEval) {
       FuncCallEval other = (FuncCallEval) obj;
 
-      if (this.type == other.type && this.desc.equals(other.desc) 
-          && Arrays.equals(givenArgs, other.givenArgs)) {
+      if (this.type == other.type
+          && TUtil.checkEquals(instance, other.instance)
+          && TUtil.checkEquals(desc, other.desc) 
+          && TUtil.checkEquals(givenArgs, other.givenArgs)) {
         return true;
       }
 	  }
 	  
 	  return false;
 	}
+	
+	@Override
+  public Object clone() throws CloneNotSupportedException {
+    FuncCallEval eval = (FuncCallEval) super.clone();
+    eval.desc = (FunctionDesc) desc.clone();
+    eval.instance = instance;
+    eval.givenArgs = givenArgs.clone();
+    return eval;
+  }
 }

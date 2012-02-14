@@ -182,6 +182,7 @@ public class Schema implements ProtoObject<SchemaProto> {
 	}
 	
 	public String toString() {
+	  initColumns();
 	  StringBuilder sb = new StringBuilder();
 	  sb.append("{");
 	  for(Column col : fields) {
@@ -190,6 +191,11 @@ public class Schema implements ProtoObject<SchemaProto> {
 	  sb.append("}");
 	  
 	  return sb.toString();
+	}
+	
+	@Override
+  public Object clone() {
+	  return new Schema(getProto());
 	}
 	
 	public String toJson() {

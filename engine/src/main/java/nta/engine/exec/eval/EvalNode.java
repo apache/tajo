@@ -14,7 +14,7 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  *
  */
-public abstract class EvalNode {
+public abstract class EvalNode implements Cloneable {
 	@Expose
 	protected Type type;
 	@Expose
@@ -84,5 +84,15 @@ public abstract class EvalNode {
 	  GTH,
 	  GEQ,
 	  JOIN;
+	}
+	
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+	  EvalNode node = (EvalNode) super.clone();
+	  node.type = type;
+	  node.leftExpr = leftExpr != null ? (EvalNode) leftExpr.clone() : null;
+	  node.rightExpr = rightExpr != null ? (EvalNode) rightExpr.clone() : null;
+	  
+	  return node;
 	}
 }

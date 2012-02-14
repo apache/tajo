@@ -1,14 +1,12 @@
 package nta.catalog;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.Expose;
-
 import nta.catalog.proto.CatalogProtos.ColumnProto;
 import nta.catalog.proto.CatalogProtos.ColumnProtoOrBuilder;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.common.ProtoObject;
 import nta.engine.json.GsonCreator;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
@@ -105,6 +103,11 @@ public class Column implements ProtoObject<ColumnProto> {
 	
   public int hashCode() {
     return getName().hashCode() ^ (getDataType().hashCode() * 17);
+  }
+  
+  @Override
+  public Object clone() {
+    return new Column(getProto());
   }
 
 	@Override

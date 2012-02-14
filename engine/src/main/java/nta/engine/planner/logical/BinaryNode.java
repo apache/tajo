@@ -9,7 +9,7 @@ import com.google.gson.annotations.Expose;
  * @author Hyunsik Choi
  *
  */
-public abstract class BinaryNode extends LogicalNode {
+public abstract class BinaryNode extends LogicalNode implements Cloneable {
 	@Expose
 	LogicalNode outer = null;
 	@Expose
@@ -40,5 +40,24 @@ public abstract class BinaryNode extends LogicalNode {
 
 	public void setInner(LogicalNode op) {
 		this.inner = op;
+	}
+		 
+/*  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof BinaryNode) {
+      BinaryNode other = (BinaryNode) obj;
+      return super.equals(other);
+    } else {
+      return false;
+    }
+  } */ 
+	
+	@Override
+  public Object clone() throws CloneNotSupportedException {
+	  BinaryNode binNode = (BinaryNode) super.clone();
+	  binNode.outer = (LogicalNode) outer.clone();
+	  binNode.inner = (LogicalNode) inner.clone();
+	  
+	  return binNode;
 	}
 }

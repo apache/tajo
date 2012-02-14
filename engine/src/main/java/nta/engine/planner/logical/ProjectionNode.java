@@ -1,5 +1,7 @@
 package nta.engine.planner.logical;
 
+import java.util.Arrays;
+
 import com.google.gson.annotations.Expose;
 
 import nta.engine.json.GsonCreator;
@@ -47,6 +49,29 @@ public class ProjectionNode extends UnaryNode {
 	  sb.append("}");
 	  return sb.toString()+"\n"
 	      + getSubNode().toString();
+	}
+	
+	@Override
+  public boolean equals(Object obj) {
+	  if (obj instanceof ProjectionNode) {
+	    ProjectionNode other = (ProjectionNode) obj;
+	    
+	    boolean b1 = super.equals(other);
+	    boolean b2 = Arrays.equals(targets, other.targets);
+	    boolean b3 = subExpr.equals(other.subExpr);
+	    
+	    return b1 && b2 && b3;
+	  } else {
+	    return false;
+	  }
+	}
+	
+	@Override
+  public Object clone() throws CloneNotSupportedException {
+	  ProjectionNode projNode = (ProjectionNode) super.clone();
+	  projNode.targets = targets.clone();
+	  
+	  return projNode;
 	}
 	
 	public String toJSON() {

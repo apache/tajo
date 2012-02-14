@@ -15,7 +15,7 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  * 
  */
-public class FieldEval extends EvalNode {
+public class FieldEval extends EvalNode implements Cloneable {
 	@Expose
 	DataType dataType;
 	@Expose
@@ -40,19 +40,7 @@ public class FieldEval extends EvalNode {
 	  if (fieldId == -1) {
 	    fieldId = schema.getColumnId(columnName);
 	  }
-	  
-/*		switch(dataType) {
-		case BOOLEAN: return tuple.getBoolean(fieldId);
-		case BYTE: return tuple.getByte(fieldId);
-		case INT: return tuple.getInt(fieldId);
-		case LONG: return tuple.getLong(fieldId);
-		case FLOAT: return tuple.getFloat(fieldId);
-		case DOUBLE: return tuple.getDouble(fieldId);
-		case STRING: return tuple.getString(fieldId);
-		case BYTES: return tuple.getBytes(fieldId);
-		case IPv4: return tuple.getIPv4(fieldId);
-		default: throw new InvalidEvalException();
-		}*/
+
 	  return tuple.get(fieldId);
 	}
 	
@@ -78,11 +66,6 @@ public class FieldEval extends EvalNode {
 	  return columnName + " " + dataType;
 	}
 	
-	public String toJSON() {
-	  Gson gson = GsonCreator.getInstance();
-    return gson.toJson(this, EvalNode.class);
-	}
-	
   public boolean equals(Object obj) {
     if (obj instanceof FieldEval) {
       FieldEval other = (FieldEval) obj;
@@ -93,5 +76,20 @@ public class FieldEval extends EvalNode {
       }
     }
     return false;
+  }
+  
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    FieldEval eval = (FieldEval) super.clone();
+    eval.dataType = dataType;
+    eval.columnName = columnName;
+    eval.fieldId = fieldId;
+    
+    return eval;
+  }
+  
+  public String toJSON() {
+    Gson gson = GsonCreator.getInstance();
+    return gson.toJson(this, EvalNode.class);
   }
 }

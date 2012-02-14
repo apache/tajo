@@ -17,7 +17,7 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  *
  */
-public class ConstEval extends EvalNode implements Comparable<ConstEval> {
+public class ConstEval extends EvalNode implements Comparable<ConstEval>, Cloneable {
 	@Expose
 	Datum datum = null;
 	/**
@@ -86,6 +86,14 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval> {
       }
     }
     return false;
+  }
+  
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    ConstEval eval = (ConstEval) super.clone();
+    eval.datum = datum;
+    
+    return eval;
   }
 
   @Override

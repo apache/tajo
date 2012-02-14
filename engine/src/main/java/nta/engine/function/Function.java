@@ -8,7 +8,7 @@ import nta.engine.exec.eval.EvalNode;
 import com.google.gson.annotations.Expose;
 
 
-public abstract class Function {
+public abstract class Function implements Cloneable {
 	@Expose
 	protected String signature;
 	@Expose

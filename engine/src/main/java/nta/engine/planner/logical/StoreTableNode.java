@@ -1,17 +1,18 @@
 package nta.engine.planner.logical;
 
-import com.google.gson.annotations.Expose;
-
 import nta.catalog.Column;
 import nta.engine.json.GsonCreator;
+import nta.engine.utils.TUtil;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
  * 
  */
-public class StoreTableNode extends UnaryNode {
+public class StoreTableNode extends UnaryNode implements Cloneable {
   @Expose
-  private final String tableName;
+  private String tableName;
   
   @Expose
   private int numPartitions;
@@ -42,6 +43,29 @@ public class StoreTableNode extends UnaryNode {
   public final void setPartitions(Column [] keys, int numPartitions) {
     this.partitionKeys = keys;
     this.numPartitions = numPartitions;
+  }
+  
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof StoreTableNode) {
+      StoreTableNode other = (StoreTableNode) obj;
+      return super.equals(other)
+          && this.tableName.equals(other.tableName)
+          && this.numPartitions == other.numPartitions
+          && TUtil.checkEquals(partitionKeys, other.partitionKeys)
+          && subExpr.equals(other.subExpr);
+    } else {
+      return false;
+    }
+  }
+  
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    StoreTableNode store = (StoreTableNode) super.clone();
+    store.tableName = tableName;
+    store.numPartitions = numPartitions;
+    store.partitionKeys = partitionKeys != null ? partitionKeys.clone() : null;
+    return store;
   }
   
   public String toString() {

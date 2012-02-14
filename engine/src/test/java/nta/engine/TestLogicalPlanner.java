@@ -23,7 +23,6 @@ import nta.engine.plan.logical.SelectionOp;
 import nta.engine.query.LogicalPlanner;
 import nta.storage.CSVFile2;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

@@ -1,9 +1,12 @@
 package nta.engine.planner.logical;
 
+import java.util.Arrays;
+
 import nta.catalog.Column;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryBlock.Target;
+import nta.engine.utils.TUtil;
 
 import com.google.gson.annotations.Expose;
 
@@ -12,7 +15,7 @@ import com.google.gson.annotations.Expose;
  * @author Hyunsik Choi
  *
  */
-public class GroupbyNode extends UnaryNode {
+public class GroupbyNode extends UnaryNode implements Cloneable {
 	@Expose
 	private Column [] columns;
 	@Expose
@@ -90,6 +93,30 @@ public class GroupbyNode extends UnaryNode {
     
     return sb.toString() + "\n"
         + getSubNode().toString();
+  }
+  
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof GroupbyNode) {
+      GroupbyNode other = (GroupbyNode) obj;
+      return super.equals(other) 
+          && Arrays.equals(columns, other.columns)
+          && TUtil.checkEquals(havingCondition, other.havingCondition)
+          && TUtil.checkEquals(targets, other.targets)
+          && getSubNode().equals(other.getSubNode());
+    } else {
+      return false;  
+    }
+  }
+  
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    GroupbyNode grp = (GroupbyNode) super.clone();
+    grp.columns = columns.clone();
+    grp.havingCondition = (EvalNode) (havingCondition != null ? havingCondition.clone() : null);
+    grp.targets = targets != null ? targets.clone() : null;
+    
+    return grp;
   }
   
   public String toJSON() {

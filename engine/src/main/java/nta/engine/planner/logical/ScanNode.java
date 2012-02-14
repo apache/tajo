@@ -9,6 +9,7 @@ import com.google.gson.annotations.Expose;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryBlock.FromTable;
+import nta.engine.utils.TUtil;
 
 /**
  * @author Hyunsik Choi
@@ -93,10 +94,34 @@ public class ScanNode extends LogicalNode {
 	  return GsonCreator.getInstance().toJson(this, LogicalNode.class);
 	}
 	
-	public Object clone() {
-	  ScanNode scanNode = new ScanNode(this.table);
-	  if(hasQual()) {
-	    scanNode.qual = this.qual;
+	@Override
+	public boolean equals(Object obj) {
+	  if (obj instanceof ScanNode) {
+	    ScanNode other = (ScanNode) obj;
+	    
+	    boolean eq = super.equals(other); 
+	    eq = eq && TUtil.checkEquals(this.table, other.table);
+	    eq = eq && TUtil.checkEquals(this.qual, other.qual);
+	    eq = eq && TUtil.checkEquals(this.targetList, other.targetList);
+	    
+	    return eq;
+	  }	  
+	  
+	  return false;
+	}	
+	
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+	  ScanNode scanNode = (ScanNode) super.clone();
+	  
+	  scanNode.table = (FromTable) this.table.clone();
+	  
+	  if (hasQual()) {
+	    scanNode.qual = (EvalNode) this.qual.clone();
+	  }
+	  
+	  if (hasTargetList()) {
+	    scanNode.targetList = (Schema) targetList.clone();
 	  }
 	  
 	  return scanNode;

@@ -17,7 +17,7 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  *
  */
-public class BinaryEval extends EvalNode {
+public class BinaryEval extends EvalNode implements Cloneable {
 	@Expose
 	DataType returnType;
 
@@ -166,5 +166,13 @@ public class BinaryEval extends EvalNode {
       }
     }
     return false;
+  }
+  
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    BinaryEval eval = (BinaryEval) super.clone();
+    eval.returnType = returnType;
+    
+    return eval;
   }
 }

@@ -148,14 +148,17 @@ public class TestEvalTree {
     block = analyzer.parse(ctx, QUERIES[1]);
     expr = block.getWhereCondition();
     assertEquals(15000, expr.eval(peopleSchema, tuple).asInt());
+    assertCloneEqual(expr);
 
     block = analyzer.parse(ctx, QUERIES[2]);
     expr = block.getWhereCondition();
     assertEquals(15050, expr.eval(peopleSchema, tuple).asInt());
+    assertCloneEqual(expr);
     
     block = analyzer.parse(ctx, QUERIES[2]);
     expr = block.getWhereCondition();
     assertEquals(15050, expr.eval(peopleSchema, tuple).asInt());
+    assertCloneEqual(expr);
     
     // Aggregation function test
     block = analyzer.parse(ctx, QUERIES[4]);
@@ -184,15 +187,18 @@ public class TestEvalTree {
   
   
   @Test
-  public void testTupleEval() {
+  public void testTupleEval() throws CloneNotSupportedException {
     ConstEval e1 = new ConstEval(DatumFactory.createInt(1));
+    assertCloneEqual(e1);
     FieldEval e2 = new FieldEval("table1.score", DataType.INT); // it indicates
+    assertCloneEqual(e2);
 
     Schema schema1 = new Schema();
     schema1.addColumn("table1.id", DataType.INT);
     schema1.addColumn("table1.score", DataType.INT);
     
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
+    assertCloneEqual(expr);
     VTuple tuple = new VTuple(2);
     tuple.put(0, DatumFactory.createInt(1)); // put 0th field
     tuple.put(1, DatumFactory.createInt(99)); // put 0th field
@@ -330,7 +336,7 @@ public class TestEvalTree {
   }
 
   @Test
-  public final void testArithmaticsOperator() {
+  public final void testArithmaticsOperator() throws CloneNotSupportedException {
     ConstEval e1 = null;
     ConstEval e2 = null;
 
@@ -339,24 +345,28 @@ public class TestEvalTree {
     e2 = new ConstEval(DatumFactory.createInt(34));
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
     assertEquals(expr.eval(null, null).asInt(), 43);
-
+    assertCloneEqual(expr);
+    
     // MINUS
     e1 = new ConstEval(DatumFactory.createInt(5));
     e2 = new ConstEval(DatumFactory.createInt(2));
     expr = new BinaryEval(Type.MINUS, e1, e2);
     assertEquals(expr.eval(null, null).asInt(), 3);
-
+    assertCloneEqual(expr);
+    
     // MULTIPLY
     e1 = new ConstEval(DatumFactory.createInt(5));
     e2 = new ConstEval(DatumFactory.createInt(2));
     expr = new BinaryEval(Type.MULTIPLY, e1, e2);
     assertEquals(expr.eval(null, null).asInt(), 10);
-
+    assertCloneEqual(expr);
+    
     // DIVIDE
     e1 = new ConstEval(DatumFactory.createInt(10));
     e2 = new ConstEval(DatumFactory.createInt(5));
     expr = new BinaryEval(Type.DIVIDE, e1, e2);
     assertEquals(expr.eval(null, null).asInt(), 2);
+    assertCloneEqual(expr);
   }
 
   @Test
@@ -381,7 +391,7 @@ public class TestEvalTree {
   }
   
   @Test
-  public final void testEquals() {
+  public final void testEquals() throws CloneNotSupportedException {
     ConstEval e1 = null;
     ConstEval e2 = null;
 
@@ -402,33 +412,40 @@ public class TestEvalTree {
     ConstEval e4 = new ConstEval(DatumFactory.createInt(9));
     ConstEval e5 = new ConstEval(DatumFactory.createInt(34));
     BinaryEval compExpr1 = new BinaryEval(Type.LTH, e4, e5);
+    assertCloneEqual(compExpr1);
     
     ConstEval e6 = new ConstEval(DatumFactory.createInt(9));
     ConstEval e7 = new ConstEval(DatumFactory.createInt(34));
     BinaryEval compExpr2 = new BinaryEval(Type.LTH, e6, e7);
+    assertCloneEqual(compExpr2);
     
     assertTrue(compExpr1.equals(compExpr2));
   }
   
   @Test
-  public final void testJson() {
+  public final void testJson() throws CloneNotSupportedException {
     ConstEval e1 = null;
     ConstEval e2 = null;
 
     // 29 > (34 + 5) + (5 + 34)
     e1 = new ConstEval(DatumFactory.createInt(34));
     e2 = new ConstEval(DatumFactory.createInt(5));
+    assertCloneEqual(e1); 
     
     BinaryEval plus1 = new BinaryEval(Type.PLUS, e1, e2);
+    assertCloneEqual(plus1);
     BinaryEval plus2 = new BinaryEval(Type.PLUS, e2, e1);
+    assertCloneEqual(plus2);
     BinaryEval plus3 = new BinaryEval(Type.PLUS, plus2, plus1);
+    assertCloneEqual(plus3);
     
     ConstEval e3 = new ConstEval(DatumFactory.createInt(29));
     BinaryEval gth = new BinaryEval(Type.GTH, e3, plus3);
+    assertCloneEqual(gth);
     
     String json = gth.toJSON();
-    System.out.println(json);
     EvalNode eval = GsonCreator.getInstance().fromJson(json, EvalNode.class);
+    assertCloneEqual(eval);
     
     assertEquals(gth.getType(), eval.getType());
     assertEquals(e3.getType(), eval.getLeftExpr().getType());
@@ -439,5 +456,10 @@ public class TestEvalTree {
     assertEquals(plus2.getRightExpr(), eval.getRightExpr().getLeftExpr().getRightExpr());
     assertEquals(plus1.getLeftExpr(), eval.getRightExpr().getRightExpr().getLeftExpr());
     assertEquals(plus1.getRightExpr(), eval.getRightExpr().getRightExpr().getRightExpr());
+  }
+  
+  private void assertCloneEqual(EvalNode eval) throws CloneNotSupportedException {
+    EvalNode copy = (EvalNode) eval.clone();
+    assertEquals(eval, copy);
   }
 }

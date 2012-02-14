@@ -29,9 +29,7 @@ import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.logical.StoreTableNode;
 
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -107,11 +105,12 @@ public class TestLogicalPlanner {
   };
 
   @Test
-  public final void testSingleRelation() {
+  public final void testSingleRelation() throws CloneNotSupportedException {
     QueryContext ctx = factory.create();
     QueryBlock block = analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
     assertEquals(ExprType.ROOT, plan.getType());
+    TestLogicalNode.testCloneLogicalNode(plan);
     LogicalRootNode root = (LogicalRootNode) plan;
 
     assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
@@ -126,7 +125,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testMultiRelations() {
+  public final void testMultiRelations() throws CloneNotSupportedException {
     // two relations
     QueryContext ctx = factory.create();
     QueryBlock block = analyzer.parse(ctx, QUERIES[1]);
@@ -134,6 +133,7 @@ public class TestLogicalPlanner {
 
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
+    TestLogicalNode.testCloneLogicalNode(root);
 
     assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
     ProjectionNode projNode = (ProjectionNode) root.getSubNode();
@@ -152,6 +152,7 @@ public class TestLogicalPlanner {
     ctx = factory.create();
     block = analyzer.parse(ctx, QUERIES[2]);
     plan = LogicalPlanner.createPlan(ctx, block);
+    TestLogicalNode.testCloneLogicalNode(plan);
 
     assertEquals(ExprType.ROOT, plan.getType());
     root = (LogicalRootNode) plan;
@@ -178,7 +179,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testGroupby() {
+  public final void testGroupby() throws CloneNotSupportedException {
     // without 'having clause'
     QueryContext ctx = factory.create();
     QueryBlock block = analyzer.parse(ctx, QUERIES[7]);
@@ -192,6 +193,7 @@ public class TestLogicalPlanner {
     ctx = factory.create();
     block = analyzer.parse(ctx, QUERIES[3]);
     plan = LogicalPlanner.createPlan(ctx, block);
+    TestLogicalNode.testCloneLogicalNode(plan);
 
     assertEquals(ExprType.ROOT, plan.getType());
     root = (LogicalRootNode) plan;
@@ -231,10 +233,11 @@ public class TestLogicalPlanner {
   }
   
   @Test
-  public final void testStoreTable() {
+  public final void testStoreTable() throws CloneNotSupportedException {
     QueryContext ctx = factory.create();
     QueryBlock block = analyzer.parse(ctx, QUERIES[8]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    TestLogicalNode.testCloneLogicalNode(plan);
     
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -242,17 +245,15 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.STORE, root.getSubNode().getType());
     StoreTableNode storeNode = (StoreTableNode) root.getSubNode();
     testQuery7(storeNode.getSubNode());
-//    System.out.println(plan);
-//    System.out.println("-------------------");
     LogicalOptimizer.optimize(ctx, plan);
-//    System.out.println(plan);
   }
 
   @Test
-  public final void testOrderBy() {
+  public final void testOrderBy() throws CloneNotSupportedException {
     QueryContext ctx = factory.create();
     QueryBlock block = analyzer.parse(ctx, QUERIES[4]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    TestLogicalNode.testCloneLogicalNode(plan);
 
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -275,10 +276,11 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testSPJPush() {
+  public final void testSPJPush() throws CloneNotSupportedException {
     QueryContext ctx = factory.create();
     QueryBlock block = analyzer.parse(ctx, QUERIES[5]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    TestLogicalNode.testCloneLogicalNode(plan);
     
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -298,14 +300,11 @@ public class TestLogicalPlanner {
   }
   
   @Test
-  public final void testSPJ() {
+  public final void testSPJ() throws CloneNotSupportedException {
     QueryContext ctx = factory.create();
     QueryBlock block = analyzer.parse(ctx, QUERIES[6]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
-/*    System.out.println(plan);
-    System.out.println("-------------------");
-    LogicalOptimizer.optimize(ctx, plan);
-    System.out.println(plan);*/
+    TestLogicalNode.testCloneLogicalNode(plan);
   }
   
   @Test

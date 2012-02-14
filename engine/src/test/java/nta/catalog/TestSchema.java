@@ -80,7 +80,7 @@ public class TestSchema {
 	}
 	
 	@Test
-	public final void testClone() {
+	public final void testClone() throws CloneNotSupportedException {
 	  Schema schema = new Schema();
 	  schema.addColumn("abc", DataType.DOUBLE);
 	  schema.addColumn("bbc", DataType.DOUBLE);
@@ -88,7 +88,12 @@ public class TestSchema {
 	  Schema schema2 = new Schema(schema.getProto());
 	  assertEquals(schema.getProto(), schema2.getProto());
 	  assertEquals(schema.getColumn(0), schema2.getColumn(0));
-	  assertEquals(schema.getColumnNum(), schema2.getColumnNum());	  
+	  assertEquals(schema.getColumnNum(), schema2.getColumnNum());
+	  
+	  Schema schema3 = (Schema) schema.clone();
+	  assertEquals(schema.getProto(), schema3.getProto());
+    assertEquals(schema.getColumn(0), schema3.getColumn(0));
+    assertEquals(schema.getColumnNum(), schema3.getColumnNum());
 	}
 	
 	@Test(expected = AlreadyExistsFieldException.class)

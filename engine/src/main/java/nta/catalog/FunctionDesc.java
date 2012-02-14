@@ -6,9 +6,6 @@ package nta.catalog;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
-import com.google.gson.Gson;
-import com.google.gson.annotations.Expose;
-
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
 import nta.catalog.proto.CatalogProtos.FunctionDescProtoOrBuilder;
@@ -17,6 +14,9 @@ import nta.common.ProtoObject;
 import nta.engine.exception.InternalException;
 import nta.engine.function.Function;
 import nta.engine.json.GsonCreator;
+
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
@@ -154,16 +154,14 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
   public boolean equals(Object obj) {
     if (obj instanceof FunctionDesc) {
       FunctionDesc other = (FunctionDesc) obj;
-      /*if (this.funcClass.getClass().equals(other.funcClass) &&
-          this.signature.equals(other.signature) && 
-          Arrays.equals(this.parameterTypes, other.parameterTypes) &&
-          this.returnType.equals(other.returnType) &&
-          this.funcType.equals(other.funcType)) {
+      if(this.getProto().equals(other.getProto()))
         return true;
-      }*/
-      if(this.getProto().equals(other.getProto()));
     }
     return false;
+  }
+  
+  public Object clone() {
+    return new FunctionDesc(getProto());
   }
 
   @Override
@@ -208,6 +206,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
     viaProto = true;
   }
   
+  @SuppressWarnings("unchecked")
   private void mergeProtoToLocal() throws InternalException {
 	  FunctionDescProtoOrBuilder p = viaProto ? proto : builder;
 	  if (signature == null && p.hasSignature()) {
@@ -215,7 +214,8 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
 	  }
 	  if (funcClass == null && p.hasClassName()) {
 		  try {
-			  this.funcClass = (Class<? extends Function>)Class.forName(p.getClassName());
+			  this.funcClass = 
+			      (Class<? extends Function>)Class.forName(p.getClassName());
 		  } catch (ClassNotFoundException e) {
 			  throw new InternalException("The function class ("+p.getClassName()+") cannot be loaded");
 		  }
@@ -236,7 +236,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
   
   @Override
   public String toString() {
-	  return null;
+	  return getProto().toString();
   }
 
   @Override

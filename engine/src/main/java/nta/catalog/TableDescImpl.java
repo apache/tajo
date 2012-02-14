@@ -6,13 +6,10 @@ import nta.catalog.proto.CatalogProtos.TableDescProtoOrBuilder;
 import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.common.ProtoObject;
 import nta.engine.json.GsonCreator;
-import nta.engine.json.PathDeserializer;
-import nta.engine.json.PathSerializer;
 
 import org.apache.hadoop.fs.Path;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 
 /**

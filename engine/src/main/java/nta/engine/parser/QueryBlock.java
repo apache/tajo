@@ -1,15 +1,15 @@
 package nta.engine.parser;
 
-import com.google.gson.Gson;
-import com.google.gson.annotations.Expose;
-
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.exec.eval.EvalNode;
-import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.json.GsonCreator;
+import nta.engine.utils.TUtil;
+
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
 
 /**
  * This class contains a set of meta data about a query statement.
@@ -150,9 +150,9 @@ public class QueryBlock {
     return this.whereCond;
   }
   
-  public static class Target {
+  public static class Target implements Cloneable {
 	  @Expose
-    private final EvalNode eval;
+    private EvalNode eval;
 	  @Expose
     private Column column;
 	  @Expose
@@ -196,34 +196,47 @@ public class QueryBlock {
       return sb.toString();
     }
     
-    public String toJSON() {
-      return GsonCreator.getInstance().toJson(this, Target.class);
+    public boolean equals(Object obj) {
+      if(obj instanceof Target) {
+        Target other = (Target) obj;
+        
+        boolean b1 = eval.equals(other.eval);
+        boolean b2 = column.equals(other.column);
+        boolean b3 = TUtil.checkEquals(alias, other.alias);
+        
+        return b1 && b2 && b3;
+      } else {
+        return false;
+      }
     }
     
     public int hashCode() {
       return this.eval.getName().hashCode();
     }
     
-    public boolean equals(Object obj) {
-      if(obj instanceof Target) {
-        return this.eval.getName().equals(((Target)obj).eval.getName());
-      } else {
-        return false;
-      }
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      Target target = (Target) super.clone();
+      target.eval = (EvalNode) eval.clone();
+      target.column = (Column) column.clone();
+      target.alias = alias != null ? alias : null;
+      
+      return target;
+    }
+    
+    public String toJSON() {
+      return GsonCreator.getInstance().toJson(this, Target.class);
     }
   }
   
-  public static class FromTable {
+  public static class FromTable implements Cloneable {
     @Expose
-	private final TableDesc desc;
+    private TableDesc desc;
     @Expose
     private String alias = null;
-    @Expose
-    private boolean isFragment;
 
     public FromTable(final TableDesc desc) {
       this.desc = desc;
-      isFragment = desc.getClass().getName().equals(Fragment.class.getName());
     }
 
     public FromTable(final TableDesc desc, final String alias) {
@@ -262,6 +275,25 @@ public class QueryBlock {
         return desc.getId();
     }
     
+    public boolean equals(Object obj) {
+      if (obj instanceof FromTable) {
+        FromTable other = (FromTable) obj;
+        return this.desc.equals(other.desc) 
+            && TUtil.checkEquals(this.alias, other.alias);
+      } else {
+        return false;
+      }
+    }
+    
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      FromTable table = (FromTable) super.clone();
+      table.desc = (TableDesc) desc.clone();
+      table.alias = alias;
+      
+      return table;
+    }
+    
     public String toJSON() {
       desc.initFromProto();
       Gson gson = GsonCreator.getInstance();
@@ -269,8 +301,8 @@ public class QueryBlock {
     }
   }
   
-  public static class SortKey {
-    private final Column sortKey;
+  public static class SortKey implements Cloneable {
+    private Column sortKey;
     private boolean ascending = true;
     
     public SortKey(final Column sortKey) {
@@ -298,6 +330,15 @@ public class QueryBlock {
     
     public final Column getSortKey() {
       return this.sortKey;
+    }
+    
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      SortKey key = (SortKey) super.clone();
+      key.sortKey = (Column) sortKey.clone();
+      key.ascending = ascending;
+      
+      return key;
     }
     
     public String toString() {

@@ -10,7 +10,7 @@ import com.google.gson.annotations.Expose;
  * @author Hyunsik Choi
  *
  */
-public abstract class LogicalNode {
+public abstract class LogicalNode implements Cloneable {
 	@Expose
 	private ExprType type;
 	@Expose
@@ -59,6 +59,30 @@ public abstract class LogicalNode {
 	
 	public Schema getOutputSchema() {
 	  return this.outputSchema;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+	  if (obj instanceof LogicalNode) {
+	    LogicalNode other = (LogicalNode) obj;
+	    
+	    return this.type == other.type 
+	        && this.inputSchema.equals(other.inputSchema) 
+	        && this.outputSchema.equals(other.outputSchema)
+	        && this.cost == other.cost;
+	  } else {
+	    return false;
+	  }
+	}
+	
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+	  LogicalNode node = (LogicalNode)super.clone();
+	  node.type = type;
+	  node.inputSchema = (Schema) inputSchema.clone();
+	  node.outputSchema = (Schema) outputSchema.clone();
+	  
+	  return node;
 	}
 	
 	public abstract String toJSON();
