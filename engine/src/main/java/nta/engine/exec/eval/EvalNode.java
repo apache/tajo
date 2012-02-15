@@ -67,6 +67,12 @@ public abstract class EvalNode implements Cloneable {
 	
 	public abstract Datum eval(Schema schema, Tuple tuple, Datum...args);
 	
+	public void accept(EvalNodeVisitor visitor) {
+	  leftExpr.accept(visitor);
+	  rightExpr.accept(visitor);	  	  
+	  visitor.visit(this);
+	}
+	
 	public static enum Type {
 	  FIELD,
 	  FUNCTION,

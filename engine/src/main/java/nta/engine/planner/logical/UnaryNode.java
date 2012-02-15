@@ -40,4 +40,9 @@ public abstract class UnaryNode extends LogicalNode implements Cloneable {
 	  
 	  return unary;
 	}
+	
+	public void accept(LogicalNodeVisitor visitor) {
+	  subExpr.accept(visitor);	  
+	  visitor.visit(this);
+	}
 }

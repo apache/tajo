@@ -83,11 +83,11 @@ public class TestLeafServer {
 
     FileStatus status = sm.listTableFiles("table1")[0];
     Fragment[] tablets1 = new Fragment[1];
-    tablets1[0] = new Fragment("table1_1", status.getPath(), meta, 0, 70000);
+    tablets1[0] = new Fragment("table1_1", status.getPath(), meta, 0, 40000);
     LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(0);
 
     Fragment[] tablets2 = new Fragment[1];
-    tablets2[0] = new Fragment("table1_2", status.getPath(), meta, 70000, 1000);
+    tablets2[0] = new Fragment("table1_2", status.getPath(), meta, 40000, status.getLen() - 40000);
     LeafServer leaf2 = util.getMiniNtaEngineCluster().getLeafServer(1);
 
     SubQueryRequest req1 = new SubQueryRequestImpl(
@@ -95,7 +95,7 @@ public class TestLeafServer {
             Arrays.asList(tablets1)), new Path(TEST_PATH, "out").toUri(),
         "select name, id from table1_1 where id > 5100");
     assertNotNull(leaf1.requestSubQuery(req1.getProto()));
-
+    Thread.sleep(1000);
     SubQueryRequest req2 = new SubQueryRequestImpl(
         QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
             Arrays.asList(tablets2)), new Path(TEST_PATH, "out").toUri(),
@@ -115,6 +115,9 @@ public class TestLeafServer {
       Log.info("Waiting for receiving the report messages");
       Thread.sleep(1000);
       list = master.getProgressQueries();
+      for (InProgressStatus ips : list) {
+        Log.info(ips.toString());
+      }
       reported.clear();
       for (InProgressStatus ips : list) {
         reported.add(new QueryUnitId(ips.getId()));
@@ -125,8 +128,6 @@ public class TestLeafServer {
       i++;
     }
     assertTrue(reported.containsAll(submitted));
-
-    //leaf1.shutdown("Normally Shutdown");
   }
 
   @Test

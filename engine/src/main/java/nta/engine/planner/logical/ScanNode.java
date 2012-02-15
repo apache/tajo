@@ -126,4 +126,8 @@ public class ScanNode extends LogicalNode {
 	  
 	  return scanNode;
 	}
+	
+	public void accept(LogicalNodeVisitor visitor) {        
+    visitor.visit(this);
+  }
 }

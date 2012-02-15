@@ -1,6 +1,9 @@
 package nta.engine.planner;
 
 import static org.junit.Assert.assertEquals;
+
+import java.util.Stack;
+
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
@@ -21,6 +24,7 @@ import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.LogicalNodeVisitor;
 import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
@@ -91,7 +95,7 @@ public class TestLogicalPlanner {
     util.shutdownMiniZKCluster();
   }
 
-  private String[] QUERIES = {
+  static String[] QUERIES = {
       "select name, empId, deptName from employee where empId > 500", // 0
       "select name, empId, e.deptName, manager from employee as e, dept as dp", // 1
       "select name, empId, e.deptName, manager, score from employee as e, dept, score", // 2
@@ -217,7 +221,7 @@ public class TestLogicalPlanner {
     System.out.println(plan);
   }
   
-  private static void testQuery7(LogicalNode plan) {
+  static void testQuery7(LogicalNode plan) {
     assertEquals(ExprType.GROUP_BY, plan.getType());
     GroupbyNode groupByNode = (GroupbyNode) plan;
 
@@ -324,5 +328,30 @@ public class TestLogicalPlanner {
 	  assertEquals(ExprType.GROUP_BY, groupby.getType());
 	  LogicalNode scan = ((GroupbyNode)groupby).getSubNode();
 	  assertEquals(ExprType.SCAN, scan.getType());
+  }
+  
+  @Test
+  public final void testVisitor() {
+    // two relations
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[1]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    
+    TestVisitor vis = new TestVisitor();
+    plan.accept(vis);
+    
+    assertEquals(ExprType.ROOT, vis.stack.pop().getType());
+    assertEquals(ExprType.PROJECTION, vis.stack.pop().getType());
+    assertEquals(ExprType.JOIN, vis.stack.pop().getType());
+    assertEquals(ExprType.SCAN, vis.stack.pop().getType());
+    assertEquals(ExprType.SCAN, vis.stack.pop().getType());
+  }
+  
+  private static class TestVisitor implements LogicalNodeVisitor {
+    Stack<LogicalNode> stack = new Stack<LogicalNode>();
+    @Override
+    public void visit(LogicalNode node) {
+      stack.push(node);
+    }
   }
 }

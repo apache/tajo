@@ -11,9 +11,7 @@ import nta.engine.json.GsonCreator;
 import nta.storage.Tuple;
 
 /**
- * 
- * @author Hyunsik Choi
- * 
+ * @author Hyunsik Choi 
  */
 public class FieldEval extends EvalNode implements Cloneable {
 	@Expose
@@ -56,6 +54,10 @@ public class FieldEval extends EvalNode implements Cloneable {
 	public String getColumnName() {
 	  return columnName.split("\\.")[1];
 	}
+	
+	public void replaceColumnRef(String columnName) {
+	  this.columnName = columnName;
+	}
 
 	@Override
 	public String getName() {
@@ -91,5 +93,10 @@ public class FieldEval extends EvalNode implements Cloneable {
   public String toJSON() {
     Gson gson = GsonCreator.getInstance();
     return gson.toJson(this, EvalNode.class);
+  }
+  
+  @Override
+  public void accept(EvalNodeVisitor visitor) {
+    visitor.visit(this);
   }
 }

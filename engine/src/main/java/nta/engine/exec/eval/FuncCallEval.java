@@ -17,7 +17,6 @@ import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
- *
  */
 public class FuncCallEval extends EvalNode {
 	@Expose
@@ -89,12 +88,12 @@ public class FuncCallEval extends EvalNode {
 	  if (obj instanceof FuncCallEval) {
       FuncCallEval other = (FuncCallEval) obj;
 
-      if (this.type == other.type
-          && TUtil.checkEquals(instance, other.instance)
-          && TUtil.checkEquals(desc, other.desc) 
-          && TUtil.checkEquals(givenArgs, other.givenArgs)) {
-        return true;
-      }
+      boolean b1 = this.type == other.type;
+      boolean b2 = TUtil.checkEquals(instance, other.instance);
+      boolean b3 = TUtil.checkEquals(desc, other.desc);
+      boolean b4 = TUtil.checkEquals(givenArgs, other.givenArgs);
+      
+      return b1 && b2 && b3 && b4;
 	  }
 	  
 	  return false;
@@ -104,8 +103,19 @@ public class FuncCallEval extends EvalNode {
   public Object clone() throws CloneNotSupportedException {
     FuncCallEval eval = (FuncCallEval) super.clone();
     eval.desc = (FunctionDesc) desc.clone();
-    eval.instance = instance;
-    eval.givenArgs = givenArgs.clone();
+    eval.instance = (Function) instance.clone();
+    eval.givenArgs = new EvalNode[givenArgs.length];
+    for (int i = 0; i < givenArgs.length; i++) {
+      eval.givenArgs[i] = (EvalNode) givenArgs[i].clone();
+    }    
     return eval;
   }
+	
+	@Override
+	public void accept(EvalNodeVisitor visitor) {
+	  for (EvalNode eval : givenArgs) {
+	    eval.accept(visitor);
+	  }
+	  visitor.visit(this);
+	}
 }

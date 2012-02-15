@@ -112,10 +112,21 @@ public class GroupbyNode extends UnaryNode implements Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     GroupbyNode grp = (GroupbyNode) super.clone();
-    grp.columns = columns.clone();
-    grp.havingCondition = (EvalNode) (havingCondition != null ? havingCondition.clone() : null);
-    grp.targets = targets != null ? targets.clone() : null;
-    
+    if (columns != null) {
+      grp.columns = new Column[columns.length];
+      for (int i = 0; i < columns.length; i++) {
+        grp.columns[i] = (Column) columns[i].clone();
+      }
+    }
+    grp.havingCondition = (EvalNode) (havingCondition != null 
+        ? havingCondition.clone() : null);    
+    if (targets != null) {
+      grp.targets = new Target[targets.length];
+      for (int i = 0; i < targets.length; i++) {
+        grp.targets[i] = (Target) targets[i].clone();
+      }
+    }
+
     return grp;
   }
   

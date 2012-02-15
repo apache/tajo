@@ -92,7 +92,7 @@ public class TestEvalTree {
     }
   }
 
-  private String[] QUERIES = {
+  static String[] QUERIES = {
       "select name, score, age from people where score > 30", // 0
       "select name, score, age from people where score * age", // 1
       "select name, score, age from people where sum(score * age, 50)", // 2

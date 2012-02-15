@@ -160,10 +160,10 @@ public class BinaryEval extends EvalNode implements Cloneable {
     if (obj instanceof BinaryEval) {
       BinaryEval other = (BinaryEval) obj;
 
-      if (this.type == other.type && leftExpr.equals(other.leftExpr)
-          && rightExpr.equals(other.rightExpr)) {
-        return true;
-      }
+      boolean b1 = this.type == other.type;
+      boolean b2 = leftExpr.equals(other.leftExpr);
+      boolean b3 = rightExpr.equals(other.rightExpr);
+      return b1 && b2 && b3;      
     }
     return false;
   }

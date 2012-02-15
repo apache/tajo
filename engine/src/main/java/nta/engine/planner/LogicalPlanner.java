@@ -11,7 +11,6 @@ import nta.engine.Context;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
-import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
@@ -31,9 +30,6 @@ import nta.engine.query.exception.NotSupportQueryException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import com.google.gson.Gson;
-import com.google.gson.annotations.Expose;
 
 /**
  * This class creates a logical plan from a parse tree ({@link QueryBlock})

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +39,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
+import org.jboss.netty.util.internal.ConcurrentHashMap;
 
 import com.google.common.collect.MapMaker;
 
@@ -72,9 +74,8 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 
   private List<EngineService> services = new ArrayList<EngineService>();
   
-  private Map<QueryUnitId, InProgressStatus> inProgressQueries = new MapMaker()
-      .concurrencyLevel(4)
-      .makeMap();
+  private Map<QueryUnitId, InProgressStatus> inProgressQueries = 
+      new ConcurrentHashMap<QueryUnitId, QueryUnitProtos.InProgressStatus>();
   
   public NtaEngineMaster(final Configuration conf) throws Exception {
     this.conf = conf;

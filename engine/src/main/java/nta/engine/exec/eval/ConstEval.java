@@ -100,4 +100,9 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
   public int compareTo(ConstEval other) {    
     return datum.compareTo(other.datum);
   }
+  
+  @Override
+  public void accept(EvalNodeVisitor visitor) {
+    visitor.visit(this);
+  }
 }

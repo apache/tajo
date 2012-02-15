@@ -41,16 +41,6 @@ public abstract class BinaryNode extends LogicalNode implements Cloneable {
 	public void setInner(LogicalNode op) {
 		this.inner = op;
 	}
-		 
-/*  @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof BinaryNode) {
-      BinaryNode other = (BinaryNode) obj;
-      return super.equals(other);
-    } else {
-      return false;
-    }
-  } */ 
 	
 	@Override
   public Object clone() throws CloneNotSupportedException {
@@ -60,4 +50,10 @@ public abstract class BinaryNode extends LogicalNode implements Cloneable {
 	  
 	  return binNode;
 	}
+	
+	public void accept(LogicalNodeVisitor visitor) {
+    outer.accept(visitor);
+    inner.accept(visitor);
+    visitor.visit(this);
+  }
 }
