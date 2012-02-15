@@ -66,6 +66,7 @@ if [ $# = 0 ]; then
   echo "  catalog              run the Catalog server"
   echo "  leafserver           run the Leaf Server"
   echo "  cluster              Cluster Utility"
+  echo "  cli                  Run the tajo cli"
   echo "  jar <jar>            run a jar file"
   echo " or"
   echo "  CLASSNAME            run the class named CLASSNAME"
@@ -188,6 +189,9 @@ elif [ "$COMMAND" = "leafserver" ] ; then
   TAJO_OPTS="$TAJO_OPTS $TAJO_ZKSERVER_OPTS"
 elif [ "$COMMAND" = "cluster" ] ; then
   CLASS='nta.engine.cluster.ClusterUtil'
+  TAJO_OPTS="$TAJO_OPTS $TAJO_ZKSERVER_OPTS"
+elif [ "$COMMAND" = "cli" ] ; then
+  CLASS='tajo.cli.TajoCli'
   TAJO_OPTS="$TAJO_OPTS $TAJO_ZKSERVER_OPTS"
 else
   CLASS=$COMMAND
