@@ -27,15 +27,16 @@ public class ProtoParamRpcServer extends NettyServerBase {
   private final Class<?> clazz;
   private final ChannelPipelineFactory pipeline;
   private Map<String, Method> methods;
-  private Map<String, Builder> builders;
+  private Map<String, Method> builderMethods;
 
+  @Deprecated
   public ProtoParamRpcServer(Object proxy,
       InetSocketAddress bindAddress) {
     super(bindAddress);
     this.instance = proxy;
     this.clazz = instance.getClass();
     this.methods = new HashMap<String, Method>();
-    this.builders = new HashMap<String, Builder>();
+    this.builderMethods = new HashMap<String, Method>();
     this.pipeline =
         new ProtoPipelineFactory(new ServerHandler(),
             Invocation.getDefaultInstance());
@@ -48,8 +49,7 @@ public class ProtoParamRpcServer extends NettyServerBase {
         methods.put(methodName, m);
 
         Method mtd = params[0].getMethod("newBuilder", new Class[] {});
-        Builder builder = (Builder) mtd.invoke(null, new Object[] {});
-        builders.put(methodName, builder);
+        builderMethods.put(methodName, mtd);
       } catch (Exception e) {
         e.printStackTrace();
         continue;
@@ -63,7 +63,7 @@ public class ProtoParamRpcServer extends NettyServerBase {
     this.instance = proxy;
     this.clazz = instance.getClass();
     this.methods = new HashMap<String, Method>();
-    this.builders = new HashMap<String, Builder>();
+    this.builderMethods = new HashMap<String, Method>();
     this.pipeline =
         new ProtoPipelineFactory(new ServerHandler(),
             Invocation.getDefaultInstance());
@@ -76,8 +76,7 @@ public class ProtoParamRpcServer extends NettyServerBase {
         methods.put(methodName, this.clazz.getMethod(methodName, params));
 
         Method mtd = params[0].getMethod("newBuilder", new Class[] {});
-        Builder builder = (Builder) mtd.invoke(null, new Object[] {});
-        builders.put(methodName, builder);
+        builderMethods.put(methodName, mtd);
       } catch (Exception e) {
         e.printStackTrace();
         continue;
@@ -100,7 +99,8 @@ public class ProtoParamRpcServer extends NettyServerBase {
         }
 
         Method method = methods.get(methodName);
-        Message.Builder builder = builders.get(methodName).clear();
+        Method builderGenMethod = builderMethods.get(methodName);
+        Builder builder = (Builder) builderGenMethod.invoke(null, new Object[] {});
         Message msg = builder.mergeFrom(request.getParam(0)).build();
         res = method.invoke(instance, msg);
 

@@ -54,7 +54,7 @@ public class BenchmarkHadoopRPC {
         RPC.getServer(new BenchmarkImpl(), "localhost", 15000,
             new Configuration());
     server.start();
-    Thread.sleep(100);
+    Thread.sleep(1000);
 
     int numThreads = 1;
     ClientWrapper client[] = new ClientWrapper[numThreads];

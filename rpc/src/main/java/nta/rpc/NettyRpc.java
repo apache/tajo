@@ -27,6 +27,7 @@ public class NettyRpc {
     return new ProtoParamRpcServer(instance, interfaceClass, newAddress);
   }
 
+  @Deprecated
   public static ProtoParamRpcServer getProtoParamRpcServer(Object instance,
       InetSocketAddress addr) {
 
