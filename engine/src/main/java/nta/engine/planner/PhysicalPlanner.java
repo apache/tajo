@@ -5,6 +5,8 @@ package nta.engine.planner;
 
 import java.io.IOException;
 
+import com.google.common.base.Preconditions;
+
 import nta.engine.SubqueryContext;
 import nta.engine.exception.InternalException;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -104,7 +106,7 @@ public class PhysicalPlanner {
   public PhysicalExec createStorePlan(SubqueryContext ctx, StoreTableNode annotation,
       PhysicalExec subOp) throws IOException {
     PhysicalExec store = null;
-    if (annotation.hasPartitionKey()) {
+    if (annotation.hasPartitionKey()) { // if the partition keys are specified
       store = new PartitionedStoreExec(sm, ctx.getQueryId(), annotation, subOp);
     } else {
       store = new StoreTableExec(sm, ctx.getQueryId(), annotation, subOp);
@@ -114,6 +116,9 @@ public class PhysicalPlanner {
 
   public PhysicalExec createScanPlan(SubqueryContext ctx, ScanNode scanNode)
       throws IOException {
+    Preconditions.checkNotNull(ctx.getTable(scanNode.getTableId()), 
+        "Error: There is no table matched to %s", scanNode.getTableId());
+    
     Fragment [] fragments = ctx.getTables(scanNode.getTableId());
     SeqScanExec scan = new SeqScanExec(sm, scanNode, fragments);
 

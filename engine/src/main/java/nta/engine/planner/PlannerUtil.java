@@ -79,6 +79,10 @@ public class PlannerUtil {
     
     LogicalNodeFinder finder = new LogicalNodeFinder(type);
     plan.accept(finder);
+    
+    if (finder.getFoundNodes().size() == 0) {
+      return null;
+    }
     return finder.getFoundNodes().get(0);
   }
   

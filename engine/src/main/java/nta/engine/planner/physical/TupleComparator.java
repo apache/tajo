@@ -5,6 +5,8 @@ package nta.engine.planner.physical;
 
 import java.util.Comparator;
 
+import com.google.common.base.Preconditions;
+
 import nta.catalog.Schema;
 import nta.datum.Datum;
 import nta.engine.parser.QueryBlock.SortKey;
@@ -28,6 +30,9 @@ public class TupleComparator implements Comparator<Tuple> {
   private int compVal;
 
   public TupleComparator(Schema schema, SortKey[] sortKeys, boolean[] nullFirst) {
+    Preconditions.checkArgument(sortKeys.length > 0, 
+        "At least one sort key must be specified.");
+    
     this.sortKeyIds = new int[sortKeys.length];
     this.asc = new boolean[sortKeys.length];
     for (int i = 0; i < sortKeys.length; i++) {

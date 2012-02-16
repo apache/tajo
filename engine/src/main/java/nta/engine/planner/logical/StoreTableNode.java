@@ -4,6 +4,7 @@ import nta.catalog.Column;
 import nta.engine.json.GsonCreator;
 import nta.engine.utils.TUtil;
 
+import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 
 /**
@@ -41,6 +42,11 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   }
   
   public final void setPartitions(Column [] keys, int numPartitions) {
+    Preconditions.checkArgument(keys.length > 0, 
+        "At least one partition key must be specified.");
+    Preconditions.checkArgument(numPartitions > 0,
+        "The number of partitions must be positive: %s", numPartitions);
+    
     this.partitionKeys = keys;
     this.numPartitions = numPartitions;
   }

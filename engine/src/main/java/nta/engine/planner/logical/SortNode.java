@@ -3,6 +3,7 @@
  */
 package nta.engine.planner.logical;
 
+import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 
 import nta.engine.json.GsonCreator;
@@ -26,6 +27,8 @@ public final class SortNode extends UnaryNode implements Cloneable {
    */
   public SortNode(SortKey [] sortKeys) {
     super(ExprType.SORT);
+    Preconditions.checkArgument(sortKeys.length > 0, 
+        "At least one sort key must be specified");
     this.sortKeys = sortKeys;
   }
   
