@@ -131,13 +131,13 @@ public class LocalCatalog implements CatalogService {
 
   @Override
   public final List<HostInfo> getHostByTable(final String tableId) {    
-    return catalog.getHostByTable(tableId);
+    return catalog.getFragmentServingInfo(tableId);
   }
   
   @Override
   public final void updateAllTabletServingInfo(final List<String> onlineServers)
       throws IOException {
-    catalog.updateAllTabletServingInfo(onlineServers);
+    catalog.updateAllFragmentServingInfo(onlineServers);
   }
   
   public CatalogServer getServer() {

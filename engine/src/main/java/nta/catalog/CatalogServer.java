@@ -74,23 +74,20 @@ import com.google.common.base.Preconditions;
  * @author Hyunsik Choi
  */
 public class CatalogServer extends Thread implements CatalogServiceProtocol {
-  private final static Log LOG = LogFactory.getLog(CatalogServer.class);
-  private final Configuration conf;
-  private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-  private final Lock rlock = lock.readLock();
-  private final Lock wlock = lock.writeLock();
 
-  /*
-   * private Map<String, TableDescProto> tables = new HashMap<String,
-   * TableDescProto>();
-   */
-  private final CatalogStore store;
+	private final static Log LOG = LogFactory.getLog(CatalogServer.class);
+	private final Configuration conf;
+	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+	private final Lock rlock = lock.readLock();
+	private final Lock wlock = lock.writeLock();
 
-  private Map<String, FunctionDescProto> functions =
-      new HashMap<String, FunctionDescProto>();
-  private Map<String, List<HostInfo>> tabletServingInfo =
-      new HashMap<String, List<HostInfo>>();
-
+	/*private Map<String, TableDescProto> tables = 
+	    new HashMap<String, TableDescProto>();*/
+	private final CatalogStore store;
+	  
+	private Map<String, FunctionDescProto> functions = 
+	    new HashMap<String, FunctionDescProto>();
+  
   // RPC variables
   private final ProtoParamRpcServer rpcServer;
   private final InetSocketAddress isa;
@@ -101,6 +98,9 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   private volatile boolean stopped = false;
   @SuppressWarnings("unused")
   private volatile boolean isOnline = false;
+  
+  private Map<String, List<HostInfo>> fragmentServingInfo
+  = new HashMap<String, List<HostInfo>>();
 
   public CatalogServer(final Configuration conf) throws IOException {
     this.conf = conf;
@@ -227,25 +227,25 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   }
 
   public void resetHostsByTable() {
-    this.tabletServingInfo.clear();
+    this.fragmentServingInfo.clear();
   }
 
-  public List<HostInfo> getHostByTable(String tableId) {
-    return tabletServingInfo.get(tableId);
+  public List<HostInfo> getFragmentServingInfo(String tableId) {
+    return fragmentServingInfo.get(tableId);
   }
-
-  public void updateAllTabletServingInfo(List<String> onlineServers)
-      throws IOException {
-    tabletServingInfo.clear();
-    Collection<String> tbs = store.getAllTableNames();
-    Iterator<String> it = tbs.iterator();
-    List<HostInfo> locInfos;
-    List<HostInfo> servInfos;
+  
+  public void updateAllFragmentServingInfo(List<String> onlineServers) throws IOException {
+    long before = System.currentTimeMillis();
+    fragmentServingInfo.clear();
+    Iterator<String> it = store.getAllTableNames().iterator();
+    List<HostInfo> locInfos, servInfos;
     int index = 0;
     StringTokenizer tokenizer;
+    String serverName;
+    
     while (it.hasNext()) {
       TableDescProto td = (TableDescProto) store.getTable(it.next()).getProto();
-      locInfos = getTabletLocInfo(td);
+      locInfos = getFragmentLocInfo(td);
       servInfos = new ArrayList<HostInfo>();
       // TODO: select the proper online server
       for (HostInfo servInfo : locInfos) {
@@ -253,52 +253,16 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
         if (index == onlineServers.size()) {
           index = 0;
         }
-        tokenizer = new StringTokenizer(onlineServers.get(index++), ":");
-        servInfo.setHost(tokenizer.nextToken(),
+        serverName = onlineServers.get(index++);
+        tokenizer = new StringTokenizer(serverName, ":");
+        servInfo.setHost(tokenizer.nextToken(), 
             Integer.valueOf(tokenizer.nextToken()));
         servInfos.add(servInfo);
       }
-      tabletServingInfo.put(td.getId(), servInfos);
+      fragmentServingInfo.put(td.getId(), servInfos);
     }
-  }
-
-  private List<HostInfo> getTabletLocInfo(TableDescProto desc)
-      throws IOException {
-    int fileIdx, blockIdx;
-    FileSystem fs = FileSystem.get(conf);
-    Path path = new Path(desc.getPath());
-
-    FileStatus[] files = fs.listStatus(new Path(path + "/data"));
-    BlockLocation[] blocks;
-    String[] hosts;
-    List<HostInfo> tabletInfoList = new ArrayList<HostInfo>();
-    // if (tabletServingInfo.containsKey(tid)) {
-    // tabletInfoList = tabletServingInfo.get(tid);
-    // } else {
-    // tabletInfoList = new ArrayList<HostInfo>();
-    // }
-
-    int i = 0;
-    for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
-      blocks =
-          fs.getFileBlockLocations(files[fileIdx], 0, files[fileIdx].getLen());
-      for (blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
-        hosts = blocks[blockIdx].getHosts();
-        // if (tabletServingInfo.containsKey(tid)) {
-        // tabletInfoList = tabletServingInfo.get(tid);
-        // } else {
-        // tabletInfoList = new ArrayList<HostInfo>();
-        // tabletServingInfo.put(tid, tabletInfoList);
-        // }
-        // TODO: select the proper serving node for block
-        tabletInfoList.add(new HostInfo(hosts[0], -1, new Fragment(desc.getId()
-            + "_" + i, files[fileIdx].getPath(), new TableMetaImpl(desc
-            .getMeta()), blocks[blockIdx].getOffset(), blocks[blockIdx]
-            .getLength())));
-        i++;
-      }
-    }
-    return tabletInfoList;
+    long after = System.currentTimeMillis();
+    LOG.info("updateAllTabletServingInfo processing time: " + (after-before) + "msc");
   }
 
   public void addTable(String tableId, TableMeta info)
@@ -367,7 +331,50 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
       LOG.error(e);
       return BoolProto.newBuilder().setValue(false).build();
     }
+  }        
+  
+  private List<HostInfo> getFragmentLocInfo(TableDescProto desc) throws IOException {
+    long before = System.currentTimeMillis();
+    int fileIdx, blockIdx;
+    FileSystem fs = FileSystem.get(conf);
+    Path path = new Path(desc.getPath());
+    
+    FileStatus[] files = fs.listStatus(new Path(path+"/data"));
+    BlockLocation[] blocks;
+    String[] hosts;
+    List<HostInfo> tabletInfoList = new ArrayList<HostInfo>();
+    
+    int i=0;
+    for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
+      blocks = fs.getFileBlockLocations(files[fileIdx], 0, files[fileIdx].getLen());
+      for (blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
+        hosts = blocks[blockIdx].getHosts();
+
+        // TODO: select the proper serving node for block
+        tabletInfoList.add(new HostInfo(hosts[0], -1, new Fragment(desc.getId(), 
+            files[fileIdx].getPath(), new TableMetaImpl(desc.getMeta()), 
+            blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
+        i++;
+      }
+    }
+    long after = System.currentTimeMillis();
+    LOG.info("getTabletLocInfo processing time: " + (after-before) + "msc");
+    return tabletInfoList;
   }
+
+	public void deleteTable(String tableId) throws NoSuchTableException {
+		wlock.lock();
+		try {
+			if (!store.existTable(tableId)) {
+				throw new NoSuchTableException(tableId);
+			}
+			store.deleteTable(tableId);
+		} catch (IOException ioe) {
+		  LOG.error(ioe);
+		} finally {
+			wlock.unlock();
+		}
+	}
 
   @Override
   public void registerFunction(FunctionDescProto funcDesc) {
