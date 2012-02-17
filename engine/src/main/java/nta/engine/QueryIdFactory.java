@@ -14,9 +14,11 @@ public class QueryIdFactory {
   private static String timeId;
   private static QueryId queryId;
   private static SubQueryId subQueryId;
+  private static QueryStepId queryStepId;
   private static QueryUnitId queryUnitId;
   private static int nextQueryId = -1;
   private static int nextSubQueryId = -1;
+  private static int nextQueryStepId = -1;
   private static int nextQueryUnitId = -1;
   
   public static void reset() {
@@ -25,6 +27,7 @@ public class QueryIdFactory {
     timeId = dateformatYYYYMMDD.format(dateNow);
     nextQueryId = -1;
     nextSubQueryId = -1;
+    nextQueryStepId = -1;
     nextQueryUnitId = -1;
   }
 
@@ -44,10 +47,18 @@ public class QueryIdFactory {
   }
   
   public static QueryUnitId newQueryUnitId() {
+    if (nextQueryStepId == -1) {
+      newQueryStepId();
+    }
+    queryUnitId = new QueryUnitId(queryStepId, ++nextQueryUnitId);
+    return queryUnitId;
+  }
+  
+  public static QueryStepId newQueryStepId() {
     if (nextSubQueryId == -1) {
       newSubQueryId();
     }
-    queryUnitId = new QueryUnitId(subQueryId, ++nextQueryUnitId);
-    return queryUnitId;
+    queryStepId = new QueryStepId(subQueryId, ++nextQueryStepId);
+    return queryStepId;
   }
 }

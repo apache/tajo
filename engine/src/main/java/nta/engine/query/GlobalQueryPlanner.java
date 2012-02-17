@@ -222,7 +222,7 @@ public class GlobalQueryPlanner {
     int curLevel = 0;
     GlobalQueryPlan globalPlan = new GlobalQueryPlan();
     ArrayList<LevelLabeledUnitQuery> s = new ArrayList<GlobalQueryPlanner.LevelLabeledUnitQuery>();
-    QueryStep queryStep = new QueryStep();
+    QueryStep queryStep = new QueryStep(QueryIdFactory.newQueryStepId());
     s.add(new LevelLabeledUnitQuery(0, graph.getRoot()));
 
     while (!s.isEmpty()) {
@@ -234,7 +234,7 @@ public class GlobalQueryPlanner {
         if (curLevel != e.level) {
           if (queryStep.size() > 0) {
             globalPlan.addQueryStep(queryStep);
-            queryStep = new QueryStep();
+            queryStep = new QueryStep(QueryIdFactory.newQueryStepId());
           }
           curLevel = e.level;
         }

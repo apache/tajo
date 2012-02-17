@@ -1,6 +1,7 @@
 package nta.engine;
 
 import java.text.NumberFormat;
+import java.util.StringTokenizer;
 
 /**
  * @author Hyunsik Choi
@@ -12,18 +13,18 @@ public class QueryUnitId implements Comparable<QueryUnitId> {
     format.setMinimumIntegerDigits(6);
   }
   
-  private final SubQueryId subQueryId;
+  private final QueryStepId queryStepId;
   private final int id;
   private final String finalId;
   
-  public QueryUnitId(final SubQueryId subQueryId, final int id) {
-    this.subQueryId = subQueryId;
+  public QueryUnitId(final QueryStepId queryStepId, final int id) {
+    this.queryStepId = queryStepId;
     this.id = id;
-    this.finalId = this.subQueryId + QueryId.SEPERATOR + format.format(id);
+    this.finalId = this.queryStepId + QueryId.SEPERATOR + format.format(id);
   }
   
   public QueryUnitId(final String finalId) {
-    this.subQueryId = null;
+    this.queryStepId = null;
     this.id = -1;
     this.finalId = finalId;
   }

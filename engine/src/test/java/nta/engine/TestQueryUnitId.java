@@ -24,8 +24,11 @@ public class TestQueryUnitId {
     SubQueryId subId = new SubQueryId(queryId, 2);
     assertEquals("query_" + timeId+"_001_002", subId.toString());
     
-    QueryUnitId qId = new QueryUnitId(subId, 5);
-    assertEquals("query_" + timeId + "_001_002_000005", qId.toString());
+    QueryStepId stepId = new QueryStepId(subId, 4);
+    assertEquals("query_" + timeId+"_001_002_004", stepId.toString());
+    
+    QueryUnitId qId = new QueryUnitId(stepId, 5);
+    assertEquals("query_" + timeId + "_001_002_004_000005", qId.toString());
   }
 
   @Test
@@ -46,10 +49,16 @@ public class TestQueryUnitId {
     SubQueryId sid3 = new SubQueryId(queryId1, 1);
     assertEquals(sid1, sid3);
     
-    QueryUnitId qid1 = new QueryUnitId(sid1, 9);
-    QueryUnitId qid2 = new QueryUnitId(sid1, 10);
+    QueryStepId stepId1 = new QueryStepId(sid1, 9);
+    QueryStepId stepId2 = new QueryStepId(sid1, 10);
+    assertNotSame(stepId1, stepId2);
+    QueryStepId stepId3 = new QueryStepId(sid1, 9);
+    assertEquals(stepId1, stepId3);
+    
+    QueryUnitId qid1 = new QueryUnitId(stepId1, 9);
+    QueryUnitId qid2 = new QueryUnitId(stepId1, 10);
     assertNotSame(qid1, qid2);
-    QueryUnitId qid3 = new QueryUnitId(sid1, 9);
+    QueryUnitId qid3 = new QueryUnitId(stepId1, 9);
     assertEquals(qid1, qid3);
   }
 
@@ -73,9 +82,16 @@ public class TestQueryUnitId {
     assertEquals(1, sid2.compareTo(sid1));
     assertEquals(0, sid3.compareTo(sid1));
     
-    QueryUnitId qid1 = new QueryUnitId(sid1, 9);
-    QueryUnitId qid2 = new QueryUnitId(sid1, 10);
-    QueryUnitId qid3 = new QueryUnitId(sid1, 9);
+    QueryStepId step1 = new QueryStepId(sid1, 9);
+    QueryStepId step2 = new QueryStepId(sid1, 10);
+    QueryStepId step3 = new QueryStepId(sid1, 9);
+    assertEquals(-1, step1.compareTo(step2));
+    assertEquals(1, step2.compareTo(step1));
+    assertEquals(0, step3.compareTo(step1));
+    
+    QueryUnitId qid1 = new QueryUnitId(step1, 9);
+    QueryUnitId qid2 = new QueryUnitId(step1, 10);
+    QueryUnitId qid3 = new QueryUnitId(step1, 9);
     assertEquals(-1, qid1.compareTo(qid2));
     assertEquals(1, qid2.compareTo(qid1));
     assertEquals(0, qid3.compareTo(qid1));
