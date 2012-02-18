@@ -21,6 +21,5 @@ public interface QueryUnitRequest extends ProtoObject<QueryUnitRequestProto> {
 	public List<Fragment> getFragments();
 	public String getOutputTableId();
 	public boolean isClusteredOutput();
-	public String getPlanName();
 	public String getSerializedData();
 }

@@ -65,7 +65,11 @@ public class StorageManager {
   }
 	
 	public FileSystem getFileSystem() {
-	  return this.fs;	    
+	  return this.fs;
+	}
+	
+	public Path getDataRoot() {
+	  return this.dataRoot;
 	}
 	
 	public Path initTableBase(TableMeta meta, String tableName) 
@@ -84,6 +88,8 @@ public class StorageManager {
     fs.mkdirs(dataDir);
     if (meta != null)
       writeTableMeta(tablePath, meta);
+    
+    LOG.info("Initialized table root (" + tablePath + ")");
     return dataDir;
 	}
 	
@@ -197,6 +203,11 @@ public class StorageManager {
     return appender;
   }
 	
+	public TableMeta getTableMeta(String tableName) throws IOException {
+	  Path tableRoot = getTablePath(tableName);
+	  return getTableMeta(tableRoot);
+	}
+	
 	public TableMeta getTableMeta(Path tablePath) throws IOException {
     TableMeta meta = null;
     
@@ -234,26 +245,23 @@ public class StorageManager {
     Fragment tablet = null;
 
     FileStatus[] fileLists = fs.listStatus(new Path(tablePath, "data"));
-    int i=0;
     for (FileStatus file : fileLists) {
       long remainFileSize = file.getLen();
       long start = 0;
       if (remainFileSize > defaultBlockSize) {
         while (remainFileSize > defaultBlockSize) {
-          tablet = new Fragment(tablePath.getName()+"_"+i, file.getPath(), meta, start,
+          tablet = new Fragment(tablePath.getName(), file.getPath(), meta, start,
               defaultBlockSize);
           listTablets.add(tablet);
           start += defaultBlockSize;
           remainFileSize -= defaultBlockSize;
-          i++;
         }
-        listTablets.add(new Fragment(tablePath.getName()+"_1", file.getPath(), meta, start,
+        listTablets.add(new Fragment(tablePath.getName(), file.getPath(), meta, start,
             remainFileSize));
       } else {
-        listTablets.add(new Fragment(tablePath.getName()+"_1", file.getPath(), meta, 0,
+        listTablets.add(new Fragment(tablePath.getName(), file.getPath(), meta, 0,
             remainFileSize));
       }
-      i++;
     }
 
     Fragment[] tablets = new Fragment[listTablets.size()];
@@ -261,6 +269,17 @@ public class StorageManager {
 
     return tablets;
   }
+	
+	public Fragment getFragment(String fragmentId, TableMeta meta, Path path) 
+	    throws IOException {
+	  FileStatus status = fs.getFileStatus(path);	  
+	  return new Fragment(fragmentId, path, meta, 0, status.getLen());
+	}
+	
+	public FileStatus [] getTableDataFiles(Path tableRoot) throws IOException {
+	  Path dataPath = new Path(tableRoot, "data");
+	  return fs.listStatus(dataPath);
+	}
 	
 	private void writeTableMeta(Path tableRoot, TableMeta meta) 
 	    throws IOException {	  

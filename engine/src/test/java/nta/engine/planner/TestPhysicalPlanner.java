@@ -5,6 +5,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.ArrayList;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
@@ -38,6 +43,8 @@ import nta.storage.VTuple;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
@@ -90,7 +97,7 @@ public class TestPhysicalPlanner {
     TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 
     sm.initTableBase(employeeMeta, "employee");
-    Appender appender = sm.getAppender(employeeMeta, "employee", "employee_1");
+    Appender appender = sm.getAppender(employeeMeta, "employee", "employee");
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
       tuple.put(DatumFactory.createString("name_" + i),
@@ -111,7 +118,7 @@ public class TestPhysicalPlanner {
     score = new TableDescImpl("score", scoreSchema, StoreType.CSV, 
         new Options(), sm.getTablePath("score"));
     sm.initTableBase(score.getMeta(), "score");
-    appender = sm.getAppender(score.getMeta(), "score", "score_1");
+    appender = sm.getAppender(score.getMeta(), "score", "score");
     tuple = new VTuple(score.getMeta().getSchema().getColumnNum());
     int m = 0;
     for (int i = 1; i <= 5; i++) {
@@ -141,19 +148,19 @@ public class TestPhysicalPlanner {
   }
 
   private String[] QUERIES = {
-      "select name, empId, deptName from employee_1 where empId", // 0
+      "select name, empId, deptName from employee where empId", // 0
       "select name, empId, e.deptName, manager from employee as e, dept as dp", // 1
       "select name, empId, e.deptName, manager, score from employee as e, dept, score", // 2
       "select p.deptName, sum(score) from dept as p, score group by p.deptName having sum(score) > 30", // 3
       "select p.deptName, score from dept as p, score order by score asc", // 4
       "select name from employee where empId = 100", // 5
-      "select deptName, class, score from score_1", // 6
-      "select deptName, class, sum(score), max(score), min(score) from score_1 group by deptName, class", // 7
-      "grouped := select deptName, class, sum(score), max(score), min(score) from score_1 group by deptName, class", // 8
-      "select count(*), max(score), min(score) from score_1", // 9
-      "select count(deptName) from score_1", // 10
-      "select managerId, empId, deptName from employee_1 order by managerId, empId desc", // 11
-      "select deptName, nullable from score_1 group by deptName, nullable", // 12
+      "select deptName, class, score from score", // 6
+      "select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 7
+      "grouped := select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 8
+      "select count(*), max(score), min(score) from score", // 9
+      "select count(deptName) from score", // 10
+      "select managerId, empId, deptName from employee order by managerId, empId desc", // 11
+      "select deptName, nullable from score group by deptName, nullable", // 12
   };
 
   public final void testCreateScanPlan() throws IOException {
@@ -249,8 +256,8 @@ public class TestPhysicalPlanner {
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
     int numPartitions = 3;
-    Column key1 = new Column("score_1.deptName", DataType.STRING);
-    Column key2 = new Column("score_1.class", DataType.STRING);
+    Column key1 = new Column("score.deptName", DataType.STRING);
+    Column key2 = new Column("score.class", DataType.STRING);
     StoreTableNode storeNode = new StoreTableNode("partition");
     storeNode.setPartitions(new Column[] { key1, key2 }, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
@@ -264,14 +271,15 @@ public class TestPhysicalPlanner {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     exec.next();
 
-    LOG.info("The table partition_000000 is stored into "
-        + sm.getTablePath("partition_" + id));
+    Path path = StorageUtil.concatPath( 
+        sm.getTablePath("partition"),
+        id.toString());
     FileSystem fs = sm.getFileSystem();
-    Path path = sm.getTablePath("partition_" + id);
+        
     assertEquals(numPartitions,
         fs.listStatus(StorageUtil.concatPath(path, "data")).length);
 
-    Scanner scanner = sm.getTableScanner("partition_" + id);
+    Scanner scanner = sm.getTableScanner(path);
     Tuple tuple = null;
     int i = 0;
     while ((tuple = scanner.next()) != null) {

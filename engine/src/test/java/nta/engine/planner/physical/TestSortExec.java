@@ -59,7 +59,7 @@ public class TestSortExec {
 
     TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
     sm.initTableBase(employeeMeta, "employee");
-    Appender appender = sm.getAppender(employeeMeta, "employee", "employee_1");
+    Appender appender = sm.getAppender(employeeMeta, "employee", "employee");
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
       tuple.put(DatumFactory.createInt(rnd.nextInt(5)),
@@ -78,7 +78,7 @@ public class TestSortExec {
 
   }
 
-  String[] QUERIES = { "select managerId, empId, deptName from employee_1 order by managerId, empId desc" };
+  String[] QUERIES = { "select managerId, empId, deptName from employee order by managerId, empId desc" };
 
   @Test
   public final void testNext() throws IOException {

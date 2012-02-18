@@ -9,9 +9,8 @@ import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
-import nta.engine.QueryUnitProtos.QueryUnitResponseProto;
-import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.engine.Stoppable;
+import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
 
 /**

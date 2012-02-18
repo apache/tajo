@@ -33,8 +33,6 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	private boolean clusteredOutput;
 	@Expose
 	private String serializedData;     // logical node
-	@Expose
-	private String planName;
 	
 	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
 	private QueryUnitRequestProto.Builder builder = null;
@@ -48,9 +46,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	
 	public QueryUnitRequestImpl(QueryUnitId id, List<Fragment> fragments, 
 			String outputTable, boolean clusteredOutput, 
-			String serializedData, String planName) {
+			String serializedData) {
 		this();
-		this.set(id, fragments, outputTable, clusteredOutput, serializedData, planName);
+		this.set(id, fragments, outputTable, clusteredOutput, serializedData);
 	}
 	
 	public QueryUnitRequestImpl(QueryUnitRequestProto proto) {
@@ -62,13 +60,12 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 	
 	public void set(QueryUnitId id, List<Fragment> fragments, 
 			String outputTable, boolean clusteredOutput, 
-			String serializedData, String planName) {
+			String serializedData) {
 		this.id = id;
 		this.fragments = fragments;
 		this.outputTable = outputTable;
 		this.clusteredOutput = clusteredOutput;
 		this.serializedData = serializedData;
-		this.planName = planName;
 		this.isUpdated = true;
 	}
 
@@ -148,19 +145,6 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 		return this.serializedData;
 	}
 	
-	@Override
-	public String getPlanName() {
-	  QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
-	  if (this.planName != null) {
-	    return this.planName;
-	  }
-	  if (!proto.hasPlanName()) {
-	    return null;
-	  }
-	  this.planName = p.getPlanName();
-	  return this.planName;
-	}
-
 	private void maybeInitBuilder() {
 		if (viaProto || builder == null) {
 			builder = QueryUnitRequestProto.newBuilder(proto);
@@ -182,9 +166,6 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
 		}
 		if (this.isUpdated) {
 			builder.setClusteredOutput(this.clusteredOutput);
-		}
-		if (this.planName != null) {
-			builder.setPlanName(this.planName);
 		}
 		if (this.serializedData != null) {
 			builder.setSerializedData(this.serializedData);
@@ -217,9 +198,6 @@ public class QueryUnitRequestImpl implements QueryUnitRequest{
     }
     if (isUpdated == false && p.hasClusteredOutput()) {
       this.clusteredOutput = p.getClusteredOutput();
-    }
-    if (planName == null && p.hasPlanName()) {
-      this.planName = p.getPlanName();
     }
     if (serializedData == null && p.hasSerializedData()) {
       this.serializedData = p.getSerializedData();

@@ -3,12 +3,6 @@
  */
 package nta.engine.ipc;
 
-import java.io.IOException;
-import java.util.List;
-
-import nta.catalog.TableDescImpl;
-
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.VersionedProtocol;
 import org.apache.zookeeper.KeeperException;
 

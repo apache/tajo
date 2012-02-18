@@ -159,6 +159,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         while (!this.stopped) {
           Thread.sleep(1000);
           sendHeartbeat();
+          LOG.info(">_<" + this.serverName + " sent hearbeat ");
         }
       }
     } catch (Throwable t) {
@@ -330,7 +331,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   }
   
   private class QueryLauncher extends Thread {
-    private final int coreNum = Runtime.getRuntime().availableProcessors();
+//    private final int coreNum = Runtime.getRuntime().availableProcessors();
+    private final int coreNum = 10;
     private final BlockingQueue<InProgressQuery> queriesToLaunch
       = new ArrayBlockingQueue<InProgressQuery>(coreNum);
     private final ExecutorService executor
@@ -384,7 +386,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     public void run() {
       try {
         this.status = QueryStatus.INPROGRESS;
-        
+        LOG.info("Query status of " + qid + " is changed to " + status);
         while(executor.next() != null) {}
       } catch (IOException e) {
         e.printStackTrace();

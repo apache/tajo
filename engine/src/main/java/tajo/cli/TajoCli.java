@@ -139,12 +139,29 @@ public class TajoCli {
         detachTable(cmd);
       } else if (cmd[0].equalsIgnoreCase("history")) {
         showHistory();
+      } else {
+       executeQuery(line); 
       }
     }
     
     sout.println("\n\nbye from data deluge...");
     sout.flush();
     return 0;
+  }
+  
+  private void executeQuery(String queryStr) {
+    // query execute
+    try {
+      long start = System.currentTimeMillis();
+      String tablePath = proxy.executeQuery(queryStr);
+      long end = System.currentTimeMillis();
+      System.out.println("write the result into " + tablePath 
+          + " (" + (end - start) +"msc)");
+      
+    // TODO - the result should be printed.
+    } catch (Throwable t) {
+      System.err.println(t.getMessage());
+    }
   }
   
   @SuppressWarnings("unchecked")

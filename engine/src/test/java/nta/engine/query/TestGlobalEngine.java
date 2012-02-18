@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mortbay.log.Log;
 
 /**
  * @author jihoon
@@ -46,6 +47,7 @@ public class TestGlobalEngine {
 	public void setup() throws Exception {
 		util = new NtaTestingUtility();
 		util.startMiniCluster(3);
+		Thread.sleep(2000);
 		master = util.getMiniNtaEngineCluster().getMaster();
 		conf = util.getConfiguration();
 		StorageManager sm = new StorageManager(conf);
@@ -60,11 +62,11 @@ public class TestGlobalEngine {
 	    TableMeta meta = TCatUtil.newTableMeta(schema3, StoreType.CSV);
 	    
 	    Appender appender = sm.getTableAppender(meta, "score");
-	    int tupleNum = 10;
+	    int tupleNum = 20000000;
 	    Tuple tuple = null;
 	    for (int i = 0; i < tupleNum; i++) {
 	    	tuple = new VTuple(2);
-	    	tuple.put(0, DatumFactory.createString("test"));
+	    	tuple.put(0, DatumFactory.createString("test" + (i%10)));
 	    	tuple.put(1, DatumFactory.createInt(i+1));
 	    	appender.addTuple(tuple);
 	    }
@@ -83,9 +85,9 @@ public class TestGlobalEngine {
 	
 	@Test
 	public void test() throws Exception {
-		master.executeQuery(query);
-//		while (true) {
-//			Thread.sleep(1000);
-//		}
+	  Thread.sleep(5000);
+	  String tablename = master.executeQuery(query);
+	  Log.info("====== Output table name is " + tablename);
+//		assertNotNull(tablename);
 	}
 }

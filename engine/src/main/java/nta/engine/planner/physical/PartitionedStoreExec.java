@@ -8,6 +8,9 @@ import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.fs.Path;
+import org.mortbay.log.Log;
+
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
@@ -18,6 +21,7 @@ import nta.engine.QueryUnitId;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
+import nta.storage.StorageUtil;
 import nta.storage.Tuple;
 
 import com.google.common.base.Preconditions;
@@ -45,11 +49,9 @@ public final class PartitionedStoreExec extends PhysicalExec {
   private final TableMeta meta;
   private final Partitioner partitioner;
   private final String storeTable;
+  private final Path storeTablePath;
   private final Map<Integer, Appender> appenderMap
     = new HashMap<Integer, Appender>();
-  private final Map<Integer, String> prefixMap
-    = new HashMap<Integer, String>();
-  private Integer incNum = 0;
   
   public PartitionedStoreExec(final StorageManager sm, final QueryUnitId queryId,
       final StoreTableNode annotation, final PhysicalExec subOp) throws IOException {
@@ -71,8 +73,14 @@ public final class PartitionedStoreExec extends PhysicalExec {
       i++;
     }
     this.partitioner = new HashPartitioner(partitionKeys, numPartitions);
-    this.storeTable = annotation.getTableName() + "_" + queryId;
-    sm.initTableBase(meta, storeTable);    
+    this.storeTable = queryId.toString();
+    
+    storeTablePath = StorageUtil.concatPath( 
+        sm.getTablePath(annotation.getTableName()),
+            queryId.toString());
+    sm.initTableBase(storeTablePath, meta);
+    Log.info("Initialized output directory (" 
+        + sm.getTablePath(storeTable) + ")");
   }
 
   @Override
@@ -81,15 +89,13 @@ public final class PartitionedStoreExec extends PhysicalExec {
   }
   
   private Appender getAppender(int partition) throws IOException {
-    Appender appender = null;
-    String prefix = prefixMap.get(partition);
-    if (prefix == null) {
-      prefix = "p_"+incNum;
-      prefixMap.put(partition, prefix);
-      appender = sm.getAppender(meta, storeTable,
-          prefix);
-      appenderMap.put(partition, appender);        
-      incNum++;
+    Appender appender = appenderMap.get(partition);
+    if (appender == null) {
+      Path dataFile =
+          StorageUtil.concatPath(storeTablePath, "data",
+              "" + partition);
+      appender = sm.getAppender(meta, dataFile);
+      appenderMap.put(partition, appender);
     } else {
       appender = appenderMap.get(partition);
     }
@@ -103,8 +109,8 @@ public final class PartitionedStoreExec extends PhysicalExec {
     Appender appender = null;
     int partition;
     while ((tuple = subOp.next()) != null) {
-      partition = partitioner.getPartition(tuple);      
-      appender = getAppender(partition);        
+      partition = partitioner.getPartition(tuple);
+      appender = getAppender(partition);
       appender.addTuple(tuple);
     }
     

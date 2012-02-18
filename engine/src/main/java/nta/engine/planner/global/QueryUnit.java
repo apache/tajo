@@ -8,11 +8,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import nta.distexec.DistPlan;
+import nta.catalog.Schema;
+import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
 import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.plan.global.Annotation;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.ScanNode;
+import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.UnaryNode;
 
 /**
  * @author jihoon
@@ -21,50 +24,65 @@ import nta.engine.planner.logical.LogicalNode;
 public class QueryUnit {
 
 	private QueryUnitId id;
-	private LogicalNode op;
-	private String tableName;
-	private String outputName;
+	private LogicalNode op = null;
+	private StoreTableNode store = null;
+	private UnaryNode mid = null;
+	private ScanNode scan = null;
 	private List<Fragment> fragments;
-	private Set<QueryUnit> prevQueries;
 	private Set<QueryUnit> nextQueries;
-	private Annotation annotaion;
-	private DistPlan distPlan;
+	private Set<QueryUnit> prevQueries;
 	
 	private String hostName;
 	private int port;
 	
 	public QueryUnit(QueryUnitId id) {
 		this.id = id;
-		prevQueries = new HashSet<QueryUnit>();
 		nextQueries = new HashSet<QueryUnit>();
+		prevQueries = new HashSet<QueryUnit>();
 		fragments = new ArrayList<Fragment>();
 	}
 	
-	public QueryUnit(QueryUnitId id, LogicalNode op) {
-		this(id);
-		set(op, null);
+	public QueryUnit setStoreNode(StoreTableNode store) {
+	  try {
+	    this.store = (StoreTableNode) store.clone();
+      return this;
+    } catch (CloneNotSupportedException e) {
+      e.printStackTrace();
+    }
+	  return null;
 	}
 	
-	public QueryUnit(QueryUnitId id, LogicalNode op, Annotation annotation) {
-		this(id);
-		set(op, annotation);
+	public QueryUnit setUnaryNode(UnaryNode node) {
+	  try {
+      this.mid = (UnaryNode) node.clone();
+      return this;
+    } catch (CloneNotSupportedException e) {
+      e.printStackTrace();
+    }
+    return null;
 	}
 	
-	public void set(LogicalNode op, Annotation annotation) {
-		this.op = op;
-		this.annotaion = annotation;
+	public QueryUnit setScanNode(ScanNode scan) {
+	  try {
+      this.scan = (ScanNode) scan.clone();
+      return this;
+    } catch (CloneNotSupportedException e) {
+      e.printStackTrace();
+    }
+	  return null;
 	}
 	
-	public void setOp(LogicalNode op) {
-		this.op = op;
-	}
-	
-	public void setAnnotation(Annotation annotation) {
-		this.annotaion = annotation;
-	}
-	
-	public void setDistPlan(DistPlan distPlan) {
-		this.distPlan = distPlan;
+	public LogicalNode buildLogicalPlan() {
+	  if (this.op == null) {
+	    if (this.mid != null) {
+        this.mid.setSubNode(this.scan);
+	      this.store.setSubNode(this.mid);
+	    } else {
+	      this.store.setSubNode(this.scan);
+	    }
+	    this.op = this.store;
+	  }
+	  return this.op;
 	}
 	
 	public void setHost(String host, int port) {
@@ -72,67 +90,52 @@ public class QueryUnit {
 		this.port = port;
 	}
 	
-	public void setTableName(String tableName) {
-		this.tableName = tableName;
-	}
-	
-	public void setOutputName(String outputName) {
-		this.outputName = outputName;
-	}
-	
 	public void addFragment(Fragment fragment) {
+	  fragment.setId(this.scan.getTableId());
 		this.fragments.add(fragment);
+	}
+	
+	public void addFragments(Fragment[] fragments) {
+	  for (Fragment frag : fragments) {
+      this.addFragment(frag);
+    }
 	}
 	
 	public void setFragments(Fragment[] fragments) {
 	  this.fragments.clear();
-	  for (Fragment frag : fragments) {
-	    this.fragments.add(frag);
-	  }
-	}
-	
-	public void addPrevQuery(QueryUnit query) {
-		prevQueries.add(query);
+	  this.addFragments(fragments);
 	}
 	
 	public void addNextQuery(QueryUnit query) {
 		nextQueries.add(query);
 	}
 	
-	public void removePrevQuery(QueryUnit query) {
-		prevQueries.remove(query);
+	public void addPrevQuery(QueryUnit query) {
+		prevQueries.add(query);
 	}
 	
 	public void removeNextQuery(QueryUnit query) {
 		nextQueries.remove(query);
 	}
 	
-	public LogicalNode getOp() {
-		return this.op;
+	public void removePrevQuery(QueryUnit query) {
+		prevQueries.remove(query);
 	}
 	
 	public List<Fragment> getFragments() {
 		return this.fragments;
 	}
 	
-	public Set<QueryUnit> getPrevQueries() {
-		return this.prevQueries;
-	}
-	
 	public Set<QueryUnit> getNextQueries() {
 		return this.nextQueries;
 	}
 	
-	public Annotation getAnnotation() {
-		return this.annotaion;
+	public Set<QueryUnit> getPrevQueries() {
+		return this.prevQueries;
 	}
 	
 	public QueryUnitId getId() {
 		return id;
-	}
-	
-	public DistPlan getDistPlan() {
-		return this.distPlan;
 	}
 	
 	public String getHost() {
@@ -143,12 +146,32 @@ public class QueryUnit {
 		return this.port;
 	}
 	
-	public String getTableName() {
-		return this.tableName;
+	public String getInputName() {
+		return this.scan.getTableId();
 	}
 	
 	public String getOutputName() {
-		return this.outputName;
+		return this.store.getTableName();
+	}
+	
+	public Schema getInputSchema() {
+	  return this.scan.getInputSchema();
+	}
+	
+	public Schema getOutputSchema() {
+	  return this.store.getOutputSchema();
+	}
+	
+	public StoreTableNode getStoreTableNode() {
+	  return this.store;
+	}
+	
+	public UnaryNode getUnaryNode() {
+	  return this.mid;
+	}
+	
+	public ScanNode getScanNode() {
+	  return this.scan;
 	}
 	
 	@Override
@@ -158,5 +181,24 @@ public class QueryUnit {
 			str += t + " ";
 		}
 		return str;
+	}
+	
+	public QueryUnit cloneExceptFragments() {
+	  QueryUnit clone = new QueryUnit(QueryIdFactory.newQueryUnitId());
+	  clone.setStoreNode(this.store);
+	  clone.setScanNode(this.scan);
+	  if (this.mid != null) {
+	    clone.setUnaryNode(this.mid);
+	  }
+	  clone.buildLogicalPlan();
+	  clone.setHost(hostName, port);
+	  for (QueryUnit next : this.nextQueries) {
+	    clone.addNextQuery(next);
+	  }
+	  for (QueryUnit prev : this.prevQueries) {
+	    clone.addPrevQuery(prev);
+	  }
+
+	  return clone;
 	}
 }

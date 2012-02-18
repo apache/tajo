@@ -40,6 +40,8 @@ public class WorkerCommunicator extends ZkListener {
 
     zkClient = new ZkClient(conf);
     tracker = new LeafServerTracker(zkClient);
+    
+    Thread.sleep(3000);
 
     servers = tracker.getMembers();
 

@@ -36,7 +36,7 @@ public abstract class UnaryNode extends LogicalNode implements Cloneable {
 	@Override
   public Object clone() throws CloneNotSupportedException {
 	  UnaryNode unary = (UnaryNode) super.clone();
-	  unary.subExpr = (LogicalNode) subExpr.clone();
+	  unary.subExpr = (LogicalNode) (subExpr == null ? null : subExpr.clone());
 	  
 	  return unary;
 	}

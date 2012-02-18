@@ -14,7 +14,7 @@ import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
 
 /**
  * @author jihoon
- *
+ * 
  */
 public interface AsyncWorkerClientInterface {
 

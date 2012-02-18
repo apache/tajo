@@ -41,6 +41,6 @@ public class HostInfo {
 	}
 	
 	public String toString() {
-		return new String("HostName: " + hostName + " port: " + port);
+		return new String(hostName + ":" + port + " " + fragment);
 	}
 }

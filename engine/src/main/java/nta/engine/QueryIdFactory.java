@@ -38,8 +38,8 @@ public class QueryIdFactory {
     return queryId;
   }
   
-  public static SubQueryId newSubQueryId() {
-    if (nextQueryId.equals(-1)) {
+  synchronized public static SubQueryId newSubQueryId() {
+    if (nextQueryId.get() == -1) {
       newQueryId();
     }
     subQueryId = new SubQueryId(queryId, nextSubQueryId.incrementAndGet());
@@ -48,7 +48,7 @@ public class QueryIdFactory {
   }
   
   public static QueryUnitId newQueryUnitId() {
-    if (nextQueryStepId.equals(-1)) {
+    if (nextQueryStepId.get() ==-1) {
       newQueryStepId();
     }
     queryUnitId = new QueryUnitId(queryStepId, nextQueryUnitId.incrementAndGet());
@@ -56,7 +56,7 @@ public class QueryIdFactory {
   }
   
   public static QueryStepId newQueryStepId() {
-    if (nextSubQueryId.equals(-1)) {
+    if (nextSubQueryId.get() == -1) {
       newSubQueryId();
     }
     queryStepId = new QueryStepId(subQueryId, nextQueryStepId.incrementAndGet());
@@ -64,7 +64,7 @@ public class QueryIdFactory {
   }
   
   public static String nextQueryStepId() {
-    if (nextSubQueryId.equals(-1)) {
+    if (nextSubQueryId.get() == -1) {
       newSubQueryId();
     }
     return subQueryId.toString() + "_" + nextQueryStepId.incrementAndGet();

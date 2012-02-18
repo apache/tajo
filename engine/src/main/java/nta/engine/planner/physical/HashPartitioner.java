@@ -23,6 +23,6 @@ public class HashPartitioner extends Partitioner {
     for (int i = 0; i < partitionKeys.length; i++) {
       keyTuple.put(i, tuple.get(partitionKeys[i]));
     }
-    return keyTuple.hashCode() % numPartitions;
+    return (keyTuple.hashCode() & Integer.MAX_VALUE) % numPartitions;
   }
 }

@@ -4,7 +4,6 @@
 package nta.engine.cluster;
 
 import java.net.InetSocketAddress;
-import java.util.Map;
 
 import nta.engine.NConstants;
 import nta.engine.QueryUnitId;
@@ -26,15 +25,16 @@ import org.mortbay.log.Log;
  */
 public class WorkerListener implements Runnable, MasterInterface {
   
-  private Map<QueryUnitId, InProgressStatus> progressMap;
+//  private Map<QueryUnitId, InProgressStatus> progressMap;
   
   private final ProtoParamRpcServer rpcServer;
   private InetSocketAddress bindAddr;
   private String addr;
   private volatile boolean stopped = false;
+  private QueryManager qm;
   
-  public WorkerListener(Configuration conf, Map<QueryUnitId, 
-      InProgressStatus> progressMap) {
+  public WorkerListener(Configuration conf, QueryManager qm) {
+//      Map<QueryUnitId,InProgressStatus> progressMap) {
     String confMasterAddr = conf.get(NConstants.MASTER_ADDRESS,
         NConstants.DEFAULT_MASTER_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterAddr);
@@ -42,7 +42,7 @@ public class WorkerListener implements Runnable, MasterInterface {
       throw new IllegalArgumentException("Failed resolve of " + initIsa);
     }
     this.rpcServer = NettyRpc.getProtoParamRpcServer(this, MasterInterface.class, initIsa);
-    this.progressMap = progressMap;
+    this.qm = qm;
   }
   
   public InetSocketAddress getBindAddress() {
@@ -74,11 +74,13 @@ public class WorkerListener implements Runnable, MasterInterface {
    */
   @Override
   public void reportQueryUnit(QueryUnitReportProto proto) {
+    Log.info("All progresses in qm: " + qm.getAllProgresses());
     QueryUnitReport report = new QueryUnitReportImpl(proto);
+    Log.info("Received progress list size: " + report.getProgressList().size());
     for (InProgressStatus status : report.getProgressList()) {
-      progressMap.put(new QueryUnitId(status.getId()), status);
+      qm.updateProgress(new QueryUnitId(status.getId()), status);
+      Log.info("Received the report :" + status);
     }
-    Log.info("Received the report :" + report.getProto());
   }
 
   @Override

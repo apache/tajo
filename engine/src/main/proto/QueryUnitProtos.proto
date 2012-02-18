@@ -12,7 +12,6 @@ message QueryUnitRequestProto {
 	required string outputTable = 3;
 	required bool clusteredOutput = 4;
 	required string serializedData = 5;
-	required string planName = 6;
 }
 
 message QueryUnitResponseProto {

@@ -83,6 +83,7 @@ public class TQueryEngine {
     SubqueryContext ctx = ctxFactory.create(request);
     LogicalNode plan = GsonCreator.getInstance().
         fromJson(request.getSerializedData(), LogicalNode.class);
+    LOG.info(plan.toString());
     LOG.info("Assigned task: (" + request.getId() + ") start:"
         + request.getFragments().get(0).getStartOffset() + " end: "
         + request.getFragments() + "\nplan:\n" + plan);

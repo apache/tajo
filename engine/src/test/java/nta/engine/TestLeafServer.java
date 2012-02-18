@@ -125,6 +125,8 @@ public class TestLeafServer {
       
       i++;
     }
+    Log.info("reported: " + reported);
+    Log.info("submitted: " + submitted);
     assertTrue(reported.containsAll(submitted));
   }
 
@@ -159,14 +161,14 @@ public class TestLeafServer {
     SubQueryRequest req1 = new SubQueryRequestImpl(
         QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
             Arrays.asList(frags)), new Path(TEST_PATH, "out").toUri(),
-        "table120205 := select name, id from table2_1 where id > 5100");
+        "table120205 := select name, id from table2 where id > 5100");
     assertNotNull(leaf1.requestSubQuery(req1.getProto()));
     assertNotNull(sm.getTableMeta(sm.getTablePath("table120205")));
     frags = sm.split("table120205");
     SubQueryRequest req2 = new SubQueryRequestImpl(
         QueryIdFactory.newQueryUnitId(), new ArrayList<Fragment>(
             Arrays.asList(frags)), new Path(TEST_PATH, "out").toUri(),
-        "table120205 := select name, id from table120205_1");
+        "table120205 := select name, id from table120205");
     assertNotNull(leaf1.requestSubQuery(req2.getProto()));
     
     // for the report sending test

@@ -7,9 +7,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import nta.catalog.CatalogService;
 import nta.catalog.LocalCatalog;
@@ -21,6 +19,7 @@ import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
 import nta.engine.QueryUnitProtos.InProgressStatus;
+import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.cluster.WorkerListener;
 import nta.engine.ipc.QueryEngineInterface;
@@ -39,9 +38,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
-import org.jboss.netty.util.internal.ConcurrentHashMap;
-
-import com.google.common.collect.MapMaker;
 
 /**
  * @author Hyunsik Choi
@@ -59,26 +55,24 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   private final ZkClient zkClient;
   private ZkServer zkServer;
 
-  private CatalogService catalog;
-  private StorageManager storeManager;
-  private GlobalEngine queryEngine;
-
   private final Path basePath;
   private final Path dataPath;
 
-  private final InetSocketAddress clientServiceBindAddr;
-
-  private RPC.Server clientServiceServer;
+  private CatalogService catalog;
+  private StorageManager storeManager;
+  private GlobalEngine queryEngine;
   private WorkerCommunicator wc;
   private WorkerListener wl;
+  private QueryManager qm;
+
+  private final InetSocketAddress clientServiceBindAddr;
+  private RPC.Server clientServiceServer;
 
   private List<EngineService> services = new ArrayList<EngineService>();
   
-  private Map<QueryUnitId, InProgressStatus> inProgressQueries = 
-      new ConcurrentHashMap<QueryUnitId, QueryUnitProtos.InProgressStatus>();
-  
   public NtaEngineMaster(final Configuration conf) throws Exception {
     this.conf = conf;
+    QueryIdFactory.reset();
 
     // Get the tajo base dir
     this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
@@ -120,11 +114,12 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     }
     // This is temporal solution of the above problem.
     this.catalog = new LocalCatalog(conf);
+    this.qm = new QueryManager();
 
     // connect the zkserver
     this.zkClient = new ZkClient(conf);
 
-    this.wl = new WorkerListener(conf, inProgressQueries);
+    this.wl = new WorkerListener(conf, qm);
     this.wl.start();
     // Setup RPC server
     // Get the master address
@@ -152,7 +147,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     this.wc = new WorkerCommunicator(conf);
     this.wc.start();
     
-    this.queryEngine = new GlobalEngine(conf, catalog, storeManager);
+    this.queryEngine = new GlobalEngine(conf, catalog, storeManager, wc, qm, this);
     this.queryEngine.init();
     services.add(queryEngine); 
   }
@@ -176,7 +171,10 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 
       if (!this.stopped) {
         while (!this.stopped) {
-          Thread.sleep(1000);
+          Thread.sleep(2000);
+          
+          LOG.info("== Master's periodical report ==");
+          LOG.info("* Progress: \n" +qm.getAllProgresses());
         }
       }
     } catch (Throwable t) {
@@ -207,7 +205,9 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   public void shutdown() {
     this.stopped = true;
     this.clientServiceServer.stop();
-    this.wc.close();
+    if (wc != null) {
+      this.wc.close();
+    }
     this.wl.stop();
 
     for (EngineService service : services) {
@@ -227,7 +227,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   @Override
   public String executeQuery(String query) throws Exception {
     catalog.updateAllTabletServingInfo(getOnlineServer());
-    String rs = queryEngine.executeQuery(query);
+    String rs = queryEngine.executeQuery(QueryIdFactory.newSubQueryId(), query);
     if (rs == null) {
       return "";
     } else {
@@ -311,7 +311,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 	
 	// TODO - to be improved
 	public Collection<InProgressStatus> getProgressQueries() {
-	  return this.inProgressQueries.values();
+	  return this.qm.getAllProgresses().values();
 	}
 
   public static void main(String[] args) throws Exception {

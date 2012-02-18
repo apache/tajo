@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
+import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
@@ -44,8 +45,9 @@ public class TestCSVFile2 {
     schema.addColumn("name", DataType.STRING);
     schema.addColumn("age", DataType.LONG);
     
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
-    meta.putOption(CSVFile2.DELIMITER, ",");
+    Options options = new Options();
+    options.put(CSVFile2.DELIMITER, ",");
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV, options);
     
     Path path = new Path(TEST_PATH);
 
@@ -96,8 +98,10 @@ public class TestCSVFile2 {
     
     Random rnd = new Random(System.currentTimeMillis());
     
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
-    meta.putOption(CSVFile2.DELIMITER, ",");
+    Options options = new Options();
+    options.put(CSVFile2.DELIMITER, ",");
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV, options);
+    
     
     sm.initTableBase(meta, "table2");
     Appender appender = sm.getAppender(meta, "table2", "table1.csv");
