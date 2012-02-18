@@ -7,8 +7,8 @@ import java.util.Random;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
@@ -51,9 +51,7 @@ public class TestIndex {
 	@Test
 	public void testsearchEQLValueInCSVcol0() throws IOException {
 		
-		meta = new TableMetaImpl();
-		meta.setSchema(this.schema);
-		meta.setStorageType(StoreType.CSV);
+		meta = TCatUtil.newTableMeta(this.schema, StoreType.CSV);
 			  
 		sm.initTableBase(meta, "table1");
 		Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
@@ -91,9 +89,7 @@ public class TestIndex {
 	@Test
 	public void testsearchGTHValueInCSVcol1() throws IOException {
 		
-		meta = new TableMetaImpl();
-		meta.setSchema(this.schema);
-		meta.setStorageType(StoreType.CSV);
+		meta = TCatUtil.newTableMeta(this.schema, StoreType.CSV);
 			  
 		sm.initTableBase(meta, "table1");
 		Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
@@ -130,9 +126,7 @@ public class TestIndex {
 	@Test
 	public void testsearchEQLValueInCSVcol2() throws IOException {
 		
-		meta = new TableMetaImpl();
-		meta.setSchema(this.schema);
-		meta.setStorageType(StoreType.CSV);
+		meta = TCatUtil.newTableMeta(this.schema, StoreType.CSV);
 			  
 		sm.initTableBase(meta, "table1");
 		Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
@@ -169,9 +163,7 @@ public class TestIndex {
 	@Test
 	public void testsearchGTHValueInCSVcol3() throws IOException {
 		
-		meta = new TableMetaImpl();
-		meta.setSchema(this.schema);
-		meta.setStorageType(StoreType.CSV);
+		meta = TCatUtil.newTableMeta(this.schema, StoreType.CSV);
 			  
 		sm.initTableBase(meta, "table1");
 		Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
@@ -207,9 +199,7 @@ public class TestIndex {
 	
 	@Test
 	public void testRandomSearchEQLValueInCSVCol0 () throws IOException {
-	  meta = new TableMetaImpl();
-    meta.setSchema(this.schema);
-    meta.setStorageType(StoreType.CSV);
+	  meta = TCatUtil.newTableMeta(this.schema, StoreType.CSV);
         
     sm.initTableBase(meta, "table1");
     Appender appender  = sm.getAppender(meta, "table1" , "table1.csv");
@@ -258,9 +248,7 @@ public class TestIndex {
 	
 	@Test
 	public void testSearchEQLValueInRawCol0() throws IOException {
-		meta = new TableMetaImpl();
-		meta.setSchema(this.schema);
-		meta.setStorageType(StoreType.RAW);
+		meta = TCatUtil.newTableMeta(this.schema, StoreType.RAW);
 			  
 		sm.initTableBase(meta, "table1");
 		Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
@@ -298,9 +286,7 @@ public class TestIndex {
 	
 	@Test
 	public void testSearchGTHValueInRawCol1() throws IOException {
-		meta = new TableMetaImpl();
-		meta.setSchema(this.schema);
-		meta.setStorageType(StoreType.RAW);
+		meta = TCatUtil.newTableMeta(this.schema, StoreType.RAW);
 			  
 		sm.initTableBase(meta, "table1");
 		Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
@@ -338,9 +324,7 @@ public class TestIndex {
 	
 	@Test
 	public void testSearchEQLValueInRawCol2() throws IOException {
-		meta = new TableMetaImpl();
-		meta.setSchema(this.schema);
-		meta.setStorageType(StoreType.RAW);
+		meta = TCatUtil.newTableMeta(this.schema, StoreType.RAW);
 			  
 		sm.initTableBase(meta, "table1");
 		Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
@@ -378,9 +362,7 @@ public class TestIndex {
 	
 	@Test
 	public void testSearchGTHValueInRawCol3() throws IOException {
-		meta = new TableMetaImpl();
-		meta.setSchema(this.schema);
-		meta.setStorageType(StoreType.RAW);
+		meta = TCatUtil.newTableMeta(this.schema, StoreType.RAW);
 			  
 		sm.initTableBase(meta, "table1");
 		Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
@@ -417,9 +399,7 @@ public class TestIndex {
 	
 	@Test
 	public void testSearchRandomValueInRawCol0() throws IOException {
-	  meta = new TableMetaImpl();
-    meta.setSchema(this.schema);
-    meta.setStorageType(StoreType.RAW);
+	  meta = TCatUtil.newTableMeta(this.schema, StoreType.RAW);
         
     sm.initTableBase(meta, "table1");
     Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
@@ -467,9 +447,7 @@ public class TestIndex {
 	
 	@Test
 	public void testSearchEQLValueInRawManyCols() throws IOException{
-		meta = new TableMetaImpl();
-		meta.setSchema(this.schema);
-		meta.setStorageType(StoreType.RAW);
+		meta = TCatUtil.newTableMeta(this.schema, StoreType.RAW);
 			  
 		sm.initTableBase(meta, "table1");
 		Appender appender  = sm.getAppender(meta, "table1", "table1.csv");

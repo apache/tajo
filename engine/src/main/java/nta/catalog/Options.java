@@ -13,6 +13,7 @@ import nta.catalog.proto.CatalogProtos.KeyValueSetProtoOrBuilder;
 import nta.common.ProtoObject;
 import nta.engine.json.GsonCreator;
 
+import com.google.common.collect.Maps;
 import com.google.gson.annotations.Expose;
 
 /**
@@ -30,11 +31,8 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 	@Expose
 	private Map<String,String> keyVals;
 	
-	/**
-	 * 
-	 */
 	public Options() {
-		builder = KeyValueSetProto.newBuilder();		
+		builder = KeyValueSetProto.newBuilder();
 	}
 	
 	public Options(KeyValueSetProto proto) {
@@ -42,9 +40,30 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 		viaProto = true;
 	}
 	
+	public Options(Options options) {
+	  this();
+	  options.initFromProto();
+	  this.keyVals = Maps.newHashMap(options.keyVals);
+	}
+	
+	public static Options create() {
+	  return new Options();
+	}
+	
+	public static Options create(Options options) {
+    return new Options(options);
+  }
+	
 	public void put(String key, String val) {
 		initOptions();
+		setModified();
 		this.keyVals.put(key, val);
+	}
+	
+	public void putAll(Options options) {
+	  initOptions();
+	  setModified();
+	  this.keyVals.putAll(options.keyVals);
 	}
 	
 	public String get(String key) {
@@ -62,7 +81,7 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 	}
 	
 	public String delete(String key) {
-		initOptions();		
+		initOptions();
 		return keyVals.remove(key);
 	}
 	
@@ -96,9 +115,11 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 	
 	@Override
 	public KeyValueSetProto getProto() {
-		mergeLocalToProto();
-		proto = viaProto ? proto : builder.build();
-		viaProto = true;
+	  if(!viaProto) {
+      mergeLocalToBuilder();
+      proto = builder.build();
+      viaProto = true;
+    }	  
 		return proto;
 	}
 	
@@ -107,13 +128,13 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 			return;
 		}
 		KeyValueSetProtoOrBuilder p = viaProto ? proto : builder;
-		this.keyVals = new HashMap<String, String>();
+		this.keyVals = Maps.newHashMap();
 		for(KeyValueProto keyval:p.getKeyvalList()) {
 			this.keyVals.put(keyval.getKey(), keyval.getValue());
-		}
+		}		
 	}
 	
-	private void maybeInitBuilder() {
+	private void setModified() {
 		if (viaProto || builder == null) {
 			builder = KeyValueSetProto.newBuilder(proto);
 		}
@@ -130,15 +151,6 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 				builder.addKeyval(kvBuilder.build());
 			}
 		}
-	}
-	
-	private void mergeLocalToProto() {
-		if(viaProto) {
-			maybeInitBuilder();
-		}
-		mergeLocalToBuilder();
-		proto = builder.build();
-		viaProto = true;
 	}
 
   @Override

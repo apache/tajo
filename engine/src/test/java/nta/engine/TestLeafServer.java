@@ -11,8 +11,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
@@ -66,9 +66,7 @@ public class TestLeafServer {
     schema.addColumn("name", DataType.STRING);
     schema.addColumn("id", DataType.INT);
 
-    TableMeta meta = new TableMetaImpl();
-    meta.setSchema(schema);
-    meta.setStorageType(StoreType.CSV);
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 
     Appender appender = sm.getTableAppender(meta, "table1");
     int tupleNum = 10000;
@@ -136,9 +134,7 @@ public class TestLeafServer {
     schema.addColumn("name", DataType.STRING);
     schema.addColumn("id", DataType.INT);
 
-    TableMeta meta = new TableMetaImpl();
-    meta.setSchema(schema);
-    meta.setStorageType(StoreType.CSV);
+    TableMeta meta = TCatUtil.newTableMeta(schema,StoreType.CSV);
 
     Appender appender = sm.getTableAppender(meta, "table2");
     int tupleNum = 10000;
@@ -156,7 +152,7 @@ public class TestLeafServer {
     Schema outputSchema = new Schema();
     outputSchema.addColumn("name", DataType.STRING);
     outputSchema.addColumn("id", DataType.INT);
-    TableMeta outputMeta = new TableMetaImpl(outputSchema, StoreType.CSV);
+    TableMeta outputMeta = TCatUtil.newTableMeta(outputSchema, StoreType.CSV);
     sm.initTableBase(outputMeta, "table120205");
     System.out.println("Table2: " + frags[0]);
     LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(0);

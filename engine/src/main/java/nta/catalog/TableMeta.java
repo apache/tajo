@@ -19,13 +19,9 @@ public interface TableMeta extends ProtoObject<TableProto>, Cloneable {
   
   Schema getSchema();
   
-  void setOptions(Options options);
+  void putOption(String key, String val);
   
-  Options getOptions();
-  
-  String getOption(String key);
-  
-  void putOption(String key, String value);
+  String getOption(String key, String defaultValue);
   
   Object clone() throws CloneNotSupportedException;
   

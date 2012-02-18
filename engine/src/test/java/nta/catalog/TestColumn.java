@@ -50,9 +50,9 @@ public class TestColumn {
 
 	@Test
 	public final void testGetFieldName() {
-		assertEquals(field1.getName(),FieldName1);
-		assertEquals(field2.getName(),FieldName2);
-		assertEquals(field3.getName(),FieldName3);
+		assertEquals(field1.getQualifiedName(),FieldName1);
+		assertEquals(field2.getQualifiedName(),FieldName2);
+		assertEquals(field3.getQualifiedName(),FieldName3);
 	}
 
 	@Test
@@ -66,9 +66,9 @@ public class TestColumn {
 	public final void testQualifiedName() {
 	  Column col = new Column("table_1.id", DataType.INT);
 	  
-	  assertTrue(col.isQualifiedName());
+	  assertTrue(col.isQualified());
 	  assertEquals("id", col.getColumnName());
-	  assertEquals("table_1.id", col.getName());
+	  assertEquals("table_1.id", col.getQualifiedName());
 	  assertEquals("table_1", col.getTableName());
 	}
 

@@ -21,9 +21,7 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 
 /**
- * 
  * @author Hyunsik Choi
- *
  */
 public class Schema implements ProtoObject<SchemaProto>, Cloneable {
   private static final Log LOG = LogFactory.getLog(Schema.class);
@@ -111,12 +109,13 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 	}
 
 	public synchronized Schema addColumn(String name, DataType dataType) {
-		initColumns();		
+		initColumns();
+		setModified();
 		if(fieldsByName.containsKey(name)) {
 		  LOG.error("Already exists column " + name);
 			throw new AlreadyExistsFieldException(name);
 		}
-		maybeInitBuilder();		
+			
 		Column newCol = new Column(name, dataType);
 		fields.add(newCol);
 		fieldsByName.put(name, fields.size() - 1);
@@ -125,7 +124,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 	}
 	
 	public synchronized void addColumn(Column column) {
-		addColumn(column.getName(), column.getDataType());		
+		addColumn(column.getQualifiedName(), column.getDataType());		
 	}
 	
 	public synchronized void addColumns(Schema schema) {
@@ -158,23 +157,25 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 
 	@Override
 	public SchemaProto getProto() {
-		mergeLocalToProto();
-		proto = viaProto ? proto : builder.build();
-		viaProto = true;
+	  if(!viaProto) {
+      mergeLocalToBuilder();
+      proto = builder.build();
+      viaProto = true;
+    }
+	  
 		return proto;
 	}
 
-	private void maybeInitBuilder() {
-		if (viaProto || builder == null) {
-			builder = SchemaProto.newBuilder(proto);
-		}
+	private void setModified() {
 		viaProto = false;
 	}
 
 	private void mergeLocalToBuilder() {
-//	  maybeInitBuilder();
-	  if (fields != null)
+	  if (builder == null) {
+	    builder = SchemaProto.newBuilder(proto);
+	  } else {	  
 	    builder.clearFields();
+	  }
 	  
 		if (this.fields  != null) {			
 			for(Column col : fields) {
@@ -183,17 +184,6 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 		}
 	}
 
-	private void mergeLocalToProto() {
-		if(viaProto) {
-			maybeInitBuilder();
-		}
-		
-		mergeLocalToBuilder();
-		proto = builder.build();
-		viaProto = true;
-		
-	}
-	
 	public String toString() {
 	  initColumns();
 	  StringBuilder sb = new StringBuilder();

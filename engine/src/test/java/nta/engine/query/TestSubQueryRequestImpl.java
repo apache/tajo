@@ -1,6 +1,6 @@
 package nta.engine.query;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -8,13 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.QueryIdFactory;
-import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.ipc.protocolrecords.SubQueryRequest;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
@@ -28,7 +28,7 @@ public class TestSubQueryRequestImpl {
 	public void test() throws URISyntaxException {
 	  QueryIdFactory.reset();
 	  Schema schema = new Schema();
-	  TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
+	  TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 	  
 		ArrayList<Fragment> tablets = new ArrayList<Fragment>();
 		tablets.add(new Fragment("test1_1",new Path("test1"), meta, 0, 1));

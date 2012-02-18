@@ -52,7 +52,7 @@ public class PlannerUtil {
       Target [] targets = gp.getTargetList();
       for (int i = 0; i < gp.getTargetList().length; i++) {
         if (targets[i].getEvalTree().getType() == Type.FUNCTION) {
-          String name = child.getOutputSchema().getColumn(i).getName();        
+          String name = child.getOutputSchema().getColumn(i).getQualifiedName();        
           FuncCallEval eval = (FuncCallEval) targets[i].getEvalTree();
           Collection<String> tobeChanged = EvalTreeUtil.findAllRefColumns(eval);
           EvalTreeUtil.changeColumnRef(eval, tobeChanged.iterator().next(), name);

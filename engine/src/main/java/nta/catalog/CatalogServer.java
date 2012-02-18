@@ -265,11 +265,6 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     LOG.info("updateAllTabletServingInfo processing time: " + (after-before) + "msc");
   }
 
-  public void addTable(String tableId, TableMeta info)
-      throws AlreadyExistsTableException {
-    addTable(new TableDescImpl(tableId, info).proto);
-  }
-
   @Override
   public void addTable(final TableDescProto proto)
       throws AlreadyExistsTableException {
@@ -286,7 +281,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 
       // rewrite schema
       SchemaProto revisedSchema =
-          CatalogUtil.getQualfiedSchema(proto.getId(), proto.getMeta()
+          TCatUtil.getQualfiedSchema(proto.getId(), proto.getMeta()
               .getSchema());
 
       TableProto.Builder metaBuilder = TableProto.newBuilder(proto.getMeta());
@@ -379,7 +374,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   @Override
   public void registerFunction(FunctionDescProto funcDesc) {
     String canonicalName =
-        CatalogUtil.getCanonicalName(funcDesc.getSignature(),
+        TCatUtil.getCanonicalName(funcDesc.getSignature(),
             funcDesc.getParameterTypesList());
     if (functions.containsKey(canonicalName)) {
       throw new AlreadyExistsFunction(canonicalName);
@@ -397,7 +392,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     for (int i = 0; i < size; i++) {
       paramTypes.add(request.getParameterTypes(i));
     }
-    String canonicalName = CatalogUtil.getCanonicalName(signature, paramTypes);
+    String canonicalName = TCatUtil.getCanonicalName(signature, paramTypes);
     if (!functions.containsKey(canonicalName)) {
       throw new NoSuchFunctionException(canonicalName);
     }
@@ -413,7 +408,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     for (int i = 0; i < size; i++) {
       paramTypes.add(request.getParameterTypes(i));
     }
-    return this.functions.get(CatalogUtil.getCanonicalName(
+    return this.functions.get(TCatUtil.getCanonicalName(
         request.getSignature(), paramTypes));
   }
 
@@ -425,7 +420,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
       paramTypes.add(request.getParameterTypes(i));
     }
     boolean returnValue =
-        this.functions.containsKey(CatalogUtil.getCanonicalName(
+        this.functions.containsKey(TCatUtil.getCanonicalName(
             request.getSignature(), paramTypes));
     return BoolProto.newBuilder().setValue(returnValue).build();
   }

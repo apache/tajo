@@ -3,6 +3,7 @@ package nta.schema;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
+import nta.catalog.TCatUtil;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 
@@ -36,7 +37,7 @@ public class BaseTableSchema {
 		schema.addColumn("tos", DataType.BYTE);
 		schema.addColumn("tag", DataType.LONG);
 		
-		tableMeta = new TableMetaImpl(schema, StoreType.CSV);
+		tableMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 	}
 	
 	public TableMeta getSchema() {

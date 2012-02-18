@@ -5,17 +5,10 @@ package nta.engine.json;
 
 import java.lang.reflect.Type;
 
-import org.apache.hadoop.fs.Path;
-
-import nta.catalog.Options;
-import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
-import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.ipc.protocolrecords.Fragment;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;

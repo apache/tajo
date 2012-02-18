@@ -1,6 +1,5 @@
 package nta.storage;
 
-import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 
@@ -12,13 +11,11 @@ public abstract class FileAppender implements Appender {
   protected final TableMeta meta;
   protected final Schema schema;
   protected final Path path;
-  protected Options option = null;
   
   public FileAppender(Configuration conf, TableMeta meta, Path path) {
     this.conf = conf;
     this.meta = meta;
     this.schema = meta.getSchema();
     this.path = path;
-    this.option = meta.getOptions();
   }
 }

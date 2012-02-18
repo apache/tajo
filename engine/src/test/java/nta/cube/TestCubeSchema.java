@@ -3,8 +3,8 @@ package nta.cube;
 import java.io.IOException;
 
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
@@ -61,9 +61,7 @@ public class TestCubeSchema {
     EngineTestingUtils.buildTestDir(TEST_PATH);
 
     StorageManager sm = StorageManager.get(new Configuration(), datapath);
-    TableMeta meta = new TableMetaImpl();
-    meta.setSchema(TEST_SCHEMA);
-    meta.setStorageType(StoreType.CSV);
+    TableMeta meta = TCatUtil.newTableMeta(TEST_SCHEMA, StoreType.CSV);
 
     Appender appender = sm.getTableAppender(meta, "origin");
     int tupleNum = data;

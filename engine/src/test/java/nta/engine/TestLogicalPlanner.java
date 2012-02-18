@@ -3,10 +3,10 @@ package nta.engine;
 import static org.junit.Assert.assertEquals;
 import nta.catalog.CatalogService;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.exception.NTAQueryException;
@@ -44,10 +44,9 @@ public class TestLogicalPlanner {
 		schema.addColumn("age", DataType.INT);
 		schema.addColumn("id", DataType.INT);
 		
-		TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);		
+		TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);		
 		meta.putOption(CSVFile2.DELIMITER, ",");  
-		TableDesc desc = new TableDescImpl("test", meta);
-		desc.setPath(new Path("/table/test"));
+		TableDesc desc = new TableDescImpl("test", meta, new Path("/table/test"));
 		cat.addTable(desc);
 	}
 	

@@ -8,8 +8,8 @@ import java.util.Arrays;
 import java.util.Random;
 
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
@@ -17,11 +17,8 @@ import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
-//import nta.engine.ipc.protocolrecords.Tablet;
 
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,9 +44,7 @@ public class TestCSVFile2 {
     schema.addColumn("name", DataType.STRING);
     schema.addColumn("age", DataType.LONG);
     
-    TableMeta meta = new TableMetaImpl();
-    meta.setSchema(schema);
-    meta.setStorageType(StoreType.CSV);
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
     meta.putOption(CSVFile2.DELIMITER, ",");
     
     Path path = new Path(TEST_PATH);
@@ -101,9 +96,7 @@ public class TestCSVFile2 {
     
     Random rnd = new Random(System.currentTimeMillis());
     
-    TableMeta meta = new TableMetaImpl();
-    meta.setSchema(schema);
-    meta.setStorageType(StoreType.CSV); 
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
     meta.putOption(CSVFile2.DELIMITER, ",");
     
     sm.initTableBase(meta, "table2");

@@ -38,7 +38,7 @@ public class Groupby {
 
     int i = 0;
     for (Column col : gnode.getGroupingColumns()) {
-      groupf[i] = gnode.getInputSchema().getColumnId(col.getName());
+      groupf[i] = gnode.getInputSchema().getColumnId(col.getQualifiedName());
       i++;
     }
 
@@ -125,7 +125,7 @@ public class Groupby {
 
     int i = 0;
     for (Column col : gnode.getGroupingColumns()) {
-      groupf[i] = gnode.getInputSchema().getColumnId(col.getName());
+      groupf[i] = gnode.getInputSchema().getColumnId(col.getQualifiedName());
       i++;
     }
 

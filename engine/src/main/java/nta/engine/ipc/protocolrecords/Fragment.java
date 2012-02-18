@@ -1,6 +1,7 @@
 package nta.engine.ipc.protocolrecords;
 
-import nta.catalog.CatalogUtil;
+import nta.annotation.Required;
+import nta.catalog.TCatUtil;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
@@ -13,6 +14,7 @@ import nta.engine.json.GsonCreator;
 
 import org.apache.hadoop.fs.Path;
 
+import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 
@@ -26,15 +28,15 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   protected TabletProto.Builder builder = null;
   protected boolean viaProto = false;
 
-  @Expose
+  @Expose @Required
   private String fragmentId;
-  @Expose
+  @Expose @Required
   private Path path;
-  @Expose
+  @Expose @Required
   private TableMeta meta;
-  @Expose
+  @Expose @Required
   private long startOffset;
-  @Expose
+  @Expose @Required
   private long length;
 
   public Fragment() {
@@ -46,7 +48,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
       long length) {
     this();
     TableMeta newMeta = new TableMetaImpl(meta.getProto());
-    SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(fragmentId, meta
+    SchemaProto newSchemaProto = TCatUtil.getQualfiedSchema(fragmentId, meta
         .getSchema().getProto());
     newMeta.setSchema(new Schema(newSchemaProto));
     this.set(fragmentId, path, newMeta, start, length);
@@ -57,9 +59,8 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
         proto.getMeta()), proto.getStartOffset(), proto.getLength());
   }
 
-  public void set(String fragmentId, Path path, TableMeta meta, long start,
+  private void set(String fragmentId, Path path, TableMeta meta, long start,
       long length) {
-    maybeInitBuilder();
     this.fragmentId = fragmentId;
     this.path = path;
     this.meta = meta;
@@ -84,7 +85,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 
   @Override
   public void setId(String fragmentId) {
-    maybeInitBuilder();
+    setModified();
     this.fragmentId = fragmentId;
   }
   
@@ -104,7 +105,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 
   @Override
   public void setPath(Path path) {
-    maybeInitBuilder();
+    setModified();
     this.path = path;
   }
   
@@ -127,7 +128,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 
   @Override
   public void setMeta(TableMeta meta) {
-    maybeInitBuilder();
+    setModified();
     this.meta = meta;
   }
 
@@ -188,7 +189,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 
   @Override
   public int hashCode() {
-    return (int) (getPath().hashCode() << 16 | getStartOffset() >> 16);
+    return Objects.hashCode(getPath(), getStartOffset());
   }
   
   public Object clone() throws CloneNotSupportedException {
@@ -213,14 +214,16 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 
   @Override
   public TabletProto getProto() {
-    mergeLocalToProto();
-
-    proto = viaProto ? proto : builder.build();
-    viaProto = true;
+    if (!viaProto) {
+      mergeLocalToBuilder();
+      proto = builder.build();
+      viaProto = true;
+    }
+    
     return proto;
   }
 
-  private void maybeInitBuilder() {
+  private void setModified() {
     if (viaProto || builder == null) {
       builder = TabletProto.newBuilder(proto);
     }
@@ -228,6 +231,10 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   }
 
   protected void mergeLocalToBuilder() {
+    if (builder == null) {
+      this.builder = TabletProto.newBuilder(proto);
+    }
+    
     if (this.fragmentId != null) {
       builder.setId(this.fragmentId);
     }
@@ -266,15 +273,6 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 	  if (length == -1 && p.hasLength()) {
 		  length = p.getLength();
 	  }
-  }
-
-  private void mergeLocalToProto() {
-    if (viaProto) {
-      maybeInitBuilder();
-    }
-    mergeLocalToBuilder();
-    proto = builder.build();
-    viaProto = true;
   }
 
   @Override

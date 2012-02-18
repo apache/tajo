@@ -33,19 +33,16 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
 		builder = TableDescProto.newBuilder();
 	}
 	
-	public TableDescImpl(String tableId) {
+	public TableDescImpl(String tableId, TableMeta info, Path path) {
 		this();
-		setId(tableId);
+	  this.tableId = tableId;
+	  this.meta = info;
+	  this.uri = path;	   
 	}
 	
-	public TableDescImpl(String tableId, TableMeta info) {
-		this();
-	  setId(tableId);
-	  setMeta(info);		
-	}
-	
-	public TableDescImpl(String tableId, Schema schema, StoreType type) {
-	  this(tableId, new TableMetaImpl(schema, type));
+	public TableDescImpl(String tableId, Schema schema, StoreType type, 
+	    Options options, Path path) {
+	  this(tableId, new TableMetaImpl(schema, type, options), path);
 	}
 	
 	public TableDescImpl(TableDescProto proto) {
@@ -54,7 +51,7 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
 	}
 	
 	public void setId(String tableId) {
-	  maybeInitBuilder();
+	  setModified();
 		this.tableId = tableId;
 	}
 	
@@ -73,6 +70,7 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
   }
 	
 	public void setPath(Path uri) {
+	  setModified();
 		this.uri = uri;
 	}
 	
@@ -92,7 +90,7 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
   
   @Override
   public void setMeta(TableMeta info) {
-    maybeInitBuilder();
+    setModified();
     this.meta = info;
   }
 	
@@ -102,7 +100,7 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
     if (meta != null) {
       return this.meta;
     }
-    if (!proto.hasMeta()) {
+    if (!p.hasMeta()) {
       return null;
     }
     this.meta = new TableMetaImpl(p.getMeta());
@@ -141,7 +139,7 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
 	  str.append("\"table\": {")
 	  .append("\"id\": \""+getId()).append("\",")
 	  .append("\"path\": \""+getPath()).append("\",")
-	  .append("\"meta\": \""+this.proto.getMeta().toString()).append("\"}");
+	  .append("\"meta\": \""+getMeta().toString()).append("\"}");
 	  
 	  return str.toString();
 	}
@@ -154,21 +152,27 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
 	}
 
   public TableDescProto getProto() {
-    mergeLocalToProto();
+    if(!viaProto) {
+      mergeLocalToBuilder();
+      proto = builder.build();
+      viaProto = true;
+    }
     
-    proto = viaProto ? proto : builder.build();
-    viaProto = true;
     return proto;
   }
   
-  private void maybeInitBuilder() {
-    if (viaProto || builder == null) {
+  private void setModified() {
+    if (viaProto && builder == null) {
       builder = TableDescProto.newBuilder(proto);
     }
     viaProto = false;
   }
   
-  protected void mergeLocalToBuilder() {    
+  protected void mergeLocalToBuilder() {
+    if (builder == null) {
+      builder = TableDescProto.newBuilder(proto);
+    }
+    
     if (this.tableId != null) {
       builder.setId(this.tableId);
     }
@@ -180,15 +184,6 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
     if (this.meta != null) {
       builder.setMeta((TableProto) meta.getProto());
     }
-  }
-  
-  private void mergeLocalToProto() {
-    if(viaProto) {
-      maybeInitBuilder();
-    }
-    mergeLocalToBuilder();
-    proto = builder.build();
-    viaProto = true;
   }
   
   private void mergeProtoToLocal() {

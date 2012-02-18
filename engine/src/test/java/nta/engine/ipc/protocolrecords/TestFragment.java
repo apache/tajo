@@ -5,8 +5,8 @@ import static org.junit.Assert.assertEquals;
 import java.util.Arrays;
 
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.json.GsonCreator;
@@ -31,7 +31,7 @@ public class TestFragment {
     schema1 = new Schema();
     schema1.addColumn("id", DataType.INT);
     schema1.addColumn("name", DataType.STRING);
-    meta1 = new TableMetaImpl(schema1, StoreType.CSV);
+    meta1 = TCatUtil.newTableMeta(schema1, StoreType.CSV);
   }
 
   @Test

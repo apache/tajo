@@ -53,9 +53,8 @@ public class TestDBStore {
     .addColumn("score", DataType.DOUBLE);
     
     String tableName = "addedtable";
-    TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl(tableName, meta);
-    desc.setPath(new Path("/addedtable"));
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableDesc desc = new TableDescImpl(tableName, meta, new Path("/addedtable"));
     assertFalse(store.existTable(tableName));
     store.addTable(desc);
     assertTrue(store.existTable(tableName));
@@ -72,9 +71,8 @@ public class TestDBStore {
     .addColumn("gettable.score", DataType.DOUBLE);
     
     String tableName = "gettable";
-    TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl(tableName, meta);
-    desc.setPath(new Path("/gettable"));
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableDesc desc = new TableDescImpl(tableName, meta, new Path("/gettable"));
 
     store.addTable(desc);
     TableDesc desc2 = store.getTable(tableName);
@@ -93,9 +91,9 @@ public class TestDBStore {
     int numTables = 5;
     for (int i = 0; i < numTables; i++) {
       String tableName = "tableA_" + i;
-      TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-      TableDesc desc = new TableDescImpl(tableName, meta);
-      desc.setPath(new Path("/tableA_" + i));
+      TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+      TableDesc desc = new TableDescImpl(tableName, meta, 
+          new Path("/tableA_" + i));
       store.addTable(desc);
     }
     

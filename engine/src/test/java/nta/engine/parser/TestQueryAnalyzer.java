@@ -6,11 +6,12 @@ import java.io.IOException;
 
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
+import nta.catalog.Options;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
@@ -30,9 +31,7 @@ import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.tree.CommonTree;
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -69,13 +68,13 @@ public class TestQueryAnalyzer {
     schema2.addColumn("dept", DataType.STRING);
     schema2.addColumn("year", DataType.INT);
 
-    TableMeta meta = new TableMetaImpl(schema1, StoreType.CSV);
-    TableDesc people = new TableDescImpl("people", meta);
-    people.setPath(new Path("file:///"));
+    TableMeta meta = TCatUtil.newTableMeta(schema1, StoreType.CSV);
+    TableDesc people = new TableDescImpl("people", meta, new Path("file:///"));
     cat.addTable(people);
     
-    TableDesc student = new TableDescImpl("student", schema2, StoreType.CSV);
-    student.setPath(new Path("file:///"));
+    TableDesc student = TCatUtil.newTableDesc("student", schema2, StoreType.CSV,
+        new Options(),
+        new Path("file:///"));
     cat.addTable(student);
     
     FunctionDesc funcMeta = new FunctionDesc("sumtest", TestSum.class,
@@ -117,9 +116,8 @@ public class TestQueryAnalyzer {
     schema.addColumn("score", DataType.INT);
     schema.addColumn("age", DataType.INT);
 
-    TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl("people", meta);
-    desc.setPath(new Path("file:///"));    
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
     cat.addTable(desc);
 
     NQL nql = new NQL(cat);
@@ -210,9 +208,9 @@ public class TestQueryAnalyzer {
   
   private static final void testOrderByCluse(QueryBlock block) {
     assertEquals(2, block.getSortKeys().length);
-    assertEquals("people.score", block.getSortKeys()[0].getSortKey().getName());
+    assertEquals("people.score", block.getSortKeys()[0].getSortKey().getQualifiedName());
     assertEquals(true, block.getSortKeys()[0].isAscending());    
-    assertEquals("people.age", block.getSortKeys()[1].getSortKey().getName());
+    assertEquals("people.age", block.getSortKeys()[1].getSortKey().getQualifiedName());
     assertEquals(false, block.getSortKeys()[1].isAscending());
   }
   
@@ -245,13 +243,13 @@ public class TestQueryAnalyzer {
   public final void testGroupByClause() {
     Context ctx = factory.create();
     QueryBlock block = analyzer.parse(ctx, QUERIES[3]);
-    assertEquals("people.age", block.getGroupFields()[0].getName());
+    assertEquals("people.age", block.getGroupFields()[0].getQualifiedName());
   }
   
   @Test(expected = InvalidQueryException.class)
   public final void testInvalidGroupFields() {
     Context ctx = factory.create();
     QueryBlock block = analyzer.parse(ctx, INVALID_QUERIES[2]);
-    assertEquals("age", block.getGroupFields()[0].getName());
+    assertEquals("age", block.getGroupFields()[0].getQualifiedName());
   }
 }

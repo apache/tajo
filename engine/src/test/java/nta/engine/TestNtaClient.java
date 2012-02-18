@@ -8,8 +8,8 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
 
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.rpc.Callback;
@@ -61,7 +61,7 @@ public class TestNtaClient {
       schema.addColumn("name", DataType.STRING);
       schema.addColumn("id", DataType.INT);
 
-      TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
+      TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
       meta.putOption(CSVFile2.DELIMITER, ",");
 
       cli.attachTable("attach1", "target/testdata/TestNtaClient/attach1");

@@ -59,7 +59,7 @@ public final class SortNode extends UnaryNode implements Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder("Order By ");
     for (int i = 0; i < sortKeys.length; i++) {    
-      sb.append(sortKeys[i].getSortKey().getName()+" "+
+      sb.append(sortKeys[i].getSortKey().getQualifiedName()+" "+
           (sortKeys[i].isAscending() ? "asc" : "desc"));
       if(i < sortKeys.length - 1) {
         sb.append(",");

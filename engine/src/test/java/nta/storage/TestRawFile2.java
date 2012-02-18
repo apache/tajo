@@ -5,8 +5,8 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
@@ -16,7 +16,6 @@ import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
 
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,9 +38,7 @@ public class TestRawFile2 {
     schema.addColumn("id", DataType.INT);
     schema.addColumn("age", DataType.LONG);
     
-    TableMeta meta = new TableMetaImpl();
-    meta.setSchema(schema);
-    meta.setStorageType(StoreType.RAW);
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
     
     sm.initTableBase(meta, "table1");
     Appender appender = sm.getAppender(meta, "table1", "file1");
@@ -80,9 +77,7 @@ public class TestRawFile2 {
     schema.addColumn("id", DataType.INT);
     schema.addColumn("age", DataType.LONG);
     
-    TableMeta meta = new TableMetaImpl();
-    meta.setSchema(schema);
-    meta.setStorageType(StoreType.RAW);
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
     
     sm.initTableBase(meta, "table1");
     Appender appender = sm.getAppender(meta, "table1", "file1");
@@ -123,9 +118,7 @@ public class TestRawFile2 {
     schema.addColumn("id", DataType.INT);
     schema.addColumn("age", DataType.LONG);
     
-    TableMeta meta = new TableMetaImpl();
-    meta.setSchema(schema);
-    meta.setStorageType(StoreType.RAW);
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
     
     sm.initTableBase(meta, "table1");
     Appender appender = sm.getAppender(meta, "table1", "file1");

@@ -41,7 +41,8 @@ public class LocalCatalog implements CatalogService {
 
   @Override
   public final TableDesc getTableDesc(final String name) {
-    return TableDesc.Factory.create(catalog.getTableDesc(StringProto.newBuilder().setValue(name).build()));
+    return TCatUtil.newTableDesc(
+        catalog.getTableDesc(StringProto.newBuilder().setValue(name).build()));
   }
 
   @Override

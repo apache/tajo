@@ -8,8 +8,8 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
@@ -51,9 +51,7 @@ public class TestStorageUtil {
     schema.addColumn("int", DataType.INT);
     
 
-    TableMeta meta = new TableMetaImpl();
-    meta.setSchema(schema);
-    meta.setStorageType(StoreType.CSV);
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
     
     Appender appender = sm.getTableAppender(meta, "table1");
     int tupleNum = 10000;

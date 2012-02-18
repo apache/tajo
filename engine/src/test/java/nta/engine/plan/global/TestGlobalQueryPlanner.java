@@ -1,17 +1,19 @@
 package nta.engine.plan.global;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.util.Arrays;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
-import nta.catalog.LocalCatalog;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
@@ -40,8 +42,6 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * 
@@ -108,7 +108,7 @@ public class TestGlobalQueryPlanner {
 			}
 			fs.mkdirs(tbPath);
 			fos = fs.create(new Path(tbPath, ".meta"));
-			meta = new TableMetaImpl(schema, StoreType.CSV);
+			meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 			meta.putOption(CSVFile2.DELIMITER, ",");			
 			FileUtil.writeProto(fos, meta.getProto());
 			fos.close();
@@ -120,8 +120,7 @@ public class TestGlobalQueryPlanner {
 			}
 			fos.close();
 
-			TableDesc desc = new TableDescImpl("table"+i, meta);
-			desc.setPath(tbPath);
+			TableDesc desc = new TableDescImpl("table"+i, meta, tbPath);
 			catalog.addTable(desc);
 		}
 	}

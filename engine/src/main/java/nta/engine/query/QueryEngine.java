@@ -96,7 +96,7 @@ public class QueryEngine implements EngineService {
 		
 		if(stream != null) {
 			for(Column desc : result.getSchema().getColumns()) {
-				stream.print(desc.getName()+"\t");
+				stream.print(desc.getQualifiedName()+"\t");
 			}
 			stream.println("\n----------------------------------");
 		}

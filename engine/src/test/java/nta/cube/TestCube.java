@@ -12,15 +12,13 @@ import java.util.concurrent.ExecutionException;
 
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
-import nta.catalog.LocalCatalog;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.conf.NtaConf;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.function.Aggavg;
@@ -39,7 +37,6 @@ import nta.engine.planner.logical.LogicalRootNode;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
 public class TestCube {
 
@@ -67,10 +64,9 @@ public class TestCube {
 
     QueryContext.Factory factory;
 
-    TableMeta meta = new TableMetaImpl(TestCubeSchema.TEST_SCHEMA,
+    TableMeta meta = TCatUtil.newTableMeta(TestCubeSchema.TEST_SCHEMA,
         StoreType.CSV);
-    TableDesc people = new TableDescImpl("nta", meta);
-    people.setPath(new Path("file:///"));    
+    TableDesc people = new TableDescImpl("nta", meta, new Path("file:///"));
     catalog.addTable(people);
 
     factory = new QueryContext.Factory(catalog);

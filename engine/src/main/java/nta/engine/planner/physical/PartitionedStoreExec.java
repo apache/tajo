@@ -10,6 +10,7 @@ import java.util.Map;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.StoreType;
@@ -59,14 +60,14 @@ public final class PartitionedStoreExec extends PhysicalExec {
     this.subOp = subOp;
     this.inputSchema = this.annotation.getInputSchema();
     this.outputSchema = this.annotation.getOutputSchema();    
-    this.meta = new TableMetaImpl(this.outputSchema, StoreType.CSV);    
+    this.meta = TCatUtil.newTableMeta(this.outputSchema, StoreType.CSV);    
     
     // about the partitions
     this.numPartitions = annotation.getNumPartitions();
     int i = 0;
     this.partitionKeys = new int [annotation.getPartitionKeys().length];
     for (Column key : annotation.getPartitionKeys()) {
-      partitionKeys[i] = inputSchema.getColumnId(key.getName());      
+      partitionKeys[i] = inputSchema.getColumnId(key.getQualifiedName());      
       i++;
     }
     this.partitioner = new HashPartitioner(partitionKeys, numPartitions);

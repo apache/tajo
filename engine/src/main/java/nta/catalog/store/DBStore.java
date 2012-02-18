@@ -16,6 +16,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
+import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.catalog.TConstants;
 import nta.catalog.TableDesc;
@@ -330,9 +331,8 @@ public class DBStore implements CatalogStore {
         tableStmt.close();
       }
 
-      TableMeta meta = new TableMetaImpl(schema, storeType);
-      table = new TableDescImpl(tableName, meta);
-      table.setPath(path);
+      TableMeta meta = new TableMetaImpl(schema, storeType, new Options());
+      table = new TableDescImpl(tableName, meta, path);
 
       return table;
     } catch (SQLException se) {

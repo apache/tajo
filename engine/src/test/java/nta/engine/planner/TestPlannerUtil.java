@@ -3,11 +3,12 @@ package nta.engine.planner;
 import static org.junit.Assert.assertEquals;
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
+import nta.catalog.Options;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
@@ -59,17 +60,19 @@ public class TestPlannerUtil {
     schema3.addColumn("deptName", DataType.STRING);
     schema3.addColumn("score", DataType.INT);
 
-    TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-    TableDesc people = new TableDescImpl("employee", meta);
-    people.setPath(new Path("file:///"));
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableDesc people = new TableDescImpl("employee", meta, 
+        new Path("file:///"));
     catalog.addTable(people);
 
-    TableDesc student = new TableDescImpl("dept", schema2, StoreType.CSV);
-    student.setPath(new Path("file:///"));
+    TableDesc student = new TableDescImpl("dept", schema2, StoreType.CSV, 
+        new Options(),
+        new Path("file:///"));
     catalog.addTable(student);
 
-    TableDesc score = new TableDescImpl("score", schema3, StoreType.CSV);
-    score.setPath(new Path("file:///"));
+    TableDesc score = new TableDescImpl("score", schema3, StoreType.CSV,
+        new Options(),
+        new Path("file:///"));
     catalog.addTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class,

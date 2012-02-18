@@ -92,8 +92,12 @@ public class TestCatalog {
 		schema1.addColumn(FieldName2, DataType.INT);
 		schema1.addColumn(FieldName3, DataType.LONG);
 		
-		TableDesc meta = new TableDescImpl("getTable", schema1, StoreType.CSV);
-		meta.setPath(new Path("/table1"));
+		TableDesc meta = TCatUtil.newTableDesc(
+		    "getTable", 
+		    schema1, 
+		    StoreType.CSV,
+		    new Options(),
+		    new Path("/table1"));
 		
 		assertFalse(catalog.existsTable("getTable"));
 		catalog.addTable(meta);
@@ -113,7 +117,7 @@ public class TestCatalog {
     schema1.addColumn(FieldName2, DataType.INT);
     schema1.addColumn(FieldName3, DataType.LONG);
     
-	  TableMeta info = new TableMetaImpl(schema1, StoreType.CSV);
+	  TableMeta info = TCatUtil.newTableMeta(schema1, StoreType.CSV);
 	  TableDesc desc = new TableDescImpl();
 	  desc.setMeta(info);
 	  
@@ -238,7 +242,7 @@ public class TestCatalog {
 			}
 			fs.mkdirs(tbPath);
 			fos = fs.create(new Path(tbPath, ".meta"));
-			meta = new TableMetaImpl(schema, StoreType.CSV);
+			meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 			meta.putOption(CSVFile2.DELIMITER, ",");			
 			FileUtil.writeProto(fos, meta.getProto());
 			fos.close();
@@ -250,8 +254,7 @@ public class TestCatalog {
 			}
 			fos.close();
 
-			TableDesc desc = new TableDescImpl("HostsByTable"+i, meta);
-			desc.setPath(tbPath);
+			TableDesc desc = new TableDescImpl("HostsByTable"+i, meta, tbPath);
 			local.addTable(desc);
 		}
 		

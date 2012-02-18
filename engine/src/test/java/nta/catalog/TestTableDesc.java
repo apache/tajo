@@ -19,30 +19,24 @@ public class TestTableDesc {
 	
 	@Before
 	public void setup() {
-		info = new TableMetaImpl();  
-	    info.setStorageType(StoreType.CSV);
-	    Schema schema = new Schema();
-	    schema.addColumn("name", DataType.BYTE);
-	    schema.addColumn("addr", DataType.STRING);
-	    info.setSchema(schema);
-	    
-	    desc = new TableDescImpl("table1", info);
-	    desc.setPath(new Path("/nta/data"));
+	  Schema schema = new Schema();
+    schema.addColumn("name", DataType.BYTE);
+    schema.addColumn("addr", DataType.STRING);
+    info = TCatUtil.newTableMeta(schema, StoreType.CSV);
+
+    desc = new TableDescImpl("table1", info, new Path("/nta/data"));
 	}
 
   @Test
   public void test() throws CloneNotSupportedException {
-    TableMeta info = new TableMetaImpl();  
-    info.setStorageType(StoreType.CSV);
     Schema schema = new Schema();
     schema.addColumn("name", DataType.BYTE);
     schema.addColumn("addr", DataType.STRING);
-    info.setSchema(schema);
+    TableMeta info = TCatUtil.newTableMeta(schema, StoreType.CSV);
     testClone(info);
 
-    TableDesc desc = new TableDescImpl("table1", info);
+    TableDesc desc = new TableDescImpl("table1", info, new Path("/nta/data"));
     assertEquals("table1", desc.getId());
-    desc.setPath(new Path("/nta/data"));
     
     assertEquals(new Path("/nta/data"), desc.getPath());
     assertEquals(info, desc.getMeta());
@@ -58,7 +52,7 @@ public class TestTableDesc {
     TableMeta jsonMeta = gson.fromJson(json, TableMeta.class);
     assertEquals(meta.getSchema(), jsonMeta.getSchema());
     assertEquals(meta.getStoreType(), jsonMeta.getStoreType());
-    assertEquals(meta.getOptions(), jsonMeta.getOptions());
+    assertEquals(meta, jsonMeta);
     testClone(meta);
   }
   
@@ -66,8 +60,7 @@ public class TestTableDesc {
   public void testTableDescToJson() throws CloneNotSupportedException {
     Gson gson = GsonCreator.getInstance();
 
-    TableDesc desc = new TableDescImpl("table1", info);
-    desc.setPath(new Path("/nta/data"));
+    TableDesc desc = new TableDescImpl("table1", info, new Path("/nta/data"));
     testClone(desc);
 
     String json = desc.toJSON();

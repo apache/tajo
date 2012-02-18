@@ -8,11 +8,12 @@ import java.io.IOException;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
+import nta.catalog.Options;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
@@ -86,7 +87,7 @@ public class TestPhysicalPlanner {
     scoreSchema.addColumn("score", DataType.INT);
     scoreSchema.addColumn("nullable", DataType.STRING);
 
-    TableMeta employeeMeta = new TableMetaImpl(schema, StoreType.CSV);
+    TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 
     sm.initTableBase(employeeMeta, "employee");
     Appender appender = sm.getAppender(employeeMeta, "employee", "employee_1");
@@ -99,15 +100,16 @@ public class TestPhysicalPlanner {
     appender.flush();
     appender.close();
 
-    employee = new TableDescImpl("employee", employeeMeta);
-    employee.setPath(sm.getTablePath("employee"));
+    employee = new TableDescImpl("employee", employeeMeta, 
+        sm.getTablePath("employee"));
     catalog.addTable(employee);
 
-    student = new TableDescImpl("dept", schema2, StoreType.CSV);
-    student.setPath(new Path("file:///"));
+    student = new TableDescImpl("dept", schema2, StoreType.CSV, new Options(),
+        new Path("file:///"));
     catalog.addTable(student);
 
-    score = new TableDescImpl("score", scoreSchema, StoreType.CSV);
+    score = new TableDescImpl("score", scoreSchema, StoreType.CSV, 
+        new Options(), sm.getTablePath("score"));
     sm.initTableBase(score.getMeta(), "score");
     appender = sm.getAppender(score.getMeta(), "score", "score_1");
     tuple = new VTuple(score.getMeta().getSchema().getColumnNum());
@@ -127,7 +129,6 @@ public class TestPhysicalPlanner {
     }
     appender.flush();
     appender.close();
-    score.setPath(sm.getTablePath("score"));
     catalog.addTable(score);
 
     analyzer = new QueryAnalyzer(catalog);
@@ -217,7 +218,7 @@ public class TestPhysicalPlanner {
 
     LogicalOptimizer.optimize(ctx, plan);
 
-    TableMeta outputMeta = new TableMetaImpl(plan.getOutputSchema(),
+    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutputSchema(),
         StoreType.CSV);
     sm.initTableBase(outputMeta, "grouped");
 
@@ -255,7 +256,7 @@ public class TestPhysicalPlanner {
     PlannerUtil.insertNode(plan, storeNode);
     LogicalOptimizer.optimize(ctx, plan);
 
-    TableMeta outputMeta = new TableMetaImpl(plan.getOutputSchema(),
+    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutputSchema(),
         StoreType.CSV);
     sm.initTableBase(outputMeta, "partition");
 

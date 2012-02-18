@@ -7,8 +7,8 @@ import java.util.Random;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
@@ -57,7 +57,7 @@ public class TestSortExec {
     schema.addColumn("empId", DataType.INT);
     schema.addColumn("deptName", DataType.STRING);
 
-    TableMeta employeeMeta = new TableMetaImpl(schema, StoreType.CSV);
+    TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
     sm.initTableBase(employeeMeta, "employee");
     Appender appender = sm.getAppender(employeeMeta, "employee", "employee_1");
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());

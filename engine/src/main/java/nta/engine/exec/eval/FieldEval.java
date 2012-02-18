@@ -30,7 +30,7 @@ public class FieldEval extends EvalNode implements Cloneable {
 	public FieldEval(Column col) {
 	  super(Type.FIELD);
 	  this.dataType = col.getDataType();
-	  this.columnName = col.getName();
+	  this.columnName = col.getQualifiedName();
 	}
 
 	@Override

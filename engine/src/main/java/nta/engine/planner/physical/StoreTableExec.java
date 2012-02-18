@@ -6,8 +6,8 @@ package nta.engine.planner.physical;
 import java.io.IOException;
 
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.QueryUnitId;
 import nta.engine.planner.logical.StoreTableNode;
@@ -43,7 +43,7 @@ public class StoreTableExec extends PhysicalExec {
     this.inputSchema = annotation.getInputSchema();
     this.outputSchema = annotation.getOutputSchema();
     
-    TableMeta meta = new TableMetaImpl(this.outputSchema, StoreType.CSV);
+    TableMeta meta = TCatUtil.newTableMeta(this.outputSchema, StoreType.CSV);
     this.appender = sm.getAppender(meta,annotation.getTableName(),
         queryId.toString());
   }

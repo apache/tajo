@@ -252,8 +252,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     LOG.info(path.toUri());
 
     TableMeta meta = TableUtil.getTableMeta(conf, path);
-    TableDesc desc = new TableDescImpl(name, meta);
-    desc.setPath(path);
+    TableDesc desc = new TableDescImpl(name, meta, path);
     catalog.addTable(desc);
     LOG.info("Table " + desc.getId() + " is attached.");
   }

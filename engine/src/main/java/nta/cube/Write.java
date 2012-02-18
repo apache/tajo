@@ -4,9 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import nta.catalog.TCatUtil;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
@@ -31,9 +31,7 @@ public class Write {
 
     StorageManager sm = StorageManager.get(new Configuration(), Cons.datapath);
 
-    TableMeta meta = new TableMetaImpl();
-    meta.setSchema(schema);
-    meta.setStorageType(StoreType.CSV);
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
     File folder = new File(sm.getTablePath(tableName).toString());
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     if (!folder.exists()) {
@@ -61,14 +59,14 @@ public class Write {
                 gnode
                     .getOutputSchema()
                     .getColumnId(
-                        gnode.getTargetList()[z].getColumnSchema().getName())
+                        gnode.getTargetList()[z].getColumnSchema().getQualifiedName())
                     , kvpair.key[z]);
           } else {
             vTuple.put(
                 gnode
                     .getOutputSchema()
                     .getColumnId(
-                        gnode.getTargetList()[z].getColumnSchema().getName())
+                        gnode.getTargetList()[z].getColumnSchema().getQualifiedName())
                     , kvpair.val[z - kvpair.key.length]);
           }
         }

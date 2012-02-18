@@ -5,10 +5,10 @@ import java.util.Random;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
@@ -81,7 +81,7 @@ public class TestQuery {
 			}
 			fs.mkdirs(tbPath);
 			fos = fs.create(new Path(tbPath, ".meta"));
-			meta = new TableMetaImpl(schema, StoreType.CSV);
+			meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 			meta.putOption(CSVFile2.DELIMITER, ",");			
 			FileUtil.writeProto(fos, meta.getProto());
 			fos.close();
@@ -93,8 +93,7 @@ public class TestQuery {
 			}
 			fos.close();
 
-			TableDesc desc = new TableDescImpl("table"+i, meta);
-			desc.setPath(tbPath);
+			TableDesc desc = new TableDescImpl("table"+i, meta, tbPath);
 			catalog.addTable(desc);
 		}
 	}

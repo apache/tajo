@@ -38,7 +38,7 @@ public class ResultSetMemImplOld implements ResultSetOld, SchemaObject {
 		
 		int i=0;
 		for(Column col: schema.getColumns()) {
-			columnMap.put(col.getName(), i);
+			columnMap.put(col.getQualifiedName(), i);
 			i++;
 		}
 	}
@@ -252,7 +252,7 @@ public class ResultSetMemImplOld implements ResultSetOld, SchemaObject {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		for(Column desc : this.meta.getColumns()) {
-			sb.append(desc.getName()+"\t");
+			sb.append(desc.getQualifiedName()+"\t");
 		}
 		sb.append("\n----------------------------------\n");
 		first();

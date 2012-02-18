@@ -45,7 +45,7 @@ public class SeqScanExec extends PhysicalExec {
         
     int i=0;
     for (Column target : annotation.getTargetList().getColumns()) {
-      targetIds[i] = inputSchema.getColumnId(target.getName());
+      targetIds[i] = inputSchema.getColumnId(target.getQualifiedName());
       i++;
     }
     

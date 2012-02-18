@@ -10,12 +10,12 @@ import nta.catalog.proto.CatalogProtos.TableProto;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestTableInfo {
+public class TestTableMeta {
   TableMeta meta = null;
   Schema schema = null;
   
   @Before
-  public void setUp() {
+  public void setUp() {    
     schema = new Schema();
     schema.addColumn("name", DataType.BYTE);
     schema.addColumn("addr", DataType.STRING);
@@ -26,7 +26,7 @@ public class TestTableInfo {
   public void testTableMetaTableProto() {    
     Schema schema1 = new Schema();
     schema1.addColumn("name", DataType.BYTE);
-    schema1.addColumn("addr", DataType.STRING);    
+    schema1.addColumn("addr", DataType.STRING);
     TableMeta meta1 = TCatUtil.newTableMeta(schema1, StoreType.CSV);
     
     TableMeta meta2 = new TableMetaImpl(meta1.getProto());    
@@ -34,26 +34,24 @@ public class TestTableInfo {
   }
   
   @Test
-  public final void testClone() throws CloneNotSupportedException {    
+  public final void testClone() throws CloneNotSupportedException {
     Schema schema1 = new Schema();
     schema1.addColumn("name", DataType.BYTE);
     schema1.addColumn("addr", DataType.STRING);
     TableMeta meta1 = TCatUtil.newTableMeta(schema1, StoreType.CSV);
     
-    TableMetaImpl info = (TableMetaImpl) meta1;
-    
-    TableMetaImpl info2 = (TableMetaImpl) info.clone();
-    assertEquals(info.getSchema(), info2.getSchema());
-    assertEquals(info.getStoreType(), info2.getStoreType());
-    assertEquals(info, info2);
+    TableMetaImpl meta2 = (TableMetaImpl) meta1.clone();
+    assertEquals(meta1.getSchema(), meta2.getSchema());
+    assertEquals(meta1.getStoreType(), meta2.getStoreType());
+    assertEquals(meta1, meta2);
   }
   
   @Test
-  public void testSchema() throws CloneNotSupportedException {    
+  public void testSchema() throws CloneNotSupportedException {
     Schema schema1 = new Schema();
     schema1.addColumn("name", DataType.BYTE);
     schema1.addColumn("addr", DataType.STRING);
-    TableMeta meta1 = TCatUtil.newTableMeta(schema1,  StoreType.CSV);
+    TableMeta meta1 = TCatUtil.newTableMeta(schema1, StoreType.CSV);
     
     TableMeta meta2 = (TableMeta) meta1.clone();
     
@@ -87,7 +85,7 @@ public class TestTableInfo {
   }
   
   @Test
-  public void testEqualsObject() {    
+  public void testEqualsObject() {   
     Schema schema2 = new Schema();
     schema2.addColumn("name", DataType.BYTE);
     schema2.addColumn("addr", DataType.STRING);
@@ -99,7 +97,7 @@ public class TestTableInfo {
   }
   
   @Test
-  public void testGetProto() {
+  public void testGetProto() {    
     Schema schema1 = new Schema();
     schema1.addColumn("name", DataType.BYTE);
     schema1.addColumn("addr", DataType.STRING);

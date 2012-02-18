@@ -85,7 +85,7 @@ public class CatalogClient implements CatalogService {
 
   @Override
   public final TableDesc getTableDesc(final String name) {
-    return TableDesc.Factory.create(proxy.getTableDesc(StringProto.newBuilder()
+    return TCatUtil.newTableDesc(proxy.getTableDesc(StringProto.newBuilder()
         .setValue(name).build()));
   }
 

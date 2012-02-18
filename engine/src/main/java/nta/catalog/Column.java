@@ -26,9 +26,9 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	}
 	  
 	public Column(String columnName, DataType dataType) {
+	  this();
 		this.name = columnName;
 		this.dataType = dataType;
-		this.builder = ColumnProto.newBuilder();
 	}
 	
 	public Column(ColumnProto proto) {
@@ -37,7 +37,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	}
 	
 
-	public String getName() {
+	public String getQualifiedName() {
 		ColumnProtoOrBuilder p = viaProto ? proto : builder;
 		if(name != null) {
 			return this.name;
@@ -50,23 +50,27 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 		return this.name;
 	}
 	
-  public boolean isQualifiedName() {
-    return getName().split("\\.").length == 2;
+  public boolean isQualified() {
+    return getQualifiedName().split("\\.").length == 2;
   }
 
   public String getTableName() {
-    return getName().split("\\.")[0];
+    if (isQualified()) {
+      return getQualifiedName().split("\\.")[0];
+    } else {
+      return "";
+    }    
   }
 
   public String getColumnName() {
-    if (isQualifiedName())
+    if (isQualified())
       return this.name.split("\\.")[1];
     else
       return name;
   }
 	
 	public void setName(String name) {
-		maybeInitBuilder();
+	  setModified();
 		this.name = name;
 	}
 	
@@ -84,7 +88,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	}
 	
 	public void setDataType(DataType dataType) {
-		maybeInitBuilder();
+		setModified();
 		this.dataType = dataType;
 	}
 	
@@ -92,7 +96,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	public boolean equals(Object o) {
 		if (o instanceof Column) {
 			Column cd = (Column)o;
-			if (this.getName().equals(cd.getName()) &&
+			if (this.getQualifiedName().equals(cd.getQualifiedName()) &&
 					this.getDataType() == cd.getDataType()
 					) {
 				return true;
@@ -102,7 +106,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	}
 	
   public int hashCode() {
-    return getName().hashCode() ^ (getDataType().hashCode() * 17);
+    return getQualifiedName().hashCode() ^ (getDataType().hashCode() * 17);
   }
   
   @Override
@@ -119,20 +123,23 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 
 	@Override
 	public ColumnProto getProto() {
-		mergeLocalToProto();
-		proto = viaProto ? proto : builder.build();
-		viaProto = true;
-		return proto;
+	  if(!viaProto) {
+      mergeLocalToBuilder();
+      proto = builder.build();
+      viaProto = true;
+    }
+	  
+	  return proto;
 	}
 	
-	private void maybeInitBuilder() {
-		if (viaProto || builder == null) {
-			builder = ColumnProto.newBuilder(proto);
-		}
-		viaProto = false;
+	private void setModified() {
+	  viaProto = false;
 	}
 	
 	private void mergeLocalToBuilder() {
+	  if (builder == null) {
+	    builder = ColumnProto.newBuilder(proto);
+	  }
 		if (this.name != null) {
 			builder.setColumnName(this.name);			
 		}
@@ -141,17 +148,8 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 		}
 	}
 	
-	private void mergeLocalToProto() {
-		if(viaProto) {
-			maybeInitBuilder();
-		}
-		mergeLocalToBuilder();
-		proto = builder.build();
-		viaProto = true;
-	}
-	
 	public String toString() {
-	  return getName() +" " + getDataType();
+	  return getQualifiedName() +" " + getDataType();
 	}
 	
 	public String toJSON() {

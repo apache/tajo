@@ -354,7 +354,7 @@ public class NQL {
 						if(field == null) {
 							field = rel.getMeta().getSchema().getColumn(rInfo.getName()+"."+fieldName.getName());								
 						} else 
-							throw new AmbiguousFieldException(field.getName());											
+							throw new AmbiguousFieldException(field.getQualifiedName());											
 					}
 				}
 			}

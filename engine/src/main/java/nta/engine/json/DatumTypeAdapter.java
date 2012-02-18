@@ -5,9 +5,7 @@ package nta.engine.json;
 
 import java.lang.reflect.Type;
 
-import nta.catalog.TableDescImpl;
 import nta.datum.Datum;
-import nta.engine.ipc.protocolrecords.Fragment;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;

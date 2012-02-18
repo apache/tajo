@@ -57,7 +57,7 @@ public class GroupByExec extends PhysicalExec {
     keylist = new int[annotation.getGroupingColumns().length];
     int idx = 0;
     for (Column col : annotation.getGroupingColumns()) {
-      keylist[idx] = inputSchema.getColumnId(col.getName());
+      keylist[idx] = inputSchema.getColumnId(col.getQualifiedName());
       idx++;
     }
     

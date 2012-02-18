@@ -16,9 +16,9 @@ import nta.catalog.CatalogService;
 import nta.catalog.Column;
 import nta.catalog.HostInfo;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.EngineService;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
@@ -139,7 +139,7 @@ public class GlobalEngine implements EngineService {
      */
 
     Schema outSchema = ((LogicalRootNode) plan).getSubNode().getOutputSchema();
-    meta = new TableMetaImpl(outSchema, StoreType.CSV);
+    meta = TCatUtil.newTableMeta(outSchema, StoreType.CSV);
     sm.initTableBase(meta, storeName);
     LOG.info(">>>>> Output directory (" + sm.getTablePath(storeName)
         + ") is created");

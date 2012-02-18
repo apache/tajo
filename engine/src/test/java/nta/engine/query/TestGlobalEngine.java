@@ -6,11 +6,12 @@ package nta.engine.query;
 import java.io.IOException;
 
 import nta.catalog.CatalogService;
+import nta.catalog.Options;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
@@ -56,9 +57,7 @@ public class TestGlobalEngine {
 	    schema3.addColumn("deptname", DataType.STRING);
 	    schema3.addColumn("score", DataType.INT);
 	    
-	    TableMeta meta = new TableMetaImpl();
-	    meta.setSchema(schema3);
-	    meta.setStorageType(StoreType.CSV);
+	    TableMeta meta = TCatUtil.newTableMeta(schema3, StoreType.CSV);
 	    
 	    Appender appender = sm.getTableAppender(meta, "score");
 	    int tupleNum = 10;
@@ -71,8 +70,9 @@ public class TestGlobalEngine {
 	    }
 	    appender.close();
 	    
-	    TableDesc score = new TableDescImpl("score", schema3, StoreType.CSV);
-	    score.setPath(new Path(conf.get(NConstants.ENGINE_DATA_DIR), "score"));
+	    TableDesc score = new TableDescImpl("score", schema3, StoreType.CSV,
+	        new Options(), 
+	        new Path(conf.get(NConstants.ENGINE_DATA_DIR), "score"));
 	    catalog.addTable(score);
 	}
 	

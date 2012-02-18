@@ -7,10 +7,10 @@ import nta.catalog.CatalogService;
 import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
@@ -112,9 +112,8 @@ public class TestEvalTree {
     schema.addColumn("score", DataType.INT);
     schema.addColumn("age", DataType.INT);
 
-    TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl("people", meta);
-    desc.setPath(new Path("file:///"));
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
     cat.addTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,

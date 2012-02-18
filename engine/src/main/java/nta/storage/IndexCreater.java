@@ -76,7 +76,7 @@ public class IndexCreater implements Closeable{
 		
 		init(tablet , column);
 		
-		if ( this.schema.getColumn(column.getName()) == null ) {
+		if ( this.schema.getColumn(column.getQualifiedName()) == null ) {
 			return false;
 		}
 		
@@ -107,7 +107,7 @@ public class IndexCreater implements Closeable{
 		this.parentPath = new Path(tablePath.getParent().getParent() , "index" );
 		this.schema = tablet.getMeta().getSchema();
 		this.fileName = tablet.getId() + "." + tablet.getStartOffset()
-				+ "." + column.getName() +  ".index";
+				+ "." + column.getQualifiedName() +  ".index";
 		Path indexPath = new Path(this.parentPath, fileName);
 		
 		if(fs != null) {

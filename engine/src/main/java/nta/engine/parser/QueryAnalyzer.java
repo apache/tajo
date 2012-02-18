@@ -1,7 +1,7 @@
 package nta.engine.parser;
 
 import nta.catalog.CatalogService;
-import nta.catalog.CatalogUtil;
+import nta.catalog.TCatUtil;
 import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
@@ -492,7 +492,7 @@ public final class QueryAnalyzer {
         paramTypes[i] = givenArgs[i].getValueType();
       }
       if (!catalog.containFunction(signature, paramTypes)) {
-        throw new UndefinedFunctionException(CatalogUtil.
+        throw new UndefinedFunctionException(TCatUtil.
             getCanonicalName(signature, paramTypes));
       }
       FunctionDesc funcDesc = catalog.getFunction(signature, paramTypes);

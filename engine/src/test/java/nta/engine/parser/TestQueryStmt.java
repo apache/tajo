@@ -12,10 +12,10 @@ import java.io.IOException;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumType;
@@ -28,9 +28,7 @@ import nta.storage.CSVFile2;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -62,13 +60,10 @@ public class TestQueryStmt {
     schema.addColumn("age", DataType.INT);
     schema.addColumn("id", DataType.INT);
     
-    TableMeta meta = new TableMetaImpl();   
-    meta.setSchema(schema);
-    meta.setStorageType(StoreType.CSV);
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
     meta.putOption(CSVFile2.DELIMITER, ",");    
     
-    TableDesc desc = new TableDescImpl("test", meta);
-    desc.setPath(new Path("/table/test"));
+    TableDesc desc = new TableDescImpl("test", meta, new Path("/table/test"));
     cat.addTable(desc);
   }
   

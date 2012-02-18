@@ -3,40 +3,42 @@
  */
 package nta.catalog;
 
+import nta.annotation.Optional;
+import nta.annotation.Required;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.catalog.proto.CatalogProtos.TableProtoOrBuilder;
 import nta.engine.json.GsonCreator;
 
+import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
- *
  */
 public class TableMetaImpl implements TableMeta {
 	protected TableProto proto = TableProto.getDefaultInstance();
 	protected TableProto.Builder builder = null;
 	protected boolean viaProto = false;	
 	
-	// materialized variables
-	@Expose
+	@Expose @Required 
 	protected Schema schema;
-	@Expose
+	@Expose @Required 
 	protected StoreType storeType;
-	@Expose
+	@Expose @Optional
 	protected Options options;
 	
-	public TableMetaImpl() {
-		builder = TableProto.newBuilder();
+	private TableMetaImpl() {
+	  builder = TableProto.newBuilder();
 	}
 	
-	public TableMetaImpl(Schema schema, StoreType type) {
+	public TableMetaImpl(Schema schema, StoreType type, Options options) {
 	  this();
-	  setSchema(schema);
-	  setStorageType(type);
-	}
+	  this.schema = schema;
+    this.storeType = type;
+    this.options = new Options(options);
+  }
 	
 	public TableMetaImpl(TableProto proto) {
 		this.proto = proto;
@@ -44,7 +46,7 @@ public class TableMetaImpl implements TableMeta {
 	}
 	
 	public void setStorageType(StoreType storeType) {
-    maybeInitBuilder();
+    setModified();
     this.storeType = storeType;
   }	
 	
@@ -63,7 +65,7 @@ public class TableMetaImpl implements TableMeta {
 	}
 	
   public void setSchema(Schema schema) {
-    maybeInitBuilder();
+    setModified();
     this.schema = schema;
   }
 	
@@ -80,47 +82,35 @@ public class TableMetaImpl implements TableMeta {
 		
 		return this.schema;
 	}
+	
   public void setOptions(Options options) {
-    initOptions();
+    setModified();
     this.options = options;
   }
   
-  public Options getOptions() {
+  private Options getOptions() {
     TableProtoOrBuilder p = viaProto ? proto : builder;
     if(this.options != null) {
       return this.options;
     }
     if(!p.hasParams()) {
-      this.options = new Options();
-      return this.options;
+      return null;
     }
     this.options = new Options(p.getParams());
     
     return this.options;
   }
 
+  @Override
   public void putOption(String key, String val) {
-    initOptions();
-    this.options.put(key, val);
+    setModified();
+    getOptions().put(key, val);
   }
-    
-  public String deleteOption(String key) {
-    initOptions();
-    return this.options.delete(key);
+
+  @Override
+  public String getOption(String key, String defaultValue) {
+    return getOptions().get(key, defaultValue);
   }
-	
-	public String getOption(String key) {
-		initOptions();
-		return this.options.get(key);		
-	}
-	
-	private void initOptions() {
-		if(this.options != null) {
-			return;
-		}
-		TableProtoOrBuilder p = viaProto ? proto : builder;
-		this.options = new Options(p.getParams());
-	}	
 	
 	public boolean equals(Object object) {
 		if(object instanceof TableMetaImpl) {
@@ -132,10 +122,14 @@ public class TableMetaImpl implements TableMeta {
 		return false;		
 	}
 	
+	public int hashCode() {
+	  return Objects.hashCode(getSchema(), storeType);
+	}
+	
 	@Override
 	public Object clone() throws CloneNotSupportedException {    
-	  TableMetaImpl meta = (TableMetaImpl) super.clone();
 	  initFromProto();
+	  TableMetaImpl meta = (TableMetaImpl) super.clone();	  
 	  meta.proto = null;
     meta.viaProto = false;
     meta.builder = TableProto.newBuilder();
@@ -146,26 +140,59 @@ public class TableMetaImpl implements TableMeta {
     return meta;
 	}
 	
+	public String toString() {
+    StringBuilder sb = new StringBuilder();
+    if(viaProto) {
+      return proto.toString();
+    }
+    
+    sb.append("{");
+    if(schema != null) {
+      sb.append("schema {")
+      .append(schema.toString())
+      .append("}");
+    }
+    
+    if(storeType != null) {
+      sb.append("storeType: {")
+      .append(storeType)
+      .append("}");
+    }
+    
+    if(options != null) {
+      sb.append("options: {")
+      .append(options)
+      .append("}");
+    }
+    
+    return sb.toString();
+  }
+	
 	////////////////////////////////////////////////////////////////////////
 	// ProtoObject
 	////////////////////////////////////////////////////////////////////////
 	@Override
 	public TableProto getProto() {
-		mergeLocalToProto();
-		
-		proto = viaProto ? proto : builder.build();
-		viaProto = true;
+	  if(!viaProto) {
+      mergeLocalToBuilder();
+      proto = builder.build();
+      viaProto = true;  
+    }
 		return proto;
 	}
-	
-	private void maybeInitBuilder() {
-		if (viaProto || builder == null) {
-			builder = TableProto.newBuilder(proto);
-		}
-		viaProto = false;
-	}
+
+  private void setModified() {
+    if (viaProto || builder == null) {
+      builder = TableProto.newBuilder(proto);
+    }
+    this.viaProto = false;
+  }
 	
 	private void mergeLocalToBuilder() {
+    if (this.builder == null) {      
+      this.builder = TableProto.newBuilder(proto);
+    }
+	  
 	  if (this.schema != null) {
 	    builder.setSchema(this.schema.getProto());
 	  }
@@ -175,22 +202,16 @@ public class TableMetaImpl implements TableMeta {
     }
 
 		if (this.options != null) {
-			builder.setParams(options.getProto());
-		}		
-	}
-	
-	private void mergeLocalToProto() {
-		if(viaProto) {
-			maybeInitBuilder();
+		  builder.setParams(options.getProto());
 		}
-		mergeLocalToBuilder();
-		proto = builder.build();
-		viaProto = true;
 	}
 	
+  ////////////////////////////////////////////////////////////////////////
+  // For Json
+  ////////////////////////////////////////////////////////////////////////	
 	private void mergeProtoToLocal() {
 		TableProtoOrBuilder p = viaProto ? proto : builder;
-		if (schema == null && p.hasSchema()) {
+		if (schema == null) {
 			schema = new Schema(p.getSchema());
 		}
 		if (storeType == null && p.hasStoreType()) {
@@ -198,42 +219,12 @@ public class TableMetaImpl implements TableMeta {
 		}
 		if (options == null && p.hasParams()) {
 			options = new Options(p.getParams());
-		} else {
-		  options = new Options();
 		}
 	}
 	
 	public void initFromProto() {
 		mergeProtoToLocal();
     schema.initFromProto();
-	}
-	
-	public String toString() {
-	  StringBuilder sb = new StringBuilder();
-	  if(viaProto) {
-	    return proto.toString();
-	  }
-	  
-	  sb.append("{");
-	  if(schema != null) {
-	    sb.append("schema {")
-	    .append(schema.toString())
-	    .append("}");
-	  }
-	  
-	  if(storeType != null) {
-	    sb.append("storeType: {")
-	    .append(storeType)
-	    .append("}");
-	  }
-	  
-	  if(options != null) {
-	    sb.append("options: {")
-	    .append(options)
-	    .append("}");
-	  }
-	  
-	  return sb.toString();
 	}
 	
 	public String toJSON() {

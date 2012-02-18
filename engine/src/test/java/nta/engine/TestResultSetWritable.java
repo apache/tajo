@@ -11,8 +11,8 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.common.type.IPv4;
@@ -53,7 +53,7 @@ public class TestResultSetWritable {
 		schema.addColumn("id", DataType.INT);
 		schema.addColumn("ip", DataType.IPv4);
 
-		TableMeta desc = new TableMetaImpl(schema, StoreType.RAW);
+		TableMeta desc = TCatUtil.newTableMeta(schema, StoreType.RAW);
 
 		Appender appender = sm.getTableAppender(desc, "table1");
 

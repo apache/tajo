@@ -76,11 +76,7 @@ public class CSVFile2 extends Storage {
       fos = fs.create(path);
       
       // set delimiter.
-      if (meta.getOptions() == null) {
-        this.delimiter = ",";
-      } else {
-        this.delimiter = meta.getOptions().get(DELIMITER, DELIMITER_DEFAULT);        
-      }
+      this.delimiter = meta.getOption(DELIMITER, DELIMITER_DEFAULT);
     }
 
     @Override
@@ -183,11 +179,7 @@ public class CSVFile2 extends Storage {
       this.bufferSize = DEFAULT_BUFFER_SIZE;
 
       // set delimiter.
-      if (tablets[0].getMeta().getOptions() == null) {
-        this.delimiter = ",";
-      } else {
-        this.delimiter = tablets[0].getMeta().getOptions().get(DELIMITER, DELIMITER_DEFAULT);        
-      }
+      this.delimiter = tablets[0].getMeta().getOption(DELIMITER, DELIMITER_DEFAULT);        
       
       // set tablets iterator.
       this.tabletSet = new TreeSet<Fragment>();

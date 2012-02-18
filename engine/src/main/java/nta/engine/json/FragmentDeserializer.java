@@ -5,14 +5,13 @@ package nta.engine.json;
 
 import java.lang.reflect.Type;
 
-import org.apache.hadoop.fs.Path;
-
 import nta.catalog.Options;
 import nta.catalog.Schema;
-import nta.catalog.TableDescImpl;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.ipc.protocolrecords.Fragment;
+
+import org.apache.hadoop.fs.Path;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonDeserializationContext;
@@ -33,9 +32,10 @@ public class FragmentDeserializer implements JsonDeserializer<Fragment> {
 		Gson gson = GsonCreator.getInstance();
 		JsonObject fragObj = json.getAsJsonObject();
 		JsonObject metaObj = fragObj.get("meta").getAsJsonObject();
-		TableMetaImpl meta = new TableMetaImpl(gson.fromJson(metaObj.get("schema"), Schema.class), 
-				gson.fromJson(metaObj.get("storeType"), StoreType.class));
-		meta.setOptions(gson.fromJson(metaObj.get("options"), Options.class));
+		TableMetaImpl meta = new TableMetaImpl(
+		    gson.fromJson(metaObj.get("schema"), Schema.class), 
+				gson.fromJson(metaObj.get("storeType"), StoreType.class), 
+				gson.fromJson(metaObj.get("options"), Options.class));
 		Fragment fragment = new Fragment(fragObj.get("tabletId").getAsString(), 
 				gson.fromJson(fragObj.get("path"), Path.class), 
 				meta, 

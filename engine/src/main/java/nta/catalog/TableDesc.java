@@ -1,8 +1,5 @@
 package nta.catalog;
 
-import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.catalog.proto.CatalogProtos.TableDescProto;
-
 import org.apache.hadoop.fs.Path;
 
 import com.google.protobuf.Message;
@@ -27,20 +24,9 @@ public interface TableDesc extends Cloneable {
   
   Message getProto();
   
-  public void initFromProto();
+  void initFromProto();
   
-  public String toJSON();
-  
-  public Object clone() throws CloneNotSupportedException;
-  
-  public static class Factory {
-    public static TableDesc create(String tableId, Schema schema, 
-        StoreType type) {
-      return new TableDescImpl(tableId, new TableMetaImpl(schema, type));   
-    }
-    
-    public static TableDesc create(TableDescProto proto) {
-      return new TableDescImpl(proto);
-    }
-  }
+  String toJSON();
+ 
+  Object clone() throws CloneNotSupportedException;
 }

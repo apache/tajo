@@ -3,10 +3,10 @@ package nta.engine.function;
 import static org.junit.Assert.assertEquals;
 import nta.catalog.CatalogService;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.Datum;
@@ -20,9 +20,7 @@ import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -55,9 +53,8 @@ public class TestBuiltinFunction {
     schema.addColumn("people.score", DataType.INT);
     schema.addColumn("people.age", DataType.INT);
 
-    TableMeta meta = new TableMetaImpl(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl("people", meta);
-    desc.setPath(new Path("file:///"));
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
     cat.addTable(desc);
 
     tuples = new Tuple[tuplenum];

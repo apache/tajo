@@ -11,7 +11,7 @@ import org.junit.Test;
 /**
  * @author Hyunsik Choi
  */
-public class TestPersistentCatalog {
+public class TestCatalogStore {
   
   @Test
   public final void test() throws Exception {
@@ -31,7 +31,7 @@ public class TestPersistentCatalog {
     for (int i = 0; i < numTables; i++) {
       String tableName = "tableA_" + i;
       TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
-      TableDesc desc = TCatUtil.newTableDesc(tableName, meta, 
+      TableDesc desc = new TableDescImpl(tableName, meta, 
           new Path("/tableA_" + i));
       catalog.addTable(desc);
     }
