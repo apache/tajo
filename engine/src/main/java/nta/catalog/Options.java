@@ -4,6 +4,7 @@
 package nta.catalog;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -78,6 +79,11 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 	  else {
 	    return defaultVal;
 	  }
+	}
+	
+	public Iterator<Entry<String,String>> getAllKeyValus() {
+	  initOptions();
+	  return keyVals.entrySet().iterator();
 	}
 	
 	public String delete(String key) {

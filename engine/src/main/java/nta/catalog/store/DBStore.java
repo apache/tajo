@@ -10,7 +10,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -46,6 +48,7 @@ public class DBStore implements CatalogStore {
   private static final String TB_META = "META";
   private static final String TB_TABLES = "TABLES";
   private static final String TB_COLUMNS = "COLUMNS";
+  private static final String TB_OPTIONS = "OPTIONS";
   
   private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
   private Lock rlock = lock.readLock();
@@ -130,13 +133,35 @@ public class DBStore implements CatalogStore {
       }
       stmt.addBatch(columns_ddl);
 
-      String columns_idx_fk_table_name = "CREATE INDEX idx_fk_table_name on "
-          + TB_COLUMNS + "(table_name)";
+      String columns_idx_fk_table_name = "CREATE UNIQUE INDEX idx_columns_fk_table_name on "
+          + TB_COLUMNS + "(table_name, column_name)";
       LOG.info(columns_idx_fk_table_name);
       stmt.addBatch(columns_idx_fk_table_name);
       stmt.executeBatch();
       LOG.info("Table '" + TB_COLUMNS + " is created.");
 
+      // OPTIONS
+      stmt = conn.createStatement();
+      String options_ddl = "CREATE TABLE " + TB_OPTIONS +"("
+          + "table_name VARCHAR(256) NOT NULL REFERENCES TABLES (TABLE_NAME) "
+          + "ON DELETE CASCADE, "
+          + "key_ VARCHAR(256) NOT NULL, value_ VARCHAR(256) NOT NULL)";
+      LOG.info(options_ddl);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(options_ddl);
+      }
+      stmt.addBatch(options_ddl);
+      
+      String options_idx_key = 
+          "CREATE UNIQUE INDEX idx_options_key on " + TB_OPTIONS 
+          + "(table_name, key_)";
+      stmt.addBatch(options_idx_key);
+      String options_idx_table_name = 
+          "CREATE INDEX idx_options_table_name on " + TB_OPTIONS 
+          + "(table_name)";
+      stmt.addBatch(options_idx_table_name);      
+      stmt.executeBatch();
+      LOG.info(options_idx_key);      
     } finally {
       wlock.unlock();
     }
@@ -153,7 +178,9 @@ public class DBStore implements CatalogStore {
       while (res.next() && found == false) {
         resName = res.getString("TABLE_NAME");
         if (TB_META.equals(resName)
-            || TB_TABLES.equals(resName)) {
+            || TB_TABLES.equals(resName)
+            || TB_COLUMNS.equals(resName)
+            || TB_OPTIONS.equals(resName)) {
             return true;
         }
       }
@@ -197,9 +224,17 @@ public class DBStore implements CatalogStore {
 
       String colSql = null;
       for (Column col : table.getMeta().getSchema().getColumns()) {
-        colSql = columnToInsertSQL(table, col);
+        colSql = columnToSQL(table, col);
         LOG.info(colSql);
         stmt.addBatch(colSql);
+      }
+      
+      Iterator<Entry<String,String>> it = table.getMeta().getOptions();
+      String optSql;
+      while (it.hasNext()) {
+        optSql = keyvalToSQL(table, it.next());
+        LOG.info(optSql);
+        stmt.addBatch(optSql);
       }
       stmt.executeBatch();
     } catch (SQLException se) {
@@ -213,7 +248,7 @@ public class DBStore implements CatalogStore {
     }
   }
   
-  private String columnToInsertSQL(final TableDesc desc, final Column col) {
+  private String columnToSQL(final TableDesc desc, final Column col) {
     String sql =
         "INSERT INTO " + TB_COLUMNS 
         + "(table_name, column_name, data_type) "
@@ -221,6 +256,20 @@ public class DBStore implements CatalogStore {
         + "'" + desc.getId() + "',"
         + "'" + col.getColumnName() + "',"
         + "'" + col.getDataType().toString() + "'"
+        + ")";
+    
+    return sql;
+  }
+  
+  private String keyvalToSQL(final TableDesc desc, 
+      final Entry<String,String> keyVal) {
+    String sql =
+        "INSERT INTO " + TB_OPTIONS 
+        + "(table_name, key_, value_) "
+        + "VALUES("
+        + "'" + desc.getId() + "',"
+        + "'" + keyVal.getKey() + "',"
+        + "'" + keyVal.getValue() + "'"
         + ")";
     
     return sql;
@@ -281,58 +330,77 @@ public class DBStore implements CatalogStore {
 
   @Override
   public final TableDesc getTable(final String name) throws IOException {
-    String sql = "SELECT table_name, path, store_type from " + TB_TABLES
-        + " WHERE table_name='" + name + "'";
+    ResultSet res = null;
+    Statement stmt = null;
 
-    ResultSet tableRes = null;
-    Statement tableStmt = null;
-
-    TableDesc table = null;
     String tableName = null;
     Path path = null;
     StoreType storeType = null;
+    Options options = null;
 
     rlock.lock();
     try {
       try {
-        tableStmt = conn.createStatement();
-        tableRes = tableStmt.executeQuery(sql);
-        if (!tableRes.next()) { // there is no table of the given name.
+        String sql = "SELECT table_name, path, store_type from " + TB_TABLES
+            + " WHERE table_name='" + name + "'";    
+        stmt = conn.createStatement();
+        res = stmt.executeQuery(sql);
+        if (!res.next()) { // there is no table of the given name.
           return null;
         }
-        tableName = tableRes.getString("table_name").trim();
-        path = new Path(tableRes.getString("path").trim());
-        storeType = getStoreType(tableRes.getString("store_type").trim());
+        tableName = res.getString("table_name").trim();
+        path = new Path(res.getString("path").trim());
+        storeType = getStoreType(res.getString("store_type").trim());
       } catch (SQLException se) { 
         throw new IOException(se);
       } finally {
-        tableStmt.close();
+        stmt.close();
+        res.close();
       }
-
-      sql = "SELECT column_name, data_type from " + TB_COLUMNS
-          + " WHERE table_name='" + name + "'";
-
+      
       Schema schema = null;
       try {
-        tableStmt = conn.createStatement();
-        tableRes = tableStmt.executeQuery(sql);
+        String sql = "SELECT column_name, data_type from " + TB_COLUMNS
+            + " WHERE table_name='" + name + "'";
+        stmt = conn.createStatement();
+        res = stmt.executeQuery(sql);
 
         schema = new Schema();
-        while (tableRes.next()) {
+        while (res.next()) {
           String columnName = tableName + "." 
-              + tableRes.getString("column_name").trim();
-          DataType dataType = getDataType(tableRes.getString("data_type")
+              + res.getString("column_name").trim();
+          DataType dataType = getDataType(res.getString("data_type")
               .trim());
           schema.addColumn(columnName, dataType);
         }
       } catch (SQLException se) {
         throw new IOException(se);
       } finally {
-        tableStmt.close();
+        stmt.close();
+        res.close();
+      }
+      
+      options = Options.create();
+      try {
+        String sql = "SELECT key_, value_ from " + TB_OPTIONS
+            + " WHERE table_name='" + name + "'";
+        stmt = conn.createStatement();
+        res = stmt.executeQuery(sql);        
+        
+        while (res.next()) {
+          options.put(
+              res.getString("key_"),
+              res.getString("value_"));          
+        }
+      } catch (SQLException se) {
+        throw new IOException(se);
+      } finally {
+        stmt.close();
+        res.close();
       }
 
-      TableMeta meta = new TableMetaImpl(schema, storeType, new Options());
-      table = new TableDescImpl(tableName, meta, path);
+      TableMeta meta = new TableMetaImpl(schema, storeType, options);
+      TableDesc table = new TableDescImpl(tableName, meta, path);
 
       return table;
     } catch (SQLException se) {

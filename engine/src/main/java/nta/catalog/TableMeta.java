@@ -1,5 +1,8 @@
 package nta.catalog;
 
+import java.util.Iterator;
+import java.util.Map.Entry;
+
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.common.ProtoObject;
@@ -21,7 +24,11 @@ public interface TableMeta extends ProtoObject<TableProto>, Cloneable {
   
   void putOption(String key, String val);
   
+  String getOption(String key);
+  
   String getOption(String key, String defaultValue);
+  
+  Iterator<Entry<String,String>> getOptions();
   
   Object clone() throws CloneNotSupportedException;
   

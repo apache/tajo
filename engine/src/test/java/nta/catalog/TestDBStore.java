@@ -11,6 +11,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.store.DBStore;
 import nta.conf.NtaConf;
 import nta.engine.NtaTestingUtility;
+import nta.storage.CSVFile2;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -53,7 +54,9 @@ public class TestDBStore {
     .addColumn("score", DataType.DOUBLE);
     
     String tableName = "addedtable";
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    Options opts = new Options();
+    opts.put(CSVFile2.DELIMITER, ",");
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV, opts);
     TableDesc desc = new TableDescImpl(tableName, meta, new Path("/addedtable"));
     assertFalse(store.existTable(tableName));
     store.addTable(desc);
@@ -71,12 +74,15 @@ public class TestDBStore {
     .addColumn("gettable.score", DataType.DOUBLE);
     
     String tableName = "gettable";
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    Options opts = new Options();
+    opts.put(CSVFile2.DELIMITER, ",");
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV, opts);
     TableDesc desc = new TableDescImpl(tableName, meta, new Path("/gettable"));
 
     store.addTable(desc);
-    TableDesc desc2 = store.getTable(tableName);
-    assertEquals(desc, desc2);
+    TableDesc retrieved = store.getTable(tableName);
+    assertEquals(",", retrieved.getMeta().getOption(CSVFile2.DELIMITER));
+    assertEquals(desc, retrieved);
     store.deleteTable(tableName);
   }
   

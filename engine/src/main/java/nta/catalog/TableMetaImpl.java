@@ -3,6 +3,9 @@
  */
 package nta.catalog;
 
+import java.util.Iterator;
+import java.util.Map.Entry;
+
 import nta.annotation.Optional;
 import nta.annotation.Required;
 import nta.catalog.proto.CatalogProtos.StoreType;
@@ -87,8 +90,8 @@ public class TableMetaImpl implements TableMeta {
     setModified();
     this.options = options;
   }
-  
-  private Options getOptions() {
+
+  private Options initOptions() {
     TableProtoOrBuilder p = viaProto ? proto : builder;
     if(this.options != null) {
       return this.options;
@@ -99,17 +102,28 @@ public class TableMetaImpl implements TableMeta {
     this.options = new Options(p.getParams());
     
     return this.options;
-  }
+  }  
 
   @Override
   public void putOption(String key, String val) {
     setModified();
-    getOptions().put(key, val);
+    initOptions().put(key, val);
+  }
+  
+
+  @Override
+  public String getOption(String key) {    
+    return initOptions().get(key);
   }
 
   @Override
   public String getOption(String key, String defaultValue) {
-    return getOptions().get(key, defaultValue);
+    return initOptions().get(key, defaultValue);
+  }
+  
+  @Override
+  public Iterator<Entry<String,String>> getOptions() {    
+    return initOptions().getAllKeyValus();
   }
 	
 	public boolean equals(Object object) {
