@@ -25,10 +25,8 @@ import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.QueryContext;
 import nta.engine.QueryId;
 import nta.engine.QueryIdFactory;
-import nta.engine.ResultSetMemImplOld;
 import nta.engine.SubQueryId;
 import nta.engine.exception.NTAQueryException;
-import nta.engine.exec.PhysicalOp;
 import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.FieldEval;
@@ -78,7 +76,6 @@ public class GlobalEngine implements EngineService {
   private final StorageManager sm;
 
   GlobalQueryPlanner globalPlanner;
-  PhysicalPlanner phyPlanner;
   AsyncWorkerClientInterface leaf;      // RPC interface list for leaf servers
 
   private Map<QueryUnit, Callback<SubQueryResponseProto>> unitQueryMap;
@@ -94,7 +91,6 @@ public class GlobalEngine implements EngineService {
 
     // loPlanner = new LogicalPlanner(this.catalog);
     globalPlanner = new GlobalQueryPlanner(this.catalog);
-    phyPlanner = new PhysicalPlanner(this.catalog, this.storageManager);
 
     this.unitQueryMap = new HashMap<QueryUnit, Callback<SubQueryResponseProto>>();
     QueryIdFactory.reset();
@@ -215,16 +211,6 @@ public class GlobalEngine implements EngineService {
     LOG.info("executeQuery processing time: " + (after - before) + "msc");
 
     return storeName;
-  }
-
-  public void execute(PhysicalOp op, ResultSetMemImplOld result)
-      throws IOException {
-    Tuple next = null;
-
-    while ((next = op.next()) != null) {
-
-      result.addTuple(next);
-    }
   }
 
   private String tupleToString(Tuple t) {

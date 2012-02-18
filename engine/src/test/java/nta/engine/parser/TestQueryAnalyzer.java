@@ -1,9 +1,6 @@
 package nta.engine.parser;
 
 import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Options;
@@ -21,15 +18,12 @@ import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
-import nta.engine.parser.NQL.Query;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.CommonTokenStream;
-import org.antlr.runtime.RecognitionException;
-import org.antlr.runtime.tree.CommonTree;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -102,43 +96,6 @@ public class TestQueryAnalyzer {
       "select name, score from people order by score asc, age desc", // 5
       "store1 := select name, score from people order by score asc, age desc",// 6
   };
-
-  private String[] EXPRS = { "3 + 5 * 3" };
-
-  // It's for benchmark of the evaluation tree methods.
-  public final void testLegacyEvalTree() throws RecognitionException, 
-      IOException {
-    NQLParser p = parseExpr(EXPRS[0]);
-    CommonTree node = (CommonTree) p.search_condition().getTree();
-
-    Schema schema = new Schema();
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("score", DataType.INT);
-    schema.addColumn("age", DataType.INT);
-
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
-    cat.addTable(desc);
-
-    NQL nql = new NQL(cat);
-    Query q = nql.parse(QUERIES[2]);
-    EvalNode expr = nql.buildExpr(q, node);
-
-    Tuple tuples[] = new Tuple[1000000];
-    for (int i = 0; i < 1000000; i++) {
-      tuples[i] = new VTuple(3);
-      tuples[i].put(
-          DatumFactory.createString("hyunsik_" + i), 
-          DatumFactory.createInt(i + 500),
-          DatumFactory.createInt(i));
-    }
-
-    long start = System.currentTimeMillis();
-    for (int i = 0; i < tuples.length; i++) {
-      expr.eval(schema, tuples[i]);
-    }
-    long end = System.currentTimeMillis();
-  }
 
   public static NQLParser parseExpr(final String expr) {
     ANTLRStringStream input = new ANTLRStringStream(expr);
