@@ -5,11 +5,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.ArrayList;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
@@ -43,8 +38,6 @@ import nta.storage.VTuple;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;

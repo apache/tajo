@@ -24,9 +24,7 @@ public interface AsyncWorkerInterface extends Stoppable, Abortable {
 	 * 
 	 * @param request 질의 구문 및 질의 제어 정보
 	 * @return 서브 질의에 대한 응답
-	 */
-	public SubQueryResponseProto requestSubQuery(SubQueryRequestProto request) throws Exception;
-	
+	 */	
 	public SubQueryResponseProto requestQueryUnit(QueryUnitRequestProto request) throws Exception;
 	
 	/**

@@ -232,14 +232,23 @@ public class StorageManager {
 	
 	public Fragment[] split(String tableName) throws IOException {
 	  Path tablePath = new Path(dataRoot, tableName);
-	  return split(tablePath);
+	  return split(tablePath, fs.getDefaultBlockSize());
 	}
 	
-	public Fragment[] split(Path tablePath)
+	public Fragment[] split(String tableName, long fragmentSize) throws IOException {
+    Path tablePath = new Path(dataRoot, tableName);
+    return split(tablePath, fragmentSize);
+  }
+	
+	public Fragment[] split(Path tablePath) throws IOException {
+	  return split(tablePath, fs.getDefaultBlockSize());
+	}
+	
+	private Fragment[] split(Path tablePath, long size)
       throws IOException {
     TableMeta meta = getTableMeta(tablePath);
 	  
-	  long defaultBlockSize = fs.getDefaultBlockSize();
+	  long defaultBlockSize = size;
 
     List<Fragment> listTablets = new ArrayList<Fragment>();
     Fragment tablet = null;

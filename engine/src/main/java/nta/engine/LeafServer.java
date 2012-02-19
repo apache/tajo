@@ -19,7 +19,6 @@ import nta.conf.NtaConf;
 import nta.engine.LeafServerProtos.AssignTabletRequestProto;
 import nta.engine.LeafServerProtos.QueryStatus;
 import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
-import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
 import nta.engine.QueryUnitProtos.InProgressStatus;
 import nta.engine.QueryUnitProtos.QueryUnitReportProto;
@@ -29,10 +28,8 @@ import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.ipc.AsyncWorkerInterface;
 import nta.engine.ipc.MasterInterface;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
-import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.engine.query.QueryUnitRequestImpl;
-import nta.engine.query.SubQueryRequestImpl;
 import nta.engine.query.TQueryEngine;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
@@ -159,7 +156,6 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         while (!this.stopped) {
           Thread.sleep(1000);
           sendHeartbeat();
-          LOG.info(">_<" + this.serverName + " sent hearbeat ");
         }
       }
     } catch (Throwable t) {
@@ -195,6 +191,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     // builds one status for each in-progress query
     for (InProgressQuery ipq : queries.values()) {
       if (ipq.status == QueryStatus.FAILED 
+          || ipq.status == QueryStatus.ABORTED
           || ipq.status == QueryStatus.FAILED
           || ipq.status == QueryStatus.FINISHED) {
         // TODO - in-progress queries should be kept until this leafserver 
@@ -264,18 +261,6 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   // LeafServerInterface
   // ////////////////////////////////////////////////////////////////////////////
   @Override
-  public SubQueryResponseProto requestSubQuery(SubQueryRequestProto proto)
-      throws IOException {
-    SubQueryRequest request = new SubQueryRequestImpl(proto);
-    PhysicalExec executor = queryEngine.createPlan(request);    
-    InProgressQuery newQuery = new InProgressQuery(request.getId(), executor);
-    queryLauncher.addSubQuery(newQuery);
-
-    SubQueryResponseProto.Builder res = SubQueryResponseProto.newBuilder();
-    return res.build();
-  }
-
-  @Override
   public SubQueryResponseProto requestQueryUnit(QueryUnitRequestProto proto)
       throws Exception {
     QueryUnitRequest request = new QueryUnitRequestImpl(proto);
@@ -331,8 +316,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   }
   
   private class QueryLauncher extends Thread {
-//    private final int coreNum = Runtime.getRuntime().availableProcessors();
-    private final int coreNum = 10;
+    private final int coreNum = Runtime.getRuntime().availableProcessors();
     private final BlockingQueue<InProgressQuery> queriesToLaunch
       = new ArrayBlockingQueue<InProgressQuery>(coreNum);
     private final ExecutorService executor
@@ -345,9 +329,11 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     @Override
     public void run() {
       try {
+        LOG.info("Started the query launcher (maximum concurrent tasks: " 
+            + coreNum);
         while (!Thread.interrupted()) {
           // wait for add
-          InProgressQuery q = queriesToLaunch.take();          
+          InProgressQuery q = queriesToLaunch.take();
           queries.put(q.qid, q);
           executor.submit(q);
         }
@@ -389,7 +375,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         LOG.info("Query status of " + qid + " is changed to " + status);
         while(executor.next() != null) {}
       } catch (IOException e) {
-        e.printStackTrace();
+        this.status = QueryStatus.FAILED;
+        this.progress = 0.0f;
+        LOG.error("Query unit ("+qid+") is failed", e);
       } finally {
         this.progress = 1.0f;
         this.status = QueryStatus.FINISHED;

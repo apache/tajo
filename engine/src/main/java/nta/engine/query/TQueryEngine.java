@@ -31,23 +31,18 @@ import org.apache.hadoop.fs.Path;
 public class TQueryEngine {
   private final static Log LOG = LogFactory.getLog(TQueryEngine.class);
   
-  private final Configuration conf;  
   private final FileSystem defaultFS;
-  
-  private final CatalogService catalog;
   private final StorageManager storageManager;
   
   private final Path basePath;
   private final Path dataPath;
   
+  private final PhysicalPlanner phyPlanner;
   private final QueryAnalyzer analyzer;
   private final SubqueryContext.Factory ctxFactory;
   
   public TQueryEngine(Configuration conf, CatalogService catalog, 
-      ZkClient zkClient) throws IOException {
-    this.conf = conf;
-    this.catalog = catalog;
-    
+      ZkClient zkClient) throws IOException {    
     // Get the tajo base dir
     this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
     LOG.info("Base dir is set " + conf.get(NConstants.ENGINE_BASE_DIR));
@@ -60,6 +55,7 @@ public class TQueryEngine {
     LOG.info("Tajo data dir is set " + dataPath);
         
     this.storageManager = new StorageManager(conf);
+    this.phyPlanner = new PhysicalPlanner(storageManager);
     this.analyzer = new QueryAnalyzer(catalog);
     this.ctxFactory = new SubqueryContext.Factory(catalog);
   }
@@ -73,7 +69,7 @@ public class TQueryEngine {
         + request.getFragments().get(0).getStartOffset() + " end: "
         + request.getFragments() + "\nquery: " + request.getQuery());
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(storageManager);
+    
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
     return exec;
