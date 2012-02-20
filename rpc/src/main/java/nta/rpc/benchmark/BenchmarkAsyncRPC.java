@@ -25,13 +25,14 @@ public class BenchmarkAsyncRPC {
         service.shoot(cb, ps);
       }
       long end = System.currentTimeMillis();
-      
+
       System.out.println("elapsed time: " + (end - start) + "msc");
     }
   }
 
   public static interface BenchmarkClientInterface {
-    public void shoot(Callback<StringProto> ret, StringProto l) throws RemoteException;
+    public void shoot(Callback<StringProto> ret, StringProto l)
+        throws RemoteException;
   }
 
   public static interface BenchmarkServerInterface {
@@ -47,8 +48,8 @@ public class BenchmarkAsyncRPC {
 
   public static void main(String[] args) throws Exception {
     ProtoParamRpcServer rpcServer =
-        NettyRpc.getProtoParamRpcServer(new BenchmarkImpl(), BenchmarkServerInterface.class,
-            new InetSocketAddress(15010));
+        NettyRpc.getProtoParamRpcServer(new BenchmarkImpl(),
+            BenchmarkServerInterface.class, new InetSocketAddress(15010));
     rpcServer.start();
     Thread.sleep(1000);
 

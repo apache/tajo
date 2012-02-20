@@ -49,8 +49,10 @@ public class BenchmarkBlockingRPC {
       RemoteException {
 
     ProtoParamRpcServer server =
-        NettyRpc.getProtoParamRpcServer(new BenchmarkImpl(), BenchmarkInterface.class,
-            new InetSocketAddress("localhost", 15001));
+        NettyRpc
+            .getProtoParamRpcServer(new BenchmarkImpl(),
+                BenchmarkInterface.class, new InetSocketAddress("localhost",
+                    15001));
 
     server.start();
     Thread.sleep(1000);

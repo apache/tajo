@@ -20,14 +20,18 @@ public class TestProtoParamAsyncRpc {
 
   public static interface DummyServerInterface {
     public Object throwException(MulRequest1 request) throws IOException;
+
     public MulResponse mul(MulRequest1 req1);
+
     public void nullParameterTest(NullProto proto);
   }
 
   public static interface DummyClientInterface {
     public void throwException(Callback<Object> callback, MulRequest1 request)
         throws IOException;
+
     public void mul(Callback<MulResponse> callback, MulRequest1 req1);
+
     public void nullParameterTest(Callback<Object> callback, NullProto proto);
   }
 
@@ -44,7 +48,8 @@ public class TestProtoParamAsyncRpc {
 
       int result1 = x1_1 * x1_2;
 
-      MulResponse rst = MulResponse.newBuilder().setResult1(result1).setResult2(400).build();
+      MulResponse rst =
+          MulResponse.newBuilder().setResult1(result1).setResult2(400).build();
       return rst;
     }
 
@@ -56,8 +61,8 @@ public class TestProtoParamAsyncRpc {
   @Before
   public void setUp() throws Exception {
     server =
-        NettyRpc.getProtoParamRpcServer(new DummyServer(), DummyServerInterface.class,
-            new InetSocketAddress(0));
+        NettyRpc.getProtoParamRpcServer(new DummyServer(),
+            DummyServerInterface.class, new InetSocketAddress(0));
     server.start();
 
     InetSocketAddress addr = server.getBindAddress();
@@ -127,5 +132,5 @@ public class TestProtoParamAsyncRpc {
     }
 
   }
-  
+
 }

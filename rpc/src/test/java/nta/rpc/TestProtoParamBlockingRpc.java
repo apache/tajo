@@ -21,13 +21,17 @@ public class TestProtoParamBlockingRpc {
   // !. Write Interface and implement class according to communication way
   public static interface DummyServerInterface {
     public void throwException(MulRequest1 request) throws IOException;
+
     public MulResponse mul(MulRequest1 req1);
+
     public void nullParameterTest(NullProto proto);
   }
 
   public static interface DummyClientInterface {
     public void throwException(MulRequest1 request) throws RemoteException;
+
     public MulResponse mul(MulRequest1 req1) throws RemoteException;
+
     public void nullParameterTest(NullProto proto) throws RemoteException;
   }
 
@@ -36,7 +40,7 @@ public class TestProtoParamBlockingRpc {
     public void throwException(MulRequest1 request) throws IOException {
       throw new IOException();
     }
-    
+
     @Override
     public MulResponse mul(MulRequest1 req1) {
       int x1_1 = req1.getX1();
@@ -44,7 +48,8 @@ public class TestProtoParamBlockingRpc {
 
       int result1 = x1_1 * x1_2;
 
-      MulResponse rst = MulResponse.newBuilder().setResult1(result1).setResult2(400).build();
+      MulResponse rst =
+          MulResponse.newBuilder().setResult1(result1).setResult2(400).build();
       return rst;
     }
 
@@ -57,8 +62,8 @@ public class TestProtoParamBlockingRpc {
   public void setUp() throws Exception {
     // 2. Write Server Part source code
     server =
-        NettyRpc.getProtoParamRpcServer(new DummyServer(), DummyServerInterface.class,
-            new InetSocketAddress(0));
+        NettyRpc.getProtoParamRpcServer(new DummyServer(),
+            DummyServerInterface.class, new InetSocketAddress(0));
     server.start();
 
     InetSocketAddress addr = server.getBindAddress();
@@ -100,7 +105,7 @@ public class TestProtoParamBlockingRpc {
       MulResponse re = proxy.mul(req1);
       assertEquals(200, re.getResult1());
       assertEquals(400, re.getResult2());
-      
+
     } catch (RemoteException e) {
       System.out.println(e.getMessage());
     }
@@ -113,10 +118,10 @@ public class TestProtoParamBlockingRpc {
     // 3.3 call procedure
     try {
       proxy.nullParameterTest(np);
-      
+
     } catch (RemoteException e) {
       System.out.println(e.getMessage());
     }
   }
-  
+
 }

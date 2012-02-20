@@ -76,7 +76,7 @@ public class ProtoParamAsyncRpcProxy extends NettyClientBase {
 
       if (args != null) {
         for (int i = 1; i < args.length; i++) {
-          ByteString str = ((Message)args[i]).toByteString();
+          ByteString str = ((Message) args[i]).toByteString();
           builder.addParam(str);
         }
       }
@@ -91,9 +91,10 @@ public class ProtoParamAsyncRpcProxy extends NettyClientBase {
       this.channel.write(request);
       return null;
     }
-    
+
     public void shutdown() {
-      LOG.info("[RPC] Client terminates connection " + channel.getRemoteAddress());
+      LOG.info("[RPC] Client terminates connection "
+          + channel.getRemoteAddress());
       this.channel.close().awaitUninterruptibly();
       bootstrap.releaseExternalResources();
     }
@@ -126,7 +127,9 @@ public class ProtoParamAsyncRpcProxy extends NettyClientBase {
           retObj = null;
         } else {
           try {
-            Method mtd = retType.getMethod("parseFrom", new Class[] { ByteString.class } );
+            Method mtd =
+                retType
+                    .getMethod("parseFrom", new Class[] { ByteString.class });
             retObj = mtd.invoke(null, response.getReturnValue());
           } catch (Exception e) {
             e.printStackTrace();
@@ -155,7 +158,8 @@ public class ProtoParamAsyncRpcProxy extends NettyClientBase {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
         throws Exception {
-      LOG.error("[RPC] ERROR " + e.getChannel().getRemoteAddress() + " " + e.getCause());
+      LOG.error("[RPC] ERROR " + e.getChannel().getRemoteAddress() + " "
+          + e.getCause());
       e.getChannel().close();
     }
   }

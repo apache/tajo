@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -30,8 +31,7 @@ public class ProtoParamRpcServer extends NettyServerBase {
   private Map<String, Method> builderMethods;
 
   @Deprecated
-  public ProtoParamRpcServer(Object proxy,
-      InetSocketAddress bindAddress) {
+  public ProtoParamRpcServer(Object proxy, InetSocketAddress bindAddress) {
     super(bindAddress);
     this.instance = proxy;
     this.clazz = instance.getClass();
@@ -56,7 +56,7 @@ public class ProtoParamRpcServer extends NettyServerBase {
       }
     }
   }
-  
+
   public ProtoParamRpcServer(Object proxy, Class<?> interfaceClass,
       InetSocketAddress bindAddress) {
     super(bindAddress);
@@ -100,12 +100,14 @@ public class ProtoParamRpcServer extends NettyServerBase {
 
         Method method = methods.get(methodName);
         Method builderGenMethod = builderMethods.get(methodName);
-        Builder builder = (Builder) builderGenMethod.invoke(null, new Object[] {});
+        Builder builder =
+            (Builder) builderGenMethod.invoke(null, new Object[] {});
         Message msg = builder.mergeFrom(request.getParam(0)).build();
         res = method.invoke(instance, msg);
 
       } catch (InvocationTargetException internalException) {
-        internalException.printStackTrace();
+        LOG.error(ExceptionUtils.getStackTrace(internalException
+            .getTargetException()));
         response =
             Response
                 .newBuilder()

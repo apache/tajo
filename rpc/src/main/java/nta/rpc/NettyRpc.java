@@ -7,8 +7,8 @@ import java.net.ServerSocket;
 
 public class NettyRpc {
 
-  public static ProtoParamRpcServer getProtoParamRpcServer(Object instance, Class<?> interfaceClass,
-      InetSocketAddress addr) {
+  public static ProtoParamRpcServer getProtoParamRpcServer(Object instance,
+      Class<?> interfaceClass, InetSocketAddress addr) {
 
     InetSocketAddress newAddress = null;
 
