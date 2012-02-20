@@ -1,10 +1,15 @@
 package nta.catalog;
 
+import java.io.IOException;
+
+import nta.catalog.proto.CatalogProtos.ColumnProto;
 import nta.catalog.proto.CatalogProtos.ContainFunctionRequest;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
 import nta.catalog.proto.CatalogProtos.GetAllTableNamesResponse;
 import nta.catalog.proto.CatalogProtos.GetFunctionMetaRequest;
 import nta.catalog.proto.CatalogProtos.GetFunctionsResponse;
+import nta.catalog.proto.CatalogProtos.GetIndexRequest;
+import nta.catalog.proto.CatalogProtos.IndexDescProto;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.catalog.proto.CatalogProtos.UnregisterFunctionRequest;
 import nta.rpc.protocolrecords.PrimitiveProtos.BoolProto;
@@ -57,6 +62,18 @@ public interface CatalogServiceProtocol {
   void deleteTable(StringProto name);
   
   BoolProto existsTable(StringProto tableId);
+  
+  void addIndex(IndexDescProto proto);
+  
+  BoolProto existIndex(StringProto indexName);
+  
+  BoolProto existIndex(GetIndexRequest req);
+  
+  IndexDescProto getIndex(StringProto indexName);
+  
+  IndexDescProto getIndex(GetIndexRequest req);
+  
+  void delIndex(StringProto indexName);
   
   /**
    * 

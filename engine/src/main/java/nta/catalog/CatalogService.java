@@ -54,6 +54,18 @@ public interface CatalogService {
   
   boolean existsTable(String tableId);
   
+  void addIndex(IndexDesc index);
+  
+  boolean existIndex(String indexName);
+  
+  boolean existIndex(String tableName, String columnName);
+  
+  IndexDesc getIndex(String indexName);
+  
+  IndexDesc getIndex(String tableName, String columnName);
+  
+  void deleteIndex(String indexName);
+  
   void registerFunction(FunctionDesc funcDesc);
  
   void unregisterFunction(String signature, DataType...paramTypes);

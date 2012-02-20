@@ -133,6 +133,9 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	}
 	
 	private void setModified() {
+	  if (viaProto && builder == null) {
+	    builder = ColumnProto.newBuilder(proto);
+	  }
 	  viaProto = false;
 	}
 	

@@ -105,4 +105,80 @@ public class TestDBStore {
     
     assertEquals(numTables, store.getAllTableNames().size());
   }
+  
+  @Test
+  public final void testAddAndDeleteIndex() throws Exception {
+    TableDesc table = prepareTable();
+    store.addTable(table);
+    
+    store.addIndex(TestIndexDesc.desc1.getProto());
+    assertTrue(store.existIndex(TestIndexDesc.desc1.getName()));
+    store.delIndex(TestIndexDesc.desc1.getName());
+    assertFalse(store.existIndex(TestIndexDesc.desc1.getName()));
+    
+    store.deleteTable(table.getId());
+  }
+  
+  @Test
+  public final void testGetIndex() throws Exception {
+    
+    TableDesc table = prepareTable();
+    store.addTable(table);
+    
+    store.addIndex(TestIndexDesc.desc2.getProto());
+    assertEquals(
+        new IndexDesc(TestIndexDesc.desc2.getProto()),
+        new IndexDesc(store.getIndex(TestIndexDesc.desc2.getName())));
+    store.delIndex(TestIndexDesc.desc2.getName());
+    
+    store.deleteTable(table.getId());
+  }
+  
+  @Test
+  public final void testGetIndexByTableAndColumn() throws Exception {
+    
+    TableDesc table = prepareTable();
+    store.addTable(table);
+    
+    store.addIndex(TestIndexDesc.desc2.getProto());
+    
+    String tableId = TestIndexDesc.desc2.getTableId();
+    String columnName = "score";
+    assertEquals(
+        new IndexDesc(TestIndexDesc.desc2.getProto()),
+        new IndexDesc(store.getIndex(tableId, columnName)));
+    store.delIndex(TestIndexDesc.desc2.getName());
+    
+    store.deleteTable(table.getId());
+  }
+  
+  @Test
+  public final void testGetAllIndexes() throws Exception {
+    
+    TableDesc table = prepareTable();
+    store.addTable(table);
+    
+    store.addIndex(TestIndexDesc.desc1.getProto());
+    store.addIndex(TestIndexDesc.desc2.getProto());
+        
+    assertEquals(2, 
+        store.getIndexes(TestIndexDesc.desc2.getTableId()).length);
+    store.delIndex(TestIndexDesc.desc1.getName());
+    store.delIndex(TestIndexDesc.desc2.getName());
+    
+    store.deleteTable(table.getId());
+  }
+  
+  public static TableDesc prepareTable() {
+    Schema schema = new Schema();
+    schema.addColumn("indexed.id", DataType.INT)
+    .addColumn("indexed.name", DataType.STRING)
+    .addColumn("indexed.age", DataType.INT)
+    .addColumn("indexed.score", DataType.DOUBLE);
+    
+    String tableName = "indexed";
+    
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    return new TableDescImpl(tableName, meta, new Path("/indexed"));
+  }
 }

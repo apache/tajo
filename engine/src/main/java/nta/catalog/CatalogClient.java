@@ -14,6 +14,7 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.GetAllTableNamesResponse;
 import nta.catalog.proto.CatalogProtos.GetFunctionMetaRequest;
 import nta.catalog.proto.CatalogProtos.GetFunctionsResponse;
+import nta.catalog.proto.CatalogProtos.GetIndexRequest;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.catalog.proto.CatalogProtos.UnregisterFunctionRequest;
 import nta.engine.NConstants;
@@ -128,6 +129,45 @@ public class CatalogClient implements CatalogService {
     return proxy
         .existsTable(StringProto.newBuilder().setValue(tableId).build())
         .getValue();
+  }
+  
+  @Override
+  public void addIndex(IndexDesc index) {
+    proxy.addIndex(index.getProto());
+  }
+
+  @Override
+  public boolean existIndex(String indexName) {
+    return proxy.existIndex(StringProto.newBuilder().
+        setValue(indexName).build()).getValue();
+  }
+  
+  @Override
+  public boolean existIndex(String tableName, String columnName) {
+    GetIndexRequest.Builder builder = GetIndexRequest.newBuilder();
+    builder.setTableName(tableName);
+    builder.setColumnName(columnName);
+    return proxy.existIndex(builder.build()).getValue();
+  }
+
+  @Override
+  public IndexDesc getIndex(String indexName) {
+    return new IndexDesc(
+        proxy.getIndex(StringProto.newBuilder().setValue(indexName).build()));
+  }
+
+  @Override
+  public IndexDesc getIndex(String tableName, String columnName) {
+    GetIndexRequest.Builder builder = GetIndexRequest.newBuilder();
+    builder.setTableName(tableName);
+    builder.setColumnName(columnName);
+    return new IndexDesc(proxy.getIndex(builder.build()));
+  }
+
+  @Override
+  public void deleteIndex(String indexName) {
+    // TODO Auto-generated method stub
+    
   }
 
   @Override

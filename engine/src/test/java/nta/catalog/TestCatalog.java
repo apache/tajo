@@ -127,6 +127,31 @@ public class TestCatalog {
     util.shutdownMiniZKCluster();
 	}
 	
+	@Test
+	public void testAddAndDelIndex() throws Exception {
+	  TableDesc desc = TestDBStore.prepareTable();
+	  catalog.addTable(desc);
+	  
+	  assertFalse(catalog.existIndex(TestIndexDesc.desc1.getName()));
+	  assertFalse(catalog.existIndex("indexed", "id"));
+	  catalog.addIndex(TestIndexDesc.desc1);
+	  assertTrue(catalog.existIndex(TestIndexDesc.desc1.getName()));
+	  assertTrue(catalog.existIndex("indexed", "id"));
+	  
+	  assertFalse(catalog.existIndex(TestIndexDesc.desc2.getName()));
+	  assertFalse(catalog.existIndex("indexed", "score"));
+	  catalog.addIndex(TestIndexDesc.desc2);
+	  assertTrue(catalog.existIndex(TestIndexDesc.desc2.getName()));
+	  assertTrue(catalog.existIndex("indexed", "score"));
+	  
+	  catalog.deleteIndex(TestIndexDesc.desc1.getName());
+	  assertFalse(catalog.existIndex(TestIndexDesc.desc1.getName()));
+	  catalog.deleteIndex(TestIndexDesc.desc2.getName());
+	  assertFalse(catalog.existIndex(TestIndexDesc.desc2.getName()));
+	  
+	  catalog.deleteTable(desc.getId());
+	}
+	
 	public static class TestFunc1 extends Function {
 		public TestFunc1() {
 			super(					
@@ -289,12 +314,5 @@ public class TestCatalog {
 	public void testInitializeZookeeper() throws Exception { 
     ZkClient zkClient = new ZkClient(util.getConfiguration());
     assertTrue(zkClient.exists(NConstants.ZNODE_CATALOG) != null);
-    
-    // TODO - to be commented out
-/*    InetSocketAddress addr = util.getMiniCatalogCluster().getCatalogServer().
-        getBindAddress();
-    String serverName = addr.getHostName()+":"+addr.getPort();
-    assertEquals(serverName, new String(zkClient.getData("/catalog", 
-        null, null)));*/
 	}
 }

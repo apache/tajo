@@ -3,10 +3,9 @@
  */
 package nta.catalog.exception;
 
-import java.io.IOException;
 
 /**
- * @author hyunsik
+ * @author Hyunsik Choi
  *
  */
 public class CatalogException extends RuntimeException {

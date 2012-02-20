@@ -3,7 +3,6 @@ package nta.catalog;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -13,8 +12,10 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import nta.catalog.exception.AlreadyExistsFunction;
+import nta.catalog.exception.AlreadyExistsIndexException;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchFunctionException;
+import nta.catalog.exception.NoSuchIndexException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.CatalogProtos.ContainFunctionRequest;
 import nta.catalog.proto.CatalogProtos.DataType;
@@ -23,6 +24,8 @@ import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.GetAllTableNamesResponse;
 import nta.catalog.proto.CatalogProtos.GetFunctionMetaRequest;
 import nta.catalog.proto.CatalogProtos.GetFunctionsResponse;
+import nta.catalog.proto.CatalogProtos.GetIndexRequest;
+import nta.catalog.proto.CatalogProtos.IndexDescProto;
 import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.catalog.proto.CatalogProtos.TableProto;
@@ -326,7 +329,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
       LOG.error(e);
       return BoolProto.newBuilder().setValue(false).build();
     }
-  }        
+  }
   
   private List<HostInfo> getFragmentLocInfo(TableDescProto desc) throws IOException {
     long before = System.currentTimeMillis();
@@ -339,7 +342,6 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     String[] hosts;
     List<HostInfo> tabletInfoList = new ArrayList<HostInfo>();
     
-    int i=0;
     for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
       blocks = fs.getFileBlockLocations(files[fileIdx], 0, files[fileIdx].getLen());
       for (blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
@@ -349,27 +351,105 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
         tabletInfoList.add(new HostInfo(hosts[0], -1, new Fragment(desc.getId(), 
             files[fileIdx].getPath(), new TableMetaImpl(desc.getMeta()), 
             blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
-        i++;
       }
     }
     long after = System.currentTimeMillis();
     LOG.info("getTabletLocInfo processing time: " + (after-before) + "msc");
     return tabletInfoList;
   }
+	
+  @Override
+  public void addIndex(IndexDescProto index) {
+    rlock.lock();
+    try {
+      if (store.existIndex(index.getName())) {
+        throw new AlreadyExistsIndexException(index.getName());
+      }
+      store.addIndex(index);
+    } catch (IOException ioe) {
+      LOG.error("ERROR : cannot add index " + index.getName(), ioe);
+      LOG.error(index);
+    } finally {
+      rlock.unlock();
+    }
+  }
+  
+  @Override
+  public BoolProto existIndex(StringProto indexName) {
+    rlock.lock();
+    try {      
+      return BoolProto.newBuilder().setValue(
+          store.existIndex(indexName.getValue())).build();
+    } catch (IOException e) {
+      LOG.error(e);
+      return BoolProto.newBuilder().setValue(false).build();
+    } finally {
+      rlock.unlock();
+    }
+  }
+  
+  @Override
+  public BoolProto existIndex(GetIndexRequest req) {
+    rlock.lock();
+    try {      
+      return BoolProto.newBuilder().setValue(
+          store.existIndex(req.getTableName(), req.getColumnName())).build();
+    } catch (IOException e) {
+      LOG.error(e);
+      return BoolProto.newBuilder().setValue(false).build();
+    } finally {
+      rlock.unlock();
+    }
+  }
 
-	public void deleteTable(String tableId) throws NoSuchTableException {
-		wlock.lock();
-		try {
-			if (!store.existTable(tableId)) {
-				throw new NoSuchTableException(tableId);
-			}
-			store.deleteTable(tableId);
-		} catch (IOException ioe) {
-		  LOG.error(ioe);
-		} finally {
-			wlock.unlock();
-		}
-	}
+  @Override
+  public void delIndex(StringProto indexName) {
+    wlock.lock();
+    try {
+      if (!store.existIndex(indexName.getValue())) {
+        throw new NoSuchIndexException(indexName.getValue());
+      }
+      store.delIndex(indexName.getValue());
+    } catch (IOException e) {
+      LOG.error(e);
+    } finally {
+      wlock.unlock();
+    }
+  }
+
+  @Override
+  public IndexDescProto getIndex(StringProto indexName) {
+    rlock.lock();
+    try {
+      if (!store.existIndex(indexName.getValue())) {
+        throw new NoSuchIndexException(indexName.getValue());
+      }
+      return store.getIndex(indexName.getValue());
+    } catch (IOException ioe) {
+      LOG.error("ERROR : cannot get index " + indexName, ioe);
+      return null;
+    } finally {    
+      rlock.unlock();
+    }
+  }
+  
+  @Override
+  public IndexDescProto getIndex(GetIndexRequest req) {    
+    rlock.lock();
+    try {
+      if (!store.existIndex(req.getTableName())) {
+        throw new NoSuchIndexException(req.getTableName() + "." 
+            + req.getColumnName());
+      }
+      return store.getIndex(req.getTableName(), req.getColumnName());
+    } catch (IOException ioe) {
+      LOG.error("ERROR : cannot get index " + req.getTableName() + "." 
+          + req.getColumnName(), ioe);
+      return null;
+    } finally {    
+      rlock.unlock();
+    }
+  }
 
   @Override
   public void registerFunction(FunctionDescProto funcDesc) {

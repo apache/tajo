@@ -6,6 +6,7 @@ package nta.catalog.store;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -25,7 +26,10 @@ import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
+import nta.catalog.proto.CatalogProtos.ColumnProto;
 import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.IndexDescProto;
+import nta.catalog.proto.CatalogProtos.IndexType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.engine.exception.InternalException;
@@ -49,6 +53,9 @@ public class DBStore implements CatalogStore {
   private static final String TB_TABLES = "TABLES";
   private static final String TB_COLUMNS = "COLUMNS";
   private static final String TB_OPTIONS = "OPTIONS";
+  private static final String TB_INDEXES = "INDEXES";
+  
+  private static final String C_TABLE_ID = "TABLE_ID";
   
   private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
   private Lock rlock = lock.readLock();
@@ -106,44 +113,59 @@ public class DBStore implements CatalogStore {
       // TABLES
       stmt = conn.createStatement();
       String tables_ddl = "CREATE TABLE "
-          + TB_TABLES
-          + " (table_name VARCHAR(256) NOT NULL PRIMARY KEY, path VARCHAR(1024), "
-          + " store_type char(16), options VARCHAR(32672))";
+          + TB_TABLES + " ("
+          + "TID int NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1), "
+          + C_TABLE_ID + " VARCHAR(256) NOT NULL CONSTRAINT TABLE_ID_UNIQ UNIQUE, "
+          + "path VARCHAR(1024), "
+          + "store_type char(16), "
+          + "options VARCHAR(32672), "
+          + "CONSTRAINT TABLES_PK PRIMARY KEY (TID)" +
+          ")";
       LOG.info(tables_ddl);
       if (LOG.isDebugEnabled()) {
         LOG.debug(tables_ddl);
       }
       stmt.addBatch(tables_ddl);
-      String tables_idx = "CREATE UNIQUE INDEX idx_table_name on " + TB_TABLES
-          + "(table_name)";
-      LOG.info(tables_idx);
-      stmt.addBatch(tables_idx);
+      String idx_tables_tid = 
+          "CREATE UNIQUE INDEX idx_tables_tid on " + TB_TABLES + " (TID)";
+      LOG.info(idx_tables_tid);
+      stmt.addBatch(idx_tables_tid);
+      
+      String idx_tables_name = "CREATE UNIQUE INDEX idx_tables_name on " 
+          + TB_TABLES + "(" + C_TABLE_ID + ")";
+      LOG.info(idx_tables_name);
+      stmt.addBatch(idx_tables_name);
       stmt.executeBatch();
       LOG.info("Table '" + TB_TABLES + "' is created.");
 
       // COLUMNS
       stmt = conn.createStatement();
-      String columns_ddl = "CREATE TABLE " + TB_COLUMNS + "("
-          + "table_name VARCHAR(256) NOT NULL REFERENCES TABLES (TABLE_NAME) "
-          + "ON DELETE CASCADE, "
-          + "column_name VARCHAR(256) NOT NULL, " + "data_type CHAR(16)" + ")";
+      String columns_ddl = 
+          "CREATE TABLE " + TB_COLUMNS + " ("
+          + "TID INT NOT NULL REFERENCES " + TB_TABLES + " (TID) ON DELETE CASCADE, "
+          + C_TABLE_ID + " VARCHAR(256) NOT NULL REFERENCES " + TB_TABLES + "("
+          + C_TABLE_ID + ") ON DELETE CASCADE, "
+          + "column_name VARCHAR(256) NOT NULL, " + "data_type CHAR(16), " 
+          + "CONSTRAINT C_COLUMN_ID UNIQUE (" + C_TABLE_ID + ", column_name))";
       LOG.info(columns_ddl);
       if (LOG.isDebugEnabled()) {
         LOG.debug(columns_ddl);
       }
       stmt.addBatch(columns_ddl);
 
-      String columns_idx_fk_table_name = "CREATE UNIQUE INDEX idx_columns_fk_table_name on "
-          + TB_COLUMNS + "(table_name, column_name)";
-      LOG.info(columns_idx_fk_table_name);
-      stmt.addBatch(columns_idx_fk_table_name);
+      String idx_fk_columns_table_name = 
+          "CREATE UNIQUE INDEX idx_fk_columns_table_name on "
+          + TB_COLUMNS + "(" + C_TABLE_ID + ", column_name)";
+      LOG.info(idx_fk_columns_table_name);
+      stmt.addBatch(idx_fk_columns_table_name);
       stmt.executeBatch();
       LOG.info("Table '" + TB_COLUMNS + " is created.");
 
       // OPTIONS
       stmt = conn.createStatement();
-      String options_ddl = "CREATE TABLE " + TB_OPTIONS +"("
-          + "table_name VARCHAR(256) NOT NULL REFERENCES TABLES (TABLE_NAME) "
+      String options_ddl = 
+          "CREATE TABLE " + TB_OPTIONS +" ("
+          + C_TABLE_ID + " VARCHAR(256) NOT NULL REFERENCES TABLES (" + C_TABLE_ID +") "
           + "ON DELETE CASCADE, "
           + "key_ VARCHAR(256) NOT NULL, value_ VARCHAR(256) NOT NULL)";
       LOG.info(options_ddl);
@@ -152,16 +174,56 @@ public class DBStore implements CatalogStore {
       }
       stmt.addBatch(options_ddl);
       
-      String options_idx_key = 
-          "CREATE UNIQUE INDEX idx_options_key on " + TB_OPTIONS 
-          + "(table_name, key_)";
-      stmt.addBatch(options_idx_key);
-      String options_idx_table_name = 
+      String idx_options_key = 
+          "CREATE UNIQUE INDEX idx_options_key on " + TB_OPTIONS + " (key_)";
+      LOG.info(idx_options_key);
+      stmt.addBatch(idx_options_key);
+      String idx_options_table_name = 
           "CREATE INDEX idx_options_table_name on " + TB_OPTIONS 
-          + "(table_name)";
-      stmt.addBatch(options_idx_table_name);      
+          + "(" + C_TABLE_ID + ")";
+      LOG.info(idx_options_table_name);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(idx_options_table_name);
+      }
+      stmt.addBatch(idx_options_table_name);
       stmt.executeBatch();
-      LOG.info(options_idx_key);      
+      LOG.info("Table '" + TB_OPTIONS + " is created.");
+      
+      // INDEXES
+      stmt = conn.createStatement();
+      String indexes_ddl = "CREATE TABLE " + TB_INDEXES +"("
+          + "index_name VARCHAR(256) NOT NULL PRIMARY KEY, "
+          + C_TABLE_ID + " VARCHAR(256) NOT NULL REFERENCES TABLES (" + C_TABLE_ID + ") "
+          + "ON DELETE CASCADE, "
+          + "column_name VARCHAR(256) NOT NULL, "
+          + "data_type VARCHAR(256) NOT NULL, "
+          + "index_type CHAR(32) NOT NULL, "
+          + "is_unique BOOLEAN NOT NULL, "
+          + "is_clustered BOOLEAN NOT NULL, "
+          + "is_ascending BOOLEAN NOT NULL)";
+      LOG.info(indexes_ddl);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(indexes_ddl);
+      }
+      stmt.addBatch(indexes_ddl);
+      
+      String idx_indexes_key = "CREATE UNIQUE INDEX idx_indexes_key ON " 
+          + TB_INDEXES + " (index_name)";
+      LOG.info(idx_indexes_key);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(idx_indexes_key);
+      }      
+      stmt.addBatch(idx_indexes_key);
+      
+      String idx_indexes_columns = "CREATE INDEX idx_indexes_columns ON " 
+          + TB_INDEXES + " (" + C_TABLE_ID + ", column_name)";
+      LOG.info(idx_indexes_columns);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(idx_indexes_columns);
+      } 
+      stmt.addBatch(idx_indexes_columns);
+      stmt.executeBatch();
+      LOG.info("Table '" + TB_INDEXES + "' is created.");
     } finally {
       wlock.unlock();
     }
@@ -210,21 +272,34 @@ public class DBStore implements CatalogStore {
   @Override
   public final void addTable(final TableDesc table) throws IOException {
     Statement stmt = null;
+    ResultSet res = null;
 
-    StringBuilder sql = new StringBuilder();
-    sql.append("INSERT INTO " + TB_TABLES + " (table_name, path, store_type)")
-        .append("VALUES(").append("'" + table.getId() + "'")
-        .append(",'" + table.getPath() + "'")
-        .append(",'" + table.getMeta().getStoreType() + "'").append(")");
+    String sql = 
+        "INSERT INTO " + TB_TABLES + " (" + C_TABLE_ID + ", path, store_type) "
+        + "VALUES('" + table.getId() + "', "
+        + "'" + table.getPath() + "', "
+        + "'" + table.getMeta().getStoreType() + "'"
+        + ")";
     LOG.info(sql.toString());
     wlock.lock();
     try {
       stmt = conn.createStatement();      
       stmt.addBatch(sql.toString());
+      stmt.executeBatch();
+      
+      stmt = conn.createStatement();
+      sql = "SELECT TID from " + TB_TABLES + " WHERE " + C_TABLE_ID 
+          + " = '" + table.getId() + "'";
+      res = stmt.executeQuery(sql);
+      if (res.next() == false) {
+        throw new IOException("ERROR: there is no tid matched to " 
+            + table.getId());
+      }
+      int tid = res.getInt("TID");
 
       String colSql = null;
       for (Column col : table.getMeta().getSchema().getColumns()) {
-        colSql = columnToSQL(table, col);
+        colSql = columnToSQL(tid, table, col);
         LOG.info(colSql);
         stmt.addBatch(colSql);
       }
@@ -232,13 +307,13 @@ public class DBStore implements CatalogStore {
       Iterator<Entry<String,String>> it = table.getMeta().getOptions();
       String optSql;
       while (it.hasNext()) {
-        optSql = keyvalToSQL(table, it.next());
+        optSql = keyvalToSQL(tid, table, it.next());
         LOG.info(optSql);
         stmt.addBatch(optSql);
       }
       stmt.executeBatch();
     } catch (SQLException se) {
-
+      throw new IOException(se.getMessage(), se);
     } finally {
       wlock.unlock();
       try {
@@ -248,11 +323,13 @@ public class DBStore implements CatalogStore {
     }
   }
   
-  private String columnToSQL(final TableDesc desc, final Column col) {
+  private String columnToSQL(final int tid, final TableDesc desc, 
+      final Column col) {
     String sql =
         "INSERT INTO " + TB_COLUMNS 
-        + "(table_name, column_name, data_type) "
+        + " (tid, " + C_TABLE_ID + ", column_name, data_type) "
         + "VALUES("
+        + tid + ","
         + "'" + desc.getId() + "',"
         + "'" + col.getColumnName() + "',"
         + "'" + col.getDataType().toString() + "'"
@@ -261,11 +338,11 @@ public class DBStore implements CatalogStore {
     return sql;
   }
   
-  private String keyvalToSQL(final TableDesc desc, 
+  private String keyvalToSQL(int tid, final TableDesc desc, 
       final Entry<String,String> keyVal) {
     String sql =
         "INSERT INTO " + TB_OPTIONS 
-        + "(table_name, key_, value_) "
+        + " (" + C_TABLE_ID + ", key_, value_) "
         + "VALUES("
         + "'" + desc.getId() + "',"
         + "'" + keyVal.getKey() + "',"
@@ -278,9 +355,9 @@ public class DBStore implements CatalogStore {
   @Override
   public final boolean existTable(final String name) throws IOException {
     StringBuilder sql = new StringBuilder();
-    sql.append("SELECT table_name from ")
+    sql.append("SELECT " + C_TABLE_ID + " from ")
     .append(TB_TABLES)
-    .append(" WHERE table_name = '")
+    .append(" WHERE " + C_TABLE_ID + " = '")
     .append(name)
     .append("'");    
     LOG.info(sql.toString());
@@ -309,7 +386,7 @@ public class DBStore implements CatalogStore {
   public final void deleteTable(final String name) throws IOException {
     String sql =
       "DELETE FROM " + TB_TABLES
-      + " WHERE table_name='" + name + "'";
+      + " WHERE " + C_TABLE_ID +" = '" + name + "'";
     LOG.info(sql.toString());
     
     Statement stmt = null;
@@ -341,14 +418,16 @@ public class DBStore implements CatalogStore {
     rlock.lock();
     try {
       try {
-        String sql = "SELECT table_name, path, store_type from " + TB_TABLES
-            + " WHERE table_name='" + name + "'";    
+        String sql = 
+            "SELECT " + C_TABLE_ID + ", path, store_type from " + TB_TABLES
+            + " WHERE " + C_TABLE_ID + "='" + name + "'";
+        LOG.info(sql);
         stmt = conn.createStatement();
         res = stmt.executeQuery(sql);
         if (!res.next()) { // there is no table of the given name.
           return null;
         }
-        tableName = res.getString("table_name").trim();
+        tableName = res.getString(C_TABLE_ID).trim();
         path = new Path(res.getString("path").trim());
         storeType = getStoreType(res.getString("store_type").trim());
       } catch (SQLException se) { 
@@ -361,7 +440,8 @@ public class DBStore implements CatalogStore {
       Schema schema = null;
       try {
         String sql = "SELECT column_name, data_type from " + TB_COLUMNS
-            + " WHERE table_name='" + name + "'";
+            + " WHERE " + C_TABLE_ID + "='" + name + "'";
+        LOG.info(sql);
         stmt = conn.createStatement();
         res = stmt.executeQuery(sql);
 
@@ -383,7 +463,7 @@ public class DBStore implements CatalogStore {
       options = Options.create();
       try {
         String sql = "SELECT key_, value_ from " + TB_OPTIONS
-            + " WHERE table_name='" + name + "'";
+            + " WHERE " + C_TABLE_ID + "='" + name + "'";
         stmt = conn.createStatement();
         res = stmt.executeQuery(sql);        
         
@@ -458,7 +538,7 @@ public class DBStore implements CatalogStore {
   
   @Override
   public final List<String> getAllTableNames() throws IOException {
-    String sql = "SELECT table_name from " + TB_TABLES;
+    String sql = "SELECT " + C_TABLE_ID + " from " + TB_TABLES;
     
     Statement stmt = null;
     ResultSet res = null;
@@ -469,7 +549,7 @@ public class DBStore implements CatalogStore {
       stmt = conn.createStatement();
       res = stmt.executeQuery(sql);
       while (res.next()) {
-        tables.add(res.getString("table_name").trim());
+        tables.add(res.getString(C_TABLE_ID).trim());
       }
     } catch (SQLException se) {
       throw new IOException(se);
@@ -481,6 +561,231 @@ public class DBStore implements CatalogStore {
       }
     }
     return tables;
+  }
+  
+  public final void addIndex(final IndexDescProto proto) throws IOException {
+    String sql = 
+        "INSERT INTO indexes (index_name, " + C_TABLE_ID + ", column_name, " 
+        +"data_type, index_type, is_unique, is_clustered, is_ascending) VALUES "
+        +"(?,?,?,?,?,?,?,?)";
+    
+    PreparedStatement stmt = null;
+
+    wlock.lock();
+    try {
+      stmt = conn.prepareStatement(sql);
+      stmt.setString(1, proto.getName());
+      stmt.setString(2, proto.getTableId());
+      stmt.setString(3, proto.getColumn().getColumnName());
+      stmt.setString(4, proto.getColumn().getDataType().toString());
+      stmt.setString(5, proto.getIndexType().toString());
+      stmt.setBoolean(6, proto.hasIsUnique() ? proto.getIsUnique() : false);
+      stmt.setBoolean(7, proto.hasIsClustered() ? proto.getIsClustered() : false);
+      stmt.setBoolean(8, proto.hasIsAscending() ? proto.getIsAscending() : false);
+      stmt.executeUpdate();
+    } catch (SQLException se) {
+      throw new IOException(se);
+    } finally {
+      wlock.unlock();
+      try {
+        stmt.close();
+      } catch (SQLException e) {     
+      }
+    }
+  }
+  
+  public final void delIndex(final String indexName) throws IOException {
+    String sql =
+        "DELETE FROM " + TB_INDEXES
+        + " WHERE index_name='" + indexName + "'";
+      LOG.info(sql.toString());
+      
+      Statement stmt = null;
+      wlock.lock(); 
+      try {
+        stmt = conn.createStatement();
+        stmt.executeUpdate(sql);
+      } catch (SQLException se) {
+        throw new IOException(se);
+      } finally {
+        wlock.unlock();
+        try {
+          stmt.close();
+        } catch (SQLException e) {
+        }      
+      }
+  }
+  
+  public final IndexDescProto getIndex(final String indexName) 
+      throws IOException {
+    ResultSet res = null;
+    PreparedStatement stmt = null;
+    
+    IndexDescProto proto = null;
+    
+    rlock.lock();
+    try {
+      String sql = 
+          "SELECT index_name, " + C_TABLE_ID + ", column_name, data_type, " 
+          + "index_type, is_unique, is_clustered, is_ascending FROM indexes "
+          + "where index_name = ?";
+      stmt = conn.prepareStatement(sql);
+      stmt.setString(1, indexName);
+      res = stmt.executeQuery();
+      if (res.next() == false) {
+        throw new IOException("ERROR: there is no index matched to " + indexName);
+      }
+      proto = resultToProto(res);
+    } catch (SQLException se) {
+      new IOException(se);
+    } finally {
+      rlock.unlock();
+    }
+    
+    return proto;
+  }
+  
+  public final IndexDescProto getIndex(final String tableName, 
+      final String columnName) throws IOException {
+    ResultSet res = null;
+    PreparedStatement stmt = null;
+    
+    IndexDescProto proto = null;
+    
+    rlock.lock();
+    try {
+      String sql = 
+          "SELECT index_name, " + C_TABLE_ID + ", column_name, data_type, " 
+          + "index_type, is_unique, is_clustered, is_ascending FROM indexes "
+          + "where " + C_TABLE_ID + " = ? AND column_name = ?";
+      stmt = conn.prepareStatement(sql);
+      stmt.setString(1, tableName);
+      stmt.setString(2, columnName);
+      res = stmt.executeQuery();
+      if (res.next() == false) {
+        throw new IOException("ERROR: there is no index matched to " 
+            + tableName + "." + columnName);
+      }      
+      proto = resultToProto(res);
+    } catch (SQLException se) {
+      new IOException(se);
+    } finally {
+      rlock.unlock();
+    }
+    
+    return proto;
+  }
+  
+  public final boolean existIndex(final String indexName) throws IOException {
+    String sql = "SELECT index_name from " + TB_INDEXES 
+        + " WHERE index_name = ?";
+    LOG.info(sql.toString());
+
+    PreparedStatement stmt = null;
+    boolean exist = false;
+    rlock.lock();
+    try {
+      stmt = conn.prepareStatement(sql);
+      stmt.setString(1, indexName);
+      ResultSet res = stmt.executeQuery();
+      exist = res.next() == true;
+    } catch (SQLException se) {
+      
+    } finally {
+      rlock.unlock();
+      try {
+        stmt.close();
+      } catch (SQLException e) {
+      }         
+    }
+    
+    return exist;
+  }
+  
+  @Override
+  public boolean existIndex(String tableName, String columnName)
+      throws IOException {
+    String sql = "SELECT index_name from " + TB_INDEXES 
+        + " WHERE " + C_TABLE_ID + " = ? AND COLUMN_NAME = ?";
+    LOG.info(sql.toString());
+
+    PreparedStatement stmt = null;
+    boolean exist = false;
+    rlock.lock();
+    try {
+      stmt = conn.prepareStatement(sql);
+      stmt.setString(1, tableName);
+      stmt.setString(2, columnName);
+      ResultSet res = stmt.executeQuery();
+      exist = res.next() == true;
+    } catch (SQLException se) {
+      
+    } finally {
+      rlock.unlock();
+      try {
+        stmt.close();
+      } catch (SQLException e) {
+      }         
+    }
+    
+    return exist;
+  }
+  
+  public final IndexDescProto [] getIndexes(final String tableName) 
+      throws IOException {
+    ResultSet res = null;
+    PreparedStatement stmt = null;
+    
+    List<IndexDescProto> protos = new ArrayList<IndexDescProto>();
+    
+    rlock.lock();
+    try {
+      String sql = "SELECT index_name, " + C_TABLE_ID + ", column_name, data_type, " 
+          + "index_type, is_unique, is_clustered, is_ascending FROM indexes "
+          + "where " + C_TABLE_ID + "= ?";
+      stmt = conn.prepareStatement(sql);
+      stmt.setString(1, tableName);
+      res = stmt.executeQuery();      
+      while (res.next()) {
+        protos.add(resultToProto(res));
+      }
+    } catch (SQLException se) {
+      new IOException(se);
+    } finally {
+      rlock.unlock();
+    }
+    
+    return protos.toArray(new IndexDescProto [protos.size()]);
+  }
+  
+  private IndexDescProto resultToProto(final ResultSet res) throws SQLException {
+    IndexDescProto.Builder builder = IndexDescProto.newBuilder();
+    builder.setName(res.getString("index_name"));
+    builder.setTableId(res.getString(C_TABLE_ID));
+    builder.setColumn(resultToColumnProto(res));
+    builder.setIndexType(getIndexType(res.getString("index_type").trim()));
+    builder.setIsUnique(res.getBoolean("is_unique"));
+    builder.setIsClustered(res.getBoolean("is_clustered"));
+    builder.setIsAscending(res.getBoolean("is_ascending"));
+    return builder.build();
+  }
+  
+  private ColumnProto resultToColumnProto(final ResultSet res) throws SQLException {
+    ColumnProto.Builder builder = ColumnProto.newBuilder();
+    builder.setColumnName(res.getString("column_name"));
+    builder.setDataType(getDataType(res.getString("data_type").trim()));
+    return builder.build();
+  }
+  
+  private IndexType getIndexType(final String typeStr) {
+    if (typeStr.equals(IndexType.TWO_LEVEL_BIN_TREE.toString())) {
+      return IndexType.TWO_LEVEL_BIN_TREE;
+    } else {
+      LOG.error("Cannot find a matched type aginst from '"
+          + typeStr + "'");
+      // TODO - needs exception handling
+      return null;
+    }
   }
   
   @Override

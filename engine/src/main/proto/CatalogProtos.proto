@@ -79,8 +79,27 @@ message FunctionDescProto {
 	required DataType returnType = 5;
 }
 
+message IndexDescProto {
+    required string name = 1;
+    required string tableId = 2;
+    required ColumnProto column = 3;
+    required IndexType indexType = 4;
+    optional bool isUnique = 5 [default = false];
+    optional bool isClustered = 6 [default = false];
+    optional bool isAscending = 7 [default = false];
+}
+
+enum IndexType {
+    TWO_LEVEL_BIN_TREE = 0;
+}
+
 message GetAllTableNamesResponse {
     repeated string tableName = 1;
+}
+
+message GetIndexRequest {
+    required string tableName = 1;
+    required string columnName = 2;
 }
 
 message GetFunctionsResponse {
