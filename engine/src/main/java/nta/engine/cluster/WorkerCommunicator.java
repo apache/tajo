@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.zookeeper.KeeperException;
 
 import nta.catalog.proto.CatalogProtos.TabletProto;
@@ -36,14 +35,14 @@ public class WorkerCommunicator extends ZkListener {
   private List<String> servers;
   private HashMap<String, AsyncWorkerClientInterface> hm = new HashMap<String, AsyncWorkerClientInterface>();
 
-  public WorkerCommunicator(Configuration conf) throws Exception {
+  public WorkerCommunicator(ZkClient zkClient, LeafServerTracker tracker)
+      throws Exception {
 
-    zkClient = new ZkClient(conf);
-    tracker = new LeafServerTracker(zkClient);
-    
+    this.zkClient = zkClient;
+    this.tracker = tracker;
     Thread.sleep(3000);
 
-    servers = tracker.getMembers();
+    servers = this.tracker.getMembers();
 
     for (String servername : servers) {
       AsyncWorkerClientInterface leaf;
@@ -80,7 +79,7 @@ public class WorkerCommunicator extends ZkListener {
 
   public Callback<SubQueryResponseProto> requestSubQuery(String serverName,
       int port, SubQueryRequestProto requestProto) throws Exception {
-    return requestSubQuery(serverName + ":" + port, requestProto);
+    return this.requestSubQuery(serverName + ":" + port, requestProto);
   }
 
   public Callback<SubQueryResponseProto> requestQueryUnit(String serverName,
@@ -94,7 +93,7 @@ public class WorkerCommunicator extends ZkListener {
 
   public Callback<SubQueryResponseProto> requestQueryUnit(String serverName,
       int port, QueryUnitRequestProto requestProto) throws Exception {
-    return requestQueryUnit(serverName + ":" + port, requestProto);
+    return this.requestQueryUnit(serverName + ":" + port, requestProto);
   }
 
   public void assignTablets(String serverName, TabletProto tablet) {
@@ -162,6 +161,7 @@ public class WorkerCommunicator extends ZkListener {
   }
 
   public void close() {
-    zkClient.close();
+    this.zkClient.unsubscribe(this);
+    this.zkClient.close();
   }
 }

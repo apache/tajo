@@ -19,6 +19,8 @@ import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
 import nta.engine.QueryUnitProtos.InProgressStatus;
+import nta.engine.cluster.ClusterManager;
+import nta.engine.cluster.LeafServerTracker;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.cluster.WorkerListener;
@@ -62,6 +64,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   private StorageManager storeManager;
   private GlobalEngine queryEngine;
   private WorkerCommunicator wc;
+  private ClusterManager cm;
   private WorkerListener wl;
   private QueryManager qm;
 
@@ -69,6 +72,8 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   private RPC.Server clientServiceServer;
 
   private List<EngineService> services = new ArrayList<EngineService>();
+  
+  private LeafServerTracker tracker;
   
   public NtaEngineMaster(final Configuration conf) throws Exception {
     this.conf = conf;
@@ -144,8 +149,12 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 
   private void initMaster() throws Exception {
     becomeMaster();
-    this.wc = new WorkerCommunicator(conf);
+    tracker = new LeafServerTracker(zkClient);
+    tracker.start();
+    
+    this.wc = new WorkerCommunicator(zkClient, tracker);
     this.wc.start();
+    this.cm = new ClusterManager(wc, conf, tracker);
     
     this.queryEngine = new GlobalEngine(conf, catalog, storeManager, wc, qm, this);
     this.queryEngine.init();
@@ -203,6 +212,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   }
 
   public void shutdown() {
+    tracker.close();
     this.stopped = true;
     this.clientServiceServer.stop();
     if (wc != null) {
@@ -308,6 +318,18 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 		Collection<String> tableNames = catalog.getAllTableNames();		
 		return GsonCreator.getInstance().toJson(tableNames);
 	}
+	
+  public WorkerCommunicator getWorkerCommunicator() {
+    return wc;
+  }
+
+  public ClusterManager getClusterManager() {
+    return cm;
+  }
+  
+  public LeafServerTracker getTracker() {
+    return tracker;
+  }
 	
 	// TODO - to be improved
 	public Collection<InProgressStatus> getProgressQueries() {

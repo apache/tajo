@@ -2,6 +2,7 @@ package nta.cluster;
 
 import static org.junit.Assert.*;
 
+import java.io.IOException;
 import java.util.List;
 
 import nta.engine.NtaTestingUtility;
@@ -12,22 +13,38 @@ import nta.engine.cluster.WorkerCommunicator;
 import nta.rpc.RemoteException;
 import nta.zookeeper.ZkClient;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestWorkerCommunicator {
 
+  private static NtaTestingUtility cluster;
+  private static ZkClient zkClient;
+  private static LeafServerTracker tracker;
+  private static WorkerCommunicator wc;
+
+  @BeforeClass
+  public static void setUp() throws Exception {
+    cluster = new NtaTestingUtility();
+    cluster.startMiniCluster(2);
+    Thread.sleep(2000);
+
+    zkClient = new ZkClient(cluster.getConfiguration());
+    tracker = cluster.getMiniNtaEngineCluster().getMaster().getTracker();
+
+    wc = new WorkerCommunicator(zkClient, tracker);
+    wc.start();
+  }
+
+  @AfterClass
+  public static void tearDown() throws IOException {
+    wc.close();
+    cluster.shutdownMiniCluster();
+  }
+
   @Test
   public void test() throws Exception {
-    NtaTestingUtility cluster = new NtaTestingUtility();
-    cluster.startMiniCluster(2);
-    Thread.sleep(1000);
-
-    LeafServerTracker tracker = new LeafServerTracker(new ZkClient(
-        cluster.getConfiguration()));
-
-    WorkerCommunicator wc = new WorkerCommunicator(cluster.getConfiguration());
-    wc.start();
-
     cluster.getMiniNtaEngineCluster().startLeafServer();
     Thread.sleep(1000);
     assertEquals(wc.getProxyMap().size(), tracker.getMembers().size());
@@ -39,13 +56,13 @@ public class TestWorkerCommunicator {
     List<String> servers = tracker.getMembers();
     for (String server : servers) {
       try {
-        ServerStatusProto status; 
-        status = wc.getServerStatus(server).get();
+        ServerStatusProto status = wc.getServerStatus(server).get();
+        ServerStatusProto.System system = status.getSystem();
 
-        assertNotNull(status.getSystem().getAvailableProcessors());
-        assertNotNull(status.getSystem().getFreeMemory());
-        assertNotNull(status.getSystem().getMaxMemory());
-        assertNotNull(status.getSystem().getTotalMemory());
+        assertNotNull(system.getAvailableProcessors());
+        assertNotNull(system.getFreeMemory());
+        assertNotNull(system.getMaxMemory());
+        assertNotNull(system.getTotalMemory());
 
         List<Disk> diskStatuses = status.getDiskList();
         for (Disk diskStatus : diskStatuses) {
@@ -59,9 +76,6 @@ public class TestWorkerCommunicator {
         System.out.println(e.getMessage());
       }
     }
-
-    wc.close();
-    cluster.shutdownMiniCluster();
   }
 
 }
