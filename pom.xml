@@ -97,19 +97,38 @@
 						</execution>
 					</executions>
 				</plugin>
+			<!-- Ignore/Execute plugin execution -->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<!-- copy-dependency plugin -->
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-dependency-plugin</artifactId>
+										<versionRange>[1.0.0,)</versionRange>
+										<goals>
+											<goal>copy-dependencies</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 	</build>
 
 	<dependencyManagement>
 		<dependencies>
-			<!-- <dependency> <groupId>org.apache.hadoop</groupId> <artifactId>hadoop-yarn-server-nodemanager</artifactId> 
-				<version>${yarn.version}</version> <scope>test</scope> </dependency> <dependency> 
-				<groupId>org.apache.hadoop</groupId> <artifactId>hadoop-yarn-server-tests</artifactId> 
-				<version>${yarn.version}</version> <type>test-jar</type> </dependency> <dependency> 
-				<groupId>org.apache.hadoop</groupId> <artifactId>hadoop-mapreduce-client-app</artifactId> 
-				<version>${hadoop-mapreduce.version}</version> <type>test-jar</type> <scope>test</scope> 
-				</dependency> -->
 			<dependency>
 				<groupId>org.antlr</groupId>
 				<artifactId>antlr</artifactId>
@@ -176,10 +195,6 @@
 				<artifactId>commons-logging-api</artifactId>
 				<version>1.1</version>
 			</dependency>
-			<!-- <dependency> <groupId>org.apache.hadoop</groupId> <artifactId>hadoop-common</artifactId> 
-				<version>${hadoop.version}</version> </dependency> <dependency> <groupId>org.apache.hadoop</groupId> 
-				<artifactId>hadoop-hdfs</artifactId> <version>${hadoop.version}</version> 
-				<type>test-jar</type> <scope>test</scope> </dependency> -->
 			<dependency>
 				<groupId>org.apache.hadoop</groupId>
 				<artifactId>hadoop-core</artifactId>

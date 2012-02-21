@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app>
+  <display-name>TestHttpServer</display-name>
+
+  <!-- Declare the existence of a servlet. -->
+  <servlet>
+    <servlet-name>DummyServlet</servlet-name>
+    <servlet-class>tajo.webapp.TestHttpServer$DummyServlet</servlet-class>
+  </servlet>
+
+  <!-- Map URLs to that servlet. -->
+  <servlet-mapping>
+    <servlet-name>DummyServlet</servlet-name>
+    <url-pattern>/dummy</url-pattern>
+  </servlet-mapping>
+</web-app>
