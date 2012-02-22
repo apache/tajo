@@ -1,0 +1,24 @@
+option java_package = "nta.engine.query";
+option java_outer_classname = "QueryIdProtos";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+message QueryIdProto {
+	required string timeId = 1;
+	required int32 id = 2;
+}
+
+message SubQueryIdProto {
+	required QueryIdProto queryId = 1;
+	required int32 id = 2;
+}
+
+message LogicalQueryUnitIdProto {
+	required SubQueryIdProto subQueryId = 1;
+	required int32 id = 2;
+}
+
+message QueryUnitIdProto {
+	required string queryStepId = 1;
+	required int32 id = 2;
+}

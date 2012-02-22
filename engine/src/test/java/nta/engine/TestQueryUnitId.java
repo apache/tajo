@@ -27,6 +27,11 @@ public class TestQueryUnitId {
     QueryStepId stepId = new QueryStepId(subId, 4);
     assertEquals("query_" + timeId+"_001_002_004", stepId.toString());
     
+    LogicalQueryUnitId logicalQUeryUnitId = 
+        new LogicalQueryUnitId(subId, 6);
+    assertEquals("query_" + timeId+"_001_002_006", 
+        logicalQUeryUnitId.toString());
+    
     QueryUnitId qId = new QueryUnitId(stepId, 5);
     assertEquals("query_" + timeId + "_001_002_004_000005", qId.toString());
   }
@@ -54,6 +59,12 @@ public class TestQueryUnitId {
     assertNotSame(stepId1, stepId2);
     QueryStepId stepId3 = new QueryStepId(sid1, 9);
     assertEquals(stepId1, stepId3);
+    
+    LogicalQueryUnitId lqid1 = new LogicalQueryUnitId(sid1, 9);
+    LogicalQueryUnitId lqid2 = new LogicalQueryUnitId(sid1, 10);
+    assertNotSame(lqid1, lqid2);
+    LogicalQueryUnitId lqid3 = new LogicalQueryUnitId(sid1, 9);
+    assertEquals(lqid1, lqid3);
     
     QueryUnitId qid1 = new QueryUnitId(stepId1, 9);
     QueryUnitId qid2 = new QueryUnitId(stepId1, 10);
@@ -89,11 +100,42 @@ public class TestQueryUnitId {
     assertEquals(1, step2.compareTo(step1));
     assertEquals(0, step3.compareTo(step1));
     
+    LogicalQueryUnitId lqid1 = new LogicalQueryUnitId(sid1, 9);
+    LogicalQueryUnitId lqid2 = new LogicalQueryUnitId(sid1, 10);
+    LogicalQueryUnitId lqid3 = new LogicalQueryUnitId(sid1, 9);
+    assertEquals(-1, step1.compareTo(step2));
+    assertEquals(1, step2.compareTo(step1));
+    assertEquals(0, step3.compareTo(step1));
+    
     QueryUnitId qid1 = new QueryUnitId(step1, 9);
     QueryUnitId qid2 = new QueryUnitId(step1, 10);
     QueryUnitId qid3 = new QueryUnitId(step1, 9);
     assertEquals(-1, qid1.compareTo(qid2));
     assertEquals(1, qid2.compareTo(qid1));
     assertEquals(0, qid3.compareTo(qid1));
+  }
+  
+  @Test
+  public void testConstructFromString() {
+    QueryIdFactory.reset();
+    QueryId qid1 = QueryIdFactory.newQueryId();
+    QueryId qid2 = new QueryId(qid1.toString());
+    assertEquals(qid1, qid2);
+    
+    SubQueryId sub1 = QueryIdFactory.newSubQueryId();
+    SubQueryId sub2 = new SubQueryId(sub1.toString());
+    assertEquals(sub1, sub2);
+    
+    QueryStepId step1 = QueryIdFactory.newQueryStepId();
+    QueryStepId step2 = new QueryStepId(step1.toString());
+    assertEquals(step1, step2);
+    
+    LogicalQueryUnitId lqid1 = QueryIdFactory.newLogicalQueryUnitId();
+    LogicalQueryUnitId lqid2 = new LogicalQueryUnitId(lqid1.toString());
+    assertEquals(lqid1, lqid2);
+    
+    QueryUnitId u1 = QueryIdFactory.newQueryUnitId();
+    QueryUnitId u2 = new QueryUnitId(u1.toString());
+    assertEquals(u1, u2);
   }
 }

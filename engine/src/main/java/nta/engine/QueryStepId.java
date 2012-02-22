@@ -11,13 +11,22 @@ private static final NumberFormat idFormat = NumberFormat.getInstance();
     idFormat.setMinimumIntegerDigits(3);
   }
 
-  public static final String SEPERATOR = "_";
-  private final SubQueryId subQueryId;
-  private final String finalId;
+  public static String SEPERATOR = "_";
+  private SubQueryId subQueryId;
+  private int id;
+  private String finalId;
   
-  public QueryStepId(SubQueryId subQueryId, final long id) {
+  public QueryStepId(SubQueryId subQueryId, final int id) {
     this.subQueryId = subQueryId;
+    this.id = id;
     finalId = subQueryId +  SEPERATOR + idFormat.format(id);
+  }
+  
+  public QueryStepId(String finalId) {
+    this.finalId = finalId;
+    int i = finalId.lastIndexOf(QueryId.SEPERATOR);
+    subQueryId = new SubQueryId(finalId.substring(0, i));
+    id = Integer.valueOf(finalId.substring(i+1));
   }
 
   @Override
