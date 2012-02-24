@@ -17,6 +17,7 @@ import nta.engine.Context;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.storage.Tuple;
@@ -95,6 +96,7 @@ public class TestQueryAnalyzer {
       "select p.id, s.id, score, dept from people as p, student as s where p.id = s.id", // 4
       "select name, score from people order by score asc, age desc", // 5
       "store1 := select name, score from people order by score asc, age desc",// 6
+      "select 7 + 8" // 7
   };
 
   public static NQLParser parseExpr(final String expr) {
@@ -177,6 +179,14 @@ public class TestQueryAnalyzer {
     QueryBlock block = analyzer.parse(ctx, QUERIES[6]);
     assertEquals("store1", block.getStoreTable());
     testOrderByCluse(block);
+  }
+  
+  @Test
+  public final void testOnlyExpr() {
+    Context ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[7]);
+    EvalNode node = block.getTargetList()[0].getEvalTree();
+    assertEquals(Type.PLUS, node.getType());
   }
   
   private String [] INVALID_QUERIES = {

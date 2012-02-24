@@ -15,7 +15,7 @@ import nta.datum.json.GsonCreator;
  * @author Hyunsik Choi
  *
  */
-public class FloatDatum extends Datum {
+public class FloatDatum extends NumericDatum {
   private static final int size = 4;
   
   @Expose
@@ -268,5 +268,10 @@ public class FloatDatum extends Datum {
     default:
       throw new InvalidOperationException(datum.type());
     }
+  }
+
+  @Override
+  public void inverseSign() {
+    this.val = - val;    
   }
 }

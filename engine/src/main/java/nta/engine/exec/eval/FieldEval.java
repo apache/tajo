@@ -1,8 +1,5 @@
 package nta.engine.exec.eval;
 
-import com.google.gson.Gson;
-import com.google.gson.annotations.Expose;
-
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
@@ -10,33 +7,30 @@ import nta.datum.Datum;
 import nta.engine.json.GsonCreator;
 import nta.storage.Tuple;
 
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
+
 /**
  * @author Hyunsik Choi 
  */
 public class FieldEval extends EvalNode implements Cloneable {
-	@Expose
-	DataType dataType;
-	@Expose
-	private String columnName;
-	@Expose
-	private int fieldId = -1;
+	@Expose private Column column;
+	@Expose	private int fieldId = -1;
 	
 	public FieldEval(String columnName, DataType domain) {
 		super(Type.FIELD);
-		this.dataType = domain;
-		this.columnName = columnName;
+		this.column = new Column(columnName, domain);
 	}
 	
-	public FieldEval(Column col) {
+	public FieldEval(Column column) {
 	  super(Type.FIELD);
-	  this.dataType = col.getDataType();
-	  this.columnName = col.getQualifiedName();
+	  this.column = column;
 	}
 
 	@Override
 	public Datum eval(Schema schema, Tuple tuple, Datum...args) {
 	  if (fieldId == -1) {
-	    fieldId = schema.getColumnId(columnName);
+	    fieldId = schema.getColumnId(column.getQualifiedName());
 	  }
 
 	  return tuple.get(fieldId);
@@ -44,47 +38,52 @@ public class FieldEval extends EvalNode implements Cloneable {
 	
 	@Override
 	public DataType getValueType() {
-		return dataType;
+		return column.getDataType();
 	}
 	
+  public Column getColumnRef() {
+    return column;
+  }
+	
 	public String getTableId() {	  
-	  return columnName.split("\\.")[0];
+	  return column.getTableName();
 	}
 	
 	public String getColumnName() {
-	  return columnName.split("\\.")[1];
+	  return column.getColumnName();
 	}
 	
 	public void replaceColumnRef(String columnName) {
-	  this.columnName = columnName;
+	  this.column.setName(columnName);
 	}
 
 	@Override
 	public String getName() {
-		return columnName;
+		return this.column.getQualifiedName();
 	}
 	
 	public String toString() {
-	  return columnName + " " + dataType;
+	  return this.column.toString();
 	}
 	
   public boolean equals(Object obj) {
     if (obj instanceof FieldEval) {
       FieldEval other = (FieldEval) obj;
-
-      if (this.type == other.type && this.columnName.equals(other.columnName)
-          && this.dataType.equals(other.dataType)) {
-        return true;
-      }
+      
+      return column.equals(other.column);      
     }
     return false;
   }
   
   @Override
+  public int hashCode() {
+    return column.hashCode();
+  }
+  
+  @Override
   public Object clone() throws CloneNotSupportedException {
     FieldEval eval = (FieldEval) super.clone();
-    eval.dataType = dataType;
-    eval.columnName = columnName;
+    eval.column = (Column) this.column.clone();
     eval.fieldId = fieldId;
     
     return eval;
@@ -96,7 +95,7 @@ public class FieldEval extends EvalNode implements Cloneable {
   }
   
   @Override
-  public void accept(EvalNodeVisitor visitor) {
+  public void postOrder(EvalNodeVisitor visitor) {
     visitor.visit(this);
   }
 }

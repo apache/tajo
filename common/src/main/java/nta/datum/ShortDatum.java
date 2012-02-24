@@ -8,11 +8,9 @@ import nta.datum.exception.InvalidCastException;
 import nta.datum.exception.InvalidOperationException;
 import nta.datum.json.GsonCreator;
 
-public class ShortDatum extends Datum {
-  private static final int size = 2;
-  
-  @Expose
-	int val;
+public class ShortDatum extends NumericDatum {
+  private static final int size = 2;  
+  @Expose private int val;
 	
 	public ShortDatum(short val) {
 		super(DatumType.SHORT);
@@ -241,5 +239,10 @@ public class ShortDatum extends Datum {
     default:
       throw new InvalidOperationException(datum.type());
     }
+  }
+
+  @Override
+  public void inverseSign() {
+    this.val = -val;
   }
 }

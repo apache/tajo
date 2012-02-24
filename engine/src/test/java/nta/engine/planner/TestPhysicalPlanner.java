@@ -154,6 +154,8 @@ public class TestPhysicalPlanner {
       "select count(deptName) from score", // 10
       "select managerId, empId, deptName from employee order by managerId, empId desc", // 11
       "select deptName, nullable from score group by deptName, nullable", // 12
+      "select 3 < 4 as ineq, 3.5 * 2 as real", // 13
+      "select 3 > 2 = 1 > 0 and 3 > 1", // 14
   };
 
   public final void testCreateScanPlan() throws IOException {
@@ -349,5 +351,32 @@ public class TestPhysicalPlanner {
       count++;
     }
     assertEquals(10, count);
+  }
+  
+  @Test
+  public final void testEvalExpr() throws IOException {
+    factory = new SubqueryContext.Factory(catalog);
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+        new Fragment[] { });
+    QueryBlock query = analyzer.parse(ctx, QUERIES[13]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    LogicalOptimizer.optimize(ctx, plan);
+    
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    Tuple tuple = null;
+    tuple = exec.next();
+    assertEquals(true, tuple.get(0).asBool());
+    assertTrue(7.0d == tuple.get(1).asDouble());    
+    
+    query = analyzer.parse(ctx, QUERIES[14]);
+    plan = LogicalPlanner.createPlan(ctx, query);
+    LogicalOptimizer.optimize(ctx, plan);
+    
+    phyPlanner = new PhysicalPlanner(sm);
+    exec = phyPlanner.createPlan(ctx, plan);
+    tuple = null;
+    tuple = exec.next();
+    assertEquals(DatumFactory.createBool(true), tuple.get(0));
   }
 }

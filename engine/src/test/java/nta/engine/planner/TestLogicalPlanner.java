@@ -109,6 +109,7 @@ public class TestLogicalPlanner {
       "select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 7
       "store1 := select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 8
       "select deptName, sumtest(score) from score group by deptName having sumtest(score) > 30", // 9
+      "select 7 + 8", // 10
   };
 
   @Test
@@ -356,5 +357,16 @@ public class TestLogicalPlanner {
     public void visit(LogicalNode node) {
       stack.push(node);
     }
+  }
+  
+  @Test
+  public final void testExprNode() {
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[10]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    LogicalOptimizer.optimize(ctx, plan);    
+    assertEquals(ExprType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+    assertEquals(ExprType.EXPRS, root.getSubNode().getType());
   }
 }

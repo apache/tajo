@@ -3,9 +3,12 @@ package nta.engine.exec.eval;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import nta.catalog.CatalogService;
+import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
@@ -15,12 +18,16 @@ import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.datum.DatumFactory;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
+import nta.engine.exception.InternalException;
+import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.TestEvalTree.TestAggSum;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
+import nta.engine.parser.QueryBlock.Target;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
@@ -35,6 +42,8 @@ public class TestEvalTreeUtil {
   static EvalNode expr1;
   static EvalNode expr2;
   static EvalNode expr3;
+  static QueryAnalyzer analyzer;
+  static QueryContext.Factory factory = new QueryContext.Factory(catalog);
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -62,8 +71,8 @@ public class TestEvalTreeUtil {
         new DataType [] { DataType.INT});
     catalog.registerFunction(funcMeta);
     
-    QueryContext.Factory factory = new QueryContext.Factory(catalog);
-    QueryAnalyzer analyzer = new QueryAnalyzer(catalog);
+    factory = new QueryContext.Factory(catalog);
+    analyzer = new QueryAnalyzer(catalog);
     
     QueryBlock block = null;    
 
@@ -87,39 +96,108 @@ public class TestEvalTreeUtil {
   public final void testChangeColumnRef() throws CloneNotSupportedException {
     EvalNode copy = (EvalNode)expr1.clone();
     EvalTreeUtil.changeColumnRef(copy, "people.score", "newscore");
-    Set<String> set = EvalTreeUtil.findAllRefColumns(copy);
+    Set<Column> set = EvalTreeUtil.findDistinctRefColumns(copy);
     assertEquals(1, set.size());
-    assertTrue(set.contains("newscore"));
+    assertTrue(set.contains(new Column("newscore", DataType.INT)));
     
     copy = (EvalNode)expr2.clone();
     EvalTreeUtil.changeColumnRef(copy, "people.age", "sum_age");
-    set = EvalTreeUtil.findAllRefColumns(copy);
+    set = EvalTreeUtil.findDistinctRefColumns(copy);
     assertEquals(2, set.size());
-    assertTrue(set.contains("people.score"));
-    assertTrue(set.contains("sum_age"));
+    assertTrue(set.contains(new Column("people.score", DataType.INT)));
+    assertTrue(set.contains(new Column("sum_age", DataType.INT)));
     
     copy = (EvalNode)expr3.clone();
     EvalTreeUtil.changeColumnRef(copy, "people.age", "sum_age");
-    set = EvalTreeUtil.findAllRefColumns(copy);
+    set = EvalTreeUtil.findDistinctRefColumns(copy);
     assertEquals(2, set.size());
-    assertTrue(set.contains("people.score"));
-    assertTrue(set.contains("sum_age"));
+    assertTrue(set.contains(new Column("people.score", DataType.INT)));
+    assertTrue(set.contains(new Column("sum_age", DataType.INT)));
   }
 
   @Test
   public final void testFindAllRefColumns() {    
-    Set<String> set = EvalTreeUtil.findAllRefColumns(expr1);
+    Set<Column> set = EvalTreeUtil.findDistinctRefColumns(expr1);
     assertEquals(1, set.size());
-    assertTrue(set.contains("people.score"));
+    assertTrue(set.contains(new Column("people.score", DataType.INT)));
     
-    set = EvalTreeUtil.findAllRefColumns(expr2);
+    set = EvalTreeUtil.findDistinctRefColumns(expr2);
     assertEquals(2, set.size());
-    assertTrue(set.contains("people.score"));
-    assertTrue(set.contains("people.age"));
+    assertTrue(set.contains(new Column("people.score", DataType.INT)));
+    assertTrue(set.contains(new Column("people.age", DataType.INT)));
     
-    set = EvalTreeUtil.findAllRefColumns(expr3);
+    set = EvalTreeUtil.findDistinctRefColumns(expr3);
     assertEquals(2, set.size());
-    assertTrue(set.contains("people.score"));
-    assertTrue(set.contains("people.age"));
+    assertTrue(set.contains(new Column("people.score", DataType.INT)));
+    assertTrue(set.contains(new Column("people.age", DataType.INT)));
   }
+  
+  public static final String [] QUERIES = {
+    "select 3 + 4 as plus, (3.5 * 2) as mul", // 0
+    "select (score + 3) < 4, age > 5 from people", // 1
+    "select score from people where score > 7", // 2
+    "select score from people where (10 * 2) * (score + 2) > 20 + 30 + 10", // 3
+    "select score from people where 10 * 2 > score * 10", // 4
+    "select score from people where score < 10 and 4 < score", // 5
+  };
+  
+  @Test
+  public final void testGetSchemaFromTargets() throws InternalException {
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[0]);
+    Schema schema = 
+        EvalTreeUtil.getSchemaByTargets(null, block.getTargetList());
+    Column col1 = schema.getColumn(0);
+    Column col2 = schema.getColumn(1);
+    assertEquals("plus", col1.getColumnName());
+    assertEquals(DataType.INT, col1.getDataType());
+    assertEquals("mul", col2.getColumnName());
+    assertEquals(DataType.DOUBLE, col2.getDataType());
+  }
+  
+  @Test
+  public final void testGetContainExprs() throws CloneNotSupportedException {
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[1]);
+    Target [] targets = block.getTargetList();
+    
+    Column col1 = new Column("people.score", DataType.INT);
+    Collection<EvalNode> exprs = EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
+    EvalNode node = exprs.iterator().next();
+    assertEquals(Type.LTH, node.getType());
+    assertEquals(Type.PLUS, node.getLeftExpr().getType());
+    assertEquals(new ConstEval(DatumFactory.createInt(4)), node.getRightExpr());
+    
+    Column col2 = new Column("people.age", DataType.INT);
+    exprs = EvalTreeUtil.getContainExpr(targets[1].getEvalTree(), col2);
+    node = exprs.iterator().next();
+    assertEquals(Type.GTH, node.getType());
+    assertEquals("people.age", node.getLeftExpr().getName());
+    assertEquals(new ConstEval(DatumFactory.createInt(5)), node.getRightExpr());
+  }
+  
+  @Test
+  public final void testGetCNF() {
+    // "select score from people where score < 10 and 4 < score "
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[5]);
+    EvalNode node = block.getWhereCondition();
+    List<EvalNode> cnf = EvalTreeUtil.getConjNormalForm(node);
+    
+    Column col1 = new Column("people.score", DataType.INT);
+    
+    assertEquals(2, cnf.size());
+    EvalNode first = cnf.get(0);
+    EvalNode second = cnf.get(1);
+    
+    FieldEval field = (FieldEval) first.getLeftExpr();
+    assertEquals(col1, field.getColumnRef());
+    assertEquals(Type.LTH, first.getType());
+    assertEquals(10, first.getRightExpr().eval(null,  null).asInt());
+    
+    field = (FieldEval) second.getRightExpr();
+    assertEquals(col1, field.getColumnRef());
+    assertEquals(Type.LTH, second.getType());
+    assertEquals(4, second.getLeftExpr().eval(null,  null).asInt());
+  }  
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import nta.catalog.Column;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.EvalTreeUtil;
 import nta.engine.exec.eval.FuncCallEval;
@@ -52,10 +53,12 @@ public class PlannerUtil {
       Target [] targets = gp.getTargetList();
       for (int i = 0; i < gp.getTargetList().length; i++) {
         if (targets[i].getEvalTree().getType() == Type.FUNCTION) {
-          String name = child.getOutputSchema().getColumn(i).getQualifiedName();        
+          Column tobe = child.getOutputSchema().getColumn(i);        
           FuncCallEval eval = (FuncCallEval) targets[i].getEvalTree();
-          Collection<String> tobeChanged = EvalTreeUtil.findAllRefColumns(eval);
-          EvalTreeUtil.changeColumnRef(eval, tobeChanged.iterator().next(), name);
+          Collection<Column> tobeChanged = 
+              EvalTreeUtil.findDistinctRefColumns(eval);
+          EvalTreeUtil.changeColumnRef(eval, tobeChanged.iterator().next(), 
+              tobe);
         }
       }
       

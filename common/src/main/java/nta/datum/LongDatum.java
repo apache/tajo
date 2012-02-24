@@ -15,11 +15,10 @@ import nta.datum.json.GsonCreator;
  * @author Hyunsik Choi
  *
  */
-public class LongDatum extends Datum {
+public class LongDatum extends NumericDatum {
   private static final int size = 8;
   
-  @Expose
-	long val;
+  @Expose private long val;
 	
 	/**
 	 * 
@@ -268,5 +267,10 @@ public class LongDatum extends Datum {
     default:
       throw new InvalidOperationException(datum.type());
     }
+  }
+
+  @Override
+  public void inverseSign() {
+    this.val = -val;
   }
 }

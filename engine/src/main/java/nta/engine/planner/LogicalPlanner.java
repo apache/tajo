@@ -15,6 +15,7 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
 import nta.engine.parser.QueryBlock.Target;
+import nta.engine.planner.logical.EvalExprNode;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
@@ -99,6 +100,9 @@ public class LogicalPlanner {
     LogicalNode subroot = null;
     if(query.hasFromClause()) {
        subroot = createJoinTree(ctx, query.getFromTables());
+    } else {
+      subroot = new EvalExprNode(query.getTargetList());
+      return subroot;
     }
     
     if(query.hasWhereClause()) {
@@ -132,7 +136,9 @@ public class LogicalPlanner {
     
     if (!query.getProjectAll() && !query.hasGroupbyClause()) {
         ProjectionNode prjNode = new ProjectionNode(query.getTargetList());
-        prjNode.setSubNode(subroot);
+        if (subroot != null) { // false if 'no from' statement
+          prjNode.setSubNode(subroot);
+        }
         subroot = prjNode;
     }
     
@@ -205,6 +211,11 @@ public class LogicalPlanner {
   static void refineInOutSchama(Context ctx,
       LogicalNode logicalNode, Set<Column> necessaryTargets, 
       Stack<LogicalNode> stack) {
+    
+    if (logicalNode == null) {
+      return;
+    }
+    
     Schema inputSchema = null;
     Schema outputSchema = null;
     
@@ -259,7 +270,9 @@ public class LogicalPlanner {
         stack.pop();
       }
       
-      projNode.setInputSchema(projNode.getSubNode().getOutputSchema());
+      if (projNode.getSubNode() != null)
+        projNode.setInputSchema(projNode.getSubNode().getOutputSchema());
+      
       if(projNode.isAll()) {
         projNode.setOutputSchema(projNode.getInputSchema());  
       } else {

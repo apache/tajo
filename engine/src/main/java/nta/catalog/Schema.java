@@ -188,8 +188,13 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 	  initColumns();
 	  StringBuilder sb = new StringBuilder();
 	  sb.append("{");
+	  int i = 0;
 	  for(Column col : fields) {
-	    sb.append(col).append(",");
+	    sb.append(col);
+	    if (i < fields.size() - 1) {
+	      sb.append(",");
+	    }
+	    i++;
 	  }
 	  sb.append("}");
 	  

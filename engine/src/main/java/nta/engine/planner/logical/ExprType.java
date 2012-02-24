@@ -10,6 +10,7 @@ package nta.engine.planner.logical;
 public enum ExprType {
 	CREATE_TABLE,
 	DESC_TABLE,
+	EXPRS,
 	GROUP_BY,
 	INSERT_INTO,
 	JOIN,

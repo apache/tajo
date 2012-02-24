@@ -80,6 +80,7 @@ public class TestStorageUtil {
         sm.getTableScanner("table1");
 
     int tupleCnt = 0;
+    @SuppressWarnings("unused")
     VTuple vTuple = null;
     while ((vTuple = (VTuple) csvscanner.next()) != null) {
       tupleCnt++;

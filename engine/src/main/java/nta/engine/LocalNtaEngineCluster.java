@@ -32,7 +32,7 @@ public class LocalNtaEngineCluster {
 
 	public LocalNtaEngineCluster(final Configuration conf, final int numLeafServers) throws Exception {
 		this.conf = conf;
-		conf.set(NConstants.LEAFSERVER_PORT, "0");
+		this.conf.set(NConstants.LEAFSERVER_PORT, "0");
 
 		addMaster(new Configuration(conf), 0);
 

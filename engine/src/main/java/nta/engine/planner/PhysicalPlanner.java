@@ -9,7 +9,9 @@ import com.google.common.base.Preconditions;
 
 import nta.engine.SubqueryContext;
 import nta.engine.exception.InternalException;
+import nta.engine.exec.eval.EvalNode;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.planner.logical.EvalExprNode;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalRootNode;
@@ -18,6 +20,7 @@ import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.physical.EvalExprExec;
 import nta.engine.planner.physical.GroupByExec;
 import nta.engine.planner.physical.PartitionedStoreExec;
 import nta.engine.planner.physical.PhysicalExec;
@@ -60,6 +63,10 @@ public class PhysicalPlanner {
     case ROOT:
       LogicalRootNode rootNode = (LogicalRootNode) logicalNode;
       return createPlanRecursive(ctx, rootNode.getSubNode());
+      
+    case EXPRS:
+      EvalExprNode evalExpr = (EvalExprNode) logicalNode;
+      return new EvalExprExec(evalExpr);
     
     case STORE:
       StoreTableNode storeNode = (StoreTableNode) logicalNode;

@@ -14,7 +14,7 @@ public class EvalTreeFactory {
 		return new ConstEval(datum);
 	}
 	
-	public static BinaryEval newBinaryEval(EvalNode.Type type, EvalNode e1, 
+	public static BinaryEval create(EvalNode.Type type, EvalNode e1, 
 	    EvalNode e2) {
 		return new BinaryEval(type, e1, e2);
 	}

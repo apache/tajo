@@ -3,6 +3,7 @@
  */
 package nta.engine.exec.eval;
 
+import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 
@@ -89,6 +90,11 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
   }
   
   @Override
+  public int hashCode() {
+    return Objects.hashCode(type, datum.type(), datum);
+  }
+  
+  @Override
   public Object clone() throws CloneNotSupportedException {
     ConstEval eval = (ConstEval) super.clone();
     eval.datum = datum;
@@ -102,7 +108,12 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
   }
   
   @Override
-  public void accept(EvalNodeVisitor visitor) {
+  public void preOrder(EvalNodeVisitor visitor) {
+    visitor.visit(this);
+  }
+  
+  @Override
+  public void postOrder(EvalNodeVisitor visitor) {
     visitor.visit(this);
   }
 }

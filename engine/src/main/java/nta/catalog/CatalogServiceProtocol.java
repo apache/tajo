@@ -1,8 +1,6 @@
 package nta.catalog;
 
-import java.io.IOException;
-
-import nta.catalog.proto.CatalogProtos.ColumnProto;
+import nta.catalog.exception.CatalogException;
 import nta.catalog.proto.CatalogProtos.ContainFunctionRequest;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
 import nta.catalog.proto.CatalogProtos.GetAllTableNamesResponse;

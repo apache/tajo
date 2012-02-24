@@ -6,6 +6,7 @@ import nta.datum.Datum;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.utils.TUtil;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 
 /**
@@ -53,6 +54,11 @@ public abstract class Function implements Cloneable {
 	  } else {
 	    return false;
 	  }
+	}
+	
+	@Override
+	public int hashCode() {
+	  return Objects.hashCode(signature, givenArgs);
 	}
 		
 	public Object clone() throws CloneNotSupportedException {

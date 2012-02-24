@@ -151,12 +151,9 @@ public class QueryBlock {
   }
   
   public static class Target implements Cloneable {
-	  @Expose
-    private EvalNode eval;
-	  @Expose
-    private Column column;
-	  @Expose
-    private String alias = null;
+	  @Expose private EvalNode eval; 
+	  @Expose private Column column;
+	  @Expose private String alias = null;
     
     public Target(EvalNode eval) {
       this.eval = eval;

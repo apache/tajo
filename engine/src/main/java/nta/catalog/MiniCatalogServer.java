@@ -12,11 +12,9 @@ import org.apache.hadoop.conf.Configuration;
  *
  */
 public class MiniCatalogServer {
-  private final Configuration conf;
   private CatalogServer catalogServers;
   
   public MiniCatalogServer(Configuration conf) throws IOException {
-    this.conf = conf;
     this.catalogServers = new CatalogServer(conf);
     this.catalogServers.start();
   }

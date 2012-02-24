@@ -3,6 +3,8 @@
  */
 package nta.engine.exec.eval;
 
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 
@@ -18,14 +20,16 @@ import nta.storage.Tuple;
  *
  */
 public class BinaryEval extends EvalNode implements Cloneable {
-	@Expose
-	DataType returnType;
+	@Expose private DataType returnType = null;
 
 	/**
 	 * @param type
 	 */
 	public BinaryEval(Type type, EvalNode left, EvalNode right) {
-		super(type, left, right);
+		super(type, left, right);		
+		Preconditions.checkNotNull(type);
+		Preconditions.checkNotNull(left);
+		Preconditions.checkNotNull(right);
 		
 		if(
 			type == Type.AND ||
@@ -143,7 +147,10 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	
 	@Override
 	public DataType getValueType() {
-		return returnType;
+		if (returnType == null) {
+		  
+		}
+	  return returnType;
 	}
 	
 	public String toString() {
@@ -166,6 +173,10 @@ public class BinaryEval extends EvalNode implements Cloneable {
       return b1 && b2 && b3;      
     }
     return false;
+  }
+  
+  public int hashCode() {
+    return Objects.hashCode(this.type, leftExpr, rightExpr);
   }
   
   @Override

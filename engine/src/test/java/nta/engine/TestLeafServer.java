@@ -1,6 +1,6 @@
 package nta.engine;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -23,7 +23,6 @@ import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalPlanner;
-import nta.engine.planner.PhysicalPlanner;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.query.QueryUnitRequestImpl;
 import nta.storage.Appender;

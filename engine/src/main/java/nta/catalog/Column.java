@@ -64,9 +64,9 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 
   public String getColumnName() {
     if (isQualified())
-      return this.name.split("\\.")[1];
+      return getQualifiedName().split("\\.")[1];
     else
-      return name;
+      return getQualifiedName();
   }
 	
 	public void setName(String name) {
@@ -152,7 +152,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	}
 	
 	public String toString() {
-	  return getQualifiedName() +" " + getDataType();
+	  return getQualifiedName() +" (" + getDataType()+")";
 	}
 	
 	public String toJSON() {

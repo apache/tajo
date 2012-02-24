@@ -12,6 +12,7 @@ import nta.engine.json.GsonCreator;
 import nta.engine.utils.TUtil;
 import nta.storage.Tuple;
 
+import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 
@@ -100,6 +101,11 @@ public class FuncCallEval extends EvalNode {
 	}
 	
 	@Override
+	public int hashCode() {
+	  return Objects.hashCode(desc, instance);
+	}
+	
+	@Override
   public Object clone() throws CloneNotSupportedException {
     FuncCallEval eval = (FuncCallEval) super.clone();
     eval.desc = (FunctionDesc) desc.clone();
@@ -112,9 +118,17 @@ public class FuncCallEval extends EvalNode {
   }
 	
 	@Override
-	public void accept(EvalNodeVisitor visitor) {
+  public void preOrder(EvalNodeVisitor visitor) {
+    for (EvalNode eval : givenArgs) {
+      eval.postOrder(visitor);
+    }
+    visitor.visit(this);
+  }
+	
+	@Override
+	public void postOrder(EvalNodeVisitor visitor) {
 	  for (EvalNode eval : givenArgs) {
-	    eval.accept(visitor);
+	    eval.postOrder(visitor);
 	  }
 	  visitor.visit(this);
 	}

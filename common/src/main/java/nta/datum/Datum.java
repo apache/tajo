@@ -1,8 +1,8 @@
 package nta.datum;
 
-import com.google.gson.annotations.Expose;
-
 import nta.datum.exception.InvalidOperationException;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
@@ -12,8 +12,8 @@ public abstract class Datum implements Comparable<Datum> {
 	@Expose
 	private DatumType type;
 	
-	private Datum() {
-		
+	@SuppressWarnings("unused")
+  private Datum() {
 	}
 	
 	public Datum(DatumType type) {
@@ -33,6 +33,23 @@ public abstract class Datum implements Comparable<Datum> {
 	public abstract float asFloat();
 	public abstract double asDouble();
 	public abstract String asChars();
+	
+	public boolean isNumeric() {
+	  return isNumber() || isReal();
+	}
+	
+	public boolean isNumber() {
+	  return 
+	      this.type == DatumType.SHORT ||
+	      this.type == DatumType.INT ||
+	      this.type == DatumType.LONG;
+	}
+	
+	public boolean isReal() {
+    return 
+        this.type == DatumType.FLOAT ||
+        this.type == DatumType.DOUBLE;
+  }
 	
 	public abstract int size();
 	

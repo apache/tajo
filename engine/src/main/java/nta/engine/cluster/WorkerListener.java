@@ -74,12 +74,9 @@ public class WorkerListener implements Runnable, MasterInterface {
    */
   @Override
   public void reportQueryUnit(QueryUnitReportProto proto) {
-    Log.info("All progresses in qm: " + qm.getAllProgresses());
     QueryUnitReport report = new QueryUnitReportImpl(proto);
-    Log.info("Received progress list size: " + report.getProgressList().size());
     for (InProgressStatus status : report.getProgressList()) {
       qm.updateProgress(new QueryUnitId(status.getId()), status);
-      Log.info("Received the report :" + status);
     }
   }
 
