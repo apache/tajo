@@ -199,5 +199,67 @@ public class TestEvalTreeUtil {
     assertEquals(col1, field.getColumnRef());
     assertEquals(Type.LTH, second.getType());
     assertEquals(4, second.getLeftExpr().eval(null,  null).asInt());
-  }  
+  }
+  
+  @Test
+  public final void testSimplify() {
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[0]);
+    Target [] targets = block.getTargetList();
+    EvalNode node = AlgebraicUtil.simplify(targets[0].getEvalTree());
+    assertEquals(Type.CONST, node.getType());
+    assertEquals(7, node.eval(null, null).asInt());
+    node = AlgebraicUtil.simplify(targets[1].getEvalTree());
+    assertEquals(Type.CONST, node.getType());
+    assertTrue(7.0d == node.eval(null, null).asDouble());
+    
+    ctx = factory.create();
+    block = analyzer.parse(ctx, QUERIES[1]);
+    targets = block.getTargetList();
+    Column col1 = new Column("people.score", DataType.INT);
+    Collection<EvalNode> exprs = EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
+    node = exprs.iterator().next();
+    System.out.println(AlgebraicUtil.simplify(node));
+  }
+  
+  @Test
+  public final void testConatainSingleVar() {
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[2]);
+    EvalNode node = block.getWhereCondition();
+    assertEquals(true, AlgebraicUtil.containSingleVar(node));
+    
+    block = analyzer.parse(ctx, QUERIES[3]);
+    node = block.getWhereCondition();
+    assertEquals(true, AlgebraicUtil.containSingleVar(node));
+  }
+  
+  @Test
+  public final void testTranspose() {
+    QueryContext ctx = factory.create();
+    QueryBlock block = analyzer.parse(ctx, QUERIES[2]);
+    EvalNode node = block.getWhereCondition();
+    assertEquals(true, AlgebraicUtil.containSingleVar(node));
+    
+    Column col1 = new Column("people.score", DataType.INT);
+    ctx = factory.create();
+    block = analyzer.parse(ctx, QUERIES[3]);
+    node = block.getWhereCondition();    
+    // we expect that score < 3
+    EvalNode transposed = AlgebraicUtil.transpose(node, col1);
+    assertEquals(Type.GTH, transposed.getType());
+    FieldEval field = (FieldEval) transposed.getLeftExpr(); 
+    assertEquals(col1, field.getColumnRef());    
+    assertEquals(1, transposed.getRightExpr().eval(null, null).asInt());
+            
+    ctx = factory.create();
+    block = analyzer.parse(ctx, QUERIES[4]);
+    node = block.getWhereCondition();    
+    // we expect that score < 3
+    transposed = AlgebraicUtil.transpose(node, col1);
+    assertEquals(Type.LTH, transposed.getType());
+    field = (FieldEval) transposed.getLeftExpr(); 
+    assertEquals(col1, field.getColumnRef());    
+    assertEquals(2, transposed.getRightExpr().eval(null, null).asInt());
+  }
 }

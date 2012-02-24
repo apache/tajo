@@ -52,6 +52,10 @@ public class BinaryEval extends EvalNode implements Cloneable {
 		}
 	}
 	
+	public BinaryEval(PartialBinaryExpr expr) {
+	  this(expr.type, expr.leftExpr, expr.rightExpr);
+	}
+	
 	private DataType determineType(DataType left, DataType right) {
 		if(left == right) 
 			return left;
