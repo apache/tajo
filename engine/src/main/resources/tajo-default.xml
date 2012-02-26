@@ -30,6 +30,11 @@
 </property>
 
 <property>
+  <name>catalog.store.class</name>
+  <value>nta.catalog.store.DBStore</value>
+</property>
+
+<property>
   <name>catalog.jdbc.uri</name>
   <value>jdbc:derby:/tmp/tcat-${user.name}/db</value>
 </property>

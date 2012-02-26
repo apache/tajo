@@ -1,6 +1,8 @@
 package nta.catalog;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -108,7 +110,22 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   public CatalogServer(final Configuration conf) throws IOException {
     this.conf = conf;
 
-    this.store = new DBStore(conf);
+    Constructor<?> cons = null;
+    try {
+      Class<?> storeClass =
+          this.conf.getClass(TConstants.STORE_CLASS, DBStore.class);
+      LOG.info("Catalog Store Class: " + storeClass.getCanonicalName());
+      
+      cons = storeClass.
+          getConstructor(new Class [] {Configuration.class});
+    } catch (Exception e) {
+      throw new IOException("cannot initialize catalog store");
+    }
+    try {
+      this.store = (CatalogStore) cons.newInstance(this.conf);
+    } catch (Exception e) {
+      throw new IOException("cannot initialize catalog store");
+    }
     initBuiltinFunctions();
 
     // Server to handle client requests.

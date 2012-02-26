@@ -17,6 +17,8 @@ public class TestCatalogStore {
   public final void test() throws Exception {
     NtaTestingUtility util = new NtaTestingUtility();
     util.startMiniZKCluster();
+    util.getConfiguration().set(TConstants.STORE_CLASS,
+        "nta.catalog.store.DBStore");
     util.startCatalogCluster();
     
     CatalogService catalog = util.getMiniCatalogCluster().getCatalog();
@@ -31,7 +33,7 @@ public class TestCatalogStore {
     for (int i = 0; i < numTables; i++) {
       String tableName = "tableA_" + i;
       TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
-      TableDesc desc = new TableDescImpl(tableName, meta, 
+      TableDesc desc = TCatUtil.newTableDesc(tableName, meta, 
           new Path("/tableA_" + i));
       catalog.addTable(desc);
     }

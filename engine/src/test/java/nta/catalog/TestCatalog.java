@@ -111,7 +111,7 @@ public class TestCatalog {
 	}
 	
 	@Test(expected = Throwable.class)
-	public void testAddTableNoName() throws Exception {    
+	public void testAddTableNoName() throws Exception {
 	  schema1 = new Schema();
     schema1.addColumn(FieldName1, DataType.BYTE);
     schema1.addColumn(FieldName2, DataType.INT);
