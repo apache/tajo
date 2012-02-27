@@ -20,6 +20,7 @@ public abstract class Context {
   private Map<String, String> aliasMap = new HashMap<String, String>();
   
   // Hints
+  protected StatementType stmtType;
   protected boolean hasWhereClause;
   protected boolean hasGroupByClause;
   protected boolean hasJoinClause;
@@ -43,13 +44,14 @@ public abstract class Context {
     QueryBlock block = null;
     switch (query.getType()) {
     case SELECT:
-      block = (QueryBlock) query;
+      block = (QueryBlock) query;      
       break;
     case CREATE_TABLE:
       block = ((CreateTableStmt) query).getSelectStmt();
       break;
     }
     
+    stmtType = query.getType();
     if (query.getType() == StatementType.SELECT
         || query.getType() == StatementType.CREATE_TABLE) {
       hasWhereClause = block.hasWhereClause();
@@ -58,6 +60,10 @@ public abstract class Context {
           : false;
       targets = block.getTargetList();
     }
+  }
+  
+  public StatementType getStatementType() {
+    return stmtType;
   }
 
   public Target[] getTargetList() {

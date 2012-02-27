@@ -1,0 +1,79 @@
+/**
+ * 
+ */
+package nta.engine.planner.logical;
+
+import nta.catalog.Options;
+import nta.catalog.proto.CatalogProtos.IndexMethod;
+import nta.engine.parser.CreateIndexStmt;
+import nta.engine.parser.QueryBlock.SortKey;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Expose;
+
+/**
+ * @author Hyunsik Choi
+ */
+public class CreateIndexNode extends UnaryNode {
+  @Expose private String indexName;
+  @Expose private boolean unique = false;
+  @Expose private String tableName;
+  @Expose private IndexMethod method = IndexMethod.TWO_LEVEL_BIN_TREE;
+  @Expose private SortKey [] sortSpecs;
+  @Expose private Options params = null;
+
+  public CreateIndexNode(CreateIndexStmt stmt) {
+    super(ExprType.CREATE_INDEX);
+    this.indexName = stmt.getIndexName();
+    this.unique = stmt.isUnique();
+    this.tableName = stmt.getTableName();
+    this.method = stmt.getMethod();
+    this.sortSpecs = stmt.getSortSpecs();
+    this.params = stmt.hasParams() ? stmt.getParams() : null;
+  }
+  
+  public String getIndexName() {
+    return this.indexName;
+  }
+  
+  public boolean isUnique() {
+    return this.unique;
+  }
+  
+  public void setUnique() {
+    this.unique = true;
+  }
+  
+  public String getTableName() {
+    return this.tableName;
+  }
+  
+  public IndexMethod getMethod() {
+    return this.method;
+  }
+  
+  public SortKey [] getSortSpecs() {
+    return this.sortSpecs;
+  }
+  
+  public boolean hasParams() {
+    return this.params != null;
+  }
+  
+  public Options getParams() {
+    return this.params;
+  }
+
+  @Override
+  public String toJSON() {
+    Gson gson = new GsonBuilder().create();
+    return gson.toJson(this);
+  }
+  
+  @Override
+  public String toString() {
+    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    return gson.toJson(this);
+  }
+}

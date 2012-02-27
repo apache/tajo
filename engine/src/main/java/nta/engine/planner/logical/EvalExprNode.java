@@ -3,12 +3,11 @@
  */
 package nta.engine.planner.logical;
 
+import nta.engine.parser.QueryBlock.Target;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import com.google.gson.annotations.Expose;
-
-import nta.engine.parser.QueryBlock.Target;
 
 /**
  * @author Hyunsik Choi

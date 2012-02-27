@@ -74,6 +74,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   private MasterInterface master;
 
   // Query Processing
+  @SuppressWarnings("unused")
   private FileSystem defaultFS;
 
   private CatalogClient catalog;
@@ -201,8 +202,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       
       status = InProgressStatus.newBuilder()
         .setId(ipq.getId().toString())
-        .setProgress(ipq.progress)
-        .setStatus(ipq.status)
+        .setProgress(ipq.getProgress())
+        .setStatus(ipq.getStatus())
         .build();      
       
       list.add(status);

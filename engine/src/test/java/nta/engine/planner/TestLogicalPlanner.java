@@ -14,6 +14,7 @@ import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
+import nta.catalog.proto.CatalogProtos.IndexMethod;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
@@ -21,7 +22,8 @@ import nta.engine.function.SumInt;
 import nta.engine.json.GsonCreator;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.parser.ParseTree;
+import nta.engine.planner.logical.CreateIndexNode;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
@@ -32,7 +34,6 @@ import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
-import nta.engine.planner.logical.CreateTableNode;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
@@ -111,6 +112,7 @@ public class TestLogicalPlanner {
       "store1 := select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 8
       "select deptName, sumtest(score) from score group by deptName having sumtest(score) > 30", // 9
       "select 7 + 8", // 10
+      "create index idx_employee on employee using bitmap (name null first, empId desc) with (fillfactor = 70)" // 11
   };
 
   @Test
@@ -365,9 +367,33 @@ public class TestLogicalPlanner {
     QueryContext ctx = factory.create();
     ParseTree block = (ParseTree) analyzer.parse(ctx, QUERIES[10]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
-    LogicalOptimizer.optimize(ctx, plan);    
+    LogicalOptimizer.optimize(ctx, plan);
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(ExprType.EXPRS, root.getSubNode().getType());
+  }
+  
+  @Test
+  public final void testCreateIndex() {
+    QueryContext ctx = factory.create();
+    ParseTree block = (ParseTree) analyzer.parse(ctx, QUERIES[11]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    LogicalOptimizer.optimize(ctx, plan);
+    LogicalRootNode root = (LogicalRootNode) plan;
+    
+    assertEquals(ExprType.CREATE_INDEX, root.getSubNode().getType());
+    CreateIndexNode indexNode = (CreateIndexNode) root.getSubNode();
+    assertEquals("idx_employee", indexNode.getIndexName());
+    assertEquals("employee", indexNode.getTableName());
+    assertEquals(false, indexNode.isUnique());
+    assertEquals(2, indexNode.getSortSpecs().length);
+    assertEquals("name", indexNode.getSortSpecs()[0].getSortKey().getColumnName());
+    assertEquals(DataType.STRING, indexNode.getSortSpecs()[0].getSortKey().getDataType());
+    assertEquals(true, indexNode.getSortSpecs()[0].isNullFirst());
+    assertEquals("empId", indexNode.getSortSpecs()[1].getSortKey().getColumnName());
+    assertEquals(DataType.INT, indexNode.getSortSpecs()[1].getSortKey().getDataType());
+    assertEquals(false, indexNode.getSortSpecs()[1].isAscending());
+    assertEquals(false, indexNode.getSortSpecs()[1].isNullFirst());
+    assertEquals(IndexMethod.BITMAP, indexNode.getMethod());
   }
 }

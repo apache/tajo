@@ -28,11 +28,19 @@ public class LogicalOptimizer {
   private LogicalOptimizer() {
   }
   
-  public static LogicalNode optimize(Context ctx, LogicalNode plan) {
-    if(PlannerUtil.findTopNode(plan, ExprType.SELECTION) != null)
-      pushSelection(ctx, plan);
-    
-    pushProjection(ctx, plan);
+  public static LogicalNode optimize(Context ctx, LogicalNode plan) {    
+    switch (ctx.getStatementType()) {
+    case SELECT:
+    case CREATE_TABLE:
+      // if there are selection node 
+      if(PlannerUtil.findTopNode(plan, ExprType.SELECTION) != null)
+        pushSelection(ctx, plan);
+      
+      pushProjection(ctx, plan);
+      
+      break;
+    default:
+    }
     
     return plan;
   }

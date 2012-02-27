@@ -2,9 +2,7 @@ package nta.engine;
 
 import java.net.InetSocketAddress;
 
-import nta.catalog.TableDescImpl;
 import nta.engine.ipc.QueryClientInterface;
-
 import nta.rpc.Callback;
 import nta.rpc.NettyRpc;
 import nta.rpc.RemoteException;

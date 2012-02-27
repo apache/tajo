@@ -1,9 +1,4 @@
-/**
- * 
- */
 package nta.engine.planner.logical;
-
-import com.google.gson.annotations.Expose;
 
 import nta.engine.json.GsonCreator;
 

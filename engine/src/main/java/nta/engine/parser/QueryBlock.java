@@ -298,9 +298,9 @@ public class QueryBlock extends ParseTree {
   }
   
   public static class SortKey implements Cloneable {
-    private Column sortKey;
-    private boolean ascending = true;
-    private boolean nullFirst = false;
+    @Expose private Column sortKey;
+    @Expose private boolean ascending = true;
+    @Expose private boolean nullFirst = false;
     
     public SortKey(final Column sortKey) {
       this.sortKey = sortKey;
