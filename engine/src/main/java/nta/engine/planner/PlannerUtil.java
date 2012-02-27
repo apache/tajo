@@ -13,6 +13,7 @@ import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalNodeVisitor;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.UnaryNode;
 
 import org.apache.commons.logging.Log;
@@ -31,7 +32,7 @@ public class PlannerUtil {
     Preconditions.checkArgument(newNode instanceof UnaryNode);
     
     UnaryNode p = (UnaryNode) parent;
-    UnaryNode c = (UnaryNode) p.getSubNode();
+    LogicalNode c = p.getSubNode();
     UnaryNode m = (UnaryNode) newNode;
     m.setInputSchema(c.getOutputSchema());
     m.setOutputSchema(c.getOutputSchema());
@@ -67,6 +68,15 @@ public class PlannerUtil {
     }
     
     return gp;
+  }
+  
+  public static LogicalNode transformTwoPhaseWithStore(GroupbyNode gb, 
+      String tableId) {
+    GroupbyNode groupby = (GroupbyNode) transformTwoPhase(gb);
+    CreateTableNode store = new CreateTableNode(tableId);
+    insertNode(groupby, store);
+    
+    return groupby;
   }
   
   /**

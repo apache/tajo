@@ -15,6 +15,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.function.SumInt;
+import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.ExprType;
@@ -25,6 +26,7 @@ import nta.engine.planner.logical.LogicalNodeVisitor;
 import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
+import nta.engine.planner.logical.UnaryNode;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
@@ -104,6 +106,27 @@ public class TestPlannerUtil {
     root.accept(new TwoPhaseBuilder());
     
     System.out.println(root);
+  }
+  
+  @Test
+  public final void testTrasformTwoPhaseWithStore() {
+    QueryContext ctx = factory.create();
+    ParseTree block = analyzer.parse(ctx, TestLogicalPlanner.QUERIES[9]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    
+    assertEquals(ExprType.ROOT, plan.getType());
+    UnaryNode unary = (UnaryNode) plan;
+    
+    assertEquals(ExprType.GROUP_BY, unary.getSubNode().getType());
+    GroupbyNode groupby = (GroupbyNode) unary.getSubNode();
+    unary = (UnaryNode) PlannerUtil.transformTwoPhaseWithStore(
+        groupby, "test");
+    assertEquals(ExprType.STORE, unary.getSubNode().getType());
+    unary = (UnaryNode) unary.getSubNode();
+    
+    assertEquals(groupby.getInputSchema(), unary.getOutputSchema());
+    
+    assertEquals(ExprType.GROUP_BY, unary.getSubNode().getType());
   }
   
   private final class TwoPhaseBuilder implements LogicalNodeVisitor {

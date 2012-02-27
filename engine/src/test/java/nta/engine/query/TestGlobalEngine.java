@@ -3,7 +3,11 @@
  */
 package nta.engine.query;
 
+import static org.junit.Assert.assertNotNull;
+
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Options;
@@ -19,29 +23,36 @@ import nta.engine.NConstants;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
 import nta.storage.Appender;
+import nta.storage.Scanner;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mortbay.log.Log;
+
+import static org.junit.Assert.*;
 
 /**
  * @author jihoon
  *
  */
 public class TestGlobalEngine {
+  private static Log LOG = LogFactory.getLog(TestGlobalEngine.class);
 	
 	private static NtaTestingUtility util;
 	private static Configuration conf;
 	private static CatalogService catalog;
 	private static NtaEngineMaster master;
+	private static StorageManager sm;
 	
 	private String query = "select deptname, sum(score) from score group by deptname having sum(score) > 30"; // 9
+	private static Map<String, Integer> result;
 
 	@Before
 	public void setup() throws Exception {
@@ -50,10 +61,10 @@ public class TestGlobalEngine {
 		Thread.sleep(2000);
 		master = util.getMiniNtaEngineCluster().getMaster();
 		conf = util.getConfiguration();
-		StorageManager sm = new StorageManager(conf);
+		sm = new StorageManager(conf);
 		
 		catalog = master.getCatalog();
-//		catalog = util.getCatalog().getCatalog();
+    result = new HashMap<String, Integer>();
 		
 		Schema schema3 = new Schema();
 	    schema3.addColumn("deptname", DataType.STRING);
@@ -62,13 +73,19 @@ public class TestGlobalEngine {
 	    TableMeta meta = TCatUtil.newTableMeta(schema3, StoreType.CSV);
 	    
 	    Appender appender = sm.getTableAppender(meta, "score");
-	    int tupleNum = 20000000;
+	    int tupleNum = 10000000;
 	    Tuple tuple = null;
 	    for (int i = 0; i < tupleNum; i++) {
 	    	tuple = new VTuple(2);
 	    	tuple.put(0, DatumFactory.createString("test" + (i%10)));
 	    	tuple.put(1, DatumFactory.createInt(i+1));
 	    	appender.addTuple(tuple);
+	    	if (!result.containsKey("test"+(i%10))) {
+	    	  result.put("test"+(i%10), i+1);
+	    	} else {
+	    	  int n = result.get("test"+(i%10));
+	    	  result.put("test"+(i%10), n+i+1);
+	    	}
 	    }
 	    appender.close();
 	    
@@ -76,6 +93,7 @@ public class TestGlobalEngine {
 	        new Options(), 
 	        new Path(conf.get(NConstants.ENGINE_DATA_DIR), "score"));
 	    catalog.addTable(score);
+	    
 	}
 	
 	@After
@@ -85,9 +103,18 @@ public class TestGlobalEngine {
 	
 	@Test
 	public void test() throws Exception {
-	  Thread.sleep(5000);
+	  Thread.sleep(3000);
 	  String tablename = master.executeQuery(query);
-	  Log.info("====== Output table name is " + tablename);
-//		assertNotNull(tablename);
+    assertNotNull(tablename);
+	  LOG.info("====== Output table name is " + tablename);
+	  Scanner scanner = sm.getTableScanner(tablename);
+	  Tuple tuple = null;
+	  String deptname;
+	  while ((tuple=scanner.next()) != null) {
+	    deptname = tuple.get(0).asChars();
+	    assertEquals(result.get(deptname).intValue(), 
+	        tuple.get(1).asInt());
+	  }
+	  LOG.info("result: " + result);
 	}
 }

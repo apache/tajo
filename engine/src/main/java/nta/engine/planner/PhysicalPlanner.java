@@ -47,7 +47,7 @@ public class PhysicalPlanner {
     try {
       plan = createPlanRecursive(ctx, logicalPlan);
     } catch (IOException ioe) {
-      throw new InternalException(ioe.getMessage());
+      throw new InternalException(ioe);
     }
 
     return plan;

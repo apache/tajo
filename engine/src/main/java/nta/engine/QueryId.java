@@ -20,7 +20,7 @@ public class QueryId implements Comparable<QueryId>, ProtoObject<QueryIdProto> {
     idFormat.setMinimumIntegerDigits(3);
   }
 
-  private static final String PREFIX = "query";
+  public static final String PREFIX = "query";
   public static final String SEPERATOR = "_";
   private String timeId = null;
   private int id = -1;
