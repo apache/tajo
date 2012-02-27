@@ -77,13 +77,13 @@ public class TestEvalTreeUtil {
     QueryBlock block = null;    
 
     QueryContext ctx = factory.create();
-    block = analyzer.parse(ctx, TestEvalTree.QUERIES[0]);
+    block = (QueryBlock) analyzer.parse(ctx, TestEvalTree.QUERIES[0]);
     expr1 = block.getWhereCondition();
 
-    block = analyzer.parse(ctx, TestEvalTree.QUERIES[1]);
+    block = (QueryBlock) analyzer.parse(ctx, TestEvalTree.QUERIES[1]);
     expr2 = block.getWhereCondition();
     
-    block = analyzer.parse(ctx, TestEvalTree.QUERIES[2]);
+    block = (QueryBlock) analyzer.parse(ctx, TestEvalTree.QUERIES[2]);
     expr3 = block.getWhereCondition();
   }
 
@@ -144,7 +144,7 @@ public class TestEvalTreeUtil {
   @Test
   public final void testGetSchemaFromTargets() throws InternalException {
     QueryContext ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[0]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     Schema schema = 
         EvalTreeUtil.getSchemaByTargets(null, block.getTargetList());
     Column col1 = schema.getColumn(0);
@@ -158,7 +158,7 @@ public class TestEvalTreeUtil {
   @Test
   public final void testGetContainExprs() throws CloneNotSupportedException {
     QueryContext ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[1]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
     Target [] targets = block.getTargetList();
     
     Column col1 = new Column("people.score", DataType.INT);
@@ -180,7 +180,7 @@ public class TestEvalTreeUtil {
   public final void testGetCNF() {
     // "select score from people where score < 10 and 4 < score "
     QueryContext ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[5]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[5]);
     EvalNode node = block.getWhereCondition();
     List<EvalNode> cnf = EvalTreeUtil.getConjNormalForm(node);
     
@@ -204,7 +204,7 @@ public class TestEvalTreeUtil {
   @Test
   public final void testSimplify() {
     QueryContext ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[0]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     Target [] targets = block.getTargetList();
     EvalNode node = AlgebraicUtil.simplify(targets[0].getEvalTree());
     assertEquals(Type.CONST, node.getType());
@@ -214,7 +214,7 @@ public class TestEvalTreeUtil {
     assertTrue(7.0d == node.eval(null, null).asDouble());
     
     ctx = factory.create();
-    block = analyzer.parse(ctx, QUERIES[1]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
     targets = block.getTargetList();
     Column col1 = new Column("people.score", DataType.INT);
     Collection<EvalNode> exprs = EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
@@ -225,11 +225,11 @@ public class TestEvalTreeUtil {
   @Test
   public final void testConatainSingleVar() {
     QueryContext ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[2]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
     EvalNode node = block.getWhereCondition();
     assertEquals(true, AlgebraicUtil.containSingleVar(node));
     
-    block = analyzer.parse(ctx, QUERIES[3]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[3]);
     node = block.getWhereCondition();
     assertEquals(true, AlgebraicUtil.containSingleVar(node));
   }
@@ -237,13 +237,13 @@ public class TestEvalTreeUtil {
   @Test
   public final void testTranspose() {
     QueryContext ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[2]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
     EvalNode node = block.getWhereCondition();
     assertEquals(true, AlgebraicUtil.containSingleVar(node));
     
     Column col1 = new Column("people.score", DataType.INT);
     ctx = factory.create();
-    block = analyzer.parse(ctx, QUERIES[3]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[3]);
     node = block.getWhereCondition();    
     // we expect that score < 3
     EvalNode transposed = AlgebraicUtil.transpose(node, col1);
@@ -253,7 +253,7 @@ public class TestEvalTreeUtil {
     assertEquals(1, transposed.getRightExpr().eval(null, null).asInt());
             
     ctx = factory.create();
-    block = analyzer.parse(ctx, QUERIES[4]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[4]);
     node = block.getWhereCondition();    
     // we expect that score < 3
     transposed = AlgebraicUtil.transpose(node, col1);

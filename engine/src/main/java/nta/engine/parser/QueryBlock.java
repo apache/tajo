@@ -17,8 +17,7 @@ import com.google.gson.annotations.Expose;
  * @author Hyunsik Choi
  *
  */
-public class QueryBlock {
-  private StatementType type;
+public class QueryBlock extends ParseTree {
   private String storeTable = null;
   private boolean projectAll = false;
   private boolean distinct = false;
@@ -37,8 +36,8 @@ public class QueryBlock {
   /* keys for ordering */
   private SortKey [] sortKeys = null;
   
-  public QueryBlock(StatementType type) {
-    this.type = type;
+  public QueryBlock() {
+    super(StatementType.SELECT);
   }
   
   public StatementType getStatementType() {
@@ -301,6 +300,7 @@ public class QueryBlock {
   public static class SortKey implements Cloneable {
     private Column sortKey;
     private boolean ascending = true;
+    private boolean nullFirst = false;
     
     public SortKey(final Column sortKey) {
       this.sortKey = sortKey;
@@ -309,20 +309,31 @@ public class QueryBlock {
     /**
      * 
      * @param sortKey
-     * @param asc true if the sort order is ascending order. 
+     * @param asc true if the sort order is ascending order
+     * @param nullFirst
      * Otherwise, it should be false.
      */
-    public SortKey(final Column sortKey, final boolean asc) {
+    public SortKey(final Column sortKey, final boolean asc, 
+        final boolean nullFirst) {
       this(sortKey);
       this.ascending = asc;
+      this.nullFirst = nullFirst;
     }
     
     public final boolean isAscending() {
       return this.ascending;
     }
     
-    public final void setDesc() {
+    public final void setDescOrder() {
       this.ascending = false;
+    }
+    
+    public final boolean isNullFirst() {
+      return this.nullFirst;
+    }
+    
+    public final void setNullFirst() {
+      this.nullFirst = true;
     }
     
     public final Column getSortKey() {

@@ -14,7 +14,7 @@ import nta.engine.QueryUnitId;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.UnaryNode;
 
 /**
@@ -25,7 +25,7 @@ public class QueryUnit {
 
 	private QueryUnitId id;
 	private LogicalNode op = null;
-	private StoreTableNode store = null;
+	private CreateTableNode store = null;
 	private UnaryNode mid = null;
 	private ScanNode scan = null;
 	private List<Fragment> fragments;
@@ -42,9 +42,9 @@ public class QueryUnit {
 		fragments = new ArrayList<Fragment>();
 	}
 	
-	public QueryUnit setStoreNode(StoreTableNode store) {
+	public QueryUnit setStoreNode(CreateTableNode store) {
 	  try {
-	    this.store = (StoreTableNode) store.clone();
+	    this.store = (CreateTableNode) store.clone();
       return this;
     } catch (CloneNotSupportedException e) {
       e.printStackTrace();
@@ -162,7 +162,7 @@ public class QueryUnit {
 	  return this.store.getOutputSchema();
 	}
 	
-	public StoreTableNode getStoreTableNode() {
+	public CreateTableNode getStoreTableNode() {
 	  return this.store;
 	}
 	

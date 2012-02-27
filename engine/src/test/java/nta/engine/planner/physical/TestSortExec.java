@@ -78,7 +78,8 @@ public class TestSortExec {
 
   }
 
-  String[] QUERIES = { "select managerId, empId, deptName from employee order by managerId, empId desc" };
+  String[] QUERIES = { 
+      "select managerId, empId, deptName from employee order by managerId, empId desc" };
 
   @Test
   public final void testNext() throws IOException {
@@ -86,7 +87,7 @@ public class TestSortExec {
     factory = new SubqueryContext.Factory(catalog);
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
         new Fragment[] { frags[0] });
-    QueryBlock query = analyzer.parse(ctx, QUERIES[0]);
+    QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
     LogicalOptimizer.optimize(ctx, plan);

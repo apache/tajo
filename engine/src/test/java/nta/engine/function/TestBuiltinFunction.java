@@ -97,7 +97,7 @@ public class TestBuiltinFunction {
     EvalNode expr = null;
     QueryContext ctx = factory.create();
 
-    block = analyzer.parse(ctx, QUERIES[0]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     expr = block.getTargetList()[0].getEvalTree();
     Datum accumulated = DatumFactory.createInt(0);
 
@@ -118,7 +118,7 @@ public class TestBuiltinFunction {
     EvalNode expr3 = null;
     QueryContext ctx = factory.create();
 
-    block = analyzer.parse(ctx, QUERIES[1]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
     expr1 = block.getTargetList()[0].getEvalTree();
     expr2 = block.getTargetList()[1].getEvalTree();
     expr3 = block.getTargetList()[2].getEvalTree();

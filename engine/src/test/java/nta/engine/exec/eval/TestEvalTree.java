@@ -139,28 +139,28 @@ public class TestEvalTree {
 
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
     QueryContext ctx = factory.create();
-    block = analyzer.parse(ctx, QUERIES[0]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     expr = block.getWhereCondition();
     assertEquals(true, expr.eval(peopleSchema, tuple)
         .asBool());
 
-    block = analyzer.parse(ctx, QUERIES[1]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
     expr = block.getWhereCondition();
     assertEquals(15000, expr.eval(peopleSchema, tuple).asInt());
     assertCloneEqual(expr);
 
-    block = analyzer.parse(ctx, QUERIES[2]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
     expr = block.getWhereCondition();
     assertEquals(15050, expr.eval(peopleSchema, tuple).asInt());
     assertCloneEqual(expr);
     
-    block = analyzer.parse(ctx, QUERIES[2]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
     expr = block.getWhereCondition();
     assertEquals(15050, expr.eval(peopleSchema, tuple).asInt());
     assertCloneEqual(expr);
     
     // Aggregation function test
-    block = analyzer.parse(ctx, QUERIES[4]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[4]);
     expr = block.getTargetList()[0].getEvalTree();
     Datum accumulated = DatumFactory.createInt(0);
     
@@ -335,7 +335,8 @@ public class TestEvalTree {
   }
 
   @Test
-  public final void testArithmaticsOperator() throws CloneNotSupportedException {
+  public final void testArithmaticsOperator() 
+      throws CloneNotSupportedException {
     ConstEval e1 = null;
     ConstEval e2 = null;
 

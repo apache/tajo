@@ -3,14 +3,14 @@
  */
 package nta.engine.planner.logical;
 
+import com.google.gson.annotations.Expose;
+
 import nta.engine.json.GsonCreator;
 
 /**
- * @author hyunsik
- *
+ * @author Hyunsik Choi
  */
 public class LogicalRootNode extends UnaryNode implements Cloneable {
-
   public LogicalRootNode() {
     super(ExprType.ROOT);
   }

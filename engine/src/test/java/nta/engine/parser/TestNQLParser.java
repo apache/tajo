@@ -110,7 +110,7 @@ public class TestNQLParser {
   public void testCreateTable() throws RecognitionException, NQLSyntaxException {
     Tree ast = parseQuery(schemaStmts[1]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(ast.getChild(0).getType(), NQLParser.TABLE);
+    assertEquals(ast.getChild(0).getType(), NQLParser.ID);
     assertEquals(ast.getChild(1).getType(), NQLParser.SELECT);
   }
 

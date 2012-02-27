@@ -19,14 +19,15 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
 import nta.datum.NullDatum;
 import nta.engine.NtaTestingUtility;
+import nta.engine.QueryContext;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
 import nta.engine.SubqueryContext;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.parser.QueryBlock;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.storage.Appender;
 import nta.storage.Scanner;
@@ -35,8 +36,6 @@ import nta.storage.StorageUtil;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -48,12 +47,11 @@ import org.junit.Test;
  * @author Hyunsik Choi
  */
 public class TestPhysicalPlanner {
-  private static final Log LOG = LogFactory.getLog(TestPhysicalPlanner.class);
-
   private static NtaTestingUtility util;
   private static Configuration conf;
   private static CatalogService catalog;
   private static QueryAnalyzer analyzer;
+  private static QueryContext.Factory qfactory;
   private static SubqueryContext.Factory factory;
   private static StorageManager sm;
 
@@ -130,7 +128,8 @@ public class TestPhysicalPlanner {
     appender.flush();
     appender.close();
     catalog.addTable(score);
-
+    qfactory = new QueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory(catalog);
     analyzer = new QueryAnalyzer(catalog);
   }
 
@@ -163,7 +162,7 @@ public class TestPhysicalPlanner {
     factory = new SubqueryContext.Factory(catalog);
     QueryUnitId id = QueryIdFactory.newQueryUnitId();
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] });
-    QueryBlock query = analyzer.parse(ctx, QUERIES[0]);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
     LogicalOptimizer.optimize(ctx, plan);
@@ -188,10 +187,9 @@ public class TestPhysicalPlanner {
   @Test
   public final void testGroupByPlan() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory(catalog);
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
         new Fragment[] { frags[0] });
-    QueryBlock query = analyzer.parse(ctx, QUERIES[7]);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
 
@@ -215,7 +213,7 @@ public class TestPhysicalPlanner {
     factory = new SubqueryContext.Factory(catalog);
     QueryUnitId id = QueryIdFactory.newQueryUnitId();
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] });
-    QueryBlock query = analyzer.parse(ctx, QUERIES[8]);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[8]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
     LogicalOptimizer.optimize(ctx, plan);
@@ -247,13 +245,13 @@ public class TestPhysicalPlanner {
     factory = new SubqueryContext.Factory(catalog);
     QueryUnitId id = QueryIdFactory.newQueryUnitId();
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] });
-    QueryBlock query = analyzer.parse(ctx, QUERIES[7]);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
     int numPartitions = 3;
     Column key1 = new Column("score.deptName", DataType.STRING);
     Column key2 = new Column("score.class", DataType.STRING);
-    StoreTableNode storeNode = new StoreTableNode("partition");
+    CreateTableNode storeNode = new CreateTableNode("partition");
     storeNode.setPartitions(new Column[] { key1, key2 }, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     LogicalOptimizer.optimize(ctx, plan);
@@ -293,7 +291,7 @@ public class TestPhysicalPlanner {
     factory = new SubqueryContext.Factory(catalog);
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
         new Fragment[] { frags[0] });
-    QueryBlock query = analyzer.parse(ctx, QUERIES[9]);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[9]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
 
@@ -315,7 +313,7 @@ public class TestPhysicalPlanner {
     factory = new SubqueryContext.Factory(catalog);
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
         new Fragment[] { frags[0] });
-    QueryBlock query = analyzer.parse(ctx, QUERIES[10]);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[10]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
 
@@ -335,7 +333,7 @@ public class TestPhysicalPlanner {
     factory = new SubqueryContext.Factory(catalog);
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
         new Fragment[] { frags[0] });
-    QueryBlock query = analyzer.parse(ctx, QUERIES[12]);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[12]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
 
@@ -358,7 +356,7 @@ public class TestPhysicalPlanner {
     factory = new SubqueryContext.Factory(catalog);
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
         new Fragment[] { });
-    QueryBlock query = analyzer.parse(ctx, QUERIES[13]);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[13]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
     
@@ -368,8 +366,8 @@ public class TestPhysicalPlanner {
     tuple = exec.next();
     assertEquals(true, tuple.get(0).asBool());
     assertTrue(7.0d == tuple.get(1).asDouble());    
-    
-    query = analyzer.parse(ctx, QUERIES[14]);
+
+    query = (ParseTree) analyzer.parse(ctx, QUERIES[14]);
     plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
     

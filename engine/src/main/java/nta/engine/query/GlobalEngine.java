@@ -34,6 +34,7 @@ import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
+import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.Target;
@@ -49,7 +50,7 @@ import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
-import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
 
@@ -121,8 +122,8 @@ public class GlobalEngine implements EngineService {
     LOG.info("* issued query: " + querystr);
     // build the logical plan
     QueryContext ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, querystr);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    ParseTree tree = (QueryBlock) analyzer.parse(ctx, querystr);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
     LogicalOptimizer.optimize(ctx, plan);
     LOG.info("* logical plan:\n" + plan);
 
@@ -183,7 +184,7 @@ public class GlobalEngine implements EngineService {
   private String initOutputTable(LogicalNode plan) throws IOException {
     String storeName = null;
     if (((LogicalRootNode) plan).getSubNode().getType() == ExprType.STORE) {
-      StoreTableNode storeNode = (StoreTableNode) ((LogicalRootNode) plan)
+      CreateTableNode storeNode = (CreateTableNode) ((LogicalRootNode) plan)
           .getSubNode();
       storeName = storeNode.getTableName();
     } else {

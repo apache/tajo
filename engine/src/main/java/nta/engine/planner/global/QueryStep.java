@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nta.engine.QueryStepId;
-import nta.engine.SubQueryId;
 
 /**
  * @author jihoon

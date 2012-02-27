@@ -9,8 +9,8 @@ import nta.engine.exception.InternalException;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.json.GsonCreator;
+import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.PhysicalPlanner;
@@ -62,8 +62,8 @@ public class TQueryEngine {
   
   public PhysicalExec createPlan(SubQueryRequest request) throws InternalException {
     SubqueryContext ctx = ctxFactory.create(request);
-    QueryBlock query = analyzer.parse(ctx, request.getQuery());
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    ParseTree parseTree = analyzer.parse(ctx, request.getQuery());
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, parseTree);
     LogicalOptimizer.optimize(ctx, plan);
     LOG.info("Assigned task: (" + request.getId() + ") start:"
         + request.getFragments().get(0).getStartOffset() + " end: "

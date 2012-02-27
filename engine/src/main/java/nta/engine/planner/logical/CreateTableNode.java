@@ -11,7 +11,7 @@ import com.google.gson.annotations.Expose;
  * @author Hyunsik Choi
  * 
  */
-public class StoreTableNode extends UnaryNode implements Cloneable {
+public class CreateTableNode extends UnaryNode implements Cloneable {
   @Expose
   private String tableName;
   
@@ -20,7 +20,7 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   @Expose
   private Column [] partitionKeys;
 
-  public StoreTableNode(String tableName) {
+  public CreateTableNode(String tableName) {
     super(ExprType.STORE);
     this.tableName = tableName;
   }
@@ -53,8 +53,8 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof StoreTableNode) {
-      StoreTableNode other = (StoreTableNode) obj;
+    if (obj instanceof CreateTableNode) {
+      CreateTableNode other = (CreateTableNode) obj;
       return super.equals(other)
           && this.tableName.equals(other.tableName)
           && this.numPartitions == other.numPartitions
@@ -67,7 +67,7 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   
   @Override
   public Object clone() throws CloneNotSupportedException {
-    StoreTableNode store = (StoreTableNode) super.clone();
+    CreateTableNode store = (CreateTableNode) super.clone();
     store.tableName = tableName;
     store.numPartitions = numPartitions;
     store.partitionKeys = partitionKeys != null ? partitionKeys.clone() : null;

@@ -1,6 +1,7 @@
 package nta.engine.parser;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Options;
@@ -11,6 +12,7 @@ import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
+import nta.catalog.proto.CatalogProtos.IndexMethod;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
 import nta.engine.Context;
@@ -19,6 +21,7 @@ import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
+import nta.engine.parser.QueryBlock.SortKey;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -31,10 +34,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * 이 테스트는 QueryAnalyzer라 정확한 QueryBlock을 생성해 내는지 테스트한다.
+ * This unit test examines the correctness of QueryAnalyzer that analyzes 
+ * an abstract syntax tree built from Antlr and generates a QueryBlock instance.
  * 
  * @author Hyunsik Choi
  * 
+ * @see QueryAnalyzer
  * @see QueryBlock
  */
 public class TestQueryAnalyzer {
@@ -89,14 +94,20 @@ public class TestQueryAnalyzer {
   }
 
   private String[] QUERIES = { 
-      "select id, name, score, age from people",
-      "select name, score, age from people where score > 30",
-      "select name, score, age from people where 3 + 5 * 3", 
+      "select id, name, score, age from people", // 0
+      "select name, score, age from people where score > 30", // 1
+      "select name, score, age from people where 3 + 5 * 3", // 2
       "select age, sumtest(score) as total from people group by age having sumtest(score) > 30", // 3
       "select p.id, s.id, score, dept from people as p, student as s where p.id = s.id", // 4
-      "select name, score from people order by score asc, age desc", // 5
-      "store1 := select name, score from people order by score asc, age desc",// 6
-      "select 7 + 8" // 7
+      "select name, score from people order by score asc, age desc null first", // 5
+      // only expr
+      "select 7 + 8", // 6
+      // create table test
+      "store1 := select name, score from people order by score asc, age desc null first",// 7
+      // create table test
+      "create table store2 as select name, score from people order by score asc, age desc null first", // 8
+      // create index
+      "create unique index score_idx on people using hash (score, age desc null first) with (fillfactor = 70)"
   };
 
   public static NQLParser parseExpr(final String expr) {
@@ -119,12 +130,12 @@ public class TestQueryAnalyzer {
     }
     
     Context ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[0]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
 
     assertEquals(1, block.getNumFromTables());
 
     ctx = factory.create();
-    block = analyzer.parse(ctx, QUERIES[2]);
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
     EvalNode expr = block.getWhereCondition();
 
     long start = System.currentTimeMillis();
@@ -139,20 +150,19 @@ public class TestQueryAnalyzer {
   @Test
   public final void testSelectStatement() {
     Context ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[0]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     
     assertEquals(1, block.getFromTables().length);
     assertEquals("people", block.getFromTables()[0].getTableId());
     ctx = factory.create();
-    block = analyzer.parse(ctx, QUERIES[3]);
-    
+    block = (QueryBlock) analyzer.parse(ctx, QUERIES[3]);    
     // TODO - to be more regressive
   }
   
   @Test
   public final void testSelectStatementWithAlias() {
     Context ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[4]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[4]);
     assertEquals(2, block.getFromTables().length);
     assertEquals("people", block.getFromTables()[0].getTableId());
     assertEquals("student", block.getFromTables()[1].getTableId());
@@ -161,30 +171,59 @@ public class TestQueryAnalyzer {
   @Test
   public final void testOrderByClause() {
     Context ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[5]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[5]);
     testOrderByCluse(block);
   }
   
   private static final void testOrderByCluse(QueryBlock block) {
     assertEquals(2, block.getSortKeys().length);
     assertEquals("people.score", block.getSortKeys()[0].getSortKey().getQualifiedName());
-    assertEquals(true, block.getSortKeys()[0].isAscending());    
+    assertEquals(true, block.getSortKeys()[0].isAscending());
+    assertEquals(false, block.getSortKeys()[0].isNullFirst());
     assertEquals("people.age", block.getSortKeys()[1].getSortKey().getQualifiedName());
     assertEquals(false, block.getSortKeys()[1].isAscending());
+    assertEquals(true, block.getSortKeys()[1].isNullFirst());
   }
   
   @Test
-  public final void testStoreTable() {
+  public final void testCreateTable() {
     Context ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[6]);
-    assertEquals("store1", block.getStoreTable());
-    testOrderByCluse(block);
+    CreateTableStmt stmt = (CreateTableStmt) analyzer.parse(ctx, QUERIES[7]);
+    assertEquals("store1", stmt.getTableName());
+    testOrderByCluse(stmt.getSelectStmt());
+    
+    ctx = factory.create();
+    stmt = (CreateTableStmt) analyzer.parse(ctx, QUERIES[8]);
+    assertEquals("store2", stmt.getTableName());
+    testOrderByCluse(stmt.getSelectStmt());
+  }
+  
+  @Test 
+  public final void testCreateIndex() {
+    Context ctx = factory.create();
+    CreateIndexStmt stmt = (CreateIndexStmt) analyzer.parse(ctx, QUERIES[9]);
+    assertEquals("score_idx", stmt.getIndexName());
+    assertTrue(stmt.isUnique());
+    assertEquals("people", stmt.getTableName());
+    assertEquals(IndexMethod.HASH, stmt.getMethod());
+    
+    SortKey [] sortKeys = stmt.getSortSpecs();
+    assertEquals(2, sortKeys.length);
+    assertEquals("score", sortKeys[0].getSortKey().getColumnName());
+    assertEquals(DataType.INT, sortKeys[0].getSortKey().getDataType());
+    assertEquals("age", sortKeys[1].getSortKey().getColumnName());
+    assertEquals(DataType.INT, sortKeys[1].getSortKey().getDataType());
+    assertEquals(false, sortKeys[1].isAscending());
+    assertEquals(true, sortKeys[1].isNullFirst());
+    
+    assertTrue(stmt.hasParams());
+    assertEquals("70", stmt.getParams().get("fillfactor"));
   }
   
   @Test
   public final void testOnlyExpr() {
     Context ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[7]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[6]);
     EvalNode node = block.getTargetList()[0].getEvalTree();
     assertEquals(Type.PLUS, node.getType());
   }
@@ -209,14 +248,14 @@ public class TestQueryAnalyzer {
   @Test
   public final void testGroupByClause() {
     Context ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, QUERIES[3]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[3]);
     assertEquals("people.age", block.getGroupFields()[0].getQualifiedName());
   }
   
   @Test(expected = InvalidQueryException.class)
   public final void testInvalidGroupFields() {
     Context ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, INVALID_QUERIES[2]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, INVALID_QUERIES[2]);
     assertEquals("age", block.getGroupFields()[0].getQualifiedName());
   }
 }

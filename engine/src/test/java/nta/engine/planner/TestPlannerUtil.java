@@ -93,7 +93,8 @@ public class TestPlannerUtil {
   public final void testTransformTwoPhase() {
     // without 'having clause'
     QueryContext ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, TestLogicalPlanner.QUERIES[7]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, 
+        TestLogicalPlanner.QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 
     assertEquals(ExprType.ROOT, plan.getType());
@@ -118,7 +119,8 @@ public class TestPlannerUtil {
   public final void testFindTopNode() throws CloneNotSupportedException {
     // two relations
     QueryContext ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx, TestLogicalPlanner.QUERIES[1]);
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, 
+        TestLogicalPlanner.QUERIES[1]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
 
     assertEquals(ExprType.ROOT, plan.getType());

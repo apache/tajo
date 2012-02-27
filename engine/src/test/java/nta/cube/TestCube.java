@@ -94,7 +94,7 @@ public class TestCube {
     QueryContext ctx = factory.create();
 
     QueryAnalyzer qa = new QueryAnalyzer(catalog);
-    QueryBlock block = qa.parse(ctx, QUERIES[0]);
+    QueryBlock block = (QueryBlock) qa.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
     // System.out.println(plan.toString());
     LogicalOptimizer.optimize(ctx, plan);

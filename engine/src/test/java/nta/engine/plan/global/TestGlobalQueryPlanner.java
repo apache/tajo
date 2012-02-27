@@ -24,6 +24,7 @@ import nta.engine.QueryIdFactory;
 import nta.engine.SubQueryId;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalPlanner;
@@ -141,9 +142,9 @@ public class TestGlobalQueryPlanner {
     catalog.updateAllTabletServingInfo(master.getOnlineServer());
 
     QueryContext ctx = factory.create();
-    QueryBlock block = analyzer.parse(ctx,
+    ParseTree tree = (ParseTree) analyzer.parse(ctx,
         "store1 := select age, sumtest(salary) from table0 group by age");
-    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, block);
+    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
 
     GlobalQueryPlan globalPlan = planner.build(subQueryId, logicalPlan);
     assertTrue(globalPlan.size() == 2);

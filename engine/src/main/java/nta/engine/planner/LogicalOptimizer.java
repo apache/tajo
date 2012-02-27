@@ -10,6 +10,7 @@ import nta.catalog.Column;
 import nta.engine.Context;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.planner.logical.BinaryNode;
+import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
@@ -28,7 +29,7 @@ public class LogicalOptimizer {
   }
   
   public static LogicalNode optimize(Context ctx, LogicalNode plan) {
-    if(ctx.hasWhereClause())
+    if(PlannerUtil.findTopNode(plan, ExprType.SELECTION) != null)
       pushSelection(ctx, plan);
     
     pushProjection(ctx, plan);

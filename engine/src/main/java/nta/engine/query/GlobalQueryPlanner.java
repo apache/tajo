@@ -34,7 +34,7 @@ import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SortNode;
-import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.UnaryNode;
 import nta.storage.StorageManager;
 
@@ -154,7 +154,7 @@ public class GlobalQueryPlanner {
         cur.setUnaryNode(unary);
         break;
       case STORE:
-        StoreTableNode store = (StoreTableNode) op;
+        CreateTableNode store = (CreateTableNode) op;
         cur.setStoreNode(store);
         break;
       case SCAN:
@@ -384,7 +384,7 @@ public class GlobalQueryPlanner {
   }
 
   private void addStore(String outputName, QueryUnit q, Phase phase) {
-    StoreTableNode store = new StoreTableNode(outputName);
+    CreateTableNode store = new CreateTableNode(outputName);
     if (phase == Phase.MAP) {
       UnaryNode unary = q.getUnaryNode();
       if (unary.getType() == ExprType.GROUP_BY) {

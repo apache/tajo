@@ -5,8 +5,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import nta.catalog.TableDesc;
+import nta.engine.parser.CreateTableStmt;
+import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.Target;
+import nta.engine.parser.StatementType;
 
 /**
  * 이 클래스는 주어진 질의가 실행 중인 동안 질의에 대한 정보를 유지한다.
@@ -15,7 +18,12 @@ import nta.engine.parser.QueryBlock.Target;
  */
 public abstract class Context {
   private Map<String, String> aliasMap = new HashMap<String, String>();
-  private QueryBlock query;
+  
+  // Hints
+  protected boolean hasWhereClause;
+  protected boolean hasGroupByClause;
+  protected boolean hasJoinClause;
+  private Target [] targets;
   
   public abstract TableDesc getTable(String id);
   
@@ -31,24 +39,28 @@ public abstract class Context {
     return this.aliasMap.get(aliasName);
   }
   
-  public void setParseTree(QueryBlock query) {
-    this.query = query;
-  }
-  
-  // Hints for planning and optimization
-  public boolean hasWhereClause() {
-    return query.hasWhereClause();
-  }
-
-  public boolean hasGroupByClause() {
-    return query.hasGroupbyClause();
-  }
-  
-  public boolean hasJoinClause() {    
-    return query.getFromTables().length > 1;
+  public void makeHints(ParseTree query) {
+    QueryBlock block = null;
+    switch (query.getType()) {
+    case SELECT:
+      block = (QueryBlock) query;
+      break;
+    case CREATE_TABLE:
+      block = ((CreateTableStmt) query).getSelectStmt();
+      break;
+    }
+    
+    if (query.getType() == StatementType.SELECT
+        || query.getType() == StatementType.CREATE_TABLE) {
+      hasWhereClause = block.hasWhereClause();
+      hasGroupByClause = block.hasGroupbyClause();
+      hasJoinClause = block.hasFromClause() ? block.getFromTables().length > 1
+          : false;
+      targets = block.getTargetList();
+    }
   }
 
   public Target[] getTargetList() {
-    return query.getTargetList();
+    return targets;
   }
 }

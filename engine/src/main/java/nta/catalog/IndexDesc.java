@@ -5,7 +5,7 @@ package nta.catalog;
 
 import nta.catalog.proto.CatalogProtos.IndexDescProto;
 import nta.catalog.proto.CatalogProtos.IndexDescProtoOrBuilder;
-import nta.catalog.proto.CatalogProtos.IndexType;
+import nta.catalog.proto.CatalogProtos.IndexMethod;
 import nta.common.ProtoObject;
 
 import com.google.common.base.Objects;
@@ -24,7 +24,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   @Expose private String name;
   @Expose private String tableId;
   @Expose private Column column;
-  @Expose private IndexType indexType;
+  @Expose private IndexMethod indexMethod;
   @Expose private boolean isUnique = false;
   @Expose private boolean isClustered = false;
   @Expose private boolean isAscending = false;
@@ -33,13 +33,13 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     this.builder = IndexDescProto.newBuilder();
   }
   
-  public IndexDesc(String name, String tableId, Column column, IndexType type,
+  public IndexDesc(String name, String tableId, Column column, IndexMethod type,
       boolean isUnique, boolean isClustered, boolean isAscending) {
     this();
     this.name = name;
     this.tableId = tableId;
     this.column = column;
-    this.indexType = type;
+    this.indexMethod = type;
     this.isUnique = isUnique;
     this.isClustered = isClustered;
     this.isAscending = isAscending;
@@ -89,17 +89,17 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     return column;
   }
   
-  public IndexType getIndexType() {
+  public IndexMethod getIndexMethod() {
     IndexDescProtoOrBuilder p = viaProto ? proto : builder;    
-    if (this.indexType != null) {
-      return this.indexType;
+    if (this.indexMethod != null) {
+      return this.indexMethod;
     }
-    if (!p.hasIndexType()) { // if isCluster == false and proto has no set
+    if (!p.hasIndexMethod()) { // if isCluster == false and proto has no set
       return null;
     }
-    this.indexType = p.getIndexType();
+    this.indexMethod = p.getIndexMethod();
     
-    return this.indexType;
+    return this.indexMethod;
   }
   
   public boolean isClustered() {
@@ -173,8 +173,8 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     if (this.column != null) {
       builder.setColumn(this.column.getProto());
     }
-    if (this.indexType != null) {
-      builder.setIndexType(indexType);
+    if (this.indexMethod != null) {
+      builder.setIndexMethod(indexMethod);
     }
     if (this.isUnique) {
       builder.setIsUnique(this.isUnique);
@@ -199,8 +199,8 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     if (this.column == null && p.hasColumn()) {
       this.column = new Column(p.getColumn());
     }
-    if (this.indexType == null && p.hasIndexType()) {
-      this.indexType = p.getIndexType();
+    if (this.indexMethod == null && p.hasIndexMethod()) {
+      this.indexMethod = p.getIndexMethod();
     }
     if (this.isUnique == false && p.hasIsUnique()) {
       this.isUnique = p.getIsUnique();
@@ -220,7 +220,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
       return getName().equals(other.getName())
           && getTableId().equals(other.getTableId())
           && getColumn().equals(other.getColumn())
-          && getIndexType().equals(other.getIndexType())
+          && getIndexMethod().equals(other.getIndexMethod())
           && isUnique() == other.isUnique()
           && isClustered() == other.isClustered()
           && isAscending() == other.isAscending();
@@ -231,7 +231,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   
   public int hashCode() {
     return Objects.hashCode(getName(), getTableId(), getColumn(), 
-        getIndexType(), isUnique(), isClustered(), isAscending());
+        getIndexMethod(), isUnique(), isClustered(), isAscending());
   }
   
   public Object clone() throws CloneNotSupportedException {
@@ -240,7 +240,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     desc.name = name;
     desc.tableId = tableId;
     desc.column = (Column) column.clone();
-    desc.indexType = indexType;
+    desc.indexMethod = indexMethod;
     desc.isUnique = isUnique;
     desc.isClustered = isClustered;
     desc.isAscending = isAscending;

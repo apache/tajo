@@ -16,16 +16,11 @@ import nta.datum.ShortDatum;
 import nta.datum.StringDatum;
 import nta.datum.exception.InvalidCastException;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
  * @author Hyunsik Choi
  * 
  */
 public class VTuple implements Tuple {
-	private static Log LOG = LogFactory.getLog(VTuple.class);
-	
 	public Datum [] values;
 	
 	public VTuple(int size) {

@@ -29,7 +29,7 @@ import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.ColumnProto;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.IndexDescProto;
-import nta.catalog.proto.CatalogProtos.IndexType;
+import nta.catalog.proto.CatalogProtos.IndexMethod;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.engine.exception.InternalException;
@@ -578,7 +578,7 @@ public class DBStore implements CatalogStore {
       stmt.setString(2, proto.getTableId());
       stmt.setString(3, proto.getColumn().getColumnName());
       stmt.setString(4, proto.getColumn().getDataType().toString());
-      stmt.setString(5, proto.getIndexType().toString());
+      stmt.setString(5, proto.getIndexMethod().toString());
       stmt.setBoolean(6, proto.hasIsUnique() ? proto.getIsUnique() : false);
       stmt.setBoolean(7, proto.hasIsClustered() ? proto.getIsClustered() : false);
       stmt.setBoolean(8, proto.hasIsAscending() ? proto.getIsAscending() : false);
@@ -763,7 +763,7 @@ public class DBStore implements CatalogStore {
     builder.setName(res.getString("index_name"));
     builder.setTableId(res.getString(C_TABLE_ID));
     builder.setColumn(resultToColumnProto(res));
-    builder.setIndexType(getIndexType(res.getString("index_type").trim()));
+    builder.setIndexMethod(getIndexMethod(res.getString("index_type").trim()));
     builder.setIsUnique(res.getBoolean("is_unique"));
     builder.setIsClustered(res.getBoolean("is_clustered"));
     builder.setIsAscending(res.getBoolean("is_ascending"));
@@ -777,9 +777,9 @@ public class DBStore implements CatalogStore {
     return builder.build();
   }
   
-  private IndexType getIndexType(final String typeStr) {
-    if (typeStr.equals(IndexType.TWO_LEVEL_BIN_TREE.toString())) {
-      return IndexType.TWO_LEVEL_BIN_TREE;
+  private IndexMethod getIndexMethod(final String typeStr) {
+    if (typeStr.equals(IndexMethod.TWO_LEVEL_BIN_TREE.toString())) {
+      return IndexMethod.TWO_LEVEL_BIN_TREE;
     } else {
       LOG.error("Cannot find a matched type aginst from '"
           + typeStr + "'");

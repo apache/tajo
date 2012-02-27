@@ -18,9 +18,12 @@ public enum StatementType {
 	UPDATE,
 	DELETE,
 	
-	// Schema
-	CREATE_TABLE,
+	// Schema	
+	CREATE_TABLE,	
 	DROP_TABLE,
+	
+	// INDEX
+	CREATE_INDEX,
 	
 	// Control
 	SHOW_TABLES,

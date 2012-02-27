@@ -8,21 +8,20 @@ import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.hadoop.fs.Path;
-import org.mortbay.log.Log;
-
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.QueryUnitId;
-import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.StorageUtil;
 import nta.storage.Tuple;
+
+import org.apache.hadoop.fs.Path;
+import org.mortbay.log.Log;
 
 import com.google.common.base.Preconditions;
 
@@ -38,7 +37,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
   }
   
   private final StorageManager sm;
-  private final StoreTableNode annotation;
+  private final CreateTableNode annotation;
   private final PhysicalExec subOp;
   
   private final Schema inputSchema;
@@ -54,7 +53,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
     = new HashMap<Integer, Appender>();
   
   public PartitionedStoreExec(final StorageManager sm, final QueryUnitId queryId,
-      final StoreTableNode annotation, final PhysicalExec subOp) throws IOException {
+      final CreateTableNode annotation, final PhysicalExec subOp) throws IOException {
     Preconditions.checkArgument(annotation.hasPartitionKey());
     
     this.sm = sm;

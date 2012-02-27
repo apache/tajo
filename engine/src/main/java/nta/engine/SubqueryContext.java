@@ -12,8 +12,6 @@ import nta.catalog.CatalogService;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
-import nta.engine.parser.QueryBlock;
-import nta.engine.parser.QueryBlock.Target;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -29,7 +27,6 @@ public class SubqueryContext extends Context {
     = new HashMap<String, List<Fragment>>();
   
   private QueryUnitId queryId;
-  private QueryBlock query;
   
   private SubqueryContext(QueryUnitId queryId, Fragment [] fragments) {
     this.queryId = queryId;
@@ -43,10 +40,6 @@ public class SubqueryContext extends Context {
         fragmentMap.put(t.getId(), frags);
       }
     }
-  }
-  
-  public void setParseTree(QueryBlock query) {
-    this.query = query;
   }
   
   public static class Factory {
@@ -84,25 +77,5 @@ public class SubqueryContext extends Context {
   
   public Fragment [] getTables(String id) {
     return fragmentMap.get(id).toArray(new Fragment[fragmentMap.size()]);
-  }
-  
-  @Override
-  public boolean hasWhereClause() {
-    return query.hasWhereClause();
-  }
-
-  @Override
-  public boolean hasGroupByClause() {
-    return query.hasGroupbyClause();
-  }
-
-  @Override
-  public Target[] getTargetList() {
-    return query.getTargetList();
-  }
-
-  @Override
-  public boolean hasJoinClause() {
-    return query.getFromTables().length > 1;
   }
 }

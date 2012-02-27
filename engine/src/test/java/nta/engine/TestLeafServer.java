@@ -20,8 +20,8 @@ import nta.datum.DatumFactory;
 import nta.engine.QueryUnitProtos.InProgressStatus;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
+import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.query.QueryUnitRequestImpl;
@@ -112,9 +112,9 @@ public class TestLeafServer {
     QueryUnitId qid2 = QueryIdFactory.newQueryUnitId();
     
     QueryContext ctx = qcFactory.create();
-    QueryBlock query = analyzer.parse(ctx, 
+    ParseTree query = analyzer.parse(ctx, 
         "testLeafServer := select name, empId, deptName from employee");
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);    
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     
     sm.initTableBase(frags[0].getMeta(), "testLeafServer");
     QueryUnitRequest req1 = new QueryUnitRequestImpl(

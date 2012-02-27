@@ -11,6 +11,8 @@ import nta.engine.Context;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
+import nta.engine.parser.CreateTableStmt;
+import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
@@ -24,7 +26,7 @@ import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
-import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.UnaryNode;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.engine.query.exception.NotSupportQueryException;
@@ -41,7 +43,7 @@ import org.apache.commons.logging.LogFactory;
  * @see QueryBlock
  */
 public class LogicalPlanner {
-  private Log LOG = LogFactory.getLog(LogicalPlanner.class);
+  private static Log LOG = LogFactory.getLog(LogicalPlanner.class);
 
   private LogicalPlanner() {
   }
@@ -52,18 +54,20 @@ public class LogicalPlanner {
    * @param query a parse tree
    * @return a initial logical plan
    */
-  public static LogicalNode createPlan(Context ctx, QueryBlock query) {
-
-    LogicalNode plan = null;    
-
-    switch(query.getStatementType()) {    
-
+  public static LogicalNode createPlan(Context ctx, ParseTree query) {
+    LogicalNode plan = null;
+    
+    switch(query.getType()) {
     case SELECT:
-      plan = createSelectPlan(ctx, query);
+      LOG.info("Planning select statement");
+      QueryBlock select = (QueryBlock) query;
+      plan = createSelectPlan(ctx, select);
       break;
       
-    case STORE:
-      plan = createStorePlan(ctx, query);
+    case CREATE_TABLE:
+      LOG.info("Planning store statement");
+      CreateTableStmt createTable = (CreateTableStmt) query;
+      plan = buildCreateTablePlan(ctx, createTable);
       break;
 
     default:;
@@ -79,10 +83,11 @@ public class LogicalPlanner {
     return root;
   }
   
-  private static LogicalNode createStorePlan(Context ctx, QueryBlock query) {
-    LogicalNode subNode = createSelectPlan(ctx, query);
+  private static LogicalNode buildCreateTablePlan(Context ctx, 
+      CreateTableStmt query) {
+    LogicalNode subNode = createSelectPlan(ctx, query.getSelectStmt());
     
-    StoreTableNode storeNode = new StoreTableNode(query.getStoreTable());
+    CreateTableNode storeNode = new CreateTableNode(query.getTableName());
     storeNode.setInputSchema(subNode.getOutputSchema());
     storeNode.setOutputSchema(subNode.getOutputSchema());
     storeNode.setSubNode(subNode);
@@ -231,7 +236,7 @@ public class LogicalPlanner {
       break;
     
     case STORE:
-      StoreTableNode storeNode = (StoreTableNode) logicalNode;
+      CreateTableNode storeNode = (CreateTableNode) logicalNode;
       stack.push(storeNode);
       refineInOutSchama(ctx, storeNode.getSubNode(), necessaryTargets, stack);
       stack.pop();

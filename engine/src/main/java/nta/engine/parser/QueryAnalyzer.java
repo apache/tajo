@@ -1,14 +1,16 @@
 package nta.engine.parser;
 
 import nta.catalog.CatalogService;
-import nta.catalog.TCatUtil;
 import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
+import nta.catalog.Options;
 import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
+import nta.catalog.proto.CatalogProtos.IndexMethod;
 import nta.datum.DatumFactory;
 import nta.engine.Context;
 import nta.engine.exception.InternalException;
@@ -26,6 +28,7 @@ import nta.engine.parser.QueryBlock.Target;
 import nta.engine.query.exception.AmbiguousFieldException;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.engine.query.exception.NQLSyntaxException;
+import nta.engine.query.exception.NotSupportQueryException;
 import nta.engine.query.exception.UndefinedFunctionException;
 
 import org.antlr.runtime.ANTLRStringStream;
@@ -53,47 +56,64 @@ public final class QueryAnalyzer {
     this.catalog = catalog;
   }
 
-  public QueryBlock parse(final Context ctx, final String query) {
+  public ParseTree parse(final Context ctx, final String query) {
     CommonTree ast = parseTree(query);
     if (LOG.isDebugEnabled()) {
       LOG.debug("Analyzer: " + ast.toStringTree());
     }
-    
-    QueryBlock block = null;
+
+    ParseTree parseTree = null;
 
     switch (getCmdType(ast)) {
     case SELECT:
-      block = new QueryBlock(StatementType.SELECT);
-      parseSelectStatement(ctx, ast, block);
+      parseTree = parseSelectStatement(ctx, ast);
       break;
-    case STORE:
-      block = new QueryBlock(StatementType.STORE);
-      block = parseStoreStatement(ctx, ast, block);
+      
+    case CREATE_INDEX:
+      parseTree = parseIndexStatement(ctx, ast);
       break;
+    
+    case CREATE_TABLE:
+      parseTree = parseCreateStatement(ctx, ast);
     default:
       break;
     }
 
-    ctx.setParseTree(block);
-    return block;
+    ctx.makeHints(parseTree);
+    return parseTree;
 
   }
   
-  public QueryBlock parseStoreStatement(final Context ctx,
-      final CommonTree ast, QueryBlock block) {
+  /**
+   * t=table ASSIGN select_stmt -> ^(CREATE_TABLE $t select_stmt)
+   * | CREATE TABLE t=table AS select_stmt -> ^(CREATE_TABLE $t select_stmt)
+   * 
+   * @param ctx
+   * @param ast
+   * @return
+   */
+  private final CreateTableStmt parseCreateStatement(final Context ctx,
+      final CommonTree ast) {    
     CommonTree node;
     
     node = (CommonTree) ast.getChild(0);
-    block.setStoreTable(node.getText());
+    String tableName = node.getText();
     
     node = (CommonTree) ast.getChild(1);
-    parseSelectStatement(ctx, node, block);
+    if (node.getType() != NQLParser.SELECT) {
+      throw new NotSupportQueryException("ERROR: not yet supported query");
+    }
     
-    return block;
+    QueryBlock selectStmt = parseSelectStatement(ctx, node);    
+    CreateTableStmt stmt = new CreateTableStmt(tableName, selectStmt);
+    
+    return stmt;
   }
 
-  public QueryBlock parseSelectStatement(final Context ctx,
-      final CommonTree ast, QueryBlock block) {
+  private final QueryBlock parseSelectStatement(final Context ctx,
+      final CommonTree ast) {
+    
+    QueryBlock block = new QueryBlock();
 
     CommonTree node;
     for (int cur = 0; cur < ast.getChildCount(); cur++) {
@@ -101,7 +121,7 @@ public final class QueryAnalyzer {
 
       switch (node.getType()) {
       case NQLParser.FROM:
-        parseFromClause(ctx, block, node);
+        parseFromClause(ctx, node, block);
         break;
               
       case NQLParser.SET_QUALIFIER:
@@ -119,7 +139,9 @@ public final class QueryAnalyzer {
         break;
         
       case NQLParser.ORDER_BY:
-        parseOrderByClause(ctx, block, node);
+        SortKey [] sortKeys = parseSortSpecifiers(ctx, 
+            (CommonTree) node.getChild(0));
+        block.setSortKeys(sortKeys);
         break;        
         
       default:
@@ -131,13 +153,66 @@ public final class QueryAnalyzer {
   }
   
   /**
-   * EBNF: table_list -> tableRef (COMMA tableRef)*
+   * EBNF: CREATE (UNIQUE?) INDEX n=ID ON t=ID LEFT_PAREN s=sort_specifier_list 
+   * RIGHT_PAREN p=param_clause? <br />
+   * AST:  ^(CREATE_INDEX $n $t $s $p)
    * 
-   * @param block
+   * @param ctx
    * @param ast
+   * @param block
+   */
+  private final CreateIndexStmt parseIndexStatement(final Context ctx,
+      final CommonTree ast) {
+    
+    int idx = 0;
+    boolean unique = false;
+    // the below things are optional
+    if (ast.getChild(idx).getType() == NQLParser.UNIQUE) {
+      unique = true;
+      idx++;
+    }
+    
+    IndexMethod method = null;
+    if (ast.getChild(idx).getType() == NQLParser.USING) {
+      method = getIndexMethod(ast.getChild(idx).getText());
+      idx++;
+    }
+    
+    // It's optional, so it can be null if there is no params clause.
+    Options params = null;
+    if (ast.getChild(idx).getType() == NQLParser.PARAMS) {
+      params = parseParams(ctx, (CommonTree) ast.getChild(idx));
+      idx++;
+    }
+    
+    // They are required, so they are always filled.
+    String idxName = ast.getChild(idx++).getText();
+    String tbName = ast.getChild(idx++).getText();
+    ctx.renameTable(tbName, tbName);
+    
+    SortKey [] sortSpecs = parseSortSpecifiers(ctx, 
+        (CommonTree) ast.getChild(idx++));
+
+    CreateIndexStmt stmt = new CreateIndexStmt(idxName, unique, tbName, 
+        sortSpecs);
+    if (method != null) {
+      stmt.setMethod(method);
+    }
+    
+    if (params != null) {
+      stmt.setParams(params);
+    }
+      
+    return stmt;
+  }
+  
+  /**
+   * EBNF: table_list -> tableRef (COMMA tableRef)
+   * @param ast
+   * @param block
    */
   private static void parseFromClause(final Context ctx, 
-      final QueryBlock block, final CommonTree ast) {
+      final CommonTree ast, final QueryBlock block) {
     int numTables = ast.getChildCount(); //
 
     if (numTables > 0) {
@@ -270,25 +345,75 @@ public final class QueryAnalyzer {
     block.setGroupingFields(groupingColumns);
   }
   
+  /**
+   * Should be given Params Node
+   * 
+   * EBNF: WITH LEFT_PAREN param (COMMA param)* RIGHT_PAREN 
+   * AST: ^(PARAMS param+)
+   * 
+   * @param ctx
+   * @param ast
+   * @return
+   */
+  private static final Options parseParams(final Context ctx, 
+      final CommonTree ast) {
+    Options params = new Options();
+    
+    Tree child = null;
+    for (int i = 0; i < ast.getChildCount(); i++) {
+      child = ast.getChild(i);
+      params.put(child.getChild(0).getText(), child.getChild(1).getText());
+    }
+    return params;
+  }
+  
 
-  private static void parseOrderByClause(final Context ctx,
-      final QueryBlock block, final CommonTree ast) {
+  /**
+   * Should be given SortSpecifiers Node
+   * 
+   * EBNF: sort_specifier (COMMA sort_specifier)* -> sort_specifier+
+   * 
+   * @param ctx
+   * @param block
+   * @param ast
+   */
+  private static SortKey [] parseSortSpecifiers(final Context ctx, 
+      final CommonTree ast) {
     int numSortKeys = ast.getChildCount();
     SortKey[] sortKeys = new SortKey[numSortKeys];
     CommonTree node = null;
     Column column = null;
+    
+    // Each child has the following EBNF and AST:
+    // EBNF: fn=fieldName a=order_specification? o=null_ordering? 
+    // AST: ^(SORT_KEY $fn $a? $o?)
     for (int i = 0; i < numSortKeys; i++) {
       node = (CommonTree) ast.getChild(i);
       column = checkAndGetColumnByAST(ctx, (CommonTree) node.getChild(0));
       sortKeys[i] = new SortKey(column);
-      if (node.getChildCount() > 1
-          && node.getChild(1).getType() == NQLParser.DESC) {
-        sortKeys[i].setDesc();
+            
+      if (node.getChildCount() > 1) {
+        Tree child = null;
+        for (int j = 1; j < node.getChildCount(); j++) {
+          child = node.getChild(j);
+          
+          // AST: ^(ORDER ASC) | ^(ORDER DESC)
+          if (child.getType() == NQLParser.ORDER) {
+            if (child.getChild(0).getType() == NQLParser.DESC) {
+              sortKeys[i].setDescOrder();
+            }            
+          } else if (child.getType() == NQLParser.NULL_ORDER) {
+            // AST: ^(NULL_ORDER FIRST) | ^(NULL_ORDER LAST)
+            if (child.getChild(0).getType() == NQLParser.FIRST) {
+              sortKeys[i].setNullFirst();
+            }
+          }          
+        }
       }
     }
     
-    block.setSortKeys(sortKeys);
-  }
+    return sortKeys;
+  }  
   
   private static Column checkAndGetColumnByAST(final Context ctx,
       final CommonTree fieldNode) {
@@ -410,6 +535,8 @@ public final class QueryAnalyzer {
       return StatementType.SELECT;
     case NQLParser.INSERT:
       return StatementType.INSERT;
+    case NQLParser.CREATE_INDEX:
+      return StatementType.CREATE_INDEX;
     case NQLParser.CREATE_TABLE:
       return StatementType.CREATE_TABLE;
     case NQLParser.DROP_TABLE:
@@ -422,6 +549,21 @@ public final class QueryAnalyzer {
       return StatementType.SHOW_FUNCTION;
     default:
       return null;
+    }
+  }
+  
+  private static IndexMethod getIndexMethod(String method) {
+    Preconditions.checkNotNull(method);
+    if (method.equals("twolevel-bst")) {
+      return IndexMethod.TWO_LEVEL_BIN_TREE;
+    } else if (method.equals("btree")) {
+      return IndexMethod.BTREE;
+    } else if (method.equals("hash")) {
+      return IndexMethod.HASH;
+    } else if (method.equals("bitmap")) {
+      return IndexMethod.BITMAP;
+    } else {
+      throw new NQLSyntaxException("ERROR: unknown index: " + method);
     }
   }
   

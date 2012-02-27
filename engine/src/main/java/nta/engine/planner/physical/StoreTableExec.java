@@ -10,7 +10,7 @@ import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.QueryUnitId;
-import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
@@ -23,7 +23,7 @@ import nta.storage.Tuple;
  */
 public class StoreTableExec extends PhysicalExec {
   @SuppressWarnings("unused")
-  private final StoreTableNode annotation;
+  private final CreateTableNode annotation;
   private final PhysicalExec subOp;
   private final Appender appender;
   
@@ -37,7 +37,7 @@ public class StoreTableExec extends PhysicalExec {
    * 
    */
   public StoreTableExec(StorageManager sm, QueryUnitId queryId,
-      StoreTableNode annotation, PhysicalExec subOp) throws IOException {
+      CreateTableNode annotation, PhysicalExec subOp) throws IOException {
     this.annotation = annotation;
     this.subOp = subOp;
     this.inputSchema = annotation.getInputSchema();

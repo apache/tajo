@@ -13,6 +13,7 @@ tokens {
   COLUMN;
   COUNT_VAL;
   COUNT_ROWS;
+  CREATE_INDEX;
   CREATE_TABLE;
   DROP_TABLE;
   DESC_TABLE;
@@ -20,14 +21,19 @@ tokens {
   FIELD_DEF;
   FUNCTION;    
   FUNC_ARGS;
-  GROUP_BY;  
+  GROUP_BY;
+  NULL_ORDER;
+  ORDER;
   ORDER_BY;
+  PARAM;
+  PARAMS;  
   SEL_LIST;
   SESSION_CLEAR;
   SET_QUALIFIER;
   SHOW_TABLE;
   SHOW_FUNCTION;
   SORT_KEY;
+  SORT_SPECIFIERS;
   STORE;
   STORE_TYPE;
   TABLE_DEF;
@@ -49,6 +55,7 @@ package nta.engine.parser;
 @lexer::members {
    @Override
    public void reportError(RecognitionException e) {
+    System.out.println(e.getMessage());
    }
 }
 
@@ -64,8 +71,8 @@ statement
   | controlStatement
   | dataStatement 
   | dataChangeStatement
-  | schemaStatement 
-  | storeStatement
+  | schemaStatement
+  | indexStatement
   ;
   
 controlStatement
@@ -84,17 +91,18 @@ dataChangeStatement
   ;
   
 schemaStatement
-  : createTable
+  : createTableStatement
   | DROP TABLE table -> ^(DROP_TABLE table)
   ;
   
-storeStatement
-  : ID ASSIGN select_stmt -> ^(STORE ID select_stmt)
+indexStatement
+  : CREATE (u=UNIQUE)? INDEX n=ID ON t=table (m=method_specifier)? LEFT_PAREN s=sort_specifier_list RIGHT_PAREN p=param_clause?-> ^(CREATE_INDEX $u? $m? $p? $n $t $s)
   ;
   
-createTable
-  : CREATE TABLE table AS select_stmt -> ^(CREATE_TABLE ^(TABLE table) select_stmt)
-  | CREATE TABLE table tableElements (USING ID)? -> ^(CREATE_TABLE ^(TABLE table) ^(TABLE_DEF tableElements) ^(STORE_TYPE ID)?)
+createTableStatement
+  : CREATE TABLE t=table AS select_stmt -> ^(CREATE_TABLE $t select_stmt)
+  | t=table ASSIGN select_stmt -> ^(CREATE_TABLE $t select_stmt)
+//  | CREATE TABLE table tableElements (USING ID)? -> ^(CREATE_TABLE table ^(TABLE_DEF tableElements) ^(STORE_TYPE ID)?)
   ;
   
 tableElements
@@ -224,17 +232,22 @@ orderby_clause
   ;
   
 sort_specifier_list
-  : sort_specifier (COMMA sort_specifier)* -> sort_specifier+
+  : sort_specifier (COMMA sort_specifier)* -> ^(SORT_SPECIFIERS sort_specifier+)
   ;
   
 sort_specifier
-  : f=fieldName o=order_specification?  -> ^(SORT_KEY $f $o?)
+  : fn=fieldName a=order_specification? o=null_ordering? -> ^(SORT_KEY $fn $a? $o?)
   ;
   
 order_specification
-  : ASC | DESC
+  : ASC -> ^(ORDER ASC)
+  | DESC -> ^(ORDER DESC)
   ;
   
+null_ordering
+  : NULL FIRST -> ^(NULL_ORDER FIRST)
+  | NULL LAST -> ^(NULL_ORDER LAST)
+  ;
 	
 set_stmt
 	:	'set' ('union'|'intersect'|'diff') table
@@ -243,6 +256,18 @@ set_stmt
 search_condition
 	:	bool_expr
 	; 
+	
+param_clause
+  : WITH LEFT_PAREN param (COMMA param)* RIGHT_PAREN -> ^(PARAMS param+)
+  ;
+  
+param
+  : k=ID EQUAL v=bool_expr -> ^(PARAM $k $v)
+  ;
+  
+method_specifier
+  : USING m=ID -> ^(USING[$m.text])
+  ;
 
 bool_expr
 	:	and_predicate (OR^ and_predicate)*
@@ -332,20 +357,27 @@ CREATE : 'create';
 DESC : 'desc';
 DISTINCT : 'distinct';
 DROP : 'drop';
+FIRST : 'first';
 FROM : 'from';
 GROUP : 'group';
+NULL : 'null';
 HAVING : 'having';
 IN : 'in';
+INDEX : 'index';
 INSERT : 'insert';
 INTO : 'into';
+LAST : 'last';
 NOT : 'not';
+ON : 'on';
 OR : 'or';
 ORDER : 'order';
 SELECT : 'select';
 TABLE : 'table';
+UNIQUE : 'unique';
 USING : 'using';
 VALUES : 'values';
 WHERE : 'where';
+WITH : 'with';
 
 // column types
 BOOL : 'bool';

@@ -5,12 +5,10 @@ package nta.engine.planner;
 
 import java.io.IOException;
 
-import com.google.common.base.Preconditions;
-
 import nta.engine.SubqueryContext;
 import nta.engine.exception.InternalException;
-import nta.engine.exec.eval.EvalNode;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.EvalExprNode;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.LogicalNode;
@@ -19,7 +17,6 @@ import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
-import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.physical.EvalExprExec;
 import nta.engine.planner.physical.GroupByExec;
 import nta.engine.planner.physical.PartitionedStoreExec;
@@ -28,6 +25,8 @@ import nta.engine.planner.physical.SeqScanExec;
 import nta.engine.planner.physical.SortExec;
 import nta.engine.planner.physical.StoreTableExec;
 import nta.storage.StorageManager;
+
+import com.google.common.base.Preconditions;
 
 /**
  * This class generates a physical execution plan.
@@ -56,6 +55,7 @@ public class PhysicalPlanner {
 
   private PhysicalExec createPlanRecursive(SubqueryContext ctx,
       LogicalNode logicalNode) throws IOException {
+    @SuppressWarnings("unused")
     PhysicalExec outer = null;
     PhysicalExec inner = null;
 
@@ -69,9 +69,9 @@ public class PhysicalPlanner {
       return new EvalExprExec(evalExpr);
     
     case STORE:
-      StoreTableNode storeNode = (StoreTableNode) logicalNode;
-      inner = createPlanRecursive(ctx, storeNode.getSubNode());
-      return createStorePlan(ctx, storeNode, inner);
+      CreateTableNode createTableNode = (CreateTableNode) logicalNode;
+      inner = createPlanRecursive(ctx, createTableNode.getSubNode());
+      return createStorePlan(ctx, createTableNode, inner);
       
     case SELECTION:
       SelectionNode selNode = (SelectionNode) logicalNode;
@@ -100,7 +100,6 @@ public class PhysicalPlanner {
     case SET_UNION:
     case SET_DIFF:
     case SET_INTERSECT:
-    case CREATE_TABLE:
     case INSERT_INTO:
     case SHOW_TABLE:
     case DESC_TABLE:
@@ -110,7 +109,7 @@ public class PhysicalPlanner {
     }
   }
   
-  public PhysicalExec createStorePlan(SubqueryContext ctx, StoreTableNode annotation,
+  public PhysicalExec createStorePlan(SubqueryContext ctx, CreateTableNode annotation,
       PhysicalExec subOp) throws IOException {
     PhysicalExec store = null;
     if (annotation.hasPartitionKey()) { // if the partition keys are specified
