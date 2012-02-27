@@ -16,7 +16,7 @@
 		<url>https://dbserver.korea.ac.kr/jenkins</url>
 	</ciManagement>
 	<scm>
-		<url>git@bitbucket.org:dblab/nta.git</url>
+		<url>git@bitbucket.org:dblab/tajo.git</url>
 	</scm>
 	<organization>
 		<name>Database Laboratory, Korea University</name>
@@ -27,7 +27,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<hadoop.version>0.24.0-SNAPSHOT</hadoop.version>
 		<yarn.version>0.24.0-SNAPSHOT</yarn.version>
-		<nta.version>0.2.0-SNAPSHOT</nta.version>
+		<nta.version>0.4.0-SNAPSHOT</nta.version>
 	</properties>
 
 	<repositories>
@@ -60,44 +60,57 @@
 			</snapshots>
 		</repository>
 	</repositories>
-
+		
+	<modules>
+        <module>common</module>
+        <module>engine</module>
+        <module>logserver</module>
+        <module>etl</module>
+        <module>rpc</module>
+    </modules>
 
 	<build>
 		<pluginManagement>
 			<plugins>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-compiler-plugin</artifactId>
-					<version>2.3.2</version>
-				</plugin>
-				<plugin>
-					<groupId>org.antlr</groupId>
-					<artifactId>antlr3-maven-plugin</artifactId>
-					<version>3.3</version>
-				</plugin>
-				<plugin>
-					<groupId>org.codehaus.mojo</groupId>
-					<artifactId>surefire-report-maven-plugin</artifactId>
-					<version>2.0-beta-1</version>
-				</plugin>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-eclipse-plugin</artifactId>
-					<version>2.8</version>
+					<artifactId>maven-enforcer-plugin</artifactId>
+					<version>1.0</version>
+					<configuration>
+						<rules>
+							<requireMavenVersion>
+								<version>[3.0.2,)</version>
+							</requireMavenVersion>
+							<requireJavaVersion>
+								<version>1.6</version>
+							</requireJavaVersion>
+						</rules>
+					</configuration>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-source-plugin</artifactId>
-					<executions>
-						<execution>
-							<id>attach-sources</id>
-							<goals>
-								<goal>jar</goal>
-							</goals>
-						</execution>
-					</executions>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>2.5</version>
 				</plugin>
-			<!-- Ignore/Execute plugin execution -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-antrun-plugin</artifactId>
+					<version>1.6</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-site-plugin</artifactId>
+					<version>3.0</version>
+					<dependencies>
+						<dependency><!-- add support for ssh/scp -->
+							<groupId>org.apache.maven.wagon</groupId>
+							<artifactId>wagon-ssh</artifactId>
+							<version>1.0</version>
+						</dependency>
+					</dependencies>
+				</plugin>
+				<!--This plugin's configuration is used to store Eclipse m2e settings 
+					only. It has no influence on the Maven build itself. -->
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
@@ -105,26 +118,156 @@
 					<configuration>
 						<lifecycleMappingMetadata>
 							<pluginExecutions>
-								<!-- copy-dependency plugin -->
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-antrun-plugin</artifactId>
+										<versionRange>[1.6,)</versionRange>
+										<goals>
+											<goal>run</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-resources-plugin</artifactId>
+										<versionRange>[2.2,)</versionRange>
+										<goals>
+											<goal>testResources</goal>
+											<goal>resources</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.avro</groupId>
+										<artifactId>avro-maven-plugin</artifactId>
+										<versionRange>[1.5.3,)</versionRange>
+										<goals>
+											<goal>schema</goal>
+											<goal>protocol</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.codehaus.mojo.jspc</groupId>
+										<artifactId>jspc-maven-plugin</artifactId>
+										<versionRange>[2.0-alpha-3,)</versionRange>
+										<goals>
+											<goal>compile</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
 								<pluginExecution>
 									<pluginExecutionFilter>
 										<groupId>org.apache.maven.plugins</groupId>
 										<artifactId>maven-dependency-plugin</artifactId>
-										<versionRange>[1.0.0,)</versionRange>
+										<versionRange>[2.1,)</versionRange>
 										<goals>
 											<goal>copy-dependencies</goal>
+											<goal>build-classpath</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>
-										<ignore />
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.codehaus.mojo</groupId>
+										<artifactId>exec-maven-plugin</artifactId>
+										<versionRange>[1.2,)</versionRange>
+										<goals>
+											<goal>exec</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-jar-plugin</artifactId>
+										<versionRange>[2.3.1,)</versionRange>
+										<goals>
+											<goal>test-jar</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
 									</action>
 								</pluginExecution>
 							</pluginExecutions>
 						</lifecycleMappingMetadata>
 					</configuration>
 				</plugin>
+				<plugin>
+					<groupId>org.antlr</groupId>
+					<artifactId>antlr3-maven-plugin</artifactId>
+					<version>3.3</version>
+				</plugin>
 			</plugins>
 		</pluginManagement>
+
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<inherited>false</inherited>
+				<executions>
+					<execution>
+						<id>clean</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<phase>pre-clean</phase>
+					</execution>
+					<execution>
+						<id>default</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<phase>validate</phase>
+					</execution>
+					<execution>
+						<id>site</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<phase>pre-site</phase>
+					</execution>
+				</executions>
+			</plugin>			
+			<plugin>
+				<artifactId>maven-site-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-descriptor</id>
+						<goals>
+							<goal>attach-descriptor</goal>
+						</goals>
+						<configuration>
+							<generateReports>true</generateReports>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
 	</build>
 
 	<dependencyManagement>
@@ -207,12 +350,4 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-
-	<modules>
-		<module>common</module>
-		<module>engine</module>
-		<module>logserver</module>
-		<module>etl</module>
-		<module>rpc</module>
-	</modules>
 </project>
