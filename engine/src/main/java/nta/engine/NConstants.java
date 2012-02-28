@@ -32,6 +32,12 @@ public final class NConstants {
 	// the two constants are only used for local zookeeper
 	public static String ZOOKEEPER_DATA_DIR="zookeeper.server.datadir";
 	public static String ZOOKEEPER_LOG_DIR="zookeeper.server.logdir";
+
+  public static String ZOOKEEPER_RETRY_COUNT="zookeeper.retry.count";
+  public static int DEFAULT_ZOOKEEPER_RETRY_COUNT=3;
+
+  public static String ZOOKEEPER_RETRY_INTERVALMILLS="zookeeper.retry.intervalmills";
+  public static int DEFAULT_ZOOKEEPER_RETRY_INTERVALMILLS=1000;
 	
 	public static String CLUSTER_DISTRIBUTED="nta.cluster.distributed";
 	public static String CLUSTER_IS_LOCAL="false";
