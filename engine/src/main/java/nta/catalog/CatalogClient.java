@@ -215,7 +215,7 @@ public class CatalogClient implements CatalogService {
   }
 
   @Override
-  public final List<HostInfo> getHostByTable(final String tableId) {
+  public final List<FragmentServInfo> getHostByTable(final String tableId) {
     // TODO - to be implemented
     return null;
   }

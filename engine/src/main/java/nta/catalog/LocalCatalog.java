@@ -170,7 +170,7 @@ public class LocalCatalog implements CatalogService {
   }
 
   @Override
-  public final List<HostInfo> getHostByTable(final String tableId) {    
+  public final List<FragmentServInfo> getHostByTable(final String tableId) {    
     return catalog.getFragmentServingInfo(tableId);
   }
   

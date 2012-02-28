@@ -25,8 +25,6 @@ import org.mortbay.log.Log;
  */
 public class WorkerListener implements Runnable, MasterInterface {
   
-//  private Map<QueryUnitId, InProgressStatus> progressMap;
-  
   private final ProtoParamRpcServer rpcServer;
   private InetSocketAddress bindAddr;
   private String addr;
@@ -34,14 +32,14 @@ public class WorkerListener implements Runnable, MasterInterface {
   private QueryManager qm;
   
   public WorkerListener(Configuration conf, QueryManager qm) {
-//      Map<QueryUnitId,InProgressStatus> progressMap) {
     String confMasterAddr = conf.get(NConstants.MASTER_ADDRESS,
         NConstants.DEFAULT_MASTER_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterAddr);
     if (initIsa.getAddress() == null) {
       throw new IllegalArgumentException("Failed resolve of " + initIsa);
     }
-    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, MasterInterface.class, initIsa);
+    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, 
+        MasterInterface.class, initIsa);
     this.qm = qm;
   }
   

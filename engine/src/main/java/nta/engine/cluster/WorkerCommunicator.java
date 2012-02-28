@@ -1,21 +1,20 @@
 package nta.engine.cluster;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.zookeeper.KeeperException;
+import java.util.Map;
+import java.util.Set;
 
 import nta.catalog.proto.CatalogProtos.TabletProto;
-import nta.engine.NConstants;
 import nta.engine.LeafServerProtos.AssignTabletRequestProto;
 import nta.engine.LeafServerProtos.SubQueryRequestProto;
 import nta.engine.LeafServerProtos.SubQueryResponseProto;
+import nta.engine.NConstants;
 import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
 import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
+import nta.engine.exception.UnknownWorkerException;
 import nta.engine.ipc.AsyncWorkerClientInterface;
 import nta.engine.ipc.AsyncWorkerInterface;
 import nta.rpc.Callback;
@@ -26,38 +25,64 @@ import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkListener;
 import nta.zookeeper.ZkUtil;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.zookeeper.KeeperException;
+
+import com.google.common.collect.MapMaker;
+
 public class WorkerCommunicator extends ZkListener {
   private final Log LOG = LogFactory.getLog(LeafServerTracker.class);
 
   private ZkClient zkClient;
   private LeafServerTracker tracker;
 
-  private List<String> servers;
-  private HashMap<String, AsyncWorkerClientInterface> hm = new HashMap<String, AsyncWorkerClientInterface>();
+  private Map<String, AsyncWorkerClientInterface> hm =
+      new MapMaker().concurrencyLevel(4).makeMap();
 
   public WorkerCommunicator(ZkClient zkClient, LeafServerTracker tracker)
       throws Exception {
 
     this.zkClient = zkClient;
     this.tracker = tracker;
-    Thread.sleep(3000);
-
-    servers = this.tracker.getMembers();
-
-    for (String servername : servers) {
-      AsyncWorkerClientInterface leaf;
-
-      leaf = (AsyncWorkerClientInterface) NettyRpc.getProtoParamAsyncRpcProxy(
-          AsyncWorkerInterface.class, AsyncWorkerClientInterface.class,
-          new InetSocketAddress(extractHost(servername),
-              extractPort(servername)));
-      hm.put(servername, leaf);
-    }
   }
 
   public void start() throws Exception {
     this.zkClient.subscribe(this);
     ZkUtil.listChildrenAndWatchThem(zkClient, NConstants.ZNODE_LEAFSERVERS);
+    update(this.tracker.getMembers());
+  }
+  
+  private void update(final List<String> servers) {
+    if (hm.size() > servers.size()) {
+      HashSet<String> serverset = new HashSet<String>();
+      serverset.addAll(servers);
+      removeUpdate(serverset);
+    } else if (hm.size() < servers.size()) {
+      addUpdate(servers);
+    }
+  }
+
+  private void removeUpdate(final Set<String> servers) {
+    Iterator<String> iterator = hm.keySet().iterator();
+    while (iterator.hasNext()) {
+      String key = (String) iterator.next();
+      if (!servers.contains(key)) {
+        hm.remove(key);
+      }
+    }
+  }
+
+  private void addUpdate(final List<String> servers) {
+    for (String servername : servers) {
+      if (!hm.containsKey(servername)) {
+        hm.put(servername, 
+            (AsyncWorkerClientInterface) NettyRpc
+            .getProtoParamAsyncRpcProxy(AsyncWorkerInterface.class,
+                AsyncWorkerClientInterface.class, new InetSocketAddress(
+                    extractHost(servername), extractPort(servername))));
+      }
+    }
   }
 
   private String extractHost(String servername) {
@@ -70,9 +95,11 @@ public class WorkerCommunicator extends ZkListener {
 
   public Callback<SubQueryResponseProto> requestSubQuery(String serverName,
       SubQueryRequestProto requestProto) throws Exception {
-    Callback<SubQueryResponseProto> cb;
-    cb = new Callback<SubQueryResponseProto>();
+    Callback<SubQueryResponseProto> cb = new Callback<SubQueryResponseProto>();
     AsyncWorkerClientInterface leaf = hm.get(serverName);
+    if (leaf == null) {
+      throw new UnknownWorkerException("server name: " + serverName);
+    }
     leaf.requestSubQuery(cb, requestProto);
     return cb;
   }
@@ -84,9 +111,11 @@ public class WorkerCommunicator extends ZkListener {
 
   public Callback<SubQueryResponseProto> requestQueryUnit(String serverName,
       QueryUnitRequestProto requestProto) throws Exception {
-    Callback<SubQueryResponseProto> cb;
-    cb = new Callback<SubQueryResponseProto>();
+    Callback<SubQueryResponseProto> cb = new Callback<SubQueryResponseProto>();
     AsyncWorkerClientInterface leaf = hm.get(serverName);
+    if (leaf == null) {
+      throw new UnknownWorkerException("server name: " + serverName);
+    }
     leaf.requestQueryUnit(cb, requestProto);
     return cb;
   }
@@ -96,9 +125,11 @@ public class WorkerCommunicator extends ZkListener {
     return this.requestQueryUnit(serverName + ":" + port, requestProto);
   }
 
-  public void assignTablets(String serverName, TabletProto tablet) {
+  public void assignTablets(String serverName, TabletProto tablet) throws UnknownWorkerException {
     AsyncWorkerClientInterface leaf = hm.get(serverName);
-
+    if (leaf == null) {
+      throw new UnknownWorkerException("server name: " + serverName);
+    }
     AssignTabletRequestProto tabletRequest = AssignTabletRequestProto
         .newBuilder().setTablets(tablet).build();
 
@@ -106,10 +137,12 @@ public class WorkerCommunicator extends ZkListener {
   }
 
   public Callback<ServerStatusProto> getServerStatus(String serverName)
-      throws RemoteException, InterruptedException {
-    Callback<ServerStatusProto> cb;
-    cb = new Callback<ServerStatusProto>();
+      throws RemoteException, InterruptedException, UnknownWorkerException {
+    Callback<ServerStatusProto> cb = new Callback<ServerStatusProto>();
     AsyncWorkerClientInterface leaf = hm.get(serverName);
+    if (leaf == null) {
+      throw new UnknownWorkerException("server name: " + serverName);
+    }
     leaf.getServerStatus(cb, NullProto.newBuilder().build());
     return cb;
   }
@@ -119,36 +152,7 @@ public class WorkerCommunicator extends ZkListener {
     if (path.equals(NConstants.ZNODE_LEAFSERVERS)) {
       try {
         ZkUtil.listChildrenAndWatchThem(zkClient, NConstants.ZNODE_LEAFSERVERS);
-
-        List<String> servers = tracker.getMembers();
-
-        if (hm.size() > servers.size()) {
-          LOG.info("Leafserver stopped: delete proxy");
-          Iterator<String> iterator = hm.keySet().iterator();
-          while (iterator.hasNext()) {
-            String key = (String) iterator.next();
-            if (!servers.contains(key)) {
-              hm.remove(key);
-              break;
-            }
-          }
-        } else if (hm.size() < servers.size()) {
-          LOG.info("Leafserver added: open proxy");
-          for (String servername : servers) {
-            if (hm.get(servername) == null) {
-              AsyncWorkerClientInterface leaf;
-
-              leaf = (AsyncWorkerClientInterface) NettyRpc
-                  .getProtoParamAsyncRpcProxy(AsyncWorkerInterface.class,
-                      AsyncWorkerClientInterface.class, new InetSocketAddress(
-                          extractHost(servername), extractPort(servername)));
-              hm.put(servername, leaf);
-              break;
-            }
-          }
-        } else {
-          LOG.error("Unexpected watching!");
-        }
+        update(tracker.getMembers());
       } catch (KeeperException e) {
         LOG.error(e.getMessage(), e);
       }
@@ -156,7 +160,7 @@ public class WorkerCommunicator extends ZkListener {
 
   }
 
-  public HashMap<String, AsyncWorkerClientInterface> getProxyMap() {
+  public Map<String, AsyncWorkerClientInterface> getProxyMap() {
     return hm;
   }
 

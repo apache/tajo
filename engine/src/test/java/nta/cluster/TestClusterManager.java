@@ -1,11 +1,15 @@
 package nta.cluster;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+
 import nta.catalog.CatalogService;
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
@@ -23,9 +27,7 @@ import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.CSVFile2;
 import nta.util.FileUtil;
-import nta.zookeeper.ZkClient;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -37,8 +39,6 @@ public class TestClusterManager {
   private static ClusterManager cm;
   private static NtaTestingUtility util;
   private static WorkerCommunicator wc;
-  private static ZkClient zkClient;
-  private static Configuration conf;
   private List<String> workers;
 
   final static int CLUST_NUM = 4;
@@ -52,13 +52,11 @@ public class TestClusterManager {
     util.startMiniCluster(CLUST_NUM);
     util.startCatalogCluster();
     Thread.sleep(4000);
-    conf = util.getConfiguration();
 
     NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
     assertNotNull(master);
     wc = master.getWorkerCommunicator();
     cm = master.getClusterManager();
-    zkClient = new ZkClient(conf);
     assertNotNull(wc);
     assertNotNull(cm);
   }
@@ -71,13 +69,13 @@ public class TestClusterManager {
 
   @Test
   public void testGetOnlineWorker() throws Exception {
-    workers = cm.getOnlineWorker(zkClient);
+    workers = cm.getOnlineWorker();
     assertEquals(workers.size(), CLUST_NUM);
   }
 
   @Test
   public void testGetWorkerInfo() throws Exception {
-    workers = cm.getOnlineWorker(zkClient);
+    workers = cm.getOnlineWorker();
     for (String worker : workers) {
 
       WorkerInfo wi = cm.getWorkerInfo(worker);
@@ -139,10 +137,10 @@ public class TestClusterManager {
       local.addTable(desc);
     }
 
-    cm.updateAllTabletServingInfo(cm.getOnlineWorker(zkClient));
-    workers = cm.getOnlineWorker(zkClient);
+    cm.updateAllFragmentServingInfo(cm.getOnlineWorker());
+    workers = cm.getOnlineWorker();
 
-    List<List<Fragment>> frags = new ArrayList<List<Fragment>>();
+    List<Set<Fragment>> frags = new ArrayList<Set<Fragment>>();
 
     int quotient = tbNum / CLUST_NUM;
     int remainder = tbNum % CLUST_NUM;
@@ -155,17 +153,9 @@ public class TestClusterManager {
 
     for (int n = 0; n < CLUST_NUM; n++) {
       for (Fragment frag : frags.get(n)) {
-        List<String> workerNames = cm.getWorkerbyFrag(frag);
-        assertEquals(workerNames.size(), 3);
+        String workerName = cm.getWorkerbyFrag(frag);
+        assertNotNull(workerName);
       }
     }
   }
-
-  @Test
-  public void testgetTableDesc() {
-    for (int t = 0; t < tbNum; t++) {
-      assertNotNull(cm.getTableDesc("HostsByTable" + (t)));
-    }
-  }
-
 }

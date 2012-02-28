@@ -287,7 +287,7 @@ public class TestCatalog {
 		
 		Collection<String> tables = local.getAllTableNames();
 		Iterator<String> it = tables.iterator();
-		List<HostInfo> tabletInfoList;
+		List<FragmentServInfo> tabletInfoList;
 		int cnt = 0;
 		int len = 0;
 		TableDesc tableInfo;

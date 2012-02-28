@@ -60,6 +60,6 @@ public class TestQueryManager {
     for (int i = 0; i < pu.length; i++) {
       pu[i].join();
     }
-    assertEquals(qm.getAllProgresses().size(), 6);
+    assertEquals(6, qm.getAllProgresses().size());
   }
 }

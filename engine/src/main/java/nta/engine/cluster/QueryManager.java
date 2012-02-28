@@ -41,7 +41,8 @@ public class QueryManager {
     // TODO 
   }
   
-  public synchronized void updateProgress(QueryUnitId queryUnitId, InProgressStatus progress) {
+  public synchronized void updateProgress(QueryUnitId queryUnitId, 
+      InProgressStatus progress) {
     inProgressQueries.put(queryUnitId, progress);
   }
   

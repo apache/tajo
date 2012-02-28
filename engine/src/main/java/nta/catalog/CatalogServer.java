@@ -103,8 +103,8 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   @SuppressWarnings("unused")
   private volatile boolean isOnline = false;
   
-  private Map<String, List<HostInfo>> fragmentServingInfo
-  = new HashMap<String, List<HostInfo>>();
+  private Map<String, List<FragmentServInfo>> fragmentServingInfo
+  = new HashMap<String, List<FragmentServInfo>>();
 
   public CatalogServer(final Configuration conf) throws IOException {
     this.conf = conf;
@@ -249,7 +249,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     this.fragmentServingInfo.clear();
   }
 
-  public List<HostInfo> getFragmentServingInfo(String tableId) {
+  public List<FragmentServInfo> getFragmentServingInfo(String tableId) {
     return fragmentServingInfo.get(tableId);
   }
   
@@ -257,7 +257,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     long before = System.currentTimeMillis();
     fragmentServingInfo.clear();
     Iterator<String> it = store.getAllTableNames().iterator();
-    List<HostInfo> locInfos, servInfos;
+    List<FragmentServInfo> locInfos, servInfos;
     int index = 0;
     StringTokenizer tokenizer;
     String serverName;
@@ -265,9 +265,9 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     while (it.hasNext()) {
       TableDescProto td = (TableDescProto) store.getTable(it.next()).getProto();
       locInfos = getFragmentLocInfo(td);
-      servInfos = new ArrayList<HostInfo>();
+      servInfos = new ArrayList<FragmentServInfo>();
       // TODO: select the proper online server
-      for (HostInfo servInfo : locInfos) {
+      for (FragmentServInfo servInfo : locInfos) {
         // round robin
         if (index == onlineServers.size()) {
           index = 0;
@@ -347,7 +347,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     }
   }
   
-  private List<HostInfo> getFragmentLocInfo(TableDescProto desc) throws IOException {
+  private List<FragmentServInfo> getFragmentLocInfo(TableDescProto desc) throws IOException {
     long before = System.currentTimeMillis();
     int fileIdx, blockIdx;
     FileSystem fs = FileSystem.get(conf);
@@ -356,7 +356,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     FileStatus[] files = fs.listStatus(new Path(path+"/data"));
     BlockLocation[] blocks;
     String[] hosts;
-    List<HostInfo> tabletInfoList = new ArrayList<HostInfo>();
+    List<FragmentServInfo> tabletInfoList = new ArrayList<FragmentServInfo>();
     
     for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
       blocks = fs.getFileBlockLocations(files[fileIdx], 0, files[fileIdx].getLen());
@@ -364,7 +364,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
         hosts = blocks[blockIdx].getHosts();
 
         // TODO: select the proper serving node for block
-        tabletInfoList.add(new HostInfo(hosts[0], -1, new Fragment(desc.getId(), 
+        tabletInfoList.add(new FragmentServInfo(hosts[0], -1, new Fragment(desc.getId(), 
             files[fileIdx].getPath(), new TableMetaImpl(desc.getMeta()), 
             blocks[blockIdx].getOffset(), blocks[blockIdx].getLength())));
       }
