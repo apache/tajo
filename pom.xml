@@ -388,6 +388,11 @@
         <version>1.9.0-rc1</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>org.jboss.netty</groupId>
+        <artifactId>netty</artifactId>
+        <version>3.2.7.Final</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 </project>
