@@ -17,7 +17,6 @@ import nta.rpc.ProtoParamRpcServer;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
-import org.mortbay.log.Log;
 
 /**
  * @author jihoon

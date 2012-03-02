@@ -156,7 +156,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     this.wc.start();
     this.cm = new ClusterManager(wc, conf, tracker);
     
-    this.queryEngine = new GlobalEngine(conf, catalog, storeManager, wc, qm, this);
+    this.queryEngine = new GlobalEngine(conf, catalog, storeManager, wc, qm, cm);
     this.queryEngine.init();
     services.add(queryEngine); 
   }
@@ -237,7 +237,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   @Override
   public String executeQuery(String query) throws Exception {
     catalog.updateAllTabletServingInfo(getOnlineServer());
-    String rs = queryEngine.executeQuery(QueryIdFactory.newSubQueryId(), query);
+    String rs = queryEngine.executeQuery(query);
     if (rs == null) {
       return "";
     } else {
