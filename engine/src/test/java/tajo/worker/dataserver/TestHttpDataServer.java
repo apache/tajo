@@ -10,9 +10,7 @@ import java.net.URL;
 import java.util.Random;
 
 import nta.engine.EngineTestingUtils;
-import nta.engine.NtaTestingUtility;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -32,10 +30,6 @@ public class TestHttpDataServer {
     EngineTestingUtils.buildTestDir(TEST_DATA);
   }
 
-  @After
-  public void tearDown() throws Exception {
-  }
-
   @Test
   public final void testHttpDataServer() throws Exception {
     Random rnd = new Random();
@@ -49,7 +43,7 @@ public class TestHttpDataServer {
     HttpDataServer server = new HttpDataServer(
         NetUtils.createSocketAddr("127.0.0.1:0"), ret);
     server.start();
-    
+
     InetSocketAddress addr = server.getBindAddress();
     URL url = new URL("http://127.0.0.1:"+addr.getPort() 
         + "/testHttp");

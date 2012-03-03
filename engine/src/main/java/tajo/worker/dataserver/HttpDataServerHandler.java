@@ -83,6 +83,8 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
       sendError(ctx, INTERNAL_SERVER_ERROR);
       return;
     }
+    
+    LOG.info("GET " + file.getAbsolutePath());
 
     RandomAccessFile raf;
     try {

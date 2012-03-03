@@ -1,0 +1,183 @@
+package tajo.datachannel;
+
+import static org.jboss.netty.channel.Channels.pipeline;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.nio.channels.FileChannel;
+import java.util.concurrent.Executors;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jboss.netty.bootstrap.ClientBootstrap;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
+import org.jboss.netty.handler.codec.http.HttpChunk;
+import org.jboss.netty.handler.codec.http.HttpClientCodec;
+import org.jboss.netty.handler.codec.http.HttpContentDecompressor;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
+import org.jboss.netty.handler.codec.http.HttpMethod;
+import org.jboss.netty.handler.codec.http.HttpRequest;
+import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.jboss.netty.handler.codec.http.HttpVersion;
+
+/**
+ * Fetcher fetches data from a given uri via HTTP protocol and stores them into
+ * a specific file. It aims at asynchronous and efficient data transmit.
+ * 
+ * @author Hyunsik Choi
+ */
+public class Fetcher {
+  private final static Log LOG = LogFactory.getLog(Fetcher.class);
+  
+  private final URI uri;
+  private final File file;
+
+  private final String host;
+  private int port;
+
+  public Fetcher(URI uri, File file) {
+    this.uri = uri;
+    this.file = file;
+
+    String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
+    this.host = uri.getHost() == null ? "localhost" : uri.getHost();
+    this.port = uri.getPort();
+    if (port == -1) {
+      if (scheme.equalsIgnoreCase("http")) {
+        this.port = 80;
+      } else if (scheme.equalsIgnoreCase("https")) {
+        this.port = 443;
+      }
+    }
+  }
+
+  public void get() throws IOException {
+    ClientBootstrap bootstrap = new ClientBootstrap(
+        new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
+            Executors.newCachedThreadPool()));
+    ChannelPipelineFactory factory = new HttpClientPipelineFactory(file);
+    bootstrap.setPipelineFactory(factory);
+
+    ChannelFuture future = bootstrap.connect(new InetSocketAddress(host, port));
+
+    // Wait until the connection attempt succeeds or fails.
+    Channel channel = future.awaitUninterruptibly().getChannel();
+    if (!future.isSuccess()) {
+      future.getCause().printStackTrace();
+      bootstrap.releaseExternalResources();
+      return;
+    }
+
+    // Prepare the HTTP request.
+    HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
+        HttpMethod.GET, uri.getPath());
+    request.setHeader(HttpHeaders.Names.HOST, host);
+    request.setHeader(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
+    request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING,
+        HttpHeaders.Values.GZIP);
+
+    // Send the HTTP request.
+    channel.write(request);
+
+    // Wait for the server to close the connection.
+    channel.getCloseFuture().awaitUninterruptibly();
+
+    // Shut down executor threads to exit.
+    bootstrap.releaseExternalResources();
+  }
+
+  public static class HttpClientHandler extends SimpleChannelUpstreamHandler {
+    private volatile boolean readingChunks;
+    private final RandomAccessFile raf;
+    private final FileChannel fc;
+    private long length = -1;
+    
+    public HttpClientHandler(File file) throws FileNotFoundException {
+      this.raf = new RandomAccessFile(file, "rw");
+      this.fc = raf.getChannel();
+    }
+
+    @Override
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
+        throws Exception {
+      if (!readingChunks) {
+        HttpResponse response = (HttpResponse) e.getMessage();
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("STATUS: ")
+          .append(response.getStatus()).append(", VERSION: ") 
+          .append(response.getProtocolVersion())
+          .append(", HEADER: ");
+
+        if (!response.getHeaderNames().isEmpty()) {
+          for (String name : response.getHeaderNames()) {
+            for (String value : response.getHeaders(name)) {
+              sb.append(name + " = " + value);
+              if (this.length == -1 && name.equals("Content-Length") == true) {
+                this.length = Long.valueOf(value);
+              }
+            }
+          }
+        }
+        LOG.info(sb.toString());
+
+        if (response.getStatus().getCode() == 200 && response.isChunked()) {
+          readingChunks = true;
+        } else {
+          ChannelBuffer content = response.getContent();
+          if (content.readable()) {
+            fc.write(content.toByteBuffer());
+          }
+        }
+      } else {
+        HttpChunk chunk = (HttpChunk) e.getMessage();
+        if (chunk.isLast()) {
+          readingChunks = false;
+          long fileLength = fc.position();
+          fc.close();
+          raf.close();
+          if (fileLength == length) {
+            LOG.info("Data fetch is done (total received bytes: " 
+                + fileLength +")");
+          } else {
+            LOG.info("Data fetch is done, but cannot get all data " +
+                "(received/total: " + fileLength + "/" + length + ")");
+          }
+        } else {
+          fc.write(chunk.getContent().toByteBuffer());
+        }
+      }
+    }
+  }
+
+  public static class HttpClientPipelineFactory implements
+      ChannelPipelineFactory {
+    private final File file;
+    public HttpClientPipelineFactory(File file) {
+      this.file = file;
+    }
+    
+    @Override
+    public ChannelPipeline getPipeline() throws Exception {
+      ChannelPipeline pipeline = pipeline();
+
+      pipeline.addLast("codec", new HttpClientCodec());
+      pipeline.addLast("inflater", new HttpContentDecompressor());
+      pipeline.addLast("handler", new HttpClientHandler(file));
+      return pipeline;
+    }
+  }
+}
