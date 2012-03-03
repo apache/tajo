@@ -5,7 +5,6 @@ package nta.engine;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
@@ -22,8 +21,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-
-import tajo.cli.TajoCli;
 
 /**
  * @author Hyunsik Choi
@@ -390,10 +387,9 @@ public class NtaTestingUtility {
 	 */
 	public static void main(String[] args) throws Exception {
 		NtaTestingUtility cluster = new NtaTestingUtility();
-		cluster.startMiniCluster(1);
+		cluster.startMiniCluster(4);
 		
-		@SuppressWarnings("unused")
-    TajoCli cli = new TajoCli(cluster.getConfiguration(), new String [] {
-		  "-z 21811"}, System.in, new PrintWriter(System.out));
-		}
+		Thread.sleep(3000);
+		cluster.getMiniNtaEngineCluster().getLeafServer(3).shutdown("For Test");
+	}
 }

@@ -9,10 +9,13 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import nta.catalog.CatalogClient;
 import nta.conf.NtaConf;
@@ -45,7 +48,9 @@ import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.MapMaker;
+import com.google.common.collect.Maps;
 
 /**
  * @author Hyunsik Choi
@@ -170,7 +175,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           LOG.error(e);
         }
       }
-
+      rpcServer.shutdown();
+      queryLauncher.shutdown();      
       masterAddrTracker.stop();
       catalog.close();
       zkClient.close();
@@ -272,6 +278,13 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     SubQueryResponseProto.Builder res = SubQueryResponseProto.newBuilder();
     return res.build();
   }
+  
+  @VisibleForTesting
+  void requestTestQuery(PhysicalExec exec) {
+    InProgressQuery newQuery = new InProgressQuery(
+        QueryIdFactory.newQueryUnitId(), exec);
+    queryLauncher.addSubQuery(newQuery);
+  }
 
   @Override
   public void assignTablets(AssignTabletRequestProto request) {
@@ -318,28 +331,53 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   
   private class QueryLauncher extends Thread {
     private final int coreNum = Runtime.getRuntime().availableProcessors();
-    private final BlockingQueue<InProgressQuery> queriesToLaunch
+    private final BlockingQueue<InProgressQuery> blockingQueue
       = new ArrayBlockingQueue<InProgressQuery>(coreNum);
     private final ExecutorService executor
       = Executors.newFixedThreadPool(coreNum);
+    private boolean stopped = false;
+    @SuppressWarnings("rawtypes")
+    private Map<InProgressQuery, Future> futures =
+      Maps.newConcurrentMap();
+    
     
     public void addSubQuery(InProgressQuery query) {
-      this.queriesToLaunch.add(query);
+      this.blockingQueue.add(query);
     }
     
+    public void shutdown() {
+      stopped = true;
+    }
+    
+    @SuppressWarnings("rawtypes")
     @Override
     public void run() {
       try {
         LOG.info("Started the query launcher (maximum concurrent tasks: " 
             + coreNum);
-        while (!Thread.interrupted()) {
+        while (!Thread.interrupted() && !stopped) {
           // wait for add
-          InProgressQuery q = queriesToLaunch.take();
-          queries.put(q.qid, q);
-          executor.submit(q);
+          InProgressQuery q = blockingQueue.poll(1000, TimeUnit.MILLISECONDS);
+          if (q != null) {
+            queries.put(q.qid, q);
+            futures.put(q, executor.submit(q));
+          }
+          
+          for (Entry<InProgressQuery,Future> entry : futures.entrySet()) {
+            if (entry.getValue().isDone()) {
+              futures.remove(entry.getKey());
+            }
+          }
         }
       } catch (Throwable t) {
         LOG.error(t);
+      } finally {
+        executor.shutdown();
+        for (Entry<InProgressQuery,Future> entry : futures.entrySet()) {
+          if (!entry.getValue().isDone()) {
+            entry.getKey().abort();
+          }
+        }
       }
     }
   }
@@ -349,6 +387,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     private final PhysicalExec executor;
     private float progress;
     private QueryStatus status;
+    private boolean stopped = false;
+    private boolean aborted = false;
     
     private InProgressQuery(QueryUnitId qid, PhysicalExec exec) {
       this.qid = qid;
@@ -368,21 +408,51 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     public QueryStatus getStatus() {
       return this.status;
     }
+    
+    public void abort() {
+      stopped = true;
+      aborted = true;
+      synchronized (this) {
+        this.notifyAll();
+      }
+    }
 
     @Override
     public void run() {
       try {
         this.status = QueryStatus.INPROGRESS;
         LOG.info("Query status of " + qid + " is changed to " + status);
-        while(executor.next() != null) {}
+        while(executor.next() != null && !stopped) {          
+        }
       } catch (IOException e) {
         this.status = QueryStatus.FAILED;
         this.progress = 0.0f;
-        LOG.error("Query unit ("+qid+") is failed", e);
+        LOG.info("Query status of " + qid + " is changed to "   + QueryStatus.FAILED);
       } finally {
-        this.progress = 1.0f;
-        this.status = QueryStatus.FINISHED;
+        if (aborted == true) {
+          this.progress = 0.0f;
+          this.status = QueryStatus.ABORTED;
+          LOG.info("Query status of " + qid + " is changed to " 
+              + QueryStatus.ABORTED);
+        } else {
+          this.progress = 1.0f;
+          this.status = QueryStatus.FINISHED;
+          LOG.info("Query status of " + qid + " is changed to " 
+              + QueryStatus.FINISHED);
+        }
       }
+    }
+    
+    public int hashCode() {
+      return this.qid.hashCode();
+    }
+    
+    public boolean equals(Object obj) {
+      if (obj instanceof InProgressQuery) {
+        InProgressQuery other = (InProgressQuery) obj;
+        return this.qid.equals(other.qid);
+      }      
+      return false;
     }
   }
 

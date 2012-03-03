@@ -181,9 +181,6 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
       if (!this.stopped) {
         while (!this.stopped) {
           Thread.sleep(2000);
-          
-          LOG.info("== Master's periodical report ==");
-          LOG.info("* Progress: \n" +qm.getAllProgresses());
         }
       }
     } catch (Throwable t) {

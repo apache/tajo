@@ -17,8 +17,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.KeeperException;
 
 /**
- * @author hyunsik
- *
+ * @author Hyunsik Choi
  */
 public class LeafServerTracker extends ZkListener {
 	private final Log LOG = LogFactory.getLog(LeafServerTracker.class); 
@@ -56,7 +55,7 @@ public class LeafServerTracker extends ZkListener {
 	public void nodeDeleted(String path) {
 		if (path.startsWith(LEAF_SERVERS)) {
 			String serverName = ZkUtil.getNodeName(path);
-			LOG.info("RegionServer ephemeral node deleted, processing expiration [" +
+			LOG.info("LeafServer ephemeral node deleted, processing expiration [" +
 					serverName + "]");
 			ServerName sn = ServerName.create(serverName);
 			// TODO - node updates		      
