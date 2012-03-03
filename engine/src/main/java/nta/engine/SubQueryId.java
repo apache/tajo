@@ -50,6 +50,10 @@ ProtoObject<SubQueryIdProto> {
     viaProto = true;
   }
   
+  public int getId() {
+    return this.id;
+  }
+  
   public final String toString() {
     if (finalId == null) {
       finalId = queryId.toString() + QueryId.SEPERATOR 

@@ -37,6 +37,7 @@ import nta.engine.query.TQueryEngine;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
 import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
+import nta.storage.StorageUtil;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkUtil;
 
@@ -44,6 +45,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
@@ -79,8 +82,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   private MasterInterface master;
 
   // Query Processing
-  @SuppressWarnings("unused")
+  private FileSystem localFS;
   private FileSystem defaultFS;
+  private final Path workDirPath;
 
   private CatalogClient catalog;
   private TQueryEngine queryEngine;
@@ -93,9 +97,16 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
 
   public LeafServer(final Configuration conf) {
     this.conf = conf;
+    this.workDirPath = new Path(conf.get(NConstants.WORKER_TMP_DIR));    
   }
   
   private void prepareServing() throws IOException {
+    localFS = LocalFileSystem.get(this.workDirPath.toUri(), conf);
+    if (!localFS.exists(workDirPath)) {
+      localFS.mkdirs(workDirPath);
+      LOG.info("local temporal dir (" + workDirPath + ") is created");
+    }
+    
     // Server to handle client requests.
     String hostname = DNS.getDefaultHost(
         conf.get("nta.master.dns.interface", "default"),
@@ -144,6 +155,14 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     InetSocketAddress addr = NetUtils.createSocketAddr(new String(master));
     this.master = (MasterInterface) NettyRpc.getProtoParamBlockingRpcProxy(
         MasterInterface.class, addr);
+  }
+  
+  public FileSystem getLocalFS() {
+    return this.localFS;
+  }
+  
+  public FileSystem getDefaultFS() {
+    return this.defaultFS;
   }
 
   public void run() {
@@ -263,6 +282,30 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     // TODO - abortRequest : to be implemented
     shutdown(reason);
   }
+   
+  public Path createLocalDir(String...subdir) throws IOException {
+    Path tmpDir = StorageUtil.concatPath(workDirPath, subdir);
+    localFS.mkdirs(tmpDir);
+    
+    return tmpDir;
+  }
+  
+  public Path createQueryTmpDir(QueryUnitId quid) throws IOException {
+    Path path = createLocalDir(getQueryUnitDir(quid).toString());
+    
+    return path;
+  }
+  
+  public static Path getQueryUnitDir(QueryUnitId quid) {
+    Path workDir = 
+        StorageUtil.concatPath(            
+            quid.getQueryStepId().getSubQueryId()
+            .getQueryId().toString(),
+            String.valueOf(quid.getQueryStepId().getSubQueryId().getId()),
+            String.valueOf((quid.getQueryStepId().getId())),
+            String.valueOf(quid.getId()));
+    return workDir;
+  }
 
   // ////////////////////////////////////////////////////////////////////////////
   // LeafServerInterface
@@ -271,7 +314,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   public SubQueryResponseProto requestQueryUnit(QueryUnitRequestProto proto)
       throws Exception {
     QueryUnitRequest request = new QueryUnitRequestImpl(proto);
-    PhysicalExec executor = queryEngine.createPlan(request);    
+    Path localQueryTmpDir = createQueryTmpDir(request.getId());
+    PhysicalExec executor = queryEngine.createPlan(request, localQueryTmpDir);    
     InProgressQuery newQuery = new InProgressQuery(request.getId(), executor);
     queryLauncher.addSubQuery(newQuery);
 

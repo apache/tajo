@@ -75,7 +75,8 @@ public class TQueryEngine {
     return exec;
   }
   
-  public PhysicalExec createPlan(QueryUnitRequest request) throws InternalException {
+  public PhysicalExec createPlan(QueryUnitRequest request, Path localTmpDir) 
+      throws InternalException {
     SubqueryContext ctx = ctxFactory.create(request);
     LogicalNode plan = GsonCreator.getInstance().
         fromJson(request.getSerializedData(), LogicalNode.class);

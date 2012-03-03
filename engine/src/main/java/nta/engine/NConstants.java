@@ -49,6 +49,10 @@ public final class NConstants {
 	
 	public static String ENGINE_DATA_DIR="engine.data.dir";
 	
+	public static String WORKER_BASE_DIR="tajo.worker.basedir";
+	
+	public static String WORKER_TMP_DIR="tajo.worker.tmpdir";
+	
 	public static String ENGINE_CATALOG_FILENAME = "catalog.tex";
 	public static String ENGINE_TABLEMETA_FILENAME = ".meta";
 	

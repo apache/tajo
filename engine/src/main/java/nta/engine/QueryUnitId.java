@@ -47,6 +47,10 @@ ProtoObject<QueryUnitIdProto> {
     this.id = Integer.valueOf(finalId.substring(i+1));
   }
   
+  public int getId() {
+    return id;
+  }
+  
   public QueryStepId getQueryStepId() {
     return this.stepId;
   }

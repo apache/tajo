@@ -28,6 +28,10 @@ private static final NumberFormat idFormat = NumberFormat.getInstance();
     subQueryId = new SubQueryId(finalId.substring(0, i));
     id = Integer.valueOf(finalId.substring(i+1));
   }
+  
+  public int getId() {
+    return this.id;
+  }
 
   @Override
   public int compareTo(QueryStepId o) {

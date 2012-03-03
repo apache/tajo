@@ -180,7 +180,11 @@ public class NtaTestingUtility {
         "jdbc:derby:"+clusterTestBuildDir.getAbsolutePath()+"/db");
     LOG.info("derby repository is set to "+conf.get(TConstants.JDBC_URI));
 		c.set(NConstants.ENGINE_BASE_DIR, 
-		    getMiniDFSCluster().getFileSystem().getUri()+"/tajo");		
+		    getMiniDFSCluster().getFileSystem().getUri()+"/tajo");
+		c.set(NConstants.WORKER_BASE_DIR, 
+		    clusterTestBuildDir.getAbsolutePath()+"/worker");
+		c.set(NConstants.WORKER_TMP_DIR, 
+        clusterTestBuildDir.getAbsolutePath()+"/worker/tmp");
 		this.engineCluster = new MiniNtaEngineCluster(c, numSlaves);
 		
 		LOG.info("Mini Tajo cluster is up");
@@ -390,6 +394,5 @@ public class NtaTestingUtility {
 		cluster.startMiniCluster(4);
 		
 		Thread.sleep(3000);
-		cluster.getMiniNtaEngineCluster().getLeafServer(3).shutdown("For Test");
 	}
 }
