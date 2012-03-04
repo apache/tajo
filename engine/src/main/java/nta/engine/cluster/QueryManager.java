@@ -40,8 +40,8 @@ public class QueryManager {
       return this;
     }
     
-    public WaitStatus setExpire(long expire) {
-      this.expire = expire;
+    public WaitStatus reset() {
+      this.expire = EXPIRE_TIME;
       return this;
     }
     

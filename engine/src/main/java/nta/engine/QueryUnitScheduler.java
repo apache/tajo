@@ -47,8 +47,6 @@ public class QueryUnitScheduler extends Thread {
   private final QueryManager qm;
   private final LogicalQueryUnit plan;
   
-  private Random rand = new Random();
-
   private BlockingQueue<QueryUnit> pendingQueue = 
       new LinkedBlockingQueue<QueryUnit>();
   private BlockingQueue<QueryUnit> waitQueue = 
@@ -113,17 +111,22 @@ public class QueryUnitScheduler extends Thread {
     while (wait) {
       Thread.sleep(WAIT_PERIOD);
       wait = false;
-      LOG.info("><><><><><><>< InProgressQueries: " + qm.getAllProgresses());
-      for (QueryUnit unit: waitQueue) {
+      Iterator<QueryUnit> it = waitQueue.iterator();
+      while (it.hasNext()) {
+        QueryUnit unit = it.next();
         WaitStatus inprogress = qm.getWaitStatus(unit.getId());
         if (inprogress != null) {
-          inprogress.update(WAIT_PERIOD);
+          LOG.info("==== uid: " + unit.getId() + 
+              " status: " + inprogress.getInProgressStatus() + 
+              " leaf time: " + inprogress.getLeftTime());
           if (inprogress.getInProgressStatus().
               getStatus() != QueryStatus.FINISHED) {
+            inprogress.update(WAIT_PERIOD);
             wait = true;
             if (inprogress.getLeftTime() <= 0) {
               waitQueue.remove(unit);
               requestBackupTask(unit);
+              inprogress.reset();
             }
           }
         } else {
@@ -135,17 +138,14 @@ public class QueryUnitScheduler extends Thread {
   
   private void requestBackupTask(QueryUnit q) throws Exception {
     FileSystem fs = sm.getFileSystem();
-    fs.delete(sm.getTablePath(q.getOutputName()), true);
+    Path path = new Path(sm.getTablePath(q.getOutputName()), 
+        q.getId().toString());
+    fs.delete(path, true);
     q.setHost(getRandomHost());
-    LOG.info("QueryUnit " + q.getId() + " is assigned to " + q.getHost() + " as the backup task");
+    LOG.info("QueryUnit " + q.getId() + " is assigned to " + 
+        q.getHost() + " as the backup task");
     pendingQueue.add(q);
     requestPendingQueryUnits();
-  }
-  
-  private String getRandomHost() 
-      throws Exception {
-    List<String> serverNames = cm.getOnlineWorker();
-    return serverNames.get(rand.nextInt(serverNames.size()));
   }
   
   @Override
@@ -158,5 +158,12 @@ public class QueryUnitScheduler extends Thread {
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+  
+  private String getRandomHost() 
+      throws Exception {
+    Random rand = new Random();
+    List<String> serverNames = cm.getOnlineWorker();
+    return serverNames.get(rand.nextInt(serverNames.size()));
   }
 }

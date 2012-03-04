@@ -3,6 +3,7 @@
  */
 package nta.engine.query;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
@@ -19,6 +20,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
+import nta.engine.LeafServer;
 import nta.engine.NConstants;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
@@ -36,8 +38,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * @author jihoon
  *
@@ -53,6 +53,8 @@ public class TestGlobalEngine {
 	
 	private String query = "select deptname, sum(score) from score group by deptname having sum(score) > 30"; // 9
 	private static Map<String, Integer> result;
+	
+	private String tablename;
 
 	@Before
 	public void setup() throws Exception {
@@ -102,11 +104,9 @@ public class TestGlobalEngine {
 	}
 	
 	@Test
-	public void test() throws Exception {
-	  Thread.sleep(3000);
+	public void testExecuteQuery() throws Exception {
 	  String tablename = master.executeQuery(query);
     assertNotNull(tablename);
-	  LOG.info("====== Output table name is " + tablename);
 	  Scanner scanner = sm.getTableScanner(tablename);
 	  Tuple tuple = null;
 	  String deptname;
@@ -115,6 +115,45 @@ public class TestGlobalEngine {
 	    assertEquals(result.get(deptname).intValue(), 
 	        tuple.get(1).asInt());
 	  }
-	  LOG.info("result: " + result);
+	}
+	
+	@Test
+	public void testFaultTolerant() throws Exception {
+	  Thread t1 = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          Thread.sleep(1000);
+          LeafServer leaf = util.getMiniNtaEngineCluster().getLeafServer(0);
+          LOG.info(">>> " + leaf.getServerName() + " will be halted!!");
+          leaf.shutdown(">>> Aborted! <<<");
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+	  Thread t2 = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          tablename = master.executeQuery(query);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    });
+	  t2.start();
+	  t1.start();
+	  t2.join();
+	  t1.join();
+	  assertNotNull(tablename);
+	  Scanner scanner = sm.getTableScanner(tablename);
+    Tuple tuple = null;
+    String deptname;
+    while ((tuple=scanner.next()) != null) {
+      deptname = tuple.get(0).asChars();
+      assertEquals(result.get(deptname).intValue(), 
+          tuple.get(1).asInt());
+    }
 	}
 }
