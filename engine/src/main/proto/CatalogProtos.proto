@@ -52,12 +52,14 @@ message TabletProto {
 	required int64 startOffset = 3;
 	required int64 length = 4;
 	required TableProto meta = 5;
+	optional TableStatProto stat = 6;
 }
 
 message TableProto {
     required SchemaProto schema = 1;
     required StoreType storeType = 2;
     required KeyValueSetProto params = 3;
+    optional TableStatProto stat = 6;
 }
 
 message TableDescProto {
@@ -124,6 +126,15 @@ message ContainFunctionRequest {
 	repeated DataType parameterTypes = 2;
 }
 
-message TableStatisticProto {
-	required int32 rowNum = 1;
+message TableStatProto {
+	required int64 numRows = 1;
+	optional int32 numBlocks = 2;
+	optional int32 numPartitions = 3;
+	optional int64 avgRows = 4;
+	repeated ColumnStatProto colStat = 5;
+}
+
+message ColumnStatProto {
+    required int64 numDistVal = 1;
+    required int64 numNulls = 2;
 }
