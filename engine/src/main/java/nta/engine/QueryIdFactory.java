@@ -69,7 +69,7 @@ public class QueryIdFactory {
     if (nextQueryStepId.get() ==-1) {
       newQueryStepId();
     }
-    queryUnitId = new QueryUnitId(queryStepId, 
+    queryUnitId = new QueryUnitId(logicalQueryUnitId, 
         nextQueryUnitId.incrementAndGet());
     return queryUnitId;
   }

@@ -5,7 +5,6 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -28,6 +27,8 @@ import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.CSVFile2;
 import nta.util.FileUtil;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -36,6 +37,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestClusterManager {
+  static final Log LOG = LogFactory.getLog(TestClusterManager.class);
+  
   private static ClusterManager cm;
   private static NtaTestingUtility util;
   private static WorkerCommunicator wc;
@@ -127,7 +130,7 @@ public class TestClusterManager {
       fos.close();
 
       fos = fs.create(new Path(tbPath, "data/table.csv"));
-      tupleNum = random.nextInt(49) + 100001;
+      tupleNum = random.nextInt(49) + 10000001;
       for (j = 0; j < tupleNum; j++) {
         fos.writeBytes(tuples[0] + "\n");
       }
@@ -142,13 +145,9 @@ public class TestClusterManager {
 
     List<Set<Fragment>> frags = new ArrayList<Set<Fragment>>();
 
-    int quotient = tbNum / CLUST_NUM;
-    int remainder = tbNum % CLUST_NUM;
-
     for (int n = 0; n < CLUST_NUM; n++) {
+      LOG.info(">>>>> " + cm.getFragbyWorker(workers.get(n)).size());
       frags.add(cm.getFragbyWorker(workers.get(n)));
-      int isRemain = (n < remainder) ? 1 : 0;
-      assertEquals(frags.get(n).size(), quotient + isRemain);
     }
 
     for (int n = 0; n < CLUST_NUM; n++) {

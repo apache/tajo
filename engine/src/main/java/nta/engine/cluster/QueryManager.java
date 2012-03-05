@@ -59,23 +59,17 @@ public class QueryManager {
   }
   
   private Map<QueryId, Query> queries;
+  private Map<ServerName, QueryUnit> queryAssignInfo;
   private Map<QueryUnitId, WaitStatus> inProgressQueries;
   
   public QueryManager() {
     queries = new MapMaker().concurrencyLevel(4).makeMap();
+    queryAssignInfo = new MapMaker().concurrencyLevel(4).makeMap();
     inProgressQueries = new MapMaker().concurrencyLevel(4).makeMap();
   }
   
   public synchronized void addQuery(Query q) {
     queries.put(q.getId(), q);
-  }
-  
-  public void addSubQuery(SubQuery subQuery) {
-    // TODO
-  }
-  
-  public void addQueryUnit(QueryUnit queryUnit) {
-    // TODO 
   }
   
   public synchronized void updateProgress(QueryUnitId queryUnitId, 
@@ -93,11 +87,8 @@ public class QueryManager {
   }
   
   public SubQuery getSubQuery(SubQueryId subQueryId) {
-    return null;
-  }
-  
-  public QueryUnit getQueryUnit(QueryUnitId queryUnitId) {
-    return null;
+    Query query = queries.get(subQueryId.getQueryId());
+    return query.getSubQuery(subQueryId);
   }
   
   public WaitStatus getWaitStatus(QueryUnitId unitId) {

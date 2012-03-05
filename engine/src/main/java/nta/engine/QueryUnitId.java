@@ -17,7 +17,7 @@ ProtoObject<QueryUnitIdProto> {
     format.setMinimumIntegerDigits(6);
   }
   
-  private QueryStepId stepId = null;
+  private LogicalQueryUnitId logicalId = null;
   private int id = -1;
   private String finalId = null;
   
@@ -29,9 +29,9 @@ ProtoObject<QueryUnitIdProto> {
     builder = QueryUnitIdProto.newBuilder();
   }
   
-  public QueryUnitId(final QueryStepId stepId,
+  public QueryUnitId(final LogicalQueryUnitId logicalId,
       final int id) {
-    this.stepId = stepId;
+    this.logicalId = logicalId;
     this.id = id;
   }
   
@@ -43,7 +43,7 @@ ProtoObject<QueryUnitIdProto> {
   public QueryUnitId(final String finalId) {
     this.finalId = finalId;
     int i = finalId.lastIndexOf(QueryId.SEPERATOR);
-    this.stepId = new QueryStepId(finalId.substring(0, i));
+    this.logicalId = new LogicalQueryUnitId(finalId.substring(0, i));
     this.id = Integer.valueOf(finalId.substring(i+1));
   }
   
@@ -51,14 +51,14 @@ ProtoObject<QueryUnitIdProto> {
     return id;
   }
   
-  public QueryStepId getQueryStepId() {
-    return this.stepId;
+  public LogicalQueryUnitId getLogicalQueryUnitId() {
+    return this.logicalId;
   }
   
   @Override
   public final String toString() {
     if (finalId == null) {
-      finalId = this.stepId + 
+      finalId = this.logicalId + 
           QueryId.SEPERATOR + format.format(id);
     }
     return this.finalId;
@@ -85,8 +85,8 @@ ProtoObject<QueryUnitIdProto> {
   
   private void mergeProtoToLocal() {
     QueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
-    if (stepId == null) {
-      stepId = new QueryStepId(p.getQueryStepId());
+    if (logicalId == null) {
+      logicalId = new LogicalQueryUnitId(p.getLogicalQueryUnitId());
     }
     if (id == -1) {
       id = p.getId();
@@ -102,8 +102,8 @@ ProtoObject<QueryUnitIdProto> {
     if (builder == null) {
       builder = QueryUnitIdProto.newBuilder(proto);
     }
-    if (this.stepId != null) {
-      builder.setQueryStepId(stepId.toString());
+    if (this.logicalId != null) {
+      builder.setLogicalQueryUnitId(logicalId.getProto());
     }
     if (this.id != -1) {
       builder.setId(id);

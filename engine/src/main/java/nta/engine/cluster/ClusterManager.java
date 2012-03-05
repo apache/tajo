@@ -2,14 +2,15 @@ package nta.engine.cluster;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.PriorityQueue;
+import java.util.Random;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.concurrent.ExecutionException;
 
 import nta.catalog.CatalogClient;
@@ -21,6 +22,7 @@ import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto.Disk;
 import nta.engine.exception.UnknownWorkerException;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.planner.global.QueryUnit;
 import nta.rpc.RemoteException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -43,7 +45,7 @@ public class ClusterManager {
     public long freeSpace;
     public long totalSpace;
   }
-
+  
   private Configuration conf;
   private final WorkerCommunicator wc;
   private final CatalogClient catalog;
@@ -95,41 +97,69 @@ public class ClusterManager {
   public Set<Fragment> getFragbyWorker(String workerName) throws Exception {
     return fragLoc.get(workerName);
   }
+  
+  private class FragmentAssignInfo 
+  implements Comparable<FragmentAssignInfo> {
+    String serverName;
+    int fragmentNum;
+    
+    public FragmentAssignInfo(String serverName, int fragmentNum) {
+      this.serverName = serverName;
+      this.fragmentNum = fragmentNum;
+    }
+    
+    public FragmentAssignInfo updateFragmentNum() {
+      this.fragmentNum++;
+      return this;
+    }
+    
+    @Override
+    public int compareTo(FragmentAssignInfo o) {
+      return this.fragmentNum - o.fragmentNum;
+    }
+  }
 
   public void updateAllFragmentServingInfo(List<String> onlineServers)
       throws Exception {
     fragLoc.clear();
     workerLoc.clear();
     
+    Map<String, PriorityQueue<FragmentAssignInfo>> servers = 
+        new HashMap<String, PriorityQueue<FragmentAssignInfo>>();
+    PriorityQueue<FragmentAssignInfo> assignInfos;
+    String host;
+    for (String serverName : onlineServers) {
+      host = serverName.split(":")[0];
+      if (servers.containsKey(host)) {
+        assignInfos = servers.get(host);
+      } else {
+        assignInfos = new PriorityQueue<FragmentAssignInfo>();
+      }
+      assignInfos.add(new FragmentAssignInfo(serverName, 0));
+      servers.put(host, assignInfos);
+    }
+    
     Iterator<String> it = catalog.getAllTableNames().iterator();
     List<FragmentServInfo> locInfos;
-    List<FragmentServInfo> servInfos;
-    int index = 0;
-    StringTokenizer tokenizer;
+    FragmentAssignInfo assignInfo;
     while (it.hasNext()) {
       TableDescProto td = (TableDescProto) catalog.getTableDesc(it.next())
           .getProto();
       locInfos = getFragmentLocInfo(td);
-      servInfos = new ArrayList<FragmentServInfo>();
 
       // TODO: select the proper online server
       for (FragmentServInfo locInfo : locInfos) {
-        // round robin
-        if (index == onlineServers.size()) {
-          index = 0;
-        }
-        String workerName = onlineServers.get(index++);
-        tokenizer = new StringTokenizer(workerName, ":");
-        locInfo.setHost(tokenizer.nextToken(),
-            Integer.valueOf(tokenizer.nextToken()));
-        servInfos.add(locInfo);
+        assignInfos = servers.get(locInfo.getHostName());
+        assignInfo = assignInfos.poll();
+        locInfo.setHost(assignInfo.serverName);
+        assignInfos.add(assignInfo.updateFragmentNum());
 
-        setFragLoc(locInfo, workerName);
+        updateFragLoc(locInfo, assignInfo.serverName);
       }
     }
   }
 
-  private void setFragLoc(FragmentServInfo servInfo, String workerName) {
+  private void updateFragLoc(FragmentServInfo servInfo, String workerName) {
     HashSet<Fragment> tempFrag;
     if (fragLoc.containsKey(workerName)) {
       tempFrag = fragLoc.get(workerName);
@@ -168,5 +198,58 @@ public class ClusterManager {
       }
     }
     return fragmentInfoList;
+  }
+  
+  /**
+   * Select a random worker
+   * 
+   * @return
+   * @throws Exception
+   */
+  public String getRandomHost() 
+      throws Exception {
+    Random rand = new Random();
+    List<String> serverNames = this.getOnlineWorker();
+    return serverNames.get(rand.nextInt(serverNames.size()));
+  }
+  
+  /**
+   * Select a worker which servers most fragments of the query unit
+   * 
+   * @param unit
+   * @return
+   * @throws Exception
+   */
+  public String getProperHost(QueryUnit unit) throws Exception {
+    // unit의 fragment 중 가장 많은 fragment를 담당하는 worker에게 할당
+
+    Map<String, Integer> map = new HashMap<String, Integer>();
+    String serverName;
+    // fragment를 담당하는 worker를 담당하는 fragment의 수에 따라 정렬
+    for (Fragment frag : unit.getFragments()) {
+      serverName = this.getWorkerbyFrag(frag);
+      if (map.containsKey(serverName)) {
+        map.put(serverName, map.get(serverName)+1);
+      } else {
+        map.put(serverName, 1);
+      }
+    }
+    PriorityQueue<FragmentAssignInfo> pq = 
+        new PriorityQueue<ClusterManager.FragmentAssignInfo>();
+    Iterator<Entry<String,Integer>> it = map.entrySet().iterator();
+    Entry<String,Integer> e;
+    while (it.hasNext()) {
+      e = it.next();
+      pq.add(new FragmentAssignInfo(e.getKey(), e.getValue()));
+    }
+    
+    List<String> serverNames = this.getOnlineWorker();
+    // 가장 많은 fragment를 담당하는 worker부터 online worker에 있는지 확인
+    for (FragmentAssignInfo assignInfo : pq) {
+      if (serverNames.contains(assignInfo.serverName)) {
+        return assignInfo.serverName;
+      }
+    }
+    return null;
   }
 }

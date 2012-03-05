@@ -19,6 +19,6 @@ message LogicalQueryUnitIdProto {
 }
 
 message QueryUnitIdProto {
-	required string queryStepId = 1;
+	required LogicalQueryUnitIdProto logicalQueryUnitId = 1;
 	required int32 id = 2;
 }

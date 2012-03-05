@@ -4,8 +4,6 @@
 package nta.engine;
 
 import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -84,8 +82,13 @@ public class QueryUnitScheduler extends Thread {
     
     // TODO: adjust the number of localization
     QueryUnit[] units = planner.localize(plan, cm.getOnlineWorker().size());
+    String hostName;
     for (QueryUnit q : units) {
-      q.setHost(getRandomHost());
+      hostName = cm.getProperHost(q);
+      if (hostName == null) {
+        hostName = cm.getRandomHost();
+      }
+      q.setHost(hostName);
       pendingQueue.add(q);
     }
     requestPendingQueryUnits();
@@ -141,7 +144,11 @@ public class QueryUnitScheduler extends Thread {
     Path path = new Path(sm.getTablePath(q.getOutputName()), 
         q.getId().toString());
     fs.delete(path, true);
-    q.setHost(getRandomHost());
+    String hostName = cm.getProperHost(q);
+    if (hostName == null) {
+      hostName = cm.getRandomHost();
+    }
+    q.setHost(hostName);
     LOG.info("QueryUnit " + q.getId() + " is assigned to " + 
         q.getHost() + " as the backup task");
     pendingQueue.add(q);
@@ -160,10 +167,4 @@ public class QueryUnitScheduler extends Thread {
     }
   }
   
-  private String getRandomHost() 
-      throws Exception {
-    Random rand = new Random();
-    List<String> serverNames = cm.getOnlineWorker();
-    return serverNames.get(rand.nextInt(serverNames.size()));
-  }
 }

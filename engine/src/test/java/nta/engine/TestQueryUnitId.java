@@ -32,8 +32,8 @@ public class TestQueryUnitId {
     assertEquals("query_" + timeId+"_001_002_006", 
         logicalQUeryUnitId.toString());
     
-    QueryUnitId qId = new QueryUnitId(stepId, 5);
-    assertEquals("query_" + timeId + "_001_002_004_000005", qId.toString());
+    QueryUnitId qId = new QueryUnitId(logicalQUeryUnitId, 5);
+    assertEquals("query_" + timeId + "_001_002_006_000005", qId.toString());
   }
 
   @Test
@@ -66,10 +66,10 @@ public class TestQueryUnitId {
     LogicalQueryUnitId lqid3 = new LogicalQueryUnitId(sid1, 9);
     assertEquals(lqid1, lqid3);
     
-    QueryUnitId qid1 = new QueryUnitId(stepId1, 9);
-    QueryUnitId qid2 = new QueryUnitId(stepId1, 10);
+    QueryUnitId qid1 = new QueryUnitId(lqid1, 9);
+    QueryUnitId qid2 = new QueryUnitId(lqid1, 10);
     assertNotSame(qid1, qid2);
-    QueryUnitId qid3 = new QueryUnitId(stepId1, 9);
+    QueryUnitId qid3 = new QueryUnitId(lqid1, 9);
     assertEquals(qid1, qid3);
   }
 
@@ -103,13 +103,13 @@ public class TestQueryUnitId {
     LogicalQueryUnitId lqid1 = new LogicalQueryUnitId(sid1, 9);
     LogicalQueryUnitId lqid2 = new LogicalQueryUnitId(sid1, 10);
     LogicalQueryUnitId lqid3 = new LogicalQueryUnitId(sid1, 9);
-    assertEquals(-1, step1.compareTo(step2));
-    assertEquals(1, step2.compareTo(step1));
-    assertEquals(0, step3.compareTo(step1));
+    assertEquals(-1, lqid1.compareTo(lqid2));
+    assertEquals(1, lqid2.compareTo(lqid1));
+    assertEquals(0, lqid3.compareTo(lqid1));
     
-    QueryUnitId qid1 = new QueryUnitId(step1, 9);
-    QueryUnitId qid2 = new QueryUnitId(step1, 10);
-    QueryUnitId qid3 = new QueryUnitId(step1, 9);
+    QueryUnitId qid1 = new QueryUnitId(lqid1, 9);
+    QueryUnitId qid2 = new QueryUnitId(lqid1, 10);
+    QueryUnitId qid3 = new QueryUnitId(lqid1, 9);
     assertEquals(-1, qid1.compareTo(qid2));
     assertEquals(1, qid2.compareTo(qid1));
     assertEquals(0, qid3.compareTo(qid1));

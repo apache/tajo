@@ -299,10 +299,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   public static Path getQueryUnitDir(QueryUnitId quid) {
     Path workDir = 
         StorageUtil.concatPath(            
-            quid.getQueryStepId().getSubQueryId()
+            quid.getLogicalQueryUnitId().getSubQueryId()
             .getQueryId().toString(),
-            String.valueOf(quid.getQueryStepId().getSubQueryId().getId()),
-            String.valueOf((quid.getQueryStepId().getId())),
+            String.valueOf(quid.getLogicalQueryUnitId().getSubQueryId().getId()),
+            String.valueOf((quid.getLogicalQueryUnitId().getId())),
             String.valueOf(quid.getId()));
     return workDir;
   }

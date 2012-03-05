@@ -179,4 +179,16 @@ public class TestGlobalQueryPlanner {
     assertEquals(store.getTableName(), scans[0].getTableId());
     assertEquals(store.getOutputSchema(), scans[0].getInputSchema());
   }
+  
+  @Test
+  public void testJoin() throws IOException {
+    QueryContext ctx = factory.create();
+    ParseTree tree = (ParseTree) analyzer.parse(ctx,
+        "select table0.age from table0,table1 where table0.salary = table1.salary");
+    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
+    logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
+
+    LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
+    
+  }
 }

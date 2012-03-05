@@ -30,7 +30,11 @@ public class FragmentServInfo {
 	}
 	
 	public void setHost(String host, int port) {
-	  this.serverName = new ServerName(host+":"+port);    
+	  setHost(host+":"+port);    
+	}
+	
+	public void setHost(String hostName) {
+	  this.serverName = new ServerName(hostName);
 	}
 	
 	public String getHostName() {

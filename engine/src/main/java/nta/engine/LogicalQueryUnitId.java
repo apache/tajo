@@ -124,5 +124,8 @@ private static final NumberFormat idFormat = NumberFormat.getInstance();
     }
     return proto;
   }
-  
+ 
+  public int getId() {
+    return this.id;
+  }
 }
