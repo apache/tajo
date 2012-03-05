@@ -18,10 +18,8 @@ import nta.datum.json.GsonCreator;
  *
  */
 public class BytesDatum extends Datum {
-//  private int size;
-	@Expose
-	byte[] val;
-	ByteBuffer bb = null;
+	@Expose private byte[] val;
+	private ByteBuffer bb = null;
 	
 	/**
 	 * 
@@ -32,7 +30,6 @@ public class BytesDatum extends Datum {
 	
 	public BytesDatum(byte [] val) {
 		this();
-//		this.size = val.length;
 		this.val = val;
 		this.bb = ByteBuffer.wrap(val);	
 		bb.flip();
@@ -40,7 +37,6 @@ public class BytesDatum extends Datum {
 	
 	public BytesDatum(ByteBuffer val) {
 		this();
-//		this.size = val.limit();
 		this.val = val.array();
 		this.bb = val.duplicate();
 		bb.flip();

@@ -17,6 +17,11 @@ public class DatumFactory {
     return new BoolDatum(boolVal);
   }
   
+  public static BoolDatum createBool(byte val) {
+    boolean boolVal = val == 0x01 ? true : false; 
+    return new BoolDatum(boolVal);
+  }
+  
   public static BoolDatum createBool(boolean val) {
     return new BoolDatum(val);
   }

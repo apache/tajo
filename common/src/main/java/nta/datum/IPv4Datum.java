@@ -3,14 +3,12 @@
  */
 package nta.datum;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
-import com.google.gson.annotations.Expose;
-
 import nta.datum.exception.InvalidCastException;
 import nta.datum.exception.InvalidOperationException;
 import nta.datum.json.GsonCreator;
+
+import com.google.common.base.Preconditions;
+import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
@@ -18,9 +16,7 @@ import nta.datum.json.GsonCreator;
  */
 public class IPv4Datum extends Datum {
   private static final int size = 4;
-  @Expose
-  byte[] val;
-	ByteBuffer bb;
+  @Expose private int address;
 	
 	/**
 	 * @param type
@@ -31,28 +27,20 @@ public class IPv4Datum extends Datum {
 	
 	public IPv4Datum(String addr) {
 		this();
-		bb = ByteBuffer.allocate(4);
 		String [] elems = addr.split("\\.");
-		
-		byte c;
-		for(int i=0; i < 4; i++) {
-			c = (byte) (0xFF & Integer.valueOf(elems[i]).byteValue());
-			bb.put(c);
-		}
-		bb.flip();
-		val = bb.array();
+		address  = Integer.valueOf(elems[3]) & 0xFF;
+    address |= ((Integer.valueOf(elems[2]) << 8) & 0xFF00);
+    address |= ((Integer.valueOf(elems[1]) << 16) & 0xFF0000);
+    address |= ((Integer.valueOf(elems[0]) << 24) & 0xFF000000);
 	}
 	
 	public IPv4Datum(byte [] addr) {
 		this();
-		val = addr;
-		bb = ByteBuffer.wrap(addr);
-	}
-	
-	public void initFromBytes() {
-		if (bb == null) {
-			bb = ByteBuffer.wrap(val);
-		}
+		Preconditions.checkArgument(addr.length == size);
+		address  = addr[3] & 0xFF;
+    address |= ((addr[2] << 8) & 0xFF00);
+    address |= ((addr[1] << 16) & 0xFF0000);
+    address |= ((addr[0] << 24) & 0xFF000000);
 	}
 	
 	public boolean asBool() {
@@ -69,7 +57,7 @@ public class IPv4Datum extends Datum {
 	 */
 	@Override
 	public int asInt() {
-		throw new InvalidCastException();
+		return this.address;
 	}
 
 	/* (non-Javadoc)
@@ -77,7 +65,7 @@ public class IPv4Datum extends Datum {
 	 */
 	@Override
 	public long asLong() {
-		throw new InvalidCastException();
+	  return this.address;
 	}
 
 	/* (non-Javadoc)
@@ -93,58 +81,31 @@ public class IPv4Datum extends Datum {
 	 */
 	@Override
 	public byte[] asByteArray() {
-		initFromBytes();
-		return bb.array();
+	  byte[] addr = new byte[size];
+	  addr[0] = (byte) ((address >>> 24) & 0xFF);
+	  addr[1] = (byte) ((address >>> 16) & 0xFF);
+	  addr[2] = (byte) ((address >>> 8) & 0xFF);
+	  addr[3] = (byte) (address & 0xFF);
+	  return addr;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asFloat()
-	 */
 	@Override
 	public float asFloat() {
 		throw new InvalidCastException();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asDouble()
-	 */
 	@Override
 	public double asDouble() {
 		throw new InvalidCastException();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asChars()
-	 */
 	@Override
 	public String asChars() {
-		initFromBytes();
-		StringBuilder sb = new StringBuilder();
-		bb.rewind();
-		
-		Byte b = bb.get();
-		
-		sb.append(toInt(b)).append(".");
-		b = bb.get();
-		sb.append(toInt(b)).append(".");
-		b = bb.get();
-		sb.append(toInt(b)).append(".");
-		b = bb.get();
-		sb.append(toInt(b));
-		
-		return sb.toString();
+		return numericToTextFormat(asByteArray());
 	}
 	
 	public String toJSON() {
 		return GsonCreator.getInstance().toJson(this, Datum.class);
-	}
-	
-	private int toInt(Byte b) {
-		int n = b.intValue();
-		if (n < 0) {
-			n += 256;
-		}
-		return n;
 	}
 
   @Override
@@ -154,16 +115,13 @@ public class IPv4Datum extends Datum {
   
   @Override
   public int hashCode() {
-	initFromBytes();
-    return bb.hashCode();
+    return address;
   }
   
   public boolean equals(Object obj) {
     if (obj instanceof IPv4Datum) {
       IPv4Datum other = (IPv4Datum) obj;
-      initFromBytes();
-      other.initFromBytes();
-      return bb.equals(other.bb);
+      return this.address == other.address;
     }
     
     return false;
@@ -172,11 +130,8 @@ public class IPv4Datum extends Datum {
   // Datum Comparable
   public BoolDatum equalsTo(Datum datum) {
     switch (datum.type()) {
-    case IPv4:
-    	initFromBytes();
-    	((IPv4Datum)datum).initFromBytes();
-    	return DatumFactory.createBool(Arrays.equals(this.val, ((IPv4Datum)datum).val));
-      //return DatumFactory.createBool(this.bb.equals(((IPv4Datum) datum).bb));
+    case IPv4:    	
+    	return DatumFactory.createBool(this.address == ((IPv4Datum)datum).address);
     default:
       throw new InvalidOperationException(datum.type());
     }
@@ -186,10 +141,24 @@ public class IPv4Datum extends Datum {
   public int compareTo(Datum datum) {
     switch (datum.type()) {
     case IPv4:
-    	initFromBytes();
-      return bb.compareTo(((BytesDatum)datum).bb);
+      byte [] bytes = asByteArray();
+      byte [] other = datum.asByteArray();
+      
+      for (int i = 0; i < 4; i++) {
+        if (bytes[i] > other[i]) {
+          return 1;
+        } else if (bytes[i] < other[i]) {
+          return -1;
+        }
+      }
+      
     default:
       throw new InvalidOperationException(datum.type());
     }
+  }
+  
+  static String numericToTextFormat(byte[] src) {
+    return (src[0] & 0xff) + "." + (src[1] & 0xff) + "." + (src[2] & 0xff)
+        + "." + (src[3] & 0xff);
   }
 }

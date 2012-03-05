@@ -254,6 +254,7 @@ public class RawFile2 extends Storage {
     			bin = new ByteArrayInputStream(bufextra);
     			din = new DataInputStream(bin);
     			this.curTupleOffset = bufferOffset;
+    			din.skip(this.curTupleOffset);
     		}
     	}
     }

@@ -39,9 +39,9 @@ import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.WritableUtils;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import sun.misc.Unsafe;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Utility class that handles byte arrays, conversions to/from other types,
