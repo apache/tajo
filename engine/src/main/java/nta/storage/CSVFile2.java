@@ -10,9 +10,12 @@ import java.util.TreeSet;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
+import nta.catalog.statistics.Stat;
+import nta.catalog.statistics.StatSet;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.datum.DatumType;
+import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
 
@@ -41,7 +44,7 @@ public class CSVFile2 extends Storage {
 
   @Override
   public Appender getAppender(TableMeta meta, Path path) throws IOException {
-    return new CSVAppender(conf, path, meta, false);
+    return new CSVAppender(conf, meta, path, true);
   }
 
   @Override
@@ -50,33 +53,46 @@ public class CSVFile2 extends Storage {
     return new CSVScanner(conf, schema, tablets);
   }
 
-  public static class CSVAppender implements Appender {
+  public static class CSVAppender extends FileAppender {
     private final Path path;
     private final TableMeta meta;
     private final Schema schema;
     private final FileSystem fs;
     private FSDataOutputStream fos;
     private String delimiter;
+    
+    private final boolean statsEnabled;
+    private StatSet statSet = null;
+    private Stat numRowStat = null;
 
-    public CSVAppender(Configuration conf, final Path path,
-        final TableMeta meta, boolean tablewrite) throws IOException {
+    public CSVAppender(Configuration conf, final TableMeta meta,
+        final Path path, boolean statsEnabled) throws IOException {
+      super(conf, meta, path);
       this.path = new Path(path, "data");
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = meta.getSchema();
 
       if (!fs.exists(path.getParent())) {
-        throw new FileNotFoundException(path.toString());
+        throw new FileNotFoundException(this.path.toString());
       }
 
       if (fs.exists(path)) {
-        throw new AlreadyExistsStorageException(path);
+        throw new AlreadyExistsStorageException(this.path);
       }
 
       fos = fs.create(path);
       
       // set delimiter.
-      this.delimiter = meta.getOption(DELIMITER, DELIMITER_DEFAULT);
+      this.delimiter = this.meta.getOption(DELIMITER, DELIMITER_DEFAULT);
+      
+      this.statsEnabled = statsEnabled;
+      if (statsEnabled) {
+        this.statSet = new StatSet();
+        this.numRowStat = new Stat(StatType.TABLE_NUM_ROWS);
+        
+        this.statSet.putStat(this.numRowStat);
+      }
     }
 
     @Override
@@ -131,6 +147,11 @@ public class CSVFile2 extends Storage {
       sb.deleteCharAt(sb.length() - 1);
       sb.append('\n');
       fos.writeBytes(sb.toString());
+      
+      // Statistical section
+      if (statsEnabled) {
+        numRowStat.increment();
+      }
     }
 
     @Override
@@ -141,6 +162,11 @@ public class CSVFile2 extends Storage {
     @Override
     public void close() throws IOException {
       fos.close();
+    }
+
+    @Override
+    public StatSet getStats() {
+      return this.statSet;
     }
   }
 

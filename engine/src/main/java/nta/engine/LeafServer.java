@@ -18,6 +18,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import nta.catalog.CatalogClient;
+import nta.catalog.statistics.StatSet;
 import nta.conf.NtaConf;
 import nta.engine.LeafServerProtos.AssignTabletRequestProto;
 import nta.engine.LeafServerProtos.QueryStatus;
@@ -30,6 +31,7 @@ import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.ipc.AsyncWorkerInterface;
 import nta.engine.ipc.MasterInterface;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.engine.query.QueryUnitRequestImpl;
@@ -87,6 +89,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   private final Path workDirPath;
 
   private CatalogClient catalog;
+  private SubqueryContext.Factory ctxFactory;
   private TQueryEngine queryEngine;
   private QueryLauncher queryLauncher;
   private List<EngineService> services = new ArrayList<EngineService>();
@@ -127,6 +130,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     
     this.zkClient = new ZkClient(this.conf);
     this.catalog = new CatalogClient(zkClient);
+    this.ctxFactory = new SubqueryContext.Factory(catalog);
     this.queryLauncher = new QueryLauncher();
     this.queryLauncher.start();
     this.queryEngine = new TQueryEngine(conf, catalog, zkClient);
@@ -229,7 +233,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         .setId(ipq.getId().toString())
         .setProgress(ipq.getProgress())
         .setStatus(ipq.getStatus())
-        .build();      
+        .build();
       
       list.add(status);
     }
@@ -315,8 +319,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       throws Exception {
     QueryUnitRequest request = new QueryUnitRequestImpl(proto);
     Path localQueryTmpDir = createQueryTmpDir(request.getId());
-    PhysicalExec executor = queryEngine.createPlan(request, localQueryTmpDir);    
-    InProgressQuery newQuery = new InProgressQuery(request.getId(), executor);
+    SubqueryContext ctx = ctxFactory.create(request);
+    PhysicalExec executor = queryEngine.createPlan(ctx, request, 
+        localQueryTmpDir);    
+    InProgressQuery newQuery = new InProgressQuery(ctx, executor);
     queryLauncher.addSubQuery(newQuery);
 
     SubQueryResponseProto.Builder res = SubQueryResponseProto.newBuilder();
@@ -324,9 +330,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   }
   
   @VisibleForTesting
-  void requestTestQuery(PhysicalExec exec) {
-    InProgressQuery newQuery = new InProgressQuery(
-        QueryIdFactory.newQueryUnitId(), exec);
+  void requestTestQuery(PhysicalExec exec) {    
+    SubqueryContext ctx = new SubqueryContext(QueryIdFactory.newQueryUnitId(),
+        new Fragment[] {});
+    InProgressQuery newQuery = new InProgressQuery(ctx, exec);
     queryLauncher.addSubQuery(newQuery);
   }
 
@@ -403,7 +410,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           // wait for add
           InProgressQuery q = blockingQueue.poll(1000, TimeUnit.MILLISECONDS);
           if (q != null) {
-            queries.put(q.qid, q);
+            queries.put(q.getId(), q);
             futures.put(q, executor.submit(q));
           }
           
@@ -427,22 +434,22 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   }
   
   private static class InProgressQuery implements Runnable {
-    private final QueryUnitId qid;
+    private final SubqueryContext ctx;
     private final PhysicalExec executor;
     private float progress;
     private QueryStatus status;
     private boolean stopped = false;
     private boolean aborted = false;
     
-    private InProgressQuery(QueryUnitId qid, PhysicalExec exec) {
-      this.qid = qid;
+    private InProgressQuery(SubqueryContext ctx, PhysicalExec exec) {
+      this.ctx = ctx;
       this.executor = exec;
       this.progress = 0;
       this.status = QueryStatus.PENDING;
     }
     
     public QueryUnitId getId() {
-      return this.qid;
+      return ctx.getQueryId();
     }
     
     public float getProgress() {
@@ -451,6 +458,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     
     public QueryStatus getStatus() {
       return this.status;
+    }
+    
+    public StatSet getStats() {
+      return null;
     }
     
     public void abort() {
@@ -465,36 +476,36 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     public void run() {
       try {
         this.status = QueryStatus.INPROGRESS;
-        LOG.info("Query status of " + qid + " is changed to " + status);
-        while(executor.next() != null && !stopped) {          
+        LOG.info("Query status of " + ctx + " is changed to " + status);
+        while(executor.next() != null && !stopped) {
         }
       } catch (IOException e) {
         this.status = QueryStatus.FAILED;
         this.progress = 0.0f;
-        LOG.info("Query status of " + qid + " is changed to "   + QueryStatus.FAILED);
+        LOG.info("Query status of " + ctx + " is changed to "   + QueryStatus.FAILED);
       } finally {
         if (aborted == true) {
           this.progress = 0.0f;
           this.status = QueryStatus.ABORTED;
-          LOG.info("Query status of " + qid + " is changed to " 
+          LOG.info("Query status of " + ctx + " is changed to " 
               + QueryStatus.ABORTED);
         } else {
           this.progress = 1.0f;
           this.status = QueryStatus.FINISHED;
-          LOG.info("Query status of " + qid + " is changed to " 
+          LOG.info("Query status of " + ctx + " is changed to " 
               + QueryStatus.FINISHED);
         }
       }
     }
     
     public int hashCode() {
-      return this.qid.hashCode();
+      return this.ctx.hashCode();
     }
     
     public boolean equals(Object obj) {
       if (obj instanceof InProgressQuery) {
         InProgressQuery other = (InProgressQuery) obj;
-        return this.qid.equals(other.qid);
+        return this.ctx.equals(other.ctx);
       }      
       return false;
     }

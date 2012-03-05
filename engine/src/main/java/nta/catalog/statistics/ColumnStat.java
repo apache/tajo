@@ -20,10 +20,8 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   private ColumnStatProto.Builder builder = null;
   private boolean viaProto = false;
 
-  @Expose
-  private Long numDistVals = null;
-  @Expose
-  private Long numNulls = null;
+  @Expose private Long numDistVals = null;
+  @Expose private Long numNulls = null;
 
   public ColumnStat() {
     builder = ColumnStatProto.newBuilder();
@@ -101,7 +99,8 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   }
   
   public String toString() {
-    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    Gson gson = new GsonBuilder().setPrettyPrinting().
+        excludeFieldsWithoutExposeAnnotation().create();
     return gson.toJson(this);
   }
 

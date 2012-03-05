@@ -15,9 +15,12 @@ import nta.catalog.Column;
 import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
+import nta.catalog.statistics.Stat;
+import nta.catalog.statistics.StatSet;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.NConstants;
+import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
 
@@ -40,7 +43,7 @@ public class RawFile2 extends Storage {
   @Override
   public Appender getAppender(TableMeta meta, Path path)
   throws IOException {
-    return new RawFileAppender(conf, meta, path);
+    return new RawFileAppender(conf, meta, path, true);
   }
 
   @Override
@@ -375,9 +378,14 @@ public class RawFile2 extends Storage {
     private long lastSyncPos;
     private FileSystem fs;
     private byte[] sync;
+    
+    // statistics
+    private final boolean statsEnabled;
+    private StatSet statSet = null;
+    private Stat numRowStat = null;
 
     public RawFileAppender(Configuration conf, final TableMeta meta, 
-        final Path path) throws IOException {
+        final Path path, boolean statsEnabled) throws IOException {
       super(conf, meta, path);      
 
       fs = path.getFileSystem(conf);
@@ -406,6 +414,14 @@ public class RawFile2 extends Storage {
       }
 
       writeHeader();
+      
+      this.statsEnabled = statsEnabled;
+      if (statsEnabled) {
+        this.statSet = new StatSet();
+        this.numRowStat = new Stat(StatType.TABLE_NUM_ROWS);
+        
+        this.statSet.putStat(this.numRowStat);
+      }
 		}
 		
 		private void writeHeader() throws IOException {
@@ -465,7 +481,12 @@ public class RawFile2 extends Storage {
 					}
 				}
 			}
-		}
+			
+      // Statistical section
+      if (statsEnabled) {
+        numRowStat.increment();
+      }
+    }
 
 		@Override
 		public void flush() throws IOException {
@@ -494,6 +515,11 @@ public class RawFile2 extends Storage {
 				sync();
 			}
 		}
+
+    @Override
+    public StatSet getStats() {
+      return statSet;
+    }
 	}
 }
 

@@ -159,7 +159,8 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable {
   }
   
   public String toString() {
-    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    Gson gson = new GsonBuilder().setPrettyPrinting().
+        excludeFieldsWithoutExposeAnnotation().create();
     return gson.toJson(this);
   }
   

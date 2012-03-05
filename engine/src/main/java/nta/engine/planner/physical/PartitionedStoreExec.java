@@ -5,7 +5,9 @@ package nta.engine.planner.physical;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import nta.catalog.Column;
@@ -13,7 +15,9 @@ import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.engine.QueryUnitId;
+import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.StatisticsUtil;
+import nta.engine.SubqueryContext;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
@@ -36,6 +40,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
     numFormat.setMinimumIntegerDigits(6);
   }
   
+  private final SubqueryContext ctx;
   private final StorageManager sm;
   private final CreateTableNode annotation;
   private final PhysicalExec subOp;
@@ -52,10 +57,10 @@ public final class PartitionedStoreExec extends PhysicalExec {
   private final Map<Integer, Appender> appenderMap
     = new HashMap<Integer, Appender>();
   
-  public PartitionedStoreExec(final StorageManager sm, final QueryUnitId queryId,
+  public PartitionedStoreExec(SubqueryContext ctx, final StorageManager sm,
       final CreateTableNode annotation, final PhysicalExec subOp) throws IOException {
     Preconditions.checkArgument(annotation.hasPartitionKey());
-    
+    this.ctx = ctx;
     this.sm = sm;
     this.annotation = annotation;
     this.subOp = subOp;
@@ -72,13 +77,13 @@ public final class PartitionedStoreExec extends PhysicalExec {
       i++;
     }
     this.partitioner = new HashPartitioner(partitionKeys, numPartitions);
-    this.storeTable = queryId.toString();
+    this.storeTable = ctx.getQueryId().toString();
     
-    storeTablePath = StorageUtil.concatPath( 
+    storeTablePath = StorageUtil.concatPath(
         sm.getTablePath(annotation.getTableName()),
-            queryId.toString());
+            ctx.getQueryId().toString());
     sm.initTableBase(storeTablePath, meta);
-    Log.info("Initialized output directory (" 
+    Log.info("Initialized output directory ("
         + sm.getTablePath(storeTable) + ")");
   }
 
@@ -113,10 +118,16 @@ public final class PartitionedStoreExec extends PhysicalExec {
       appender.addTuple(tuple);
     }
     
+    List<StatSet> statSets = new ArrayList<StatSet>();
     for (Appender app : appenderMap.values()) {
       app.flush();
       app.close();
+      statSets.add(app.getStats());
     }
+    
+    // Collect and aggregated statistics data
+    StatSet statSet = StatisticsUtil.aggregate(statSets);
+    ctx.addStatSet("PartitionedStore", statSet);
     
     return null;
   }

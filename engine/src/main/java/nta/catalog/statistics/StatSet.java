@@ -31,10 +31,15 @@ public class StatSet implements ProtoObject<StatSetProto>, Cloneable {
     this.viaProto = true;
   }
 
-  public void addStat(Stat stat) {
+  public void putStat(Stat stat) {
     initStats();
     setModified();
     stats.put(stat.getType(), stat);
+  }
+  
+  public boolean containStat(StatType type) {
+    initStats();
+    return stats.containsKey(type);
   }
 
   public Stat getStat(StatType type) {

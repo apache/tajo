@@ -5,19 +5,23 @@ package nta.engine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import nta.catalog.CatalogService;
+import nta.catalog.statistics.StatSet;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.ipc.protocolrecords.SubQueryRequest;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 
 
 /**
- * 실행 중인 subquery에 대한 정보를 담는다. 
+ * 실행 중인 subquery에 대한 정보를 담는다.
  * 
  * @author Hyunsik Choi
  *
@@ -26,9 +30,11 @@ public class SubqueryContext extends Context {
   private final Map<String, List<Fragment>> fragmentMap
     = new HashMap<String, List<Fragment>>();
   
+  private final Map<String, StatSet> stats;
   private QueryUnitId queryId;
   
-  private SubqueryContext(QueryUnitId queryId, Fragment [] fragments) {
+  @VisibleForTesting
+  SubqueryContext(QueryUnitId queryId, Fragment [] fragments) {
     this.queryId = queryId;
     
     for(Fragment t : fragments) {
@@ -40,6 +46,20 @@ public class SubqueryContext extends Context {
         fragmentMap.put(t.getId(), frags);
       }
     }
+    
+    stats = Maps.newHashMap();
+  }
+  
+  public void addStatSet(String name, StatSet stats) {
+    this.stats.put(name, stats);
+  }
+  
+  public StatSet getStatSet(String name) {
+    return stats.get(name);
+  }
+  
+  public Iterator<Entry<String, StatSet>> getAllStats() {
+    return stats.entrySet().iterator();
   }
   
   public static class Factory {

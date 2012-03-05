@@ -19,10 +19,10 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
 import nta.datum.NullDatum;
 import nta.engine.NtaTestingUtility;
-import nta.engine.QueryContext;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
 import nta.engine.SubqueryContext;
+import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
@@ -51,7 +51,6 @@ public class TestPhysicalPlanner {
   private static Configuration conf;
   private static CatalogService catalog;
   private static QueryAnalyzer analyzer;
-  private static QueryContext.Factory qfactory;
   private static SubqueryContext.Factory factory;
   private static StorageManager sm;
 
@@ -128,7 +127,6 @@ public class TestPhysicalPlanner {
     appender.flush();
     appender.close();
     catalog.addTable(score);
-    qfactory = new QueryContext.Factory(catalog);
     factory = new SubqueryContext.Factory(catalog);
     analyzer = new QueryAnalyzer(catalog);
   }
@@ -237,6 +235,11 @@ public class TestPhysicalPlanner {
     }
     assertEquals(10, i);
     scanner.close();
+    
+    // Examine the statistics information
+    assertEquals(10, 
+        ctx.getStatSet("StoreTable").
+        getStat(StatType.TABLE_NUM_ROWS).getValue());
   }
 
   @Test
@@ -264,7 +267,7 @@ public class TestPhysicalPlanner {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     exec.next();
 
-    Path path = StorageUtil.concatPath( 
+    Path path = StorageUtil.concatPath(
         sm.getTablePath("partition"),
         id.toString());
     FileSystem fs = sm.getFileSystem();
@@ -283,6 +286,11 @@ public class TestPhysicalPlanner {
     }
     assertEquals(10, i);
     scanner.close();
+    
+    // Examine the statistics information
+    assertEquals(10, 
+        ctx.getStatSet("PartitionedStore").
+        getStat(StatType.TABLE_NUM_ROWS).getValue());
   }
 
   @Test

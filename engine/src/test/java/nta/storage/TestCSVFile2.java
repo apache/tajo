@@ -13,10 +13,12 @@ import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.statistics.StatSet;
 import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NConstants;
+import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 
 import org.apache.hadoop.fs.FileStatus;
@@ -65,6 +67,9 @@ public class TestCSVFile2 {
       appender.addTuple(vTuple);
     }
     appender.close();
+    
+    StatSet statset = appender.getStats();
+    assertEquals(tupleNum, statset.getStat(StatType.TABLE_NUM_ROWS).getValue());
         
     FileStatus status = sm.listTableFiles("table1")[0];
     long fileLen = status.getLen();

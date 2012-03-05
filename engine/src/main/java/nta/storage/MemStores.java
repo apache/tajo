@@ -10,6 +10,7 @@ import java.util.Map;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
+import nta.catalog.statistics.StatSet;
 import nta.datum.exception.InvalidCastException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -64,6 +65,11 @@ public class MemStores {
     @Override
     public void close() throws IOException {
       
+    }
+
+    @Override
+    public StatSet getStats() {
+      return null;
     }
 	}
 	

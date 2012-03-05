@@ -39,7 +39,6 @@ public class TQueryEngine {
   
   private final PhysicalPlanner phyPlanner;
   private final QueryAnalyzer analyzer;
-  private final SubqueryContext.Factory ctxFactory;
   
   public TQueryEngine(Configuration conf, CatalogService catalog, 
       ZkClient zkClient) throws IOException {    
@@ -57,11 +56,10 @@ public class TQueryEngine {
     this.storageManager = new StorageManager(conf);
     this.phyPlanner = new PhysicalPlanner(storageManager);
     this.analyzer = new QueryAnalyzer(catalog);
-    this.ctxFactory = new SubqueryContext.Factory(catalog);
   }
   
-  public PhysicalExec createPlan(SubQueryRequest request) throws InternalException {
-    SubqueryContext ctx = ctxFactory.create(request);
+  public PhysicalExec createPlan(SubqueryContext ctx, SubQueryRequest request) 
+      throws InternalException {
     ParseTree parseTree = analyzer.parse(ctx, request.getQuery());
     LogicalNode plan = LogicalPlanner.createPlan(ctx, parseTree);
     LogicalOptimizer.optimize(ctx, plan);
@@ -75,9 +73,8 @@ public class TQueryEngine {
     return exec;
   }
   
-  public PhysicalExec createPlan(QueryUnitRequest request, Path localTmpDir) 
-      throws InternalException {
-    SubqueryContext ctx = ctxFactory.create(request);
+  public PhysicalExec createPlan(SubqueryContext ctx, QueryUnitRequest request, 
+      Path localTmpDir) throws InternalException {
     LogicalNode plan = GsonCreator.getInstance().
         fromJson(request.getSerializedData(), LogicalNode.class);
     LOG.info(plan.toString());
@@ -85,7 +82,6 @@ public class TQueryEngine {
         + request.getFragments().get(0).getStartOffset() + " end: "
         + request.getFragments() + "\nplan:\n" + plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(storageManager);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
     return exec;

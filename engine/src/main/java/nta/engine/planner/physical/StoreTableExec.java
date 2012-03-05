@@ -9,7 +9,7 @@ import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.engine.QueryUnitId;
+import nta.engine.SubqueryContext;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
@@ -22,7 +22,7 @@ import nta.storage.Tuple;
  *
  */
 public class StoreTableExec extends PhysicalExec {
-  @SuppressWarnings("unused")
+  private final SubqueryContext ctx;
   private final CreateTableNode annotation;
   private final PhysicalExec subOp;
   private final Appender appender;
@@ -36,16 +36,17 @@ public class StoreTableExec extends PhysicalExec {
    * @throws IOException 
    * 
    */
-  public StoreTableExec(StorageManager sm, QueryUnitId queryId,
+  public StoreTableExec(SubqueryContext ctx, StorageManager sm,
       CreateTableNode annotation, PhysicalExec subOp) throws IOException {
+    this.ctx = ctx;
     this.annotation = annotation;
     this.subOp = subOp;
-    this.inputSchema = annotation.getInputSchema();
-    this.outputSchema = annotation.getOutputSchema();
+    this.inputSchema = this.annotation.getInputSchema();
+    this.outputSchema = this.annotation.getOutputSchema();
     
     TableMeta meta = TCatUtil.newTableMeta(this.outputSchema, StoreType.CSV);
-    this.appender = sm.getAppender(meta,annotation.getTableName(),
-        queryId.toString());
+    this.appender = sm.getAppender(meta,this.annotation.getTableName(),
+        ctx.getQueryId().toString());
   }
 
   /* (non-Javadoc)
@@ -67,6 +68,9 @@ public class StoreTableExec extends PhysicalExec {
     appender.flush();
     appender.close();
     
+    // Collect statistics data
+    ctx.addStatSet("StoreTable", appender.getStats());
+        
     return null;
   }
 }

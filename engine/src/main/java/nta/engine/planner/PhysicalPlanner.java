@@ -113,9 +113,9 @@ public class PhysicalPlanner {
       PhysicalExec subOp) throws IOException {
     PhysicalExec store = null;
     if (annotation.hasPartitionKey()) { // if the partition keys are specified
-      store = new PartitionedStoreExec(sm, ctx.getQueryId(), annotation, subOp);
+      store = new PartitionedStoreExec(ctx, sm, annotation, subOp);
     } else {
-      store = new StoreTableExec(sm, ctx.getQueryId(), annotation, subOp);
+      store = new StoreTableExec(ctx, sm, annotation, subOp);
     }
     return store;
   }

@@ -5,6 +5,7 @@ option java_generate_equals_and_hash = true;
 
 import "CatalogProtos.proto";
 import "LeafServerProtos.proto";
+import "TCommonProtos.proto";
 
 message QueryUnitRequestProto {
 	required string id = 1;
@@ -27,4 +28,5 @@ message InProgressStatus {
     required string id = 1;
     required float progress = 2;
     required QueryStatus status = 3;
+    optional StatSetProto stats = 4;
 }
