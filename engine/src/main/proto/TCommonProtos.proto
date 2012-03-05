@@ -1,0 +1,23 @@
+option java_package = "nta.engine";
+option java_outer_classname = "TCommonProtos";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+enum StatType {
+  TABLE_NUM_ROWS = 0;
+  TABLE_NUM_BLOCKS = 1;
+  TABLE_NUM_PARTITIONS = 2;
+  TABLE_AVG_ROWS = 3;
+
+  COLUMN_NUM_NDV = 4;
+  COLUMN_NUM_NULLS = 5;
+}
+
+message StatSetProto {
+    repeated StatProto stats = 1;
+}
+
+message StatProto {
+    required StatType type = 1;
+    required int64 value = 2;
+}
