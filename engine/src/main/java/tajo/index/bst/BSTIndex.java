@@ -227,7 +227,7 @@ public class BSTIndex implements IndexMethod {
       private TreeMap<Tuple, LinkedList<Long>> map;
 
       public KeyOffsetCollector(TupleComparator comparator) {
-        map = Maps.newTreeMap(comparator);
+        map = new TreeMap<Tuple, LinkedList<Long>>(comparator);
       }
 
       public void put(Tuple key, long offset) {
