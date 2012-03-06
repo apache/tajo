@@ -20,8 +20,9 @@ import java.util.concurrent.TimeUnit;
 import nta.catalog.CatalogClient;
 import nta.conf.NtaConf;
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.PingRequestProto;
+import nta.engine.MasterInterfaceProtos.PingResponseProto;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
-import nta.engine.MasterInterfaceProtos.QueryUnitReportProto;
 import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
 import nta.engine.MasterInterfaceProtos.ServerStatusProto;
 import nta.engine.MasterInterfaceProtos.SubQueryResponseProto;
@@ -181,7 +182,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         this.isOnline = true;
         while (!this.stopped) {
           Thread.sleep(1000);
-          sendHeartbeat();
+          long time = System.currentTimeMillis();
+          @SuppressWarnings("unused")
+          PingResponseProto response = sendHeartbeat(time);
         }
       }
     } catch (Throwable t) {
@@ -205,8 +208,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     LOG.info("LeafServer (" + serverName + ") main thread exiting");
   }
   
-  private void sendHeartbeat() throws IOException {
-    QueryUnitReportProto.Builder report = QueryUnitReportProto.newBuilder();
+  private PingResponseProto sendHeartbeat(long time) throws IOException {
+    PingRequestProto.Builder ping = PingRequestProto.newBuilder();
+    ping.setTimestamp(time);
+    ping.setServerName(serverName);
     
     // to send
     List<InProgressStatus> list 
@@ -235,13 +240,13 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       list.add(status);
     }
     
-    report.addAllStatus(list);
+    ping.addAllStatus(list);
     // eliminates aborted, failed, finished queries
     for (QueryUnitId rid : tobeRemoved) {
       this.queries.remove(rid);
     }
     
-    master.reportQueryUnit(report.build());
+    return master.reportQueryUnit(ping.build());
   }
 
   private class ShutdownHook implements Runnable {

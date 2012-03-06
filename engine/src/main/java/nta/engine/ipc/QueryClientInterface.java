@@ -1,6 +1,5 @@
 package nta.engine.ipc;
 
-import nta.catalog.TableDescImpl;
 import nta.rpc.Callback;
 import nta.rpc.RemoteException;
 

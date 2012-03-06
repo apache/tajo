@@ -105,7 +105,7 @@ public class TestLeafServer {
     }
     
     int splitIdx = (int) Math.ceil(frags.length / 2.f);
-   
+    QueryIdFactory.reset();
     LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(0);
     LeafServer leaf2 = util.getMiniNtaEngineCluster().getLeafServer(1);    
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId();

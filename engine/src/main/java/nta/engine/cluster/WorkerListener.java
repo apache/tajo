@@ -6,12 +6,13 @@ package nta.engine.cluster;
 import java.net.InetSocketAddress;
 
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
-import nta.engine.MasterInterfaceProtos.QueryUnitReportProto;
+import nta.engine.MasterInterfaceProtos.PingRequestProto;
+import nta.engine.MasterInterfaceProtos.PingResponseProto;
 import nta.engine.NConstants;
 import nta.engine.QueryUnitId;
 import nta.engine.ipc.MasterInterface;
-import nta.engine.ipc.QueryUnitReport;
-import nta.engine.query.QueryUnitReportImpl;
+import nta.engine.ipc.PingRequest;
+import nta.engine.query.PingRequestImpl;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
 
@@ -70,11 +71,14 @@ public class WorkerListener implements Runnable, MasterInterface {
    * @see nta.engine.ipc.AsyncMasterInterface#reportQueryUnit(nta.engine.QueryUnitProtos.QueryUnitReportProto)
    */
   @Override
-  public void reportQueryUnit(QueryUnitReportProto proto) {
-    QueryUnitReport report = new QueryUnitReportImpl(proto);
+  public PingResponseProto reportQueryUnit(PingRequestProto proto) {
+    PingRequest report = new PingRequestImpl(proto);
     for (InProgressStatus status : report.getProgressList()) {
       qm.updateProgress(new QueryUnitId(status.getId()), status);
     }
+    PingResponseProto.Builder response 
+      = PingResponseProto.newBuilder();
+    return response.build();
   }
 
   @Override

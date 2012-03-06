@@ -3,7 +3,8 @@
  */
 package nta.engine.ipc;
 
-import nta.engine.MasterInterfaceProtos.QueryUnitReportProto;
+import nta.engine.MasterInterfaceProtos.PingRequestProto;
+import nta.engine.MasterInterfaceProtos.PingResponseProto;
 
 /**
  * @author jihoon
@@ -16,5 +17,5 @@ public interface MasterInterface {
    * 
    * @param report 질의 및 질의 경과 정보
    */
-  public void reportQueryUnit(QueryUnitReportProto report);
+  public PingResponseProto reportQueryUnit(PingRequestProto report);
 }

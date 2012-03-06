@@ -66,8 +66,8 @@ public class QueryIdFactory {
   }
 
   public synchronized static QueryUnitId newQueryUnitId() {
-    if (nextQueryStepId.get() ==-1) {
-      newQueryStepId();
+    if (nextLogicalQueryUnitId.get() ==-1) {
+      newLogicalQueryUnitId();
     }
     queryUnitId = new QueryUnitId(logicalQueryUnitId, 
         nextQueryUnitId.incrementAndGet());
