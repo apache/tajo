@@ -143,6 +143,10 @@ public class TestLeafServer {
       Thread.sleep(1000);
       list = master.getProgressQueries();
       for (InProgressStatus ips : list) {
+        // Because this query is to store, it should have the statistics info 
+        // of the store data. The below 'assert' examines the existence of 
+        // the statistics info.
+        assertTrue(ips.hasStats());
         Log.info(ips.toString());
       }
       reported.clear();

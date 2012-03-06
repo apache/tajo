@@ -11,6 +11,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.SubqueryContext;
 import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.ExprType;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
@@ -69,7 +70,7 @@ public class StoreTableExec extends PhysicalExec {
     appender.close();
     
     // Collect statistics data
-    ctx.addStatSet("StoreTable", appender.getStats());
+    ctx.addStatSet(annotation.getType().toString(), appender.getStats());
         
     return null;
   }

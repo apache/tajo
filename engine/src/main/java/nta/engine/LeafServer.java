@@ -18,6 +18,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import nta.catalog.CatalogClient;
+import nta.catalog.statistics.StatSet;
 import nta.conf.NtaConf;
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.MasterInterfaceProtos.PingRequestProto;
@@ -31,6 +32,7 @@ import nta.engine.ipc.AsyncWorkerInterface;
 import nta.engine.ipc.MasterInterface;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
+import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.engine.query.QueryUnitRequestImpl;
 import nta.engine.query.TQueryEngine;
@@ -216,7 +218,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     // to send
     List<InProgressStatus> list 
       = new ArrayList<InProgressStatus>();
-    InProgressStatus status = null;
+    InProgressStatus.Builder status = null;
     // to be removed
     List<QueryUnitId> tobeRemoved = new ArrayList<QueryUnitId>();
     
@@ -231,13 +233,16 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         tobeRemoved.add(ipq.getId());
       }
       
-      status = InProgressStatus.newBuilder()
-        .setId(ipq.getId().toString())
+      status = InProgressStatus.newBuilder();      
+      status.setId(ipq.getId().toString())
         .setProgress(ipq.getProgress())
-        .setStatus(ipq.getStatus())
-        .build();
+        .setStatus(ipq.getStatus());        
       
-      list.add(status);
+      if (ipq.getStats() != null) {
+        status.setStats(ipq.getStats().getProto());
+      }
+      
+      list.add(status.build());
     }
     
     ping.addAllStatus(list);
@@ -450,6 +455,15 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     
     public QueryStatus getStatus() {
       return this.status;
+    }
+    
+    public StatSet getStats() {
+      StatSet stats = ctx.getStatSet(ExprType.STORE.toString());
+      if (stats != null) {
+        return stats;
+      } else {
+        return null;
+      }
     }
     
     public void abort() {

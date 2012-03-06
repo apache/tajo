@@ -27,6 +27,7 @@ import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.storage.Appender;
@@ -238,7 +239,7 @@ public class TestPhysicalPlanner {
     
     // Examine the statistics information
     assertEquals(10, 
-        ctx.getStatSet("StoreTable").
+        ctx.getStatSet(ExprType.STORE.toString()).
         getStat(StatType.TABLE_NUM_ROWS).getValue());
   }
 
@@ -289,7 +290,7 @@ public class TestPhysicalPlanner {
     
     // Examine the statistics information
     assertEquals(10, 
-        ctx.getStatSet("PartitionedStore").
+        ctx.getStatSet(ExprType.STORE.toString()).
         getStat(StatType.TABLE_NUM_ROWS).getValue());
   }
 

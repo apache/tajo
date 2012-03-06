@@ -19,6 +19,7 @@ import nta.catalog.statistics.StatSet;
 import nta.catalog.statistics.StatisticsUtil;
 import nta.engine.SubqueryContext;
 import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.ExprType;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.StorageUtil;
@@ -127,7 +128,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
     
     // Collect and aggregated statistics data
     StatSet statSet = StatisticsUtil.aggregate(statSets);
-    ctx.addStatSet("PartitionedStore", statSet);
+    ctx.addStatSet(annotation.getType().toString(), statSet);
     
     return null;
   }
