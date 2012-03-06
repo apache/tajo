@@ -3,7 +3,7 @@
  */
 package nta.engine.ipc;
 
-import nta.engine.QueryUnitProtos.QueryUnitReportProto;
+import nta.engine.MasterInterfaceProtos.QueryUnitReportProto;
 
 /**
  * @author jihoon

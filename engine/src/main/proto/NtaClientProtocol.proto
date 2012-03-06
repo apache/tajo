@@ -1,9 +1,0 @@
-option java_package = "org.apache.hadoop.yarn.proto";
-option java_outer_classname = "NtaClientProtocol";
-option java_generic_services = true;
-
-import "NtaClientProtos.proto";
-
-service NtaClientProtocolService {
-	rpc getSchema (GetSchemaRequestProto) returns (GetSchemaResponseProto);
-}

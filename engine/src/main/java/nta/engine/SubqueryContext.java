@@ -14,7 +14,6 @@ import nta.catalog.CatalogService;
 import nta.catalog.statistics.StatSet;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
-import nta.engine.ipc.protocolrecords.SubQueryRequest;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -71,12 +70,6 @@ public class SubqueryContext extends Context {
     @VisibleForTesting
     public SubqueryContext create(QueryUnitId id, Fragment [] frags) {
       return new SubqueryContext(id, frags);
-    }
-    
-    public SubqueryContext create(SubQueryRequest request) {
-      return new SubqueryContext(request.getId(), 
-          request.getFragments().toArray(
-              new Fragment [request.getFragments().size()]));
     }
     
     public SubqueryContext create(QueryUnitRequest request) {

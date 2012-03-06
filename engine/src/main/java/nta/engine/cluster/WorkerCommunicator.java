@@ -7,13 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import nta.catalog.proto.CatalogProtos.TabletProto;
-import nta.engine.LeafServerProtos.AssignTabletRequestProto;
-import nta.engine.LeafServerProtos.SubQueryRequestProto;
-import nta.engine.LeafServerProtos.SubQueryResponseProto;
+import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
+import nta.engine.MasterInterfaceProtos.ServerStatusProto;
+import nta.engine.MasterInterfaceProtos.SubQueryResponseProto;
 import nta.engine.NConstants;
-import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
-import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
 import nta.engine.exception.UnknownWorkerException;
 import nta.engine.ipc.AsyncWorkerClientInterface;
 import nta.engine.ipc.AsyncWorkerInterface;
@@ -93,22 +90,6 @@ public class WorkerCommunicator extends ZkListener {
     return Integer.parseInt(servername.substring(servername.indexOf(":") + 1));
   }
 
-  public Callback<SubQueryResponseProto> requestSubQuery(String serverName,
-      SubQueryRequestProto requestProto) throws Exception {
-    Callback<SubQueryResponseProto> cb = new Callback<SubQueryResponseProto>();
-    AsyncWorkerClientInterface leaf = hm.get(serverName);
-    if (leaf == null) {
-      throw new UnknownWorkerException("server name: " + serverName);
-    }
-    leaf.requestSubQuery(cb, requestProto);
-    return cb;
-  }
-
-  public Callback<SubQueryResponseProto> requestSubQuery(String serverName,
-      int port, SubQueryRequestProto requestProto) throws Exception {
-    return this.requestSubQuery(serverName + ":" + port, requestProto);
-  }
-
   public Callback<SubQueryResponseProto> requestQueryUnit(String serverName,
       QueryUnitRequestProto requestProto) throws Exception {
     Callback<SubQueryResponseProto> cb = new Callback<SubQueryResponseProto>();
@@ -123,17 +104,6 @@ public class WorkerCommunicator extends ZkListener {
   public Callback<SubQueryResponseProto> requestQueryUnit(String serverName,
       int port, QueryUnitRequestProto requestProto) throws Exception {
     return this.requestQueryUnit(serverName + ":" + port, requestProto);
-  }
-
-  public void assignTablets(String serverName, TabletProto tablet) throws UnknownWorkerException {
-    AsyncWorkerClientInterface leaf = hm.get(serverName);
-    if (leaf == null) {
-      throw new UnknownWorkerException("server name: " + serverName);
-    }
-    AssignTabletRequestProto tabletRequest = AssignTabletRequestProto
-        .newBuilder().setTablets(tablet).build();
-
-    leaf.assignTablets(tabletRequest);
   }
 
   public Callback<ServerStatusProto> getServerStatus(String serverName)

@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import nta.engine.QueryUnitProtos.InProgressStatus;
-import nta.engine.QueryUnitProtos.QueryUnitReportProto;
-import nta.engine.QueryUnitProtos.QueryUnitReportProtoOrBuilder;
+import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.QueryUnitReportProto;
+import nta.engine.MasterInterfaceProtos.QueryUnitReportProtoOrBuilder;
 import nta.engine.ipc.QueryUnitReport;
 
 /**

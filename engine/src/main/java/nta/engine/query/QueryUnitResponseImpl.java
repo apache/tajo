@@ -3,10 +3,10 @@
  */
 package nta.engine.query;
 
-import nta.engine.LeafServerProtos.QueryStatus;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
+import nta.engine.MasterInterfaceProtos.QueryUnitResponseProto;
+import nta.engine.MasterInterfaceProtos.QueryUnitResponseProtoOrBuilder;
 import nta.engine.QueryUnitId;
-import nta.engine.QueryUnitProtos.QueryUnitResponseProto;
-import nta.engine.QueryUnitProtos.QueryUnitResponseProtoOrBuilder;
 import nta.engine.ipc.protocolrecords.QueryUnitResponse;
 
 /**

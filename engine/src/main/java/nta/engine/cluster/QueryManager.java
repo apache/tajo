@@ -8,10 +8,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.Query;
 import nta.engine.QueryId;
 import nta.engine.QueryUnitId;
-import nta.engine.QueryUnitProtos.InProgressStatus;
 import nta.engine.SubQuery;
 import nta.engine.SubQueryId;
 import nta.engine.planner.global.QueryUnit;

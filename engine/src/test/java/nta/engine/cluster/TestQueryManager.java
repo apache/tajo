@@ -4,9 +4,9 @@
 package nta.engine.cluster;
 
 import static org.junit.Assert.assertEquals;
-import nta.engine.LeafServerProtos.QueryStatus;
+import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.QueryIdFactory;
-import nta.engine.QueryUnitProtos.InProgressStatus;
 
 import org.junit.Before;
 import org.junit.Test;

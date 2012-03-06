@@ -17,7 +17,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
-import nta.engine.QueryUnitProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.parser.ParseTree;

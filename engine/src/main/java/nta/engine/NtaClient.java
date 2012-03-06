@@ -10,7 +10,6 @@ import nta.rpc.RemoteException;
 import org.apache.hadoop.conf.Configuration;
 
 public class NtaClient {
-  private Configuration conf = null;
   private QueryClientInterface asyncProtocol = null;
   private QueryClientInterface blockingProtocol = null;
 
@@ -28,7 +27,6 @@ public class NtaClient {
    * @param conf
    */
   public void init(Configuration conf, String ip, int port) {
-    this.conf = conf;
     InetSocketAddress addr = new InetSocketAddress(ip, port);
     this.blockingProtocol =
         (QueryClientInterface) NettyRpc.getProtoParamBlockingRpcProxy(

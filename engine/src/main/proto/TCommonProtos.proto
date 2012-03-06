@@ -21,3 +21,29 @@ message StatProto {
     required StatType type = 1;
     required int64 value = 2;
 }
+
+message QueryIdProto {
+    required string timeId = 1;
+    required int32 id = 2;
+}
+
+message SubQueryIdProto {
+    required QueryIdProto queryId = 1;
+    required int32 id = 2;
+}
+
+message LogicalQueryUnitIdProto {
+    required SubQueryIdProto subQueryId = 1;
+    required int32 id = 2;
+}
+
+message QueryUnitIdProto {
+    required LogicalQueryUnitIdProto logicalQueryUnitId = 1;
+    required int32 id = 2;
+}
+
+message ServerNameProto {
+    required string serverName = 1;
+    required string hostName = 2;
+    required int32 port = 3;
+}

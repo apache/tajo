@@ -6,10 +6,8 @@ package nta.engine.ipc.protocolrecords;
 import java.util.List;
 
 import nta.common.ProtoObject;
+import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
 import nta.engine.QueryUnitId;
-import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
-
-import com.google.gson.Gson;
 
 /**
  * @author jihoon

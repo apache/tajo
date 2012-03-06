@@ -10,11 +10,11 @@ import nta.conf.NtaConf;
 import nta.engine.ipc.QueryEngineInterface;
 import nta.engine.json.GsonCreator;
 
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.ipc.RPC;
 
 import com.google.gson.Gson;
 
+@Deprecated
 public class NtaEngineClient {
 	
 	static String[] history = new String[20];
@@ -44,7 +44,6 @@ public class NtaEngineClient {
 	  }
 
     NtaConf conf = new NtaConf();
-    FileSystem fs = FileSystem.get(conf);
     QueryEngineInterface cli = 
         (QueryEngineInterface) RPC.getProxy(QueryEngineInterface.class, 
         		QueryEngineInterface.versionId, 

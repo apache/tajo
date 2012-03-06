@@ -1,8 +1,8 @@
 package nta.engine.cluster;
 
 import nta.common.ProtoObject;
-import nta.engine.cluster.ClusterProtos.ServerNameProto;
-import nta.engine.cluster.ClusterProtos.ServerNameProtoOrBuilder;
+import nta.engine.TCommonProtos.ServerNameProto;
+import nta.engine.TCommonProtos.ServerNameProtoOrBuilder;
 
 import com.google.common.base.Preconditions;
 

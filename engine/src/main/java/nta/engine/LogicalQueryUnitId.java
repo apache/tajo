@@ -6,17 +6,17 @@ package nta.engine;
 import java.text.NumberFormat;
 
 import nta.common.ProtoObject;
-import nta.engine.query.QueryIdProtos.LogicalQueryUnitIdProto;
-import nta.engine.query.QueryIdProtos.LogicalQueryUnitIdProtoOrBuilder;
+import nta.engine.TCommonProtos.LogicalQueryUnitIdProto;
+import nta.engine.TCommonProtos.LogicalQueryUnitIdProtoOrBuilder;
 
 /**
  * @author jihoon
  *
  */
 public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
-ProtoObject<LogicalQueryUnitIdProto> {
+  ProtoObject<LogicalQueryUnitIdProto> {
   
-private static final NumberFormat idFormat = NumberFormat.getInstance();
+  private static final NumberFormat idFormat = NumberFormat.getInstance();
   
   static {
     idFormat.setGroupingUsed(false);

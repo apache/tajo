@@ -18,7 +18,7 @@ import nta.catalog.TableUtil;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.conf.NtaConf;
-import nta.engine.QueryUnitProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.LeafServerTracker;
 import nta.engine.cluster.QueryManager;
@@ -29,7 +29,6 @@ import nta.engine.json.GsonCreator;
 import nta.engine.query.GlobalEngine;
 import nta.storage.StorageManager;
 import nta.zookeeper.ZkClient;
-import nta.zookeeper.ZkServer;
 import nta.zookeeper.ZkUtil;
 
 import org.apache.commons.logging.Log;
@@ -55,7 +54,6 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 
   private final String clientServiceAddr;
   private final ZkClient zkClient;
-  private ZkServer zkServer;
 
   private final Path basePath;
   private final Path dataPath;

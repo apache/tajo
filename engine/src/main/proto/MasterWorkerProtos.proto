@@ -1,0 +1,59 @@
+option java_package = "nta.engine";
+option java_outer_classname = "MasterInterfaceProtos";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+import "CatalogProtos.proto";
+import "TCommonProtos.proto";
+
+enum QueryStatus {
+     PENDING = 0;
+     INPROGRESS = 1;
+     FINISHED = 2;
+     FAILED = 3;
+     ABORTED = 4;
+}
+
+message QueryUnitReportProto {
+    repeated InProgressStatus status = 1;
+}
+
+message InProgressStatus {
+    required string id = 1;
+    required float progress = 2;
+    required QueryStatus status = 3;
+    optional StatSetProto stats = 4;
+}
+
+message QueryUnitRequestProto {
+    required string id = 1;
+    repeated TabletProto fragments = 2;
+    required string outputTable = 3;
+    required bool clusteredOutput = 4;
+    required string serializedData = 5;
+}
+
+message QueryUnitResponseProto {
+    required string id = 1;
+    required QueryStatus status = 2;
+}
+
+message SubQueryResponseProto {
+}
+
+message ServerStatusProto {
+    message System {
+        required int32 availableProcessors = 1;
+        required int64 freeMemory = 2;
+        required int64 maxMemory = 3;
+        required int64 totalMemory = 4;
+    }
+    message Disk {
+        required string absolutePath = 1;
+        required int64 totalSpace = 2;
+        required int64 freeSpace = 3;
+        required int64 usableSpace = 4;
+    }
+    required System system = 1;
+    repeated Disk disk = 2;
+}

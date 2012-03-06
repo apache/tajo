@@ -14,7 +14,6 @@ public class MiniNtaEngineCluster {
 	static final Log LOG = LogFactory.getLog(MiniNtaEngineCluster.class);
 	private Configuration conf;
 	public LocalNtaEngineCluster engineCluster;
-	private static int index;
 	
 	public MiniNtaEngineCluster(Configuration conf, int numLeafServers) throws Exception {
 		this.conf = conf;

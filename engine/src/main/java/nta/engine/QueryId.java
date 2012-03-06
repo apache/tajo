@@ -6,8 +6,8 @@ package nta.engine;
 import java.text.NumberFormat;
 
 import nta.common.ProtoObject;
-import nta.engine.query.QueryIdProtos.QueryIdProto;
-import nta.engine.query.QueryIdProtos.QueryIdProtoOrBuilder;
+import nta.engine.TCommonProtos.QueryIdProto;
+import nta.engine.TCommonProtos.QueryIdProtoOrBuilder;
 
 /**
  * @author Hyunsik Choi

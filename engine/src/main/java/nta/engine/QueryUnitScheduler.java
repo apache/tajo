@@ -9,7 +9,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import nta.catalog.TCatUtil;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.engine.LeafServerProtos.QueryStatus;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.QueryManager.WaitStatus;

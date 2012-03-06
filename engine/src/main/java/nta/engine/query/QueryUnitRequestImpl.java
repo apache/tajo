@@ -6,21 +6,19 @@ package nta.engine.query;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.annotations.Expose;
-
-import nta.distexec.DistPlan;
+import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
+import nta.engine.MasterInterfaceProtos.QueryUnitRequestProtoOrBuilder;
 import nta.engine.QueryUnitId;
-import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
-import nta.engine.QueryUnitProtos.QueryUnitRequestProtoOrBuilder;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
-import nta.engine.json.GsonCreator;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * @author jihoon
  *
  */
-public class QueryUnitRequestImpl implements QueryUnitRequest{
+public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
   @Expose
 	private QueryUnitId id;

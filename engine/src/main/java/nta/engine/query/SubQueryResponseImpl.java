@@ -3,8 +3,8 @@
  */
 package nta.engine.query;
 
-import nta.engine.LeafServerProtos.QueryStatus;
-import nta.engine.LeafServerProtos.SubQueryResponseProto;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
+import nta.engine.MasterInterfaceProtos.SubQueryResponseProto;
 import nta.engine.QueryUnitId;
 import nta.engine.ipc.protocolrecords.SubQueryResponse;
 

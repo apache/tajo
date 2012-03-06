@@ -4,9 +4,9 @@
 package nta.engine.ipc.protocolrecords;
 
 import nta.common.ProtoObject;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
+import nta.engine.MasterInterfaceProtos.QueryUnitResponseProto;
 import nta.engine.QueryUnitId;
-import nta.engine.QueryUnitProtos.QueryUnitResponseProto;
-import nta.engine.LeafServerProtos.QueryStatus;
 
 /**
  * @author jihoon

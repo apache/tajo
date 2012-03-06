@@ -18,16 +18,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import nta.catalog.CatalogClient;
-import nta.catalog.statistics.StatSet;
 import nta.conf.NtaConf;
-import nta.engine.LeafServerProtos.AssignTabletRequestProto;
-import nta.engine.LeafServerProtos.QueryStatus;
-import nta.engine.LeafServerProtos.ReleaseTabletRequestProto;
-import nta.engine.LeafServerProtos.SubQueryResponseProto;
-import nta.engine.QueryUnitProtos.InProgressStatus;
-import nta.engine.QueryUnitProtos.QueryUnitReportProto;
-import nta.engine.QueryUnitProtos.QueryUnitRequestProto;
-import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
+import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
+import nta.engine.MasterInterfaceProtos.QueryUnitReportProto;
+import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
+import nta.engine.MasterInterfaceProtos.ServerStatusProto;
+import nta.engine.MasterInterfaceProtos.SubQueryResponseProto;
 import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.ipc.AsyncWorkerInterface;
 import nta.engine.ipc.MasterInterface;
@@ -213,7 +210,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     
     // to send
     List<InProgressStatus> list 
-      = new ArrayList<QueryUnitProtos.InProgressStatus>();
+      = new ArrayList<InProgressStatus>();
     InProgressStatus status = null;
     // to be removed
     List<QueryUnitId> tobeRemoved = new ArrayList<QueryUnitId>();
@@ -338,16 +335,6 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   }
 
   @Override
-  public void assignTablets(AssignTabletRequestProto request) {
-    // TODO - not implemented yet
-  }
-
-  @Override
-  public void releaseTablets(ReleaseTabletRequestProto request) {
-    // TODO - not implemented yet
-  }
-
-  @Override
   public ServerStatusProto getServerStatus(NullProto request) {
     // serverStatus builder
     ServerStatusProto.Builder serverStatus = ServerStatusProto.newBuilder();
@@ -458,10 +445,6 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     
     public QueryStatus getStatus() {
       return this.status;
-    }
-    
-    public StatSet getStats() {
-      return null;
     }
     
     public void abort() {

@@ -3,14 +3,14 @@ package nta.engine;
 import java.text.NumberFormat;
 
 import nta.common.ProtoObject;
-import nta.engine.query.QueryIdProtos.SubQueryIdProto;
-import nta.engine.query.QueryIdProtos.SubQueryIdProtoOrBuilder;
+import nta.engine.TCommonProtos.SubQueryIdProto;
+import nta.engine.TCommonProtos.SubQueryIdProtoOrBuilder;
 
 /**
  * @author Hyunsik Choi
  */
 public class SubQueryId implements Comparable<SubQueryId>, 
-ProtoObject<SubQueryIdProto> {
+  ProtoObject<SubQueryIdProto> {
   private static final NumberFormat idFormat = NumberFormat.getInstance();
   
   static {

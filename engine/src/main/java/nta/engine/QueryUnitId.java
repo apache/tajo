@@ -3,14 +3,14 @@ package nta.engine;
 import java.text.NumberFormat;
 
 import nta.common.ProtoObject;
-import nta.engine.query.QueryIdProtos.QueryUnitIdProto;
-import nta.engine.query.QueryIdProtos.QueryUnitIdProtoOrBuilder;
+import nta.engine.TCommonProtos.QueryUnitIdProto;
+import nta.engine.TCommonProtos.QueryUnitIdProtoOrBuilder;
 
 /**
  * @author Hyunsik Choi
  */
 public class QueryUnitId implements Comparable<QueryUnitId>, 
-ProtoObject<QueryUnitIdProto> {
+  ProtoObject<QueryUnitIdProto> {
   private static final NumberFormat format = NumberFormat.getInstance();
   static {
     format.setGroupingUsed(false);

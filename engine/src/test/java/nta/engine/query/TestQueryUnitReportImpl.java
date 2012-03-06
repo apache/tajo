@@ -3,14 +3,14 @@
  */
 package nta.engine.query;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.QueryIdFactory;
-import nta.engine.LeafServerProtos.QueryStatus;
-import nta.engine.QueryUnitProtos.InProgressStatus;
 import nta.engine.ipc.QueryUnitReport;
 
 import org.junit.Test;

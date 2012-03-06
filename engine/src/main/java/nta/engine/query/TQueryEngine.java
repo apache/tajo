@@ -7,12 +7,7 @@ import nta.engine.NConstants;
 import nta.engine.SubqueryContext;
 import nta.engine.exception.InternalException;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
-import nta.engine.ipc.protocolrecords.SubQueryRequest;
 import nta.engine.json.GsonCreator;
-import nta.engine.parser.ParseTree;
-import nta.engine.parser.QueryAnalyzer;
-import nta.engine.planner.LogicalOptimizer;
-import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.PhysicalPlanner;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.physical.PhysicalExec;
@@ -38,7 +33,6 @@ public class TQueryEngine {
   private final Path dataPath;
   
   private final PhysicalPlanner phyPlanner;
-  private final QueryAnalyzer analyzer;
   
   public TQueryEngine(Configuration conf, CatalogService catalog, 
       ZkClient zkClient) throws IOException {    
@@ -55,22 +49,6 @@ public class TQueryEngine {
         
     this.storageManager = new StorageManager(conf);
     this.phyPlanner = new PhysicalPlanner(storageManager);
-    this.analyzer = new QueryAnalyzer(catalog);
-  }
-  
-  public PhysicalExec createPlan(SubqueryContext ctx, SubQueryRequest request) 
-      throws InternalException {
-    ParseTree parseTree = analyzer.parse(ctx, request.getQuery());
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, parseTree);
-    LogicalOptimizer.optimize(ctx, plan);
-    LOG.info("Assigned task: (" + request.getId() + ") start:"
-        + request.getFragments().get(0).getStartOffset() + " end: "
-        + request.getFragments() + "\nquery: " + request.getQuery());
-
-    
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-    
-    return exec;
   }
   
   public PhysicalExec createPlan(SubqueryContext ctx, QueryUnitRequest request, 

@@ -21,6 +21,7 @@ public class ServerEngn {
     fNode++;
   }
 
+  @SuppressWarnings("deprecation")
   public void run(CubeConf conf) throws IOException, InterruptedException {
 
     ProtoParamRpcServer server = NettyRpc.getProtoParamRpcServer(

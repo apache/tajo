@@ -5,10 +5,10 @@ package nta.engine.cluster;
 
 import java.net.InetSocketAddress;
 
+import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.QueryUnitReportProto;
 import nta.engine.NConstants;
 import nta.engine.QueryUnitId;
-import nta.engine.QueryUnitProtos.InProgressStatus;
-import nta.engine.QueryUnitProtos.QueryUnitReportProto;
 import nta.engine.ipc.MasterInterface;
 import nta.engine.ipc.QueryUnitReport;
 import nta.engine.query.QueryUnitReportImpl;

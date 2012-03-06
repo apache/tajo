@@ -1,13 +1,14 @@
 package nta.cluster;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.util.List;
 
+import nta.engine.MasterInterfaceProtos.ServerStatusProto;
+import nta.engine.MasterInterfaceProtos.ServerStatusProto.Disk;
 import nta.engine.NtaTestingUtility;
-import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto;
-import nta.engine.cluster.LeafServerStatusProtos.ServerStatusProto.Disk;
 import nta.engine.cluster.LeafServerTracker;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.rpc.RemoteException;
