@@ -4,9 +4,27 @@
 package nta.engine.cluster;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
+import nta.engine.Query;
+import nta.engine.QueryId;
 import nta.engine.QueryIdFactory;
+import nta.engine.SubQuery;
+import nta.engine.SubQueryId;
+import nta.engine.exception.NoSuchQueryIdException;
+import nta.engine.planner.global.LogicalQueryUnit;
+import nta.engine.planner.global.MockQueryUnitScheduler;
+import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.LogicalRootNode;
+import nta.engine.planner.logical.ScanNode;
+import nta.engine.query.GlobalQueryPlanner;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -57,5 +75,45 @@ public class TestQueryManager {
       pu[i].join();
     }
     assertEquals(6, qm.getAllProgresses().size());
+  }
+  
+  @Test
+  public void testQueryInfo() throws IOException, NoSuchQueryIdException, InterruptedException {
+    QueryIdFactory.reset();
+    LogicalRootNode root = new LogicalRootNode();
+    CreateTableNode store = new CreateTableNode("test");
+    ScanNode scan = new ScanNode(null);
+    store.setSubNode(scan);
+    root.setSubNode(store);
+    
+    QueryId qid = QueryIdFactory.newQueryId();
+    Query query = new Query(qid);
+    qm.addQuery(query);
+    SubQueryId subId = QueryIdFactory.newSubQueryId();
+    SubQuery subQuery = new SubQuery(subId);
+    qm.addSubQuery(subQuery);
+    GlobalQueryPlanner planner = new GlobalQueryPlanner(null);
+    LogicalQueryUnit plan = planner.build(subId, root).getRoot();
+    MockQueryUnitScheduler mockScheduler = new MockQueryUnitScheduler(planner, 
+        qm, plan);
+    mockScheduler.run();
+    List<String> s1 = new ArrayList<String>();
+    recursiveTest(s1, plan);
+    List<String> s2 = qm.getAssignedWorkers(query);
+    assertEquals(s1.size(), s2.size());
+    for (int i = 0; i < s1.size(); i++) {
+      assertEquals(s1.get(i), s2.get(i));
+    }
+  }
+  
+  private void recursiveTest(List<String> s, LogicalQueryUnit plan) throws NoSuchQueryIdException {
+    if (plan.hasPrevQuery()) {
+      Iterator<LogicalQueryUnit> it = plan.getPrevIterator();
+      while (it.hasNext()) {
+        recursiveTest(s, it.next());
+      }
+    }
+    s.addAll(qm.getAssignedWorkers(plan));
+    assertTrue(qm.isFinished(plan.getId()));
   }
 }

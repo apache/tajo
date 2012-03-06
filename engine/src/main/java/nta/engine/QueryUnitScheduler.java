@@ -70,6 +70,7 @@ public class QueryUnitScheduler extends Thread {
       }
     }
     
+    qm.addLogicalQueryUnit(plan);
     LOG.info("Table path " + sm.getTablePath(plan.getOutputName()).toString()
         + " is initialized for " + plan.getOutputName());
     if (plan.getPhase() == Phase.MAP) {
@@ -82,6 +83,7 @@ public class QueryUnitScheduler extends Thread {
     
     // TODO: adjust the number of localization
     QueryUnit[] units = planner.localize(plan, cm.getOnlineWorker().size());
+    qm.addQueryUnits(units);
     String hostName;
     for (QueryUnit q : units) {
       hostName = cm.getProperHost(q);
@@ -90,6 +92,7 @@ public class QueryUnitScheduler extends Thread {
       }
       q.setHost(hostName);
       pendingQueue.add(q);
+      qm.updateQueryAssignInfo(hostName, q);
     }
     requestPendingQueryUnits();
     

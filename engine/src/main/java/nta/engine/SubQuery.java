@@ -3,6 +3,12 @@
  */
 package nta.engine;
 
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import nta.engine.planner.global.LogicalQueryUnit;
 import nta.engine.planner.global.LogicalQueryUnitGraph;
 
 /**
@@ -12,18 +18,26 @@ import nta.engine.planner.global.LogicalQueryUnitGraph;
 public class SubQuery {
 
   private final SubQueryId id;
-  private final LogicalQueryUnitGraph plan;
+  private Map<LogicalQueryUnitId, LogicalQueryUnit> units;
   
-  public SubQuery(SubQueryId id, LogicalQueryUnitGraph plan) {
+  public SubQuery(SubQueryId id) {
     this.id = id;
-    this.plan = plan;
+    units = new LinkedHashMap<LogicalQueryUnitId, LogicalQueryUnit>();
+  }
+  
+  public void addLogicalQueryUnit(LogicalQueryUnit unit) {
+    units.put(unit.getId(), unit);
   }
   
   public SubQueryId getId() {
     return this.id;
   }
   
-  public LogicalQueryUnitGraph getPlan() {
-    return this.plan;
+  public Iterator<LogicalQueryUnit> getLogicalQueryUnitIterator() {
+    return this.units.values().iterator();
+  }
+  
+  public LogicalQueryUnit getLogicalQueryUnit(LogicalQueryUnitId id) {
+    return this.units.get(id);
   }
 }

@@ -10,7 +10,9 @@ import java.util.Map;
 import nta.catalog.CatalogService;
 import nta.catalog.TableDesc;
 import nta.engine.EngineService;
+import nta.engine.Query;
 import nta.engine.QueryContext;
+import nta.engine.QueryId;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
 import nta.engine.QueryUnitScheduler;
@@ -50,9 +52,6 @@ public class GlobalEngine implements EngineService {
   private QueryManager qm;
   private ClusterManager cm;
   
-  private Map<SubQuery, QueryUnitScheduler> subQueries = 
-      new HashMap<SubQuery, QueryUnitScheduler>();
-
   public GlobalEngine(Configuration conf, CatalogService cat,
       StorageManager sm, WorkerCommunicator wc,
       QueryManager qm, ClusterManager cm)
@@ -82,17 +81,39 @@ public class GlobalEngine implements EngineService {
     LogicalOptimizer.optimize(ctx, plan);
     LOG.info("* logical plan:\n" + plan);
 
+    QueryId qid = QueryIdFactory.newQueryId();
+    qm.addQuery(new Query(qid));
     SubQueryId subId = QueryIdFactory.newSubQueryId();
+    SubQuery subQuery = new SubQuery(subId);
+    qm.addSubQuery(subQuery);
     // build the global plan
     LogicalQueryUnitGraph globalPlan = globalPlanner.build(subId, plan);
     
     QueryUnitScheduler queryUnitScheduler = new QueryUnitScheduler(
         conf, sm, cm, qm, wc, globalPlanner, globalPlan.getRoot());
-    subQueries.put(new SubQuery(subId, globalPlan), queryUnitScheduler);
+    qm.addQueryUnitScheduler(subQuery, queryUnitScheduler);
     queryUnitScheduler.start();
     queryUnitScheduler.join();
 
     return globalPlan.getRoot().getOutputName();
+  }
+  
+  public LogicalQueryUnitGraph testQuery(String querystr) throws Exception {
+    LOG.info("* issued query: " + querystr);
+    // build the logical plan
+    QueryContext ctx = factory.create();
+    ParseTree tree = (QueryBlock) analyzer.parse(ctx, querystr);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
+    LogicalOptimizer.optimize(ctx, plan);
+    LOG.info("* logical plan:\n" + plan);
+
+    QueryId qid = QueryIdFactory.newQueryId();
+    qm.addQuery(new Query(qid));
+    SubQueryId subId = QueryIdFactory.newSubQueryId();
+    SubQuery subQuery = new SubQuery(subId);
+    qm.addSubQuery(subQuery);
+    // build the global plan
+    return globalPlanner.build(subId, plan);
   }
 
   public Map<QueryUnitId, Float> getProgress(SubQueryId subqid) {

@@ -322,6 +322,18 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     return cm;
   }
   
+  public QueryManager getQueryManager() {
+    return this.qm;
+  }
+  
+  public GlobalEngine getGlobalEngine() {
+    return this.queryEngine;
+  }
+  
+  public StorageManager getStorageManager() {
+    return this.storeManager;
+  }
+  
   public LeafServerTracker getTracker() {
     return tracker;
   }
