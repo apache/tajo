@@ -115,6 +115,7 @@ public class TestCube {
   }
 
   //@Test
+  @SuppressWarnings("deprecation")
   public void test() throws IOException, InterruptedException,
       ExecutionException {
     Cons.gnode = gnode;

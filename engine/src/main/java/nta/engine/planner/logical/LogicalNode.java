@@ -79,8 +79,10 @@ public abstract class LogicalNode implements Cloneable {
 	public Object clone() throws CloneNotSupportedException {
 	  LogicalNode node = (LogicalNode)super.clone();
 	  node.type = type;
-	  node.inputSchema = (Schema) inputSchema.clone();
-	  node.outputSchema = (Schema) outputSchema.clone();
+	  node.inputSchema = 
+	      (Schema) (inputSchema != null ? inputSchema.clone() : null);
+	  node.outputSchema = 
+	      (Schema) (outputSchema != null ? outputSchema.clone() : null);
 	  
 	  return node;
 	}

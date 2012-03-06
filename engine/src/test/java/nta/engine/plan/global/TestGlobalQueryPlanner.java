@@ -188,6 +188,7 @@ public class TestGlobalQueryPlanner {
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
+    @SuppressWarnings("unused")
     LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
     
   }

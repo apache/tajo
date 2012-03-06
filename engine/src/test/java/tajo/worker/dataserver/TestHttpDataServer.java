@@ -12,7 +12,6 @@ import java.util.Random;
 import nta.engine.EngineTestingUtils;
 
 import org.apache.hadoop.net.NetUtils;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
