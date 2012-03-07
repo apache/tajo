@@ -10,6 +10,7 @@ import nta.engine.json.GsonCreator;
 import org.apache.hadoop.fs.Path;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 
 /**
@@ -135,13 +136,9 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
 	}
 	
 	public String toString() {
-	  StringBuilder str = new StringBuilder();
-	  str.append("\"table\": {")
-	  .append("\"id\": \""+getId()).append("\",")
-	  .append("\"path\": \""+getPath()).append("\",")
-	  .append("\"meta\": \""+getMeta().toString()).append("\"}");
-	  
-	  return str.toString();
+	  Gson gson = new GsonBuilder().setPrettyPrinting().
+	      excludeFieldsWithoutExposeAnnotation().create();
+    return gson.toJson(this);
 	}
 	
 	public String toJSON() {

@@ -6,9 +6,11 @@ import nta.catalog.TableDesc;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.json.GsonCreator;
+import nta.engine.planner.JoinType;
 import nta.engine.utils.TUtil;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 
 /**
@@ -25,6 +27,8 @@ public class QueryBlock extends ParseTree {
   private Target [] targetList = null;
   /* from clause */
   private FromTable [] fromTables = null;
+  /* from clause with join */
+  private JoinClause joinClause = null;
   /* where clause */
   private EvalNode whereCond = null;
   /* if true, there is at least one aggregation function. */
@@ -129,6 +133,18 @@ public class QueryBlock extends ParseTree {
     this.fromTables = tables;
   }
   
+  public final boolean hasExplicitJoinClause() {
+    return this.joinClause != null;
+  }
+  
+  public final void setJoinClause(final JoinClause joinClause) {
+    this.joinClause = joinClause;
+  }
+  
+  public final JoinClause getJoinClause() {
+    return this.joinClause;
+  }
+  
   public final int getNumFromTables() {
     return fromTables.length;
   }
@@ -147,6 +163,56 @@ public class QueryBlock extends ParseTree {
   
   public final EvalNode getWhereCondition() {
     return this.whereCond;
+  }
+  
+  public static class JoinClause implements Cloneable {
+    @Expose private JoinType joinType;
+    @Expose private FromTable left;
+    @Expose private FromTable right;
+    @Expose private JoinClause rightJoin;
+    
+    @SuppressWarnings("unused")
+    private JoinClause() {
+      // for gson
+    }
+    
+    public JoinClause(final JoinType joinType, final FromTable left) {
+      this.joinType = joinType;
+      this.left = left;
+    }
+    
+    public JoinType getJoinType() {
+      return this.joinType;
+    }
+    
+    public void setRight(FromTable right) {
+      this.right = right;
+    }
+    
+    public void setRight(JoinClause right) {
+      this.rightJoin = right;
+    }
+    
+    public boolean hasRightJoin() {
+      return rightJoin != null;
+    }
+    
+    public FromTable getLeft() {
+      return this.left;
+    }
+    
+    public FromTable getRight() {
+      return this.right;
+    }
+    
+    public JoinClause getRightJoin() {
+      return this.rightJoin;
+    }
+    
+    public String toString() {
+      Gson gson = new GsonBuilder().setPrettyPrinting().create();
+      return gson.toJson(this);
+    }
   }
   
   public static class Target implements Cloneable {

@@ -1,5 +1,6 @@
 package nta.engine.parser;
 
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import nta.catalog.CatalogService;
@@ -21,7 +22,9 @@ import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
+import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.SortKey;
+import nta.engine.planner.JoinType;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -67,6 +70,12 @@ public class TestQueryAnalyzer {
     schema2.addColumn("people_id", DataType.INT);
     schema2.addColumn("dept", DataType.STRING);
     schema2.addColumn("year", DataType.INT);
+    
+    Schema schema3 = new Schema();
+    schema3.addColumn("id", DataType.INT);
+    schema3.addColumn("people_id", DataType.INT);
+    schema3.addColumn("class", DataType.STRING);
+    schema3.addColumn("branch_name", DataType.STRING);
 
     TableMeta meta = TCatUtil.newTableMeta(schema1, StoreType.CSV);
     TableDesc people = new TableDescImpl("people", meta, new Path("file:///"));
@@ -76,6 +85,11 @@ public class TestQueryAnalyzer {
         new Options(),
         new Path("file:///"));
     cat.addTable(student);
+    
+    TableDesc branch = TCatUtil.newTableDesc("branch", schema3, StoreType.CSV,
+        new Options(),
+        new Path("file:///"));
+    cat.addTable(branch);
     
     FunctionDesc funcMeta = new FunctionDesc("sumtest", TestSum.class,
         FunctionType.GENERAL, DataType.INT, 
@@ -257,5 +271,119 @@ public class TestQueryAnalyzer {
     Context ctx = factory.create();
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, INVALID_QUERIES[2]);
     assertEquals("age", block.getGroupFields()[0].getQualifiedName());
+  }
+  
+  static String [] JOINS = {
+    "select p.id, name, branch_name from people as p natural join student natural join branch", // 0
+    "select name, dept from people as p inner join student as s on people.id = student.people_id", // 1
+    "select name, addr from people inner join student using (id, name)", // 2
+    "select p.id, name, branch_name from people as p cross join student cross join branch", // 3
+    "select p.id, dept from people as p left outer join student as s on people.name = student.name", // 4
+    "select p.id, dept from people as p right outer join student as s on people.name = student.name", // 5
+    "select p.id, dept from people as p join student as s on people.name = student.name", // 6
+    "select p.id, dept from people as p left join student as s on people.name = student.name", // 7
+    "select p.id, dept from people as p right join student as s on people.name = student.name" // 8
+  };
+  
+  @Test
+  public final void testNaturalJoinClause() {
+    Context ctx = factory.create();
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[0]);
+    JoinClause join = block.getJoinClause();
+    assertEquals(JoinType.NATURAL, join.getJoinType());
+    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("p", join.getLeft().getAlias());    
+    assertTrue(join.hasRightJoin());
+    
+    assertFalse(join.getRightJoin().getLeft().hasAlias());
+    assertEquals("student", join.getRightJoin().getLeft().getTableId());
+    assertEquals("branch", join.getRightJoin().getRight().getTableId());
+  }
+  
+  @Test
+  public final void testInnerJoinClause() {
+    Context ctx = factory.create();
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[1]);
+    JoinClause join = block.getJoinClause();
+    assertEquals(JoinType.INNER, join.getJoinType());
+    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("p", join.getLeft().getAlias());
+    assertEquals("student", join.getRight().getTableId());
+    assertEquals("s", join.getRight().getAlias());
+  }
+  
+  @Test
+  public final void testJoinClause() {
+    Context ctx = factory.create();
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[6]);
+    JoinClause join = block.getJoinClause();
+    assertEquals(JoinType.INNER, join.getJoinType());
+    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("p", join.getLeft().getAlias());
+    assertEquals("student", join.getRight().getTableId());
+    assertEquals("s", join.getRight().getAlias());
+  }
+  
+  @Test
+  public final void testCrossJoinClause() {
+    Context ctx = factory.create();
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[3]);
+    JoinClause join = block.getJoinClause();
+    assertEquals(JoinType.CROSS_JOIN, join.getJoinType());
+    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("p", join.getLeft().getAlias());    
+    assertTrue(join.hasRightJoin());
+    
+    assertFalse(join.getRightJoin().getLeft().hasAlias());
+    assertEquals("student", join.getRightJoin().getLeft().getTableId());
+    assertEquals("branch", join.getRightJoin().getRight().getTableId());
+  }
+  
+  @Test
+  public final void testLeftOuterJoinClause() {
+    Context ctx = factory.create();
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[4]);
+    JoinClause join = block.getJoinClause();
+    assertEquals(JoinType.LEFT_OUTER, join.getJoinType());
+    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("p", join.getLeft().getAlias());
+    assertEquals("student", join.getRight().getTableId());
+    assertEquals("s", join.getRight().getAlias());
+  }
+  
+  @Test
+  public final void testLeftJoinClause() {
+    Context ctx = factory.create();
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[7]);
+    JoinClause join = block.getJoinClause();
+    assertEquals(JoinType.LEFT_OUTER, join.getJoinType());
+    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("p", join.getLeft().getAlias());
+    assertEquals("student", join.getRight().getTableId());
+    assertEquals("s", join.getRight().getAlias());
+  }
+  
+  @Test
+  public final void testRightOuterJoinClause() {
+    Context ctx = factory.create();
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[5]);
+    JoinClause join = block.getJoinClause();
+    assertEquals(JoinType.RIGHT_OUTER, join.getJoinType());
+    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("p", join.getLeft().getAlias());
+    assertEquals("student", join.getRight().getTableId());
+    assertEquals("s", join.getRight().getAlias());
+  }
+  
+  @Test
+  public final void testRightJoinClause() {
+    Context ctx = factory.create();
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[8]);
+    JoinClause join = block.getJoinClause();
+    assertEquals(JoinType.RIGHT_OUTER, join.getJoinType());
+    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("p", join.getLeft().getAlias());
+    assertEquals("student", join.getRight().getTableId());
+    assertEquals("s", join.getRight().getAlias());
   }
 }

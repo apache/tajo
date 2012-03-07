@@ -6,13 +6,10 @@ package nta.engine.planner;
  *
  */
 public enum JoinType {
-	INNER,
-	OUTER,
-	SEMI,
-	ANTI,
-	LEFT,
-	RIGHT,
-	FULL,
-	UNIQUE_OUTER,
-	UNIQUE_INNER
+	NATURAL,
+  CROSS_JOIN,
+  INNER,
+	LEFT_OUTER,
+	RIGHT_OUTER,
+	FULL_OUTER
 }

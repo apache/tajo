@@ -23,8 +23,10 @@ import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.parser.QueryBlock.FromTable;
+import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.SortKey;
 import nta.engine.parser.QueryBlock.Target;
+import nta.engine.planner.JoinType;
 import nta.engine.query.exception.AmbiguousFieldException;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.engine.query.exception.NQLSyntaxException;
@@ -213,41 +215,113 @@ public final class QueryAnalyzer {
    */
   private static void parseFromClause(final Context ctx, 
       final CommonTree ast, final QueryBlock block) {
-    int numTables = ast.getChildCount(); //
-
-    if (numTables > 0) {
-      FromTable[] tables = new FromTable[numTables];
-      CommonTree node = null;
-      for (int i = 0; i < ast.getChildCount(); i++) {
-        node = (CommonTree) ast.getChild(i);
-
-        switch (node.getType()) {
-
-        case NQLParser.TABLE:
-          // table (AS ID)?
-          // 0 - a table name, 1 - table alias
-          String tableName = node.getChild(0).getText();
-          TableDesc desc = checkAndGetTableByName(ctx, tableName);
-          FromTable table = null;
-          if (node.getChildCount() > 1) {
-            table = new FromTable(desc, 
-                node.getChild(1).getText());
-            ctx.renameTable(table.getTableId(), table.getAlias());
-          } else {
-            table = new FromTable(desc);
-            ctx.renameTable(table.getTableId(), table.getTableId());
-          }
-          
-          tables[i] = table;
-          
-          break;        
-
-        default:
-        } // switch
-      } // for each derievedTable
-
-      block.setFromTables(tables);
-    } // if the number of tables is greater than 0
+    if (ast.getChild(0).getType() == NQLParser.JOIN) {
+      JoinClause joinClause = parseJoinClause(ctx, block, 
+          (CommonTree) ast.getChild(0));
+      block.setJoinClause(joinClause);
+    } else {
+      int numTables = ast.getChildCount(); //
+  
+      if (numTables > 0) {
+        FromTable[] tables = new FromTable[numTables];
+        CommonTree node = null;
+        for (int i = 0; i < ast.getChildCount(); i++) {
+          node = (CommonTree) ast.getChild(i);
+  
+          switch (node.getType()) {
+  
+          case NQLParser.TABLE:
+            // table (AS ID)?
+            // 0 - a table name, 1 - table alias
+            String tableName = node.getChild(0).getText();
+            TableDesc desc = checkAndGetTableByName(ctx, tableName);
+            FromTable table = null;
+            if (node.getChildCount() > 1) {
+              table = new FromTable(desc, 
+                  node.getChild(1).getText());
+              ctx.renameTable(table.getTableId(), table.getAlias());
+            } else {
+              table = new FromTable(desc);
+              ctx.renameTable(table.getTableId(), table.getTableId());
+            }
+            
+            tables[i] = table;
+            
+            break;        
+  
+          default:
+          } // switch
+        } // for each derievedTable
+  
+        block.setFromTables(tables);
+      } // if the number of tables is greater than 0
+    }
+  }
+  
+  private static JoinClause parseJoinClause(final Context ctx, final QueryBlock block, 
+      final CommonTree ast) {
+    CommonTree joinAST = (CommonTree) ast;
+    
+    int idx = 0;
+    int parsedJoinType = joinAST.getChild(idx).getType();
+    JoinType joinType = null;
+    
+    switch (parsedJoinType) {
+    case NQLParser.NATURAL_JOIN:
+      joinType = JoinType.NATURAL;
+      break;    
+    case NQLParser.INNER_JOIN:
+      joinType = JoinType.INNER;
+      break;
+    case NQLParser.OUTER_JOIN:
+      CommonTree outerAST = (CommonTree) joinAST.getChild(0);      
+      if (outerAST.getChild(0).getType() == NQLParser.LEFT) {
+        joinType = JoinType.LEFT_OUTER;
+      } else if (outerAST.getChild(0).getType() == NQLParser.RIGHT) {
+        joinType = JoinType.RIGHT_OUTER;
+      }
+      break;
+    case NQLParser.CROSS_JOIN:
+      joinType = JoinType.CROSS_JOIN;
+      break;
+    }
+    
+    idx++; // 1
+    FromTable left = parseTable(ctx, block, (CommonTree) joinAST.getChild(idx));
+    ctx.renameTable(left.getTableId(), 
+        left.hasAlias() ? left.getAlias() : left.getTableId());
+    JoinClause joinClause = new JoinClause(joinType, left);
+    
+    idx++; // 2
+    if (joinAST.getChild(idx).getType() == NQLParser.JOIN) {
+      joinClause.setRight(parseJoinClause(ctx, block, 
+          (CommonTree) joinAST.getChild(idx)));
+    } else {
+      FromTable right = parseTable(ctx, block, 
+          (CommonTree) joinAST.getChild(idx));
+      ctx.renameTable(right.getTableId(), 
+          right.hasAlias() ? right.getAlias() : right.getTableId());
+      joinClause.setRight(right);
+    }
+    
+    idx++; // 3
+    
+    return joinClause;
+  }
+  
+  private static FromTable parseTable(final Context ctx, final QueryBlock block,
+      final CommonTree tableAST) {
+    String tableName = tableAST.getChild(0).getText();
+    TableDesc desc = checkAndGetTableByName(ctx, tableName);
+    FromTable table = null;
+    if (tableAST.getChildCount() > 1) {
+      table = new FromTable(desc, 
+          tableAST.getChild(1).getText());
+    } else {
+      table = new FromTable(desc);
+    }
+    
+    return table;
   }
   
   /**

@@ -15,6 +15,7 @@ import nta.engine.json.GsonCreator;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 
 /**
@@ -155,31 +156,9 @@ public class TableMetaImpl implements TableMeta {
 	}
 	
 	public String toString() {
-    StringBuilder sb = new StringBuilder();
-    if(viaProto) {
-      return proto.toString();
-    }
-    
-    sb.append("{");
-    if(schema != null) {
-      sb.append("schema {")
-      .append(schema.toString())
-      .append("}");
-    }
-    
-    if(storeType != null) {
-      sb.append("storeType: {")
-      .append(storeType)
-      .append("}");
-    }
-    
-    if(options != null) {
-      sb.append("options: {")
-      .append(options)
-      .append("}");
-    }
-    
-    return sb.toString();
+	  Gson gson = new GsonBuilder().setPrettyPrinting().
+        excludeFieldsWithoutExposeAnnotation().create();
+	  return gson.toJson(this);
   }
 	
 	////////////////////////////////////////////////////////////////////////

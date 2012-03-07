@@ -195,7 +195,8 @@ tableRef
   
 joinedTable
   : l=derivedTable CROSS JOIN r=tableRef -> ^(JOIN CROSS_JOIN $l $r)
-  | l=derivedTable t=join_type? JOIN r=tableRef s=join_specification -> ^(JOIN $t? $l $r $s)  
+  | l=derivedTable JOIN r=tableRef s=join_specification -> ^(JOIN INNER_JOIN $l $r $s)
+  | l=derivedTable t=join_type JOIN r=tableRef s=join_specification -> ^(JOIN $t $l $r $s)  
   | l=derivedTable 'natural' t=join_type? 'join' r=tableRef -> ^(JOIN NATURAL_JOIN $t? $l $r)
   ; 
 
