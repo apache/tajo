@@ -30,7 +30,7 @@ public class TestNQLParser {
       "select name, addr, age from people where age > 30", // 6
       "select name, addr, age from people where age = 30", // 7
       "select name as n, sum(score, 3+4, 3>4) as total, 3+4 as id from people where age = 30", // 8
-      "select ipv4:src_ip from test" // 9
+      "select ipv4:src_ip from test", // 9
   };
 
   static final String[] insQueries = {
@@ -101,6 +101,100 @@ public class TestNQLParser {
       NQLSyntaxException {
     Tree tree = parseQuery(insQueries[0]);
     assertEquals(tree.getType(), NQLParser.INSERT);
+  }
+  
+  static String [] JOINS = {
+    "select name, addr from people natural join student natural join professor", // 0
+    "select name, addr from people inner join student on people.name = student.name", // 1
+    "select name, addr from people inner join student using (id, name)", // 2
+    "select name, addr from people cross join student cross join professor", // 3
+    "select name, addr from people left outer join student on people.name = student.name", // 4
+    "select name, addr from people right outer join student on people.name = student.name" // 5
+  };
+  
+  @Test
+  public void testNaturalJoinClause() {
+    // l=derivedTable 'natural' t=join_type? 'join' r=tableRef -> ^(JOIN NATURAL_JOIN $t? $l $r)
+    Tree tree = parseQuery(JOINS[0]);
+    assertEquals(tree.getType(), NQLParser.SELECT);
+    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    CommonTree fromAST = (CommonTree) tree.getChild(0);
+    assertEquals(NQLParser.JOIN, fromAST.getChild(0).getType());
+    CommonTree joinAST = (CommonTree) fromAST.getChild(0);
+    assertEquals(NQLParser.NATURAL_JOIN, joinAST.getChild(0).getType());
+    assertEquals("people", joinAST.getChild(1).getChild(0).getText());
+    assertEquals(NQLParser.JOIN, joinAST.getChild(2).getType());
+    joinAST = (CommonTree) joinAST.getChild(2);
+    assertEquals("student", joinAST.getChild(1).getChild(0).getText());
+    assertEquals("professor", joinAST.getChild(2).getChild(0).getText());
+  }
+  
+  @Test
+  public void testInnerJoinClause() {
+    // l=derivedTable t=join_type? JOIN r=tableRef s=join_specification -> ^(JOIN $t? $l $r $s)
+    // 
+    Tree tree = parseQuery(JOINS[1]);    
+    assertEquals(tree.getType(), NQLParser.SELECT);
+    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    CommonTree fromAST = (CommonTree) tree.getChild(0);
+    assertEquals(NQLParser.JOIN, fromAST.getChild(0).getType());
+    CommonTree joinAST = (CommonTree) fromAST.getChild(0);
+    assertEquals(NQLParser.INNER_JOIN, joinAST.getChild(0).getType());
+    assertEquals("people", joinAST.getChild(1).getChild(0).getText());
+    assertEquals("student", joinAST.getChild(2).getChild(0).getText());
+    assertEquals(NQLParser.ON, joinAST.getChild(3).getType());
+    System.out.println(joinAST.getChild(3).toStringTree());
+    
+    tree = parseQuery(JOINS[2]);
+    System.out.println(tree.toStringTree());
+    assertEquals(tree.getType(), NQLParser.SELECT);
+  }
+  
+  @Test
+  public void testCrossJoinClause() {
+    // l=derivedTable CROSS JOIN r=tableRef -> ^(JOIN CROSS_JOIN $l $r)
+    Tree tree = parseQuery(JOINS[3]);
+    assertEquals(tree.getType(), NQLParser.SELECT);
+    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    CommonTree fromAST = (CommonTree) tree.getChild(0);
+    assertEquals(NQLParser.JOIN, fromAST.getChild(0).getType());
+    CommonTree joinAST = (CommonTree) fromAST.getChild(0);
+    assertEquals(NQLParser.CROSS_JOIN, joinAST.getChild(0).getType());
+    assertEquals("people", joinAST.getChild(1).getChild(0).getText());
+    joinAST = (CommonTree) joinAST.getChild(2);
+    assertEquals(NQLParser.CROSS_JOIN, joinAST.getChild(0).getType());
+    assertEquals("student", joinAST.getChild(1).getChild(0).getText());
+    assertEquals("professor", joinAST.getChild(2).getChild(0).getText());    
+  }
+  
+  @Test
+  public void testLeftOuterJoinClause() {
+    Tree tree = parseQuery(JOINS[4]);
+    assertEquals(tree.getType(), NQLParser.SELECT);
+    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    CommonTree fromAST = (CommonTree) tree.getChild(0);
+    assertEquals(NQLParser.JOIN, fromAST.getChild(0).getType());
+    CommonTree joinAST = (CommonTree) fromAST.getChild(0);
+    assertEquals(NQLParser.OUTER_JOIN, joinAST.getChild(0).getType());
+    assertEquals(NQLParser.LEFT, joinAST.getChild(0).getChild(0).getType());
+    assertEquals("people", joinAST.getChild(1).getChild(0).getText());
+    assertEquals("student", joinAST.getChild(2).getChild(0).getText());
+    assertEquals(NQLParser.ON, joinAST.getChild(3).getType());
+  }
+  
+  @Test
+  public void testRightOuterJoinClause() {
+    Tree tree = parseQuery(JOINS[5]);
+    assertEquals(tree.getType(), NQLParser.SELECT);
+    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    CommonTree fromAST = (CommonTree) tree.getChild(0);
+    assertEquals(NQLParser.JOIN, fromAST.getChild(0).getType());
+    CommonTree joinAST = (CommonTree) fromAST.getChild(0);
+    assertEquals(NQLParser.OUTER_JOIN, joinAST.getChild(0).getType());
+    assertEquals(NQLParser.RIGHT, joinAST.getChild(0).getChild(0).getType());
+    assertEquals("people", joinAST.getChild(1).getChild(0).getText());
+    assertEquals("student", joinAST.getChild(2).getChild(0).getText());
+    assertEquals(NQLParser.ON, joinAST.getChild(3).getType());
   }
 
   static String[] schemaStmts = { "drop table abc",
@@ -309,7 +403,6 @@ public class TestNQLParser {
   public void testFuncCallEvalTree() throws RecognitionException {
     NQLParser p = parseExpr(exprs[21]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
-    System.out.println(node.toStringTree());
     assertEquals(node.getType(), NQLParser.FUNCTION);
     assertEquals(node.getText(), "sum");
     assertEquals(node.getChild(0).getType(), NQLParser.FIELD_NAME);

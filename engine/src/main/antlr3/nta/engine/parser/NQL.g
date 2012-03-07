@@ -15,18 +15,22 @@ tokens {
   COUNT_ROWS;
   CREATE_INDEX;
   CREATE_TABLE;
+  CROSS_JOIN;
   DROP_TABLE;
   DESC_TABLE;
   FIELD_NAME;  
   FIELD_DEF;
   FUNCTION;    
   FUNC_ARGS;
-  GROUP_BY;
-  NULL_ORDER;
+  GROUP_BY;  
+  INNER_JOIN;
+  NATURAL_JOIN;
+  NULL_ORDER;  
+  OUTER_JOIN;  
   ORDER;
   ORDER_BY;
   PARAM;
-  PARAMS;  
+  PARAMS;
   SEL_LIST;
   SESSION_CLEAR;
   SET_QUALIFIER;
@@ -190,25 +194,33 @@ tableRef
   ;
   
 joinedTable
-  : derivedTable 'cross' 'join' derivedTable
-  | derivedTable join_type? 'join' derivedTable join_condition
-  | derivedTable 'natural' join_type? 'join' derivedTable
-  ;
-  
-join_condition
-  : 'on' bool_expr
-  ;
-  
-  
+  : l=derivedTable CROSS JOIN r=tableRef -> ^(JOIN CROSS_JOIN $l $r)
+  | l=derivedTable t=join_type? JOIN r=tableRef s=join_specification -> ^(JOIN $t? $l $r $s)  
+  | l=derivedTable 'natural' t=join_type? 'join' r=tableRef -> ^(JOIN NATURAL_JOIN $t? $l $r)
+  ; 
+
 join_type
-  : 'inner'
-  | 'outer' outer_join_type?
+  : 'inner' -> ^(INNER_JOIN)
+  | t=outer_join_type? 'outer' -> ^(OUTER_JOIN $t)
   ;
   
 outer_join_type
   : 'left'
   | 'right'
   | 'full'
+  ;
+  
+join_specification
+  : join_condition
+  | named_columns_join
+  ;
+  
+join_condition
+  : ON^ search_condition
+  ;
+  
+named_columns_join
+  : USING LEFT_PAREN f=fieldList RIGHT_PAREN -> ^(USING $f)
   ;
   
 derivedTable
@@ -354,6 +366,7 @@ ASC : 'asc';
 BY : 'by';
 COUNT : 'count';
 CREATE : 'create';
+CROSS : 'cross';
 DESC : 'desc';
 DISTINCT : 'distinct';
 DROP : 'drop';
@@ -366,11 +379,14 @@ IN : 'in';
 INDEX : 'index';
 INSERT : 'insert';
 INTO : 'into';
+JOIN : 'join';
 LAST : 'last';
+LEFT : 'left';
 NOT : 'not';
 ON : 'on';
 OR : 'or';
 ORDER : 'order';
+RIGHT : 'right';
 SELECT : 'select';
 TABLE : 'table';
 UNIQUE : 'unique';
