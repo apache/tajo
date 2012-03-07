@@ -13,4 +13,18 @@ public class SchemaUtil {
     
     return merged;
   }
+  
+  public static Schema getCommons(Schema left, Schema right) {
+    Schema common = new Schema();
+    for (Column outer : left.getColumns()) {
+      for (Column inner : right.getColumns()) {
+        if (outer.getColumnName().equals(inner.getColumnName()) &&
+            outer.getDataType() == inner.getDataType()) {
+          common.addColumn(outer.getColumnName(), outer.getDataType());
+        }
+      }
+    }
+    
+    return common;
+  }
 }

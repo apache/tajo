@@ -1,7 +1,7 @@
 package nta.engine.parser;
 
-import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
@@ -275,14 +275,14 @@ public class TestQueryAnalyzer {
   
   static String [] JOINS = {
     "select p.id, name, branch_name from people as p natural join student natural join branch", // 0
-    "select name, dept from people as p inner join student as s on people.id = student.people_id", // 1
-    "select name, addr from people inner join student using (id, name)", // 2
+    "select name, dept from people as p inner join student as s on p.id = s.people_id", // 1
+    "select name, dept from people as p inner join student as s using (p.id)", // 2
     "select p.id, name, branch_name from people as p cross join student cross join branch", // 3
-    "select p.id, dept from people as p left outer join student as s on people.name = student.name", // 4
-    "select p.id, dept from people as p right outer join student as s on people.name = student.name", // 5
-    "select p.id, dept from people as p join student as s on people.name = student.name", // 6
-    "select p.id, dept from people as p left join student as s on people.name = student.name", // 7
-    "select p.id, dept from people as p right join student as s on people.name = student.name" // 8
+    "select p.id, dept from people as p left outer join student as s on p.id = s.people_id", // 4
+    "select p.id, dept from people as p right outer join student as s on p.id = s.people_id", // 5
+    "select p.id, dept from people as p join student as s on p.id = s.people_id", // 6
+    "select p.id, dept from people as p left join student as s on p.id = s.people_id", // 7
+    "select p.id, dept from people as p right join student as s on p.id= s.people_id" // 8
   };
   
   @Test
@@ -310,6 +310,19 @@ public class TestQueryAnalyzer {
     assertEquals("p", join.getLeft().getAlias());
     assertEquals("student", join.getRight().getTableId());
     assertEquals("s", join.getRight().getAlias());
+    assertTrue(join.hasJoinQual());
+    assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
+    
+    ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, JOINS[2]);
+    join = block.getJoinClause();
+    assertEquals(JoinType.INNER, join.getJoinType());
+    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("p", join.getLeft().getAlias());
+    assertEquals("student", join.getRight().getTableId());
+    assertEquals("s", join.getRight().getAlias());
+    assertTrue(join.hasJoinColumns());
+    assertEquals("id", join.getJoinColumns()[0].getColumnName());
   }
   
   @Test
@@ -322,6 +335,8 @@ public class TestQueryAnalyzer {
     assertEquals("p", join.getLeft().getAlias());
     assertEquals("student", join.getRight().getTableId());
     assertEquals("s", join.getRight().getAlias());
+    assertTrue(join.hasJoinQual());
+    assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
   }
   
   @Test
@@ -349,6 +364,8 @@ public class TestQueryAnalyzer {
     assertEquals("p", join.getLeft().getAlias());
     assertEquals("student", join.getRight().getTableId());
     assertEquals("s", join.getRight().getAlias());
+    assertTrue(join.hasJoinQual());
+    assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
   }
   
   @Test
@@ -361,6 +378,8 @@ public class TestQueryAnalyzer {
     assertEquals("p", join.getLeft().getAlias());
     assertEquals("student", join.getRight().getTableId());
     assertEquals("s", join.getRight().getAlias());
+    assertTrue(join.hasJoinQual());
+    assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
   }
   
   @Test
@@ -373,6 +392,8 @@ public class TestQueryAnalyzer {
     assertEquals("p", join.getLeft().getAlias());
     assertEquals("student", join.getRight().getTableId());
     assertEquals("s", join.getRight().getAlias());
+    assertTrue(join.hasJoinQual());
+    assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
   }
   
   @Test
@@ -385,5 +406,7 @@ public class TestQueryAnalyzer {
     assertEquals("p", join.getLeft().getAlias());
     assertEquals("student", join.getRight().getTableId());
     assertEquals("s", join.getRight().getAlias());
+    assertTrue(join.hasJoinQual());
+    assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
   }
 }

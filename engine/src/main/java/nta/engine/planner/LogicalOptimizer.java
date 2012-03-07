@@ -103,8 +103,8 @@ public class LogicalOptimizer {
         pushSelectionRecursive(ctx, unary.getSubNode(), evalNode, stack);
       } else if (plan instanceof BinaryNode) {
         BinaryNode binary = (BinaryNode) plan;
-        pushSelectionRecursive(ctx, binary.getLeftSubNode(), evalNode, stack);
-        pushSelectionRecursive(ctx, binary.getRightSubNode(), evalNode, stack);
+        pushSelectionRecursive(ctx, binary.getOuterNode(), evalNode, stack);
+        pushSelectionRecursive(ctx, binary.getInnerNode(), evalNode, stack);
       }
       stack.pop();
       break;

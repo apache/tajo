@@ -213,7 +213,7 @@ public final class QueryAnalyzer {
    * @param ast
    * @param block
    */
-  private static void parseFromClause(final Context ctx, 
+  private void parseFromClause(final Context ctx, 
       final CommonTree ast, final QueryBlock block) {
     if (ast.getChild(0).getType() == NQLParser.JOIN) {
       JoinClause joinClause = parseJoinClause(ctx, block, 
@@ -258,7 +258,7 @@ public final class QueryAnalyzer {
     }
   }
   
-  private static JoinClause parseJoinClause(final Context ctx, final QueryBlock block, 
+  private JoinClause parseJoinClause(final Context ctx, final QueryBlock block, 
       final CommonTree ast) {
     CommonTree joinAST = (CommonTree) ast;
     
@@ -271,7 +271,7 @@ public final class QueryAnalyzer {
       joinType = JoinType.NATURAL;
       break;    
     case NQLParser.INNER_JOIN:
-      joinType = JoinType.INNER;
+      joinType = JoinType.INNER;      
       break;
     case NQLParser.OUTER_JOIN:
       CommonTree outerAST = (CommonTree) joinAST.getChild(0);      
@@ -305,8 +305,36 @@ public final class QueryAnalyzer {
     }
     
     idx++; // 3
+    if (joinAST.getChild(idx) != null) {
+      if (joinType == JoinType.CROSS_JOIN || joinType == JoinType.NATURAL) {
+        throw new InvalidQueryException("Cross or natural join cannot have join conditions");
+      }
+      
+      CommonTree joinQual = (CommonTree) joinAST.getChild(idx);
+      if (joinQual.getType() == NQLParser.ON) {
+        EvalNode joinCond = parseJoinCondition(ctx, block, joinQual);
+        joinClause.setJoinQual(joinCond);
+      } else if (joinQual.getType() == NQLParser.USING) {
+        Column [] joinColumns = parseJoinColumns(ctx, block, joinQual);
+        joinClause.setJoinColumns(joinColumns);
+      }
+    }
     
     return joinClause;
+  }
+  
+  private Column [] parseJoinColumns(Context ctx, QueryBlock block, 
+      CommonTree ast) {
+    Column [] joinColumns = new Column[ast.getChildCount()]; 
+    for (int i = 0; i < ast.getChildCount(); i++) {
+      joinColumns[i] = checkAndGetColumnByAST(ctx, (CommonTree) ast.getChild(i));
+    }
+    return joinColumns;
+  }
+  
+  private EvalNode parseJoinCondition(Context ctx, QueryBlock block, 
+      CommonTree ast) {
+    return createEvalTree(ctx, ast.getChild(0), block);
   }
   
   private static FromTable parseTable(final Context ctx, final QueryBlock block,

@@ -145,8 +145,8 @@ public class GlobalQueryPlanner {
         s.add(0, unit);
       }
     } else if (node instanceof BinaryNode) {
-      recursiveBuildQueryUnit(s, ((BinaryNode) node).getLeftSubNode());
-      recursiveBuildQueryUnit(s, ((BinaryNode) node).getRightSubNode());
+      recursiveBuildQueryUnit(s, ((BinaryNode) node).getOuterNode());
+      recursiveBuildQueryUnit(s, ((BinaryNode) node).getInnerNode());
     } else {
       
     }

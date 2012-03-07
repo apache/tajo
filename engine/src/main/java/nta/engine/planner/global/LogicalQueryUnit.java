@@ -62,8 +62,8 @@ public class LogicalQueryUnit {
       } else if (node instanceof BinaryNode) {
         scan = new ScanNode[2];
         BinaryNode binary = (BinaryNode) node;
-        s.add(s.size(), binary.getLeftSubNode());
-        s.add(s.size(), binary.getRightSubNode());
+        s.add(s.size(), binary.getOuterNode());
+        s.add(s.size(), binary.getInnerNode());
       } else if (node instanceof ScanNode) {
         if (scan == null) {
           scan = new ScanNode[1];

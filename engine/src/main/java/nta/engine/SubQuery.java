@@ -6,10 +6,8 @@ package nta.engine;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import nta.engine.planner.global.LogicalQueryUnit;
-import nta.engine.planner.global.LogicalQueryUnitGraph;
 
 /**
  * @author jihoon

@@ -30,6 +30,8 @@ public class ScanNode extends LogicalNode {
 	public ScanNode(FromTable table) {
 		super(ExprType.SCAN);
 		this.table = table;
+		this.setInputSchema(table.getSchema());
+		this.setOutputSchema(table.getSchema());
 	}
 	
 	public String getTableId() {

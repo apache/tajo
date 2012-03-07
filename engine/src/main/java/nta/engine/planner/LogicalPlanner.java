@@ -17,6 +17,7 @@ import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
+import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.CreateIndexNode;
 import nta.engine.planner.logical.CreateTableNode;
@@ -117,7 +118,11 @@ public class LogicalPlanner {
   private static LogicalNode buildSelectPlan(Context ctx, QueryBlock query) {
     LogicalNode subroot = null;
     if(query.hasFromClause()) {
-       subroot = createJoinTree(ctx, query.getFromTables());
+      if (query.hasExplicitJoinClause()) {
+        subroot = createExplicitJoinTree(ctx, query.getJoinClause());
+      } else {
+        subroot = createImplicitJoinTree(ctx, query.getFromTables());
+      }
     } else {
       subroot = new EvalExprNode(query.getTargetList());
       return subroot;
@@ -163,13 +168,43 @@ public class LogicalPlanner {
     return subroot;  
   }
   
-  private static LogicalNode createJoinTree(Context ctx, FromTable [] tables) {
+  private static LogicalNode createExplicitJoinTree(Context ctx, 
+      JoinClause joinClause) {
+    JoinNode join = null;
+    
+    join = new JoinNode(joinClause.getJoinType(),
+        new ScanNode(joinClause.getLeft()));
+    if (joinClause.hasJoinQual()) {
+      join.setJoinQual(joinClause.getJoinQual());
+    } else if (joinClause.hasJoinColumns()) {
+      // TODO - to be implemented. Now, tajo only support 'ON' join clause.
+    }
+    
+    if (joinClause.hasRightJoin()) {
+      join.setInner(createExplicitJoinTree(ctx, joinClause.getRightJoin()));
+    } else {
+      join.setInner(new ScanNode(joinClause.getRight()));
+    }
+    
+    return join;
+  }
+  
+  private static LogicalNode createImplicitJoinTree(Context ctx, 
+      FromTable [] tables) {
     LogicalNode subroot = null;
     
     subroot = new ScanNode(tables[0]);
+    Schema joinSchema = null;
     if(tables.length > 1) {    
       for(int i=1; i < tables.length; i++) {
-        subroot = new JoinNode(new ScanNode(tables[i]), subroot);
+        JoinNode join = new JoinNode(JoinType.INNER, 
+            subroot, new ScanNode(tables[i]));
+        joinSchema = SchemaUtil.merge(
+            join.getOuterNode().getOutputSchema(),
+            join.getInnerNode().getOutputSchema());
+        join.setInputSchema(joinSchema);
+        join.setOutputSchema(joinSchema);
+        subroot = join;
       }
     }
     
@@ -415,17 +450,13 @@ public class LogicalPlanner {
     case JOIN:
       JoinNode joinNode = (JoinNode) logicalNode;
       stack.push(joinNode);
-      refineInOutSchama(ctx, joinNode.getLeftSubNode(), necessaryTargets, 
+      refineInOutSchama(ctx, joinNode.getOuterNode(), necessaryTargets, 
           stack);
-      refineInOutSchama(ctx, joinNode.getRightSubNode(), necessaryTargets,
+      refineInOutSchama(ctx, joinNode.getInnerNode(), necessaryTargets,
           stack);
-      stack.pop();
-      
-      inputSchema = SchemaUtil.merge(joinNode.getLeftSubNode().getOutputSchema(), 
-          joinNode.getRightSubNode().getOutputSchema());
-      joinNode.setInputSchema(inputSchema);
-      joinNode.setOutputSchema(inputSchema);
+      stack.pop();      
             
+      break;
       default: return;
     }
   }

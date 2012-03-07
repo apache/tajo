@@ -126,7 +126,7 @@ public class QueryBlock extends ParseTree {
   
   // From Clause
   public final boolean hasFromClause() {
-    return fromTables != null;
+    return fromTables != null || joinClause != null;
   }
   
   public final void setFromTables(final FromTable [] tables) {
@@ -170,6 +170,8 @@ public class QueryBlock extends ParseTree {
     @Expose private FromTable left;
     @Expose private FromTable right;
     @Expose private JoinClause rightJoin;
+    @Expose private EvalNode joinQual;
+    @Expose private Column [] joinColumns;
     
     @SuppressWarnings("unused")
     private JoinClause() {
@@ -208,6 +210,31 @@ public class QueryBlock extends ParseTree {
     public JoinClause getRightJoin() {
       return this.rightJoin;
     }
+    
+    public void setJoinQual(EvalNode cond) {
+      this.joinQual = cond;
+    }
+    
+    public boolean hasJoinQual() {
+      return this.joinQual != null;
+    }
+    
+    public EvalNode getJoinQual() {
+      return this.joinQual;
+    }
+    
+    public void setJoinColumns(Column [] columns) {
+      this.joinColumns = columns;
+    }
+    
+    public boolean hasJoinColumns() {
+      return this.joinColumns != null;
+    }
+    
+    public Column [] getJoinColumns() {
+      return this.joinColumns;
+    }
+    
     
     public String toString() {
       Gson gson = new GsonBuilder().setPrettyPrinting().create();

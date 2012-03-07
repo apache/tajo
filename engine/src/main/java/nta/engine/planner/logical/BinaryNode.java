@@ -26,7 +26,7 @@ public abstract class BinaryNode extends LogicalNode implements Cloneable {
 		super(opType);
 	}
 	
-	public LogicalNode getRightSubNode() {
+	public LogicalNode getOuterNode() {
 		return this.outer;
 	}
 	
@@ -34,7 +34,7 @@ public abstract class BinaryNode extends LogicalNode implements Cloneable {
 		this.outer = op;
 	}
 
-	public LogicalNode getLeftSubNode() {
+	public LogicalNode getInnerNode() {
 		return this.inner;
 	}
 

@@ -156,11 +156,11 @@ public class TestPlannerUtil {
     assertEquals(ExprType.JOIN, projNode.getSubNode().getType());
     JoinNode joinNode = (JoinNode) projNode.getSubNode();
 
-    assertEquals(ExprType.SCAN, joinNode.getLeftSubNode().getType());
-    ScanNode leftNode = (ScanNode) joinNode.getLeftSubNode();
+    assertEquals(ExprType.SCAN, joinNode.getOuterNode().getType());
+    ScanNode leftNode = (ScanNode) joinNode.getOuterNode();
     assertEquals("employee", leftNode.getTableId());
-    assertEquals(ExprType.SCAN, joinNode.getRightSubNode().getType());
-    ScanNode rightNode = (ScanNode) joinNode.getRightSubNode();
+    assertEquals(ExprType.SCAN, joinNode.getInnerNode().getType());
+    ScanNode rightNode = (ScanNode) joinNode.getInnerNode();
     assertEquals("dept", rightNode.getTableId());
     
     LogicalNode node = PlannerUtil.findTopNode(root, ExprType.ROOT);

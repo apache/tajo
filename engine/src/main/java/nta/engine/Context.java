@@ -56,8 +56,14 @@ public abstract class Context {
         || query.getType() == StatementType.CREATE_TABLE) {
       hasWhereClause = block.hasWhereClause();
       hasGroupByClause = block.hasGroupbyClause();
-      hasJoinClause = block.hasFromClause() ? block.getFromTables().length > 1
-          : false;
+      
+      if (block.hasFromClause()) {
+        if (block.hasExplicitJoinClause()) {
+          hasJoinClause = true;
+        } else {
+          hasJoinClause = block.getFromTables().length > 1 ? true : false;
+        }
+      }      
       targets = block.getTargetList();
     }
   }

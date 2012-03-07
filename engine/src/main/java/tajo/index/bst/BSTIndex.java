@@ -24,8 +24,6 @@ import tajo.index.IndexMethod;
 import tajo.index.IndexWriter;
 import tajo.index.OrderIndexReader;
 
-import com.google.common.collect.Maps;
-
 /**
  * @author Ryu Hyo Seok
  * @author Hyunsik Choi

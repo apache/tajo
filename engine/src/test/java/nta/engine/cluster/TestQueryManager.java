@@ -11,6 +11,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import nta.catalog.Schema;
+import nta.catalog.TCatUtil;
+import nta.catalog.TableDesc;
+import nta.catalog.TableMeta;
+import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.Query;
@@ -19,6 +24,7 @@ import nta.engine.QueryIdFactory;
 import nta.engine.SubQuery;
 import nta.engine.SubQueryId;
 import nta.engine.exception.NoSuchQueryIdException;
+import nta.engine.parser.QueryBlock.FromTable;
 import nta.engine.planner.global.LogicalQueryUnit;
 import nta.engine.planner.global.MockQueryUnitScheduler;
 import nta.engine.planner.logical.CreateTableNode;
@@ -26,6 +32,7 @@ import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalQueryPlanner;
 
+import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -79,10 +86,13 @@ public class TestQueryManager {
   
   @Test
   public void testQueryInfo() throws IOException, NoSuchQueryIdException, InterruptedException {
+    Schema schema = new Schema();    
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableDesc desc = TCatUtil.newTableDesc("test", meta, new Path("/"));
     QueryIdFactory.reset();
     LogicalRootNode root = new LogicalRootNode();
     CreateTableNode store = new CreateTableNode("test");
-    ScanNode scan = new ScanNode(null);
+    ScanNode scan = new ScanNode(new FromTable(desc));
     store.setSubNode(scan);
     root.setSubNode(store);
     

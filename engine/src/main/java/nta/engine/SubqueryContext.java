@@ -62,6 +62,7 @@ public class SubqueryContext extends Context {
   }
   
   public static class Factory {
+    @SuppressWarnings("unused")
     private final CatalogService catalog;
     public Factory(CatalogService catalog) {
       this.catalog = catalog;
