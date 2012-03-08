@@ -9,11 +9,14 @@ import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.EvalTreeUtil;
 import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.parser.QueryBlock.Target;
+import nta.engine.planner.logical.BinaryNode;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalNodeVisitor;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.ScanNode;
+import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.logical.UnaryNode;
 
 import org.apache.commons.logging.Log;
@@ -42,7 +45,57 @@ public class PlannerUtil {
     return p;
   }
   
-  public static LogicalNode transformTwoPhase(GroupbyNode gp) {
+  public static LogicalNode insertOuterNode(LogicalNode parent, LogicalNode outer) {
+    Preconditions.checkArgument(parent instanceof BinaryNode);
+    Preconditions.checkArgument(outer instanceof UnaryNode);
+    
+    BinaryNode p = (BinaryNode) parent;
+    LogicalNode c = p.getOuterNode();
+    UnaryNode m = (UnaryNode) outer;
+    m.setInputSchema(c.getOutputSchema());
+    m.setOutputSchema(c.getOutputSchema());
+    m.setSubNode(c);
+    p.setOuter(m);
+    return p;
+  }
+  
+  public static LogicalNode insertInnerNode(LogicalNode parent, LogicalNode inner) {
+    Preconditions.checkArgument(parent instanceof BinaryNode);
+    Preconditions.checkArgument(inner instanceof UnaryNode);
+    
+    BinaryNode p = (BinaryNode) parent;
+    LogicalNode c = p.getInnerNode();
+    UnaryNode m = (UnaryNode) inner;
+    m.setInputSchema(c.getOutputSchema());
+    m.setOutputSchema(c.getOutputSchema());
+    m.setSubNode(c);
+    p.setInner(m);
+    return p;
+  }
+  
+  public static LogicalNode insertNode(LogicalNode parent, 
+      LogicalNode left, LogicalNode right) {
+    Preconditions.checkArgument(parent instanceof BinaryNode);
+    Preconditions.checkArgument(left instanceof UnaryNode);
+    Preconditions.checkArgument(right instanceof UnaryNode);
+    
+    BinaryNode p = (BinaryNode)parent;
+    LogicalNode lc = p.getOuterNode();
+    LogicalNode rc = p.getInnerNode();
+    UnaryNode lm = (UnaryNode)left;
+    UnaryNode rm = (UnaryNode)right;
+    lm.setInputSchema(lc.getOutputSchema());
+    lm.setOutputSchema(lc.getOutputSchema());
+    lm.setSubNode(lc);
+    rm.setInputSchema(rc.getOutputSchema());
+    rm.setOutputSchema(rc.getOutputSchema());
+    rm.setSubNode(rc);
+    p.setOuter(lm);
+    p.setInner(rm);
+    return p;
+  }
+  
+  public static LogicalNode transformGroupbyTo2P(GroupbyNode gp) {
     Preconditions.checkNotNull(gp);
         
     try {
@@ -70,13 +123,38 @@ public class PlannerUtil {
     return gp;
   }
   
-  public static LogicalNode transformTwoPhaseWithStore(GroupbyNode gb, 
-      String tableId) {
-    GroupbyNode groupby = (GroupbyNode) transformTwoPhase(gb);
-    CreateTableNode store = new CreateTableNode(tableId);
-    insertNode(groupby, store);
+  public static LogicalNode transformSortTo2P(SortNode sort) {
+    Preconditions.checkNotNull(sort);
     
-    return groupby;
+    try {
+      SortNode child = (SortNode) sort.clone();
+      sort.setSubNode(child);
+      sort.setInputSchema(child.getOutputSchema());
+      sort.setOutputSchema(child.getOutputSchema());
+    } catch (CloneNotSupportedException e) {
+      LOG.error(e);
+    }
+    return sort;
+  }
+  
+  public static LogicalNode transformGroupbyTo2PWithStore(GroupbyNode gb, 
+      String tableId) {
+    GroupbyNode groupby = (GroupbyNode) transformGroupbyTo2P(gb);
+    return insertStore(groupby, tableId);
+  }
+  
+  public static LogicalNode transformSortTo2PWithStore(SortNode sort, 
+      String tableId) {
+    SortNode sort2p = (SortNode) transformSortTo2P(sort);
+    return insertStore(sort2p, tableId);
+  }
+  
+  private static LogicalNode insertStore(LogicalNode parent, 
+      String tableId) {
+    CreateTableNode store = new CreateTableNode(tableId);
+    insertNode(parent, store);
+    
+    return parent;
   }
   
   /**

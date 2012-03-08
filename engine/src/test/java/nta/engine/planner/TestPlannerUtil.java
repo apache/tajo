@@ -119,7 +119,7 @@ public class TestPlannerUtil {
     
     assertEquals(ExprType.GROUP_BY, unary.getSubNode().getType());
     GroupbyNode groupby = (GroupbyNode) unary.getSubNode();
-    unary = (UnaryNode) PlannerUtil.transformTwoPhaseWithStore(
+    unary = (UnaryNode) PlannerUtil.transformGroupbyTo2PWithStore(
         groupby, "test");
     assertEquals(ExprType.STORE, unary.getSubNode().getType());
     unary = (UnaryNode) unary.getSubNode();
@@ -133,7 +133,7 @@ public class TestPlannerUtil {
     @Override
     public void visit(LogicalNode node) {
       if (node.getType() == ExprType.GROUP_BY) {
-        PlannerUtil.transformTwoPhase((GroupbyNode) node);
+        PlannerUtil.transformGroupbyTo2P((GroupbyNode) node);
       }
     }    
   }

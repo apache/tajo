@@ -16,7 +16,7 @@ import nta.engine.cluster.QueryManager.WaitStatus;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.planner.global.LogicalQueryUnit;
-import nta.engine.planner.global.LogicalQueryUnit.Phase;
+import nta.engine.planner.global.LogicalQueryUnit.PARTITION_TYPE;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.query.GlobalQueryPlanner;
 import nta.engine.query.QueryUnitRequestImpl;
@@ -73,7 +73,7 @@ public class QueryUnitScheduler extends Thread {
     qm.addLogicalQueryUnit(plan);
     LOG.info("Table path " + sm.getTablePath(plan.getOutputName()).toString()
         + " is initialized for " + plan.getOutputName());
-    if (plan.getPhase() == Phase.MAP) {
+    if (plan.getOutputType() == PARTITION_TYPE.HASH) {
       Path tablePath = sm.getTablePath(plan.getOutputName());
       sm.getFileSystem().mkdirs(tablePath);
     } else {

@@ -3,12 +3,15 @@
  */
 package nta.engine.query;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Options;
@@ -51,8 +54,12 @@ public class TestGlobalEngine {
 	private static NtaEngineMaster master;
 	private static StorageManager sm;
 	
-	private String query = "select deptname, sum(score) from score group by deptname having sum(score) > 30"; // 9
-	private static Map<String, Integer> result;
+	private String[] query = {
+	    "select deptname, sum(score) from score group by deptname having sum(score) > 30",
+	    "select deptname from score"
+	};
+	private static Map<String, Integer> groupbyResult;
+	private static Set<String> scanResult;
 	
 	private String tablename;
 
@@ -66,7 +73,8 @@ public class TestGlobalEngine {
 		sm = new StorageManager(conf);
 		
 		catalog = master.getCatalog();
-    result = new HashMap<String, Integer>();
+    groupbyResult = new HashMap<String, Integer>();
+    scanResult = new HashSet<String>();
 		
 		Schema schema3 = new Schema();
 	    schema3.addColumn("deptname", DataType.STRING);
@@ -82,11 +90,12 @@ public class TestGlobalEngine {
 	    	tuple.put(0, DatumFactory.createString("test" + (i%10)));
 	    	tuple.put(1, DatumFactory.createInt(i+1));
 	    	appender.addTuple(tuple);
-	    	if (!result.containsKey("test"+(i%10))) {
-	    	  result.put("test"+(i%10), i+1);
+	    	scanResult.add("test"+(i%10));
+	    	if (!groupbyResult.containsKey("test"+(i%10))) {
+	    	  groupbyResult.put("test"+(i%10), i+1);
 	    	} else {
-	    	  int n = result.get("test"+(i%10));
-	    	  result.put("test"+(i%10), n+i+1);
+	    	  int n = groupbyResult.get("test"+(i%10));
+	    	  groupbyResult.put("test"+(i%10), n+i+1);
 	    	}
 	    }
 	    appender.close();
@@ -104,15 +113,28 @@ public class TestGlobalEngine {
 	}
 	
 	@Test
-	public void testExecuteQuery() throws Exception {
-	  String tablename = master.executeQuery(query);
+	public void testScanQuery() throws Exception {
+	  String tablename = master.executeQuery(query[1]);
+    assertNotNull(tablename);
+    Scanner scanner = sm.getTableScanner(tablename);
+    Tuple tuple = null;
+    String deptname;
+    while ((tuple=scanner.next()) != null) {
+      deptname = tuple.get(0).asChars();
+      assertTrue(scanResult.contains(deptname));
+    }
+	}
+	
+	@Test
+	public void testGroupbyQuery() throws Exception {
+	  String tablename = master.executeQuery(query[0]);
     assertNotNull(tablename);
 	  Scanner scanner = sm.getTableScanner(tablename);
 	  Tuple tuple = null;
 	  String deptname;
 	  while ((tuple=scanner.next()) != null) {
 	    deptname = tuple.get(0).asChars();
-	    assertEquals(result.get(deptname).intValue(), 
+	    assertEquals(groupbyResult.get(deptname).intValue(), 
 	        tuple.get(1).asInt());
 	  }
 	}
@@ -136,7 +158,7 @@ public class TestGlobalEngine {
       @Override
       public void run() {
         try {
-          tablename = master.executeQuery(query);
+          tablename = master.executeQuery(query[0]);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -152,7 +174,7 @@ public class TestGlobalEngine {
     String deptname;
     while ((tuple=scanner.next()) != null) {
       deptname = tuple.get(0).asChars();
-      assertEquals(result.get(deptname).intValue(), 
+      assertEquals(groupbyResult.get(deptname).intValue(), 
           tuple.get(1).asInt());
     }
 	}

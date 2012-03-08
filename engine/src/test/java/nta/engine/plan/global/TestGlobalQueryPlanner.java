@@ -1,8 +1,6 @@
 package nta.engine.plan.global;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -28,8 +26,9 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.LogicalQueryUnit;
-import nta.engine.planner.global.LogicalQueryUnit.Phase;
+import nta.engine.planner.global.LogicalQueryUnit.PARTITION_TYPE;
 import nta.engine.planner.global.LogicalQueryUnitGraph;
+import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
@@ -101,7 +100,7 @@ public class TestGlobalQueryPlanner {
         DatumFactory.createString("h"), DatumFactory.createInt(10));
 
     for (i = 0; i < tbNum; i++) {
-      meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+      meta = TCatUtil.newTableMeta((Schema)schema.clone(), StoreType.CSV);
       meta.putOption(CSVFile2.DELIMITER, ",");
 
       if (fs.exists(sm.getTablePath("table"+i))) {
@@ -114,7 +113,7 @@ public class TestGlobalQueryPlanner {
       }
       appender.close();
 
-      TableDesc desc = TCatUtil.newTableDesc("table" + i, meta, sm.getTablePath("table"+i));
+      TableDesc desc = TCatUtil.newTableDesc("table" + i, (TableMeta)meta.clone(), sm.getTablePath("table"+i));
       catalog.addTable(desc);
     }
 
@@ -140,7 +139,8 @@ public class TestGlobalQueryPlanner {
     
     LogicalQueryUnit unit = globalPlan.getRoot();
     assertFalse(unit.hasPrevQuery());
-    assertEquals(Phase.LOCAL, unit.getPhase());
+    assertEquals(PARTITION_TYPE.LIST, unit.getInputType());
+    assertEquals(PARTITION_TYPE.LIST, unit.getOutputType());
     LogicalNode plan = unit.getLogicalPlan();
     assertEquals(ExprType.STORE, plan.getType());
     assertEquals(ExprType.SCAN, ((CreateTableNode)plan).getSubNode().getType());
@@ -161,12 +161,49 @@ public class TestGlobalQueryPlanner {
     
     next = globalPlan.getRoot();
     assertTrue(next.hasPrevQuery());
-    assertEquals(Phase.MERGE, next.getPhase());
+    assertEquals(PARTITION_TYPE.HASH, next.getInputType());
+    assertEquals(PARTITION_TYPE.LIST, next.getOutputType());
     Iterator<LogicalQueryUnit> it= next.getPrevIterator();
     
     prev = it.next();
     assertFalse(prev.hasPrevQuery());
-    assertEquals(Phase.MAP, prev.getPhase());
+    assertEquals(PARTITION_TYPE.LIST, prev.getInputType());
+    assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
+    assertFalse(it.hasNext());
+    
+    ScanNode []scans = prev.getScanNodes();
+    assertEquals(1, scans.length);
+    assertEquals("table0", scans[0].getTableId());
+    
+    scans = next.getScanNodes();
+    assertEquals(1, scans.length);
+    CreateTableNode store = prev.getStoreTableNode();
+    assertEquals(store.getTableName(), scans[0].getTableId());
+    assertEquals(store.getOutputSchema(), scans[0].getInputSchema());
+  }
+  
+  @Test
+  public void testSort() throws IOException {
+    QueryContext ctx = factory.create();
+    ParseTree tree = (ParseTree) analyzer.parse(ctx,
+        "store1 := select age from table0 order by age");
+    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
+    logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
+
+    LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
+    
+    LogicalQueryUnit next, prev;
+    
+    next = globalPlan.getRoot();
+    assertTrue(next.hasPrevQuery());
+    assertEquals(PARTITION_TYPE.HASH, next.getInputType());
+    assertEquals(PARTITION_TYPE.LIST, next.getOutputType());
+    Iterator<LogicalQueryUnit> it= next.getPrevIterator();
+    
+    prev = it.next();
+    assertFalse(prev.hasPrevQuery());
+    assertEquals(PARTITION_TYPE.LIST, prev.getInputType());
+    assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
     assertFalse(it.hasNext());
     
     ScanNode []scans = prev.getScanNodes();
@@ -184,12 +221,101 @@ public class TestGlobalQueryPlanner {
   public void testJoin() throws IOException {
     QueryContext ctx = factory.create();
     ParseTree tree = (ParseTree) analyzer.parse(ctx,
-        "select table0.age from table0,table1 where table0.salary = table1.salary");
+        "select table0.age,table0.salary,table1.salary from table0,table1 where table0.salary = table1.salary order by table0.age");
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
+    System.out.println(logicalPlan);
 
-    @SuppressWarnings("unused")
     LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
     
+    LogicalQueryUnit next, prev;
+    
+    // the second phase of the sort
+    next = globalPlan.getRoot();
+    assertTrue(next.hasPrevQuery());
+    assertEquals(PARTITION_TYPE.HASH, next.getInputType());
+    assertEquals(PARTITION_TYPE.LIST, next.getOutputType());
+    assertEquals(ExprType.SORT, next.getStoreTableNode().getSubNode().getType());
+    ScanNode []scans = next.getScanNodes();
+    assertEquals(1, scans.length);
+    Iterator<LogicalQueryUnit> it= next.getPrevIterator();
+    
+    // the first phase of the sort
+    prev = it.next();
+    assertEquals(ExprType.SORT, prev.getStoreTableNode().getSubNode().getType());
+    assertEquals(scans[0].getInputSchema(), prev.getOutputSchema());
+    assertTrue(prev.hasPrevQuery());
+    assertEquals(PARTITION_TYPE.HASH, prev.getInputType());
+    assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
+    assertFalse(it.hasNext());
+    scans = prev.getScanNodes();
+    assertEquals(1, scans.length);
+    next = prev;
+    it= next.getPrevIterator();
+    
+    // the second phase of the join
+    prev = it.next();
+    assertEquals(ExprType.JOIN, prev.getStoreTableNode().getSubNode().getType());
+    assertEquals(scans[0].getInputSchema(), prev.getOutputSchema());
+    assertTrue(prev.hasPrevQuery());
+    assertEquals(PARTITION_TYPE.HASH, prev.getInputType());
+    assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
+    assertFalse(it.hasNext());
+    scans = prev.getScanNodes();
+    assertEquals(2, scans.length);
+    next = prev;
+    it= next.getPrevIterator();
+    
+    // the first phase of the join
+    prev = it.next();
+    assertEquals(ExprType.SCAN, prev.getStoreTableNode().getSubNode().getType());
+    assertFalse(prev.hasPrevQuery());
+    assertEquals(PARTITION_TYPE.LIST, prev.getInputType());
+    assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
+    assertEquals(1, prev.getScanNodes().length);
+    
+    prev = it.next();
+    assertEquals(ExprType.SCAN, prev.getStoreTableNode().getSubNode().getType());
+    assertFalse(prev.hasPrevQuery());
+    assertEquals(PARTITION_TYPE.LIST, prev.getInputType());
+    assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
+    assertEquals(1, prev.getScanNodes().length);
+    assertFalse(it.hasNext());
+  }
+  
+  @Test
+  public void testLocalize() throws IOException {
+    QueryContext ctx = factory.create();
+    ParseTree tree = (ParseTree) analyzer.parse(ctx,
+        "select table0.age,table0.salary,table1.salary from table0 inner join table1 on table0.salary = table1.salary");
+    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
+    logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
+    System.out.println(logicalPlan);
+
+    LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
+    
+    recursiveTestLocalize(globalPlan.getRoot());
+  }
+  
+  private void recursiveTestLocalize(LogicalQueryUnit plan) throws IOException {
+    if (plan.hasPrevQuery()) {
+      Iterator<LogicalQueryUnit> it = plan.getPrevIterator();
+      while (it.hasNext()) {
+        recursiveTestLocalize(it.next());
+      }
+    }
+    
+    QueryUnit[] units = planner.localize(plan, 3);
+    assertEquals(3, units.length);
+    for (QueryUnit unit : units) {
+      // partition
+      if (plan.getOutputType() == PARTITION_TYPE.HASH) {
+        assertTrue(unit.getStoreTableNode().getNumPartitions() > 0);
+        assertNotNull(unit.getStoreTableNode().getPartitionKeys());
+      }
+      
+      // fragment
+      assertNotNull(unit.getFragments());
+    }
   }
 }

@@ -25,10 +25,9 @@ import com.google.common.base.Preconditions;
  */
 public class LogicalQueryUnit {
   
-  public enum Phase {
-    LOCAL,
-    MAP,
-    MERGE
+  public enum PARTITION_TYPE {
+    HASH,
+    LIST
   }
 
   private LogicalQueryUnitId id;
@@ -37,12 +36,20 @@ public class LogicalQueryUnit {
   private ScanNode[] scan = null;
   private LogicalQueryUnit next;
   private Set<LogicalQueryUnit> prevs;
-  private Phase phase;
+  private PARTITION_TYPE inputType;
+  private PARTITION_TYPE outputType;
   
-  public LogicalQueryUnit(LogicalQueryUnitId id, Phase phase) {
+  public LogicalQueryUnit(LogicalQueryUnitId id) {
     this.id = id;
-    this.phase = phase;
     prevs = new HashSet<LogicalQueryUnit>();
+  }
+  
+  public void setInputType(PARTITION_TYPE type) {
+    this.inputType = type;
+  }
+  
+  public void setOutputType(PARTITION_TYPE type) {
+    this.outputType = type;
   }
   
   public void setLogicalPlan(LogicalNode plan) {
@@ -97,8 +104,12 @@ public class LogicalQueryUnit {
     return this.store.getTableName();
   }
   
-  public Phase getPhase() {
-    return this.phase;
+  public PARTITION_TYPE getInputType() {
+    return this.inputType;
+  }
+  
+  public PARTITION_TYPE getOutputType() {
+    return this.outputType;
   }
   
   public Schema getOutputSchema() {
