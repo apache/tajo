@@ -74,8 +74,8 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   @Override
   public final String toString() {
     if (finalId == null) {
-      finalId = this.logicalId + 
-          QueryId.SEPERATOR + format.format(id);
+      finalId = this.getLogicalQueryUnitId() + 
+          QueryId.SEPERATOR + format.format(getId());
     }
     return this.finalId;
   }

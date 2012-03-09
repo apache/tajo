@@ -53,9 +53,34 @@ public class QueryId implements Comparable<QueryId>, ProtoObject<QueryIdProto> {
     viaProto = true;
   }
   
+  public int getId() {
+    QueryIdProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.id != -1) {
+      return this.id;
+    }
+    if (!p.hasId()) {
+      return -1;
+    }
+    this.id = p.getId();
+    return this.id;
+  }
+  
+  public String getTimeId() {
+    QueryIdProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.timeId != null) {
+      return this.timeId;
+    }
+    if (!p.hasTimeId()) {
+      return null;
+    }
+    this.timeId = p.getTimeId();
+    return this.timeId;
+  }
+  
   public final String toString() {
     if (finalId == null) {
-      finalId = PREFIX + SEPERATOR + timeId +  SEPERATOR + idFormat.format(id);
+      finalId = PREFIX + SEPERATOR + getTimeId() + 
+          SEPERATOR + idFormat.format(getId());
     }
     return finalId;
   }
@@ -64,7 +89,8 @@ public class QueryId implements Comparable<QueryId>, ProtoObject<QueryIdProto> {
   public final boolean equals(final Object o) {
     if (o instanceof QueryId) {
       QueryId other = (QueryId) o;
-      return this.timeId.equals(other.timeId) && (this.id==other.id);
+      return this.getTimeId().equals(other.getTimeId()) && 
+          (this.getId()==other.getId());
     }
     return false;
   }

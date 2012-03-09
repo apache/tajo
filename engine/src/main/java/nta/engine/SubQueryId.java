@@ -63,8 +63,8 @@ public class SubQueryId implements Comparable<SubQueryId>,
   
   public final String toString() {
     if (finalId == null) {
-      finalId = queryId.toString() + QueryId.SEPERATOR 
-          + idFormat.format(id);
+      finalId = getQueryId().toString() + QueryId.SEPERATOR 
+          + idFormat.format(getId());
     }
     return finalId;
   }
@@ -85,8 +85,8 @@ public class SubQueryId implements Comparable<SubQueryId>,
   public final boolean equals(final Object o) {
     if (o instanceof SubQueryId) {
       SubQueryId other = (SubQueryId) o;
-      return this.queryId.equals(other.queryId) &&
-          this.id == other.id;
+      return this.getQueryId().equals(other.getQueryId()) &&
+          this.getId()== other.getId();
     }
     return false;
   }

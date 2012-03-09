@@ -126,9 +126,9 @@ public class TestQueryUnitId {
     SubQueryId sub2 = new SubQueryId(sub1.toString());
     assertEquals(sub1, sub2);
     
-    QueryStepId step1 = QueryIdFactory.newQueryStepId();
-    QueryStepId step2 = new QueryStepId(step1.toString());
-    assertEquals(step1, step2);
+//    QueryStepId step1 = QueryIdFactory.newQueryStepId();
+//    QueryStepId step2 = new QueryStepId(step1.toString());
+//    assertEquals(step1, step2);
     
     LogicalQueryUnitId lqid1 = QueryIdFactory.newLogicalQueryUnitId();
     LogicalQueryUnitId lqid2 = new LogicalQueryUnitId(lqid1.toString());

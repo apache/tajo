@@ -97,7 +97,7 @@ public class TestLeafServer {
     util.shutdownMiniCluster();
   }
 
-  @Test
+//  @Test
   public final void testRequestSubQuery() throws Exception {
     Fragment[] frags = sm.split("employee", 40000);
     for (Fragment frag : frags) {

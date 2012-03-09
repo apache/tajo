@@ -63,7 +63,8 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
   @Override
   public final String toString() {
     if (finalId == null) {
-      finalId = subQueryId +  SEPERATOR + idFormat.format(id);
+      finalId = getSubQueryId() +  SEPERATOR + 
+          idFormat.format(getId());
     }
     return finalId;
   }
@@ -72,8 +73,8 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
   public final boolean equals(final Object o) {
     if (o instanceof LogicalQueryUnitId) {
       LogicalQueryUnitId oid = (LogicalQueryUnitId) o;
-      return this.subQueryId.equals(oid.subQueryId) &&
-          this.id == oid.id;
+      return this.getSubQueryId().equals(oid.getSubQueryId()) &&
+          this.getId()== oid.getId();
     }
     return false;
   }

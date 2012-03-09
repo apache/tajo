@@ -83,8 +83,10 @@ public class GlobalEngine implements EngineService {
 
     QueryId qid = QueryIdFactory.newQueryId();
     qm.addQuery(new Query(qid));
+    LOG.info("=== Query " + qid + " is initialized");
     SubQueryId subId = QueryIdFactory.newSubQueryId();
     SubQuery subQuery = new SubQuery(subId);
+    LOG.info("=== SubQuery " + subId + " is initialized");
     qm.addSubQuery(subQuery);
     // build the global plan
     LogicalQueryUnitGraph globalPlan = globalPlanner.build(subId, plan);
