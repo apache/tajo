@@ -39,13 +39,21 @@ public class GsonCreator {
 			builder.registerTypeAdapter(Function.class, new FunctionAdapter());
 			builder.registerTypeAdapter(Datum.class, new DatumAdapter());
 		}
-		if (gson == null ) {
-			gson = builder.create();
-		}
 	}
 
 	public static Gson getInstance() {
-		init();
-		return gson;
+	  init();
+	  if (gson == null ) {
+	    gson = builder.create();
+	  }
+	  return gson;
+	}
+
+	public static Gson getPrettyInstance() {
+	  init();
+	  if (gson == null ) {
+	    gson = builder.setPrettyPrinting().create();
+	  }
+	  return gson;
 	}
 }
