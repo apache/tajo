@@ -84,6 +84,14 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
   }
   
   public SubQueryId getSubQueryId() {
+    LogicalQueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
+    if (subQueryId != null) {
+      return this.subQueryId;
+    }
+    if (!p.hasSubQueryId()) {
+      return null;
+    }
+    this.subQueryId = new SubQueryId(p.getSubQueryId());
     return this.subQueryId;
   }
   
@@ -126,6 +134,14 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
   }
  
   public int getId() {
+    LogicalQueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.id != -1) {
+      return this.id;
+    }
+    if (!p.hasId()) {
+      return -1;
+    }
+    this.id = p.getId();
     return this.id;
   }
 }

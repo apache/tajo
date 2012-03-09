@@ -48,10 +48,26 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   }
   
   public int getId() {
+    QueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.id != -1) {
+      return this.id;
+    }
+    if (!p.hasId()) {
+      return -1;
+    }
+    this.id = p.getId();
     return id;
   }
   
   public LogicalQueryUnitId getLogicalQueryUnitId() {
+    QueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.logicalId != null) {
+      return this.logicalId;
+    }
+    if (!p.hasLogicalQueryUnitId()) {
+      return null;
+    }
+    this.logicalId = new LogicalQueryUnitId(p.getLogicalQueryUnitId());
     return this.logicalId;
   }
   

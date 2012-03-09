@@ -81,7 +81,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		if (id != null) {
 			return this.id;
 		}
-		if (!proto.hasId()) {
+		if (!p.hasId()) {
 			return null;
 		}
 		this.id = new QueryUnitId(p.getId());
@@ -109,7 +109,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		if (outputTable != null) {
 			return this.outputTable;
 		}
-		if (!proto.hasOutputTable()) {
+		if (!p.hasOutputTable()) {
 			return null;
 		}
 		this.outputTable = p.getOutputTable();
@@ -122,7 +122,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		if (isUpdated) {
 			return this.clusteredOutput;
 		}
-		if (!proto.hasClusteredOutput()) {
+		if (!p.hasClusteredOutput()) {
 			return false;
 		}
 		this.clusteredOutput = p.getClusteredOutput();
@@ -136,7 +136,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		if (this.serializedData != null) {
 			return this.serializedData;
 		}
-		if (!proto.hasSerializedData()) {
+		if (!p.hasSerializedData()) {
 			return null;
 		}
 		this.serializedData = p.getSerializedData();

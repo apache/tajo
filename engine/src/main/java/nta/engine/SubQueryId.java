@@ -38,7 +38,6 @@ public class SubQueryId implements Comparable<SubQueryId>,
   
   public SubQueryId(String finalId) {
     this();
-//    String[] split = finalId.split(QueryId.SEPERATOR);
     int i = finalId.lastIndexOf(QueryId.SEPERATOR);
     
     this.queryId = new QueryId(finalId.substring(0, i));
@@ -51,6 +50,14 @@ public class SubQueryId implements Comparable<SubQueryId>,
   }
   
   public int getId() {
+    SubQueryIdProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.id != -1) {
+      return this.id;
+    }
+    if (!p.hasId()) {
+      return -1;
+    }
+    this.id = p.getId();
     return this.id;
   }
   
@@ -63,6 +70,14 @@ public class SubQueryId implements Comparable<SubQueryId>,
   }
   
   public QueryId getQueryId() {
+    SubQueryIdProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.queryId != null) {
+      return this.queryId;
+    }
+    if (!p.hasQueryId()) {
+      return null;
+    }
+    this.queryId = new QueryId(p.getQueryId());
     return this.queryId;
   }
   
