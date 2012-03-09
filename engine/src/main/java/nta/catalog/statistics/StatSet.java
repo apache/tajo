@@ -9,8 +9,10 @@ import nta.engine.TCommonProtos.StatProto;
 import nta.engine.TCommonProtos.StatSetProto;
 import nta.engine.TCommonProtos.StatSetProtoOrBuilder;
 import nta.engine.TCommonProtos.StatType;
+import nta.engine.json.GsonCreator;
 
 import com.google.common.collect.Maps;
+import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
@@ -20,7 +22,7 @@ public class StatSet implements ProtoObject<StatSetProto>, Cloneable {
   private StatSetProto.Builder builder = null;
   boolean viaProto = false;
 
-  private Map<StatType, Stat> stats;
+  @Expose private Map<StatType, Stat> stats;
 
   public StatSet() {
     builder = StatSetProto.newBuilder();
@@ -127,5 +129,9 @@ public class StatSet implements ProtoObject<StatSetProto>, Cloneable {
         builder.addStats(stat.toProto());
       }
     }
+  }
+  
+  public String toString() {
+    return GsonCreator.getPrettyInstance().toJson(this);
   }
 }

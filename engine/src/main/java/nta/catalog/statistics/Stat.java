@@ -1,16 +1,17 @@
 package nta.catalog.statistics;
 
-import com.google.common.base.Objects;
-
 import nta.engine.TCommonProtos.StatProto;
 import nta.engine.TCommonProtos.StatType;
+
+import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
  */
 public class Stat implements Cloneable {
-  private long val = 0;
-  private StatType type;
+  @Expose private long val = 0;
+  @Expose private StatType type;
 
   public Stat(StatType type) {
     this.type = type;

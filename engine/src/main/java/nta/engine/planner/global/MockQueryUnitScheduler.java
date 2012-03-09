@@ -5,9 +5,13 @@ package nta.engine.planner.global;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Random;
 
+import nta.catalog.statistics.Stat;
+import nta.catalog.statistics.StatSet;
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
+import nta.engine.TCommonProtos.StatType;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
 import nta.engine.cluster.QueryManager;
@@ -83,6 +87,7 @@ public class MockQueryUnitScheduler {
           builder.setId("test"+i);
           builder.setProgress(i/3.f);
           builder.setStatus(QueryStatus.INPROGRESS);
+          builder.setStats(buildStatSet().getProto());
           qm.updateProgress(id, builder.build());
         }
         builder.setStatus(QueryStatus.FINISHED);
@@ -90,6 +95,30 @@ public class MockQueryUnitScheduler {
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
+    }
+    
+    private StatSet buildStatSet() {
+      StatSet statSet = new StatSet();
+      Stat stat = new Stat(StatType.COLUMN_NUM_NDV);
+      stat.setValue(1);
+      statSet.putStat(stat);
+      stat = new Stat(StatType.COLUMN_NUM_NULLS);
+      stat.setValue(2);
+      statSet.putStat(stat);
+      stat = new Stat(StatType.TABLE_AVG_ROWS);
+      stat.setValue(3);
+      statSet.putStat(stat);
+      stat = new Stat(StatType.TABLE_NUM_BLOCKS);
+      stat.setValue(4);
+      statSet.putStat(stat);
+      stat = new Stat(StatType.TABLE_NUM_PARTITIONS);
+      stat.setValue(5);
+      statSet.putStat(stat);
+      stat = new Stat(StatType.TABLE_NUM_ROWS);
+      stat.setValue(6);
+      statSet.putStat(stat);
+      
+      return statSet;
     }
   }
 }

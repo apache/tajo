@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import nta.catalog.statistics.Stat;
+import nta.catalog.statistics.StatSet;
 import nta.engine.LogicalQueryUnitId;
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
@@ -70,6 +72,8 @@ public class QueryManager {
   private Map<QueryId, Query> queries = 
       new HashMap<QueryId, Query>();
   
+  private Map<String, StatSet> statSetOfTable;
+  
   private Map<QueryUnit, String> serverByQueryUnit;
   private Map<String, List<QueryUnit>> queryUnitsByServer;
   private Map<LogicalQueryUnit, QueryUnit[]> queryUnitsForLogicalQueryUnit;
@@ -82,6 +86,7 @@ public class QueryManager {
     queryUnitsByServer = mapMaker.makeMap();
     queryUnitsForLogicalQueryUnit = mapMaker.makeMap();
     inProgressQueries = mapMaker.makeMap();
+    statSetOfTable = mapMaker.makeMap();
   }
   
   public synchronized void addQuery(Query q) {
@@ -238,9 +243,33 @@ public class QueryManager {
         if (status.getInProgressStatus().getStatus() != QueryStatus.FINISHED) {
           return false;
         }
+      } else {
+        return false;
       }
     }
+    statSetOfTable.put(getLogicalQueryUnit(id).getOutputName(), 
+        mergeStatSet(units));
     return true;
+  }
+  
+  public StatSet getStatSet(String tableId) {
+    return statSetOfTable.get(tableId);
+  }
+  
+  private StatSet mergeStatSet(QueryUnit[] units) {
+    WaitStatus status;
+    StatSet merged = new StatSet();
+    for (QueryUnit unit : units) {
+      status = inProgressQueries.get(unit.getId());
+      StatSet statSet = new StatSet(status.getInProgressStatus().getStats());
+      for (Stat stat : statSet.getAllStats()) {
+        if (merged.containStat(stat.getType())) {
+          stat.setValue(merged.getStat(stat.getType()).getValue() + stat.getValue());
+        }
+        merged.putStat(stat);
+      }
+    }
+    return merged;
   }
   
   public QueryUnit[] getQueryUnits(LogicalQueryUnit unit) {

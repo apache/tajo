@@ -3,8 +3,7 @@
  */
 package nta.engine.cluster;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,8 +15,10 @@ import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.statistics.StatSet;
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
+import nta.engine.TCommonProtos.StatType;
 import nta.engine.Query;
 import nta.engine.QueryId;
 import nta.engine.QueryIdFactory;
@@ -85,7 +86,8 @@ public class TestQueryManager {
   }
   
   @Test
-  public void testQueryInfo() throws IOException, NoSuchQueryIdException, InterruptedException {
+  public void testQueryInfo() throws IOException, NoSuchQueryIdException, 
+  InterruptedException {
     Schema schema = new Schema();    
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
     TableDesc desc = TCatUtil.newTableDesc("test", meta, new Path("/"));
@@ -116,7 +118,8 @@ public class TestQueryManager {
     }
   }
   
-  private void recursiveTest(List<String> s, LogicalQueryUnit plan) throws NoSuchQueryIdException {
+  private void recursiveTest(List<String> s, LogicalQueryUnit plan) 
+      throws NoSuchQueryIdException {
     if (plan.hasPrevQuery()) {
       Iterator<LogicalQueryUnit> it = plan.getPrevIterator();
       while (it.hasNext()) {
@@ -125,5 +128,12 @@ public class TestQueryManager {
     }
     s.addAll(qm.getAssignedWorkers(plan));
     assertTrue(qm.isFinished(plan.getId()));
+    StatSet statSet = qm.getStatSet(plan.getOutputName());
+    assertEquals(3, statSet.getStat(StatType.COLUMN_NUM_NDV).getValue());
+    assertEquals(6, statSet.getStat(StatType.COLUMN_NUM_NULLS).getValue());
+    assertEquals(9, statSet.getStat(StatType.TABLE_AVG_ROWS).getValue());
+    assertEquals(12, statSet.getStat(StatType.TABLE_NUM_BLOCKS).getValue());
+    assertEquals(15, statSet.getStat(StatType.TABLE_NUM_PARTITIONS).getValue());
+    assertEquals(18, statSet.getStat(StatType.TABLE_NUM_ROWS).getValue());
   }
 }
