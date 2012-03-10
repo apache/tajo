@@ -37,9 +37,14 @@ public class EvalExprNode extends LogicalNode {
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     return gson.toJson(this);
   }
+  
+  @Override
+  public void preOrder(LogicalNodeVisitor visitor) {
+    // nothing
+  }
 
   @Override
-  public void accept(LogicalNodeVisitor visitor) {
+  public void postOrder(LogicalNodeVisitor visitor) {
     // nothing
   }
 }

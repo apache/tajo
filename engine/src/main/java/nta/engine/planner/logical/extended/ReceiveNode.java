@@ -108,7 +108,12 @@ public final class ReceiveNode extends LogicalNode implements Cloneable {
   }
 
   @Override
-  public void accept(LogicalNodeVisitor visitor) {
+  public void preOrder(LogicalNodeVisitor visitor) {
+    visitor.visit(this);
+  }
+  
+  @Override
+  public void postOrder(LogicalNodeVisitor visitor) {
     visitor.visit(this);
   }
 }

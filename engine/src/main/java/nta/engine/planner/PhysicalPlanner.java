@@ -11,6 +11,7 @@ import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.EvalExprNode;
 import nta.engine.planner.logical.GroupbyNode;
+import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ProjectionNode;
@@ -19,8 +20,10 @@ import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.physical.EvalExprExec;
 import nta.engine.planner.physical.GroupByExec;
+import nta.engine.planner.physical.NLJoinExec;
 import nta.engine.planner.physical.PartitionedStoreExec;
 import nta.engine.planner.physical.PhysicalExec;
+import nta.engine.planner.physical.ProjectionExec;
 import nta.engine.planner.physical.SeqScanExec;
 import nta.engine.planner.physical.SortExec;
 import nta.engine.planner.physical.StoreTableExec;
@@ -55,7 +58,6 @@ public class PhysicalPlanner {
 
   private PhysicalExec createPlanRecursive(SubqueryContext ctx,
       LogicalNode logicalNode) throws IOException {
-    @SuppressWarnings("unused")
     PhysicalExec outer = null;
     PhysicalExec inner = null;
 
@@ -70,8 +72,8 @@ public class PhysicalPlanner {
     
     case STORE:
       CreateTableNode createTableNode = (CreateTableNode) logicalNode;
-      inner = createPlanRecursive(ctx, createTableNode.getSubNode());
-      return createStorePlan(ctx, createTableNode, inner);
+      outer = createPlanRecursive(ctx, createTableNode.getSubNode());
+      return createStorePlan(ctx, createTableNode, outer);
       
     case SELECTION:
       SelectionNode selNode = (SelectionNode) logicalNode;
@@ -79,23 +81,29 @@ public class PhysicalPlanner {
 
     case PROJECTION:
       ProjectionNode prjNode = (ProjectionNode) logicalNode;
-      return createPlanRecursive(ctx, prjNode.getSubNode());
-
+      outer = createPlanRecursive(ctx, prjNode.getSubNode());      
+      return new ProjectionExec(ctx, prjNode, outer);
+      
     case SCAN:
-      inner = createScanPlan(ctx, (ScanNode) logicalNode);
-      return inner;
+      outer = createScanPlan(ctx, (ScanNode) logicalNode);
+      return outer;
 
     case GROUP_BY:
       GroupbyNode grpNode = (GroupbyNode) logicalNode;
-      inner = createPlanRecursive(ctx, grpNode.getSubNode());
-      return createGroupByPlan(ctx, grpNode, inner);
+      outer = createPlanRecursive(ctx, grpNode.getSubNode());
+      return createGroupByPlan(ctx, grpNode, outer);
       
     case SORT:
       SortNode sortNode = (SortNode) logicalNode;
-      inner = createPlanRecursive(ctx, sortNode.getSubNode());
-      return createSortPlan(ctx, sortNode, inner);          
+      outer = createPlanRecursive(ctx, sortNode.getSubNode());
+      return createSortPlan(ctx, sortNode, outer);          
     
-    case JOIN:   
+    case JOIN:
+      JoinNode joinNode = (JoinNode) logicalNode;
+      outer = createPlanRecursive(ctx, joinNode.getOuterNode());
+      inner = createPlanRecursive(ctx, joinNode.getInnerNode());
+      return createJoinPlan(ctx, joinNode, outer, inner);
+      
     case RENAME:
     case SET_UNION:
     case SET_DIFF:
@@ -107,6 +115,12 @@ public class PhysicalPlanner {
     default:
       return null;
     }
+  }
+  
+  public PhysicalExec createJoinPlan(SubqueryContext ctx, JoinNode joinNode, 
+      PhysicalExec outer, PhysicalExec inner) {
+    NLJoinExec nlj = new NLJoinExec(ctx, joinNode, outer, inner);
+    return nlj;
   }
   
   public PhysicalExec createStorePlan(SubqueryContext ctx, CreateTableNode annotation,

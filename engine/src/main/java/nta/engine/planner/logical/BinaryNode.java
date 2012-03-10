@@ -51,9 +51,15 @@ public abstract class BinaryNode extends LogicalNode implements Cloneable {
 	  return binNode;
 	}
 	
-	public void accept(LogicalNodeVisitor visitor) {
-    outer.accept(visitor);
-    inner.accept(visitor);
+	public void preOrder(LogicalNodeVisitor visitor) {
+	  visitor.visit(this);
+	  outer.postOrder(visitor);
+    inner.postOrder(visitor);    
+  }
+	
+	public void postOrder(LogicalNodeVisitor visitor) {
+    outer.postOrder(visitor);
+    inner.postOrder(visitor);
     visitor.visit(this);
   }
 }

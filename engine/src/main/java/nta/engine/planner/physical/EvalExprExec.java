@@ -48,4 +48,8 @@ public class EvalExprExec extends PhysicalExec {
     }
     return t;
   }
+
+  @Override
+  public void rescan() throws IOException {    
+  }
 }

@@ -25,9 +25,9 @@ import nta.storage.VTuple;
  * 
  */
 public class GroupByExec extends PhysicalExec {
-  private final GroupbyNode annotation;
   private PhysicalExec subOp = null;
   
+  @SuppressWarnings("unused")
   private final EvalNode havingQual;
   private final Schema inputSchema;
   private final Schema outputSchema;
@@ -45,7 +45,6 @@ public class GroupByExec extends PhysicalExec {
 	 * 
 	 */
   public GroupByExec(GroupbyNode annotation, PhysicalExec subOp) throws IOException {
-    this.annotation = annotation;
     this.subOp = subOp;
     this.havingQual = annotation.getHavingCondition();
     this.inputSchema = annotation.getInputSchema();
@@ -64,15 +63,16 @@ public class GroupByExec extends PhysicalExec {
     // getting value list
     int valueIdx = 0;
     measurelist = new int[annotation.getTargetList().length - keylist.length];
-    search:
-    for (int inputIdx = 0; inputIdx < annotation.getTargetList().length; inputIdx++) {
-      for(int key : keylist) { // eliminate key field
-        if(inputIdx == key) {
-          continue search;
+    if (measurelist.length > 0) {
+      search: for (int inputIdx = 0; inputIdx < annotation.getTargetList().length; inputIdx++) {
+        for (int key : keylist) { // eliminate key field
+          if (inputIdx == key) {
+            continue search;
+          }
         }
+        measurelist[valueIdx] = inputIdx;
+        valueIdx++;
       }
-      measurelist[valueIdx] = inputIdx;
-      valueIdx++;      
     }
     
     idx = 0;
@@ -135,5 +135,11 @@ public class GroupByExec extends PhysicalExec {
   @Override
   public Schema getSchema() {
     return outputSchema;
+  }
+
+  @Override
+  public void rescan() throws IOException {    
+    iterator = tupleSlots.entrySet().iterator();
+    computed = true;
   }
 }

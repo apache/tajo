@@ -73,4 +73,9 @@ public class StoreTableExec extends PhysicalExec {
         
     return null;
   }
+
+  @Override
+  public void rescan() throws IOException {
+    // nothing to do
+  }
 }

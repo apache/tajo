@@ -215,15 +215,16 @@ public final class QueryAnalyzer {
    */
   private void parseFromClause(final Context ctx, 
       final CommonTree ast, final QueryBlock block) {
-    if (ast.getChild(0).getType() == NQLParser.JOIN) {
-      JoinClause joinClause = parseJoinClause(ctx, block, 
+    if (ast.getChild(0).getType() == NQLParser.JOIN) { // explicit join
+      JoinClause joinClause = parseExplicitJoinClause(ctx, block, 
           (CommonTree) ast.getChild(0));
       block.setJoinClause(joinClause);
-    } else {
-      int numTables = ast.getChildCount(); //
+    
+    } else { // implicit join or the from clause on single relation
+      int numTables = ast.getChildCount();
   
-      if (numTables > 0) {
-        FromTable[] tables = new FromTable[numTables];
+      if (numTables == 1) { // on single relation
+        FromTable table = null;
         CommonTree node = null;
         for (int i = 0; i < ast.getChildCount(); i++) {
           node = (CommonTree) ast.getChild(i);
@@ -233,32 +234,60 @@ public final class QueryAnalyzer {
           case NQLParser.TABLE:
             // table (AS ID)?
             // 0 - a table name, 1 - table alias
-            String tableName = node.getChild(0).getText();
-            TableDesc desc = checkAndGetTableByName(ctx, tableName);
-            FromTable table = null;
-            if (node.getChildCount() > 1) {
-              table = new FromTable(desc, 
-                  node.getChild(1).getText());
-              ctx.renameTable(table.getTableId(), table.getAlias());
-            } else {
-              table = new FromTable(desc);
-              ctx.renameTable(table.getTableId(), table.getTableId());
-            }
-            
-            tables[i] = table;
-            
-            break;        
+            table = parseTable(ctx, block, node);
+            ctx.renameTable(table.getTableId(),
+                table.hasAlias() ? table.getAlias() : table.getTableId());
+            block.addFromTable(table);
+            break;
   
           default:
           } // switch
         } // for each derievedTable
-  
-        block.setFromTables(tables);
-      } // if the number of tables is greater than 0
+      } else if (numTables > 1) {
+        // if the number of tables is greater than 1,
+        // it means the implicit join clause
+        JoinClause joinClause = parseImplicitJoinClause(ctx, block, 
+            (CommonTree) ast);
+        block.setJoinClause(joinClause);
+      }
     }
   }
   
-  private JoinClause parseJoinClause(final Context ctx, final QueryBlock block, 
+  private JoinClause parseImplicitJoinClause(final Context ctx,
+      final QueryBlock block, final CommonTree ast) {
+    int numTables = ast.getChildCount();
+    Preconditions.checkArgument(numTables > 1);
+    
+    return parseImplicitJoinClause_(ctx, block, (CommonTree) ast, 0);
+  }
+  
+  private JoinClause parseImplicitJoinClause_(final Context ctx,
+      final QueryBlock block, final CommonTree ast, int idx) {
+    JoinClause join = null;
+    if (idx < ast.getChildCount() - 1) {
+      CommonTree node = (CommonTree) ast.getChild(idx);
+      FromTable left = parseTable(ctx, block, node);        
+      ctx.renameTable(left.getTableId(),
+          left.hasAlias() ? left.getAlias() : left.getTableId());
+      block.addFromTable(left);
+                
+      join = new JoinClause(JoinType.CROSS_JOIN, left);
+      idx++;
+      if ((ast.getChildCount() - idx) > 1) {
+        join.setRight(parseImplicitJoinClause_(ctx, block, ast, idx));
+      } else {        
+        FromTable right = parseTable(ctx, block, (CommonTree) ast.getChild(idx));
+        ctx.renameTable(right.getTableId(),
+            right.hasAlias() ? right.getAlias() : right.getTableId());
+        block.addFromTable(right);
+        join.setRight(right);
+      }
+    }
+
+    return join;
+  }
+  
+  private JoinClause parseExplicitJoinClause(final Context ctx, final QueryBlock block, 
       final CommonTree ast) {
     CommonTree joinAST = (CommonTree) ast;
     
@@ -294,19 +323,20 @@ public final class QueryAnalyzer {
     
     idx++; // 2
     if (joinAST.getChild(idx).getType() == NQLParser.JOIN) {
-      joinClause.setRight(parseJoinClause(ctx, block, 
+      joinClause.setRight(parseExplicitJoinClause(ctx, block, 
           (CommonTree) joinAST.getChild(idx)));
     } else {
       FromTable right = parseTable(ctx, block, 
           (CommonTree) joinAST.getChild(idx));
       ctx.renameTable(right.getTableId(), 
           right.hasAlias() ? right.getAlias() : right.getTableId());
+      block.addFromTable(right);
       joinClause.setRight(right);
     }
     
     idx++; // 3
     if (joinAST.getChild(idx) != null) {
-      if (joinType == JoinType.CROSS_JOIN || joinType == JoinType.NATURAL) {
+      if (joinType == JoinType.NATURAL) {
         throw new InvalidQueryException("Cross or natural join cannot have join conditions");
       }
       
@@ -402,10 +432,54 @@ public final class QueryAnalyzer {
   
   private void parseWhereClause(final Context ctx, 
       final QueryBlock block, final CommonTree ast) {
-    EvalNode evalTree = createEvalTree(ctx, ast.getChild(0), block);
-    block.setWhereCondition(evalTree);
+    EvalNode whereCond = createEvalTree(ctx, ast.getChild(0), block);        
+    block.setWhereCondition(whereCond);    
+/*    if (block.hasJoinClause()) {
+      // find join conditions from where Clause
+      List<EvalNode> cnfs = EvalTreeUtil.getConjNormalForm(whereCond);
+      List<EvalNode> equiJoinQual = Lists.newArrayList();
+      EquiConditionFinder finder = null;
+      List<EvalNode> equis = null;
+      for (EvalNode nf : cnfs) {
+        finder = new EquiConditionFinder();
+        nf.preOrder(finder);
+        equis = finder.getEquiConds();
+        if (equis.size() > 0) {
+          for (EvalNode equi : equis) {
+            if (equi.getLeftExpr().getType() == Type.FIELD &&
+                equi.getRightExpr().getType() == Type.FIELD) {
+              FieldEval left = (FieldEval) equi.getLeftExpr();
+              FieldEval right = (FieldEval) equi.getRightExpr();
+              if (!left.getTableId().equals(right.getTableId())) {
+                equiJoinQual.add(equi);
+              }
+            }
+          }
+        }
+      }
+    }*/
   }
-
+  
+  /*
+  private static class EquiConditionFinder implements EvalNodeVisitor {
+    private List<EvalNode> equis = null;
+    
+    public EquiConditionFinder() {
+      equis = Lists.newArrayList();
+    }
+    
+    public List<EvalNode> getEquiConds() {
+      return this.equis;
+    }
+    
+    @Override
+    public void visit(EvalNode node) {
+      if (node.getType() == Type.EQUAL) {
+        equis.add(node);
+      }
+    }    
+  }*/
+  
   /**
    * EBNF -> AST: <br /><pre>
    * groupby_clause

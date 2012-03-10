@@ -89,5 +89,6 @@ public abstract class LogicalNode implements Cloneable {
 	
 	public abstract String toJSON();
 
-  public abstract void accept(LogicalNodeVisitor visitor);
+	public abstract void preOrder(LogicalNodeVisitor visitor);
+  public abstract void postOrder(LogicalNodeVisitor visitor);
 }

@@ -124,7 +124,8 @@ public class JoinNode extends BinaryNode implements Cloneable {
   }
 
   public String toString() {
-    return "\"Join\": "
+    return "\"Join\": \"joinType\": \"" + joinType +"\""
+        + (joinQual != null ? ", \"qual\": " + joinQual : "")
         + "\n\"out schema: " + getOutputSchema() 
         + "\n\"in schema: " + getInputSchema()
     		+ "\n" + getOuterNode().toString() + " and " + getInnerNode();

@@ -3,6 +3,8 @@ package nta.engine.planner.logical;
 import java.util.Arrays;
 
 import nta.catalog.Column;
+import nta.catalog.Schema;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryBlock.Target;
@@ -64,6 +66,17 @@ public class GroupbyNode extends UnaryNode implements Cloneable {
 
   public void setTargetList(Target[] targets) {
     this.targets = targets;
+  }
+  
+  public void setSubNode(LogicalNode subNode) {
+    super.setSubNode(subNode);    
+    Schema grpTargets = new Schema();
+    for(Target t : targets) {
+      DataType type = t.getEvalTree().getValueType();
+      String name = t.getEvalTree().getName();
+      grpTargets.addColumn(name,type);
+    }
+    setOutputSchema(grpTargets);
   }
   
   public String toString() {

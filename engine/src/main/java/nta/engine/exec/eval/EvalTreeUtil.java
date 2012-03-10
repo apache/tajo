@@ -45,15 +45,38 @@ public class EvalTreeUtil {
   }
   
   /**
+   * Convert a list of conjunctive normal forms into a singleton expression.
+   *  
+   * @param evalNode
+   * @return
+   */
+  public static EvalNode transformCNF2Singleton(EvalNode...evalNode) {    
+    if (evalNode.length == 1) {
+      return evalNode[0];
+    }
+    
+    return transformCNF2Singleton_(evalNode, 0);
+  }
+  
+  private static EvalNode transformCNF2Singleton_(EvalNode [] evalNode, int idx) {
+    if (idx == evalNode.length - 2) {
+      return new BinaryEval(Type.AND, evalNode[idx], evalNode[idx + 1]);
+    } else {
+      return new BinaryEval(Type.AND, evalNode[idx], 
+          transformCNF2Singleton_(evalNode, idx + 1));
+    }
+  }
+  
+  /**
    * Get a list of exprs similar to CNF
    * 
    * @param node
    * @return
    */
-  public static List<EvalNode> getConjNormalForm(EvalNode node) {
+  public static EvalNode [] getConjNormalForm(EvalNode node) {
     List<EvalNode> list = new ArrayList<EvalNode>();    
     getConjNormalForm(node, list);    
-    return list;
+    return list.toArray(new EvalNode[list.size()]);
   }
   
   private static void getConjNormalForm(EvalNode node, List<EvalNode> found) {

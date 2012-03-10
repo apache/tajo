@@ -4,6 +4,8 @@ import java.util.Arrays;
 
 import com.google.gson.annotations.Expose;
 
+import nta.catalog.Schema;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryBlock.Target;
 
@@ -31,6 +33,17 @@ public class ProjectionNode extends UnaryNode {
 	
 	public boolean isAll() {
 	  return targets == null;
+	}
+	
+	public void setSubNode(LogicalNode subNode) {
+	  super.setSubNode(subNode);
+	  Schema projected = new Schema();
+	  for(Target t : targets) {
+      DataType type = t.getEvalTree().getValueType();
+      String name = t.getEvalTree().getName();
+      projected.addColumn(name,type);
+    }
+	  setOutputSchema(projected);
 	}
 	
 	public String toString() {

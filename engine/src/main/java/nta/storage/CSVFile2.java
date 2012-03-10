@@ -443,7 +443,7 @@ public class CSVFile2 extends Storage {
 
     @Override
     public void reset() throws IOException {
-
+      init(conf, schema, tablets);
     }
 
     @Override

@@ -78,7 +78,7 @@ public class GlobalEngine implements EngineService {
     QueryContext ctx = factory.create();
     ParseTree tree = (QueryBlock) analyzer.parse(ctx, querystr);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
-    LogicalOptimizer.optimize(ctx, plan);
+    plan = LogicalOptimizer.optimize(ctx, plan);
     LOG.info("* logical plan:\n" + plan);
 
     QueryId qid = QueryIdFactory.newQueryId();

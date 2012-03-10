@@ -59,4 +59,10 @@ public class SortExec extends PhysicalExec {
       return null;
     }
   }
+
+  @Override
+  public void rescan() throws IOException {
+    this.iterator = tupleSlots.iterator();
+    sorted = true;
+  }
 }

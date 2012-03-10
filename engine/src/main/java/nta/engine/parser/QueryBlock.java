@@ -1,5 +1,7 @@
 package nta.engine.parser;
 
+import java.util.List;
+
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
@@ -9,6 +11,7 @@ import nta.engine.json.GsonCreator;
 import nta.engine.planner.JoinType;
 import nta.engine.utils.TUtil;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
@@ -26,7 +29,7 @@ public class QueryBlock extends ParseTree {
   /* select target list */
   private Target [] targetList = null;
   /* from clause */
-  private FromTable [] fromTables = null;
+  private List<FromTable> fromTables = Lists.newArrayList();
   /* from clause with join */
   private JoinClause joinClause = null;
   /* where clause */
@@ -126,14 +129,14 @@ public class QueryBlock extends ParseTree {
   
   // From Clause
   public final boolean hasFromClause() {
-    return fromTables != null || joinClause != null;
+    return fromTables.size() > 0 || joinClause != null;
   }
   
-  public final void setFromTables(final FromTable [] tables) {
-    this.fromTables = tables;
+  public final void addFromTable(final FromTable table) {
+    this.fromTables.add(table);
   }
   
-  public final boolean hasExplicitJoinClause() {
+  public final boolean hasJoinClause() {
     return this.joinClause != null;
   }
   
@@ -146,11 +149,11 @@ public class QueryBlock extends ParseTree {
   }
   
   public final int getNumFromTables() {
-    return fromTables.length;
+    return fromTables.size();
   }
   
   public final FromTable [] getFromTables() {
-    return this.fromTables;
+    return this.fromTables.toArray(new FromTable[fromTables.size()]);
   }
   
   public final boolean hasWhereClause() {
@@ -178,9 +181,19 @@ public class QueryBlock extends ParseTree {
       // for gson
     }
     
+    public JoinClause(final JoinType joinType) {
+      this.joinType = joinType;
+    }
+    
     public JoinClause(final JoinType joinType, final FromTable left) {
       this.joinType = joinType;
       this.left = left;
+    }
+    
+    public JoinClause(final JoinType joinType, final FromTable left, 
+        final FromTable right) {
+      this(joinType, left);
+      this.right = right;
     }
     
     public JoinType getJoinType() {

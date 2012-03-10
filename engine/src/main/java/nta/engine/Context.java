@@ -58,10 +58,8 @@ public abstract class Context {
       hasGroupByClause = block.hasGroupbyClause();
       
       if (block.hasFromClause()) {
-        if (block.hasExplicitJoinClause()) {
+        if (block.hasJoinClause()) {
           hasJoinClause = true;
-        } else {
-          hasJoinClause = block.getFromTables().length > 1 ? true : false;
         }
       }      
       targets = block.getTargetList();

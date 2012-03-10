@@ -129,7 +129,12 @@ public class ScanNode extends LogicalNode {
 	  return scanNode;
 	}
 	
-	public void accept(LogicalNodeVisitor visitor) {        
+  @Override
+  public void preOrder(LogicalNodeVisitor visitor) {
+    visitor.visit(this);
+  }
+	
+	public void postOrder(LogicalNodeVisitor visitor) {        
     visitor.visit(this);
   }
 }

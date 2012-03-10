@@ -48,4 +48,9 @@ public class SleepExec extends PhysicalExec {
     }
     return new VTuple(1);
   }
+
+  @Override
+  public void rescan() throws IOException {
+    // nothing to do
+  }
 }

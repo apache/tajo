@@ -103,7 +103,7 @@ public class TestPlannerUtil {
     LogicalRootNode root = (LogicalRootNode) plan;
     TestLogicalPlanner.testQuery7(root.getSubNode());
     
-    root.accept(new TwoPhaseBuilder());
+    root.postOrder(new TwoPhaseBuilder());
     
     System.out.println(root);
   }

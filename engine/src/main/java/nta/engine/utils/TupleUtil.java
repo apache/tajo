@@ -1,15 +1,26 @@
 package nta.engine.utils;
 
-import nta.datum.Datum;
-import nta.engine.query.TargetEntry;
-import nta.storage.VTuple;
+import nta.catalog.Column;
+import nta.catalog.Schema;
+import nta.storage.Tuple;
 
 public class TupleUtil {
-	public static VTuple project(VTuple intoTuple, TargetEntry [] targets, Datum [] datum) {		
-		for(int i=0; i < targets.length; i++) {
-			intoTuple.put(targets[i].resId, datum[i]);
-		}
-		
-		return intoTuple;
-	}
+  public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
+    int[] targetIds = new int[outSchema.getColumnNum()];
+    int i = 0;
+    for (Column target : outSchema.getColumns()) {
+      targetIds[i] = inSchema.getColumnId(target.getQualifiedName());
+      i++;
+    }
+
+    return targetIds;
+  }
+
+  public static Tuple project(Tuple in, Tuple out, int[] targetIds) {
+    out.clear();
+    for (int idx = 0; idx < targetIds.length; idx++) {
+      out.put(idx, in.get(targetIds[idx]));
+    }
+    return out;
+  }
 }

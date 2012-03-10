@@ -90,6 +90,6 @@ public class SubqueryContext extends Context {
   }
   
   public Fragment [] getTables(String id) {
-    return fragmentMap.get(id).toArray(new Fragment[fragmentMap.size()]);
+    return fragmentMap.get(id).toArray(new Fragment[fragmentMap.get(id).size()]);
   }
 }

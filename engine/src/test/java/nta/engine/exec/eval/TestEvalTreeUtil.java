@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 import nta.catalog.CatalogService;
@@ -33,6 +32,8 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.google.common.collect.Sets;
 
 /**
  * @author Hyunsik Choi
@@ -139,6 +140,7 @@ public class TestEvalTreeUtil {
     "select score from people where (10 * 2) * (score + 2) > 20 + 30 + 10", // 3
     "select score from people where 10 * 2 > score * 10", // 4
     "select score from people where score < 10 and 4 < score", // 5
+    "select score from people where score < 10 and 4 < score and age > 5", // 6
   };
   
   @Test
@@ -182,13 +184,13 @@ public class TestEvalTreeUtil {
     QueryContext ctx = factory.create();
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[5]);
     EvalNode node = block.getWhereCondition();
-    List<EvalNode> cnf = EvalTreeUtil.getConjNormalForm(node);
+    EvalNode [] cnf = EvalTreeUtil.getConjNormalForm(node);
     
     Column col1 = new Column("people.score", DataType.INT);
     
-    assertEquals(2, cnf.size());
-    EvalNode first = cnf.get(0);
-    EvalNode second = cnf.get(1);
+    assertEquals(2, cnf.length);
+    EvalNode first = cnf[0];
+    EvalNode second = cnf[1];
     
     FieldEval field = (FieldEval) first.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
@@ -199,6 +201,23 @@ public class TestEvalTreeUtil {
     assertEquals(col1, field.getColumnRef());
     assertEquals(Type.LTH, second.getType());
     assertEquals(4, second.getLeftExpr().eval(null,  null).asInt());
+  }
+  
+  @Test
+  public final void testTransformCNF2Singleton() {
+    // "select score from people where score < 10 and 4 < score "
+    QueryContext ctx = factory.create();
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[6]);
+    EvalNode node = block.getWhereCondition();
+    EvalNode [] cnf1 = EvalTreeUtil.getConjNormalForm(node);
+    assertEquals(3, cnf1.length);
+    
+    EvalNode conj = EvalTreeUtil.transformCNF2Singleton(cnf1);
+    EvalNode [] cnf2 = EvalTreeUtil.getConjNormalForm(conj);
+    
+    Set<EvalNode> set1 = Sets.newHashSet(cnf1);
+    Set<EvalNode> set2 = Sets.newHashSet(cnf2);
+    assertEquals(set1, set2);
   }
   
   @Test

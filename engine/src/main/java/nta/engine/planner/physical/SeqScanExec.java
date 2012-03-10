@@ -88,4 +88,9 @@ public class SeqScanExec extends PhysicalExec {
   public Schema getSchema() {
     return outputSchema;
   }
+
+  @Override
+  public void rescan() throws IOException {
+    scanner.reset();    
+  }
 }

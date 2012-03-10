@@ -27,6 +27,8 @@ public abstract class UnaryNode extends LogicalNode implements Cloneable {
 	
 	public void setSubNode(LogicalNode subNode) {
 		this.subExpr = subNode;
+		this.setInputSchema(subNode.getOutputSchema());
+		this.setOutputSchema(subNode.getOutputSchema());
 	}
 	
 	public LogicalNode getSubNode() {
@@ -41,8 +43,13 @@ public abstract class UnaryNode extends LogicalNode implements Cloneable {
 	  return unary;
 	}
 	
-	public void accept(LogicalNodeVisitor visitor) {
-	  subExpr.accept(visitor);	  
+	public void preOrder(LogicalNodeVisitor visitor) {
+	  visitor.visit(this);
+	  subExpr.preOrder(visitor);
+  }
+	
+	public void postOrder(LogicalNodeVisitor visitor) {
+	  subExpr.postOrder(visitor);	  
 	  visitor.visit(this);
 	}
 }

@@ -357,7 +357,7 @@ public class RawFile2 extends Storage {
 
     @Override
     public void reset() throws IOException {
-      in.reset();
+      init();
     }
 		
     @Override

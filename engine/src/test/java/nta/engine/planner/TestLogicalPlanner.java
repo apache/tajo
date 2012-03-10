@@ -165,6 +165,7 @@ public class TestLogicalPlanner {
     ctx = factory.create();
     block = (ParseTree) analyzer.parse(ctx, QUERIES[2]);
     plan = LogicalPlanner.createPlan(ctx, block);
+    System.out.println(plan);
     TestLogicalNode.testCloneLogicalNode(plan);
 
     assertEquals(ExprType.ROOT, plan.getType());
@@ -176,20 +177,20 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.JOIN, projNode.getSubNode().getType());
     joinNode = (JoinNode) projNode.getSubNode();
 
-    assertEquals(ExprType.JOIN, joinNode.getOuterNode().getType());
-    JoinNode leftNode2 = (JoinNode) joinNode.getOuterNode();
-    
-    assertEquals(ExprType.SCAN, leftNode2.getOuterNode().getType());
-    ScanNode scan1 = (ScanNode) leftNode2.getOuterNode();
+    assertEquals(ExprType.SCAN, joinNode.getOuterNode().getType());
+    ScanNode scan1 = (ScanNode) joinNode.getOuterNode();
     assertEquals("employee", scan1.getTableId());
     
-    assertEquals(ExprType.SCAN, leftNode2.getInnerNode().getType());
-    ScanNode scan2 = (ScanNode) leftNode2.getInnerNode();
-    assertEquals("dept", scan2.getTableId());
+    JoinNode rightNode2 = (JoinNode) joinNode.getInnerNode();
+    assertEquals(ExprType.JOIN, rightNode2.getType());
+        
+    assertEquals(ExprType.SCAN, rightNode2.getOuterNode().getType());
+    ScanNode leftScan = (ScanNode) rightNode2.getOuterNode();
+    assertEquals("dept", leftScan.getTableId());
 
-    assertEquals(ExprType.SCAN, joinNode.getInnerNode().getType());
-    rightNode = (ScanNode) joinNode.getInnerNode();
-    assertEquals("score", rightNode.getTableId());    
+    assertEquals(ExprType.SCAN, rightNode2.getInnerNode().getType());
+    ScanNode rightScan = (ScanNode) rightNode2.getInnerNode();
+    assertEquals("score", rightScan.getTableId());
   }
   
   String [] JOINS = { 
@@ -212,6 +213,8 @@ public class TestLogicalPlanner {
     JoinNode join = (JoinNode) proj.getSubNode();
     assertEquals(JoinType.NATURAL, join.getJoinType());
     assertEquals(ExprType.SCAN, join.getOuterNode().getType());
+    assertTrue(join.hasJoinQual());
+    System.out.println(join.getJoinQual());
     ScanNode scan = (ScanNode) join.getOuterNode();
     assertEquals("employee", scan.getTableId());
     
@@ -224,8 +227,6 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.SCAN, join.getInnerNode().getType());
     ScanNode inner = (ScanNode) join.getInnerNode();
     assertEquals("score", inner.getTableId());
-    
-    System.out.println(root);
   }
   
   @Test
@@ -259,7 +260,7 @@ public class TestLogicalPlanner {
   }
   
   @Test
-  public final void testOuterJoinPlan2() {
+  public final void testOuterJoinPlan() {
     // two relations
     QueryContext ctx = factory.create();
     ParseTree block = (ParseTree) analyzer.parse(ctx, JOINS[2]);
@@ -401,9 +402,10 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.SCAN, selNode.getSubNode().getType());
     ScanNode scanNode = (ScanNode) selNode.getSubNode();
     
-    LogicalOptimizer.optimize(ctx, plan);
-    assertEquals(ExprType.ROOT, plan.getType());
-    root = (LogicalRootNode) plan;
+    LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
+    assertEquals(ExprType.ROOT, optimized.getType());
+    root = (LogicalRootNode) optimized;
+    
     assertEquals(ExprType.SCAN, root.getSubNode().getType());
     scanNode = (ScanNode) root.getSubNode();
     assertEquals("employee", scanNode.getTableId());
@@ -444,7 +446,7 @@ public class TestLogicalPlanner {
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
     
     TestVisitor vis = new TestVisitor();
-    plan.accept(vis);
+    plan.postOrder(vis);
     
     assertEquals(ExprType.ROOT, vis.stack.pop().getType());
     assertEquals(ExprType.PROJECTION, vis.stack.pop().getType());

@@ -134,7 +134,7 @@ public class GlobalQueryPlanner {
 
   private LogicalNode convertTo2Phase(LogicalNode logicalPlan) {
     LogicalRootNode root = (LogicalRootNode) logicalPlan;
-    root.accept(new TwoPhaseBuilder());
+    root.postOrder(new TwoPhaseBuilder());
     return logicalPlan;
   }
   

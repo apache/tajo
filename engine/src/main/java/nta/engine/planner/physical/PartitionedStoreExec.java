@@ -131,4 +131,9 @@ public final class PartitionedStoreExec extends PhysicalExec {
     
     return null;
   }
+
+  @Override
+  public void rescan() throws IOException {
+    // nothing to do   
+  }
 }
