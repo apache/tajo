@@ -42,7 +42,7 @@ public class SeqScanExec extends PhysicalExec {
     
     this.scanner = sm.getScanner(fragments[0].getMeta(), fragments);
     Schema targets = annotation.hasTargetList() ? annotation.getTargetList() :
-      annotation.getInputSchema();
+      annotation.getOutputSchema();
     this.targetIds = new int[targets.getColumnNum()];    
     
     int i=0;

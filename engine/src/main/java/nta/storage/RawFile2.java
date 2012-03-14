@@ -120,7 +120,12 @@ public class RawFile2 extends Storage {
         this.fs = curTablet.getPath().getFileSystem(this.conf);
         this.in = fs.open(curTablet.getPath());
         this.start = curTablet.getStartOffset();
-        this.end = curTablet.getStartOffset() + curTablet.getLength();
+        if (curTablet.getLength() == -1) {
+          long fileLength = fs.getFileStatus(curTablet.getPath()).getLen();
+          this.end = curTablet.getStartOffset() + fileLength;
+        } else {
+          this.end = curTablet.getStartOffset() + curTablet.getLength();
+        }
         
         readHeader();
         // set correct start offset.
@@ -383,6 +388,7 @@ public class RawFile2 extends Storage {
     private final boolean statsEnabled;
     private StatSet statSet = null;
     private Stat numRowStat = null;
+    private Stat outputBytesStat = null;
 
     public RawFileAppender(Configuration conf, final TableMeta meta, 
         final Path path, boolean statsEnabled) throws IOException {
@@ -418,9 +424,10 @@ public class RawFile2 extends Storage {
       this.statsEnabled = statsEnabled;
       if (statsEnabled) {
         this.statSet = new StatSet();
-        this.numRowStat = new Stat(StatType.TABLE_NUM_ROWS);
-        
+        this.numRowStat = new Stat(StatType.TABLE_NUM_ROWS);        
         this.statSet.putStat(this.numRowStat);
+        this.outputBytesStat = new Stat(StatType.TABLE_NUM_BYTES);
+        this.statSet.putStat(this.outputBytesStat);
       }
 		}
 		
@@ -496,6 +503,9 @@ public class RawFile2 extends Storage {
 		@Override
 		public void close() throws IOException {
 			if (out != null) {
+			  if (statsEnabled) {
+			    outputBytesStat.setValue(out.getPos());
+			  }
 				sync();
 				out.flush();
 				out.close();

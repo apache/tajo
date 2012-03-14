@@ -84,7 +84,7 @@ public class TestBuiltinFunction {
   @AfterClass
   public static void tearDown() throws Exception {
     util.shutdownCatalogCluster();
-    util.shutdownCatalogCluster();
+    util.shutdownMiniZKCluster();
   }
 
   private String[] QUERIES = { "select count(*) from people", // 0

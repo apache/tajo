@@ -52,5 +52,6 @@ public class TestNtaEngineMaster {
     
     data = ZkUtil.getDataAndWatch(zkClient, NConstants.ZNODE_CLIENTSERVICE);
     assertEquals(master.getClientServiceServerName(), new String(data));
+    zkClient.close();
   }
 }

@@ -53,7 +53,6 @@ public class TestClusterManager {
   public static void setUp() throws Exception {
     util = new NtaTestingUtility();
     util.startMiniCluster(CLUST_NUM);
-    util.startCatalogCluster();
     Thread.sleep(4000);
 
     NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
@@ -66,7 +65,6 @@ public class TestClusterManager {
 
   @AfterClass
   public static void tearDown() throws IOException {
-    util.shutdownCatalogCluster();
     util.shutdownMiniCluster();
   }
 
@@ -96,7 +94,8 @@ public class TestClusterManager {
 
   @Test
   public void testGetFragAndWorker() throws Exception {
-    CatalogService local = util.getMiniCatalogCluster().getCatalog();
+    CatalogService local = util.getMiniNtaEngineCluster().getMaster()
+        .getCatalog();
 
     int i, j;
     FSDataOutputStream fos;

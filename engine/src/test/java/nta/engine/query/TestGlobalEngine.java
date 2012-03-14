@@ -3,13 +3,13 @@
  */
 package nta.engine.query;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -125,7 +125,7 @@ public class TestGlobalEngine {
     }
 	}
 	
-	@Test
+	//@Test
 	public void testGroupbyQuery() throws Exception {
 	  String tablename = master.executeQuery(query[0]);
     assertNotNull(tablename);
@@ -139,7 +139,7 @@ public class TestGlobalEngine {
 	  }
 	}
 	
-	@Test
+	//@Test
 	public void testFaultTolerant() throws Exception {
 	  Thread t1 = new Thread(new Runnable() {
       @Override

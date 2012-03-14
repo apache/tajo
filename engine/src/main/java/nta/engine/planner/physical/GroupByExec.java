@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.datum.Datum;
+import nta.engine.SubqueryContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.GroupbyNode;
@@ -25,6 +26,7 @@ import nta.storage.VTuple;
  * 
  */
 public class GroupByExec extends PhysicalExec {
+  private final SubqueryContext ctx;
   private PhysicalExec subOp = null;
   
   @SuppressWarnings("unused")
@@ -44,7 +46,9 @@ public class GroupByExec extends PhysicalExec {
    * @throws IOException 
 	 * 
 	 */
-  public GroupByExec(GroupbyNode annotation, PhysicalExec subOp) throws IOException {
+  public GroupByExec(SubqueryContext ctx, GroupbyNode annotation, 
+      PhysicalExec subOp) throws IOException {
+    this.ctx = ctx;
     this.subOp = subOp;
     this.havingQual = annotation.getHavingCondition();
     this.inputSchema = annotation.getInputSchema();
@@ -66,7 +70,8 @@ public class GroupByExec extends PhysicalExec {
     if (measurelist.length > 0) {
       search: for (int inputIdx = 0; inputIdx < annotation.getTargetList().length; inputIdx++) {
         for (int key : keylist) { // eliminate key field
-          if (inputIdx == key) {
+          if (annotation.getTargetList()[inputIdx].getColumnSchema().getColumnName()
+              .equals(inputSchema.getColumn(key).getColumnName())) {
             continue search;
           }
         }
@@ -88,7 +93,7 @@ public class GroupByExec extends PhysicalExec {
   private void compute() throws IOException {
     Tuple tuple = null;
     Tuple keyTuple = null;
-    while((tuple = subOp.next()) != null) {
+    while((tuple = subOp.next()) != null && !ctx.isStopped()) {
       keyTuple = new VTuple(keylist.length);
       // build one key tuple
       for(int i = 0; i < keylist.length; i++) {
@@ -123,7 +128,7 @@ public class GroupByExec extends PhysicalExec {
       compute();
       iterator = tupleSlots.entrySet().iterator();
       computed = true;
-    }    
+    }
         
     if(iterator.hasNext()) {
       return iterator.next().getValue();

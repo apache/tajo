@@ -147,7 +147,7 @@ public class PhysicalPlanner {
   
   public PhysicalExec createGroupByPlan(SubqueryContext ctx, 
       GroupbyNode groupbyNode, PhysicalExec subOp) throws IOException {
-    GroupByExec groupby = new GroupByExec(groupbyNode, subOp);
+    GroupByExec groupby = new GroupByExec(ctx, groupbyNode, subOp);
     
     return groupby;
   }

@@ -15,6 +15,7 @@ import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
+import nta.engine.NtaTestingUtility;
 import nta.engine.QueryIdFactory;
 import nta.engine.SubqueryContext;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -29,6 +30,7 @@ import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
+import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -85,8 +87,9 @@ public class TestSortExec {
   public final void testNext() throws IOException {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory(catalog);
+    Path workDir = NtaTestingUtility.getTestDir("TestSortExec");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
-        new Fragment[] { frags[0] });
+        new Fragment[] { frags[0] }, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 

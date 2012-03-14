@@ -7,7 +7,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -62,8 +61,8 @@ public final class ReceiveNode extends LogicalNode implements Cloneable {
     return Collections.unmodifiableList(fetchMap.get(name));
   }
 
-  public Iterator<Entry<String, List<URI>>> getAllDataSet() {
-    return fetchMap.entrySet().iterator();
+  public Collection<Entry<String, List<URI>>> getAllDataSet() {
+    return Collections.unmodifiableSet(fetchMap.entrySet());
   }
 
   @Override

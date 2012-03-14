@@ -64,6 +64,7 @@ public class CSVFile2 extends Storage {
     private final boolean statsEnabled;
     private StatSet statSet = null;
     private Stat numRowStat = null;
+    private Stat outputBytesStat = null;
 
     public CSVAppender(Configuration conf, final TableMeta meta,
         final Path path, boolean statsEnabled) throws IOException {
@@ -90,8 +91,9 @@ public class CSVFile2 extends Storage {
       if (statsEnabled) {
         this.statSet = new StatSet();
         this.numRowStat = new Stat(StatType.TABLE_NUM_ROWS);
-        
         this.statSet.putStat(this.numRowStat);
+        this.outputBytesStat = new Stat(StatType.TABLE_NUM_BYTES);
+        this.statSet.putStat(this.outputBytesStat);
       }
     }
 
@@ -161,6 +163,10 @@ public class CSVFile2 extends Storage {
 
     @Override
     public void close() throws IOException {
+      // Statistical section
+      if (statsEnabled) {
+        outputBytesStat.setValue(fos.getPos());
+      }
       fos.close();
     }
 
@@ -227,7 +233,11 @@ public class CSVFile2 extends Storage {
         this.fs = curTablet.getPath().getFileSystem(this.conf);
         this.fis = this.fs.open(curTablet.getPath());
         this.startOffset = curTablet.getStartOffset();
-        this.length = curTablet.getLength();
+        if (curTablet.getLength() == -1) { // unknown case
+          this.length = fs.getFileStatus(curTablet.getPath()).getLen();
+        } else {
+          this.length = curTablet.getLength();
+        }
         long available = tabletable();//(this.startOffset + this.length) - fis.getPos();
         
         // set correct start offset.

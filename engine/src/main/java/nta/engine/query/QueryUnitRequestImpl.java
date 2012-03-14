@@ -3,15 +3,22 @@
  */
 package nta.engine.query;
 
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+import nta.catalog.Column;
+import nta.catalog.proto.CatalogProtos.ColumnProto;
+import nta.catalog.proto.CatalogProtos.SchemaProtoOrBuilder;
+import nta.engine.MasterInterfaceProtos.Fetch;
 import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
 import nta.engine.MasterInterfaceProtos.QueryUnitRequestProtoOrBuilder;
 import nta.engine.QueryUnitId;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 
+import com.google.common.collect.Lists;
 import com.google.gson.annotations.Expose;
 
 /**
@@ -31,6 +38,10 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	private boolean clusteredOutput;
 	@Expose
 	private String serializedData;     // logical node
+	@Expose
+	private Boolean interQuery;
+	@Expose
+	private List<Fetch> fetches;
 	
 	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
 	private QueryUnitRequestProto.Builder builder = null;
@@ -143,6 +154,49 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		return this.serializedData;
 	}
 	
+	public boolean isInterQuery() {
+	  QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    if (interQuery != null) {
+      return interQuery;
+    }
+    if (!p.hasInterQuery()) {
+      return false;
+    }
+    this.interQuery = p.getInterQuery();
+    return this.interQuery;
+	}
+	
+	public void setInterQuery() {
+	  maybeInitBuilder();
+	  this.interQuery = true;
+	}
+	
+	public void addFetch(String name, URI uri) {
+	  maybeInitBuilder();
+	  initFetches();
+	  fetches.add(
+	  Fetch.newBuilder()
+	    .setName(name)
+	    .setUrls(uri.toString()).build());
+	  
+	}
+	
+	public List<Fetch> getFetches() {
+	  initFetches();    
+    return this.fetches;  
+	}
+	
+	private void initFetches() {
+	  if (this.fetches != null) {
+      return;
+    }
+    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    this.fetches = new ArrayList<Fetch>();
+    for(Fetch fetch : p.getFetchesList()) {
+      fetches.add(fetch);
+    }
+	}
+	
 	private void maybeInitBuilder() {
 		if (viaProto || builder == null) {
 			builder = QueryUnitRequestProto.newBuilder(proto);
@@ -167,6 +221,12 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		}
 		if (this.serializedData != null) {
 			builder.setSerializedData(this.serializedData);
+		}
+		if (this.interQuery != null) {
+		  builder.setInterQuery(this.interQuery);
+		}
+		if (this.fetches != null) {
+		  builder.addAllFetches(this.fetches);
 		}
 	}
 
@@ -199,6 +259,12 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     }
     if (serializedData == null && p.hasSerializedData()) {
       this.serializedData = p.getSerializedData();
+    }
+    if (interQuery == null && p.hasInterQuery()) {
+      this.interQuery = p.getInterQuery();
+    }
+    if (fetches == null && p.getFetchesCount() > 0) {
+      this.fetches = p.getFetchesList();
     }
   }
   

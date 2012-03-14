@@ -30,6 +30,7 @@ import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -120,8 +121,9 @@ public class TestNLJoinExec {
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);
     
     factory = new SubqueryContext.Factory(catalog);
+    Path workDir = NtaTestingUtility.getTestDir("CrossJoin");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
-        merged);
+        merged, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     System.out.println(plan);
@@ -147,8 +149,9 @@ public class TestNLJoinExec {
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);
     
     factory = new SubqueryContext.Factory(catalog);
+    Path workDir = NtaTestingUtility.getTestDir("InnerJoin");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
-        merged);
+        merged, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     System.out.println(plan);

@@ -64,7 +64,7 @@ public class Fetcher {
     }
   }
 
-  public void get() throws IOException {
+  public File get() throws IOException {
     ClientBootstrap bootstrap = new ClientBootstrap(
         new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
             Executors.newCachedThreadPool()));
@@ -78,12 +78,15 @@ public class Fetcher {
     if (!future.isSuccess()) {
       future.getCause().printStackTrace();
       bootstrap.releaseExternalResources();
-      return;
+      return null;
     }
 
+    String query = uri.getPath() + (uri.getQuery() != null ? "?" 
+        + uri.getQuery() : "");
     // Prepare the HTTP request.
     HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-        HttpMethod.GET, uri.getPath());
+        HttpMethod.GET, query);
+    LOG.info("Fetch: " + request.getUri());
     request.setHeader(HttpHeaders.Names.HOST, host);
     request.setHeader(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
     request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING,
@@ -97,6 +100,12 @@ public class Fetcher {
 
     // Shut down executor threads to exit.
     bootstrap.releaseExternalResources();
+    
+    return file;
+  }
+  
+  public URI getURI() {
+    return this.uri;
   }
 
   public static class HttpClientHandler extends SimpleChannelUpstreamHandler {

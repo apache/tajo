@@ -52,7 +52,6 @@ public final class PartitionedStoreExec extends PhysicalExec {
   
   private final TableMeta meta;
   private final Partitioner partitioner;
-  private final String storeTable;
   private final Path storeTablePath;
   private final Map<Integer, Appender> appenderMap
     = new HashMap<Integer, Appender>();
@@ -76,15 +75,9 @@ public final class PartitionedStoreExec extends PhysicalExec {
       partitionKeys[i] = inputSchema.getColumnId(key.getQualifiedName());      
       i++;
     }
-    this.partitioner = new HashPartitioner(partitionKeys, numPartitions);
-    this.storeTable = ctx.getQueryId().toString();
-    
-    storeTablePath = StorageUtil.concatPath(
-        sm.getTablePath(annotation.getTableName()),
-            ctx.getQueryId().toString());
-    sm.initTableBase(storeTablePath, meta);
-    Log.info("Initialized output directory ("
-        + sm.getTablePath(storeTable) + ")");
+    this.partitioner = new HashPartitioner(partitionKeys, numPartitions);    
+    storeTablePath = new Path(ctx.getWorkDir(), "out");
+    sm.initLocalTableBase(storeTablePath, meta);
   }
 
   @Override
@@ -98,8 +91,10 @@ public final class PartitionedStoreExec extends PhysicalExec {
       Path dataFile =
           StorageUtil.concatPath(storeTablePath, "data",
               "" + partition);
-      appender = sm.getAppender(meta, dataFile);
+      Log.info(">>>>>> " + dataFile.toString());
+      appender = sm.getLocalAppender(meta, dataFile);      
       appenderMap.put(partition, appender);
+      ctx.addRepartition(partition, dataFile.getName());
     } else {
       appender = appenderMap.get(partition);
     }

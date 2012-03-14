@@ -93,6 +93,11 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 		return fields;
 	}
 	
+	public void alter(int idx, Column column) {
+	  initColumns();
+	  this.fields.set(idx, column);
+	}
+	
 	public boolean contains(String colName) {
 		initColumns();
 		return fieldsByName.containsKey(colName);

@@ -31,6 +31,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
@@ -96,6 +97,18 @@ public class PlannerUtil {
       throw new InvalidQueryException("Unexpected logical plan: " + parent);
     }    
     return parent;
+  }
+  
+  public static void replaceNode(LogicalNode plan, LogicalNode newNode, ExprType type) {
+    LogicalNode parent = findTopParentNode(plan, type);
+    Preconditions.checkArgument(parent instanceof UnaryNode);
+    Preconditions.checkArgument(!(newNode instanceof BinaryNode));
+    UnaryNode parentNode = (UnaryNode) parent;
+    LogicalNode child = parentNode.getSubNode();
+    if (child instanceof UnaryNode) {
+      ((UnaryNode) newNode).setSubNode(((UnaryNode)child).getSubNode());
+    }
+    parentNode.setSubNode(newNode);
   }
   
   public static LogicalNode insertOuterNode(LogicalNode parent, LogicalNode outer) {
@@ -341,6 +354,13 @@ public class PlannerUtil {
         
       case GROUP_BY:
         GroupbyNode groupByNode = (GroupbyNode)node;
+        collected.addAll(Lists.newArrayList(groupByNode.getGroupingColumns()));
+        for (Target t : groupByNode.getTargetList()) {
+          temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
+          if (!temp.isEmpty()) {
+            collected.addAll(temp);
+          }
+        }
         if(groupByNode.hasHavingCondition()) {
           temp = EvalTreeUtil.findDistinctRefColumns(groupByNode.
               getHavingCondition());

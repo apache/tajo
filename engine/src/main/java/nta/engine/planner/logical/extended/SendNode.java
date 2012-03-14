@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import nta.catalog.Column;
 import nta.engine.json.GsonCreator;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
@@ -15,6 +16,7 @@ import nta.engine.planner.logical.UnaryNode;
 import nta.engine.utils.TUtil;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -31,6 +33,8 @@ public class SendNode extends UnaryNode {
   @Expose private RepartitionType repaType;
   /** This will be used for pipeType == PUSH. */
   @Expose private Map<Integer, URI> destURIs;
+  @Expose private Column [] partitionKeys;
+  @Expose private int numPartitions;
 
   private SendNode() {
     super(ExprType.SEND);
@@ -53,6 +57,29 @@ public class SendNode extends UnaryNode {
   
   public URI getDestURI(int partition) {
     return this.destURIs.get(partition);
+  }
+  
+  public void setPartitionKeys(Column [] keys, int numPartitions) {
+    Preconditions.checkState(repaType != RepartitionType.NONE,
+        "Hash or Sort repartition only requires the partition keys");
+    Preconditions.checkArgument(keys.length > 0, 
+        "At least one partition key must be specified.");
+    Preconditions.checkArgument(numPartitions > 0,
+        "The number of partitions must be positive: %s", numPartitions);
+    this.partitionKeys = keys;
+    this.numPartitions = numPartitions;
+  }
+  
+  public boolean hasPartitionKeys() {
+    return this.partitionKeys != null;
+  }
+  
+  public Column [] getPartitionKeys() {
+    return this.partitionKeys;
+  }
+  
+  public int getPartitionsNum() {
+    return this.numPartitions;
   }
   
   public Iterator<Entry<Integer, URI>> getAllDestURIs() {

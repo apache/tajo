@@ -160,7 +160,8 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory(catalog);
     QueryUnitId id = QueryIdFactory.newQueryUnitId();
-    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] });
+    Path workDir = NtaTestingUtility.getTestDir("CreateScan");
+    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
@@ -186,8 +187,9 @@ public class TestPhysicalPlanner {
   @Test
   public final void testGroupByPlan() throws IOException {
     Fragment[] frags = sm.split("score");
+    Path workDir = NtaTestingUtility.getTestDir("GroupBy");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
-        new Fragment[] { frags[0] });
+        new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
@@ -211,7 +213,9 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
     QueryUnitId id = QueryIdFactory.newQueryUnitId();
-    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] });
+    Path workDir = NtaTestingUtility.getTestDir("StorePlan");
+    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
+        workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[8]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
@@ -248,7 +252,9 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
     QueryUnitId id = QueryIdFactory.newQueryUnitId();
-    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] });
+    Path workDir = NtaTestingUtility.getTestDir("PartitionedStore");
+    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
+        workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
@@ -269,8 +275,7 @@ public class TestPhysicalPlanner {
     exec.next();
 
     Path path = StorageUtil.concatPath(
-        sm.getTablePath("partition"),
-        id.toString());
+        workDir, "out");
     FileSystem fs = sm.getFileSystem();
         
     assertEquals(numPartitions,
@@ -298,8 +303,9 @@ public class TestPhysicalPlanner {
   public final void testAggregationFunction() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
+    Path workDir = NtaTestingUtility.getTestDir("AggregationFunction");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
-        new Fragment[] { frags[0] });
+        new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[9]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
@@ -320,8 +326,9 @@ public class TestPhysicalPlanner {
   public final void testCountFunction() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
+    Path workDir = NtaTestingUtility.getTestDir("CountFunction");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
-        new Fragment[] { frags[0] });
+        new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[10]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
@@ -340,8 +347,9 @@ public class TestPhysicalPlanner {
   public final void testGroupByWithNullValue() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
+    Path workDir = NtaTestingUtility.getTestDir("GroupByWithNull");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
-        new Fragment[] { frags[0] });
+        new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[12]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
@@ -363,8 +371,9 @@ public class TestPhysicalPlanner {
   @Test
   public final void testEvalExpr() throws IOException {
     factory = new SubqueryContext.Factory(catalog);
+    Path workDir = NtaTestingUtility.getTestDir("EvalExpr");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
-        new Fragment[] { });
+        new Fragment[] { }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[13]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);

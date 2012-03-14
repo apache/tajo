@@ -20,6 +20,8 @@ public abstract class Function implements Cloneable {
 	@Expose
 	protected EvalNode [] givenArgs;
 	
+	public final static Column [] NoArgs = new Column [] {};
+	
 	public Function(Column [] definedArgs) {
 		this.definedArgs = definedArgs;
 	}

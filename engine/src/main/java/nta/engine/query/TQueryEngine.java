@@ -51,18 +51,9 @@ public class TQueryEngine {
     this.phyPlanner = new PhysicalPlanner(storageManager);
   }
   
-  public PhysicalExec createPlan(SubqueryContext ctx, QueryUnitRequest request, 
-      Path localTmpDir) throws InternalException {
-    LogicalNode plan = GsonCreator.getInstance().
-        fromJson(request.getSerializedData(), LogicalNode.class);
-    LOG.info(plan.toString());
-    LOG.info("Assigned task: (" + request.getId() + ") start:"
-        + request.getFragments().get(0).getStartOffset() + " end: "
-        + request.getFragments() + "\nplan:\n" + plan);
-
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-    
-    return exec;
+  public PhysicalExec createPlan(SubqueryContext ctx, LogicalNode plan) 
+      throws InternalException {    
+    return phyPlanner.createPlan(ctx, plan);
   }
   
   public void stop() throws IOException {

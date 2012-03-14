@@ -300,6 +300,7 @@ public class LogicalOptimizer {
         
       case GROUP_BY:
         GroupbyNode groupByNode = (GroupbyNode)node;
+        necessary.addAll(Lists.newArrayList(groupByNode.getGroupingColumns()));
         for (Target t : groupByNode.getTargetList()) {
           temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
           if (!temp.isEmpty()) {

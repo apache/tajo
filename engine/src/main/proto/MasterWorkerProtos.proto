@@ -7,11 +7,14 @@ import "CatalogProtos.proto";
 import "TCommonProtos.proto";
 
 enum QueryStatus {
-     PENDING = 0;
-     INPROGRESS = 1;
-     FINISHED = 2;
-     FAILED = 3;
-     ABORTED = 4;
+    INITED = 0;
+    FETCHING = 1;
+    PENDING = 2;
+    INPROGRESS = 3;
+    FINISHED = 4;
+    DATASERVER = 5;
+    KILLED = 6;
+    ABORTED = 7;
 }
 
 message InProgressStatus {
@@ -19,6 +22,7 @@ message InProgressStatus {
     required float progress = 2;
     required QueryStatus status = 3;
     optional StatSetProto stats = 4;
+    repeated Partition partitions = 5;
 }
 
 message QueryUnitRequestProto {
@@ -27,6 +31,13 @@ message QueryUnitRequestProto {
     required string outputTable = 3;
     required bool clusteredOutput = 4;
     required string serializedData = 5;
+    optional bool interQuery = 6 [default = false];
+    repeated Fetch fetches = 7;
+}
+
+message Fetch {
+    required string name = 1;
+    required string urls = 2;
 }
 
 message QueryUnitResponseProto {
@@ -57,6 +68,11 @@ enum CommandType {
     LAUNCH = 1;
     STOP = 2;
     FINALIZE = 3;
+}
+
+message Partition {
+    required int32 partitionKey = 1;
+    required string fileName = 2;
 }
 
 message ServerStatusProto {

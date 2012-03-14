@@ -11,6 +11,7 @@ import java.util.List;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.TableProto;
+import nta.conf.NtaConf;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
@@ -23,6 +24,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 
 /**
@@ -77,8 +79,28 @@ public class StorageManager {
 	  return initTableBase(new Path(dataRoot,tableName), meta);
 	}
 	
+	public Path initLocalTableBase(Path tablePath, TableMeta meta) throws IOException {
+	  NtaConf c = NtaConf.create(conf);
+	  c.set("fs.default.name", "file:///");
+	  FileSystem fs = LocalFileSystem.get(c);
+    if (fs.exists(tablePath)) {
+      throw new AlreadyExistsStorageException(tablePath);
+    }
+
+    fs.mkdirs(tablePath);
+    Path dataDir = new Path(tablePath,"data");
+    fs.mkdirs(dataDir);
+    if (meta != null)
+      writeTableMeta(tablePath, meta);
+    
+    LOG.info("Initialized table root (" + tablePath + ")");
+    return dataDir;
+	}
+	
+	
 	public Path initTableBase(Path tablePath, TableMeta meta) 
 	    throws IOException {
+	  FileSystem fs = tablePath.getFileSystem(conf);
     if (fs.exists(tablePath)) {
       throw new AlreadyExistsStorageException(tablePath);
     }
@@ -98,6 +120,7 @@ public class StorageManager {
 	}
 	
   public void delete(Path tablePath) throws IOException {
+    FileSystem fs = tablePath.getFileSystem(conf);
     fs.delete(tablePath, true);
   }
   
@@ -119,7 +142,8 @@ public class StorageManager {
 	    throws IOException {
 	  TableMeta meta = getTableMeta(getTablePath(tableName));
 	  Path filePath = StorageUtil.concatPath(dataRoot, tableName, 
-	      "data", fileName);	  
+	      "data", fileName);
+	  FileSystem fs = filePath.getFileSystem(conf);
 	  FileStatus status = fs.getFileStatus(filePath);
 	  Fragment tablet = new Fragment(tableName+"_1", status.getPath(), 
 	      meta, 0l , status.getLen());
@@ -172,6 +196,27 @@ public class StorageManager {
     return appender; 
 	}
 	
+	public Appender getLocalAppender(TableMeta meta, Path filename) 
+      throws IOException {
+	  NtaConf c = NtaConf.create(conf);
+    c.set("fs.default.name", "file:///");
+    
+    Appender appender = null;
+    switch(meta.getStoreType()) {
+    case RAW: {
+      appender = new RawFile2(c).getAppender(meta,
+          filename);
+      break;
+    }
+    case CSV: {
+      appender = new CSVFile2(c).getAppender(meta, filename);
+      break;
+    }
+    }
+    
+    return appender;
+  }
+	
 	public Appender getAppender(TableMeta meta, String tableName, String filename) 
 	    throws IOException {
 	  Path filePath = StorageUtil.concatPath(dataRoot, tableName, "data", filename);
@@ -185,8 +230,8 @@ public class StorageManager {
 	
 	public Appender getTableAppender(TableMeta meta, Path tablePath) throws 
   IOException {
-    Appender appender = null;
-
+    Appender appender = null;    
+    FileSystem fs = tablePath.getFileSystem(conf);    
     Path tableData = new Path(tablePath, "data");
     if (!fs.exists(tablePath)) {
       fs.mkdirs(tableData);
@@ -211,7 +256,8 @@ public class StorageManager {
 	public TableMeta getTableMeta(Path tablePath) throws IOException {
     TableMeta meta = null;
     
-    Path tableMetaPath = new Path(tablePath, ".meta");
+    FileSystem fs = tablePath.getFileSystem(conf);
+    Path tableMetaPath = new Path(tablePath, ".meta");    
     if(!fs.exists(tableMetaPath)) {
       throw new FileNotFoundException(".meta file not found in "+tablePath.toString());
     }
@@ -227,11 +273,13 @@ public class StorageManager {
 	
 	public FileStatus [] listTableFiles(String tableName) throws IOException {
 	  Path dataPath = new Path(dataRoot,tableName);
+	  FileSystem fs = dataPath.getFileSystem(conf);
 	  return fs.listStatus(new Path(dataPath, "data"));
 	}
 	
 	public Fragment[] split(String tableName) throws IOException {
 	  Path tablePath = new Path(dataRoot, tableName);
+	  FileSystem fs = tablePath.getFileSystem(conf);
 	  return split(tablePath, fs.getDefaultBlockSize());
 	}
 	
@@ -241,18 +289,19 @@ public class StorageManager {
   }
 	
 	public Fragment[] split(Path tablePath) throws IOException {
+	  FileSystem fs = tablePath.getFileSystem(conf);
 	  return split(tablePath, fs.getDefaultBlockSize());
 	}
 	
 	private Fragment[] split(Path tablePath, long size)
       throws IOException {
-    TableMeta meta = getTableMeta(tablePath);
+	  FileSystem fs = tablePath.getFileSystem(conf);    
 	  
+	  TableMeta meta = getTableMeta(tablePath);
 	  long defaultBlockSize = size;
-
     List<Fragment> listTablets = new ArrayList<Fragment>();
     Fragment tablet = null;
-
+    
     FileStatus[] fileLists = fs.listStatus(new Path(tablePath, "data"));
     for (FileStatus file : fileLists) {
       long remainFileSize = file.getLen();
@@ -281,17 +330,20 @@ public class StorageManager {
 	
 	public Fragment getFragment(String fragmentId, TableMeta meta, Path path) 
 	    throws IOException {
+	  FileSystem fs = path.getFileSystem(conf);
 	  FileStatus status = fs.getFileStatus(path);	  
 	  return new Fragment(fragmentId, path, meta, 0, status.getLen());
 	}
 	
 	public FileStatus [] getTableDataFiles(Path tableRoot) throws IOException {
-	  Path dataPath = new Path(tableRoot, "data");
+	  FileSystem fs = tableRoot.getFileSystem(conf);
+	  Path dataPath = new Path(tableRoot, "data");	  
 	  return fs.listStatus(dataPath);
 	}
 	
 	private void writeTableMeta(Path tableRoot, TableMeta meta) 
-	    throws IOException {	  
+	    throws IOException {
+	  FileSystem fs = tableRoot.getFileSystem(conf);
     FSDataOutputStream out = fs.create(new Path(tableRoot, ".meta"));
     FileUtil.writeProto(out, meta.getProto());
     out.flush();

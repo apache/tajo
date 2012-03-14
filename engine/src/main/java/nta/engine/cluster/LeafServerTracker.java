@@ -91,6 +91,5 @@ public class LeafServerTracker extends ZkListener {
 	}
 
 	public void close() {
-		this.client.close();
 	}
 }

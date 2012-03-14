@@ -39,6 +39,7 @@ import com.google.common.collect.Sets;
  * @author Hyunsik Choi
  */
 public class TestEvalTreeUtil {
+  static NtaTestingUtility util;
   static CatalogService catalog = null;
   static EvalNode expr1;
   static EvalNode expr2;
@@ -48,7 +49,7 @@ public class TestEvalTreeUtil {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    NtaTestingUtility util = new NtaTestingUtility();
+    util = new NtaTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();
@@ -90,7 +91,8 @@ public class TestEvalTreeUtil {
 
   @AfterClass
   public static void tearDown() throws Exception {
-
+    util.shutdownCatalogCluster();
+    util.shutdownMiniZKCluster();    
   }
 
   @Test
