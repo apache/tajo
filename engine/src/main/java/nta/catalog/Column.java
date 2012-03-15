@@ -27,7 +27,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	  
 	public Column(String columnName, DataType dataType) {
 	  this();
-		this.name = columnName;
+		this.name = columnName.toLowerCase();
 		this.dataType = dataType;
 	}
 	
@@ -71,7 +71,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	
 	public void setName(String name) {
 	  setModified();
-		this.name = name;
+		this.name = name.toLowerCase();
 	}
 	
 	public DataType getDataType() {

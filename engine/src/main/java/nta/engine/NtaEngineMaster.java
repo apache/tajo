@@ -232,7 +232,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   @Override
   public String executeQuery(String query) throws Exception {
     cm.updateAllFragmentServingInfo(cm.getOnlineWorker());
-    String rs = queryEngine.executeQuery(query);
+    String rs = queryEngine.executeQuery(query.toLowerCase());
     if (rs == null) {
       return "";
     } else {

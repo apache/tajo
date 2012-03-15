@@ -491,7 +491,7 @@ public class TestLogicalPlanner {
     assertEquals("name", indexNode.getSortSpecs()[0].getSortKey().getColumnName());
     assertEquals(DataType.STRING, indexNode.getSortSpecs()[0].getSortKey().getDataType());
     assertEquals(true, indexNode.getSortSpecs()[0].isNullFirst());
-    assertEquals("empId", indexNode.getSortSpecs()[1].getSortKey().getColumnName());
+    assertEquals("empid", indexNode.getSortSpecs()[1].getSortKey().getColumnName());
     assertEquals(DataType.INT, indexNode.getSortSpecs()[1].getSortKey().getDataType());
     assertEquals(false, indexNode.getSortSpecs()[1].isAscending());
     assertEquals(false, indexNode.getSortSpecs()[1].isNullFirst());

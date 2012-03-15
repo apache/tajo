@@ -64,14 +64,14 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 
 	public Column getColumn(String colName) {
 		initColumns();
-		Integer cid = fieldsByName.get(colName);
+		Integer cid = fieldsByName.get(colName.toLowerCase());
 		return cid != null ? fields.get(cid) : null;
 	}
 	
 	public Column getColumnByName(String colName) {
 	  initColumns();
 	  for (Column col : fields) {
-	    if (col.getColumnName().equals(colName)) {
+	    if (col.getColumnName().equals(colName.toLowerCase())) {
 	      return col;
 	    }
 	  }
@@ -85,7 +85,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 	
 	public int getColumnId(String colName) {
 	  initColumns();
-	  return fieldsByName.get(colName);
+	  return fieldsByName.get(colName.toLowerCase());
 	}
 	
 	public Collection<Column> getColumns() {
@@ -100,7 +100,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 	
 	public boolean contains(String colName) {
 		initColumns();
-		return fieldsByName.containsKey(colName);
+		return fieldsByName.containsKey(colName.toLowerCase());
 	}
 	
 	public void initFromProto() {
@@ -126,14 +126,15 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 	public synchronized Schema addColumn(String name, DataType dataType) {
 		initColumns();
 		setModified();
-		if(fieldsByName.containsKey(name)) {
-		  LOG.error("Already exists column " + name);
-			throw new AlreadyExistsFieldException(name);
+		String lowcased = name.toLowerCase();
+		if(fieldsByName.containsKey(lowcased)) {
+		  LOG.error("Already exists column " + lowcased);
+			throw new AlreadyExistsFieldException(lowcased);
 		}
 			
-		Column newCol = new Column(name, dataType);
+		Column newCol = new Column(lowcased, dataType);
 		fields.add(newCol);
-		fieldsByName.put(name, fields.size() - 1);
+		fieldsByName.put(lowcased, fields.size() - 1);
 		
 		return this;
 	}

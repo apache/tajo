@@ -45,7 +45,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
   public FunctionDesc(String signature, Class<? extends Function> clazz,
       FunctionType funcType, DataType retType, DataType... parameterTypes) {
     this();
-    this.signature = signature;
+    this.signature = signature.toLowerCase();
     this.funcClass = clazz;
     this.funcType = funcType;
     this.returnType = retType;

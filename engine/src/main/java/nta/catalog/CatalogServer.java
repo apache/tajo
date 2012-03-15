@@ -85,8 +85,6 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	private final Lock rlock = lock.readLock();
 	private final Lock wlock = lock.writeLock();
 
-	/*private Map<String, TableDescProto> tables = 
-	    new HashMap<String, TableDescProto>();*/
 	private final CatalogStore store;
 	  
 	private Map<String, FunctionDescProto> functions = 
@@ -216,7 +214,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
       throws NoSuchTableException {
     rlock.lock();
     try {
-      String tableId = name.getValue();
+      String tableId = name.getValue().toLowerCase();
       if (!this.store.existTable(tableId)) {
         throw new NoSuchTableException(tableId);
       }
@@ -324,7 +322,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   public void deleteTable(StringProto name) throws NoSuchTableException {
     wlock.lock();
     try {
-      String tableId = name.getValue();
+      String tableId = name.getValue().toLowerCase();
       if (!store.existTable(tableId)) {
         throw new NoSuchTableException(tableId);
       }
@@ -339,7 +337,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   @Override
   public BoolProto existsTable(StringProto name) {
     try {
-      String tableId = name.getValue();
+      String tableId = name.getValue().toLowerCase();
       return BoolProto.newBuilder().setValue(store.existTable(tableId)).build();
     } catch (IOException e) {
       LOG.error(e);
@@ -505,7 +503,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
       paramTypes.add(request.getParameterTypes(i));
     }
     return this.functions.get(TCatUtil.getCanonicalName(
-        request.getSignature(), paramTypes));
+        request.getSignature().toLowerCase(), paramTypes));
   }
 
   @Override
@@ -517,7 +515,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     }
     boolean returnValue =
         this.functions.containsKey(TCatUtil.getCanonicalName(
-            request.getSignature(), paramTypes));
+            request.getSignature().toLowerCase(), paramTypes));
     return BoolProto.newBuilder().setValue(returnValue).build();
   }
 

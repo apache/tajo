@@ -36,8 +36,8 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   public IndexDesc(String name, String tableId, Column column, IndexMethod type,
       boolean isUnique, boolean isClustered, boolean isAscending) {
     this();
-    this.name = name;
-    this.tableId = tableId;
+    this.name = name.toLowerCase();
+    this.tableId = tableId.toLowerCase();
     this.column = column;
     this.indexMethod = type;
     this.isUnique = isUnique;

@@ -23,12 +23,9 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
   protected TableDescProto.Builder builder = null;
   protected boolean viaProto = false;
   
-	@Expose
-  protected String tableId;
-	@Expose
-  protected Path uri;
-	@Expose
-  protected TableMeta meta;
+	@Expose protected String tableId;
+	@Expose protected Path uri;
+	@Expose protected TableMeta meta;
   
 	public TableDescImpl() {
 		builder = TableDescProto.newBuilder();
@@ -36,7 +33,8 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
 	
 	public TableDescImpl(String tableId, TableMeta info, Path path) {
 		this();
-	  this.tableId = tableId;
+		// tajo deems all identifiers as lowcase characters
+	  this.tableId = tableId.toLowerCase();
 	  this.meta = info;
 	  this.uri = path;	   
 	}
@@ -53,7 +51,8 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
 	
 	public void setId(String tableId) {
 	  setModified();
-		this.tableId = tableId;
+	  // tajo deems all identifiers as lowcase characters
+		this.tableId = tableId.toLowerCase();
 	}
 	
   public String getId() {
