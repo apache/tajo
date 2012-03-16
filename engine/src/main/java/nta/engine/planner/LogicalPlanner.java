@@ -3,6 +3,7 @@ package nta.engine.planner;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.SchemaUtil;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.engine.Context;
 import nta.engine.exec.eval.BinaryEval;
 import nta.engine.exec.eval.EvalNode;
@@ -15,6 +16,7 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
 import nta.engine.parser.QueryBlock.JoinClause;
+import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.CreateIndexNode;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.EvalExprNode;
@@ -112,14 +114,13 @@ public class LogicalPlanner {
     LogicalNode subroot = null;
     if(query.hasFromClause()) {
       if (query.hasJoinClause()) {
-        subroot = createExplicitJoinTree(ctx, query.getJoinClause(), 
-            query.getWhereCondition());
+        subroot = createExplicitJoinTree(ctx, query.getJoinClause());
       } else {
-        subroot = createImplicitJoinTree(ctx, query.getFromTables(),
-            query.getWhereCondition());
+        subroot = createImplicitJoinTree(ctx, query.getFromTables());
       }
     } else {
       subroot = new EvalExprNode(query.getTargetList());
+      subroot.setOutputSchema(getProjectedSchema(ctx, query.getTargetList()));
       return subroot;
     }
     
@@ -127,6 +128,8 @@ public class LogicalPlanner {
       SelectionNode selNode = 
           new SelectionNode(query.getWhereCondition());
       selNode.setSubNode(subroot);
+      selNode.setInputSchema(subroot.getOutputSchema());
+      selNode.setOutputSchema(selNode.getInputSchema());
       subroot = selNode;
     }
     
@@ -140,47 +143,76 @@ public class LogicalPlanner {
         // when aggregation functions are used without grouping fields
         groupbyNode = new GroupbyNode(new Column [] {});
       }
-      groupbyNode.setTargetList(ctx.getTargetList());
+      groupbyNode.setTargetList(ctx.getTargetList());      
       groupbyNode.setSubNode(subroot);
-      subroot = groupbyNode;      
+      groupbyNode.setInputSchema(subroot.getOutputSchema());      
+      Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
+      groupbyNode.setOutputSchema(outSchema);
+      subroot = groupbyNode;
     }
     
     if(query.hasOrderByClause()) {
       SortNode sortNode = new SortNode(query.getSortKeys());
       sortNode.setSubNode(subroot);
+      sortNode.setInputSchema(subroot.getOutputSchema());
+      sortNode.setOutputSchema(sortNode.getInputSchema());
       subroot = sortNode;
     }
     
-    if (!query.getProjectAll() && !query.hasGroupbyClause()) {
-        ProjectionNode prjNode = new ProjectionNode(query.getTargetList());
+    ProjectionNode prjNode = null;
+    if (query.getProjectAll()) {
+      prjNode = new ProjectionNode();
+      prjNode.setSubNode(subroot);
+      subroot = prjNode;
+    } else {
+      if (query.hasAggregation()) {           
+      } else {
+        prjNode = new ProjectionNode(query.getTargetList());
         if (subroot != null) { // false if 'no from' statement
           prjNode.setSubNode(subroot);
         }
+        prjNode.setInputSchema(subroot.getOutputSchema());
+        Schema projected = getProjectedSchema(ctx, query.getTargetList());
+        prjNode.setOutputSchema(projected);
         subroot = prjNode;
-    }
+      }
+    }    
     
     return subroot;
   }
   
   private static LogicalNode createExplicitJoinTree(Context ctx, 
-      JoinClause joinClause, EvalNode whereCond) {
+      JoinClause joinClause) {
     JoinNode join = null;
     
     join = new JoinNode(joinClause.getJoinType(),
         new ScanNode(joinClause.getLeft()));
     if (joinClause.hasJoinQual()) {
       join.setJoinQual(joinClause.getJoinQual());
-    } else if (joinClause.hasJoinColumns()) {
+    } else if (joinClause.hasJoinColumns()) { 
+      // for using clause of explicit join
       // TODO - to be implemented. Now, tajo only support 'ON' join clause.
     }
     
     if (joinClause.hasRightJoin()) {
-      join.setInner(createExplicitJoinTree(ctx, joinClause.getRightJoin(), 
-          whereCond));
+      join.setInner(createExplicitJoinTree(ctx, joinClause.getRightJoin()));
     } else {
-      join.setInner(new ScanNode(joinClause.getRight()));
+      join.setInner(new ScanNode(joinClause.getRight()));      
     }
     
+    // Determine Join Schemas
+    Schema merged = null;
+    if (join.getJoinType() == JoinType.NATURAL) {
+      merged = getNaturalJoin(join.getOuterNode(), join.getInnerNode());
+    } else {
+      merged = SchemaUtil.merge(join.getOuterNode().getOutputSchema(),
+          join.getInnerNode().getOutputSchema());
+    }
+    
+    join.setInputSchema(merged);
+    join.setOutputSchema(merged);
+    
+    // Determine join quals
     // if natural join, should have the equi join conditions on common columns
     if (join.getJoinType() == JoinType.NATURAL) {
       Schema leftSchema = join.getOuterNode().getOutputSchema();
@@ -220,7 +252,7 @@ public class LogicalPlanner {
   }
   
   private static LogicalNode createImplicitJoinTree(Context ctx, 
-      FromTable [] tables, EvalNode whereCond) {
+      FromTable [] tables) {
     LogicalNode subroot = null;
     
     subroot = new ScanNode(tables[0]);
@@ -239,5 +271,46 @@ public class LogicalPlanner {
     }
     
     return subroot;
-  } 
+  }
+  
+  public static Schema getProjectedSchema(Context ctx, Target [] targets) {
+    Schema projected = new Schema();
+    for(Target t : targets) {
+      DataType type = t.getEvalTree().getValueType();
+      String name = null;
+      if (t.hasAlias()) {
+        name = t.getAlias();
+      } else if (t.getEvalTree().getName().equals("?")) {
+        name = ctx.getUnnamedColumn();
+      } else {
+        name = t.getEvalTree().getName();
+      }      
+      projected.addColumn(name,type);
+    }
+    
+    return projected;
+  }
+  
+  private static Schema getNaturalJoin(LogicalNode outer, LogicalNode inner) {
+    Schema joinSchema = new Schema();
+    Schema commons = SchemaUtil.getCommons(outer.getOutputSchema(),
+        inner.getOutputSchema());
+    joinSchema.addColumns(commons);
+    for (Column c : outer.getOutputSchema().getColumns()) {
+      for (Column common : commons.getColumns()) {
+        if (!common.getColumnName().equals(c.getColumnName())) {
+          joinSchema.addColumn(c);
+        }
+      }
+    }
+
+    for (Column c : inner.getOutputSchema().getColumns()) {
+      for (Column common : commons.getColumns()) {
+        if (!common.getColumnName().equals(c.getColumnName())) {
+          joinSchema.addColumn(c);
+        }
+      }
+    }
+    return joinSchema;
+  }
 }

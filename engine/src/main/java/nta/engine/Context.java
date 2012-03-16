@@ -73,4 +73,11 @@ public abstract class Context {
   public Target[] getTargetList() {
     return targets;
   }
+  
+  private int i = 0;
+  public String getUnnamedColumn() {    
+    String unnamed = "column_" + i;
+    i++;
+    return unnamed;
+  }
 }

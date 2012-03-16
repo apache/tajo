@@ -377,13 +377,13 @@ public class LogicalOptimizer {
     }
   }
   
-  public static class InSchemaRefresher implements LogicalNodeVisitor {    
+  public static class InSchemaRefresher implements LogicalNodeVisitor {   
     public InSchemaRefresher() {
     }
     
     @Override
     public void visit(LogicalNode node) {
-      switch (node.getType()) {      
+      switch (node.getType()) {
       case SCAN:        
       break;
       

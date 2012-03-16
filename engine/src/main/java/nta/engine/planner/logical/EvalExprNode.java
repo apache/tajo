@@ -34,7 +34,8 @@ public class EvalExprNode extends LogicalNode {
   
   @Override
   public String toString() {
-    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation()
+        .setPrettyPrinting().create();
     return gson.toJson(this);
   }
   

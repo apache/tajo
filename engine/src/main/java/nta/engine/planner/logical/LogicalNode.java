@@ -65,11 +65,13 @@ public abstract class LogicalNode implements Cloneable {
 	public boolean equals(Object obj) {
 	  if (obj instanceof LogicalNode) {
 	    LogicalNode other = (LogicalNode) obj;
-	    
-	    return this.type == other.type 
-	        && this.inputSchema.equals(other.inputSchema) 
-	        && this.outputSchema.equals(other.outputSchema)
-	        && this.cost == other.cost;
+
+      boolean b1 = this.type == other.type;
+      boolean b2 = this.inputSchema.equals(other.inputSchema);
+      boolean b3 = this.outputSchema.equals(other.outputSchema);
+      boolean b4 = this.cost == other.cost;
+      
+      return b1 && b2 && b3 && b4;
 	  } else {
 	    return false;
 	  }

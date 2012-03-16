@@ -434,51 +434,7 @@ public final class QueryAnalyzer {
       final QueryBlock block, final CommonTree ast) {
     EvalNode whereCond = createEvalTree(ctx, ast.getChild(0), block);        
     block.setWhereCondition(whereCond);    
-/*    if (block.hasJoinClause()) {
-      // find join conditions from where Clause
-      List<EvalNode> cnfs = EvalTreeUtil.getConjNormalForm(whereCond);
-      List<EvalNode> equiJoinQual = Lists.newArrayList();
-      EquiConditionFinder finder = null;
-      List<EvalNode> equis = null;
-      for (EvalNode nf : cnfs) {
-        finder = new EquiConditionFinder();
-        nf.preOrder(finder);
-        equis = finder.getEquiConds();
-        if (equis.size() > 0) {
-          for (EvalNode equi : equis) {
-            if (equi.getLeftExpr().getType() == Type.FIELD &&
-                equi.getRightExpr().getType() == Type.FIELD) {
-              FieldEval left = (FieldEval) equi.getLeftExpr();
-              FieldEval right = (FieldEval) equi.getRightExpr();
-              if (!left.getTableId().equals(right.getTableId())) {
-                equiJoinQual.add(equi);
-              }
-            }
-          }
-        }
-      }
-    }*/
   }
-  
-  /*
-  private static class EquiConditionFinder implements EvalNodeVisitor {
-    private List<EvalNode> equis = null;
-    
-    public EquiConditionFinder() {
-      equis = Lists.newArrayList();
-    }
-    
-    public List<EvalNode> getEquiConds() {
-      return this.equis;
-    }
-    
-    @Override
-    public void visit(EvalNode node) {
-      if (node.getType() == Type.EQUAL) {
-        equis.add(node);
-      }
-    }    
-  }*/
   
   /**
    * EBNF -> AST: <br /><pre>

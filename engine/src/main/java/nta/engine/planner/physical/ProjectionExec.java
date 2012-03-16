@@ -7,8 +7,8 @@ import java.io.IOException;
 
 import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
+import nta.engine.exec.eval.EvalNode;
 import nta.engine.planner.logical.ProjectionNode;
-import nta.engine.utils.TupleUtil;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
@@ -18,11 +18,12 @@ import nta.storage.VTuple;
 public class ProjectionExec extends PhysicalExec {
   private final ProjectionNode projNode;
   private final PhysicalExec subOp;
-  
-  private final Tuple outTuple;
-  private final int [] targetIds;
+      
   private final Schema inSchema;
   private final Schema outSchema;
+  
+  private final Tuple outTuple;
+  private final EvalNode [] evals;
 
   public ProjectionExec(SubqueryContext ctx, ProjectionNode projNode, 
       PhysicalExec subOp) {
@@ -32,7 +33,12 @@ public class ProjectionExec extends PhysicalExec {
     this.subOp = subOp;
     
     this.outTuple = new VTuple(outSchema.getColumnNum());
-    this.targetIds = TupleUtil.getTargetIds(inSchema, outSchema);
+    
+    evals = new EvalNode[projNode.getTargetList().length];
+    
+    for (int i = 0; i < projNode.getTargetList().length; i++) {
+      evals[i] = projNode.getTargetList()[i].getEvalTree();
+    }
   }
 
   @Override
@@ -46,8 +52,12 @@ public class ProjectionExec extends PhysicalExec {
     if (tuple ==  null) {
       return null;
     }
-        
-    return TupleUtil.project(tuple, outTuple, targetIds);
+     
+    for (int i = 0; i < evals.length; i++) {
+      outTuple.put(i, evals[i].eval(inSchema, tuple));
+    }
+    
+    return outTuple;
   }
 
   @Override

@@ -146,7 +146,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 
 	@Override
 	public String getName() {
-		return "unnamed";
+		return "?";
 	}
 	
 	@Override

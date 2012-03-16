@@ -3,9 +3,11 @@ package nta.engine.planner;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Iterator;
 import java.util.Stack;
 
 import nta.catalog.CatalogService;
+import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Options;
 import nta.catalog.Schema;
@@ -113,7 +115,7 @@ public class TestLogicalPlanner {
       "select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 7
       "store1 := select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 8
       "select deptName, sumtest(score) from score group by deptName having sumtest(score) > 30", // 9
-      "select 7 + 8", // 10
+      "select 7 + 8, 8 * 9, 10 * 10 as mul", // 10
       "create index idx_employee on employee using bitmap (name null first, empId desc) with (fillfactor = 70)" // 11
   };
 
@@ -165,7 +167,6 @@ public class TestLogicalPlanner {
     ctx = factory.create();
     block = (ParseTree) analyzer.parse(ctx, QUERIES[2]);
     plan = LogicalPlanner.createPlan(ctx, block);
-    System.out.println(plan);
     TestLogicalNode.testCloneLogicalNode(plan);
 
     assertEquals(ExprType.ROOT, plan.getType());
@@ -214,7 +215,6 @@ public class TestLogicalPlanner {
     assertEquals(JoinType.NATURAL, join.getJoinType());
     assertEquals(ExprType.SCAN, join.getOuterNode().getType());
     assertTrue(join.hasJoinQual());
-    System.out.println(join.getJoinQual());
     ScanNode scan = (ScanNode) join.getOuterNode();
     assertEquals("employee", scan.getTableId());
     
@@ -322,10 +322,7 @@ public class TestLogicalPlanner {
     ScanNode rightNode = (ScanNode) joinNode.getInnerNode();
     assertEquals("score", rightNode.getTableId());
     
-    System.out.println(plan);
-    System.out.println("-------------------");
-    LogicalOptimizer.optimize(ctx, plan);
-    System.out.println(plan);
+    LogicalOptimizer.optimize(ctx, plan);    
   }
   
   static void testQuery7(LogicalNode plan) {
@@ -472,6 +469,15 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(ExprType.EXPRS, root.getSubNode().getType());
+    Schema out = root.getOutputSchema();
+    
+    Iterator<Column> it = out.getColumns().iterator();
+    Column col = it.next();
+    assertEquals("column_0", col.getColumnName());
+    col = it.next();
+    assertEquals("column_1", col.getColumnName());
+    col = it.next();
+    assertEquals("mul", col.getColumnName());
   }
   
   @Test
@@ -496,5 +502,39 @@ public class TestLogicalPlanner {
     assertEquals(false, indexNode.getSortSpecs()[1].isAscending());
     assertEquals(false, indexNode.getSortSpecs()[1].isNullFirst());
     assertEquals(IndexMethod.BITMAP, indexNode.getMethod());
+  }
+  
+  static final String ALIAS [] = {
+    "select deptName, sum(score) as total from score group by deptName",
+    "select em.empId as id, sum(score) as total from employee as em inner join score using (em.deptName)"
+  };
+  
+  @Test
+  public final void testAlias() {
+    QueryContext ctx = factory.create();
+    ParseTree block = (ParseTree) analyzer.parse(ctx, ALIAS[0]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+    LogicalRootNode root = (LogicalRootNode) plan;
+        
+    Schema finalSchema = root.getOutputSchema();
+    Iterator<Column> it = finalSchema.getColumns().iterator();
+    Column col = it.next();
+    assertEquals("deptname", col.getColumnName());
+    col = it.next();
+    assertEquals("total", col.getColumnName());
+    
+    ctx = factory.create();
+    block = (ParseTree) analyzer.parse(ctx, ALIAS[1]);
+    plan = LogicalPlanner.createPlan(ctx, block);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+    root = (LogicalRootNode) plan;
+    
+    finalSchema = root.getOutputSchema();
+    it = finalSchema.getColumns().iterator();
+    col = it.next();
+    assertEquals("id", col.getColumnName());
+    col = it.next();
+    assertEquals("total", col.getColumnName());
   }
 }

@@ -307,10 +307,8 @@ public class TestPhysicalPlanner {
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[9]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    LogicalOptimizer.optimize(ctx, plan);
-
-    System.out.println(plan);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);    
+    plan = LogicalOptimizer.optimize(ctx, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -331,9 +329,7 @@ public class TestPhysicalPlanner {
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[10]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    LogicalOptimizer.optimize(ctx, plan);
-
-    System.out.println(plan);
+    plan = LogicalOptimizer.optimize(ctx, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -351,10 +347,8 @@ public class TestPhysicalPlanner {
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[12]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    LogicalOptimizer.optimize(ctx, plan);
-
-    System.out.println(plan);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);    
+    plan = LogicalOptimizer.optimize(ctx, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
