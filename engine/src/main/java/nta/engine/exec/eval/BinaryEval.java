@@ -119,7 +119,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 			return DatumFactory.createBool(leftExpr.eval(schema, tuple).asBool() && rightExpr.eval(schema, tuple).asBool());
 		case OR:
 			return DatumFactory.createBool(leftExpr.eval(schema, tuple).asBool() || rightExpr.eval(schema, tuple).asBool());
-		
+			
 		case EQUAL:
 			return leftExpr.eval(schema, tuple).equalsTo(rightExpr.eval(schema, tuple));
 		case LTH:
@@ -129,7 +129,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 		case GTH:
 			return leftExpr.eval(schema, tuple).greaterThan(rightExpr.eval(schema, tuple));
 		case GEQ:
-			return leftExpr.eval(schema, tuple).greaterThanEqual(rightExpr.eval(schema, tuple));			
+			return leftExpr.eval(schema, tuple).greaterThanEqual(rightExpr.eval(schema, tuple));
 			
 		case PLUS:
 			return leftExpr.eval(schema, tuple).plus(rightExpr.eval(schema, tuple));			

@@ -317,11 +317,16 @@ boolean_primary
 predicate 
   : comparison_predicate
   | in_predicate
+  | like_predicate
   ;
 
 in_predicate
 	:	expr NOT? IN array -> ^(IN expr array NOT?)
 	;
+	
+like_predicate
+  : f=fieldName NOT? LIKE s=string_value_expr -> ^(LIKE NOT? $f $s)
+  ;
 	
 comparison_predicate
 	:	expr EQUAL^ expr
@@ -352,12 +357,11 @@ atom
 	;
 	
 literal
-  : general_literal
+  : string_value_expr
   | signed_numerical_literal
   ;
 	
-// It represents various literals, such as string, bytes, and network addr.
-general_literal
+string_value_expr
   : STRING
   ;
   
@@ -406,6 +410,7 @@ IS : 'is';
 JOIN : 'join';
 LAST : 'last';
 LEFT : 'left';
+LIKE : 'like';
 NOT : 'not';
 ON : 'on';
 OUTER : 'outer';
@@ -478,7 +483,7 @@ WS  :   ( ' '
     ;
 
 STRING
-    :  '\'' ( ESC_SEQ | ~('\\'|'\'') )* '\''
+    :  '\'' ( ESC_SEQ | ~('\\'|'\'') )* '\'' {setText(getText().substring(1, getText().length()-1));}
     ;
 
 fragment

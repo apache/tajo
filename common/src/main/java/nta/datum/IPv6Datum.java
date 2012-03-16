@@ -2,7 +2,6 @@ package nta.datum;
 
 import nta.common.exception.NotImplementedException;
 import nta.datum.exception.InvalidCastException;
-import nta.datum.exception.InvalidOperationException;
 import nta.datum.json.GsonCreator;
 
 public class IPv6Datum extends Datum {

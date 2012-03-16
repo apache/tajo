@@ -96,6 +96,7 @@ public abstract class EvalNode implements Cloneable {
     DIVIDE,
 	  FIELD,
     FUNCTION,
+    LIKE,
     CONST,
 	}
 	

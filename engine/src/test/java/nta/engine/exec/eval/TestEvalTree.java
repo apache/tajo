@@ -27,8 +27,8 @@ import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.gson.Gson;
@@ -37,13 +37,59 @@ import com.google.gson.Gson;
  * @author Hyunsik Choi
  */
 public class TestEvalTree {
+  private static NtaTestingUtility util;
+  private static CatalogService cat;
+  private static QueryContext.Factory factory;
+  private static QueryAnalyzer analyzer;
+  private static Tuple [] tuples = new Tuple[3];
+  
+  @BeforeClass
+  public static void setUp() throws Exception {
+    util = new NtaTestingUtility();
+    util.startMiniZKCluster();
+    util.startCatalogCluster();
+    cat = util.getMiniCatalogCluster().getCatalog();
 
-  @Before
-  public void setUp() throws Exception {
+    Schema schema = new Schema();
+    schema.addColumn("name", DataType.STRING);
+    schema.addColumn("score", DataType.INT);
+    schema.addColumn("age", DataType.INT);
+
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
+    cat.addTable(desc);
+
+    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
+        FunctionType.GENERAL, DataType.INT, 
+        new DataType [] { DataType.INT, DataType.INT});
+    cat.registerFunction(funcMeta);
+    
+    funcMeta = new FunctionDesc("aggsum", TestAggSum.class,
+        FunctionType.AGGREGATION, DataType.INT, 
+        new DataType [] { DataType.INT});
+    cat.registerFunction(funcMeta);
+    
+    factory = new QueryContext.Factory(cat);
+    analyzer = new QueryAnalyzer(cat);    
+    
+    tuples[0] = new VTuple(3);
+    tuples[0].put(DatumFactory.createString("aabc"), 
+        DatumFactory.createInt(100), 
+        DatumFactory.createInt(10));
+    tuples[1] = new VTuple(3);
+    tuples[1].put(DatumFactory.createString("aaba"), 
+        DatumFactory.createInt(200), 
+        DatumFactory.createInt(20));
+    tuples[2] = new VTuple(3);
+    tuples[2].put(DatumFactory.createString("kabc"), 
+        DatumFactory.createInt(300), 
+        DatumFactory.createInt(30));
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDown() throws Exception {
+    util.shutdownCatalogCluster();
+    util.shutdownMiniZKCluster();
   }
 
   public static class TestSum extends Function {
@@ -98,43 +144,16 @@ public class TestEvalTree {
       "select name, score, age from people where sum(score * age, 50)", // 2
       "select 2+3", // 3
       "select aggsum(score) from people", // 4
-      "select name from people where NOT (20 > 30)" // 5
+      "select name from people where NOT (20 > 30)", // 5
   };
 
   @Test
-  public final void testFunctionEval() throws Exception {
-    NtaTestingUtility util = new NtaTestingUtility();
-    util.startMiniZKCluster();
-    util.startCatalogCluster();
-    CatalogService cat = util.getMiniCatalogCluster().getCatalog();
-
-    Schema schema = new Schema();
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("score", DataType.INT);
-    schema.addColumn("age", DataType.INT);
-
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
-    cat.addTable(desc);
-
-    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
-        FunctionType.GENERAL, DataType.INT, 
-        new DataType [] { DataType.INT, DataType.INT});
-    cat.registerFunction(funcMeta);
-    
-    funcMeta = new FunctionDesc("aggsum", TestAggSum.class,
-        FunctionType.AGGREGATION, DataType.INT, 
-        new DataType [] { DataType.INT});
-    cat.registerFunction(funcMeta);
-
+  public final void testFunctionEval() throws Exception {    
     Tuple tuple = new VTuple(3);
     tuple.put(DatumFactory.createString("hyunsik"), 
         DatumFactory.createInt(500), 
         DatumFactory.createInt(30));
 
-    QueryContext.Factory factory = new QueryContext.Factory(cat);
-    QueryAnalyzer analyzer = new QueryAnalyzer(cat);
-    
     QueryBlock block = null;
     EvalNode expr = null;
 
@@ -180,9 +199,6 @@ public class TestEvalTree {
       sum = sum + (i+1);
       assertEquals(sum, accumulated.asInt());
     }
-    
-    util.shutdownCatalogCluster();
-    util.shutdownMiniZKCluster();
   }
   
   
@@ -464,11 +480,15 @@ public class TestEvalTree {
     assertEquals(eval, copy);
   }
   
+  static String[] NOT = {
+    "select name, score, age from people where not (score >= 200)", // 0"
+  };
+  
   @Test
   public final void testNot() throws CloneNotSupportedException {
     ConstEval e1 = null;
     ConstEval e2 = null;
-    BinaryEval expr = null;
+    EvalNode expr = null;
 
     // Constant
     e1 = new ConstEval(DatumFactory.createInt(9));
@@ -492,5 +512,62 @@ public class TestEvalTree {
     assertFalse(expr.eval(null, null).asBool());
     not = new NotEval(expr);
     assertTrue(not.eval(null, null).asBool());
+    
+    // Evaluation Test
+    QueryBlock block = null; 
+    Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
+    QueryContext ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, NOT[0]);
+    expr = block.getWhereCondition();
+    assertTrue(expr.eval(peopleSchema, tuples[0])
+        .asBool());
+    assertFalse(expr.eval(peopleSchema, tuples[1])
+        .asBool());
+    assertFalse(expr.eval(peopleSchema, tuples[2])
+        .asBool());
+  }
+  
+  static String[] LIKE = {
+    "select name, score, age from people where name like '%bc'", // 0"
+    "select name, score, age from people where name like 'aa%'", // 1"
+    "select name, score, age from people where name not like '%bc'", // 2"
+  };
+  
+  @Test
+  public final void testLike() {
+    QueryBlock block = null;
+    EvalNode expr = null;
+
+    // suffix
+    Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
+    QueryContext ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, LIKE[0]);
+    expr = block.getWhereCondition();
+    assertTrue(expr.eval(peopleSchema, tuples[0])
+        .asBool());
+    assertFalse(expr.eval(peopleSchema, tuples[1])
+        .asBool());
+    assertTrue(expr.eval(peopleSchema, tuples[2])
+        .asBool());
+    
+    // prefix
+    block = (QueryBlock) analyzer.parse(ctx, LIKE[1]);
+    expr = block.getWhereCondition();
+    assertTrue(expr.eval(peopleSchema, tuples[0])
+        .asBool());
+    assertTrue(expr.eval(peopleSchema, tuples[1])
+        .asBool());
+    assertFalse(expr.eval(peopleSchema, tuples[2])
+        .asBool());
+
+    // Not Test
+    block = (QueryBlock) analyzer.parse(ctx, LIKE[2]);
+    expr = block.getWhereCondition();
+    assertFalse(expr.eval(peopleSchema, tuples[0])
+        .asBool());
+    assertTrue(expr.eval(peopleSchema, tuples[1])
+        .asBool());
+    assertFalse(expr.eval(peopleSchema, tuples[2])
+        .asBool());
   }
 }

@@ -252,7 +252,9 @@ public class TestNQLParser {
       "1.2", // 20
       "sum(age)", // 21
       "date()", // 22
-      "not (90 > 100)" // 23
+      "not (90 > 100)", // 23
+      "type like '%top'", // 24
+      "type not like 'top%'" // 25
   };
 
   public static NQLParser parseExpr(String expr) {
@@ -339,8 +341,8 @@ public class TestNQLParser {
 
     p = parseExpr(exprs[11]);
     node = (CommonTree) p.array().getTree();
-    assertEquals(node.getChild(0).getText(), "'male'");
-    assertEquals(node.getChild(1).getText(), "'female'");
+    assertEquals(node.getChild(0).getText(), "male");
+    assertEquals(node.getChild(1).getText(), "female");
   }
 
   @Test
@@ -348,8 +350,8 @@ public class TestNQLParser {
     NQLParser p = parseExpr(exprs[12]);
     CommonTree node = (CommonTree) p.in_predicate().getTree();
     assertEquals(node.getType(), NQLParser.IN);
-    assertEquals(node.getChild(1).getText(), "'male'");
-    assertEquals(node.getChild(2).getText(), "'female'");
+    assertEquals(node.getChild(1).getText(), "male");
+    assertEquals(node.getChild(2).getText(), "female");
 
     p = parseExpr(exprs[13]);
     node = (CommonTree) p.in_predicate().getTree();
@@ -357,8 +359,8 @@ public class TestNQLParser {
     assertEquals(node.getChild(0).getType(), NQLParser.FIELD_NAME);
     FieldName fieldName = new FieldName(node.getChild(0));
     assertEquals(fieldName.getName(), "gender");
-    assertEquals(node.getChild(1).getText(), "'male'");
-    assertEquals(node.getChild(2).getText(), "'female'");
+    assertEquals(node.getChild(1).getText(), "male");
+    assertEquals(node.getChild(2).getText(), "female");
     assertEquals(node.getChild(3).getType(), NQLParser.NOT);
   }
 
@@ -427,5 +429,25 @@ public class TestNQLParser {
     assertEquals(node.getType(), NQLParser.FUNCTION);
     assertEquals(node.getText(), "date");
     assertNull(node.getChild(1));
+  }
+  
+  @Test
+  public void testLikeEvalTree() throws RecognitionException {
+    NQLParser p = parseExpr(exprs[24]);
+    CommonTree node = (CommonTree) p.search_condition().getTree();
+    assertEquals(NQLParser.LIKE, node.getType());
+    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
+    FieldName fieldName = new FieldName(node.getChild(0));
+    assertEquals(fieldName.getName(), "type");
+    assertEquals(NQLParser.STRING, node.getChild(1).getType());
+    
+    p = parseExpr(exprs[25]);
+    node = (CommonTree) p.search_condition().getTree();    
+    assertEquals(NQLParser.NOT, node.getChild(0).getType());
+    assertEquals(NQLParser.LIKE, node.getType());
+    assertEquals(NQLParser.FIELD_NAME, node.getChild(1).getType());
+    fieldName = new FieldName(node.getChild(1));
+    assertEquals(fieldName.getName(), "type");
+    assertEquals(NQLParser.STRING, node.getChild(2).getType());
   }
 }

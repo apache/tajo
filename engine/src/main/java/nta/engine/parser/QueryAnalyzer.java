@@ -19,6 +19,7 @@ import nta.engine.exec.eval.BinaryEval;
 import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.CountRowEval;
 import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.LikeEval;
 import nta.engine.exec.eval.NotEval;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.FieldEval;
@@ -414,12 +415,9 @@ public final class QueryAnalyzer {
       
       // the final one for each target is the alias
       // EBNF: bool_expr AS? fieldName
-      for (int i = 0; i < ast.getChildCount(); i++) {
-        
+      for (int i = 0; i < ast.getChildCount(); i++) {        
         node = (CommonTree) ast.getChild(i);
-        //evalTreeBin = compileEvalTree(node);
         evalTree = createEvalTree(ctx, node, block);
-        // TODO - the rettype should be expected
         targets[i] = new Target(evalTree); 
         if (node.getChildCount() > 1) {          
           alias = node.getChild(node.getChildCount() - 1).getChild(0).getText();
@@ -719,6 +717,8 @@ public final class QueryAnalyzer {
       return new BinaryEval(Type.OR, createEvalTree(ctx, ast.getChild(0), query), 
           createEvalTree(ctx, ast.getChild(1), query));
       
+    case NQLParser.LIKE:
+      return parseLike(ctx, ast, query);
       
     case NQLParser.EQUAL:
       return new BinaryEval(Type.EQUAL, createEvalTree(ctx, ast.getChild(0), query), 
@@ -734,8 +734,7 @@ public final class QueryAnalyzer {
           createEvalTree(ctx, ast.getChild(1), query));
     case NQLParser.GEQ: 
       return new BinaryEval(Type.GEQ, createEvalTree(ctx, ast.getChild(0), query), 
-          createEvalTree(ctx, ast.getChild(1), query));
-    
+          createEvalTree(ctx, ast.getChild(1), query));        
     case NQLParser.NOT:
       return new NotEval(createEvalTree(ctx, ast.getChild(0), query));
       
@@ -755,7 +754,6 @@ public final class QueryAnalyzer {
           createEvalTree(ctx, ast.getChild(1), query));
       
     case NQLParser.COLUMN:
-      // TODO - support column alias
       return createEvalTree(ctx, ast.getChild(0), query);
       
     case NQLParser.FIELD_NAME:              
@@ -819,5 +817,31 @@ public final class QueryAnalyzer {
     default:
     }
     return null;
+  }
+  
+  /**
+   * <pre>
+   * like_predicate : fieldName NOT? LIKE string_value_expr 
+   * -> ^(LIKE NOT? fieldName string_value_expr)
+   * </pre>
+   * @param ctx
+   * @param tree
+   * @param block
+   * @return
+   */
+  private LikeEval parseLike(Context ctx, Tree tree, QueryBlock block) {
+    int idx = 0;
+    
+    boolean not = false;
+    if (tree.getChild(idx).getType() == NQLParser.NOT) {
+      not = true;
+      idx++;
+    }
+    
+    Column column = checkAndGetColumnByAST(ctx, (CommonTree) 
+        tree.getChild(idx));
+    idx++;
+    String pattern = tree.getChild(idx).getText();
+    return new LikeEval(not, column, pattern);
   }
 }
