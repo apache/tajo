@@ -6,8 +6,6 @@ import nta.catalog.CatalogService;
 import nta.engine.NConstants;
 import nta.engine.SubqueryContext;
 import nta.engine.exception.InternalException;
-import nta.engine.ipc.protocolrecords.QueryUnitRequest;
-import nta.engine.json.GsonCreator;
 import nta.engine.planner.PhysicalPlanner;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.physical.PhysicalExec;

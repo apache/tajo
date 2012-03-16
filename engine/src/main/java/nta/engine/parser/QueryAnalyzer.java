@@ -19,6 +19,7 @@ import nta.engine.exec.eval.BinaryEval;
 import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.CountRowEval;
 import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.NotEval;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
@@ -735,6 +736,8 @@ public final class QueryAnalyzer {
       return new BinaryEval(Type.GEQ, createEvalTree(ctx, ast.getChild(0), query), 
           createEvalTree(ctx, ast.getChild(1), query));
     
+    case NQLParser.NOT:
+      return new NotEval(createEvalTree(ctx, ast.getChild(0), query));
       
     case NQLParser.PLUS: 
       return new BinaryEval(Type.PLUS, createEvalTree(ctx, ast.getChild(0), query), 

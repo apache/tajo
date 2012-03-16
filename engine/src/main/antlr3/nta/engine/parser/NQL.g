@@ -197,18 +197,18 @@ joinedTable
   : l=derivedTable CROSS JOIN r=tableRef -> ^(JOIN CROSS_JOIN $l $r)
   | l=derivedTable JOIN r=tableRef s=join_specification -> ^(JOIN INNER_JOIN $l $r $s)
   | l=derivedTable t=join_type JOIN r=tableRef s=join_specification -> ^(JOIN $t $l $r $s)  
-  | l=derivedTable 'natural' t=join_type? 'join' r=tableRef -> ^(JOIN NATURAL_JOIN $t? $l $r)
+  | l=derivedTable NATURAL t=join_type? JOIN r=tableRef -> ^(JOIN NATURAL_JOIN $t? $l $r)
   ; 
 
 join_type
-  : 'inner' -> ^(INNER_JOIN)
-  | t=outer_join_type? 'outer' -> ^(OUTER_JOIN $t)
+  : INNER -> ^(INNER_JOIN)
+  | t=outer_join_type? OUTER -> ^(OUTER_JOIN $t)
   ;
   
 outer_join_type
-  : 'left'
-  | 'right'
-  | 'full'
+  : LEFT
+  | RIGHT
+  | FULL
   ;
   
 join_specification
@@ -287,11 +287,29 @@ bool_expr
 	;
 
 and_predicate
-  :	boolean_primary (AND^ boolean_primary)*
+  :	boolean_factor (AND^ boolean_factor)*
 	;
+	
+boolean_factor
+  : boolean_test
+  | NOT boolean_test -> ^(NOT boolean_test)
+  ;
+  
+boolean_test
+  : boolean_primary is_clause?
+  ;
+  
+is_clause
+  : IS NOT? t=truth_value -> ^(IS NOT? $t)
+  ;
+
+  
+truth_value
+  : TRUE | FALSE | UNKNOWN
+  ;
 
 boolean_primary
-  : predicate 
+  : predicate
   | expr
   | LEFT_PAREN! bool_expr RIGHT_PAREN!
   ;
@@ -371,26 +389,34 @@ CROSS : 'cross';
 DESC : 'desc';
 DISTINCT : 'distinct';
 DROP : 'drop';
+FALSE : 'false';
 FIRST : 'first';
+FULL : 'full';
 FROM : 'from';
 GROUP : 'group';
+NATURAL : 'natural';
 NULL : 'null';
 HAVING : 'having';
 IN : 'in';
 INDEX : 'index';
+INNER : 'inner';
 INSERT : 'insert';
 INTO : 'into';
+IS : 'is';
 JOIN : 'join';
 LAST : 'last';
 LEFT : 'left';
 NOT : 'not';
 ON : 'on';
+OUTER : 'outer';
 OR : 'or';
 ORDER : 'order';
 RIGHT : 'right';
 SELECT : 'select';
 TABLE : 'table';
+TRUE : 'true';
 UNIQUE : 'unique';
+UNKNOWN: 'unknown';
 USING : 'using';
 VALUES : 'values';
 WHERE : 'where';

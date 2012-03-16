@@ -228,7 +228,8 @@ public class TestNQLParser {
     assertEquals(ast.getChild(0).getText(), "abc");
   }
 
-  static String[] exprs = { "1 + 2", // 0
+  static String[] exprs = { 
+      "1 + 2", // 0
       "3 - 4", // 1
       "5 * 6", // 2
       "7 / 8", // 3
@@ -250,7 +251,8 @@ public class TestNQLParser {
       "3", // 19
       "1.2", // 20
       "sum(age)", // 21
-      "date()" // 22
+      "date()", // 22
+      "not (90 > 100)" // 23
   };
 
   public static NQLParser parseExpr(String expr) {
@@ -397,6 +399,17 @@ public class TestNQLParser {
     assertEquals(node.getText(), "and");
     assertEquals(node.getChild(0).getText(), "or");
     assertEquals(node.getChild(1).getText(), "and");
+  }
+  
+  @Test
+  public void testNotEvalTree() throws RecognitionException {
+    NQLParser p = parseExpr(exprs[23]);
+    CommonTree node = (CommonTree) p.search_condition().getTree();
+    assertEquals(node.getType(), NQLParser.NOT);
+    assertEquals(node.getChild(0).getType(), NQLParser.GTH);
+    CommonTree gth = (CommonTree) node.getChild(0);
+    assertEquals(gth.getChild(0).getType(), NQLParser.DIGIT);
+    assertEquals(gth.getChild(1).getType(), NQLParser.DIGIT);
   }
 
   @Test

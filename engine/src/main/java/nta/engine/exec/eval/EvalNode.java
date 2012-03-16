@@ -81,22 +81,22 @@ public abstract class EvalNode implements Cloneable {
 	}
 	
 	public static enum Type {
-	  FIELD,
-	  FUNCTION,
 	  AND,
 	  OR,
-	  CONST,
-	  PLUS,
-	  MINUS,
-	  MULTIPLY,
-	  DIVIDE,
 	  EQUAL,
 	  NOT_EQUAL,
 	  LTH,
 	  LEQ,
 	  GTH,
 	  GEQ,
-	  JOIN;
+	  NOT,
+	  PLUS,
+    MINUS,
+    MULTIPLY,
+    DIVIDE,
+	  FIELD,
+    FUNCTION,
+    CONST,
 	}
 	
 	@Override

@@ -97,7 +97,8 @@ public class TestEvalTree {
       "select name, score, age from people where score * age", // 1
       "select name, score, age from people where sum(score * age, 50)", // 2
       "select 2+3", // 3
-      "select aggsum(score) from people" // 4
+      "select aggsum(score) from people", // 4
+      "select name from people where NOT (20 > 30)" // 5
   };
 
   @Test
@@ -461,5 +462,35 @@ public class TestEvalTree {
   private void assertCloneEqual(EvalNode eval) throws CloneNotSupportedException {
     EvalNode copy = (EvalNode) eval.clone();
     assertEquals(eval, copy);
+  }
+  
+  @Test
+  public final void testNot() throws CloneNotSupportedException {
+    ConstEval e1 = null;
+    ConstEval e2 = null;
+    BinaryEval expr = null;
+
+    // Constant
+    e1 = new ConstEval(DatumFactory.createInt(9));
+    e2 = new ConstEval(DatumFactory.createInt(34));
+    expr = new BinaryEval(Type.LTH, e1, e2);
+    assertTrue(expr.eval(null, null).asBool());
+    NotEval not = new NotEval(expr);
+    assertFalse(not.eval(null, null).asBool());
+    
+    expr = new BinaryEval(Type.LEQ, e1, e2);
+    assertTrue(expr.eval(null, null).asBool());
+    not = new NotEval(expr);
+    assertFalse(not.eval(null, null).asBool());
+    
+    expr = new BinaryEval(Type.LTH, e2, e1);
+    assertFalse(expr.eval(null, null).asBool());
+    not = new NotEval(expr);
+    assertTrue(not.eval(null, null).asBool());
+    
+    expr = new BinaryEval(Type.LEQ, e2, e1);
+    assertFalse(expr.eval(null, null).asBool());
+    not = new NotEval(expr);
+    assertTrue(not.eval(null, null).asBool());
   }
 }
