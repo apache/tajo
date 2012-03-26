@@ -218,6 +218,7 @@ public class PlannerUtil {
   private static LogicalNode insertStore(LogicalNode parent, 
       String tableId) {
     CreateTableNode store = new CreateTableNode(tableId);
+    store.setLocal(true);
     insertNode(parent, store);
     
     return parent;

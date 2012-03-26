@@ -4,8 +4,11 @@
 package nta.engine.planner.global;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import nta.catalog.Schema;
@@ -27,7 +30,8 @@ public class LogicalQueryUnit {
   
   public enum PARTITION_TYPE {
     HASH,
-    LIST
+    LIST,
+    BROADCAST
   }
 
   private LogicalQueryUnitId id;
@@ -35,17 +39,13 @@ public class LogicalQueryUnit {
   private CreateTableNode store = null;
   private ScanNode[] scan = null;
   private LogicalQueryUnit next;
-  private Set<LogicalQueryUnit> prevs;
-  private PARTITION_TYPE inputType;
+  private Map<ScanNode, LogicalQueryUnit> prevs;
   private PARTITION_TYPE outputType;
+  private QueryUnit[] queryUnits;
   
   public LogicalQueryUnit(LogicalQueryUnitId id) {
     this.id = id;
-    prevs = new HashSet<LogicalQueryUnit>();
-  }
-  
-  public void setInputType(PARTITION_TYPE type) {
-    this.inputType = type;
+    prevs = new HashMap<ScanNode, LogicalQueryUnit>();
   }
   
   public void setOutputType(PARTITION_TYPE type) {
@@ -84,8 +84,20 @@ public class LogicalQueryUnit {
     this.next = next;
   }
   
-  public void addPrevQuery(LogicalQueryUnit prev) {
-    prevs.add(prev);
+  public void addPrevQuery(ScanNode prevscan, LogicalQueryUnit prev) {
+    prevs.put(prevscan, prev);
+  }
+  
+  public void addPrevQueries(Map<ScanNode, LogicalQueryUnit> prevs) {
+    this.prevs.putAll(prevs);
+  }
+  
+  public void setQueryUnits(QueryUnit[] queryUnits) {
+    this.queryUnits = queryUnits;
+  }
+  
+  public void removePrevQuery(LogicalQueryUnit prev) {
+    this.prevs.remove(prev);
   }
   
   public LogicalQueryUnit getNextQuery() {
@@ -97,15 +109,23 @@ public class LogicalQueryUnit {
   }
   
   public Iterator<LogicalQueryUnit> getPrevIterator() {
-    return this.prevs.iterator();
+    return this.prevs.values().iterator();
+  }
+  
+  public Collection<LogicalQueryUnit> getPrevQueries() {
+    return this.prevs.values();
+  }
+  
+  public Map<ScanNode, LogicalQueryUnit> getPrevMaps() {
+    return this.prevs;
+  }
+  
+  public LogicalQueryUnit getPrevQuery(ScanNode prevscan) {
+    return this.prevs.get(prevscan);
   }
   
   public String getOutputName() {
     return this.store.getTableName();
-  }
-  
-  public PARTITION_TYPE getInputType() {
-    return this.inputType;
   }
   
   public PARTITION_TYPE getOutputType() {
@@ -132,14 +152,36 @@ public class LogicalQueryUnit {
     return this.id;
   }
   
+  public QueryUnit[] getQueryUnits() {
+    return this.queryUnits;
+  }
+  
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append(plan.toString());
     sb.append("next: " + next + " prevs:");
-    Iterator<LogicalQueryUnit> it = prevs.iterator();
+    Iterator<LogicalQueryUnit> it = getPrevIterator();
     while (it.hasNext()) {
       sb.append(" " + it.next());
     }
     return sb.toString();
+  }
+  
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof LogicalQueryUnit) {
+      LogicalQueryUnit other = (LogicalQueryUnit)o;
+      return this.id.equals(other.getId());
+    }
+    return false;
+  }
+  
+  @Override
+  public int hashCode() {
+    return this.id.hashCode();
+  }
+  
+  public int compareTo(LogicalQueryUnit other) {
+    return this.id.compareTo(other.id);
   }
 }

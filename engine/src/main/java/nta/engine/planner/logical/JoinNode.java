@@ -7,13 +7,15 @@ import nta.engine.exec.eval.EvalNode;
 import nta.engine.json.GsonCreator;
 import nta.engine.planner.JoinType;
 
+import com.google.gson.annotations.Expose;
+
 /**
  * @author Hyunsik Choi
  * 
  */
 public class JoinNode extends BinaryNode implements Cloneable {
-  private JoinType joinType;
-  private EvalNode joinQual;
+  @Expose private JoinType joinType;
+  @Expose private EvalNode joinQual;
 
   public JoinNode(JoinType joinType, LogicalNode left) {
     super(ExprType.JOIN);

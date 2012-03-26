@@ -3,7 +3,10 @@
  */
 package nta.engine;
 
+import java.net.URI;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -18,6 +21,7 @@ import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.planner.global.LogicalQueryUnit;
 import nta.engine.planner.global.LogicalQueryUnit.PARTITION_TYPE;
 import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalQueryPlanner;
 import nta.engine.query.QueryUnitRequestImpl;
 import nta.storage.StorageManager;
@@ -83,7 +87,6 @@ public class QueryUnitScheduler extends Thread {
     
     // TODO: adjust the number of localization
     QueryUnit[] units = planner.localize(plan, cm.getOnlineWorker().size());
-    qm.addQueryUnits(units);
     String hostName;
     for (QueryUnit q : units) {
       hostName = cm.getProperHost(q);
@@ -106,6 +109,22 @@ public class QueryUnitScheduler extends Thread {
       waitQueue.add(q);
       QueryUnitRequest request = new QueryUnitRequestImpl(q.getId(), q.getFragments(), 
           q.getOutputName(), false, q.getLogicalPlan().toJSON());
+      
+      if (q.getStoreTableNode().isLocal()) {
+        request.setInterQuery();
+      }
+      ScanNode [] scans = q.getScanNodes();
+      for (ScanNode scan : scans) {
+        if (scan.isLocal()) {
+          Collection<List<URI>> fetchHosts =  q.getFetches();
+          for (List<URI> hosts : fetchHosts) {
+            for (URI host : hosts) {
+              request.addFetch(scan.getTableId(), host);
+            }
+          }
+        }
+      }
+      
       wc.requestQueryUnit(q.getHost(), request.getProto());
       LOG.info("QueryUnitRequest " + q.getId() + " is sent to " + (q.getHost()));
       LOG.info("QueryStep's output name " + q.getStoreTableNode().getTableName());
@@ -124,7 +143,7 @@ public class QueryUnitScheduler extends Thread {
         if (inprogress != null) {
           LOG.info("==== uid: " + unit.getId() + 
               " status: " + inprogress.getInProgressStatus() + 
-              " leaf time: " + inprogress.getLeftTime());
+              " left time: " + inprogress.getLeftTime());
           if (inprogress.getInProgressStatus().
               getStatus() != QueryStatus.FINISHED) {
             inprogress.update(WAIT_PERIOD);

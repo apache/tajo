@@ -50,7 +50,6 @@ public class MockQueryUnitScheduler {
     
     qm.addLogicalQueryUnit(plan);
     QueryUnit[] units = mockLocalize(plan, 3);
-    qm.addQueryUnits(units);
     MockWorkerListener [] listener = new MockWorkerListener[3];
     for (int i = 0; i < 3; i++) {
       listener[i] = new MockWorkerListener(units[i].getId());
@@ -68,6 +67,7 @@ public class MockQueryUnitScheduler {
       units[i] = new QueryUnit(QueryIdFactory.newQueryUnitId());
       units[i].setLogicalPlan(plan.getLogicalPlan());
     }
+    plan.setQueryUnits(units);
     return units;
   }
   

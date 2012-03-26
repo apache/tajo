@@ -3,18 +3,23 @@
  */
 package nta.engine.planner.global;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import nta.catalog.Schema;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.logical.BinaryNode;
+import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.UnaryNode;
 
 import com.google.common.base.Preconditions;
@@ -32,6 +37,7 @@ public class QueryUnit {
 	private List<Fragment> fragments;
 	
 	private String hostName;
+	private Map<String, List<URI>> fetchMap;
 	
 	public QueryUnit(QueryUnitId id) {
 		this.id = id;
@@ -62,6 +68,9 @@ public class QueryUnit {
 	        scan = new ScanNode[1];
 	      }
 	      scan[i++] = (ScanNode) node;
+	      if (scan[i-1].isLocal()) {
+	        fetchMap = new HashMap<String, List<URI>>();
+	      }
 	    }
 	  }
 	}
@@ -85,6 +94,37 @@ public class QueryUnit {
 	  this.addFragments(fragments);
 	}
 	
+	public void addFetch(String key, String uri) throws URISyntaxException {
+	  this.addFetch(key, new URI(uri));
+	}
+	
+	public void addFetch(String key, URI uri) {
+	  List<URI> uris = null;
+	  if (fetchMap.containsKey(key)) {
+	    uris = fetchMap.get(key);
+	  } else {
+	    uris = new ArrayList<URI>();
+	  }
+	  uris.add(uri);
+    fetchMap.put(key, uris);
+	}
+	
+	public void addFetches(String key, List<URI> urilist) {
+	  List<URI> uris = null;
+    if (fetchMap.containsKey(key)) {
+      uris = fetchMap.get(key);
+    } else {
+      uris = new ArrayList<URI>();
+    }
+    uris.addAll(urilist);
+    fetchMap.put(key, uris);
+	}
+	
+	public void setFetches(Map<String, List<URI>> fetches) {
+	  this.fetchMap.clear();
+	  this.fetchMap.putAll(fetches);
+	}
+	
 	public List<Fragment> getFragments() {
 		return this.fragments;
 	}
@@ -95,6 +135,14 @@ public class QueryUnit {
 	
 	public QueryUnitId getId() {
 		return id;
+	}
+	
+	public List<URI> getFetchHosts(String tableId) {
+	  return fetchMap.get(tableId);
+	}
+	
+	public Collection<List<URI>> getFetches() {
+	  return fetchMap.values();
 	}
 	
 	public String getHost() {

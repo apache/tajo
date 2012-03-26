@@ -22,9 +22,12 @@ public class ScanNode extends LogicalNode {
   private EvalNode qual;
 	@Expose
   private Schema targetList;
+	@Expose
+	private boolean local;
 	
 	public ScanNode() {
 		super();
+		local = false;
 	}
   
 	public ScanNode(FromTable table) {
@@ -32,6 +35,7 @@ public class ScanNode extends LogicalNode {
 		this.table = table;
 		this.setInputSchema(table.getSchema());
 		this.setOutputSchema(table.getSchema());
+		local = false;
 	}
 	
 	public String getTableId() {
@@ -52,6 +56,14 @@ public class ScanNode extends LogicalNode {
 	
 	public EvalNode getQual() {
 	  return this.qual;
+	}
+	
+	public boolean isLocal() {
+	  return this.local;
+	}
+	
+	public void setLocal(boolean local) {
+	  this.local = local;
 	}
 	
 	public void setQual(EvalNode evalTree) {

@@ -381,6 +381,8 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.SCAN, joinNode.getInnerNode().getType());
     ScanNode rightNode = (ScanNode) joinNode.getInnerNode();
     assertEquals("score", rightNode.getTableId());
+    LogicalNode opt = LogicalOptimizer.optimize(ctx, plan);
+    System.out.println(opt);
   }
 
   @Test

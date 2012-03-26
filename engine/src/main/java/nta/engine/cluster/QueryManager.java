@@ -76,7 +76,6 @@ public class QueryManager {
   
   private Map<QueryUnit, String> serverByQueryUnit;
   private Map<String, List<QueryUnit>> queryUnitsByServer;
-  private Map<LogicalQueryUnit, QueryUnit[]> queryUnitsForLogicalQueryUnit;
   
   private Map<QueryUnitId, WaitStatus> inProgressQueries;
   
@@ -84,12 +83,11 @@ public class QueryManager {
     MapMaker mapMaker = new MapMaker();
     serverByQueryUnit = mapMaker.concurrencyLevel(4).makeMap();
     queryUnitsByServer = mapMaker.makeMap();
-    queryUnitsForLogicalQueryUnit = mapMaker.makeMap();
     inProgressQueries = mapMaker.makeMap();
     statSetOfTable = mapMaker.makeMap();
   }
   
-  public synchronized void addQuery(Query q) {
+  public void addQuery(Query q) {
     queries.put(q.getId(), q);
   }
   
@@ -102,7 +100,7 @@ public class QueryManager {
     }
   }
   
-  public synchronized void addLogicalQueryUnit(LogicalQueryUnit logicalQueryUnit)
+  public void addLogicalQueryUnit(LogicalQueryUnit logicalQueryUnit)
   throws NoSuchQueryIdException {
     SubQueryId subId = logicalQueryUnit.getId().getSubQueryId();
     QueryId qid = subId.getQueryId();
@@ -118,26 +116,26 @@ public class QueryManager {
     }
   }
   
-  public synchronized void addQueryUnits(QueryUnit[] queryUnit) throws NoSuchQueryIdException {
-    LogicalQueryUnitId logicalId = queryUnit[0].getId().getLogicalQueryUnitId();
-    SubQueryId subId = logicalId.getSubQueryId();
-    QueryId qid = subId.getQueryId();
-    if (queries.containsKey(qid)) {
-      SubQuery subQuery = queries.get(qid).getSubQuery(subId);
-      if (subQuery != null) {
-        LogicalQueryUnit logicalUnit = subQuery.getLogicalQueryUnit(logicalId);
-        if (logicalUnit != null) {
-          queryUnitsForLogicalQueryUnit.put(logicalUnit, queryUnit);
-        } else {
-          throw new NoSuchQueryIdException("LogicalQueryUnitId: " + logicalId);
-        }
-      } else {
-        throw new NoSuchQueryIdException("SubQueryId: " + subId);
-      }
-    } else {
-      throw new NoSuchQueryIdException("QueryId: " + qid);
-    }
-  }
+//  public void addQueryUnits(QueryUnit[] queryUnit) throws NoSuchQueryIdException {
+//    LogicalQueryUnitId logicalId = queryUnit[0].getId().getLogicalQueryUnitId();
+//    SubQueryId subId = logicalId.getSubQueryId();
+//    QueryId qid = subId.getQueryId();
+//    if (queries.containsKey(qid)) {
+//      SubQuery subQuery = queries.get(qid).getSubQuery(subId);
+//      if (subQuery != null) {
+//        LogicalQueryUnit logicalUnit = subQuery.getLogicalQueryUnit(logicalId);
+//        if (logicalUnit != null) {
+//          queryUnitsForLogicalQueryUnit.put(logicalUnit, queryUnit);
+//        } else {
+//          throw new NoSuchQueryIdException("LogicalQueryUnitId: " + logicalId);
+//        }
+//      } else {
+//        throw new NoSuchQueryIdException("SubQueryId: " + subId);
+//      }
+//    } else {
+//      throw new NoSuchQueryIdException("QueryId: " + qid);
+//    }
+//  }
   
   public synchronized void updateQueryAssignInfo(String servername, QueryUnit unit) {
     serverByQueryUnit.put(unit, servername);
@@ -233,9 +231,23 @@ public class QueryManager {
     return serverByQueryUnit.get(unit);
   }
   
+  public WaitStatus[] getWaitStatusOfLogicalUnit(LogicalQueryUnitId id) {
+    LogicalQueryUnit logicalUnit = getLogicalQueryUnit(id);
+    return getWaitStatusOfLogicalUnit(logicalUnit);
+  }
+  
+  public WaitStatus[] getWaitStatusOfLogicalUnit(LogicalQueryUnit logicalUnit) {
+    QueryUnit[] units = logicalUnit.getQueryUnits();
+    WaitStatus[] statuses = new WaitStatus[units.length];
+    for (int i = 0; i < units.length; i++) {
+      statuses[i] = inProgressQueries.get(units[i].getId());
+    }
+    return statuses;
+  }
+  
   public boolean isFinished(LogicalQueryUnitId id) {
     LogicalQueryUnit logicalUnit = getLogicalQueryUnit(id);
-    QueryUnit[] units = queryUnitsForLogicalQueryUnit.get(logicalUnit);
+    QueryUnit[] units = logicalUnit.getQueryUnits();
     WaitStatus status;
     for (QueryUnit unit : units) {
       status = inProgressQueries.get(unit.getId());
@@ -272,12 +284,8 @@ public class QueryManager {
     return merged;
   }
   
-  public QueryUnit[] getQueryUnits(LogicalQueryUnit unit) {
-    return queryUnitsForLogicalQueryUnit.get(unit);
-  }
-  
   public List<String> getAssignedWorkers(LogicalQueryUnit unit) {
-    QueryUnit[] queryUnits = queryUnitsForLogicalQueryUnit.get(unit);
+    QueryUnit[] queryUnits = unit.getQueryUnits();
     if (queryUnits == null) {
       System.out.println(">>>>>> " + unit.getId());
     }

@@ -5,6 +5,7 @@ package nta.engine;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -125,8 +126,12 @@ public class SubqueryContext extends Context {
     return repartitions.entrySet().iterator();
   }
   
-  public void changeFragment(Fragment [] fragments) {
+  public void clearFragment() {
     this.fragmentMap.clear();
+  }
+  
+  public void changeFragment(String tableId, Fragment [] fragments) {
+    fragmentMap.remove(tableId);
     for(Fragment t : fragments) {
       if (fragmentMap.containsKey(t.getId())) {
         fragmentMap.get(t.getId()).add(t);
@@ -177,6 +182,11 @@ public class SubqueryContext extends Context {
   @Override
   public Fragment getTable(String id) {
     return fragmentMap.get(id).get(0);
+  }
+  
+  @Override
+  public Collection<String> getInputTables() {
+    return fragmentMap.keySet();
   }
   
   public Fragment [] getTables(String id) {

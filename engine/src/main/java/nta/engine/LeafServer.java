@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -286,10 +287,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     for (Task task : tasks.values()) {
       qs = task.getStatus();
       if (qs == QueryStatus.ABORTED 
-          || qs == QueryStatus.ABORTED
           || qs == QueryStatus.FINISHED) {
         // TODO - in-progress queries should be kept until this leafserver 
-        // ensures that this report is deliveried.
+        // ensures that this report is delivered.
         tobeRemoved.add(task.getId());
       }
       
@@ -450,14 +450,14 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     }
     @Override
     public void run() {
-      ctx.setStatus(QueryStatus.FETCHING);
+//      ctx.setStatus(QueryStatus.FETCHING);
       try {
         fetcher.get();
       } catch (IOException e) {
         LOG.error("Fetch failed: " + fetcher.getURI(), e);
       } finally {
         ctx.getFetchLatch().countDown();
-        ctx.setStatus(QueryStatus.PENDING);
+//        ctx.setStatus(QueryStatus.PENDING);
       }
     }
   }
@@ -603,17 +603,19 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           // If the fetch is still in progress, the query unit must wait for 
           // complete.
           ctx.getFetchLatch().await();
-          
-          Fragment [] frags = list(ctx.getFetchIn(), "interquery",
-              ctx.getTable("interquery").getMeta());
-          ctx.changeFragment(frags);
+          Collection<String> inputs = Lists.newArrayList(ctx.getInputTables());
+          for (String inputTable: inputs) {
+            Fragment [] frags = list(ctx.getFetchIn(), inputTable,
+                ctx.getTable(inputTable).getMeta());
+            ctx.changeFragment(inputTable, frags);
+          }
         }
         
         this.executor = queryEngine.createPlan(ctx, plan);
         while(executor.next() != null && !killed) {
         }
       } catch (Exception e) {
-        LOG.info(e);
+        LOG.error(e);
         ctx.setStatus(QueryStatus.ABORTED);
         ctx.setProgress(0.0f);
         LOG.info("Query status of " + ctx.getQueryId() + " is changed to "   

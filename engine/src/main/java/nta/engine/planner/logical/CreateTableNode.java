@@ -19,10 +19,13 @@ public class CreateTableNode extends UnaryNode implements Cloneable {
   private int numPartitions;
   @Expose
   private Column [] partitionKeys;
+  @Expose
+  private boolean local;
 
   public CreateTableNode(String tableName) {
     super(ExprType.STORE);
     this.tableName = tableName;
+    this.local = false;
   }
 
   public final String getTableName() {
@@ -39,6 +42,14 @@ public class CreateTableNode extends UnaryNode implements Cloneable {
   
   public final Column [] getPartitionKeys() {
     return this.partitionKeys;
+  }
+  
+  public final void setLocal(boolean local) {
+    this.local = local;
+  }
+  
+  public final boolean isLocal() {
+    return this.local;
   }
   
   public final void setPartitions(Column [] keys, int numPartitions) {

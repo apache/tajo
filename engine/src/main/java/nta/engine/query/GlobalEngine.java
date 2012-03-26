@@ -65,7 +65,7 @@ public class GlobalEngine implements EngineService {
     this.analyzer = new QueryAnalyzer(cat);
     this.factory = new QueryContext.Factory(catalog);
 
-    this.globalPlanner = new GlobalQueryPlanner(this.sm);
+    this.globalPlanner = new GlobalQueryPlanner(this.sm, this.qm);
   }
 
   public void createTable(TableDesc meta) throws IOException {
