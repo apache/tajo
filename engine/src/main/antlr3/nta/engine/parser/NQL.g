@@ -106,7 +106,7 @@ indexStatement
 createTableStatement
   : CREATE TABLE t=table AS select_stmt -> ^(CREATE_TABLE $t select_stmt)
   | t=table ASSIGN select_stmt -> ^(CREATE_TABLE $t select_stmt)
-//  | CREATE TABLE table tableElements (USING ID)? -> ^(CREATE_TABLE table ^(TABLE_DEF tableElements) ^(STORE_TYPE ID)?)
+  | CREATE TABLE t=table tableElements USING s=ID LOCATION p=STRING-> ^(CREATE_TABLE $t ^(TABLE_DEF tableElements) $s $p)
   ;
   
 tableElements
@@ -411,6 +411,7 @@ JOIN : 'join';
 LAST : 'last';
 LEFT : 'left';
 LIKE : 'like';
+LOCATION : 'location';
 NOT : 'not';
 ON : 'on';
 OUTER : 'outer';

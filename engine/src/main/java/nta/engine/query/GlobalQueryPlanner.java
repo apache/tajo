@@ -39,7 +39,7 @@ import nta.engine.planner.global.LogicalQueryUnitGraph;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.logical.BinaryNode;
 import nta.engine.planner.logical.CreateIndexNode;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
@@ -90,8 +90,8 @@ public class GlobalQueryPlanner {
     return globalPlan;
   }
   
-  private CreateTableNode insertStore(String tableId, LogicalNode parent) {
-    CreateTableNode store = new CreateTableNode(tableId);
+  private StoreTableNode insertStore(String tableId, LogicalNode parent) {
+    StoreTableNode store = new StoreTableNode(tableId);
     store.setLocal(true);
     PlannerUtil.insertNode(parent, store);
     return store;
@@ -123,13 +123,13 @@ public class GlobalQueryPlanner {
         JoinNode join = (JoinNode) node;
         if (join.getOuterNode().getType() != ExprType.STORE) {
           tableId = QueryIdFactory.newLogicalQueryUnitId().toString();
-          CreateTableNode store = new CreateTableNode(tableId);
+          StoreTableNode store = new StoreTableNode(tableId);
           store.setLocal(true);
           PlannerUtil.insertOuterNode(node, store);
         }
         if (join.getInnerNode().getType() != ExprType.STORE) {
           tableId = QueryIdFactory.newLogicalQueryUnitId().toString();
-          CreateTableNode store = new CreateTableNode(tableId);
+          StoreTableNode store = new StoreTableNode(tableId);
           store.setLocal(true);
           PlannerUtil.insertInnerNode(node, store);
         }
@@ -143,20 +143,20 @@ public class GlobalQueryPlanner {
     return logicalPlan;
   }
   
-  private Map<CreateTableNode, LogicalQueryUnit> convertMap = 
-      new HashMap<CreateTableNode, LogicalQueryUnit>();
+  private Map<StoreTableNode, LogicalQueryUnit> convertMap = 
+      new HashMap<StoreTableNode, LogicalQueryUnit>();
   
   private void recursiveBuildQueryUnit(LogicalNode node) 
       throws IOException {
     LogicalQueryUnit unit = null, prev = null;
     UnaryNode unaryChild;
-    CreateTableNode store, prevStore;
+    StoreTableNode store, prevStore;
     ScanNode newScan;
     if (node instanceof UnaryNode) {
       recursiveBuildQueryUnit(((UnaryNode) node).getSubNode());
       
       if (node.getType() == ExprType.STORE) {
-        store = (CreateTableNode) node;
+        store = (StoreTableNode) node;
         LogicalQueryUnitId id = null;
         if (store.getTableName().startsWith(QueryId.PREFIX)) {
           id = new LogicalQueryUnitId(store.getTableName());
@@ -182,7 +182,7 @@ public class GlobalQueryPlanner {
             } else {
               // store - groupby - store - groupby
               unit.setOutputType(PARTITION_TYPE.LIST);
-              prevStore = (CreateTableNode) unaryChild;
+              prevStore = (StoreTableNode) unaryChild;
               TableMeta meta = TCatUtil.newTableMeta(prevStore.getOutputSchema(), 
                   StoreType.CSV);
               newScan = (ScanNode)insertScan(store.getSubNode(), 
@@ -205,8 +205,8 @@ public class GlobalQueryPlanner {
           JoinNode join = (JoinNode) store.getSubNode();
           unit.setOutputType(PARTITION_TYPE.LIST);
           
-          prevStore = (CreateTableNode) join.getOuterNode();
-          CreateTableNode prevStore2 = (CreateTableNode) join.getInnerNode();
+          prevStore = (StoreTableNode) join.getOuterNode();
+          StoreTableNode prevStore2 = (StoreTableNode) join.getInnerNode();
           TableMeta lmeta = TCatUtil.newTableMeta(prevStore.getOutputSchema(), 
               StoreType.CSV);
           TableMeta rmeta = TCatUtil.newTableMeta(prevStore2.getOutputSchema(), 
@@ -324,7 +324,7 @@ public class GlobalQueryPlanner {
 
     // set the partition number for groupby and sort
     if (logicalUnit.getOutputType() == PARTITION_TYPE.HASH) {
-      CreateTableNode store = logicalUnit.getStoreTableNode();
+      StoreTableNode store = logicalUnit.getStoreTableNode();
       Column[] keys = null;
       if (store.getSubNode().getType() == ExprType.GROUP_BY) {
         GroupbyNode groupby = (GroupbyNode)store.getSubNode();

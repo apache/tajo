@@ -47,21 +47,23 @@ public abstract class Context {
       block = (QueryBlock) query;      
       break;
     case CREATE_TABLE:
-      block = ((CreateTableStmt) query).getSelectStmt();
+      CreateTableStmt createTableStmt = (CreateTableStmt) query;
+      if (createTableStmt.hasSelectStmt()) {
+        block = ((CreateTableStmt) query).getSelectStmt();
+      }
       break;
     }
     
     stmtType = query.getType();
-    if (query.getType() == StatementType.SELECT
-        || query.getType() == StatementType.CREATE_TABLE) {
+    if (block != null) {
       hasWhereClause = block.hasWhereClause();
       hasGroupByClause = block.hasGroupbyClause();
-      
+
       if (block.hasFromClause()) {
         if (block.hasJoinClause()) {
           hasJoinClause = true;
         }
-      }      
+      }
       targets = block.getTargetList();
     }
   }

@@ -14,7 +14,7 @@ import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.LogicalOptimizer.InSchemaRefresher;
 import nta.engine.planner.LogicalOptimizer.OutSchemaRefresher;
 import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
@@ -217,7 +217,7 @@ public class PlannerUtil {
   
   private static LogicalNode insertStore(LogicalNode parent, 
       String tableId) {
-    CreateTableNode store = new CreateTableNode(tableId);
+    StoreTableNode store = new StoreTableNode(tableId);
     store.setLocal(true);
     insertNode(parent, store);
     

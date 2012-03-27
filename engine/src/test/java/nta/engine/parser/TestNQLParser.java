@@ -197,15 +197,28 @@ public class TestNQLParser {
     assertEquals(NQLParser.ON, joinAST.getChild(3).getType());
   }
 
-  static String[] schemaStmts = { "drop table abc",
-      "create table name as select * from test" };
+  static String[] schemaStmts = { 
+    "drop table abc",
+    "create table name as select * from test",
+    "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data'"
+  };
 
   @Test
-  public void testCreateTable() throws RecognitionException, NQLSyntaxException {
+  public void testCreateTableAsSelect() throws RecognitionException, NQLSyntaxException {
     Tree ast = parseQuery(schemaStmts[1]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
     assertEquals(ast.getChild(0).getType(), NQLParser.ID);
     assertEquals(ast.getChild(1).getType(), NQLParser.SELECT);
+  }
+  
+  @Test
+  public void testCreateTableDef() throws RecognitionException, NQLSyntaxException {
+    Tree ast = parseQuery(schemaStmts[2]);
+    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
+    assertEquals(ast.getChild(0).getType(), NQLParser.ID);
+    assertEquals(ast.getChild(1).getType(), NQLParser.TABLE_DEF);
+    assertEquals(ast.getChild(2).getType(), NQLParser.ID);
+    assertEquals(ast.getChild(3).getType(), NQLParser.STRING);
   }
 
   @Test

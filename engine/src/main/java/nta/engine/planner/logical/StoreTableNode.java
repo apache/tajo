@@ -15,24 +15,24 @@ import com.google.gson.annotations.Expose;
  * @author Hyunsik Choi
  * 
  */
-public class CreateTableNode extends LogicalNode implements Cloneable {
+public class StoreTableNode extends UnaryNode implements Cloneable {
   @Expose private String tableName;
+  @Expose private int numPartitions;
   @Expose private Column [] partitionKeys;
-  @Expose private StoreType storeType;
-  @Expose private Schema schema;
-  @Expose private Path path;
+  @Expose private boolean local;
 
-  public CreateTableNode(String tableName, Schema schema, StoreType storeType, 
-      Path path) {
-    super(ExprType.CREATE_TABLE);
+  public StoreTableNode(String tableName) {
+    super(ExprType.STORE);
     this.tableName = tableName;
-    this.schema = schema;
-    this.storeType = storeType;
-    this.path = path;
+    this.local = false;
   }
 
   public final String getTableName() {
     return this.tableName;
+  }
+    
+  public final int getNumPartitions() {
+    return this.numPartitions;
   }
   
   public final boolean hasPartitionKey() {
@@ -43,35 +43,33 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
     return this.partitionKeys;
   }
   
-  public final void setPartitionKeys(Column [] keys) {
-    Preconditions.checkArgument(keys.length > 0, 
-        "At least one partition key must be specified.");
-    
-    this.partitionKeys = keys;
-  }
-    
-  public Schema getSchema() {
-    return this.schema;
-  }
-
-  public StoreType getStoreType() {
-    return this.storeType;
+  public final void setLocal(boolean local) {
+    this.local = local;
   }
   
-  public Path getPath() {
-    return this.path;
+  public final boolean isLocal() {
+    return this.local;
+  }
+  
+  public final void setPartitions(Column [] keys, int numPartitions) {
+    Preconditions.checkArgument(keys.length > 0, 
+        "At least one partition key must be specified.");
+    Preconditions.checkArgument(numPartitions > 0,
+        "The number of partitions must be positive: %s", numPartitions);
+    
+    this.partitionKeys = keys;
+    this.numPartitions = numPartitions;
   }
   
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof CreateTableNode) {
-      CreateTableNode other = (CreateTableNode) obj;
+    if (obj instanceof StoreTableNode) {
+      StoreTableNode other = (StoreTableNode) obj;
       return super.equals(other)
           && this.tableName.equals(other.tableName)
-          && this.schema.equals(other.schema)
-          && this.storeType == other.storeType
-          && this.path.equals(other.path) 
-          && TUtil.checkEquals(partitionKeys, other.partitionKeys);
+          && this.numPartitions == other.numPartitions
+          && TUtil.checkEquals(partitionKeys, other.partitionKeys)
+          && subExpr.equals(other.subExpr);
     } else {
       return false;
     }
@@ -79,11 +77,9 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
   
   @Override
   public Object clone() throws CloneNotSupportedException {
-    CreateTableNode store = (CreateTableNode) super.clone();
+    StoreTableNode store = (StoreTableNode) super.clone();
     store.tableName = tableName;
-    store.schema = (Schema) schema.clone();
-    store.storeType = storeType;
-    store.path = new Path(path.toString());
+    store.numPartitions = numPartitions;
     store.partitionKeys = partitionKeys != null ? partitionKeys.clone() : null;
     return store;
   }
@@ -98,30 +94,17 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
         if (i < partitionKeys.length - 1)
           sb.append(",");
       }
-      sb.append("],");
     }
-    sb.append("\"schema: \"{" + this.schema).append("}");
-    sb.append(",\"storeType\": \"" + this.storeType);
-    sb.append(",\"path\" : \"" + this.path).append("\",");
     
     sb.append("\n  \"out schema\": ").append(getOutputSchema()).append(",")
     .append("\n  \"in schema\": ").append(getInputSchema())
     .append("}");
     
-    return sb.toString();
+    return sb.toString() + "\n"
+        + getSubNode().toString();
   }
   
   public String toJSON() {
     return GsonCreator.getInstance().toJson(this, LogicalNode.class);
-  }
-
-  @Override
-  public void preOrder(LogicalNodeVisitor visitor) {
-    visitor.visit(this);    
-  }
-
-  @Override
-  public void postOrder(LogicalNodeVisitor visitor) {
-    visitor.visit(this);    
   }
 }

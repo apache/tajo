@@ -28,6 +28,7 @@ import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.logical.CreateIndexNode;
 import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
@@ -351,7 +352,7 @@ public class TestLogicalPlanner {
     LogicalRootNode root = (LogicalRootNode) plan;
     
     assertEquals(ExprType.STORE, root.getSubNode().getType());
-    CreateTableNode storeNode = (CreateTableNode) root.getSubNode();
+    StoreTableNode storeNode = (StoreTableNode) root.getSubNode();
     testQuery7(storeNode.getSubNode());
     LogicalOptimizer.optimize(ctx, plan);
   }
@@ -538,5 +539,32 @@ public class TestLogicalPlanner {
     assertEquals("id", col.getColumnName());
     col = it.next();
     assertEquals("total", col.getColumnName());
+  }
+  
+  static final String CREATE_TABLE [] = {
+    "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data'"
+  };
+  
+  @Test
+  public final void testCreateTableDef() {
+    QueryContext ctx = factory.create();
+    ParseTree block = (ParseTree) analyzer.parse(ctx, CREATE_TABLE[0]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+    LogicalRootNode root = (LogicalRootNode) plan;
+    assertEquals(ExprType.CREATE_TABLE, root.getSubNode().getType());
+    CreateTableNode createTable = (CreateTableNode) root.getSubNode();
+    
+    Schema def = createTable.getSchema();
+    assertEquals("name", def.getColumn(0).getColumnName());
+    assertEquals(DataType.STRING, def.getColumn(0).getDataType());
+    assertEquals("age", def.getColumn(1).getColumnName());
+    assertEquals(DataType.INT, def.getColumn(1).getDataType());
+    assertEquals("earn", def.getColumn(2).getColumnName());
+    assertEquals(DataType.LONG, def.getColumn(2).getDataType());
+    assertEquals("score", def.getColumn(3).getColumnName());
+    assertEquals(DataType.FLOAT, def.getColumn(3).getDataType());    
+    assertEquals(StoreType.CSV, createTable.getStoreType());    
+    assertEquals("/tmp/data", createTable.getPath().toString());
   }
 }

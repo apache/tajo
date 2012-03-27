@@ -26,7 +26,7 @@ import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.physical.PhysicalExec;
@@ -261,7 +261,7 @@ public class TestPhysicalPlanner {
     int numPartitions = 3;
     Column key1 = new Column("score.deptName", DataType.STRING);
     Column key2 = new Column("score.class", DataType.STRING);
-    CreateTableNode storeNode = new CreateTableNode("partition");
+    StoreTableNode storeNode = new StoreTableNode("partition");
     storeNode.setPartitions(new Column[] { key1, key2 }, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     LogicalOptimizer.optimize(ctx, plan);

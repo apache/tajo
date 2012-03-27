@@ -33,7 +33,7 @@ import nta.engine.planner.global.LogicalQueryUnit;
 import nta.engine.planner.global.LogicalQueryUnit.PARTITION_TYPE;
 import nta.engine.planner.global.LogicalQueryUnitGraph;
 import nta.engine.planner.global.QueryUnit;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
@@ -148,7 +148,7 @@ public class TestGlobalQueryPlanner {
     assertEquals(PARTITION_TYPE.LIST, unit.getOutputType());
     LogicalNode plan = unit.getLogicalPlan();
     assertEquals(ExprType.STORE, plan.getType());
-    assertEquals(ExprType.SCAN, ((CreateTableNode)plan).getSubNode().getType());
+    assertEquals(ExprType.SCAN, ((StoreTableNode)plan).getSubNode().getType());
   }
 
   @Test
@@ -186,7 +186,7 @@ public class TestGlobalQueryPlanner {
     
     scans = next.getScanNodes();
     assertEquals(1, scans.length);
-    CreateTableNode store = prev.getStoreTableNode();
+    StoreTableNode store = prev.getStoreTableNode();
     assertEquals(store.getTableName(), scans[0].getTableId());
     assertEquals(store.getOutputSchema(), scans[0].getInputSchema());
   }
@@ -219,7 +219,7 @@ public class TestGlobalQueryPlanner {
     
     scans = next.getScanNodes();
     assertEquals(1, scans.length);
-    CreateTableNode store = prev.getStoreTableNode();
+    StoreTableNode store = prev.getStoreTableNode();
     assertEquals(store.getTableName(), scans[0].getTableId());
     assertEquals(store.getOutputSchema(), scans[0].getInputSchema());
   }

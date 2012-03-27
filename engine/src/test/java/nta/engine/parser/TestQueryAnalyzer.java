@@ -121,7 +121,9 @@ public class TestQueryAnalyzer {
       // create table test
       "create table store2 as select name, score from people order by score asc, age desc null first", // 8
       // create index
-      "create unique index score_idx on people using hash (score, age desc null first) with (fillfactor = 70)"
+      "create unique index score_idx on people using hash (score, age desc null first) with (fillfactor = 70)", // 9
+      // create table def
+      "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data'" // 10     
   };
 
   public static NQLParser parseExpr(final String expr) {
@@ -200,7 +202,7 @@ public class TestQueryAnalyzer {
   }
   
   @Test
-  public final void testCreateTable() {
+  public final void testCreateTableAsSelect() {
     Context ctx = factory.create();
     CreateTableStmt stmt = (CreateTableStmt) analyzer.parse(ctx, QUERIES[7]);
     assertEquals("store1", stmt.getTableName());
@@ -210,6 +212,24 @@ public class TestQueryAnalyzer {
     stmt = (CreateTableStmt) analyzer.parse(ctx, QUERIES[8]);
     assertEquals("store2", stmt.getTableName());
     testOrderByCluse(stmt.getSelectStmt());
+  }
+  
+  @Test
+  public final void testCreateTableDef() {
+    Context ctx = factory.create();
+    CreateTableStmt stmt = (CreateTableStmt) analyzer.parse(ctx, QUERIES[10]);
+    assertEquals("table1", stmt.getTableName());
+    Schema def = stmt.getSchema();
+    assertEquals("name", def.getColumn(0).getColumnName());
+    assertEquals(DataType.STRING, def.getColumn(0).getDataType());
+    assertEquals("age", def.getColumn(1).getColumnName());
+    assertEquals(DataType.INT, def.getColumn(1).getDataType());
+    assertEquals("earn", def.getColumn(2).getColumnName());
+    assertEquals(DataType.LONG, def.getColumn(2).getDataType());
+    assertEquals("score", def.getColumn(3).getColumnName());
+    assertEquals(DataType.FLOAT, def.getColumn(3).getDataType());    
+    assertEquals(StoreType.CSV, stmt.getStoreType());    
+    assertEquals("/tmp/data", stmt.getPath().toString());
   }
   
   @Test 

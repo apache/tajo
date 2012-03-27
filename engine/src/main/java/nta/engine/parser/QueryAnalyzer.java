@@ -1,5 +1,7 @@
 package nta.engine.parser;
 
+import java.util.List;
+
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
 import nta.catalog.FunctionDesc;
@@ -11,6 +13,7 @@ import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.IndexMethod;
+import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
 import nta.engine.Context;
 import nta.engine.exception.InternalException;
@@ -19,11 +22,11 @@ import nta.engine.exec.eval.BinaryEval;
 import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.CountRowEval;
 import nta.engine.exec.eval.EvalNode;
-import nta.engine.exec.eval.LikeEval;
-import nta.engine.exec.eval.NotEval;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
+import nta.engine.exec.eval.LikeEval;
+import nta.engine.exec.eval.NotEval;
 import nta.engine.parser.QueryBlock.FromTable;
 import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.SortKey;
@@ -42,6 +45,7 @@ import org.antlr.runtime.tree.CommonTree;
 import org.antlr.runtime.tree.Tree;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 
 import com.google.common.base.Preconditions;
 
@@ -97,21 +101,55 @@ public final class QueryAnalyzer {
    * @return
    */
   private final CreateTableStmt parseCreateStatement(final Context ctx,
-      final CommonTree ast) {    
+      final CommonTree ast) {
+    CreateTableStmt stmt = null;
+    
+    int idx = 0;
     CommonTree node;
+    String tableName = ast.getChild(idx).getText();
+    idx++;
+    node = (CommonTree) ast.getChild(idx);
     
-    node = (CommonTree) ast.getChild(0);
-    String tableName = node.getText();
-    
-    node = (CommonTree) ast.getChild(1);
-    if (node.getType() != NQLParser.SELECT) {
+    if (node.getType() == NQLParser.TABLE_DEF) {
+      Schema tableDef = parseCreateTableDef(ctx, node);
+      idx++;      
+      StoreType storeType = ParseUtil.getStoreType(ast.getChild(idx).getText());
+      idx++;
+      Path path = new Path(ast.getChild(idx).getText());
+      stmt = new CreateTableStmt(tableName, tableDef, storeType, path);
+    } else if (node.getType() == NQLParser.SELECT) {
+      QueryBlock selectStmt = parseSelectStatement(ctx, node);    
+      stmt = new CreateTableStmt(tableName, selectStmt);      
+    } else {    
       throw new NotSupportQueryException("ERROR: not yet supported query");
     }
     
-    QueryBlock selectStmt = parseSelectStatement(ctx, node);    
-    CreateTableStmt stmt = new CreateTableStmt(tableName, selectStmt);
-    
     return stmt;
+  }
+  
+  private final Schema parseCreateTableDef(final Context ctx, final CommonTree ast) {
+    Schema tableDef = new Schema();
+    DataType type = null;
+    for (int i = 0; i < ast.getChildCount(); i++) {
+      System.out.println(ast.getChild(i).getText());
+      System.out.println(ast.getChild(i).getChild(1).getType());
+      switch(ast.getChild(i).getChild(1).getType()) {      
+      case NQLParser.BOOL: type = DataType.BOOLEAN; break;
+      case NQLParser.BYTE: type = DataType.BYTE; break;
+      case NQLParser.INT: type = DataType.INT; break;                                 
+      case NQLParser.LONG: type = DataType.LONG; break;
+      case NQLParser.FLOAT: type = DataType.FLOAT; break;
+      case NQLParser.DOUBLE: type = DataType.DOUBLE; break;
+      case NQLParser.TEXT: type = DataType.STRING; break;
+      case NQLParser.BYTES: type = DataType.BYTES; break;
+      case NQLParser.IPv4: type = DataType.IPv4; break;
+      default: throw new InvalidQueryException(ast.toStringTree());
+      }                                       
+      
+      tableDef.addColumn(ast.getChild(i).getChild(0).getText(), type);                                   
+    }
+    
+    return tableDef;
   }
 
   private final QueryBlock parseSelectStatement(final Context ctx,

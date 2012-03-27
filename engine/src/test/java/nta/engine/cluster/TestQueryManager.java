@@ -28,7 +28,7 @@ import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.parser.QueryBlock.FromTable;
 import nta.engine.planner.global.LogicalQueryUnit;
 import nta.engine.planner.global.MockQueryUnitScheduler;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalQueryPlanner;
@@ -93,7 +93,7 @@ public class TestQueryManager {
     TableDesc desc = TCatUtil.newTableDesc("test", meta, new Path("/"));
     QueryIdFactory.reset();
     LogicalRootNode root = new LogicalRootNode();
-    CreateTableNode store = new CreateTableNode("test");
+    StoreTableNode store = new StoreTableNode("test");
     ScanNode scan = new ScanNode(new FromTable(desc));
     store.setSubNode(scan);
     root.setSubNode(store);

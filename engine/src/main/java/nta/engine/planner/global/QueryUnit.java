@@ -16,7 +16,7 @@ import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
@@ -31,7 +31,7 @@ import com.google.common.base.Preconditions;
 public class QueryUnit {
 
 	private QueryUnitId id;
-	private CreateTableNode store = null;
+	private StoreTableNode store = null;
 	private LogicalNode plan = null;
 	private ScanNode[] scan;
 	private List<Fragment> fragments;
@@ -48,7 +48,7 @@ public class QueryUnit {
     Preconditions.checkArgument(plan.getType() == ExprType.STORE);
     
 	  this.plan = plan;
-	  store = (CreateTableNode) plan;
+	  store = (StoreTableNode) plan;
 	  LogicalNode node = plan;
 	  ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
 	  s.add(node);
@@ -157,7 +157,7 @@ public class QueryUnit {
 	  return this.store.getOutputSchema();
 	}
 	
-	public CreateTableNode getStoreTableNode() {
+	public StoreTableNode getStoreTableNode() {
 	  return this.store;
 	}
 	

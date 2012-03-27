@@ -19,6 +19,7 @@ import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.CreateIndexNode;
 import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.EvalExprNode;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
@@ -94,14 +95,25 @@ public class LogicalPlanner {
   
   private static LogicalNode buildCreateTablePlan(Context ctx, 
       CreateTableStmt query) {
-    LogicalNode subNode = buildSelectPlan(ctx, query.getSelectStmt());
+    LogicalNode node = null;
+    if (query.hasDefinition())  {
+      CreateTableNode createTable = 
+          new CreateTableNode(query.getTableName(), query.getSchema(), 
+              query.getStoreType(), query.getPath());
+      createTable.setInputSchema(query.getSchema());
+      createTable.setOutputSchema(query.getSchema());
+      node = createTable;
+    } else if (query.hasSelectStmt()) {
+      LogicalNode subNode = buildSelectPlan(ctx, query.getSelectStmt());
+      
+      StoreTableNode storeNode = new StoreTableNode(query.getTableName());
+      storeNode.setInputSchema(subNode.getOutputSchema());
+      storeNode.setOutputSchema(subNode.getOutputSchema());
+      storeNode.setSubNode(subNode);
+      node = storeNode;
+    }
     
-    CreateTableNode storeNode = new CreateTableNode(query.getTableName());
-    storeNode.setInputSchema(subNode.getOutputSchema());
-    storeNode.setOutputSchema(subNode.getOutputSchema());
-    storeNode.setSubNode(subNode);
-    
-    return storeNode;
+    return node;
   }
   
   /**

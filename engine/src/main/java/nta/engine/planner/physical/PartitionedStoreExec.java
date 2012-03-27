@@ -18,7 +18,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.StatSet;
 import nta.catalog.statistics.StatisticsUtil;
 import nta.engine.SubqueryContext;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.StorageUtil;
@@ -42,7 +42,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
   
   private final SubqueryContext ctx;
   private final StorageManager sm;
-  private final CreateTableNode annotation;
+  private final StoreTableNode annotation;
   private final PhysicalExec subOp;
   
   private final Schema inputSchema;
@@ -57,7 +57,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
     = new HashMap<Integer, Appender>();
   
   public PartitionedStoreExec(SubqueryContext ctx, final StorageManager sm,
-      final CreateTableNode annotation, final PhysicalExec subOp) throws IOException {
+      final StoreTableNode annotation, final PhysicalExec subOp) throws IOException {
     Preconditions.checkArgument(annotation.hasPartitionKey());
     this.ctx = ctx;
     this.sm = sm;

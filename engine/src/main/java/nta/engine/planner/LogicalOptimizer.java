@@ -20,7 +20,7 @@ import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.parser.QueryBlock.SortKey;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
@@ -423,7 +423,7 @@ public class LogicalOptimizer {
       break;
     
     case STORE:
-      CreateTableNode storeNode = (CreateTableNode) logicalNode;
+      StoreTableNode storeNode = (StoreTableNode) logicalNode;
       stack.push(storeNode);
       pushProjection(ctx, storeNode.getSubNode(), necessary, stack);
       stack.pop();

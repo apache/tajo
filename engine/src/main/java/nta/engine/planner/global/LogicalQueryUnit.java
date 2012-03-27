@@ -14,7 +14,7 @@ import java.util.Set;
 import nta.catalog.Schema;
 import nta.engine.LogicalQueryUnitId;
 import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
@@ -36,7 +36,7 @@ public class LogicalQueryUnit {
 
   private LogicalQueryUnitId id;
   private LogicalNode plan = null;
-  private CreateTableNode store = null;
+  private StoreTableNode store = null;
   private ScanNode[] scan = null;
   private LogicalQueryUnit next;
   private Map<ScanNode, LogicalQueryUnit> prevs;
@@ -56,7 +56,7 @@ public class LogicalQueryUnit {
     Preconditions.checkArgument(plan.getType() == ExprType.STORE);
     
     this.plan = plan;
-    store = (CreateTableNode) plan;
+    store = (StoreTableNode) plan;
     LogicalNode node = plan;
     ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
     s.add(node);
@@ -136,7 +136,7 @@ public class LogicalQueryUnit {
     return this.store.getOutputSchema();
   }
   
-  public CreateTableNode getStoreTableNode() {
+  public StoreTableNode getStoreTableNode() {
     return this.store;
   }
   

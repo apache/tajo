@@ -8,7 +8,7 @@ import java.io.IOException;
 import nta.engine.SubqueryContext;
 import nta.engine.exception.InternalException;
 import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.EvalExprNode;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
@@ -71,9 +71,9 @@ public class PhysicalPlanner {
       return new EvalExprExec(evalExpr);
     
     case STORE:
-      CreateTableNode createTableNode = (CreateTableNode) logicalNode;
-      outer = createPlanRecursive(ctx, createTableNode.getSubNode());
-      return createStorePlan(ctx, createTableNode, outer);
+      StoreTableNode storeNode = (StoreTableNode) logicalNode;
+      outer = createPlanRecursive(ctx, storeNode.getSubNode());
+      return createStorePlan(ctx, storeNode, outer);
       
     case SELECTION:
       SelectionNode selNode = (SelectionNode) logicalNode;
@@ -123,7 +123,7 @@ public class PhysicalPlanner {
     return nlj;
   }
   
-  public PhysicalExec createStorePlan(SubqueryContext ctx, CreateTableNode annotation,
+  public PhysicalExec createStorePlan(SubqueryContext ctx, StoreTableNode annotation,
       PhysicalExec subOp) throws IOException {
     PhysicalExec store = null;
     if (annotation.hasPartitionKey()) { // if the partition keys are specified

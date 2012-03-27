@@ -33,7 +33,7 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.PlannerUtil;
-import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.query.QueryUnitRequestImpl;
 import nta.storage.Appender;
@@ -225,7 +225,7 @@ public class TestLeafServer {
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     int numPartitions = 2;
     Column key1 = new Column("employee.deptName", DataType.STRING);
-    CreateTableNode storeNode = new CreateTableNode("testInterQuery");
+    StoreTableNode storeNode = new StoreTableNode("testInterQuery");
     storeNode.setPartitions(new Column[] { key1 }, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     LogicalOptimizer.optimize(ctx, plan);   
@@ -293,7 +293,7 @@ public class TestLeafServer {
     query = analyzer.parse(ctx, 
         "select col1, col2 from interquery");
     plan = LogicalPlanner.createPlan(ctx, query);    
-    storeNode = new CreateTableNode("final");
+    storeNode = new StoreTableNode("final");
     PlannerUtil.insertNode(plan, storeNode);
     LogicalOptimizer.optimize(ctx, plan);
     sm.initTableBase(TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV), 
