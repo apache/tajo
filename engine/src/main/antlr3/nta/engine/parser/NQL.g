@@ -106,7 +106,7 @@ indexStatement
 createTableStatement
   : CREATE TABLE t=table AS select_stmt -> ^(CREATE_TABLE $t select_stmt)
   | t=table ASSIGN select_stmt -> ^(CREATE_TABLE $t select_stmt)
-  | CREATE TABLE t=table tableElements USING s=ID LOCATION p=STRING-> ^(CREATE_TABLE $t ^(TABLE_DEF tableElements) $s $p)
+  | CREATE TABLE t=table tableElements USING s=ID LOCATION path=STRING p=param_clause? -> ^(CREATE_TABLE $t ^(TABLE_DEF tableElements) $s $path $p?)
   ;
   
 tableElements
@@ -275,7 +275,7 @@ param_clause
   ;
   
 param
-  : k=ID EQUAL v=bool_expr -> ^(PARAM $k $v)
+  : k=STRING EQUAL v=bool_expr -> ^(PARAM $k $v)
   ;
   
 method_specifier

@@ -3,6 +3,7 @@
  */
 package nta.engine.parser;
 
+import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.StoreType;
 
@@ -17,6 +18,7 @@ public class CreateTableStmt extends ParseTree {
   private StoreType storeType;
   private Path path;
   private QueryBlock selectStmt;
+  private Options options;
   
   private CreateTableStmt(final String tableName) {
     super(StatementType.CREATE_TABLE);
@@ -63,5 +65,17 @@ public class CreateTableStmt extends ParseTree {
   
   public final Path getPath() {
     return this.path;
+  }
+  
+  public boolean hasOptions() {
+    return this.options != null;
+  }
+  
+  public void setOptions(Options opt) {
+    this.options = opt;
+  }
+  
+  public Options getOptions() {
+    return this.options;
   }
 }

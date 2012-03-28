@@ -121,9 +121,9 @@ public class TestQueryAnalyzer {
       // create table test
       "create table store2 as select name, score from people order by score asc, age desc null first", // 8
       // create index
-      "create unique index score_idx on people using hash (score, age desc null first) with (fillfactor = 70)", // 9
+      "create unique index score_idx on people using hash (score, age desc null first) with ('fillfactor' = 70)", // 9
       // create table def
-      "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data'" // 10     
+      "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data' with ('csv.delimiter'='|')" // 10     
   };
 
   public static NQLParser parseExpr(final String expr) {
@@ -230,6 +230,8 @@ public class TestQueryAnalyzer {
     assertEquals(DataType.FLOAT, def.getColumn(3).getDataType());    
     assertEquals(StoreType.CSV, stmt.getStoreType());    
     assertEquals("/tmp/data", stmt.getPath().toString());
+    assertTrue(stmt.hasOptions());
+    assertEquals("|", stmt.getOptions().get("csv.delimiter"));
   }
   
   @Test 

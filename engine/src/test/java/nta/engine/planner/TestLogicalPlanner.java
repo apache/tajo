@@ -117,7 +117,7 @@ public class TestLogicalPlanner {
       "store1 := select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 8
       "select deptName, sumtest(score) from score group by deptName having sumtest(score) > 30", // 9
       "select 7 + 8, 8 * 9, 10 * 10 as mul", // 10
-      "create index idx_employee on employee using bitmap (name null first, empId desc) with (fillfactor = 70)" // 11
+      "create index idx_employee on employee using bitmap (name null first, empId desc) with ('fillfactor' = 70)" // 11
   };
 
   @Test
@@ -542,7 +542,7 @@ public class TestLogicalPlanner {
   }
   
   static final String CREATE_TABLE [] = {
-    "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data'"
+    "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data' with ('csv.delimiter'='|')"
   };
   
   @Test
@@ -566,5 +566,7 @@ public class TestLogicalPlanner {
     assertEquals(DataType.FLOAT, def.getColumn(3).getDataType());    
     assertEquals(StoreType.CSV, createTable.getStoreType());    
     assertEquals("/tmp/data", createTable.getPath().toString());
+    assertTrue(createTable.hasOptions());
+    assertEquals("|", createTable.getOptions().get("csv.delimiter"));
   }
 }

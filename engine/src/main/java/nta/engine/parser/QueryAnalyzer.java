@@ -116,7 +116,14 @@ public final class QueryAnalyzer {
       StoreType storeType = ParseUtil.getStoreType(ast.getChild(idx).getText());
       idx++;
       Path path = new Path(ast.getChild(idx).getText());
-      stmt = new CreateTableStmt(tableName, tableDef, storeType, path);
+      stmt = new CreateTableStmt(tableName, tableDef, storeType, path);      
+      if ((ast.getChildCount() - idx) > 1) {
+        idx++;
+        if (ast.getChild(idx).getType() == NQLParser.PARAMS) {
+          Options options = parseParams(ctx, (CommonTree) ast.getChild(idx));
+          stmt.setOptions(options);
+        }
+      }      
     } else if (node.getType() == NQLParser.SELECT) {
       QueryBlock selectStmt = parseSelectStatement(ctx, node);    
       stmt = new CreateTableStmt(tableName, selectStmt);      
@@ -131,8 +138,6 @@ public final class QueryAnalyzer {
     Schema tableDef = new Schema();
     DataType type = null;
     for (int i = 0; i < ast.getChildCount(); i++) {
-      System.out.println(ast.getChild(i).getText());
-      System.out.println(ast.getChild(i).getChild(1).getType());
       switch(ast.getChild(i).getChild(1).getType()) {      
       case NQLParser.BOOL: type = DataType.BOOLEAN; break;
       case NQLParser.BYTE: type = DataType.BYTE; break;

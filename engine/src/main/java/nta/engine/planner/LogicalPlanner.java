@@ -100,6 +100,9 @@ public class LogicalPlanner {
       CreateTableNode createTable = 
           new CreateTableNode(query.getTableName(), query.getSchema(), 
               query.getStoreType(), query.getPath());
+      if (query.hasOptions()) {
+        createTable.setOptions(query.getOptions());
+      }
       createTable.setInputSchema(query.getSchema());
       createTable.setOutputSchema(query.getSchema());
       node = createTable;

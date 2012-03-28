@@ -1,6 +1,7 @@
 package nta.engine.planner.logical;
 
 import nta.catalog.Column;
+import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.json.GsonCreator;
@@ -13,14 +14,14 @@ import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
- * 
- */
+*/
 public class CreateTableNode extends LogicalNode implements Cloneable {
   @Expose private String tableName;
   @Expose private Column [] partitionKeys;
   @Expose private StoreType storeType;
   @Expose private Schema schema;
   @Expose private Path path;
+  @Expose private Options options;
 
   public CreateTableNode(String tableName, Schema schema, StoreType storeType, 
       Path path) {
@@ -62,6 +63,18 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
     return this.path;
   }
   
+  public boolean hasOptions() {
+    return this.options != null;
+  }
+  
+  public void setOptions(Options opt) {
+    this.options = opt;
+  }
+  
+  public Options getOptions() {
+    return this.options;
+  }
+  
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof CreateTableNode) {
@@ -70,7 +83,8 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
           && this.tableName.equals(other.tableName)
           && this.schema.equals(other.schema)
           && this.storeType == other.storeType
-          && this.path.equals(other.path) 
+          && this.path.equals(other.path)
+          && TUtil.checkEquals(options, other.options)
           && TUtil.checkEquals(partitionKeys, other.partitionKeys);
     } else {
       return false;
@@ -85,6 +99,7 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
     store.storeType = storeType;
     store.path = new Path(path.toString());
     store.partitionKeys = partitionKeys != null ? partitionKeys.clone() : null;
+    store.options = (Options) (options != null ? options.clone() : null);
     return store;
   }
   
