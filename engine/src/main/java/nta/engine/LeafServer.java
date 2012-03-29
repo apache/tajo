@@ -62,11 +62,15 @@ import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
 
+
 import tajo.datachannel.Fetcher;
 import tajo.worker.dataserver.HttpDataServer;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
+import tajo.webapp.HttpServer;
+
 
 /**
  * @author Hyunsik Choi
@@ -110,6 +114,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   private HttpDataServer dataServer;
   private InterDataRetriever retriever;
   private String dataServerURL;
+  
+  //Web server
+  private HttpServer webServer;
 
   public LeafServer(final Configuration conf) {
     this.conf = conf;
@@ -127,6 +134,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     }
     
     // Server to handle client requests.
+    
+    
     String hostname = DNS.getDefaultHost(
         conf.get("nta.master.dns.interface", "default"),
         conf.get("nta.master.dns.nameserver", "default"));
@@ -201,6 +210,11 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       try {
         prepareServing();
         participateCluster();
+        
+        webServer = new HttpServer("admin", this.isa.getHostName() ,8080 , 
+            true, null, conf, null);
+        webServer.setAttribute("tajo.master.addr", conf.get(NConstants.MASTER_ADDRESS));
+        webServer.start();
       } catch (Exception e) {
         abort(e.getMessage(), e);
       }
@@ -260,6 +274,12 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         }
       }
       
+      try {
+        webServer.stop();
+      } catch (Exception e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
       rpcServer.shutdown();
       queryLauncher.shutdown();      
       masterAddrTracker.stop();

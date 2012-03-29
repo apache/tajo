@@ -40,6 +40,8 @@ import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
 
+import tajo.webapp.StaticHttpServer;
+
 /**
  * @author Hyunsik Choi
  * 
@@ -73,7 +75,15 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   
   private LeafServerTracker tracker;
   
+  //Web Server
+  private StaticHttpServer webServer;
+  
   public NtaEngineMaster(final Configuration conf) throws Exception {
+
+    webServer = StaticHttpServer.getInstance(this ,"admin", null, 8080 , 
+        true, null, conf, null);
+    webServer.start();
+    
     this.conf = conf;
     QueryIdFactory.reset();
 
@@ -146,6 +156,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   }
 
   private void initMaster() throws Exception {
+    
     becomeMaster();
     tracker = new LeafServerTracker(zkClient);
     tracker.start();
@@ -207,6 +218,12 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   }
 
   public void shutdown() {
+    try {
+      webServer.stop();
+    } catch (Exception e1) {
+      // TODO Auto-generated catch block
+      e1.printStackTrace();
+    }
     tracker.close();
     this.stopped = true;
     this.clientServiceServer.stop();
@@ -345,6 +362,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
 
   public static void main(String[] args) throws Exception {
     Configuration conf = new NtaConf();
+    
     NtaEngineMaster master = new NtaEngineMaster(conf);
 
     master.start();

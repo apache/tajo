@@ -391,6 +391,7 @@ public class NtaTestingUtility {
 	 */
 	public static void main(String[] args) throws Exception {
 		NtaTestingUtility cluster = new NtaTestingUtility();
+
 		cluster.startMiniCluster(4);
 		
 		Thread.sleep(3000);
