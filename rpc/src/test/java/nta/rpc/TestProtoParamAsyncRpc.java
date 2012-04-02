@@ -1,17 +1,17 @@
 package nta.rpc;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import nta.rpc.test.DummyProtos.MulRequest1;
 import nta.rpc.test.DummyProtos.MulResponse;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class TestProtoParamAsyncRpc {
   public static String MESSAGE = TestProtoParamAsyncRpc.class.getName();
@@ -48,28 +48,25 @@ public class TestProtoParamAsyncRpc {
 
       int result1 = x1_1 * x1_2;
 
-      MulResponse rst =
-          MulResponse.newBuilder().setResult1(result1).setResult2(400).build();
+      MulResponse rst = MulResponse.newBuilder().setResult1(result1)
+          .setResult2(400).build();
       return rst;
     }
 
     public void nullParameterTest(NullProto proto) {
-      System.out.println("NULL PARAMETER TEST");
     }
   }
 
   @Before
   public void setUp() throws Exception {
-    server =
-        NettyRpc.getProtoParamRpcServer(new DummyServer(),
-            DummyServerInterface.class, new InetSocketAddress(0));
+    server = NettyRpc.getProtoParamRpcServer(new DummyServer(),
+        DummyServerInterface.class, new InetSocketAddress(0));
     server.start();
 
     InetSocketAddress addr = server.getBindAddress();
 
-    proxy =
-        (DummyClientInterface) NettyRpc.getProtoParamAsyncRpcProxy(
-            DummyServerInterface.class, DummyClientInterface.class, addr);
+    proxy = (DummyClientInterface) NettyRpc.getProtoParamAsyncRpcProxy(
+        DummyServerInterface.class, DummyClientInterface.class, addr);
   }
 
   @After
@@ -80,57 +77,22 @@ public class TestProtoParamAsyncRpc {
   MulResponse answer1 = null;
 
   @Test
-  public void testRpcRemoteException() throws Exception {
-
-    MulRequest1 req = MulRequest1.newBuilder().setX1(10).setX2(20).build();
-
-    System.out.println("Do whatever you want before get result!!");
-
-    try {
-      Callback<Object> cb = new Callback<Object>();
-      proxy.throwException(cb, req);
-      cb.get();
-
-    } catch (RemoteException e) {
-      System.out.println(e.getMessage());
-    }
-
-  }
-
-  @Test
   public void testRpcProtoType() throws Exception {
-
     MulRequest1 req1 = MulRequest1.newBuilder().setX1(10).setX2(20).build();
 
-    System.out.println("Do whatever you want before get result!!");
+    Callback<MulResponse> cb = new Callback<MulResponse>();
+    proxy.mul(cb, req1);
 
-    try {
-      Callback<MulResponse> cb = new Callback<MulResponse>();
-      proxy.mul(cb, req1);
-
-      MulResponse resp = (MulResponse) cb.get();
-      assertEquals(200, resp.getResult1());
-      assertEquals(400, resp.getResult2());
-
-    } catch (RemoteException e) {
-      System.out.println(e.getMessage());
-    }
-
+    MulResponse resp = (MulResponse) cb.get();
+    assertEquals(200, resp.getResult1());
+    assertEquals(400, resp.getResult2());
   }
 
   @Test
   public void testNullParameter() throws Exception {
     NullProto np = NullProto.newBuilder().build();
-    System.out.println("Do whatever you want before get result!!");
 
-    try {
-      Callback<Object> cb = new Callback<Object>();
-      proxy.nullParameterTest(cb, np);
-
-    } catch (RemoteException e) {
-      System.out.println(e.getMessage());
-    }
-
+    Callback<Object> cb = new Callback<Object>();
+    proxy.nullParameterTest(cb, np);
   }
-
 }
