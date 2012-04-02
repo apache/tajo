@@ -22,8 +22,10 @@ import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.datum.DatumFactory;
 import nta.engine.LeafServer;
 import nta.engine.NConstants;
@@ -34,10 +36,12 @@ import nta.storage.Scanner;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
+import nta.util.FileUtil;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
@@ -59,7 +63,8 @@ public class TestGlobalEngine {
   private String[] query = {
       "select deptname, sum(score) from score group by deptname having sum(score) > 30",
       "select deptname from score",
-      "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname"
+      "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname",
+      "create table test (id int, name string) using csv location '/tmp/data' with ('csv.delimiter'='|')"
   };
   private static Map<String, Integer> groupbyResult;
   private static Set<String> scanResult;
@@ -141,6 +146,23 @@ public class TestGlobalEngine {
     util.shutdownMiniCluster();
   }
 
+  @Test
+  public void testCreateTable() throws Exception {
+    String tablename = master.executeQuery(query[3]);
+    assertNotNull(tablename);
+    FileSystem fs = FileSystem.get(conf);
+    assertTrue(fs.exists(new Path("/tmp/data/.meta")));
+    TableProto proto = TableProto.getDefaultInstance();
+    proto = (TableProto) FileUtil.loadProto(conf, new Path("/tmp/data/.meta"), 
+        proto);
+    TableMeta meta = new TableMetaImpl(proto);
+    Schema schema = new Schema();
+    schema.addColumn("id", DataType.INT);
+    schema.addColumn("name", DataType.STRING);
+    assertEquals(schema, meta.getSchema());
+    assertEquals(StoreType.CSV, meta.getStoreType());
+  }
+  
   @Test
   public void testScanQuery() throws Exception {
     String tablename = master.executeQuery(query[1]);

@@ -8,7 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import nta.catalog.CatalogService;
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
+import nta.catalog.TableMeta;
 import nta.engine.EngineService;
 import nta.engine.Query;
 import nta.engine.QueryContext;
@@ -27,8 +29,12 @@ import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.LogicalQueryUnitGraph;
+import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.LogicalRootNode;
 import nta.storage.StorageManager;
+import nta.storage.StorageUtil;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -76,28 +82,46 @@ public class GlobalEngine implements EngineService {
     LOG.info("* issued query: " + querystr);
     // build the logical plan
     QueryContext ctx = factory.create();
-    ParseTree tree = (QueryBlock) analyzer.parse(ctx, querystr);
+    ParseTree tree = analyzer.parse(ctx, querystr);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
     plan = LogicalOptimizer.optimize(ctx, plan);
     LOG.info("* logical plan:\n" + plan);
-
-    QueryId qid = QueryIdFactory.newQueryId();
-    qm.addQuery(new Query(qid));
-    LOG.info("=== Query " + qid + " is initialized");
-    SubQueryId subId = QueryIdFactory.newSubQueryId();
-    SubQuery subQuery = new SubQuery(subId);
-    LOG.info("=== SubQuery " + subId + " is initialized");
-    qm.addSubQuery(subQuery);
-    // build the global plan
-    LogicalQueryUnitGraph globalPlan = globalPlanner.build(subId, plan);
     
-    QueryUnitScheduler queryUnitScheduler = new QueryUnitScheduler(
-        conf, sm, cm, qm, wc, globalPlanner, globalPlan.getRoot());
-    qm.addQueryUnitScheduler(subQuery, queryUnitScheduler);
-    queryUnitScheduler.start();
-    queryUnitScheduler.join();
+    LogicalRootNode root = (LogicalRootNode) plan;
+    if (root.getSubNode().getType() == ExprType.CREATE_TABLE) {
+      CreateTableNode createTable = (CreateTableNode) root.getSubNode();
+      TableMeta meta = null;
+      if (createTable.hasOptions()) {
+        meta = TCatUtil.newTableMeta(createTable.getSchema(), 
+            createTable.getStoreType(), createTable.getOptions());
+      } else {
+        meta = TCatUtil.newTableMeta(createTable.getSchema(), 
+            createTable.getStoreType());
+      }
+      StorageUtil.writeTableMeta(conf, createTable.getPath(), meta);
+      TableDesc desc = TCatUtil.newTableDesc(createTable.getTableName(), meta, 
+          createTable.getPath());
+      catalog.addTable(desc);
+      return desc.getId();
+    } else {
+      QueryId qid = QueryIdFactory.newQueryId();
+      qm.addQuery(new Query(qid));
+      LOG.info("=== Query " + qid + " is initialized");
+      SubQueryId subId = QueryIdFactory.newSubQueryId();
+      SubQuery subQuery = new SubQuery(subId);
+      LOG.info("=== SubQuery " + subId + " is initialized");
+      qm.addSubQuery(subQuery);
+      // build the global plan
+      LogicalQueryUnitGraph globalPlan = globalPlanner.build(subId, plan);
+      
+      QueryUnitScheduler queryUnitScheduler = new QueryUnitScheduler(
+          conf, sm, cm, qm, wc, globalPlanner, globalPlan.getRoot());
+      qm.addQueryUnitScheduler(subQuery, queryUnitScheduler);
+      queryUnitScheduler.start();
+      queryUnitScheduler.join();
 
-    return globalPlan.getRoot().getOutputName();
+      return globalPlan.getRoot().getOutputName();
+    }
   }
   
   public LogicalQueryUnitGraph testQuery(String querystr) throws Exception {
