@@ -33,6 +33,8 @@ import nta.engine.planner.global.LogicalQueryUnit;
 import nta.engine.planner.global.LogicalQueryUnit.PARTITION_TYPE;
 import nta.engine.planner.global.LogicalQueryUnitGraph;
 import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.logical.JoinNode;
+import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
@@ -263,7 +265,7 @@ public class TestGlobalQueryPlanner {
     assertEquals(ExprType.JOIN, prev.getStoreTableNode().getSubNode().getType());
     assertEquals(scans[0].getInputSchema(), prev.getOutputSchema());
     assertTrue(prev.hasPrevQuery());
-    assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
+    assertEquals(PARTITION_TYPE.LIST, prev.getOutputType());
     assertFalse(it.hasNext());
     scans = prev.getScanNodes();
     assertEquals(2, scans.length);
@@ -286,13 +288,38 @@ public class TestGlobalQueryPlanner {
   }
   
   @Test
+  public void testSelectAfterJoin() throws IOException {
+    String query = "select table0.name, table1.salary from table0,table1 where table0.name = table1.name and table1.salary > 10";
+    QueryContext ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx, query);
+    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
+    logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
+    
+    LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
+    
+    LogicalQueryUnit unit = globalPlan.getRoot();
+    StoreTableNode store = unit.getStoreTableNode();
+    assertEquals(ExprType.SELECTION, store.getSubNode().getType());
+    SelectionNode select = (SelectionNode) store.getSubNode();
+    assertEquals(ExprType.JOIN, select.getSubNode().getType());
+    assertTrue(unit.hasPrevQuery());
+    ScanNode [] scans = unit.getScanNodes();
+    assertEquals(2, scans.length);
+    LogicalQueryUnit prev;
+    for (ScanNode scan : scans) {
+      prev = unit.getPrevQuery(scan);
+      store = prev.getStoreTableNode();
+      assertEquals(ExprType.SCAN, store.getSubNode().getType());
+    }
+  }
+  
+  @Test
   public void testLocalize() throws IOException, URISyntaxException {
     QueryContext ctx = factory.create();
     ParseTree tree = (ParseTree) analyzer.parse(ctx,
         "select table0.age,table0.salary,table1.salary from table0 inner join table1 on table0.salary = table1.salary");
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
-    System.out.println(logicalPlan);
 
     LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
     

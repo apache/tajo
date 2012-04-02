@@ -64,11 +64,13 @@ public class TestGlobalEngine {
       "select deptname, sum(score) from score group by deptname having sum(score) > 30",
       "select deptname from score",
       "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname",
-      "create table test (id int, name string) using csv location '/tmp/data' with ('csv.delimiter'='|')"
+      "create table test (id int, name string) using csv location '/tmp/data' with ('csv.delimiter'='|')",
+      "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname and score.score > 10000"
   };
   private static Map<String, Integer> groupbyResult;
   private static Set<String> scanResult;
   private static Map<String, List<Integer>> joinResult;
+  private static Map<String, List<Integer>> selectAfterJoinResult;
 
   private String tablename;
 
@@ -85,6 +87,7 @@ public class TestGlobalEngine {
     groupbyResult = new HashMap<String, Integer>();
     scanResult = new HashSet<String>();
     joinResult = new HashMap<String, List<Integer>>();
+    selectAfterJoinResult = new HashMap<String, List<Integer>>();
 
     Schema scoreSchema = new Schema();
     scoreSchema.addColumn("deptname", DataType.STRING);
@@ -119,6 +122,16 @@ public class TestGlobalEngine {
         joinResult.put(key, list);
       } else {
         joinResult.get(key).add((i+1));
+      }
+
+      if (i+1 > 10000) {
+        if (!selectAfterJoinResult.containsKey(key)) {
+          List<Integer> list = new ArrayList<Integer>();
+          list.add((i+1));
+          selectAfterJoinResult.put(key, list);
+        } else {
+          selectAfterJoinResult.get(key).add((i+1));
+        }
       }
     }
     appender.close();
@@ -200,6 +213,21 @@ public class TestGlobalEngine {
     while ((tuple = scanner.next()) != null) {
       deptname = tuple.get(0).asChars();
       results = new HashSet<Integer>(joinResult.get(deptname));
+      assertTrue(results.contains(tuple.get(1).asInt()));
+    }
+  }
+  
+  @Test
+  public void testSelectAfterJoin() throws Exception {
+    String tablename = master.executeQuery(query[4]);
+    assertNotNull(tablename);
+    Scanner scanner = sm.getTableScanner(tablename);
+    Tuple tuple = null;
+    String deptname;
+    Set<Integer> results;
+    while ((tuple = scanner.next()) != null) {
+      deptname = tuple.get(0).asChars();
+      results = new HashSet<Integer>(selectAfterJoinResult.get(deptname));
       assertTrue(results.contains(tuple.get(1).asInt()));
     }
   }
