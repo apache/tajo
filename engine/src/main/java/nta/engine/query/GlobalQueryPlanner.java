@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import nta.catalog.CatalogService;
 import nta.catalog.Column;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
@@ -54,17 +55,20 @@ import nta.storage.StorageManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
 
 public class GlobalQueryPlanner {
   private static Log LOG = LogFactory.getLog(GlobalQueryPlanner.class);
 
   private StorageManager sm;
   private QueryManager qm;
+  private CatalogService catalog;
 
-  public GlobalQueryPlanner(StorageManager sm, QueryManager qm)
+  public GlobalQueryPlanner(StorageManager sm, QueryManager qm, CatalogService catalog)
       throws IOException {
     this.sm = sm;
     this.qm = qm;
+    this.catalog = catalog;
   }
 
   public LogicalQueryUnitGraph build(SubQueryId subQueryId, LogicalNode logicalPlan)
@@ -256,38 +260,6 @@ public class GlobalQueryPlanner {
       } else {
         unit.setOutputType(PARTITION_TYPE.HASH);
       }
-//      
-//      
-//      
-//      if (unaryChild.getSubNode().getType() == curType) {
-//        // store - groupby - store - groupby
-//        unit.setOutputType(PARTITION_TYPE.LIST);
-//        prevStore = (StoreTableNode) unaryChild;
-//        TableMeta meta = TCatUtil.newTableMeta(prevStore.getOutputSchema(), 
-//            StoreType.CSV);
-//        newScan = (ScanNode)insertScan(unary.getSubNode(), 
-//            prevStore.getTableName(), meta);
-//        prev = convertMap.get(prevStore);
-//        if (prev != null) {
-//          prev.setOutputType(PARTITION_TYPE.HASH);
-//          prev.setNextQuery(unit);
-//          unit.addPrevQuery(newScan, prev);
-//        }
-//      } else {
-//        // store - groupby - store - other nodes
-//        unit.setOutputType(PARTITION_TYPE.HASH);
-//        prevStore = (StoreTableNode) unaryChild;
-//        TableMeta meta = TCatUtil.newTableMeta(prevStore.getOutputSchema(), 
-//            StoreType.CSV);
-//        newScan = (ScanNode)insertScan(unary.getSubNode(), 
-//            prevStore.getTableName(), meta);
-//        prev = convertMap.get(prevStore);
-//        if (prev != null) {
-//          prev.setOutputType(PARTITION_TYPE.LIST);
-//          prev.setNextQuery(unit);
-//          unit.addPrevQuery(newScan, prev);
-//        }
-//      }
     } else if (unaryChild.getSubNode().getType() == ExprType.SCAN) {
       // store - groupby - scan
       unit.setOutputType(PARTITION_TYPE.HASH);
@@ -427,8 +399,14 @@ public class GlobalQueryPlanner {
       }
     }
 
+    Path tablepath = null;
     ScanNode[] scans = logicalUnit.getScanNodes();
     for (ScanNode scan : scans) {
+      if (scan.getTableId().startsWith(QueryId.PREFIX)) {
+        tablepath = sm.getTablePath(scan.getTableId());
+      } else {
+        tablepath = catalog.getTableDesc(scan.getTableId()).getPath();
+      }
       if (scan.isLocal()) {
         // make fetchMap
         for (WaitStatus status: qm.getWaitStatusOfLogicalUnit(
@@ -444,12 +422,10 @@ public class GlobalQueryPlanner {
         if (logicalUnit.hasPrevQuery() && 
             logicalUnit.getPrevQuery(scan).getOutputType() == 
             PARTITION_TYPE.HASH) {
-          files = sm.getFileSystem().listStatus(
-              sm.getTablePath(scan.getTableId()));
+          files = sm.getFileSystem().listStatus(tablepath);
         } else {
           files = new FileStatus[1];
-          files[0] = sm.getFileSystem().getFileStatus(
-              sm.getTablePath(scan.getTableId()));
+          files[0] = sm.getFileSystem().getFileStatus(tablepath);
         }
         for (FileStatus file : files) {
           frags = sm.split(file.getPath());
@@ -465,9 +441,14 @@ public class GlobalQueryPlanner {
     QueryUnit[] units = split(logicalUnit, n);
     if (logicalUnit.hasPrevQuery()) {
       for (ScanNode scan : scans) {
+        if (scan.getTableId().startsWith(QueryId.PREFIX)) {
+          tablepath = sm.getTablePath(scan.getTableId());
+        } else {
+          tablepath = catalog.getTableDesc(scan.getTableId()).getPath();
+        }
         if (scan.isLocal()) {
           Fragment frag = new Fragment(scan.getTableId(), 
-              sm.getTablePath(scan.getTableId()), 
+              tablepath,
               TCatUtil.newTableMeta(scan.getInputSchema(),StoreType.CSV), 
               0, 0);
           fragList.add(frag);

@@ -96,7 +96,7 @@ public class TestGlobalQueryPlanner {
     FileSystem fs = sm.getFileSystem();
 
     qm = new QueryManager();
-    planner = new GlobalQueryPlanner(new StorageManager(conf), qm);
+    planner = new GlobalQueryPlanner(new StorageManager(conf), qm, catalog);
     analyzer = new QueryAnalyzer(catalog);
     factory = new QueryContext.Factory(catalog);
 
