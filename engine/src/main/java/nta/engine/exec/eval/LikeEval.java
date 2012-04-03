@@ -76,4 +76,14 @@ public class LikeEval extends EvalNode {
     
     return result;
   }
+  
+  @Override
+  public void preOrder(EvalNodeVisitor visitor) {
+    visitor.visit(this);
+  }
+  
+  @Override
+  public void postOrder(EvalNodeVisitor visitor) {
+    visitor.visit(this);
+  }
 }
