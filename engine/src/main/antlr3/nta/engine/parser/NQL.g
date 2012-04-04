@@ -18,6 +18,7 @@ tokens {
   CROSS_JOIN;
   DROP_TABLE;
   DESC_TABLE;
+  EMPTY_GROUPING_SET;
   FIELD_NAME;  
   FIELD_DEF;
   FUNCTION;    
@@ -130,13 +131,13 @@ fieldType
   ;
   
 select_stmt
-  : SELECT setQualifier? selectList from_clause? where_clause? groupby_clause? orderby_clause?
-  -> ^(SELECT from_clause? selectList where_clause? groupby_clause? orderby_clause?)
+  : SELECT setQualifier? selectList from_clause? where_clause? groupby_clause? having_clause? orderby_clause?
+  -> ^(SELECT from_clause? selectList where_clause? groupby_clause? having_clause? orderby_clause?)
   ;
   
 insertStmt
-  : INSERT 'into' table (LEFT_PAREN fieldList RIGHT_PAREN)? 'values' array
-  -> ^(INSERT ^(TABLE table) ^(VALUES array) ^(TARGET_FIELDS fieldList)?)
+  : INSERT 'into' table (LEFT_PAREN column_reference RIGHT_PAREN)? 'values' array
+  -> ^(INSERT ^(TABLE table) ^(VALUES array) ^(TARGET_FIELDS column_reference)?)
   ;
 	
 selectList
@@ -161,7 +162,7 @@ asClause
   : AS? fieldName
   ;
 	
-fieldList  
+column_reference  
 	:	fieldName (COMMA fieldName)* -> fieldName+
 	;
   
@@ -221,7 +222,7 @@ join_condition
   ;
   
 named_columns_join
-  : USING LEFT_PAREN f=fieldList RIGHT_PAREN -> ^(USING $f)
+  : USING LEFT_PAREN f=column_reference RIGHT_PAREN -> ^(USING $f)
   ;
   
 derivedTable
@@ -233,7 +234,35 @@ where_clause
   ;
   
 groupby_clause
-  : GROUP BY fieldList having_clause? -> ^(GROUP_BY having_clause? fieldList)
+  : GROUP BY g=grouping_element_list -> ^(GROUP_BY $g)
+  ;
+  
+grouping_element_list
+  : grouping_element (COMMA grouping_element)* -> grouping_element+
+  ;
+  
+grouping_element
+  : ordinary_grouping_set
+  | rollup_list
+  | cube_list
+  | empty_grouping_set
+  ;
+  
+ordinary_grouping_set
+  : column_reference
+  | LEFT_PAREN! column_reference RIGHT_PAREN!
+  ;
+
+rollup_list
+  : ROLLUP LEFT_PAREN c=ordinary_grouping_set RIGHT_PAREN -> ^(ROLLUP $c)
+  ;
+  
+cube_list
+  : CUBE LEFT_PAREN c=ordinary_grouping_set RIGHT_PAREN -> ^(CUBE $c)
+  ;
+
+empty_grouping_set
+  : LEFT_PAREN RIGHT_PAREN -> ^(EMPTY_GROUPING_SET)
   ;
   
 having_clause
@@ -390,6 +419,7 @@ BY : 'by';
 COUNT : 'count';
 CREATE : 'create';
 CROSS : 'cross';
+CUBE : 'cube';
 DESC : 'desc';
 DISTINCT : 'distinct';
 DROP : 'drop';
@@ -418,6 +448,7 @@ OUTER : 'outer';
 OR : 'or';
 ORDER : 'order';
 RIGHT : 'right';
+ROLLUP : 'rollup';
 SELECT : 'select';
 TABLE : 'table';
 TRUE : 'true';

@@ -1,5 +1,6 @@
 package nta.engine.parser;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import nta.catalog.CatalogService;
@@ -28,6 +29,9 @@ import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.exec.eval.LikeEval;
 import nta.engine.exec.eval.NotEval;
 import nta.engine.parser.QueryBlock.FromTable;
+import nta.engine.parser.QueryBlock.GroupByClause;
+import nta.engine.parser.QueryBlock.GroupElement;
+import nta.engine.parser.QueryBlock.GroupType;
 import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.SortKey;
 import nta.engine.parser.QueryBlock.Target;
@@ -183,6 +187,10 @@ public final class QueryAnalyzer {
 
       case NQLParser.GROUP_BY:
         parseGroupByClause(ctx, block, node);
+        break;
+        
+      case NQLParser.HAVING:
+        parseHavingClause(ctx, block, node);
         break;
         
       case NQLParser.ORDER_BY:
@@ -479,11 +487,7 @@ public final class QueryAnalyzer {
   }
   
   /**
-   * EBNF -> AST: <br /><pre>
-   * groupby_clause
-   * : 'group' 'by' fieldList having_clause? -> ^(GROUP_BY having_clause? fieldList)
-   * ;
-   * </pre>
+   * See 'groupby_clause' rule in NQL.g
    * 
    * @param ctx
    * @param block
@@ -491,32 +495,55 @@ public final class QueryAnalyzer {
    */
   private void parseGroupByClause(final Context ctx, 
       final QueryBlock block, final CommonTree ast) {
+    GroupByClause clause = new GroupByClause();
     
-    int numFields = ast.getChildCount();
-    
-    // the first child is having clause, but it is optional.
     int idx = 0;
-    if (ast.getChild(idx).getType() == NQLParser.HAVING) {      
-      EvalNode evalTree = 
-          createEvalTree(ctx, (CommonTree) ast.getChild(0).getChild(0), block);      
-      block.setHavingCond(evalTree);
-      idx++;
-      numFields--; // because one children is this having clause.
-    }
-
-    // the remain ones are grouping fields.
-    int i = 0;
-    Tree fieldNode = null;
-    Column [] groupingColumns = new Column [numFields];
-    for (; idx < ast.getChildCount(); idx++) {
-      fieldNode = ast.getChild(idx);                  
-      Column column =
-          checkAndGetColumnByAST(ctx,(CommonTree) fieldNode);
-      groupingColumns[i] = column;     
-      i++;
+    
+    if (ast.getChild(idx).getType() == NQLParser.EMPTY_GROUPING_SET) {
+      clause.setEmptyGroupSet();
+    } else {
+      // the remain ones are grouping fields.
+      Tree group = null;
+      List<Column> columnRefs = new ArrayList<Column>();
+      Column [] columns = null;
+      Column column = null;
+      for (; idx < ast.getChildCount(); idx++) {
+        group = ast.getChild(idx);
+        switch (group.getType()) {
+        case NQLParser.CUBE:
+          columns = parseColumnReferences(ctx, (CommonTree) group);
+          GroupElement cube = new GroupElement(GroupType.CUBE, columns);
+          clause.addGroupSet(cube);
+          break;
+          
+        case NQLParser.ROLLUP:
+          columns = parseColumnReferences(ctx, (CommonTree) group);
+          GroupElement rollup = new GroupElement(GroupType.ROLLUP, columns);
+          clause.addGroupSet(rollup);
+          break;
+          
+        case NQLParser.FIELD_NAME:
+          column = checkAndGetColumnByAST(ctx, (CommonTree) group);
+          columnRefs.add(column);
+          break;
+        }
+      }
+      
+      if (columnRefs.size() > 0) {        
+        Column [] groupingFields = columnRefs.toArray(new Column[columnRefs.size()]);
+        GroupElement g = new GroupElement(GroupType.GROUPBY, groupingFields);
+        clause.addGroupSet(g);
+      }
     }
     
-    block.setGroupingFields(groupingColumns);
+    block.setGroupByClause(clause);
+  }
+  
+  private void parseHavingClause(final Context ctx,
+      final QueryBlock block, final CommonTree ast) {
+    EvalNode evalTree = 
+        createEvalTree(ctx, (CommonTree) ast.getChild(0), block);      
+    block.setHavingCond(evalTree);
   }
   
   /**
@@ -886,5 +913,26 @@ public final class QueryAnalyzer {
     idx++;
     String pattern = tree.getChild(idx).getText();
     return new LikeEval(not, column, pattern);
+  }
+  
+  /**
+   * It parses the below EBNF.
+   * <pre>
+   * column_reference  
+   * : fieldName (COMMA fieldName)* -> fieldName+
+   * ;
+   * </pre>
+   * @param ctx
+   * @param parent
+   * @return
+   */
+  private Column [] parseColumnReferences(final Context ctx, 
+      final CommonTree parent) {
+    Column [] columns = new Column[parent.getChildCount()];
+    for (int i = 0; i < columns.length; i++) {
+      columns[i] = checkAndGetColumnByAST(ctx, (CommonTree) parent.getChild(i));
+    }
+    
+    return columns;
   }
 }

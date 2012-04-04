@@ -151,7 +151,7 @@ public class LogicalPlanner {
     if(query.hasAggregation()) {
       GroupbyNode groupbyNode = null;
       if (query.hasGroupbyClause()) {
-        groupbyNode = new GroupbyNode(query.getGroupFields());
+        groupbyNode = new GroupbyNode(query.getGroupByClause().getGroupSet().get(0).getColumns());
         if(query.hasHavingCond())
           groupbyNode.setHavingCondition(query.getHavingCond());
       } else {

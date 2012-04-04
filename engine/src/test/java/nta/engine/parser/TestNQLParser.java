@@ -59,6 +59,35 @@ public class TestNQLParser {
     Tree tree = parseQuery(selQueries[0]);
     assertEquals(tree.getType(), NQLParser.SELECT);
   }
+  
+  @Test
+  public void testCubeByClause() throws RecognitionException {
+    Tree ast = parseQuery(groupingClause[0]);
+    assertEquals(NQLParser.SELECT, ast.getType());
+    int idx = 0;    
+    assertEquals(NQLParser.FROM, ast.getChild(idx++).getType());
+    assertEquals(NQLParser.SEL_LIST, ast.getChild(idx++).getType());
+    assertEquals(NQLParser.GROUP_BY, ast.getChild(idx).getType());    
+    
+    Tree groupby = ast.getChild(idx);
+    int grpIdx = 0;
+    assertEquals(NQLParser.FIELD_NAME, groupby.getChild(grpIdx++).getType());
+    assertEquals(NQLParser.CUBE, groupby.getChild(grpIdx).getType());
+    
+    int cubeIdx = 0;
+    Tree cube = groupby.getChild(grpIdx);
+    assertEquals(NQLParser.FIELD_NAME, cube.getChild(cubeIdx++).getType());
+    assertEquals(NQLParser.FIELD_NAME, cube.getChild(cubeIdx++).getType());
+    grpIdx++;
+    assertEquals(NQLParser.ROLLUP, groupby.getChild(grpIdx).getType());
+    
+    int rollupIdx = 0;
+    Tree rollup = groupby.getChild(grpIdx);
+    assertEquals(NQLParser.FIELD_NAME, rollup.getChild(rollupIdx++).getType());
+    
+    idx++;
+    assertEquals(NQLParser.HAVING, ast.getChild(idx).getType());
+  }
 
   @Test
   public void testColumnFamily() throws NQLSyntaxException {
@@ -463,4 +492,8 @@ public class TestNQLParser {
     assertEquals(fieldName.getName(), "type");
     assertEquals(NQLParser.STRING, node.getChild(2).getType());
   }
+  
+  final String groupingClause [] = {
+      "select col0, col1, col2, col3, sum(col4) as total, avg(col5) from base group by col0, cube (col1, col2), rollup(col3) having total > 100"
+  };
 }

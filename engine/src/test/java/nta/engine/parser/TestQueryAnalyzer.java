@@ -3,6 +3,10 @@ package nta.engine.parser;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Iterator;
+import java.util.List;
+
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Options;
@@ -22,6 +26,8 @@ import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
+import nta.engine.parser.QueryBlock.GroupElement;
+import nta.engine.parser.QueryBlock.GroupType;
 import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.SortKey;
 import nta.engine.planner.JoinType;
@@ -166,13 +172,91 @@ public class TestQueryAnalyzer {
   @Test
   public final void testSelectStatement() {
     Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
-    
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);    
     assertEquals(1, block.getFromTables().length);
     assertEquals("people", block.getFromTables()[0].getTableId());
     ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, QUERIES[3]);    
-    // TODO - to be more regressive
+  }
+  
+  private String[] GROUP_BY = { 
+      "select age, sumtest(score) as total from people group by age having sumtest(score) > 30", // 0
+      "select name, age, sumtest(score) total from people group by cube (name,age)", // 1
+      "select name, age, sumtest(score) total from people group by rollup (name,age)", // 2
+      "select id, name, age, sumtest(score) total from people group by id, cube (name), rollup (age)", // 3
+      "select id, name, age, sumtest(score) total from people group by ()", // 4
+  };
+  
+  @Test
+  public final void testGroupByStatement() {
+    Context ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx, GROUP_BY[0]);
+    assertEquals(StatementType.SELECT, tree.getType());
+    QueryBlock block = (QueryBlock) tree;
+    assertTrue(block.hasGroupbyClause());
+    assertEquals(1, block.getGroupByClause().getGroupSet().size());
+    assertEquals("age", block.getGroupByClause().getGroupSet().get(0).getColumns()[0].getColumnName());
+    assertTrue(block.hasHavingCond());
+    assertEquals(Type.GTH, block.getHavingCond().getType());
+  }
+  
+  @Test
+  public final void testCubeByStatement() {
+    Context ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx, GROUP_BY[1]);
+    assertEquals(StatementType.SELECT, tree.getType());
+    QueryBlock block = (QueryBlock) tree;
+    assertTrue(block.hasGroupbyClause());
+    assertEquals(1, block.getGroupByClause().getGroupSet().size());
+    assertEquals(GroupType.CUBE, block.getGroupByClause().
+        getGroupSet().get(0).getType());
+    List<GroupElement> groups = block.getGroupByClause().getGroupSet();
+    assertEquals("people.name", groups.get(0).getColumns()[0].getQualifiedName());
+    assertEquals("people.age", groups.get(0).getColumns()[1].getQualifiedName());
+  }
+  
+  @Test
+  public final void testRollUpStatement() {
+    Context ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx, GROUP_BY[2]);
+    assertEquals(StatementType.SELECT, tree.getType());
+    QueryBlock block = (QueryBlock) tree;
+    assertTrue(block.hasGroupbyClause());
+    assertEquals(1, block.getGroupByClause().getGroupSet().size());
+    assertEquals(GroupType.ROLLUP, block.getGroupByClause().
+        getGroupSet().get(0).getType());
+    List<GroupElement> groups = block.getGroupByClause().getGroupSet();
+    assertEquals("people.name", groups.get(0).getColumns()[0].getQualifiedName());
+    assertEquals("people.age", groups.get(0).getColumns()[1].getQualifiedName());
+  }
+  
+  @Test
+  public final void testMixedGroupByStatement() {
+    Context ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx, GROUP_BY[3]);
+    assertEquals(StatementType.SELECT, tree.getType());
+    QueryBlock block = (QueryBlock) tree;
+    assertTrue(block.hasGroupbyClause());
+    assertEquals(3, block.getGroupByClause().getGroupSet().size());
+    Iterator<GroupElement> it = block.getGroupByClause().getGroupSet().iterator();
+    GroupElement group = it.next();
+    assertEquals(GroupType.CUBE, group.getType());    
+    assertEquals("people.name", group.getColumns()[0].getQualifiedName());
+    group = it.next();
+    assertEquals(GroupType.ROLLUP, group.getType());    
+    assertEquals("people.age", group.getColumns()[0].getQualifiedName());
+    group = it.next();
+    assertEquals(GroupType.GROUPBY, group.getType());
+    assertEquals("people.id", group.getColumns()[0].getQualifiedName());
+  }
+  
+  @Test
+  public final void testEmptyGroupSetStatement() {
+    Context ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx, GROUP_BY[4]);
+    assertEquals(StatementType.SELECT, tree.getType());
+    QueryBlock block = (QueryBlock) tree;
+    assertTrue(block.hasGroupbyClause());
+    assertTrue(block.getGroupByClause().isEmptyGroupSet());
   }
   
   @Test
@@ -281,18 +365,11 @@ public class TestQueryAnalyzer {
     analyzer.parse(ctx, INVALID_QUERIES[1]);
   }
   
-  @Test
-  public final void testGroupByClause() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[3]);
-    assertEquals("people.age", block.getGroupFields()[0].getQualifiedName());
-  }
-  
   @Test(expected = InvalidQueryException.class)
   public final void testInvalidGroupFields() {
     Context ctx = factory.create();
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, INVALID_QUERIES[2]);
-    assertEquals("age", block.getGroupFields()[0].getQualifiedName());
+    assertEquals("age", block.getGroupByClause().getGroupSet().get(0).getColumns()[0].getQualifiedName());
   }
   
   static String [] JOINS = {

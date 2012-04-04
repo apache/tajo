@@ -1,5 +1,7 @@
 package nta.engine.parser;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import nta.catalog.Column;
@@ -37,7 +39,7 @@ public class QueryBlock extends ParseTree {
   /* if true, there is at least one aggregation function. */
   private boolean aggregation = false;
   /* if true, there is at least grouping field. */
-  private Column [] groupFields = null;
+  private GroupByClause groupbyClause = null;
   /* having condition */
   private EvalNode havingCond = null;
   /* keys for ordering */
@@ -92,15 +94,15 @@ public class QueryBlock extends ParseTree {
   }
   
   public final boolean hasGroupbyClause() {
-    return this.groupFields != null;
+    return this.groupbyClause != null;
   }
   
-  public final void setGroupingFields(final Column [] groupFields) {
-    this.groupFields = groupFields;
+  public final void setGroupByClause(final GroupByClause groupbyClause) {
+    this.groupbyClause = groupbyClause;
   }
   
-  public final Column [] getGroupFields() {
-    return this.groupFields;
+  public final GroupByClause getGroupByClause() {
+    return this.groupbyClause;
   }
   
   public final boolean hasHavingCond() {
@@ -166,6 +168,94 @@ public class QueryBlock extends ParseTree {
   
   public final EvalNode getWhereCondition() {
     return this.whereCond;
+  }
+  
+  public static class GroupByClause implements Cloneable {
+    @Expose private boolean isEmptyGroupSet = false;
+    @Expose private List<GroupElement> groups 
+      = new ArrayList<QueryBlock.GroupElement>();
+    
+    public GroupByClause() {      
+    }
+    
+    public void setEmptyGroupSet() {
+      isEmptyGroupSet = true;
+    }
+    
+    public void addGroupSet(GroupElement group) {
+      groups.add(group);
+      if (isEmptyGroupSet) {
+        isEmptyGroupSet = false;
+      }
+    }
+    
+    public boolean isEmptyGroupSet() {
+      return this.isEmptyGroupSet;
+    }
+    
+    public List<GroupElement> getGroupSet() {
+      return Collections.unmodifiableList(groups);
+    }
+    
+    public String toString() {
+      Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation()
+          .setPrettyPrinting().create();
+      return gson.toJson(this);
+    }
+    
+    public Object clone() throws CloneNotSupportedException {
+      GroupByClause g = (GroupByClause) super.clone();
+      g.isEmptyGroupSet = isEmptyGroupSet;
+      g.groups = new ArrayList<QueryBlock.GroupElement>(groups);
+      
+      return g;
+    }
+  }
+  
+  public static class GroupElement implements Cloneable {
+    @Expose private GroupType type;
+    @Expose private Column [] columns;
+    
+    @SuppressWarnings("unused")
+    private GroupElement() {
+      // for gson
+    }
+    
+    public GroupElement(GroupType type, Column [] columns) {
+      this.type = type;
+      this.columns = columns;
+    }
+    
+    public GroupType getType() {
+      return this.type;
+    }
+    
+    public Column [] getColumns() {
+      return this.columns;
+    }
+    
+    public String toString() {
+      Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation()
+          .setPrettyPrinting().create();
+      return gson.toJson(this);
+    }
+    
+    public Object clone() throws CloneNotSupportedException {
+      GroupElement groups = (GroupElement) super.clone();
+      groups.type = type;
+      groups.columns = new Column[columns.length];      
+      for (int i = 0; i < columns.length; i++) {
+          groups.columns[i++] = (Column) columns[i].clone();
+      }      
+      return groups;
+    }
+  }
+  
+  public static enum GroupType {
+    GROUPBY,
+    CUBE,
+    ROLLUP,
+    EMPTYSET
   }
   
   public static class JoinClause implements Cloneable {

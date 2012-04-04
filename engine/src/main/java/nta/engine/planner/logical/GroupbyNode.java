@@ -10,10 +10,8 @@ import nta.engine.utils.TUtil;
 
 import com.google.gson.annotations.Expose;
 
-/**
- * 
+/** 
  * @author Hyunsik Choi
- *
  */
 public class GroupbyNode extends UnaryNode implements Cloneable {
 	@Expose
@@ -27,9 +25,9 @@ public class GroupbyNode extends UnaryNode implements Cloneable {
 		super();
 	}
 	
-	public GroupbyNode(final Column [] groupingColumns) {
+	public GroupbyNode(final Column [] columns) {
 		super(ExprType.GROUP_BY);
-		this.columns = groupingColumns;
+		this.columns = columns;
 	}
 	
 	public GroupbyNode(final Column [] columns, 
