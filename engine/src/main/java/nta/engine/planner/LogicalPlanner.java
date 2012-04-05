@@ -1,5 +1,7 @@
 package nta.engine.planner;
 
+import java.util.List;
+
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.SchemaUtil;
@@ -15,11 +17,13 @@ import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
+import nta.engine.parser.QueryBlock.GroupByClause;
+import nta.engine.parser.QueryBlock.GroupElement;
+import nta.engine.parser.QueryBlock.GroupType;
 import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.CreateIndexNode;
 import nta.engine.planner.logical.CreateTableNode;
-import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.EvalExprNode;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
@@ -29,10 +33,15 @@ import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
+import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.UnionNode;
+import nta.engine.query.exception.InvalidQueryException;
 import nta.engine.query.exception.NotSupportQueryException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import com.google.common.collect.Lists;
 
 /**
  * This class creates a logical plan from a parse tree ({@link QueryBlock})
@@ -148,22 +157,35 @@ public class LogicalPlanner {
       subroot = selNode;
     }
     
-    if(query.hasAggregation()) {
+    if(query.hasAggregation()) {      
       GroupbyNode groupbyNode = null;
       if (query.hasGroupbyClause()) {
-        groupbyNode = new GroupbyNode(query.getGroupByClause().getGroupSet().get(0).getColumns());
+        if (query.getGroupByClause().getGroupSet().get(0).getType() == GroupType.GROUPBY) {          
+          groupbyNode = new GroupbyNode(query.getGroupByClause().getGroupSet().get(0).getColumns());
+          groupbyNode.setTargetList(ctx.getTargetList());
+          groupbyNode.setSubNode(subroot);
+          groupbyNode.setInputSchema(subroot.getOutputSchema());      
+          Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
+          groupbyNode.setOutputSchema(outSchema);
+          subroot = groupbyNode;
+        } else if (query.getGroupByClause().getGroupSet().get(0).getType() == GroupType.CUBE) {
+          LogicalNode union = createGroupByUnionByCube(ctx, subroot, query.getGroupByClause());
+          Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
+          union.setOutputSchema(outSchema);
+          subroot = union;
+        }
         if(query.hasHavingCond())
           groupbyNode.setHavingCondition(query.getHavingCond());
       } else {
         // when aggregation functions are used without grouping fields
         groupbyNode = new GroupbyNode(new Column [] {});
+        groupbyNode.setTargetList(ctx.getTargetList());
+        groupbyNode.setSubNode(subroot);
+        groupbyNode.setInputSchema(subroot.getOutputSchema());      
+        Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
+        groupbyNode.setOutputSchema(outSchema);
+        subroot = groupbyNode;
       }
-      groupbyNode.setTargetList(ctx.getTargetList());      
-      groupbyNode.setSubNode(subroot);
-      groupbyNode.setInputSchema(subroot.getOutputSchema());      
-      Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
-      groupbyNode.setOutputSchema(outSchema);
-      subroot = groupbyNode;
     }
     
     if(query.hasOrderByClause()) {
@@ -180,20 +202,90 @@ public class LogicalPlanner {
       prjNode.setSubNode(subroot);
       subroot = prjNode;
     } else {
-      if (query.hasAggregation()) {           
-      } else {
-        prjNode = new ProjectionNode(query.getTargetList());
-        if (subroot != null) { // false if 'no from' statement
-          prjNode.setSubNode(subroot);
-        }
-        prjNode.setInputSchema(subroot.getOutputSchema());
-        Schema projected = getProjectedSchema(ctx, query.getTargetList());
-        prjNode.setOutputSchema(projected);
-        subroot = prjNode;
+      prjNode = new ProjectionNode(query.getTargetList());
+      if (subroot != null) { // false if 'no from' statement
+        prjNode.setSubNode(subroot);
       }
-    }    
+      prjNode.setInputSchema(subroot.getOutputSchema());
+      Schema projected = getProjectedSchema(ctx, query.getTargetList());
+      prjNode.setOutputSchema(projected);
+      subroot = prjNode;
+    }
     
     return subroot;
+  }
+  
+  public static LogicalNode createGroupByUnionByCube(Context ctx, 
+      LogicalNode subNode, GroupByClause clause) {
+    GroupElement element = clause.getGroupSet().get(0);
+    List<Column []> cuboids  = generateCuboids(element.getColumns());  
+
+    return createGroupByUnion(ctx, subNode, cuboids, 0);
+  }
+  
+  private static UnionNode createGroupByUnion(Context ctx, LogicalNode subNode, 
+      List<Column []> cuboids, int idx) {
+    UnionNode union = null;
+    try {
+    if ((cuboids.size() - idx) > 2) {
+      GroupbyNode g1 = new GroupbyNode(cuboids.get(idx));
+      g1.setTargetList(ctx.getTargetList());
+      g1.setSubNode((LogicalNode) subNode.clone());
+      g1.setInputSchema(g1.getSubNode().getOutputSchema());
+      Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
+      g1.setOutputSchema(outSchema);
+      
+      union = new UnionNode(g1, createGroupByUnion(ctx, subNode, cuboids, idx+1));
+      union.setInputSchema(g1.getOutputSchema());
+      union.setOutputSchema(g1.getOutputSchema());
+      return union;
+    } else {
+      GroupbyNode g1 = new GroupbyNode(cuboids.get(idx));
+      g1.setTargetList(ctx.getTargetList());
+      g1.setSubNode((LogicalNode) subNode.clone());
+      g1.setInputSchema(g1.getSubNode().getOutputSchema());      
+      Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
+      g1.setOutputSchema(outSchema);
+      
+      GroupbyNode g2 = new GroupbyNode(cuboids.get(idx+1));
+      g2.setTargetList(ctx.getTargetList());
+      g2.setSubNode((LogicalNode) subNode.clone());
+      g2.setInputSchema(g1.getSubNode().getOutputSchema());
+      outSchema = getProjectedSchema(ctx, ctx.getTargetList());
+      g2.setOutputSchema(outSchema);
+      union = new UnionNode(g1, g2);
+      union.setInputSchema(g1.getOutputSchema());
+      union.setOutputSchema(g1.getOutputSchema());
+      return union;
+    }
+    } catch (CloneNotSupportedException cnse) {
+      LOG.error(cnse);
+      throw new InvalidQueryException(cnse);
+    }
+  }
+  
+  public static final Column [] ALL 
+    = Lists.newArrayList().toArray(new Column[0]);
+  
+  public static List<Column []> generateCuboids(Column [] columns) {
+    int numCuboids = (int) Math.pow(2, columns.length);
+    int maxBits = columns.length;    
+    
+    List<Column []> cube = Lists.newArrayList();
+    List<Column> cuboidCols = null;
+    
+    cube.add(ALL);
+    for (int cuboidId = 1; cuboidId < numCuboids; cuboidId++) {
+      cuboidCols = Lists.newArrayList();
+      for (int j = 0; j < maxBits; j++) {
+        int bit = 1 << j;
+        if ((cuboidId & bit) == bit) {
+          cuboidCols.add(columns[j]);
+        }
+      }
+      cube.add(cuboidCols.toArray(new Column[cuboidCols.size()]));
+    }
+    return cube;
   }
   
   private static LogicalNode createExplicitJoinTree(Context ctx, 

@@ -3,7 +3,10 @@ package nta.engine.planner;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 
 import nta.catalog.CatalogService;
@@ -28,7 +31,6 @@ import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.logical.CreateIndexNode;
 import nta.engine.planner.logical.CreateTableNode;
-import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
@@ -39,12 +41,16 @@ import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
+import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.UnionNode;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 
 /**
@@ -310,8 +316,10 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.ROOT, plan.getType());
     root = (LogicalRootNode) plan;
 
-    assertEquals(ExprType.GROUP_BY, root.getSubNode().getType());
-    GroupbyNode groupByNode = (GroupbyNode) root.getSubNode();
+    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
+    assertEquals(ExprType.GROUP_BY, projNode.getSubNode().getType());
+    GroupbyNode groupByNode = (GroupbyNode) projNode.getSubNode();
 
     assertEquals(ExprType.JOIN, groupByNode.getSubNode().getType());
     JoinNode joinNode = (JoinNode) groupByNode.getSubNode();
@@ -327,8 +335,10 @@ public class TestLogicalPlanner {
   }
   
   static void testQuery7(LogicalNode plan) {
-    assertEquals(ExprType.GROUP_BY, plan.getType());
-    GroupbyNode groupByNode = (GroupbyNode) plan;
+    assertEquals(ExprType.PROJECTION, plan.getType());
+    ProjectionNode projNode = (ProjectionNode) plan;
+    assertEquals(ExprType.GROUP_BY, projNode.getSubNode().getType());
+    GroupbyNode groupByNode = (GroupbyNode) projNode.getSubNode();
 
     assertEquals(ExprType.JOIN, groupByNode.getSubNode().getType());
     JoinNode joinNode = (JoinNode) groupByNode.getSubNode();
@@ -433,8 +443,10 @@ public class TestLogicalPlanner {
 	  System.out.println(fromJson.toJSON());
 	  assertEquals(ExprType.ROOT, fromJson.getType());
 	  LogicalNode groupby = ((LogicalRootNode)fromJson).getSubNode();
-	  assertEquals(ExprType.GROUP_BY, groupby.getType());
-	  LogicalNode scan = ((GroupbyNode)groupby).getSubNode();
+	  assertEquals(ExprType.PROJECTION, groupby.getType());
+	  LogicalNode projNode = ((ProjectionNode)groupby).getSubNode();
+	  assertEquals(ExprType.GROUP_BY, projNode.getType());
+	  LogicalNode scan = ((GroupbyNode)projNode).getSubNode();
 	  assertEquals(ExprType.SCAN, scan.getType());
   }
   
@@ -568,5 +580,102 @@ public class TestLogicalPlanner {
     assertEquals("/tmp/data", createTable.getPath().toString());
     assertTrue(createTable.hasOptions());
     assertEquals("|", createTable.getOptions().get("csv.delimiter"));
+  }
+  
+  private static final List<Set<Column>> testGenerateCuboidsResult 
+    = Lists.newArrayList();
+  private static final int numCubeColumns = 3;
+  private static final Column [] testGenerateCuboids = new Column[numCubeColumns];
+  
+  private static final List<Set<Column>> testCubeByResult 
+    = Lists.newArrayList();
+  private static final Column [] testCubeByCuboids = new Column[2];
+  static {
+    testGenerateCuboids[0] = new Column("col1", DataType.INT);
+    testGenerateCuboids[1] = new Column("col2", DataType.LONG);
+    testGenerateCuboids[2] = new Column("col3", DataType.FLOAT);
+    
+    testGenerateCuboidsResult.add(new HashSet<Column>());
+    testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[0]));
+    testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[1]));
+    testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[2]));
+    testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[0], 
+        testGenerateCuboids[1]));
+    testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[0], 
+        testGenerateCuboids[2]));
+    testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[1], 
+        testGenerateCuboids[2]));
+    testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[0], 
+        testGenerateCuboids[1], testGenerateCuboids[2]));
+    
+    testCubeByCuboids[0] = new Column("employee.name", DataType.STRING);
+    testCubeByCuboids[1] = new Column("employee.empid", DataType.INT);
+    testCubeByResult.add(new HashSet<Column>());
+    testCubeByResult.add(Sets.newHashSet(testCubeByCuboids[0]));
+    testCubeByResult.add(Sets.newHashSet(testCubeByCuboids[1]));
+    testCubeByResult.add(Sets.newHashSet(testCubeByCuboids[0], 
+        testCubeByCuboids[1]));
+  }
+  
+  @Test
+  public final void testGenerateCuboids() {
+    Column [] columns = new Column[3];
+    
+    columns[0] = new Column("col1", DataType.INT);
+    columns[1] = new Column("col2", DataType.LONG);
+    columns[2] = new Column("col3", DataType.FLOAT);
+    
+    List<Column[]> cube = LogicalPlanner.generateCuboids(columns);
+    assertEquals(((int)Math.pow(2, numCubeColumns)), cube.size());    
+    
+    Set<Set<Column>> cuboids = Sets.newHashSet();
+    for (Column [] cols : cube) {
+      cuboids.add(Sets.newHashSet(cols));
+    }
+    
+    for (Set<Column> result : testGenerateCuboidsResult) {
+      assertTrue(cuboids.contains(result));
+    }
+  }
+  
+  static final String CUBE_ROLLUP [] = {
+    "select name, empid, sum(score) from employee natural join score group by cube(name, empid)"
+  };
+  
+  @Test
+  public final void testCubeBy() {
+    QueryContext ctx = factory.create();
+    ParseTree block = (ParseTree) analyzer.parse(ctx, CUBE_ROLLUP[0]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);    
+    plan = LogicalOptimizer.optimize(ctx, plan);
+    
+    Set<Set<Column>> cuboids = Sets.newHashSet();
+    
+    LogicalRootNode root = (LogicalRootNode) plan;
+    assertEquals(ExprType.UNION, root.getSubNode().getType());
+    UnionNode u0 = (UnionNode) root.getSubNode();
+    assertEquals(ExprType.GROUP_BY, u0.getOuterNode().getType());
+    assertEquals(ExprType.UNION, u0.getInnerNode().getType());
+    GroupbyNode grp = (GroupbyNode) u0.getOuterNode();
+    cuboids.add(Sets.newHashSet(grp.getGroupingColumns()));
+    
+    UnionNode u1 = (UnionNode) u0.getInnerNode();
+    assertEquals(ExprType.GROUP_BY, u1.getOuterNode().getType());
+    assertEquals(ExprType.UNION, u1.getInnerNode().getType());
+    grp = (GroupbyNode) u1.getOuterNode();
+    cuboids.add(Sets.newHashSet(grp.getGroupingColumns()));
+    
+    UnionNode u2 = (UnionNode) u1.getInnerNode();
+    assertEquals(ExprType.GROUP_BY, u2.getOuterNode().getType());
+    grp = (GroupbyNode) u2.getInnerNode();
+    cuboids.add(Sets.newHashSet(grp.getGroupingColumns()));
+    assertEquals(ExprType.GROUP_BY, u2.getInnerNode().getType());    
+    grp = (GroupbyNode) u2.getOuterNode();
+    cuboids.add(Sets.newHashSet(grp.getGroupingColumns()));
+    
+    assertEquals((int)Math.pow(2, 2), cuboids.size());
+    for (Set<Column> result : testCubeByResult) {
+      assertTrue(cuboids.contains(result));
+    }
   }
 }

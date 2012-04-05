@@ -164,22 +164,20 @@ public class TestLogicalOptimizer {
   public final void testOptimizeWithGroupBy() throws CloneNotSupportedException {
     QueryContext ctx = factory.create();
     ParseTree block = (ParseTree) analyzer.parse(ctx, QUERIES[3]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);    
-    LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
         
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     TestLogicalNode.testCloneLogicalNode(root);
-    assertEquals(ExprType.GROUP_BY, root.getSubNode().getType());
-    GroupbyNode groupbyNode = (GroupbyNode) root.getSubNode();    
+    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
+    assertEquals(ExprType.GROUP_BY, projNode.getSubNode().getType());
+    GroupbyNode groupbyNode = (GroupbyNode) projNode.getSubNode();    
     assertEquals(ExprType.SELECTION, groupbyNode.getSubNode().getType());
     SelectionNode selNode = (SelectionNode) groupbyNode.getSubNode();
-    assertEquals(ExprType.SCAN, selNode.getSubNode().getType());    
+    assertEquals(ExprType.SCAN, selNode.getSubNode().getType());
     
-    System.out.println(plan);
-    optimized = LogicalOptimizer.optimize(ctx, plan);
-    System.out.println("-------------");
-    System.out.println(optimized);
+    LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
     assertEquals(ExprType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
     TestLogicalNode.testCloneLogicalNode(root);

@@ -21,9 +21,7 @@ public class UnionNode extends BinaryNode {
   }
 
   public String toString() {
-    return "\"Union\": " + "\n\"out schema: " + getOutputSchema()
-        + "\n\"in schema: " + getInputSchema() + "\n"
-        + getOuterNode().toString() + " and " + getInnerNode().toString();
+    return getOuterNode().toString() + "\n UNION \n" + getInnerNode().toString();
   }
 
   @Override

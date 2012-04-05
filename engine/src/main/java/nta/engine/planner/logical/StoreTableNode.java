@@ -1,12 +1,8 @@
 package nta.engine.planner.logical;
 
 import nta.catalog.Column;
-import nta.catalog.Schema;
-import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.json.GsonCreator;
 import nta.engine.utils.TUtil;
-
-import org.apache.hadoop.fs.Path;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;

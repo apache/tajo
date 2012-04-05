@@ -192,7 +192,7 @@ public class TestPhysicalPlanner {
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    LogicalOptimizer.optimize(ctx, plan);
+    plan = LogicalOptimizer.optimize(ctx, plan);    
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -219,7 +219,7 @@ public class TestPhysicalPlanner {
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[8]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
-    LogicalOptimizer.optimize(ctx, plan);
+    plan = LogicalOptimizer.optimize(ctx, plan);
 
     TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutputSchema(),
         StoreType.CSV);
@@ -264,7 +264,7 @@ public class TestPhysicalPlanner {
     StoreTableNode storeNode = new StoreTableNode("partition");
     storeNode.setPartitions(new Column[] { key1, key2 }, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
-    LogicalOptimizer.optimize(ctx, plan);
+    plan = LogicalOptimizer.optimize(ctx, plan);
 
     TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutputSchema(),
         StoreType.CSV);

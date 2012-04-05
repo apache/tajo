@@ -32,6 +32,7 @@ import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.logical.UnaryNode;
+import nta.engine.planner.logical.UnionNode;
 import nta.engine.query.exception.InvalidQueryException;
 
 import org.apache.commons.logging.Log;
@@ -87,7 +88,7 @@ public class LogicalOptimizer {
    */
   private static void pushProjection(Context ctx, LogicalNode plan) {
     OutSchemaRefresher out = new OutSchemaRefresher();
-    plan.preOrder(out);    
+    plan.preOrder(out);
     InSchemaRefresher refresher = new InSchemaRefresher();
     plan.postOrder(refresher);
     
@@ -267,6 +268,9 @@ public class LogicalOptimizer {
       Set<Column> temp = null;
       Schema projected = null;
       switch (node.getType()) {
+      case ROOT:
+        
+        break;
       case PROJECTION:
         ProjectionNode projNode = (ProjectionNode) node;
 
@@ -353,6 +357,17 @@ public class LogicalOptimizer {
         
         break;
         
+      case UNION:
+        UnionNode unionNode = (UnionNode) node;
+        projected = new Schema();
+        for(Column col : unionNode.getInputSchema().getColumns()) {
+          if(necessary.contains(col)) {
+            projected.addColumn(col);
+          }
+        }
+        unionNode.setOutputSchema(projected);
+        break;
+        
       case SCAN:
         ScanNode scanNode = (ScanNode) node;
         projected = new Schema();
@@ -387,15 +402,22 @@ public class LogicalOptimizer {
       case SCAN:        
       break;
       
+      case JOIN:
+        BinaryNode join = (BinaryNode) node;
+        Schema merged = SchemaUtil.merge(join.getOuterNode().getOutputSchema(),
+            join.getInnerNode().getOutputSchema());
+        join.setInputSchema(merged);
+        break;
+        
+      case UNION:
+        UnionNode union = (UnionNode) node;        
+        union.setInputSchema(union.getOuterNode().getOutputSchema());
+        break;
+      
       default:
         if (node instanceof UnaryNode) {
           UnaryNode unary = (UnaryNode) node;
           unary.setInputSchema(unary.getSubNode().getOutputSchema());
-        } else if (node instanceof BinaryNode) {
-          BinaryNode bin = (BinaryNode) node;
-          Schema merged = SchemaUtil.merge(bin.getOuterNode().getOutputSchema(),
-              bin.getInnerNode().getOutputSchema());
-          bin.setInputSchema(merged);          
         }
       }
     }

@@ -116,9 +116,10 @@ public class TestPlannerUtil {
     
     assertEquals(ExprType.ROOT, plan.getType());
     UnaryNode unary = (UnaryNode) plan;
-    
-    assertEquals(ExprType.GROUP_BY, unary.getSubNode().getType());
-    GroupbyNode groupby = (GroupbyNode) unary.getSubNode();
+    assertEquals(ExprType.PROJECTION, unary.getSubNode().getType());
+    ProjectionNode proj = (ProjectionNode) unary.getSubNode();
+    assertEquals(ExprType.GROUP_BY, proj.getSubNode().getType());
+    GroupbyNode groupby = (GroupbyNode) proj.getSubNode();
     unary = (UnaryNode) PlannerUtil.transformGroupbyTo2PWithStore(
         groupby, "test");
     assertEquals(ExprType.STORE, unary.getSubNode().getType());
