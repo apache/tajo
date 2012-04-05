@@ -79,8 +79,9 @@
               <arguments>
                 <argument>-Isrc/main/proto/</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
-                <argument>src/main/proto/TCommonProtos.proto</argument>
+                <argument>src/main/proto/TCommonProtos.proto</argument>                
                 <argument>src/main/proto/MasterWorkerProtos.proto</argument>
+                <argument>src/main/proto/ClientServiceProtos.proto</argument>
                 <argument>src/main/proto/CatalogProtos.proto</argument>
               </arguments>
             </configuration>

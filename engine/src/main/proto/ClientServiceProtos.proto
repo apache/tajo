@@ -1,0 +1,34 @@
+option java_package = "nta.engine";
+option java_outer_classname = "ClientServiceProtos";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+import "TCommonProtos.proto";
+import "CatalogProtos.proto";
+
+message QuerySubmitRequest {
+    required string query = 1;
+}
+
+message QuerySubmitRespose {
+    required string tableName = 1;
+}
+
+message CreateTableRequest {
+    required string name = 1;
+    required string path = 2;
+    required TableProto meta = 3;
+}
+
+message CreateTableResponse {
+    required TableDescProto desc = 1;
+}
+
+message AttachTableRequest {
+    required string name = 1;
+    required string path = 2;
+}
+
+message AttachTableResponse {
+    required TableDescProto desc = 1;
+}

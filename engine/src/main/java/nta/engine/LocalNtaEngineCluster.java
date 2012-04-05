@@ -34,7 +34,7 @@ public class LocalNtaEngineCluster {
 		this.conf = conf;
 		this.conf.set(NConstants.LEAFSERVER_PORT, "0");
 
-		addMaster(new Configuration(conf), 0);
+		addMaster(conf, 0);
 
 		for(int i=0; i < numLeafServers; i++) {
 			addRegionServer(new Configuration(conf), i);

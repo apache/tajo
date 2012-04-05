@@ -14,10 +14,18 @@ import nta.catalog.LocalCatalog;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
 import nta.catalog.TableUtil;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
+import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.conf.NtaConf;
+import nta.engine.ClientServiceProtos.AttachTableRequest;
+import nta.engine.ClientServiceProtos.AttachTableResponse;
+import nta.engine.ClientServiceProtos.CreateTableRequest;
+import nta.engine.ClientServiceProtos.CreateTableResponse;
+import nta.engine.ClientServiceProtos.QuerySubmitRequest;
+import nta.engine.ClientServiceProtos.QuerySubmitRespose;
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.LeafServerTracker;
@@ -27,6 +35,11 @@ import nta.engine.cluster.WorkerListener;
 import nta.engine.ipc.QueryEngineInterface;
 import nta.engine.json.GsonCreator;
 import nta.engine.query.GlobalEngine;
+import nta.rpc.NettyRpc;
+import nta.rpc.ProtoParamRpcServer;
+import nta.rpc.RemoteException;
+import nta.rpc.protocolrecords.PrimitiveProtos.BoolProto;
+import nta.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import nta.storage.StorageManager;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkUtil;
@@ -36,17 +49,17 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
 
+import tajo.client.ClientService;
 import tajo.webapp.StaticHttpServer;
 
 /**
  * @author Hyunsik Choi
- * 
  */
-public class NtaEngineMaster extends Thread implements QueryEngineInterface {
+public class NtaEngineMaster extends Thread implements QueryEngineInterface, 
+    ClientService {
   private static final Log LOG = LogFactory.getLog(NtaEngineMaster.class);
 
   private final Configuration conf;
@@ -69,7 +82,8 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
   private QueryManager qm;
 
   private final InetSocketAddress clientServiceBindAddr;
-  private RPC.Server clientServiceServer;
+  //private RPC.Server clientServiceServer;
+  private ProtoParamRpcServer server;
 
   private List<EngineService> services = new ArrayList<EngineService>();
   
@@ -143,10 +157,16 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     String confClientServiceAddr = conf.get(NConstants.CLIENT_SERVICE_ADDRESS, 
         NConstants.DEFAULT_CLIENT_SERVICE_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
-    this.clientServiceServer = RPC.getServer(this, initIsa.getHostName(), 
-        initIsa.getPort(), conf);
-    this.clientServiceServer.start();
-    this.clientServiceBindAddr = this.clientServiceServer.getListenerAddress();
+    this.server = 
+        NettyRpc
+            .getProtoParamRpcServer(this,
+                ClientService.class, initIsa);
+    
+    //this.server = RPC.getServer(this, initIsa.getHostName(), 
+        //initIsa.getPort(), conf);
+    //this.clientServiceServer.start();
+    this.server.start();
+    this.clientServiceBindAddr = this.server.getBindAddress();
     this.clientServiceAddr = clientServiceBindAddr.getHostName() + ":" +
         clientServiceBindAddr.getPort();
     LOG.info("Tajo client service master is bind to " + this.clientServiceAddr);
@@ -226,7 +246,7 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     }
     tracker.close();
     this.stopped = true;
-    this.clientServiceServer.stop();
+    this.server.shutdown();
     if (wc != null) {
       this.wc.close();
     }
@@ -366,5 +386,100 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface {
     NtaEngineMaster master = new NtaEngineMaster(conf);
 
     master.start();
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // ClientService
+  /////////////////////////////////////////////////////////////////////////////
+  @Override
+  public QuerySubmitRespose submitQuery(QuerySubmitRequest query) throws RemoteException {
+    try {
+      cm.updateAllFragmentServingInfo(cm.getOnlineWorker());
+    } catch (IOException ioe) {
+      LOG.error(ioe);
+      throw new RemoteException(ioe);
+    }
+    String rs = null;
+    try {
+      rs = queryEngine.executeQuery(query.getQuery());
+    } catch (Exception e) {
+      throw new RemoteException(e);
+    }
+    
+    return QuerySubmitRespose.newBuilder().setTableName(rs).build();
+  }
+
+  @Override
+  public AttachTableResponse attachTable(AttachTableRequest request)
+      throws RemoteException {    
+    if (catalog.existsTable(request.getName()))
+      throw new AlreadyExistsTableException(request.getName());
+
+    Path path = new Path(request.getPath());
+
+    LOG.info(path.toUri());
+
+    TableMeta meta;
+    try {
+      meta = TableUtil.getTableMeta(conf, path);
+    } catch (IOException e) {
+      throw new RemoteException(e);
+    }
+    TableDesc desc = new TableDescImpl(request.getName(), meta, path);
+    catalog.addTable(desc);
+    LOG.info("Table " + desc.getId() + " is attached.");
+    
+    return AttachTableResponse.newBuilder().
+        setDesc((TableDescProto) desc.getProto()).build();
+  }
+
+  @Override
+  public void detachTable(StringProto name) throws RemoteException {
+    if (!catalog.existsTable(name.getValue())) {
+      throw new NoSuchTableException(name.getValue());
+    }
+
+    catalog.deleteTable(name.getValue());
+    LOG.info("Table " + name + " is detached.");
+  }
+
+  @Override
+  public CreateTableResponse createTable(CreateTableRequest request)
+      throws RemoteException {    
+    if (catalog.existsTable(request.getName()))
+      throw new AlreadyExistsTableException(request.getName());
+
+    Path path = new Path(request.getPath());
+    LOG.info(path.toUri());
+    
+    TableDesc desc = new TableDescImpl(request.getName(), 
+        new TableMetaImpl(request.getMeta()), path);
+    catalog.addTable(desc);
+    LOG.info("Table " + desc.getId() + " is attached.");
+    
+    return CreateTableResponse.newBuilder().
+        setDesc((TableDescProto) desc.getProto()).build();
+  }
+  
+  @Override
+  public BoolProto existTable(StringProto name) throws RemoteException {    
+    BoolProto.Builder res = BoolProto.newBuilder();
+    return res.setValue(catalog.existsTable(name.getValue())).build();
+  }
+
+  @Override
+  public void dropTable(StringProto name) throws RemoteException {
+    if (!catalog.existsTable(name.getValue())) {
+      throw new NoSuchTableException(name.getValue());
+    }
+
+    Path path = catalog.getTableDesc(name.getValue()).getPath();
+    catalog.deleteTable(name.getValue());
+    try {
+      this.storeManager.delete(path);
+    } catch (IOException e) {
+      throw new RemoteException(e);
+    }
+    LOG.info("Drop Table " + name);
   }
 }

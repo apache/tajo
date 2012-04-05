@@ -23,6 +23,8 @@ import nta.engine.SubQueryId;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
+import nta.engine.exception.InternalException;
+import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
@@ -79,7 +81,7 @@ public class GlobalEngine implements EngineService {
     catalog.addTable(meta);
   }
   
-  public String executeQuery(String querystr) throws Exception {
+  public String executeQuery(String querystr) throws InterruptedException, IOException, NoSuchQueryIdException {
     LOG.info("* issued query: " + querystr);
     // build the logical plan
     QueryContext ctx = factory.create();

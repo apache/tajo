@@ -187,6 +187,9 @@ public class NtaTestingUtility {
         clusterTestBuildDir.getAbsolutePath()+"/worker/tmp");
 		this.engineCluster = new MiniNtaEngineCluster(c, numSlaves);
 		
+		this.conf.set(NConstants.MASTER_ADDRESS, c.get(NConstants.MASTER_ADDRESS));
+		this.conf.set(NConstants.CATALOG_ADDRESS, c.get(NConstants.CATALOG_ADDRESS));
+		
 		LOG.info("Mini Tajo cluster is up");
 		return this.engineCluster;
 	}

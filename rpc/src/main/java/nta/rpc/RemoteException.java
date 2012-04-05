@@ -13,5 +13,8 @@ public class RemoteException extends RuntimeException {
   public RemoteException(String message) {
     super(message);
   }
-
+  
+  public RemoteException(Throwable t) {
+    super(t);
+  }
 }

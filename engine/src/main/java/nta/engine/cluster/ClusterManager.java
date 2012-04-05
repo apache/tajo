@@ -86,7 +86,7 @@ public class ClusterManager {
     return null;
   }
 
-  public List<String> getOnlineWorker() throws Exception {
+  public List<String> getOnlineWorker() {
     return tracker.getMembers();
   }
 
@@ -119,8 +119,7 @@ public class ClusterManager {
     }
   }
 
-  public void updateAllFragmentServingInfo(List<String> onlineServers)
-      throws Exception {
+  public void updateAllFragmentServingInfo(List<String> onlineServers) throws IOException {
     fragLoc.clear();
     workerLoc.clear();
     
