@@ -28,5 +28,6 @@ public enum ExprType {
 	SHOW_TABLE,
 	SHOW_FUNCTION,
 	SORT,
-	STORE
+	STORE,
+	UNION
 }
