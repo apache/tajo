@@ -18,8 +18,8 @@ import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.QueryManager.WaitStatus;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
-import nta.engine.planner.global.LogicalQueryUnit;
-import nta.engine.planner.global.LogicalQueryUnit.PARTITION_TYPE;
+import nta.engine.planner.global.ScheduleUnit;
+import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalQueryPlanner;
@@ -47,7 +47,7 @@ public class QueryUnitScheduler extends Thread {
   private final GlobalQueryPlanner planner;
   private final ClusterManager cm;
   private final QueryManager qm;
-  private final LogicalQueryUnit plan;
+  private final ScheduleUnit plan;
   
   private BlockingQueue<QueryUnit> pendingQueue = 
       new LinkedBlockingQueue<QueryUnit>();
@@ -56,7 +56,7 @@ public class QueryUnitScheduler extends Thread {
   
   public QueryUnitScheduler(Configuration conf, StorageManager sm, 
       ClusterManager cm, QueryManager qm, WorkerCommunicator wc, 
-      GlobalQueryPlanner planner, LogicalQueryUnit plan) {
+      GlobalQueryPlanner planner, ScheduleUnit plan) {
     this.sm = sm;
     this.cm = cm;
     this.qm = qm;
@@ -65,10 +65,10 @@ public class QueryUnitScheduler extends Thread {
     this.plan = plan;
   }
   
-  private void recursiveExecuteQueryUnit(LogicalQueryUnit plan) 
+  private void recursiveExecuteQueryUnit(ScheduleUnit plan) 
       throws Exception {
     if (plan.hasPrevQuery()) {
-      Iterator<LogicalQueryUnit> it = plan.getPrevIterator();
+      Iterator<ScheduleUnit> it = plan.getPrevIterator();
       while (it.hasNext()) {
         recursiveExecuteQueryUnit(it.next());
       }

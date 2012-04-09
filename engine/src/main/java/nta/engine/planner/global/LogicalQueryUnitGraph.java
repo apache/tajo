@@ -9,21 +9,21 @@ package nta.engine.planner.global;
  */
 public class LogicalQueryUnitGraph {
 
-  private LogicalQueryUnit root;
+  private ScheduleUnit root;
   
   public LogicalQueryUnitGraph() {
     root = null;
   }
   
-  public LogicalQueryUnitGraph(LogicalQueryUnit root) {
+  public LogicalQueryUnitGraph(ScheduleUnit root) {
     setRoot(root);
   }
   
-  public void setRoot(LogicalQueryUnit root) {
+  public void setRoot(ScheduleUnit root) {
     this.root = root;
   }
   
-  public LogicalQueryUnit getRoot() {
+  public ScheduleUnit getRoot() {
     return this.root;
   }
 }

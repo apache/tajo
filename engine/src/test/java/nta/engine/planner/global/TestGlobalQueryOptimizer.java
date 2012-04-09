@@ -139,7 +139,7 @@ public class TestGlobalQueryOptimizer {
     LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
     globalPlan = optimizer.optimize(globalPlan.getRoot());
     
-    LogicalQueryUnit unit = globalPlan.getRoot();
+    ScheduleUnit unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
     assertEquals(ExprType.SORT, store.getSubNode().getType());
     SortNode sort = (SortNode) store.getSubNode();
@@ -155,7 +155,7 @@ public class TestGlobalQueryOptimizer {
     
     assertTrue(unit.hasPrevQuery());
     for (ScanNode prevscan : unit.getScanNodes()) {
-      LogicalQueryUnit prev = unit.getPrevQuery(prevscan);
+      ScheduleUnit prev = unit.getPrevQuery(prevscan);
       store = prev.getStoreTableNode();
       assertEquals(ExprType.SCAN, store.getSubNode().getType());
     }

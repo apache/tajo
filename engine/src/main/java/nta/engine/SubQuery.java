@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import nta.engine.planner.global.LogicalQueryUnit;
+import nta.engine.planner.global.ScheduleUnit;
 
 /**
  * @author jihoon
@@ -16,14 +16,14 @@ import nta.engine.planner.global.LogicalQueryUnit;
 public class SubQuery {
 
   private final SubQueryId id;
-  private Map<LogicalQueryUnitId, LogicalQueryUnit> units;
+  private Map<LogicalQueryUnitId, ScheduleUnit> units;
   
   public SubQuery(SubQueryId id) {
     this.id = id;
-    units = new LinkedHashMap<LogicalQueryUnitId, LogicalQueryUnit>();
+    units = new LinkedHashMap<LogicalQueryUnitId, ScheduleUnit>();
   }
   
-  public void addLogicalQueryUnit(LogicalQueryUnit unit) {
+  public void addLogicalQueryUnit(ScheduleUnit unit) {
     units.put(unit.getId(), unit);
   }
   
@@ -31,11 +31,11 @@ public class SubQuery {
     return this.id;
   }
   
-  public Iterator<LogicalQueryUnit> getLogicalQueryUnitIterator() {
+  public Iterator<ScheduleUnit> getLogicalQueryUnitIterator() {
     return this.units.values().iterator();
   }
   
-  public LogicalQueryUnit getLogicalQueryUnit(LogicalQueryUnitId id) {
+  public ScheduleUnit getLogicalQueryUnit(LogicalQueryUnitId id) {
     return this.units.get(id);
   }
 }

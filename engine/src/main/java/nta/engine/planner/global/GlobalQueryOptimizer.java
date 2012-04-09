@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import nta.engine.planner.PlannerUtil;
-import nta.engine.planner.global.LogicalQueryUnit.PARTITION_TYPE;
+import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
@@ -26,34 +26,34 @@ public class GlobalQueryOptimizer {
     
   }
   
-  public LogicalQueryUnitGraph optimize(LogicalQueryUnit logicalUnit) {
-    LogicalQueryUnit reducedStep = reduceLogicalQueryUnitStep(logicalUnit);
-    LogicalQueryUnit joinChosen = chooseJoinAlgorithm(reducedStep);
+  public LogicalQueryUnitGraph optimize(ScheduleUnit logicalUnit) {
+    ScheduleUnit reducedStep = reduceLogicalQueryUnitStep(logicalUnit);
+    ScheduleUnit joinChosen = chooseJoinAlgorithm(reducedStep);
     return new LogicalQueryUnitGraph(joinChosen);
   }
   
   @VisibleForTesting
-  private LogicalQueryUnit chooseJoinAlgorithm(LogicalQueryUnit logicalUnit) {
+  private ScheduleUnit chooseJoinAlgorithm(ScheduleUnit logicalUnit) {
     
     return logicalUnit;
   }
   
   @VisibleForTesting
-  private LogicalQueryUnit reduceLogicalQueryUnitStep(LogicalQueryUnit logicalUnit) {
+  private ScheduleUnit reduceLogicalQueryUnitStep(ScheduleUnit logicalUnit) {
     reduceLogicalQueryUnitStep_(logicalUnit);
     return logicalUnit;
   }
   
-  private void reduceLogicalQueryUnitStep_(LogicalQueryUnit cur) {
+  private void reduceLogicalQueryUnitStep_(ScheduleUnit cur) {
     if (cur.hasPrevQuery()) {
-      Iterator<LogicalQueryUnit> it = cur.getPrevIterator();
-      LogicalQueryUnit prev;
+      Iterator<ScheduleUnit> it = cur.getPrevIterator();
+      ScheduleUnit prev;
       while (it.hasNext()) {
         prev = it.next();
         reduceLogicalQueryUnitStep_(prev);
       }
       
-      Collection<LogicalQueryUnit> prevs = cur.getPrevQueries();
+      Collection<ScheduleUnit> prevs = cur.getPrevQueries();
       it = prevs.iterator();
       while (it.hasNext()) {
         prev = it.next();
@@ -64,8 +64,8 @@ public class GlobalQueryOptimizer {
     }
   }
   
-  private LogicalQueryUnit mergeLogicalUnits(LogicalQueryUnit parent, 
-      LogicalQueryUnit child) {
+  private ScheduleUnit mergeLogicalUnits(ScheduleUnit parent, 
+      ScheduleUnit child) {
     LogicalNode p = PlannerUtil.findTopParentNode(parent.getLogicalPlan(), 
         ExprType.SCAN);
     Preconditions.checkArgument(p instanceof UnaryNode);

@@ -26,10 +26,10 @@ public class MockQueryUnitScheduler {
 
   private final GlobalQueryPlanner planner;
   private final QueryManager qm;
-  private final LogicalQueryUnit plan;
+  private final ScheduleUnit plan;
   
   public MockQueryUnitScheduler(GlobalQueryPlanner planner, 
-      QueryManager qm, LogicalQueryUnit plan) {
+      QueryManager qm, ScheduleUnit plan) {
     this.planner = planner;
     this.qm = qm;
     this.plan = plan;
@@ -39,10 +39,10 @@ public class MockQueryUnitScheduler {
     recursiveExecuteQueryUnit(plan);
   }
   
-  private void recursiveExecuteQueryUnit(LogicalQueryUnit plan) 
+  private void recursiveExecuteQueryUnit(ScheduleUnit plan) 
       throws NoSuchQueryIdException, IOException, InterruptedException {
     if (plan.hasPrevQuery()) {
-      Iterator<LogicalQueryUnit> it = plan.getPrevIterator();
+      Iterator<ScheduleUnit> it = plan.getPrevIterator();
       while (it.hasNext()) {
         recursiveExecuteQueryUnit(it.next());
       }
@@ -61,7 +61,7 @@ public class MockQueryUnitScheduler {
     
   }
   
-  private QueryUnit[] mockLocalize(LogicalQueryUnit plan, int n) {
+  private QueryUnit[] mockLocalize(ScheduleUnit plan, int n) {
     QueryUnit[] units = new QueryUnit[n];
     for (int i = 0; i < units.length; i++) {
       units[i] = new QueryUnit(QueryIdFactory.newQueryUnitId());

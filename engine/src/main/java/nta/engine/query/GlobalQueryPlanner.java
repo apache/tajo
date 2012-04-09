@@ -34,8 +34,8 @@ import nta.engine.exec.eval.EvalTreeUtil;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryBlock.FromTable;
 import nta.engine.planner.PlannerUtil;
-import nta.engine.planner.global.LogicalQueryUnit;
-import nta.engine.planner.global.LogicalQueryUnit.PARTITION_TYPE;
+import nta.engine.planner.global.ScheduleUnit;
+import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.global.LogicalQueryUnitGraph;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.logical.BinaryNode;
@@ -147,12 +147,12 @@ public class GlobalQueryPlanner {
     return logicalPlan;
   }
   
-  private Map<StoreTableNode, LogicalQueryUnit> convertMap = 
-      new HashMap<StoreTableNode, LogicalQueryUnit>();
+  private Map<StoreTableNode, ScheduleUnit> convertMap = 
+      new HashMap<StoreTableNode, ScheduleUnit>();
   
   private void recursiveBuildQueryUnit(LogicalNode node) 
       throws IOException {
-    LogicalQueryUnit unit = null;
+    ScheduleUnit unit = null;
     StoreTableNode store;
     if (node instanceof UnaryNode) {
       recursiveBuildQueryUnit(((UnaryNode) node).getSubNode());
@@ -165,7 +165,7 @@ public class GlobalQueryPlanner {
         } else {
           id = QueryIdFactory.newLogicalQueryUnitId();
         }
-        unit = new LogicalQueryUnit(id);
+        unit = new ScheduleUnit(id);
 
         switch (store.getSubNode().getType()) {
         case SCAN:  // store - scan
@@ -200,14 +200,14 @@ public class GlobalQueryPlanner {
     }
   }
   
-  private LogicalQueryUnit makeScanUnit(LogicalNode plan, 
-      LogicalQueryUnit unit) {
+  private ScheduleUnit makeScanUnit(LogicalNode plan, 
+      ScheduleUnit unit) {
     unit.setOutputType(PARTITION_TYPE.LIST);
     return unit;
   }
   
-  private LogicalQueryUnit makeUnifiableUnit(LogicalNode plan, 
-      LogicalQueryUnit unit) throws IOException {
+  private ScheduleUnit makeUnifiableUnit(LogicalNode plan, 
+      ScheduleUnit unit) throws IOException {
     UnaryNode unary = (UnaryNode) plan;
     switch (unary.getSubNode().getType()) {
     case SCAN:
@@ -228,13 +228,13 @@ public class GlobalQueryPlanner {
     return unit;
   }
   
-  private LogicalQueryUnit makeTwoPhaseUnit(LogicalNode plan, 
-      LogicalQueryUnit unit) throws IOException {
+  private ScheduleUnit makeTwoPhaseUnit(LogicalNode plan, 
+      ScheduleUnit unit) throws IOException {
     UnaryNode unary = (UnaryNode) plan;
     UnaryNode unaryChild;
     StoreTableNode prevStore;
     ScanNode newScan;
-    LogicalQueryUnit prev;
+    ScheduleUnit prev;
     unaryChild = (UnaryNode) unary.getSubNode();  // groupby
     ExprType curType = unaryChild.getType();
     if (unaryChild.getSubNode().getType() == ExprType.STORE) {
@@ -269,11 +269,11 @@ public class GlobalQueryPlanner {
     return unit;
   }
   
-  private LogicalQueryUnit makeJoinUnit(LogicalNode plan, 
-      LogicalQueryUnit unit) throws IOException {
+  private ScheduleUnit makeJoinUnit(LogicalNode plan, 
+      ScheduleUnit unit) throws IOException {
     UnaryNode unary = (UnaryNode)plan;
     StoreTableNode prevStore;
-    LogicalQueryUnit prev;
+    ScheduleUnit prev;
     JoinNode join = (JoinNode) unary.getSubNode();
     unit.setOutputType(PARTITION_TYPE.LIST);
     
@@ -356,7 +356,7 @@ public class GlobalQueryPlanner {
   private LogicalQueryUnitGraph convertToGlobalPlan(SubQueryId subQueryId,
       CreateIndexNode index, LogicalNode logicalPlan) throws IOException {
     recursiveBuildQueryUnit(logicalPlan);
-    LogicalQueryUnit root = convertMap.get(((LogicalRootNode)logicalPlan).getSubNode());
+    ScheduleUnit root = convertMap.get(((LogicalRootNode)logicalPlan).getSubNode());
     if (index != null) {
       index.setSubNode(root.getLogicalPlan());
       root.setLogicalPlan(index);
@@ -364,7 +364,7 @@ public class GlobalQueryPlanner {
     return new LogicalQueryUnitGraph(root);
   }
 
-  public QueryUnit[] localize(LogicalQueryUnit logicalUnit, int n) 
+  public QueryUnit[] localize(ScheduleUnit logicalUnit, int n) 
       throws IOException, URISyntaxException {
     FileStatus[] files;
     Fragment[] frags;
@@ -373,7 +373,7 @@ public class GlobalQueryPlanner {
     
     // if the next query is join, 
     // set the partition number for the current logicalUnit
-    LogicalQueryUnit nextQueryUnit = logicalUnit.getNextQuery();
+    ScheduleUnit nextQueryUnit = logicalUnit.getNextQuery();
     if (nextQueryUnit != null &&
         nextQueryUnit.getStoreTableNode().getSubNode().getType() == ExprType.JOIN) {
       logicalUnit.getStoreTableNode().setPartitions(
@@ -480,7 +480,7 @@ public class GlobalQueryPlanner {
     return units;
   }
   
-  private QueryUnit[] split(LogicalQueryUnit logicalUnit, int n) {
+  private QueryUnit[] split(ScheduleUnit logicalUnit, int n) {
     QueryUnit[] units = new QueryUnit[n];
     for (int i = 0; i < units.length; i++) {
       units[i] = new QueryUnit(QueryIdFactory.newQueryUnitId());

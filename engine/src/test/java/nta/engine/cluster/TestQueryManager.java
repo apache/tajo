@@ -26,7 +26,7 @@ import nta.engine.SubQuery;
 import nta.engine.SubQueryId;
 import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.parser.QueryBlock.FromTable;
-import nta.engine.planner.global.LogicalQueryUnit;
+import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.MockQueryUnitScheduler;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.LogicalRootNode;
@@ -105,7 +105,7 @@ public class TestQueryManager {
     SubQuery subQuery = new SubQuery(subId);
     qm.addSubQuery(subQuery);
     GlobalQueryPlanner planner = new GlobalQueryPlanner(null, null, null);
-    LogicalQueryUnit plan = planner.build(subId, root).getRoot();
+    ScheduleUnit plan = planner.build(subId, root).getRoot();
     MockQueryUnitScheduler mockScheduler = new MockQueryUnitScheduler(planner, 
         qm, plan);
     mockScheduler.run();
@@ -118,10 +118,10 @@ public class TestQueryManager {
     }
   }
   
-  private void recursiveTest(List<String> s, LogicalQueryUnit plan) 
+  private void recursiveTest(List<String> s, ScheduleUnit plan) 
       throws NoSuchQueryIdException {
     if (plan.hasPrevQuery()) {
-      Iterator<LogicalQueryUnit> it = plan.getPrevIterator();
+      Iterator<ScheduleUnit> it = plan.getPrevIterator();
       while (it.hasNext()) {
         recursiveTest(s, it.next());
       }

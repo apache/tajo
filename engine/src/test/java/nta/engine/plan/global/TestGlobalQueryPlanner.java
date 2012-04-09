@@ -29,8 +29,8 @@ import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
-import nta.engine.planner.global.LogicalQueryUnit;
-import nta.engine.planner.global.LogicalQueryUnit.PARTITION_TYPE;
+import nta.engine.planner.global.ScheduleUnit;
+import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.global.LogicalQueryUnitGraph;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.logical.JoinNode;
@@ -145,7 +145,7 @@ public class TestGlobalQueryPlanner {
 
     LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
     
-    LogicalQueryUnit unit = globalPlan.getRoot();
+    ScheduleUnit unit = globalPlan.getRoot();
     assertFalse(unit.hasPrevQuery());
     assertEquals(PARTITION_TYPE.LIST, unit.getOutputType());
     LogicalNode plan = unit.getLogicalPlan();
@@ -164,7 +164,7 @@ public class TestGlobalQueryPlanner {
 
     LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
 
-    LogicalQueryUnit next, prev;
+    ScheduleUnit next, prev;
     
     next = globalPlan.getRoot();
     assertTrue(next.hasPrevQuery());
@@ -173,7 +173,7 @@ public class TestGlobalQueryPlanner {
       assertTrue(scan.isLocal());
     }
     assertFalse(next.getStoreTableNode().isLocal());
-    Iterator<LogicalQueryUnit> it= next.getPrevIterator();
+    Iterator<ScheduleUnit> it= next.getPrevIterator();
     
     prev = it.next();
     assertFalse(prev.hasPrevQuery());
@@ -203,12 +203,12 @@ public class TestGlobalQueryPlanner {
 
     LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
     
-    LogicalQueryUnit next, prev;
+    ScheduleUnit next, prev;
     
     next = globalPlan.getRoot();
     assertTrue(next.hasPrevQuery());
     assertEquals(PARTITION_TYPE.LIST, next.getOutputType());
-    Iterator<LogicalQueryUnit> it= next.getPrevIterator();
+    Iterator<ScheduleUnit> it= next.getPrevIterator();
     
     prev = it.next();
     assertFalse(prev.hasPrevQuery());
@@ -236,7 +236,7 @@ public class TestGlobalQueryPlanner {
 
     LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
     
-    LogicalQueryUnit next, prev;
+    ScheduleUnit next, prev;
     
     // the second phase of the sort
     next = globalPlan.getRoot();
@@ -245,7 +245,7 @@ public class TestGlobalQueryPlanner {
     assertEquals(ExprType.SORT, next.getStoreTableNode().getSubNode().getType());
     ScanNode []scans = next.getScanNodes();
     assertEquals(1, scans.length);
-    Iterator<LogicalQueryUnit> it= next.getPrevIterator();
+    Iterator<ScheduleUnit> it= next.getPrevIterator();
     
     // the first phase of the sort
     prev = it.next();
@@ -296,7 +296,7 @@ public class TestGlobalQueryPlanner {
     
     LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
     
-    LogicalQueryUnit unit = globalPlan.getRoot();
+    ScheduleUnit unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
     assertEquals(ExprType.SELECTION, store.getSubNode().getType());
     SelectionNode select = (SelectionNode) store.getSubNode();
@@ -304,7 +304,7 @@ public class TestGlobalQueryPlanner {
     assertTrue(unit.hasPrevQuery());
     ScanNode [] scans = unit.getScanNodes();
     assertEquals(2, scans.length);
-    LogicalQueryUnit prev;
+    ScheduleUnit prev;
     for (ScanNode scan : scans) {
       prev = unit.getPrevQuery(scan);
       store = prev.getStoreTableNode();
@@ -325,10 +325,10 @@ public class TestGlobalQueryPlanner {
     recursiveTestLocalize(globalPlan.getRoot());
   }
   
-  private void recursiveTestLocalize(LogicalQueryUnit plan) 
+  private void recursiveTestLocalize(ScheduleUnit plan) 
       throws IOException, URISyntaxException {
     if (plan.hasPrevQuery()) {
-      Iterator<LogicalQueryUnit> it = plan.getPrevIterator();
+      Iterator<ScheduleUnit> it = plan.getPrevIterator();
       while (it.hasNext()) {
         recursiveTestLocalize(it.next());
       }

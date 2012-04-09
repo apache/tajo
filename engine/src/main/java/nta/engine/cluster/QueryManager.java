@@ -22,7 +22,7 @@ import nta.engine.QueryUnitScheduler;
 import nta.engine.SubQuery;
 import nta.engine.SubQueryId;
 import nta.engine.exception.NoSuchQueryIdException;
-import nta.engine.planner.global.LogicalQueryUnit;
+import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.QueryUnit;
 
 import com.google.common.collect.MapMaker;
@@ -100,7 +100,7 @@ public class QueryManager {
     }
   }
   
-  public void addLogicalQueryUnit(LogicalQueryUnit logicalQueryUnit)
+  public void addLogicalQueryUnit(ScheduleUnit logicalQueryUnit)
   throws NoSuchQueryIdException {
     SubQueryId subId = logicalQueryUnit.getId().getSubQueryId();
     QueryId qid = subId.getQueryId();
@@ -176,7 +176,7 @@ public class QueryManager {
     return query.getSubQuery(subQueryId);
   }
   
-  public LogicalQueryUnit getLogicalQueryUnit(LogicalQueryUnitId logicalUnitId) {
+  public ScheduleUnit getLogicalQueryUnit(LogicalQueryUnitId logicalUnitId) {
     SubQueryId subId = logicalUnitId.getSubQueryId();
     return getSubQuery(subId).getLogicalQueryUnit(logicalUnitId);
   }
@@ -219,7 +219,7 @@ public class QueryManager {
   }
   
   public List<String> getAssignedWorkers(SubQuery subQuery) {
-    Iterator<LogicalQueryUnit> it = subQuery.getLogicalQueryUnitIterator();
+    Iterator<ScheduleUnit> it = subQuery.getLogicalQueryUnitIterator();
     List<String> servernames = new ArrayList<String>();
     while (it.hasNext()) {
       servernames.addAll(getAssignedWorkers(it.next()));
@@ -232,11 +232,11 @@ public class QueryManager {
   }
   
   public WaitStatus[] getWaitStatusOfLogicalUnit(LogicalQueryUnitId id) {
-    LogicalQueryUnit logicalUnit = getLogicalQueryUnit(id);
+    ScheduleUnit logicalUnit = getLogicalQueryUnit(id);
     return getWaitStatusOfLogicalUnit(logicalUnit);
   }
   
-  public WaitStatus[] getWaitStatusOfLogicalUnit(LogicalQueryUnit logicalUnit) {
+  public WaitStatus[] getWaitStatusOfLogicalUnit(ScheduleUnit logicalUnit) {
     QueryUnit[] units = logicalUnit.getQueryUnits();
     WaitStatus[] statuses = new WaitStatus[units.length];
     for (int i = 0; i < units.length; i++) {
@@ -246,7 +246,7 @@ public class QueryManager {
   }
   
   public boolean isFinished(LogicalQueryUnitId id) {
-    LogicalQueryUnit logicalUnit = getLogicalQueryUnit(id);
+    ScheduleUnit logicalUnit = getLogicalQueryUnit(id);
     QueryUnit[] units = logicalUnit.getQueryUnits();
     WaitStatus status;
     for (QueryUnit unit : units) {
@@ -284,7 +284,7 @@ public class QueryManager {
     return merged;
   }
   
-  public List<String> getAssignedWorkers(LogicalQueryUnit unit) {
+  public List<String> getAssignedWorkers(ScheduleUnit unit) {
     QueryUnit[] queryUnits = unit.getQueryUnits();
     if (queryUnits == null) {
       System.out.println(">>>>>> " + unit.getId());

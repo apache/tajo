@@ -26,7 +26,7 @@ import com.google.common.base.Preconditions;
  * @author jihoon
  *
  */
-public class LogicalQueryUnit {
+public class ScheduleUnit {
   
   public enum PARTITION_TYPE {
     HASH,
@@ -38,14 +38,14 @@ public class LogicalQueryUnit {
   private LogicalNode plan = null;
   private StoreTableNode store = null;
   private ScanNode[] scan = null;
-  private LogicalQueryUnit next;
-  private Map<ScanNode, LogicalQueryUnit> prevs;
+  private ScheduleUnit next;
+  private Map<ScanNode, ScheduleUnit> prevs;
   private PARTITION_TYPE outputType;
   private QueryUnit[] queryUnits;
   
-  public LogicalQueryUnit(LogicalQueryUnitId id) {
+  public ScheduleUnit(LogicalQueryUnitId id) {
     this.id = id;
-    prevs = new HashMap<ScanNode, LogicalQueryUnit>();
+    prevs = new HashMap<ScanNode, ScheduleUnit>();
   }
   
   public void setOutputType(PARTITION_TYPE type) {
@@ -80,15 +80,15 @@ public class LogicalQueryUnit {
     }
   }
   
-  public void setNextQuery(LogicalQueryUnit next) {
+  public void setNextQuery(ScheduleUnit next) {
     this.next = next;
   }
   
-  public void addPrevQuery(ScanNode prevscan, LogicalQueryUnit prev) {
+  public void addPrevQuery(ScanNode prevscan, ScheduleUnit prev) {
     prevs.put(prevscan, prev);
   }
   
-  public void addPrevQueries(Map<ScanNode, LogicalQueryUnit> prevs) {
+  public void addPrevQueries(Map<ScanNode, ScheduleUnit> prevs) {
     this.prevs.putAll(prevs);
   }
   
@@ -100,7 +100,7 @@ public class LogicalQueryUnit {
     this.prevs.remove(prevscan);
   }
   
-  public LogicalQueryUnit getNextQuery() {
+  public ScheduleUnit getNextQuery() {
     return this.next;
   }
   
@@ -108,19 +108,19 @@ public class LogicalQueryUnit {
     return !this.prevs.isEmpty();
   }
   
-  public Iterator<LogicalQueryUnit> getPrevIterator() {
+  public Iterator<ScheduleUnit> getPrevIterator() {
     return this.prevs.values().iterator();
   }
   
-  public Collection<LogicalQueryUnit> getPrevQueries() {
+  public Collection<ScheduleUnit> getPrevQueries() {
     return this.prevs.values();
   }
   
-  public Map<ScanNode, LogicalQueryUnit> getPrevMaps() {
+  public Map<ScanNode, ScheduleUnit> getPrevMaps() {
     return this.prevs;
   }
   
-  public LogicalQueryUnit getPrevQuery(ScanNode prevscan) {
+  public ScheduleUnit getPrevQuery(ScanNode prevscan) {
     return this.prevs.get(prevscan);
   }
   
@@ -160,7 +160,7 @@ public class LogicalQueryUnit {
     StringBuilder sb = new StringBuilder();
     sb.append(plan.toString());
     sb.append("next: " + next + " prevs:");
-    Iterator<LogicalQueryUnit> it = getPrevIterator();
+    Iterator<ScheduleUnit> it = getPrevIterator();
     while (it.hasNext()) {
       sb.append(" " + it.next());
     }
@@ -169,8 +169,8 @@ public class LogicalQueryUnit {
   
   @Override
   public boolean equals(Object o) {
-    if (o instanceof LogicalQueryUnit) {
-      LogicalQueryUnit other = (LogicalQueryUnit)o;
+    if (o instanceof ScheduleUnit) {
+      ScheduleUnit other = (ScheduleUnit)o;
       return this.id.equals(other.getId());
     }
     return false;
@@ -181,7 +181,7 @@ public class LogicalQueryUnit {
     return this.id.hashCode();
   }
   
-  public int compareTo(LogicalQueryUnit other) {
+  public int compareTo(ScheduleUnit other) {
     return this.id.compareTo(other.id);
   }
 }
