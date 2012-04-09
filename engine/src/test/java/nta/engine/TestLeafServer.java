@@ -146,6 +146,7 @@ public class TestLeafServer {
     ParseTree query = analyzer.parse(ctx, 
         "testLeafServer := select name, empId, deptName from employee");
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    plan = LogicalOptimizer.optimize(ctx, plan);
     
     sm.initTableBase(frags[0].getMeta(), "testLeafServer");
     QueryUnitRequest req1 = new QueryUnitRequestImpl(
@@ -228,7 +229,7 @@ public class TestLeafServer {
     StoreTableNode storeNode = new StoreTableNode("testInterQuery");
     storeNode.setPartitions(new Column[] { key1 }, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
-    LogicalOptimizer.optimize(ctx, plan);   
+    plan = LogicalOptimizer.optimize(ctx, plan);   
     
     sm.initTableBase(frags[0].getMeta(), "testInterQuery");
     QueryUnitRequest req1 = new QueryUnitRequestImpl(
@@ -295,7 +296,7 @@ public class TestLeafServer {
     plan = LogicalPlanner.createPlan(ctx, query);    
     storeNode = new StoreTableNode("final");
     PlannerUtil.insertNode(plan, storeNode);
-    LogicalOptimizer.optimize(ctx, plan);
+    plan = LogicalOptimizer.optimize(ctx, plan);
     sm.initTableBase(TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV), 
         "final");
     Fragment emptyFrag = new Fragment("interquery", new Path("/"), newMeta, 0l, 0l);
