@@ -1,0 +1,8 @@
+create table partsupp (
+	ps_partkey int,
+	ps_suppkey int,
+	ps_availqty int,
+	ps_supplycost float,
+	ps_comment string
+	/* primary key (ps_partkey, ps_suppkey) */
+)
