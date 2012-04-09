@@ -30,6 +30,7 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
+import nta.engine.planner.global.GlobalQueryOptimizer;
 import nta.engine.planner.global.LogicalQueryUnitGraph;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.ExprType;
@@ -56,6 +57,7 @@ public class GlobalEngine implements EngineService {
   private final StorageManager sm;
 
   private GlobalQueryPlanner globalPlanner;
+  private GlobalQueryOptimizer globalOptimizer;
   private WorkerCommunicator wc;
   private QueryManager qm;
   private ClusterManager cm;
@@ -75,6 +77,7 @@ public class GlobalEngine implements EngineService {
 
     this.globalPlanner = new GlobalQueryPlanner(this.sm, this.qm, 
         this.catalog);
+    this.globalOptimizer = new GlobalQueryOptimizer();
   }
 
   public void createTable(TableDesc meta) throws IOException {
@@ -116,6 +119,7 @@ public class GlobalEngine implements EngineService {
       qm.addSubQuery(subQuery);
       // build the global plan
       LogicalQueryUnitGraph globalPlan = globalPlanner.build(subId, plan);
+      globalPlan = globalOptimizer.optimize(globalPlan.getRoot());
       
       QueryUnitScheduler queryUnitScheduler = new QueryUnitScheduler(
           conf, sm, cm, qm, wc, globalPlanner, globalPlan.getRoot());

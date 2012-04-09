@@ -233,7 +233,6 @@ public class TestGlobalQueryPlanner {
         "select table0.age,table0.salary,table1.salary from table0,table1 where table0.salary = table1.salary order by table0.age");
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
-    System.out.println(logicalPlan);
 
     LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
     

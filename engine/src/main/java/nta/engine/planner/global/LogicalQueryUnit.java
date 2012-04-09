@@ -96,8 +96,8 @@ public class LogicalQueryUnit {
     this.queryUnits = queryUnits;
   }
   
-  public void removePrevQuery(LogicalQueryUnit prev) {
-    this.prevs.remove(prev);
+  public void removePrevQuery(ScanNode prevscan) {
+    this.prevs.remove(prevscan);
   }
   
   public LogicalQueryUnit getNextQuery() {
