@@ -1,5 +1,0 @@
-create table region (
-	r_regionkey int /* primary key */,
-	r_name string,
-	r_comment string
-) 
