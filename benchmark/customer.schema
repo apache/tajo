@@ -1,0 +1,9 @@
+create table customer (
+	c_custkey int, /* primary key */
+	c_name string,
+	c_nationkey int,
+	c_phone string,
+	c_acctbal float,
+	c_mktsegment string,
+	c_comment string
+) 

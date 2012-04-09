@@ -5,21 +5,24 @@ option java_generic_services = false;
 option java_generate_equals_and_hash = true;
 
 enum DataType {
-	BOOLEAN = 0;
-	BYTE = 1;
-	BYTES = 2;
-	SHORT = 3;
-	INT = 4;
-	LONG = 5;
-	FLOAT = 6;
-	DOUBLE = 7;
-	STRING = 8;
-	ENUM = 9;
-	IPv4 = 10;
-	IPv6 = 11;
-	NULL = 12;
-	ANY = 13;
-	ALL = 14;
+    BOOLEAN = 0;
+    BYTE = 1;
+    CHAR = 2;
+    BYTES = 3;
+    SHORT = 4;
+    INT = 5;
+    BIGINT = 6;
+    LONG = 7;
+    FLOAT = 8;
+    DOUBLE = 9;
+    BIGDECIMAL = 10;
+    STRING = 11;
+    DATE = 12;
+    IPv4 = 13;
+    IPv6 = 14;
+    NULL = 15;
+    ANY = 16;
+    ALL = 17;
 }
 
 enum StoreType {
