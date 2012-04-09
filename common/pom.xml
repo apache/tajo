@@ -172,5 +172,7 @@
   </reporting>
   <properties>
     <nta.version>0.4.0-SNAPSHOT</nta.version>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 </project>

@@ -13,6 +13,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <nta.version>0.4.0-SNAPSHOT</nta.version>
     <yarn.version>0.24.0-SNAPSHOT</yarn.version>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
   <repositories>
