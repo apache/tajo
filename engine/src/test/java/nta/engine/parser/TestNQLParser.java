@@ -60,6 +60,10 @@ public class TestNQLParser {
     assertEquals(tree.getType(), NQLParser.SELECT);
   }
   
+  private final String groupingClause [] = {
+      "select col0, col1, col2, col3, sum(col4) as total, avg(col5) from base group by col0, cube (col1, col2), rollup(col3) having total > 100"
+  };
+  
   @Test
   public void testCubeByClause() throws RecognitionException {
     Tree ast = parseQuery(groupingClause[0]);
@@ -172,10 +176,8 @@ public class TestNQLParser {
     assertEquals("people", joinAST.getChild(1).getChild(0).getText());
     assertEquals("student", joinAST.getChild(2).getChild(0).getText());
     assertEquals(NQLParser.ON, joinAST.getChild(3).getType());
-    System.out.println(joinAST.getChild(3).toStringTree());
     
     tree = parseQuery(JOINS[2]);
-    System.out.println(tree.toStringTree());
     assertEquals(tree.getType(), NQLParser.SELECT);
   }
   
@@ -224,6 +226,66 @@ public class TestNQLParser {
     assertEquals("people", joinAST.getChild(1).getChild(0).getText());
     assertEquals("student", joinAST.getChild(2).getChild(0).getText());
     assertEquals(NQLParser.ON, joinAST.getChild(3).getType());
+  }
+  
+  private final static String setClauses [] = {
+    "select a,b,c from table1 union select a,b,c from table1", // 0
+    "select a,b,c from table1 union all select a,b,c from table1", // 1
+    "select a,b,c from table1 union distinct select a,b,c from table1", // 2
+    "select a,b,c from table1 except select a,b,c from table1", // 3
+    "select a,b,c from table1 except all select a,b,c from table1", // 4
+    "select a,b,c from table1 except distinct select a,b,c from table1", // 5
+    "select a,b,c from table1 union select a,b,c from table1 union select a,b,c from table 2", // 6
+    "select a,b,c from table1 union select a,b,c from table1 intersect select a,b,c from table 2" // 7
+  };
+  
+  @Test
+  public void testUnionClause() throws RecognitionException {
+    Tree tree = parseQuery(setClauses[0]);
+    assertEquals(NQLParser.UNION, tree.getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(1).getType());
+    
+    tree = parseQuery(setClauses[1]);
+    assertEquals(NQLParser.UNION, tree.getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(NQLParser.ALL, tree.getChild(1).getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(2).getType());
+    
+    tree = parseQuery(setClauses[2]);
+    assertEquals(NQLParser.UNION, tree.getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(NQLParser.DISTINCT, tree.getChild(1).getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(2).getType());
+    
+    tree = parseQuery(setClauses[3]);
+    assertEquals(NQLParser.EXCEPT, tree.getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(1).getType());
+    
+    tree = parseQuery(setClauses[4]);
+    assertEquals(NQLParser.EXCEPT, tree.getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(NQLParser.ALL, tree.getChild(1).getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(2).getType());
+    
+    tree = parseQuery(setClauses[5]);
+    assertEquals(NQLParser.EXCEPT, tree.getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(NQLParser.DISTINCT, tree.getChild(1).getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(2).getType());
+    
+    tree = parseQuery(setClauses[6]);
+    assertEquals(NQLParser.UNION, tree.getType());
+    assertEquals(NQLParser.UNION, tree.getChild(0).getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(1).getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(0).getChild(0).getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(0).getChild(1).getType());
+    
+    tree = parseQuery(setClauses[7]);
+    assertEquals(NQLParser.UNION, tree.getType());
+    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(NQLParser.INTERSECT, tree.getChild(1).getType());
   }
 
   static String[] schemaStmts = { 
@@ -293,7 +355,7 @@ public class TestNQLParser {
       "3", // 19
       "1.2", // 20
       "sum(age)", // 21
-      "date()", // 22
+      "now()", // 22
       "not (90 > 100)", // 23
       "type like '%top'", // 24
       "type not like 'top%'" // 25
@@ -469,7 +531,7 @@ public class TestNQLParser {
     p = parseExpr(exprs[22]);
     node = (CommonTree) p.search_condition().getTree();
     assertEquals(node.getType(), NQLParser.FUNCTION);
-    assertEquals(node.getText(), "date");
+    assertEquals(node.getText(), "now");
     assertNull(node.getChild(1));
   }
   
@@ -491,9 +553,5 @@ public class TestNQLParser {
     fieldName = new FieldName(node.getChild(1));
     assertEquals(fieldName.getName(), "type");
     assertEquals(NQLParser.STRING, node.getChild(2).getType());
-  }
-  
-  final String groupingClause [] = {
-      "select col0, col1, col2, col3, sum(col4) as total, avg(col5) from base group by col0, cube (col1, col2), rollup(col3) having total > 100"
-  };
+  } 
 }

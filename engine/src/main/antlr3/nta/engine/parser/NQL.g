@@ -87,7 +87,7 @@ controlStatement
   ;
   
 dataStatement
-  : select_stmt
+  : query_expression
   | set_stmt
   ;
   
@@ -105,8 +105,8 @@ indexStatement
   ;
   
 createTableStatement
-  : CREATE TABLE t=table AS select_stmt -> ^(CREATE_TABLE $t select_stmt)
-  | t=table ASSIGN select_stmt -> ^(CREATE_TABLE $t select_stmt)
+  : CREATE TABLE t=table AS query_expression -> ^(CREATE_TABLE $t query_expression)
+  | t=table ASSIGN query_expression -> ^(CREATE_TABLE $t query_expression)
   | CREATE TABLE t=table tableElements USING s=ID LOCATION path=STRING p=param_clause? -> ^(CREATE_TABLE $t ^(TABLE_DEF tableElements) $s $path $p?)
   ;
   
@@ -121,16 +121,55 @@ fieldElement
 fieldType
   : BOOL
   | BYTE
+  | CHAR
   | INT
   | LONG
   | FLOAT
   | DOUBLE
-  | TEXT (LEFT_PAREN DIGIT RIGHT_PAREN)?
+  | TEXT
+  | DATE
   | BYTES
   | IPv4
   ;
+
+query_expression
+  : query_expression_body
+  ;
   
-select_stmt
+query_expression_body
+  : non_join_query_expression
+  | joined_table
+  ;
+  
+non_join_query_expression
+  : (non_join_query_term | joined_table (UNION | EXCEPT)^ (ALL|DISTINCT)? query_term) ((UNION | EXCEPT)^ (ALL|DISTINCT)? query_term)*  
+  ;
+  
+query_term
+  : non_join_query_term
+  | joined_table
+  ;
+  
+non_join_query_term
+  : ( non_join_query_primary | joined_table INTERSECT^ (ALL|DISTINCT)? query_primary) (INTERSECT^ (ALL|DISTINCT)? query_primary)*
+  ;
+  
+query_primary
+  : non_join_query_primary
+  | joined_table
+  ;
+  
+non_join_query_primary
+  : simple_table
+  | LEFT_PAREN non_join_query_expression RIGHT_PAREN
+  ;
+  
+simple_table
+options {k=1;}
+  : query_specification
+  ;
+
+query_specification
   : SELECT setQualifier? selectList from_clause? where_clause? groupby_clause? having_clause? orderby_clause?
   -> ^(SELECT from_clause? selectList where_clause? groupby_clause? having_clause? orderby_clause?)
   ;
@@ -159,7 +198,7 @@ fieldName
 	;
 	
 asClause
-  : AS? fieldName
+  : (AS)? fieldName
   ;
 	
 column_reference  
@@ -182,24 +221,32 @@ funcArgs
   ;
 	
 from_clause
-  : FROM^ table_list
+  : FROM^ table_reference_list
   ;
   
-table_list
-  :tableRef (COMMA tableRef)* -> tableRef+
-  ;  
-  
-tableRef
-  : derivedTable
-  | joinedTable
+table_reference_list
+  :table_reference (COMMA table_reference)* -> table_reference+
   ;
   
-joinedTable
-  : l=derivedTable CROSS JOIN r=tableRef -> ^(JOIN CROSS_JOIN $l $r)
-  | l=derivedTable JOIN r=tableRef s=join_specification -> ^(JOIN INNER_JOIN $l $r $s)
-  | l=derivedTable t=join_type JOIN r=tableRef s=join_specification -> ^(JOIN $t $l $r $s)  
-  | l=derivedTable NATURAL t=join_type? JOIN r=tableRef -> ^(JOIN NATURAL_JOIN $t? $l $r)
-  ; 
+table_reference
+  : table_primary
+  | joined_table
+  ;
+  
+joined_table
+  : cross_join 
+  | l=table_primary JOIN r=table_reference s=join_specification -> ^(JOIN INNER_JOIN $l $r $s)
+  | l=table_primary t=join_type JOIN r=table_reference s=join_specification -> ^(JOIN $t $l $r $s)  
+  | natural_join
+  ;
+  
+cross_join
+  : l=table_primary CROSS JOIN r=table_reference -> ^(JOIN CROSS_JOIN $l $r)
+  ;
+  
+natural_join
+  : l=table_primary NATURAL t=join_type? JOIN r=table_reference -> ^(JOIN NATURAL_JOIN $t? $l $r)
+  ;
 
 join_type
   : INNER -> ^(INNER_JOIN)
@@ -225,8 +272,8 @@ named_columns_join
   : USING LEFT_PAREN f=column_reference RIGHT_PAREN -> ^(USING $f)
   ;
   
-derivedTable
-  : table (AS ID)? -> ^(TABLE table (ID)?)
+table_primary
+  : table ((AS)? a=ID)? -> ^(TABLE table ($a)?)
   ;
 
 where_clause
@@ -423,6 +470,7 @@ CUBE : 'cube';
 DESC : 'desc';
 DISTINCT : 'distinct';
 DROP : 'drop';
+EXCEPT : 'except';
 FALSE : 'false';
 FIRST : 'first';
 FULL : 'full';
@@ -435,6 +483,7 @@ IN : 'in';
 INDEX : 'index';
 INNER : 'inner';
 INSERT : 'insert';
+INTERSECT : 'intersect';
 INTO : 'into';
 IS : 'is';
 JOIN : 'join';
@@ -452,6 +501,7 @@ ROLLUP : 'rollup';
 SELECT : 'select';
 TABLE : 'table';
 TRUE : 'true';
+UNION : 'union';
 UNIQUE : 'unique';
 UNKNOWN: 'unknown';
 USING : 'using';
@@ -462,11 +512,13 @@ WITH : 'with';
 // column types
 BOOL : 'bool';
 BYTE : 'byte';
+CHAR : 'char';
 INT : 'int';
 LONG : 'long';
 FLOAT : 'float';
 DOUBLE : 'double';
 TEXT : 'string';
+DATE : 'date';
 BYTES : 'bytes';
 IPv4 : 'ipv4';
 
