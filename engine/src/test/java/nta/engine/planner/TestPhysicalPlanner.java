@@ -18,6 +18,7 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
 import nta.datum.NullDatum;
+import nta.engine.EngineTestingUtils;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
@@ -26,9 +27,11 @@ import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
+import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.UnionNode;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.storage.Appender;
 import nta.storage.Scanner;
@@ -139,7 +142,7 @@ public class TestPhysicalPlanner {
   }
 
   private String[] QUERIES = {
-      "select name, empId, deptName from employee where empId", // 0
+      "select name, empId, deptName from employee", // 0
       "select name, empId, e.deptName, manager from employee as e, dept as dp", // 1
       "select name, empId, e.deptName, manager, score from employee as e, dept, score", // 2
       "select p.deptName, sum(score) from dept as p, score group by p.deptName having sum(score) > 30", // 3
@@ -252,7 +255,8 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
     QueryUnitId id = QueryIdFactory.newQueryUnitId();
-    Path workDir = NtaTestingUtility.getTestDir("PartitionedStore");
+    EngineTestingUtils.buildTestDir("target/test-data/PartitionedStore");
+    Path workDir = new Path("target/test-data/PartitionedStore");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
         workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[7]);
@@ -360,6 +364,32 @@ public class TestPhysicalPlanner {
       count++;
     }
     assertEquals(10, count);
+  }
+  
+  @Test
+  public final void testUnionPlan() throws IOException {
+    Fragment[] frags = sm.split("employee");
+    factory = new SubqueryContext.Factory(catalog);
+    Path workDir = NtaTestingUtility.getTestDir("Union");
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+        new Fragment[] { frags[0] }, workDir);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[0]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+    LogicalRootNode root = (LogicalRootNode) plan;
+    UnionNode union = new UnionNode(root.getSubNode(), root.getSubNode());
+    root.setSubNode(union);
+
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, root);
+
+    @SuppressWarnings("unused")
+    Tuple tuple = null;    
+    int count = 0;
+    while((tuple = exec.next()) != null) {
+      count++;
+    }
+    assertEquals(200, count);
   }
   
   @Test

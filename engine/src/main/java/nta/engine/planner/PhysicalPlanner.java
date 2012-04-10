@@ -18,6 +18,7 @@ import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
+import nta.engine.planner.logical.UnionNode;
 import nta.engine.planner.physical.EvalExprExec;
 import nta.engine.planner.physical.GroupByExec;
 import nta.engine.planner.physical.NLJoinExec;
@@ -27,6 +28,7 @@ import nta.engine.planner.physical.ProjectionExec;
 import nta.engine.planner.physical.SeqScanExec;
 import nta.engine.planner.physical.SortExec;
 import nta.engine.planner.physical.StoreTableExec;
+import nta.engine.planner.physical.UnionExec;
 import nta.storage.StorageManager;
 
 import com.google.common.base.Preconditions;
@@ -103,6 +105,11 @@ public class PhysicalPlanner {
       outer = createPlanRecursive(ctx, joinNode.getOuterNode());
       inner = createPlanRecursive(ctx, joinNode.getInnerNode());
       return createJoinPlan(ctx, joinNode, outer, inner);
+    case UNION:
+      UnionNode unionNode = (UnionNode) logicalNode;
+      outer = createPlanRecursive(ctx, unionNode.getOuterNode());
+      inner = createPlanRecursive(ctx, unionNode.getInnerNode());
+      return new UnionExec(outer, inner);
       
     case RENAME:
     case SET_UNION:
@@ -111,7 +118,7 @@ public class PhysicalPlanner {
     case INSERT_INTO:
     case SHOW_TABLE:
     case DESC_TABLE:
-    case SHOW_FUNCTION:
+    case SHOW_FUNCTION:    
     default:
       return null;
     }
