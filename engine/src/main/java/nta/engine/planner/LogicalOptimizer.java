@@ -65,6 +65,9 @@ public class LogicalOptimizer {
     
     switch (ctx.getStatementType()) {
     case SELECT:
+    //case UNION: // TODO - to be implemented
+    //case EXCEPT:
+    //case INTERSECT:
     case CREATE_TABLE:
       // if there are selection node 
       if(PlannerUtil.findTopNode(plan, ExprType.SELECTION) != null) {

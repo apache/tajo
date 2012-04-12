@@ -78,6 +78,11 @@ public class LikeEval extends EvalNode {
   }
   
   @Override
+  public String toString() {
+    return this.column + " like '" + pattern +"'";
+  }
+  
+  @Override
   public void preOrder(EvalNodeVisitor visitor) {
     visitor.visit(this);
   }

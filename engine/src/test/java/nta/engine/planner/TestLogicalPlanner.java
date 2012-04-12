@@ -31,8 +31,10 @@ import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.logical.CreateIndexNode;
 import nta.engine.planner.logical.CreateTableNode;
+import nta.engine.planner.logical.ExceptNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
+import nta.engine.planner.logical.IntersectNode;
 import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalNodeVisitor;
@@ -677,5 +679,62 @@ public class TestLogicalPlanner {
     for (Set<Column> result : testCubeByResult) {
       assertTrue(cuboids.contains(result));
     }
+  }
+  
+  static final String setStatements [] = {
+    "select deptName from employee where deptName like 'data%' union select deptName from score where deptName like 'data%'",
+    "select deptName from employee union select deptName from score intersect select deptName from score",
+    "select deptName from employee union select deptName from score except select deptName from score intersect select deptName from score"
+  };
+  
+  @Test
+  public final void testSetPlan() {
+    QueryContext ctx = factory.create();
+    ParseTree block = (ParseTree) analyzer.parse(ctx, setStatements[0]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);    
+    plan = LogicalOptimizer.optimize(ctx, plan);
+    assertEquals(ExprType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+    assertEquals(ExprType.UNION, root.getSubNode().getType());
+    UnionNode union = (UnionNode) root.getSubNode();
+    assertEquals(ExprType.PROJECTION, union.getOuterNode().getType());
+    ProjectionNode projL = (ProjectionNode) union.getOuterNode();
+    assertEquals(ExprType.SELECTION, projL.getSubNode().getType());
+    assertEquals(ExprType.PROJECTION, union.getInnerNode().getType());
+    ProjectionNode projR = (ProjectionNode) union.getInnerNode();
+    assertEquals(ExprType.SELECTION, projR.getSubNode().getType());
+    
+    // for testing multiple set statements
+    ctx = factory.create();
+    block = (ParseTree) analyzer.parse(ctx, setStatements[1]);
+    plan = LogicalPlanner.createPlan(ctx, block);    
+    plan = LogicalOptimizer.optimize(ctx, plan);
+    assertEquals(ExprType.ROOT, plan.getType());
+    root = (LogicalRootNode) plan;
+    assertEquals(ExprType.UNION, root.getSubNode().getType());
+    union = (UnionNode) root.getSubNode();
+    assertEquals(ExprType.PROJECTION, union.getOuterNode().getType());
+    assertEquals(ExprType.INTERSECT, union.getInnerNode().getType());
+    IntersectNode intersect = (IntersectNode) union.getInnerNode();
+    assertEquals(ExprType.PROJECTION, intersect.getOuterNode().getType());
+    assertEquals(ExprType.PROJECTION, intersect.getInnerNode().getType());
+    
+    // for testing multiple set statements
+    ctx = factory.create();
+    block = (ParseTree) analyzer.parse(ctx, setStatements[2]);
+    plan = LogicalPlanner.createPlan(ctx, block);    
+    plan = LogicalOptimizer.optimize(ctx, plan);
+    assertEquals(ExprType.ROOT, plan.getType());
+    root = (LogicalRootNode) plan;
+    assertEquals(ExprType.EXCEPT, root.getSubNode().getType());
+    ExceptNode except = (ExceptNode) root.getSubNode();
+    assertEquals(ExprType.UNION, except.getOuterNode().getType());
+    assertEquals(ExprType.INTERSECT, except.getInnerNode().getType());
+    union = (UnionNode) except.getOuterNode();
+    assertEquals(ExprType.PROJECTION, union.getOuterNode().getType());
+    assertEquals(ExprType.PROJECTION, union.getInnerNode().getType());
+    intersect = (IntersectNode) except.getInnerNode();
+    assertEquals(ExprType.PROJECTION, intersect.getOuterNode().getType());
+    assertEquals(ExprType.PROJECTION, intersect.getInnerNode().getType());
   }
 }

@@ -82,4 +82,8 @@ public abstract class Context {
     i++;
     return unnamed;
   }
+  
+  public void mergeContext(Context ctx) {
+    aliasMap.putAll(ctx.aliasMap);
+  }
 }

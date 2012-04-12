@@ -17,6 +17,7 @@ import nta.catalog.proto.CatalogProtos.IndexMethod;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
 import nta.engine.Context;
+import nta.engine.QueryContext;
 import nta.engine.exception.InternalException;
 import nta.engine.exec.eval.AggFuncCallEval;
 import nta.engine.exec.eval.BinaryEval;
@@ -73,12 +74,21 @@ public final class QueryAnalyzer {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Analyzer: " + ast.toStringTree());
     }
-
+    return parseQueryTree(ctx, ast);
+  }
+  
+  private ParseTree parseQueryTree(final Context ctx, CommonTree ast) {
     ParseTree parseTree = null;
-
+    
     switch (getCmdType(ast)) {
     case SELECT:
       parseTree = parseSelectStatement(ctx, ast);
+      break;
+      
+    case UNION:
+    case EXCEPT:
+    case INTERSECT:
+      parseTree = parseSetStatement(ctx, ast);
       break;
       
     case CREATE_INDEX:
@@ -93,7 +103,6 @@ public final class QueryAnalyzer {
 
     ctx.makeHints(parseTree);
     return parseTree;
-
   }
   
   /**
@@ -159,6 +168,47 @@ public final class QueryAnalyzer {
     }
     
     return tableDef;
+  }  
+  
+  private final SetStmt parseSetStatement(final Context ctx,
+      final CommonTree ast) {
+    StatementType type = null;
+    boolean distinct = true;
+    ParseTree left;
+    ParseTree right;
+    
+    switch (ast.getType()) {
+    case NQLParser.UNION:
+      type = StatementType.UNION;
+      break;
+    case NQLParser.EXCEPT:
+      type = StatementType.EXCEPT;
+      break;
+    case NQLParser.INTERSECT:
+      type = StatementType.INTERSECT;
+      break;
+    default:
+       throw new InvalidQueryException("Illegal AST:\n" + ast.toStringTree());
+    }
+    
+    int idx = 0;
+    QueryContext leftCtx = new QueryContext(catalog);
+    left = parseQueryTree(leftCtx, (CommonTree) ast.getChild(idx));
+    idx++;    
+    int nodeType = ast.getChild(idx).getType();
+    if (nodeType == NQLParser.ALL) {
+      distinct = true;
+      idx++;
+    } else if (nodeType == NQLParser.DISTINCT) {
+      distinct = false;
+      idx++;
+    }
+    QueryContext rightCtx = new QueryContext(catalog);
+    right = parseQueryTree(rightCtx, (CommonTree) ast.getChild(idx));
+    ctx.mergeContext(leftCtx);
+    ctx.mergeContext(rightCtx);
+    SetStmt set = new SetStmt(type, left, right, distinct);
+    return set;
   }
 
   private final QueryBlock parseSelectStatement(final Context ctx,
@@ -734,6 +784,12 @@ public final class QueryAnalyzer {
       return StatementType.STORE;
     case NQLParser.SELECT:
       return StatementType.SELECT;
+    case NQLParser.UNION:
+      return StatementType.UNION;
+    case NQLParser.EXCEPT:
+      return StatementType.EXCEPT;
+    case NQLParser.INTERSECT:
+      return StatementType.INTERSECT;
     case NQLParser.INSERT:
       return StatementType.INSERT;
     case NQLParser.CREATE_INDEX:

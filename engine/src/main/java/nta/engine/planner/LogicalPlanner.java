@@ -22,10 +22,14 @@ import nta.engine.parser.QueryBlock.GroupElement;
 import nta.engine.parser.QueryBlock.GroupType;
 import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.Target;
+import nta.engine.parser.SetStmt;
+import nta.engine.planner.logical.BinaryNode;
 import nta.engine.planner.logical.CreateIndexNode;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.EvalExprNode;
+import nta.engine.planner.logical.ExceptNode;
 import nta.engine.planner.logical.GroupbyNode;
+import nta.engine.planner.logical.IntersectNode;
 import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalRootNode;
@@ -66,11 +70,31 @@ public class LogicalPlanner {
   public static LogicalNode createPlan(Context ctx, ParseTree query) {
     LogicalNode plan = null;
     
+    plan = createPlanInternal(ctx, query);
+    
+    LogicalRootNode root = new LogicalRootNode();
+    root.setInputSchema(plan.getOutputSchema());
+    root.setOutputSchema(plan.getOutputSchema());
+    root.setSubNode(plan);
+    
+    return root;
+  }
+  
+  private static LogicalNode createPlanInternal(Context ctx, ParseTree query) {
+    LogicalNode plan = null;
+    
     switch(query.getType()) {
     case SELECT:
       LOG.info("Planning select statement");
       QueryBlock select = (QueryBlock) query;
       plan = buildSelectPlan(ctx, select);
+      break;
+      
+    case UNION:
+    case EXCEPT:
+    case INTERSECT:
+      SetStmt set = (SetStmt) query;
+      plan = buildSetPlan(ctx, set);
       break;
       
     case CREATE_INDEX:
@@ -89,12 +113,29 @@ public class LogicalPlanner {
     throw new NotSupportQueryException(query.toString());
     }
     
-    LogicalRootNode root = new LogicalRootNode();
-    root.setInputSchema(plan.getOutputSchema());
-    root.setOutputSchema(plan.getOutputSchema());
-    root.setSubNode(plan);
+    return plan;
+  }
+  
+  private static LogicalNode buildSetPlan(Context ctx,
+      SetStmt stmt) {
+    BinaryNode bin = null;
+    switch (stmt.getType()) {
+    case UNION:
+      bin = new UnionNode();
+      break;
+    case EXCEPT:
+      bin = new ExceptNode();
+      break;
+    case INTERSECT:
+      bin = new IntersectNode();
+      break;
+    }
     
-    return root;
+    bin.setOuter(createPlanInternal(ctx, stmt.getLeftTree()));
+    bin.setInner(createPlanInternal(ctx, stmt.getRightTree()));
+    bin.setInputSchema(bin.getOuterNode().getOutputSchema());
+    bin.setOutputSchema(bin.getOuterNode().getOutputSchema());
+    return bin;
   }
   
   private static LogicalNode buildCreateIndexPlan(Context ctx,

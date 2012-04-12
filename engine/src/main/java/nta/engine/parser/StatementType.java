@@ -12,6 +12,9 @@ public enum StatementType {
   STORE,
   // Select
 	SELECT,
+	UNION,
+	EXCEPT,
+	INTERSECT,
 	
 	// Update
 	INSERT,

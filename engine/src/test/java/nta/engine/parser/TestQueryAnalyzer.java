@@ -508,4 +508,38 @@ public class TestQueryAnalyzer {
     assertTrue(join.hasJoinQual());
     assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
   }
+  
+  private final String [] setClauses = {
+      "select id, people_id from student union select id, people_id from branch",
+      "select id, people_id from student union select id, people_id from branch intersect select id, people_id from branch as b"
+  };
+  
+  @Test
+  public final void testUnionClause() {
+    Context ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx, setClauses[0]);
+    assertEquals(StatementType.UNION, tree.getType());
+    SetStmt union = (SetStmt) tree;
+    assertEquals(StatementType.SELECT, union.getLeftTree().getType());
+    assertEquals(StatementType.SELECT, union.getRightTree().getType());
+    QueryBlock left = (QueryBlock) union.getLeftTree();
+    assertEquals("student", left.getFromTables()[0].getTableId());
+    QueryBlock right = (QueryBlock) union.getRightTree();
+    assertEquals("branch", right.getFromTables()[0].getTableId());
+    
+    // multiple set statements
+    ctx = factory.create();
+    tree = analyzer.parse(ctx, setClauses[1]);
+    assertEquals(StatementType.UNION, tree.getType());
+    union = (SetStmt) tree;
+    assertEquals(StatementType.SELECT, union.getLeftTree().getType());
+    assertEquals(StatementType.INTERSECT, union.getRightTree().getType());
+    left = (QueryBlock) union.getLeftTree();
+    assertEquals("student", left.getFromTables()[0].getTableId());
+    SetStmt rightSet = (SetStmt) union.getRightTree();
+    left = (QueryBlock) rightSet.getLeftTree();
+    assertEquals("branch", left.getFromTables()[0].getTableId());
+    right = (QueryBlock) rightSet.getRightTree();
+    assertEquals("b", right.getFromTables()[0].getAlias());
+  }
 }

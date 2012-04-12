@@ -14,7 +14,7 @@ import nta.catalog.TableDesc;
 public class QueryContext extends Context {
   private final CatalogService catalog;
 
-  private QueryContext(CatalogService catalog) {
+  public QueryContext(CatalogService catalog) {
     this.catalog = catalog;
   }
 
