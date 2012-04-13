@@ -39,7 +39,7 @@ public class NtaTestingUtility {
 	private FileSystem defaultFS = null;
 	private MiniDFSCluster dfsCluster;
 	private MiniZooKeeperCluster zkCluster = null;
-	private MiniNtaEngineCluster engineCluster;
+	private MiniTajoCluster engineCluster;
 	private MiniCatalogServer catalogCluster;
 
 	// If non-null, then already a cluster running.
@@ -121,12 +121,12 @@ public class NtaTestingUtility {
 	 * @return a mini tajo cluster
 	 * @throws Exception
 	 */
-	public MiniNtaEngineCluster startMiniCluster(final int numSlaves) 
+	public MiniTajoCluster startMiniCluster(final int numSlaves) 
 	    throws Exception {
 		return startMiniCluster(numSlaves, null);
 	}
 
-	public MiniNtaEngineCluster startMiniCluster(final int numSlaves, 
+	public MiniTajoCluster startMiniCluster(final int numSlaves, 
 	    final String [] dataNodeHosts) throws Exception {
 	  Configuration c = getConfiguration();
 	  // the conf is set to the distributed mode.
@@ -171,7 +171,7 @@ public class NtaTestingUtility {
 		return startMiniTajoCluster(this.clusterTestBuildDir, numSlaves);
 	}
 	
-	private MiniNtaEngineCluster startMiniTajoCluster(File testBuildDir,
+	private MiniTajoCluster startMiniTajoCluster(File testBuildDir,
 	    final int numSlaves) throws Exception {
 	  Configuration c = getConfiguration();
 	  c.set(NConstants.MASTER_ADDRESS, "localhost:0");
@@ -185,7 +185,7 @@ public class NtaTestingUtility {
 		    clusterTestBuildDir.getAbsolutePath()+"/worker");
 		c.set(NConstants.WORKER_TMP_DIR, 
         clusterTestBuildDir.getAbsolutePath()+"/worker/tmp");
-		this.engineCluster = new MiniNtaEngineCluster(c, numSlaves);
+		this.engineCluster = new MiniTajoCluster(c, numSlaves);
 		
 		this.conf.set(NConstants.MASTER_ADDRESS, c.get(NConstants.MASTER_ADDRESS));
 		this.conf.set(NConstants.CATALOG_ADDRESS, c.get(NConstants.CATALOG_ADDRESS));
@@ -197,12 +197,12 @@ public class NtaTestingUtility {
 	public void restartNtaEngineCluster(int numSlaves) throws Exception {
 	  this.engineCluster.shutdown();
 		this.engineCluster = 
-		    new MiniNtaEngineCluster(new Configuration(this.conf), numSlaves);
+		    new MiniTajoCluster(new Configuration(this.conf), numSlaves);
 		
 		LOG.info("Minicluster has been restarted");
 	}
 	
-	public MiniNtaEngineCluster getMiniNtaEngineCluster() {
+	public MiniTajoCluster getMiniNtaEngineCluster() {
 		return this.engineCluster;
 	}
 	

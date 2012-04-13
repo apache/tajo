@@ -32,7 +32,7 @@ public class TestQuery {
 	Configuration conf;
 	NtaTestingUtility util;
 	NtaEngineMaster clusterMaster;
-	MiniNtaEngineCluster cluster;
+	MiniTajoCluster cluster;
 	Schema schema;
 	CatalogService catalog;
 	
