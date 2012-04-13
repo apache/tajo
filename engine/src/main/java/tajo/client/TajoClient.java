@@ -2,16 +2,24 @@ package tajo.client;
 
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
+import java.util.List;
 
+import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
+import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.engine.ClientServiceProtos.AttachTableRequest;
 import nta.engine.ClientServiceProtos.AttachTableResponse;
 import nta.engine.ClientServiceProtos.CreateTableRequest;
 import nta.engine.ClientServiceProtos.CreateTableResponse;
-import nta.engine.ClientServiceProtos.QuerySubmitRequest;
+import nta.engine.ClientServiceProtos.ExecuteQueryRequest;
+import nta.engine.ClientServiceProtos.GetClusterInfoRequest;
+import nta.engine.ClientServiceProtos.GetClusterInfoResponse;
+import nta.engine.ClientServiceProtos.GetTableListRequest;
+import nta.engine.ClientServiceProtos.GetTableListResponse;
 import nta.engine.NConstants;
+import nta.engine.utils.ProtoUtil;
 import nta.rpc.NettyRpc;
 import nta.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import nta.rpc.protocolrecords.PrimitiveProtos.StringProto;
@@ -39,15 +47,19 @@ public class TajoClient {
             ClientService.class, addr);
   }
   
+  public boolean isConnected() {
+    return service != null;
+  }
+  
   public ResultSet executeQuery(String tql) {
     // TODO - to be implemented in NTA-647
     return null;
   }
   
   public void updateQuery(String tql) {
-    QuerySubmitRequest.Builder builder = QuerySubmitRequest.newBuilder();
+    ExecuteQueryRequest.Builder builder = ExecuteQueryRequest.newBuilder();
     builder.setQuery(tql);
-    service.submitQuery(builder.build());
+    service.executeQuery(builder.build());
   }
   
   public boolean existTable(String name) {
@@ -57,10 +69,10 @@ public class TajoClient {
     return res.getValue();
   }
   
-  public TableDesc attachTable(String name, Path path) {
+  public TableDesc attachTable(String name, String path) {
     AttachTableRequest.Builder builder = AttachTableRequest.newBuilder();
     builder.setName(name);
-    builder.setPath(path.toString());
+    builder.setPath(path);
     AttachTableResponse res = service.attachTable(builder.build());    
     return new TableDescImpl(res.getDesc());
   }
@@ -84,5 +96,20 @@ public class TajoClient {
     StringProto.Builder builder = StringProto.newBuilder();
     builder.setValue(name);
     service.dropTable(builder.build());
+  }
+  
+  public List<String> getClusterInfo() {
+    GetClusterInfoResponse res = service.getClusterInfo(GetClusterInfoRequest.getDefaultInstance());
+    return res.getServerNameList();
+  }
+  
+  public List<String> getTableList() {
+    GetTableListResponse res = service.getTableList(GetTableListRequest.getDefaultInstance());
+    return res.getTablesList();
+  }
+  
+  public TableDesc getTableDesc(String tableName) {    
+    TableDescProto res = service.getTableDesc(ProtoUtil.newProto(tableName));
+    return TCatUtil.newTableDesc(res);
   }
 }

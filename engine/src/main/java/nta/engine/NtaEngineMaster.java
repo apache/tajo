@@ -24,16 +24,18 @@ import nta.engine.ClientServiceProtos.AttachTableRequest;
 import nta.engine.ClientServiceProtos.AttachTableResponse;
 import nta.engine.ClientServiceProtos.CreateTableRequest;
 import nta.engine.ClientServiceProtos.CreateTableResponse;
-import nta.engine.ClientServiceProtos.QuerySubmitRequest;
-import nta.engine.ClientServiceProtos.QuerySubmitRespose;
+import nta.engine.ClientServiceProtos.ExecuteQueryRequest;
+import nta.engine.ClientServiceProtos.ExecuteQueryRespose;
+import nta.engine.ClientServiceProtos.GetClusterInfoRequest;
+import nta.engine.ClientServiceProtos.GetClusterInfoResponse;
+import nta.engine.ClientServiceProtos.GetTableListRequest;
+import nta.engine.ClientServiceProtos.GetTableListResponse;
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.LeafServerTracker;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.cluster.WorkerListener;
-import nta.engine.ipc.QueryEngineInterface;
-import nta.engine.json.GsonCreator;
 import nta.engine.query.GlobalEngine;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
@@ -58,8 +60,7 @@ import tajo.webapp.StaticHttpServer;
 /**
  * @author Hyunsik Choi
  */
-public class NtaEngineMaster extends Thread implements QueryEngineInterface, 
-    ClientService {
+public class NtaEngineMaster extends Thread implements ClientService {
   private static final Log LOG = LogFactory.getLog(NtaEngineMaster.class);
 
   private final Configuration conf;
@@ -265,62 +266,6 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface,
       InterruptedException {
     return zkClient.getChildren(NConstants.ZNODE_LEAFSERVERS);
   }
-  
-  @Override
-  public String executeQuery(String query) throws Exception {
-    cm.updateAllFragmentServingInfo(cm.getOnlineWorker());
-    String rs = queryEngine.executeQuery(query.toLowerCase());
-    if (rs == null) {
-      return "";
-    } else {
-      return rs.toString();
-    }
-  }
-
-  @Override
-  public String executeQueryAsync(String query) {
-    // TODO Auto-generated method stub
-    return "Path String should be returned(Async)";
-  }
-
-  @Override
-  public void attachTable(String name, String strPath) throws Exception {
-
-    if (catalog.existsTable(name))
-      throw new AlreadyExistsTableException(name);
-
-    Path path = new Path(strPath);
-
-    LOG.info(path.toUri());
-
-    TableMeta meta = TableUtil.getTableMeta(conf, path);
-    TableDesc desc = new TableDescImpl(name, meta, path);
-    catalog.addTable(desc);
-    LOG.info("Table " + desc.getId() + " is attached.");
-  }
-
-  @Override
-  public void detachTable(String name) throws Exception {
-    if (!catalog.existsTable(name)) {
-      throw new NoSuchTableException(name);
-    }
-
-    catalog.deleteTable(name);
-    LOG.info("Table " + name + " is detached.");
-  }
-
-  @Override
-  public boolean existsTable(String name) {
-    return catalog.existsTable(name);
-  }
-
-  public String getTableDesc(String name) throws NoSuchTableException {
-    if (!catalog.existsTable(name)) {
-      throw new NoSuchTableException(name);
-    }
-
-    return catalog.getTableDesc(name).toJSON();
-  }
 
   private class ShutdownHook implements Runnable {
     @Override
@@ -332,24 +277,6 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface,
   public CatalogService getCatalog() {
     return this.catalog;
   }
-
-	public String getClusterInfo() throws KeeperException, InterruptedException {
-		List<String> onlineServers = getOnlineServer();
-		String json = GsonCreator.getInstance().toJson(onlineServers);
-		return json;
-	}
-
-	@Override
-	public long getProtocolVersion(String protocol, long clientVersion)
-			throws IOException {
-		return 0l;
-	}
-
-	@Override
-	public String getTableList() {		
-		Collection<String> tableNames = catalog.getAllTableNames();		
-		return GsonCreator.getInstance().toJson(tableNames);
-	}
 	
   public WorkerCommunicator getWorkerCommunicator() {
     return wc;
@@ -392,21 +319,28 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface,
   // ClientService
   /////////////////////////////////////////////////////////////////////////////
   @Override
-  public QuerySubmitRespose submitQuery(QuerySubmitRequest query) throws RemoteException {
+  public ExecuteQueryRespose executeQuery(ExecuteQueryRequest query) throws RemoteException {
     try {
       cm.updateAllFragmentServingInfo(cm.getOnlineWorker());
     } catch (IOException ioe) {
       LOG.error(ioe);
       throw new RemoteException(ioe);
     }
-    String rs = null;
+    String path = null;
+    long elapsed = 0; 
     try {
-      rs = queryEngine.executeQuery(query.getQuery());
+      long start = System.currentTimeMillis();
+      path = queryEngine.executeQuery(query.getQuery());
+      long end = System.currentTimeMillis();
+      elapsed = end - start;
     } catch (Exception e) {
       throw new RemoteException(e);
     }
     
-    return QuerySubmitRespose.newBuilder().setTableName(rs).build();
+    ExecuteQueryRespose.Builder build = ExecuteQueryRespose.newBuilder();
+    build.setPath(path);
+    build.setResponseTime(elapsed);
+    return build.build();
   }
 
   @Override
@@ -481,5 +415,40 @@ public class NtaEngineMaster extends Thread implements QueryEngineInterface,
       throw new RemoteException(e);
     }
     LOG.info("Drop Table " + name);
+  }
+  
+  @Override
+  public GetClusterInfoResponse getClusterInfo(GetClusterInfoRequest request) throws RemoteException {
+    List<String> onlineServers = null;
+    try {
+      onlineServers = getOnlineServer();
+      if (onlineServers == null) {
+       throw new NullPointerException(); 
+      }
+    } catch (Exception e) {
+      throw new RemoteException(e);
+    }
+    GetClusterInfoResponse.Builder builder = GetClusterInfoResponse.newBuilder();
+    builder.addAllServerName(onlineServers);
+    return builder.build();
+  }
+  
+  @Override
+  public GetTableListResponse getTableList(GetTableListRequest request) {    
+    Collection<String> tableNames = catalog.getAllTableNames(); 
+    GetTableListResponse.Builder builder = GetTableListResponse.newBuilder();
+    builder.addAllTables(tableNames);
+    return builder.build();
+  }
+
+  @Override
+  public TableDescProto getTableDesc(StringProto proto)
+      throws RemoteException {
+    String name = proto.getValue();
+    if (!catalog.existsTable(name)) {
+      throw new NoSuchTableException(name);
+    }
+
+    return (TableDescProto) catalog.getTableDesc(name).getProto();
   }
 }

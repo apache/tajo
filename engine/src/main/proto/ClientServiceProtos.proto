@@ -6,12 +6,13 @@ option java_generate_equals_and_hash = true;
 import "TCommonProtos.proto";
 import "CatalogProtos.proto";
 
-message QuerySubmitRequest {
+message ExecuteQueryRequest {
     required string query = 1;
 }
 
-message QuerySubmitRespose {
-    required string tableName = 1;
+message ExecuteQueryRespose {
+    required string path = 1;
+    required int64 responseTime = 2;
 }
 
 message CreateTableRequest {
@@ -31,4 +32,18 @@ message AttachTableRequest {
 
 message AttachTableResponse {
     required TableDescProto desc = 1;
+}
+
+message GetClusterInfoRequest {
+}
+
+message GetClusterInfoResponse {
+    repeated string serverName = 1;
+}
+
+message GetTableListRequest {
+}
+
+message GetTableListResponse {
+    repeated string tables = 1;
 }

@@ -27,6 +27,8 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.datum.DatumFactory;
+import nta.engine.ClientServiceProtos.ExecuteQueryRequest;
+import nta.engine.ClientServiceProtos.ExecuteQueryRespose;
 import nta.engine.LeafServer;
 import nta.engine.NConstants;
 import nta.engine.NtaEngineMaster;
@@ -161,7 +163,11 @@ public class TestGlobalEngine {
 
   @Test
   public void testCreateTable() throws Exception {
-    String tablename = master.executeQuery(query[3]);
+    ExecuteQueryRequest.Builder builder
+      = ExecuteQueryRequest.newBuilder();
+    builder.setQuery(query[3]);
+    ExecuteQueryRespose res = master.executeQuery(builder.build());
+    String tablename = res.getPath();
     assertNotNull(tablename);
     FileSystem fs = FileSystem.get(conf);
     assertTrue(fs.exists(new Path("/tmp/data/.meta")));
@@ -178,7 +184,11 @@ public class TestGlobalEngine {
   
   @Test
   public void testScanQuery() throws Exception {
-    String tablename = master.executeQuery(query[1]);
+    ExecuteQueryRequest.Builder builder
+      = ExecuteQueryRequest.newBuilder();
+    builder.setQuery(query[1]);
+    ExecuteQueryRespose res = master.executeQuery(builder.build());
+    String tablename = res.getPath();
     assertNotNull(tablename);
     Scanner scanner = sm.getTableScanner(tablename);
     Tuple tuple = null;
@@ -191,7 +201,11 @@ public class TestGlobalEngine {
 
   @Test
   public void testGroupbyQuery() throws Exception {
-    String tablename = master.executeQuery(query[0]);
+    ExecuteQueryRequest.Builder builder
+      = ExecuteQueryRequest.newBuilder();
+    builder.setQuery(query[0]);
+    ExecuteQueryRespose res = master.executeQuery(builder.build());
+    String tablename = res.getPath();
     assertNotNull(tablename);
     Scanner scanner = sm.getTableScanner(tablename);
     Tuple tuple = null;
@@ -204,7 +218,11 @@ public class TestGlobalEngine {
 
   @Test
   public void testJoin() throws Exception {
-    String tablename = master.executeQuery(query[2]);
+    ExecuteQueryRequest.Builder builder
+      = ExecuteQueryRequest.newBuilder();
+    builder.setQuery(query[2]);
+    ExecuteQueryRespose res = master.executeQuery(builder.build());
+    String tablename = res.getPath();
     assertNotNull(tablename);
     Scanner scanner = sm.getTableScanner(tablename);
     Tuple tuple = null;
@@ -219,7 +237,11 @@ public class TestGlobalEngine {
   
   @Test
   public void testSelectAfterJoin() throws Exception {
-    String tablename = master.executeQuery(query[4]);
+    ExecuteQueryRequest.Builder builder
+      = ExecuteQueryRequest.newBuilder();
+    builder.setQuery(query[4]);
+    ExecuteQueryRespose res = master.executeQuery(builder.build());
+    String tablename = res.getPath();
     assertNotNull(tablename);
     Scanner scanner = sm.getTableScanner(tablename);
     Tuple tuple = null;
@@ -251,7 +273,10 @@ public class TestGlobalEngine {
       @Override
       public void run() {
         try {
-          tablename = master.executeQuery(query[0]);
+          ExecuteQueryRequest.Builder builder
+            = ExecuteQueryRequest.newBuilder();
+          builder.setQuery(query[0]);
+          tablename = master.executeQuery(builder.build()).getPath();
         } catch (Exception e) {
           e.printStackTrace();
         }

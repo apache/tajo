@@ -6,6 +6,7 @@ package tajo.cli;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.sql.ResultSet;
 import java.util.List;
 
 import jline.ConsoleReader;
@@ -16,8 +17,6 @@ import nta.catalog.TableDesc;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
 import nta.engine.cluster.ServerNodeTracker;
-import nta.engine.ipc.QueryEngineInterface;
-import nta.engine.json.GsonCreator;
 import nta.zookeeper.ZkClient;
 
 import org.apache.commons.cli.CommandLine;
@@ -26,27 +25,23 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.ipc.RPC;
-import org.apache.hadoop.net.NetUtils;
-import org.apache.zookeeper.KeeperException;
 
-import com.google.gson.Gson;
+import tajo.client.TajoClient;
 
 /**
  * @author Hyunsik Choi
- *
  */
 public class TajoCli {
   private final Configuration conf;
   private static final Options options;
   private ZkClient zkClient;
   private ServerNodeTracker masterTracker;
-  private QueryEngineInterface proxy;
+  private TajoClient client;
   @SuppressWarnings("unused")
-  private CatalogClient client;
+  private CatalogClient catalog;
   
   private String zkAddr;
-  private String masterAddr;  
+  private String entryAddr;  
   private static final int WAIT_TIME = 3000;
   
   private ConsoleReader reader;
@@ -55,59 +50,60 @@ public class TajoCli {
   
   static {
     options = new Options();
-    options.addOption("h", "host", true, "client service host");
+    options.addOption("a", "addr", true, "client service host");   
     options.addOption("p", "port", true, "client service port");
     options.addOption("z", "zkaddr", true, "zookeeper address");
     options.addOption("conf", true, "user configuration dir");
+    options.addOption("h", "help", false, "help");
   }
   
   public TajoCli(Configuration c, String [] args, 
       InputStream in, Writer out) throws Exception {
-    this.conf = c;
+    this.conf = new Configuration(c);
     this.sin = in;
     this.sout = new PrintWriter(out);
     
     CommandLineParser parser = new PosixParser();
     CommandLine cmd = parser.parse(options, args);
     
+    if (cmd.hasOption("h")) {
+      printUsage();
+      System.exit(-1);
+    }
+    
     String hostName;
     int givenPort;
-    if (masterAddr == null && cmd.hasOption("h")) {
-      hostName = cmd.getOptionValue("h");
+    if (entryAddr == null && cmd.hasOption("a")) {
+      hostName = cmd.getOptionValue("a");
       if (cmd.hasOption("p")) {
         givenPort = Integer.valueOf(cmd.getOptionValue("p"));
       } else {
         givenPort = NConstants.DEFAULT_MASTER_PORT;
       }
       
-      this.masterAddr = hostName + ":" + givenPort;
+      this.entryAddr = hostName + ":" + givenPort;
+      c.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
     }
     
-    if(this.masterAddr == null && cmd.hasOption("z")) {
+    if(this.entryAddr == null && cmd.hasOption("z")) {
       zkAddr = cmd.getOptionValue("z");
       zkClient = new ZkClient(zkAddr);
       masterTracker = new ServerNodeTracker(zkClient, NConstants.ZNODE_CLIENTSERVICE);
       masterTracker.start();      
-      byte [] masterAddrBytes = null; 
+      byte [] entryAddrBytes = null; 
       do {
-        masterAddrBytes = masterTracker.blockUntilAvailable(WAIT_TIME);
-        System.out.println("Waiting the zookeeper (" + zkAddr + ")");
-      } while (masterAddrBytes == null);
+        entryAddrBytes = masterTracker.blockUntilAvailable(WAIT_TIME);
+        sout.println("Waiting the zookeeper (" + zkAddr + ")");
+      } while (entryAddrBytes == null);
       
-      masterAddr = new String(masterAddrBytes);
+      this.entryAddr = new String(entryAddrBytes);
+      c.set(NConstants.ZOOKEEPER_ADDRESS, this.zkAddr);
+      c.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
     }
     
-    if (this.masterAddr == null) {
-      printUsage();
-      System.exit(-1);
-    }
-    
-    sout.println("Trying to connect the tajo master (" + this.masterAddr + ")");
-    proxy = 
-        (QueryEngineInterface) RPC.getProxy(QueryEngineInterface.class, 
-            QueryEngineInterface.versionId, 
-            NetUtils.createSocketAddr(this.masterAddr), conf);
-    sout.println("Connected to tajo master (" + this.masterAddr + ")");
+    sout.println("Trying to connect the tajo master (" + c.get(NConstants.CLIENT_SERVICE_ADDRESS) + ")");
+    client = new TajoClient(conf);
+    sout.println("Connected to tajo master (" + c.get(NConstants.CLIENT_SERVICE_ADDRESS) + ")");
   }
   
   public int executeShell() throws Exception {
@@ -152,41 +148,33 @@ public class TajoCli {
   private void executeQuery(String queryStr) {
     // query execute
     try {
-      long start = System.currentTimeMillis();
-      String tablePath = proxy.executeQuery(queryStr);
-      long end = System.currentTimeMillis();
-      System.out.println("write the result into " + tablePath 
-          + " (" + (end - start) +"msc)");
-      
+      ResultSet res = client.executeQuery(queryStr);
+      while (res.next()) {
+        
+      }      
     // TODO - the result should be printed.
     } catch (Throwable t) {
       System.err.println(t.getMessage());
     }
   }
   
-  @SuppressWarnings("unchecked")
-  private void clusterInfo() throws KeeperException, InterruptedException {
-    String json = proxy.getClusterInfo();
-    List<String> servers = GsonCreator.getInstance().fromJson(json, List.class);
-    for(String server : servers) {
+  private void clusterInfo() {
+    List<String> list = client.getClusterInfo();    
+    for(String server : list) {
       sout.println(server);
     }
   }
   
   private void showTables() {
-    String json = proxy.getTableList();
-    @SuppressWarnings("unchecked")
-    List<String> tables = GsonCreator.getInstance().fromJson(json, List.class);
-    for (String table : tables) {
+    List<String> tableList = client.getTableList();
+    for (String table : tableList) {
       sout.println(table);
     }
   }
   
   private void descTable(String [] cmd) {
     if (cmd.length > 1) {
-      String json = proxy.getTableDesc(cmd[1]);
-      Gson gson = GsonCreator.getInstance();
-      TableDesc desc = gson.fromJson(json, TableDesc.class);
+      TableDesc desc = client.getTableDesc(cmd[1]);
       sout.println(toFormattedString(desc));
     } else {
       sout.println("Table name is required");
@@ -197,7 +185,7 @@ public class TajoCli {
     if(cmd.length != 3) {
       sout.println("usage: attach tablename path");
     } else {
-      proxy.attachTable(cmd[1], cmd[2]);
+      client.attachTable(cmd[1], cmd[2]);
       sout.println("attached " + cmd[1] + " (" + cmd[2] + ")");
     }
   }
@@ -206,7 +194,7 @@ public class TajoCli {
     if (cmd.length != 2) {
       System.out.println("usage: detach tablename");
     } else {
-      proxy.detachTable(cmd[1]);
+      client.detachTable(cmd[1]);
       sout.println("detached " + cmd[1] + " from tajo");
     }
   }
