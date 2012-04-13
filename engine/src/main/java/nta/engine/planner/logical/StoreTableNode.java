@@ -48,7 +48,7 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   }
   
   public final void setPartitions(Column [] keys, int numPartitions) {
-    Preconditions.checkArgument(keys.length > 0, 
+    Preconditions.checkArgument(keys.length >= 0, 
         "At least one partition key must be specified.");
     Preconditions.checkArgument(numPartitions > 0,
         "The number of partitions must be positive: %s", numPartitions);

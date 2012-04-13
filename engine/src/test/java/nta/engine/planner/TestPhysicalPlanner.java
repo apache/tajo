@@ -157,6 +157,7 @@ public class TestPhysicalPlanner {
       "select deptName, nullable from score group by deptName, nullable", // 12
       "select 3 < 4 as ineq, 3.5 * 2 as real", // 13
       "select 3 > 2 = 1 > 0 and 3 > 1", // 14
+      "select deptName, class, sum(score), max(score), min(score) from score", // 15
   };
 
   public final void testCreateScanPlan() throws IOException {
@@ -299,6 +300,58 @@ public class TestPhysicalPlanner {
     
     // Examine the statistics information
     assertEquals(10, 
+        ctx.getStatSet(ExprType.STORE.toString()).
+        getStat(StatType.TABLE_NUM_ROWS).getValue());
+  }
+  
+  @Test
+  public final void testPartitionedStorePlanWithEmptyGroupingSet() 
+      throws IOException {
+    Fragment[] frags = sm.split("score");
+    factory = new SubqueryContext.Factory(catalog);
+    QueryUnitId id = QueryIdFactory.newQueryUnitId();
+    EngineTestingUtils.buildTestDir("target/test-data/emptygs");
+    Path workDir = new Path("target/test-data/emptygs");
+    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
+        workDir);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[15]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+
+    int numPartitions = 1;
+    StoreTableNode storeNode = new StoreTableNode("emptyset");
+    storeNode.setPartitions(new Column[] {}, numPartitions);
+    PlannerUtil.insertNode(plan, storeNode);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+
+    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutputSchema(),
+        StoreType.CSV);
+    sm.initTableBase(outputMeta, "emptyset");
+
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    exec.next();
+
+    Path path = StorageUtil.concatPath(
+        workDir, "out");
+    FileSystem fs = sm.getFileSystem();
+        
+    assertEquals(numPartitions,
+        fs.listStatus(StorageUtil.concatPath(path, "data")).length);
+
+    Scanner scanner = sm.getTableScanner(path);
+    Tuple tuple = null;
+    int i = 0;
+    while ((tuple = scanner.next()) != null) {
+      assertEquals(60, tuple.getInt(2).asInt()); // sum
+      assertEquals(3, tuple.getInt(3).asInt()); // max
+      assertEquals(1, tuple.getInt(4).asInt()); // min
+      i++;
+    }
+    assertEquals(1, i);
+    scanner.close();
+    
+    // Examine the statistics information
+    assertEquals(1, 
         ctx.getStatSet(ExprType.STORE.toString()).
         getStat(StatType.TABLE_NUM_ROWS).getValue());
   }

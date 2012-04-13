@@ -17,7 +17,7 @@ public abstract class Partitioner {
   public Partitioner(final int [] keyList, final int numPartitions) {
     Preconditions.checkArgument(keyList != null, 
         "Partition keys must be given");
-    Preconditions.checkArgument(keyList.length > 0,
+    Preconditions.checkArgument(keyList.length >= 0,
         "At least one partition key must be specified.");
     Preconditions.checkArgument(numPartitions > 0, 
         "The number of partitions must be positive: %s", numPartitions);
