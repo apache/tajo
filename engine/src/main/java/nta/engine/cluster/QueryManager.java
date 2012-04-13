@@ -12,9 +12,11 @@ import java.util.Map.Entry;
 
 import nta.catalog.statistics.Stat;
 import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.TableStat;
 import nta.engine.LogicalQueryUnitId;
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
+import nta.engine.TCommonProtos.StatType;
 import nta.engine.Query;
 import nta.engine.QueryId;
 import nta.engine.QueryUnitId;
@@ -72,7 +74,7 @@ public class QueryManager {
   private Map<QueryId, Query> queries = 
       new HashMap<QueryId, Query>();
   
-  private Map<String, StatSet> statSetOfTable;
+  private Map<String, TableStat> statSetOfTable;
   
   private Map<QueryUnit, String> serverByQueryUnit;
   private Map<String, List<QueryUnit>> queryUnitsByServer;
@@ -264,24 +266,62 @@ public class QueryManager {
     return true;
   }
   
-  public StatSet getStatSet(String tableId) {
+  public TableStat getStatSet(String tableId) {
     return statSetOfTable.get(tableId);
   }
   
-  private StatSet mergeStatSet(QueryUnit[] units) {
+  private TableStat mergeStatSet(QueryUnit[] units) {
     WaitStatus status;
-    StatSet merged = new StatSet();
+    TableStat tableStat = new TableStat();
     for (QueryUnit unit : units) {
       status = inProgressQueries.get(unit.getId());
       StatSet statSet = new StatSet(status.getInProgressStatus().getStats());
       for (Stat stat : statSet.getAllStats()) {
-        if (merged.containStat(stat.getType())) {
-          stat.setValue(merged.getStat(stat.getType()).getValue() + stat.getValue());
+        switch (stat.getType()) {
+        case COLUMN_NUM_NULLS:
+          // TODO
+          break;
+        case TABLE_AVG_ROWS:
+          if (tableStat.getAvgRows() == null) {
+            tableStat.setAvgRows(stat.getValue());
+          } else {
+            tableStat.setAvgRows(tableStat.getAvgRows()+stat.getValue());
+          }
+          break;
+        case TABLE_NUM_BLOCKS:
+          if (tableStat.getNumBlocks() == null) {
+            tableStat.setNumBlocks((int)stat.getValue());
+          } else {
+            tableStat.setNumBlocks(tableStat.getNumBlocks()+
+                (int)stat.getValue());
+          }
+          break;
+        case TABLE_NUM_BYTES:
+          if (tableStat.getNumBytes() == null) {
+            tableStat.setNumBytes(stat.getValue());
+          } else {
+            tableStat.setNumBytes(tableStat.getNumBytes()+stat.getValue());
+          }
+          break;
+        case TABLE_NUM_PARTITIONS:
+          if (tableStat.getNumPartitions() == null) {
+            tableStat.setNumPartitions((int)stat.getValue());
+          } else {
+            tableStat.setNumPartitions(tableStat.getNumPartitions()+
+                (int)stat.getValue());
+          }
+          break;
+        case TABLE_NUM_ROWS:
+          if (tableStat.getNumRows() == null) {
+            tableStat.setNumRows(stat.getValue());
+          } else {
+            tableStat.setNumRows(tableStat.getNumRows()+stat.getValue());
+          }
+          break;
         }
-        merged.putStat(stat);
       }
     }
-    return merged;
+    return tableStat;
   }
   
   public List<String> getAssignedWorkers(ScheduleUnit unit) {

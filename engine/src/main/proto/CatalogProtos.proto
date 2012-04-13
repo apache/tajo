@@ -62,7 +62,7 @@ message TableProto {
     required SchemaProto schema = 1;
     required StoreType storeType = 2;
     required KeyValueSetProto params = 3;
-    optional TableStatProto stat = 6;
+    optional TableStatProto stat = 4;
 }
 
 message TableDescProto {
@@ -131,10 +131,11 @@ message ContainFunctionRequest {
 
 message TableStatProto {
 	required int64 numRows = 1;
-	optional int32 numBlocks = 2;
-	optional int32 numPartitions = 3;
-	optional int64 avgRows = 4;
-	repeated ColumnStatProto colStat = 5;
+	required int64 numBytes = 2;
+	optional int32 numBlocks = 3;
+	optional int32 numPartitions = 4;
+	optional int64 avgRows = 5;
+	repeated ColumnStatProto colStat = 6;
 }
 
 message ColumnStatProto {

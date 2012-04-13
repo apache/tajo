@@ -341,7 +341,7 @@ public class StorageManager {
 	  return fs.listStatus(dataPath);
 	}
 	
-	private void writeTableMeta(Path tableRoot, TableMeta meta) 
+	public void writeTableMeta(Path tableRoot, TableMeta meta) 
 	    throws IOException {
 	  FileSystem fs = tableRoot.getFileSystem(conf);
     FSDataOutputStream out = fs.create(new Path(tableRoot, ".meta"));

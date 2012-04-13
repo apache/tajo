@@ -11,6 +11,8 @@ import nta.annotation.Required;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.catalog.proto.CatalogProtos.TableProtoOrBuilder;
+import nta.catalog.statistics.Stat;
+import nta.catalog.statistics.TableStat;
 import nta.engine.json.GsonCreator;
 
 import com.google.common.base.Objects;
@@ -32,6 +34,8 @@ public class TableMetaImpl implements TableMeta {
 	protected StoreType storeType;
 	@Expose @Optional
 	protected Options options;
+	@Expose @Optional
+	protected TableStat stat;
 	
 	private TableMetaImpl() {
 	  builder = TableProto.newBuilder();
@@ -42,6 +46,15 @@ public class TableMetaImpl implements TableMeta {
 	  this.schema = schema;
     this.storeType = type;
     this.options = new Options(options);
+  }
+	
+	public TableMetaImpl(Schema schema, StoreType type, Options options,
+	    TableStat stat) {
+    this();
+    this.schema = schema;
+    this.storeType = type;
+    this.options = new Options(options);
+    this.stat = stat;
   }
 	
 	public TableMetaImpl(TableProto proto) {
@@ -55,7 +68,7 @@ public class TableMetaImpl implements TableMeta {
   }	
 	
 	public StoreType getStoreType() {
-		TableProtoOrBuilder p = viaProto ? proto : builder;
+	  TableProtoOrBuilder p = viaProto ? proto : builder;
 		
 		if(storeType != null) {
 			return this.storeType;
@@ -150,6 +163,7 @@ public class TableMetaImpl implements TableMeta {
     meta.builder = TableProto.newBuilder();
     meta.schema = (Schema) schema.clone();
     meta.storeType = storeType;
+    meta.stat = (TableStat) (stat != null ? stat.clone() : null);
     meta.options = (Options) (options != null ? options.clone() : null);
     
     return meta;
@@ -189,6 +203,10 @@ public class TableMetaImpl implements TableMeta {
 	  if (this.schema != null) {
 	    builder.setSchema(this.schema.getProto());
 	  }
+	  
+	  if (this.stat != null) {
+	    builder.setStat(this.stat.getProto());
+	  }
 
 	  if (this.storeType != null) {
       builder.setStoreType(storeType);
@@ -207,6 +225,9 @@ public class TableMetaImpl implements TableMeta {
 		if (schema == null) {
 			schema = new Schema(p.getSchema());
 		}
+		if (p.hasStat() && stat == null) {
+		  stat = new TableStat(p.getStat());
+		}
 		if (storeType == null && p.hasStoreType()) {
 			storeType = p.getStoreType();
 		}
@@ -218,6 +239,9 @@ public class TableMetaImpl implements TableMeta {
 	public void initFromProto() {
 		mergeProtoToLocal();
     schema.initFromProto();
+    if (stat != null) {
+      stat.initFromProto();
+    }
 	}
 	
 	public String toJSON() {
@@ -225,4 +249,24 @@ public class TableMetaImpl implements TableMeta {
 		Gson gson = GsonCreator.getInstance();
 		return gson.toJson(this, TableMeta.class);
 	}
+
+  @Override
+  public void setStat(TableStat stat) {
+    setModified();
+    this.stat = stat;
+  }
+
+  @Override
+  public TableStat getStat() {
+    TableProtoOrBuilder p = viaProto ? proto : builder;
+    if (stat != null) {
+      return stat;
+    }
+    if (!p.hasStat()) {
+      return null;
+    }
+    stat = new TableStat(p.getStat());
+    
+    return this.stat;
+  }
 }

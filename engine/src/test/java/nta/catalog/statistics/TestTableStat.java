@@ -13,6 +13,7 @@ public class TestTableStat {
   public final void testTableStat() throws CloneNotSupportedException {
     TableStat stat = new TableStat();
     stat.setNumRows(957685);
+    stat.setNumBytes(1023234);
     stat.setNumBlocks(3123);
     stat.setNumPartitions(5);
     stat.setAvgRows(80000);
@@ -27,6 +28,7 @@ public class TestTableStat {
     }
     
     assertTrue(957685 == stat.getNumRows());
+    assertTrue(1023234 == stat.getNumBytes());
     assertTrue(3123 == stat.getNumBlocks());
     assertTrue(5 == stat.getNumPartitions());
     assertTrue(80000 == stat.getAvgRows());

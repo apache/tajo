@@ -26,6 +26,7 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable {
   private boolean viaProto = false;
   
   @Expose private Long numRows = null;
+  @Expose private Long numBytes = null;
   @Expose private Integer numBlocks = null;
   @Expose private Integer numPartitions = null;
   @Expose private Long avgRows = null;
@@ -69,6 +70,23 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable {
     this.numBlocks = p.getNumBlocks();
     
     return this.numBlocks;
+  }
+  
+  public void setNumBytes(long numBytes) {
+    setModified();
+    this.numBytes = numBytes;
+  }
+  
+  public Long getNumBytes() {
+    TableStatProtoOrBuilder p = viaProto ? proto : builder;
+    if (numBytes != null) {
+      return this.numBytes;
+    }
+    if (!p.hasNumBytes()) {
+      return null;
+    }
+    this.numBytes = p.getNumBytes();
+    return this.numBytes;
   }
   
   public void setNumBlocks(int numBlocks) {
@@ -134,6 +152,7 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable {
       other.initFromProto();
       
       return this.numRows.equals(other.numRows)
+          && this.numBytes.equals(other.numBytes)
           && this.numBlocks.equals(other.numBlocks)
           && this.numPartitions.equals(other.numPartitions)
           && this.avgRows.equals(other.avgRows)
@@ -144,13 +163,15 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable {
   }
   
   public int hashCode() {
-    return Objects.hashCode(numRows, numBlocks, numPartitions, columnStats);
+    return Objects.hashCode(numRows, numBytes, 
+        numBlocks, numPartitions, columnStats);
   }
   
   public Object clone() throws CloneNotSupportedException {
     TableStat stat = (TableStat) super.clone();
     initFromProto();
     stat.numRows = numRows;
+    stat.numBytes = numBytes;
     stat.numBlocks = numBlocks;
     stat.numPartitions = numPartitions;
     stat.columnStats = new ArrayList<ColumnStat>(this.columnStats);
@@ -188,6 +209,9 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable {
     if (this.numRows == null && p.hasNumRows()) {
       this.numRows = p.getNumRows();
     }
+    if (this.numBytes == null && p.hasNumBytes()) {
+      this.numBytes = p.getNumBytes();
+    }
     if (this.numBlocks == null && p.hasNumBlocks()) {
       this.numBlocks = p.getNumBlocks();
     }
@@ -221,6 +245,9 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable {
     }
     if (this.numRows != null) {
       builder.setNumRows(this.numRows);
+    }
+    if (this.numBytes != null) {
+      builder.setNumBytes(this.numBytes);
     }
     if (this.numBlocks != null) {
       builder.setNumBlocks(this.numBlocks);

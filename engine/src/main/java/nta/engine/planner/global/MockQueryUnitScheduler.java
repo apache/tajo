@@ -5,15 +5,14 @@ package nta.engine.planner.global;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Random;
 
 import nta.catalog.statistics.Stat;
 import nta.catalog.statistics.StatSet;
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
-import nta.engine.TCommonProtos.StatType;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
+import nta.engine.TCommonProtos.StatType;
 import nta.engine.cluster.QueryManager;
 import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.query.GlobalQueryPlanner;
@@ -24,13 +23,11 @@ import nta.engine.query.GlobalQueryPlanner;
  */
 public class MockQueryUnitScheduler {
 
-  private final GlobalQueryPlanner planner;
   private final QueryManager qm;
   private final ScheduleUnit plan;
   
   public MockQueryUnitScheduler(GlobalQueryPlanner planner, 
       QueryManager qm, ScheduleUnit plan) {
-    this.planner = planner;
     this.qm = qm;
     this.plan = plan;
   }

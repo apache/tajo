@@ -9,6 +9,7 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
+import nta.catalog.statistics.TableStat;
 import nta.engine.query.exception.InvalidQueryException;
 
 public class TCatUtil {
@@ -94,6 +95,11 @@ public class TCatUtil {
   public static TableMeta newTableMeta(Schema schema, StoreType type, 
       Options options) {
     return new TableMetaImpl(schema, type, options);
+  }
+  
+  public static TableMeta newTableMeta(Schema schema, StoreType type, Options options, 
+      TableStat stat) {
+    return new TableMetaImpl(schema, type, options, stat);
   }
   
   public static TableDesc newTableDesc(String tableName, TableMeta meta, 

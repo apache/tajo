@@ -11,16 +11,18 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import nta.catalog.TCatUtil;
+import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.statistics.TableStat;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.QueryManager.WaitStatus;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
+import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
-import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalQueryPlanner;
 import nta.engine.query.QueryUnitRequestImpl;
@@ -81,8 +83,9 @@ public class QueryUnitScheduler extends Thread {
       Path tablePath = sm.getTablePath(plan.getOutputName());
       sm.getFileSystem().mkdirs(tablePath);
     } else {
-      sm.initTableBase(TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV), 
-          plan.getOutputName());
+//      sm.initTableBase(TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV), 
+//          plan.getOutputName());
+      sm.initTableBase(null, plan.getOutputName());
     }
     
     // TODO: adjust the number of localization
@@ -100,6 +103,9 @@ public class QueryUnitScheduler extends Thread {
     requestPendingQueryUnits();
     
     waitForFinishQueryUnits();
+    TableMeta meta = TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV);
+    meta.setStat(qm.getStatSet(plan.getOutputName()));
+    sm.writeTableMeta(sm.getTablePath(plan.getOutputName()), meta);
     waitQueue.clear();
   }
   
@@ -133,6 +139,7 @@ public class QueryUnitScheduler extends Thread {
   
   private void waitForFinishQueryUnits() throws Exception {
     boolean wait = true;
+    TableStat stat = new TableStat();
     while (wait) {
       Thread.sleep(WAIT_PERIOD);
       wait = false;
@@ -153,6 +160,8 @@ public class QueryUnitScheduler extends Thread {
               requestBackupTask(unit);
               inprogress.reset();
             }
+          } else {
+            
           }
         } else {
           wait = true;
