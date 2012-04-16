@@ -158,6 +158,7 @@ public class TestPhysicalPlanner {
       "select 3 < 4 as ineq, 3.5 * 2 as real", // 13
       "select 3 > 2 = 1 > 0 and 3 > 1", // 14
       "select deptName, class, sum(score), max(score), min(score) from score", // 15
+      "select deptname, class, sum(score), max(score), min(score) from score group by deptname" // 16
   };
 
   public final void testCreateScanPlan() throws IOException {
@@ -210,6 +211,31 @@ public class TestPhysicalPlanner {
       i++;
     }
     assertEquals(10, i);
+  }
+  
+  @Test
+  public final void testGroupByPlanWithALLField() throws IOException {
+    Fragment[] frags = sm.split("score");
+    Path workDir = NtaTestingUtility.getTestDir("GroupBy");
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+        new Fragment[] { frags[0] }, workDir);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[16]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    plan = LogicalOptimizer.optimize(ctx, plan);    
+
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+
+    int i = 0;
+    Tuple tuple = null;
+    while ((tuple = exec.next()) != null) {
+      assertEquals(DatumFactory.createAllDatum(), tuple.get(1));
+      assertEquals(12, tuple.getInt(2).asInt()); // sum
+      assertEquals(3, tuple.getInt(3).asInt()); // max
+      assertEquals(1, tuple.getInt(4).asInt()); // min
+      i++;
+    }    
+    assertEquals(5, i);
   }
 
   @Test

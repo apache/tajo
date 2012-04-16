@@ -20,5 +20,6 @@ public enum DatumType {
 	STRING,
 	ENUM,
 	IPv4,
-	IPv6;
+	IPv6,
+	ALL
 }

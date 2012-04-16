@@ -95,4 +95,8 @@ public class DatumFactory {
 	public static IPv4Datum createIPv4(String val) {
 	  return new IPv4Datum(val);
 	}
+	
+	public static AllDatum createAllDatum() {
+	  return AllDatum.get();
+	}
 }

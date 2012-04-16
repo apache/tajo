@@ -8,16 +8,22 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.datum.Datum;
+import nta.datum.DatumFactory;
 import nta.engine.SubqueryContext;
+import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
+
+import com.google.common.collect.Sets;
 
 /**
  * This class is the hash-based GroupBy Operator.
@@ -37,6 +43,7 @@ public class GroupByExec extends PhysicalExec {
   private Tuple tuple = null;
   private int keylist [];
   private int measurelist [];
+  private Set<Column> nonAllProjFields;
   private Map<Tuple, Tuple> tupleSlots;
   
   private boolean computed = false;
@@ -56,14 +63,17 @@ public class GroupByExec extends PhysicalExec {
     
     tupleSlots = new HashMap<Tuple, Tuple>(1000);
 
+    nonAllProjFields = Sets.newHashSet(); 
+    
     // getting key list
     keylist = new int[annotation.getGroupingColumns().length];
-    int idx = 0;
-    for (Column col : annotation.getGroupingColumns()) {
+    Column col = null;
+    for (int idx = 0; idx < annotation.getGroupingColumns().length; idx++) {
+      col = annotation.getGroupingColumns()[idx];
       keylist[idx] = inputSchema.getColumnId(col.getQualifiedName());
-      idx++;
-    }
-    
+      nonAllProjFields.add(col);
+    }    
+        
     // getting value list
     int valueIdx = 0;
     measurelist = new int[annotation.getTargetList().length - keylist.length];
@@ -80,11 +90,14 @@ public class GroupByExec extends PhysicalExec {
       }
     }
     
-    idx = 0;
     evals = new EvalNode[annotation.getTargetList().length];
-    for (Target t : annotation.getTargetList()) {
-      evals[idx] = t.getEvalTree();
-      idx++;
+    for (int i = 0; i < annotation.getTargetList().length; i++) {
+      Target t = annotation.getTargetList()[i];
+      if (t.getEvalTree().getType() == Type.FIELD && !nonAllProjFields.contains(t.getColumnSchema())) {
+        evals[i] = new ConstEval(DatumFactory.createAllDatum());
+      } else {
+        evals[i] = t.getEvalTree();
+      }
     }
     
     this.tuple = new VTuple(outputSchema.getColumnNum());
