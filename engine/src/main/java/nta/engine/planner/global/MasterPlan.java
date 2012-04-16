@@ -7,15 +7,15 @@ package nta.engine.planner.global;
  * @author jihoon
  *
  */
-public class LogicalQueryUnitGraph {
+public class MasterPlan {
 
   private ScheduleUnit root;
   
-  public LogicalQueryUnitGraph() {
+  public MasterPlan() {
     root = null;
   }
   
-  public LogicalQueryUnitGraph(ScheduleUnit root) {
+  public MasterPlan(ScheduleUnit root) {
     setRoot(root);
   }
   

@@ -61,19 +61,53 @@ public class TestGlobalEngine {
   private static CatalogService catalog;
   private static NtaEngineMaster master;
   private static StorageManager sm;
+  
+  private class CompositeKey {
+    String deptname;
+    int year;
+    
+    public CompositeKey(String deptname, int year) {
+      this.deptname = deptname;
+      this.year = year;
+    }
+    
+    @Override
+    public String toString() {
+      return "(" + this.deptname + ", " + year + ")";
+    }
+    
+    @Override
+    public int hashCode() {
+      return deptname.hashCode() ^ new Integer(year).hashCode();
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+      if (o instanceof CompositeKey) {
+        CompositeKey k = (CompositeKey) o;
+        if (this.deptname.equals(k.deptname) && this.year == k.year) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
 
   private String[] query = {
-      "select deptname, sum(score) from score group by deptname having sum(score) > 30",
+//      "select deptname, sum(score) from score group by deptname having sum(score) > 30",
+      "select deptname, year, sum(score) from score group by deptname, year",
       "select deptname from score",
       "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname",
       "create table test (id int, name string) using csv location '/tmp/data' with ('csv.delimiter'='|')",
-      "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname and score.score > 10000"
+      "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname and score.score > 10000",
+      "select deptname, year, sum(score) from score group by cube (deptname, year)"
   };
-  private static Map<String, Integer> groupbyResult;
+  private static Map<CompositeKey, Integer> groupbyResult;
+  private static Map<CompositeKey, Integer> cubebyResult;
   private static Set<String> scanResult;
   private static Map<String, List<Integer>> joinResult;
   private static Map<String, List<Integer>> selectAfterJoinResult;
-
+  
   private String tablename;
 
   @Before
@@ -86,7 +120,8 @@ public class TestGlobalEngine {
     sm = new StorageManager(conf);
 
     catalog = master.getCatalog();
-    groupbyResult = new HashMap<String, Integer>();
+    groupbyResult = new HashMap<TestGlobalEngine.CompositeKey, Integer>();
+    cubebyResult = new HashMap<CompositeKey, Integer>();
     scanResult = new HashSet<String>();
     joinResult = new HashMap<String, List<Integer>>();
     selectAfterJoinResult = new HashMap<String, List<Integer>>();
@@ -94,48 +129,72 @@ public class TestGlobalEngine {
     Schema scoreSchema = new Schema();
     scoreSchema.addColumn("deptname", DataType.STRING);
     scoreSchema.addColumn("score", DataType.INT);
+    scoreSchema.addColumn("year", DataType.INT);
     TableMeta scoreMeta = TCatUtil.newTableMeta(scoreSchema, StoreType.CSV);
 
     Schema deptSchema = new Schema();
     deptSchema.addColumn("id", DataType.INT);
     deptSchema.addColumn("deptname", DataType.STRING);
+    deptSchema.addColumn("since", DataType.INT);
     TableMeta deptMeta = TCatUtil.newTableMeta(deptSchema, StoreType.CSV);
 
     Appender appender = sm.getTableAppender(scoreMeta, "score");
-    int deptSize = 10000;
-    int tupleNum = 10000000;
+    int deptSize = 1000;
+    int tupleNum = 100000;
+    int allScoreSum = 0;
     Tuple tuple = null;
     for (int i = 0; i < tupleNum; i++) {
-      tuple = new VTuple(2);
-      String key = "test" + (i % deptSize);
-      tuple.put(0, DatumFactory.createString(key));
-      tuple.put(1, DatumFactory.createInt(i + 1));
+      tuple = new VTuple(3);
+      String id = "test" + (i % deptSize);
+      tuple.put(0, DatumFactory.createString(id));          // id
+      tuple.put(1, DatumFactory.createInt(i + 1));          // score
+      tuple.put(2, DatumFactory.createInt(i + 1900));       // year
       appender.addTuple(tuple);
-      scanResult.add(key);
-      if (!groupbyResult.containsKey(key)) {
-        groupbyResult.put(key, i + 1);
+      scanResult.add(id);
+      allScoreSum += i+1;
+      CompositeKey compkey = new CompositeKey(id, i+1900);
+      if (!groupbyResult.containsKey(compkey)) {
+        groupbyResult.put(compkey, i + 1);
       } else {
-        int n = groupbyResult.get(key);
-        groupbyResult.put(key, n + i + 1);
+        int n = groupbyResult.get(compkey);
+        groupbyResult.put(compkey, n + i + 1);
       }
-      if (!joinResult.containsKey(key)) {
+      if (!cubebyResult.containsKey(compkey)) {
+        cubebyResult.put(compkey, i+1);
+      } else {
+        cubebyResult.put(compkey, cubebyResult.get(compkey)+i+1);
+      }
+      CompositeKey idkey = new CompositeKey(id, 0);
+      if (!cubebyResult.containsKey(idkey)) {
+        cubebyResult.put(idkey, i+1);
+      } else {
+        cubebyResult.put(idkey, cubebyResult.get(idkey)+i+1);
+      }
+      CompositeKey yearkey = new CompositeKey("null", i+1900);
+      if (!cubebyResult.containsKey(yearkey)) {
+        cubebyResult.put(yearkey, i+1);
+      } else {
+        cubebyResult.put(yearkey, cubebyResult.get(yearkey)+i+1);
+      }
+      if (!joinResult.containsKey(id)) {
         List<Integer> list = new ArrayList<Integer>();
         list.add((i+1));
-        joinResult.put(key, list);
+        joinResult.put(id, list);
       } else {
-        joinResult.get(key).add((i+1));
+        joinResult.get(id).add((i+1));
       }
 
       if (i+1 > 10000) {
-        if (!selectAfterJoinResult.containsKey(key)) {
+        if (!selectAfterJoinResult.containsKey(id)) {
           List<Integer> list = new ArrayList<Integer>();
           list.add((i+1));
-          selectAfterJoinResult.put(key, list);
+          selectAfterJoinResult.put(id, list);
         } else {
-          selectAfterJoinResult.get(key).add((i+1));
+          selectAfterJoinResult.get(id).add((i+1));
         }
       }
     }
+    cubebyResult.put(new CompositeKey("null", 0), allScoreSum);
     appender.close();
 
     TableDesc score = new TableDescImpl("score", scoreSchema, StoreType.CSV,
@@ -145,9 +204,10 @@ public class TestGlobalEngine {
     appender = sm.getTableAppender(deptMeta, "dept");
     tupleNum = deptSize;
     for (int i = 0; i < tupleNum; i++) {
-      tuple = new VTuple(2);
+      tuple = new VTuple(3);
       tuple.put(0, DatumFactory.createInt(i+1));
       tuple.put(1, DatumFactory.createString("test"+i));
+      tuple.put(2, DatumFactory.createInt(i%1000));
       appender.addTuple(tuple);
     }
     appender.close();
@@ -210,9 +270,12 @@ public class TestGlobalEngine {
     Scanner scanner = sm.getTableScanner(tablename);
     Tuple tuple = null;
     String deptname;
+    int year;
     while ((tuple = scanner.next()) != null) {
       deptname = tuple.get(0).asChars();
-      assertEquals(groupbyResult.get(deptname).intValue(), tuple.get(1).asInt());
+      year = tuple.get(1).asInt();
+      assertEquals(groupbyResult.get(new CompositeKey(deptname, year)).intValue(), 
+          tuple.get(2).asInt());
     }
   }
 
@@ -251,6 +314,28 @@ public class TestGlobalEngine {
       deptname = tuple.get(0).asChars();
       results = new HashSet<Integer>(selectAfterJoinResult.get(deptname));
       assertTrue(results.contains(tuple.get(1).asInt()));
+    }
+  }
+  
+  @Test
+  public void testCubeby() throws Exception {
+    ExecuteQueryRequest.Builder builder
+    = ExecuteQueryRequest.newBuilder();
+    builder.setQuery(query[5]);
+    ExecuteQueryRespose res = master.executeQuery(builder.build());
+    String tablename = res.getPath();
+    assertNotNull(tablename);
+    Scanner scanner = sm.getTableScanner(tablename);
+    Tuple tuple = null;
+    String deptname;
+    int year;
+    while ((tuple = scanner.next()) != null) {
+      deptname = tuple.get(0).asChars();
+      year = tuple.get(1).asInt();
+      LOG.info(">>>>>>>>> deptname: " + deptname + " year: " + year + 
+          " sum(score): " + tuple.get(2).asInt());
+      assertEquals(cubebyResult.get(new CompositeKey(deptname, year)).intValue(), 
+          tuple.get(2).asInt());
     }
   }
 

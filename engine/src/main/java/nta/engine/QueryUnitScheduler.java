@@ -13,7 +13,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.catalog.statistics.TableStat;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
@@ -23,6 +22,7 @@ import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
+import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalQueryPlanner;
 import nta.engine.query.QueryUnitRequestImpl;
@@ -76,37 +76,56 @@ public class QueryUnitScheduler extends Thread {
       }
     }
     
-    qm.addLogicalQueryUnit(plan);
-    LOG.info("Table path " + sm.getTablePath(plan.getOutputName()).toString()
-        + " is initialized for " + plan.getOutputName());
-    if (plan.getOutputType() == PARTITION_TYPE.HASH) {
-      Path tablePath = sm.getTablePath(plan.getOutputName());
-      sm.getFileSystem().mkdirs(tablePath);
+    if (plan.getStoreTableNode().getSubNode().getType() == ExprType.UNION) {
+      // union operators are not executed
+//      // change inputs of the next schedule unit
+//      ScheduleUnit next = plan.getNextQuery();
+//      for (ScanNode ns : next.getScanNodes()) {
+//        if (ns.getTableId().equals(plan.getStoreTableNode().getTableName())) {
+//          next.removePrevQuery(ns);
+//          next.removeScan(ns);
+//        }
+//      }
+//      for (ScanNode s : plan.getScanNodes()) {
+//        next.addScan(s);
+//      }
+//      next.addPrevQueries(plan.getPrevMaps());
     } else {
-//      sm.initTableBase(TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV), 
-//          plan.getOutputName());
-      sm.initTableBase(null, plan.getOutputName());
-    }
-    
-    // TODO: adjust the number of localization
-    QueryUnit[] units = planner.localize(plan, cm.getOnlineWorker().size());
-    String hostName;
-    for (QueryUnit q : units) {
-      hostName = cm.getProperHost(q);
-      if (hostName == null) {
-        hostName = cm.getRandomHost();
+      LOG.info("Plan of " + plan.getId() + " : " + plan.getLogicalPlan());
+      qm.addLogicalQueryUnit(plan);
+      if (plan.getOutputType() == PARTITION_TYPE.HASH) {
+        Path tablePath = sm.getTablePath(plan.getOutputName());
+        sm.getFileSystem().mkdirs(tablePath);
+        LOG.info("Table path " + sm.getTablePath(plan.getOutputName()).toString()
+            + " is initialized for " + plan.getOutputName());
+      } else {
+        if (!sm.getFileSystem().exists(sm.getTablePath(plan.getOutputName()))) {
+          sm.initTableBase(null, plan.getOutputName());
+          LOG.info("Table path " + sm.getTablePath(plan.getOutputName()).toString()
+              + " is initialized for " + plan.getOutputName());
+        }
       }
-      q.setHost(hostName);
-      pendingQueue.add(q);
-      qm.updateQueryAssignInfo(hostName, q);
+
+      // TODO: adjust the number of localization
+      QueryUnit[] units = planner.localize(plan, cm.getOnlineWorker().size());
+      String hostName;
+      for (QueryUnit q : units) {
+        hostName = cm.getProperHost(q);
+        if (hostName == null) {
+          hostName = cm.getRandomHost();
+        }
+        q.setHost(hostName);
+        pendingQueue.add(q);
+        qm.updateQueryAssignInfo(hostName, q);
+      }
+      requestPendingQueryUnits();
+      
+      waitForFinishQueryUnits();
+      TableMeta meta = TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV);
+      meta.setStat(qm.getStatSet(plan.getOutputName()));
+      sm.writeTableMeta(sm.getTablePath(plan.getOutputName()), meta);
+      waitQueue.clear();
     }
-    requestPendingQueryUnits();
-    
-    waitForFinishQueryUnits();
-    TableMeta meta = TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV);
-    meta.setStat(qm.getStatSet(plan.getOutputName()));
-    sm.writeTableMeta(sm.getTablePath(plan.getOutputName()), meta);
-    waitQueue.clear();
   }
   
   private void requestPendingQueryUnits() throws Exception {
@@ -139,7 +158,6 @@ public class QueryUnitScheduler extends Thread {
   
   private void waitForFinishQueryUnits() throws Exception {
     boolean wait = true;
-    TableStat stat = new TableStat();
     while (wait) {
       Thread.sleep(WAIT_PERIOD);
       wait = false;

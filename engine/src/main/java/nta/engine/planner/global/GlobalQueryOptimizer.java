@@ -26,10 +26,10 @@ public class GlobalQueryOptimizer {
     
   }
   
-  public LogicalQueryUnitGraph optimize(ScheduleUnit logicalUnit) {
+  public MasterPlan optimize(ScheduleUnit logicalUnit) {
     ScheduleUnit reducedStep = reduceLogicalQueryUnitStep(logicalUnit);
     ScheduleUnit joinChosen = chooseJoinAlgorithm(reducedStep);
-    return new LogicalQueryUnitGraph(joinChosen);
+    return new MasterPlan(joinChosen);
   }
   
   @VisibleForTesting
@@ -68,15 +68,17 @@ public class GlobalQueryOptimizer {
       ScheduleUnit child) {
     LogicalNode p = PlannerUtil.findTopParentNode(parent.getLogicalPlan(), 
         ExprType.SCAN);
-    Preconditions.checkArgument(p instanceof UnaryNode);
-    ScanNode scan = (ScanNode) ((UnaryNode)p).getSubNode();
-    LogicalNode c = child.getStoreTableNode().getSubNode();
-    UnaryNode u = (UnaryNode) p;
-    u.setSubNode(c);
+//    Preconditions.checkArgument(p instanceof UnaryNode);
+    if (p instanceof UnaryNode) {
+      UnaryNode u = (UnaryNode) p;
+      ScanNode scan = (ScanNode) u.getSubNode();
+      LogicalNode c = child.getStoreTableNode().getSubNode();
 
-    parent.removePrevQuery(scan);
-    parent.setLogicalPlan(parent.getLogicalPlan());
-    parent.addPrevQueries(child.getPrevMaps());
+      parent.removePrevQuery(scan);
+      u.setSubNode(c);
+      parent.setLogicalPlan(parent.getLogicalPlan());
+      parent.addPrevQueries(child.getPrevMaps());
+    }
     return parent;
   }
 }

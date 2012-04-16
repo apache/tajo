@@ -136,7 +136,7 @@ public class TestGlobalQueryOptimizer {
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
-    LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
+    MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
     globalPlan = optimizer.optimize(globalPlan.getRoot());
     
     ScheduleUnit unit = globalPlan.getRoot();

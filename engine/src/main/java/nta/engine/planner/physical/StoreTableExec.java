@@ -70,6 +70,7 @@ public class StoreTableExec extends PhysicalExec {
     
     // Collect statistics data
     ctx.addStatSet(annotation.getType().toString(), appender.getStats());
+    ctx.addRepartition(0, ctx.getQueryId().toString());
         
     return null;
   }

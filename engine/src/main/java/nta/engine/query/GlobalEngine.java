@@ -31,7 +31,7 @@ import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.GlobalQueryOptimizer;
-import nta.engine.planner.global.LogicalQueryUnitGraph;
+import nta.engine.planner.global.MasterPlan;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
@@ -118,7 +118,7 @@ public class GlobalEngine implements EngineService {
       LOG.info("=== SubQuery " + subId + " is initialized");
       qm.addSubQuery(subQuery);
       // build the global plan
-      LogicalQueryUnitGraph globalPlan = globalPlanner.build(subId, plan);
+      MasterPlan globalPlan = globalPlanner.build(subId, plan);
       globalPlan = globalOptimizer.optimize(globalPlan.getRoot());
       
       QueryUnitScheduler queryUnitScheduler = new QueryUnitScheduler(
@@ -131,7 +131,7 @@ public class GlobalEngine implements EngineService {
     }
   }
   
-  public LogicalQueryUnitGraph testQuery(String querystr) throws Exception {
+  public MasterPlan testQuery(String querystr) throws Exception {
     LOG.info("* issued query: " + querystr);
     // build the logical plan
     QueryContext ctx = factory.create();

@@ -43,8 +43,17 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     this.local = local;
   }
   
+  public final void setTableName(String tableName) {
+    this.tableName = tableName;
+  }
+  
   public final boolean isLocal() {
     return this.local;
+  }
+  
+  public final void clearPartitions() {
+    this.partitionKeys = null;
+    this.numPartitions = 0;
   }
   
   public final void setPartitions(Column [] keys, int numPartitions) {

@@ -1,6 +1,9 @@
 package nta.engine.plan.global;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -31,14 +34,15 @@ import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
-import nta.engine.planner.global.LogicalQueryUnitGraph;
+import nta.engine.planner.global.MasterPlan;
 import nta.engine.planner.global.QueryUnit;
-import nta.engine.planner.logical.JoinNode;
-import nta.engine.planner.logical.SelectionNode;
-import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
+import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
+import nta.engine.planner.logical.SelectionNode;
+import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.UnionNode;
 import nta.engine.query.GlobalQueryPlanner;
 import nta.storage.Appender;
 import nta.storage.CSVFile2;
@@ -143,7 +147,7 @@ public class TestGlobalQueryPlanner {
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, block);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
-    LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
+    MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
     
     ScheduleUnit unit = globalPlan.getRoot();
     assertFalse(unit.hasPrevQuery());
@@ -162,7 +166,7 @@ public class TestGlobalQueryPlanner {
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
-    LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
+    MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
 
     ScheduleUnit next, prev;
     
@@ -201,7 +205,7 @@ public class TestGlobalQueryPlanner {
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
-    LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
+    MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
     
     ScheduleUnit next, prev;
     
@@ -234,7 +238,7 @@ public class TestGlobalQueryPlanner {
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
-    LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
+    MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
     
     ScheduleUnit next, prev;
     
@@ -294,7 +298,7 @@ public class TestGlobalQueryPlanner {
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
     
-    LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
+    MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
     
     ScheduleUnit unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
@@ -313,6 +317,51 @@ public class TestGlobalQueryPlanner {
   }
   
   @Test
+  public void testCubeby() throws IOException {
+    QueryContext ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx, 
+        "select age, sum(salary) from table0 group by cube (age, id)");
+    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
+    logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
+    
+    MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
+    
+    ScheduleUnit unit = globalPlan.getRoot();
+    StoreTableNode store = unit.getStoreTableNode();
+    assertEquals(ExprType.UNION, store.getSubNode().getType());
+    UnionNode union = (UnionNode) store.getSubNode();
+    assertEquals(ExprType.SCAN, union.getOuterNode().getType());
+    assertEquals(ExprType.UNION, union.getInnerNode().getType());
+    union = (UnionNode) union.getInnerNode();
+    assertEquals(ExprType.SCAN, union.getOuterNode().getType());
+    assertEquals(ExprType.UNION, union.getInnerNode().getType());
+    union = (UnionNode) union.getInnerNode();
+    assertEquals(ExprType.SCAN, union.getOuterNode().getType());
+    assertEquals(ExprType.SCAN, union.getInnerNode().getType());
+    assertTrue(unit.hasPrevQuery());
+    
+    String tableId = "";
+    for (ScanNode scan : unit.getScanNodes()) {
+      ScheduleUnit prev = unit.getPrevQuery(scan);
+      store = prev.getStoreTableNode();
+      assertEquals(ExprType.GROUP_BY, store.getSubNode().getType());
+      GroupbyNode groupby = (GroupbyNode) store.getSubNode();
+      assertEquals(ExprType.SCAN, groupby.getSubNode().getType());
+      if (tableId.equals("")) {
+        tableId = store.getTableName();
+      } else {
+        assertEquals(tableId, store.getTableName());
+      }
+      assertEquals(1, prev.getScanNodes().length);
+      prev = prev.getPrevQuery(prev.getScanNodes()[0]);
+      store = prev.getStoreTableNode();
+      assertEquals(ExprType.GROUP_BY, store.getSubNode().getType());
+      groupby = (GroupbyNode) store.getSubNode();
+      assertEquals(ExprType.SCAN, groupby.getSubNode().getType());
+    }
+  }
+  
+  @Test
   public void testLocalize() throws IOException, URISyntaxException {
     QueryContext ctx = factory.create();
     ParseTree tree = (ParseTree) analyzer.parse(ctx,
@@ -320,7 +369,7 @@ public class TestGlobalQueryPlanner {
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
-    LogicalQueryUnitGraph globalPlan = planner.build(subQueryId, logicalPlan);
+    MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
     
     recursiveTestLocalize(globalPlan.getRoot());
   }

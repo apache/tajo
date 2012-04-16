@@ -6,18 +6,17 @@ package nta.engine.planner.global;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import nta.catalog.Schema;
 import nta.engine.LogicalQueryUnitId;
 import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.UnaryNode;
 
 import com.google.common.base.Preconditions;
@@ -37,7 +36,7 @@ public class ScheduleUnit {
   private LogicalQueryUnitId id;
   private LogicalNode plan = null;
   private StoreTableNode store = null;
-  private ScanNode[] scan = null;
+  private List<ScanNode> scanlist = null;
   private ScheduleUnit next;
   private Map<ScanNode, ScheduleUnit> prevs;
   private PARTITION_TYPE outputType;
@@ -46,6 +45,7 @@ public class ScheduleUnit {
   public ScheduleUnit(LogicalQueryUnitId id) {
     this.id = id;
     prevs = new HashMap<ScanNode, ScheduleUnit>();
+    scanlist = new ArrayList<ScanNode>();
   }
   
   public void setOutputType(PARTITION_TYPE type) {
@@ -60,22 +60,17 @@ public class ScheduleUnit {
     LogicalNode node = plan;
     ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
     s.add(node);
-    int i = 0;
     while (!s.isEmpty()) {
       node = s.remove(s.size()-1);
       if (node instanceof UnaryNode) {
         UnaryNode unary = (UnaryNode) node;
         s.add(s.size(), unary.getSubNode());
       } else if (node instanceof BinaryNode) {
-        scan = new ScanNode[2];
         BinaryNode binary = (BinaryNode) node;
         s.add(s.size(), binary.getOuterNode());
         s.add(s.size(), binary.getInnerNode());
       } else if (node instanceof ScanNode) {
-        if (scan == null) {
-          scan = new ScanNode[1];
-        }
-        scan[i++] = (ScanNode) node;
+        scanlist.add((ScanNode)node);
       }
     }
   }
@@ -96,8 +91,17 @@ public class ScheduleUnit {
     this.queryUnits = queryUnits;
   }
   
-  public void removePrevQuery(ScanNode prevscan) {
-    this.prevs.remove(prevscan);
+  public void removePrevQuery(ScanNode scan) {
+    scanlist.remove(scan);
+    this.prevs.remove(scan);
+  }
+  
+  public void removeScan(ScanNode scan) {
+    scanlist.remove(scan);
+  }
+  
+  public void addScan(ScanNode scan) {
+    scanlist.add(scan);
   }
   
   public ScheduleUnit getNextQuery() {
@@ -141,7 +145,7 @@ public class ScheduleUnit {
   }
   
   public ScanNode[] getScanNodes() {
-    return this.scan;
+    return this.scanlist.toArray(new ScanNode[scanlist.size()]);
   }
   
   public LogicalNode getLogicalPlan() {

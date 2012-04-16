@@ -33,7 +33,7 @@ public class QueryUnit {
 	private QueryUnitId id;
 	private StoreTableNode store = null;
 	private LogicalNode plan = null;
-	private ScanNode[] scan;
+	private List<ScanNode> scan;
 	private List<Fragment> fragments;
 	
 	private String hostName;
@@ -42,6 +42,8 @@ public class QueryUnit {
 	public QueryUnit(QueryUnitId id) {
 		this.id = id;
 		fragments = new ArrayList<Fragment>();
+		scan = new ArrayList<ScanNode>();
+    fetchMap = new HashMap<String, List<URI>>();
 	}
 	
 	public void setLogicalPlan(LogicalNode plan) {
@@ -59,18 +61,11 @@ public class QueryUnit {
 	      UnaryNode unary = (UnaryNode) node;
 	      s.add(s.size(), unary.getSubNode());
 	    } else if (node instanceof BinaryNode) {
-	      scan = new ScanNode[2];
 	      BinaryNode binary = (BinaryNode) node;
 	      s.add(s.size(), binary.getOuterNode());
 	      s.add(s.size(), binary.getInnerNode());
 	    } else if (node instanceof ScanNode) {
-	      if (scan == null) {
-	        scan = new ScanNode[1];
-	      }
-	      scan[i++] = (ScanNode) node;
-	      if (scan[i-1].isLocal()) {
-	        fetchMap = new HashMap<String, List<URI>>();
-	      }
+	      scan.add((ScanNode)node);
 	    }
 	  }
 	}
@@ -162,7 +157,7 @@ public class QueryUnit {
 	}
 	
 	public ScanNode[] getScanNodes() {
-	  return this.scan;
+	  return this.scan.toArray(new ScanNode[scan.size()]);
 	}
 	
 	@Override

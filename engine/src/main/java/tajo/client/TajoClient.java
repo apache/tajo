@@ -1,5 +1,6 @@
 package tajo.client;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.util.List;
@@ -14,16 +15,20 @@ import nta.engine.ClientServiceProtos.AttachTableResponse;
 import nta.engine.ClientServiceProtos.CreateTableRequest;
 import nta.engine.ClientServiceProtos.CreateTableResponse;
 import nta.engine.ClientServiceProtos.ExecuteQueryRequest;
+import nta.engine.ClientServiceProtos.ExecuteQueryRespose;
 import nta.engine.ClientServiceProtos.GetClusterInfoRequest;
 import nta.engine.ClientServiceProtos.GetClusterInfoResponse;
 import nta.engine.ClientServiceProtos.GetTableListRequest;
 import nta.engine.ClientServiceProtos.GetTableListResponse;
 import nta.engine.NConstants;
+import nta.engine.query.ResultSetImpl;
 import nta.engine.utils.ProtoUtil;
 import nta.rpc.NettyRpc;
 import nta.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import nta.rpc.protocolrecords.PrimitiveProtos.StringProto;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
@@ -32,6 +37,8 @@ import org.apache.hadoop.net.NetUtils;
  * @author Hyunsik Choi
  */
 public class TajoClient {
+  private final Log LOG = LogFactory.getLog(TajoClient.class);
+  
   private final Configuration conf;
   private final ClientService service;
   
@@ -51,9 +58,15 @@ public class TajoClient {
     return service != null;
   }
   
-  public ResultSet executeQuery(String tql) {
+  public ResultSet executeQuery(String tql) throws IOException {
     // TODO - to be implemented in NTA-647
-    return null;
+    ExecuteQueryRequest.Builder builder = ExecuteQueryRequest.newBuilder();
+    builder.setQuery(tql);
+    ExecuteQueryRespose response = service.executeQuery(builder.build());
+    ResultSet resultSet = new ResultSetImpl(conf, response.getPath());
+    LOG.info(">>>> Output path: " + response.getPath());
+    LOG.info(">>>> Response time: " + response.getResponseTime());
+    return resultSet;
   }
   
   public void updateQuery(String tql) {

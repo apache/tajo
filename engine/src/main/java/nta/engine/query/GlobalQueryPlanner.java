@@ -20,6 +20,7 @@ import java.util.TreeMap;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
+import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
@@ -34,10 +35,10 @@ import nta.engine.exec.eval.EvalTreeUtil;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryBlock.FromTable;
 import nta.engine.planner.PlannerUtil;
+import nta.engine.planner.global.MasterPlan;
+import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
-import nta.engine.planner.global.LogicalQueryUnitGraph;
-import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.logical.BinaryNode;
 import nta.engine.planner.logical.CreateIndexNode;
 import nta.engine.planner.logical.ExprType;
@@ -50,6 +51,7 @@ import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.UnaryNode;
+import nta.engine.planner.logical.UnionNode;
 import nta.storage.StorageManager;
 
 import org.apache.commons.logging.Log;
@@ -71,7 +73,7 @@ public class GlobalQueryPlanner {
     this.catalog = catalog;
   }
 
-  public LogicalQueryUnitGraph build(SubQueryId subQueryId, LogicalNode logicalPlan)
+  public MasterPlan build(SubQueryId subQueryId, LogicalNode logicalPlan)
       throws IOException {
     // insert store at the subnode of the root
     UnaryNode root = (UnaryNode) logicalPlan;
@@ -89,7 +91,7 @@ public class GlobalQueryPlanner {
     LogicalNode tp = convertTo2Phase(logicalPlan);
 
     // make query graph
-    LogicalQueryUnitGraph globalPlan = convertToGlobalPlan(subQueryId, indexNode, tp);
+    MasterPlan globalPlan = convertToGlobalPlan(subQueryId, indexNode, tp);
 
     return globalPlan;
   }
@@ -101,13 +103,14 @@ public class GlobalQueryPlanner {
     return store;
   }
   
-  private class TwoPhaseBuilder implements LogicalNodeVisitor {
+  private class GlobalPlanBuilder implements LogicalNodeVisitor {
     @Override
     public void visit(LogicalNode node) {
       String tableId;
       if (node.getType() == ExprType.GROUP_BY) {
         GroupbyNode groupby = (GroupbyNode) node;
-        if (groupby.getSubNode().getType() != ExprType.STORE &&
+        if (groupby.getSubNode().getType() != ExprType.UNION &&
+            groupby.getSubNode().getType() != ExprType.STORE &&
             groupby.getSubNode().getType() != ExprType.SCAN) {
           tableId = QueryIdFactory.newLogicalQueryUnitId().toString();
           insertStore(tableId, groupby);
@@ -116,7 +119,8 @@ public class GlobalQueryPlanner {
         PlannerUtil.transformGroupbyTo2PWithStore((GroupbyNode)node, tableId);
       } else if (node.getType() == ExprType.SORT) {
         SortNode sort = (SortNode) node;
-        if (sort.getSubNode().getType() != ExprType.STORE &&
+        if (sort.getSubNode().getType() != ExprType.UNION &&
+            sort.getSubNode().getType() != ExprType.STORE &&
             sort.getSubNode().getType() != ExprType.SCAN) {
           tableId = QueryIdFactory.newLogicalQueryUnitId().toString();
           insertStore(tableId, sort);
@@ -125,13 +129,31 @@ public class GlobalQueryPlanner {
         PlannerUtil.transformSortTo2PWithStore((SortNode)node, tableId);
       } else if (node.getType() == ExprType.JOIN) {
         JoinNode join = (JoinNode) node;
-        if (join.getOuterNode().getType() != ExprType.STORE) {
+        if (join.getOuterNode().getType() != ExprType.UNION &&
+            join.getOuterNode().getType() != ExprType.STORE) {
           tableId = QueryIdFactory.newLogicalQueryUnitId().toString();
           StoreTableNode store = new StoreTableNode(tableId);
           store.setLocal(true);
           PlannerUtil.insertOuterNode(node, store);
         }
-        if (join.getInnerNode().getType() != ExprType.STORE) {
+        if (join.getInnerNode().getType() != ExprType.UNION &&
+            join.getInnerNode().getType() != ExprType.STORE) {
+          tableId = QueryIdFactory.newLogicalQueryUnitId().toString();
+          StoreTableNode store = new StoreTableNode(tableId);
+          store.setLocal(true);
+          PlannerUtil.insertInnerNode(node, store);
+        }
+      } else if (node.getType() == ExprType.UNION) {
+        UnionNode union = (UnionNode) node;
+        if (union.getOuterNode().getType() != ExprType.UNION &&
+            union.getOuterNode().getType() != ExprType.STORE) {
+          tableId = QueryIdFactory.newLogicalQueryUnitId().toString();
+          StoreTableNode store = new StoreTableNode(tableId);
+          store.setLocal(true);
+          PlannerUtil.insertOuterNode(node, store);
+        }
+        if (union.getInnerNode().getType() != ExprType.UNION &&
+            union.getInnerNode().getType() != ExprType.STORE) {
           tableId = QueryIdFactory.newLogicalQueryUnitId().toString();
           StoreTableNode store = new StoreTableNode(tableId);
           store.setLocal(true);
@@ -143,19 +165,19 @@ public class GlobalQueryPlanner {
 
   private LogicalNode convertTo2Phase(LogicalNode logicalPlan) {
     LogicalRootNode root = (LogicalRootNode) logicalPlan;
-    root.postOrder(new TwoPhaseBuilder());
+    root.postOrder(new GlobalPlanBuilder());
     return logicalPlan;
   }
   
   private Map<StoreTableNode, ScheduleUnit> convertMap = 
       new HashMap<StoreTableNode, ScheduleUnit>();
   
-  private void recursiveBuildQueryUnit(LogicalNode node) 
+  private void recursiveBuildScheduleUnit(LogicalNode node) 
       throws IOException {
     ScheduleUnit unit = null;
     StoreTableNode store;
     if (node instanceof UnaryNode) {
-      recursiveBuildQueryUnit(((UnaryNode) node).getSubNode());
+      recursiveBuildScheduleUnit(((UnaryNode) node).getSubNode());
       
       if (node.getType() == ExprType.STORE) {
         store = (StoreTableNode) node;
@@ -169,21 +191,25 @@ public class GlobalQueryPlanner {
 
         switch (store.getSubNode().getType()) {
         case SCAN:  // store - scan
-          unit = makeScanUnit(node, unit);
+          unit = makeScanUnit(unit);
           unit.setLogicalPlan(node);
           break;
         case SELECTION:
         case PROJECTION:
-          unit = makeUnifiableUnit(store.getSubNode(), unit);
+          unit = makeUnifiableUnit(store, store.getSubNode(), unit);
           unit.setLogicalPlan(node);
           break;
         case GROUP_BY:
         case SORT:
-          unit = makeTwoPhaseUnit(node, unit);
+          unit = makeTwoPhaseUnit(store, node, unit);
           unit.setLogicalPlan(node);
           break;
         case JOIN:  // store - join
-          unit = makeJoinUnit(node, unit);
+          unit = makeJoinUnit(store, node, unit);
+          unit.setLogicalPlan(node);
+          break;
+        case UNION:
+          unit = makeUnionUnit(store, node, unit);
           unit.setLogicalPlan(node);
           break;
         default:
@@ -193,43 +219,45 @@ public class GlobalQueryPlanner {
         convertMap.put(store, unit);
       }
     } else if (node instanceof BinaryNode) {
-      recursiveBuildQueryUnit(((BinaryNode) node).getOuterNode());
-      recursiveBuildQueryUnit(((BinaryNode) node).getInnerNode());
+      recursiveBuildScheduleUnit(((BinaryNode) node).getOuterNode());
+      recursiveBuildScheduleUnit(((BinaryNode) node).getInnerNode());
     } else {
       
     }
   }
   
-  private ScheduleUnit makeScanUnit(LogicalNode plan, 
-      ScheduleUnit unit) {
+  private ScheduleUnit makeScanUnit(ScheduleUnit unit) {
     unit.setOutputType(PARTITION_TYPE.LIST);
     return unit;
   }
   
-  private ScheduleUnit makeUnifiableUnit(LogicalNode plan, 
-      ScheduleUnit unit) throws IOException {
+  private ScheduleUnit makeUnifiableUnit(StoreTableNode rootStore, 
+      LogicalNode plan, ScheduleUnit unit) throws IOException {
     UnaryNode unary = (UnaryNode) plan;
     switch (unary.getSubNode().getType()) {
     case SCAN:
-      unit = makeScanUnit(plan, unit);
+      unit = makeScanUnit(unit);
       break;
     case SELECTION:
     case PROJECTION:
-      unit = makeUnifiableUnit(unary.getSubNode(), unit);
+      unit = makeUnifiableUnit(rootStore, unary.getSubNode(), unit);
       break;
     case SORT:
     case GROUP_BY:
-      unit = makeTwoPhaseUnit(plan, unit);
+      unit = makeTwoPhaseUnit(rootStore, plan, unit);
       break;
     case JOIN:
-      unit = makeJoinUnit(plan, unit);
+      unit = makeJoinUnit(rootStore, plan, unit);
+      break;
+    case UNION:
+      unit = makeUnionUnit(rootStore, plan, unit);
       break;
     }
     return unit;
   }
   
-  private ScheduleUnit makeTwoPhaseUnit(LogicalNode plan, 
-      ScheduleUnit unit) throws IOException {
+  private ScheduleUnit makeTwoPhaseUnit(StoreTableNode rootStore, 
+      LogicalNode plan, ScheduleUnit unit) throws IOException {
     UnaryNode unary = (UnaryNode) plan;
     UnaryNode unaryChild;
     StoreTableNode prevStore;
@@ -263,66 +291,175 @@ public class GlobalQueryPlanner {
     } else if (unaryChild.getSubNode().getType() == ExprType.SCAN) {
       // store - groupby - scan
       unit.setOutputType(PARTITION_TYPE.HASH);
+    } else if (unaryChild.getSubNode().getType() == ExprType.UNION) {
+      _handleUnionNode(rootStore, (UnionNode)unaryChild.getSubNode(), unit, 
+          null, PARTITION_TYPE.LIST);
     } else {
       // error
     }
     return unit;
   }
   
-  private ScheduleUnit makeJoinUnit(LogicalNode plan, 
-      ScheduleUnit unit) throws IOException {
-    UnaryNode unary = (UnaryNode)plan;
-    StoreTableNode prevStore;
+  private ScheduleUnit makeUnionUnit(StoreTableNode rootStore, 
+      LogicalNode plan, ScheduleUnit unit) throws IOException {
+    UnaryNode unary = (UnaryNode) plan;
+    StoreTableNode outerStore, innerStore;
     ScheduleUnit prev;
-    JoinNode join = (JoinNode) unary.getSubNode();
+    UnionNode union = (UnionNode) unary.getSubNode();
     unit.setOutputType(PARTITION_TYPE.LIST);
     
-    prevStore = (StoreTableNode) join.getOuterNode();
-    StoreTableNode prevStore2 = (StoreTableNode) join.getInnerNode();
-    TableMeta lmeta = TCatUtil.newTableMeta(prevStore.getOutputSchema(), 
-        StoreType.CSV);
-    TableMeta rmeta = TCatUtil.newTableMeta(prevStore2.getOutputSchema(), 
-        StoreType.CSV);
-    insertScan(join, prevStore.getTableName(), prevStore2.getTableName(), 
-        lmeta, rmeta);
-    
-    prev = convertMap.get(prevStore);
-    if (prev != null) {
-      prev.setOutputType(PARTITION_TYPE.HASH);
-      prev.setNextQuery(unit);
-      unit.addPrevQuery((ScanNode)join.getOuterNode(), prev);
+    if (union.getOuterNode().getType() == ExprType.STORE) {
+      outerStore = (StoreTableNode) union.getOuterNode();
+      TableMeta outerMeta = TCatUtil.newTableMeta(outerStore.getOutputSchema(), 
+          StoreType.CSV);
+      insertOuterScan(union, outerStore.getTableName(), outerMeta);
+      prev = convertMap.get(outerStore);
+      if (prev != null) {
+        prev.getStoreTableNode().setTableName(rootStore.getTableName());
+        prev.setOutputType(PARTITION_TYPE.LIST);
+        prev.setNextQuery(unit);
+        unit.addPrevQuery((ScanNode)union.getOuterNode(), prev);
+      }
+    } else if (union.getOuterNode().getType() == ExprType.UNION) {
+      _handleUnionNode(rootStore, union, unit, null, PARTITION_TYPE.LIST);
     }
     
-    prev = convertMap.get(prevStore2);
-    if (prev != null) {
-      prev.setOutputType(PARTITION_TYPE.HASH);
-      prev.setNextQuery(unit);
-      unit.addPrevQuery((ScanNode)join.getInnerNode(), prev);
+    if (union.getInnerNode().getType() == ExprType.STORE) {
+      innerStore = (StoreTableNode) union.getInnerNode();
+      TableMeta innerMeta = TCatUtil.newTableMeta(innerStore.getOutputSchema(), 
+          StoreType.CSV);
+      insertInnerScan(union, innerStore.getTableName(), innerMeta);
+      prev = convertMap.get(innerStore);
+      if (prev != null) {
+        prev.getStoreTableNode().setTableName(rootStore.getTableName());
+        prev.setOutputType(PARTITION_TYPE.LIST);
+        prev.setNextQuery(unit);
+        unit.addPrevQuery((ScanNode)union.getInnerNode(), prev);
+      }
+    } else if (union.getInnerNode().getType() == ExprType.UNION) {
+      _handleUnionNode(rootStore, union, unit, null, PARTITION_TYPE.LIST);
     }
+
+    return unit;
+  }
+  
+  private ScheduleUnit makeJoinUnit(StoreTableNode rootStore, 
+      LogicalNode plan, ScheduleUnit unit) throws IOException {
+    UnaryNode unary = (UnaryNode)plan;
+    StoreTableNode outerStore, innerStore;
+    ScheduleUnit prev;
+    JoinNode join = (JoinNode) unary.getSubNode();
+    Schema outerSchema = join.getOuterNode().getOutputSchema();
+    Schema innerSchema = join.getInnerNode().getOutputSchema();
+    unit.setOutputType(PARTITION_TYPE.LIST);
+    List<Column> outerCollist = new ArrayList<Column>();
+    List<Column> innerCollist = new ArrayList<Column>();   
     
     // TODO: set partition for store nodes
     if (join.hasJoinQual()) {
       // repartition
       Set<Column> cols = EvalTreeUtil.findDistinctRefColumns(join.getJoinQual());
       Iterator<Column> it = cols.iterator();
-      List<Column> leftCols = new ArrayList<Column>();
-      List<Column> rightCols = new ArrayList<Column>();
       while (it.hasNext()) {
         Column col = it.next();
-        if (prevStore.getOutputSchema().contains(col.getQualifiedName())) {
-          leftCols.add(col);
-        } else if (prevStore2.getOutputSchema().contains(col.getQualifiedName())) {
-          rightCols.add(col);
+        if (outerSchema.contains(col.getQualifiedName())) {
+          outerCollist.add(col);
+        } else if (innerSchema.contains(col.getQualifiedName())) {
+          innerCollist.add(col);
         }
       }
-      prevStore.setPartitions(leftCols.toArray(
-          new Column[leftCols.size()]), 1);
-      prevStore2.setPartitions(rightCols.toArray(
-          new Column[rightCols.size()]), 1);
     } else {
       // broadcast
     }
+    
+    Column[] outerCols = new Column[outerCollist.size()];
+    Column[] innerCols = new Column[innerCollist.size()];
+    outerCols = outerCollist.toArray(outerCols);
+    innerCols = innerCollist.toArray(innerCols);
+    
+    // outer
+    if (join.getOuterNode().getType() == ExprType.STORE) {
+      outerStore = (StoreTableNode) join.getOuterNode();
+      TableMeta outerMeta = TCatUtil.newTableMeta(outerStore.getOutputSchema(), 
+          StoreType.CSV);
+      insertOuterScan(join, outerStore.getTableName(), outerMeta);
+      prev = convertMap.get(outerStore);
+      if (prev != null) {
+        prev.setOutputType(PARTITION_TYPE.HASH);
+        prev.setNextQuery(unit);
+        unit.addPrevQuery((ScanNode)join.getOuterNode(), prev);
+      }
+      outerStore.setPartitions(outerCols, 1);
+    } else if (join.getOuterNode().getType() != ExprType.UNION) {
+      _handleUnionNode(rootStore, (UnionNode)join.getOuterNode(), unit, 
+          outerCols, PARTITION_TYPE.HASH);
+    }
+    
+    // inner
+    if (join.getInnerNode().getType() == ExprType.STORE) {
+      innerStore = (StoreTableNode) join.getInnerNode();
+      TableMeta innerMeta = TCatUtil.newTableMeta(innerStore.getOutputSchema(), 
+          StoreType.CSV);
+      insertInnerScan(join, innerStore.getTableName(), innerMeta);
+      prev = convertMap.get(innerStore);
+      if (prev != null) {
+        prev.setOutputType(PARTITION_TYPE.HASH);
+        prev.setNextQuery(unit);
+        unit.addPrevQuery((ScanNode)join.getInnerNode(), prev);
+      }
+      innerStore.setPartitions(innerCols, 1);
+    } else if (join.getInnerNode().getType() == ExprType.UNION) {
+      _handleUnionNode(rootStore, (UnionNode)join.getInnerNode(), unit,
+          innerCols, PARTITION_TYPE.HASH);
+    }
+    
     return unit;
+  }
+  
+  private void _handleUnionNode(StoreTableNode rootStore, UnionNode union, 
+      ScheduleUnit cur, Column[] cols, PARTITION_TYPE prevOutputType) 
+          throws IOException {
+    StoreTableNode store;
+    TableMeta meta;
+    ScheduleUnit prev;
+    
+    if (union.getOuterNode().getType() == ExprType.STORE) {
+      store = (StoreTableNode) union.getOuterNode();
+      meta = TCatUtil.newTableMeta(store.getOutputSchema(), StoreType.CSV);
+      insertOuterScan(union, store.getTableName(), meta);
+      prev = convertMap.get(store);
+      if (prev != null) {
+        prev.getStoreTableNode().setTableName(rootStore.getTableName());
+        prev.setOutputType(prevOutputType);
+        prev.setNextQuery(cur);
+        cur.addPrevQuery((ScanNode)union.getOuterNode(), prev);
+      }
+      if (cols != null) {
+        store.setPartitions(cols, 1);
+      }
+    } else if (union.getOuterNode().getType() == ExprType.UNION) {
+      _handleUnionNode(rootStore, (UnionNode)union.getOuterNode(), cur, cols, 
+          prevOutputType);
+    }
+    
+    if (union.getInnerNode().getType() == ExprType.STORE) {
+      store = (StoreTableNode) union.getInnerNode();
+      meta = TCatUtil.newTableMeta(store.getOutputSchema(), StoreType.CSV);
+      insertInnerScan(union, store.getTableName(), meta);
+      prev = convertMap.get(store);
+      if (prev != null) {
+        prev.getStoreTableNode().setTableName(rootStore.getTableName());
+        prev.setOutputType(prevOutputType);
+        prev.setNextQuery(cur);
+        cur.addPrevQuery((ScanNode)union.getInnerNode(), prev);
+      }
+      if (cols != null) {
+        store.setPartitions(cols, 1);
+      }
+    } else if (union.getInnerNode().getType() == ExprType.UNION) {
+      _handleUnionNode(rootStore, (UnionNode)union.getInnerNode(), cur, cols, 
+          prevOutputType);
+    }
   }
   
   private LogicalNode insertScan(LogicalNode parent, String tableId, TableMeta meta) 
@@ -336,53 +473,62 @@ public class GlobalQueryPlanner {
     return newScan;
   }
   
-  private LogicalNode insertScan(LogicalNode parent, String leftId, String rightId, 
-      TableMeta lmeta, TableMeta rmeta) throws IOException {
-    TableDesc desc = TCatUtil.newTableDesc(leftId, lmeta, sm.getTablePath(leftId));
-    ScanNode left = new ScanNode(new FromTable(desc));
-    left.setLocal(true);
-    left.setInputSchema(lmeta.getSchema());
-    left.setOutputSchema(lmeta.getSchema());
-    desc = TCatUtil.newTableDesc(rightId, rmeta, sm.getTablePath(rightId));
-    ScanNode right = new ScanNode(new FromTable(desc));
-    right.setLocal(true);
-    right.setInputSchema(rmeta.getSchema());
-    right.setOutputSchema(rmeta.getSchema());
-    ((BinaryNode)parent).setInner(right);
-    ((BinaryNode)parent).setOuter(left);
+  private LogicalNode insertOuterScan(BinaryNode parent, String tableId, 
+      TableMeta meta) throws IOException {
+    TableDesc desc = TCatUtil.newTableDesc(tableId, meta, sm.getTablePath(tableId));
+    ScanNode scan = new ScanNode(new FromTable(desc));
+    scan.setLocal(true);
+    scan.setInputSchema(meta.getSchema());
+    scan.setOutputSchema(meta.getSchema());
+    parent.setOuter(scan);
     return parent;
   }
   
-  private LogicalQueryUnitGraph convertToGlobalPlan(SubQueryId subQueryId,
+  private LogicalNode insertInnerScan(BinaryNode parent, String tableId, 
+      TableMeta meta) throws IOException {
+    TableDesc desc = TCatUtil.newTableDesc(tableId, meta, sm.getTablePath(tableId));
+    ScanNode scan = new ScanNode(new FromTable(desc));
+    scan.setLocal(true);
+    scan.setInputSchema(meta.getSchema());
+    scan.setOutputSchema(meta.getSchema());
+    parent.setInner(scan);
+    return parent;
+  }
+  
+  private MasterPlan convertToGlobalPlan(SubQueryId subQueryId,
       CreateIndexNode index, LogicalNode logicalPlan) throws IOException {
-    recursiveBuildQueryUnit(logicalPlan);
+    recursiveBuildScheduleUnit(logicalPlan);
     ScheduleUnit root = convertMap.get(((LogicalRootNode)logicalPlan).getSubNode());
     if (index != null) {
       index.setSubNode(root.getLogicalPlan());
       root.setLogicalPlan(index);
     }
-    return new LogicalQueryUnitGraph(root);
+    return new MasterPlan(root);
   }
 
-  public QueryUnit[] localize(ScheduleUnit logicalUnit, int n) 
+  public QueryUnit[] localize(ScheduleUnit unit, int n) 
       throws IOException, URISyntaxException {
     FileStatus[] files;
     Fragment[] frags;
-    List<Fragment> fragList = new ArrayList<Fragment>();
-    List<URI> uriList = new ArrayList<URI>();
+    List<Fragment> fragList;
+    List<URI> uriList;
+    Map<ScanNode, List<Fragment>> fragMap = new HashMap<ScanNode, List<Fragment>>();
+    Map<ScanNode, List<URI>> fetchMap = new HashMap<ScanNode, List<URI>>();
     
     // if the next query is join, 
     // set the partition number for the current logicalUnit
-    ScheduleUnit nextQueryUnit = logicalUnit.getNextQuery();
-    if (nextQueryUnit != null &&
-        nextQueryUnit.getStoreTableNode().getSubNode().getType() == ExprType.JOIN) {
-      logicalUnit.getStoreTableNode().setPartitions(
-          logicalUnit.getStoreTableNode().getPartitionKeys(), n);
+    // TODO: union handling when join has union as its child
+    ScheduleUnit nextQueryUnit = unit.getNextQuery();
+    if (nextQueryUnit != null) {
+      if (nextQueryUnit.getStoreTableNode().getSubNode().getType() == ExprType.JOIN) {
+        unit.getStoreTableNode().setPartitions(
+            unit.getStoreTableNode().getPartitionKeys(), n);
+      }
     }
 
     // set the partition number for groupby and sort
-    if (logicalUnit.getOutputType() == PARTITION_TYPE.HASH) {
-      StoreTableNode store = logicalUnit.getStoreTableNode();
+    if (unit.getOutputType() == PARTITION_TYPE.HASH) {
+      StoreTableNode store = unit.getStoreTableNode();
       Column[] keys = null;
       if (store.getSubNode().getType() == ExprType.GROUP_BY) {
         GroupbyNode groupby = (GroupbyNode)store.getSubNode();
@@ -395,12 +541,17 @@ public class GlobalQueryPlanner {
         }
       }
       if (keys != null) {
-        store.setPartitions(keys, n);
+        if (keys.length == 0) {
+//          store.clearPartitions();
+          store.setPartitions(new Column[]{}, 1);
+        } else {
+          store.setPartitions(keys, n);
+        }
       }
     }
 
     Path tablepath = null;
-    ScanNode[] scans = logicalUnit.getScanNodes();
+    ScanNode[] scans = unit.getScanNodes();
     for (ScanNode scan : scans) {
       if (scan.getTableId().startsWith(QueryId.PREFIX)) {
         tablepath = sm.getTablePath(scan.getTableId());
@@ -409,18 +560,27 @@ public class GlobalQueryPlanner {
       }
       if (scan.isLocal()) {
         // make fetchMap
+        uriList = new ArrayList<URI>();
+        fragList = new ArrayList<Fragment>();
         for (WaitStatus status: qm.getWaitStatusOfLogicalUnit(
-            logicalUnit.getPrevQuery(scan))) {
+            unit.getPrevQuery(scan))) {
           int cnt = status.getInProgressStatus().getPartitionsCount();
           for (int i = 0; i < cnt; i++) {
             uriList.add(new URI(status.getInProgressStatus().
                 getPartitions(i).getFileName()));
           }
         }
+        fetchMap.put(scan, uriList);
+        Fragment frag = new Fragment(scan.getTableId(), tablepath,
+            TCatUtil.newTableMeta(scan.getInputSchema(),StoreType.CSV), 
+            0, 0);
+        fragList.add(frag);
+        fragMap.put(scan, fragList);
       } else {
+        fragList = new ArrayList<Fragment>();
         // set fragments for each scan
-        if (logicalUnit.hasPrevQuery() && 
-            logicalUnit.getPrevQuery(scan).getOutputType() == 
+        if (unit.hasPrevQuery() && 
+            unit.getPrevQuery(scan).getOutputType() == 
             PARTITION_TYPE.HASH) {
           files = sm.getFileSystem().listStatus(tablepath);
         } else {
@@ -435,47 +595,69 @@ public class GlobalQueryPlanner {
             fragList.add(f);
           }
         }
+        fragMap.put(scan, fragList);
       }
     }
 
-    QueryUnit[] units = split(logicalUnit, n);
-    if (logicalUnit.hasPrevQuery()) {
-      for (ScanNode scan : scans) {
-        if (scan.getTableId().startsWith(QueryId.PREFIX)) {
-          tablepath = sm.getTablePath(scan.getTableId());
-        } else {
-          tablepath = catalog.getTableDesc(scan.getTableId()).getPath();
+    QueryUnit[] units = split(unit, n);
+    for (ScanNode scan : scans) {
+      if (unit.hasPrevQuery()) {
+        ScheduleUnit prev = unit.getPrevQuery(scan);
+        if (prev.getStoreTableNode().getSubNode().getType() == 
+            ExprType.GROUP_BY) {
+          GroupbyNode groupby = (GroupbyNode) prev.getStoreTableNode().
+              getSubNode();
+          if (groupby.getGroupingColumns().length == 0) {
+            units = split(unit, 1);
+            
+          }
         }
-        if (scan.isLocal()) {
-          Fragment frag = new Fragment(scan.getTableId(), 
-              tablepath,
-              TCatUtil.newTableMeta(scan.getInputSchema(),StoreType.CSV), 
-              0, 0);
-          fragList.add(frag);
-        }
-        switch (logicalUnit.getPrevQuery(scan).getOutputType()) {
+        switch (prev.getOutputType()) {
         case BROADCAST:
-          assignFetchesByBroadcast(units, uriList);
+          assignFetchesByBroadcast(units, fetchMap.get(scan));
           break;
         case HASH:
           if (scan.isLocal()) {
-            assignFetchesByHash(units, uriList);
+            assignFetchesByHash(units, fetchMap.get(scan));
+            assignEqualFragment(units, fragMap.get(scan).get(0));
+          } else {
+            assignFragmentsByHash(units, fragMap.get(scan));
           }
-          assignFragmentsByHash(units, fragList);
           break;
         case LIST:
           if (scan.isLocal()) {
-            assignFetchesByRoundRobin(units, uriList);
-          } 
-          assignFragmentsByRoundRobin(units, fragList);
+            assignFetchesByRoundRobin(units, scan, fetchMap.get(scan));
+            assignEqualFragment(units, fragMap.get(scan).get(0));
+          } else {
+            assignFragmentsByRoundRobin(units, fragMap.get(scan));
+          }
           break;
         }
+      } else {
+        assignFragmentsByRoundRobin(units, fragMap.get(scan));
       }
-    } else {
-      assignFragmentsByRoundRobin(units, fragList);
     }
     
-    logicalUnit.setQueryUnits(units);
+    int cnt = 0;
+    for (QueryUnit u : units) {
+      if (!(u.getFetches().isEmpty() && 
+          u.getFragments().isEmpty())) {
+        cnt++;
+      }
+    }
+    if (cnt != units.length) {
+      QueryUnit[] uus = new QueryUnit[cnt];
+      int i = 0;
+      for (int j = 0; j < units.length; j++) {
+        if (!(units[j].getFetches().isEmpty() &&
+            units[j].getFragments().isEmpty())) {
+          uus[i++] = units[j];
+        }
+      }
+      units = uus;
+    }
+    
+    unit.setQueryUnits(units);
     
     return units;
   }
@@ -504,10 +686,11 @@ public class GlobalQueryPlanner {
     }
   }
   
-  private void assignFetchesByRoundRobin(QueryUnit[] units, List<URI> uriList) { 
+  private void assignFetchesByRoundRobin(QueryUnit[] units, ScanNode scan,
+      List<URI> uriList) { 
     int i = 0;
     for (URI uri : uriList) {
-      units[i].addFetch(units[i].getScanNodes()[0].getTableId(), uri);
+      units[i].addFetch(scan.getTableId(), uri);
       if (++i == units.length) {
         i = 0;
       }
@@ -561,6 +744,12 @@ public class GlobalQueryPlanner {
       if (++i == units.length) {
         i = 0;
       }
+    }
+  }
+  
+  private void assignEqualFragment(QueryUnit[] units, Fragment frag) {
+    for (QueryUnit unit : units) {
+      unit.addFragment(frag);
     }
   }
   
