@@ -27,10 +27,10 @@ import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.planner.logical.LogicalRootNode;
-import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.LogicalRootNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.UnionNode;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.storage.Appender;
@@ -229,7 +229,7 @@ public class TestPhysicalPlanner {
     int i = 0;
     Tuple tuple = null;
     while ((tuple = exec.next()) != null) {
-      assertEquals(DatumFactory.createAllDatum(), tuple.get(1));
+      assertEquals(DatumFactory.createNullDatum(), tuple.get(1));
       assertEquals(12, tuple.getInt(2).asInt()); // sum
       assertEquals(3, tuple.getInt(3).asInt()); // max
       assertEquals(1, tuple.getInt(4).asInt()); // min

@@ -105,9 +105,6 @@ public class CSVFile2 extends Storage {
       for (int i = 0; i < schema.getColumnNum(); i++) {
         datum = tuple.get(i);
         if (datum.type() == DatumType.NULL) {
-          
-        } else if (datum.type() == DatumType.ALL) {
-          sb.append("ALL");        
         } else {
           col = schema.getColumn(i);
           switch (col.getDataType()) {

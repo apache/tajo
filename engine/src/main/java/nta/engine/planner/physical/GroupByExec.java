@@ -43,7 +43,7 @@ public class GroupByExec extends PhysicalExec {
   private Tuple tuple = null;
   private int keylist [];
   private int measurelist [];
-  private Set<Column> nonAllProjFields;
+  private Set<Column> nonNullGroupingFields;
   private Map<Tuple, Tuple> tupleSlots;
   
   private boolean computed = false;
@@ -63,7 +63,7 @@ public class GroupByExec extends PhysicalExec {
     
     tupleSlots = new HashMap<Tuple, Tuple>(1000);
 
-    nonAllProjFields = Sets.newHashSet(); 
+    nonNullGroupingFields = Sets.newHashSet(); 
     
     // getting key list
     keylist = new int[annotation.getGroupingColumns().length];
@@ -71,7 +71,7 @@ public class GroupByExec extends PhysicalExec {
     for (int idx = 0; idx < annotation.getGroupingColumns().length; idx++) {
       col = annotation.getGroupingColumns()[idx];
       keylist[idx] = inputSchema.getColumnId(col.getQualifiedName());
-      nonAllProjFields.add(col);
+      nonNullGroupingFields.add(col);
     }    
         
     // getting value list
@@ -93,8 +93,8 @@ public class GroupByExec extends PhysicalExec {
     evals = new EvalNode[annotation.getTargetList().length];
     for (int i = 0; i < annotation.getTargetList().length; i++) {
       Target t = annotation.getTargetList()[i];
-      if (t.getEvalTree().getType() == Type.FIELD && !nonAllProjFields.contains(t.getColumnSchema())) {
-        evals[i] = new ConstEval(DatumFactory.createAllDatum());
+      if (t.getEvalTree().getType() == Type.FIELD && !nonNullGroupingFields.contains(t.getColumnSchema())) {
+        evals[i] = new ConstEval(DatumFactory.createNullDatum());
       } else {
         evals[i] = t.getEvalTree();
       }
