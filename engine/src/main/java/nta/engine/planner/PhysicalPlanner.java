@@ -8,6 +8,7 @@ import java.io.IOException;
 import nta.engine.SubqueryContext;
 import nta.engine.exception.InternalException;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.planner.logical.IndexWriteNode;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.EvalExprNode;
 import nta.engine.planner.logical.GroupbyNode;
@@ -21,6 +22,7 @@ import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.logical.UnionNode;
 import nta.engine.planner.physical.EvalExprExec;
 import nta.engine.planner.physical.GroupByExec;
+import nta.engine.planner.physical.IndexWriteExec;
 import nta.engine.planner.physical.NLJoinExec;
 import nta.engine.planner.physical.PartitionedStoreExec;
 import nta.engine.planner.physical.PhysicalExec;
@@ -105,11 +107,17 @@ public class PhysicalPlanner {
       outer = createPlanRecursive(ctx, joinNode.getOuterNode());
       inner = createPlanRecursive(ctx, joinNode.getInnerNode());
       return createJoinPlan(ctx, joinNode, outer, inner);
+      
     case UNION:
       UnionNode unionNode = (UnionNode) logicalNode;
       outer = createPlanRecursive(ctx, unionNode.getOuterNode());
       inner = createPlanRecursive(ctx, unionNode.getInnerNode());
       return new UnionExec(outer, inner);
+      
+    case CREATE_INDEX:
+      IndexWriteNode createIndexNode = (IndexWriteNode) logicalNode;
+      outer = createPlanRecursive(ctx, createIndexNode.getSubNode());
+      return createIndexWritePlan(sm, ctx, createIndexNode, outer);
       
     case RENAME:
     case SET_UNION:
@@ -164,5 +172,16 @@ public class PhysicalPlanner {
     SortExec sort = new SortExec(sortNode, subOp);
     
     return sort;
+  }
+  
+  public PhysicalExec createIndexWritePlan(
+      StorageManager sm,
+      SubqueryContext ctx,
+      IndexWriteNode indexWriteNode, PhysicalExec subOp) throws IOException {
+      
+    IndexWriteExec writer = new IndexWriteExec(indexWriteNode, 
+        ctx.getTable(indexWriteNode.getTableName()), subOp);
+    
+    return writer;
   }
 }

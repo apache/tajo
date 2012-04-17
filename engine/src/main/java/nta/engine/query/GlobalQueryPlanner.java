@@ -40,7 +40,7 @@ import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.CreateIndexNode;
+import nta.engine.planner.logical.IndexWriteNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.JoinNode;
@@ -77,10 +77,10 @@ public class GlobalQueryPlanner {
       throws IOException {
     // insert store at the subnode of the root
     UnaryNode root = (UnaryNode) logicalPlan;
-    CreateIndexNode indexNode = null;
+    IndexWriteNode indexNode = null;
     // TODO: check whether the type of the subnode is CREATE_INDEX
     if (root.getSubNode().getType() == ExprType.CREATE_INDEX) {
-      indexNode = (CreateIndexNode) root.getSubNode();
+      indexNode = (IndexWriteNode) root.getSubNode();
       root = (UnaryNode)root.getSubNode();
     } 
     if (root.getSubNode().getType() != ExprType.STORE) {
@@ -496,7 +496,7 @@ public class GlobalQueryPlanner {
   }
   
   private MasterPlan convertToGlobalPlan(SubQueryId subQueryId,
-      CreateIndexNode index, LogicalNode logicalPlan) throws IOException {
+      IndexWriteNode index, LogicalNode logicalPlan) throws IOException {
     recursiveBuildScheduleUnit(logicalPlan);
     ScheduleUnit root = convertMap.get(((LogicalRootNode)logicalPlan).getSubNode());
     if (index != null) {

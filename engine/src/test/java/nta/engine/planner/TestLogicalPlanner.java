@@ -29,7 +29,7 @@ import nta.engine.function.SumInt;
 import nta.engine.json.GsonCreator;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.planner.logical.CreateIndexNode;
+import nta.engine.planner.logical.IndexWriteNode;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.ExceptNode;
 import nta.engine.planner.logical.ExprType;
@@ -506,7 +506,7 @@ public class TestLogicalPlanner {
     LogicalRootNode root = (LogicalRootNode) plan;
     
     assertEquals(ExprType.CREATE_INDEX, root.getSubNode().getType());
-    CreateIndexNode indexNode = (CreateIndexNode) root.getSubNode();
+    IndexWriteNode indexNode = (IndexWriteNode) root.getSubNode();
     assertEquals("idx_employee", indexNode.getIndexName());
     assertEquals("employee", indexNode.getTableName());
     assertEquals(false, indexNode.isUnique());

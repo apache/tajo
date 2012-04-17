@@ -7,7 +7,7 @@ import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 
 import nta.engine.json.GsonCreator;
-import nta.engine.parser.QueryBlock.SortKey;
+import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.utils.TUtil;
 
 /**
@@ -16,7 +16,7 @@ import nta.engine.utils.TUtil;
  */
 public final class SortNode extends UnaryNode implements Cloneable {
 	@Expose
-  private SortKey [] sortKeys;
+  private SortSpec [] sortKeys;
 	
 	public SortNode() {
 		super();
@@ -25,14 +25,14 @@ public final class SortNode extends UnaryNode implements Cloneable {
   /**
    * @param opType
    */
-  public SortNode(SortKey [] sortKeys) {
+  public SortNode(SortSpec [] sortKeys) {
     super(ExprType.SORT);
     Preconditions.checkArgument(sortKeys.length > 0, 
         "At least one sort key must be specified");
     this.sortKeys = sortKeys;
   }
   
-  public SortKey [] getSortKeys() {
+  public SortSpec [] getSortKeys() {
     return this.sortKeys;
   }
   

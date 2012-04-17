@@ -22,6 +22,7 @@ import nta.datum.exception.InvalidCastException;
  */
 public class VTuple implements Tuple {
 	public Datum [] values;
+	private long offset;
 	
 	public VTuple(int size) {
 		values = new Datum [size];
@@ -61,6 +62,14 @@ public class VTuple implements Tuple {
 	//////////////////////////////////////////////////////
 	public Datum get(int fieldId) {
 		return this.values[fieldId];
+	}
+	
+	public void setOffset(long offset) {
+	  this.offset = offset;
+	}
+	
+	public long getOffset() {
+	  return this.offset;
 	}
 	
 	@Override

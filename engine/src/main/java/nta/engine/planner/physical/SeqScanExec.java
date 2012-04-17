@@ -50,8 +50,6 @@ public class SeqScanExec extends PhysicalExec {
       targetIds[i] = inputSchema.getColumnId(target.getQualifiedName());
       i++;
     }
-    
-    this.tuple = new VTuple(outputSchema.getColumnNum());
   }
 
   @Override
@@ -76,7 +74,7 @@ public class SeqScanExec extends PhysicalExec {
           for(int cid : targetIds) {
             newTuple.put(i, tuple.get(cid));
             i++;
-          }
+          }          
           return newTuple;
         }
       }

@@ -6,7 +6,7 @@ package nta.engine.planner.logical;
 import nta.catalog.Options;
 import nta.catalog.proto.CatalogProtos.IndexMethod;
 import nta.engine.parser.CreateIndexStmt;
-import nta.engine.parser.QueryBlock.SortKey;
+import nta.engine.parser.QueryBlock.SortSpec;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -15,15 +15,15 @@ import com.google.gson.annotations.Expose;
 /**
  * @author Hyunsik Choi
  */
-public class CreateIndexNode extends UnaryNode {
+public class IndexWriteNode extends UnaryNode {
   @Expose private String indexName;
   @Expose private boolean unique = false;
   @Expose private String tableName;
   @Expose private IndexMethod method = IndexMethod.TWO_LEVEL_BIN_TREE;
-  @Expose private SortKey [] sortSpecs;
+  @Expose private SortSpec [] sortSpecs;
   @Expose private Options params = null;
 
-  public CreateIndexNode(CreateIndexStmt stmt) {
+  public IndexWriteNode(CreateIndexStmt stmt) {
     super(ExprType.CREATE_INDEX);
     this.indexName = stmt.getIndexName();
     this.unique = stmt.isUnique();
@@ -53,7 +53,7 @@ public class CreateIndexNode extends UnaryNode {
     return this.method;
   }
   
-  public SortKey [] getSortSpecs() {
+  public SortSpec [] getSortSpecs() {
     return this.sortSpecs;
   }
   

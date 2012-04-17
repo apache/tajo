@@ -43,7 +43,7 @@ public class QueryBlock extends ParseTree {
   /* having condition */
   private EvalNode havingCond = null;
   /* keys for ordering */
-  private SortKey [] sortKeys = null;
+  private SortSpec [] sortKeys = null;
   
   public QueryBlock() {
     super(StatementType.SELECT);
@@ -121,11 +121,11 @@ public class QueryBlock extends ParseTree {
     return this.sortKeys != null;
   }
   
-  public final SortKey [] getSortKeys() {
+  public final SortSpec [] getSortKeys() {
     return this.sortKeys;
   }
   
-  public void setSortKeys(final SortKey [] keys) {
+  public void setSortKeys(final SortSpec [] keys) {
     this.sortKeys = keys;
   }
   
@@ -493,12 +493,12 @@ public class QueryBlock extends ParseTree {
     }
   }
   
-  public static class SortKey implements Cloneable {
+  public static class SortSpec implements Cloneable {
     @Expose private Column sortKey;
     @Expose private boolean ascending = true;
     @Expose private boolean nullFirst = false;
     
-    public SortKey(final Column sortKey) {
+    public SortSpec(final Column sortKey) {
       this.sortKey = sortKey;
     }
     
@@ -509,7 +509,7 @@ public class QueryBlock extends ParseTree {
      * @param nullFirst
      * Otherwise, it should be false.
      */
-    public SortKey(final Column sortKey, final boolean asc, 
+    public SortSpec(final Column sortKey, final boolean asc, 
         final boolean nullFirst) {
       this(sortKey);
       this.ascending = asc;
@@ -538,7 +538,7 @@ public class QueryBlock extends ParseTree {
     
     @Override
     public Object clone() throws CloneNotSupportedException {
-      SortKey key = (SortKey) super.clone();
+      SortSpec key = (SortSpec) super.clone();
       key.sortKey = (Column) sortKey.clone();
       key.ascending = ascending;
       

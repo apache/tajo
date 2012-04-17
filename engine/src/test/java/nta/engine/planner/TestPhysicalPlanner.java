@@ -41,6 +41,7 @@ import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
@@ -497,5 +498,32 @@ public class TestPhysicalPlanner {
     tuple = null;
     tuple = exec.next();
     assertEquals(DatumFactory.createBool(true), tuple.get(0));
+  }
+  
+  public final String [] createIndexStmt = {
+      "create index idx_employee on employee using bst (name null first, empId desc)"
+  };
+  
+  @Test
+  public final void testCreateIndex() throws IOException {
+    Fragment[] frags = sm.split("employee");
+    factory = new SubqueryContext.Factory(catalog);
+    Path workDir = NtaTestingUtility.getTestDir("CreateIndex");
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+        new Fragment[] {frags[0]}, workDir);
+    ParseTree query = (ParseTree) analyzer.parse(ctx, createIndexStmt[0]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    LogicalOptimizer.optimize(ctx, plan);
+    
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    @SuppressWarnings("unused")
+    Tuple tuple = null;
+    while ((tuple = exec.next()) != null) {      
+    }
+    
+    Path path = sm.getTablePath("employee");
+    FileStatus [] list = sm.getFileSystem().listStatus(new Path(path, "index"));
+    assertEquals(2, list.length);
   }
 }

@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.DatumFactory;
-import nta.engine.parser.QueryBlock.SortKey;
+import nta.engine.parser.QueryBlock.SortSpec;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
@@ -50,11 +50,11 @@ public class TestTupleComparator {
         DatumFactory.createInt(4),
         DatumFactory.createString("abd"));
 
-    SortKey sortKey1 = new SortKey(schema.getColumn("col4"), true, false);
-    SortKey sortKey2 = new SortKey(schema.getColumn("col5"), true, false);
+    SortSpec sortKey1 = new SortSpec(schema.getColumn("col4"), true, false);
+    SortSpec sortKey2 = new SortSpec(schema.getColumn("col5"), true, false);
 
     TupleComparator tc = new TupleComparator(schema, 
-        new SortKey[] {sortKey1, sortKey2}, null);
+        new SortSpec[] {sortKey1, sortKey2}, null);
     assertEquals(-1, tc.compare(tuple1, tuple2));
     assertEquals(1, tc.compare(tuple2, tuple1));
   }

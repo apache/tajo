@@ -34,7 +34,7 @@ import nta.engine.parser.QueryBlock.GroupByClause;
 import nta.engine.parser.QueryBlock.GroupElement;
 import nta.engine.parser.QueryBlock.GroupType;
 import nta.engine.parser.QueryBlock.JoinClause;
-import nta.engine.parser.QueryBlock.SortKey;
+import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.JoinType;
 import nta.engine.query.exception.AmbiguousFieldException;
@@ -244,7 +244,7 @@ public final class QueryAnalyzer {
         break;
         
       case NQLParser.ORDER_BY:
-        SortKey [] sortKeys = parseSortSpecifiers(ctx, 
+        SortSpec [] sortKeys = parseSortSpecifiers(ctx, 
             (CommonTree) node.getChild(0));
         block.setSortKeys(sortKeys);
         break;        
@@ -295,7 +295,7 @@ public final class QueryAnalyzer {
     String tbName = ast.getChild(idx++).getText();
     ctx.renameTable(tbName, tbName);
     
-    SortKey [] sortSpecs = parseSortSpecifiers(ctx, 
+    SortSpec [] sortSpecs = parseSortSpecifiers(ctx, 
         (CommonTree) ast.getChild(idx++));
 
     CreateIndexStmt stmt = new CreateIndexStmt(idxName, unique, tbName, 
@@ -628,10 +628,10 @@ public final class QueryAnalyzer {
    * @param block
    * @param ast
    */
-  private static SortKey [] parseSortSpecifiers(final Context ctx, 
+  private static SortSpec [] parseSortSpecifiers(final Context ctx, 
       final CommonTree ast) {
     int numSortKeys = ast.getChildCount();
-    SortKey[] sortKeys = new SortKey[numSortKeys];
+    SortSpec[] sortKeys = new SortSpec[numSortKeys];
     CommonTree node = null;
     Column column = null;
     
@@ -641,7 +641,7 @@ public final class QueryAnalyzer {
     for (int i = 0; i < numSortKeys; i++) {
       node = (CommonTree) ast.getChild(i);
       column = checkAndGetColumnByAST(ctx, (CommonTree) node.getChild(0));
-      sortKeys[i] = new SortKey(column);
+      sortKeys[i] = new SortSpec(column);
             
       if (node.getChildCount() > 1) {
         Tree child = null;
@@ -811,7 +811,7 @@ public final class QueryAnalyzer {
   
   private static IndexMethod getIndexMethod(String method) {
     Preconditions.checkNotNull(method);
-    if (method.equals("twolevel-bst")) {
+    if (method.equals("bst")) {
       return IndexMethod.TWO_LEVEL_BIN_TREE;
     } else if (method.equals("btree")) {
       return IndexMethod.BTREE;

@@ -75,6 +75,16 @@ public class FrameTuple implements Tuple {
   public void put(int fieldId, Datum value) {
     throw new UnsupportedException();
   }
+  
+  @Override
+  public void setOffset(long offset) {
+    throw new UnsupportedException();
+  }
+  
+  @Override
+  public long getOffset() {
+    throw new UnsupportedException();
+  }
 
   @Override
   public void put(Datum... values) {

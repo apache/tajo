@@ -9,7 +9,7 @@ import nta.catalog.Column;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.EvalTreeUtil;
 import nta.engine.exec.eval.FuncCallEval;
-import nta.engine.parser.QueryBlock.SortKey;
+import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.LogicalOptimizer.InSchemaRefresher;
 import nta.engine.planner.LogicalOptimizer.OutSchemaRefresher;
@@ -374,7 +374,7 @@ public class PlannerUtil {
         
       case SORT:
         SortNode sortNode = (SortNode) node;
-        for (SortKey key : sortNode.getSortKeys()) {
+        for (SortSpec key : sortNode.getSortKeys()) {
           collected.add(key.getSortKey());
         }
         

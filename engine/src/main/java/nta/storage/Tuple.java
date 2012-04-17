@@ -22,7 +22,7 @@ import nta.datum.StringDatum;
  */
 
 public interface Tuple {
-	
+  
 	public int size();
 	
 	public boolean contains(int fieldid);
@@ -34,6 +34,10 @@ public interface Tuple {
 	public void put(Datum...values);
 	
 	public Datum get(int fieldId);
+	
+	public void setOffset(long offset);
+	
+	public long getOffset();
 
 	public BoolDatum getBoolean(int fieldId);
 	

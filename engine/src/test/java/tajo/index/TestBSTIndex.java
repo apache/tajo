@@ -16,7 +16,7 @@ import nta.datum.DatumFactory;
 import nta.engine.EngineTestingUtils;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.parser.QueryBlock.SortKey;
+import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.planner.physical.TupleComparator;
 import nta.storage.Appender;
 import nta.storage.FileScanner;
@@ -84,9 +84,9 @@ public class TestBSTIndex {
     long fileLen = status.getLen();
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
-    SortKey [] sortKeys = new SortKey[2];
-    sortKeys[0] = new SortKey(schema.getColumn("long"), true, false);
-    sortKeys[1] = new SortKey(schema.getColumn("double"), true, false);
+    SortSpec [] sortKeys = new SortSpec[2];
+    sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", DataType.LONG));
@@ -166,9 +166,9 @@ public class TestBSTIndex {
     long fileLen = status.getLen();
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
-    SortKey [] sortKeys = new SortKey[2];
-    sortKeys[0] = new SortKey(schema.getColumn("long"), true, false);
-    sortKeys[1] = new SortKey(schema.getColumn("double"), true, false);
+    SortSpec [] sortKeys = new SortSpec[2];
+    sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", DataType.LONG));
@@ -234,9 +234,9 @@ public class TestBSTIndex {
     long fileLen = status.getLen();
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
-    SortKey [] sortKeys = new SortKey[2];
-    sortKeys[0] = new SortKey(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortKey(schema.getColumn("long"), true, false);
+    SortSpec [] sortKeys = new SortSpec[2];
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", DataType.INT));
@@ -315,9 +315,9 @@ public class TestBSTIndex {
     long fileLen = status.getLen();
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
-    SortKey [] sortKeys = new SortKey[2];
-    sortKeys[0] = new SortKey(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortKey(schema.getColumn("long"), true, false);
+    SortSpec [] sortKeys = new SortSpec[2];
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", DataType.INT));
@@ -389,9 +389,9 @@ public class TestBSTIndex {
     long fileLen = status.getLen();
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
-    SortKey [] sortKeys = new SortKey[2];
-    sortKeys[0] = new SortKey(schema.getColumn("long"), false, false);
-    sortKeys[1] = new SortKey(schema.getColumn("double"), true, false);
+    SortSpec [] sortKeys = new SortSpec[2];
+    sortKeys[0] = new SortSpec(schema.getColumn("long"), false, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", DataType.LONG));
@@ -462,9 +462,9 @@ public class TestBSTIndex {
     long fileLen = status.getLen();
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
-    SortKey [] sortKeys = new SortKey[2];
-    sortKeys[0] = new SortKey(schema.getColumn("long"), false, false);
-    sortKeys[1] = new SortKey(schema.getColumn("double"), true, false);
+    SortSpec [] sortKeys = new SortSpec[2];
+    sortKeys[0] = new SortSpec(schema.getColumn("long"), false, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", DataType.LONG));
@@ -530,9 +530,9 @@ public class TestBSTIndex {
     long fileLen = status.getLen();
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
-    SortKey [] sortKeys = new SortKey[2];
-    sortKeys[0] = new SortKey(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortKey(schema.getColumn("long"), true, false);
+    SortSpec [] sortKeys = new SortSpec[2];
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", DataType.INT));
@@ -611,9 +611,9 @@ public class TestBSTIndex {
     long fileLen = status.getLen();
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
-    SortKey [] sortKeys = new SortKey[2];
-    sortKeys[0] = new SortKey(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortKey(schema.getColumn("long"), true, false);
+    SortSpec [] sortKeys = new SortSpec[2];
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", DataType.INT));
@@ -683,9 +683,9 @@ public class TestBSTIndex {
     long fileLen = status.getLen();
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
-    SortKey [] sortKeys = new SortKey[2];
-    sortKeys[0] = new SortKey(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortKey(schema.getColumn("long"), true, false);
+    SortSpec [] sortKeys = new SortSpec[2];
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", DataType.INT));

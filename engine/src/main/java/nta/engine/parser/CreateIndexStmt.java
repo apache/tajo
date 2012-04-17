@@ -5,7 +5,7 @@ package nta.engine.parser;
 
 import nta.catalog.Options;
 import nta.catalog.proto.CatalogProtos.IndexMethod;
-import nta.engine.parser.QueryBlock.SortKey;
+import nta.engine.parser.QueryBlock.SortSpec;
 
 import com.google.common.base.Preconditions;
 
@@ -17,7 +17,7 @@ public class CreateIndexStmt extends ParseTree {
   private boolean unique = false;
   private String tableName;
   private IndexMethod method = IndexMethod.TWO_LEVEL_BIN_TREE;
-  private SortKey [] sortSpecs;
+  private SortSpec [] sortSpecs;
   private Options params = null;
 
   public CreateIndexStmt() {
@@ -25,7 +25,7 @@ public class CreateIndexStmt extends ParseTree {
   }
   
   public CreateIndexStmt(String idxName, boolean unique, String tableName, 
-      SortKey [] sortSpecs) {
+      SortSpec [] sortSpecs) {
     this();
     this.idxName = idxName;
     this.unique = unique;
@@ -65,14 +65,14 @@ public class CreateIndexStmt extends ParseTree {
     return this.method;
   }
   
-  public void setSortSpecs(SortKey [] sortSpecs) {
+  public void setSortSpecs(SortSpec [] sortSpecs) {
     Preconditions.checkNotNull(sortSpecs);
     Preconditions.checkArgument(sortSpecs.length > 1, 
         "Sort specifiers must be at least one");
     this.sortSpecs = sortSpecs;
   }
   
-  public SortKey [] getSortSpecs() {
+  public SortSpec [] getSortSpecs() {
     return this.sortSpecs;
   }
   

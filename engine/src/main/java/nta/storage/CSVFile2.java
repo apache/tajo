@@ -388,8 +388,11 @@ public class CSVFile2 extends Storage {
             }
           }
         }
+        
+        long nextOffset = getNextOffset();
 
         VTuple tuple = new VTuple(schema.getColumnNum());
+        tuple.setOffset(nextOffset);
         String[] cells = tupleList[curIndex++].split(delimiter);
         Column field;
 

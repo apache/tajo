@@ -29,7 +29,7 @@ import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.parser.QueryBlock.GroupElement;
 import nta.engine.parser.QueryBlock.GroupType;
 import nta.engine.parser.QueryBlock.JoinClause;
-import nta.engine.parser.QueryBlock.SortKey;
+import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.planner.JoinType;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.storage.Tuple;
@@ -327,7 +327,7 @@ public class TestQueryAnalyzer {
     assertEquals("people", stmt.getTableName());
     assertEquals(IndexMethod.HASH, stmt.getMethod());
     
-    SortKey [] sortKeys = stmt.getSortSpecs();
+    SortSpec [] sortKeys = stmt.getSortSpecs();
     assertEquals(2, sortKeys.length);
     assertEquals("score", sortKeys[0].getSortKey().getColumnName());
     assertEquals(DataType.INT, sortKeys[0].getSortKey().getDataType());

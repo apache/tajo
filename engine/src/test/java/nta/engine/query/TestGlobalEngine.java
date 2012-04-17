@@ -332,8 +332,6 @@ public class TestGlobalEngine {
     while ((tuple = scanner.next()) != null) {
       deptname = tuple.get(0).asChars();
       year = tuple.get(1).asInt();
-      LOG.info(">>>>>>>>> deptname: " + deptname + " year: " + year + 
-          " sum(score): " + tuple.get(2).asInt());
       assertEquals(cubebyResult.get(new CompositeKey(deptname, year)).intValue(), 
           tuple.get(2).asInt());
     }

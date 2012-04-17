@@ -17,7 +17,7 @@ import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalTreeUtil;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
-import nta.engine.parser.QueryBlock.SortKey;
+import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.BinaryNode;
 import nta.engine.planner.logical.StoreTableNode;
@@ -335,7 +335,7 @@ public class LogicalOptimizer {
         }
         
         sortNode.setOutputSchema(projected);
-        for (SortKey key : sortNode.getSortKeys()) {
+        for (SortSpec key : sortNode.getSortKeys()) {
           necessary.add(key.getSortKey());
         }
         

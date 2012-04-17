@@ -24,7 +24,7 @@ import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.parser.SetStmt;
 import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.CreateIndexNode;
+import nta.engine.planner.logical.IndexWriteNode;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.EvalExprNode;
 import nta.engine.planner.logical.ExceptNode;
@@ -139,8 +139,17 @@ public class LogicalPlanner {
   }
   
   private static LogicalNode buildCreateIndexPlan(Context ctx,
-      CreateIndexStmt stmt) {    
-    return new CreateIndexNode(stmt);    
+      CreateIndexStmt stmt) {
+    FromTable table = new FromTable(ctx.getTable(stmt.getTableName()));
+    ScanNode scan = new ScanNode(table);
+    scan.setInputSchema(table.getSchema());
+    scan.setOutputSchema(table.getSchema());
+    IndexWriteNode indexWrite = new IndexWriteNode(stmt);
+    indexWrite.setSubNode(scan);
+    indexWrite.setInputSchema(scan.getOutputSchema());
+    indexWrite.setOutputSchema(scan.getOutputSchema());
+    
+    return indexWrite;
   }
   
   private static LogicalNode buildCreateTablePlan(Context ctx, 
