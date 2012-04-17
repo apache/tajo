@@ -211,7 +211,10 @@ public class CSVFile2 extends Storage {
       this.bufferSize = DEFAULT_BUFFER_SIZE;
 
       // set delimiter.
-      this.delimiter = tablets[0].getMeta().getOption(DELIMITER, DELIMITER_DEFAULT);        
+      this.delimiter = tablets[0].getMeta().getOption(DELIMITER, DELIMITER_DEFAULT);    
+      if (this.delimiter.equals("|")) {
+        this.delimiter = "\\|";
+      }
       
       // set tablets iterator.
       this.tabletSet = new TreeSet<Fragment>();
