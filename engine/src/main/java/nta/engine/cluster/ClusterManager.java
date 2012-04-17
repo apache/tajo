@@ -1,5 +1,6 @@
 package nta.engine.cluster;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,6 +26,8 @@ import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.global.QueryUnit;
 import nta.rpc.RemoteException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
@@ -32,6 +35,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 public class ClusterManager {
+  private final Log LOG = LogFactory.getLog(ClusterManager.class);
 
   public class WorkerInfo {
     public int availableProcessors;
@@ -140,19 +144,21 @@ public class ClusterManager {
     
     Iterator<String> it = catalog.getAllTableNames().iterator();
     List<FragmentServInfo> locInfos;
-    FragmentAssignInfo assignInfo;
+    FragmentAssignInfo assignInfo = null;
     while (it.hasNext()) {
       TableDescProto td = (TableDescProto) catalog.getTableDesc(it.next())
           .getProto();
       locInfos = getFragmentLocInfo(td);
-
+      
       // TODO: select the proper online server
       for (FragmentServInfo locInfo : locInfos) {
         assignInfos = servers.get(locInfo.getHostName());
+        if (assignInfos == null) {
+          assignInfos = servers.values().iterator().next();
+        } 
         assignInfo = assignInfos.poll();
         locInfo.setHost(assignInfo.serverName);
         assignInfos.add(assignInfo.updateFragmentNum());
-
         updateFragLoc(locInfo, assignInfo.serverName);
       }
     }
@@ -176,19 +182,21 @@ public class ClusterManager {
     int fileIdx, blockIdx;
     FileSystem fs = FileSystem.get(conf);
     Path path = new Path(desc.getPath());
-
+    
     FileStatus[] files = fs.listStatus(new Path(path + "/data"));
+    if (files == null || files.length == 0) {
+      throw new FileNotFoundException(path.toString() + "/data");
+    }
     BlockLocation[] blocks;
     String[] hosts;
     List<FragmentServInfo> fragmentInfoList = 
         new ArrayList<FragmentServInfo>();
-
+    
     for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
       blocks = fs.getFileBlockLocations(files[fileIdx], 0,
           files[fileIdx].getLen());
       for (blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
         hosts = blocks[blockIdx].getHosts();
-
         // TODO: select the proper serving node for block
         Fragment fragment = new Fragment(desc.getId(),
             files[fileIdx].getPath(), new TableMetaImpl(desc.getMeta()),
