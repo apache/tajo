@@ -3,32 +3,23 @@
  */
 package tajo.cli;
 
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.Writer;
-import java.sql.ResultSet;
-import java.util.List;
-
 import jline.ConsoleReader;
 import jline.History;
-import nta.catalog.CatalogClient;
 import nta.catalog.Column;
 import nta.catalog.TableDesc;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
 import nta.engine.cluster.ServerNodeTracker;
 import nta.zookeeper.ZkClient;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.PosixParser;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.commons.cli.*;
 import org.apache.hadoop.conf.Configuration;
-
 import tajo.client.TajoClient;
+
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.Writer;
+import java.sql.ResultSet;
+import java.util.List;
 
 /**
  * @author Hyunsik Choi
@@ -39,8 +30,6 @@ public class TajoCli {
   private ZkClient zkClient;
   private ServerNodeTracker masterTracker;
   private TajoClient client;
-  @SuppressWarnings("unused")
-  private CatalogClient catalog;
   
   private String zkAddr;
   private String entryAddr;  
@@ -52,11 +41,11 @@ public class TajoCli {
   
   static {
     options = new Options();
-    options.addOption("a", "addr", true, "client service host");   
+    options.addOption("a", "addr", true, "client service host");
     options.addOption("p", "port", true, "client service port");
-    options.addOption("z", "zkaddr", true, "zookeeper address");
     options.addOption("conf", true, "user configuration dir");
     options.addOption("h", "help", false, "help");
+    options.addOption("l", "local", false, "run on local mode");
   }
   
   public TajoCli(Configuration c, String [] args, 
@@ -84,23 +73,25 @@ public class TajoCli {
       }
       
       this.entryAddr = hostName + ":" + givenPort;
-      c.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
+      conf.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
+      conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
     }
-    
+
     if(this.entryAddr == null && cmd.hasOption("z")) {
       zkAddr = cmd.getOptionValue("z");
       zkClient = new ZkClient(zkAddr);
       masterTracker = new ServerNodeTracker(zkClient, NConstants.ZNODE_CLIENTSERVICE);
-      masterTracker.start();      
-      byte [] entryAddrBytes = null; 
+      masterTracker.start();
+      byte [] entryAddrBytes;
       do {
         entryAddrBytes = masterTracker.blockUntilAvailable(WAIT_TIME);
         sout.println("Waiting the zookeeper (" + zkAddr + ")");
       } while (entryAddrBytes == null);
-      
+
       this.entryAddr = new String(entryAddrBytes);
-      c.set(NConstants.ZOOKEEPER_ADDRESS, this.zkAddr);
-      c.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
+      conf.set(NConstants.ZOOKEEPER_ADDRESS, this.zkAddr);
+      conf.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
+      conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
     }
     
     sout.println("Trying to connect the tajo master (" + c.get(NConstants.CLIENT_SERVICE_ADDRESS) + ")");
@@ -111,10 +102,10 @@ public class TajoCli {
   public int executeShell() throws Exception {
     reader = new ConsoleReader(sin, sout);
     
-    String line = "";
+    String line;
     String cmd [] = null;
     boolean quit = false;
-    while(quit == false) {
+    while(!quit) {
       line = reader.readLine("tajo> ");
       if (line == null) { // if EOF, quit
         quit = true;
@@ -212,9 +203,9 @@ public class TajoCli {
   
   private static String toFormattedString(TableDesc desc) {
     StringBuilder sb = new StringBuilder();
-    sb.append("\ntable name: " + desc.getId()).append("\n");
-    sb.append("table path: " + desc.getPath()).append("\n");
-    sb.append("store type: " + desc.getMeta().getStoreType()).append("\n");
+    sb.append("\ntable name: ").append(desc.getId()).append("\n");
+    sb.append("table path: ").append(desc.getPath()).append("\n");
+    sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
     sb.append("schema: \n");
     
     for(int i = 0; i < desc.getMeta().getSchema().getColumnNum(); i++) {
@@ -232,8 +223,10 @@ public class TajoCli {
 
   public static void main(String [] args) throws Exception {
     Configuration conf = NtaConf.create();
+    PrintWriter out = new PrintWriter(System.out);
     TajoCli shell = new TajoCli(conf, args, 
-        System.in, new PrintWriter(System.out));
+        System.in, out);
+    System.out.println();
     int status = shell.executeShell();
     System.exit(status);
   }

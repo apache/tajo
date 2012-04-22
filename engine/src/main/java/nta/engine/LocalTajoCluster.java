@@ -1,17 +1,16 @@
 package nta.engine;
 
+import nta.conf.NtaConf;
+import nta.engine.utils.JVMClusterUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import nta.conf.NtaConf;
-import nta.engine.utils.JVMClusterUtil;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 
 public class LocalTajoCluster {
 	static final Log LOG = LogFactory.getLog(LocalTajoCluster.class);
@@ -19,14 +18,9 @@ public class LocalTajoCluster {
 	private final List<JVMClusterUtil.LeafServerThread> leafThreads
 	= new CopyOnWriteArrayList<JVMClusterUtil.LeafServerThread>();
 	private final static int DEFAULT_NO = 1;
-	/** local mode */
-	public static final String LOCAL = "local";
-	/** 'local:' */
-	public static final String LOCAL_COLON = LOCAL + ":";
 	private final Configuration conf;
 
-	public LocalTajoCluster(final Configuration conf) 
-		throws Exception {
+	public LocalTajoCluster(final Configuration conf) throws Exception {
 		this(conf, DEFAULT_NO);		
 	}
 

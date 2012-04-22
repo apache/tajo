@@ -3,39 +3,14 @@
  */
 package nta.engine;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import nta.catalog.CatalogService;
-import nta.catalog.LocalCatalog;
-import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
-import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
-import nta.catalog.TableUtil;
+import nta.catalog.*;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.conf.NtaConf;
-import nta.engine.ClientServiceProtos.AttachTableRequest;
-import nta.engine.ClientServiceProtos.AttachTableResponse;
-import nta.engine.ClientServiceProtos.CreateTableRequest;
-import nta.engine.ClientServiceProtos.CreateTableResponse;
-import nta.engine.ClientServiceProtos.ExecuteQueryRequest;
-import nta.engine.ClientServiceProtos.ExecuteQueryRespose;
-import nta.engine.ClientServiceProtos.GetClusterInfoRequest;
-import nta.engine.ClientServiceProtos.GetClusterInfoResponse;
-import nta.engine.ClientServiceProtos.GetTableListRequest;
-import nta.engine.ClientServiceProtos.GetTableListResponse;
+import nta.engine.ClientServiceProtos.*;
 import nta.engine.MasterInterfaceProtos.InProgressStatus;
-import nta.engine.cluster.ClusterManager;
-import nta.engine.cluster.LeafServerTracker;
-import nta.engine.cluster.QueryManager;
-import nta.engine.cluster.WorkerCommunicator;
-import nta.engine.cluster.WorkerListener;
+import nta.engine.cluster.*;
 import nta.engine.query.GlobalEngine;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
@@ -44,8 +19,8 @@ import nta.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import nta.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import nta.storage.StorageManager;
 import nta.zookeeper.ZkClient;
+import nta.zookeeper.ZkServer;
 import nta.zookeeper.ZkUtil;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -53,9 +28,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
-
 import tajo.client.ClientService;
 import tajo.webapp.StaticHttpServer;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Hyunsik Choi
@@ -70,6 +50,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
 
   private final String clientServiceAddr;
   private final ZkClient zkClient;
+  private ZkServer zkServer = null;
 
   private final Path basePath;
   private final Path dataPath;
@@ -125,12 +106,11 @@ public class NtaEngineMaster extends Thread implements ClientService {
 
     // The below is some mode-dependent codes
     // If tajo is local mode
-    if (conf.get(NConstants.CLUSTER_DISTRIBUTED, NConstants.CLUSTER_IS_LOCAL)
-        .equals("false")) {
+    final String mode = conf.get(NConstants.CLUSTER_DISTRIBUTED);
+    if (mode == null || mode.equals(NConstants.CLUSTER_IS_LOCAL)) {
       LOG.info("Enabled Pseudo Distributed Mode");
-      /*
-       * this.zkServer = new ZkServer(conf); this.zkServer.start();
-       */
+      this.zkServer = new ZkServer(conf);
+      this.zkServer.start();
 
       // TODO - When the RPC framework supports all methods of the catalog
       // server, the below comments should be eliminated.
@@ -326,8 +306,8 @@ public class NtaEngineMaster extends Thread implements ClientService {
       LOG.error(ioe);
       throw new RemoteException(ioe);
     }
-    String path = null;
-    long elapsed = 0; 
+    String path;
+    long elapsed;
     try {
       long start = System.currentTimeMillis();
       path = queryEngine.executeQuery(query.getQuery());
@@ -419,7 +399,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
   
   @Override
   public GetClusterInfoResponse getClusterInfo(GetClusterInfoRequest request) throws RemoteException {
-    List<String> onlineServers = null;
+    List<String> onlineServers;
     try {
       onlineServers = getOnlineServer();
       if (onlineServers == null) {

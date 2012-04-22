@@ -1,37 +1,28 @@
 package tajo.client;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.sql.ResultSet;
-import java.util.List;
-
 import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
-import nta.engine.ClientServiceProtos.AttachTableRequest;
-import nta.engine.ClientServiceProtos.AttachTableResponse;
-import nta.engine.ClientServiceProtos.CreateTableRequest;
-import nta.engine.ClientServiceProtos.CreateTableResponse;
-import nta.engine.ClientServiceProtos.ExecuteQueryRequest;
-import nta.engine.ClientServiceProtos.ExecuteQueryRespose;
-import nta.engine.ClientServiceProtos.GetClusterInfoRequest;
-import nta.engine.ClientServiceProtos.GetClusterInfoResponse;
-import nta.engine.ClientServiceProtos.GetTableListRequest;
-import nta.engine.ClientServiceProtos.GetTableListResponse;
+import nta.engine.ClientServiceProtos.*;
+import nta.engine.LocalTajoCluster;
 import nta.engine.NConstants;
 import nta.engine.query.ResultSetImpl;
 import nta.engine.utils.ProtoUtil;
 import nta.rpc.NettyRpc;
 import nta.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import nta.rpc.protocolrecords.PrimitiveProtos.StringProto;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.sql.ResultSet;
+import java.util.List;
 
 /**
  * @author Hyunsik Choi
@@ -42,16 +33,30 @@ public class TajoClient {
   private final Configuration conf;
   private final ClientService service;
   
-  public TajoClient(Configuration conf) {
+  public TajoClient(Configuration conf) throws IOException {
     this.conf = conf;
-    
+
     String masterAddr = this.conf.get(NConstants.CLIENT_SERVICE_ADDRESS, 
         NConstants.DEFAULT_CLIENT_SERVICE_ADDRESS);
-    InetSocketAddress addr = NetUtils.createSocketAddr(masterAddr);
-    
-    service =
-        (ClientService) NettyRpc.getProtoParamBlockingRpcProxy(
-            ClientService.class, addr);
+
+    String mode = this.conf.get(NConstants.CLUSTER_DISTRIBUTED);
+    // If cli is executed in local mode
+    if (mode == null || mode.equals(NConstants.CLUSTER_IS_LOCAL)) {
+      try {
+        LocalTajoCluster cluster = new LocalTajoCluster(conf);
+        cluster.startup();
+        service = cluster.getMaster();
+      } catch (Exception e) {
+        LOG.error(e);
+        throw new IOException(e);
+      }
+    } else {
+      InetSocketAddress addr = NetUtils.createSocketAddr(masterAddr);
+
+      service =
+          (ClientService) NettyRpc.getProtoParamBlockingRpcProxy(
+              ClientService.class, addr);
+    }
   }
   
   public boolean isConnected() {
