@@ -3,6 +3,7 @@ package nta.engine.planner.physical;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 
 import nta.catalog.CatalogService;
@@ -121,7 +122,7 @@ public class TestNLJoinExec {
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);
     
     factory = new SubqueryContext.Factory(catalog);
-    Path workDir = NtaTestingUtility.getTestDir("CrossJoin");
+    File workDir = NtaTestingUtility.getTestDir("CrossJoin");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
         merged, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
@@ -149,7 +150,7 @@ public class TestNLJoinExec {
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);
     
     factory = new SubqueryContext.Factory(catalog);
-    Path workDir = NtaTestingUtility.getTestDir("InnerJoin");
+    File workDir = NtaTestingUtility.getTestDir("InnerJoin");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
         merged, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);

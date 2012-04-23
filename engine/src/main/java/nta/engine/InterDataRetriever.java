@@ -6,6 +6,7 @@ package nta.engine;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,10 +32,10 @@ public class InterDataRetriever implements DataRetriever {
   public InterDataRetriever() {
   }
   
-  public void register(QueryUnitId id, String workDir) {
+  public void register(QueryUnitId id, String baseURI) {
     synchronized (registered) {
       if (!registered.contains(id)) {      
-        map.put(id.toString(), workDir);
+        map.put(id.toString(), baseURI);
         registered.add(id);      
       }
     } 
@@ -81,8 +82,8 @@ public class InterDataRetriever implements DataRetriever {
     if (baseDir == null) {
       throw new FileNotFoundException("No such qid: " + qid.toString());
     }
-    
-    File file = new File(baseDir, fn);
+
+    File file = new File(baseDir + "/" + fn);
     if (file.isHidden() || !file.exists()) {
       throw new FileNotFoundException("No such file: " + baseDir + "/" 
           + file.getName());

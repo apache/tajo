@@ -2,6 +2,7 @@ package nta.engine.planner.physical;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
@@ -87,7 +88,7 @@ public class TestSortExec {
   public final void testNext() throws IOException {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory(catalog);
-    Path workDir = NtaTestingUtility.getTestDir("TestSortExec");
+    File workDir = NtaTestingUtility.getTestDir("TestSortExec");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
         new Fragment[] { frags[0] }, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);

@@ -24,6 +24,7 @@ import nta.engine.QueryUnitId;
 import nta.engine.exception.UnknownWorkerException;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.logical.ScanNode;
 import nta.rpc.RemoteException;
 
 import org.apache.commons.logging.Log;
@@ -233,12 +234,14 @@ public class ClusterManager {
     Map<String, Integer> map = new HashMap<String, Integer>();
     String serverName;
     // fragment를 담당하는 worker를 담당하는 fragment의 수에 따라 정렬
-    for (Fragment frag : unit.getFragments()) {
-      serverName = this.getWorkerbyFrag(frag);
-      if (map.containsKey(serverName)) {
-        map.put(serverName, map.get(serverName)+1);
-      } else {
-        map.put(serverName, 1);
+    for (ScanNode scan : unit.getScanNodes()) {
+      for (Fragment frag : unit.getFragments(scan.getTableId())) {
+        serverName = this.getWorkerbyFrag(frag);
+        if (map.containsKey(serverName)) {
+          map.put(serverName, map.get(serverName)+1);
+        } else {
+          map.put(serverName, 1);
+        }
       }
     }
     PriorityQueue<FragmentAssignInfo> pq = 

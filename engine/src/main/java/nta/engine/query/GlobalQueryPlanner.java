@@ -25,6 +25,7 @@ import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.common.exception.NotImplementedException;
 import nta.engine.LogicalQueryUnitId;
 import nta.engine.QueryId;
 import nta.engine.QueryIdFactory;
@@ -40,9 +41,9 @@ import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.IndexWriteNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
+import nta.engine.planner.logical.IndexWriteNode;
 import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalNodeVisitor;
@@ -58,6 +59,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
+
+import com.google.common.base.Preconditions;
 
 public class GlobalQueryPlanner {
   private static Log LOG = LogFactory.getLog(GlobalQueryPlanner.class);
@@ -599,102 +602,228 @@ public class GlobalQueryPlanner {
       }
     }
 
-    QueryUnit[] units = split(unit, n);
-    for (ScanNode scan : scans) {
-      if (unit.hasPrevQuery()) {
-        ScheduleUnit prev = unit.getPrevQuery(scan);
-        if (prev.getStoreTableNode().getSubNode().getType() == 
-            ExprType.GROUP_BY) {
-          GroupbyNode groupby = (GroupbyNode) prev.getStoreTableNode().
-              getSubNode();
-          if (groupby.getGroupingColumns().length == 0) {
-            units = split(unit, 1);
-            
-          }
-        }
-        switch (prev.getOutputType()) {
-        case BROADCAST:
-          assignFetchesByBroadcast(units, fetchMap.get(scan));
-          break;
-        case HASH:
-          if (scan.isLocal()) {
-            assignFetchesByHash(units, fetchMap.get(scan));
-            assignEqualFragment(units, fragMap.get(scan).get(0));
-          } else {
-            assignFragmentsByHash(units, fragMap.get(scan));
-          }
-          break;
-        case LIST:
-          if (scan.isLocal()) {
-            assignFetchesByRoundRobin(units, scan, fetchMap.get(scan));
-            assignEqualFragment(units, fragMap.get(scan).get(0));
-          } else {
-            assignFragmentsByRoundRobin(units, fragMap.get(scan));
-          }
-          break;
-        }
-      } else {
-        assignFragmentsByRoundRobin(units, fragMap.get(scan));
-      }
+    List<QueryUnit> unitList = null;
+    if (scans.length == 1) {
+      unitList = makeUnaryQueryUnit(unit, n, fragMap, fetchMap);
+    } else if (scans.length == 2) {
+      unitList = makeBinaryQueryUnit(unit, n, fragMap, fetchMap);
     }
     
-    int cnt = 0;
-    for (QueryUnit u : units) {
-      if (!(u.getFetches().isEmpty() && 
-          u.getFragments().isEmpty())) {
-        cnt++;
-      }
-    }
-    if (cnt != units.length) {
-      QueryUnit[] uus = new QueryUnit[cnt];
-      int i = 0;
-      for (int j = 0; j < units.length; j++) {
-        if (!(units[j].getFetches().isEmpty() &&
-            units[j].getFragments().isEmpty())) {
-          uus[i++] = units[j];
-        }
-      }
-      units = uus;
-    }
-    
+    QueryUnit[] units = new QueryUnit[unitList.size()];
+    units = unitList.toArray(units);
     unit.setQueryUnits(units);
     
     return units;
   }
   
-  private QueryUnit[] split(ScheduleUnit logicalUnit, int n) {
-    QueryUnit[] units = new QueryUnit[n];
-    for (int i = 0; i < units.length; i++) {
-      units[i] = new QueryUnit(QueryIdFactory.newQueryUnitId());
-      units[i].setLogicalPlan(logicalUnit.getLogicalPlan());
+  private List<QueryUnit> makeBinaryQueryUnit(ScheduleUnit unit, int n, 
+      Map<ScanNode, List<Fragment>> fragMap, 
+      Map<ScanNode, List<URI>> fetchMap) {
+    List<QueryUnit> unitList = new ArrayList<QueryUnit>();
+    int maxQueryUnitNum = n;
+    ScanNode[] scans = unit.getScanNodes();
+    
+    if (unit.hasPrevQuery()) {
+      ScheduleUnit prev = unit.getPrevQuery(scans[0]);
+      switch (prev.getOutputType()) {
+      case BROADCAST:
+        break;
+      case HASH:
+        if (scans[0].isLocal()) {
+          unitList = assignFetchesByHash(unit, unitList,
+              fetchMap, maxQueryUnitNum);
+          unitList = assignEqualFragment(unitList, fragMap);
+        } else {
+//          unitList = assignFragmentsByHash(unit, unitList, scan,
+//              fragMap.get(scan), maxQueryUnitNum);
+          throw new NotImplementedException();
+        }
+        break;
+      case LIST:
+//        if (scans[0].isLocal()) {
+//          unitList = assignFetchesByRoundRobin(unit, unitList, scan, 
+//              fetchMap.get(scan), maxQueryUnitNum);
+//          unitList = assignEqualFragment(unitList, scan, 
+//              fragMap.get(scan).get(0));
+//        } else {
+//          unitList = assignFragmentsByRoundRobin(unit, unitList, scan,
+//              fragMap.get(scan), maxQueryUnitNum);
+//        }
+//        break;
+        throw new NotImplementedException();
+      }
+    } else {
+      unitList = assignFragmentsByRoundRobin(unit, unitList, fragMap, 
+          maxQueryUnitNum);
     }
-    return units;
+
+    return unitList;
   }
   
-  private void assignFetchesByHash(QueryUnit[] units, List<URI> uriList) {
+  private List<QueryUnit> makeUnaryQueryUnit(ScheduleUnit unit, int n,
+      Map<ScanNode, List<Fragment>> fragMap, 
+      Map<ScanNode, List<URI>> fetchMap) {
+    List<QueryUnit> unitList = new ArrayList<QueryUnit>();
+    int maxQueryUnitNum = 0;
+    ScanNode scan = unit.getScanNodes()[0];
+    maxQueryUnitNum = n;
+    if (unit.hasPrevQuery()) {
+      ScheduleUnit prev = unit.getPrevQuery(scan);
+      if (prev.getStoreTableNode().getSubNode().getType() == 
+          ExprType.GROUP_BY) {
+        GroupbyNode groupby = (GroupbyNode) prev.getStoreTableNode().
+            getSubNode();
+        if (groupby.getGroupingColumns().length == 0) {
+          maxQueryUnitNum = 1;
+        }
+      }
+      switch (prev.getOutputType()) {
+      case BROADCAST:
+        //          if (unitList == null) {
+        //            unitList = split(unit, 
+        //                fetchMap.get(scan).size() > maxQueryUnitNum ? 
+        //                    maxQueryUnitNum : fetchMap.get(scan).size());
+        //          }
+        //          assignFetchesByBroadcast(unitList, fetchMap.get(scan));
+        break;
+      case HASH:
+        if (scan.isLocal()) {
+          unitList = assignFetchesByHash(unit, unitList, scan,
+              fetchMap.get(scan), maxQueryUnitNum);
+          unitList = assignEqualFragment(unitList, scan, 
+              fragMap.get(scan).get(0));
+        } else {
+          unitList = assignFragmentsByHash(unit, unitList, scan,
+              fragMap.get(scan), maxQueryUnitNum);
+        }
+        break;
+      case LIST:
+        if (scan.isLocal()) {
+          unitList = assignFetchesByRoundRobin(unit, unitList, scan, 
+              fetchMap.get(scan), maxQueryUnitNum);
+          unitList = assignEqualFragment(unitList, scan, 
+              fragMap.get(scan).get(0));
+        } else {
+          unitList = assignFragmentsByRoundRobin(unit, unitList, scan,
+              fragMap.get(scan), maxQueryUnitNum);
+        }
+        break;
+      }
+    } else {
+      unitList = assignFragmentsByRoundRobin(unit, unitList, scan,
+          fragMap.get(scan), maxQueryUnitNum);
+    }
+    return unitList;
+  }
+  
+  private QueryUnit newQueryUnit(ScheduleUnit scheduleUnit) {
+    QueryUnit unit = new QueryUnit(QueryIdFactory.newQueryUnitId());
+    unit.setLogicalPlan(scheduleUnit.getLogicalPlan());
+    return unit;
+  }
+  
+  private List<QueryUnit> assignFetchesByHash(ScheduleUnit scheduleUnit, 
+      List<QueryUnit> unitList, Map<ScanNode, List<URI>> fetchMap, int n) {
+    QueryUnit unit = null;
+    int i = 0;
+    ScanNode[] scans = scheduleUnit.getScanNodes();
+    Map<String, Map<ScanNode, List<URI>>> hashed = hashFetches(fetchMap);
+    Iterator<Entry<String, Map<ScanNode, List<URI>>>> it = 
+        hashed.entrySet().iterator();
+    Entry<String, Map<ScanNode, List<URI>>> e = null;
+    while (it.hasNext()) {
+      e = it.next();
+      if (unitList.size() == n) {
+        unit = unitList.get(i++);
+        if (i == unitList.size()) {
+          i = 0;
+        }
+      } else {
+        unit = newQueryUnit(scheduleUnit);
+        unitList.add(unit);
+      }
+      Map<ScanNode, List<URI>> m = e.getValue();
+      for (ScanNode scan : m.keySet()) {
+        for (URI uri : m.get(scan)) {
+          unit.addFetch(scan.getTableId(), uri);
+        }
+      }
+    }
+    
+    return unitList;
+  }
+  
+  private List<QueryUnit> assignFetchesByHash(ScheduleUnit scheduleUnit, 
+      List<QueryUnit> unitList, ScanNode scan, List<URI> uriList, int n) {
     Map<String, List<URI>> hashed = hashFetches(uriList); // hash key, uri
+    QueryUnit unit = null;
     int i = 0;
     // TODO: units에 hashed 할당
     Iterator<Entry<String, List<URI>>> it = hashed.entrySet().iterator();
     Entry<String, List<URI>> e;
     while (it.hasNext()) {
       e = it.next();
-      units[i].addFetches(e.getKey(), e.getValue());
-      if (++i == units.length) {
-        i = 0;
+      if (unitList.size() == n) {
+        unit = unitList.get(i++);
+        if (i == unitList.size()) {
+          i = 0;
+        }
+      } else {
+        unit = newQueryUnit(scheduleUnit);
+        unitList.add(unit);
       }
+      unit.addFetches(scan.getTableId(), e.getValue());
     }
+    return unitList;
   }
   
-  private void assignFetchesByRoundRobin(QueryUnit[] units, ScanNode scan,
-      List<URI> uriList) { 
+  private List<QueryUnit> assignFetchesByRoundRobin(ScheduleUnit scheduleUnit, 
+      List<QueryUnit> unitList, ScanNode scan, List<URI> uriList, int n) { 
+    QueryUnit unit = null;
     int i = 0;
     for (URI uri : uriList) {
-      units[i].addFetch(scan.getTableId(), uri);
-      if (++i == units.length) {
-        i = 0;
+      if (unitList.size() < n) {
+        unit = newQueryUnit(scheduleUnit);
+        unitList.add(unit);
+      } else {
+        unit = unitList.get(i++);
+        if (i == unitList.size()) {
+          i = 0;
+        }
+      }
+      unit.addFetch(scan.getTableId(), uri);
+    }
+    return unitList;
+  }
+  
+  private Map<String, Map<ScanNode, List<URI>>> hashFetches(Map<ScanNode, 
+      List<URI>> uriMap) {
+    SortedMap<String, Map<ScanNode, List<URI>>> hashed = 
+        new TreeMap<String, Map<ScanNode,List<URI>>>();
+    String uriPath, key;
+    Map<ScanNode, List<URI>> m = null;
+    List<URI> uriList = null;
+    for (Entry<ScanNode, List<URI>> e : uriMap.entrySet()) {
+      for (URI uri : e.getValue()) {
+        uriPath = uri.toString();
+        key = uriPath.substring(uriPath.lastIndexOf("=")+1);
+        if (hashed.containsKey(key)) {
+          m = hashed.get(key);
+        } else {
+          m = new HashMap<ScanNode, List<URI>>();
+        }
+        if (m.containsKey(e.getKey())) {
+          uriList = m.get(e.getKey());
+        } else {
+          uriList = new ArrayList<URI>();
+        }
+        uriList.add(uri);
+        m.put(e.getKey(), uriList);
+        hashed.put(key, m);
       }
     }
+    
+    return hashed;
   }
   
   private Map<String, List<URI>> hashFetches(List<URI> uriList) {
@@ -716,41 +845,139 @@ public class GlobalQueryPlanner {
     return hashed;
   }
   
-  private void assignFetchesByBroadcast(QueryUnit[] units, List<URI> uriList) {
+  private void assignFetchesByBroadcast(QueryUnit[] units, ScanNode scan, List<URI> uriList) {
     for (URI uri : uriList) {
       for (QueryUnit unit : units) {
         // TODO: add each uri to every units
-        unit.addFetch("b", uri);
+        unit.addFetch(scan.getTableId(), uri);
       }
     }
   }
   
-  private void assignFragmentsByHash(QueryUnit[] units, List<Fragment> fragList) {
+//  private List<QueryUnit> assignFragmentsByHash(ScheduleUnit scheduleUnit, 
+//      List<QueryUnit> unitList, Map<ScanNode, List<Fragment>> fragMap, int n) {
+//    Map<String, Map<ScanNode, List<Fragment>>> hashed = hashFragments(fragMap);
+//    QueryUnit unit = null;
+//    int i = 0;
+//    
+//    
+//    
+//    return unitList;
+//  }
+  
+  private List<QueryUnit> assignFragmentsByHash(ScheduleUnit scheduleUnit, 
+      List<QueryUnit> unitList, ScanNode scan, List<Fragment> fragList, int n) {
     Collection<List<Fragment>> hashed = hashFragments(fragList);
+    QueryUnit unit = null;
     int i = 0;
     for (List<Fragment> frags : hashed) {
-      units[i++].addFragments(frags.toArray(new Fragment[frags.size()]));
-      if (i == units.length) {
-        i = 0;
+      if (unitList.size() < n) {
+        unit = newQueryUnit(scheduleUnit);
+        unitList.add(unit);
+      } else {
+        unit = unitList.get(i++);
+        if (i == unitList.size()) {
+          i = 0;
+        }
       }
+      unit.addFragments(scan.getTableId(), frags);
     }
-  }
-
-  private void assignFragmentsByRoundRobin(QueryUnit[] units,
-      List<Fragment> frags) {
-    int i = 0;
-    for (Fragment f : frags) {
-      units[i].addFragment(f);
-      if (++i == units.length) {
-        i = 0;
-      }
-    }
+    return unitList;
   }
   
-  private void assignEqualFragment(QueryUnit[] units, Fragment frag) {
-    for (QueryUnit unit : units) {
-      unit.addFragment(frag);
+  private List<QueryUnit> assignFragmentsByRoundRobin(ScheduleUnit scheduleUnit,
+      List<QueryUnit> unitList, Map<ScanNode, List<Fragment>> fragMap, int n) {
+    QueryUnit unit = null;
+    int i = 0;
+    ScanNode[] scans = scheduleUnit.getScanNodes();
+    Preconditions.checkArgument(fragMap.get(scans[0]).size() == 
+        fragMap.get(scans[1]).size());
+    int fragNum = fragMap.get(scans[0]).size();
+    
+    for (int k = 0; k < fragNum; k++) {
+      if (unitList.size() < n) {
+        unit = newQueryUnit(scheduleUnit);
+        unitList.add(unit);
+      } else {
+        unit = unitList.get(i);
+        if (i == unitList.size()) {
+          i = 0;
+        }
+      }
+      
+      for (ScanNode scan : scans) {
+        unit.addFragment(scan.getTableId(), fragMap.get(scan).get(k));
+      }
     }
+    
+    return unitList;
+  }
+
+  private List<QueryUnit> assignFragmentsByRoundRobin(ScheduleUnit scheduleUnit,
+      List<QueryUnit> unitList, ScanNode scan, List<Fragment> frags, int n) {
+    QueryUnit unit = null;
+    int i = 0;
+    for (Fragment f : frags) {
+      if (unitList.size() < n) {
+        unit = newQueryUnit(scheduleUnit);
+        unitList.add(unit);
+      } else {
+        unit = unitList.get(i++);
+        if (i == unitList.size()) {
+          i = 0;
+        }
+      }
+      unit.addFragment(scan.getTableId(), f);
+    }
+    return unitList;
+  }
+  
+  private List<QueryUnit> assignEqualFragment(List<QueryUnit> unitList, 
+      ScanNode scan, Fragment frag) {
+    for (int i = 0; i < unitList.size(); i++) {
+      unitList.get(i).addFragment(scan.getTableId(), frag);
+    }
+    
+    return unitList;
+  }
+  
+  private List<QueryUnit> assignEqualFragment(List<QueryUnit> unitList, 
+      Map<ScanNode, List<Fragment>> fragMap) {
+    for (int i = 0; i < unitList.size(); i++) {
+      for (ScanNode scan : fragMap.keySet()) {
+        unitList.get(i).addFragment(scan.getTableId(), fragMap.get(scan).get(0));
+      }
+    }
+    return unitList;
+  }
+  
+  private Map<String, Map<ScanNode, List<Fragment>>> hashFragments(Map<ScanNode, 
+      List<Fragment>> fragMap) {
+    SortedMap<String, Map<ScanNode, List<Fragment>>> hashed = 
+        new TreeMap<String, Map<ScanNode,List<Fragment>>>();
+    String key;
+    Map<ScanNode, List<Fragment>> m = null;
+    List<Fragment> fragList = null;
+    for (Entry<ScanNode, List<Fragment>> e : fragMap.entrySet()) {
+      for (Fragment f : e.getValue()) {
+        key = f.getPath().getName();
+        if (hashed.containsKey(key)) {
+          m = hashed.get(key);
+        } else {
+          m = new HashMap<ScanNode, List<Fragment>>();
+        }
+        if (m.containsKey(e.getKey())) {
+          fragList = m.get(e.getKey());
+        } else {
+          fragList = new ArrayList<Fragment>();
+        }
+        fragList.add(f);
+        m.put(e.getKey(), fragList);
+        hashed.put(key, m);
+      }
+    }
+    
+    return hashed;
   }
   
   private Collection<List<Fragment>> hashFragments(List<Fragment> frags) {

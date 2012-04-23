@@ -8,8 +8,10 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import nta.catalog.Schema;
 import nta.engine.QueryIdFactory;
@@ -34,16 +36,16 @@ public class QueryUnit {
 	private StoreTableNode store = null;
 	private LogicalNode plan = null;
 	private List<ScanNode> scan;
-	private List<Fragment> fragments;
 	
 	private String hostName;
+	private Map<String, List<Fragment>> fragMap;
 	private Map<String, List<URI>> fetchMap;
 	
 	public QueryUnit(QueryUnitId id) {
 		this.id = id;
-		fragments = new ArrayList<Fragment>();
 		scan = new ArrayList<ScanNode>();
     fetchMap = new HashMap<String, List<URI>>();
+    fragMap = new HashMap<String, List<Fragment>>();
 	}
 	
 	public void setLogicalPlan(LogicalNode plan) {
@@ -54,7 +56,6 @@ public class QueryUnit {
 	  LogicalNode node = plan;
 	  ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
 	  s.add(node);
-	  int i = 0;
 	  while (!s.isEmpty()) {
 	    node = s.remove(s.size()-1);
 	    if (node instanceof UnaryNode) {
@@ -74,20 +75,33 @@ public class QueryUnit {
 		this.hostName = host;
 	}
 	
-	public void addFragment(Fragment fragment) {
-		this.fragments.add(fragment);
+	public void addFragment(String key, Fragment fragment) {
+	  List<Fragment> frags = null;
+	  if (fragMap.containsKey(key)) {
+	    frags = fragMap.get(key);
+	  } else {
+	    frags = new ArrayList<Fragment>();
+	  }
+	  frags.add(fragment);
+		this.fragMap.put(key, frags);
 	}
 	
-	public void addFragments(Fragment[] fragments) {
+	public void addFragments(String key, Fragment[] fragments) {
 	  for (Fragment frag : fragments) {
-      this.addFragment(frag);
+      this.addFragment(key, frag);
     }
 	}
 	
-	public void setFragments(Fragment[] fragments) {
-	  this.fragments.clear();
-	  this.addFragments(fragments);
+	public void addFragments(String key, List<Fragment> fragList) {
+	  for (Fragment frag : fragList) {
+	    this.addFragment(key, frag);
+	  }
 	}
+	
+//	public void setFragments(Fragment[] fragments) {
+//	  this.fragments.clear();
+//	  this.addFragments(fragments);
+//	}
 	
 	public void addFetch(String key, String uri) throws URISyntaxException {
 	  this.addFetch(key, new URI(uri));
@@ -120,8 +134,8 @@ public class QueryUnit {
 	  this.fetchMap.putAll(fetches);
 	}
 	
-	public List<Fragment> getFragments() {
-		return this.fragments;
+	public List<Fragment> getFragments(String key) {
+		return this.fragMap.get(key);
 	}
 	
 	public LogicalNode getLogicalPlan() {
@@ -138,6 +152,10 @@ public class QueryUnit {
 	
 	public Collection<List<URI>> getFetches() {
 	  return fetchMap.values();
+	}
+	
+	public List<URI> getFetch(ScanNode scan) {
+	  return this.fetchMap.get(scan.getTableId());
 	}
 	
 	public String getHost() {
@@ -163,9 +181,19 @@ public class QueryUnit {
 	@Override
 	public String toString() {
 		String str = new String(plan.getType() + " ");
-		for (Fragment t : fragments) {
-			str += t + " ";
+		for (Entry<String, List<Fragment>> e : fragMap.entrySet()) {
+		  str += e.getKey() + " : ";
+		  for (Fragment t : e.getValue()) {
+	      str += t + " ";
+	    }
 		}
+		for (Entry<String, List<URI>> e : fetchMap.entrySet()) {
+      str += e.getKey() + " : ";
+      for (URI t : e.getValue()) {
+        str += t + " ";
+      }
+    }
+		
 		return str;
 	}
 	

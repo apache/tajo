@@ -30,8 +30,19 @@ public class LocalTajoCluster {
 
 		addMaster(conf, 0);
 
+    Configuration c = null;
 		for(int i=0; i < numLeafServers; i++) {
-			addRegionServer(new Configuration(conf), i);
+      c = new Configuration(conf);
+
+      // if LocalTajoCluster is executed by NtaTestingUtility
+      // each leaf server should have its own tmp directory.
+      if (System.getProperty("test.build.data") != null) {
+        String clusterTestBuildDir =
+            System.getProperty("test.build.data");
+        c.set(NConstants.WORKER_TMP_DIR,
+            clusterTestBuildDir + "/worker_" + i + "/tmp");
+      }
+			addLeafServer(c, i);
 		}
 	}
 
@@ -46,8 +57,8 @@ public class LocalTajoCluster {
 		return mt;
 	}
 
-	public JVMClusterUtil.LeafServerThread addRegionServer(
-		Configuration c, final int index)
+	public JVMClusterUtil.LeafServerThread addLeafServer(
+      Configuration c, final int index)
 			throws IOException {
 		// Create each regionserver with its own Configuration instance so each has
 		// its HConnection instance rather than share (see HBASE_INSTANCES down in

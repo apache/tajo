@@ -115,4 +115,9 @@ public class TestStorageManager {
     
     assertEquals(tupleNum, tupleCnt); 
 	}
+
+  @Test
+  public final void testInitLocalTable() {
+
+  }
 }

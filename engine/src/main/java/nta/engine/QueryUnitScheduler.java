@@ -4,9 +4,11 @@
 package nta.engine;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -18,6 +20,7 @@ import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.QueryManager.WaitStatus;
 import nta.engine.cluster.WorkerCommunicator;
+import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
@@ -132,27 +135,37 @@ public class QueryUnitScheduler extends Thread {
     while (!pendingQueue.isEmpty()) {
       QueryUnit q = pendingQueue.take();
       waitQueue.add(q);
-      QueryUnitRequest request = new QueryUnitRequestImpl(q.getId(), q.getFragments(), 
+      List<Fragment> fragList = new ArrayList<Fragment>();
+      for (ScanNode scan : q.getScanNodes()) {
+        fragList.addAll(q.getFragments(scan.getTableId()));
+      }
+      QueryUnitRequest request = new QueryUnitRequestImpl(q.getId(), fragList, 
           q.getOutputName(), false, q.getLogicalPlan().toJSON());
       
       if (q.getStoreTableNode().isLocal()) {
         request.setInterQuery();
       }
-      ScanNode [] scans = q.getScanNodes();
-      for (ScanNode scan : scans) {
-        if (scan.isLocal()) {
-          Collection<List<URI>> fetchHosts =  q.getFetches();
-          for (List<URI> hosts : fetchHosts) {
-            for (URI host : hosts) {
-              request.addFetch(scan.getTableId(), host);
-            }
+      
+      for (ScanNode scan : q.getScanNodes()) {
+        List<URI> fetches = q.getFetch(scan);
+        if (fetches != null) {
+          for (URI fetch : fetches) {
+            request.addFetch(scan.getTableId(), fetch);
           }
         }
       }
       
       wc.requestQueryUnit(q.getHost(), request.getProto());
-      LOG.info("QueryUnitRequest " + q.getId() + " is sent to " + (q.getHost()));
+      LOG.info("=====================================================================");
+      LOG.info("QueryUnitRequest " + request.getId() + " is sent to " + (q.getHost()));
+      LOG.info("Fragments: " + request.getFragments());
       LOG.info("QueryStep's output name " + q.getStoreTableNode().getTableName());
+      if (request.isInterQuery()) {
+        LOG.info("InterQuery is enabled");
+      } else {
+        LOG.info("InterQuery is disabled");
+      }
+      LOG.info("Fetches: " + request.getFetches());
     }
   }
   

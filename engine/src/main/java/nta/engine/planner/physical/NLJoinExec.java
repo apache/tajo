@@ -6,8 +6,10 @@ import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.planner.logical.JoinNode;
+import nta.engine.utils.TupleUtil;
 import nta.storage.FrameTuple;
 import nta.storage.Tuple;
+import nta.storage.VTuple;
 
 public class NLJoinExec extends PhysicalExec {
   // from logical plan
@@ -24,6 +26,10 @@ public class NLJoinExec extends PhysicalExec {
   private FrameTuple frameTuple;
   private Tuple outerTuple = null;
   private Tuple innerTuple = null;
+  private Tuple outputTuple = null;
+
+  // projection
+  private final int [] targetIds;
 
   public NLJoinExec(SubqueryContext ctx, JoinNode ann, PhysicalExec outer,
       PhysicalExec inner) {    
@@ -33,9 +39,13 @@ public class NLJoinExec extends PhysicalExec {
     this.outSchema = ann.getOutputSchema();
     this.joinQual = ann.getJoinQual();
 
+    // for projection
+    targetIds = TupleUtil.getTargetIds(inSchema, outSchema);
+
+    // for join
     needNewOuter = true;
-    
     frameTuple = new FrameTuple();
+    outputTuple = new VTuple(outSchema.getColumnNum());
   }
 
   public Tuple next() throws IOException {
@@ -57,9 +67,12 @@ public class NLJoinExec extends PhysicalExec {
 
       frameTuple.set(outerTuple, innerTuple);
       if (joinQual != null) {
-        if (joinQual.eval(inSchema, frameTuple).asBool())
-          return frameTuple;
+        if (joinQual.eval(inSchema, frameTuple).asBool()) {
+          TupleUtil.project(frameTuple, outputTuple, targetIds);
+          return outputTuple;
+        }
       } else {
+        TupleUtil.project(frameTuple, outputTuple, targetIds);
         return frameTuple;
       }
     }

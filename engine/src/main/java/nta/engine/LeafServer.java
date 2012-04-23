@@ -1,6 +1,3 @@
-/**
- * 
- */
 package nta.engine;
 
 import java.io.File;
@@ -51,6 +48,7 @@ import nta.storage.StorageUtil;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkUtil;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -61,7 +59,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
-
 
 import tajo.datachannel.Fetcher;
 import tajo.worker.dataserver.HttpDataServer;
@@ -101,7 +98,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   // Query Processing
   private FileSystem localFS;
   private FileSystem defaultFS;
-  private final Path workDirPath;
+  private final File workDir;
 
   private CatalogClient catalog;
   private SubqueryContext.Factory ctxFactory;
@@ -120,22 +117,21 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
 
   public LeafServer(final Configuration conf) {
     this.conf = conf;
-    this.workDirPath = new Path(conf.get(NConstants.WORKER_TMP_DIR));
+    LOG.info(conf.get(NConstants.WORKER_TMP_DIR));
+    this.workDir = new File(conf.get(NConstants.WORKER_TMP_DIR));
   }
   
   private void prepareServing() throws IOException {
     NtaConf c = NtaConf.create(this.conf);
     c.set("fs.default.name", "file:///");
     localFS = LocalFileSystem.get(c);
+    Path workDirPath = new Path(workDir.toURI());
     if (!localFS.exists(workDirPath)) {
       localFS.mkdirs(workDirPath);
       LOG.info("local temporal dir is created: " + localFS.exists(workDirPath));
-      LOG.info("local temporal dir (" + workDirPath + ") is created");
+      LOG.info("local temporal dir (" + workDir + ") is created");
     }
-    
-    // Server to handle client requests.
-    
-    
+
     String hostname = DNS.getDefaultHost(
         conf.get("nta.master.dns.interface", "default"),
         conf.get("nta.master.dns.nameserver", "default"));
@@ -361,11 +357,11 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     shutdown(reason);
   }
    
-  public Path createLocalDir(String...subdir) throws IOException {
-    Path tmpDir = StorageUtil.concatPath(workDirPath, subdir);
+  public File createLocalDir(String...subdir) throws IOException {
+    Path tmpDir = StorageUtil.concatPath(new Path(workDir.toURI()),
+      subdir);
     localFS.mkdirs(tmpDir);
-    
-    return tmpDir;
+    return new File(tmpDir.toUri());
   }
   
   public static Path getQueryUnitDir(QueryUnitId quid) {
@@ -407,20 +403,24 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       List<Fetch> fetches) {    
 
     if (fetches.size() > 0) {      
-      Path inputDir = new Path(ctx.getWorkDir(), "in");
-      File storeDir = new File(inputDir.toString());
-      storeDir.mkdirs();
+      File inputDir = new File(ctx.getWorkDir(), "in");
+      inputDir.mkdirs();
+      File storeDir = null;
       
       int i = 0;
       File storeFile = null;
       List<Fetcher> runnerList = Lists.newArrayList();      
       for (Fetch f : fetches) {
-        storeFile = new File(inputDir.toString(), "in_" + i);        
+        storeDir = new File(inputDir, f.getName());
+        if (!storeDir.exists()) {
+          storeDir.mkdirs();
+        }
+        storeFile = new File(storeDir, "in_" + i);
         Fetcher fetcher = new Fetcher(URI.create(f.getUrls()), storeFile);
         runnerList.add(fetcher);
         i++;
       }
-      ctx.addFetchPhase(runnerList.size(), storeDir);
+      ctx.addFetchPhase(runnerList.size(), inputDir);
       return runnerList;
     } else {
       return Lists.newArrayList();
@@ -528,15 +528,42 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     private PhysicalExec executor;
     private boolean interQuery;    
     private boolean killed = false;
+    private boolean aborted = false;
 
     public Task(QueryUnitRequest request) throws IOException {
-      Path localQueryTmpDir = createWorkDir(request.getId());            
+      File localQueryTmpDir = createWorkDir(request.getId());
       this.ctx = ctxFactory.create(request, localQueryTmpDir);
       plan = GsonCreator.getInstance().fromJson(request.getSerializedData(),
           LogicalNode.class);      
-      interQuery = request.getProto().getInterQuery();      
+      interQuery = request.getProto().getInterQuery();
+      if (interQuery == false)
+        LOG.info("Final query");
       fetcherRunners = getFetchRunners(ctx, request.getFetches());      
       ctx.setStatus(QueryStatus.INITED);
+      LOG.info("=====================================================");
+      LOG.info("* Task Initialization Info ");
+      LOG.info("* queryId: " + request.getId());
+      LOG.info("* interQuery: " + interQuery);
+      LOG.info("* fragments (total: " + request.getFragments().size());
+      for (Fragment f: request.getFragments()) {
+        LOG.info("** table id:" + f.getId());
+        LOG.info("** path:" + f.getPath());
+        LOG.info("** start offset:" + f.getStartOffset());
+        LOG.info("** length :" + f.getLength());
+        LOG.info("** store type :" + f.getMeta().getStoreType());
+        LOG.info("** schema :\n" + f.getMeta().getSchema());
+        LOG.info("----------------------------------");
+      }
+      LOG.info("* fetches (total:" + request.getFetches().size() + ") :");
+      for (Fetch f : request.getFetches()) {
+        LOG.info("** matched table: " + f.getName());
+        LOG.info("** url: " + f.getUrls());
+        LOG.info("----------------------------------");
+      }
+      LOG.info("* local task dir: " + localQueryTmpDir.getAbsolutePath());
+      LOG.info("* plan:\n");
+      LOG.info(plan.toString());
+      LOG.info("=====================================================");
     }
 
     public void init() throws InternalException {      
@@ -564,10 +591,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       }
     }
 
-    private Path createWorkDir(QueryUnitId quid) throws IOException {
-      Path path = createLocalDir(getQueryUnitDir(quid).toString());
+    private File createWorkDir(QueryUnitId quid) throws IOException {
+      File dir = createLocalDir(getQueryUnitDir(quid).toString());
 
-      return path;
+      return dir;
     }
 
     public void startDataServer() {
@@ -618,14 +645,15 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     public void run() {
       try {
         ctx.setStatus(QueryStatus.INPROGRESS);
-        LOG.info("Query status of " + ctx + " is changed to " + getStatus());        
+        LOG.info("Query status of " + ctx.getQueryId() + " is changed to " + getStatus());
         if (ctx.hasFetchPhase()) {
           // If the fetch is still in progress, the query unit must wait for 
           // complete.
           ctx.getFetchLatch().await();
           Collection<String> inputs = Lists.newArrayList(ctx.getInputTables());
           for (String inputTable: inputs) {
-            Fragment [] frags = list(ctx.getFetchIn(), inputTable,
+            File tableDir = new File(ctx.getFetchIn(), inputTable);
+            Fragment [] frags = list(tableDir, inputTable,
                 ctx.getTable(inputTable).getMeta());
             ctx.changeFragment(inputTable, frags);
           }
@@ -635,17 +663,20 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         while(executor.next() != null && !killed) {
         }
       } catch (Exception e) {
-        LOG.error(e);
-        ctx.setStatus(QueryStatus.ABORTED);
-        ctx.setProgress(0.0f);
-        LOG.info("Query status of " + ctx.getQueryId() + " is changed to "   
-            + QueryStatus.ABORTED);        
+        LOG.error(ExceptionUtils.getStackTrace(e));
+        aborted = true;
       } finally {
-        if (killed == true) {
+        if (killed || aborted) {
           ctx.setProgress(0.0f);
-          ctx.setStatus(QueryStatus.ABORTED);
-          LOG.info("Query status of " + ctx + " is changed to " 
-              + QueryStatus.ABORTED);
+          QueryStatus failedStatus = null;
+          if (killed) {
+            failedStatus = QueryStatus.KILLED;
+          } else if (aborted) {
+            failedStatus = QueryStatus.ABORTED;
+          }
+          ctx.setStatus(failedStatus);
+          LOG.info("Query status of " + ctx.getQueryId() + " is changed to "
+              + failedStatus);
         } else {
           ctx.setProgress(1.0f);
           if (interQuery) {

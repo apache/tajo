@@ -35,7 +35,7 @@ import com.google.common.collect.MapMaker;
  */
 public class QueryManager {
 
-  private final static long EXPIRE_TIME = 3000;
+  private final static long EXPIRE_TIME = 5000;
   
   public class WaitStatus {
     private InProgressStatus status;

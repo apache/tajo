@@ -67,7 +67,7 @@ public class NtaTestingUtility {
 	public void initTestDir() {
 		if (System.getProperty(TEST_DIRECTORY_KEY) == null) {
 			clusterTestBuildDir = setupClusterTestBuildDir();
-			System.setProperty(TEST_DIRECTORY_KEY, clusterTestBuildDir.getPath());
+			System.setProperty(TEST_DIRECTORY_KEY, clusterTestBuildDir.getAbsolutePath());
 		}
 	}
 
@@ -75,11 +75,9 @@ public class NtaTestingUtility {
 	 * @return Where to write test data on local filesystem; usually
 	 * {@link #DEFAULT_TEST_DIRECTORY}
 	 * @see #setupClusterTestBuildDir()
-	 * @see #clusterTestBuildDir()
-	 * @see #getTestFileSystem()
 	 */
-	public static Path getTestDir() {
-		return new Path(System.getProperty(TEST_DIRECTORY_KEY,
+	public static File getTestDir() {
+		return new File(System.getProperty(TEST_DIRECTORY_KEY,
 			DEFAULT_TEST_DIRECTORY));
 	}
 
@@ -88,11 +86,9 @@ public class NtaTestingUtility {
 	 * @return Path to a subdirectory named <code>subdirName</code> under
 	 * {@link #getTestDir()}.
 	 * @see #setupClusterTestBuildDir()
-	 * @see #clusterTestBuildDir(String)
-	 * @see #getTestFileSystem()
 	 */
-	public static Path getTestDir(final String subdirName) {
-		return new Path(getTestDir(), subdirName);
+	public static File getTestDir(final String subdirName) {
+		return new File(getTestDir(), subdirName);
 	}
 
 	public File setupClusterTestBuildDir() {
@@ -152,7 +148,8 @@ public class NtaTestingUtility {
 		this.clusterTestBuildDir = testBuildPath == null? 
 		    setupClusterTestBuildDir() : new File(testBuildPath);
 
-		System.setProperty(TEST_DIRECTORY_KEY, this.clusterTestBuildDir.getPath());
+		System.setProperty(TEST_DIRECTORY_KEY,
+      this.clusterTestBuildDir.getAbsolutePath());
 
 		startMiniDFSCluster(numDataNodes, this.clusterTestBuildDir, dataNodeHosts);
 		this.dfsCluster.waitClusterUp();
@@ -182,9 +179,9 @@ public class NtaTestingUtility {
 		c.set(NConstants.ENGINE_BASE_DIR, 
 		    getMiniDFSCluster().getFileSystem().getUri()+"/tajo");
 		c.set(NConstants.WORKER_BASE_DIR, 
-		    clusterTestBuildDir.getAbsolutePath()+"/worker");
+		    clusterTestBuildDir+"/worker");
 		c.set(NConstants.WORKER_TMP_DIR, 
-        clusterTestBuildDir.getAbsolutePath()+"/worker/tmp");
+        clusterTestBuildDir +"/worker/tmp");
 		this.engineCluster = new MiniTajoCluster(c, numSlaves);
 		
 		this.conf.set(NConstants.MASTER_ADDRESS, c.get(NConstants.MASTER_ADDRESS));
@@ -268,12 +265,7 @@ public class NtaTestingUtility {
 		
 		return this.dfsCluster;
 	}
-	
-	/**
-	 * Shuts down instance created by call to {@link #startMiniDFSCluster(int, File)}
-	 * or does nothing.
-	 * @throws Exception
-	 */
+
 	public void shutdownMiniDFSCluster() throws Exception {
 		if (this.dfsCluster != null) {
 			// The below throws an exception per dn, AsynchronousCloseException.
@@ -389,8 +381,7 @@ public class NtaTestingUtility {
 
 	/**
 	 * @param args
-	 * @throws Exception 
-	 * @throws MetaException 
+	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
 		NtaTestingUtility cluster = new NtaTestingUtility();

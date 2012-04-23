@@ -91,7 +91,7 @@ public class StorageManager {
     Path dataDir = new Path(tablePath,"data");
     fs.mkdirs(dataDir);
     if (meta != null)
-      writeTableMeta(tablePath, meta);
+      writeTableMetaLocal(tablePath, meta);
     
     LOG.info("Initialized table root (" + tablePath + ")");
     return dataDir;
@@ -349,4 +349,15 @@ public class StorageManager {
     out.flush();
     out.close();
 	}
+
+  public void writeTableMetaLocal(Path tableRoot, TableMeta meta)
+    throws  IOException {
+    NtaConf c = NtaConf.create(conf);
+    c.set("fs.default.name", "file:///");
+    FileSystem fs = LocalFileSystem.get(c);
+    FSDataOutputStream out = fs.create(new Path(tableRoot, ".meta"));
+    FileUtil.writeProto(out, meta.getProto());
+    out.flush();
+    out.close();
+  }
 }

@@ -361,7 +361,7 @@ public class TestGlobalQueryPlanner {
     }
   }
   
-  @Test
+  //@Test
   public void testLocalize() throws IOException, URISyntaxException {
     QueryContext ctx = factory.create();
     ParseTree tree = (ParseTree) analyzer.parse(ctx,
@@ -393,7 +393,9 @@ public class TestGlobalQueryPlanner {
       }
       
       // fragment
-      assertNotNull(unit.getFragments());
+      for (ScanNode scan : unit.getScanNodes()) {
+        assertNotNull(unit.getFragments(scan.getTableId()));  
+      }
       InProgressStatus.Builder builder = InProgressStatus.newBuilder();
       builder.setId(unit.getId().toString())
       .setProgress(1.0f)

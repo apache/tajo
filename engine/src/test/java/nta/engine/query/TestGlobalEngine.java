@@ -139,8 +139,8 @@ public class TestGlobalEngine {
     TableMeta deptMeta = TCatUtil.newTableMeta(deptSchema, StoreType.CSV);
 
     Appender appender = sm.getTableAppender(scoreMeta, "score");
-    int deptSize = 1000;
-    int tupleNum = 100000;
+    int deptSize = 10;
+    int tupleNum = 100;
     int allScoreSum = 0;
     Tuple tuple = null;
     for (int i = 0; i < tupleNum; i++) {

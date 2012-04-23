@@ -39,7 +39,7 @@ public class SubqueryContext extends Context {
   private QueryStatus status;
   private final Map<String, StatSet> stats;
   private QueryUnitId queryId;
-  private final Path workDir;
+  private final File workDir;
   private boolean needFetch = false;
   private CountDownLatch doneFetchPhaseSignal;
   private float progress = 0;
@@ -48,7 +48,7 @@ public class SubqueryContext extends Context {
   private boolean stopped = false;
   
   @VisibleForTesting
-  SubqueryContext(QueryUnitId queryId, Fragment [] fragments, Path workDir) {    
+  SubqueryContext(QueryUnitId queryId, Fragment [] fragments, File workDir) {
     this.queryId = queryId;
     
     for(Fragment t : fragments) {
@@ -152,18 +152,18 @@ public class SubqueryContext extends Context {
     
     @VisibleForTesting
     public SubqueryContext create(QueryUnitId id, Fragment [] frags, 
-        Path workDir) {
+        File workDir) {
       return new SubqueryContext(id, frags, workDir);
     }
     
-    public SubqueryContext create(QueryUnitRequest request, Path workDir) {
+    public SubqueryContext create(QueryUnitRequest request, File workDir) {
       return new SubqueryContext(request.getId(), 
           request.getFragments().toArray(
               new Fragment [request.getFragments().size()]), workDir);
     }
   }
   
-  public Path getWorkDir() {
+  public File getWorkDir() {
     return this.workDir;
   }
   

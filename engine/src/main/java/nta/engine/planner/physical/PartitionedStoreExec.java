@@ -76,7 +76,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
       i++;
     }
     this.partitioner = new HashPartitioner(partitionKeys, numPartitions);    
-    storeTablePath = new Path(ctx.getWorkDir(), "out");
+    storeTablePath = new Path(ctx.getWorkDir().getAbsolutePath(), "out");
     sm.initLocalTableBase(storeTablePath, meta);
   }
 

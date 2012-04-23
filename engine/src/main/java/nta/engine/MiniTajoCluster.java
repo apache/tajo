@@ -36,7 +36,7 @@ public class MiniTajoCluster {
 		
 		JVMClusterUtil.LeafServerThread t = null;
 		
-		t = engineCluster.addRegionServer(newConf,engineCluster.getLeafServers().size());
+		t = engineCluster.addLeafServer(newConf, engineCluster.getLeafServers().size());
 		t.start();
 		t.waitForServerOnline();
 		
@@ -114,7 +114,7 @@ public class MiniTajoCluster {
 	}
 	
 	public JVMClusterUtil.LeafServerThread addLeafServer() throws IOException {
-	  return engineCluster.addRegionServer(conf, engineCluster.getClusterSize());
+	  return engineCluster.addLeafServer(conf, engineCluster.getClusterSize());
 	}
 	
 	public void shutdownLeafServer(int idx) {

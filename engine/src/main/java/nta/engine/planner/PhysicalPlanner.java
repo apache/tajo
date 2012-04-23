@@ -20,17 +20,7 @@ import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.logical.UnionNode;
-import nta.engine.planner.physical.EvalExprExec;
-import nta.engine.planner.physical.GroupByExec;
-import nta.engine.planner.physical.IndexWriteExec;
-import nta.engine.planner.physical.NLJoinExec;
-import nta.engine.planner.physical.PartitionedStoreExec;
-import nta.engine.planner.physical.PhysicalExec;
-import nta.engine.planner.physical.ProjectionExec;
-import nta.engine.planner.physical.SeqScanExec;
-import nta.engine.planner.physical.SortExec;
-import nta.engine.planner.physical.StoreTableExec;
-import nta.engine.planner.physical.UnionExec;
+import nta.engine.planner.physical.*;
 import nta.storage.StorageManager;
 
 import com.google.common.base.Preconditions;
@@ -81,7 +71,8 @@ public class PhysicalPlanner {
       
     case SELECTION:
       SelectionNode selNode = (SelectionNode) logicalNode;
-      return createPlanRecursive(ctx, selNode.getSubNode());
+      outer = createPlanRecursive(ctx, selNode.getSubNode());
+      return new SelectionExec(ctx, selNode, outer);
 
     case PROJECTION:
       ProjectionNode prjNode = (ProjectionNode) logicalNode;
