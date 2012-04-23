@@ -3,41 +3,23 @@
  */
 package nta.catalog.store;
 
+import nta.catalog.*;
+import nta.catalog.proto.CatalogProtos.*;
+import nta.conf.NtaConf;
+import nta.engine.exception.InternalException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import nta.catalog.Column;
-import nta.catalog.FunctionDesc;
-import nta.catalog.Options;
-import nta.catalog.Schema;
-import nta.catalog.TConstants;
-import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
-import nta.catalog.TableMeta;
-import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.CatalogProtos.ColumnProto;
-import nta.catalog.proto.CatalogProtos.DataType;
-import nta.catalog.proto.CatalogProtos.IndexDescProto;
-import nta.catalog.proto.CatalogProtos.IndexMethod;
-import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.conf.NtaConf;
-import nta.engine.exception.InternalException;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 
 /**
  * @author Hyunsik Choi
@@ -145,7 +127,8 @@ public class DBStore implements CatalogStore {
           + "TID INT NOT NULL REFERENCES " + TB_TABLES + " (TID) ON DELETE CASCADE, "
           + C_TABLE_ID + " VARCHAR(256) NOT NULL REFERENCES " + TB_TABLES + "("
           + C_TABLE_ID + ") ON DELETE CASCADE, "
-          + "column_name VARCHAR(256) NOT NULL, " + "data_type CHAR(16), " 
+          + "column_id INT NOT NULL,"
+          + "column_name VARCHAR(256) NOT NULL, " + "data_type CHAR(16), "
           + "CONSTRAINT C_COLUMN_ID UNIQUE (" + C_TABLE_ID + ", column_name))";
       LOG.info(columns_ddl);
       if (LOG.isDebugEnabled()) {
@@ -298,10 +281,12 @@ public class DBStore implements CatalogStore {
       int tid = res.getInt("TID");
 
       String colSql = null;
+      int columnId = 0;
       for (Column col : table.getMeta().getSchema().getColumns()) {
-        colSql = columnToSQL(tid, table, col);
+        colSql = columnToSQL(tid, table, columnId, col);
         LOG.info(colSql);
         stmt.addBatch(colSql);
+        columnId++;
       }
       
       Iterator<Entry<String,String>> it = table.getMeta().getOptions();
@@ -324,13 +309,14 @@ public class DBStore implements CatalogStore {
   }
   
   private String columnToSQL(final int tid, final TableDesc desc, 
-      final Column col) {
+      final int columnId, final Column col) {
     String sql =
         "INSERT INTO " + TB_COLUMNS 
-        + " (tid, " + C_TABLE_ID + ", column_name, data_type) "
+        + " (tid, " + C_TABLE_ID + ", column_id, column_name, data_type) "
         + "VALUES("
         + tid + ","
         + "'" + desc.getId() + "',"
+        + columnId + ", "
         + "'" + col.getColumnName() + "',"
         + "'" + col.getDataType().toString() + "'"
         + ")";
@@ -440,7 +426,7 @@ public class DBStore implements CatalogStore {
       Schema schema = null;
       try {
         String sql = "SELECT column_name, data_type from " + TB_COLUMNS
-            + " WHERE " + C_TABLE_ID + "='" + name + "'";
+            + " WHERE " + C_TABLE_ID + "='" + name + "' ORDER by column_id asc";
         LOG.info(sql);
         stmt = conn.createStatement();
         res = stmt.executeQuery(sql);

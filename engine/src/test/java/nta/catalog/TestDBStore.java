@@ -1,18 +1,11 @@
 package nta.catalog;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.store.DBStore;
 import nta.conf.NtaConf;
 import nta.engine.NtaTestingUtility;
 import nta.storage.CSVFile2;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -20,6 +13,10 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Hyunsik Choi
@@ -61,6 +58,10 @@ public class TestDBStore {
     assertFalse(store.existTable(tableName));
     store.addTable(desc);
     assertTrue(store.existTable(tableName));
+
+    TableDesc retrieved = store.getTable(tableName);
+    // Schema order check
+    assertSchemaOrder(desc.getMeta().getSchema(), retrieved.getMeta().getSchema());
     store.deleteTable(tableName);
     assertFalse(store.existTable(tableName));
   }
@@ -83,6 +84,8 @@ public class TestDBStore {
     TableDesc retrieved = store.getTable(tableName);
     assertEquals(",", retrieved.getMeta().getOption(CSVFile2.DELIMITER));
     assertEquals(desc, retrieved);
+    // Schema order check
+    assertSchemaOrder(desc.getMeta().getSchema(), retrieved.getMeta().getSchema());
     store.deleteTable(tableName);
   }
   
@@ -180,5 +183,16 @@ public class TestDBStore {
     
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
     return new TableDescImpl(tableName, meta, new Path("/indexed"));
+  }
+
+  public static void assertSchemaOrder(Schema s1, Schema s2) {
+    // Schema order check
+    assertEquals(s1.getColumnNum(),
+        s2.getColumnNum());
+
+    for (int i = 0; i < s1.getColumnNum(); i++) {
+      assertEquals(s1.getColumn(i).getColumnName(),
+          s2.getColumn(i).getColumnName());
+    }
   }
 }
