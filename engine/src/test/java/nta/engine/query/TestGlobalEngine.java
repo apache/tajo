@@ -251,6 +251,8 @@ public class TestGlobalEngine {
     String tablename = res.getPath();
     assertNotNull(tablename);
     Scanner scanner = sm.getTableScanner(tablename);
+    TableMeta meta = sm.getTableMeta(tablename);
+    assertNotNull(meta.getStat());
     Tuple tuple = null;
     String deptname;
     while ((tuple = scanner.next()) != null) {

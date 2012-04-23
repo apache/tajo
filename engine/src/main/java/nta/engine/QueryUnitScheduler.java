@@ -56,8 +56,8 @@ public class QueryUnitScheduler extends Thread {
   
   private BlockingQueue<QueryUnit> pendingQueue = 
       new LinkedBlockingQueue<QueryUnit>();
-  private BlockingQueue<QueryUnit> waitQueue = 
-      new LinkedBlockingQueue<QueryUnit>();
+//  private BlockingQueue<QueryUnit> waitQueue = 
+//      new LinkedBlockingQueue<QueryUnit>();
   
   public QueryUnitScheduler(Configuration conf, StorageManager sm, 
       ClusterManager cm, QueryManager qm, WorkerCommunicator wc, 
@@ -123,18 +123,17 @@ public class QueryUnitScheduler extends Thread {
       }
       requestPendingQueryUnits();
       
-      waitForFinishQueryUnits();
+      waitForFinishScheduleUnit(plan);
       TableMeta meta = TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV);
       meta.setStat(qm.getStatSet(plan.getOutputName()));
       sm.writeTableMeta(sm.getTablePath(plan.getOutputName()), meta);
-      waitQueue.clear();
+//      waitQueue.clear();
     }
   }
   
   private void requestPendingQueryUnits() throws Exception {
     while (!pendingQueue.isEmpty()) {
       QueryUnit q = pendingQueue.take();
-      waitQueue.add(q);
       List<Fragment> fragList = new ArrayList<Fragment>();
       for (ScanNode scan : q.getScanNodes()) {
         fragList.addAll(q.getFragments(scan.getTableId()));
@@ -169,14 +168,14 @@ public class QueryUnitScheduler extends Thread {
     }
   }
   
-  private void waitForFinishQueryUnits() throws Exception {
+  private void waitForFinishScheduleUnit(ScheduleUnit scheduleUnit) throws Exception {
     boolean wait = true;
+    QueryUnit[] units = scheduleUnit.getQueryUnits();
     while (wait) {
       Thread.sleep(WAIT_PERIOD);
       wait = false;
-      Iterator<QueryUnit> it = waitQueue.iterator();
-      while (it.hasNext()) {
-        QueryUnit unit = it.next();
+//      Iterator<QueryUnit> it = waitQueue.iterator();
+      for (QueryUnit unit : units) {
         WaitStatus inprogress = qm.getWaitStatus(unit.getId());
         if (inprogress != null) {
           LOG.info("==== uid: " + unit.getId() + 
@@ -187,18 +186,17 @@ public class QueryUnitScheduler extends Thread {
             inprogress.update(WAIT_PERIOD);
             wait = true;
             if (inprogress.getLeftTime() <= 0) {
-              waitQueue.remove(unit);
+//              waitQueue.remove(unit);
               requestBackupTask(unit);
               inprogress.reset();
             }
-          } else {
-            
           }
         } else {
           wait = true;
         }
       }
     }
+    qm.updateTableStat(scheduleUnit.getOutputName(), units);
   }
   
   private void requestBackupTask(QueryUnit q) throws Exception {
@@ -228,5 +226,4 @@ public class QueryUnitScheduler extends Thread {
       e.printStackTrace();
     }
   }
-  
 }

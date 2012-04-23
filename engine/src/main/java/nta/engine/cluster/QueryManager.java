@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import nta.catalog.statistics.Stat;
 import nta.catalog.statistics.StatSet;
 import nta.catalog.statistics.TableStat;
@@ -34,6 +37,7 @@ import com.google.common.collect.MapMaker;
  *
  */
 public class QueryManager {
+  private final Log LOG = LogFactory.getLog(QueryManager.class);
 
   private final static long EXPIRE_TIME = 5000;
   
@@ -254,6 +258,9 @@ public class QueryManager {
     for (QueryUnit unit : units) {
       status = inProgressQueries.get(unit.getId());
       if (status != null) {
+        LOG.info("==== uid: " + unit.getId() + 
+            " status: " + status.getInProgressStatus() + 
+            " left time: " + status.getLeftTime());
         if (status.getInProgressStatus().getStatus() != QueryStatus.FINISHED) {
           return false;
         }
@@ -264,6 +271,10 @@ public class QueryManager {
     statSetOfTable.put(getLogicalQueryUnit(id).getOutputName(), 
         mergeStatSet(units));
     return true;
+  }
+  
+  public void updateTableStat(String tableId, QueryUnit[] units) {
+    statSetOfTable.put(tableId, mergeStatSet(units));
   }
   
   public TableStat getStatSet(String tableId) {
