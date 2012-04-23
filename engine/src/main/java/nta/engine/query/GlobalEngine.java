@@ -127,7 +127,7 @@ public class GlobalEngine implements EngineService {
       queryUnitScheduler.start();
       queryUnitScheduler.join();
 
-      return globalPlan.getRoot().getOutputName();
+      return sm.getTablePath(globalPlan.getRoot().getOutputName()).toString();
     }
   }
   
