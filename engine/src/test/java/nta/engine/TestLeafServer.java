@@ -43,12 +43,14 @@ import nta.storage.StorageUtil;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mortbay.log.Log;
 
 import tajo.datachannel.Fetcher;
 
@@ -58,7 +60,7 @@ import com.google.common.collect.Lists;
  * @author Hyunsik Choi
  */
 public class TestLeafServer {
-
+  private final Log LOG = LogFactory.getLog(TestLeafServer.class);
   private Configuration conf;
   private NtaTestingUtility util;
   private String TEST_PATH = "target/test-data/TestLeafServer";
@@ -160,6 +162,7 @@ public class TestLeafServer {
     assertNotNull(leaf1.requestQueryUnit(req1.getProto()));
     Thread.sleep(1000);
     assertNotNull(leaf2.requestQueryUnit(req2.getProto()));
+    Thread.sleep(1000);
     
     // for the report sending test
     NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
@@ -169,31 +172,7 @@ public class TestLeafServer {
     submitted.add(req1.getId());
     submitted.add(req2.getId());
 
-    int i = 0;
-    while (i < 10) { // waiting for the report messages 
-      Log.info("Waiting for receiving the report messages");
-      Thread.sleep(1000);
-      list = master.getProgressQueries();
-      reported.clear();
-      for (InProgressStatus ips : list) {
-        // Because this query is to store, it should have the statistics info 
-        // of the store data. The below 'assert' examines the existence of 
-        // the statistics info.
-        if (ips.getStatus() == QueryStatus.FINISHED) {
-          reported.add(new QueryUnitId(ips.getId()));
-          assertTrue(ips.hasStats());   
-        }
-      }
-
-      if (reported.containsAll(submitted)) {
-        break;
-      }
-      
-      i++;
-    }
-    Log.info("reported: " + reported);
-    Log.info("submitted: " + submitted);
-    assertTrue(reported.containsAll(submitted));
+    assertSubmittedAndReported(master, submitted);
     
     Scanner scanner = sm.getTableScanner("testLeafServer");
     int j = 0;
@@ -210,7 +189,7 @@ public class TestLeafServer {
   public final void testInterQuery() throws Exception {
     Fragment[] frags = sm.split("employee", 40000);
     for (Fragment frag : frags) {
-      Log.info(frag.toString());
+      LOG.info(frag.toString());
     }
     
     int splitIdx = (int) Math.ceil(frags.length / 2.f);
@@ -245,11 +224,11 @@ public class TestLeafServer {
     assertNotNull(leaf1.requestQueryUnit(req1.getProto()));
     Thread.sleep(1000);
     assertNotNull(leaf2.requestQueryUnit(req2.getProto()));
-    
+    Thread.sleep(1000);
     // for the report sending test
     NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
     Collection<InProgressStatus> list = master.getProgressQueries();
-    Set<QueryUnitId> submitted = new HashSet<QueryUnitId>();
+    Set<QueryUnitId> submitted = Sets.newHashSet();
     submitted.add(req1.getId());
     submitted.add(req2.getId());
     
@@ -261,7 +240,6 @@ public class TestLeafServer {
     
     for (InProgressStatus ips : list) {
       if (ips.getStatus() == QueryStatus.FINISHED) {
-        Log.info(">>>>> InProgress: " + ips.getId());
         long sum = 0;
         List<Partition> partitions = ips.getPartitionsList();
         assertEquals(2, partitions.size());
@@ -272,7 +250,7 @@ public class TestLeafServer {
           }
           Fetcher fetcher = new Fetcher(URI.create(part.getFileName()), out);
           File fetched = fetcher.get();
-          Log.info(">>>>> Fetched: partition" + "(" + part.getPartitionKey()
+          LOG.info(">>>>> Fetched: partition" + "(" + part.getPartitionKey()
               + ") " + fetched.getAbsolutePath() + " (size: "
               + fetched.length() + " bytes)");
           assertNotNull(fetched);
@@ -303,6 +281,7 @@ public class TestLeafServer {
     QueryUnitRequest req3 = new QueryUnitRequestImpl(
         qid3, Lists.newArrayList(emptyFrag),
         "", false, plan.toJSON());
+    assertTrue("InProgress list must be positive.", list.size() != 0);
     for (InProgressStatus ips : list) {
       for (Partition part : ips.getPartitionsList()) {
         if (part.getPartitionKey() == 0)
@@ -322,7 +301,7 @@ public class TestLeafServer {
     Collection<InProgressStatus> list = master.getProgressQueries();
     int i = 0;
     while (i < 10) { // waiting for the report messages 
-      Log.info("Waiting for receiving the report messages");
+      LOG.info("Waiting for receiving the report messages");
       Thread.sleep(1000);
       list = master.getProgressQueries();
       reported.clear();
@@ -341,8 +320,8 @@ public class TestLeafServer {
       
       i++;
     }
-    Log.info("reported: " + reported);
-    Log.info("submitted: " + submitted);
+    LOG.info("reported: " + reported);
+    LOG.info("submitted: " + submitted);
     assertTrue(reported.containsAll(submitted));
   }
 }
