@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.util.List;
 
 /**
@@ -35,6 +36,7 @@ public class TajoCli {
   private String zkAddr;
   private String entryAddr;  
   private static final int WAIT_TIME = 3000;
+  private static final int PRINT_LIMIT = 24;
   
   private ConsoleReader reader;
   private InputStream sin;
@@ -91,10 +93,14 @@ public class TajoCli {
     if (entryAddr != null) {
       conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
     }
-    
-    sout.println("Trying to connect the tajo master (" + c.get(NConstants.CLIENT_SERVICE_ADDRESS) + ")");
+
+    if (entryAddr != null) {
+      sout.println("Trying to connect the tajo master (" + entryAddr + ")");
+    } else {
+      sout.println("Executing the tajo cluster in local mode");
+    }
     client = new TajoClient(conf);
-    sout.println("Connected to tajo master (" + c.get(NConstants.CLIENT_SERVICE_ADDRESS) + ")");
+    sout.println("Connected...");
   }
   
   public int executeShell() throws Exception {
@@ -137,13 +143,44 @@ public class TajoCli {
   }
   
   private void executeQuery(String queryStr) {
+    // if query is empty string
+    if (queryStr.equals("")) {
+      return;
+    }
+
     // query execute
     try {
       ResultSet res = client.executeQuery(queryStr);
+      ResultSetMetaData rsmd = res.getMetaData();
+      int numOfColumns = rsmd.getColumnCount();
+
+      for (int i = 0; i < numOfColumns; i++) {
+        if (i > 0) sout.print(",  ");
+        String columnName = rsmd.getColumnName(i);
+        sout.print(columnName);
+      }
+      sout.println("\n-------------------------------");
+
+      int numOfPrintedRows = 0;
       while (res.next()) {
-        
-      }      
-    // TODO - the result should be printed.
+        // TODO - to be improved to print more formatted text
+        for (int i = 0; i < numOfColumns; i++) {
+          if (i > 0) sout.print(",  ");
+          String columnValue = res.getObject(i).toString();
+          sout.print(columnValue);
+        }
+        sout.println();
+        sout.flush();
+        numOfPrintedRows++;
+        if (numOfPrintedRows >= PRINT_LIMIT) {
+          sout.print("continue... ('q' is quit)");
+          sout.flush();
+          if (sin.read() == 'q') {
+            break;
+          }
+          numOfPrintedRows = 0;
+        }
+      }
     } catch (Throwable t) {
       System.err.println(t.getMessage());
     }

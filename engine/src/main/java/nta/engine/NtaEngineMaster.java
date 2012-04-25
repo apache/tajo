@@ -90,7 +90,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
     this.defaultFS = basePath.getFileSystem(conf);
     LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
 
-    if (defaultFS.exists(basePath) == false) {
+    if (!defaultFS.exists(basePath)) {
       defaultFS.mkdirs(basePath);
       LOG.info("Tajo Base dir (" + basePath + ") is created.");
     }
@@ -111,6 +111,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
       LOG.info("Enabled Pseudo Distributed Mode");
       this.zkServer = new ZkServer(conf);
       this.zkServer.start();
+      conf.set(NConstants.ZOOKEEPER_ADDRESS, "127.0.0.1:2181");
 
       // TODO - When the RPC framework supports all methods of the catalog
       // server, the below comments should be eliminated.

@@ -55,6 +55,7 @@ public class ZkClient implements Watcher {
 
   public ZkClient(String serverstring, int sessionTimeout, int maxRetries,
       int retryIntervalMills) throws IOException {
+    LOG.info("Try to connect zookeeper (" + serverstring + ")");
     this.zk = new ZooKeeper(serverstring, sessionTimeout, this);
     this.retryCounterFactory =
         new RetryCounterFactory(maxRetries, retryIntervalMills);
