@@ -77,4 +77,8 @@ public class TestServerName {
 		assertTrue(s4.compareTo(s1) > 0);
 	}
 
+  @Test (expected = IllegalArgumentException.class)
+  public void testException() {
+    new ServerName("ex1.com");
+  }
 }

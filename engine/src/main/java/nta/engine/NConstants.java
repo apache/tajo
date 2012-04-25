@@ -14,6 +14,7 @@ public final class NConstants {
 	
 	public static String CLIENT_SERVICE_ADDRESS="client.service.addr";
 	public static String DEFAULT_CLIENT_SERVICE_ADDRESS="localhost:9004";
+  public static int DEFAULT_CLIENT_SERVICE_PORT = 9004;
 	
 	public static String ZOOKEEPER_ADDRESS="zookeeper.server.addr";
 	public static String DEFAULT_ZOOKEEPER_ADDRESS="localhost:2181";		

@@ -9,6 +9,7 @@ import nta.catalog.Column;
 import nta.catalog.TableDesc;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
+import nta.engine.cluster.ServerName;
 import nta.engine.cluster.ServerNodeTracker;
 import nta.zookeeper.ZkClient;
 import org.apache.commons.cli.*;
@@ -41,11 +42,9 @@ public class TajoCli {
   
   static {
     options = new Options();
-    options.addOption("a", "addr", true, "client service host");
-    options.addOption("p", "port", true, "client service port");
+    options.addOption("a", "addr", true, "client service address (hostname:port)");
     options.addOption("conf", true, "user configuration dir");
     options.addOption("h", "help", false, "help");
-    options.addOption("l", "local", false, "run on local mode");
   }
   
   public TajoCli(Configuration c, String [] args, 
@@ -62,19 +61,14 @@ public class TajoCli {
       System.exit(-1);
     }
     
-    String hostName;
-    int givenPort;
+    String addr;
     if (entryAddr == null && cmd.hasOption("a")) {
-      hostName = cmd.getOptionValue("a");
-      if (cmd.hasOption("p")) {
-        givenPort = Integer.valueOf(cmd.getOptionValue("p"));
-      } else {
-        givenPort = NConstants.DEFAULT_MASTER_PORT;
-      }
-      
-      this.entryAddr = hostName + ":" + givenPort;
+      addr = cmd.getOptionValue("a");
+      ServerName sn = ServerName.createWithDefaultPort(addr,
+          NConstants.DEFAULT_CLIENT_SERVICE_PORT);
+
+      this.entryAddr = sn.getServerName();
       conf.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
-      conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
     }
 
     if(this.entryAddr == null && cmd.hasOption("z")) {
@@ -91,6 +85,10 @@ public class TajoCli {
       this.entryAddr = new String(entryAddrBytes);
       conf.set(NConstants.ZOOKEEPER_ADDRESS, this.zkAddr);
       conf.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
+    }
+
+    // if the remote tajo cluster is set, entryAddr is not null.
+    if (entryAddr != null) {
       conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
     }
     
@@ -103,7 +101,7 @@ public class TajoCli {
     reader = new ConsoleReader(sin, sout);
     
     String line;
-    String cmd [] = null;
+    String cmd [];
     boolean quit = false;
     while(!quit) {
       line = reader.readLine("tajo> ");
