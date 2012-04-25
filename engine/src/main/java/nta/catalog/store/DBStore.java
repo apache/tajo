@@ -21,6 +21,29 @@ import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import nta.catalog.Column;
+import nta.catalog.FunctionDesc;
+import nta.catalog.Options;
+import nta.catalog.Schema;
+import nta.catalog.TConstants;
+import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
+import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
+import nta.catalog.proto.CatalogProtos.ColumnProto;
+import nta.catalog.proto.CatalogProtos.DataType;
+import nta.catalog.proto.CatalogProtos.IndexDescProto;
+import nta.catalog.proto.CatalogProtos.IndexMethod;
+import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.statistics.TableStat;
+import nta.conf.NtaConf;
+import nta.engine.exception.InternalException;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+
 /**
  * @author Hyunsik Choi
  */
@@ -36,6 +59,7 @@ public class DBStore implements CatalogStore {
   private static final String TB_COLUMNS = "COLUMNS";
   private static final String TB_OPTIONS = "OPTIONS";
   private static final String TB_INDEXES = "INDEXES";
+  private static final String TB_STATISTICS = "STATS";
   
   private static final String C_TABLE_ID = "TABLE_ID";
   
@@ -79,7 +103,8 @@ public class DBStore implements CatalogStore {
             "Cannot initialize the persistent storage of Catalog", se);
       }
   }
-  
+
+  // TODO - DDL and index statements should be renamed
   private void createBaseTable() throws SQLException {
     wlock.lock();
     try {
@@ -99,7 +124,7 @@ public class DBStore implements CatalogStore {
           + "TID int NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1), "
           + C_TABLE_ID + " VARCHAR(256) NOT NULL CONSTRAINT TABLE_ID_UNIQ UNIQUE, "
           + "path VARCHAR(1024), "
-          + "store_type char(16), "
+          + "store_type CHAR(16), "
           + "options VARCHAR(32672), "
           + "CONSTRAINT TABLES_PK PRIMARY KEY (TID)" +
           ")";
@@ -207,6 +232,28 @@ public class DBStore implements CatalogStore {
       stmt.addBatch(idx_indexes_columns);
       stmt.executeBatch();
       LOG.info("Table '" + TB_INDEXES + "' is created.");
+
+      String stats_ddl = "CREATE TABLE " + TB_STATISTICS + "("
+          + C_TABLE_ID + " VARCHAR(256) NOT NULL REFERENCES TABLES (" + C_TABLE_ID + ") "
+          + "ON DELETE CASCADE, "
+          + "num_rows INT, "
+          + "num_bytes INT)";
+      LOG.info(stats_ddl);  // TODO - to be removed
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(stats_ddl);
+      }
+      stmt.addBatch(stats_ddl);
+
+      String idx_stats_fk_table_name = "CREATE INDEX idx_stats_table_name ON "
+          + TB_STATISTICS + " (" + C_TABLE_ID + ")";
+      LOG.info(idx_stats_fk_table_name); // TODO - to be removed
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(idx_stats_fk_table_name);
+      }
+      stmt.addBatch(idx_stats_fk_table_name);
+      stmt.executeBatch();
+      LOG.info("Table '" + TB_STATISTICS + "' is created.");
+
     } finally {
       wlock.unlock();
     }
@@ -220,7 +267,7 @@ public class DBStore implements CatalogStore {
           new String [] {"TABLE"});
       
       String resName;
-      while (res.next() && found == false) {
+      while (res.next() && !found) {
         resName = res.getString("TABLE_NAME");
         if (TB_META.equals(resName)
             || TB_TABLES.equals(resName)
@@ -241,7 +288,7 @@ public class DBStore implements CatalogStore {
       boolean found = false;
       ResultSet res = conn.getMetaData().getTables(null, null, null, 
               new String [] {"TABLE"});
-      while(res.next() && found == false) {
+      while(res.next() && !found) {
         if (tableName.equals(res.getString("TABLE_NAME")))
           found = true;
       }
@@ -255,7 +302,7 @@ public class DBStore implements CatalogStore {
   @Override
   public final void addTable(final TableDesc table) throws IOException {
     Statement stmt = null;
-    ResultSet res = null;
+    ResultSet res;
 
     String sql = 
         "INSERT INTO " + TB_TABLES + " (" + C_TABLE_ID + ", path, store_type) "
@@ -263,18 +310,18 @@ public class DBStore implements CatalogStore {
         + "'" + table.getPath() + "', "
         + "'" + table.getMeta().getStoreType() + "'"
         + ")";
-    LOG.info(sql.toString());
+    LOG.info(sql);
     wlock.lock();
     try {
       stmt = conn.createStatement();      
-      stmt.addBatch(sql.toString());
+      stmt.addBatch(sql);
       stmt.executeBatch();
       
       stmt = conn.createStatement();
       sql = "SELECT TID from " + TB_TABLES + " WHERE " + C_TABLE_ID 
           + " = '" + table.getId() + "'";
       res = stmt.executeQuery(sql);
-      if (res.next() == false) {
+      if (!res.next()) {
         throw new IOException("ERROR: there is no tid matched to " 
             + table.getId());
       }
@@ -292,11 +339,20 @@ public class DBStore implements CatalogStore {
       Iterator<Entry<String,String>> it = table.getMeta().getOptions();
       String optSql;
       while (it.hasNext()) {
-        optSql = keyvalToSQL(tid, table, it.next());
+        optSql = keyvalToSQL(table, it.next());
         LOG.info(optSql);
         stmt.addBatch(optSql);
       }
       stmt.executeBatch();
+      if (table.getMeta().getStat() != null) {
+        sql = "INSERT INTO " + TB_STATISTICS + " (" + C_TABLE_ID + ", num_rows, num_bytes) "
+            + "VALUES ('" + table.getId() + "', "
+            + table.getMeta().getStat().getNumRows() + ","
+            + table.getMeta().getStat().getNumBytes() + ")";
+        LOG.info(sql);
+        stmt.addBatch(sql);
+        stmt.executeBatch();
+      }
     } catch (SQLException se) {
       throw new IOException(se.getMessage(), se);
     } finally {
@@ -324,7 +380,7 @@ public class DBStore implements CatalogStore {
     return sql;
   }
   
-  private String keyvalToSQL(int tid, final TableDesc desc, 
+  private String keyvalToSQL(final TableDesc desc,
       final Entry<String,String> keyVal) {
     String sql =
         "INSERT INTO " + TB_OPTIONS 
@@ -354,9 +410,9 @@ public class DBStore implements CatalogStore {
     try {
       stmt = conn.createStatement();
       ResultSet res = stmt.executeQuery(sql.toString());
-      exist = res.next() == true;
+      exist = res.next();
     } catch (SQLException se) {
-      
+      throw new IOException(se);
     } finally {
       rlock.unlock();
       try {
@@ -373,7 +429,7 @@ public class DBStore implements CatalogStore {
     String sql =
       "DELETE FROM " + TB_TABLES
       + " WHERE " + C_TABLE_ID +" = '" + name + "'";
-    LOG.info(sql.toString());
+    LOG.info(sql);
     
     Statement stmt = null;
     wlock.lock(); 
@@ -399,7 +455,8 @@ public class DBStore implements CatalogStore {
     String tableName = null;
     Path path = null;
     StoreType storeType = null;
-    Options options = null;
+    Options options;
+    TableStat stat = null;
 
     rlock.lock();
     try {
@@ -450,6 +507,7 @@ public class DBStore implements CatalogStore {
       try {
         String sql = "SELECT key_, value_ from " + TB_OPTIONS
             + " WHERE " + C_TABLE_ID + "='" + name + "'";
+        LOG.info(sql);
         stmt = conn.createStatement();
         res = stmt.executeQuery(sql);        
         
@@ -465,7 +523,29 @@ public class DBStore implements CatalogStore {
         res.close();
       }
 
+      try {
+        String sql = "SELECT num_rows, num_bytes from " + TB_STATISTICS
+            + " WHERE " + C_TABLE_ID + "='" + name + "'";
+        LOG.info(sql);
+        stmt = conn.createStatement();
+        res = stmt.executeQuery(sql);
+
+        if (res.next()) {
+          stat = new TableStat();
+          stat.setNumRows(res.getInt("num_rows"));
+          stat.setNumBytes(res.getInt("num_bytes"));
+        }
+      } catch (SQLException se) {
+        throw new IOException(se);
+      } finally {
+        stmt.close();
+        res.close();
+      }
+
       TableMeta meta = new TableMetaImpl(schema, storeType, options);
+      if (stat != null) {
+        meta.setStat(stat);
+      }
       TableDesc table = new TableDescImpl(tableName, meta, path);
 
       return table;
@@ -527,7 +607,7 @@ public class DBStore implements CatalogStore {
     String sql = "SELECT " + C_TABLE_ID + " from " + TB_TABLES;
     
     Statement stmt = null;
-    ResultSet res = null;
+    ResultSet res;
     
     List<String> tables = new ArrayList<String>();
     rlock.lock();
@@ -584,7 +664,7 @@ public class DBStore implements CatalogStore {
     String sql =
         "DELETE FROM " + TB_INDEXES
         + " WHERE index_name='" + indexName + "'";
-      LOG.info(sql.toString());
+      LOG.info(sql);
       
       Statement stmt = null;
       wlock.lock(); 
@@ -604,8 +684,8 @@ public class DBStore implements CatalogStore {
   
   public final IndexDescProto getIndex(final String indexName) 
       throws IOException {
-    ResultSet res = null;
-    PreparedStatement stmt = null;
+    ResultSet res;
+    PreparedStatement stmt;
     
     IndexDescProto proto = null;
     
@@ -618,12 +698,11 @@ public class DBStore implements CatalogStore {
       stmt = conn.prepareStatement(sql);
       stmt.setString(1, indexName);
       res = stmt.executeQuery();
-      if (res.next() == false) {
+      if (!res.next()) {
         throw new IOException("ERROR: there is no index matched to " + indexName);
       }
       proto = resultToProto(res);
     } catch (SQLException se) {
-      new IOException(se);
     } finally {
       rlock.unlock();
     }
@@ -633,8 +712,8 @@ public class DBStore implements CatalogStore {
   
   public final IndexDescProto getIndex(final String tableName, 
       final String columnName) throws IOException {
-    ResultSet res = null;
-    PreparedStatement stmt = null;
+    ResultSet res;
+    PreparedStatement stmt;
     
     IndexDescProto proto = null;
     
@@ -648,7 +727,7 @@ public class DBStore implements CatalogStore {
       stmt.setString(1, tableName);
       stmt.setString(2, columnName);
       res = stmt.executeQuery();
-      if (res.next() == false) {
+      if (!res.next()) {
         throw new IOException("ERROR: there is no index matched to " 
             + tableName + "." + columnName);
       }      
@@ -665,7 +744,7 @@ public class DBStore implements CatalogStore {
   public final boolean existIndex(final String indexName) throws IOException {
     String sql = "SELECT index_name from " + TB_INDEXES 
         + " WHERE index_name = ?";
-    LOG.info(sql.toString());
+    LOG.info(sql);
 
     PreparedStatement stmt = null;
     boolean exist = false;
@@ -674,7 +753,7 @@ public class DBStore implements CatalogStore {
       stmt = conn.prepareStatement(sql);
       stmt.setString(1, indexName);
       ResultSet res = stmt.executeQuery();
-      exist = res.next() == true;
+      exist = res.next();
     } catch (SQLException se) {
       
     } finally {
@@ -693,7 +772,7 @@ public class DBStore implements CatalogStore {
       throws IOException {
     String sql = "SELECT index_name from " + TB_INDEXES 
         + " WHERE " + C_TABLE_ID + " = ? AND COLUMN_NAME = ?";
-    LOG.info(sql.toString());
+    LOG.info(sql);
 
     PreparedStatement stmt = null;
     boolean exist = false;
@@ -703,7 +782,7 @@ public class DBStore implements CatalogStore {
       stmt.setString(1, tableName);
       stmt.setString(2, columnName);
       ResultSet res = stmt.executeQuery();
-      exist = res.next() == true;
+      exist = res.next();
     } catch (SQLException se) {
       
     } finally {
@@ -719,8 +798,8 @@ public class DBStore implements CatalogStore {
   
   public final IndexDescProto [] getIndexes(final String tableName) 
       throws IOException {
-    ResultSet res = null;
-    PreparedStatement stmt = null;
+    ResultSet res;
+    PreparedStatement stmt;
     
     List<IndexDescProto> protos = new ArrayList<IndexDescProto>();
     
@@ -736,7 +815,6 @@ public class DBStore implements CatalogStore {
         protos.add(resultToProto(res));
       }
     } catch (SQLException se) {
-      new IOException(se);
     } finally {
       rlock.unlock();
     }

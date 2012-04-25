@@ -2,6 +2,7 @@ package nta.catalog;
 
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.statistics.TableStat;
 import nta.catalog.store.DBStore;
 import nta.conf.NtaConf;
 import nta.engine.NtaTestingUtility;
@@ -28,7 +29,7 @@ public class TestDBStore {
   private static DBStore store;
 
   @BeforeClass
-  public static final void setUp() throws Exception {
+  public static void setUp() throws Exception {
     conf = NtaConf.create();
     util = new NtaTestingUtility();
     File file = util.setupClusterTestBuildDir();
@@ -38,7 +39,7 @@ public class TestDBStore {
   }
 
   @AfterClass
-  public static final void tearDown() throws Exception {
+  public static void tearDown() throws Exception {
     store.close();
   }
 
@@ -78,12 +79,20 @@ public class TestDBStore {
     Options opts = new Options();
     opts.put(CSVFile2.DELIMITER, ",");
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV, opts);
+
+    TableStat stat = new TableStat();
+    stat.setNumRows(957685);
+    stat.setNumBytes(1023234);
+    meta.setStat(stat);
+
     TableDesc desc = new TableDescImpl(tableName, meta, new Path("/gettable"));
 
     store.addTable(desc);
     TableDesc retrieved = store.getTable(tableName);
     assertEquals(",", retrieved.getMeta().getOption(CSVFile2.DELIMITER));
     assertEquals(desc, retrieved);
+    assertTrue(957685 == desc.getMeta().getStat().getNumRows());
+    assertTrue(1023234 == desc.getMeta().getStat().getNumBytes());
     // Schema order check
     assertSchemaOrder(desc.getMeta().getSchema(), retrieved.getMeta().getSchema());
     store.deleteTable(tableName);
