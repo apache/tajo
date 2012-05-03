@@ -3,8 +3,6 @@
  */
 package nta.catalog.store;
 
-import nta.catalog.*;
-import nta.catalog.proto.CatalogProtos.*;
 import nta.conf.NtaConf;
 import nta.engine.exception.InternalException;
 import org.apache.commons.logging.Log;
@@ -36,13 +34,6 @@ import nta.catalog.proto.CatalogProtos.IndexDescProto;
 import nta.catalog.proto.CatalogProtos.IndexMethod;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.TableStat;
-import nta.conf.NtaConf;
-import nta.engine.exception.InternalException;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 
 /**
  * @author Hyunsik Choi
@@ -416,7 +407,9 @@ public class DBStore implements CatalogStore {
     } finally {
       rlock.unlock();
       try {
-        stmt.close();
+        if (stmt != null) {
+          stmt.close();
+        }
       } catch (SQLException e) {
       }         
     }
@@ -441,7 +434,9 @@ public class DBStore implements CatalogStore {
     } finally {
       wlock.unlock();
       try {
-        stmt.close();
+        if (stmt != null) {
+          stmt.close();
+        }
       } catch (SQLException e) {
       }      
     }
@@ -576,6 +571,8 @@ public class DBStore implements CatalogStore {
       return DataType.BOOLEAN;
     } else if (typeStr.equals(DataType.BYTE.toString())) {
       return DataType.BYTE;
+    } else if (typeStr.equals(DataType.CHAR.toString())) {
+      return DataType.CHAR;
     } else if (typeStr.equals(DataType.SHORT.toString())) {
       return DataType.SHORT;
     } else if (typeStr.equals(DataType.INT.toString())) {
@@ -594,6 +591,8 @@ public class DBStore implements CatalogStore {
       return DataType.IPv6;
     } else if (typeStr.equals(DataType.BYTES.toString())) {
       return DataType.BYTES;
+    } else if (typeStr.equals(DataType.DATE.toString())) {
+      return DataType.DATE;
     } else {
       LOG.error("Cannot find a matched type aginst from '"
           + typeStr + "'");
@@ -622,7 +621,9 @@ public class DBStore implements CatalogStore {
     } finally {
       rlock.unlock();
       try {
-        stmt.close();
+        if (stmt != null) {
+          stmt.close();
+        }
       } catch (SQLException e) {
       }
     }
@@ -645,16 +646,18 @@ public class DBStore implements CatalogStore {
       stmt.setString(3, proto.getColumn().getColumnName());
       stmt.setString(4, proto.getColumn().getDataType().toString());
       stmt.setString(5, proto.getIndexMethod().toString());
-      stmt.setBoolean(6, proto.hasIsUnique() ? proto.getIsUnique() : false);
-      stmt.setBoolean(7, proto.hasIsClustered() ? proto.getIsClustered() : false);
-      stmt.setBoolean(8, proto.hasIsAscending() ? proto.getIsAscending() : false);
+      stmt.setBoolean(6, proto.hasIsUnique() && proto.getIsUnique());
+      stmt.setBoolean(7, proto.hasIsClustered() && proto.getIsClustered());
+      stmt.setBoolean(8, proto.hasIsAscending() && proto.getIsAscending());
       stmt.executeUpdate();
     } catch (SQLException se) {
       throw new IOException(se);
     } finally {
       wlock.unlock();
       try {
-        stmt.close();
+        if (stmt != null) {
+          stmt.close();
+        }
       } catch (SQLException e) {     
       }
     }
@@ -676,7 +679,9 @@ public class DBStore implements CatalogStore {
       } finally {
         wlock.unlock();
         try {
-          stmt.close();
+          if (stmt != null) {
+            stmt.close();
+          }
         } catch (SQLException e) {
         }      
       }

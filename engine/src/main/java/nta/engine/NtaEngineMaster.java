@@ -18,6 +18,7 @@ import nta.rpc.RemoteException;
 import nta.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import nta.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import nta.storage.StorageManager;
+import nta.storage.StorageUtil;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkServer;
 import nta.zookeeper.ZkUtil;
@@ -109,9 +110,10 @@ public class NtaEngineMaster extends Thread implements ClientService {
     final String mode = conf.get(NConstants.CLUSTER_DISTRIBUTED);
     if (mode == null || mode.equals(NConstants.CLUSTER_IS_LOCAL)) {
       LOG.info("Enabled Pseudo Distributed Mode");
+      conf.set(NConstants.ZOOKEEPER_ADDRESS, "127.0.0.1:2181");
       this.zkServer = new ZkServer(conf);
       this.zkServer.start();
-      conf.set(NConstants.ZOOKEEPER_ADDRESS, "127.0.0.1:2181");
+
 
       // TODO - When the RPC framework supports all methods of the catalog
       // server, the below comments should be eliminated.
@@ -369,6 +371,11 @@ public class NtaEngineMaster extends Thread implements ClientService {
     
     TableDesc desc = new TableDescImpl(request.getName(), 
         new TableMetaImpl(request.getMeta()), path);
+    try {
+      StorageUtil.writeTableMeta(conf, path, desc.getMeta());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     catalog.addTable(desc);
     LOG.info("Table " + desc.getId() + " is attached.");
     

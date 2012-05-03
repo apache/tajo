@@ -269,6 +269,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           t.kill();
         }
       }
+
+      // remove the znode
+      ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName);
       
       try {
         webServer.stop();
@@ -276,6 +279,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         // TODO Auto-generated catch block
         e.printStackTrace();
       }
+
       rpcServer.shutdown();
       queryLauncher.shutdown();      
       masterAddrTracker.stop();

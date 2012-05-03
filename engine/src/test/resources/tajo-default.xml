@@ -9,7 +9,7 @@
 
 <property>
   <name>engine.rootdir</name>
-  <value>file:///tmp/tazo-${user.name}</value>
+  <value>file:///tmp/tajo-${user.name}</value>
   <description>A base for other temporary directories.</description>
 </property>
 

@@ -73,11 +73,25 @@ public class WorkerCommunicator extends ZkListener {
   private void addUpdate(final List<String> servers) {
     for (String servername : servers) {
       if (!hm.containsKey(servername)) {
-        hm.put(servername, 
-            (AsyncWorkerClientInterface) NettyRpc
+        AsyncWorkerClientInterface proxy = null;
+        try {
+        proxy = (AsyncWorkerClientInterface) NettyRpc
             .getProtoParamAsyncRpcProxy(AsyncWorkerInterface.class,
                 AsyncWorkerClientInterface.class, new InetSocketAddress(
-                    extractHost(servername), extractPort(servername))));
+                    extractHost(servername), extractPort(servername)));
+        } catch (Exception e) {
+          LOG.error("cannot connect to the worker (" + servername + ")");
+          try {
+            zkClient.delete(ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, servername));
+          } catch (InterruptedException ie) {
+            ie.printStackTrace();
+          } catch (KeeperException ke) {
+            ke.printStackTrace();
+          }
+        }
+        if (proxy != null) {
+          hm.put(servername, proxy);
+        }
       }
     }
   }

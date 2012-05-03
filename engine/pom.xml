@@ -25,7 +25,26 @@
         <enabled>false</enabled>
       </snapshots>
     </repository>
+    <repository>
+      <id>scala-tools.org releases</id>
+      <name>Scala-tools Maven2 Releases Snapshots Repository</name>
+      <url>http://scala-tools.org/repo-releases</url>
+    </repository>
   </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>scala</id>
+      <name>Scala Tools</name>
+      <url>http://scala-tools.org/repo-releases/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
 
   <build>
     <plugins>
@@ -37,6 +56,25 @@
           <target>1.6</target>
         </configuration>
       </plugin>
+    <plugin>
+      <groupId>net.alchim31.maven</groupId>
+      <artifactId>scala-maven-plugin</artifactId>
+      <version>3.0.1</version>
+      <executions>
+        <execution>
+          <goals>
+            <goal>compile</goal>
+            <goal>testCompile</goal>
+          </goals>
+        </execution>
+      </executions>
+      <configuration>
+        <jvmArgs>
+          <jvmArg>-Xms64m</jvmArg>
+          <jvmArg>-Xmx1024m</jvmArg>
+        </jvmArgs>
+      </configuration>
+    </plugin>
       <plugin>
         <groupId>org.antlr</groupId>
         <artifactId>antlr3-maven-plugin</artifactId>
@@ -160,6 +198,17 @@
   </build>
   <dependencies>
     <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-library</artifactId>
+        <version>2.9.2</version>
+    </dependency>
+    <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest_2.9.2</artifactId>
+        <version>1.7.2</version>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
     </dependency>
@@ -259,7 +308,6 @@
           </excludeRoots>
         </configuration>
       </plugin>
-
     </plugins>
   </reporting>
 </project>

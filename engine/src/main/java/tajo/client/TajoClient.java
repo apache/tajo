@@ -5,6 +5,7 @@ import nta.catalog.TableDesc;
 import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
+import nta.conf.NtaConf;
 import nta.engine.ClientServiceProtos.*;
 import nta.engine.LocalTajoCluster;
 import nta.engine.NConstants;
@@ -31,31 +32,52 @@ public class TajoClient {
   private final Log LOG = LogFactory.getLog(TajoClient.class);
   
   private final Configuration conf;
-  private final ClientService service;
-  
+  private ClientService service;
+  private static LocalTajoCluster cluster = null;
+
   public TajoClient(Configuration conf) throws IOException {
     this.conf = conf;
-
-    String masterAddr = this.conf.get(NConstants.CLIENT_SERVICE_ADDRESS, 
-        NConstants.DEFAULT_CLIENT_SERVICE_ADDRESS);
 
     String mode = this.conf.get(NConstants.CLUSTER_DISTRIBUTED);
     // If cli is executed in local mode
     if (mode == null || mode.equals(NConstants.CLUSTER_IS_LOCAL)) {
-      try {
-        LocalTajoCluster cluster = new LocalTajoCluster(conf);
-        cluster.startup();
-        service = cluster.getMaster();
-      } catch (Exception e) {
-        LOG.error(e);
-        throw new IOException(e);
-      }
+      initLocalCluster(conf);
     } else {
+      String masterAddr = this.conf.get(NConstants.CLIENT_SERVICE_ADDRESS,
+          NConstants.DEFAULT_CLIENT_SERVICE_ADDRESS);
       InetSocketAddress addr = NetUtils.createSocketAddr(masterAddr);
+      init(addr);
+    }
+  }
 
-      service =
-          (ClientService) NettyRpc.getProtoParamBlockingRpcProxy(
-              ClientService.class, addr);
+  public TajoClient(InetSocketAddress addr) throws IOException {
+    this.conf = NtaConf.create();
+    this.conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
+    init(addr);
+  }
+
+  public TajoClient(String hostname, int port) throws IOException {
+    this.conf = NtaConf.create();
+    this.conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
+    init(NetUtils.createSocketAddr(hostname, port));
+  }
+
+  private void init(InetSocketAddress addr) throws IOException {
+    service =
+        (ClientService) NettyRpc.getProtoParamBlockingRpcProxy(
+            ClientService.class, addr);
+  }
+
+  private void initLocalCluster(Configuration conf) throws IOException {
+    try {
+      if (cluster == null) {
+        cluster = new LocalTajoCluster(conf);
+        cluster.startup();
+      }
+      service = cluster.getMaster();
+    } catch (Exception e) {
+      LOG.error(e);
+      throw new IOException(e);
     }
   }
   

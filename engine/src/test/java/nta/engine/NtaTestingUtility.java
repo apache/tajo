@@ -124,9 +124,8 @@ public class NtaTestingUtility {
 
 	public MiniTajoCluster startMiniCluster(final int numSlaves, 
 	    final String [] dataNodeHosts) throws Exception {
-	  Configuration c = getConfiguration();
 	  // the conf is set to the distributed mode.
-	  c.set(NConstants.CLUSTER_DISTRIBUTED, "true");
+	  this.conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
 	  
 		int numDataNodes = numSlaves;
 		if(dataNodeHosts != null && dataNodeHosts.length != 0) {
