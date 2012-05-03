@@ -5,20 +5,18 @@ package nta.engine;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.statistics.TableStat;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
-import nta.engine.cluster.QueryManager.WaitStatus;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
@@ -27,8 +25,9 @@ import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.ScanNode;
-import nta.engine.query.GlobalQueryPlanner;
+import nta.engine.query.GlobalPlanner;
 import nta.engine.query.QueryUnitRequestImpl;
+import nta.engine.query.TQueryUtil;
 import nta.storage.StorageManager;
 
 import org.apache.commons.logging.Log;
@@ -43,25 +42,23 @@ import org.apache.hadoop.fs.Path;
  */
 public class QueryUnitScheduler extends Thread {
   
-  private final static long WAIT_PERIOD = 1000;
+  private final static int WAIT_PERIOD = 1000;
   
   private Log LOG = LogFactory.getLog(QueryUnitScheduler.class);
   
   private final StorageManager sm;
   private final WorkerCommunicator wc;
-  private final GlobalQueryPlanner planner;
+  private final GlobalPlanner planner;
   private final ClusterManager cm;
   private final QueryManager qm;
   private final ScheduleUnit plan;
   
   private BlockingQueue<QueryUnit> pendingQueue = 
       new LinkedBlockingQueue<QueryUnit>();
-//  private BlockingQueue<QueryUnit> waitQueue = 
-//      new LinkedBlockingQueue<QueryUnit>();
   
   public QueryUnitScheduler(Configuration conf, StorageManager sm, 
       ClusterManager cm, QueryManager qm, WorkerCommunicator wc, 
-      GlobalQueryPlanner planner, ScheduleUnit plan) {
+      GlobalPlanner planner, ScheduleUnit plan) {
     this.sm = sm;
     this.cm = cm;
     this.qm = qm;
@@ -72,8 +69,8 @@ public class QueryUnitScheduler extends Thread {
   
   private void recursiveExecuteQueryUnit(ScheduleUnit plan) 
       throws Exception {
-    if (plan.hasPrevQuery()) {
-      Iterator<ScheduleUnit> it = plan.getPrevIterator();
+    if (plan.hasChildQuery()) {
+      Iterator<ScheduleUnit> it = plan.getChildIterator();
       while (it.hasNext()) {
         recursiveExecuteQueryUnit(it.next());
       }
@@ -81,21 +78,9 @@ public class QueryUnitScheduler extends Thread {
     
     if (plan.getStoreTableNode().getSubNode().getType() == ExprType.UNION) {
       // union operators are not executed
-//      // change inputs of the next schedule unit
-//      ScheduleUnit next = plan.getNextQuery();
-//      for (ScanNode ns : next.getScanNodes()) {
-//        if (ns.getTableId().equals(plan.getStoreTableNode().getTableName())) {
-//          next.removePrevQuery(ns);
-//          next.removeScan(ns);
-//        }
-//      }
-//      for (ScanNode s : plan.getScanNodes()) {
-//        next.addScan(s);
-//      }
-//      next.addPrevQueries(plan.getPrevMaps());
     } else {
       LOG.info("Plan of " + plan.getId() + " : " + plan.getLogicalPlan());
-      qm.addLogicalQueryUnit(plan);
+      qm.addScheduleUnit(plan);
       if (plan.getOutputType() == PARTITION_TYPE.HASH) {
         Path tablePath = sm.getTablePath(plan.getOutputName());
         sm.getFileSystem().mkdirs(tablePath);
@@ -109,7 +94,6 @@ public class QueryUnitScheduler extends Thread {
         }
       }
 
-      // TODO: adjust the number of localization
       QueryUnit[] units = planner.localize(plan, cm.getOnlineWorker().size());
       String hostName;
       for (QueryUnit q : units) {
@@ -123,11 +107,11 @@ public class QueryUnitScheduler extends Thread {
       }
       requestPendingQueryUnits();
       
-      waitForFinishScheduleUnit(plan);
-      TableMeta meta = TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV);
-      meta.setStat(qm.getStatSet(plan.getOutputName()));
+      TableStat stat = waitForFinishScheduleUnit(plan);
+      TableMeta meta = TCatUtil.newTableMeta(plan.getOutputSchema(), 
+          StoreType.CSV);
+      meta.setStat(stat);
       sm.writeTableMeta(sm.getTablePath(plan.getOutputName()), meta);
-//      waitQueue.clear();
     }
   }
   
@@ -168,35 +152,34 @@ public class QueryUnitScheduler extends Thread {
     }
   }
   
-  private void waitForFinishScheduleUnit(ScheduleUnit scheduleUnit) throws Exception {
+  private TableStat waitForFinishScheduleUnit(ScheduleUnit scheduleUnit) 
+      throws Exception {
     boolean wait = true;
     QueryUnit[] units = scheduleUnit.getQueryUnits();
     while (wait) {
       Thread.sleep(WAIT_PERIOD);
       wait = false;
-//      Iterator<QueryUnit> it = waitQueue.iterator();
       for (QueryUnit unit : units) {
-        WaitStatus inprogress = qm.getWaitStatus(unit.getId());
-        if (inprogress != null) {
-          LOG.info("==== uid: " + unit.getId() + 
-              " status: " + inprogress.getInProgressStatus() + 
-              " left time: " + inprogress.getLeftTime());
-          if (inprogress.getInProgressStatus().
-              getStatus() != QueryStatus.FINISHED) {
-            inprogress.update(WAIT_PERIOD);
-            wait = true;
-            if (inprogress.getLeftTime() <= 0) {
-//              waitQueue.remove(unit);
-              requestBackupTask(unit);
-              inprogress.reset();
-            }
-          }
-        } else {
+//        WaitStatus inprogress = qm.getWaitStatus(unit.getId());
+        LOG.info("==== uid: " + unit.getId() + 
+            " status: " + unit.getInProgressStatus() + 
+            " left time: " + unit.getLeftTime());
+        if (unit.getInProgressStatus().
+            getStatus() != QueryStatus.FINISHED) {
+          unit.updateExpireTime(WAIT_PERIOD);
           wait = true;
+          if (unit.getLeftTime() <= 0) {
+            requestBackupTask(unit);
+            unit.resetExpireTime();
+          }
         }
       }
     }
-    qm.updateTableStat(scheduleUnit.getOutputName(), units);
+    TableStat tableStat = new TableStat();
+    for (QueryUnit unit : units ) {
+      tableStat = TQueryUtil.mergeStatSet(tableStat, unit.getStats());
+    }
+    return tableStat;
   }
   
   private void requestBackupTask(QueryUnit q) throws Exception {

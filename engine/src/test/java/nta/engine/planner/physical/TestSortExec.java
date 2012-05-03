@@ -89,7 +89,10 @@ public class TestSortExec {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory(catalog);
     File workDir = NtaTestingUtility.getTestDir("TestSortExec");
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);

@@ -94,6 +94,9 @@ public class TestNtaTestingUtility {
     Fragment[] frags = sm.split("employee", 40000);
     int splitIdx = (int) Math.ceil(frags.length / 2.f);
     QueryIdFactory.reset();
+    ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(
+        QueryIdFactory.newSubQueryId(
+            QueryIdFactory.newQueryId()));
     QueryUnitId qid = null;
     QueryContext ctx = null;
     ParseTree query = null;
@@ -103,7 +106,7 @@ public class TestNtaTestingUtility {
       
     sm.initTableBase(frags[0].getMeta(), "testNtaTestingUtil");
     for (int i = 0; i < 4; i++) {
-      qid = QueryIdFactory.newQueryUnitId();
+      qid = QueryIdFactory.newQueryUnitId(sid);
       ctx = qcFactory.create();
       query = analyzer.parse(ctx, 
           "testNtaTestingUtil := select deptName, sleep(name) from employee group by deptName");

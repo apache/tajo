@@ -4,31 +4,28 @@
 package nta.engine.cluster;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import nta.catalog.statistics.Stat;
 import nta.catalog.statistics.StatSet;
-import nta.catalog.statistics.TableStat;
-import nta.engine.LogicalQueryUnitId;
-import nta.engine.MasterInterfaceProtos.InProgressStatus;
-import nta.engine.MasterInterfaceProtos.QueryStatus;
-import nta.engine.TCommonProtos.StatType;
+import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.Query;
 import nta.engine.QueryId;
 import nta.engine.QueryUnitId;
 import nta.engine.QueryUnitScheduler;
+import nta.engine.ScheduleUnitId;
 import nta.engine.SubQuery;
 import nta.engine.SubQueryId;
 import nta.engine.exception.NoSuchQueryIdException;
-import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.global.ScheduleUnit;
+import nta.engine.query.InProgressStatus;
+import nta.engine.query.TQueryUtil;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import com.google.common.collect.MapMaker;
 
@@ -39,58 +36,21 @@ import com.google.common.collect.MapMaker;
 public class QueryManager {
   private final Log LOG = LogFactory.getLog(QueryManager.class);
 
-  private final static long EXPIRE_TIME = 5000;
+  private Map<QueryId, Query> queries; 
   
-  public class WaitStatus {
-    private InProgressStatus status;
-    private long expire;
-    
-    public WaitStatus(InProgressStatus status, long expire) {
-      set(status, expire);
-    }
-    
-    public WaitStatus set(InProgressStatus status, long expire) {
-      this.status = status;
-      this.expire = expire;
-      return this;
-    }
-    
-    public WaitStatus reset() {
-      this.expire = EXPIRE_TIME;
-      return this;
-    }
-    
-    public void update(long period) {
-      this.expire -= period;
-    }
-    
-    public InProgressStatus getInProgressStatus() {
-      return this.status;
-    }
-    
-    public long getLeftTime() {
-      return this.expire;
-    }
-  }
-  
-  private Map<SubQuery, QueryUnitScheduler> subQueries = 
-      new HashMap<SubQuery, QueryUnitScheduler>();
-  private Map<QueryId, Query> queries = 
-      new HashMap<QueryId, Query>();
-  
-  private Map<String, TableStat> statSetOfTable;
+  private Map<SubQuery, QueryUnitScheduler> subQueryToQueryUnitSchedulerMap;
   
   private Map<QueryUnit, String> serverByQueryUnit;
   private Map<String, List<QueryUnit>> queryUnitsByServer;
   
-  private Map<QueryUnitId, WaitStatus> inProgressQueries;
-  
   public QueryManager() {
-    MapMaker mapMaker = new MapMaker();
-    serverByQueryUnit = mapMaker.concurrencyLevel(4).makeMap();
+    MapMaker mapMaker = new MapMaker().concurrencyLevel(4);
+    
+    queries = mapMaker.makeMap();
+    subQueryToQueryUnitSchedulerMap = mapMaker.makeMap();
+
+    serverByQueryUnit = mapMaker.makeMap();
     queryUnitsByServer = mapMaker.makeMap();
-    inProgressQueries = mapMaker.makeMap();
-    statSetOfTable = mapMaker.makeMap();
   }
   
   public void addQuery(Query q) {
@@ -106,44 +66,27 @@ public class QueryManager {
     }
   }
   
-  public void addLogicalQueryUnit(ScheduleUnit logicalQueryUnit)
+  public void addScheduleUnit(ScheduleUnit scheduleUnit)
   throws NoSuchQueryIdException {
-    SubQueryId subId = logicalQueryUnit.getId().getSubQueryId();
-    QueryId qid = subId.getQueryId();
-    if (queries.containsKey(qid)) {
-      SubQuery subQuery = queries.get(qid).getSubQuery(subId);
+    ScheduleUnitId scheduleId = scheduleUnit.getId();
+    Query query = queries.get(scheduleId.getQueryId());
+    if (query != null) {
+      SubQuery subQuery = query.getSubQuery(scheduleId.getSubQueryId());
       if (subQuery != null) {
-        subQuery.addLogicalQueryUnit(logicalQueryUnit);
-      } else {
-        throw new NoSuchQueryIdException("SubQueryId: " + subId);
+        subQuery.addScheduleUnit(scheduleUnit);
+      }
+      else {
+        throw new NoSuchQueryIdException("SubQueryId: " + 
+            scheduleId.getSubQueryId());
       }
     } else {
-      throw new NoSuchQueryIdException("QueryId: " + qid);
+      throw new NoSuchQueryIdException("QueryId: " + 
+          scheduleId.getQueryId());
     }
   }
   
-//  public void addQueryUnits(QueryUnit[] queryUnit) throws NoSuchQueryIdException {
-//    LogicalQueryUnitId logicalId = queryUnit[0].getId().getLogicalQueryUnitId();
-//    SubQueryId subId = logicalId.getSubQueryId();
-//    QueryId qid = subId.getQueryId();
-//    if (queries.containsKey(qid)) {
-//      SubQuery subQuery = queries.get(qid).getSubQuery(subId);
-//      if (subQuery != null) {
-//        LogicalQueryUnit logicalUnit = subQuery.getLogicalQueryUnit(logicalId);
-//        if (logicalUnit != null) {
-//          queryUnitsForLogicalQueryUnit.put(logicalUnit, queryUnit);
-//        } else {
-//          throw new NoSuchQueryIdException("LogicalQueryUnitId: " + logicalId);
-//        }
-//      } else {
-//        throw new NoSuchQueryIdException("SubQueryId: " + subId);
-//      }
-//    } else {
-//      throw new NoSuchQueryIdException("QueryId: " + qid);
-//    }
-//  }
-  
-  public synchronized void updateQueryAssignInfo(String servername, QueryUnit unit) {
+  public synchronized void updateQueryAssignInfo(String servername, 
+      QueryUnit unit) {
     serverByQueryUnit.put(unit, servername);
     List<QueryUnit> units;
     if (queryUnitsByServer.containsKey(servername)) {
@@ -156,17 +99,26 @@ public class QueryManager {
   }
   
   public synchronized void updateProgress(QueryUnitId queryUnitId, 
-      InProgressStatus progress) {
-    if (inProgressQueries.containsKey(queryUnitId)) {
-      inProgressQueries.put(queryUnitId, 
-          inProgressQueries.get(queryUnitId).set(progress, EXPIRE_TIME));
+      InProgressStatusProto progress) throws NoSuchQueryIdException {
+    QueryUnit unit = queries.get(queryUnitId.getQueryId()).getQueryUnit(queryUnitId);
+    if (unit != null) {
+      unit.setProgress(progress.getProgress());
+      unit.setStatus(progress.getStatus());
+      if (progress.getPartitionsCount() > 0) {
+        unit.addPartitions(progress.getPartitionsList());
+      }
+      if (progress.hasStats()) {
+        unit.setStatSet(new StatSet(progress.getStats()));
+      }
+      unit.resetExpireTime();
     } else {
-      inProgressQueries.put(queryUnitId, new WaitStatus(progress, EXPIRE_TIME));
+      throw new NoSuchQueryIdException("QueryUnitId: " + queryUnitId);
     }
   }
   
-  public void addQueryUnitScheduler(SubQuery subQuery, QueryUnitScheduler scheduler) {
-    subQueries.put(subQuery, scheduler);
+  public void addQueryUnitScheduler(SubQuery subQuery, 
+      QueryUnitScheduler scheduler) {
+    subQueryToQueryUnitSchedulerMap.put(subQuery, scheduler);
   }
   
   public Query getQuery(QueryId queryId) {
@@ -182,32 +134,37 @@ public class QueryManager {
     return query.getSubQuery(subQueryId);
   }
   
-  public ScheduleUnit getLogicalQueryUnit(LogicalQueryUnitId logicalUnitId) {
-    SubQueryId subId = logicalUnitId.getSubQueryId();
-    return getSubQuery(subId).getLogicalQueryUnit(logicalUnitId);
+  public ScheduleUnit getScheduleUnit(ScheduleUnitId scheduleUnitId) {
+    SubQueryId subId = scheduleUnitId.getSubQueryId();
+    return getSubQuery(subId).getScheduleUnit(scheduleUnitId);
   }
   
-  public WaitStatus getWaitStatus(QueryUnitId unitId) {
-    return this.inProgressQueries.get(unitId);
+  public QueryUnit getQueryUnit(QueryUnitId queryUnitId) {
+    return getScheduleUnit(queryUnitId.getScheduleUnitId()).
+        getQueryUnit(queryUnitId);
   }
-  
-  public InProgressStatus getProgress(QueryUnitId queryUnitId) {
-    if (inProgressQueries.containsKey(queryUnitId)) {
-      return this.inProgressQueries.get(queryUnitId).status;
-    } else {
+
+  public InProgressStatus getInProgressStatus(QueryUnitId id) {
+    QueryUnit unit = queries.get(id.getQueryId()).getQueryUnit(id);
+    if (unit == null) {
       return null;
+    } else {
+      return unit.getInProgressStatus();
     }
   }
   
-  public Map<QueryUnitId, InProgressStatus> getAllProgresses() {
-    Map<QueryUnitId, InProgressStatus> map = 
-        new HashMap<QueryUnitId, InProgressStatus>();
-    Iterator<Entry<QueryUnitId, WaitStatus>> it = inProgressQueries.entrySet().iterator();
-    while (it.hasNext()) {
-      Entry<QueryUnitId, WaitStatus> e = it.next();
-      map.put(e.getKey(), e.getValue().status);
+  public Collection<InProgressStatusProto> getAllProgresses() {
+    Collection<InProgressStatusProto> statuses = new ArrayList<InProgressStatusProto>();
+    for (Query query : queries.values()) {
+      for (SubQuery subQuery : query.getSubQueries()) {
+        for (ScheduleUnit scheduleUnit : subQuery.getScheduleUnits()) {
+          for (QueryUnit queryUnit : scheduleUnit.getQueryUnits()) {
+            statuses.add(TQueryUtil.getInProgressStatusProto(queryUnit));
+          }
+        }
+      }
     }
-    return map;
+    return statuses;
   }
   
   public QueryUnit[] getQueryUnitsExecutedByWorker(String serverName) {
@@ -225,7 +182,7 @@ public class QueryManager {
   }
   
   public List<String> getAssignedWorkers(SubQuery subQuery) {
-    Iterator<ScheduleUnit> it = subQuery.getLogicalQueryUnitIterator();
+    Iterator<ScheduleUnit> it = subQuery.getScheduleUnitIterator();
     List<String> servernames = new ArrayList<String>();
     while (it.hasNext()) {
       servernames.addAll(getAssignedWorkers(it.next()));
@@ -235,104 +192,6 @@ public class QueryManager {
   
   public String getAssignedWorker(QueryUnit unit) {
     return serverByQueryUnit.get(unit);
-  }
-  
-  public WaitStatus[] getWaitStatusOfLogicalUnit(LogicalQueryUnitId id) {
-    ScheduleUnit logicalUnit = getLogicalQueryUnit(id);
-    return getWaitStatusOfLogicalUnit(logicalUnit);
-  }
-  
-  public WaitStatus[] getWaitStatusOfLogicalUnit(ScheduleUnit logicalUnit) {
-    QueryUnit[] units = logicalUnit.getQueryUnits();
-    WaitStatus[] statuses = new WaitStatus[units.length];
-    for (int i = 0; i < units.length; i++) {
-      statuses[i] = inProgressQueries.get(units[i].getId());
-    }
-    return statuses;
-  }
-  
-  public boolean isFinished(LogicalQueryUnitId id) {
-    ScheduleUnit logicalUnit = getLogicalQueryUnit(id);
-    QueryUnit[] units = logicalUnit.getQueryUnits();
-    WaitStatus status;
-    for (QueryUnit unit : units) {
-      status = inProgressQueries.get(unit.getId());
-      if (status != null) {
-        LOG.info("==== uid: " + unit.getId() + 
-            " status: " + status.getInProgressStatus() + 
-            " left time: " + status.getLeftTime());
-        if (status.getInProgressStatus().getStatus() != QueryStatus.FINISHED) {
-          return false;
-        }
-      } else {
-        return false;
-      }
-    }
-    statSetOfTable.put(getLogicalQueryUnit(id).getOutputName(), 
-        mergeStatSet(units));
-    return true;
-  }
-  
-  public void updateTableStat(String tableId, QueryUnit[] units) {
-    statSetOfTable.put(tableId, mergeStatSet(units));
-  }
-  
-  public TableStat getStatSet(String tableId) {
-    return statSetOfTable.get(tableId);
-  }
-  
-  private TableStat mergeStatSet(QueryUnit[] units) {
-    WaitStatus status;
-    TableStat tableStat = new TableStat();
-    for (QueryUnit unit : units) {
-      status = inProgressQueries.get(unit.getId());
-      StatSet statSet = new StatSet(status.getInProgressStatus().getStats());
-      for (Stat stat : statSet.getAllStats()) {
-        switch (stat.getType()) {
-        case COLUMN_NUM_NULLS:
-          // TODO
-          break;
-        case TABLE_AVG_ROWS:
-          if (tableStat.getAvgRows() == null) {
-            tableStat.setAvgRows(stat.getValue());
-          } else {
-            tableStat.setAvgRows(tableStat.getAvgRows()+stat.getValue());
-          }
-          break;
-        case TABLE_NUM_BLOCKS:
-          if (tableStat.getNumBlocks() == null) {
-            tableStat.setNumBlocks((int)stat.getValue());
-          } else {
-            tableStat.setNumBlocks(tableStat.getNumBlocks()+
-                (int)stat.getValue());
-          }
-          break;
-        case TABLE_NUM_BYTES:
-          if (tableStat.getNumBytes() == null) {
-            tableStat.setNumBytes(stat.getValue());
-          } else {
-            tableStat.setNumBytes(tableStat.getNumBytes()+stat.getValue());
-          }
-          break;
-        case TABLE_NUM_PARTITIONS:
-          if (tableStat.getNumPartitions() == null) {
-            tableStat.setNumPartitions((int)stat.getValue());
-          } else {
-            tableStat.setNumPartitions(tableStat.getNumPartitions()+
-                (int)stat.getValue());
-          }
-          break;
-        case TABLE_NUM_ROWS:
-          if (tableStat.getNumRows() == null) {
-            tableStat.setNumRows(stat.getValue());
-          } else {
-            tableStat.setNumRows(tableStat.getNumRows()+stat.getValue());
-          }
-          break;
-        }
-      }
-    }
-    return tableStat;
   }
   
   public List<String> getAssignedWorkers(ScheduleUnit unit) {

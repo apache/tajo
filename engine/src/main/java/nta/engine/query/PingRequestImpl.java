@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.PingRequestProto;
 import nta.engine.MasterInterfaceProtos.PingRequestProtoOrBuilder;
 import nta.engine.ipc.PingRequest;
@@ -20,19 +20,19 @@ public class PingRequestImpl implements PingRequest {
   private boolean viaProto;
   private Long timestamp;
   private String serverName;
-  private List<InProgressStatus> inProgressQueries;
+  private List<InProgressStatusProto> inProgressQueries;
   
   public PingRequestImpl() {
     builder = PingRequestProto.newBuilder();
   }
   
   public PingRequestImpl(long timestamp, String serverName, 
-      List<InProgressStatus> inProgress) {
+      List<InProgressStatusProto> inProgress) {
     this();
     this.timestamp = timestamp;
     this.serverName = serverName;
     this.inProgressQueries = 
-        new ArrayList<InProgressStatus>(inProgress);
+        new ArrayList<InProgressStatusProto>(inProgress);
   }
   
   public PingRequestImpl(PingRequestProto proto) {
@@ -75,7 +75,7 @@ public class PingRequestImpl implements PingRequest {
   }
 
   @Override
-  public Collection<InProgressStatus> getProgressList() {
+  public Collection<InProgressStatusProto> getProgressList() {
     initProgress();
     return inProgressQueries;
   }

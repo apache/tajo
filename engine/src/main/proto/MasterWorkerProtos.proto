@@ -17,8 +17,8 @@ enum QueryStatus {
     ABORTED = 7;
 }
 
-message InProgressStatus {
-    required string id = 1;
+message InProgressStatusProto {
+    required QueryUnitIdProto id = 1;
     required float progress = 2;
     required QueryStatus status = 3;
     optional StatSetProto stats = 4;
@@ -51,7 +51,7 @@ message SubQueryResponseProto {
 message PingRequestProto {
     required int64 timestamp = 1;
     required string serverName = 2;
-    repeated InProgressStatus status = 3;
+    repeated InProgressStatusProto status = 3;
 }
 
 message PingResponseProto {

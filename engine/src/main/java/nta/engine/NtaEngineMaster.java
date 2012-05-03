@@ -3,14 +3,39 @@
  */
 package nta.engine;
 
-import nta.catalog.*;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import nta.catalog.CatalogService;
+import nta.catalog.LocalCatalog;
+import nta.catalog.TableDesc;
+import nta.catalog.TableDescImpl;
+import nta.catalog.TableMeta;
+import nta.catalog.TableMetaImpl;
+import nta.catalog.TableUtil;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.conf.NtaConf;
-import nta.engine.ClientServiceProtos.*;
-import nta.engine.MasterInterfaceProtos.InProgressStatus;
-import nta.engine.cluster.*;
+import nta.engine.ClientServiceProtos.AttachTableRequest;
+import nta.engine.ClientServiceProtos.AttachTableResponse;
+import nta.engine.ClientServiceProtos.CreateTableRequest;
+import nta.engine.ClientServiceProtos.CreateTableResponse;
+import nta.engine.ClientServiceProtos.ExecuteQueryRequest;
+import nta.engine.ClientServiceProtos.ExecuteQueryRespose;
+import nta.engine.ClientServiceProtos.GetClusterInfoRequest;
+import nta.engine.ClientServiceProtos.GetClusterInfoResponse;
+import nta.engine.ClientServiceProtos.GetTableListRequest;
+import nta.engine.ClientServiceProtos.GetTableListResponse;
+import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
+import nta.engine.cluster.ClusterManager;
+import nta.engine.cluster.LeafServerTracker;
+import nta.engine.cluster.QueryManager;
+import nta.engine.cluster.WorkerCommunicator;
+import nta.engine.cluster.WorkerListener;
 import nta.engine.query.GlobalEngine;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
@@ -22,6 +47,7 @@ import nta.storage.StorageUtil;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkServer;
 import nta.zookeeper.ZkUtil;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -29,14 +55,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
+
 import tajo.client.ClientService;
 import tajo.webapp.StaticHttpServer;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * @author Hyunsik Choi
@@ -286,8 +307,8 @@ public class NtaEngineMaster extends Thread implements ClientService {
   }
 	
 	// TODO - to be improved
-	public Collection<InProgressStatus> getProgressQueries() {
-	  return this.qm.getAllProgresses().values();
+	public Collection<InProgressStatusProto> getProgressQueries() {
+	  return this.qm.getAllProgresses();
 	}
 
   public static void main(String[] args) throws Exception {

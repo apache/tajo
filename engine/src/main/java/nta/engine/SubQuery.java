@@ -3,27 +3,29 @@
  */
 package nta.engine;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
+import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 
 /**
  * @author jihoon
  *
  */
-public class SubQuery {
+public class SubQuery extends AbstractQuery {
 
   private final SubQueryId id;
-  private Map<LogicalQueryUnitId, ScheduleUnit> units;
+  private Map<ScheduleUnitId, ScheduleUnit> units;
   
   public SubQuery(SubQueryId id) {
     this.id = id;
-    units = new LinkedHashMap<LogicalQueryUnitId, ScheduleUnit>();
+    units = new HashMap<ScheduleUnitId, ScheduleUnit>();
   }
   
-  public void addLogicalQueryUnit(ScheduleUnit unit) {
+  public void addScheduleUnit(ScheduleUnit unit) {
     units.put(unit.getId(), unit);
   }
   
@@ -31,11 +33,19 @@ public class SubQuery {
     return this.id;
   }
   
-  public Iterator<ScheduleUnit> getLogicalQueryUnitIterator() {
+  public Iterator<ScheduleUnit> getScheduleUnitIterator() {
     return this.units.values().iterator();
   }
   
-  public ScheduleUnit getLogicalQueryUnit(LogicalQueryUnitId id) {
+  public ScheduleUnit getScheduleUnit(ScheduleUnitId id) {
     return this.units.get(id);
+  }
+  
+  public Collection<ScheduleUnit> getScheduleUnits() {
+    return this.units.values();
+  }
+  
+  public QueryUnit getQueryUnit(QueryUnitId id) {
+    return this.getScheduleUnit(id.getScheduleUnitId()).getQueryUnit(id);
   }
 }

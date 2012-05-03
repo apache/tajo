@@ -6,15 +6,15 @@ package nta.engine;
 import java.text.NumberFormat;
 
 import nta.common.ProtoObject;
-import nta.engine.TCommonProtos.LogicalQueryUnitIdProto;
-import nta.engine.TCommonProtos.LogicalQueryUnitIdProtoOrBuilder;
+import nta.engine.TCommonProtos.ScheduleUnitIdProto;
+import nta.engine.TCommonProtos.ScheduleUnitIdProtoOrBuilder;
 
 /**
  * @author jihoon
  *
  */
-public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
-  ProtoObject<LogicalQueryUnitIdProto> {
+public class ScheduleUnitId implements Comparable<ScheduleUnitId>,
+  ProtoObject<ScheduleUnitIdProto> {
   
   private static final NumberFormat idFormat = NumberFormat.getInstance();
   
@@ -28,27 +28,27 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
   private int id = -1;
   private String finalId = null;
   
-  private LogicalQueryUnitIdProto proto = 
-      LogicalQueryUnitIdProto.getDefaultInstance();
-  private LogicalQueryUnitIdProto.Builder builder = null;
+  private ScheduleUnitIdProto proto = 
+      ScheduleUnitIdProto.getDefaultInstance();
+  private ScheduleUnitIdProto.Builder builder = null;
   private boolean viaProto = false;
   
-  public LogicalQueryUnitId() {
-    builder = LogicalQueryUnitIdProto.newBuilder();
+  public ScheduleUnitId() {
+    builder = ScheduleUnitIdProto.newBuilder();
   }
   
-  public LogicalQueryUnitId(SubQueryId subQueryId, final int id) {
+  public ScheduleUnitId(SubQueryId subQueryId, final int id) {
     this();
     this.subQueryId = subQueryId;
     this.id = id;
   }
   
-  public LogicalQueryUnitId(LogicalQueryUnitIdProto proto) {
+  public ScheduleUnitId(ScheduleUnitIdProto proto) {
     this.proto = proto;
     viaProto = true;
   }
   
-  public LogicalQueryUnitId(String finalId) {
+  public ScheduleUnitId(String finalId) {
     this.finalId = finalId;
     int i = finalId.lastIndexOf(QueryId.SEPERATOR);
     this.subQueryId = new SubQueryId(finalId.substring(0, i));
@@ -56,7 +56,7 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
   }
 
   @Override
-  public int compareTo(LogicalQueryUnitId o) {
+  public int compareTo(ScheduleUnitId o) {
     return this.toString().compareTo(o.toString());
   }
 
@@ -71,8 +71,8 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
   
   @Override
   public final boolean equals(final Object o) {
-    if (o instanceof LogicalQueryUnitId) {
-      LogicalQueryUnitId oid = (LogicalQueryUnitId) o;
+    if (o instanceof ScheduleUnitId) {
+      ScheduleUnitId oid = (ScheduleUnitId) o;
       return this.getSubQueryId().equals(oid.getSubQueryId()) &&
           this.getId()== oid.getId();
     }
@@ -85,7 +85,7 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
   }
   
   public SubQueryId getSubQueryId() {
-    LogicalQueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
+    ScheduleUnitIdProtoOrBuilder p = viaProto ? proto : builder;
     if (subQueryId != null) {
       return this.subQueryId;
     }
@@ -96,8 +96,12 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
     return this.subQueryId;
   }
   
+  public QueryId getQueryId() {
+    return this.getSubQueryId().getQueryId();
+  }
+  
   private void mergeProtoToLocal() {
-    LogicalQueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
+    ScheduleUnitIdProtoOrBuilder p = viaProto ? proto : builder;
     if (subQueryId == null) {
       subQueryId = new SubQueryId(p.getSubQueryId());
     }
@@ -114,7 +118,7 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
   
   private void mergeLocalToBuilder() {
     if (this.builder == null) {
-      builder = LogicalQueryUnitIdProto.newBuilder(proto);
+      builder = ScheduleUnitIdProto.newBuilder(proto);
     }
     if (this.subQueryId != null) {
       builder.setSubQueryId(subQueryId.getProto());
@@ -125,7 +129,7 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
   }
 
   @Override
-  public LogicalQueryUnitIdProto getProto() {
+  public ScheduleUnitIdProto getProto() {
     if (!viaProto) {
       mergeLocalToBuilder();
       proto = builder.build();
@@ -135,7 +139,7 @@ public class LogicalQueryUnitId implements Comparable<LogicalQueryUnitId>,
   }
  
   public int getId() {
-    LogicalQueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
+    ScheduleUnitIdProtoOrBuilder p = viaProto ? proto : builder;
     if (this.id != -1) {
       return this.id;
     }

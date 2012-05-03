@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.Map;
 
 import nta.catalog.Schema;
-import nta.engine.LogicalQueryUnitId;
+import nta.engine.AbstractQuery;
+import nta.engine.QueryUnitId;
+import nta.engine.ScheduleUnitId;
 import nta.engine.planner.logical.BinaryNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
@@ -25,7 +27,7 @@ import com.google.common.base.Preconditions;
  * @author jihoon
  *
  */
-public class ScheduleUnit {
+public class ScheduleUnit extends AbstractQuery {
   
   public enum PARTITION_TYPE {
     HASH,
@@ -33,7 +35,7 @@ public class ScheduleUnit {
     BROADCAST
   }
 
-  private LogicalQueryUnitId id;
+  private ScheduleUnitId id;
   private LogicalNode plan = null;
   private StoreTableNode store = null;
   private List<ScanNode> scanlist = null;
@@ -42,7 +44,7 @@ public class ScheduleUnit {
   private PARTITION_TYPE outputType;
   private QueryUnit[] queryUnits;
   
-  public ScheduleUnit(LogicalQueryUnitId id) {
+  public ScheduleUnit(ScheduleUnitId id) {
     this.id = id;
     prevs = new HashMap<ScanNode, ScheduleUnit>();
     scanlist = new ArrayList<ScanNode>();
@@ -75,15 +77,15 @@ public class ScheduleUnit {
     }
   }
   
-  public void setNextQuery(ScheduleUnit next) {
+  public void setParentQuery(ScheduleUnit next) {
     this.next = next;
   }
   
-  public void addPrevQuery(ScanNode prevscan, ScheduleUnit prev) {
+  public void addChildQuery(ScanNode prevscan, ScheduleUnit prev) {
     prevs.put(prevscan, prev);
   }
   
-  public void addPrevQueries(Map<ScanNode, ScheduleUnit> prevs) {
+  public void addChildQueries(Map<ScanNode, ScheduleUnit> prevs) {
     this.prevs.putAll(prevs);
   }
   
@@ -91,7 +93,7 @@ public class ScheduleUnit {
     this.queryUnits = queryUnits;
   }
   
-  public void removePrevQuery(ScanNode scan) {
+  public void removeChildQuery(ScanNode scan) {
     scanlist.remove(scan);
     this.prevs.remove(scan);
   }
@@ -104,27 +106,27 @@ public class ScheduleUnit {
     scanlist.add(scan);
   }
   
-  public ScheduleUnit getNextQuery() {
+  public ScheduleUnit getParentQuery() {
     return this.next;
   }
   
-  public boolean hasPrevQuery() {
+  public boolean hasChildQuery() {
     return !this.prevs.isEmpty();
   }
   
-  public Iterator<ScheduleUnit> getPrevIterator() {
+  public Iterator<ScheduleUnit> getChildIterator() {
     return this.prevs.values().iterator();
   }
   
-  public Collection<ScheduleUnit> getPrevQueries() {
+  public Collection<ScheduleUnit> getChildQueries() {
     return this.prevs.values();
   }
   
-  public Map<ScanNode, ScheduleUnit> getPrevMaps() {
+  public Map<ScanNode, ScheduleUnit> getChildMaps() {
     return this.prevs;
   }
   
-  public ScheduleUnit getPrevQuery(ScanNode prevscan) {
+  public ScheduleUnit getChildQuery(ScanNode prevscan) {
     return this.prevs.get(prevscan);
   }
   
@@ -152,7 +154,7 @@ public class ScheduleUnit {
     return this.plan;
   }
   
-  public LogicalQueryUnitId getId() {
+  public ScheduleUnitId getId() {
     return this.id;
   }
   
@@ -160,11 +162,20 @@ public class ScheduleUnit {
     return this.queryUnits;
   }
   
+  public QueryUnit getQueryUnit(QueryUnitId qid) {
+    for (QueryUnit unit : queryUnits) {
+      if (unit.getId().equals(qid)) {
+        return unit;
+      }
+    }
+    return null;
+  }
+  
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append(plan.toString());
     sb.append("next: " + next + " prevs:");
-    Iterator<ScheduleUnit> it = getPrevIterator();
+    Iterator<ScheduleUnit> it = getChildIterator();
     while (it.hasNext()) {
       sb.append(" " + it.next());
     }

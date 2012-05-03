@@ -3,22 +3,26 @@
  */
 package nta.engine;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
+
+import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.global.ScheduleUnit;
 
 /**
  * @author jihoon
  *
  */
-public class Query {
+public class Query extends AbstractQuery {
 
   private final QueryId id;
   private Map<SubQueryId, SubQuery> subqueries;
   
   public Query(QueryId id) {
     this.id = id;
-    subqueries = new LinkedHashMap<SubQueryId, SubQuery>();
+    subqueries = new HashMap<SubQueryId, SubQuery>();
   }
   
   public void addSubQuery(SubQuery q) {
@@ -28,12 +32,24 @@ public class Query {
   public QueryId getId() {
     return this.id;
   }
-  
+
   public Iterator<SubQuery> getSubQueryIterator() {
     return this.subqueries.values().iterator();
   }
   
   public SubQuery getSubQuery(SubQueryId id) {
     return this.subqueries.get(id);
+  }
+  
+  public Collection<SubQuery> getSubQueries() {
+    return this.subqueries.values();
+  }
+  
+  public ScheduleUnit getScheduleUnit(ScheduleUnitId id) {
+    return this.getSubQuery(id.getSubQueryId()).getScheduleUnit(id);
+  }
+  
+  public QueryUnit getQueryUnit(QueryUnitId id) {
+    return this.getScheduleUnit(id.getScheduleUnitId()).getQueryUnit(id);
   }
 }

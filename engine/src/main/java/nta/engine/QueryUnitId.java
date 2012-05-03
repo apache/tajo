@@ -17,7 +17,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
     format.setMinimumIntegerDigits(6);
   }
   
-  private LogicalQueryUnitId logicalId = null;
+  private ScheduleUnitId logicalId = null;
   private int id = -1;
   private String finalId = null;
   
@@ -29,7 +29,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
     builder = QueryUnitIdProto.newBuilder();
   }
   
-  public QueryUnitId(final LogicalQueryUnitId logicalId,
+  public QueryUnitId(final ScheduleUnitId logicalId,
       final int id) {
     this.logicalId = logicalId;
     this.id = id;
@@ -43,7 +43,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   public QueryUnitId(final String finalId) {
     this.finalId = finalId;
     int i = finalId.lastIndexOf(QueryId.SEPERATOR);
-    this.logicalId = new LogicalQueryUnitId(finalId.substring(0, i));
+    this.logicalId = new ScheduleUnitId(finalId.substring(0, i));
     this.id = Integer.valueOf(finalId.substring(i+1));
   }
   
@@ -59,22 +59,30 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
     return id;
   }
   
-  public LogicalQueryUnitId getLogicalQueryUnitId() {
+  public ScheduleUnitId getScheduleUnitId() {
     QueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
     if (this.logicalId != null) {
       return this.logicalId;
     }
-    if (!p.hasLogicalQueryUnitId()) {
+    if (!p.hasScheduleUnitId()) {
       return null;
     }
-    this.logicalId = new LogicalQueryUnitId(p.getLogicalQueryUnitId());
+    this.logicalId = new ScheduleUnitId(p.getScheduleUnitId());
     return this.logicalId;
+  }
+  
+  public SubQueryId getSubQueryId() {
+    return this.getScheduleUnitId().getSubQueryId();
+  }
+  
+  public QueryId getQueryId() {
+    return this.getSubQueryId().getQueryId();
   }
   
   @Override
   public final String toString() {
     if (finalId == null) {
-      finalId = this.getLogicalQueryUnitId() + 
+      finalId = this.getScheduleUnitId() + 
           QueryId.SEPERATOR + format.format(getId());
     }
     return this.finalId;
@@ -102,7 +110,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   private void mergeProtoToLocal() {
     QueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
     if (logicalId == null) {
-      logicalId = new LogicalQueryUnitId(p.getLogicalQueryUnitId());
+      logicalId = new ScheduleUnitId(p.getScheduleUnitId());
     }
     if (id == -1) {
       id = p.getId();
@@ -119,7 +127,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
       builder = QueryUnitIdProto.newBuilder(proto);
     }
     if (this.logicalId != null) {
-      builder.setLogicalQueryUnitId(logicalId.getProto());
+      builder.setScheduleUnitId(logicalId.getProto());
     }
     if (this.id != -1) {
       builder.setId(id);

@@ -20,13 +20,14 @@ import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
-import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.QueryIdFactory;
 import nta.engine.SubQueryId;
 import nta.engine.cluster.QueryManager;
+import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
@@ -43,7 +44,7 @@ import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.UnionNode;
-import nta.engine.query.GlobalQueryPlanner;
+import nta.engine.query.GlobalPlanner;
 import nta.storage.Appender;
 import nta.storage.CSVFile2;
 import nta.storage.StorageManager;
@@ -67,7 +68,7 @@ public class TestGlobalQueryPlanner {
   private static NtaTestingUtility util;
   private static NtaConf conf;
   private static CatalogService catalog;
-  private static GlobalQueryPlanner planner;
+  private static GlobalPlanner planner;
   private static Schema schema;
   private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
@@ -100,7 +101,7 @@ public class TestGlobalQueryPlanner {
     FileSystem fs = sm.getFileSystem();
 
     qm = new QueryManager();
-    planner = new GlobalQueryPlanner(new StorageManager(conf), qm, catalog);
+    planner = new GlobalPlanner(new StorageManager(conf), qm, catalog);
     analyzer = new QueryAnalyzer(catalog);
     factory = new QueryContext.Factory(catalog);
 
@@ -130,7 +131,7 @@ public class TestGlobalQueryPlanner {
     }
 
     QueryIdFactory.reset();
-    subQueryId = QueryIdFactory.newSubQueryId();
+    subQueryId = QueryIdFactory.newSubQueryId(QueryIdFactory.newQueryId());
   }
 
   @AfterClass
@@ -150,7 +151,7 @@ public class TestGlobalQueryPlanner {
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
     
     ScheduleUnit unit = globalPlan.getRoot();
-    assertFalse(unit.hasPrevQuery());
+    assertFalse(unit.hasChildQuery());
     assertEquals(PARTITION_TYPE.LIST, unit.getOutputType());
     LogicalNode plan = unit.getLogicalPlan();
     assertEquals(ExprType.STORE, plan.getType());
@@ -171,16 +172,16 @@ public class TestGlobalQueryPlanner {
     ScheduleUnit next, prev;
     
     next = globalPlan.getRoot();
-    assertTrue(next.hasPrevQuery());
+    assertTrue(next.hasChildQuery());
     assertEquals(PARTITION_TYPE.LIST, next.getOutputType());
     for (ScanNode scan : next.getScanNodes()) {
       assertTrue(scan.isLocal());
     }
     assertFalse(next.getStoreTableNode().isLocal());
-    Iterator<ScheduleUnit> it= next.getPrevIterator();
+    Iterator<ScheduleUnit> it= next.getChildIterator();
     
     prev = it.next();
-    assertFalse(prev.hasPrevQuery());
+    assertFalse(prev.hasChildQuery());
     assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
     assertTrue(prev.getStoreTableNode().isLocal());
     assertFalse(it.hasNext());
@@ -210,12 +211,12 @@ public class TestGlobalQueryPlanner {
     ScheduleUnit next, prev;
     
     next = globalPlan.getRoot();
-    assertTrue(next.hasPrevQuery());
+    assertTrue(next.hasChildQuery());
     assertEquals(PARTITION_TYPE.LIST, next.getOutputType());
-    Iterator<ScheduleUnit> it= next.getPrevIterator();
+    Iterator<ScheduleUnit> it= next.getChildIterator();
     
     prev = it.next();
-    assertFalse(prev.hasPrevQuery());
+    assertFalse(prev.hasChildQuery());
     assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
     assertFalse(it.hasNext());
     
@@ -244,47 +245,47 @@ public class TestGlobalQueryPlanner {
     
     // the second phase of the sort
     next = globalPlan.getRoot();
-    assertTrue(next.hasPrevQuery());
+    assertTrue(next.hasChildQuery());
     assertEquals(PARTITION_TYPE.LIST, next.getOutputType());
     assertEquals(ExprType.SORT, next.getStoreTableNode().getSubNode().getType());
     ScanNode []scans = next.getScanNodes();
     assertEquals(1, scans.length);
-    Iterator<ScheduleUnit> it= next.getPrevIterator();
+    Iterator<ScheduleUnit> it= next.getChildIterator();
     
     // the first phase of the sort
     prev = it.next();
     assertEquals(ExprType.SORT, prev.getStoreTableNode().getSubNode().getType());
     assertEquals(scans[0].getInputSchema(), prev.getOutputSchema());
-    assertTrue(prev.hasPrevQuery());
+    assertTrue(prev.hasChildQuery());
     assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
     assertFalse(it.hasNext());
     scans = prev.getScanNodes();
     assertEquals(1, scans.length);
     next = prev;
-    it= next.getPrevIterator();
+    it= next.getChildIterator();
     
     // the second phase of the join
     prev = it.next();
     assertEquals(ExprType.JOIN, prev.getStoreTableNode().getSubNode().getType());
     assertEquals(scans[0].getInputSchema(), prev.getOutputSchema());
-    assertTrue(prev.hasPrevQuery());
+    assertTrue(prev.hasChildQuery());
     assertEquals(PARTITION_TYPE.LIST, prev.getOutputType());
     assertFalse(it.hasNext());
     scans = prev.getScanNodes();
     assertEquals(2, scans.length);
     next = prev;
-    it= next.getPrevIterator();
+    it= next.getChildIterator();
     
     // the first phase of the join
     prev = it.next();
     assertEquals(ExprType.SCAN, prev.getStoreTableNode().getSubNode().getType());
-    assertFalse(prev.hasPrevQuery());
+    assertFalse(prev.hasChildQuery());
     assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
     assertEquals(1, prev.getScanNodes().length);
     
     prev = it.next();
     assertEquals(ExprType.SCAN, prev.getStoreTableNode().getSubNode().getType());
-    assertFalse(prev.hasPrevQuery());
+    assertFalse(prev.hasChildQuery());
     assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
     assertEquals(1, prev.getScanNodes().length);
     assertFalse(it.hasNext());
@@ -305,12 +306,12 @@ public class TestGlobalQueryPlanner {
     assertEquals(ExprType.SELECTION, store.getSubNode().getType());
     SelectionNode select = (SelectionNode) store.getSubNode();
     assertEquals(ExprType.JOIN, select.getSubNode().getType());
-    assertTrue(unit.hasPrevQuery());
+    assertTrue(unit.hasChildQuery());
     ScanNode [] scans = unit.getScanNodes();
     assertEquals(2, scans.length);
     ScheduleUnit prev;
     for (ScanNode scan : scans) {
-      prev = unit.getPrevQuery(scan);
+      prev = unit.getChildQuery(scan);
       store = prev.getStoreTableNode();
       assertEquals(ExprType.SCAN, store.getSubNode().getType());
     }
@@ -338,11 +339,11 @@ public class TestGlobalQueryPlanner {
     union = (UnionNode) union.getInnerNode();
     assertEquals(ExprType.SCAN, union.getOuterNode().getType());
     assertEquals(ExprType.SCAN, union.getInnerNode().getType());
-    assertTrue(unit.hasPrevQuery());
+    assertTrue(unit.hasChildQuery());
     
     String tableId = "";
     for (ScanNode scan : unit.getScanNodes()) {
-      ScheduleUnit prev = unit.getPrevQuery(scan);
+      ScheduleUnit prev = unit.getChildQuery(scan);
       store = prev.getStoreTableNode();
       assertEquals(ExprType.GROUP_BY, store.getSubNode().getType());
       GroupbyNode groupby = (GroupbyNode) store.getSubNode();
@@ -353,7 +354,7 @@ public class TestGlobalQueryPlanner {
         assertEquals(tableId, store.getTableName());
       }
       assertEquals(1, prev.getScanNodes().length);
-      prev = prev.getPrevQuery(prev.getScanNodes()[0]);
+      prev = prev.getChildQuery(prev.getScanNodes()[0]);
       store = prev.getStoreTableNode();
       assertEquals(ExprType.GROUP_BY, store.getSubNode().getType());
       groupby = (GroupbyNode) store.getSubNode();
@@ -362,7 +363,7 @@ public class TestGlobalQueryPlanner {
   }
   
   //@Test
-  public void testLocalize() throws IOException, URISyntaxException {
+  public void testLocalize() throws IOException, URISyntaxException, NoSuchQueryIdException {
     QueryContext ctx = factory.create();
     ParseTree tree = (ParseTree) analyzer.parse(ctx,
         "select table0.age,table0.salary,table1.salary from table0 inner join table1 on table0.salary = table1.salary");
@@ -375,9 +376,9 @@ public class TestGlobalQueryPlanner {
   }
   
   private void recursiveTestLocalize(ScheduleUnit plan) 
-      throws IOException, URISyntaxException {
-    if (plan.hasPrevQuery()) {
-      Iterator<ScheduleUnit> it = plan.getPrevIterator();
+      throws IOException, URISyntaxException, NoSuchQueryIdException {
+    if (plan.hasChildQuery()) {
+      Iterator<ScheduleUnit> it = plan.getChildIterator();
       while (it.hasNext()) {
         recursiveTestLocalize(it.next());
       }
@@ -396,8 +397,8 @@ public class TestGlobalQueryPlanner {
       for (ScanNode scan : unit.getScanNodes()) {
         assertNotNull(unit.getFragments(scan.getTableId()));  
       }
-      InProgressStatus.Builder builder = InProgressStatus.newBuilder();
-      builder.setId(unit.getId().toString())
+      InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder();
+      builder.setId(unit.getId().getProto())
       .setProgress(1.0f)
       .setStatus(QueryStatus.FINISHED);
       

@@ -8,25 +8,25 @@ import java.util.Iterator;
 
 import nta.catalog.statistics.Stat;
 import nta.catalog.statistics.StatSet;
-import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
 import nta.engine.TCommonProtos.StatType;
 import nta.engine.cluster.QueryManager;
 import nta.engine.exception.NoSuchQueryIdException;
-import nta.engine.query.GlobalQueryPlanner;
+import nta.engine.query.GlobalPlanner;
 
 /**
  * @author jihoon
  *
  */
-public class MockQueryUnitScheduler {
+public class MockupQueryUnitScheduler {
 
   private final QueryManager qm;
   private final ScheduleUnit plan;
   
-  public MockQueryUnitScheduler(GlobalQueryPlanner planner, 
+  public MockupQueryUnitScheduler(GlobalPlanner planner, 
       QueryManager qm, ScheduleUnit plan) {
     this.qm = qm;
     this.plan = plan;
@@ -38,18 +38,18 @@ public class MockQueryUnitScheduler {
   
   private void recursiveExecuteQueryUnit(ScheduleUnit plan) 
       throws NoSuchQueryIdException, IOException, InterruptedException {
-    if (plan.hasPrevQuery()) {
-      Iterator<ScheduleUnit> it = plan.getPrevIterator();
+    if (plan.hasChildQuery()) {
+      Iterator<ScheduleUnit> it = plan.getChildIterator();
       while (it.hasNext()) {
         recursiveExecuteQueryUnit(it.next());
       }
     }
     
-    qm.addLogicalQueryUnit(plan);
-    QueryUnit[] units = mockLocalize(plan, 3);
-    MockWorkerListener [] listener = new MockWorkerListener[3];
+    qm.addScheduleUnit(plan);
+    QueryUnit[] units = localize(plan, 3);
+    MockupWorkerListener [] listener = new MockupWorkerListener[3];
     for (int i = 0; i < 3; i++) {
-      listener[i] = new MockWorkerListener(units[i].getId());
+      listener[i] = new MockupWorkerListener(units[i].getId());
       listener[i].start();
     }
     for (int i = 0; i < 3; i++) {
@@ -58,30 +58,30 @@ public class MockQueryUnitScheduler {
     
   }
   
-  private QueryUnit[] mockLocalize(ScheduleUnit plan, int n) {
+  public QueryUnit[] localize(ScheduleUnit plan, int n) {
     QueryUnit[] units = new QueryUnit[n];
     for (int i = 0; i < units.length; i++) {
-      units[i] = new QueryUnit(QueryIdFactory.newQueryUnitId());
+      units[i] = new QueryUnit(QueryIdFactory.newQueryUnitId(plan.getId()));
       units[i].setLogicalPlan(plan.getLogicalPlan());
     }
     plan.setQueryUnits(units);
     return units;
   }
   
-  private class MockWorkerListener extends Thread {
+  private class MockupWorkerListener extends Thread {
     private QueryUnitId id;
     
-    public MockWorkerListener(QueryUnitId id) {
+    public MockupWorkerListener(QueryUnitId id) {
       this.id = id;
     }
     
     @Override
     public void run() {
-      InProgressStatus.Builder builder = InProgressStatus.newBuilder();
+      InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder();
       try {
         for (int i = 0; i < 3; i++) {
           Thread.sleep(1000);
-          builder.setId("test"+i);
+          builder.setId(id.getProto());
           builder.setProgress(i/3.f);
           builder.setStatus(QueryStatus.INPROGRESS);
           builder.setStats(buildStatSet().getProto());
@@ -91,6 +91,8 @@ public class MockQueryUnitScheduler {
         qm.updateProgress(id, builder.build());
       } catch (InterruptedException e) {
         e.printStackTrace();
+      } catch (NoSuchQueryIdException ie) {
+        ie.printStackTrace();
       }
     }
     
@@ -98,9 +100,6 @@ public class MockQueryUnitScheduler {
       StatSet statSet = new StatSet();
       Stat stat = new Stat(StatType.COLUMN_NUM_NDV);
       stat.setValue(1);
-      statSet.putStat(stat);
-      stat = new Stat(StatType.COLUMN_NUM_NULLS);
-      stat.setValue(2);
       statSet.putStat(stat);
       stat = new Stat(StatType.TABLE_AVG_ROWS);
       stat.setValue(3);

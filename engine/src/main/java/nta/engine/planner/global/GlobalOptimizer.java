@@ -14,20 +14,19 @@ import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.UnaryNode;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 
 /**
  * @author jihoon
  *
  */
-public class GlobalQueryOptimizer {
+public class GlobalOptimizer {
 
-  public GlobalQueryOptimizer() {
+  public GlobalOptimizer() {
     
   }
   
   public MasterPlan optimize(ScheduleUnit logicalUnit) {
-    ScheduleUnit reducedStep = reduceLogicalQueryUnitStep(logicalUnit);
+    ScheduleUnit reducedStep = reduceSchedules(logicalUnit);
     ScheduleUnit joinChosen = chooseJoinAlgorithm(reducedStep);
     return new MasterPlan(joinChosen);
   }
@@ -39,21 +38,21 @@ public class GlobalQueryOptimizer {
   }
   
   @VisibleForTesting
-  private ScheduleUnit reduceLogicalQueryUnitStep(ScheduleUnit logicalUnit) {
+  private ScheduleUnit reduceSchedules(ScheduleUnit logicalUnit) {
     reduceLogicalQueryUnitStep_(logicalUnit);
     return logicalUnit;
   }
   
   private void reduceLogicalQueryUnitStep_(ScheduleUnit cur) {
-    if (cur.hasPrevQuery()) {
-      Iterator<ScheduleUnit> it = cur.getPrevIterator();
+    if (cur.hasChildQuery()) {
+      Iterator<ScheduleUnit> it = cur.getChildIterator();
       ScheduleUnit prev;
       while (it.hasNext()) {
         prev = it.next();
         reduceLogicalQueryUnitStep_(prev);
       }
       
-      Collection<ScheduleUnit> prevs = cur.getPrevQueries();
+      Collection<ScheduleUnit> prevs = cur.getChildQueries();
       it = prevs.iterator();
       while (it.hasNext()) {
         prev = it.next();
@@ -74,10 +73,10 @@ public class GlobalQueryOptimizer {
       ScanNode scan = (ScanNode) u.getSubNode();
       LogicalNode c = child.getStoreTableNode().getSubNode();
 
-      parent.removePrevQuery(scan);
+      parent.removeChildQuery(scan);
       u.setSubNode(c);
       parent.setLogicalPlan(parent.getLogicalPlan());
-      parent.addPrevQueries(child.getPrevMaps());
+      parent.addChildQueries(child.getChildMaps());
     }
     return parent;
   }

@@ -123,7 +123,10 @@ public class TestNLJoinExec {
     
     factory = new SubqueryContext.Factory(catalog);
     File workDir = NtaTestingUtility.getTestDir("CrossJoin");
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
         merged, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
@@ -151,7 +154,10 @@ public class TestNLJoinExec {
     
     factory = new SubqueryContext.Factory(catalog);
     File workDir = NtaTestingUtility.getTestDir("InnerJoin");
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
         merged, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);

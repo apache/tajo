@@ -32,7 +32,7 @@ import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.logical.StoreTableNode;
-import nta.engine.query.GlobalQueryPlanner;
+import nta.engine.query.GlobalPlanner;
 import nta.storage.Appender;
 import nta.storage.CSVFile2;
 import nta.storage.StorageManager;
@@ -54,13 +54,13 @@ public class TestGlobalQueryOptimizer {
   private static NtaTestingUtility util;
   private static NtaConf conf;
   private static CatalogService catalog;
-  private static GlobalQueryPlanner planner;
+  private static GlobalPlanner planner;
   private static Schema schema;
   private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
   private static SubQueryId subQueryId;
   private static QueryManager qm;
-  private static GlobalQueryOptimizer optimizer;
+  private static GlobalOptimizer optimizer;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -88,7 +88,7 @@ public class TestGlobalQueryOptimizer {
     FileSystem fs = sm.getFileSystem();
 
     qm = new QueryManager();
-    planner = new GlobalQueryPlanner(new StorageManager(conf), qm, catalog);
+    planner = new GlobalPlanner(new StorageManager(conf), qm, catalog);
     analyzer = new QueryAnalyzer(catalog);
     factory = new QueryContext.Factory(catalog);
 
@@ -118,8 +118,8 @@ public class TestGlobalQueryOptimizer {
     }
 
     QueryIdFactory.reset();
-    subQueryId = QueryIdFactory.newSubQueryId();
-    optimizer = new GlobalQueryOptimizer();
+    subQueryId = QueryIdFactory.newSubQueryId(QueryIdFactory.newQueryId());
+    optimizer = new GlobalOptimizer();
   }
   
   @AfterClass
@@ -146,16 +146,16 @@ public class TestGlobalQueryOptimizer {
     assertEquals(ExprType.SCAN, sort.getSubNode().getType());
     ScanNode scan = (ScanNode) sort.getSubNode();
     
-    assertTrue(unit.hasPrevQuery());
-    unit = unit.getPrevQuery(scan);
+    assertTrue(unit.hasChildQuery());
+    unit = unit.getChildQuery(scan);
     store = unit.getStoreTableNode();
     assertEquals(ExprType.SORT, store.getSubNode().getType());
     sort = (SortNode) store.getSubNode();
     assertEquals(ExprType.JOIN, sort.getSubNode().getType());
     
-    assertTrue(unit.hasPrevQuery());
+    assertTrue(unit.hasChildQuery());
     for (ScanNode prevscan : unit.getScanNodes()) {
-      ScheduleUnit prev = unit.getPrevQuery(prevscan);
+      ScheduleUnit prev = unit.getChildQuery(prevscan);
       store = prev.getStoreTableNode();
       assertEquals(ExprType.SCAN, store.getSubNode().getType());
     }

@@ -6,7 +6,7 @@ package nta.engine.ipc;
 import java.util.Collection;
 
 import nta.common.ProtoObject;
-import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.PingRequestProto;
 
 /**
@@ -14,5 +14,5 @@ import nta.engine.MasterInterfaceProtos.PingRequestProto;
  *
  */
 public interface PingRequest extends ProtoObject<PingRequestProto> {
-  Collection<InProgressStatus> getProgressList();
+  Collection<InProgressStatusProto> getProgressList();
 }

@@ -21,7 +21,7 @@ import nta.catalog.TableMeta;
 import nta.conf.NtaConf;
 import nta.engine.MasterInterfaceProtos.Command;
 import nta.engine.MasterInterfaceProtos.Fetch;
-import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.Partition;
 import nta.engine.MasterInterfaceProtos.PingRequestProto;
 import nta.engine.MasterInterfaceProtos.PingResponseProto;
@@ -296,9 +296,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     ping.setServerName(serverName);
     
     // to send
-    List<InProgressStatus> list 
-      = new ArrayList<InProgressStatus>();
-    InProgressStatus status = null;
+    List<InProgressStatusProto> list 
+      = new ArrayList<InProgressStatusProto>();
+    InProgressStatusProto status = null;
     // to be removed
     List<QueryUnitId> tobeRemoved = new ArrayList<QueryUnitId>();
     
@@ -371,10 +371,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   public static Path getQueryUnitDir(QueryUnitId quid) {
     Path workDir = 
         StorageUtil.concatPath(            
-            quid.getLogicalQueryUnitId().getSubQueryId()
+            quid.getScheduleUnitId().getSubQueryId()
             .getQueryId().toString(),
-            String.valueOf(quid.getLogicalQueryUnitId().getSubQueryId().getId()),
-            String.valueOf((quid.getLogicalQueryUnitId().getId())),
+            String.valueOf(quid.getScheduleUnitId().getSubQueryId().getId()),
+            String.valueOf((quid.getScheduleUnitId().getId())),
             String.valueOf(quid.getId()));
     return workDir;
   }
@@ -615,9 +615,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       // remove itself from worker
     }
 
-    public InProgressStatus getReport() {
-      InProgressStatus.Builder builder = InProgressStatus.newBuilder();
-      builder.setId(ctx.getQueryId().toString())
+    public InProgressStatusProto getReport() {
+      InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder();
+      builder.setId(ctx.getQueryId().getProto())
           .setProgress(ctx.getProgress())
           .setStatus(ctx.getStatus());
 

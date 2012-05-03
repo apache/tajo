@@ -166,7 +166,10 @@ public class TestPhysicalPlanner {
   public final void testCreateScanPlan() throws IOException {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory(catalog);
-    QueryUnitId id = QueryIdFactory.newQueryUnitId();
+    QueryUnitId id = QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId())));
     File workDir = new File(NtaTestingUtility.getTestDir("CreateScan").toString());
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[0]);
@@ -195,7 +198,10 @@ public class TestPhysicalPlanner {
   public final void testGroupByPlan() throws IOException {
     Fragment[] frags = sm.split("score");
     File workDir = new File(NtaTestingUtility.getTestDir("GroupBy").toString());
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
@@ -219,7 +225,10 @@ public class TestPhysicalPlanner {
   public final void testGroupByPlanWithALLField() throws IOException {
     Fragment[] frags = sm.split("score");
     File workDir = new File(NtaTestingUtility.getTestDir("GroupBy").toString());
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[16]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
@@ -244,7 +253,10 @@ public class TestPhysicalPlanner {
   public final void testStorePlan() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    QueryUnitId id = QueryIdFactory.newQueryUnitId();
+    QueryUnitId id = QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId())));
     File workDir = new File(NtaTestingUtility.getTestDir("StorePlan").toString());
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
         workDir);
@@ -283,7 +295,10 @@ public class TestPhysicalPlanner {
   public final void testPartitionedStorePlan() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    QueryUnitId id = QueryIdFactory.newQueryUnitId();
+    QueryUnitId id = QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+        QueryIdFactory.newSubQueryId(
+            QueryIdFactory.newQueryId())));
     EngineTestingUtils.buildTestDir("target/test-data/PartitionedStore");
     File workDir = new File("target/test-data/PartitionedStore");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
@@ -337,7 +352,10 @@ public class TestPhysicalPlanner {
       throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    QueryUnitId id = QueryIdFactory.newQueryUnitId();
+    QueryUnitId id = QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId())));
     EngineTestingUtils.buildTestDir("target/test-data/emptygs");
     File workDir = new File("target/test-data/emptygs");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
@@ -389,7 +407,10 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
     File workDir = new File(NtaTestingUtility.getTestDir("AggregationFunction").toString());
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[9]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);    
@@ -410,7 +431,10 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
     File workDir = new File(NtaTestingUtility.getTestDir("CountFunction").toString());
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[10]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
@@ -429,7 +453,10 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
     File workDir = new File(NtaTestingUtility.getTestDir("GroupByWithNull").toString());
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[12]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);    
@@ -452,7 +479,10 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory(catalog);
     File workDir = new File(NtaTestingUtility.getTestDir("Union").toString());
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
@@ -477,7 +507,10 @@ public class TestPhysicalPlanner {
   public final void testEvalExpr() throws IOException {
     factory = new SubqueryContext.Factory(catalog);
     File workDir = new File(NtaTestingUtility.getTestDir("EvalExpr").toString());
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
         new Fragment[] { }, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[13]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
@@ -510,7 +543,10 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory(catalog);
     File workDir = new File(NtaTestingUtility.getTestDir("CreateIndex").toString());
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(),
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
         new Fragment[] {frags[0]}, workDir);
     ParseTree query = (ParseTree) analyzer.parse(ctx, createIndexStmt[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);

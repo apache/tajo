@@ -8,20 +8,21 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import nta.catalog.Schema;
-import nta.engine.QueryIdFactory;
+import nta.catalog.statistics.StatSet;
+import nta.engine.AbstractQuery;
+import nta.engine.MasterInterfaceProtos.Partition;
 import nta.engine.QueryUnitId;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.UnaryNode;
 
 import com.google.common.base.Preconditions;
@@ -30,7 +31,9 @@ import com.google.common.base.Preconditions;
  * @author jihoon
  *
  */
-public class QueryUnit {
+public class QueryUnit extends AbstractQuery {
+  
+  private final static int EXPIRE_TIME = 5000;
 
 	private QueryUnitId id;
 	private StoreTableNode store = null;
@@ -41,11 +44,17 @@ public class QueryUnit {
 	private Map<String, List<Fragment>> fragMap;
 	private Map<String, List<URI>> fetchMap;
 	
+	private int expire;
+	private List<Partition> partitions;
+	private StatSet statSet;
+	
 	public QueryUnit(QueryUnitId id) {
 		this.id = id;
 		scan = new ArrayList<ScanNode>();
     fetchMap = new HashMap<String, List<URI>>();
     fragMap = new HashMap<String, List<Fragment>>();
+    partitions = new ArrayList<Partition>();
+    expire = QueryUnit.EXPIRE_TIME;
 	}
 	
 	public void setLogicalPlan(LogicalNode plan) {
@@ -97,11 +106,6 @@ public class QueryUnit {
 	    this.addFragment(key, frag);
 	  }
 	}
-	
-//	public void setFragments(Fragment[] fragments) {
-//	  this.fragments.clear();
-//	  this.addFragments(fragments);
-//	}
 	
 	public void addFetch(String key, String uri) throws URISyntaxException {
 	  this.addFetch(key, new URI(uri));
@@ -197,15 +201,47 @@ public class QueryUnit {
 		return str;
 	}
 	
-	public QueryUnit cloneExceptFragments() {
-	  QueryUnit clone = new QueryUnit(QueryIdFactory.newQueryUnitId());
-	  try {
-      clone.setLogicalPlan((LogicalNode) this.plan.clone());
-    } catch (CloneNotSupportedException e) {
-      e.printStackTrace();
-    }
-	  clone.setHost(hostName);
-
-	  return clone;
+	public void setStatSet(StatSet statSet) {
+	  this.statSet = statSet;
+	}
+	
+	public void addPartitions(List<Partition> partitions) {
+	  this.partitions.addAll(partitions);
+	}
+	
+	public void addPartition(Partition partition) {
+	  this.partitions.add(partition);
+	}
+	
+	public StatSet getStats() {
+	  return this.statSet;
+	}
+	
+	public List<Partition> getPartitions() {
+	  return this.partitions;
+	}
+	
+	public int getPartitionNum() {
+	  return this.partitions.size();
+	}
+	
+	/*
+	 * Expire time
+	 */
+	
+	public void setExpireTime(int expire) {
+	  this.expire = expire;
+	}
+	
+	public void updateExpireTime(int period) {
+	  this.setExpireTime(this.expire - period);
+	}
+	
+	public void resetExpireTime() {
+	  this.setExpireTime(QueryUnit.EXPIRE_TIME);
+	}
+	
+	public int getLeftTime() {
+	  return this.expire;
 	}
 }

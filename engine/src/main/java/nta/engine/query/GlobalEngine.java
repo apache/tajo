@@ -23,14 +23,13 @@ import nta.engine.SubQueryId;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
-import nta.engine.exception.InternalException;
 import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
-import nta.engine.planner.global.GlobalQueryOptimizer;
+import nta.engine.planner.global.GlobalOptimizer;
 import nta.engine.planner.global.MasterPlan;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.ExprType;
@@ -56,8 +55,8 @@ public class GlobalEngine implements EngineService {
   private final QueryContext.Factory factory;
   private final StorageManager sm;
 
-  private GlobalQueryPlanner globalPlanner;
-  private GlobalQueryOptimizer globalOptimizer;
+  private GlobalPlanner globalPlanner;
+  private GlobalOptimizer globalOptimizer;
   private WorkerCommunicator wc;
   private QueryManager qm;
   private ClusterManager cm;
@@ -75,9 +74,9 @@ public class GlobalEngine implements EngineService {
     this.analyzer = new QueryAnalyzer(cat);
     this.factory = new QueryContext.Factory(catalog);
 
-    this.globalPlanner = new GlobalQueryPlanner(this.sm, this.qm, 
+    this.globalPlanner = new GlobalPlanner(this.sm, this.qm, 
         this.catalog);
-    this.globalOptimizer = new GlobalQueryOptimizer();
+    this.globalOptimizer = new GlobalOptimizer();
   }
 
   public void createTable(TableDesc meta) throws IOException {
@@ -95,6 +94,7 @@ public class GlobalEngine implements EngineService {
     
     LogicalRootNode root = (LogicalRootNode) plan;
     if (root.getSubNode().getType() == ExprType.CREATE_TABLE) {
+      // create table queries are executed by the master
       CreateTableNode createTable = (CreateTableNode) root.getSubNode();
       TableMeta meta = null;
       if (createTable.hasOptions()) {
@@ -110,14 +110,17 @@ public class GlobalEngine implements EngineService {
       catalog.addTable(desc);
       return desc.getId();
     } else {
+      // other queries are executed by workers
+      // TODO: Queries should be maintained by the GlobalEngine or another class
       QueryId qid = QueryIdFactory.newQueryId();
       qm.addQuery(new Query(qid));
       LOG.info("=== Query " + qid + " is initialized");
-      SubQueryId subId = QueryIdFactory.newSubQueryId();
+      SubQueryId subId = QueryIdFactory.newSubQueryId(qid);
       SubQuery subQuery = new SubQuery(subId);
       LOG.info("=== SubQuery " + subId + " is initialized");
       qm.addSubQuery(subQuery);
-      // build the global plan
+      
+      // build the master plan
       MasterPlan globalPlan = globalPlanner.build(subId, plan);
       globalPlan = globalOptimizer.optimize(globalPlan.getRoot());
       
@@ -129,32 +132,6 @@ public class GlobalEngine implements EngineService {
 
       return sm.getTablePath(globalPlan.getRoot().getOutputName()).toString();
     }
-  }
-  
-  public MasterPlan testQuery(String querystr) throws Exception {
-    LOG.info("* issued query: " + querystr);
-    // build the logical plan
-    QueryContext ctx = factory.create();
-    ParseTree tree = (QueryBlock) analyzer.parse(ctx, querystr);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
-    LogicalOptimizer.optimize(ctx, plan);
-    LOG.info("* logical plan:\n" + plan);
-
-    QueryId qid = QueryIdFactory.newQueryId();
-    qm.addQuery(new Query(qid));
-    SubQueryId subId = QueryIdFactory.newSubQueryId();
-    SubQuery subQuery = new SubQuery(subId);
-    qm.addSubQuery(subQuery);
-    // build the global plan
-    return globalPlanner.build(subId, plan);
-  }
-
-  public Map<QueryUnitId, Float> getProgress(SubQueryId subqid) {
-    Map<QueryUnitId, Float> progressMap = new HashMap<QueryUnitId, Float>();
-    
-    
-    
-    return progressMap;
   }
   
   /*

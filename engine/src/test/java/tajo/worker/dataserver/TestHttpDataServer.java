@@ -16,6 +16,7 @@ import nta.engine.EngineTestingUtils;
 import nta.engine.InterDataRetriever;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
+import nta.engine.ScheduleUnitId;
 
 import org.apache.hadoop.net.NetUtils;
 import org.junit.Before;
@@ -68,8 +69,11 @@ public class TestHttpDataServer {
   @Test
   public final void testInterDataRetriver() throws Exception {
     QueryIdFactory.reset();
-    QueryUnitId qid1 = QueryIdFactory.newQueryUnitId();
-    QueryUnitId qid2 = QueryIdFactory.newQueryUnitId();
+    ScheduleUnitId schid = QueryIdFactory.newScheduleUnitId(
+        QueryIdFactory.newSubQueryId(
+            QueryIdFactory.newQueryId()));
+    QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(schid);
+    QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(schid);
     
     File qid1Dir = new File(TEST_DATA + "/" + qid1.toString() + "/out");
     qid1Dir.mkdirs();
@@ -108,8 +112,11 @@ public class TestHttpDataServer {
   @Test(expected = FileNotFoundException.class)
   public final void testNoSuchFile() throws Exception {
     QueryIdFactory.reset();
-    QueryUnitId qid1 = QueryIdFactory.newQueryUnitId();
-    QueryUnitId qid2 = QueryIdFactory.newQueryUnitId();
+    ScheduleUnitId schid = QueryIdFactory.newScheduleUnitId(
+        QueryIdFactory.newSubQueryId(
+            QueryIdFactory.newQueryId()));
+    QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(schid);
+    QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(schid);
     
     File qid1Dir = new File(TEST_DATA + "/" + qid1.toString() + "/out");
     qid1Dir.mkdirs();

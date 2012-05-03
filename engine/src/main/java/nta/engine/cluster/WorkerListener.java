@@ -5,11 +5,12 @@ package nta.engine.cluster;
 
 import java.net.InetSocketAddress;
 
-import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.PingRequestProto;
 import nta.engine.MasterInterfaceProtos.PingResponseProto;
 import nta.engine.NConstants;
 import nta.engine.QueryUnitId;
+import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.ipc.MasterInterface;
 import nta.engine.ipc.PingRequest;
 import nta.engine.query.PingRequestImpl;
@@ -73,8 +74,13 @@ public class WorkerListener implements Runnable, MasterInterface {
   @Override
   public PingResponseProto reportQueryUnit(PingRequestProto proto) {
     PingRequest report = new PingRequestImpl(proto);
-    for (InProgressStatus status : report.getProgressList()) {
-      qm.updateProgress(new QueryUnitId(status.getId()), status);
+    for (InProgressStatusProto status : report.getProgressList()) {
+      QueryUnitId uid = new QueryUnitId(status.getId());
+      try {
+        qm.updateProgress(uid, status);
+      } catch (NoSuchQueryIdException e) {
+        e.printStackTrace();
+      }
     }
     PingResponseProto.Builder response 
       = PingResponseProto.newBuilder();

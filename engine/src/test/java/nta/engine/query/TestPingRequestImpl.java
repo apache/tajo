@@ -8,7 +8,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 
-import nta.engine.MasterInterfaceProtos.InProgressStatus;
+import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.QueryIdFactory;
 import nta.engine.ipc.PingRequest;
@@ -25,17 +25,23 @@ public class TestPingRequestImpl {
   public void test() {
     QueryIdFactory.reset();
     
-    List<InProgressStatus> list 
-      = new ArrayList<InProgressStatus>();
+    List<InProgressStatusProto> list 
+      = new ArrayList<InProgressStatusProto>();
     
-    InProgressStatus.Builder builder = InProgressStatus.newBuilder()
-        .setId(QueryIdFactory.newQueryUnitId().toString())
+    InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder()
+        .setId(QueryIdFactory.newQueryUnitId(
+            QueryIdFactory.newScheduleUnitId(
+                QueryIdFactory.newSubQueryId(
+                    QueryIdFactory.newQueryId()))).getProto())
         .setProgress(0.5f)
         .setStatus(QueryStatus.FINISHED);
     list.add(builder.build());
     
-    builder = InProgressStatus.newBuilder()
-        .setId(QueryIdFactory.newQueryUnitId().toString())
+    builder = InProgressStatusProto.newBuilder()
+        .setId(QueryIdFactory.newQueryUnitId(
+            QueryIdFactory.newScheduleUnitId(
+                QueryIdFactory.newSubQueryId(
+                    QueryIdFactory.newQueryId()))).getProto())
         .setProgress(0.5f)
         .setStatus(QueryStatus.FINISHED);
     list.add(builder.build());
