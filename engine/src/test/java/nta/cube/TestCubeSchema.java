@@ -8,7 +8,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
-import nta.engine.EngineTestingUtils;
+import nta.engine.WorkerTestingUtil;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.VTuple;
@@ -58,7 +58,7 @@ public class TestCubeSchema {
   public static void datagen() throws IOException {
 
     String TEST_PATH = datapath;
-    EngineTestingUtils.buildTestDir(TEST_PATH);
+    WorkerTestingUtil.buildTestDir(TEST_PATH);
 
     StorageManager sm = StorageManager.get(new Configuration(), datapath);
     TableMeta meta = TCatUtil.newTableMeta(TEST_SCHEMA, StoreType.CSV);

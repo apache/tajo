@@ -30,7 +30,7 @@ public class TestNtaClient {
     util = new NtaTestingUtility();
     util.startMiniCluster(1);
 
-    master = util.getMiniNtaEngineCluster().getMaster();
+    master = util.getMiniTajoCluster().getMaster();
     InetSocketAddress serverAddr = master.getRpcServerAddr();
     String ip = serverAddr.getAddress().getHostAddress();
     int port = serverAddr.getPort();

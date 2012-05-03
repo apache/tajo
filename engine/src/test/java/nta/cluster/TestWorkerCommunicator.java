@@ -32,7 +32,7 @@ public class TestWorkerCommunicator {
     Thread.sleep(2000);
 
     zkClient = new ZkClient(cluster.getConfiguration());
-    tracker = cluster.getMiniNtaEngineCluster().getMaster().getTracker();
+    tracker = cluster.getMiniTajoCluster().getMaster().getTracker();
 
     wc = new WorkerCommunicator(zkClient, tracker);
     wc.start();
@@ -46,11 +46,11 @@ public class TestWorkerCommunicator {
 
   @Test
   public void test() throws Exception {
-    cluster.getMiniNtaEngineCluster().startLeafServer();
+    cluster.getMiniTajoCluster().startLeafServer();
     Thread.sleep(1000);
     assertEquals(wc.getProxyMap().size(), tracker.getMembers().size());
 
-    cluster.getMiniNtaEngineCluster().stopLeafServer(0, true);
+    cluster.getMiniTajoCluster().stopLeafServer(0, true);
     Thread.sleep(1500);
     assertEquals(wc.getProxyMap().size(), tracker.getMembers().size());
 

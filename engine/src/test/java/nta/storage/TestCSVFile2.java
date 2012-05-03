@@ -16,7 +16,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.StatSet;
 import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
-import nta.engine.EngineTestingUtils;
+import nta.engine.WorkerTestingUtil;
 import nta.engine.NConstants;
 import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -35,7 +35,7 @@ public class TestCSVFile2 {
   public void setup() throws Exception {
     conf = new NtaConf();
     conf.set(NConstants.ENGINE_DATA_DIR, TEST_PATH);
-    EngineTestingUtils.buildTestDir(TEST_PATH);
+    WorkerTestingUtil.buildTestDir(TEST_PATH);
     sm = StorageManager.get(conf, TEST_PATH);
   }
   

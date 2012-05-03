@@ -88,14 +88,6 @@ public class MiniTajoCluster {
 		}
 	}
 	
-	public void flushcache() {
-		// TODO - to be implemented, but it is necessary?
-	}
-	
-	public void flushcache(String tableName) {
-		// TODO - to be implemented, but it is necessary?
-	}
-	
 	public List<JVMClusterUtil.LeafServerThread> getLeafServerThreads() {
 		return this.engineCluster.getLeafServers();
 	}
@@ -106,11 +98,6 @@ public class MiniTajoCluster {
 	
 	public LeafServer getLeafServer(int index) {
 		return engineCluster.getLeafServer(index);
-	}
-	
-	public List<LeafServer> getLeafServers(String tableName) {
-		// TODO - to be implemented
-		return null;
 	}
 	
 	public JVMClusterUtil.LeafServerThread addLeafServer() throws IOException {

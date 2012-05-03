@@ -14,7 +14,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
-import nta.engine.EngineTestingUtils;
+import nta.engine.WorkerTestingUtil;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryIdFactory;
 import nta.engine.SubqueryContext;
@@ -31,7 +31,6 @@ import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +49,7 @@ public class TestNLJoinExec {
     util = new NtaTestingUtility();
     util.startMiniZKCluster();
     catalog = util.startCatalogCluster().getCatalog();
-    EngineTestingUtils.buildTestDir(TEST_PATH);
+    WorkerTestingUtil.buildTestDir(TEST_PATH);
     conf = util.getConfiguration();
     sm = StorageManager.get(conf, TEST_PATH);
 

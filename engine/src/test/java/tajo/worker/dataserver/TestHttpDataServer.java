@@ -12,7 +12,7 @@ import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.Random;
 
-import nta.engine.EngineTestingUtils;
+import nta.engine.WorkerTestingUtil;
 import nta.engine.InterDataRetriever;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
@@ -33,7 +33,7 @@ public class TestHttpDataServer {
   
   @Before
   public void setUp() throws Exception {
-    EngineTestingUtils.buildTestDir(TEST_DATA);
+    WorkerTestingUtil.buildTestDir(TEST_DATA);
   }
 
   @Test

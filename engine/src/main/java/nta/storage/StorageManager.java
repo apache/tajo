@@ -171,10 +171,9 @@ public class StorageManager {
 	
 	/**
 	 * 파일을 outputPath에 출력한다. writeMeta가 true라면 TableMeta를 테이블 디렉토리에 저장한다.
-	 * 
-	 * @param conf
+	 *
 	 * @param meta 테이블 정보
-	 * @param 출력할 파일 이름 
+   * @param filename
 	 * @return
 	 * @throws IOException
 	 */
@@ -280,20 +279,24 @@ public class StorageManager {
 	public Fragment[] split(String tableName) throws IOException {
 	  Path tablePath = new Path(dataRoot, tableName);
 	  FileSystem fs = tablePath.getFileSystem(conf);
-	  return split(tablePath, fs.getDefaultBlockSize());
+	  return split(tableName, tablePath, fs.getDefaultBlockSize());
 	}
 	
 	public Fragment[] split(String tableName, long fragmentSize) throws IOException {
     Path tablePath = new Path(dataRoot, tableName);
-    return split(tablePath, fragmentSize);
+    return split(tableName, tablePath, fragmentSize);
   }
 	
 	public Fragment[] split(Path tablePath) throws IOException {
 	  FileSystem fs = tablePath.getFileSystem(conf);
-	  return split(tablePath, fs.getDefaultBlockSize());
+	  return split(tablePath.getName(), tablePath, fs.getDefaultBlockSize());
 	}
+
+  public Fragment[] split(String tableName, Path tablePath) throws IOException {
+    return split(tableName, tablePath, fs.getDefaultBlockSize());
+  }
 	
-	private Fragment[] split(Path tablePath, long size)
+	private Fragment[] split(String tableName, Path tablePath, long size)
       throws IOException {
 	  FileSystem fs = tablePath.getFileSystem(conf);    
 	  
@@ -308,7 +311,7 @@ public class StorageManager {
       long start = 0;
       if (remainFileSize > defaultBlockSize) {
         while (remainFileSize > defaultBlockSize) {
-          tablet = new Fragment(tablePath.getName(), file.getPath(), meta, start,
+          tablet = new Fragment(tableName, file.getPath(), meta, start,
               defaultBlockSize);
           listTablets.add(tablet);
           start += defaultBlockSize;

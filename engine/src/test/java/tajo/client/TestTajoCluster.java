@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import nta.catalog.TableDesc;
-import nta.engine.EngineTestingUtils;
+import nta.engine.WorkerTestingUtil;
 import nta.engine.NtaTestingUtility;
 import nta.storage.StorageManager;
 
@@ -41,7 +41,7 @@ public class TestTajoCluster {
   @Test
   public final void testAttachTable() throws IOException {
     final String tableName = "attach";
-    EngineTestingUtils.writeTmpTable(conf, "/tajo/data", tableName, true);
+    WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName, true);
     Configuration conf = util.getConfiguration();
     TajoClient tajo = new TajoClient(conf);
     assertFalse(tajo.existTable(tableName));
@@ -55,7 +55,7 @@ public class TestTajoCluster {
   public final void testUpdateQuery() throws IOException {
     Configuration conf = util.getConfiguration();
     final String tableName = "updateQuery";
-    EngineTestingUtils.writeTmpTable(conf, "/tmp", tableName, false);
+    WorkerTestingUtil.writeTmpTable(conf, "/tmp", tableName, false);
     StorageManager sm = StorageManager.get(conf, "/tmp");
     FileSystem fs = sm.getFileSystem();
     assertTrue(fs.exists(new Path("/tmp", tableName)));
@@ -72,7 +72,7 @@ public class TestTajoCluster {
   @Test
   public final void testCreateAndDropTable() throws IOException {
     final String tableName = "create";
-    EngineTestingUtils.writeTmpTable(conf, "/tmp", tableName, false);
+    WorkerTestingUtil.writeTmpTable(conf, "/tmp", tableName, false);
     StorageManager sm = StorageManager.get(conf, "/tmp");
     FileSystem fs = sm.getFileSystem();
     assertTrue(fs.exists(new Path("/tmp", tableName)));    
@@ -80,7 +80,7 @@ public class TestTajoCluster {
     TajoClient tajo = new TajoClient(conf);
     assertFalse(tajo.existTable(tableName));
     tajo.createTable(tableName, new Path("/tmp", tableName), 
-        EngineTestingUtils.mockupMeta);
+        WorkerTestingUtil.mockupMeta);
     assertTrue(tajo.existTable(tableName));
     tajo.dropTable(tableName);
     assertFalse(tajo.existTable(tableName));
@@ -98,8 +98,8 @@ public class TestTajoCluster {
   public final void testGetTableList() throws IOException {    
     final String tableName1 = "table1";
     final String tableName2 = "table2";
-    EngineTestingUtils.writeTmpTable(conf, "/tajo/data", tableName1, true);
-    EngineTestingUtils.writeTmpTable(conf, "/tajo/data", tableName2, true);
+    WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName1, true);
+    WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName2, true);
     Configuration conf = util.getConfiguration();
     TajoClient tajo = new TajoClient(conf);
     assertFalse(tajo.existTable(tableName1));
@@ -118,7 +118,7 @@ public class TestTajoCluster {
   @Test
   public final void testGetTableDesc() throws IOException {    
     final String tableName1 = "tabledesc";
-    EngineTestingUtils.writeTmpTable(conf, "/tajo/data", tableName1, true);
+    WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName1, true);
     Configuration conf = util.getConfiguration();
     TajoClient tajo = new TajoClient(conf);
     assertFalse(tajo.existTable(tableName1));

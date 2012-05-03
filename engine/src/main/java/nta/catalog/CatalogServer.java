@@ -475,7 +475,9 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     }
 
     functions.put(canonicalName, funcDesc);
-    LOG.info("Function " + canonicalName + " is registered.");
+    if (LOG.isDebugEnabled()) {
+      LOG.info("Function " + canonicalName + " is registered.");
+    }
   }
 
   @Override

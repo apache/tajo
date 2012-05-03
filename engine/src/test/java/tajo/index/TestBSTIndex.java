@@ -13,7 +13,7 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
-import nta.engine.EngineTestingUtils;
+import nta.engine.WorkerTestingUtil;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryBlock.SortSpec;
@@ -56,7 +56,7 @@ public class TestBSTIndex {
    
   @Before
   public void setUp() throws Exception {
-    EngineTestingUtils.buildTestDir(TEST_PATH);
+    WorkerTestingUtil.buildTestDir(TEST_PATH);
     sm = StorageManager.get(conf, TEST_PATH);
   }
   

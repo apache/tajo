@@ -77,7 +77,7 @@ public class TestCatalog {
 	public static void setUp() throws Exception {
 	  util = new NtaTestingUtility();
     util.startMiniCluster(3);
-    catalog = util.getMiniNtaEngineCluster().getMaster().getCatalog();
+    catalog = util.getMiniTajoCluster().getMaster().getCatalog();
 	}
 	
 	@AfterClass
@@ -231,14 +231,14 @@ public class TestCatalog {
 	
 	@Test
 	public final void testHostsByTable() throws Exception {  
-	  CatalogService local = util.getMiniNtaEngineCluster().
+	  CatalogService local = util.getMiniTajoCluster().
 	      getMaster().getCatalog();
 	  
 		int i, j;
 		FSDataOutputStream fos;
 		Path tbPath;
 		
-		NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
+		NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
 		
 		Schema schema = new Schema();
 		schema.addColumn("id",DataType.INT);

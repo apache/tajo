@@ -55,7 +55,7 @@ public class TestClusterManager {
     util.startMiniCluster(CLUST_NUM);
     Thread.sleep(4000);
 
-    NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
+    NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
     assertNotNull(master);
     wc = master.getWorkerCommunicator();
     cm = master.getClusterManager();
@@ -94,7 +94,7 @@ public class TestClusterManager {
 
   @Test
   public void testGetFragAndWorker() throws Exception {
-    CatalogService local = util.getMiniNtaEngineCluster().getMaster()
+    CatalogService local = util.getMiniTajoCluster().getMaster()
         .getCatalog();
 
     int i, j;

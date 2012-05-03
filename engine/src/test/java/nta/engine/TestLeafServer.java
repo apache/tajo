@@ -75,10 +75,10 @@ public class TestLeafServer {
 
   @Before
   public void setUp() throws Exception {
-    EngineTestingUtils.buildTestDir(TEST_PATH);
+    WorkerTestingUtil.buildTestDir(TEST_PATH);
     util = new NtaTestingUtility();
     util.startMiniCluster(2);
-    catalog = util.getMiniNtaEngineCluster().getMaster().getCatalog();
+    catalog = util.getMiniTajoCluster().getMaster().getCatalog();
     conf = util.getConfiguration();
     sm = StorageManager.get(conf);
     QueryIdFactory.reset();
@@ -142,8 +142,9 @@ public class TestLeafServer {
         
     int splitIdx = (int) Math.ceil(frags.length / 2.f);
     QueryIdFactory.reset();
-    LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(0);
-    LeafServer leaf2 = util.getMiniNtaEngineCluster().getLeafServer(1);    
+
+    LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(0);
+    LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(1);
     
     ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(
         QueryIdFactory.newSubQueryId(
@@ -172,8 +173,7 @@ public class TestLeafServer {
     Thread.sleep(1000);
     
     // for the report sending test
-    NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
-//    Collection<InProgressStatusProto> list = master.getProgressQueries();
+    NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
     Set<QueryUnitId> reported = new HashSet<QueryUnitId>();
     Set<QueryUnitId> submitted = new HashSet<QueryUnitId>();
     submitted.add(req1.getId());
@@ -201,8 +201,9 @@ public class TestLeafServer {
     
     int splitIdx = (int) Math.ceil(frags.length / 2.f);
     QueryIdFactory.reset();
-    LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(0);
-    LeafServer leaf2 = util.getMiniNtaEngineCluster().getLeafServer(1);
+
+    LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(0);
+    LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(1);
     ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(
         QueryIdFactory.newSubQueryId(
             QueryIdFactory.newQueryId()));
@@ -236,7 +237,7 @@ public class TestLeafServer {
     assertNotNull(leaf2.requestQueryUnit(req2.getProto()));
     Thread.sleep(1000);
     // for the report sending test
-    NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
+    NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
     Collection<InProgressStatusProto> list = master.getProgressQueries();
     Set<QueryUnitId> submitted = Sets.newHashSet();
     submitted.add(req1.getId());

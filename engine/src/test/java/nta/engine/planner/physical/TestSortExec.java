@@ -15,7 +15,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
-import nta.engine.EngineTestingUtils;
+import nta.engine.WorkerTestingUtil;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryIdFactory;
 import nta.engine.SubqueryContext;
@@ -31,7 +31,6 @@ import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
-import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +51,7 @@ public class TestSortExec {
   @Before
   public void setUp() throws Exception {
     this.conf = new NtaConf();
-    EngineTestingUtils.buildTestDir(TEST_PATH);
+    WorkerTestingUtil.buildTestDir(TEST_PATH);
     sm = StorageManager.get(conf, TEST_PATH);
 
     Schema schema = new Schema();

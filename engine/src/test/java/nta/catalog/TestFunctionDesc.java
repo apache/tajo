@@ -9,7 +9,7 @@ import java.io.IOException;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
 import nta.catalog.proto.CatalogProtos.FunctionType;
-import nta.engine.EngineTestingUtils;
+import nta.engine.WorkerTestingUtil;
 import nta.engine.exception.InternalException;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.json.GsonCreator;
@@ -34,7 +34,7 @@ public class TestFunctionDesc {
     assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
         desc.getDefinedArgs());
 
-    EngineTestingUtils.buildTestDir(TEST_PATH);
+    WorkerTestingUtil.buildTestDir(TEST_PATH);
     File save = new File(TEST_PATH + "/save.dat");
     FileUtil.writeProto(save, desc.getProto());
 

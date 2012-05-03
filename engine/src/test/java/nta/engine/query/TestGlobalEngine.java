@@ -115,7 +115,7 @@ public class TestGlobalEngine {
     util = new NtaTestingUtility();
     util.startMiniCluster(3);
     Thread.sleep(2000);
-    master = util.getMiniNtaEngineCluster().getMaster();
+    master = util.getMiniTajoCluster().getMaster();
     conf = util.getConfiguration();
     sm = new StorageManager(conf);
 
@@ -346,7 +346,7 @@ public class TestGlobalEngine {
       public void run() {
         try {
           Thread.sleep(1000);
-          LeafServer leaf = util.getMiniNtaEngineCluster().getLeafServer(0);
+          LeafServer leaf = util.getMiniTajoCluster().getLeafServer(0);
           LOG.info(">>> " + leaf.getServerName() + " will be halted!!");
           leaf.shutdown(">>> Aborted! <<<");
         } catch (InterruptedException e) {

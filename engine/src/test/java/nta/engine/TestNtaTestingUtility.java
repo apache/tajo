@@ -49,7 +49,7 @@ public class TestNtaTestingUtility {
     util = new NtaTestingUtility();
     util.startMiniCluster(num);
           
-    catalog = util.getMiniNtaEngineCluster().getMaster().getCatalog();
+    catalog = util.getMiniTajoCluster().getMaster().getCatalog();
     conf = util.getConfiguration();
     sm = StorageManager.get(conf);
     QueryIdFactory.reset();
@@ -115,24 +115,24 @@ public class TestNtaTestingUtility {
       req = new QueryUnitRequestImpl(
           qid, Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
           "", false, plan.toJSON());
-      util.getMiniNtaEngineCluster().getLeafServerThreads().get(i)
+      util.getMiniTajoCluster().getLeafServerThreads().get(i)
         .getLeafServer().requestQueryUnit(req.getProto());
     }
     
     Thread.sleep(3000);
-    LeafServer leaf0 = util.getMiniNtaEngineCluster().getLeafServer(0);
+    LeafServer leaf0 = util.getMiniTajoCluster().getLeafServer(0);
     leaf0.shutdown("Aborted!");
 
     Thread.sleep(1000);
-    LeafServer leaf1 = util.getMiniNtaEngineCluster().getLeafServer(1);
+    LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(1);
     leaf1.shutdown("Aborted!");
     
     Thread.sleep(1000);
-    LeafServer leaf2 = util.getMiniNtaEngineCluster().getLeafServer(2);
+    LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(2);
     leaf2.shutdown("Aborted!");
     
     Thread.sleep(1000);
-    LeafServer leaf3 = util.getMiniNtaEngineCluster().getLeafServer(3);
+    LeafServer leaf3 = util.getMiniTajoCluster().getLeafServer(3);
     leaf3.shutdown("Aborted!");
     
     assertFalse(leaf0.isAlive());

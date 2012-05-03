@@ -10,7 +10,7 @@ import java.net.URI;
 import java.util.Random;
 
 import nta.conf.NtaConf;
-import nta.engine.EngineTestingUtils;
+import nta.engine.WorkerTestingUtil;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -34,9 +34,9 @@ public class TestFetcher {
   
   @Before
   public void setUp() throws Exception {
-    EngineTestingUtils.buildTestDir(TEST_DATA);
-    EngineTestingUtils.buildTestDir(INPUT_DIR);
-    EngineTestingUtils.buildTestDir(OUTPUT_DIR);
+    WorkerTestingUtil.buildTestDir(TEST_DATA);
+    WorkerTestingUtil.buildTestDir(INPUT_DIR);
+    WorkerTestingUtil.buildTestDir(OUTPUT_DIR);
   }
 
   @Test

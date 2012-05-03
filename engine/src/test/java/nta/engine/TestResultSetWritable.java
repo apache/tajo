@@ -45,7 +45,7 @@ public class TestResultSetWritable {
 	@Before
 	public void setUp() throws Exception {
 		conf = new NtaConf();
-		EngineTestingUtils.buildTestDir(TEST_PATH);
+		WorkerTestingUtil.buildTestDir(TEST_PATH);
 		sm = StorageManager.get(conf, TEST_PATH);
 		
 		Schema schema = new Schema();

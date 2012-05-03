@@ -276,7 +276,6 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       try {
         webServer.stop();
       } catch (Exception e) {
-        // TODO Auto-generated catch block
         e.printStackTrace();
       }
 

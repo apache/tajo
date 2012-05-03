@@ -19,11 +19,8 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
 import nta.datum.NullDatum;
-import nta.engine.EngineTestingUtils;
-import nta.engine.NtaTestingUtility;
-import nta.engine.QueryIdFactory;
-import nta.engine.QueryUnitId;
-import nta.engine.SubqueryContext;
+import nta.engine.*;
+import nta.engine.WorkerTestingUtil;
 import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
@@ -295,11 +292,13 @@ public class TestPhysicalPlanner {
   public final void testPartitionedStorePlan() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
+
     QueryUnitId id = QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
         QueryIdFactory.newSubQueryId(
             QueryIdFactory.newQueryId())));
-    EngineTestingUtils.buildTestDir("target/test-data/PartitionedStore");
+    WorkerTestingUtil.buildTestDir("target/test-data/PartitionedStore");
+
     File workDir = new File("target/test-data/PartitionedStore");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
         workDir);
@@ -352,11 +351,13 @@ public class TestPhysicalPlanner {
       throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
+
     QueryUnitId id = QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId())));
-    EngineTestingUtils.buildTestDir("target/test-data/emptygs");
+    WorkerTestingUtil.buildTestDir("target/test-data/emptygs");
+
     File workDir = new File("target/test-data/emptygs");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
         workDir);

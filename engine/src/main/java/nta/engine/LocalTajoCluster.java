@@ -12,11 +12,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * @author Hyunsik Choi
+ */
 public class LocalTajoCluster {
 	static final Log LOG = LogFactory.getLog(LocalTajoCluster.class);
 	private JVMClusterUtil.MasterThread masterThread;
 	private final List<JVMClusterUtil.LeafServerThread> leafThreads
-	= new CopyOnWriteArrayList<JVMClusterUtil.LeafServerThread>();
+	  = new CopyOnWriteArrayList<JVMClusterUtil.LeafServerThread>();
 	private final static int DEFAULT_NO = 1;
 	private final Configuration conf;
 
@@ -26,6 +29,7 @@ public class LocalTajoCluster {
 
 	public LocalTajoCluster(final Configuration conf, final int numLeafServers) throws Exception {
 		this.conf = conf;
+    // all workers ports are set to 0, leading to random port.
 		this.conf.set(NConstants.LEAFSERVER_PORT, "0");
 
 		addMaster(conf, 0);
@@ -33,6 +37,8 @@ public class LocalTajoCluster {
     Configuration c = null;
 		for(int i=0; i < numLeafServers; i++) {
       c = new Configuration(conf);
+
+      // TODO - if non-testing local cluster, how do worker's temporal directories created?
 
       // if LocalTajoCluster is executed by NtaTestingUtility
       // each leaf server should have its own tmp directory.
@@ -48,9 +54,6 @@ public class LocalTajoCluster {
 
 	public JVMClusterUtil.MasterThread addMaster(Configuration c, final int index)
 		throws Exception {
-		// Create each master with its own Configuration instance so each has
-		// its HConnection instance rather than share (see HBASE_INSTANCES down in
-		// the guts of HConnectionManager.
 		JVMClusterUtil.MasterThread mt =
 			JVMClusterUtil.createMasterThread(c, index);
 		this.masterThread = mt;
@@ -60,9 +63,6 @@ public class LocalTajoCluster {
 	public JVMClusterUtil.LeafServerThread addLeafServer(
       Configuration c, final int index)
 			throws IOException {
-		// Create each regionserver with its own Configuration instance so each has
-		// its HConnection instance rather than share (see HBASE_INSTANCES down in
-		// the guts of HConnectionManager.
 		JVMClusterUtil.LeafServerThread rst =
 			JVMClusterUtil.createLeafServerThread(c, index);
 		this.leafThreads.add(rst);
@@ -144,7 +144,7 @@ public class LocalTajoCluster {
 	}
 
 	/**
-	 * Wait for Mini HBase Cluster to shut down.
+	 * Wait for workers to shut down.
 	 * Presumes you've already called {@link #shutdown()}.
 	 */
 	public void join() {
@@ -179,22 +179,10 @@ public class LocalTajoCluster {
 	
 	/**
 	 * @param c Configuration to check.
-	 * @return True if a 'local' address in hbase.master value.
+	 * @return True if "nta.cluster.distributed" is false or null
 	 */
 	public static boolean isLocal(final Configuration c) {
 		final String mode = c.get(NConstants.CLUSTER_DISTRIBUTED); 
 		return mode == null || mode.equals(NConstants.CLUSTER_IS_LOCAL);
-	}
-
-	/**
-	 * @param args
-	 * @throws Exception 
-	 */
-	public static void main(String[] args) throws Exception {
-		Configuration conf = new NtaConf();
-	    LocalTajoCluster cluster = new LocalTajoCluster(conf,2);
-	    cluster.startup();
-	    Thread.sleep(1000);
-	    cluster.shutdown();
 	}
 }

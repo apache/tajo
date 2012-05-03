@@ -47,7 +47,7 @@ public class TestNtaEngineMaster {
 
     byte[] data = ZkUtil.getDataAndWatch(zkClient, NConstants.ZNODE_MASTER);
 
-    NtaEngineMaster master = util.getMiniNtaEngineCluster().getMaster();
+    NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
     assertEquals(master.getMasterServerName(), new String(data));
     
     data = ZkUtil.getDataAndWatch(zkClient, NConstants.ZNODE_CLIENTSERVICE);
