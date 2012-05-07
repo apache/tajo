@@ -64,9 +64,10 @@ public class TestSortExec {
     Appender appender = sm.getAppender(employeeMeta, "employee", "employee");
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
-      tuple.put(DatumFactory.createInt(rnd.nextInt(5)),
+      tuple.put(new Datum[] {
+          DatumFactory.createInt(rnd.nextInt(5)),
           DatumFactory.createInt(rnd.nextInt(10)),
-          DatumFactory.createString("dept_" + rnd.nextInt(10)));
+          DatumFactory.createString("dept_" + rnd.nextInt(10))});
       appender.addTuple(tuple);
     }
     appender.flush();
@@ -101,9 +102,9 @@ public class TestSortExec {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    Tuple tuple = null;
+    Tuple tuple;
     Datum preVal = null;
-    Datum curVal = null;
+    Datum curVal;
     while ((tuple = exec.next()) != null) {
       curVal = tuple.get(0);
       if (preVal != null) {

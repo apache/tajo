@@ -100,14 +100,17 @@ public class CSVFile2 extends Storage {
     @Override
     public void addTuple(Tuple tuple) throws IOException {
       StringBuilder sb = new StringBuilder();
-      Column col = null;
-      Datum datum = null;
+      Column col;
+      Datum datum;
       for (int i = 0; i < schema.getColumnNum(); i++) {
         datum = tuple.get(i);
         if (datum.type() == DatumType.NULL) {
         } else {
           col = schema.getColumn(i);
           switch (col.getDataType()) {
+          case BOOLEAN:
+            sb.append(tuple.getBoolean(i));
+            break;
           case BYTE:
             sb.append(new String(Base64.encodeBase64(tuple.getByte(i)
                 .asByteArray(), false)));
@@ -115,6 +118,9 @@ public class CSVFile2 extends Storage {
           case BYTES:
             sb.append(new String(Base64.encodeBase64(tuple.getBytes(i)
                 .asByteArray(), false)));
+            break;
+          case CHAR:
+            sb.append(tuple.getChar(i));
             break;
           case STRING:
             sb.append(tuple.getString(i));
@@ -270,7 +276,7 @@ public class CSVFile2 extends Storage {
         this.curIndex = 0;
         this.validIndex = 0;
         this.curTupleOffset = 0;
-        this.bufferSize = DEFAULT_BUFFER_SIZE;;
+        this.bufferSize = DEFAULT_BUFFER_SIZE;
         return false;
       }
       
@@ -410,9 +416,17 @@ public class CSVFile2 extends Storage {
               tuple.put(i, DatumFactory.createNullDatum());
             } else {
               switch (field.getDataType()) {
+              case BOOLEAN:
+                tuple.put(i, DatumFactory.createBool(cell));
+                break;
+
               case BYTE:
                 tuple.put(i,
                     DatumFactory.createByte(Base64.decodeBase64(cell)[0]));
+                break;
+              case CHAR:
+                tuple.put(i,
+                    DatumFactory.createChar(cell.charAt(0)));
                 break;
               case BYTES:
                 tuple.put(i,
@@ -437,12 +451,7 @@ public class CSVFile2 extends Storage {
                 tuple.put(i, DatumFactory.createString(cell));
                 break;
               case IPv4:
-                if (cells[i].charAt(0) == '/') {
-                  tuple.put(
-                      i,
-                      DatumFactory.createIPv4(cells[i].substring(1,
-                          cell.length())));
-                }
+                tuple.put(i,DatumFactory.createIPv4(cell));
                 break;
               }
             }

@@ -73,17 +73,20 @@ public class TestEvalTree {
     analyzer = new QueryAnalyzer(cat);    
     
     tuples[0] = new VTuple(3);
-    tuples[0].put(DatumFactory.createString("aabc"), 
+    tuples[0].put(new Datum[] {
+        DatumFactory.createString("aabc"),
         DatumFactory.createInt(100), 
-        DatumFactory.createInt(10));
+        DatumFactory.createInt(10)});
     tuples[1] = new VTuple(3);
-    tuples[1].put(DatumFactory.createString("aaba"), 
+    tuples[1].put(new Datum[] {
+        DatumFactory.createString("aaba"),
         DatumFactory.createInt(200), 
-        DatumFactory.createInt(20));
+        DatumFactory.createInt(20)});
     tuples[2] = new VTuple(3);
-    tuples[2].put(DatumFactory.createString("kabc"), 
+    tuples[2].put(new Datum[] {
+        DatumFactory.createString("kabc"),
         DatumFactory.createInt(300), 
-        DatumFactory.createInt(30));
+        DatumFactory.createInt(30)});
   }
 
   @AfterClass
@@ -150,12 +153,14 @@ public class TestEvalTree {
   @Test
   public final void testFunctionEval() throws Exception {    
     Tuple tuple = new VTuple(3);
-    tuple.put(DatumFactory.createString("hyunsik"), 
-        DatumFactory.createInt(500), 
-        DatumFactory.createInt(30));
+    tuple.put(
+        new Datum[] {
+          DatumFactory.createString("hyunsik"),
+          DatumFactory.createInt(500),
+          DatumFactory.createInt(30)});
 
-    QueryBlock block = null;
-    EvalNode expr = null;
+    QueryBlock block;
+    EvalNode expr;
 
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
     QueryContext ctx = factory.create();
@@ -188,8 +193,8 @@ public class TestEvalTree {
     Tuple [] tuples = new Tuple[tuplenum];
     for (int i=0; i < tuplenum; i++) {
       tuples[i] = new VTuple(3);
-      tuples[i].put(DatumFactory.createString("hyunsik")); 
-      tuples[i].put(1,DatumFactory.createInt(i+1)); 
+      tuples[i].put(0, DatumFactory.createString("hyunsik"));
+      tuples[i].put(1, DatumFactory.createInt(i+1));
       tuples[i].put(2, DatumFactory.createInt(30));
     }
     
@@ -306,9 +311,9 @@ public class TestEvalTree {
 
   @Test
   public final void testCompOperator() {
-    ConstEval e1 = null;
-    ConstEval e2 = null;
-    BinaryEval expr = null;
+    ConstEval e1;
+    ConstEval e2;
+    BinaryEval expr;
 
     // Constant
     e1 = new ConstEval(DatumFactory.createInt(9));
@@ -354,8 +359,8 @@ public class TestEvalTree {
   @Test
   public final void testArithmaticsOperator() 
       throws CloneNotSupportedException {
-    ConstEval e1 = null;
-    ConstEval e2 = null;
+    ConstEval e1;
+    ConstEval e2;
 
     // PLUS
     e1 = new ConstEval(DatumFactory.createInt(9));
@@ -388,8 +393,8 @@ public class TestEvalTree {
 
   @Test
   public final void testGetReturnType() {
-    ConstEval e1 = null;
-    ConstEval e2 = null;
+    ConstEval e1;
+    ConstEval e2;
 
     // PLUS
     e1 = new ConstEval(DatumFactory.createInt(9));
@@ -409,8 +414,8 @@ public class TestEvalTree {
   
   @Test
   public final void testEquals() throws CloneNotSupportedException {
-    ConstEval e1 = null;
-    ConstEval e2 = null;
+    ConstEval e1;
+    ConstEval e2;
 
     // PLUS
     e1 = new ConstEval(DatumFactory.createInt(34));
@@ -441,8 +446,8 @@ public class TestEvalTree {
   
   @Test
   public final void testJson() throws CloneNotSupportedException {
-    ConstEval e1 = null;
-    ConstEval e2 = null;
+    ConstEval e1;
+    ConstEval e2;
 
     // 29 > (34 + 5) + (5 + 34)
     e1 = new ConstEval(DatumFactory.createInt(34));
@@ -486,9 +491,9 @@ public class TestEvalTree {
   
   @Test
   public final void testNot() throws CloneNotSupportedException {
-    ConstEval e1 = null;
-    ConstEval e2 = null;
-    EvalNode expr = null;
+    ConstEval e1;
+    ConstEval e2;
+    EvalNode expr;
 
     // Constant
     e1 = new ConstEval(DatumFactory.createInt(9));
@@ -514,7 +519,7 @@ public class TestEvalTree {
     assertTrue(not.eval(null, null).asBool());
     
     // Evaluation Test
-    QueryBlock block = null; 
+    QueryBlock block;
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
     QueryContext ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, NOT[0]);
@@ -535,8 +540,8 @@ public class TestEvalTree {
   
   @Test
   public final void testLike() {
-    QueryBlock block = null;
-    EvalNode expr = null;
+    QueryBlock block;
+    EvalNode expr;
 
     // suffix
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();

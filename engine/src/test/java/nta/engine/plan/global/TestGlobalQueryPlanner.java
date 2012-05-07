@@ -19,6 +19,7 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
@@ -109,8 +110,9 @@ public class TestGlobalQueryPlanner {
     int tupleNum;
     Appender appender;
     Tuple t = new VTuple(4);
-    t.put(DatumFactory.createInt(1), DatumFactory.createInt(32),
-        DatumFactory.createString("h"), DatumFactory.createInt(10));
+    t.put(new Datum[] {
+        DatumFactory.createInt(1), DatumFactory.createInt(32),
+        DatumFactory.createString("h"), DatumFactory.createInt(10)});
 
     for (i = 0; i < tbNum; i++) {
       meta = TCatUtil.newTableMeta((Schema)schema.clone(), StoreType.CSV);
@@ -162,7 +164,7 @@ public class TestGlobalQueryPlanner {
   public void testGroupby() throws IOException, KeeperException,
       InterruptedException {
     QueryContext ctx = factory.create();
-    ParseTree tree = (ParseTree) analyzer.parse(ctx,
+    ParseTree tree = analyzer.parse(ctx,
         "store1 := select age, sumtest(salary) from table0 group by age");
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
@@ -201,7 +203,7 @@ public class TestGlobalQueryPlanner {
   @Test
   public void testSort() throws IOException {
     QueryContext ctx = factory.create();
-    ParseTree tree = (ParseTree) analyzer.parse(ctx,
+    ParseTree tree = analyzer.parse(ctx,
         "store1 := select age from table0 order by age");
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
@@ -234,7 +236,7 @@ public class TestGlobalQueryPlanner {
   @Test
   public void testJoin() throws IOException {
     QueryContext ctx = factory.create();
-    ParseTree tree = (ParseTree) analyzer.parse(ctx,
+    ParseTree tree = analyzer.parse(ctx,
         "select table0.age,table0.salary,table1.salary from table0,table1 where table0.salary = table1.salary order by table0.age");
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
@@ -365,7 +367,7 @@ public class TestGlobalQueryPlanner {
   //@Test
   public void testLocalize() throws IOException, URISyntaxException, NoSuchQueryIdException {
     QueryContext ctx = factory.create();
-    ParseTree tree = (ParseTree) analyzer.parse(ctx,
+    ParseTree tree = analyzer.parse(ctx,
         "select table0.age,table0.salary,table1.salary from table0 inner join table1 on table0.salary = table1.salary");
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);

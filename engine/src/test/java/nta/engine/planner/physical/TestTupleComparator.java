@@ -3,6 +3,7 @@ package nta.engine.planner.physical;
 import static org.junit.Assert.assertEquals;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.storage.Tuple;
@@ -38,17 +39,19 @@ public class TestTupleComparator {
     Tuple tuple2 = new VTuple(5);
 
     tuple1.put(
+        new Datum[] {
         DatumFactory.createInt(9), 
         DatumFactory.createInt(3),
         DatumFactory.createInt(33), 
         DatumFactory.createInt(4),
-        DatumFactory.createString("abc"));
+        DatumFactory.createString("abc")});
     tuple2.put(
+        new Datum[] {
         DatumFactory.createInt(1), 
         DatumFactory.createInt(25),
         DatumFactory.createInt(109),
         DatumFactory.createInt(4),
-        DatumFactory.createString("abd"));
+        DatumFactory.createString("abd")});
 
     SortSpec sortKey1 = new SortSpec(schema.getColumn("col4"), true, false);
     SortSpec sortKey2 = new SortSpec(schema.getColumn("col5"), true, false);

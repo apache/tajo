@@ -13,6 +13,7 @@ import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.WorkerTestingUtil;
 import nta.engine.NtaTestingUtility;
@@ -64,10 +65,11 @@ public class TestNLJoinExec {
     Appender appender = sm.getAppender(employeeMeta, "employee", "employee");
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 10; i++) {
-      tuple.put(DatumFactory.createInt(i),
+      tuple.put(new Datum[] {
+          DatumFactory.createInt(i),
           DatumFactory.createInt(i),
           DatumFactory.createInt(10+i),
-          DatumFactory.createString("dept_" + i));
+          DatumFactory.createString("dept_" + i)});
       appender.addTuple(tuple);
     }
     appender.flush();
@@ -86,11 +88,11 @@ public class TestNLJoinExec {
     appender = sm.getAppender(peopleMeta, "people", "people");
     tuple = new VTuple(peopleMeta.getSchema().getColumnNum());
     for (int i = 1; i < 10; i += 2) {
-      tuple.put(
+      tuple.put(new Datum[] {
           DatumFactory.createInt(i),
           DatumFactory.createInt(10+i),
           DatumFactory.createString("name_" + i),
-          DatumFactory.createInt(30 + i));
+          DatumFactory.createInt(30 + i)});
       appender.addTuple(tuple);
     }
     appender.flush();
@@ -134,11 +136,9 @@ public class TestNLJoinExec {
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-    
-    @SuppressWarnings("unused")
-    Tuple tuple = null;
+
     int i = 0;
-    while ((tuple = exec.next()) != null) {
+    while (exec.next() != null) {
       i++;
     }
     assertEquals(50, i); // expected 10 * 5
@@ -166,7 +166,7 @@ public class TestNLJoinExec {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
-    Tuple tuple = null;
+    Tuple tuple;
     int i = 1;
     while ((tuple = exec.next()) != null) {
       assertTrue(i == tuple.getInt(0).asInt());

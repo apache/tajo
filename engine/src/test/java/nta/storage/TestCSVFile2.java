@@ -1,10 +1,8 @@
 package nta.storage;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
 
 import nta.catalog.Options;
@@ -15,6 +13,7 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.StatSet;
 import nta.conf.NtaConf;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.WorkerTestingUtil;
 import nta.engine.NConstants;
@@ -56,11 +55,11 @@ public class TestCSVFile2 {
     sm.initTableBase(meta, "table1");
     Appender appender = sm.getAppender(meta, "table1", "file1");
     int tupleNum = 10000;
-    VTuple vTuple = null;
+    VTuple vTuple;
 
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(4);
-      vTuple.put(0, DatumFactory.createInt((Integer)(i+1)));
+      vTuple.put(0, DatumFactory.createInt(i+1));
       vTuple.put(1, DatumFactory.createString("file1"));
       vTuple.put(2, DatumFactory.createString("haemi"));
       vTuple.put(3, DatumFactory.createLong(25l));
@@ -85,7 +84,7 @@ public class TestCSVFile2 {
     
     Scanner scanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;
-    while ((vTuple = (VTuple) scanner.next()) != null) {
+    while (scanner.next() != null) {
       tupleCnt++;
     }
     scanner.close();
@@ -96,54 +95,47 @@ public class TestCSVFile2 {
   @Test
   public void testVariousTypes() throws IOException {
     Schema schema = new Schema();
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("age", DataType.INT);
-    schema.addColumn("image", DataType.BYTES);
-    schema.addColumn("flag", DataType.BYTE);
-    
-    Random rnd = new Random(System.currentTimeMillis());
+    schema.addColumn("col1", DataType.BOOLEAN);
+    schema.addColumn("col2", DataType.BYTE);
+    schema.addColumn("col3", DataType.CHAR);
+    schema.addColumn("col4", DataType.SHORT);
+    schema.addColumn("col5", DataType.INT);
+    schema.addColumn("col6", DataType.LONG);
+    schema.addColumn("col7", DataType.FLOAT);
+    schema.addColumn("col8", DataType.DOUBLE);
+    schema.addColumn("col9", DataType.STRING);
+    schema.addColumn("col10", DataType.BYTES);
+    schema.addColumn("col11", DataType.IPv4);
     
     Options options = new Options();
     options.put(CSVFile2.DELIMITER, ",");
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV, options);
     
-    
     sm.initTableBase(meta, "table2");
     Appender appender = sm.getAppender(meta, "table2", "table1.csv");
-    
-    byte [] image1 = new byte[32];
-    
-    VTuple vTuple = null;
-    vTuple = new VTuple(4);
-    vTuple.put(0, DatumFactory.createString("hyunsik"));
-    vTuple.put(1, DatumFactory.createInt(33));    
-    rnd.nextBytes(image1);
-    vTuple.put(2, DatumFactory.createBytes(image1));
-    vTuple.put(3, DatumFactory.createByte((byte) 0x09));
-    appender.addTuple(vTuple);
-    
-    byte [] image2 = new byte[32];
-    vTuple.clear();
-    vTuple.put(0, DatumFactory.createString("jihoon"));
-    vTuple.put(1, DatumFactory.createInt(30));
-    rnd.nextBytes(image2);
-    vTuple.put(2, DatumFactory.createBytes(image2));
-    vTuple.put(3, DatumFactory.createByte((byte) 0x12));
-    appender.addTuple(vTuple);
+
+    Tuple tuple = new VTuple(11);
+    tuple.put(new Datum[] {
+        DatumFactory.createBool(true),
+        DatumFactory.createByte((byte) 0x99),
+        DatumFactory.createChar('7'),
+        DatumFactory.createShort((short) 17),
+        DatumFactory.createInt(59),
+        DatumFactory.createLong(23l),
+        DatumFactory.createFloat(77.9f),
+        DatumFactory.createDouble(271.9f),
+        DatumFactory.createString("hyunsik"),
+        DatumFactory.createBytes("hyunsik".getBytes()),
+        DatumFactory.createIPv4("192.168.0.1")
+    });
+    appender.addTuple(tuple);
     appender.flush();
     appender.close();
     
     Scanner scanner = sm.getScanner("table2", "table1.csv");
-    Tuple tuple = scanner.next();    
-    assertEquals(DatumFactory.createString("hyunsik"), tuple.get(0));
-    assertEquals(DatumFactory.createInt(33), tuple.get(1));
-    assertTrue(Arrays.equals(image1, tuple.getBytes(2).asByteArray()));
-    assertEquals(0x09, tuple.getByte(3).asByte());
-    
-    tuple = scanner.next();
-    assertEquals(DatumFactory.createString("jihoon"), tuple.get(0));
-    assertEquals(DatumFactory.createInt(30), tuple.get(1));
-    assertTrue(Arrays.equals(image2, tuple.getBytes(2).asByteArray()));
-    assertEquals(0x12, tuple.getByte(3).asByte());
+    Tuple retrieved = scanner.next();
+    for (int i = 0; i < tuple.size(); i++) {
+      assertEquals(tuple.get(i), retrieved.get(i));
+    }
 	}
 }

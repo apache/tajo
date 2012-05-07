@@ -7,17 +7,7 @@ import java.net.InetAddress;
 
 import com.google.common.base.Preconditions;
 
-import nta.datum.BoolDatum;
-import nta.datum.ByteDatum;
-import nta.datum.BytesDatum;
-import nta.datum.Datum;
-import nta.datum.DoubleDatum;
-import nta.datum.FloatDatum;
-import nta.datum.IPv4Datum;
-import nta.datum.IntDatum;
-import nta.datum.LongDatum;
-import nta.datum.ShortDatum;
-import nta.datum.StringDatum;
+import nta.datum.*;
 import nta.engine.exception.UnimplementedException;
 import nta.engine.exception.UnsupportedException;
 
@@ -87,7 +77,7 @@ public class FrameTuple implements Tuple {
   }
 
   @Override
-  public void put(Datum... values) {
+  public void put(Datum [] values) {
     throw new UnsupportedException();
   }
 
@@ -111,6 +101,11 @@ public class FrameTuple implements Tuple {
   @Override
   public ByteDatum getByte(int fieldId) {
     return (ByteDatum) get(fieldId);
+  }
+
+  @Override
+  public CharDatum getChar(int fieldId) {
+    return (CharDatum) get(fieldId);
   }
 
   @Override
@@ -150,7 +145,7 @@ public class FrameTuple implements Tuple {
 
   @Override
   public byte[] getIPv4Bytes(int fieldId) { 
-    return ((IPv4Datum)get(fieldId)).asByteArray();
+    return get(fieldId).asByteArray();
   }
 
   @Override
@@ -173,7 +168,7 @@ public class FrameTuple implements Tuple {
     StringBuilder str = new StringBuilder();
     str.append("(");
     for(int i=0; i < size(); i++) {      
-      if(contains(i) != false) {
+      if(contains(i)) {
         if(first) {
           first = false;
         } else {

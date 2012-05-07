@@ -1,6 +1,5 @@
 package tajo.benchmark
 
-import nta.catalog.Schema
 import tajo.client.TajoClient
 import nta.engine.NConstants
 import org.apache.hadoop.conf.Configuration
@@ -8,6 +7,8 @@ import org.apache.hadoop.net.NetUtils
 import collection.immutable.HashMap
 import java.io.File
 import nta.util.FileUtil
+import nta.catalog.{TConstants, Schema}
+import nta.catalog.store.MemStore
 
 /**
  * @author Hyunsik Choi
@@ -20,6 +21,7 @@ abstract class BenchmarkSet(conf : org.apache.hadoop.conf.Configuration) {
   if (System.getProperty(NConstants.MASTER_ADDRESS) != null) {
     tajo = new TajoClient(NetUtils.createSocketAddr(System.getProperty(NConstants.MASTER_ADDRESS)))
   } else {
+    conf.set(TConstants.STORE_CLASS, classOf[MemStore].getCanonicalName);
     tajo = new TajoClient(conf)
   }
 

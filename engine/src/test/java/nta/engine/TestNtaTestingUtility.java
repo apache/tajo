@@ -13,6 +13,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
@@ -67,10 +68,10 @@ public class TestNtaTestingUtility {
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
 
     for (int i = 0; i < tupleNum; i++) {
-      tuple.put(
+      tuple.put(new Datum[] {
           DatumFactory.createString("name_" + i),
           DatumFactory.createInt(i),
-          DatumFactory.createString("dept_" + i));
+          DatumFactory.createString("dept_" + i)});
       appender.addTuple(tuple);
     }
     appender.flush();
@@ -97,11 +98,11 @@ public class TestNtaTestingUtility {
     ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(
         QueryIdFactory.newSubQueryId(
             QueryIdFactory.newQueryId()));
-    QueryUnitId qid = null;
-    QueryContext ctx = null;
-    ParseTree query = null;
-    LogicalNode plan = null;
-    QueryUnitRequest req = null;
+    QueryUnitId qid;
+    QueryContext ctx;
+    ParseTree query;
+    LogicalNode plan;
+    QueryUnitRequest req;
     Thread.sleep(2000);
       
     sm.initTableBase(frags[0].getMeta(), "testNtaTestingUtil");

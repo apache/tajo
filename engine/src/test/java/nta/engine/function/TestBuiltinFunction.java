@@ -60,20 +60,20 @@ public class TestBuiltinFunction {
     tuples = new Tuple[tuplenum];
     for (int i = 0; i < tuplenum - 3; i++) {
       tuples[i] = new VTuple(3);
-      tuples[i].put(DatumFactory.createString("hyunsik"));
+      tuples[i].put(0, DatumFactory.createString("hyunsik"));
       tuples[i].put(1, DatumFactory.createInt(i + 1));
       tuples[i].put(2, DatumFactory.createInt(30));
     }
 
     for (int i = 7; i < 9; i++) {
       tuples[i] = new VTuple(3);
-      tuples[i].put(DatumFactory.createString("nullval"));
+      tuples[i].put(0, DatumFactory.createString("nullval"));
       tuples[i].put(1, DatumFactory.createNullDatum());
       tuples[i].put(2, DatumFactory.createNullDatum());
     }
 
     tuples[9] = new VTuple(3);
-    tuples[9].put(DatumFactory.createString("specificval"));
+    tuples[9].put(0, DatumFactory.createString("specificval"));
     tuples[9].put(1, DatumFactory.createInt(99));
     tuples[9].put(2, DatumFactory.createNullDatum());
 
@@ -93,8 +93,8 @@ public class TestBuiltinFunction {
 
   @Test
   public final void testCountRows() {
-    QueryBlock block = null;
-    EvalNode expr = null;
+    QueryBlock block;
+    EvalNode expr;
     QueryContext ctx = factory.create();
 
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
@@ -112,10 +112,10 @@ public class TestBuiltinFunction {
 
   @Test
   public final void testCountVals() {
-    QueryBlock block = null;
-    EvalNode expr1 = null;
-    EvalNode expr2 = null;
-    EvalNode expr3 = null;
+    QueryBlock block;
+    EvalNode expr1;
+    EvalNode expr2;
+    EvalNode expr3;
     QueryContext ctx = factory.create();
 
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);

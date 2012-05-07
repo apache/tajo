@@ -10,6 +10,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.WorkerTestingUtil;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -47,9 +48,10 @@ public class TestStorageManager {
 		Tuple [] tuples = new Tuple[4];
 		for(int i=0; i < tuples.length; i++) {
 		  tuples[i] = new VTuple(3);
-		  tuples[i].put(DatumFactory.createInt(i),
+		  tuples[i].put(new Datum[] {
+          DatumFactory.createInt(i),
 		      DatumFactory.createInt(i+32),
-		      DatumFactory.createString("name"+i));
+		      DatumFactory.createString("name"+i)});
 		}
 		
 		Appender appender = sm.getTableAppender(meta, "table1");
@@ -100,7 +102,7 @@ public class TestStorageManager {
     
     Scanner fileScanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;
-    while((vTuple = (VTuple) fileScanner.next()) != null) {
+    while(fileScanner.next() != null) {
       tupleCnt++;
     }
     fileScanner.close();
@@ -108,7 +110,7 @@ public class TestStorageManager {
     tablets[0] = new Fragment("table2_2", status.getPath(), meta, randomNum, fileLen - randomNum);
 
     fileScanner = new CSVFile2.CSVScanner(conf, schema, tablets);
-    while((vTuple = (VTuple) fileScanner.next()) != null) {
+    while(fileScanner.next() != null) {
       tupleCnt++;
     }
     fileScanner.close();    

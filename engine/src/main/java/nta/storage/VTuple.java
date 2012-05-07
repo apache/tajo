@@ -3,17 +3,7 @@ package nta.storage;
 import java.net.InetAddress;
 import java.util.Arrays;
 
-import nta.datum.BoolDatum;
-import nta.datum.ByteDatum;
-import nta.datum.BytesDatum;
-import nta.datum.Datum;
-import nta.datum.DoubleDatum;
-import nta.datum.FloatDatum;
-import nta.datum.IPv4Datum;
-import nta.datum.IntDatum;
-import nta.datum.LongDatum;
-import nta.datum.ShortDatum;
-import nta.datum.StringDatum;
+import nta.datum.*;
 import nta.datum.exception.InvalidCastException;
 
 /**
@@ -51,10 +41,8 @@ public class VTuple implements Tuple {
 		values[fieldId] = value;
 	}
 	
-	public void put(Datum...values) {
-	  for(int i=0; i < values.length; i++) {
-	    this.values[i] = values[i];
-	  }
+	public void put(Datum [] values) {
+    System.arraycopy(values, 0, this.values, 0, size());
 	}
 	
 	//////////////////////////////////////////////////////
@@ -80,6 +68,10 @@ public class VTuple implements Tuple {
 	public ByteDatum getByte(int fieldId) {
 		return (ByteDatum) values[fieldId];
 	}
+
+  public CharDatum getChar(int fieldId) {
+    return (CharDatum) values[fieldId];
+  }
 
 	public BytesDatum getBytes(int fieldId) {
 		return (BytesDatum) values[fieldId];
@@ -110,7 +102,7 @@ public class VTuple implements Tuple {
 	}
 
 	public byte[] getIPv4Bytes(int fieldId) {
-		return ((IPv4Datum)values[fieldId]).asByteArray();
+		return values[fieldId].asByteArray();
 	}
 
 	public InetAddress getIPv6(int fieldId) {

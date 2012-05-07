@@ -2,17 +2,7 @@ package nta.storage;
 
 import java.net.InetAddress;
 
-import nta.datum.BoolDatum;
-import nta.datum.ByteDatum;
-import nta.datum.BytesDatum;
-import nta.datum.Datum;
-import nta.datum.DoubleDatum;
-import nta.datum.FloatDatum;
-import nta.datum.IPv4Datum;
-import nta.datum.IntDatum;
-import nta.datum.LongDatum;
-import nta.datum.ShortDatum;
-import nta.datum.StringDatum;
+import nta.datum.*;
 
 /** 
  * 
@@ -31,7 +21,7 @@ public interface Tuple {
 	
 	public void put(int fieldId, Datum value);
 	
-	public void put(Datum...values);
+	public void put(Datum [] values);
 	
 	public Datum get(int fieldId);
 	
@@ -42,6 +32,8 @@ public interface Tuple {
 	public BoolDatum getBoolean(int fieldId);
 	
 	public ByteDatum getByte(int fieldId);
+
+  public CharDatum getChar(int fieldId);
 	
 	public BytesDatum getBytes(int fieldId);
 	

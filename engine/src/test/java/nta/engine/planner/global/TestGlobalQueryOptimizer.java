@@ -15,6 +15,7 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
@@ -27,7 +28,6 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.logical.ExprType;
-import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SortNode;
@@ -83,7 +83,7 @@ public class TestGlobalQueryOptimizer {
     catalog = util.getMiniCatalogCluster().getCatalog();
     StorageManager sm = new StorageManager(util.getConfiguration());
     FunctionDesc funcDesc = new FunctionDesc("sumtest", TestSum.class,
-        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
+        FunctionType.GENERAL, DataType.INT, new DataType[] {DataType.INT});
     catalog.registerFunction(funcDesc);
     FileSystem fs = sm.getFileSystem();
 
@@ -96,8 +96,9 @@ public class TestGlobalQueryOptimizer {
     int tupleNum;
     Appender appender;
     Tuple t = new VTuple(4);
-    t.put(DatumFactory.createInt(1), DatumFactory.createInt(32),
-        DatumFactory.createString("h"), DatumFactory.createInt(10));
+    t.put(new Datum[] {
+        DatumFactory.createInt(1), DatumFactory.createInt(32),
+        DatumFactory.createString("h"), DatumFactory.createInt(10)});
 
     for (i = 0; i < tbNum; i++) {
       meta = TCatUtil.newTableMeta((Schema)schema.clone(), StoreType.CSV);
@@ -131,7 +132,7 @@ public class TestGlobalQueryOptimizer {
   @Test
   public void testReduceLogicalQueryUnitSteps() throws IOException {
     QueryContext ctx = factory.create();
-    ParseTree tree = (ParseTree) analyzer.parse(ctx,
+    ParseTree tree = analyzer.parse(ctx,
         "select table0.age,table0.salary,table1.salary from table0,table1 where table0.salary = table1.salary order by table0.age");
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);

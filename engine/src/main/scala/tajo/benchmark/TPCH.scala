@@ -31,9 +31,10 @@ class TPCH (conf : Configuration, datadir : String) extends BenchmarkSet(conf) {
       .addColumn("l_tax", DataType.FLOAT) // 7
       .addColumn("l_returnflag", DataType.CHAR) // 8
       .addColumn("l_linestatus", DataType.CHAR) // 9
-      .addColumn("l_shipdate", DataType.DATE) // 10
-      .addColumn("l_commitdate", DataType.DATE) // 11
-      .addColumn("l_receiptdate", DataType.DATE) // 12
+      // TODO - This is temporal solution. 10,11, and 12 are actually Date type.
+      .addColumn("l_shipdate", DataType.STRING) // 10
+      .addColumn("l_commitdate", DataType.STRING) // 11
+      .addColumn("l_receiptdate", DataType.STRING) // 12
       .addColumn("l_shipinstruct", DataType.STRING) // 13
       .addColumn("l_shipmode", DataType.STRING) // 14
       .addColumn("l_comment", DataType.STRING)) // 15
@@ -74,6 +75,7 @@ class TPCH (conf : Configuration, datadir : String) extends BenchmarkSet(conf) {
       .addColumn("o_custkey", DataType.INT)
       .addColumn("o_orderstatus", DataType.STRING)
       .addColumn("o_totalprice", DataType.FLOAT)
+      // TODO - This is temporal solution. o_orderdate is actually Date type.
       .addColumn("o_orderdate", DataType.DATE)
       .addColumn("o_orderpriority", DataType.STRING)
       .addColumn("o_clerk", DataType.STRING)

@@ -19,6 +19,7 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.IndexMethod;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.Context;
 import nta.engine.NtaTestingUtility;
@@ -132,23 +133,16 @@ public class TestQueryAnalyzer {
       "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data' with ('csv.delimiter'='|')" // 10     
   };
 
-  public static NQLParser parseExpr(final String expr) {
-    ANTLRStringStream input = new ANTLRStringStream(expr);
-    NQLLexer lexer = new NQLLexer(input);
-    CommonTokenStream tokens = new CommonTokenStream(lexer);
-    NQLParser parser = new NQLParser(tokens);
-    return parser;
-  }
-
+  @Test
   public final void testNewEvalTree() {    
     Tuple tuples[] = new Tuple[1000000];
     for (int i = 0; i < 1000000; i++) {
       tuples[i] = new VTuple(4);
-      tuples[i].put(
+      tuples[i].put(new Datum[] {
           DatumFactory.createInt(i),
           DatumFactory.createString("hyunsik_" + i),
           DatumFactory.createInt(i + 500),
-          DatumFactory.createInt(i));
+          DatumFactory.createInt(i)});
     }
     
     Context ctx = factory.create();
@@ -161,8 +155,8 @@ public class TestQueryAnalyzer {
     EvalNode expr = block.getWhereCondition();
 
     long start = System.currentTimeMillis();
-    for (int i = 0; i < tuples.length; i++) {
-      expr.eval(schema1, tuples[i]);
+    for (Tuple t : tuples) {
+      expr.eval(schema1, t);
     }
     long end = System.currentTimeMillis();
 
@@ -175,7 +169,6 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);    
     assertEquals(1, block.getFromTables().length);
     assertEquals("people", block.getFromTables()[0].getTableId());
-    ctx = factory.create();
   }
   
   private String[] GROUP_BY = { 
@@ -275,7 +268,7 @@ public class TestQueryAnalyzer {
     testOrderByCluse(block);
   }
   
-  private static final void testOrderByCluse(QueryBlock block) {
+  private static void testOrderByCluse(QueryBlock block) {
     assertEquals(2, block.getSortKeys().length);
     assertEquals("people.score", block.getSortKeys()[0].getSortKey().getQualifiedName());
     assertEquals(true, block.getSortKeys()[0].isAscending());

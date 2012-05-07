@@ -22,7 +22,7 @@ import com.google.gson.annotations.Expose;
  * @author Hyunsik Choi
  * 
  */
-public class FunctionDesc implements ProtoObject<FunctionDescProto> { 
+public class FunctionDesc implements ProtoObject<FunctionDescProto> {
   private FunctionDescProto proto = FunctionDescProto.getDefaultInstance();
   private FunctionDescProto.Builder builder = null;
   private boolean viaProto = false;
@@ -43,7 +43,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
   }
   
   public FunctionDesc(String signature, Class<? extends Function> clazz,
-      FunctionType funcType, DataType retType, DataType... parameterTypes) {
+      FunctionType funcType, DataType retType, DataType [] parameterTypes) {
     this();
     this.signature = signature.toLowerCase();
     this.funcClass = clazz;
@@ -76,8 +76,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
   public Function newInstance() throws InternalException {
     try {
       Constructor<? extends Function> cons = getFuncClass().getConstructor();
-      Function f = (Function) cons.newInstance();
-      return f;
+      return (Function) cons.newInstance();
     } catch (Exception ioe) {
       throw new InternalException("Cannot initiate function " + signature);
     }

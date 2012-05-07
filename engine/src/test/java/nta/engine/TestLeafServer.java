@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -22,6 +21,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.StatSet;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.Partition;
@@ -34,11 +34,9 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.PlannerUtil;
-import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.query.QueryUnitRequestImpl;
-import nta.engine.query.TQueryUtil;
 import nta.storage.Appender;
 import nta.storage.Scanner;
 import nta.storage.StorageManager;
@@ -53,7 +51,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
 import tajo.datachannel.Fetcher;
 
@@ -96,10 +93,10 @@ public class TestLeafServer {
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
 
     for (int i = 0; i < tupleNum; i++) {
-      tuple.put(
+      tuple.put(new Datum[] {
           DatumFactory.createString("name_" + i),
           DatumFactory.createInt(i),
-          DatumFactory.createString("dept_" + i));
+          DatumFactory.createString("dept_" + i)});
       appender.addTuple(tuple);
     }
     appender.flush();
@@ -118,10 +115,10 @@ public class TestLeafServer {
     tuple = new VTuple(meta2.getSchema().getColumnNum());
 
     for (int i = 0; i < tupleNum; i++) {
-      tuple.put(
+      tuple.put(new Datum[] {
           DatumFactory.createString("name_" + i),
           DatumFactory.createInt(i),
-          DatumFactory.createString("dept_" + i));
+          DatumFactory.createString("dept_" + i)});
       appender.addTuple(tuple);
     }
     appender.flush();
@@ -185,7 +182,7 @@ public class TestLeafServer {
     int j = 0;
     @SuppressWarnings("unused")
     Tuple tuple = null;
-    while ((tuple = scanner.next()) != null) {
+    while (scanner.next() != null) {
       j++;
     }
 

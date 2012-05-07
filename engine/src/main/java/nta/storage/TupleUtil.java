@@ -10,11 +10,12 @@ public class TupleUtil {
   public static byte [] toBytes(Schema schema, Tuple tuple) {
     int size = StorageUtil.getRowByteSize(schema);
     ByteBuffer bb = ByteBuffer.allocate(size);
-    Column col = null;
+    Column col;
     for (int i = 0; i < schema.getColumnNum(); i++) {
       col = schema.getColumn(i);
       switch (col.getDataType()) {
       case BYTE: bb.put(tuple.get(i).asByte()); break;
+      case CHAR: bb.put(tuple.get(i).asByte()); break;
       case BOOLEAN: bb.put(tuple.get(i).asByte()); break;
       case SHORT: bb.putShort(tuple.get(i).asShort()); break;
       case INT: bb.putInt(tuple.get(i).asInt()); break;
@@ -49,12 +50,13 @@ public class TupleUtil {
   public static Tuple toTuple(Schema schema, byte [] bytes) {
     ByteBuffer bb = ByteBuffer.wrap(bytes);
     Tuple tuple = new VTuple(schema.getColumnNum());
-    Column col = null;
+    Column col;
     for (int i =0; i < schema.getColumnNum(); i++) {
       col = schema.getColumn(i);
       
       switch (col.getDataType()) {
       case BYTE: tuple.put(i, DatumFactory.createByte(bb.get())); break;
+      case CHAR: tuple.put(i, DatumFactory.createChar(bb.get())); break;
       case BOOLEAN: tuple.put(i, DatumFactory.createBool(bb.get())); break;
       case SHORT: tuple.put(i, DatumFactory.createShort(bb.getShort())); break;
       case INT: tuple.put(i, DatumFactory.createInt(bb.getInt())); break;

@@ -17,6 +17,7 @@ import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.datum.NullDatum;
 import nta.engine.*;
@@ -62,7 +63,7 @@ public class TestPhysicalPlanner {
   private static TableDesc score = null;
 
   @BeforeClass
-  public static final void setUp() throws Exception {
+  public static void setUp() throws Exception {
     QueryIdFactory.reset();
     util = new NtaTestingUtility();
     util.startMiniZKCluster();
@@ -93,8 +94,8 @@ public class TestPhysicalPlanner {
     Appender appender = sm.getAppender(employeeMeta, "employee", "employee");
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
-      tuple.put(DatumFactory.createString("name_" + i),
-          DatumFactory.createInt(i), DatumFactory.createString("dept_" + i));
+      tuple.put(new Datum[] {DatumFactory.createString("name_" + i),
+          DatumFactory.createInt(i), DatumFactory.createString("dept_" + i)});
       appender.addTuple(tuple);
     }
     appender.flush();
@@ -117,11 +118,11 @@ public class TestPhysicalPlanner {
     for (int i = 1; i <= 5; i++) {
       for (int k = 3; k < 5; k++) {
         for (int j = 1; j <= 3; j++) {
-          tuple.put(DatumFactory.createString("name_" + i), // name_1 ~ 5 (cad:
-                                                            // 5)
+          tuple.put(
+              new Datum[] {DatumFactory.createString("name_" + i), // name_1 ~ 5 (cad: // 5)
               DatumFactory.createString(k + "rd"), // 3 or 4rd (cad: 2)
               DatumFactory.createInt(j), // 1 ~ 3
-              m % 3 == 1 ? DatumFactory.createString("one") : NullDatum.get()); 
+              m % 3 == 1 ? DatumFactory.createString("one") : NullDatum.get()});
           appender.addTuple(tuple);
           m++;
         }
@@ -135,7 +136,7 @@ public class TestPhysicalPlanner {
   }
 
   @AfterClass
-  public static final void tearDown() throws Exception {
+  public static void tearDown() throws Exception {
     util.shutdownCatalogCluster();
     util.shutdownMiniZKCluster();
   }
@@ -160,6 +161,7 @@ public class TestPhysicalPlanner {
       "select deptname, class, sum(score), max(score), min(score) from score group by deptname" // 16
   };
 
+  @Test
   public final void testCreateScanPlan() throws IOException {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory(catalog);
@@ -169,7 +171,7 @@ public class TestPhysicalPlanner {
                 QueryIdFactory.newQueryId())));
     File workDir = new File(NtaTestingUtility.getTestDir("CreateScan").toString());
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[0]);
+    ParseTree query = analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
     LogicalOptimizer.optimize(ctx, plan);
@@ -177,7 +179,7 @@ public class TestPhysicalPlanner {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    Tuple tuple = null;
+    Tuple tuple;
     int i = 0;
     long start = System.currentTimeMillis();
     while ((tuple = exec.next()) != null) {
@@ -200,7 +202,7 @@ public class TestPhysicalPlanner {
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[7]);
+    ParseTree query = analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     plan = LogicalOptimizer.optimize(ctx, plan);    
 
@@ -208,7 +210,7 @@ public class TestPhysicalPlanner {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     int i = 0;
-    Tuple tuple = null;
+    Tuple tuple;
     while ((tuple = exec.next()) != null) {
       assertEquals(6, tuple.getInt(2).asInt()); // sum
       assertEquals(3, tuple.getInt(3).asInt()); // max
@@ -227,7 +229,7 @@ public class TestPhysicalPlanner {
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[16]);
+    ParseTree query = analyzer.parse(ctx, QUERIES[16]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     plan = LogicalOptimizer.optimize(ctx, plan);    
 
@@ -235,7 +237,7 @@ public class TestPhysicalPlanner {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     int i = 0;
-    Tuple tuple = null;
+    Tuple tuple;
     while ((tuple = exec.next()) != null) {
       assertEquals(DatumFactory.createNullDatum(), tuple.get(1));
       assertEquals(12, tuple.getInt(2).asInt()); // sum
@@ -257,7 +259,7 @@ public class TestPhysicalPlanner {
     File workDir = new File(NtaTestingUtility.getTestDir("StorePlan").toString());
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
         workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[8]);
+    ParseTree query = analyzer.parse(ctx, QUERIES[8]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
     plan = LogicalOptimizer.optimize(ctx, plan);
@@ -271,7 +273,7 @@ public class TestPhysicalPlanner {
     exec.next();
 
     Scanner scanner = sm.getScanner("grouped", id.toString());
-    Tuple tuple = null;
+    Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
       assertEquals(6, tuple.getInt(2).asInt()); // sum
@@ -302,7 +304,7 @@ public class TestPhysicalPlanner {
     File workDir = new File("target/test-data/PartitionedStore");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
         workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[7]);
+    ParseTree query = analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
     int numPartitions = 3;
@@ -329,7 +331,7 @@ public class TestPhysicalPlanner {
         fs.listStatus(StorageUtil.concatPath(path, "data")).length);
 
     Scanner scanner = sm.getTableScanner(path);
-    Tuple tuple = null;
+    Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
       assertEquals(6, tuple.getInt(2).asInt()); // sum
@@ -361,7 +363,7 @@ public class TestPhysicalPlanner {
     File workDir = new File("target/test-data/emptygs");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
         workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[15]);
+    ParseTree query = analyzer.parse(ctx, QUERIES[15]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
     int numPartitions = 1;
@@ -386,7 +388,7 @@ public class TestPhysicalPlanner {
         fs.listStatus(StorageUtil.concatPath(path, "data")).length);
 
     Scanner scanner = sm.getTableScanner(path);
-    Tuple tuple = null;
+    Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
       assertEquals(60, tuple.getInt(2).asInt()); // sum
@@ -413,7 +415,7 @@ public class TestPhysicalPlanner {
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[9]);
+    ParseTree query = analyzer.parse(ctx, QUERIES[9]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);    
     plan = LogicalOptimizer.optimize(ctx, plan);
 
@@ -437,7 +439,7 @@ public class TestPhysicalPlanner {
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[10]);
+    ParseTree query = analyzer.parse(ctx, QUERIES[10]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     plan = LogicalOptimizer.optimize(ctx, plan);
 
@@ -459,7 +461,7 @@ public class TestPhysicalPlanner {
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[12]);
+    ParseTree query = analyzer.parse(ctx, QUERIES[12]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);    
     plan = LogicalOptimizer.optimize(ctx, plan);
 
@@ -469,7 +471,7 @@ public class TestPhysicalPlanner {
     @SuppressWarnings("unused")
     Tuple tuple = null;    
     int count = 0;
-    while((tuple = exec.next()) != null) {
+    while(exec.next() != null) {
       count++;
     }
     assertEquals(10, count);
@@ -485,7 +487,7 @@ public class TestPhysicalPlanner {
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId()))),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[0]);
+    ParseTree query = analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     plan = LogicalOptimizer.optimize(ctx, plan);
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -498,7 +500,7 @@ public class TestPhysicalPlanner {
     @SuppressWarnings("unused")
     Tuple tuple = null;    
     int count = 0;
-    while((tuple = exec.next()) != null) {
+    while(exec.next() != null) {
       count++;
     }
     assertEquals(200, count);
@@ -513,24 +515,23 @@ public class TestPhysicalPlanner {
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId()))),
         new Fragment[] { }, workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, QUERIES[13]);
+    ParseTree query = analyzer.parse(ctx, QUERIES[13]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
     
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-    Tuple tuple = null;
+    Tuple tuple;
     tuple = exec.next();
     assertEquals(true, tuple.get(0).asBool());
     assertTrue(7.0d == tuple.get(1).asDouble());    
 
-    query = (ParseTree) analyzer.parse(ctx, QUERIES[14]);
+    query = analyzer.parse(ctx, QUERIES[14]);
     plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
     
     phyPlanner = new PhysicalPlanner(sm);
     exec = phyPlanner.createPlan(ctx, plan);
-    tuple = null;
     tuple = exec.next();
     assertEquals(DatumFactory.createBool(true), tuple.get(0));
   }
@@ -549,15 +550,13 @@ public class TestPhysicalPlanner {
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId()))),
         new Fragment[] {frags[0]}, workDir);
-    ParseTree query = (ParseTree) analyzer.parse(ctx, createIndexStmt[0]);
+    ParseTree query = analyzer.parse(ctx, createIndexStmt[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     LogicalOptimizer.optimize(ctx, plan);
     
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-    @SuppressWarnings("unused")
-    Tuple tuple = null;
-    while ((tuple = exec.next()) != null) {      
+    while (exec.next() != null) {
     }
     
     Path path = sm.getTablePath("employee");
