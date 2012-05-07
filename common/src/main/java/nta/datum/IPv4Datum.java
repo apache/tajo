@@ -3,12 +3,11 @@
  */
 package nta.datum;
 
-import nta.datum.exception.InvalidCastException;
+import com.google.gson.annotations.Expose;
 import nta.datum.exception.InvalidOperationException;
 import nta.datum.json.GsonCreator;
 
 import com.google.common.base.Preconditions;
-import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
@@ -17,10 +16,7 @@ import com.google.gson.annotations.Expose;
 public class IPv4Datum extends Datum {
   private static final int size = 4;
   @Expose private int address;
-	
-	/**
-	 * @param type
-	 */
+
 	public IPv4Datum() {
 		super(DatumType.IPv4);
 	}
@@ -42,43 +38,17 @@ public class IPv4Datum extends Datum {
     address |= ((addr[1] << 16) & 0xFF0000);
     address |= ((addr[0] << 24) & 0xFF000000);
 	}
-	
-	public boolean asBool() {
-		throw new InvalidCastException();
-	}
-	
-	@Override
-	public short asShort() {	
-		throw new InvalidCastException();
-	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asInt()
-	 */
 	@Override
 	public int asInt() {
 		return this.address;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asLong()
-	 */
 	@Override
 	public long asLong() {
 	  return this.address;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByte()
-	 */
-	@Override
-	public byte asByte() {
-		throw new InvalidCastException();
-	}
-
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByteArray()
-	 */
 	@Override
 	public byte[] asByteArray() {
 	  byte[] addr = new byte[size];
@@ -90,20 +60,11 @@ public class IPv4Datum extends Datum {
 	}
 
 	@Override
-	public float asFloat() {
-		throw new InvalidCastException();
-	}
-
-	@Override
-	public double asDouble() {
-		throw new InvalidCastException();
-	}
-
-	@Override
 	public String asChars() {
 		return numericToTextFormat(asByteArray());
 	}
-	
+
+  @Override
 	public String toJSON() {
 		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
@@ -117,7 +78,8 @@ public class IPv4Datum extends Datum {
   public int hashCode() {
     return address;
   }
-  
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof IPv4Datum) {
       IPv4Datum other = (IPv4Datum) obj;
@@ -126,8 +88,8 @@ public class IPv4Datum extends Datum {
     
     return false;
   }
-  
-  // Datum Comparable
+
+  @Override
   public BoolDatum equalsTo(Datum datum) {
     switch (datum.type()) {
     case IPv4:    	

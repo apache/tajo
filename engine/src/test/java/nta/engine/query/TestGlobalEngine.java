@@ -316,20 +316,13 @@ public class TestGlobalEngine {
     Tuple tuple;
     String deptname;
     int year;
-    FileSystem fs = util.getMiniDFSCluster().getFileSystem();
+
     while ((tuple = scanner.next()) != null) {
       deptname = tuple.get(0).asChars();
       year = tuple.get(1).asInt();
       CompositeKey key = new CompositeKey(deptname, year);
       int expected = cubebyResult.get(key);
       int value = tuple.get(2).asInt();
-      if (expected != value) {
-        System.out.println(">>>>>>>>DIFF: " + tuple);
-        FileStatus [] fss = fs.listStatus(new Path(res.getPath(), "data"));
-        for (FileStatus s : fss) {
-          fs.copyToLocalFile(s.getPath(), new Path("file:/home/hyunsik/diff/" + s.getPath().getName()));
-        }
-      }
       assertEquals(expected, value);
     }
   }

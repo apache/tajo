@@ -7,7 +7,6 @@ import java.nio.ByteBuffer;
 
 import com.google.gson.annotations.Expose;
 
-import nta.datum.exception.InvalidCastException;
 import nta.datum.exception.InvalidOperationException;
 import nta.datum.json.GsonCreator;
 
@@ -17,12 +16,8 @@ import nta.datum.json.GsonCreator;
  */
 public class DoubleDatum extends NumericDatum {
   private static final int size = 8;
-  
   @Expose private double val;
-	
-	/**
-	 * 
-	 */
+
 	public DoubleDatum() {
 		super(DatumType.DOUBLE);
 	}
@@ -32,66 +27,44 @@ public class DoubleDatum extends NumericDatum {
 		this.val = val;
 	}
 	
-	public boolean asBool() {
-		throw new InvalidCastException();
-	}
-	
 	@Override
 	public short asShort() {	
 		return (short) val;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asInt()
-	 */
+	@Override
 	public int asInt() {		
 		return (int) val;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asLong()
-	 */
+  @Override
 	public long asLong() {
 		return (long) val;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByte()
-	 */
-	public byte asByte() {
-		throw new InvalidCastException();
-	}
-
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByteArray()
-	 */
+  @Override
 	public byte[] asByteArray() {
 		ByteBuffer bb = ByteBuffer.allocate(8);
 		bb.putDouble(val);
 		return bb.array();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asFloat()
-	 */
+  @Override
 	public float asFloat() {		
 		return (float) val;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asDouble()
-	 */
+  @Override
 	public double asDouble() {
 		return val;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asChars()
-	 */
+  @Override
 	public String asChars() {
 		return ""+val;
 	}
-	
+
+  @Override
 	public String toJSON() {
 		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
@@ -114,8 +87,8 @@ public class DoubleDatum extends NumericDatum {
     
     return false;
   }
-  
-  // Datum Comparable
+
+  @Override
   public BoolDatum equalsTo(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -132,7 +105,8 @@ public class DoubleDatum extends NumericDatum {
       throw new InvalidOperationException(datum.type());
     }
   }
-  
+
+  @Override
   public BoolDatum lessThan(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -150,6 +124,7 @@ public class DoubleDatum extends NumericDatum {
     }
   }
 
+  @Override
   public BoolDatum lessThanEqual(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -166,7 +141,8 @@ public class DoubleDatum extends NumericDatum {
       throw new InvalidOperationException(datum.toString());
     }
   }
-  
+
+  @Override
   public BoolDatum greaterThan(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -183,7 +159,8 @@ public class DoubleDatum extends NumericDatum {
       throw new InvalidOperationException(datum.type());
     }
   }
-  
+
+  @Override
   public BoolDatum greaterThanEqual(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -200,7 +177,8 @@ public class DoubleDatum extends NumericDatum {
       throw new InvalidOperationException();
     }
   }
-  
+
+  @Override
   public Datum plus(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -217,7 +195,8 @@ public class DoubleDatum extends NumericDatum {
       throw new InvalidOperationException(datum.type());
     }
   }
-  
+
+  @Override
   public Datum minus(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -234,7 +213,8 @@ public class DoubleDatum extends NumericDatum {
       throw new InvalidOperationException(datum.type());
     }
   }
-  
+
+  @Override
   public Datum multiply(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -251,7 +231,8 @@ public class DoubleDatum extends NumericDatum {
       throw new InvalidOperationException();
     }
   }
-  
+
+  @Override
   public Datum divide(Datum datum) {
     switch (datum.type()) {
     case SHORT:

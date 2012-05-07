@@ -1,5 +1,6 @@
 package nta.datum;
 
+import nta.datum.exception.InvalidCastException;
 import nta.datum.exception.InvalidOperationException;
 
 import com.google.gson.annotations.Expose;
@@ -24,15 +25,44 @@ public abstract class Datum implements Comparable<Datum> {
 		return this.type;
 	}
 	
-	public abstract boolean asBool();
-	public abstract byte asByte();
-	public abstract short asShort();
-	public abstract int asInt();
-	public abstract long asLong();	
-	public abstract byte [] asByteArray();
-	public abstract float asFloat();
-	public abstract double asDouble();
-	public abstract String asChars();
+	public boolean asBool() {
+    throw new InvalidCastException(type + " cannot be casted to BOOL type");
+  }
+
+  public byte asByte() {
+    throw new InvalidCastException(type + " cannot be casted to BYTE type");
+  }
+
+  public char asChar() {
+    throw new InvalidCastException(type + " cannot be casted to CHAR type");
+  }
+
+	public short asShort() {
+    throw new InvalidCastException(type + " cannot be casted to SHORT type");
+  }
+	public int asInt() {
+    throw new InvalidCastException(type + " cannot be casted to INT type");
+  }
+
+  public long asLong() {
+    throw new InvalidCastException(type + " cannot be casted to LONG type");
+  }
+
+	public byte [] asByteArray() {
+    throw new InvalidCastException(type + " cannot be casted to BYTES type");
+  }
+
+	public float asFloat() {
+    throw new InvalidCastException(type + " cannot be casted to FLOAT type");
+  }
+
+	public double asDouble() {
+    throw new InvalidCastException(type + " cannot be casted to DOUBLE type");
+  }
+
+	public String asChars() {
+    throw new InvalidCastException(type + " cannot be casted to STRING type");
+  }
 	
 	public boolean isNumeric() {
 	  return isNumber() || isReal();
@@ -96,16 +126,16 @@ public abstract class Datum implements Comparable<Datum> {
 	}
 	
 	public int compareTo(Datum o) {
-		BoolDatum bd = (BoolDatum)this.lessThanEqual(o);
-		if (bd.asBool()) {
-			bd = (BoolDatum)this.greaterThanEqual(o);
+		BoolDatum bd = this.lessThan(o);
+    if (bd.asBool()) {
+      return -1;
+    } else {
+			bd = this.greaterThan(o);
 			if (bd.asBool()) {
-				return 0;
-			} else {
-				return -1;
-			}
-		} else {
-			return 1;
+        return 1;
+      } else {
+        return 0;
+      }
 		}
 	}
 }

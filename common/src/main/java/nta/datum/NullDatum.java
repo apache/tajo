@@ -60,14 +60,15 @@ public class NullDatum extends Datum {
 
   @Override
   public String asChars() {
-    return "null";
+    return "NULL";
   }
 
   @Override
   public int size() {
     return 0;
   }
-  
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof NullDatum) {
       return true;
@@ -75,7 +76,8 @@ public class NullDatum extends Datum {
       return false;
     }
   }
-  
+
+  @Override
   public int hashCode() {
     return 23244; // one of the prime number
   }

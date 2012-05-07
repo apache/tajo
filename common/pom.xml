@@ -112,6 +112,10 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+      </plugin>
     </plugins>
   </build>
 
@@ -163,9 +167,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-pmd-plugin</artifactId>
-        <version>2.5</version>
+        <version>2.7.1</version>
         <configuration>
-          <targetJdk>1.6</targetJdk>
+          <targetJdk>1.5</targetJdk>
         </configuration>
       </plugin>
     </plugins>

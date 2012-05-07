@@ -28,67 +28,50 @@ public class IntDatum extends NumericDatum {
 		this();
 		this.val = val;
 	}
-	
-	public boolean asBool() {
-		throw new InvalidCastException();
-	}	
 
 	@Override
 	public short asShort() {	
 		return (short) val;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asInt()
-	 */
+  @Override
 	public int asInt() {		
 		return val;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asLong()
-	 */
+  @Override
 	public long asLong() {
 		return val;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByte()
-	 */
+  @Override
 	public byte asByte() {
 		throw new InvalidCastException();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByteArray()
-	 */
+  @Override
 	public byte[] asByteArray() {
 		ByteBuffer bb = ByteBuffer.allocate(4);
 		bb.putInt(val);
 		return bb.array();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asFloat()
-	 */
+  @Override
 	public float asFloat() {
 		return val;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asDouble()
-	 */
+  @Override
 	public double asDouble() {
 		return val;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asChars()
-	 */
+  @Override
 	public String asChars() {
 		return ""+val;
 	}
-	
+
+  @Override
 	public String toJSON() {
 		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
@@ -111,8 +94,8 @@ public class IntDatum extends NumericDatum {
     
     return false;
   }
-  
-  // Datum Comparable
+
+  @Override
   public BoolDatum equalsTo(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -130,6 +113,7 @@ public class IntDatum extends NumericDatum {
     }
   }
 
+  @Override
   public BoolDatum lessThan(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -146,7 +130,8 @@ public class IntDatum extends NumericDatum {
       throw new InvalidOperationException();
     }
   }
-  
+
+  @Override
   public BoolDatum lessThanEqual(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -163,7 +148,8 @@ public class IntDatum extends NumericDatum {
       throw new InvalidOperationException(datum.toString());
     }
   }
-  
+
+  @Override
   public BoolDatum greaterThan(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -180,7 +166,8 @@ public class IntDatum extends NumericDatum {
       throw new InvalidOperationException(datum.type());
     }
   }
-  
+
+  @Override
   public BoolDatum greaterThanEqual(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -198,6 +185,7 @@ public class IntDatum extends NumericDatum {
     }
   }
 
+  @Override
   public Datum plus(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -214,7 +202,8 @@ public class IntDatum extends NumericDatum {
       throw new InvalidOperationException(datum.type());
     }
   }
-  
+
+  @Override
   public Datum minus(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -231,7 +220,8 @@ public class IntDatum extends NumericDatum {
       throw new InvalidOperationException(datum.type());
     }
   }
-  
+
+  @Override
   public Datum multiply(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -248,7 +238,8 @@ public class IntDatum extends NumericDatum {
       throw new InvalidOperationException();
     }
   }
-  
+
+  @Override
   public Datum divide(Datum datum) {
     switch (datum.type()) {
     case SHORT:
@@ -268,7 +259,6 @@ public class IntDatum extends NumericDatum {
 
   @Override
   public void inverseSign() {
-    // TODO Auto-generated method stub
-    
+    this.val = - val;
   }
 }

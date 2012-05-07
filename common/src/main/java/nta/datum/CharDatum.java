@@ -3,41 +3,40 @@
  */
 package nta.datum;
 
-import java.nio.ByteBuffer;
-
 import com.google.gson.annotations.Expose;
-
+import nta.datum.exception.InvalidCastException;
 import nta.datum.exception.InvalidOperationException;
 import nta.datum.json.GsonCreator;
+
+import java.nio.ByteBuffer;
 
 /**
  * @author Hyunsik Choi
  */
-public class ByteDatum extends Datum {
+public class CharDatum extends Datum {
   private static final int size = 1;
-  
-  @Expose	byte val;
-	
-	public ByteDatum() {
-		super(DatumType.BYTE);
+  @Expose char val;
+
+	public CharDatum() {
+		super(DatumType.CHAR);
 	}
-	
-	public ByteDatum(byte val) {
+
+	public CharDatum(byte val) {
 		this();
-		this.val = val;
+		this.val = (char)val;
 	}
-	
-	public ByteDatum(char val) {
+
+	public CharDatum(char val) {
 	  this();
-	  this.val = (byte) val;
+	  this.val = val;
 	}
 
   @Override
   public char asChar() {
-    return (char)val;
+    return val;
   }
 
-	@Override
+  @Override
 	public int asInt() {		
 		return val;
 	}
@@ -49,13 +48,13 @@ public class ByteDatum extends Datum {
 
   @Override
 	public byte asByte() {
-		return val;
+		return (byte)val;
 	}
 
   @Override
 	public byte[] asByteArray() {
 		ByteBuffer bb = ByteBuffer.allocate(1);
-		bb.put(val);
+		bb.putChar(val);
 		return bb.array();
 	}
 
@@ -71,9 +70,10 @@ public class ByteDatum extends Datum {
 
   @Override
 	public String asChars() {
-		return "0x"+val;
+		return String.valueOf(val);
 	}
-	
+
+  @Override
 	public String toJSON() {
 		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
@@ -90,8 +90,8 @@ public class ByteDatum extends Datum {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof ByteDatum) {
-      ByteDatum other = (ByteDatum) obj;
+    if (obj instanceof CharDatum) {
+      CharDatum other = (CharDatum) obj;
       return val == other.val;
     }
     
@@ -102,7 +102,7 @@ public class ByteDatum extends Datum {
   public BoolDatum equalsTo(Datum datum) {
     switch (datum.type()) {
     case BYTE:
-      return DatumFactory.createBool(this.val == (((ByteDatum) datum).val));
+      return DatumFactory.createBool(this.val == (((CharDatum) datum).val));
     default:
       throw new InvalidOperationException(datum.type());
     }
@@ -111,10 +111,11 @@ public class ByteDatum extends Datum {
   @Override
   public int compareTo(Datum datum) {
     switch (datum.type()) {
-    case BYTE:
-      if (val < datum.asByte() ) {
+      case BYTE:
+      case CHAR:
+      if (val < datum.asChar()) {
         return -1;
-      } else if (val > datum.asByte()) {
+      } else if (val > datum.asChar()) {
         return 1;
       } else {
         return 0;

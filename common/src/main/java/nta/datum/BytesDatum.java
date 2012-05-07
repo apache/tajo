@@ -9,7 +9,6 @@ import java.util.Arrays;
 
 import com.google.gson.annotations.Expose;
 
-import nta.datum.exception.InvalidCastException;
 import nta.datum.exception.InvalidOperationException;
 import nta.datum.json.GsonCreator;
 
@@ -47,96 +46,74 @@ public class BytesDatum extends Datum {
 			bb = ByteBuffer.wrap(val);
 		}
 	}
-	
-	public boolean asBool() {
-		throw new InvalidCastException("Cannot cast bytes into boolean");
-	}
-	
-	@Override
-	public short asShort() {	
-		throw new InvalidCastException();
-	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asInt()
-	 */
+  @Override
 	public int asInt() {
 		initFromBytes();
 		bb.rewind();
 		return bb.getInt();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asLong()
-	 */
+  @Override
 	public long asLong() {
 		initFromBytes();
 		bb.rewind();
 		return bb.getLong();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByte()
-	 */
+  @Override
 	public byte asByte() {
 		initFromBytes();
 		bb.rewind();
 		return bb.get();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByteArray()
-	 */
+  @Override
 	public byte[] asByteArray() {
 		initFromBytes();
 		bb.rewind();
 		return bb.array();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asFloat()
-	 */
+  @Override
 	public float asFloat() {
 		initFromBytes();
 		bb.rewind();
 		return bb.getFloat();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asDouble()
-	 */
+  @Override
 	public double asDouble() {
 		initFromBytes();
 		bb.rewind();
 		return bb.getDouble();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asChars()
-	 */
+  @Override
 	public String asChars() {
 		initFromBytes();
 		bb.rewind();
 		return new String(bb.array(), Charset.defaultCharset());
 	}
-	
+
+  @Override
 	public String toJSON() {
 		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
 
   @Override
   public int size() {
-//    return size;
 	  return this.val.length;
   }
   
   @Override
   public int hashCode() {
-	initFromBytes();
-	bb.rewind();
+	  initFromBytes();
+	  bb.rewind();
     return bb.hashCode();
   }
-  
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof BytesDatum) {
       BytesDatum other = (BytesDatum) obj;
@@ -148,7 +125,7 @@ public class BytesDatum extends Datum {
     return false;
   }
 
-  // Datum Comparable
+  @Override
   public BoolDatum equalsTo(Datum datum) {
     switch (datum.type()) {
     case BYTES:

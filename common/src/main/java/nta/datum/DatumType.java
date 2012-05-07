@@ -11,6 +11,7 @@ public enum DatumType {
   NULL,
 	BOOLEAN,
 	BYTE,
+  CHAR,
 	BYTES,
 	SHORT,
 	INT,

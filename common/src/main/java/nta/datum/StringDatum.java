@@ -14,28 +14,22 @@ import nta.datum.json.GsonCreator;
  *
  */
 public class StringDatum extends Datum { 
-	@Expose
-	String val;
+	@Expose String val;
 	
-	/**
-	 * @param type
-	 */
+	public StringDatum() {
+    super(DatumType.STRING);
+  }
+
 	public StringDatum(String val) {
-		super(DatumType.STRING);
+		this();
 		this.val = val;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asBool()
-	 */
 	@Override
 	public boolean asBool() {	
 		throw new InvalidCastException();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByte()
-	 */
 	@Override
 	public byte asByte() {
 		throw new InvalidCastException();
@@ -46,9 +40,6 @@ public class StringDatum extends Datum {
 		throw new InvalidCastException();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asInt()
-	 */
 	@Override
 	public int asInt() {
 		int res;
@@ -60,9 +51,6 @@ public class StringDatum extends Datum {
 		return res;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asLong()
-	 */
 	@Override
 	public long asLong() {
 		long res;
@@ -74,17 +62,11 @@ public class StringDatum extends Datum {
 		return res;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asByteArray()
-	 */
 	@Override
 	public byte[] asByteArray() {		
 		return val.getBytes();
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asFloat()
-	 */
 	@Override
 	public float asFloat() {
 		float res;
@@ -96,9 +78,6 @@ public class StringDatum extends Datum {
 		return res;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asDouble()
-	 */
 	@Override
 	public double asDouble() {
 		double res;
@@ -110,20 +89,18 @@ public class StringDatum extends Datum {
 		return res;
 	}
 
-	/* (non-Javadoc)
-	 * @see nta.common.datum.Datum#asChars()
-	 */
 	@Override
 	public String asChars() {
 		return val;
 	}
 
+  @Override
   public boolean equals(Object obj) {
-    if (obj instanceof StringDatum) {
-      return this.val.equals(((StringDatum) obj).val);
+    if (obj instanceof StringDatum && this.val.equals(((StringDatum) obj).val)) {
+      return true;
+    } else {
+      return false;
     }
-
-    return false;
   }
 
   @Override
@@ -135,8 +112,8 @@ public class StringDatum extends Datum {
   public int hashCode() {
     return val.hashCode();
   }
-  
-  // Datum Comparable
+
+  @Override
   public BoolDatum equalsTo(Datum datum) {
     switch (datum.type()) {
     case STRING:
@@ -157,6 +134,7 @@ public class StringDatum extends Datum {
     }
   }
 
+  @Override
   public String toJSON() {
 		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}

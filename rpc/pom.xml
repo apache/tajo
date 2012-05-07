@@ -2,9 +2,9 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-  <artifactId>nta</artifactId>
-  <version>0.4.0-SNAPSHOT</version>
-  <groupId>kr.ac.korea.dbserver</groupId>
+    <artifactId>nta</artifactId>
+    <version>0.4.0-SNAPSHOT</version>
+    <groupId>kr.ac.korea.dbserver</groupId>
   </parent>
   <packaging>jar</packaging>
   <artifactId>nta-rpc</artifactId>
@@ -84,6 +84,10 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
@@ -132,4 +136,26 @@
       </snapshots>
     </repository>
   </repositories>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
+            <version>2.3.2</version>
+            <configuration>
+              <xmlOutput>true</xmlOutput>
+              <xmlOutputDirectory>target/findbugs</xmlOutputDirectory>
+              <!-- <excludeFilterFile>src/main/findbugs/findbugs-exclude.xml</excludeFilterFile> -->
+            </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-pmd-plugin</artifactId>
+          <configuration>
+            <targetJdk>1.5</targetJdk>
+          </configuration>
+        </plugin>
+    </plugins>
+  </reporting>
 </project>

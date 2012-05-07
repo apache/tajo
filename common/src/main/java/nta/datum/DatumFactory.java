@@ -1,7 +1,5 @@
 package nta.datum;
 
-import nta.datum.exception.InvalidCastException;
-
 /**
  * 
  * @author Hyunsik Choi
@@ -13,12 +11,12 @@ public class DatumFactory {
   }
   
   public static BoolDatum createBool(String val) {
-    boolean boolVal = val.equals("true") ? true : false;
+    boolean boolVal = val.equalsIgnoreCase("true");
     return new BoolDatum(boolVal);
   }
   
   public static BoolDatum createBool(byte val) {
-    boolean boolVal = val == 0x01 ? true : false; 
+    boolean boolVal = val == 0x01;
     return new BoolDatum(boolVal);
   }
   
@@ -29,11 +27,13 @@ public class DatumFactory {
 	public static ByteDatum createByte(byte val) {
 		return new ByteDatum(val);
 	}
-	
-	public static ByteDatum createByte(String val) {
-	  if(val.length() > 1)
-	    throw new InvalidCastException("Cannot cast byte from a multi bytes");
-    return new ByteDatum(val.charAt(0));
+
+  public static CharDatum createChar(char val) {
+    return new CharDatum(val);
+  }
+
+  public static CharDatum createChar(byte val) {
+    return new CharDatum(val);
   }
 	
 	public static ShortDatum createShort(short val) {
@@ -94,9 +94,5 @@ public class DatumFactory {
 	
 	public static IPv4Datum createIPv4(String val) {
 	  return new IPv4Datum(val);
-	}
-	
-	public static AllDatum createAllDatum() {
-	  return AllDatum.get();
 	}
 }
