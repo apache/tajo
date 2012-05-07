@@ -10,14 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 import nta.catalog.statistics.StatSet;
+import nta.engine.*;
 import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
-import nta.engine.Query;
-import nta.engine.QueryId;
-import nta.engine.QueryUnitId;
-import nta.engine.QueryUnitScheduler;
-import nta.engine.ScheduleUnitId;
-import nta.engine.SubQuery;
-import nta.engine.SubQueryId;
 import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
@@ -101,7 +95,10 @@ public class QueryManager {
   public synchronized void updateProgress(QueryUnitId queryUnitId, 
       InProgressStatusProto progress) throws NoSuchQueryIdException {
     QueryUnit unit = queries.get(queryUnitId.getQueryId()).getQueryUnit(queryUnitId);
-    if (unit != null) {
+    if (unit != null
+        && (unit.getStatus() != MasterInterfaceProtos.QueryStatus.FINISHED
+        || unit.getStatus() != MasterInterfaceProtos.QueryStatus.ABORTED
+        || unit.getStatus() != MasterInterfaceProtos.QueryStatus.KILLED)) {
       unit.setProgress(progress.getProgress());
       unit.setStatus(progress.getStatus());
       if (progress.getPartitionsCount() > 0) {

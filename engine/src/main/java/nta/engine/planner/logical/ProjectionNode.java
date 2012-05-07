@@ -13,10 +13,15 @@ import com.google.gson.annotations.Expose;
  *
  */
 public class ProjectionNode extends UnaryNode {
-	@Expose
-	private Target [] targets;
-	
-	public ProjectionNode() {
+  /**
+   * the targets are always filled even if the query is 'select *'
+   */
+  @Expose	private Target [] targets;
+
+  /**
+   * This method is for gson.
+   */
+	private ProjectionNode() {
 		super();
 	}
 
@@ -27,10 +32,6 @@ public class ProjectionNode extends UnaryNode {
 	
 	public Target [] getTargetList() {
 	  return this.targets;
-	}
-	
-	public boolean isAll() {
-	  return targets == null;
 	}
 	
 	public void setSubNode(LogicalNode subNode) {

@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Set;
 
 import nta.catalog.Column;
+import nta.catalog.Schema;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.EvalTreeUtil;
+import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.parser.QueryBlock.Target;
@@ -45,8 +47,8 @@ public class PlannerUtil {
    * This method changes the input logical plan. If you do not want that, you
    * should copy the input logical plan before do it.
    * 
-   * @param plan
-   * @return
+   * @param plan - to be refreshed
+   * @return refreshed Schema
    */
   public static LogicalNode refreshSchema(LogicalNode plan) {    
     OutSchemaRefresher outRefresher = new OutSchemaRefresher();
@@ -81,7 +83,7 @@ public class PlannerUtil {
    * Delete the child of a given parent operator.
    * 
    * @param parent Must be a unary logical operator.
-   * @return
+   * @return input parent node
    */
   public static LogicalNode deleteNode(LogicalNode parent) {
     if (parent instanceof UnaryNode) {
@@ -333,12 +335,10 @@ public class PlannerUtil {
       case PROJECTION:
         ProjectionNode projNode = (ProjectionNode) node;
 
-        if (!projNode.isAll()) {
-          for (Target t : projNode.getTargetList()) {
-            temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
-            if (!temp.isEmpty()) {
-              collected.addAll(temp);
-            }
+        for (Target t : projNode.getTargetList()) {
+          temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
+          if (!temp.isEmpty()) {
+            collected.addAll(temp);
           }
         }
 
@@ -405,5 +405,16 @@ public class PlannerUtil {
       default:
       }
     }
+  }
+
+  public static Target [] schemaToTargets(Schema schema) {
+    Target [] targets = new Target[schema.getColumnNum()];
+
+    FieldEval eval = null;
+    for (int i = 0; i < schema.getColumnNum(); i++) {
+      eval = new FieldEval(schema.getColumn(i));
+      targets[i] = new Target(eval);
+    }
+    return targets;
   }
 }

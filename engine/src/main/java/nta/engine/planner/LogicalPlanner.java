@@ -68,7 +68,7 @@ public class LogicalPlanner {
    * @return a initial logical plan
    */
   public static LogicalNode createPlan(Context ctx, ParseTree query) {
-    LogicalNode plan = null;
+    LogicalNode plan;
     
     plan = createPlanInternal(ctx, query);
     
@@ -81,7 +81,7 @@ public class LogicalPlanner {
   }
   
   private static LogicalNode createPlanInternal(Context ctx, ParseTree query) {
-    LogicalNode plan = null;
+    LogicalNode plan;
     
     switch(query.getType()) {
     case SELECT:
@@ -109,8 +109,8 @@ public class LogicalPlanner {
       plan = buildCreateTablePlan(ctx, createTable);
       break;
 
-    default:;
-    throw new NotSupportQueryException(query.toString());
+    default:
+      throw new NotSupportQueryException(query.toString());
     }
     
     return plan;
@@ -129,6 +129,8 @@ public class LogicalPlanner {
     case INTERSECT:
       bin = new IntersectNode();
       break;
+    default:
+      throw new IllegalStateException("the statement cannot be matched to any set operation type");
     }
     
     bin.setOuter(createPlanInternal(ctx, stmt.getLeftTree()));
@@ -182,10 +184,10 @@ public class LogicalPlanner {
    * ^(SELECT from_clause? where_clause? groupby_clause? selectList)
    * 
    * @param query
-   * @return
+   * @return the planed logical plan
    */
   private static LogicalNode buildSelectPlan(Context ctx, QueryBlock query) {
-    LogicalNode subroot = null;
+    LogicalNode subroot;
     if(query.hasFromClause()) {
       if (query.hasJoinClause()) {
         subroot = createExplicitJoinTree(ctx, query.getJoinClause());
@@ -246,10 +248,14 @@ public class LogicalPlanner {
       subroot = sortNode;
     }
     
-    ProjectionNode prjNode = null;
+    ProjectionNode prjNode;
     if (query.getProjectAll()) {
-      prjNode = new ProjectionNode();
+      Schema merged = SchemaUtil.merge(query.getFromTables());
+      Target [] allTargets = PlannerUtil.schemaToTargets(merged);
+      prjNode = new ProjectionNode(allTargets);
       prjNode.setSubNode(subroot);
+      prjNode.setInputSchema(merged);
+      prjNode.setOutputSchema(merged);
       subroot = prjNode;
     } else {
       prjNode = new ProjectionNode(query.getTargetList());
@@ -275,7 +281,7 @@ public class LogicalPlanner {
   
   private static UnionNode createGroupByUnion(Context ctx, LogicalNode subNode, 
       List<Column []> cuboids, int idx) {
-    UnionNode union = null;
+    UnionNode union;
     try {
     if ((cuboids.size() - idx) > 2) {
       GroupbyNode g1 = new GroupbyNode(cuboids.get(idx));
@@ -322,7 +328,7 @@ public class LogicalPlanner {
     int maxBits = columns.length;    
     
     List<Column []> cube = Lists.newArrayList();
-    List<Column> cuboidCols = null;
+    List<Column> cuboidCols;
     
     cube.add(ALL);
     for (int cuboidId = 1; cuboidId < numCuboids; cuboidId++) {
@@ -340,9 +346,7 @@ public class LogicalPlanner {
   
   private static LogicalNode createExplicitJoinTree(Context ctx, 
       JoinClause joinClause) {
-    JoinNode join = null;
-    
-    join = new JoinNode(joinClause.getJoinType(),
+    JoinNode join = new JoinNode(joinClause.getJoinType(),
         new ScanNode(joinClause.getLeft()));
     if (joinClause.hasJoinQual()) {
       join.setJoinQual(joinClause.getJoinQual());
@@ -358,7 +362,7 @@ public class LogicalPlanner {
     }
     
     // Determine Join Schemas
-    Schema merged = null;
+    Schema merged;
     if (join.getJoinType() == JoinType.NATURAL) {
       merged = getNaturalJoin(join.getOuterNode(), join.getInnerNode());
     } else {
@@ -388,7 +392,7 @@ public class LogicalPlanner {
   
   private static EvalNode getNJCond(Schema outer, Schema inner, Schema commons) {
     EvalNode njQual = null;
-    EvalNode equiQual = null;
+    EvalNode equiQual;
     
     Column leftJoinKey;
     Column rightJoinKey;
@@ -410,9 +414,7 @@ public class LogicalPlanner {
   
   private static LogicalNode createImplicitJoinTree(Context ctx, 
       FromTable [] tables) {
-    LogicalNode subroot = null;
-    
-    subroot = new ScanNode(tables[0]);
+    LogicalNode subroot = new ScanNode(tables[0]);
     Schema joinSchema = null;
     if(tables.length > 1) {    
       for(int i=1; i < tables.length; i++) {

@@ -21,6 +21,7 @@ import nta.util.FileUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
@@ -104,7 +105,7 @@ public class TestGlobalEngine {
     sm = new StorageManager(conf);
 
     catalog = master.getCatalog();
-    groupbyResult = new HashMap<TestGlobalEngine.CompositeKey, Integer>();
+    groupbyResult = new HashMap<CompositeKey, Integer>();
     cubebyResult = new HashMap<CompositeKey, Integer>();
     scanResult = new HashSet<String>();
     joinResult = new HashMap<String, List<Integer>>();
@@ -315,12 +316,20 @@ public class TestGlobalEngine {
     Tuple tuple;
     String deptname;
     int year;
+    FileSystem fs = util.getMiniDFSCluster().getFileSystem();
     while ((tuple = scanner.next()) != null) {
       deptname = tuple.get(0).asChars();
       year = tuple.get(1).asInt();
       CompositeKey key = new CompositeKey(deptname, year);
       int expected = cubebyResult.get(key);
       int value = tuple.get(2).asInt();
+      if (expected != value) {
+        System.out.println(">>>>>>>>DIFF: " + tuple);
+        FileStatus [] fss = fs.listStatus(new Path(res.getPath(), "data"));
+        for (FileStatus s : fss) {
+          fs.copyToLocalFile(s.getPath(), new Path("file:/home/hyunsik/diff/" + s.getPath().getName()));
+        }
+      }
       assertEquals(expected, value);
     }
   }

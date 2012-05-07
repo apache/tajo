@@ -5,6 +5,7 @@ package nta.engine;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -130,7 +131,7 @@ public class QueryUnitScheduler extends Thread {
       }
       
       for (ScanNode scan : q.getScanNodes()) {
-        List<URI> fetches = q.getFetch(scan);
+        Collection<URI> fetches = q.getFetch(scan);
         if (fetches != null) {
           for (URI fetch : fetches) {
             request.addFetch(scan.getTableId(), fetch);
@@ -149,6 +150,7 @@ public class QueryUnitScheduler extends Thread {
         LOG.info("InterQuery is disabled");
       }
       LOG.info("Fetches: " + request.getFetches());
+      LOG.info("=====================================================================");
     }
   }
   

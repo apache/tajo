@@ -276,14 +276,11 @@ public class LogicalOptimizer {
         break;
       case PROJECTION:
         ProjectionNode projNode = (ProjectionNode) node;
-
-        if (!projNode.isAll()) {
-          for (Target t : projNode.getTargetList()) {
+        for (Target t : projNode.getTargetList()) {
             temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
             if (!temp.isEmpty()) {
               necessary.addAll(temp);
             }
-          }
         }
 
         break;
@@ -458,15 +455,9 @@ public class LogicalOptimizer {
     case PROJECTION:
       ProjectionNode projNode = ((ProjectionNode)logicalNode);
       if(necessary != null) {
-        if(projNode.isAll()) {
-          for(Column column : projNode.getOutputSchema().getColumns()) {
-            necessary.add(column);
-          }          
-        } else {
-          for(Target t : projNode.getTargetList()) {
+        for(Target t : projNode.getTargetList()) {
             getTargetListFromEvalTree(projNode.getInputSchema(), t.getEvalTree(), 
                 necessary);
-          }
         }
         
         stack.push(projNode);
@@ -488,17 +479,13 @@ public class LogicalOptimizer {
       if (projNode.getSubNode() != null)
         projNode.setInputSchema(projNode.getSubNode().getOutputSchema());
       
-      if(projNode.isAll()) {
-        projNode.setOutputSchema(projNode.getInputSchema());  
-      } else {
-        Schema prjTargets = new Schema();
-        for(Target t : projNode.getTargetList()) {
-          DataType type = t.getEvalTree().getValueType();
-          String name = t.getEvalTree().getName();
-          prjTargets.addColumn(name,type);
-        }
-        projNode.setOutputSchema(prjTargets);
+      Schema prjTargets = new Schema();
+      for(Target t : projNode.getTargetList()) {
+        DataType type = t.getEvalTree().getValueType();
+        String name = t.getEvalTree().getName();
+        prjTargets.addColumn(name,type);
       }
+      projNode.setOutputSchema(prjTargets);
       
       break;
       

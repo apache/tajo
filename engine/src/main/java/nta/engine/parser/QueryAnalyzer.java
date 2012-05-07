@@ -113,9 +113,9 @@ public final class QueryAnalyzer {
    * @param ast
    * @return
    */
-  private final CreateTableStmt parseCreateStatement(final Context ctx,
+  private CreateTableStmt parseCreateStatement(final Context ctx,
       final CommonTree ast) {
-    CreateTableStmt stmt = null;
+    CreateTableStmt stmt;
     
     int idx = 0;
     CommonTree node;
@@ -147,9 +147,9 @@ public final class QueryAnalyzer {
     return stmt;
   }
   
-  private final Schema parseCreateTableDef(final Context ctx, final CommonTree ast) {
+  private Schema parseCreateTableDef(final Context ctx, final CommonTree ast) {
     Schema tableDef = new Schema();
-    DataType type = null;
+    DataType type;
     for (int i = 0; i < ast.getChildCount(); i++) {
       switch(ast.getChild(i).getChild(1).getType()) {      
       case NQLParser.BOOL: type = DataType.BOOLEAN; break;
@@ -170,9 +170,9 @@ public final class QueryAnalyzer {
     return tableDef;
   }  
   
-  private final SetStmt parseSetStatement(final Context ctx,
+  private SetStmt parseSetStatement(final Context ctx,
       final CommonTree ast) {
-    StatementType type = null;
+    StatementType type;
     boolean distinct = true;
     ParseTree left;
     ParseTree right;
@@ -211,7 +211,7 @@ public final class QueryAnalyzer {
     return set;
   }
 
-  private final QueryBlock parseSelectStatement(final Context ctx,
+  private QueryBlock parseSelectStatement(final Context ctx,
       final CommonTree ast) {
     
     QueryBlock block = new QueryBlock();
@@ -264,9 +264,8 @@ public final class QueryAnalyzer {
    * 
    * @param ctx
    * @param ast
-   * @param block
    */
-  private final CreateIndexStmt parseIndexStatement(final Context ctx,
+  private CreateIndexStmt parseIndexStatement(final Context ctx,
       final CommonTree ast) {
     
     int idx = 0;
@@ -349,8 +348,7 @@ public final class QueryAnalyzer {
       } else if (numTables > 1) {
         // if the number of tables is greater than 1,
         // it means the implicit join clause
-        JoinClause joinClause = parseImplicitJoinClause(ctx, block, 
-            (CommonTree) ast);
+        JoinClause joinClause = parseImplicitJoinClause(ctx, block, ast);
         block.setJoinClause(joinClause);
       }
     }
@@ -361,7 +359,7 @@ public final class QueryAnalyzer {
     int numTables = ast.getChildCount();
     Preconditions.checkArgument(numTables > 1);
     
-    return parseImplicitJoinClause_(ctx, block, (CommonTree) ast, 0);
+    return parseImplicitJoinClause_(ctx, block, ast, 0);
   }
   
   private JoinClause parseImplicitJoinClause_(final Context ctx,
@@ -392,7 +390,7 @@ public final class QueryAnalyzer {
   
   private JoinClause parseExplicitJoinClause(final Context ctx, final QueryBlock block, 
       final CommonTree ast) {
-    CommonTree joinAST = (CommonTree) ast;
+    CommonTree joinAST = ast;
     
     int idx = 0;
     int parsedJoinType = joinAST.getChild(idx).getType();
@@ -474,7 +472,7 @@ public final class QueryAnalyzer {
       final CommonTree tableAST) {
     String tableName = tableAST.getChild(0).getText();
     TableDesc desc = checkAndGetTableByName(ctx, tableName);
-    FromTable table = null;
+    FromTable table;
     if (tableAST.getChildCount() > 1) {
       table = new FromTable(desc, 
           tableAST.getChild(1).getText());
@@ -511,8 +509,8 @@ public final class QueryAnalyzer {
       CommonTree node = null;
       int numTargets = ast.getChildCount();
       Target [] targets = new Target[numTargets];
-      EvalNode evalTree = null;
-      String alias = null;
+      EvalNode evalTree;
+      String alias;
       
       // the final one for each target is the alias
       // EBNF: bool_expr AS? fieldName
@@ -553,10 +551,10 @@ public final class QueryAnalyzer {
       clause.setEmptyGroupSet();
     } else {
       // the remain ones are grouping fields.
-      Tree group = null;
+      Tree group;
       List<Column> columnRefs = new ArrayList<Column>();
-      Column [] columns = null;
-      Column column = null;
+      Column [] columns;
+      Column column;
       for (; idx < ast.getChildCount(); idx++) {
         group = ast.getChild(idx);
         switch (group.getType()) {
@@ -592,7 +590,7 @@ public final class QueryAnalyzer {
   private void parseHavingClause(final Context ctx,
       final QueryBlock block, final CommonTree ast) {
     EvalNode evalTree = 
-        createEvalTree(ctx, (CommonTree) ast.getChild(0), block);      
+        createEvalTree(ctx, ast.getChild(0), block);
     block.setHavingCond(evalTree);
   }
   
@@ -606,7 +604,7 @@ public final class QueryAnalyzer {
    * @param ast
    * @return
    */
-  private static final Options parseParams(final Context ctx, 
+  private static Options parseParams(final Context ctx,
       final CommonTree ast) {
     Options params = new Options();
     
@@ -625,15 +623,14 @@ public final class QueryAnalyzer {
    * EBNF: sort_specifier (COMMA sort_specifier)* -> sort_specifier+
    * 
    * @param ctx
-   * @param block
    * @param ast
    */
   private static SortSpec [] parseSortSpecifiers(final Context ctx, 
       final CommonTree ast) {
     int numSortKeys = ast.getChildCount();
     SortSpec[] sortKeys = new SortSpec[numSortKeys];
-    CommonTree node = null;
-    Column column = null;
+    CommonTree node;
+    Column column;
     
     // Each child has the following EBNF and AST:
     // EBNF: fn=fieldName a=order_specification? o=null_ordering? 
@@ -644,7 +641,7 @@ public final class QueryAnalyzer {
       sortKeys[i] = new SortSpec(column);
             
       if (node.getChildCount() > 1) {
-        Tree child = null;
+        Tree child;
         for (int j = 1; j < node.getChildCount(); j++) {
           child = node.getChild(j);
           
@@ -676,9 +673,9 @@ public final class QueryAnalyzer {
       tableName = fieldNode.getChild(1).getText();
     }
     
-    Column column = null;
+    Column column;
     if(tableName != null) {
-      TableDesc desc = null;
+      TableDesc desc;
       desc = checkAndGetTableByMappedName(ctx, tableName);  
       column = checkAndGetFieldByName(desc, columnName);
     } else {
@@ -696,7 +693,7 @@ public final class QueryAnalyzer {
   
   private static TableDesc checkAndGetTableByName(final Context ctx,
       final String tableName) {
-    TableDesc desc = null;
+    TableDesc desc;
 
     try {
       desc =
@@ -711,7 +708,7 @@ public final class QueryAnalyzer {
   
   private static Column checkAndGetFieldByName(final TableDesc desc,
       final String columnName) {
-    Column column = null;
+    Column column;
     
     column = desc.getMeta().getSchema().getColumn(desc.getId()+"."+columnName);
     if(column == null) {
@@ -730,8 +727,8 @@ public final class QueryAnalyzer {
    * @return a found column
    */
   private static Column expectTableByField(Context ctx, String columnName) {
-    TableDesc desc = null;
-    Schema schema = null;
+    TableDesc desc;
+    Schema schema;
     Column column = null;    
     int count = 0;
     for(String table : ctx.getInputTables()) {
@@ -764,7 +761,7 @@ public final class QueryAnalyzer {
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     NQLParser parser = new NQLParser(tokens);
 
-    CommonTree ast = null;
+    CommonTree ast;
     try {
       ast = ((CommonTree) parser.statement().getTree());
     } catch (RecognitionException e) {

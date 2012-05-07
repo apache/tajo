@@ -5,11 +5,7 @@ package nta.engine.planner.global;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 import nta.catalog.Schema;
@@ -26,6 +22,7 @@ import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.UnaryNode;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 
 /**
  * @author jihoon
@@ -42,7 +39,7 @@ public class QueryUnit extends AbstractQuery {
 	
 	private String hostName;
 	private Map<String, List<Fragment>> fragMap;
-	private Map<String, List<URI>> fetchMap;
+	private Map<String, Set<URI>> fetchMap;
 	
 	private int expire;
 	private List<Partition> partitions;
@@ -51,7 +48,7 @@ public class QueryUnit extends AbstractQuery {
 	public QueryUnit(QueryUnitId id) {
 		this.id = id;
 		scan = new ArrayList<ScanNode>();
-    fetchMap = new HashMap<String, List<URI>>();
+    fetchMap = new HashMap<String, Set<URI>>();
     fragMap = new HashMap<String, List<Fragment>>();
     partitions = new ArrayList<Partition>();
     expire = QueryUnit.EXPIRE_TIME;
@@ -112,28 +109,28 @@ public class QueryUnit extends AbstractQuery {
 	}
 	
 	public void addFetch(String key, URI uri) {
-	  List<URI> uris = null;
+	  Set<URI> uris = null;
 	  if (fetchMap.containsKey(key)) {
 	    uris = fetchMap.get(key);
 	  } else {
-	    uris = new ArrayList<URI>();
+	    uris = Sets.newHashSet();
 	  }
 	  uris.add(uri);
     fetchMap.put(key, uris);
 	}
 	
 	public void addFetches(String key, List<URI> urilist) {
-	  List<URI> uris = null;
+	  Set<URI> uris = null;
     if (fetchMap.containsKey(key)) {
       uris = fetchMap.get(key);
     } else {
-      uris = new ArrayList<URI>();
+      uris = Sets.newHashSet();
     }
     uris.addAll(urilist);
     fetchMap.put(key, uris);
 	}
 	
-	public void setFetches(Map<String, List<URI>> fetches) {
+	public void setFetches(Map<String, Set<URI>> fetches) {
 	  this.fetchMap.clear();
 	  this.fetchMap.putAll(fetches);
 	}
@@ -150,15 +147,15 @@ public class QueryUnit extends AbstractQuery {
 		return id;
 	}
 	
-	public List<URI> getFetchHosts(String tableId) {
+	public Collection<URI> getFetchHosts(String tableId) {
 	  return fetchMap.get(tableId);
 	}
 	
-	public Collection<List<URI>> getFetches() {
+	public Collection<Set<URI>> getFetches() {
 	  return fetchMap.values();
 	}
 	
-	public List<URI> getFetch(ScanNode scan) {
+	public Collection<URI> getFetch(ScanNode scan) {
 	  return this.fetchMap.get(scan.getTableId());
 	}
 	
@@ -191,7 +188,7 @@ public class QueryUnit extends AbstractQuery {
 	      str += t + " ";
 	    }
 		}
-		for (Entry<String, List<URI>> e : fetchMap.entrySet()) {
+		for (Entry<String, Set<URI>> e : fetchMap.entrySet()) {
       str += e.getKey() + " : ";
       for (URI t : e.getValue()) {
         str += t + " ";

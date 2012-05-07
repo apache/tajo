@@ -1,6 +1,7 @@
 package nta.catalog;
 
 
+import nta.engine.parser.QueryBlock;
 
 public class SchemaUtil {
   public static Schema merge(Schema left, Schema right) {
@@ -12,6 +13,15 @@ public class SchemaUtil {
       merged.addColumn(col);
     }
     
+    return merged;
+  }
+
+  public static Schema merge(QueryBlock.FromTable [] fromTables) {
+    Schema merged = new Schema();
+    for (QueryBlock.FromTable table : fromTables) {
+      merged.addColumns(table.getSchema());
+    }
+
     return merged;
   }
   

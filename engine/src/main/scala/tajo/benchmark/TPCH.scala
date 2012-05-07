@@ -21,22 +21,22 @@ class TPCH (conf : Configuration, datadir : String) extends BenchmarkSet(conf) {
 
   override def loadSchemas() {
     schemas += ("lineitem" -> (new Schema)
-      .addColumn("l_orderkey", DataType.INT)
-      .addColumn("l_partkey", DataType.INT)
-      .addColumn("l_suppkey", DataType.INT)
-      .addColumn("l_linenumber", DataType.INT)
-      .addColumn("l_quantity", DataType.FLOAT)
-      .addColumn("l_extendedprice", DataType.FLOAT)
-      .addColumn("l_discount", DataType.FLOAT)
-      .addColumn("l_tax", DataType.FLOAT)
-      .addColumn("l_returnflag", DataType.CHAR)
-      .addColumn("l_linestatus", DataType.CHAR)
-      .addColumn("l_shipdate", DataType.DATE)
-      .addColumn("l_commitdate", DataType.DATE)
-      .addColumn("l_receiptdate", DataType.DATE)
-      .addColumn("l_shipinstruct", DataType.STRING)
-      .addColumn("l_shipmode", DataType.STRING)
-      .addColumn("l_comment", DataType.STRING))
+      .addColumn("l_orderkey", DataType.INT)  // 0
+      .addColumn("l_partkey", DataType.INT) // 1
+      .addColumn("l_suppkey", DataType.INT) // 2
+      .addColumn("l_linenumber", DataType.INT) // 3
+      .addColumn("l_quantity", DataType.FLOAT) // 4
+      .addColumn("l_extendedprice", DataType.FLOAT) // 5
+      .addColumn("l_discount", DataType.FLOAT) // 6
+      .addColumn("l_tax", DataType.FLOAT) // 7
+      .addColumn("l_returnflag", DataType.CHAR) // 8
+      .addColumn("l_linestatus", DataType.CHAR) // 9
+      .addColumn("l_shipdate", DataType.DATE) // 10
+      .addColumn("l_commitdate", DataType.DATE) // 11
+      .addColumn("l_receiptdate", DataType.DATE) // 12
+      .addColumn("l_shipinstruct", DataType.STRING) // 13
+      .addColumn("l_shipmode", DataType.STRING) // 14
+      .addColumn("l_comment", DataType.STRING)) // 15
 
     schemas += ("customer" -> (new Schema)
       .addColumn("c_custkey", DataType.INT)

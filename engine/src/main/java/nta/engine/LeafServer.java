@@ -547,7 +547,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       LOG.info("* Task Initialization Info ");
       LOG.info("* queryId: " + request.getId());
       LOG.info("* interQuery: " + interQuery);
-      LOG.info("* fragments (total: " + request.getFragments().size());
+      LOG.info("* fragments (total: " + request.getFragments().size() + ")");
       for (Fragment f: request.getFragments()) {
         LOG.info("** table id:" + f.getId());
         LOG.info("** path:" + f.getPath());
