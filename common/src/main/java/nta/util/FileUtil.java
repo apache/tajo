@@ -56,12 +56,12 @@ public class FileUtil {
 		return new File(path);
 	}
 	
-	public final static String readTextFile(String filePath) throws IOException {
-    StringBuffer fileData = new StringBuffer(1000);
+	public static String readTextFile(File file) throws IOException {
+    StringBuilder fileData = new StringBuilder(1000);
     BufferedReader reader = new BufferedReader(
-            new FileReader(filePath));
+            new FileReader(file));
     char[] buf = new char[1024];
-    int numRead=0;
+    int numRead = 0;
     while((numRead=reader.read(buf)) != -1){
         String readData = String.valueOf(buf, 0, numRead);
         fileData.append(readData);

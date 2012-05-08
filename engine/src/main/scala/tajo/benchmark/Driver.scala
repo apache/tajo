@@ -19,9 +19,9 @@ object Driver {
     val conf : Configuration = NtaConf.create()
     val clazz = Class.forName(args(0))
     val params = Array[AnyRef](conf, args(1))
-    val cons = clazz.getConstructor(classOf[Configuration], classOf[String]);
-    val benchmark = cons.newInstance(params:_*).asInstanceOf[BenchmarkSet]
+    val benchmark = clazz.newInstance().asInstanceOf[BenchmarkSet]
 
+    benchmark.init(conf, args(1))
     benchmark.loadSchemas()
     benchmark.loadQueries()
     benchmark.loadTables()

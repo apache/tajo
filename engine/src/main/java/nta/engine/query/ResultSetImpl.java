@@ -772,13 +772,9 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public String getString(int fieldId) throws SQLException {
-    Datum d = cur.get(fieldId - 1);
-    if (d.type() == DatumType.NULL) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asChars();
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
+    return datum.asChars();
   }
 
   /* (non-Javadoc)

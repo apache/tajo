@@ -1,0 +1,56 @@
+package tajo.engine;
+
+import nta.catalog.Options;
+import nta.catalog.Schema;
+import nta.engine.NtaTestingUtility;
+import nta.storage.CSVFile2;
+import nta.util.FileUtil;
+import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
+import tajo.benchmark.TPCH;
+
+import java.io.File;
+import java.io.IOException;
+import java.sql.ResultSet;
+import java.util.Map;
+
+/**
+ * @author Hyunsik Choi
+ */
+abstract class TpchTestBase {
+  String [] names;
+  String [][] tables;
+  Schema[] schemas;
+  Map<String, Integer> nameMap = Maps.newHashMap();
+
+  public TpchTestBase() throws IOException {
+    names = new String[] {"customer", "lineitem", "nation", "orders", "part", "partsupp", "region", "supplier"};
+    for (int i = 0; i < names.length; i++) {
+      nameMap.put(names[i], i);
+    }
+
+    TPCH tpch = new TPCH();
+    tpch.loadSchemas();
+
+    schemas = new Schema[names.length];
+    for (int i = 0; i < names.length; i++) {
+      schemas[i] = tpch.getSchema(names[i]);
+    }
+
+    tables = new String[names.length][];
+    File file;
+    for (int i = 0; i < names.length; i++) {
+      file = new File("src/test/tpch/" + names[i] + ".tbl");
+      tables[i] = FileUtil.readTextFile(file).split("\n");
+    }
+  }
+
+  public int getIndexByName(String name) {
+    return nameMap.get(name);
+  }
+
+  public ResultSet execute(String query) throws Exception {
+    Options opt = new Options();
+    opt.put(CSVFile2.DELIMITER, "|");
+    return NtaTestingUtility.run(names, schemas, opt, tables, query);
+  }
+}

@@ -14,24 +14,19 @@ import nta.catalog.TConstants
 class TestSimpleQuery extends FunSuite with BeforeAndAfterAll {
   var benchmark : SimpleQuery = _
   var conf : Configuration = _
-  var util : NtaTestingUtility = _
 
-  override def beforeAll {
-    util = new NtaTestingUtility
-    util.startMiniCluster(1)
-    conf = util.getConfiguration
-    benchmark = new SimpleQuery(conf, "")
+  override def beforeAll() {
+    benchmark = new SimpleQuery()
     benchmark.loadSchemas()
     benchmark.loadQueries()
     // the test of load table
     //benchmark.loadTables()
   }
 
-  override def afterAll {
-    util.shutdownMiniCluster()
+  override def afterAll() {
   }
 
-  test("Schema Load Test Passed") {
+  test("Schema Load Test") {
     assert(benchmark.getSchema("lineitem") != null)
     assert(benchmark.getSchema("customer") != null)
     assert(benchmark.getSchema("nation") != null)
@@ -42,14 +37,14 @@ class TestSimpleQuery extends FunSuite with BeforeAndAfterAll {
     assert(benchmark.getSchema("supplier") != null)
   }
 
-  test("Query Load Test Passed") {
+  test("Query Load Test") {
     assert(benchmark.getQuery("q1") != null)
   }
 
   /*
   test("Table Load Test Passed") {
     val client = new TajoClient(conf)
-    assert(client.existTable("lineitem"))
+    assert(client.existTable("lineitem.tbl"))
     assert(client.existTable("customer"))
     assert(client.existTable("nation"))
     assert(client.existTable("part"))

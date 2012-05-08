@@ -417,6 +417,7 @@ public class NtaTestingUtility {
 
   public static ResultSet run(String [] tableNames,
                               Schema[] schemas,
+                              Options option,
                               String [][] tables,
                               String query) throws Exception {
     NtaTestingUtility util = new NtaTestingUtility();
@@ -432,7 +433,7 @@ public class NtaTestingUtility {
       dataDir.mkdirs();
       File tableFile = new File(dataDir, tableNames[i]);
       writeLines(tableFile, tables[i]);
-      TableMeta meta = TCatUtil.newTableMeta(schemas[i], CatalogProtos.StoreType.CSV);
+      TableMeta meta = TCatUtil.newTableMeta(schemas[i], CatalogProtos.StoreType.CSV, option);
       client.createTable(tableNames[i], new Path(tableDir.getAbsolutePath()), meta);
     }
     Thread.sleep(1000);

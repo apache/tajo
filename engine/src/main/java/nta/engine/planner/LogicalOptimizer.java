@@ -55,7 +55,7 @@ public class LogicalOptimizer {
   }
   
   public static LogicalNode optimize(Context ctx, LogicalNode plan) {
-    LogicalNode toBeOptimized = null;
+    LogicalNode toBeOptimized;
     try {
       toBeOptimized = (LogicalNode) plan.clone();
     } catch (CloneNotSupportedException e) {
@@ -94,7 +94,8 @@ public class LogicalOptimizer {
     plan.preOrder(out);
     InSchemaRefresher refresher = new InSchemaRefresher();
     plan.postOrder(refresher);
-    
+
+    // TODO - Only if the projection all is pushed down, the projection ca be removed.
     LogicalNode parent = PlannerUtil.
         findTopParentNode(plan, ExprType.PROJECTION);
     if (parent != null) {
@@ -165,7 +166,7 @@ public class LogicalOptimizer {
           matched.add(eval);
         }
       }
-      EvalNode qual = null;
+      EvalNode qual;
       if (matched.size() > 1) {
         qual = EvalTreeUtil.transformCNF2Singleton(
             matched.toArray(new EvalNode [matched.size()]));
@@ -268,8 +269,8 @@ public class LogicalOptimizer {
     
     @Override
     public void visit(LogicalNode node) {
-      Set<Column> temp = null;
-      Schema projected = null;
+      Set<Column> temp;
+      Schema projected;
       switch (node.getType()) {
       case ROOT:
         
@@ -431,8 +432,8 @@ public class LogicalOptimizer {
       return;
     }
     
-    Schema inputSchema = null;
-    Schema outputSchema = null;
+    Schema inputSchema;
+    Schema outputSchema;
     
     switch(logicalNode.getType()) {
     case ROOT:
@@ -466,7 +467,7 @@ public class LogicalOptimizer {
         
         LogicalNode parent = stack.peek();
         if(parent instanceof UnaryNode) {
-          ((UnaryNode) parent).setSubNode(((UnaryNode) projNode).getSubNode());
+          ((UnaryNode) parent).setSubNode((projNode).getSubNode());
         } else {
           throw new InvalidQueryException("Unexpected Logical Query Plan");
         }
@@ -606,7 +607,7 @@ public class LogicalOptimizer {
       stack.pop();      
             
       break;
-      default: return;
+      default:;
     }
   }
   
@@ -642,7 +643,7 @@ public class LogicalOptimizer {
        for(EvalNode evalNode : funcEval.getGivenArgs()) {
          getTargetListFromEvalTree(inputSchema, evalNode, targetList);
        }
-    default: return;
+    default:;
     }
   }
 }

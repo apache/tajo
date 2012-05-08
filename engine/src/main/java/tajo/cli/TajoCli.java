@@ -154,8 +154,8 @@ public class TajoCli {
       ResultSetMetaData rsmd = res.getMetaData();
       int numOfColumns = rsmd.getColumnCount();
 
-      for (int i = 0; i < numOfColumns; i++) {
-        if (i > 0) sout.print(",  ");
+      for (int i = 1; i <= numOfColumns; i++) {
+        if (i > 1) sout.print(",  ");
         String columnName = rsmd.getColumnName(i);
         sout.print(columnName);
       }
@@ -164,8 +164,8 @@ public class TajoCli {
       int numOfPrintedRows = 0;
       while (res.next()) {
         // TODO - to be improved to print more formatted text
-        for (int i = 0; i < numOfColumns; i++) {
-          if (i > 0) sout.print(",  ");
+        for (int i = 1; i <= numOfColumns; i++) {
+          if (i > 1) sout.print(",  ");
           String columnValue = res.getObject(i).toString();
           sout.print(columnValue);
         }

@@ -14,10 +14,13 @@ import proto.CatalogProtos.{DataType, StoreType}
 import nta.storage.CSVFile2
 ;
 
-class TPCH (conf : Configuration, datadir : String) extends BenchmarkSet(conf) {
+class TPCH extends BenchmarkSet {
   private final val LOG : Log  = LogFactory.getLog(classOf[TPCH])
   private final val BENCHMARK_DIR: String = "benchmark/tpch"
-  private val _datadir = datadir;
+
+  override def init(conf : Configuration, datadir : String) {
+    super.init(conf, datadir)
+  }
 
   override def loadSchemas() {
     schemas += ("lineitem" -> (new Schema)
