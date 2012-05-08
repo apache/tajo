@@ -58,7 +58,7 @@ public class TestResultSetImpl {
         new Path(p2, "score"));
     int deptSize = 100;
     int tupleNum = 10000;
-    Tuple tuple = null;
+    Tuple tuple;
     long written = 0;
     for (int i = 0; i < tupleNum; i++) {
       tuple = new VTuple(2);
@@ -91,18 +91,18 @@ public class TestResultSetImpl {
     Schema schema = scoreMeta.getSchema();
     assertEquals(schema.getColumnNum(), meta.getColumnCount());
     for (int i = 0; i < meta.getColumnCount(); i++) {
-      assertEquals(schema.getColumn(i).getColumnName(), meta.getColumnName(i));
-      assertEquals(schema.getColumn(i).getTableName(), meta.getTableName(i));
+      assertEquals(schema.getColumn(i).getColumnName(), meta.getColumnName(i + 1));
+      assertEquals(schema.getColumn(i).getTableName(), meta.getTableName(i + 1));
       assertEquals(schema.getColumn(i).getDataType().getClass().getCanonicalName(),
-          meta.getColumnTypeName(i));
+          meta.getColumnTypeName(i + 1));
     }
-    
+
     int i = 0;
     assertTrue(rs.isBeforeFirst());
-    for (i = 0 ; rs.next(); i++) {
-      assertEquals("test"+i%100, rs.getString(0));
+    for (; rs.next(); i++) {
+      assertEquals("test"+i%100, rs.getString(1));
       assertEquals("test"+i%100, rs.getString("deptname"));
-      assertEquals(i+1, rs.getInt(1));
+      assertEquals(i+1, rs.getInt(2));
       assertEquals(i+1, rs.getInt("score"));
     }
     assertEquals(10000, i);

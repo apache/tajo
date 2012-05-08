@@ -31,6 +31,7 @@ import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.TableProto;
 import nta.datum.Datum;
+import nta.datum.DatumType;
 import nta.engine.exception.UnsupportedException;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.CSVFile2;
@@ -58,7 +59,6 @@ public class ResultSetImpl implements ResultSet {
   private Tuple cur;
   private int curRow;
   private long totalRow;
-  private Statement stmt;
   private boolean wasNull;
   
   public ResultSetImpl(Configuration conf, String path) 
@@ -327,12 +327,8 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public boolean getBoolean(int fieldId) throws SQLException {
-    Datum datum = cur.getBoolean(fieldId);
-    if (datum == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
     return datum.asBool();
   }
 
@@ -341,12 +337,8 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public boolean getBoolean(String colName) throws SQLException {
-    Datum datum = cur.getBoolean(findColumn(colName));
-    if (datum == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
+    Datum datum = cur.get(findColumn(colName));
+    handleNull(datum);
     return datum.asBool();
   }
 
@@ -354,13 +346,9 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getByte(int)
    */
   @Override
-  public byte getByte(int arg0) throws SQLException {
-    Datum datum = cur.getByte(arg0);
-    if (datum == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
+  public byte getByte(int fieldId) throws SQLException {
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
     return datum.asByte();
   }
 
@@ -368,13 +356,9 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getByte(java.lang.String)
    */
   @Override
-  public byte getByte(String arg0) throws SQLException {
-    Datum datum = cur.getByte(findColumn(arg0));
-    if (datum == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
+  public byte getByte(String name) throws SQLException {
+    Datum datum = cur.get(findColumn(name));
+    handleNull(datum);
     return datum.asByte();
   }
 
@@ -382,28 +366,20 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getBytes(int)
    */
   @Override
-  public byte[] getBytes(int arg0) throws SQLException {
-    Datum d = cur.getBytes(arg0);
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asByteArray();
+  public byte[] getBytes(int fieldId) throws SQLException {
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
+    return datum.asByteArray();
   }
 
   /* (non-Javadoc)
    * @see java.sql.ResultSet#getBytes(java.lang.String)
    */
   @Override
-  public byte[] getBytes(String arg0) throws SQLException {
-    Datum d = cur.getBytes(findColumn(arg0));
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asByteArray();
+  public byte[] getBytes(String name) throws SQLException {
+    Datum datum = cur.get(findColumn(name));
+    handleNull(datum);
+    return datum.asByteArray();
   }
 
   /* (non-Javadoc)
@@ -496,28 +472,20 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getDouble(int)
    */
   @Override
-  public double getDouble(int arg0) throws SQLException {
-    Datum d = cur.getDouble(arg0);
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asDouble();
+  public double getDouble(int fieldId) throws SQLException {
+    Datum datum = cur.getDouble(fieldId - 1);
+    handleNull(datum);
+    return datum.asDouble();
   }
 
   /* (non-Javadoc)
    * @see java.sql.ResultSet#getDouble(java.lang.String)
    */
   @Override
-  public double getDouble(String arg0) throws SQLException {
-    Datum d = cur.getDouble(findColumn(arg0));
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asDouble();
+  public double getDouble(String name) throws SQLException {
+    Datum datum = cur.get(findColumn(name));
+    handleNull(datum);
+    return datum.asDouble();
   }
 
   /* (non-Javadoc)
@@ -540,28 +508,20 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getFloat(int)
    */
   @Override
-  public float getFloat(int arg0) throws SQLException {
-    Datum d =  cur.getFloat(arg0);
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asFloat();
+  public float getFloat(int fieldId) throws SQLException {
+    Datum datum =  cur.get(fieldId - 1);
+    handleNull(datum);
+    return datum.asFloat();
   }
 
   /* (non-Javadoc)
    * @see java.sql.ResultSet#getFloat(java.lang.String)
    */
   @Override
-  public float getFloat(String arg0) throws SQLException {
-    Datum d = cur.getFloat(findColumn(arg0));
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asFloat();
+  public float getFloat(String name) throws SQLException {
+    Datum datum = cur.get(findColumn(name));
+    handleNull(datum);
+    return datum.asFloat();
   }
 
   /* (non-Javadoc)
@@ -576,56 +536,40 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getInt(int)
    */
   @Override
-  public int getInt(int arg0) throws SQLException {
-    Datum d = cur.getInt(arg0);
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asInt();
+  public int getInt(int fieldId) throws SQLException {
+    Datum datum = cur.getInt(fieldId - 1);
+    handleNull(datum);
+    return datum.asInt();
   }
 
   /* (non-Javadoc)
    * @see java.sql.ResultSet#getInt(java.lang.String)
    */
   @Override
-  public int getInt(String arg0) throws SQLException {
-    Datum d = cur.getInt(findColumn(arg0));
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asInt();
+  public int getInt(String name) throws SQLException {
+    Datum datum = cur.get(findColumn(name));
+    handleNull(datum);
+    return datum.asInt();
   }
 
   /* (non-Javadoc)
    * @see java.sql.ResultSet#getLong(int)
    */
   @Override
-  public long getLong(int arg0) throws SQLException {
-    Datum d = cur.getLong(arg0);
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asLong();
+  public long getLong(int fieldId) throws SQLException {
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
+    return datum.asLong();
   }
 
   /* (non-Javadoc)
    * @see java.sql.ResultSet#getLong(java.lang.String)
    */
   @Override
-  public long getLong(String arg0) throws SQLException {
-    Datum d = cur.getLong(findColumn(arg0));
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asLong();
+  public long getLong(String name) throws SQLException {
+    Datum datum = cur.get(findColumn(name));
+    handleNull(datum);
+    return datum.asLong();
   }
 
   /* (non-Javadoc)
@@ -674,7 +618,7 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getNString(int)
    */
   @Override
-  public String getNString(int arg0) throws SQLException {
+  public String getNString(int fieldId) throws SQLException {
     // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
@@ -692,13 +636,14 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getObject(int)
    */
   @Override
-  public Object getObject(int arg0) throws SQLException {
-    Datum d = cur.get(arg0);
+  public Object getObject(int fieldId) throws SQLException {
+    Datum d = cur.get(fieldId - 1);
     if (d == null) {
       wasNull = true;
     } else {
       wasNull = false;
     }
+    // TODO - to be changed to return Object type
     return d;
   }
 
@@ -764,7 +709,7 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getRowId(int)
    */
   @Override
-  public RowId getRowId(int arg0) throws SQLException {
+  public RowId getRowId(int fieldId) throws SQLException {
     // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
@@ -782,7 +727,7 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getSQLXML(int)
    */
   @Override
-  public SQLXML getSQLXML(int arg0) throws SQLException {
+  public SQLXML getSQLXML(int fieldId) throws SQLException {
     throw new UnsupportedException();
   }
 
@@ -798,28 +743,20 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getShort(int)
    */
   @Override
-  public short getShort(int arg0) throws SQLException {
-    Datum d = cur.getShort(arg0);
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asShort();
+  public short getShort(int fieldId) throws SQLException {
+    Datum datum = cur.get(fieldId - 1);
+    handleNull(datum);
+    return datum.asShort();
   }
 
   /* (non-Javadoc)
    * @see java.sql.ResultSet#getShort(java.lang.String)
    */
   @Override
-  public short getShort(String arg0) throws SQLException {
-    Datum d = cur.getShort(findColumn(arg0));
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asShort();
+  public short getShort(String name) throws SQLException {
+    Datum datum = cur.get(findColumn(name));
+    handleNull(datum);
+    return datum.asShort();
   }
 
   /* (non-Javadoc)
@@ -834,9 +771,9 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getString(int)
    */
   @Override
-  public String getString(int arg0) throws SQLException {
-    Datum d = cur.getString(arg0);
-    if (d == null) {
+  public String getString(int fieldId) throws SQLException {
+    Datum d = cur.get(fieldId - 1);
+    if (d.type() == DatumType.NULL) {
       wasNull = true;
     } else {
       wasNull = false;
@@ -849,20 +786,16 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public String getString(String arg0) throws SQLException {
-    Datum d = cur.getString(findColumn(arg0));
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
-    return d.asChars();
+    Datum datum = cur.get(findColumn(arg0));
+    handleNull(datum);
+    return datum.asChars();
   }
 
   /* (non-Javadoc)
    * @see java.sql.ResultSet#getTime(int)
    */
   @Override
-  public Time getTime(int arg0) throws SQLException {
+  public Time getTime(int fieldId) throws SQLException {
     // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
@@ -871,7 +804,7 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getTime(java.lang.String)
    */
   @Override
-  public Time getTime(String arg0) throws SQLException {
+  public Time getTime(String name) throws SQLException {
     // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
@@ -880,7 +813,7 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getTime(int, java.util.Calendar)
    */
   @Override
-  public Time getTime(int arg0, Calendar arg1) throws SQLException {
+  public Time getTime(int fieldId, Calendar arg1) throws SQLException {
     // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
@@ -889,7 +822,7 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getTime(java.lang.String, java.util.Calendar)
    */
   @Override
-  public Time getTime(String arg0, Calendar arg1) throws SQLException {
+  public Time getTime(String name, Calendar arg1) throws SQLException {
     // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
@@ -898,7 +831,7 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getTimestamp(int)
    */
   @Override
-  public Timestamp getTimestamp(int arg0) throws SQLException {
+  public Timestamp getTimestamp(int fieldId) throws SQLException {
     // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
@@ -916,7 +849,7 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getTimestamp(int, java.util.Calendar)
    */
   @Override
-  public Timestamp getTimestamp(int arg0, Calendar arg1) throws SQLException {
+  public Timestamp getTimestamp(int fieldId, Calendar arg1) throws SQLException {
     // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
@@ -942,7 +875,7 @@ public class ResultSetImpl implements ResultSet {
    * @see java.sql.ResultSet#getURL(int)
    */
   @Override
-  public URL getURL(int arg0) throws SQLException {
+  public URL getURL(int fieldId) throws SQLException {
     // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
@@ -1846,4 +1779,11 @@ public class ResultSetImpl implements ResultSet {
     return wasNull;
   }
 
+  private void handleNull(Datum d) {
+    if (d.type() == DatumType.NULL) {
+      wasNull = true;
+    } else {
+      wasNull = false;
+    }
+  }
 }

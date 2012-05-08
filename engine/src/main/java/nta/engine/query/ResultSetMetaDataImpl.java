@@ -53,7 +53,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public String getColumnClassName(int column) throws SQLException {
-    return meta.getSchema().getColumn(column).getClass().getName();
+    return meta.getSchema().getColumn(column - 1).getClass().getName();
   }
 
   /* (non-Javadoc)
@@ -77,7 +77,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public String getColumnLabel(int column) throws SQLException {
-    return meta.getSchema().getColumn(column).getQualifiedName();
+    return meta.getSchema().getColumn(column - 1).getQualifiedName();
   }
 
   /* (non-Javadoc)
@@ -85,7 +85,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public String getColumnName(int column) throws SQLException {
-    return meta.getSchema().getColumn(column).getColumnName();
+    return meta.getSchema().getColumn(column - 1).getColumnName();
   }
 
   /* (non-Javadoc)
@@ -94,7 +94,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
   @Override
   public int getColumnType(int column) throws SQLException {
     // TODO
-    DataType type = meta.getSchema().getColumn(column).getDataType();
+    DataType type = meta.getSchema().getColumn(column - 1).getDataType();
     switch (type) {
     case BOOLEAN:
       return Types.BOOLEAN;
@@ -132,7 +132,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public String getColumnTypeName(int column) throws SQLException {
-    return meta.getSchema().getColumn(column).
+    return meta.getSchema().getColumn(column - 1).
         getDataType().getClass().getCanonicalName();
   }
 
@@ -165,7 +165,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public String getTableName(int column) throws SQLException {
-    return meta.getSchema().getColumn(column).getTableName();
+    return meta.getSchema().getColumn(column - 1).getTableName();
   }
 
   /* (non-Javadoc)
@@ -242,5 +242,4 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
   public boolean isWritable(int column) throws SQLException {
     return false;
   }
-
 }
