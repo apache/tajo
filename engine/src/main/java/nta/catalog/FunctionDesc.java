@@ -22,7 +22,7 @@ import com.google.gson.annotations.Expose;
  * @author Hyunsik Choi
  * 
  */
-public class FunctionDesc implements ProtoObject<FunctionDescProto> {
+public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
   private FunctionDescProto proto = FunctionDescProto.getDefaultInstance();
   private FunctionDescProto.Builder builder = null;
   private boolean viaProto = false;
@@ -159,8 +159,20 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto> {
     return false;
   }
   
-  public Object clone() {
-    return new FunctionDesc(getProto());
+  @Override
+  public Object clone() throws CloneNotSupportedException{
+    FunctionDesc desc  = (FunctionDesc)super.clone();
+    desc.proto = this.proto;
+    desc.builder = this.builder == null?null:this.builder.clone();
+    
+    desc.signature = this.signature;
+    desc.parameterTypes = this.parameterTypes;
+    
+    desc.returnType = this.returnType;
+    desc.viaProto = this.viaProto;
+    desc.funcClass = this.funcClass;
+    
+    return desc;
   }
 
   @Override

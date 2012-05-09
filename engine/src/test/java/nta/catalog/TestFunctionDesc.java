@@ -2,6 +2,7 @@ package nta.catalog;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,5 +71,16 @@ public class TestFunctionDesc {
 	    		fromJson.getDefinedArgs());
 
 	    assertEquals(desc.getProto(), fromJson.getProto());
+  }
+  
+  @Test
+  public void testClone() throws CloneNotSupportedException {
+    FunctionDesc desc = new FunctionDesc("sum", TestSum.class,
+        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT,
+            DataType.LONG });
+    FunctionDesc cloned = (FunctionDesc)desc.clone();
+    assertTrue("reference chk" , !(desc == cloned));
+    assertTrue("getClass() chk", desc.getClass() == cloned.getClass());
+    assertTrue("equals() chk", desc.equals(cloned));
   }
 }
