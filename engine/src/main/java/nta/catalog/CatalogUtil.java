@@ -1,11 +1,15 @@
 package nta.catalog;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 
+import nta.catalog.proto.CatalogProtos;
 import nta.catalog.proto.CatalogProtos.ColumnProto;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.SchemaProto;
 import nta.engine.query.exception.InvalidQueryException;
+import nta.util.FileUtil;
 
 public class CatalogUtil {
   public static String getCanonicalName(String signature,
@@ -61,7 +65,7 @@ public class CatalogUtil {
       SchemaProto schema) {
     SchemaProto.Builder revisedSchema = SchemaProto.newBuilder(schema);
     revisedSchema.clearFields();
-    String[] split = null;
+    String[] split;
     for (ColumnProto col : schema.getFieldsList()) {
       split = col.getColumnName().split("\\.");
       if (split.length == 1) { // if not qualified name
@@ -81,5 +85,34 @@ public class CatalogUtil {
     }
 
     return revisedSchema.build();
+  }
+
+  public static String prettyPrint(TableMeta meta) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("store type: ").append(meta.getStoreType()).append("\n");
+    sb.append("schema: \n");
+
+    for(int i = 0; i < meta.getSchema().getColumnNum(); i++) {
+      Column col = meta.getSchema().getColumn(i);
+      sb.append(col.getColumnName()).append("\t").append(col.getDataType());
+      sb.append("\n");
+    }
+    return sb.toString();
+  }
+
+  public static void printTableMeta(File file) throws IOException {
+    CatalogProtos.TableProto proto = (CatalogProtos.TableProto) FileUtil.
+        loadProto(file, CatalogProtos.TableProto.getDefaultInstance());
+    System.out.println(prettyPrint(new TableMetaImpl(proto)));
+  }
+
+  public static void main(String [] args) throws IOException {
+    if (args.length < 2) {
+      System.out.println("catalog print [filename]");
+      System.exit(-1);
+    }
+
+    File file = new File(args[1]);
+    printTableMeta(file);
   }
 }

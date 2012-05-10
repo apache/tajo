@@ -64,9 +64,10 @@ if [ $# = 0 ]; then
   echo "  master               run the Master Server"
   echo "  zkserver             run the Zookeeper Server"
   echo "  catalog              run the Catalog server"
+  echo "  catutil			   catalog utility"
   echo "  leafserver           run the Leaf Server"
-  echo "  cluster              Cluster Utility"
-  echo "  cli                  Run the tajo cli"
+  echo "  cluster              cluster Utility"
+  echo "  cli                  run the tajo cli"
   echo "  jar <jar>            run a jar file"
   echo "  benchmark            run the benchmark driver"
   echo " or"
@@ -181,6 +182,9 @@ elif [ "$COMMAND" = "master" ] ; then
   TAJO_OPTS="$TAJO_OPTS $TAJO_MASTER_OPTS"
 elif [ "$COMMAND" = "catalog" ] ; then
   CLASS='nta.catalog.CatalogServer'
+  TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"
+elif [ "$COMMAND" = "catutil" ] ; then
+  CLASS='nta.catalog.CatalogUtil'
   TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"
 elif [ "$COMMAND" = "zkserver" ] ; then
   CLASS='nta.zookeeper.ZkServer'
