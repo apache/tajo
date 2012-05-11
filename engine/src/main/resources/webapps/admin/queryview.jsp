@@ -9,6 +9,8 @@
 <%@ page import="java.net.InetAddress"  %>
 <%@ page import="org.apache.hadoop.conf.Configuration" %>
 <%@ page import="nta.engine.NConstants" %>
+<%@ page import="nta.engine.ClientServiceProtos.*" %>
+<%@ page import="nta.engine.utils.*" %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
   <head>
@@ -28,15 +30,20 @@
 	   if (cmd[0].equalsIgnoreCase("attach")) {
 	     if(cmd.length != 3) {
 	     } else {
-	       master.attachTable(cmd[1], cmd[2]);
+	       AttachTableRequest.Builder attachRequest = AttachTableRequest.newBuilder();
+	       attachRequest.setName(cmd[1]);
+	       attachRequest.setPath(cmd[2]);
+	       master.attachTable(attachRequest.build());
 	     }
 	   } else if (cmd[0].equalsIgnoreCase("detach")) {
 		 if (cmd.length != 2) {
 	     } else {
-		  master.detachTable(cmd[1]);
+		  master.detachTable(ProtoUtil.newProto(cmd[1]));
 	     }
 	   } else {
-	     master.executeQuery(query); 
+		 ExecuteQueryRequest.Builder executeRequest = ExecuteQueryRequest.newBuilder();
+		 executeRequest.setQuery(query);
+	     master.executeQuery(executeRequest.build()); 
 	   }
      }
    
@@ -45,7 +52,7 @@
   <body>
     <div class = "center">
       <div>
-      <img src = "./img/tajochar_title.jpg" />
+      <img src = "./img/tajochar_queries_small.jpg" />
       </div>
     </div>
     <br />
@@ -58,7 +65,7 @@
     </div>
     <hr />
     <div class = "command" >
-      <form method="post" action="main.jsp">
+      <form method="post" action="./queryview.jsp">
 	    <textarea name="command"  class = "command">insert query</textarea>
 	    <br />
 	    <br />

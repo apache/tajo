@@ -21,7 +21,7 @@
    String tableName = request.getParameter("tablename");
    if(tableName == null) {
 	  if(master.getCatalog().getAllTableNames().iterator().hasNext()) 
-	    tableName = master.getCatalog().getAllTableNames().iterator().next();
+	    tableName = catalog.getAllTableNames().iterator().next();
 	  else
 		tableName = null;
    }
@@ -29,7 +29,7 @@
    TableMeta meta = null;
    Collection<String> tableList = null;
    if(tableName != null) {
-     desc = GsonCreator.getInstance().fromJson(master.getTableDesc(tableName) , TableDesc.class);
+	 desc = catalog.getTableDesc(tableName);
      meta = desc.getMeta();
      tableList = master.getCatalog().getAllTableNames();
    }
@@ -37,7 +37,7 @@
 </head>
 <body>
   <div class = "container" >
-  <img src="./img/tajochar_worker.jpg" />
+  <img src="./img/tajochar_catalog_small.jpg" />
   </div>
   <br />
   <div class = "headline_2">

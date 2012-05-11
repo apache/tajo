@@ -29,8 +29,11 @@
   %>
   <body>
     <div class = "container" >
-      <img src = "./img/tajochar_head.jpg" /> <font class="subtitle">Tajo Workers</font>
+      <div>
+      <img src = "./img/tajochar_worker_small.jpg" />
+      </div>
     </div>
+    <br />
     <div class = "headline_2">
       <div class = "container">
         <a href="./index.jsp" class="headline">Tajo Main</a>
