@@ -70,11 +70,11 @@ public class LogicalOptimizer {
     //case INTERSECT:
     case CREATE_TABLE:
       // if there are selection node 
+      pushProjection(ctx, toBeOptimized);
+
       if(PlannerUtil.findTopNode(plan, ExprType.SELECTION) != null) {
         pushSelection(ctx, toBeOptimized);
       }
-      
-      pushProjection(ctx, toBeOptimized);
       
       break;
     default:
@@ -130,12 +130,12 @@ public class LogicalOptimizer {
     Preconditions.checkNotNull(selNode);
     
     Stack<LogicalNode> stack = new Stack<LogicalNode>();
-    EvalNode [] cnfs = EvalTreeUtil.getConjNormalForm(selNode.getQual());
-    pushSelectionRecursive(ctx, plan, Lists.newArrayList(cnfs), stack);
+    EvalNode [] cnf = EvalTreeUtil.getConjNormalForm(selNode.getQual());
+    pushSelectionRecursive(ctx, plan, Lists.newArrayList(cnf), stack);
   }
   
   private static void pushSelectionRecursive(Context ctx, LogicalNode plan,
-      List<EvalNode> evalTrees, Stack<LogicalNode> stack) {
+      List<EvalNode> cnf, Stack<LogicalNode> stack) {
     
     switch(plan.getType()) {
     
@@ -143,12 +143,12 @@ public class LogicalOptimizer {
       SelectionNode selNode = (SelectionNode) plan;
       stack.push(selNode);
       pushSelectionRecursive(ctx, selNode.getSubNode(),
-          evalTrees, stack);
+          cnf, stack);
       stack.pop();
       
       // remove the selection operator if there is no search condition 
       // after selection push.
-      if(evalTrees.size() == 0) {
+      if(cnf.size() == 0) {
         LogicalNode node = stack.peek();
         if (node instanceof UnaryNode) {
           UnaryNode unary = (UnaryNode) node;
@@ -158,26 +158,33 @@ public class LogicalOptimizer {
         }
       }
       break;
-    case SCAN:
-    case JOIN:      
+    case JOIN:
+      JoinNode join = (JoinNode) plan;
+
+      LogicalNode outer = join.getOuterNode();
+      LogicalNode inner = join.getInnerNode();
+
+      pushSelectionRecursive(ctx, outer, cnf, stack);
+      pushSelectionRecursive(ctx, inner, cnf, stack);
+
       List<EvalNode> matched = Lists.newArrayList();
-      for (EvalNode eval : evalTrees) {
+      for (EvalNode eval : cnf) {
         if (selectionPushable(eval, plan)) {
           matched.add(eval);
         }
       }
-      EvalNode qual;
+
+      EvalNode qual = null;
       if (matched.size() > 1) {
+        // merged into one eval tree
         qual = EvalTreeUtil.transformCNF2Singleton(
             matched.toArray(new EvalNode [matched.size()]));
-      } else {
+      } else if (matched.size() == 1) {
+        // if the number of matched expr is one
         qual = matched.get(0);
       }
-      
-      if (plan.getType() == ExprType.SCAN) {
-        ScanNode scanNode = (ScanNode) plan;
-        scanNode.setQual(qual);
-      } else if (plan.getType() == ExprType.JOIN) {
+
+      if (qual != null) {
         JoinNode joinNode = (JoinNode) plan;
         if (joinNode.hasJoinQual()) {
           EvalNode conjQual = EvalTreeUtil.
@@ -186,19 +193,46 @@ public class LogicalOptimizer {
         } else {
           joinNode.setJoinQual(qual);
         }
-      }      
-      evalTrees.removeAll(matched);      
+        cnf.removeAll(matched);
+      }
+
       break;
-      
+
+    case SCAN:
+      matched = Lists.newArrayList();
+      for (EvalNode eval : cnf) {
+        if (selectionPushable(eval, plan)) {
+          matched.add(eval);
+        }
+      }
+
+      qual = null;
+      if (matched.size() > 1) {
+        // merged into one eval tree
+        qual = EvalTreeUtil.transformCNF2Singleton(
+            matched.toArray(new EvalNode [matched.size()]));
+      } else if (matched.size() == 1) {
+        // if the number of matched expr is one
+        qual = matched.get(0);
+      }
+
+      if (qual != null) { // if a matched qual exists
+        ScanNode scanNode = (ScanNode) plan;
+        scanNode.setQual(qual);
+      }
+
+      cnf.removeAll(matched);
+      break;
+
     default:
       stack.push(plan);
       if (plan instanceof UnaryNode) {
         UnaryNode unary = (UnaryNode) plan;
-        pushSelectionRecursive(ctx, unary.getSubNode(), evalTrees, stack);
+        pushSelectionRecursive(ctx, unary.getSubNode(), cnf, stack);
       } else if (plan instanceof BinaryNode) {
         BinaryNode binary = (BinaryNode) plan;
-        pushSelectionRecursive(ctx, binary.getOuterNode(), evalTrees, stack);
-        pushSelectionRecursive(ctx, binary.getInnerNode(), evalTrees, stack);
+        pushSelectionRecursive(ctx, binary.getOuterNode(), cnf, stack);
+        pushSelectionRecursive(ctx, binary.getInnerNode(), cnf, stack);
       }
       stack.pop();
       break;
@@ -232,18 +266,21 @@ public class LogicalOptimizer {
         return false;
       }
       
-      String outer = PlannerUtil.getLineage(joinNode.getOuterNode());
-      String inner = PlannerUtil.getLineage(joinNode.getInnerNode());
+      String [] outer = PlannerUtil.getLineage(joinNode.getOuterNode());
+      String [] inner = PlannerUtil.getLineage(joinNode.getInnerNode());
+
+      Set<String> o = Sets.newHashSet(outer);
+      Set<String> i = Sets.newHashSet(inner);
       if (outer == null || inner == null) {      
         throw new InvalidQueryException("ERROR: Unexpected logical plan");
       }
       Iterator<String> it = tableIds.iterator();
-      if (it.next().equals(outer) && it.next().equals(inner)) {
+      if (o.contains(it.next()) && i.contains(it.next())) {
         return true;
       }
       
       it = tableIds.iterator();
-      if (it.next().equals(inner) && it.next().equals(outer)) {
+      if (i.contains(it.next()) && o.contains(it.next())) {
         return true;
       }
       

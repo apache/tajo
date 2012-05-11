@@ -208,6 +208,8 @@ public class TestLogicalOptimizer {
     assertFalse(joinNode.hasJoinQual());
     
     // Test for Pushable
+    System.out.println("===> " + selNode.getQual());
+    System.out.println("===> " + joinNode);
     assertTrue(LogicalOptimizer.selectionPushable(selNode.getQual(), joinNode));
     
     // Optimized plan

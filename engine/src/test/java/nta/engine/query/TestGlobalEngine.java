@@ -21,7 +21,6 @@ import nta.util.FileUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
@@ -84,7 +83,7 @@ public class TestGlobalEngine {
       "select deptname from score",
       "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname",
       "create table test (id int, name string) using csv location '/tmp/data' with ('csv.delimiter'='|')",
-      "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname and score.score > 10000",
+      "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname and score.score > 50",
       "select deptname, year, sum(score) from score group by cube (deptname, year)"
   };
   private static Map<CompositeKey, Integer> groupbyResult;
@@ -169,7 +168,7 @@ public class TestGlobalEngine {
         joinResult.get(id).add((i+1));
       }
 
-      if (i+1 > 10000) {
+      if (i+1 > 50) {
         if (!selectAfterJoinResult.containsKey(id)) {
           List<Integer> list = new ArrayList<Integer>();
           list.add((i+1));
@@ -281,7 +280,7 @@ public class TestGlobalEngine {
     while ((tuple = scanner.next()) != null) {
       deptname = tuple.get(0).asChars();
       results = new HashSet<Integer>(joinResult.get(deptname));
-      assertTrue(results.contains(tuple.get(1).asInt()));
+      assertTrue(results.contains(tuple.get(2).asInt()));
     }
   }
 
@@ -300,7 +299,7 @@ public class TestGlobalEngine {
     while ((tuple = scanner.next()) != null) {
       deptname = tuple.get(0).asChars();
       results = new HashSet<Integer>(selectAfterJoinResult.get(deptname));
-      assertTrue(results.contains(tuple.get(1).asInt()));
+      assertTrue(results.contains(tuple.get(2).asInt()));
     }
   }
 

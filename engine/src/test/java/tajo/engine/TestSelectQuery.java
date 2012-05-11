@@ -71,4 +71,12 @@ public class TestSelectQuery extends TpchTestBase {
     assertEquals("MAIL",res.getString(15));
     assertEquals("ly final dependencies: slyly bold",res.getString(16));
   }
+
+  @Test
+  public final void testSelectWithFilter() throws Exception {
+    ResultSet res = execute("select l_orderkey, l_linenumber from lineitem where l_shipdate = '1997-01-28'");
+    res.next();
+    assertEquals(2, res.getInt(1));
+    assertEquals(1, res.getInt(2));
+  }
 }

@@ -21,6 +21,7 @@ abstract class TpchTestBase {
   String [][] tables;
   Schema[] schemas;
   Map<String, Integer> nameMap = Maps.newHashMap();
+  protected TPCH tpch;
 
   public TpchTestBase() throws IOException {
     names = new String[] {"customer", "lineitem", "nation", "orders", "part", "partsupp", "region", "supplier"};
@@ -28,8 +29,9 @@ abstract class TpchTestBase {
       nameMap.put(names[i], i);
     }
 
-    TPCH tpch = new TPCH();
+    tpch = new TPCH();
     tpch.loadSchemas();
+    tpch.loadQueries();
 
     schemas = new Schema[names.length];
     for (int i = 0; i < names.length; i++) {

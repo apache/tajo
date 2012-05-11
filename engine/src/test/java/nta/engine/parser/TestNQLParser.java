@@ -358,7 +358,8 @@ public class TestNQLParser {
       "now()", // 22
       "not (90 > 100)", // 23
       "type like '%top'", // 24
-      "type not like 'top%'" // 25
+      "type not like 'top%'", // 25
+      "col = 'value'" // 26
   };
 
   public static NQLParser parseExpr(String expr) {
@@ -553,5 +554,18 @@ public class TestNQLParser {
     fieldName = new FieldName(node.getChild(1));
     assertEquals(fieldName.getName(), "type");
     assertEquals(NQLParser.STRING, node.getChild(2).getType());
-  } 
+  }
+
+  @Test
+  /**
+   * TODO - needs more tests
+   */
+  public void testConstEval() throws RecognitionException {
+    NQLParser p = parseExpr(exprs[26]);
+    CommonTree node = (CommonTree) p.search_condition().getTree();
+    System.out.println(node.toStringTree());
+    assertEquals(NQLParser.EQUAL, node.getType());
+    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
+    assertEquals(NQLParser.STRING, node.getChild(1).getType());
+  }
 }

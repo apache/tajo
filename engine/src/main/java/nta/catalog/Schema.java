@@ -87,6 +87,16 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 	  initColumns();
 	  return fieldsByName.get(colName.toLowerCase());
 	}
+
+  public int getColumnIdByName(String colName) {
+    initColumns();
+    for (Column col : fields) {
+      if (col.getColumnName().equals(colName.toLowerCase())) {
+        return fieldsByName.get(col.getQualifiedName());
+      }
+    }
+    return -1;
+  }
 	
 	public Collection<Column> getColumns() {
 		initColumns();

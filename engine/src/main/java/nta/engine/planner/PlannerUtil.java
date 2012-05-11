@@ -59,9 +59,20 @@ public class PlannerUtil {
     return plan;
   }
   
-  public static String getLineage(LogicalNode node) {
-    ScanNode scanNode = (ScanNode) PlannerUtil.findTopNode(node, ExprType.SCAN);
-    return scanNode.getTableId();
+  public static String [] getLineage(LogicalNode node) {
+    LogicalNode [] scans =  PlannerUtil.findAllNodes(node, ExprType.SCAN);
+    String [] tableNames = new String[scans.length];
+    String name;
+    ScanNode scan;
+    for (int i = 0; i < scans.length; i++) {
+      scan = (ScanNode) scans[i];
+      /*if (scan.hasAlias()) {
+        tableNames[i] = scan.getAlias();
+      } else {*/
+        tableNames[i] = scan.getTableId();
+      //}
+    }
+    return tableNames;
   }
   
   public static LogicalNode insertNode(LogicalNode parent, LogicalNode newNode) {
@@ -227,23 +238,44 @@ public class PlannerUtil {
   }
   
   /**
-   * Find the top node of the given plan
+   * Find the top logical node matched to type from the given node
    * 
-   * @param plan
+   * @param node
    * @param type to find
    * @return a found logical node
    */
-  public static LogicalNode findTopNode(LogicalNode plan, ExprType type) {
-    Preconditions.checkNotNull(plan);
+  public static LogicalNode findTopNode(LogicalNode node, ExprType type) {
+    Preconditions.checkNotNull(node);
     Preconditions.checkNotNull(type);
     
     LogicalNodeFinder finder = new LogicalNodeFinder(type);
-    plan.postOrder(finder);
+    node.postOrder(finder);
     
     if (finder.getFoundNodes().size() == 0) {
       return null;
     }
     return finder.getFoundNodes().get(0);
+  }
+
+  /**
+   * Find the all logical node matched to type from the given node
+   *
+   * @param node
+   * @param type to find
+   * @return a found logical node
+   */
+  public static LogicalNode [] findAllNodes(LogicalNode node, ExprType type) {
+    Preconditions.checkNotNull(node);
+    Preconditions.checkNotNull(type);
+
+    LogicalNodeFinder finder = new LogicalNodeFinder(type);
+    node.postOrder(finder);
+
+    if (finder.getFoundNodes().size() == 0) {
+      return new LogicalNode[] {};
+    }
+    List<LogicalNode> founds = finder.getFoundNodes();
+    return founds.toArray(new LogicalNode[founds.size()]);
   }
   
   /**

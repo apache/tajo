@@ -1,5 +1,8 @@
 <FindBugsFilter>
      <Match>
-		<Package name="~nta\.query\.parser" />
+		<Package name="~nta\.engine\.parser" />
+	</Match>
+	<Match>
+		<Class name="~.*\.*Protos" />
 	</Match>
 </FindBugsFilter>

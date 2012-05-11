@@ -832,6 +832,9 @@ public final class QueryAnalyzer {
     case NQLParser.REAL:
       return new ConstEval(DatumFactory.createDouble(
           Double.valueOf(ast.getText())));
+
+    case NQLParser.STRING:
+      return new ConstEval(DatumFactory.createString(ast.getText()));
     
     case NQLParser.AND:
       return new BinaryEval(Type.AND, createEvalTree(ctx, ast.getChild(0), query), 

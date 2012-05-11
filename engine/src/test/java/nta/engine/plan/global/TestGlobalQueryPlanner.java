@@ -42,7 +42,6 @@ import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.UnionNode;
 import nta.engine.query.GlobalPlanner;
@@ -305,9 +304,7 @@ public class TestGlobalQueryPlanner {
     
     ScheduleUnit unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
-    assertEquals(ExprType.SELECTION, store.getSubNode().getType());
-    SelectionNode select = (SelectionNode) store.getSubNode();
-    assertEquals(ExprType.JOIN, select.getSubNode().getType());
+    assertEquals(ExprType.JOIN, store.getSubNode().getType());
     assertTrue(unit.hasChildQuery());
     ScanNode [] scans = unit.getScanNodes();
     assertEquals(2, scans.length);

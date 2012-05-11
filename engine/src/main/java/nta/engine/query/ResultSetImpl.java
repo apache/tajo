@@ -204,7 +204,7 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public int findColumn(String colName) throws SQLException {
-    return this.meta.getSchema().getColumnId(colName);
+    return this.meta.getSchema().getColumnIdByName(colName);
   }
 
   /* (non-Javadoc)
