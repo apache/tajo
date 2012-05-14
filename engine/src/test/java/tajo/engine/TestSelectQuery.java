@@ -100,4 +100,18 @@ public class TestSelectQuery extends TpchTestBase {
     }
     assertEquals(3,cnt);
   }
+
+  @Test
+  public final void testLikeClause() throws Exception {
+    Set<String> result = Sets.newHashSet(new String[]
+        {"ALGERIA", "ETHIOPIA", "INDIA", "INDONESIA", "ROMANIA", "SAUDI ARABIA", "RUSSIA"});
+
+    ResultSet res = execute("select n_name from nation where n_name like '%IA'");
+    int cnt = 0;
+    while(res.next()) {
+      assertTrue(result.contains(res.getString(1)));
+      cnt++;
+    }
+    assertEquals(result.size(), cnt);
+  }
 }

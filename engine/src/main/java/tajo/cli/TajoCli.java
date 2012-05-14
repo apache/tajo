@@ -179,6 +179,7 @@ public class TajoCli {
             break;
           }
           numOfPrintedRows = 0;
+          sout.println();
         }
       }
     } catch (Throwable t) {

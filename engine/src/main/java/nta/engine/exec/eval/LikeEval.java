@@ -23,6 +23,8 @@ public class LikeEval extends EvalNode {
   @Expose private boolean not;
   @Expose private Column column;
   @Expose private String pattern;
+
+  // temporal variables
   private int fieldId = -1;
   private Pattern compiled;
   private BoolDatum result;
@@ -35,11 +37,10 @@ public class LikeEval extends EvalNode {
     this();
     this.not = not;
     this.column = column;
-    this.setPattern(pattern);
+    this.pattern = pattern;
   }
   
-  public void setPattern(String pattern) {
-    this.pattern = pattern;
+  public void compile(String pattern) {
     String regex = pattern.replace("?", ".");
     regex = regex.replace("%", ".*");
     
@@ -57,15 +58,12 @@ public class LikeEval extends EvalNode {
   public String getName() {
     return "?";
   }
-  
-  public String getPattern() {
-    return this.pattern;
-  }
 
   @Override
   public Datum eval(Schema schema, Tuple tuple, Datum... args) {
     if (fieldId == -1) {
       fieldId = schema.getColumnId(column.getQualifiedName());
+      compile(this.pattern);
     }    
     StringDatum str = tuple.getString(fieldId);
     if (not) {
