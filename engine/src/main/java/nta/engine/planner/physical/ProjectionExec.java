@@ -17,13 +17,20 @@ import nta.storage.VTuple;
  */
 public class ProjectionExec extends PhysicalExec {
   private final ProjectionNode projNode;
-  private final PhysicalExec subOp;
+  private PhysicalExec subOp;
       
   private final Schema inSchema;
   private final Schema outSchema;
   
   private final Tuple outTuple;
   private final EvalNode [] evals;
+  
+  public PhysicalExec getsubOp(){
+    return this.subOp;
+  }
+  public void setsubOp(PhysicalExec s){
+    this.subOp = s;
+  }
 
   public ProjectionExec(SubqueryContext ctx, ProjectionNode projNode, 
       PhysicalExec subOp) {

@@ -24,9 +24,21 @@ public class SortExec extends PhysicalExec {
   private final List<Tuple> tupleSlots;  
   private boolean sorted = false;
   private Iterator<Tuple> iterator;
+  private SortNode annotation;
 
+  public PhysicalExec getsubOp(){
+    return this.subOp;
+  }
+  public void setsubOp(PhysicalExec s){
+    this.subOp = s;
+  }
+  public SortNode getSortNode(){
+    return this.annotation;
+  }
+  
   public SortExec(SortNode annotation, PhysicalExec subOp) {
     this.subOp = subOp;
+    this.annotation = annotation;
     
     this.inputSchema = annotation.getInputSchema();
     this.outputSchema = annotation.getOutputSchema();
