@@ -8,18 +8,7 @@ import java.io.IOException;
 import nta.engine.SubqueryContext;
 import nta.engine.exception.InternalException;
 import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.planner.logical.IndexWriteNode;
-import nta.engine.planner.logical.StoreTableNode;
-import nta.engine.planner.logical.EvalExprNode;
-import nta.engine.planner.logical.GroupbyNode;
-import nta.engine.planner.logical.JoinNode;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.LogicalRootNode;
-import nta.engine.planner.logical.ProjectionNode;
-import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.SelectionNode;
-import nta.engine.planner.logical.SortNode;
-import nta.engine.planner.logical.UnionNode;
+import nta.engine.planner.logical.*;
 import nta.engine.planner.physical.*;
 import nta.storage.StorageManager;
 
@@ -40,7 +29,7 @@ public class PhysicalPlanner {
 
   public PhysicalExec createPlan(SubqueryContext ctx, LogicalNode logicalPlan)
       throws InternalException {
-    PhysicalExec plan = null;
+    PhysicalExec plan;
     try {
       plan = createPlanRecursive(ctx, logicalPlan);
     } catch (IOException ioe) {
@@ -52,14 +41,14 @@ public class PhysicalPlanner {
 
   private PhysicalExec createPlanRecursive(SubqueryContext ctx,
       LogicalNode logicalNode) throws IOException {
-    PhysicalExec outer = null;
-    PhysicalExec inner = null;
+    PhysicalExec outer;
+    PhysicalExec inner;
 
     switch (logicalNode.getType()) {
     case ROOT:
       LogicalRootNode rootNode = (LogicalRootNode) logicalNode;
       return createPlanRecursive(ctx, rootNode.getSubNode());
-      
+
     case EXPRS:
       EvalExprNode evalExpr = (EvalExprNode) logicalNode;
       return new EvalExprExec(evalExpr);
@@ -125,13 +114,12 @@ public class PhysicalPlanner {
   
   public PhysicalExec createJoinPlan(SubqueryContext ctx, JoinNode joinNode, 
       PhysicalExec outer, PhysicalExec inner) {
-    NLJoinExec nlj = new NLJoinExec(ctx, joinNode, outer, inner);
-    return nlj;
+    return new NLJoinExec(ctx, joinNode, outer, inner);
   }
   
   public PhysicalExec createStorePlan(SubqueryContext ctx, StoreTableNode annotation,
       PhysicalExec subOp) throws IOException {
-    PhysicalExec store = null;
+    PhysicalExec store;
     if (annotation.hasPartitionKey()) { // if the partition keys are specified
       store = new PartitionedStoreExec(ctx, sm, annotation, subOp);
     } else {
@@ -146,33 +134,26 @@ public class PhysicalPlanner {
         "Error: There is no table matched to %s", scanNode.getTableId());
     
     Fragment [] fragments = ctx.getTables(scanNode.getTableId());
-    SeqScanExec scan = new SeqScanExec(sm, scanNode, fragments);
 
-    return scan;
+    return new SeqScanExec(sm, scanNode, fragments);
   }
   
   public PhysicalExec createGroupByPlan(SubqueryContext ctx, 
       GroupbyNode groupbyNode, PhysicalExec subOp) throws IOException {
-    GroupByExec groupby = new GroupByExec(ctx, groupbyNode, subOp);
-    
-    return groupby;
+    return new GroupByExec(ctx, groupbyNode, subOp);
   }
   
   public PhysicalExec createSortPlan(SubqueryContext ctx,
       SortNode sortNode, PhysicalExec subOp) throws IOException {
-    SortExec sort = new SortExec(sortNode, subOp);
-    
-    return sort;
+    return new SortExec(sortNode, subOp);
   }
   
   public PhysicalExec createIndexWritePlan(
       StorageManager sm,
       SubqueryContext ctx,
       IndexWriteNode indexWriteNode, PhysicalExec subOp) throws IOException {
-      
-    IndexWriteExec writer = new IndexWriteExec(indexWriteNode, 
-        ctx.getTable(indexWriteNode.getTableName()), subOp);
     
-    return writer;
+    return new IndexWriteExec(indexWriteNode,
+        ctx.getTable(indexWriteNode.getTableName()), subOp);
   }
 }

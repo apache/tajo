@@ -171,7 +171,7 @@ options {k=1;}
 
 query_specification
   : SELECT setQualifier? selectList from_clause? where_clause? groupby_clause? having_clause? orderby_clause?
-  -> ^(SELECT from_clause? selectList where_clause? groupby_clause? having_clause? orderby_clause?)
+  -> ^(SELECT from_clause? setQualifier? selectList where_clause? groupby_clause? having_clause? orderby_clause?)
   ;
   
 insertStmt

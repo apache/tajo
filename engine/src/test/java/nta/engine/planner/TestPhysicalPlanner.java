@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 import nta.catalog.CatalogService;
 import nta.catalog.Column;
@@ -43,6 +44,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -119,9 +121,10 @@ public class TestPhysicalPlanner {
       for (int k = 3; k < 5; k++) {
         for (int j = 1; j <= 3; j++) {
           tuple.put(
-              new Datum[] {DatumFactory.createString("name_" + i), // name_1 ~ 5 (cad: // 5)
-              DatumFactory.createString(k + "rd"), // 3 or 4rd (cad: 2)
-              DatumFactory.createInt(j), // 1 ~ 3
+              new Datum[] {
+                  DatumFactory.createString("name_" + i), // name_1 ~ 5 (cad: // 5)
+                  DatumFactory.createString(k + "rd"), // 3 or 4rd (cad: 2)
+                  DatumFactory.createInt(j), // 1 ~ 3
               m % 3 == 1 ? DatumFactory.createString("one") : NullDatum.get()});
           appender.addTuple(tuple);
           m++;
@@ -562,5 +565,37 @@ public class TestPhysicalPlanner {
     Path path = sm.getTablePath("employee");
     FileStatus [] list = sm.getFileSystem().listStatus(new Path(path, "index"));
     assertEquals(2, list.length);
+  }
+
+  final static String [] duplicateElimination = {
+      "select distinct deptname from score",
+  };
+
+  @Test
+  public final void testDuplicateEliminate() throws IOException {
+    Fragment[] frags = sm.split("score");
+    factory = new SubqueryContext.Factory(catalog);
+    File workDir = new File(NtaTestingUtility.getTestDir("DuplicateEliminate").toString());
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
+        new Fragment[] {frags[0]}, workDir);
+    ParseTree query = analyzer.parse(ctx, duplicateElimination[0]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    LogicalOptimizer.optimize(ctx, plan);
+
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    Tuple tuple;
+
+    int cnt = 0;
+    Set<String> expected = Sets.newHashSet(
+        new String [] {"name_1", "name_2", "name_3", "name_4", "name_5"});
+    while ((tuple = exec.next()) != null) {
+      assertTrue(expected.contains(tuple.getString(0).asChars()));
+      cnt++;
+    }
+    assertEquals(5, cnt);
   }
 }

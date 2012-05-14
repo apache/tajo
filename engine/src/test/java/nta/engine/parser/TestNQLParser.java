@@ -31,6 +31,8 @@ public class TestNQLParser {
       "select name, addr, age from people where age = 30", // 7
       "select name as n, sum(score, 3+4, 3>4) as total, 3+4 as id from people where age = 30", // 8
       "select ipv4:src_ip from test", // 9
+      "select distinct id, name, age, gender from people", // 10
+      "select all id, name, age, gender from people", // 11
   };
 
   static final String[] insQueries = {
@@ -43,7 +45,7 @@ public class TestNQLParser {
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     NQLParser parser = new NQLParser(tokens);
 
-    Tree tree = null;
+    Tree tree;
     try {
       tree = ((Tree) parser.statement().getTree());
     } catch (RecognitionException e) {
@@ -105,6 +107,28 @@ public class TestNQLParser {
     assertEquals("ipv4", fieldName.getFamilyName());
     assertEquals("src_ip", fieldName.getSimpleName());
     assertEquals("ipv4:src_ip", fieldName.getName());
+  }
+
+  @Test
+  public void testSetQualifier() throws NQLSyntaxException {
+    Tree ast = parseQuery(selQueries[10]);
+    assertEquals(NQLParser.SELECT, ast.getType());
+    assertEquals(NQLParser.SET_QUALIFIER, ast.getChild(1).getType());
+    assertEquals(NQLParser.DISTINCT, ast.getChild(1).getChild(0).getType());
+    assertSetListofSetQualifierTest(ast);
+
+    ast = parseQuery(selQueries[11]);
+    assertEquals(NQLParser.SELECT, ast.getType());
+    assertEquals(NQLParser.SET_QUALIFIER, ast.getChild(1).getType());
+    assertEquals(NQLParser.ALL, ast.getChild(1).getChild(0).getType());
+    assertSetListofSetQualifierTest(ast);
+  }
+
+  private void assertSetListofSetQualifierTest(Tree ast) {
+    assertEquals(NQLParser.SEL_LIST, ast.getChild(2).getType());
+    assertEquals(NQLParser.COLUMN, ast.getChild(2).getChild(0).getType());
+    assertEquals(NQLParser.FIELD_NAME, ast.getChild(2).getChild(0).getChild(0)
+        .getType());
   }
 
   @Test

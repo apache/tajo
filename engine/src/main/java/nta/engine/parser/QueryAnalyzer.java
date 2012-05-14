@@ -207,8 +207,7 @@ public final class QueryAnalyzer {
     right = parseQueryTree(rightCtx, (CommonTree) ast.getChild(idx));
     ctx.mergeContext(leftCtx);
     ctx.mergeContext(rightCtx);
-    SetStmt set = new SetStmt(type, left, right, distinct);
-    return set;
+    return new SetStmt(type, left, right, distinct);
   }
 
   private QueryBlock parseSelectStatement(final Context ctx,
@@ -222,10 +221,12 @@ public final class QueryAnalyzer {
 
       switch (node.getType()) {
       case NQLParser.FROM:
-        parseFromClause(ctx, node, block);
+        parseFromClause(ctx, block, node);
         break;
               
       case NQLParser.SET_QUALIFIER:
+        parseSetQualifier(ctx, block, node);
+        break;
         
       case NQLParser.SEL_LIST:
         parseSelectList(ctx, block, node);
@@ -255,6 +256,14 @@ public final class QueryAnalyzer {
     }
 
     return block;
+  }
+
+  private void parseSetQualifier(final Context ctx, final QueryBlock block, final CommonTree ast) {
+    int idx = 0;
+
+    if (ast.getChild(idx).getType() == NQLParser.DISTINCT) {
+      block.setDistinct();
+    }
   }
   
   /**
@@ -312,11 +321,11 @@ public final class QueryAnalyzer {
   
   /**
    * EBNF: table_list -> tableRef (COMMA tableRef)
-   * @param ast
    * @param block
+   * @param ast
    */
-  private void parseFromClause(final Context ctx, 
-      final CommonTree ast, final QueryBlock block) {
+  private void parseFromClause(final Context ctx,
+                               final QueryBlock block, final CommonTree ast) {
     if (ast.getChild(0).getType() == NQLParser.JOIN) { // explicit join
       JoinClause joinClause = parseExplicitJoinClause(ctx, block, 
           (CommonTree) ast.getChild(0));
@@ -326,8 +335,8 @@ public final class QueryAnalyzer {
       int numTables = ast.getChildCount();
   
       if (numTables == 1) { // on single relation
-        FromTable table = null;
-        CommonTree node = null;
+        FromTable table;
+        CommonTree node;
         for (int i = 0; i < ast.getChildCount(); i++) {
           node = (CommonTree) ast.getChild(i);
   
@@ -390,10 +399,9 @@ public final class QueryAnalyzer {
   
   private JoinClause parseExplicitJoinClause(final Context ctx, final QueryBlock block, 
       final CommonTree ast) {
-    CommonTree joinAST = ast;
     
     int idx = 0;
-    int parsedJoinType = joinAST.getChild(idx).getType();
+    int parsedJoinType = ast.getChild(idx).getType();
     JoinType joinType = null;
     
     switch (parsedJoinType) {
@@ -404,7 +412,7 @@ public final class QueryAnalyzer {
       joinType = JoinType.INNER;      
       break;
     case NQLParser.OUTER_JOIN:
-      CommonTree outerAST = (CommonTree) joinAST.getChild(0);      
+      CommonTree outerAST = (CommonTree) ast.getChild(0);
       if (outerAST.getChild(0).getType() == NQLParser.LEFT) {
         joinType = JoinType.LEFT_OUTER;
       } else if (outerAST.getChild(0).getType() == NQLParser.RIGHT) {
@@ -417,18 +425,18 @@ public final class QueryAnalyzer {
     }
     
     idx++; // 1
-    FromTable left = parseTable(ctx, block, (CommonTree) joinAST.getChild(idx));
+    FromTable left = parseTable(ctx, block, (CommonTree) ast.getChild(idx));
     ctx.renameTable(left.getTableId(), 
         left.hasAlias() ? left.getAlias() : left.getTableId());
     JoinClause joinClause = new JoinClause(joinType, left);
     
     idx++; // 2
-    if (joinAST.getChild(idx).getType() == NQLParser.JOIN) {
+    if (ast.getChild(idx).getType() == NQLParser.JOIN) {
       joinClause.setRight(parseExplicitJoinClause(ctx, block, 
-          (CommonTree) joinAST.getChild(idx)));
+          (CommonTree) ast.getChild(idx)));
     } else {
       FromTable right = parseTable(ctx, block, 
-          (CommonTree) joinAST.getChild(idx));
+          (CommonTree) ast.getChild(idx));
       ctx.renameTable(right.getTableId(), 
           right.hasAlias() ? right.getAlias() : right.getTableId());
       block.addFromTable(right);
@@ -436,12 +444,12 @@ public final class QueryAnalyzer {
     }
     
     idx++; // 3
-    if (joinAST.getChild(idx) != null) {
+    if (ast.getChild(idx) != null) {
       if (joinType == JoinType.NATURAL) {
         throw new InvalidQueryException("Cross or natural join cannot have join conditions");
       }
       
-      CommonTree joinQual = (CommonTree) joinAST.getChild(idx);
+      CommonTree joinQual = (CommonTree) ast.getChild(idx);
       if (joinQual.getType() == NQLParser.ON) {
         EvalNode joinCond = parseJoinCondition(ctx, block, joinQual);
         joinClause.setJoinQual(joinCond);
@@ -506,7 +514,7 @@ public final class QueryAnalyzer {
     if (ast.getChild(0).getType() == NQLParser.ALL) {
       block.setProjectAll();
     } else {
-      CommonTree node = null;
+      CommonTree node;
       int numTargets = ast.getChildCount();
       Target [] targets = new Target[numTargets];
       EvalNode evalTree;
@@ -608,7 +616,7 @@ public final class QueryAnalyzer {
       final CommonTree ast) {
     Options params = new Options();
     
-    Tree child = null;
+    Tree child;
     for (int i = 0; i < ast.getChildCount(); i++) {
       child = ast.getChild(i);
       params.put(child.getChild(0).getText(), child.getChild(1).getText());

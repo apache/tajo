@@ -62,7 +62,6 @@ public class PlannerUtil {
   public static String [] getLineage(LogicalNode node) {
     LogicalNode [] scans =  PlannerUtil.findAllNodes(node, ExprType.SCAN);
     String [] tableNames = new String[scans.length];
-    String name;
     ScanNode scan;
     for (int i = 0; i < scans.length; i++) {
       scan = (ScanNode) scans[i];
@@ -240,7 +239,7 @@ public class PlannerUtil {
   /**
    * Find the top logical node matched to type from the given node
    * 
-   * @param node
+   * @param node start node
    * @param type to find
    * @return a found logical node
    */
@@ -260,7 +259,7 @@ public class PlannerUtil {
   /**
    * Find the all logical node matched to type from the given node
    *
-   * @param node
+   * @param node start node
    * @param type to find
    * @return a found logical node
    */
@@ -281,16 +280,16 @@ public class PlannerUtil {
   /**
    * Find a parent node of a given-typed operator.
    * 
-   * @param plan
-   * @param type
+   * @param node start node
+   * @param type to find
    * @return the parent node of a found logical node
    */
-  public static LogicalNode findTopParentNode(LogicalNode plan, ExprType type) {
-    Preconditions.checkNotNull(plan);
+  public static LogicalNode findTopParentNode(LogicalNode node, ExprType type) {
+    Preconditions.checkNotNull(node);
     Preconditions.checkNotNull(type);
     
     ParentNodeFinder finder = new ParentNodeFinder(type);
-    plan.postOrder(finder);
+    node.postOrder(finder);
     
     if (finder.getFoundNodes().size() == 0) {
       return null;
@@ -362,7 +361,7 @@ public class PlannerUtil {
 
     @Override
     public void visit(LogicalNode node) {
-      Set<Column> temp = null;
+      Set<Column> temp;
       switch (node.getType()) {
       case PROJECTION:
         ProjectionNode projNode = (ProjectionNode) node;
@@ -442,11 +441,21 @@ public class PlannerUtil {
   public static Target [] schemaToTargets(Schema schema) {
     Target [] targets = new Target[schema.getColumnNum()];
 
-    FieldEval eval = null;
+    FieldEval eval;
     for (int i = 0; i < schema.getColumnNum(); i++) {
       eval = new FieldEval(schema.getColumn(i));
       targets[i] = new Target(eval);
     }
     return targets;
+  }
+
+  public static SortSpec [] schemaToSortSpecs(Schema schema) {
+    SortSpec [] specs = new SortSpec[schema.getColumnNum()];
+
+    for (int i = 0; i < schema.getColumnNum(); i++) {
+      specs[i] = new SortSpec(schema.getColumn(i), true, false);
+    }
+
+    return specs;
   }
 }

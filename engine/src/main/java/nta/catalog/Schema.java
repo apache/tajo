@@ -233,4 +233,8 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 	  return gson.toJson(this, Schema.class);
 		
 	}
+
+  public Column [] toArray() {
+    return this.fields.toArray(new Column[this.fields.size()]);
+  }
 }

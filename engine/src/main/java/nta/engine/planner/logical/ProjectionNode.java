@@ -17,6 +17,7 @@ public class ProjectionNode extends UnaryNode {
    * the targets are always filled even if the query is 'select *'
    */
   @Expose	private Target [] targets;
+  @Expose private boolean distinct = false;
 
   /**
    * This method is for gson.
@@ -40,7 +41,11 @@ public class ProjectionNode extends UnaryNode {
 	
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();
-	  sb.append("\"Projection\": {\"targets\": [");
+	  sb.append("\"Projection\": {");
+    if (distinct) {
+      sb.append("\"distinct\": true, ");
+    }
+    sb.append("\"targets\": [");
 	  
 	  for (int i = 0; i < targets.length; i++) {
 	    sb.append("\"").append(targets[i]).append("\"");

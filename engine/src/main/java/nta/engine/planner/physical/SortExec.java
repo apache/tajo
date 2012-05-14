@@ -10,6 +10,7 @@ import java.util.List;
 import nta.catalog.Schema;
 import nta.engine.planner.logical.SortNode;
 import nta.storage.Tuple;
+import nta.storage.VTuple;
 
 /**
  * @author Hyunsik Choi
@@ -42,10 +43,10 @@ public class SortExec extends PhysicalExec {
 
   @Override
   public Tuple next() throws IOException {
-    if (sorted == false) {
-      Tuple tuple = null;
+    if (!sorted) {
+      Tuple tuple;
       while ((tuple = subOp.next()) != null) {
-        tupleSlots.add(tuple);
+        tupleSlots.add(new VTuple(tuple));
       }
       
       Collections.sort(tupleSlots, this.comparator);

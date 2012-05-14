@@ -756,4 +756,36 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.PROJECTION, intersect.getOuterNode().getType());
     assertEquals(ExprType.PROJECTION, intersect.getInnerNode().getType());
   }
+
+  static final String [] setQualifiers = {
+    "select name, empid from employee",
+    "select distinct name, empid from employee",
+    "select all name, empid from employee",
+  };
+
+  @Test
+  public void testSetQualifier() {
+    QueryContext ctx = factory.create();
+    ParseTree block = analyzer.parse(ctx, setQualifiers[0]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+    assertEquals(ExprType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+    assertEquals(ExprType.SCAN, root.getSubNode().getType());
+
+    ctx = factory.create();
+    block = analyzer.parse(ctx, setQualifiers[1]);
+    plan = LogicalPlanner.createPlan(ctx, block);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+    assertEquals(ExprType.ROOT, plan.getType());
+    root = (LogicalRootNode) plan;
+    assertEquals(ExprType.GROUP_BY, root.getSubNode().getType());
+
+    block = analyzer.parse(ctx, setQualifiers[2]);
+    plan = LogicalPlanner.createPlan(ctx, block);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+    assertEquals(ExprType.ROOT, plan.getType());
+    root = (LogicalRootNode) plan;
+    assertEquals(ExprType.SCAN, root.getSubNode().getType());
+  }
 }

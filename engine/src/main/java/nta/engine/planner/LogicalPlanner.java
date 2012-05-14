@@ -23,22 +23,7 @@ import nta.engine.parser.QueryBlock.GroupType;
 import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.parser.SetStmt;
-import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.IndexWriteNode;
-import nta.engine.planner.logical.CreateTableNode;
-import nta.engine.planner.logical.EvalExprNode;
-import nta.engine.planner.logical.ExceptNode;
-import nta.engine.planner.logical.GroupbyNode;
-import nta.engine.planner.logical.IntersectNode;
-import nta.engine.planner.logical.JoinNode;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.LogicalRootNode;
-import nta.engine.planner.logical.ProjectionNode;
-import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.SelectionNode;
-import nta.engine.planner.logical.SortNode;
-import nta.engine.planner.logical.StoreTableNode;
-import nta.engine.planner.logical.UnionNode;
+import nta.engine.planner.logical.*;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.engine.query.exception.NotSupportQueryException;
 
@@ -118,7 +103,7 @@ public class LogicalPlanner {
   
   private static LogicalNode buildSetPlan(Context ctx,
       SetStmt stmt) {
-    BinaryNode bin = null;
+    BinaryNode bin;
     switch (stmt.getType()) {
     case UNION:
       bin = new UnionNode();
@@ -209,7 +194,11 @@ public class LogicalPlanner {
       subroot = selNode;
     }
     
-    if(query.hasAggregation()) {      
+    if(query.hasAggregation()) {
+      if (query.isDistinct()) {
+        throw new InvalidQueryException("Cannot support GROUP BY queries with distinct keyword");
+      }
+
       GroupbyNode groupbyNode = null;
       if (query.hasGroupbyClause()) {
         if (query.getGroupByClause().getGroupSet().get(0).getType() == GroupType.GROUPBY) {          
@@ -247,7 +236,7 @@ public class LogicalPlanner {
       sortNode.setOutputSchema(sortNode.getInputSchema());
       subroot = sortNode;
     }
-    
+
     ProjectionNode prjNode;
     if (query.getProjectAll()) {
       Schema merged = SchemaUtil.merge(query.getFromTables());
@@ -266,6 +255,17 @@ public class LogicalPlanner {
       Schema projected = getProjectedSchema(ctx, query.getTargetList());
       prjNode.setOutputSchema(projected);
       subroot = prjNode;
+    }
+
+    GroupbyNode dupRemoval;
+    if (query.isDistinct()) {
+      dupRemoval = new GroupbyNode(subroot.getOutputSchema().toArray());
+      dupRemoval.setTargetList(ctx.getTargetList());
+      dupRemoval.setSubNode(subroot);
+      dupRemoval.setInputSchema(subroot.getOutputSchema());
+      Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
+      dupRemoval.setOutputSchema(outSchema);
+      subroot = dupRemoval;
     }
     
     return subroot;
@@ -415,7 +415,7 @@ public class LogicalPlanner {
   private static LogicalNode createImplicitJoinTree(Context ctx, 
       FromTable [] tables) {
     LogicalNode subroot = new ScanNode(tables[0]);
-    Schema joinSchema = null;
+    Schema joinSchema;
     if(tables.length > 1) {    
       for(int i=1; i < tables.length; i++) {
         JoinNode join = new JoinNode(JoinType.CROSS_JOIN, 
@@ -436,7 +436,7 @@ public class LogicalPlanner {
     Schema projected = new Schema();
     for(Target t : targets) {
       DataType type = t.getEvalTree().getValueType();
-      String name = null;
+      String name;
       if (t.hasAlias()) {
         name = t.getAlias();
       } else if (t.getEvalTree().getName().equals("?")) {

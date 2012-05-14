@@ -1,9 +1,11 @@
 package tajo.engine;
 
+import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -73,10 +75,29 @@ public class TestSelectQuery extends TpchTestBase {
   }
 
   @Test
-  public final void testSelectWithFilter() throws Exception {
-    ResultSet res = execute("select l_orderkey, l_linenumber from lineitem where l_shipdate = '1997-01-28'");
-    res.next();
-    assertEquals(2, res.getInt(1));
-    assertEquals(1, res.getInt(2));
+  public final void testSelectDistinct() throws Exception {
+    Set<String> result1 = Sets.newHashSet();
+    result1.add("1,1");
+    result1.add("1,2");
+    result1.add("2,1");
+    result1.add("3,1");
+    result1.add("3,2");
+
+    ResultSet res = execute("select distinct l_orderkey, l_linenumber from lineitem");
+    int cnt = 0;
+    while(res.next()) {
+      assertTrue(result1.contains(res.getInt(1) + "," + res.getInt(2)));
+      cnt++;
+    }
+    assertEquals(5, cnt);
+
+    res = execute("select distinct l_orderkey from lineitem");
+    Set<Integer> result2 = Sets.newHashSet(new Integer[]{1,2,3});
+    cnt = 0;
+    while (res.next()) {
+      assertTrue(result2.contains(res.getInt(1)));
+      cnt++;
+    }
+    assertEquals(3,cnt);
   }
 }

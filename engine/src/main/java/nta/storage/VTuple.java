@@ -16,7 +16,13 @@ public class VTuple implements Tuple {
 	
 	public VTuple(int size) {
 		values = new Datum [size];
-	}	
+	}
+
+  public VTuple(Tuple tuple) {
+    this.values = new Datum[tuple.size()];
+    System.arraycopy(((VTuple)tuple).values, 0, values, 0, tuple.size());
+    this.offset = ((VTuple)tuple).offset;
+  }
 
 	@Override
 	public int size() {	

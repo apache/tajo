@@ -36,8 +36,6 @@ import nta.engine.query.exception.InvalidQueryException;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
-import org.antlr.runtime.ANTLRStringStream;
-import org.antlr.runtime.CommonTokenStream;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -534,5 +532,32 @@ public class TestQueryAnalyzer {
     assertEquals("branch", left.getFromTables()[0].getTableId());
     right = (QueryBlock) rightSet.getRightTree();
     assertEquals("b", right.getFromTables()[0].getAlias());
+  }
+
+  static final String [] setQualifier = {
+      "select id, people_id from student",
+      "select distinct id, people_id from student",
+      "select all id, people_id from student",
+  };
+
+  @Test
+  public final void testSetQulaifier() {
+    Context ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx, setQualifier[0]);
+    assertEquals(StatementType.SELECT, tree.getType());
+    QueryBlock block = (QueryBlock) tree;
+    assertFalse(block.isDistinct());
+
+    ctx = factory.create();
+    tree = analyzer.parse(ctx, setQualifier[1]);
+    assertEquals(StatementType.SELECT, tree.getType());
+    block = (QueryBlock) tree;
+    assertTrue(block.isDistinct());
+
+    ctx = factory.create();
+    tree = analyzer.parse(ctx, setQualifier[2]);
+    assertEquals(StatementType.SELECT, tree.getType());
+    block = (QueryBlock) tree;
+    assertFalse(block.isDistinct());
   }
 }

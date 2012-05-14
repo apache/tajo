@@ -73,7 +73,7 @@ public class QueryBlock extends ParseTree {
     this.distinct = true;
   }
   
-  public final boolean getDistinct() {
+  public final boolean isDistinct() {
     return this.distinct;
   }
   
@@ -383,7 +383,7 @@ public class QueryBlock extends ParseTree {
     public String toString() {
       StringBuilder sb = new StringBuilder(eval.toString());      
       if(hasAlias()) {
-        sb.append(", alias="+alias);
+        sb.append(", alias=").append(alias);
       }
       return sb.toString();
     }
@@ -504,7 +504,7 @@ public class QueryBlock extends ParseTree {
     
     /**
      * 
-     * @param sortKey
+     * @param sortKey columns to sort
      * @param asc true if the sort order is ascending order
      * @param nullFirst
      * Otherwise, it should be false.
@@ -547,7 +547,7 @@ public class QueryBlock extends ParseTree {
     
     public String toString() {
       return "Sortkey (key="+sortKey
-          + " "+(ascending == true ? "asc" : "desc")+")"; 
+          + " "+(ascending ? "asc" : "desc")+")";
     }
   }
 }
