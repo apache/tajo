@@ -27,12 +27,9 @@ import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.planner.logical.ExprType;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.LogicalRootNode;
-import nta.engine.planner.logical.StoreTableNode;
-import nta.engine.planner.logical.UnionNode;
-import nta.engine.planner.physical.PhysicalExec;
+import nta.engine.parser.QueryBlock;
+import nta.engine.planner.logical.*;
+import nta.engine.planner.physical.*;
 import nta.storage.Appender;
 import nta.storage.Scanner;
 import nta.storage.StorageManager;
@@ -224,9 +221,9 @@ public class TestPhysicalPlanner {
   }
   
   @Test
-  public final void testGroupByPlanWithALLField() throws IOException {
+  public final void testHashGroupByPlanWithALLField() throws IOException {
     Fragment[] frags = sm.split("score");
-    File workDir = new File(NtaTestingUtility.getTestDir("GroupBy").toString());
+    File workDir = new File(NtaTestingUtility.getTestDir("HashGroupBy").toString());
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -249,6 +246,60 @@ public class TestPhysicalPlanner {
       i++;
     }    
     assertEquals(5, i);
+  }
+
+  @Test
+  public final void testSortGroupByPlan() throws IOException {
+    Fragment[] frags = sm.split("score");
+    File workDir = new File(NtaTestingUtility.getTestDir("SortGroupBy").toString());
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
+        new Fragment[] { frags[0] }, workDir);
+    ParseTree query = analyzer.parse(ctx, QUERIES[7]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+
+    HashAggregateExec hashAgg = (HashAggregateExec) exec;
+    SeqScanExec scan = (SeqScanExec) hashAgg.getSubOp();
+
+    Column [] grpColumns = hashAgg.getAnnotation().getGroupingColumns();
+    QueryBlock.SortSpec [] specs = new QueryBlock.SortSpec[grpColumns.length];
+    for (int i = 0; i < grpColumns.length; i++) {
+      specs[i] = new QueryBlock.SortSpec(grpColumns[i], true, false);
+    }
+    SortNode annotation = new SortNode(specs);
+    annotation.setInputSchema(scan.getSchema());
+    annotation.setOutputSchema(scan.getSchema());
+    SortExec sort = new SortExec(annotation, scan);
+    exec = new SortAggregateExec(ctx, hashAgg.getAnnotation(), sort);
+
+    int i = 0;
+    Tuple tuple;
+    while ((tuple = exec.next()) != null) {
+      assertEquals(6, tuple.getInt(2).asInt()); // sum
+      assertEquals(3, tuple.getInt(3).asInt()); // max
+      assertEquals(1, tuple.getInt(4).asInt()); // min
+      i++;
+    }
+    assertEquals(10, i);
+
+    exec.rescan();
+    i = 0;
+    while ((tuple = exec.next()) != null) {
+      if (i == 8) {
+        System.out.println("Point!");
+      }
+      assertEquals(6, tuple.getInt(2).asInt()); // sum
+      assertEquals(3, tuple.getInt(3).asInt()); // max
+      assertEquals(1, tuple.getInt(4).asInt()); // min
+      i++;
+    }
+    assertEquals(10, i);
   }
 
   @Test
@@ -591,7 +642,7 @@ public class TestPhysicalPlanner {
 
     int cnt = 0;
     Set<String> expected = Sets.newHashSet(
-        new String [] {"name_1", "name_2", "name_3", "name_4", "name_5"});
+        new String[]{"name_1", "name_2", "name_3", "name_4", "name_5"});
     while ((tuple = exec.next()) != null) {
       assertTrue(expected.contains(tuple.getString(0).asChars()));
       cnt++;

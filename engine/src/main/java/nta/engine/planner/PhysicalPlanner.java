@@ -140,7 +140,7 @@ public class PhysicalPlanner {
   
   public PhysicalExec createGroupByPlan(SubqueryContext ctx, 
       GroupbyNode groupbyNode, PhysicalExec subOp) throws IOException {
-    return new GroupByExec(ctx, groupbyNode, subOp);
+    return new HashAggregateExec(ctx, groupbyNode, subOp);
   }
   
   public PhysicalExec createSortPlan(SubqueryContext ctx,
