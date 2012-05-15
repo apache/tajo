@@ -34,6 +34,7 @@ public class TajoClient {
   private final Configuration conf;
   private ClientService service;
   private static LocalTajoCluster cluster = null;
+  private String resultPath;
 
   public TajoClient(Configuration conf) throws IOException {
     this.conf = conf;
@@ -93,7 +94,12 @@ public class TajoClient {
     ResultSet resultSet = new ResultSetImpl(conf, response.getPath());
     LOG.info(">>>> Output path: " + response.getPath());
     LOG.info(">>>> Response time: " + response.getResponseTime());
+    this.resultPath = response.getPath();
     return resultSet;
+  }
+  
+  public String getResultPath() {
+    return resultPath;
   }
   
   public void updateQuery(String tql) {
