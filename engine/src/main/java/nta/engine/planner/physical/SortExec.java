@@ -29,9 +29,7 @@ public class SortExec extends PhysicalExec {
   public PhysicalExec getsubOp(){
     return this.subOp;
   }
-  public void setsubOp(PhysicalExec s){
-    this.subOp = s;
-  }
+
   public SortNode getSortNode(){
     return this.annotation;
   }
@@ -44,7 +42,7 @@ public class SortExec extends PhysicalExec {
     this.outputSchema = annotation.getOutputSchema();
     
     this.comparator =
-        new TupleComparator(inputSchema, annotation.getSortKeys(), null);    
+        new TupleComparator(inputSchema, annotation.getSortKeys());
     this.tupleSlots = new ArrayList<Tuple>(1000);
   }
   

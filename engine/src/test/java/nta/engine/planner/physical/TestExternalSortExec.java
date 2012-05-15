@@ -102,7 +102,7 @@ public class TestExternalSortExec {
     SortExec inMemSort = (SortExec) proj.getsubOp();
     SeqScanExec scan = (SeqScanExec)inMemSort.getsubOp();
   
-    ExternalSortExec extSort = new ExternalSortExec(sm, inMemSort.getSortNode(),scan);
+    ExternalSortExec extSort = new ExternalSortExec(ctx, sm, inMemSort.getSortNode(), scan);
     proj.setsubOp(extSort);
 
     Tuple tuple;

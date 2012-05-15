@@ -22,12 +22,10 @@ import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.datum.NullDatum;
 import nta.engine.*;
-import nta.engine.WorkerTestingUtil;
 import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.*;
 import nta.engine.planner.physical.*;
 import nta.storage.Appender;
@@ -65,6 +63,7 @@ public class TestPhysicalPlanner {
   public static void setUp() throws Exception {
     QueryIdFactory.reset();
     util = new NtaTestingUtility();
+    util.initTestDir();
     util.startMiniZKCluster();
     util.startCatalogCluster();
     conf = util.getConfiguration();
@@ -169,7 +168,7 @@ public class TestPhysicalPlanner {
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId())));
-    File workDir = new File(NtaTestingUtility.getTestDir("CreateScan").toString());
+    File workDir = NtaTestingUtility.getTestDir("testCreateScanPlan");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
@@ -196,7 +195,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testGroupByPlan() throws IOException {
     Fragment[] frags = sm.split("score");
-    File workDir = new File(NtaTestingUtility.getTestDir("GroupBy").toString());
+    File workDir = NtaTestingUtility.getTestDir("testGroupByPlan");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -222,8 +221,9 @@ public class TestPhysicalPlanner {
   
   @Test
   public final void testHashGroupByPlanWithALLField() throws IOException {
+    // TODO - currently, this query does not use hash-based group operator.
     Fragment[] frags = sm.split("score");
-    File workDir = new File(NtaTestingUtility.getTestDir("HashGroupBy").toString());
+    File workDir = NtaTestingUtility.getTestDir("testHashGroupByPlanWithALLField");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -251,7 +251,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testSortGroupByPlan() throws IOException {
     Fragment[] frags = sm.split("score");
-    File workDir = new File(NtaTestingUtility.getTestDir("SortGroupBy").toString());
+    File workDir = NtaTestingUtility.getTestDir("testSortGroupByPlan");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -264,7 +264,8 @@ public class TestPhysicalPlanner {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    HashAggregateExec hashAgg = (HashAggregateExec) exec;
+    /*HashAggregateExec hashAgg = (HashAggregateExec) exec;
+
     SeqScanExec scan = (SeqScanExec) hashAgg.getSubOp();
 
     Column [] grpColumns = hashAgg.getAnnotation().getGroupingColumns();
@@ -276,7 +277,7 @@ public class TestPhysicalPlanner {
     annotation.setInputSchema(scan.getSchema());
     annotation.setOutputSchema(scan.getSchema());
     SortExec sort = new SortExec(annotation, scan);
-    exec = new SortAggregateExec(ctx, hashAgg.getAnnotation(), sort);
+    exec = new SortAggregateExec(ctx, hashAgg.getAnnotation(), sort);*/
 
     int i = 0;
     Tuple tuple;
@@ -310,7 +311,7 @@ public class TestPhysicalPlanner {
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId())));
-    File workDir = new File(NtaTestingUtility.getTestDir("StorePlan").toString());
+    File workDir = NtaTestingUtility.getTestDir("testStorePlan");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
         workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[8]);
@@ -353,9 +354,9 @@ public class TestPhysicalPlanner {
         QueryIdFactory.newScheduleUnitId(
         QueryIdFactory.newSubQueryId(
             QueryIdFactory.newQueryId())));
-    WorkerTestingUtil.buildTestDir("target/test-data/PartitionedStore");
 
-    File workDir = new File("target/test-data/PartitionedStore");
+
+    File workDir = NtaTestingUtility.getTestDir("testPartitionedStorePlan");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
         workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[7]);
@@ -412,9 +413,8 @@ public class TestPhysicalPlanner {
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId())));
-    WorkerTestingUtil.buildTestDir("target/test-data/emptygs");
 
-    File workDir = new File("target/test-data/emptygs");
+    File workDir = NtaTestingUtility.getTestDir("testPartitionedStorePlanWithEmptyGroupingSet");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] }, 
         workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[15]);
@@ -463,7 +463,7 @@ public class TestPhysicalPlanner {
   public final void testAggregationFunction() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    File workDir = new File(NtaTestingUtility.getTestDir("AggregationFunction").toString());
+    File workDir = NtaTestingUtility.getTestDir("testAggregationFunction");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -487,7 +487,7 @@ public class TestPhysicalPlanner {
   public final void testCountFunction() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    File workDir = new File(NtaTestingUtility.getTestDir("CountFunction").toString());
+    File workDir = NtaTestingUtility.getTestDir("testCountFunction");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -509,7 +509,7 @@ public class TestPhysicalPlanner {
   public final void testGroupByWithNullValue() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    File workDir = new File(NtaTestingUtility.getTestDir("GroupByWithNull").toString());
+    File workDir = NtaTestingUtility.getTestDir("testGroupByWithNullValue");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -522,8 +522,6 @@ public class TestPhysicalPlanner {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    @SuppressWarnings("unused")
-    Tuple tuple = null;    
     int count = 0;
     while(exec.next() != null) {
       count++;
@@ -535,7 +533,7 @@ public class TestPhysicalPlanner {
   public final void testUnionPlan() throws IOException {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory(catalog);
-    File workDir = new File(NtaTestingUtility.getTestDir("Union").toString());
+    File workDir = NtaTestingUtility.getTestDir("testUnionPlan");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -563,7 +561,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testEvalExpr() throws IOException {
     factory = new SubqueryContext.Factory(catalog);
-    File workDir = new File(NtaTestingUtility.getTestDir("EvalExpr").toString());
+    File workDir = NtaTestingUtility.getTestDir("testEvalExpr");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -598,7 +596,7 @@ public class TestPhysicalPlanner {
   public final void testCreateIndex() throws IOException {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory(catalog);
-    File workDir = new File(NtaTestingUtility.getTestDir("CreateIndex").toString());
+    File workDir = NtaTestingUtility.getTestDir("testCreateIndex");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -626,7 +624,8 @@ public class TestPhysicalPlanner {
   public final void testDuplicateEliminate() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
-    File workDir = new File(NtaTestingUtility.getTestDir("DuplicateEliminate").toString());
+
+    File workDir = NtaTestingUtility.getTestDir("testDuplicateEliminate");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(

@@ -5,9 +5,11 @@ package nta.engine.planner;
 
 import java.io.IOException;
 
+import nta.catalog.Column;
 import nta.engine.SubqueryContext;
 import nta.engine.exception.InternalException;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.*;
 import nta.engine.planner.physical.*;
 import nta.storage.StorageManager;
@@ -140,7 +142,21 @@ public class PhysicalPlanner {
   
   public PhysicalExec createGroupByPlan(SubqueryContext ctx, 
       GroupbyNode groupbyNode, PhysicalExec subOp) throws IOException {
-    return new HashAggregateExec(ctx, groupbyNode, subOp);
+    Column[] grpColumns = groupbyNode.getGroupingColumns();
+    if (grpColumns.length == 0) {
+      return new HashAggregateExec(ctx, groupbyNode, subOp);
+    }  else {
+      QueryBlock.SortSpec [] specs = new QueryBlock.SortSpec[grpColumns.length];
+      for (int i = 0; i < grpColumns.length; i++) {
+        specs[i] = new QueryBlock.SortSpec(grpColumns[i], true, false);
+      }
+      SortNode sortNode = new SortNode(specs);
+      sortNode.setInputSchema(subOp.getSchema());
+      sortNode.setOutputSchema(subOp.getSchema());
+      //SortExec sortExec = new SortExec(sortNode, subOp);
+      ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
+      return new SortAggregateExec(ctx, groupbyNode, sortExec);
+    }
   }
   
   public PhysicalExec createSortPlan(SubqueryContext ctx,

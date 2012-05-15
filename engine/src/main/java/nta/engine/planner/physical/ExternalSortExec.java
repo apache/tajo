@@ -10,11 +10,10 @@ import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.engine.SubqueryContext;
 import nta.engine.planner.logical.SortNode;
-import nta.storage.Appender;
-import nta.storage.Scanner;
-import nta.storage.StorageManager;
-import nta.storage.Tuple;
+import nta.storage.*;
+import org.apache.hadoop.fs.Path;
 
 /**
  * @author Byungnam Lim
@@ -32,11 +31,13 @@ public class ExternalSortExec extends PhysicalExec {
   private Appender appender;
   private String tableName = null;
 
-  private final int MAXSIZE = 10000;
+
+  private final String workDir;
+  private final int MAXSIZE = 800000;
   private int run;
   private final static String SORT_PREFIX = "s_";
 
-  public ExternalSortExec(StorageManager sm, SortNode annotation,
+  public ExternalSortExec(SubqueryContext ctx, StorageManager sm, SortNode annotation,
       PhysicalExec subOp) {
     this.subOp = subOp;
     this.sm = sm;
@@ -44,11 +45,11 @@ public class ExternalSortExec extends PhysicalExec {
     this.inputSchema = annotation.getInputSchema();
     this.outputSchema = annotation.getOutputSchema();
 
-    this.comparator = new TupleComparator(inputSchema,
-        annotation.getSortKeys(), null);
+    this.comparator = new TupleComparator(inputSchema, annotation.getSortKeys());
     this.tupleSlots = new ArrayList<Tuple>(MAXSIZE);
 
     this.run = 0;
+    this.workDir = ctx.getWorkDir().getAbsolutePath() + "/extsort";
   }
 
   @Override
@@ -59,8 +60,9 @@ public class ExternalSortExec extends PhysicalExec {
   private void firstPhase(List<Tuple> tupleSlots) throws IOException {
     TableMeta meta = TCatUtil.newTableMeta(this.inputSchema, StoreType.CSV);
     Collections.sort(tupleSlots, this.comparator);
-    sm.initTableBase(meta, SORT_PREFIX + "0_" + run);
-    appender = sm.getAppender(meta, SORT_PREFIX+"0_" + run, SORT_PREFIX + "0_" + run);
+    Path localPath = new Path(workDir, SORT_PREFIX + "0_" + run);
+    sm.initLocalTableBase(localPath, meta);
+    appender = sm.getLocalAppender(meta, new Path(localPath, "data/" + SORT_PREFIX + "0_" + run));
     for (Tuple t : tupleSlots) {
       appender.addTuple(t);
     }
@@ -72,11 +74,11 @@ public class ExternalSortExec extends PhysicalExec {
 
   @Override
   public Tuple next() throws IOException {
-    if (sorted == false) {
-      Tuple tuple = null;
+    if (!sorted) {
+      Tuple tuple;
       int runNum = 0;
       while ((tuple = subOp.next()) != null) { // partition sort start
-        tupleSlots.add(tuple);
+        tupleSlots.add(new VTuple(tuple));
         if (tupleSlots.size() == MAXSIZE) {
           firstPhase(tupleSlots);
         }
@@ -93,21 +95,21 @@ public class ExternalSortExec extends PhysicalExec {
       while (runNum > 1) {
         while (run < runNum) {
           meta = TCatUtil.newTableMeta(this.inputSchema, StoreType.CSV);
-          sm.initTableBase(meta, SORT_PREFIX + (iterator + 1) + "_" + (run / 2));
-          appender = sm.getAppender(meta, SORT_PREFIX + (iterator + 1) + "_"
-              + (run / 2), SORT_PREFIX + (iterator + 1) + "_" + (run / 2));
+          Path localPath = new Path(workDir, SORT_PREFIX + (iterator + 1) + "_" + (run / 2));
+          sm.initLocalTableBase(localPath, meta);
+          appender = sm.getLocalAppender(meta, new Path(localPath, "data/" + SORT_PREFIX + (iterator + 1) + "_" + (run / 2)));
 
           if (run + 1 >= runNum) { // if number of run is odd just copy it.
-            Scanner s1 = sm.getScanner(SORT_PREFIX + iterator + "_" + run, SORT_PREFIX
-                + iterator + "_" + run);
+            Path p2 = new Path(workDir, SORT_PREFIX + iterator + "_" + run);
+            Scanner s1 = sm.getLocalScanner(p2, SORT_PREFIX + iterator + "_" + run);
             while ((tuple = s1.next()) != null) {
               appender.addTuple(tuple);
             }
           } else {
-            Scanner s1 = sm.getScanner(SORT_PREFIX + iterator + "_" + run, SORT_PREFIX
-                + iterator + "_" + run);
-            Scanner s2 = sm.getScanner(SORT_PREFIX + iterator + "_" + (run + 1),
-                SORT_PREFIX + iterator + "_" + (run + 1));
+            Path p2 = new Path(workDir, SORT_PREFIX + iterator + "_" + run);
+            Scanner s1 = sm.getLocalScanner(p2, SORT_PREFIX + iterator + "_" + run);
+            Path p3 = new Path(workDir, SORT_PREFIX + iterator + "_" + (run + 1));
+            Scanner s2 = sm.getLocalScanner(p3, SORT_PREFIX + iterator + "_" + (run + 1));
 
             Tuple left = s1.next();
             Tuple right = s2.next();
@@ -142,8 +144,8 @@ public class ExternalSortExec extends PhysicalExec {
         run = 0;
         runNum = runNum / 2 + runNum % 2;
       }
-      tableName = new String(SORT_PREFIX + iterator + "_" + 0);
-      s = sm.getScanner(tableName, tableName);
+      tableName = SORT_PREFIX + iterator + "_" + 0;
+      s = sm.getLocalScanner(new Path(workDir, tableName), tableName);
       sorted = true;
     }
 

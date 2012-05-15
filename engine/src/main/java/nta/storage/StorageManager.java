@@ -150,6 +150,34 @@ public class StorageManager {
 	  
 	  return getScanner(meta, new Fragment[] {tablet});
 	}
+
+  public Scanner getLocalScanner(Path tablePath, String fileName)
+      throws IOException {
+    TableMeta meta = getLocalTableMeta(tablePath);
+    Path filePath = new Path(tablePath, "data/" + fileName);
+    NtaConf c = NtaConf.create(conf);
+    c.set("fs.default.name", "file:///");
+    FileSystem fs = LocalFileSystem.get(c);
+    FileStatus status = fs.getFileStatus(filePath);
+    Fragment tablet = new Fragment(tablePath.getName(), status.getPath(),
+        meta, 0l , status.getLen());
+
+    Scanner scanner = null;
+
+    switch(meta.getStoreType()) {
+      case RAW: {
+        scanner = new RawFile2(c).
+            openScanner(meta.getSchema(), new Fragment [] {tablet});
+        break;
+      }
+      case CSV: {
+        scanner = new CSVFile2(c).openScanner(meta.getSchema(), new Fragment [] {tablet});
+        break;
+      }
+    }
+
+    return scanner;
+  }
 	
 	public Scanner getScanner(TableMeta meta, Fragment [] tablets) throws IOException {
     Scanner scanner = null;
@@ -229,7 +257,7 @@ public class StorageManager {
 	
 	public Appender getTableAppender(TableMeta meta, Path tablePath) throws 
   IOException {
-    Appender appender = null;    
+    Appender appender;
     FileSystem fs = tablePath.getFileSystem(conf);    
     Path tableData = new Path(tablePath, "data");
     if (!fs.exists(tablePath)) {
@@ -253,7 +281,7 @@ public class StorageManager {
 	}
 	
 	public TableMeta getTableMeta(Path tablePath) throws IOException {
-    TableMeta meta = null;
+    TableMeta meta;
     
     FileSystem fs = tablePath.getFileSystem(conf);
     Path tableMetaPath = new Path(tablePath, ".meta");    
@@ -265,6 +293,26 @@ public class StorageManager {
 
     TableProto tableProto = (TableProto) FileUtil.loadProto(tableMetaIn, 
       TableProto.getDefaultInstance());
+    meta = new TableMetaImpl(tableProto);
+
+    return meta;
+  }
+
+  public TableMeta getLocalTableMeta(Path tablePath) throws IOException {
+    TableMeta meta;
+
+    NtaConf c = NtaConf.create(conf);
+    c.set("fs.default.name", "file:///");
+    FileSystem fs = LocalFileSystem.get(c);
+    Path tableMetaPath = new Path(tablePath, ".meta");
+    if(!fs.exists(tableMetaPath)) {
+      throw new FileNotFoundException(".meta file not found in "+tablePath.toString());
+    }
+
+    FSDataInputStream tableMetaIn = fs.open(tableMetaPath);
+
+    TableProto tableProto = (TableProto) FileUtil.loadProto(tableMetaIn,
+        TableProto.getDefaultInstance());
     meta = new TableMetaImpl(tableProto);
 
     return meta;
@@ -303,7 +351,7 @@ public class StorageManager {
 	  TableMeta meta = getTableMeta(tablePath);
 	  long defaultBlockSize = size;
     List<Fragment> listTablets = new ArrayList<Fragment>();
-    Fragment tablet = null;
+    Fragment tablet;
     
     FileStatus[] fileLists = fs.listStatus(new Path(tablePath, "data"));
     for (FileStatus file : fileLists) {

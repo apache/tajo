@@ -9,6 +9,7 @@ import com.google.common.base.Preconditions;
 
 import nta.catalog.Schema;
 import nta.datum.Datum;
+import nta.datum.DatumType;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.storage.Tuple;
 
@@ -28,21 +29,20 @@ public class TupleComparator implements Comparator<Tuple> {
   private Datum left;
   private Datum right;
   private int compVal;
-  
-  public final static boolean [] DEFAULT_NULL_ORDER = new boolean[] { false, false };
 
-  public TupleComparator(Schema schema, SortSpec[] sortKeys, boolean[] nullFirst) {
+  public TupleComparator(Schema schema, SortSpec[] sortKeys) {
     Preconditions.checkArgument(sortKeys.length > 0, 
         "At least one sort key must be specified.");
     
     this.sortKeyIds = new int[sortKeys.length];
     this.asc = new boolean[sortKeys.length];
+    this.nullFirsts = new boolean[sortKeys.length];
     for (int i = 0; i < sortKeys.length; i++) {
       this.sortKeyIds[i] = schema.getColumnId(sortKeys[i].getSortKey().getQualifiedName());
           
-      this.asc[i] = sortKeys[i].isAscending() == true ? true : false;
+      this.asc[i] = sortKeys[i].isAscending();
+      this.nullFirsts[i]= sortKeys[i].isNullFirst();
     }
-    this.nullFirsts = nullFirst;
   }
 
   @Override
@@ -50,13 +50,31 @@ public class TupleComparator implements Comparator<Tuple> {
     for (int i = 0; i < sortKeyIds.length; i++) {
       left = tuple1.get(sortKeyIds[i]);
       right = tuple2.get(sortKeyIds[i]);
-      if (asc[i]) {
-        compVal = left.compareTo(right);
+
+      if (left.type() == DatumType.NULL || right.type() == DatumType.NULL) {
+        if (!left.equals(right)) {
+          if (left.type() == DatumType.NULL) {
+            compVal = 1;
+          } else if (right.type() == DatumType.NULL) {
+            compVal = -1;
+          }
+          if (nullFirsts[i]) {
+            if (compVal != 0) {
+              compVal *= -1;
+            }
+          }
+        } else {
+          compVal = 0;
+        }
       } else {
-        compVal = right.compareTo(left);
+        if (asc[i]) {
+          compVal = left.compareTo(right);
+        } else {
+          compVal = right.compareTo(left);
+        }
       }
 
-      if (compVal == -1 || compVal == 1) {
+      if (compVal < 0 || compVal > 0) {
         return compVal;
       }
     }

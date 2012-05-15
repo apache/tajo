@@ -44,8 +44,7 @@ public class IndexWriteExec extends PhysicalExec {
       indexKeys[i] = inSchema.getColumnId(col.getQualifiedName());
       keySchema.addColumn(inSchema.getColumn(col.getQualifiedName()));
     }
-    this.comp = new TupleComparator(inSchema, annotation.getSortSpecs(), 
-        TupleComparator.DEFAULT_NULL_ORDER);
+    this.comp = new TupleComparator(inSchema, annotation.getSortSpecs());
     
     BSTIndex bst = new BSTIndex(NtaConf.create());
     this.indexWriter = bst.getIndexWriter(BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
