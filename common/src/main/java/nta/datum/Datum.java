@@ -107,22 +107,22 @@ public abstract class Datum implements Comparable<Datum> {
 	}
 	
 	public BoolDatum equalsTo(Datum datum) {
-	  throw new InvalidOperationException(datum.type);
+	  return DatumFactory.createBool(compareTo(datum) == 0);
 	}
 	public BoolDatum lessThan(Datum datum) {
-	  throw new InvalidOperationException(datum.type);
+    return DatumFactory.createBool(compareTo(datum) < 0);
 	}
 	
 	public BoolDatum lessThanEqual(Datum datum) {
-	  throw new InvalidOperationException(datum.type);
+    return DatumFactory.createBool(compareTo(datum) <= 0);
 	}	
 	
 	public BoolDatum greaterThan(Datum datum) {
-	  throw new InvalidOperationException(datum.type);
+    return DatumFactory.createBool(compareTo(datum) > 0);
 	}
 	
 	public BoolDatum greaterThanEqual(Datum datum) {
-	  throw new InvalidOperationException(datum.type);
+    return DatumFactory.createBool(compareTo(datum) >= 0);
 	}
 	
 	public int compareTo(Datum o) {

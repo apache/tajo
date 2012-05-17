@@ -2,6 +2,7 @@ package tajo.engine;
 
 import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.Test;
+import tajo.client.ResultSetUtil;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -113,5 +114,19 @@ public class TestSelectQuery extends TpchTestBase {
       cnt++;
     }
     assertEquals(result.size(), cnt);
+  }
+
+  @Test
+  public final void testStringCompare() throws Exception {
+    Set<Integer> result = Sets.newHashSet(new Integer[]
+        {1,3});
+
+    ResultSet res = execute("select l_orderkey from lineitem where l_shipdate <= '1996-03-22'");
+    int cnt = 0;
+    while(res.next()) {
+      assertTrue(result.contains(res.getInt(1)));
+      cnt++;
+    }
+    assertEquals(3, cnt);
   }
 }

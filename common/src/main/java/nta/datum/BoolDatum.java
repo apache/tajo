@@ -21,13 +21,13 @@ public class BoolDatum extends Datum {
 		this.val = val;
 	}
 	
-	public void setValue(boolean val) {
-	  this.val = val;
-	}
-	
 	public boolean asBool() {
 		return val;
 	}
+
+  public void setValue(boolean val) {
+    this.val = val;
+  }
 	
 	@Override
 	public short asShort() {	

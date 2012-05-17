@@ -38,7 +38,7 @@ class TestSimpleQuery extends FunSuite with BeforeAndAfterAll {
   }
 
   test("Query Load Test") {
-    assert(benchmark.getQuery("q1") != null)
+    assert(benchmark.getQuery("selection1") != null)
   }
 
   /*
