@@ -1,11 +1,5 @@
 package nta.engine.planner.physical;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
@@ -14,6 +8,12 @@ import nta.engine.SubqueryContext;
 import nta.engine.planner.logical.SortNode;
 import nta.storage.*;
 import org.apache.hadoop.fs.Path;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * @author Byungnam Lim

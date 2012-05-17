@@ -1,16 +1,5 @@
 package nta.storage;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
 import nta.catalog.Column;
 import nta.catalog.Options;
 import nta.catalog.Schema;
@@ -23,7 +12,6 @@ import nta.engine.NConstants;
 import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -31,6 +19,17 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class RawFile2 extends Storage {
 
@@ -66,7 +65,7 @@ public class RawFile2 extends Storage {
     private byte[] sync;
     private byte[] checkSync;
     private long start, end;
-    private long startPos, headerPos, lastSyncPos; 
+    private long startPos, headerPos, lastSyncPos;
     private long pageStart, pageLen;
     private long curTupleOffset;
     private Options option;
@@ -306,10 +305,20 @@ public class RawFile2 extends Storage {
         if (contains[i]) {
           col = schema.getColumn(i);
           switch (col.getDataType()) {
+          case BOOLEAN:
+          datum = DatumFactory.createBool(din.readBoolean());
+            this.curTupleOffset += datum.size();
+            tuple.put(i, datum);
+            break;
           case BYTE:
         	datum = DatumFactory.createByte(din.readByte());
         	this.curTupleOffset += datum.size();
             tuple.put(i, datum );
+            break;
+          case CHAR:
+            datum = DatumFactory.createChar(din.readChar());
+            this.curTupleOffset += datum.size();
+            tuple.put(i, datum);
             break;
           case SHORT:
         	datum = DatumFactory.createShort(din.readShort());
@@ -345,7 +354,17 @@ public class RawFile2 extends Storage {
             this.curTupleOffset += datum.size();
             tuple.put(i, datum);
             break;
+            case BYTES:
+              int bytesLen = din.readInt();
+              byte [] bytesBuf = new byte[bytesLen];
+              din.read(bytesBuf);
+              this.curTupleOffset += bytesLen;
+              datum = DatumFactory.createBytes(bytesBuf);
+              tuple.put(i, datum);
+              break;
+
           case IPv4:
+
         	byte[] ipv4 = new byte[4];
             din.read(ipv4, 0, 4);
             datum = DatumFactory.createIPv4(ipv4);
@@ -441,7 +460,7 @@ public class RawFile2 extends Storage {
 		@Override
 		public void addTuple(Tuple t) throws IOException {
 			checkAndWriteSync();
-			Column col = null;
+			Column col;
 			for (int i = 0; i < schema.getColumnNum(); i++) {
 				out.writeBoolean(t.contains(i));
 			}
@@ -449,9 +468,15 @@ public class RawFile2 extends Storage {
 				if (t.contains(i)) {
 					col = schema.getColumn(i);
 					switch (col.getDataType()) {
+          case BOOLEAN:
+            out.writeBoolean(t.getBoolean(i).asBool());
+            break;
 					case BYTE:
 						out.writeByte(t.getByte(i).asByte());
 						break;
+            case CHAR:
+              out.writeChar(t.getChar(i).asChar());
+              break;
 					case STRING:
 						byte[] buf = t.getString(i).asByteArray();
 						if (buf.length > 256) {
@@ -477,6 +502,11 @@ public class RawFile2 extends Storage {
 					case DOUBLE:
 						out.writeDouble(t.getDouble(i).asDouble());
 						break;
+            case BYTES:
+              byte [] bytes = t.getBytes(i).asByteArray();
+            out.writeInt(bytes.length);
+              out.write(bytes);
+              break;
 					case IPv4:
 						out.write(t.getIPv4Bytes(i));
 						break;

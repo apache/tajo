@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 
+import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
@@ -11,6 +12,7 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.StatSet;
 import nta.conf.NtaConf;
+import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.WorkerTestingUtil;
 import nta.engine.NConstants;
@@ -45,11 +47,11 @@ public class TestRawFile2 {
     sm.initTableBase(meta, "table1");
     Appender appender = sm.getAppender(meta, "table1", "file1");
     int tupleNum = 10000;
-    VTuple vTuple = null;
+    VTuple vTuple;
     
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(2);
-      vTuple.put(0, DatumFactory.createInt((Integer)(i+1)));
+      vTuple.put(0, DatumFactory.createInt(i+1));
       vTuple.put(1, DatumFactory.createLong(25l));
       appender.addTuple(vTuple);
     }
@@ -68,7 +70,7 @@ public class TestRawFile2 {
 
     Scanner scanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;
-    while ((vTuple = (VTuple) scanner.next()) != null) {
+    while (scanner.next() != null) {
       tupleCnt++;
     }
     scanner.close();    
@@ -87,11 +89,11 @@ public class TestRawFile2 {
     sm.initTableBase(meta, "table1");
     Appender appender = sm.getAppender(meta, "table1", "file1");
     int tupleNum = 10000;
-    VTuple vTuple = null;
+    VTuple vTuple;
     
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(2);
-      vTuple.put(0, DatumFactory.createInt((Integer)(i+1)));
+      vTuple.put(0, DatumFactory.createInt(i+1));
       vTuple.put(1, DatumFactory.createLong(25l));
       appender.addTuple(vTuple);
     }
@@ -109,7 +111,7 @@ public class TestRawFile2 {
 
     Scanner scanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;
-    while ((vTuple = (VTuple) scanner.next()) != null) {
+    while (scanner.next() != null) {
       tupleCnt++;
     }
     scanner.close();   
@@ -132,7 +134,7 @@ public class TestRawFile2 {
     
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(2);
-      vTuple.put(0, DatumFactory.createInt((Integer)(i+1)));
+      vTuple.put(0, DatumFactory.createInt(i+1));
       vTuple.put(1, DatumFactory.createLong(25l));
       appender.addTuple(vTuple);
     }
@@ -141,7 +143,7 @@ public class TestRawFile2 {
     appender = sm.getAppender(meta, "table1", "file2");
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(2);
-      vTuple.put(0, DatumFactory.createInt((Integer)(i+1000)));
+      vTuple.put(0, DatumFactory.createInt(i+1000));
       vTuple.put(1, DatumFactory.createLong(25l));
       appender.addTuple(vTuple);
     }
@@ -162,11 +164,57 @@ public class TestRawFile2 {
     
     Scanner scanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;
-    while ((vTuple = (VTuple) scanner.next()) != null) {
+    while (scanner.next() != null) {
       tupleCnt++;
     }
     scanner.close();   
     
     assertEquals(tupleNum*2, tupleCnt);
+  }
+
+  @Test
+  public void testVariousTypes() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("col1", DataType.BOOLEAN);
+    schema.addColumn("col2", DataType.BYTE);
+    schema.addColumn("col3", DataType.CHAR);
+    schema.addColumn("col4", DataType.SHORT);
+    schema.addColumn("col5", DataType.INT);
+    schema.addColumn("col6", DataType.LONG);
+    schema.addColumn("col7", DataType.FLOAT);
+    schema.addColumn("col8", DataType.DOUBLE);
+    schema.addColumn("col9", DataType.STRING);
+    schema.addColumn("col10", DataType.BYTES);
+    schema.addColumn("col11", DataType.IPv4);
+
+    Options options = new Options();
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW, options);
+
+    sm.initTableBase(meta, "raw");
+    Appender appender = sm.getAppender(meta, "raw", "table.dat");
+
+    Tuple tuple = new VTuple(11);
+    tuple.put(new Datum[] {
+        DatumFactory.createBool(true),
+        DatumFactory.createByte((byte) 0x99),
+        DatumFactory.createChar('7'),
+        DatumFactory.createShort((short) 17),
+        DatumFactory.createInt(59),
+        DatumFactory.createLong(23l),
+        DatumFactory.createFloat(77.9f),
+        DatumFactory.createDouble(271.9f),
+        DatumFactory.createString("hyunsik"),
+        DatumFactory.createBytes("hyunsik".getBytes()),
+        DatumFactory.createIPv4("192.168.0.1")
+    });
+    appender.addTuple(tuple);
+    appender.flush();
+    appender.close();
+
+    Scanner scanner = sm.getScanner("raw", "table.dat");
+    Tuple retrieved = scanner.next();
+    for (int i = 0; i < tuple.size(); i++) {
+      assertEquals(tuple.get(i), retrieved.get(i));
+    }
   }
 }

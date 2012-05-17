@@ -3,13 +3,7 @@
  */
 package nta.engine.planner.physical;
 
-import java.io.IOException;
-import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.google.common.base.Preconditions;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
@@ -23,11 +17,15 @@ import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.StorageUtil;
 import nta.storage.Tuple;
-
 import org.apache.hadoop.fs.Path;
 import org.mortbay.log.Log;
 
-import com.google.common.base.Preconditions;
+import java.io.IOException;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Hyunsik Choi
@@ -65,7 +63,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
     this.subOp = subOp;
     this.inputSchema = this.annotation.getInputSchema();
     this.outputSchema = this.annotation.getOutputSchema();    
-    this.meta = TCatUtil.newTableMeta(this.outputSchema, StoreType.CSV);    
+    this.meta = TCatUtil.newTableMeta(this.outputSchema, StoreType.CSV);
     
     // about the partitions
     this.numPartitions = annotation.getNumPartitions();
@@ -104,8 +102,8 @@ public final class PartitionedStoreExec extends PhysicalExec {
 
   @Override
   public Tuple next() throws IOException {
-    Tuple tuple = null;
-    Appender appender = null;
+    Tuple tuple;
+    Appender appender;
     int partition;
     while ((tuple = subOp.next()) != null) {
       partition = partitioner.getPartition(tuple);
