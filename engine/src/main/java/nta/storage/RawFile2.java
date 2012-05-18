@@ -301,7 +301,7 @@ public class RawFile2 extends Storage {
       }
       Column col = null;
       for (i = 0; i < schema.getColumnNum(); i++) {
-    	Datum datum;
+    	  Datum datum;
         if (contains[i]) {
           col = schema.getColumn(i);
           switch (col.getDataType()) {
@@ -374,6 +374,8 @@ public class RawFile2 extends Storage {
           default:
             break;
           }
+        } else {
+          tuple.put(i, DatumFactory.createNullDatum());
         }
       }
       return tuple;
@@ -462,10 +464,10 @@ public class RawFile2 extends Storage {
 			checkAndWriteSync();
 			Column col;
 			for (int i = 0; i < schema.getColumnNum(); i++) {
-				out.writeBoolean(t.contains(i));
+				out.writeBoolean(!t.isNull(i));
 			}
 			for (int i = 0; i < schema.getColumnNum(); i++) {
-				if (t.contains(i)) {
+				if (!t.isNull(i)) {
 					col = schema.getColumn(i);
 					switch (col.getDataType()) {
           case BOOLEAN:

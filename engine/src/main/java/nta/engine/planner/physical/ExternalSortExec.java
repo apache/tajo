@@ -58,7 +58,7 @@ public class ExternalSortExec extends PhysicalExec {
   }
 
   private void firstPhase(List<Tuple> tupleSlots) throws IOException {
-    TableMeta meta = TCatUtil.newTableMeta(this.inputSchema, StoreType.CSV);
+    TableMeta meta = TCatUtil.newTableMeta(this.inputSchema, StoreType.RAW);
     Collections.sort(tupleSlots, this.comparator);
     Path localPath = new Path(workDir, SORT_PREFIX + "0_" + run);
     sm.initLocalTableBase(localPath, meta);
@@ -94,7 +94,7 @@ public class ExternalSortExec extends PhysicalExec {
       // external sort start
       while (runNum > 1) {
         while (run < runNum) {
-          meta = TCatUtil.newTableMeta(this.inputSchema, StoreType.CSV);
+          meta = TCatUtil.newTableMeta(this.inputSchema, StoreType.RAW);
           Path localPath = new Path(workDir, SORT_PREFIX + (iterator + 1) + "_" + (run / 2));
           sm.initLocalTableBase(localPath, meta);
           appender = sm.getLocalAppender(meta, new Path(localPath, "data/" + SORT_PREFIX + (iterator + 1) + "_" + (run / 2)));

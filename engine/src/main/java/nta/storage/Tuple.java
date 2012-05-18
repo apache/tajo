@@ -16,6 +16,8 @@ public interface Tuple {
 	public int size();
 	
 	public boolean contains(int fieldid);
+
+  public boolean isNull(int fieldid);
 	
 	public void clear();
 	

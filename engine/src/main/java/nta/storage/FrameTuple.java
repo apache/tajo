@@ -57,6 +57,11 @@ public class FrameTuple implements Tuple {
   }
 
   @Override
+  public boolean isNull(int fieldid) {
+    return get(fieldid).type() == DatumType.NULL;
+  }
+
+  @Override
   public void clear() {
     throw new UnsupportedException();
   }

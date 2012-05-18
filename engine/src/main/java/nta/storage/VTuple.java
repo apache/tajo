@@ -32,7 +32,12 @@ public class VTuple implements Tuple {
 	public boolean contains(int fieldId) {
 		return values[fieldId] != null;
 	}
-	
+
+  @Override
+  public boolean isNull(int fieldid) {
+    return values[fieldid].type() == DatumType.NULL;
+  }
+
   @Override
   public void clear() {   
     for (int i=0; i < values.length; i++) {
