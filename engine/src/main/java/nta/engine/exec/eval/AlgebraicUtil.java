@@ -114,7 +114,7 @@ public class AlgebraicUtil {
    * @param expr to be simplified
    * @return the simplified expr
    */
-  public static EvalNode simplify(EvalNode expr) {   
+  public static EvalNode simplify(EvalNode expr) {
     EvalNode left = expr.getLeftExpr();
     EvalNode right = expr.getRightExpr();
     

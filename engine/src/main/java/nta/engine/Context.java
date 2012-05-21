@@ -60,7 +60,7 @@ public abstract class Context {
       hasGroupByClause = block.hasGroupbyClause();
 
       if (block.hasFromClause()) {
-        if (block.hasJoinClause()) {
+        if (block.hasExplicitJoinClause()) {
           hasJoinClause = true;
         }
       }

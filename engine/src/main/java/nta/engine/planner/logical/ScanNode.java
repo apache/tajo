@@ -39,7 +39,7 @@ public class ScanNode extends LogicalNode {
 	}
 	
 	public String getTableId() {
-	  return table.getTableId();
+	  return table.getTableName();
 	}
 	
 	public boolean hasAlias() {
@@ -85,7 +85,7 @@ public class ScanNode extends LogicalNode {
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();	  
 	  sb.append("\"Scan\" : {\"table\":\"")
-	  .append(table.getTableId()).append("\"");
+	  .append(table.getTableName()).append("\"");
 	  if (hasAlias()) {
 	    sb.append(",\"alias\": \"").append(table.getAlias());
 	  }

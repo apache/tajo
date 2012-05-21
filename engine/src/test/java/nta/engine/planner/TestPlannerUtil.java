@@ -1,6 +1,9 @@
 package nta.engine.planner;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Options;
@@ -12,8 +15,13 @@ import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.datum.DatumFactory;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
+import nta.engine.exec.eval.BinaryEval;
+import nta.engine.exec.eval.ConstEval;
+import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.FieldEval;
 import nta.engine.function.SumInt;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
@@ -175,5 +183,36 @@ public class TestPlannerUtil {
     
     node = PlannerUtil.findTopNode(root, ExprType.SCAN);
     assertEquals(ExprType.SCAN, node.getType());
+  }
+
+  @Test
+  public final void testIsJoinQual() {
+    FieldEval f1 = new FieldEval("part.p_partkey", DataType.INT);
+    FieldEval f2 = new FieldEval("partsupp.ps_partkey", DataType.INT);
+
+
+    BinaryEval [] joinQuals = new BinaryEval[5];
+    int idx = 0;
+    joinQuals[idx++] = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
+    joinQuals[idx++] = new BinaryEval(EvalNode.Type.LEQ, f1, f2);
+    joinQuals[idx++] = new BinaryEval(EvalNode.Type.LTH, f1, f2);
+    joinQuals[idx++] = new BinaryEval(EvalNode.Type.GEQ, f1, f2);
+    joinQuals[idx] = new BinaryEval(EvalNode.Type.GTH, f1, f2);
+    for (int i = 0; i < idx; i++) {
+      assertTrue(PlannerUtil.isJoinQual(joinQuals[idx]));
+    }
+
+    BinaryEval [] wrongJoinQuals = new BinaryEval[5];
+    idx = 0;
+    wrongJoinQuals[idx++] = new BinaryEval(EvalNode.Type.OR, f1, f2);
+    wrongJoinQuals[idx++] = new BinaryEval(EvalNode.Type.PLUS, f1, f2);
+    wrongJoinQuals[idx++] = new BinaryEval(EvalNode.Type.LIKE, f1, f2);
+
+    ConstEval f3 = new ConstEval(DatumFactory.createInt(1));
+    wrongJoinQuals[idx] = new BinaryEval(EvalNode.Type.EQUAL, f1, f3);
+
+    for (int i = 0; i < idx; i++) {
+      assertFalse(PlannerUtil.isJoinQual(wrongJoinQuals[idx]));
+    }
   }
 }

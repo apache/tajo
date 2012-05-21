@@ -327,4 +327,16 @@ public class EvalTreeUtil {
       return counter;
     }
   }
+
+  public static boolean isComparisonOperator(EvalNode expr) {
+    return expr.getType() == Type.EQUAL ||
+        expr.getType() == Type.LEQ ||
+        expr.getType() == Type.LTH ||
+        expr.getType() == Type.GEQ ||
+        expr.getType() == Type.GTH;
+  }
+
+  public static boolean isLogicalOperator(EvalNode expr) {
+    return expr.getType() == Type.AND || expr.getType() == Type.OR;
+  }
 }

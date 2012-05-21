@@ -138,8 +138,8 @@ public class QueryBlock extends ParseTree {
     this.fromTables.add(table);
   }
   
-  public final boolean hasJoinClause() {
-    return this.joinClause != null;
+  public final boolean hasExplicitJoinClause() {
+    return joinClause != null;
   }
   
   public final void setJoinClause(final JoinClause joinClause) {
@@ -436,8 +436,12 @@ public class QueryBlock extends ParseTree {
       this.alias = alias;
     }
     
-    public final String getTableId() {
+    public final String getTableName() {
       return desc.getId();
+    }
+
+    public final String getTableId() {
+      return alias == null ? desc.getId() : alias;
     }
     
     public final StoreType getStoreType() {

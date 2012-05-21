@@ -280,7 +280,7 @@ public class TestGlobalEngine {
     while ((tuple = scanner.next()) != null) {
       deptname = tuple.get(0).asChars();
       results = new HashSet<Integer>(joinResult.get(deptname));
-      assertTrue(results.contains(tuple.get(2).asInt()));
+      assertTrue(results.contains(tuple.get(1).asInt()));
     }
   }
 
@@ -299,7 +299,7 @@ public class TestGlobalEngine {
     while ((tuple = scanner.next()) != null) {
       deptname = tuple.get(0).asChars();
       results = new HashSet<Integer>(selectAfterJoinResult.get(deptname));
-      assertTrue(results.contains(tuple.get(2).asInt()));
+      assertTrue(results.contains(tuple.get(1).asInt()));
     }
   }
 

@@ -188,20 +188,22 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.JOIN, projNode.getSubNode().getType());
     joinNode = (JoinNode) projNode.getSubNode();
 
-    assertEquals(ExprType.SCAN, joinNode.getOuterNode().getType());
-    ScanNode scan1 = (ScanNode) joinNode.getOuterNode();
-    assertEquals("employee", scan1.getTableId());
-    
-    JoinNode rightNode2 = (JoinNode) joinNode.getInnerNode();
-    assertEquals(ExprType.JOIN, rightNode2.getType());
-        
-    assertEquals(ExprType.SCAN, rightNode2.getOuterNode().getType());
-    ScanNode leftScan = (ScanNode) rightNode2.getOuterNode();
-    assertEquals("dept", leftScan.getTableId());
+    assertEquals(ExprType.JOIN, joinNode.getOuterNode().getType());
 
-    assertEquals(ExprType.SCAN, rightNode2.getInnerNode().getType());
-    ScanNode rightScan = (ScanNode) rightNode2.getInnerNode();
-    assertEquals("score", rightScan.getTableId());
+    assertEquals(ExprType.SCAN, joinNode.getInnerNode().getType());
+    ScanNode scan1 = (ScanNode) joinNode.getInnerNode();
+    assertEquals("score", scan1.getTableId());
+    
+    JoinNode leftNode2 = (JoinNode) joinNode.getOuterNode();
+    assertEquals(ExprType.JOIN, leftNode2.getType());
+        
+    assertEquals(ExprType.SCAN, leftNode2.getOuterNode().getType());
+    ScanNode leftScan = (ScanNode) leftNode2.getOuterNode();
+    assertEquals("employee", leftScan.getTableId());
+
+    assertEquals(ExprType.SCAN, leftNode2.getInnerNode().getType());
+    ScanNode rightScan = (ScanNode) leftNode2.getInnerNode();
+    assertEquals("dept", rightScan.getTableId());
   }
   
   String [] JOINS = { 

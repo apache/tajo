@@ -238,6 +238,7 @@ public class TestGlobalQueryPlanner {
     ParseTree tree = analyzer.parse(ctx,
         "select table0.age,table0.salary,table1.salary from table0,table1 where table0.salary = table1.salary order by table0.age");
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
+    System.out.println(logicalPlan);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);

@@ -60,6 +60,10 @@ abstract class BenchmarkSet() {
     schemas(name)
   }
 
+  def getSchemas() : Iterator[Schema] = {
+    schemas.valuesIterator
+  }
+
   def perform(queryName : String) {
     val query = queries(queryName)
     if (query == null) {

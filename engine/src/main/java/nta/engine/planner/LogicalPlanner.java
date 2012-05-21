@@ -1,16 +1,15 @@
 package nta.engine.planner;
 
-import java.util.List;
+import java.util.*;
 
+import com.google.common.collect.Sets;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.SchemaUtil;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.engine.Context;
-import nta.engine.exec.eval.BinaryEval;
-import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.*;
 import nta.engine.exec.eval.EvalNode.Type;
-import nta.engine.exec.eval.FieldEval;
 import nta.engine.parser.CreateIndexStmt;
 import nta.engine.parser.CreateTableStmt;
 import nta.engine.parser.ParseTree;
@@ -24,6 +23,8 @@ import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.parser.SetStmt;
 import nta.engine.planner.logical.*;
+import nta.engine.planner.logical.join.Edge;
+import nta.engine.planner.logical.join.JoinTree;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.engine.query.exception.NotSupportQueryException;
 
@@ -31,6 +32,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.google.common.collect.Lists;
+import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 
 /**
  * This class creates a logical plan from a parse tree ({@link QueryBlock})
@@ -173,11 +175,19 @@ public class LogicalPlanner {
    */
   private static LogicalNode buildSelectPlan(Context ctx, QueryBlock query) {
     LogicalNode subroot;
+    EvalNode whereCondition = null;
+    EvalNode [] cnf = null;
+    if(query.hasWhereClause()) {
+      whereCondition = query.getWhereCondition();
+      whereCondition = AlgebraicUtil.simplify(whereCondition);
+      cnf = EvalTreeUtil.getConjNormalForm(whereCondition);
+    }
+
     if(query.hasFromClause()) {
-      if (query.hasJoinClause()) {
-        subroot = createExplicitJoinTree(ctx, query.getJoinClause());
+      if (query.hasExplicitJoinClause()) {
+        subroot = createExplicitJoinTree(ctx, query);
       } else {
-        subroot = createImplicitJoinTree(ctx, query.getFromTables());
+        subroot = createImplicitJoinTree(ctx, query.getFromTables(), cnf);
       }
     } else {
       subroot = new EvalExprNode(query.getTargetList());
@@ -185,7 +195,7 @@ public class LogicalPlanner {
       return subroot;
     }
     
-    if(query.hasWhereClause()) {
+    if(whereCondition != null) {
       SelectionNode selNode = 
           new SelectionNode(query.getWhereCondition());
       selNode.setSubNode(subroot);
@@ -343,9 +353,14 @@ public class LogicalPlanner {
     }
     return cube;
   }
+
+  private static LogicalNode createExplicitJoinTree(Context ctx,
+                                                     QueryBlock block) {
+    return createExplicitJoinTree_(ctx, block.getJoinClause());
+  }
   
-  private static LogicalNode createExplicitJoinTree(Context ctx, 
-      JoinClause joinClause) {
+  private static LogicalNode createExplicitJoinTree_(Context ctx,
+                                                     JoinClause joinClause) {
     JoinNode join = new JoinNode(joinClause.getJoinType(),
         new ScanNode(joinClause.getLeft()));
     if (joinClause.hasJoinQual()) {
@@ -356,7 +371,7 @@ public class LogicalPlanner {
     }
     
     if (joinClause.hasRightJoin()) {
-      join.setInner(createExplicitJoinTree(ctx, joinClause.getRightJoin()));
+      join.setInner(createExplicitJoinTree_(ctx, joinClause.getRightJoin()));
     } else {
       join.setInner(new ScanNode(joinClause.getRight()));      
     }
@@ -380,7 +395,7 @@ public class LogicalPlanner {
       Schema rightSchema = join.getInnerNode().getOutputSchema();
       Schema commons = SchemaUtil.getCommons(
           leftSchema, rightSchema);
-      EvalNode njCond = getNJCond(leftSchema, rightSchema, commons);
+      EvalNode njCond = getNaturalJoinCondition(leftSchema, rightSchema, commons);
       join.setJoinQual(njCond);
     } else if (joinClause.hasJoinQual()) { 
       // otherwise, the given join conditions are set
@@ -390,7 +405,7 @@ public class LogicalPlanner {
     return join;
   }
   
-  private static EvalNode getNJCond(Schema outer, Schema inner, Schema commons) {
+  private static EvalNode getNaturalJoinCondition(Schema outer, Schema inner, Schema commons) {
     EvalNode njQual = null;
     EvalNode equiQual;
     
@@ -412,13 +427,119 @@ public class LogicalPlanner {
     return njQual;
   }
   
-  private static LogicalNode createImplicitJoinTree(Context ctx, 
-      FromTable [] tables) {
+  private static LogicalNode createImplicitJoinTree(Context ctx, FromTable [] tables, EvalNode [] cnf) {
+    if (cnf == null) {
+      return createCatasianProduct(ctx, tables);
+    } else {
+      return createCrossJoinFromJoinCondition(ctx, tables, cnf);
+    }
+  }
+
+  private static LogicalNode createCrossJoinFromJoinCondition(Context ctx, FromTable [] tables, EvalNode [] cnf) {
+    Map<String, FromTable> fromTableMap = Maps.newHashMap();
+    for (FromTable f : tables) {
+      // TODO - to consider alias and self-join
+      fromTableMap.put(f.getTableName(), f);
+    }
+
+    JoinTree joinTree = new JoinTree(); // to infer join order
+    for (EvalNode expr : cnf) {
+      if (PlannerUtil.isJoinQual(expr)) {
+        joinTree.addJoin(expr);
+      }
+    }
+
+    List<String> remain = Lists.newArrayList(fromTableMap.keySet());
+    remain.removeAll(joinTree.getTables()); // only remain joins not matched to any join condition
+    List<Edge> joinOrder = null;
+    LogicalNode subroot = null;
+    JoinNode join;
+    Schema joinSchema;
+
+    // if there are at least one join matched to the one of join conditions,
+    // we try to traverse the join tree in the depth-first manner and
+    // determine the initial join order. Here, we do not consider the join cost.
+    // The optimized join order will be considered in the optimizer.
+    if (joinTree.getJoinNum() > 0) {
+      Stack<String> stack = new Stack<String>();
+      Set<String> visited = Sets.newHashSet();
+
+
+      // initially, one table is pushed into the stack
+      String seed = joinTree.getTables().iterator().next();
+      stack.add(seed);
+
+      joinOrder = Lists.newArrayList();
+
+      while (!stack.empty()) {
+        String table = stack.pop();
+        if (visited.contains(table)) {
+          continue;
+        }
+        visited.add(table);
+
+        // 'joinOrder' will contain all tables corresponding to the given join conditions.
+        for (Edge edge : joinTree.getEdges(table)) {
+          if (!visited.contains(edge.getTarget()) && !edge.getTarget().equals(table)) {
+            stack.add(edge.getTarget());
+            joinOrder.add(edge);
+          }
+        }
+      }
+
+      subroot = new ScanNode(fromTableMap.get(joinOrder.get(0).getSrc()));
+      LogicalNode inner;
+      for (int i = 0; i < joinOrder.size(); i++) {
+        Edge edge = joinOrder.get(i);
+        inner = new ScanNode(fromTableMap.get(edge.getTarget()));
+        join = new JoinNode(JoinType.CROSS_JOIN, subroot, inner);
+        subroot = join;
+
+        joinSchema = SchemaUtil.merge(
+            join.getOuterNode().getOutputSchema(),
+            join.getInnerNode().getOutputSchema());
+        join.setInputSchema(joinSchema);
+        join.setOutputSchema(joinSchema);
+      }
+    }
+
+    // Here, there are two cases:
+    // 1) there already exists the join plan.
+    // 2) there are no join plan.
+    if (joinOrder != null) { // case 1)
+      // if there are join tables corresponding to any join condition,
+      // the join plan is placed as the outer plan of the product.
+      remain.remove(joinOrder.get(0).getSrc());
+      remain.remove(joinOrder.get(0).getTarget());
+    } else { // case 2)
+      // if there are no inferred joins, the one of the remain join tables is placed as the left table
+      subroot = new ScanNode(fromTableMap.get(remain.get(0)));
+      remain.remove(remain.get(0));
+    }
+
+    // Here, the variable 'remain' contains join tables which are not matched to any join conditions.
+    // Thus, they will be joined by catasian product
+    for (String table : remain) {
+      join = new JoinNode(JoinType.CROSS_JOIN,
+          subroot, new ScanNode(fromTableMap.get(table)));
+      joinSchema = SchemaUtil.merge(
+          join.getOuterNode().getOutputSchema(),
+          join.getInnerNode().getOutputSchema());
+      join.setInputSchema(joinSchema);
+      join.setOutputSchema(joinSchema);
+      subroot = join;
+    }
+
+    return subroot;
+  }
+
+  // TODO - this method is somewhat duplicated to createCrossJoinFromJoinCondition. Later, it should be removed.
+  private static LogicalNode createCatasianProduct(Context ctx, FromTable [] tables) {
     LogicalNode subroot = new ScanNode(tables[0]);
     Schema joinSchema;
-    if(tables.length > 1) {    
+    if(tables.length > 1) {
       for(int i=1; i < tables.length; i++) {
-        JoinNode join = new JoinNode(JoinType.CROSS_JOIN, 
+        JoinNode join = new JoinNode(JoinType.CROSS_JOIN,
             subroot, new ScanNode(tables[i]));
         joinSchema = SchemaUtil.merge(
             join.getOuterNode().getOutputSchema(),
@@ -428,7 +549,7 @@ public class LogicalPlanner {
         subroot = join;
       }
     }
-    
+
     return subroot;
   }
   

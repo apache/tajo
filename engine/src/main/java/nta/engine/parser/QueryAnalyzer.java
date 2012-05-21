@@ -334,7 +334,7 @@ public final class QueryAnalyzer {
     } else { // implicit join or the from clause on single relation
       int numTables = ast.getChildCount();
   
-      if (numTables == 1) { // on single relation
+      //if (numTables == 1) { // on single relation
         FromTable table;
         CommonTree node;
         for (int i = 0; i < ast.getChildCount(); i++) {
@@ -346,20 +346,20 @@ public final class QueryAnalyzer {
             // table (AS ID)?
             // 0 - a table name, 1 - table alias
             table = parseTable(ctx, block, node);
-            ctx.renameTable(table.getTableId(),
-                table.hasAlias() ? table.getAlias() : table.getTableId());
+            ctx.renameTable(table.getTableName(),
+                table.hasAlias() ? table.getAlias() : table.getTableName());
             block.addFromTable(table);
             break;
   
           default:
           } // switch
         } // for each derievedTable
-      } else if (numTables > 1) {
-        // if the number of tables is greater than 1,
-        // it means the implicit join clause
-        JoinClause joinClause = parseImplicitJoinClause(ctx, block, ast);
-        block.setJoinClause(joinClause);
-      }
+//      } else if (numTables > 1) {
+//        // if the number of tables is greater than 1,
+//        // it means the implicit join clause
+//        JoinClause joinClause = parseImplicitJoinClause(ctx, block, ast);
+//        block.setJoinClause(joinClause);
+//      }
     }
   }
   
@@ -377,8 +377,8 @@ public final class QueryAnalyzer {
     if (idx < ast.getChildCount() - 1) {
       CommonTree node = (CommonTree) ast.getChild(idx);
       FromTable left = parseTable(ctx, block, node);        
-      ctx.renameTable(left.getTableId(),
-          left.hasAlias() ? left.getAlias() : left.getTableId());
+      ctx.renameTable(left.getTableName(),
+          left.hasAlias() ? left.getAlias() : left.getTableName());
       block.addFromTable(left);
                 
       join = new JoinClause(JoinType.CROSS_JOIN, left);
@@ -387,8 +387,8 @@ public final class QueryAnalyzer {
         join.setRight(parseImplicitJoinClause_(ctx, block, ast, idx));
       } else {        
         FromTable right = parseTable(ctx, block, (CommonTree) ast.getChild(idx));
-        ctx.renameTable(right.getTableId(),
-            right.hasAlias() ? right.getAlias() : right.getTableId());
+        ctx.renameTable(right.getTableName(),
+            right.hasAlias() ? right.getAlias() : right.getTableName());
         block.addFromTable(right);
         join.setRight(right);
       }
@@ -426,8 +426,8 @@ public final class QueryAnalyzer {
     
     idx++; // 1
     FromTable left = parseTable(ctx, block, (CommonTree) ast.getChild(idx));
-    ctx.renameTable(left.getTableId(), 
-        left.hasAlias() ? left.getAlias() : left.getTableId());
+    ctx.renameTable(left.getTableName(),
+        left.hasAlias() ? left.getAlias() : left.getTableName());
     JoinClause joinClause = new JoinClause(joinType, left);
     
     idx++; // 2
@@ -437,8 +437,8 @@ public final class QueryAnalyzer {
     } else {
       FromTable right = parseTable(ctx, block, 
           (CommonTree) ast.getChild(idx));
-      ctx.renameTable(right.getTableId(), 
-          right.hasAlias() ? right.getAlias() : right.getTableId());
+      ctx.renameTable(right.getTableName(),
+          right.hasAlias() ? right.getAlias() : right.getTableName());
       block.addFromTable(right);
       joinClause.setRight(right);
     }

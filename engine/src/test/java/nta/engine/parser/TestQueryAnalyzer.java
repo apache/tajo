@@ -166,7 +166,7 @@ public class TestQueryAnalyzer {
     Context ctx = factory.create();
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);    
     assertEquals(1, block.getFromTables().length);
-    assertEquals("people", block.getFromTables()[0].getTableId());
+    assertEquals("people", block.getFromTables()[0].getTableName());
   }
   
   private String[] GROUP_BY = { 
@@ -255,8 +255,8 @@ public class TestQueryAnalyzer {
     Context ctx = factory.create();
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[4]);
     assertEquals(2, block.getFromTables().length);
-    assertEquals("people", block.getFromTables()[0].getTableId());
-    assertEquals("student", block.getFromTables()[1].getTableId());
+    assertEquals("people", block.getFromTables()[0].getTableName());
+    assertEquals("student", block.getFromTables()[1].getTableName());
   }
   
   @Test
@@ -381,13 +381,12 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[0]);
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.NATURAL, join.getJoinType());
-    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("people", join.getLeft().getTableName());
     assertEquals("p", join.getLeft().getAlias());    
     assertTrue(join.hasRightJoin());
-    
-    assertFalse(join.getRightJoin().getLeft().hasAlias());
-    assertEquals("student", join.getRightJoin().getLeft().getTableId());
-    assertEquals("branch", join.getRightJoin().getRight().getTableId());
+
+    assertEquals("student", join.getRightJoin().getLeft().getTableName());
+    assertEquals("branch", join.getRightJoin().getRight().getTableName());
   }
   
   @Test
@@ -396,9 +395,9 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[1]);
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.INNER, join.getJoinType());
-    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("people", join.getLeft().getTableName());
     assertEquals("p", join.getLeft().getAlias());
-    assertEquals("student", join.getRight().getTableId());
+    assertEquals("student", join.getRight().getTableName());
     assertEquals("s", join.getRight().getAlias());
     assertTrue(join.hasJoinQual());
     assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
@@ -407,9 +406,9 @@ public class TestQueryAnalyzer {
     block = (QueryBlock) analyzer.parse(ctx, JOINS[2]);
     join = block.getJoinClause();
     assertEquals(JoinType.INNER, join.getJoinType());
-    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("people", join.getLeft().getTableName());
     assertEquals("p", join.getLeft().getAlias());
-    assertEquals("student", join.getRight().getTableId());
+    assertEquals("student", join.getRight().getTableName());
     assertEquals("s", join.getRight().getAlias());
     assertTrue(join.hasJoinColumns());
     assertEquals("id", join.getJoinColumns()[0].getColumnName());
@@ -421,9 +420,9 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[6]);
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.INNER, join.getJoinType());
-    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("people", join.getLeft().getTableName());
     assertEquals("p", join.getLeft().getAlias());
-    assertEquals("student", join.getRight().getTableId());
+    assertEquals("student", join.getRight().getTableName());
     assertEquals("s", join.getRight().getAlias());
     assertTrue(join.hasJoinQual());
     assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
@@ -435,13 +434,12 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[3]);
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.CROSS_JOIN, join.getJoinType());
-    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("people", join.getLeft().getTableName());
     assertEquals("p", join.getLeft().getAlias());    
     assertTrue(join.hasRightJoin());
-    
-    assertFalse(join.getRightJoin().getLeft().hasAlias());
-    assertEquals("student", join.getRightJoin().getLeft().getTableId());
-    assertEquals("branch", join.getRightJoin().getRight().getTableId());
+
+    assertEquals("student", join.getRightJoin().getLeft().getTableName());
+    assertEquals("branch", join.getRightJoin().getRight().getTableName());
   }
   
   @Test
@@ -450,9 +448,9 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[4]);
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.LEFT_OUTER, join.getJoinType());
-    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("people", join.getLeft().getTableName());
     assertEquals("p", join.getLeft().getAlias());
-    assertEquals("student", join.getRight().getTableId());
+    assertEquals("student", join.getRight().getTableName());
     assertEquals("s", join.getRight().getAlias());
     assertTrue(join.hasJoinQual());
     assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
@@ -464,9 +462,9 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[7]);
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.LEFT_OUTER, join.getJoinType());
-    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("people", join.getLeft().getTableName());
     assertEquals("p", join.getLeft().getAlias());
-    assertEquals("student", join.getRight().getTableId());
+    assertEquals("student", join.getRight().getTableName());
     assertEquals("s", join.getRight().getAlias());
     assertTrue(join.hasJoinQual());
     assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
@@ -478,9 +476,9 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[5]);
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.RIGHT_OUTER, join.getJoinType());
-    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("people", join.getLeft().getTableName());
     assertEquals("p", join.getLeft().getAlias());
-    assertEquals("student", join.getRight().getTableId());
+    assertEquals("student", join.getRight().getTableName());
     assertEquals("s", join.getRight().getAlias());
     assertTrue(join.hasJoinQual());
     assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
@@ -492,9 +490,9 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[8]);
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.RIGHT_OUTER, join.getJoinType());
-    assertEquals("people", join.getLeft().getTableId());
+    assertEquals("people", join.getLeft().getTableName());
     assertEquals("p", join.getLeft().getAlias());
-    assertEquals("student", join.getRight().getTableId());
+    assertEquals("student", join.getRight().getTableName());
     assertEquals("s", join.getRight().getAlias());
     assertTrue(join.hasJoinQual());
     assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
@@ -514,9 +512,9 @@ public class TestQueryAnalyzer {
     assertEquals(StatementType.SELECT, union.getLeftTree().getType());
     assertEquals(StatementType.SELECT, union.getRightTree().getType());
     QueryBlock left = (QueryBlock) union.getLeftTree();
-    assertEquals("student", left.getFromTables()[0].getTableId());
+    assertEquals("student", left.getFromTables()[0].getTableName());
     QueryBlock right = (QueryBlock) union.getRightTree();
-    assertEquals("branch", right.getFromTables()[0].getTableId());
+    assertEquals("branch", right.getFromTables()[0].getTableName());
     
     // multiple set statements
     ctx = factory.create();
@@ -526,10 +524,10 @@ public class TestQueryAnalyzer {
     assertEquals(StatementType.SELECT, union.getLeftTree().getType());
     assertEquals(StatementType.INTERSECT, union.getRightTree().getType());
     left = (QueryBlock) union.getLeftTree();
-    assertEquals("student", left.getFromTables()[0].getTableId());
+    assertEquals("student", left.getFromTables()[0].getTableName());
     SetStmt rightSet = (SetStmt) union.getRightTree();
     left = (QueryBlock) rightSet.getLeftTree();
-    assertEquals("branch", left.getFromTables()[0].getTableId());
+    assertEquals("branch", left.getFromTables()[0].getTableName());
     right = (QueryBlock) rightSet.getRightTree();
     assertEquals("b", right.getFromTables()[0].getAlias());
   }

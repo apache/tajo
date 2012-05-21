@@ -7,10 +7,12 @@ import java.util.Set;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.EvalTreeUtil;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.exec.eval.FuncCallEval;
+import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.LogicalOptimizer.InSchemaRefresher;
@@ -457,5 +459,24 @@ public class PlannerUtil {
     }
 
     return specs;
+  }
+
+  /**
+   * is it join qual or not?
+   * TODO - this method does not support the self join (NTA-740)
+   * @param qual
+   * @return true if two operands refers to columns and the operator is comparison,
+   */
+  public static boolean isJoinQual(EvalNode qual) {
+    if (EvalTreeUtil.isComparisonOperator(qual)) {
+      List<Column> left = EvalTreeUtil.findAllColumnRefs(qual.getLeftExpr());
+      List<Column> right = EvalTreeUtil.findAllColumnRefs(qual.getRightExpr());
+
+      if (left.size() == 1 && right.size() == 1 &&
+          !left.get(0).getTableName().equals(right.get(0).getTableName()))
+        return true;
+    }
+
+    return false;
   }
 }
