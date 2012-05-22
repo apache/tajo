@@ -7,12 +7,8 @@ import java.util.Set;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
-import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.*;
 import nta.engine.exec.eval.EvalNode.Type;
-import nta.engine.exec.eval.EvalTreeUtil;
-import nta.engine.exec.eval.FieldEval;
-import nta.engine.exec.eval.FuncCallEval;
-import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.LogicalOptimizer.InSchemaRefresher;
@@ -29,6 +25,7 @@ import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.planner.logical.SortNode;
 import nta.engine.planner.logical.UnaryNode;
+import nta.engine.planner.physical.TupleComparator;
 import nta.engine.query.exception.InvalidQueryException;
 
 import org.apache.commons.logging.Log;
@@ -478,5 +475,68 @@ public class PlannerUtil {
     }
 
     return false;
+  }
+
+  public static List<SortSpec[]> getSortKeysFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {
+    List<Column []> joinKeyPairs = getJoinKeyPairs(joinQual, outer, inner);
+    SortSpec [] outerSortSpec = new SortSpec[joinKeyPairs.size()];
+    SortSpec [] innerSortSpec = new SortSpec[joinKeyPairs.size()];
+
+    for (int i = 0; i < joinKeyPairs.size(); i++) {
+      outerSortSpec[i] = new SortSpec(joinKeyPairs.get(i)[0]);
+      innerSortSpec[i] = new SortSpec(joinKeyPairs.get(i)[1]);
+    }
+
+    return Lists.newArrayList(outerSortSpec, innerSortSpec);
+  }
+
+  public static List<TupleComparator> getComparatorsFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {
+    List<SortSpec []> sortSpecs = getSortKeysFromJoinQual(joinQual, outer, inner);
+    return Lists.newArrayList(
+        new TupleComparator(outer, sortSpecs.get(0)),
+        new TupleComparator(inner, sortSpecs.get(1)));
+  }
+
+  public static List<Column []> getJoinKeyPairs(EvalNode joinQual, Schema outer, Schema inner) {
+    JoinKeyPairFinder finder = new JoinKeyPairFinder(outer, inner);
+    joinQual.preOrder(finder);
+    return finder.getPairs();
+  }
+
+  public static class JoinKeyPairFinder implements EvalNodeVisitor {
+    private final List<Column []> pairs = Lists.newArrayList();
+    private Schema [] schemas = new Schema[2];
+
+    public JoinKeyPairFinder(Schema outer, Schema inner) {
+      schemas[0] = outer;
+      schemas[1] = inner;
+    }
+
+    @Override
+    public void visit(EvalNode node) {
+      if (EvalTreeUtil.isComparisonOperator(node)) {
+        Column [] pair = new Column[2];
+
+        for (int i = 0; i <= 1; i++) { // access left, right sub expression
+          Column column = EvalTreeUtil.findAllColumnRefs(node.getExpr(i)).get(0);
+          for (int j = 0; j < schemas.length; j++) {
+          // check whether the column is for either outer or inner
+          // 0 is outer, and 1 is inner
+            if (schemas[j].contains(column.getQualifiedName())) {
+              pair[j] = column;
+            }
+          }
+        }
+
+        if (pair[0] == null || pair[1] == null) {
+          throw new IllegalStateException("Wrong join key: " + node);
+        }
+        pairs.add(pair);
+      }
+    }
+
+    public List<Column []> getPairs() {
+      return this.pairs;
+    }
   }
 }

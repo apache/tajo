@@ -4,14 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import nta.catalog.CatalogService;
-import nta.catalog.FunctionDesc;
-import nta.catalog.Options;
-import nta.catalog.Schema;
-import nta.catalog.TCatUtil;
-import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
-import nta.catalog.TableMeta;
+import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
@@ -36,10 +29,15 @@ import nta.engine.planner.logical.ProjectionNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.UnaryNode;
 
+import nta.engine.planner.physical.TupleComparator;
+import nta.storage.Tuple;
+import nta.storage.VTuple;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.List;
 
 /**
  * @author Hyunsik Choi
@@ -214,5 +212,134 @@ public class TestPlannerUtil {
     for (int i = 0; i < idx; i++) {
       assertFalse(PlannerUtil.isJoinQual(wrongJoinQuals[idx]));
     }
+  }
+
+  @Test
+  public final void testGetJoinKeyPairs() {
+    Schema outerSchema = new Schema();
+    outerSchema.addColumn("employee.id1", DataType.INT);
+    outerSchema.addColumn("employee.id2", DataType.INT);
+    Schema innerSchema = new Schema();
+    innerSchema.addColumn("people.fid1", DataType.INT);
+    innerSchema.addColumn("people.fid2", DataType.INT);
+
+    FieldEval f1 = new FieldEval("employee.id1", DataType.INT);
+    FieldEval f2 = new FieldEval("people.fid1", DataType.INT);
+    FieldEval f3 = new FieldEval("employee.id2", DataType.INT);
+    FieldEval f4 = new FieldEval("people.fid2", DataType.INT);
+
+    EvalNode joinQual = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
+
+    // the case where part is the outer and partsupp is the inner.
+    List<Column[]> pairs = PlannerUtil.getJoinKeyPairs(joinQual, outerSchema,  innerSchema);
+    assertEquals(1, pairs.size());
+    assertEquals("employee.id1", pairs.get(0)[0].getQualifiedName());
+    assertEquals("people.fid1", pairs.get(0)[1].getQualifiedName());
+
+    // after exchange of outer and inner
+    pairs = PlannerUtil.getJoinKeyPairs(joinQual, innerSchema, outerSchema);
+    assertEquals("people.fid1", pairs.get(0)[0].getQualifiedName());
+    assertEquals("employee.id1", pairs.get(0)[1].getQualifiedName());
+
+    // composited join key test
+    EvalNode joinQual2 = new BinaryEval(EvalNode.Type.EQUAL, f3, f4);
+    EvalNode compositedJoinQual = new BinaryEval(EvalNode.Type.AND, joinQual, joinQual2);
+    pairs = PlannerUtil.getJoinKeyPairs(compositedJoinQual, outerSchema,  innerSchema);
+    assertEquals(2, pairs.size());
+    assertEquals("employee.id1", pairs.get(0)[0].getQualifiedName());
+    assertEquals("people.fid1", pairs.get(0)[1].getQualifiedName());
+    assertEquals("employee.id2", pairs.get(1)[0].getQualifiedName());
+    assertEquals("people.fid2", pairs.get(1)[1].getQualifiedName());
+
+    // after exchange of outer and inner
+    pairs = PlannerUtil.getJoinKeyPairs(compositedJoinQual, innerSchema,  outerSchema);
+    assertEquals(2, pairs.size());
+    assertEquals("people.fid1", pairs.get(0)[0].getQualifiedName());
+    assertEquals("employee.id1", pairs.get(0)[1].getQualifiedName());
+    assertEquals("people.fid2", pairs.get(1)[0].getQualifiedName());
+    assertEquals("employee.id2", pairs.get(1)[1].getQualifiedName());
+  }
+
+  @Test
+  public final void testGetSortKeysFromJoinQual() {
+    Schema outerSchema = new Schema();
+    outerSchema.addColumn("employee.id1", DataType.INT);
+    outerSchema.addColumn("employee.id2", DataType.INT);
+    Schema innerSchema = new Schema();
+    innerSchema.addColumn("people.fid1", DataType.INT);
+    innerSchema.addColumn("people.fid2", DataType.INT);
+
+    FieldEval f1 = new FieldEval("employee.id1", DataType.INT);
+    FieldEval f2 = new FieldEval("people.fid1", DataType.INT);
+    FieldEval f3 = new FieldEval("employee.id2", DataType.INT);
+    FieldEval f4 = new FieldEval("people.fid2", DataType.INT);
+
+    EvalNode joinQual = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
+    List<QueryBlock.SortSpec []> sortSpecs = PlannerUtil.getSortKeysFromJoinQual(joinQual, outerSchema, innerSchema);
+    assertEquals(2, sortSpecs.size());
+    assertEquals(1, sortSpecs.get(0).length);
+    assertEquals(1, sortSpecs.get(1).length);
+    assertEquals(outerSchema.getColumnByName("id1"), sortSpecs.get(0)[0].getSortKey());
+    assertEquals(innerSchema.getColumnByName("fid1"), sortSpecs.get(1)[0].getSortKey());
+
+    // tests for composited join key
+    EvalNode joinQual2 = new BinaryEval(EvalNode.Type.EQUAL, f3, f4);
+    EvalNode compositedJoinQual = new BinaryEval(EvalNode.Type.AND, joinQual, joinQual2);
+
+    sortSpecs = PlannerUtil.getSortKeysFromJoinQual(compositedJoinQual, outerSchema, innerSchema);
+    assertEquals(2, sortSpecs.size());
+    assertEquals(2, sortSpecs.get(0).length);
+    assertEquals(2, sortSpecs.get(1).length);
+    assertEquals(outerSchema.getColumnByName("id1"), sortSpecs.get(0)[0].getSortKey());
+    assertEquals(outerSchema.getColumnByName("id2"), sortSpecs.get(0)[1].getSortKey());
+    assertEquals(innerSchema.getColumnByName("fid1"), sortSpecs.get(1)[0].getSortKey());
+    assertEquals(innerSchema.getColumnByName("fid2"), sortSpecs.get(1)[1].getSortKey());
+  }
+
+  @Test
+  public final void testComparatorsFromJoinQual() {
+    Schema outerSchema = new Schema();
+    outerSchema.addColumn("employee.id1", DataType.INT);
+    outerSchema.addColumn("employee.id2", DataType.INT);
+    Schema innerSchema = new Schema();
+    innerSchema.addColumn("people.fid1", DataType.INT);
+    innerSchema.addColumn("people.fid2", DataType.INT);
+
+    FieldEval f1 = new FieldEval("employee.id1", DataType.INT);
+    FieldEval f2 = new FieldEval("people.fid1", DataType.INT);
+    FieldEval f3 = new FieldEval("employee.id2", DataType.INT);
+    FieldEval f4 = new FieldEval("people.fid2", DataType.INT);
+
+    EvalNode joinQual = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
+    List<TupleComparator> sortSpecs = PlannerUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);
+
+    Tuple t1 = new VTuple(2);
+    t1.put(0, DatumFactory.createInt(1));
+    t1.put(1, DatumFactory.createInt(2));
+
+    Tuple t2 = new VTuple(2);
+    t2.put(0, DatumFactory.createInt(2));
+    t2.put(1, DatumFactory.createInt(3));
+
+    TupleComparator outerComparator = sortSpecs.get(0);
+    assertTrue(outerComparator.compare(t1, t2) < 0);
+    assertTrue(outerComparator.compare(t2, t1) > 0);
+
+    TupleComparator innerComparator = sortSpecs.get(1);
+    assertTrue(innerComparator.compare(t1, t2) < 0);
+    assertTrue(innerComparator.compare(t2, t1) > 0);
+
+    // tests for composited join key
+    EvalNode joinQual2 = new BinaryEval(EvalNode.Type.EQUAL, f3, f4);
+    EvalNode compositedJoinQual = new BinaryEval(EvalNode.Type.AND, joinQual, joinQual2);
+    sortSpecs = PlannerUtil.getComparatorsFromJoinQual(compositedJoinQual, outerSchema, innerSchema);
+
+    outerComparator = sortSpecs.get(0);
+    assertTrue(outerComparator.compare(t1, t2) < 0);
+    assertTrue(outerComparator.compare(t2, t1) > 0);
+
+    innerComparator = sortSpecs.get(1);
+    assertTrue(innerComparator.compare(t1, t2) < 0);
+    assertTrue(innerComparator.compare(t2, t1) > 0);
   }
 }

@@ -60,7 +60,8 @@ public class JoinNode extends BinaryNode implements Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     JoinNode join = (JoinNode) super.clone();
-
+    join.joinType = this.joinType;
+    join.joinQual = this.joinQual == null ? null : (EvalNode) this.joinQual.clone();
     return join;
   }
 

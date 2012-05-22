@@ -185,7 +185,6 @@ public class EvalTreeUtil {
       if (containColumnRef(expr, target)) {          
         exprSet.add(expr);
       }
-      return;      
     }    
   }
   
@@ -274,35 +273,6 @@ public class EvalTreeUtil {
     public Set<Column> getColumnRefs() {
       return this.colList;
     }
-  }
-  
-  public static class ConjunctiveForm implements EvalNodeVisitor {
-    boolean conjunctive = false;
-    Set<EvalNode> conjList = new HashSet<EvalNode>();
-    
-    @Override
-    public void visit(EvalNode node) {
-      if (node.getType() == Type.OR) {
-        conjunctive = false;
-      } else if (node.getType() == Type.AND) {
-        conjunctive = true;
-      }
-      
-      if (conjunctive = false) {
-        conjList = new HashSet<EvalNode>();
-      }
-      
-      switch (node.getType()) {      
-      case EQUAL:
-      case LTH:
-      case LEQ:      
-      case GEQ:
-      case GTH:
-        if (node.getLeftExpr().getType() == Type.CONST) {
-          conjList.add(node);
-        }
-      }
-    } 
   }
   
   public static class VariableCounter implements EvalNodeVisitor {

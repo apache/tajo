@@ -51,6 +51,16 @@ public abstract class EvalNode implements Cloneable {
 	public EvalNode getRightExpr() {
 		return this.rightExpr;
 	}
+
+  public EvalNode getExpr(int id) {
+    if (id == 0) {
+      return this.leftExpr;
+    } else if (id == 1) {
+      return this.rightExpr;
+    } else {
+      throw new ArrayIndexOutOfBoundsException("only 0 or 1 is available (" + id + " is not available)");
+    }
+  }
 	
 	public abstract DataType getValueType();
 	

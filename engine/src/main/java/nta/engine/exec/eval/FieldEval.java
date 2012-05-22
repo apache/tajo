@@ -93,6 +93,10 @@ public class FieldEval extends EvalNode implements Cloneable {
     Gson gson = GsonCreator.getInstance();
     return gson.toJson(this, EvalNode.class);
   }
+
+  public void preOrder(EvalNodeVisitor visitor) {
+    visitor.visit(this);
+  }
   
   @Override
   public void postOrder(EvalNodeVisitor visitor) {
