@@ -1,15 +1,7 @@
 package nta.engine.parser;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import nta.catalog.CatalogService;
-import nta.catalog.Column;
-import nta.catalog.FunctionDesc;
-import nta.catalog.Options;
-import nta.catalog.Schema;
-import nta.catalog.TCatUtil;
-import nta.catalog.TableDesc;
+import com.google.common.base.Preconditions;
+import nta.catalog.*;
 import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
@@ -19,30 +11,11 @@ import nta.datum.DatumFactory;
 import nta.engine.Context;
 import nta.engine.QueryContext;
 import nta.engine.exception.InternalException;
-import nta.engine.exec.eval.AggFuncCallEval;
-import nta.engine.exec.eval.BinaryEval;
-import nta.engine.exec.eval.ConstEval;
-import nta.engine.exec.eval.CountRowEval;
-import nta.engine.exec.eval.EvalNode;
+import nta.engine.exec.eval.*;
 import nta.engine.exec.eval.EvalNode.Type;
-import nta.engine.exec.eval.FieldEval;
-import nta.engine.exec.eval.FuncCallEval;
-import nta.engine.exec.eval.LikeEval;
-import nta.engine.exec.eval.NotEval;
-import nta.engine.parser.QueryBlock.FromTable;
-import nta.engine.parser.QueryBlock.GroupByClause;
-import nta.engine.parser.QueryBlock.GroupElement;
-import nta.engine.parser.QueryBlock.GroupType;
-import nta.engine.parser.QueryBlock.JoinClause;
-import nta.engine.parser.QueryBlock.SortSpec;
-import nta.engine.parser.QueryBlock.Target;
+import nta.engine.parser.QueryBlock.*;
 import nta.engine.planner.JoinType;
-import nta.engine.query.exception.AmbiguousFieldException;
-import nta.engine.query.exception.InvalidQueryException;
-import nta.engine.query.exception.NQLSyntaxException;
-import nta.engine.query.exception.NotSupportQueryException;
-import nta.engine.query.exception.UndefinedFunctionException;
-
+import nta.engine.query.exception.*;
 import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.RecognitionException;
@@ -52,7 +25,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 
-import com.google.common.base.Preconditions;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class transforms a query statement into a QueryBlock. 
@@ -330,18 +304,16 @@ public final class QueryAnalyzer {
       JoinClause joinClause = parseExplicitJoinClause(ctx, block, 
           (CommonTree) ast.getChild(0));
       block.setJoinClause(joinClause);
-    
-    } else { // implicit join or the from clause on single relation
-      int numTables = ast.getChildCount();
-  
-      //if (numTables == 1) { // on single relation
-        FromTable table;
-        CommonTree node;
-        for (int i = 0; i < ast.getChildCount(); i++) {
-          node = (CommonTree) ast.getChild(i);
-  
-          switch (node.getType()) {
-  
+
+    } else {
+      // implicit join or the from clause on single relation
+      FromTable table;
+      CommonTree node;
+      for (int i = 0; i < ast.getChildCount(); i++) {
+        node = (CommonTree) ast.getChild(i);
+
+        switch (node.getType()) {
+
           case NQLParser.TABLE:
             // table (AS ID)?
             // 0 - a table name, 1 - table alias
@@ -350,51 +322,11 @@ public final class QueryAnalyzer {
                 table.hasAlias() ? table.getAlias() : table.getTableName());
             block.addFromTable(table);
             break;
-  
-          default:
-          } // switch
-        } // for each derievedTable
-//      } else if (numTables > 1) {
-//        // if the number of tables is greater than 1,
-//        // it means the implicit join clause
-//        JoinClause joinClause = parseImplicitJoinClause(ctx, block, ast);
-//        block.setJoinClause(joinClause);
-//      }
-    }
-  }
-  
-  private JoinClause parseImplicitJoinClause(final Context ctx,
-      final QueryBlock block, final CommonTree ast) {
-    int numTables = ast.getChildCount();
-    Preconditions.checkArgument(numTables > 1);
-    
-    return parseImplicitJoinClause_(ctx, block, ast, 0);
-  }
-  
-  private JoinClause parseImplicitJoinClause_(final Context ctx,
-      final QueryBlock block, final CommonTree ast, int idx) {
-    JoinClause join = null;
-    if (idx < ast.getChildCount() - 1) {
-      CommonTree node = (CommonTree) ast.getChild(idx);
-      FromTable left = parseTable(ctx, block, node);        
-      ctx.renameTable(left.getTableName(),
-          left.hasAlias() ? left.getAlias() : left.getTableName());
-      block.addFromTable(left);
-                
-      join = new JoinClause(JoinType.CROSS_JOIN, left);
-      idx++;
-      if ((ast.getChildCount() - idx) > 1) {
-        join.setRight(parseImplicitJoinClause_(ctx, block, ast, idx));
-      } else {        
-        FromTable right = parseTable(ctx, block, (CommonTree) ast.getChild(idx));
-        ctx.renameTable(right.getTableName(),
-            right.hasAlias() ? right.getAlias() : right.getTableName());
-        block.addFromTable(right);
-        join.setRight(right);
-      }
-    }
 
-    return join;
+          default:
+        } // switch
+      } // for each derievedTable
+    }
   }
   
   private JoinClause parseExplicitJoinClause(final Context ctx, final QueryBlock block, 
@@ -972,11 +904,11 @@ public final class QueryAnalyzer {
       idx++;
     }
     
-    Column column = checkAndGetColumnByAST(ctx, (CommonTree) 
-        tree.getChild(idx));
+    FieldEval field = (FieldEval) createEvalTree(ctx, tree.getChild(idx), block);
     idx++;
-    String pattern = tree.getChild(idx).getText();
-    return new LikeEval(not, column, pattern);
+    ConstEval pattern = (ConstEval) createEvalTree(ctx, tree.getChild(idx), block);
+
+    return new LikeEval(not, field, pattern);
   }
   
   /**

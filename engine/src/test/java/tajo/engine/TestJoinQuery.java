@@ -1,12 +1,11 @@
 package tajo.engine;
 
-import nta.engine.query.ResultSetImpl;
+import nta.util.FileUtil;
 import org.junit.Test;
-import tajo.client.ResultSetUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.sql.ResultSet;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -22,6 +21,7 @@ public class TestJoinQuery extends TpchTestBase {
   @Test
   public final void testCrossJoin() throws Exception {
     ResultSet res = execute("select n_name, r_name, n_regionkey, r_regionkey from nation, region");
+
     int cnt = 0;
     while(res.next()) {
       cnt++;
@@ -43,11 +43,7 @@ public class TestJoinQuery extends TpchTestBase {
 
   @Test
   public final void testTPCHQ2Join() throws Exception {
-    ResultSet res = execute(
-        "select s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone, s_comment " +
-        "from part, supplier, partsupp, nation, region " +
-        "where p_partkey = ps_partkey and s_suppkey = ps_suppkey and s_nationkey = n_nationkey " +
-        "and n_regionkey = r_regionkey");
+    ResultSet res = execute(FileUtil.readTextFile(new File("src/test/queries/tpch_q2_simplified.tql")));
 
     res.next();
     assertTrue(4032.68f == res.getFloat("s_acctbal"));

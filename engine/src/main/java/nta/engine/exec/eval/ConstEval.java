@@ -6,7 +6,6 @@ package nta.engine.exec.eval;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
-
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
@@ -19,11 +18,8 @@ import nta.storage.Tuple;
  *
  */
 public class ConstEval extends EvalNode implements Comparable<ConstEval>, Cloneable {
-	@Expose
-	Datum datum = null;
-	/**
-	 * @param type
-	 */
+	@Expose Datum datum = null;
+
 	public ConstEval() {
 		super(Type.CONST);
 	}
@@ -44,6 +40,10 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
 	public Datum eval(Schema schema, Tuple tuple, Datum...args) {
 		return this.datum;
 	}
+
+  public Datum getValue() {
+    return this.datum;
+  }
 	
 	public String toString() {
 		return datum.toString();

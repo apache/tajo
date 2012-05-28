@@ -3,8 +3,7 @@
  */
 package nta.engine.exec.eval;
 
-import java.util.regex.Pattern;
-
+import com.google.gson.annotations.Expose;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
@@ -14,30 +13,27 @@ import nta.datum.DatumFactory;
 import nta.datum.StringDatum;
 import nta.storage.Tuple;
 
-import com.google.gson.annotations.Expose;
+import java.util.regex.Pattern;
 
 /**
  * @author Hyunsik Choi
  */
-public class LikeEval extends EvalNode {
+public class LikeEval extends BinaryEval {
   @Expose private boolean not;
   @Expose private Column column;
   @Expose private String pattern;
 
   // temporal variables
-  private int fieldId = -1;
+  private Integer fieldId = null;
   private Pattern compiled;
   private BoolDatum result;
+
   
-  public LikeEval() {
-    super(Type.LIKE);
-  }
-  
-  public LikeEval(boolean not, Column column, String pattern) {
-    this();
+  public LikeEval(boolean not, FieldEval field, ConstEval pattern) {
+    super(Type.LIKE, field, pattern);
     this.not = not;
-    this.column = column;
-    this.pattern = pattern;
+    this.column = field.getColumnRef();
+    this.pattern = pattern.getValue().asChars();
   }
   
   public void compile(String pattern) {
@@ -61,7 +57,7 @@ public class LikeEval extends EvalNode {
 
   @Override
   public Datum eval(Schema schema, Tuple tuple, Datum... args) {
-    if (fieldId == -1) {
+    if (fieldId == null) {
       fieldId = schema.getColumnId(column.getQualifiedName());
       compile(this.pattern);
     }    
@@ -78,15 +74,5 @@ public class LikeEval extends EvalNode {
   @Override
   public String toString() {
     return this.column + " like '" + pattern +"'";
-  }
-  
-  @Override
-  public void preOrder(EvalNodeVisitor visitor) {
-    visitor.visit(this);
-  }
-  
-  @Override
-  public void postOrder(EvalNodeVisitor visitor) {
-    visitor.visit(this);
   }
 }

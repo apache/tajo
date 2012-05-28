@@ -1,7 +1,5 @@
 package nta.engine.planner.physical;
 
-import java.io.IOException;
-
 import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
 import nta.engine.exec.eval.EvalNode;
@@ -10,6 +8,8 @@ import nta.engine.utils.TupleUtil;
 import nta.storage.FrameTuple;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
+
+import java.io.IOException;
 
 public class NLJoinExec extends PhysicalExec {
   // from logical plan
@@ -73,7 +73,7 @@ public class NLJoinExec extends PhysicalExec {
         }
       } else {
         TupleUtil.project(frameTuple, outputTuple, targetIds);
-        return frameTuple;
+        return outputTuple;
       }
     }
   }

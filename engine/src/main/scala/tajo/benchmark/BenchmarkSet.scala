@@ -2,7 +2,6 @@ package tajo.benchmark
 
 import tajo.client.TajoClient
 import nta.engine.NConstants
-import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.net.NetUtils
 import collection.immutable.HashMap
 import java.io.File
@@ -17,6 +16,7 @@ import nta.catalog.store.MemStore
 abstract class BenchmarkSet() {
   protected var tajo : TajoClient = _
   protected var schemas = HashMap[String, Schema]()
+  protected var outSchemas = HashMap[String, Schema]()
   protected var datadir : String = _
 
   def init(conf : org.apache.hadoop.conf.Configuration, _datadir : String) {
@@ -44,6 +44,8 @@ abstract class BenchmarkSet() {
 
   def loadSchemas()
 
+  def loadOutSchema()
+
   def loadQueries()
 
   def loadTables()
@@ -62,6 +64,10 @@ abstract class BenchmarkSet() {
 
   def getSchemas() : Iterator[Schema] = {
     schemas.valuesIterator
+  }
+
+  def getOutSchema(name : String) : Schema = {
+    outSchemas(name)
   }
 
   def perform(queryName : String) {

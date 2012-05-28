@@ -1,15 +1,15 @@
 package nta.engine;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import nta.catalog.TableDesc;
 import nta.engine.parser.CreateTableStmt;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.parser.StatementType;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 이 클래스는 주어진 질의가 실행 중인 동안 질의에 대한 정보를 유지한다.
@@ -66,6 +66,10 @@ public abstract class Context {
       }
       targets = block.getTargetList();
     }
+  }
+
+  public void setTargets(Target [] targets) {
+    this.targets = targets;
   }
   
   public StatementType getStatementType() {

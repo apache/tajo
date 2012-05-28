@@ -1,7 +1,6 @@
 package nta.engine.planner;
 
-import java.util.*;
-
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import nta.catalog.Column;
 import nta.catalog.Schema;
@@ -10,29 +9,21 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.engine.Context;
 import nta.engine.exec.eval.*;
 import nta.engine.exec.eval.EvalNode.Type;
-import nta.engine.parser.CreateIndexStmt;
-import nta.engine.parser.CreateTableStmt;
-import nta.engine.parser.ParseTree;
-import nta.engine.parser.QueryAnalyzer;
-import nta.engine.parser.QueryBlock;
-import nta.engine.parser.QueryBlock.FromTable;
-import nta.engine.parser.QueryBlock.GroupByClause;
-import nta.engine.parser.QueryBlock.GroupElement;
-import nta.engine.parser.QueryBlock.GroupType;
-import nta.engine.parser.QueryBlock.JoinClause;
-import nta.engine.parser.QueryBlock.Target;
-import nta.engine.parser.SetStmt;
+import nta.engine.parser.*;
+import nta.engine.parser.QueryBlock.*;
 import nta.engine.planner.logical.*;
 import nta.engine.planner.logical.join.Edge;
 import nta.engine.planner.logical.join.JoinTree;
 import nta.engine.query.exception.InvalidQueryException;
 import nta.engine.query.exception.NotSupportQueryException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import com.google.common.collect.Lists;
 import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 
 /**
  * This class creates a logical plan from a parse tree ({@link QueryBlock})
@@ -256,6 +247,7 @@ public class LogicalPlanner {
       prjNode.setInputSchema(merged);
       prjNode.setOutputSchema(merged);
       subroot = prjNode;
+      ctx.setTargets(allTargets);
     } else {
       prjNode = new ProjectionNode(query.getTargetList());
       if (subroot != null) { // false if 'no from' statement
@@ -489,8 +481,7 @@ public class LogicalPlanner {
 
       subroot = new ScanNode(fromTableMap.get(joinOrder.get(0).getSrc()));
       LogicalNode inner;
-      for (int i = 0; i < joinOrder.size(); i++) {
-        Edge edge = joinOrder.get(i);
+      for (Edge edge : joinOrder) {
         inner = new ScanNode(fromTableMap.get(edge.getTarget()));
         join = new JoinNode(JoinType.CROSS_JOIN, subroot, inner);
         subroot = join;

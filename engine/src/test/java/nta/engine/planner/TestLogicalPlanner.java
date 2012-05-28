@@ -1,23 +1,9 @@
 package nta.engine.planner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
-
-import nta.catalog.CatalogService;
-import nta.catalog.Column;
-import nta.catalog.FunctionDesc;
-import nta.catalog.Options;
-import nta.catalog.Schema;
-import nta.catalog.TCatUtil;
-import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
-import nta.catalog.TableMeta;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.gson.Gson;
+import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.IndexMethod;
@@ -29,32 +15,20 @@ import nta.engine.function.SumInt;
 import nta.engine.json.GsonCreator;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.planner.logical.IndexWriteNode;
-import nta.engine.planner.logical.CreateTableNode;
-import nta.engine.planner.logical.ExceptNode;
-import nta.engine.planner.logical.ExprType;
-import nta.engine.planner.logical.GroupbyNode;
-import nta.engine.planner.logical.IntersectNode;
-import nta.engine.planner.logical.JoinNode;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.LogicalNodeVisitor;
-import nta.engine.planner.logical.LogicalRootNode;
-import nta.engine.planner.logical.ProjectionNode;
-import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.SelectionNode;
-import nta.engine.planner.logical.SortNode;
-import nta.engine.planner.logical.StoreTableNode;
-import nta.engine.planner.logical.UnionNode;
-
+import nta.engine.planner.logical.*;
+import nta.util.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.gson.Gson;
 import tajo.benchmark.TPCH;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Hyunsik Choi
@@ -64,6 +38,7 @@ public class TestLogicalPlanner {
   private static CatalogService catalog;
   private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
+  private static TPCH tpch;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -102,6 +77,20 @@ public class TestLogicalPlanner {
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class,
         FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
+
+
+    // TPC-H Schema for Complex Queries
+    String [] tpchTables = {
+        "part", "supplier", "partsupp", "nation", "region"
+    };
+    tpch = new TPCH();
+    tpch.loadSchemas();
+    tpch.loadOutSchema();
+    for (String table : tpchTables) {
+      TableMeta m = TCatUtil.newTableMeta(tpch.getSchema(table), StoreType.CSV);
+      TableDesc d = TCatUtil.newTableDesc(table, m, new Path("file:///"));
+      catalog.addTable(d);
+    }
 
     catalog.registerFunction(funcDesc);
     analyzer = new QueryAnalyzer(catalog);
@@ -149,6 +138,18 @@ public class TestLogicalPlanner {
     assertEquals("employee", scanNode.getTableId());
   }
 
+  public static void assertSchema(Schema expected, Schema schema) {
+    assertEquals(expected.getColumnNum(), schema.getColumnNum());
+    Column expectedColumn;
+    Column column;
+    for (int i = 0; i < expected.getColumnNum(); i++) {
+      expectedColumn = expected.getColumn(i);
+      column = schema.getColumn(i);
+      assertEquals(expectedColumn.getColumnName(), column.getColumnName());
+      assertEquals(expectedColumn.getDataType(), column.getDataType());
+    }
+  }
+
   @Test
   public final void testImplicityJoinPlan() throws CloneNotSupportedException {
     // two relations
@@ -159,6 +160,13 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     TestLogicalNode.testCloneLogicalNode(root);
+
+    Schema expectedSchema = new Schema();
+    expectedSchema.addColumn("name", DataType.STRING);
+    expectedSchema.addColumn("empId", DataType.INT);
+    expectedSchema.addColumn("deptName", DataType.STRING);
+    expectedSchema.addColumn("manager", DataType.STRING);
+    assertSchema(expectedSchema, root.getOutputSchema());
 
     assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
     ProjectionNode projNode = (ProjectionNode) root.getSubNode();
@@ -173,11 +181,17 @@ public class TestLogicalPlanner {
     ScanNode rightNode = (ScanNode) joinNode.getInnerNode();
     assertEquals("dept", rightNode.getTableId());
 
+    LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
+    assertSchema(expectedSchema, optimized.getOutputSchema());
+
     // three relations
     ctx = factory.create();
     block = analyzer.parse(ctx, QUERIES[2]);
     plan = LogicalPlanner.createPlan(ctx, block);
     TestLogicalNode.testCloneLogicalNode(plan);
+
+    expectedSchema.addColumn("score", DataType.INT);
+    assertSchema(expectedSchema, plan.getOutputSchema());
 
     assertEquals(ExprType.ROOT, plan.getType());
     root = (LogicalRootNode) plan;
@@ -204,6 +218,9 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.SCAN, leftNode2.getInnerNode().getType());
     ScanNode rightScan = (ScanNode) leftNode2.getInnerNode();
     assertEquals("dept", rightScan.getTableId());
+
+    optimized = LogicalOptimizer.optimize(ctx, plan);
+    assertSchema(expectedSchema, optimized.getOutputSchema());
   }
   
   String [] JOINS = { 
@@ -211,6 +228,14 @@ public class TestLogicalPlanner {
       "select name, dept.deptName, score from employee inner join dept inner join score on dept.deptName = score.deptName", // 1
       "select name, dept.deptName, score from employee left outer join dept right outer join score on dept.deptName = score.deptName" // 2
   };
+
+  static Schema expectedJoinSchema;
+  static {
+    expectedJoinSchema = new Schema();
+    expectedJoinSchema.addColumn("name", DataType.STRING);
+    expectedJoinSchema.addColumn("deptName", DataType.STRING);
+    expectedJoinSchema.addColumn("score", DataType.INT);
+  }
   
   @Test
   public final void testNaturalJoinPlan() {
@@ -218,6 +243,8 @@ public class TestLogicalPlanner {
     QueryContext ctx = factory.create();
     ParseTree block = analyzer.parse(ctx, JOINS[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    assertSchema(expectedJoinSchema, plan.getOutputSchema());
+
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;    
     assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
@@ -239,6 +266,9 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.SCAN, join.getInnerNode().getType());
     ScanNode inner = (ScanNode) join.getInnerNode();
     assertEquals("score", inner.getTableId());
+
+    LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
+    assertSchema(expectedJoinSchema, optimized.getOutputSchema());
   }
   
   @Test
@@ -247,6 +277,8 @@ public class TestLogicalPlanner {
     QueryContext ctx = factory.create();
     ParseTree block = analyzer.parse(ctx, JOINS[1]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    assertSchema(expectedJoinSchema, plan.getOutputSchema());
+
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;    
     assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
@@ -269,6 +301,9 @@ public class TestLogicalPlanner {
     assertEquals("score", inner.getTableId());
     assertTrue(join.hasJoinQual());
     assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
+
+    LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
+    assertSchema(expectedJoinSchema, optimized.getOutputSchema());
   }
   
   @Test
@@ -277,6 +312,8 @@ public class TestLogicalPlanner {
     QueryContext ctx = factory.create();
     ParseTree block = analyzer.parse(ctx, JOINS[2]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    assertSchema(expectedJoinSchema, plan.getOutputSchema());
+
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;    
     assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
@@ -299,6 +336,9 @@ public class TestLogicalPlanner {
     assertEquals("score", inner.getTableId());
     assertTrue(join.hasJoinQual());
     assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
+
+    LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
+    assertSchema(expectedJoinSchema, optimized.getOutputSchema());
   }
 
   @Test
@@ -340,21 +380,19 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testMultipleJoin() {
-    TPCH tpch = new TPCH();
-    tpch.loadSchemas();
-    tpch.loadQueries();
-
-    for (String name : tpch.getTableNames()) {
-      TableMeta meta = TCatUtil.newTableMeta(tpch.getSchema(name), StoreType.CSV);
-      TableDesc desc = TCatUtil.newTableDesc(name, meta, new Path("/"));
-      catalog.addTable(desc);
-    }
-
+  public final void testMultipleJoin() throws IOException {
     QueryContext ctx = factory.create();
-    ParseTree block = analyzer.parse(ctx, tpch.getQuery("q2"));
+    ParseTree block = analyzer.parse(ctx,
+        FileUtil.readTextFile(new File("src/test/queries/tpch_q2_simplified.tql")));
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
-    System.out.println(plan);
+    Schema expected = tpch.getOutSchema("q2");
+    assertSchema(expected, plan.getOutputSchema());
+    LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
+    assertSchema(expected, optimized.getOutputSchema());
+
+    System.out.println(optimized);
+
+    System.out.println(optimized.getOutputSchema());
   }
   
   static void testQuery7(LogicalNode plan) {
@@ -434,6 +472,7 @@ public class TestLogicalPlanner {
     SelectionNode selNode = (SelectionNode) projNode.getSubNode();    
     assertEquals(ExprType.SCAN, selNode.getSubNode().getType());
     ScanNode scanNode = (ScanNode) selNode.getSubNode();
+    assertEquals(scanNode.getTableId(), "employee");
     
     LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
     assertEquals(ExprType.ROOT, optimized.getType());

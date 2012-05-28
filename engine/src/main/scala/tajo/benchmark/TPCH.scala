@@ -1,12 +1,6 @@
 package tajo.benchmark
 
-import nta.util.FileUtil
-import tajo.client.TajoClient
-import org.apache.hadoop.net.NetUtils
-import collection.immutable.{Nil, Map, HashMap}
-import nta.conf.NtaConf
 import org.apache.commons.logging.{LogFactory, Log}
-import nta.engine.NConstants
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.conf.Configuration
 import nta.catalog._
@@ -99,6 +93,18 @@ class TPCH extends BenchmarkSet {
       .addColumn("s_nationkey", DataType.INT)
       .addColumn("s_phone", DataType.STRING)
       .addColumn("s_acctbal", DataType.FLOAT)
+      .addColumn("s_comment", DataType.STRING))
+  }
+
+  override def loadOutSchema() {
+    outSchemas += ("q2" -> new (Schema)
+      .addColumn("s_acctbal", DataType.FLOAT)
+      .addColumn("s_name", DataType.STRING)
+      .addColumn("n_name", DataType.STRING)
+      .addColumn("p_partkey", DataType.INT)
+      .addColumn("p_mfgr", DataType.STRING)
+      .addColumn("s_address", DataType.STRING)
+      .addColumn("s_phone", DataType.STRING)
       .addColumn("s_comment", DataType.STRING))
   }
 

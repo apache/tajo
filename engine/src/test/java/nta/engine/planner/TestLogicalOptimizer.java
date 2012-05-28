@@ -1,16 +1,6 @@
 package nta.engine.planner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import nta.catalog.CatalogService;
-import nta.catalog.FunctionDesc;
-import nta.catalog.Options;
-import nta.catalog.Schema;
-import nta.catalog.TCatUtil;
-import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
-import nta.catalog.TableMeta;
+import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
@@ -19,19 +9,13 @@ import nta.engine.QueryContext;
 import nta.engine.function.SumInt;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.planner.logical.ExprType;
-import nta.engine.planner.logical.GroupbyNode;
-import nta.engine.planner.logical.JoinNode;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.LogicalRootNode;
-import nta.engine.planner.logical.ProjectionNode;
-import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.SelectionNode;
-
+import nta.engine.planner.logical.*;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class TestLogicalOptimizer {
 
@@ -103,7 +87,7 @@ public class TestLogicalOptimizer {
   public final void testProjectionPushWithNaturalJoin() throws CloneNotSupportedException {
     // two relations
     QueryContext ctx = factory.create();
-    ParseTree block = (ParseTree) analyzer.parse(ctx, QUERIES[4]);
+    ParseTree block = analyzer.parse(ctx, QUERIES[4]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -129,7 +113,7 @@ public class TestLogicalOptimizer {
   public final void testProjectionPushWithInnerJoin() throws CloneNotSupportedException {
     // two relations
     QueryContext ctx = factory.create();
-    ParseTree block = (ParseTree) analyzer.parse(ctx, QUERIES[5]);
+    ParseTree block = analyzer.parse(ctx, QUERIES[5]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
     System.out.println(plan);
     System.out.println("--------------");
@@ -141,7 +125,7 @@ public class TestLogicalOptimizer {
   public final void testProjectionPush() throws CloneNotSupportedException {
     // two relations
     QueryContext ctx = factory.create();
-    ParseTree block = (ParseTree) analyzer.parse(ctx, QUERIES[2]);
+    ParseTree block = analyzer.parse(ctx, QUERIES[2]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
     
     assertEquals(ExprType.ROOT, plan.getType());
@@ -163,7 +147,7 @@ public class TestLogicalOptimizer {
   @Test
   public final void testOptimizeWithGroupBy() throws CloneNotSupportedException {
     QueryContext ctx = factory.create();
-    ParseTree block = (ParseTree) analyzer.parse(ctx, QUERIES[3]);
+    ParseTree block = analyzer.parse(ctx, QUERIES[3]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
         
     assertEquals(ExprType.ROOT, plan.getType());
@@ -190,7 +174,7 @@ public class TestLogicalOptimizer {
   public final void testPushable() throws CloneNotSupportedException {
     // two relations
     QueryContext ctx = factory.create();
-    ParseTree block = (ParseTree) analyzer.parse(ctx, QUERIES[0]);
+    ParseTree block = analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
     
     assertEquals(ExprType.ROOT, plan.getType());
@@ -208,8 +192,6 @@ public class TestLogicalOptimizer {
     assertFalse(joinNode.hasJoinQual());
     
     // Test for Pushable
-    System.out.println("===> " + selNode.getQual());
-    System.out.println("===> " + joinNode);
     assertTrue(LogicalOptimizer.selectionPushable(selNode.getQual(), joinNode));
     
     // Optimized plan
@@ -223,7 +205,7 @@ public class TestLogicalOptimizer {
     
     // Scan Pushable Test
     ctx = factory.create();
-    block = (ParseTree) analyzer.parse(ctx, QUERIES[1]);
+    block = analyzer.parse(ctx, QUERIES[1]);
     plan = LogicalPlanner.createPlan(ctx, block);
     
     assertEquals(ExprType.ROOT, plan.getType());

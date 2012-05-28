@@ -1,62 +1,30 @@
 package nta.engine.planner;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.engine.exec.eval.*;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.parser.QueryBlock.Target;
-import nta.engine.planner.LogicalOptimizer.InSchemaRefresher;
-import nta.engine.planner.LogicalOptimizer.OutSchemaRefresher;
-import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.StoreTableNode;
-import nta.engine.planner.logical.ExprType;
-import nta.engine.planner.logical.GroupbyNode;
-import nta.engine.planner.logical.JoinNode;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.LogicalNodeVisitor;
-import nta.engine.planner.logical.ProjectionNode;
-import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.SelectionNode;
-import nta.engine.planner.logical.SortNode;
-import nta.engine.planner.logical.UnaryNode;
+import nta.engine.planner.logical.*;
 import nta.engine.planner.physical.TupleComparator;
 import nta.engine.query.exception.InvalidQueryException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Hyunsik Choi
  */
 public class PlannerUtil {
   private static final Log LOG = LogFactory.getLog(PlannerUtil.class);
-  
-  /**
-   * Refresh in/out schemas of all level logical nodes from scan nodes to root.
-   * This method changes the input logical plan. If you do not want that, you
-   * should copy the input logical plan before do it.
-   * 
-   * @param plan - to be refreshed
-   * @return refreshed Schema
-   */
-  public static LogicalNode refreshSchema(LogicalNode plan) {    
-    OutSchemaRefresher outRefresher = new OutSchemaRefresher();
-    plan.preOrder(outRefresher);
-    InSchemaRefresher inRefresher = new InSchemaRefresher();
-    plan.postOrder(inRefresher);
-    
-    return plan;
-  }
   
   public static String [] getLineage(LogicalNode node) {
     LogicalNode [] scans =  PlannerUtil.findAllNodes(node, ExprType.SCAN);
