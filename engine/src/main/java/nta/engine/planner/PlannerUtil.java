@@ -458,11 +458,12 @@ public class PlannerUtil {
     return Lists.newArrayList(outerSortSpec, innerSortSpec);
   }
 
-  public static List<TupleComparator> getComparatorsFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {
+  public static TupleComparator [] getComparatorsFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {
     List<SortSpec []> sortSpecs = getSortKeysFromJoinQual(joinQual, outer, inner);
-    return Lists.newArrayList(
-        new TupleComparator(outer, sortSpecs.get(0)),
-        new TupleComparator(inner, sortSpecs.get(1)));
+    TupleComparator [] comparators = new TupleComparator[2];
+    comparators[0] = new TupleComparator(outer, sortSpecs.get(0));
+    comparators[1] = new TupleComparator(inner, sortSpecs.get(1));
+    return comparators;
   }
 
   public static List<Column []> getJoinKeyPairs(EvalNode joinQual, Schema outer, Schema inner) {

@@ -37,6 +37,7 @@ public class ExternalSortExec extends PhysicalExec {
   private int run;
   private final static String SORT_PREFIX = "s_";
 
+  
   public ExternalSortExec(SubqueryContext ctx, StorageManager sm, SortNode annotation,
       PhysicalExec subOp) {
     this.subOp = subOp;

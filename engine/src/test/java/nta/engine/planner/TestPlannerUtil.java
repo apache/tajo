@@ -311,7 +311,7 @@ public class TestPlannerUtil {
     FieldEval f4 = new FieldEval("people.fid2", DataType.INT);
 
     EvalNode joinQual = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
-    List<TupleComparator> sortSpecs = PlannerUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);
+    TupleComparator [] comparators = PlannerUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);
 
     Tuple t1 = new VTuple(2);
     t1.put(0, DatumFactory.createInt(1));
@@ -321,24 +321,24 @@ public class TestPlannerUtil {
     t2.put(0, DatumFactory.createInt(2));
     t2.put(1, DatumFactory.createInt(3));
 
-    TupleComparator outerComparator = sortSpecs.get(0);
+    TupleComparator outerComparator = comparators[0];
     assertTrue(outerComparator.compare(t1, t2) < 0);
     assertTrue(outerComparator.compare(t2, t1) > 0);
 
-    TupleComparator innerComparator = sortSpecs.get(1);
+    TupleComparator innerComparator = comparators[1];
     assertTrue(innerComparator.compare(t1, t2) < 0);
     assertTrue(innerComparator.compare(t2, t1) > 0);
 
     // tests for composited join key
     EvalNode joinQual2 = new BinaryEval(EvalNode.Type.EQUAL, f3, f4);
     EvalNode compositedJoinQual = new BinaryEval(EvalNode.Type.AND, joinQual, joinQual2);
-    sortSpecs = PlannerUtil.getComparatorsFromJoinQual(compositedJoinQual, outerSchema, innerSchema);
+    comparators = PlannerUtil.getComparatorsFromJoinQual(compositedJoinQual, outerSchema, innerSchema);
 
-    outerComparator = sortSpecs.get(0);
+    outerComparator = comparators[0];
     assertTrue(outerComparator.compare(t1, t2) < 0);
     assertTrue(outerComparator.compare(t2, t1) > 0);
 
-    innerComparator = sortSpecs.get(1);
+    innerComparator = comparators[1];
     assertTrue(innerComparator.compare(t1, t2) < 0);
     assertTrue(innerComparator.compare(t2, t1) > 0);
   }

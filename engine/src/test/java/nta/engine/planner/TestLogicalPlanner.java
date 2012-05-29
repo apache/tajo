@@ -389,10 +389,6 @@ public class TestLogicalPlanner {
     assertSchema(expected, plan.getOutputSchema());
     LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
     assertSchema(expected, optimized.getOutputSchema());
-
-    System.out.println(optimized);
-
-    System.out.println(optimized.getOutputSchema());
   }
   
   static void testQuery7(LogicalNode plan) {
@@ -454,7 +450,6 @@ public class TestLogicalPlanner {
     ScanNode rightNode = (ScanNode) joinNode.getInnerNode();
     assertEquals("score", rightNode.getTableId());
     LogicalNode opt = LogicalOptimizer.optimize(ctx, plan);
-    System.out.println(opt);
   }
 
   @Test
@@ -499,10 +494,8 @@ public class TestLogicalPlanner {
 	  LogicalOptimizer.optimize(ctx, plan);
 	    
 	  String json = plan.toJSON();
-	  System.out.println(json);
 	  Gson gson = GsonCreator.getInstance();
 	  LogicalNode fromJson = gson.fromJson(json, LogicalNode.class);
-	  System.out.println(fromJson.toJSON());
 	  assertEquals(ExprType.ROOT, fromJson.getType());
 	  LogicalNode groupby = ((LogicalRootNode)fromJson).getSubNode();
 	  assertEquals(ExprType.PROJECTION, groupby.getType());

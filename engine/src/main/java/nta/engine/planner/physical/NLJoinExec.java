@@ -20,6 +20,18 @@ public class NLJoinExec extends PhysicalExec {
   // sub operations
   private PhysicalExec outer;
   private PhysicalExec inner;
+    
+  private JoinNode ann;
+  
+  public PhysicalExec getouter(){
+    return this.outer;
+  }
+  public PhysicalExec getinner(){
+    return this.inner;
+  }
+  public JoinNode getJoinNode(){
+    return this.ann;
+  }
 
   // temporal tuples and states for nested loop join
   private boolean needNewOuter;
@@ -38,6 +50,7 @@ public class NLJoinExec extends PhysicalExec {
     this.inSchema = ann.getInputSchema();
     this.outSchema = ann.getOutputSchema();
     this.joinQual = ann.getJoinQual();
+    this.ann = ann;
 
     // for projection
     targetIds = TupleUtil.getTargetIds(inSchema, outSchema);

@@ -180,7 +180,6 @@ public class TestPhysicalPlanner {
 
     Tuple tuple;
     int i = 0;
-    long start = System.currentTimeMillis();
     while ((tuple = exec.next()) != null) {
       assertTrue(tuple.contains(0));
       assertTrue(tuple.contains(1));
@@ -188,8 +187,6 @@ public class TestPhysicalPlanner {
       i++;
     }
     assertEquals(100, i);
-    long end = System.currentTimeMillis();
-    System.out.println((end - start) + " msc");
   }
 
   @Test
@@ -292,9 +289,6 @@ public class TestPhysicalPlanner {
     exec.rescan();
     i = 0;
     while ((tuple = exec.next()) != null) {
-      if (i == 8) {
-        System.out.println("Point!");
-      }
       assertEquals(6, tuple.getInt(2).asInt()); // sum
       assertEquals(3, tuple.getInt(3).asInt()); // max
       assertEquals(1, tuple.getInt(4).asInt()); // min
