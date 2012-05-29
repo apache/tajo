@@ -27,9 +27,6 @@ public class FuncCallEval extends EvalNode {
 	@Expose
 	protected EvalNode [] givenArgs;
 
-	/**
-	 * @param type
-	 */
 	public FuncCallEval(FunctionDesc desc, Function instance, 
 	    EvalNode [] givenArgs) {
 		super(Type.FUNCTION);
@@ -38,9 +35,13 @@ public class FuncCallEval extends EvalNode {
 		this.givenArgs = givenArgs;
 	}
 	
-	public EvalNode [] getGivenArgs() {
+	public EvalNode [] getArgs() {
 	  return this.givenArgs;
 	}
+
+  public void setArgs(EvalNode [] args) {
+    this.givenArgs = args;
+  }
 	
 	public DataType getValueType() {
 		return this.desc.getReturnType();

@@ -64,7 +64,7 @@ public class TestEvalTreeUtil {
     catalog.addTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
-        FunctionType.GENERAL, DataType.INT, 
+        FunctionType.GENERAL, DataType.INT,
         new DataType [] { DataType.INT, DataType.INT});
     catalog.registerFunction(funcMeta);
     
@@ -76,7 +76,7 @@ public class TestEvalTreeUtil {
     factory = new QueryContext.Factory(catalog);
     analyzer = new QueryAnalyzer(catalog);
     
-    QueryBlock block = null;    
+    QueryBlock block;
 
     QueryContext ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, TestEvalTree.QUERIES[0]);

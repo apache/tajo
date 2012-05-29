@@ -1,6 +1,3 @@
-/**
- * 
- */
 package nta.datum;
 
 import java.nio.ByteBuffer;
@@ -196,9 +193,9 @@ public class FloatDatum extends NumericDatum {
     case INT:
       return DatumFactory.createFloat(val + datum.asInt());
     case LONG:
-      return DatumFactory.createFloat(val + datum.asLong());
+      return DatumFactory.createDouble(val + datum.asLong());
     case FLOAT:
-      return DatumFactory.createFloat(val + datum.asFloat());
+      return DatumFactory.createDouble(val + datum.asFloat());
     case DOUBLE:
       return DatumFactory.createDouble(val + datum.asDouble());
     default:
@@ -216,7 +213,7 @@ public class FloatDatum extends NumericDatum {
     case LONG:
       return DatumFactory.createDouble(val - datum.asLong());
     case FLOAT:
-      return DatumFactory.createFloat(val - datum.asFloat());
+      return DatumFactory.createDouble(val - datum.asFloat());
     case DOUBLE:
       return DatumFactory.createDouble(val - datum.asDouble());
     default:
@@ -234,7 +231,7 @@ public class FloatDatum extends NumericDatum {
     case LONG:
       return DatumFactory.createDouble(val * datum.asLong());
     case FLOAT:
-      return DatumFactory.createFloat(val * datum.asFloat());
+      return DatumFactory.createDouble(val * datum.asFloat());
     case DOUBLE:
       return DatumFactory.createDouble(val * datum.asDouble());
     default:
@@ -252,7 +249,7 @@ public class FloatDatum extends NumericDatum {
     case LONG:
       return DatumFactory.createDouble(val / datum.asLong());
     case FLOAT:
-      return DatumFactory.createFloat(val / datum.asFloat());
+      return DatumFactory.createDouble(val / datum.asFloat());
     case DOUBLE:
       return DatumFactory.createDouble(val / datum.asDouble());
     default:

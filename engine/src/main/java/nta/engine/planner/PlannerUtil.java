@@ -16,7 +16,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -154,10 +153,11 @@ public class PlannerUtil {
         if (targets[i].getEvalTree().getType() == Type.FUNCTION) {
           Column tobe = child.getOutputSchema().getColumn(i);        
           FuncCallEval eval = (FuncCallEval) targets[i].getEvalTree();
-          Collection<Column> tobeChanged = 
-              EvalTreeUtil.findDistinctRefColumns(eval);
-          EvalTreeUtil.changeColumnRef(eval, tobeChanged.iterator().next(), 
-              tobe);
+//          Collection<Column> tobeChanged =
+//              EvalTreeUtil.findDistinctRefColumns(eval);
+//          EvalTreeUtil.changeColumnRef(eval, tobeChanged.iterator().next(),
+//              tobe);
+          eval.setArgs(new EvalNode [] {new FieldEval(tobe)});
         }
       }
       
