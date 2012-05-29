@@ -7,13 +7,11 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.SubqueryContext;
 import nta.engine.planner.logical.SortNode;
 import nta.storage.*;
+import nta.storage.Scanner;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Byungnam Lim
@@ -50,7 +48,7 @@ public class ExternalSortExec extends PhysicalExec {
     this.tupleSlots = new ArrayList<Tuple>(MAXSIZE);
 
     this.run = 0;
-    this.workDir = ctx.getWorkDir().getAbsolutePath() + "/extsort";
+    this.workDir = ctx.getWorkDir().getAbsolutePath() + "/" + UUID.randomUUID();
   }
 
   @Override
@@ -77,7 +75,7 @@ public class ExternalSortExec extends PhysicalExec {
   public Tuple next() throws IOException {
     if (!sorted) {
       Tuple tuple;
-      int runNum = 0;
+      int runNum;
       while ((tuple = subOp.next()) != null) { // partition sort start
         tupleSlots.add(new VTuple(tuple));
         if (tupleSlots.size() == MAXSIZE) {
@@ -85,7 +83,9 @@ public class ExternalSortExec extends PhysicalExec {
         }
       }
 
-      firstPhase(tupleSlots);
+      if (tupleSlots.size() != 0) {
+        firstPhase(tupleSlots);
+      }
       runNum = run;
 
       int iterator = 0;

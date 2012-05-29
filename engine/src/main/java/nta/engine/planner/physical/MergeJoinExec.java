@@ -10,7 +10,6 @@ import nta.engine.SubqueryContext;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.planner.PlannerUtil;
 import nta.engine.planner.logical.JoinNode;
-import nta.engine.planner.logical.SortNode;
 import nta.engine.utils.TupleUtil;
 import nta.storage.FrameTuple;
 import nta.storage.Tuple;
@@ -40,7 +39,7 @@ public class MergeJoinExec extends PhysicalExec {
   private JoinTupleComparator joincomparator = null;
   private TupleComparator [] tupleComparator = null;
 
-  private final int MAXSIZE = 10000;
+  private final static int INITIAL_TUPLE_SLOT = 10000;
   
   private boolean end = false;
 
@@ -48,16 +47,16 @@ public class MergeJoinExec extends PhysicalExec {
   private final int[] targetIds;
 
   public MergeJoinExec(SubqueryContext ctx, JoinNode ann, PhysicalExec outer,
-      PhysicalExec inner, SortNode outersort, SortNode innersort) {
+      PhysicalExec inner, SortSpec [] outerSortKey, SortSpec [] innerSortKey) {
     this.outer = outer;
     this.inner = inner;
     this.inSchema = ann.getInputSchema();
     this.outSchema = ann.getOutputSchema();
-    this.outertupleSlots = new ArrayList<Tuple>(MAXSIZE);
-    this.innerTupleSlots = new ArrayList<Tuple>(MAXSIZE);
+    this.outertupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
+    this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     SortSpec[][] sortSpecs = new SortSpec[2][];
-    sortSpecs[0] = outersort.getSortKeys();
-    sortSpecs[1] = innersort.getSortKeys();
+    sortSpecs[0] = outerSortKey;
+    sortSpecs[1] = innerSortKey;
     this.joincomparator = new JoinTupleComparator(outer.getSchema(),
         inner.getSchema(), sortSpecs);
     this.tupleComparator = PlannerUtil.getComparatorsFromJoinQual(
@@ -76,8 +75,8 @@ public class MergeJoinExec extends PhysicalExec {
   public Tuple next() throws IOException {
     Tuple previous;
     
-    if (!outerIterator.hasNext()) {
-      if(end == true){
+    if (!outerIterator.hasNext() && !innerIterator.hasNext()) {
+      if(end){
         return null;
       }
       

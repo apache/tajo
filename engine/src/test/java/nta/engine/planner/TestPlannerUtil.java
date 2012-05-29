@@ -275,25 +275,25 @@ public class TestPlannerUtil {
     FieldEval f4 = new FieldEval("people.fid2", DataType.INT);
 
     EvalNode joinQual = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
-    List<QueryBlock.SortSpec []> sortSpecs = PlannerUtil.getSortKeysFromJoinQual(joinQual, outerSchema, innerSchema);
-    assertEquals(2, sortSpecs.size());
-    assertEquals(1, sortSpecs.get(0).length);
-    assertEquals(1, sortSpecs.get(1).length);
-    assertEquals(outerSchema.getColumnByName("id1"), sortSpecs.get(0)[0].getSortKey());
-    assertEquals(innerSchema.getColumnByName("fid1"), sortSpecs.get(1)[0].getSortKey());
+    QueryBlock.SortSpec [][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(joinQual, outerSchema, innerSchema);
+    assertEquals(2, sortSpecs.length);
+    assertEquals(1, sortSpecs[0].length);
+    assertEquals(1, sortSpecs[1].length);
+    assertEquals(outerSchema.getColumnByName("id1"), sortSpecs[0][0].getSortKey());
+    assertEquals(innerSchema.getColumnByName("fid1"), sortSpecs[1][0].getSortKey());
 
     // tests for composited join key
     EvalNode joinQual2 = new BinaryEval(EvalNode.Type.EQUAL, f3, f4);
     EvalNode compositedJoinQual = new BinaryEval(EvalNode.Type.AND, joinQual, joinQual2);
 
     sortSpecs = PlannerUtil.getSortKeysFromJoinQual(compositedJoinQual, outerSchema, innerSchema);
-    assertEquals(2, sortSpecs.size());
-    assertEquals(2, sortSpecs.get(0).length);
-    assertEquals(2, sortSpecs.get(1).length);
-    assertEquals(outerSchema.getColumnByName("id1"), sortSpecs.get(0)[0].getSortKey());
-    assertEquals(outerSchema.getColumnByName("id2"), sortSpecs.get(0)[1].getSortKey());
-    assertEquals(innerSchema.getColumnByName("fid1"), sortSpecs.get(1)[0].getSortKey());
-    assertEquals(innerSchema.getColumnByName("fid2"), sortSpecs.get(1)[1].getSortKey());
+    assertEquals(2, sortSpecs.length);
+    assertEquals(2, sortSpecs[0].length);
+    assertEquals(2, sortSpecs[1].length);
+    assertEquals(outerSchema.getColumnByName("id1"), sortSpecs[0][0].getSortKey());
+    assertEquals(outerSchema.getColumnByName("id2"), sortSpecs[0][1].getSortKey());
+    assertEquals(innerSchema.getColumnByName("fid1"), sortSpecs[1][0].getSortKey());
+    assertEquals(innerSchema.getColumnByName("fid2"), sortSpecs[1][1].getSortKey());
   }
 
   @Test

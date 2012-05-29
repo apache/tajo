@@ -1,11 +1,13 @@
 package tajo.engine;
 
 import nta.util.FileUtil;
+import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -45,26 +47,38 @@ public class TestJoinQuery extends TpchTestBase {
   public final void testTPCHQ2Join() throws Exception {
     ResultSet res = execute(FileUtil.readTextFile(new File("src/test/queries/tpch_q2_simplified.tql")));
 
-    res.next();
-    assertTrue(4032.68f == res.getFloat("s_acctbal"));
-    assertEquals("Supplier#000000002", res.getString("s_name"));
-    assertEquals("ETHIOPIA", res.getString("n_name"));
+    Object [][] result = new Object[3][3];
 
-    res.next();
-    assertTrue(4641.08f == res.getFloat("s_acctbal"));
-    assertEquals("Supplier#000000004", res.getString("s_name"));
-    assertEquals("MOROCCO", res.getString("n_name"));
+    int tupleId = 0;
+    int colId = 0;
+    result[tupleId][colId++] = 4032.68f;
+    result[tupleId][colId++] = "Supplier#000000002";
+    result[tupleId++][colId] = "ETHIOPIA";
 
-    res.next();
-    assertTrue(4192.4f == res.getFloat("s_acctbal"));
-    assertEquals("Supplier#000000003", res.getString("s_name"));
-    assertEquals("ARGENTINA", res.getString("n_name"));
+    colId = 0;
+    result[tupleId][colId++] = 4641.08f;
+    result[tupleId][colId++] = "Supplier#000000004";
+    result[tupleId++][colId] = "MOROCCO";
+
+    colId = 0;
+    result[tupleId][colId++] = 4192.4f;
+    result[tupleId][colId++] = "Supplier#000000003";
+    result[tupleId][colId] = "ARGENTINA";
+
+    Map<Float, Object[]> resultSet =
+        Maps.newHashMap();
+    for (Object [] t : result) {
+      resultSet.put((Float) t[0], t);
+    }
+
+    for (int i = 0; i < 3; i++) {
+      res.next();
+      Object [] resultTuple = resultSet.get(res.getFloat("s_acctbal"));
+      assertEquals(resultTuple[0], res.getFloat("s_acctbal"));
+      assertEquals(resultTuple[1], res.getString("s_name"));
+      assertEquals(resultTuple[2], res.getString("n_name"));
+    }
 
     assertFalse(res.next());
-  }
-
-  //@Test
-  public final void testCount() throws Exception {
-    ResultSet res = execute("select count(l_orderkey) as total from lineitem");
   }
 }

@@ -172,6 +172,9 @@ public class LogicalOptimizer {
         } else {
           joinNode.setJoinQual(qual);
         }
+        if (joinNode.getJoinType() == JoinType.CROSS_JOIN) {
+          joinNode.setJoinType(JoinType.INNER);
+        }
         cnf.removeAll(matched);
       }
 

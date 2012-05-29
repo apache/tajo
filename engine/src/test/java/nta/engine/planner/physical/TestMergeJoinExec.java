@@ -18,14 +18,12 @@ import nta.datum.DatumFactory;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryIdFactory;
 import nta.engine.SubqueryContext;
-import nta.engine.WorkerTestingUtil;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.PhysicalPlanner;
 import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.SortNode;
 import nta.engine.utils.TUtil;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
@@ -39,7 +37,7 @@ import org.junit.Test;
 
 public class TestMergeJoinExec {
   private Configuration conf;
-  private final String TEST_PATH = "target/test-data/TestNLJoinExec";
+  private final String TEST_PATH = "target/test-data/TestMergeJoinExec";
   private NtaTestingUtility util;
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
@@ -49,11 +47,12 @@ public class TestMergeJoinExec {
   @Before
   public void setUp() throws Exception {
     util = new NtaTestingUtility();
+    util.initTestDir();
     util.startMiniZKCluster();
     catalog = util.startCatalogCluster().getCatalog();
-    WorkerTestingUtil.buildTestDir(TEST_PATH);
+    File testDir = NtaTestingUtility.getTestDir(TEST_PATH);
     conf = util.getConfiguration();
-    sm = StorageManager.get(conf, TEST_PATH);
+    sm = StorageManager.get(conf, testDir.getAbsolutePath());
 
     Schema employeeSchema = new Schema();
     employeeSchema.addColumn("managerId", DataType.INT);
@@ -143,7 +142,7 @@ public class TestMergeJoinExec {
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-
+    /*
     ProjectionExec proj = (ProjectionExec) exec;
     NLJoinExec nestedLoopJoin = (NLJoinExec) proj.getsubOp();
     SeqScanExec outerScan = (SeqScanExec) nestedLoopJoin.getouter();
@@ -175,10 +174,10 @@ public class TestMergeJoinExec {
     SortExec innerSortExec = new SortExec(innerSort, innerScan);
 
     MergeJoinExec mergeJoin = new MergeJoinExec(ctx,
-        nestedLoopJoin.getJoinNode(), outerSortExec, innerSortExec, outerSort,
-        innerSort);
+        nestedLoopJoin.getJoinNode(), outerSortExec, innerSortExec, outerSortKeys,
+        innerSortKeys);
     proj.setsubOp(mergeJoin);
-    exec = proj;
+    exec = proj;*/
 
     Tuple tuple;
     int count = 0;

@@ -116,7 +116,20 @@ public class PhysicalPlanner {
   
   public PhysicalExec createJoinPlan(SubqueryContext ctx, JoinNode joinNode, 
       PhysicalExec outer, PhysicalExec inner) {
-    return new NLJoinExec(ctx, joinNode, outer, inner);
+    switch (joinNode.getJoinType()) {
+      case CROSS_JOIN:
+        return new NLJoinExec(ctx, joinNode, outer, inner);
+
+      default:
+        QueryBlock.SortSpec [][] sortSpecs =
+          PlannerUtil.getSortKeysFromJoinQual(joinNode.getJoinQual(), outer.getSchema(), inner.getSchema());
+        ExternalSortExec outerSort = new ExternalSortExec(ctx, sm,
+            new SortNode(sortSpecs[0], outer.getSchema(), outer.getSchema()), outer);
+        ExternalSortExec innerSort = new ExternalSortExec(ctx, sm,
+            new SortNode(sortSpecs[1], inner.getSchema(), inner.getSchema()), inner);
+
+        return new MergeJoinExec(ctx, joinNode, outerSort, innerSort, sortSpecs[0], sortSpecs[1]);
+    }
   }
   
   public PhysicalExec createStorePlan(SubqueryContext ctx, StoreTableNode annotation,

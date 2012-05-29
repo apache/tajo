@@ -34,6 +34,10 @@ public class JoinNode extends BinaryNode implements Cloneable {
     return this.joinType;
   }
 
+  public void setJoinType(JoinType joinType) {
+    this.joinType = joinType;
+  }
+
   public void setJoinQual(EvalNode joinQual) {
     this.joinQual = joinQual;
   }

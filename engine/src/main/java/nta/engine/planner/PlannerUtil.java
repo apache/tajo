@@ -445,7 +445,7 @@ public class PlannerUtil {
     return false;
   }
 
-  public static List<SortSpec[]> getSortKeysFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {
+  public static SortSpec[][] getSortKeysFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {
     List<Column []> joinKeyPairs = getJoinKeyPairs(joinQual, outer, inner);
     SortSpec [] outerSortSpec = new SortSpec[joinKeyPairs.size()];
     SortSpec [] innerSortSpec = new SortSpec[joinKeyPairs.size()];
@@ -455,14 +455,14 @@ public class PlannerUtil {
       innerSortSpec[i] = new SortSpec(joinKeyPairs.get(i)[1]);
     }
 
-    return Lists.newArrayList(outerSortSpec, innerSortSpec);
+    return new SortSpec[][] {outerSortSpec, innerSortSpec};
   }
 
   public static TupleComparator [] getComparatorsFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {
-    List<SortSpec []> sortSpecs = getSortKeysFromJoinQual(joinQual, outer, inner);
+    SortSpec [][] sortSpecs = getSortKeysFromJoinQual(joinQual, outer, inner);
     TupleComparator [] comparators = new TupleComparator[2];
-    comparators[0] = new TupleComparator(outer, sortSpecs.get(0));
-    comparators[1] = new TupleComparator(inner, sortSpecs.get(1));
+    comparators[0] = new TupleComparator(outer, sortSpecs[0]);
+    comparators[1] = new TupleComparator(inner, sortSpecs[1]);
     return comparators;
   }
 
