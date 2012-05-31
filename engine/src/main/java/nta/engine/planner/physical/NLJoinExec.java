@@ -23,10 +23,10 @@ public class NLJoinExec extends PhysicalExec {
     
   private JoinNode ann;
   
-  public PhysicalExec getouter(){
+  public PhysicalExec getOuter(){
     return this.outer;
   }
-  public PhysicalExec getinner(){
+  public PhysicalExec getInner(){
     return this.inner;
   }
   public JoinNode getJoinNode(){

@@ -5,6 +5,7 @@ import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.SubqueryContext;
+import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.SortNode;
 import nta.storage.*;
 import nta.storage.Scanner;
@@ -35,6 +36,9 @@ public class ExternalSortExec extends PhysicalExec {
   private int run;
   private final static String SORT_PREFIX = "s_";
 
+  public PhysicalExec getsubOp(){
+    return this.subOp;
+  }
   
   public ExternalSortExec(SubqueryContext ctx, StorageManager sm, SortNode annotation,
       PhysicalExec subOp) {

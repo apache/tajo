@@ -64,7 +64,7 @@ public class TestNLJoinExec {
     sm.initTableBase(employeeMeta, "employee");
     Appender appender = sm.getAppender(employeeMeta, "employee", "employee");
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 50; i++) {
       tuple.put(new Datum[] {
           DatumFactory.createInt(i),
           DatumFactory.createInt(i),
@@ -87,7 +87,7 @@ public class TestNLJoinExec {
     sm.initTableBase(peopleMeta, "people");
     appender = sm.getAppender(peopleMeta, "people", "people");
     tuple = new VTuple(peopleMeta.getSchema().getColumnNum());
-    for (int i = 1; i < 10; i += 2) {
+    for (int i = 1; i < 50; i += 2) {
       tuple.put(new Datum[] {
           DatumFactory.createInt(i),
           DatumFactory.createInt(10+i),
@@ -117,6 +117,7 @@ public class TestNLJoinExec {
   
   @Test
   public final void testCrossJoin() throws IOException {
+//    long start = System.currentTimeMillis();
     Fragment[] empFrags = sm.split("employee");
     Fragment[] peopleFrags = sm.split("people");
     
@@ -141,11 +142,13 @@ public class TestNLJoinExec {
     while (exec.next() != null) {
       i++;
     }
-    assertEquals(50, i); // expected 10 * 5
+    assertEquals(50*50/2, i); // expected 10 * 5
+//    System.out.println("TIME : " + (System.currentTimeMillis() - start));
   }
 
   @Test
   public final void testInnerJoin() throws IOException {
+//    long start = System.currentTimeMillis();
     Fragment[] empFrags = sm.split("employee");
     Fragment[] peopleFrags = sm.split("people");
     
@@ -177,6 +180,7 @@ public class TestNLJoinExec {
       assertTrue(10 + i == tuple.getInt(3).asInt());
       i += 2;
     }
-    assertEquals(5, count); // expected 10 * 5
+    assertEquals(50 / 2, count);
+//    System.out.println("TIME : " + (System.currentTimeMillis() - start));
   }
 }

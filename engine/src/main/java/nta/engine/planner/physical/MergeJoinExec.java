@@ -31,7 +31,7 @@ public class MergeJoinExec extends PhysicalExec {
   private Tuple outputTuple = null;
   private Tuple outernext = null;
 
-  private final List<Tuple> outertupleSlots;
+  private final List<Tuple> outerTupleSlots;
   private final List<Tuple> innerTupleSlots;
   private Iterator<Tuple> outerIterator;
   private Iterator<Tuple> innerIterator;
@@ -42,9 +42,21 @@ public class MergeJoinExec extends PhysicalExec {
   private final static int INITIAL_TUPLE_SLOT = 10000;
   
   private boolean end = false;
+  
+  private JoinNode ann;
 
   // projection
   private final int[] targetIds;
+  
+  public PhysicalExec getinner(){
+    return this.inner;
+  }
+  public PhysicalExec getouter(){
+    return this.outer;
+  }
+  public JoinNode getJoinNode(){
+    return this.ann;
+  }
 
   public MergeJoinExec(SubqueryContext ctx, JoinNode ann, PhysicalExec outer,
       PhysicalExec inner, SortSpec [] outerSortKey, SortSpec [] innerSortKey) {
@@ -52,17 +64,20 @@ public class MergeJoinExec extends PhysicalExec {
     this.inner = inner;
     this.inSchema = ann.getInputSchema();
     this.outSchema = ann.getOutputSchema();
-    this.outertupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
+
+    this.outerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     SortSpec[][] sortSpecs = new SortSpec[2][];
     sortSpecs[0] = outerSortKey;
     sortSpecs[1] = innerSortKey;
+
     this.joincomparator = new JoinTupleComparator(outer.getSchema(),
         inner.getSchema(), sortSpecs);
     this.tupleComparator = PlannerUtil.getComparatorsFromJoinQual(
         ann.getJoinQual(), outer.getSchema(), inner.getSchema());
-    this.outerIterator = outertupleSlots.iterator();
+    this.outerIterator = outerTupleSlots.iterator();
     this.innerIterator = innerTupleSlots.iterator();
+    this.ann = ann;
     
     // for projection
     targetIds = TupleUtil.getTargetIds(inSchema, outSchema);
@@ -87,7 +102,7 @@ public class MergeJoinExec extends PhysicalExec {
         innerTuple = inner.next();
       }
       
-      outertupleSlots.clear();
+      outerTupleSlots.clear();
       innerTupleSlots.clear();
       
       int cmp;
@@ -104,14 +119,14 @@ public class MergeJoinExec extends PhysicalExec {
       
       previous = outerTuple;
       do {
-        outertupleSlots.add(outerTuple);
+        outerTupleSlots.add(outerTuple);
         outerTuple = outer.next();
         if (outerTuple == null) {
           end = true;
           break;
         }
       } while (tupleComparator[0].compare(previous, outerTuple) == 0);
-      outerIterator = outertupleSlots.iterator();
+      outerIterator = outerTupleSlots.iterator();
       outernext = outerIterator.next();
       
       previous = innerTuple;
@@ -145,9 +160,9 @@ public class MergeJoinExec extends PhysicalExec {
   public void rescan() throws IOException {
     outer.rescan();
     inner.rescan();
-    outertupleSlots.clear();
+    outerTupleSlots.clear();
     innerTupleSlots.clear();
-    outerIterator = outertupleSlots.iterator();
+    outerIterator = outerTupleSlots.iterator();
     innerIterator = innerTupleSlots.iterator();
   }
 }
