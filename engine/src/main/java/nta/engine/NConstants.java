@@ -34,7 +34,7 @@ public final class NConstants {
   public static final String ZOOKEEPER_RETRY_INTERVALMILLS="zookeeper.retry.intervalmills";
   public static final int DEFAULT_ZOOKEEPER_RETRY_INTERVALMILLS=1000;
 	
-	public static final String CLUSTER_DISTRIBUTED="nta.cluster.distributed";
+	public static final String CLUSTER_DISTRIBUTED="tajo.cluster.distributed";
 	public static final String CLUSTER_IS_LOCAL="false";
 	
 	public static final String ENGINE_BASE_DIR="engine.rootdir";
