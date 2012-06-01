@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.TableStat;
 import nta.engine.*;
 import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.exception.NoSuchQueryIdException;
@@ -104,8 +104,8 @@ public class QueryManager {
       if (progress.getPartitionsCount() > 0) {
         unit.addPartitions(progress.getPartitionsList());
       }
-      if (progress.hasStats()) {
-        unit.setStatSet(new StatSet(progress.getStats()));
+      if (progress.hasResultStats()) {
+        unit.setStats(new TableStat(progress.getResultStats()));
       }
       unit.resetExpireTime();
     } else {

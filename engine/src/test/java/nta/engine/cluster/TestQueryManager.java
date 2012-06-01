@@ -4,21 +4,20 @@
 package nta.engine.cluster;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.common.collect.Lists;
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.StatisticsUtil;
 import nta.catalog.statistics.TableStat;
-import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.Query;
 import nta.engine.QueryId;
@@ -34,7 +33,6 @@ import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.query.GlobalPlanner;
-import nta.engine.query.TQueryUtil;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
@@ -95,17 +93,20 @@ public class TestQueryManager {
       }
     }
     s.addAll(qm.getAssignedWorkers(plan));
-    TableStat statSet = new TableStat();
+    List<TableStat> stats = Lists.newArrayList();
     for (QueryUnit unit : plan.getQueryUnits()) {
       assertEquals(QueryStatus.FINISHED, unit.getInProgressStatus().getStatus());
-      statSet = TQueryUtil.mergeStatSet(statSet, unit.getStats());
+      stats.add(unit.getStats());
     }
-    
-//    assertEquals(3, statSet.getStat(StatType.COLUMN_NUM_NDV).getValue());
-//    assertEquals(6, statSet.getStat(StatType.COLUMN_NUM_NULLS).getValue());
-    assertEquals(9l, statSet.getAvgRows().longValue());
-    assertEquals(12, statSet.getNumBlocks().intValue());
-    assertEquals(15, statSet.getNumPartitions().intValue());
-    assertEquals(18, statSet.getNumRows().longValue());
+    TableStat stat = StatisticsUtil.aggregate(stats);
+    assertEquals(5, stat.getColumnStats().get(0).getMinValue().longValue());
+    assertEquals(100, stat.getColumnStats().get(0).getMaxValue().longValue());
+    assertEquals(3, stat.getColumnStats().get(0).getNumDistValues().longValue());
+    assertEquals(6, stat.getColumnStats().get(0).getNumNulls().longValue());
+    //assertEquals(6l, statSet.getAvgRows().longValue());
+    assertEquals(12, stat.getNumBlocks().intValue());
+    assertEquals(15, stat.getNumPartitions().intValue());
+    assertEquals(18l, stat.getNumRows().longValue());
+    assertEquals(21l, stat.getNumBytes().longValue());
   }
 }

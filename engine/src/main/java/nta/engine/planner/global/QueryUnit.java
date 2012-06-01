@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import nta.catalog.Schema;
-import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.TableStat;
 import nta.engine.AbstractQuery;
 import nta.engine.MasterInterfaceProtos.Partition;
 import nta.engine.QueryUnitId;
@@ -43,7 +43,7 @@ public class QueryUnit extends AbstractQuery {
 	
 	private int expire;
 	private List<Partition> partitions;
-	private StatSet statSet;
+	private TableStat stats;
 	
 	public QueryUnit(QueryUnitId id) {
 		this.id = id;
@@ -82,7 +82,7 @@ public class QueryUnit extends AbstractQuery {
 	}
 	
 	public void addFragment(String key, Fragment fragment) {
-	  List<Fragment> frags = null;
+	  List<Fragment> frags;
 	  if (fragMap.containsKey(key)) {
 	    frags = fragMap.get(key);
 	  } else {
@@ -109,7 +109,7 @@ public class QueryUnit extends AbstractQuery {
 	}
 	
 	public void addFetch(String key, URI uri) {
-	  Set<URI> uris = null;
+	  Set<URI> uris;
 	  if (fetchMap.containsKey(key)) {
 	    uris = fetchMap.get(key);
 	  } else {
@@ -120,7 +120,7 @@ public class QueryUnit extends AbstractQuery {
 	}
 	
 	public void addFetches(String key, List<URI> urilist) {
-	  Set<URI> uris = null;
+	  Set<URI> uris;
     if (fetchMap.containsKey(key)) {
       uris = fetchMap.get(key);
     } else {
@@ -198,8 +198,8 @@ public class QueryUnit extends AbstractQuery {
 		return str;
 	}
 	
-	public void setStatSet(StatSet statSet) {
-	  this.statSet = statSet;
+	public void setStats(TableStat stats) {
+	  this.stats = stats;
 	}
 	
 	public void addPartitions(List<Partition> partitions) {
@@ -210,8 +210,8 @@ public class QueryUnit extends AbstractQuery {
 	  this.partitions.add(partition);
 	}
 	
-	public StatSet getStats() {
-	  return this.statSet;
+	public TableStat getStats() {
+	  return this.stats;
 	}
 	
 	public List<Partition> getPartitions() {

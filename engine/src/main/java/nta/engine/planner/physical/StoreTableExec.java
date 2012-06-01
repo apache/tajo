@@ -69,7 +69,8 @@ public class StoreTableExec extends PhysicalExec {
     appender.close();
     
     // Collect statistics data
-    ctx.addStatSet(annotation.getType().toString(), appender.getStats());
+//    ctx.addStatSet(annotation.getType().toString(), appender.getStats());
+    ctx.setResultStats(appender.getStats());
     ctx.addRepartition(0, ctx.getQueryId().toString());
         
     return null;

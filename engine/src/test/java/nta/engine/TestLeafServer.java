@@ -20,13 +20,12 @@ import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.TableStat;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.Partition;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
-import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.parser.ParseTree;
@@ -264,8 +263,8 @@ public class TestLeafServer {
           assertNotNull(fetched);
           sum += fetched.length();
         }
-        StatSet stat = new StatSet(ips.getStats());
-        assertEquals(stat.getStat(StatType.TABLE_NUM_BYTES).getValue(), sum);
+        TableStat stat = new TableStat(ips.getResultStats());
+        assertEquals(sum, stat.getNumBytes().longValue());
       }
     }    
     

@@ -6,13 +6,12 @@ package nta.engine.planner.global;
 import java.io.IOException;
 import java.util.Iterator;
 
-import nta.catalog.statistics.Stat;
-import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.ColumnStat;
+import nta.catalog.statistics.TableStat;
 import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitId;
-import nta.engine.TCommonProtos.StatType;
 import nta.engine.cluster.QueryManager;
 import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.query.GlobalPlanner;
@@ -84,7 +83,7 @@ public class MockupQueryUnitScheduler {
           builder.setId(id.getProto());
           builder.setProgress(i/3.f);
           builder.setStatus(QueryStatus.INPROGRESS);
-          builder.setStats(buildStatSet().getProto());
+          builder.setResultStats(buildStatSet().getProto());
           qm.updateProgress(id, builder.build());
         }
         builder.setStatus(QueryStatus.FINISHED);
@@ -95,25 +94,20 @@ public class MockupQueryUnitScheduler {
         ie.printStackTrace();
       }
     }
-    
-    private StatSet buildStatSet() {
-      StatSet statSet = new StatSet();
-      Stat stat = new Stat(StatType.COLUMN_NUM_NDV);
-      stat.setValue(1);
-      statSet.putStat(stat);
-      stat = new Stat(StatType.TABLE_AVG_ROWS);
-      stat.setValue(3);
-      statSet.putStat(stat);
-      stat = new Stat(StatType.TABLE_NUM_BLOCKS);
-      stat.setValue(4);
-      statSet.putStat(stat);
-      stat = new Stat(StatType.TABLE_NUM_PARTITIONS);
-      stat.setValue(5);
-      statSet.putStat(stat);
-      stat = new Stat(StatType.TABLE_NUM_ROWS);
-      stat.setValue(6);
-      statSet.putStat(stat);
-      
+
+    private TableStat buildStatSet() {
+      TableStat statSet = new TableStat();
+      ColumnStat cs1 = new ColumnStat();
+      cs1.setNumDistVals(1);
+      cs1.setNumNulls(2);
+      cs1.setMinValue(5);
+      cs1.setMaxValue(100);
+      statSet.addColumnStat(cs1);
+      //statSet.setAvgRows(3);
+      statSet.setNumBlocks(4);
+      statSet.setNumPartitions(5);
+      statSet.setNumRows(6);
+      statSet.setNumBytes(7);
       return statSet;
     }
   }

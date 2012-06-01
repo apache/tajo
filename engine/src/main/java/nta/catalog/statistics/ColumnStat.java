@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package nta.catalog.statistics;
 
@@ -10,7 +10,6 @@ import nta.common.ProtoObject;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
@@ -20,11 +19,17 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   private ColumnStatProto.Builder builder = null;
   private boolean viaProto = false;
 
-  @Expose private Long numDistVals = null;
-  @Expose private Long numNulls = null;
+  private Long numDistVals = null;
+  private Long numNulls = null;
+  private Long minValue = null;
+  private Long maxValue = null;
 
   public ColumnStat() {
     builder = ColumnStatProto.newBuilder();
+    numDistVals = 0l;
+    numNulls = 0l;
+    minValue = Long.MAX_VALUE;
+    maxValue = Long.MIN_VALUE;
   }
 
   public ColumnStat(ColumnStatProto proto) {
@@ -48,6 +53,42 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   public void setNumDistVals(long numDistVals) {
     setModified();
     this.numDistVals = numDistVals;
+  }
+
+  public Long getMinValue() {
+    ColumnStatProtoOrBuilder p = viaProto ? proto : builder;
+    if (minValue != null) {
+      return this.minValue;
+    }
+    if (!p.hasMinValue()) {
+      return null;
+    }
+    this.minValue = p.getMinValue();
+
+    return this.minValue;
+  }
+
+  public void setMinValue(long minValue) {
+    setModified();
+    this.minValue = minValue;
+  }
+
+  public Long getMaxValue() {
+    ColumnStatProtoOrBuilder p = viaProto ? proto : builder;
+    if (maxValue != null) {
+      return this.maxValue;
+    }
+    if (!p.hasMaxValue()) {
+      return null;
+    }
+    this.maxValue = p.getMaxValue();
+
+    return this.maxValue;
+  }
+
+  public void setMaxValue(long maxValue) {
+    setModified();
+    this.maxValue = maxValue;
   }
 
   public Long getNumNulls() {
@@ -84,7 +125,7 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
       return false;
     }
   }
-  
+
   public int hashCode() {
     return Objects.hashCode(getNumDistValues(), getNumNulls());
   }
@@ -97,7 +138,7 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
 
     return stat;
   }
-  
+
   public String toString() {
     Gson gson = new GsonBuilder().setPrettyPrinting().
         excludeFieldsWithoutExposeAnnotation().create();
@@ -112,6 +153,12 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
     }
     if (this.numNulls == null && p.hasNumNulls()) {
       this.numNulls = p.getNumNulls();
+    }
+    if (this.minValue == null && p.hasMinValue()) {
+      this.minValue = p.getMinValue();
+    }
+    if (this.maxValue == null && p.hasMaxValue()) {
+      this.maxValue = p.getMaxValue();
     }
   }
 
@@ -135,6 +182,12 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
     }
     if (this.numNulls != null) {
       builder.setNumNulls(this.numNulls);
+    }
+    if (this.minValue != null) {
+      builder.setMinValue(this.minValue);
+    }
+    if (this.maxValue != null) {
+      builder.setMaxValue(this.maxValue);
     }
   }
 }

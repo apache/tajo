@@ -11,9 +11,11 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.google.common.collect.Lists;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.statistics.StatisticsUtil;
 import nta.catalog.statistics.TableStat;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.cluster.ClusterManager;
@@ -28,7 +30,6 @@ import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalPlanner;
 import nta.engine.query.QueryUnitRequestImpl;
-import nta.engine.query.TQueryUtil;
 import nta.storage.StorageManager;
 
 import org.apache.commons.logging.Log;
@@ -177,10 +178,11 @@ public class QueryUnitScheduler extends Thread {
         }
       }
     }
-    TableStat tableStat = new TableStat();
+    List<TableStat> stats = Lists.newArrayList();
     for (QueryUnit unit : units ) {
-      tableStat = TQueryUtil.mergeStatSet(tableStat, unit.getStats());
+      stats.add(unit.getStats());
     }
+    TableStat tableStat = StatisticsUtil.aggregate(stats);
     return tableStat;
   }
   

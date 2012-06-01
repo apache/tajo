@@ -22,7 +22,6 @@ import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.datum.NullDatum;
 import nta.engine.*;
-import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
@@ -334,9 +333,7 @@ public class TestPhysicalPlanner {
     scanner.close();
     
     // Examine the statistics information
-    assertEquals(10, 
-        ctx.getStatSet(ExprType.STORE.toString()).
-        getStat(StatType.TABLE_NUM_ROWS).getValue());
+    assertEquals(10, ctx.getResultStats().getNumRows().longValue());
   }
 
   @Test
@@ -392,9 +389,7 @@ public class TestPhysicalPlanner {
     scanner.close();
     
     // Examine the statistics information
-    assertEquals(10, 
-        ctx.getStatSet(ExprType.STORE.toString()).
-        getStat(StatType.TABLE_NUM_ROWS).getValue());
+    assertEquals(10, ctx.getResultStats().getNumRows().longValue());
   }
   
   @Test
@@ -448,9 +443,7 @@ public class TestPhysicalPlanner {
     scanner.close();
     
     // Examine the statistics information
-    assertEquals(1, 
-        ctx.getStatSet(ExprType.STORE.toString()).
-        getStat(StatType.TABLE_NUM_ROWS).getValue());
+    assertEquals(1, ctx.getResultStats().getNumRows().longValue());
   }
 
   @Test

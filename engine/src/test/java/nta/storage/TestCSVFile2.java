@@ -3,7 +3,6 @@ package nta.storage;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
-import java.util.Random;
 
 import nta.catalog.Options;
 import nta.catalog.Schema;
@@ -11,13 +10,12 @@ import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.TableStat;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.WorkerTestingUtil;
 import nta.engine.NConstants;
-import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 
 import org.apache.hadoop.fs.FileStatus;
@@ -67,8 +65,8 @@ public class TestCSVFile2 {
     }
     appender.close();
     
-    StatSet statset = appender.getStats();
-    assertEquals(tupleNum, statset.getStat(StatType.TABLE_NUM_ROWS).getValue());
+    TableStat stat = appender.getStats();
+    assertEquals(tupleNum, stat.getNumRows().longValue());
         
     FileStatus status = sm.listTableFiles("table1")[0];
     long fileLen = status.getLen();

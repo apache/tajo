@@ -139,6 +139,8 @@ message TableStatProto {
 }
 
 message ColumnStatProto {
-    required int64 numDistVal = 1;
-    required int64 numNulls = 2;
+    optional int64 numDistVal = 1;
+    optional int64 numNulls = 2;
+    optional int64 minValue = 3;
+    optional int64 maxValue = 4;
 }

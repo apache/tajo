@@ -86,7 +86,7 @@ public class TQueryUtil {
     builder.setStatus(unit.getStatus());
     builder.setProgress(unit.getProgress());
     builder.addAllPartitions(unit.getPartitions());
-    builder.setStats(unit.getStats().getProto());
+    builder.setResultStats(unit.getStats().getProto());
     return builder.build();
   }
 }

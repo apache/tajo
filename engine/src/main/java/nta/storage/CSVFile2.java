@@ -10,12 +10,11 @@ import java.util.TreeSet;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
-import nta.catalog.statistics.Stat;
-import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.TableStat;
+import nta.catalog.statistics.TableStatistics;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.datum.DatumType;
-import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
 
@@ -62,9 +61,7 @@ public class CSVFile2 extends Storage {
     private String delimiter;
     
     private final boolean statsEnabled;
-    private StatSet statSet = null;
-    private Stat numRowStat = null;
-    private Stat outputBytesStat = null;
+    private TableStatistics stats = null;
 
     public CSVAppender(Configuration conf, final TableMeta meta,
         final Path path, boolean statsEnabled) throws IOException {
@@ -89,11 +86,7 @@ public class CSVFile2 extends Storage {
       
       this.statsEnabled = statsEnabled;
       if (statsEnabled) {
-        this.statSet = new StatSet();
-        this.numRowStat = new Stat(StatType.TABLE_NUM_ROWS);
-        this.statSet.putStat(this.numRowStat);
-        this.outputBytesStat = new Stat(StatType.TABLE_NUM_BYTES);
-        this.statSet.putStat(this.outputBytesStat);
+        this.stats = new TableStatistics(this.schema);
       }
     }
 
@@ -104,6 +97,9 @@ public class CSVFile2 extends Storage {
       Datum datum;
       for (int i = 0; i < schema.getColumnNum(); i++) {
         datum = tuple.get(i);
+        if (statsEnabled) {
+          stats.analyzeField(i, datum);
+        }
         if (datum.type() == DatumType.NULL) {
         } else {
           col = schema.getColumn(i);
@@ -158,7 +154,7 @@ public class CSVFile2 extends Storage {
       
       // Statistical section
       if (statsEnabled) {
-        numRowStat.increment();
+        stats.incrementRow();
       }
     }
 
@@ -171,14 +167,14 @@ public class CSVFile2 extends Storage {
     public void close() throws IOException {
       // Statistical section
       if (statsEnabled) {
-        outputBytesStat.setValue(fos.getPos());
+        stats.setNumBytes(fos.getPos());
       }
       fos.close();
     }
 
     @Override
-    public StatSet getStats() {
-      return this.statSet;
+    public TableStat getStats() {
+      return this.stats.getTableStat();
     }
   }
 

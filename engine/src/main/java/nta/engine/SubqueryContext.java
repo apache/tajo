@@ -15,11 +15,10 @@ import java.util.concurrent.CountDownLatch;
 
 import nta.catalog.CatalogService;
 import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.TableStat;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
-
-import org.apache.hadoop.fs.Path;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
@@ -38,6 +37,7 @@ public class SubqueryContext extends Context {
   
   private QueryStatus status;
   private final Map<String, StatSet> stats;
+  private TableStat resultStats;
   private QueryUnitId queryId;
   private final File workDir;
   private boolean needFetch = false;
@@ -90,6 +90,18 @@ public class SubqueryContext extends Context {
   
   public Iterator<Entry<String, StatSet>> getAllStats() {
     return stats.entrySet().iterator();
+  }
+
+  public boolean hasResultStats() {
+    return resultStats != null;
+  }
+
+  public void setResultStats(TableStat stats) {
+    this.resultStats = stats;
+  }
+
+  public TableStat getResultStats() {
+    return this.resultStats;
   }
   
   public boolean isStopped() {

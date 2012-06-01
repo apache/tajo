@@ -10,13 +10,12 @@ import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.TableStat;
 import nta.conf.NtaConf;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.WorkerTestingUtil;
 import nta.engine.NConstants;
-import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 
 import org.apache.hadoop.fs.FileStatus;
@@ -57,8 +56,8 @@ public class TestRawFile2 {
     }
     appender.close();
     
-    StatSet statset = appender.getStats();
-    assertEquals(tupleNum, statset.getStat(StatType.TABLE_NUM_ROWS).getValue());
+    TableStat stat = appender.getStats();
+    assertEquals(tupleNum, stat.getNumRows().longValue());
     
     FileStatus status = sm.listTableFiles("table1")[0];
     long fileLen = status.getLen();
@@ -130,7 +129,7 @@ public class TestRawFile2 {
     sm.initTableBase(meta, "table1");
     Appender appender = sm.getAppender(meta, "table1", "file1");
     int tupleNum = 10000;
-    VTuple vTuple = null;
+    VTuple vTuple;
     
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(2);

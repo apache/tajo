@@ -3,7 +3,7 @@ package nta.storage;
 import java.io.Closeable;
 import java.io.IOException;
 
-import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.TableStat;
 
 public interface Appender extends Closeable {
   
@@ -13,5 +13,5 @@ public interface Appender extends Closeable {
   
   public abstract void close() throws IOException;
   
-  public abstract StatSet getStats();
+  public abstract TableStat getStats();
 }

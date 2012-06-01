@@ -22,7 +22,8 @@ message InProgressStatusProto {
     required float progress = 2;
     required QueryStatus status = 3;
     optional StatSetProto stats = 4;
-    repeated Partition partitions = 5;
+    optional TableStatProto resultStats = 5;
+    repeated Partition partitions = 6;
 }
 
 message QueryUnitRequestProto {

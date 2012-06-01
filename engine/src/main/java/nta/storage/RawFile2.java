@@ -4,12 +4,11 @@ import nta.catalog.Column;
 import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
-import nta.catalog.statistics.Stat;
-import nta.catalog.statistics.StatSet;
+import nta.catalog.statistics.TableStat;
+import nta.catalog.statistics.TableStatistics;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.NConstants;
-import nta.engine.TCommonProtos.StatType;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.storage.exception.AlreadyExistsStorageException;
 import org.apache.commons.logging.Log;
@@ -407,9 +406,7 @@ public class RawFile2 extends Storage {
     
     // statistics
     private final boolean statsEnabled;
-    private StatSet statSet = null;
-    private Stat numRowStat = null;
-    private Stat outputBytesStat = null;
+    private TableStatistics stats;
 
     public RawFileAppender(Configuration conf, final TableMeta meta, 
         final Path path, boolean statsEnabled) throws IOException {
@@ -444,11 +441,7 @@ public class RawFile2 extends Storage {
       
       this.statsEnabled = statsEnabled;
       if (statsEnabled) {
-        this.statSet = new StatSet();
-        this.numRowStat = new Stat(StatType.TABLE_NUM_ROWS);        
-        this.statSet.putStat(this.numRowStat);
-        this.outputBytesStat = new Stat(StatType.TABLE_NUM_BYTES);
-        this.statSet.putStat(this.outputBytesStat);
+        this.stats = new TableStatistics(this.schema);
       }
 		}
 		
@@ -467,6 +460,10 @@ public class RawFile2 extends Storage {
 				out.writeBoolean(!t.isNull(i));
 			}
 			for (int i = 0; i < schema.getColumnNum(); i++) {
+        if (statsEnabled) {
+          stats.analyzeField(i, t.get(i));
+        }
+
 				if (!t.isNull(i)) {
 					col = schema.getColumn(i);
 					switch (col.getDataType()) {
@@ -523,7 +520,7 @@ public class RawFile2 extends Storage {
 			
       // Statistical section
       if (statsEnabled) {
-        numRowStat.increment();
+        stats.incrementRow();
       }
     }
 
@@ -536,7 +533,7 @@ public class RawFile2 extends Storage {
 		public void close() throws IOException {
 			if (out != null) {
 			  if (statsEnabled) {
-			    outputBytesStat.setValue(out.getPos());
+			    stats.setNumBytes(out.getPos());
 			  }
 				sync();
 				out.flush();
@@ -559,8 +556,8 @@ public class RawFile2 extends Storage {
 		}
 
     @Override
-    public StatSet getStats() {
-      return statSet;
+    public TableStat getStats() {
+      return stats.getTableStat();
     }
 	}
 }

@@ -36,7 +36,6 @@ import nta.engine.ipc.MasterInterface;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.json.GsonCreator;
-import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.engine.query.QueryUnitRequestImpl;
@@ -173,7 +172,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     this.masterAddrTracker = new MasterAddressTracker(zkClient);
     this.masterAddrTracker.start();
 
-    byte[] master = null;
+    byte[] master;
     do {    
       master = masterAddrTracker.blockUntilAvailable(1000);
       LOG.info("Waiting for the Tajo master.....");
@@ -222,9 +221,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           long time = System.currentTimeMillis();
           PingResponseProto response = sendHeartbeat(time);
                     
-          QueryUnitId qid = null;
-          Task task = null;
-          QueryStatus status = null;
+          QueryUnitId qid;
+          Task task;
+          QueryStatus status;
           for (Command cmd : response.getCommandList()) {
             qid = new QueryUnitId(cmd.getId());
             if (!tasks.containsKey(qid)) {
@@ -297,12 +296,12 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     // to send
     List<InProgressStatusProto> list 
       = new ArrayList<InProgressStatusProto>();
-    InProgressStatusProto status = null;
+    InProgressStatusProto status;
     // to be removed
     List<QueryUnitId> tobeRemoved = new ArrayList<QueryUnitId>();
     
     // builds one status for each in-progress query
-    QueryStatus qs = null;
+    QueryStatus qs;
     for (Task task : tasks.values()) {
       qs = task.getStatus();
       if (qs == QueryStatus.ABORTED 
@@ -408,10 +407,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     if (fetches.size() > 0) {      
       File inputDir = new File(ctx.getWorkDir(), "in");
       inputDir.mkdirs();
-      File storeDir = null;
+      File storeDir;
       
       int i = 0;
-      File storeFile = null;
+      File storeFile;
       List<Fetcher> runnerList = Lists.newArrayList();      
       for (Fetch f : fetches) {
         storeDir = new File(inputDir, f.getName());
@@ -620,8 +619,11 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           .setProgress(ctx.getProgress())
           .setStatus(ctx.getStatus());
 
-      if (ctx.getStatSet(ExprType.STORE.toString()) != null) {
+/*      if (ctx.getStatSet(ExprType.STORE.toString()) != null) {
         builder.setStats(ctx.getStatSet(ExprType.STORE.toString()).getProto());
+      }*/
+      if (ctx.hasResultStats()) {
+        builder.setResultStats(ctx.getResultStats().getProto());
       }
       
       
@@ -714,7 +716,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       Path tablePath = new Path(file.getAbsolutePath());      
       
       List<Fragment> listTablets = new ArrayList<Fragment>();
-      Fragment tablet = null;
+      Fragment tablet;
       
       FileStatus[] fileLists = fs.listStatus(tablePath);
       for (FileStatus f : fileLists) {

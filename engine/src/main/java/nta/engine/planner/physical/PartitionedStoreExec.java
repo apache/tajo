@@ -9,8 +9,8 @@ import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.catalog.statistics.StatSet;
 import nta.catalog.statistics.StatisticsUtil;
+import nta.catalog.statistics.TableStat;
 import nta.engine.SubqueryContext;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.storage.Appender;
@@ -111,16 +111,16 @@ public final class PartitionedStoreExec extends PhysicalExec {
       appender.addTuple(tuple);
     }
     
-    List<StatSet> statSets = new ArrayList<StatSet>();
+    List<TableStat> statSet = new ArrayList<TableStat>();
     for (Appender app : appenderMap.values()) {
       app.flush();
       app.close();
-      statSets.add(app.getStats());
+      statSet.add(app.getStats());
     }
     
     // Collect and aggregated statistics data
-    StatSet statSet = StatisticsUtil.aggregate(statSets);
-    ctx.addStatSet(annotation.getType().toString(), statSet);
+    TableStat aggregated = StatisticsUtil.aggregate(statSet);
+    ctx.setResultStats(aggregated);
     
     return null;
   }
