@@ -1,28 +1,24 @@
 package tajo.index.bst;
 
+import nta.catalog.Schema;
+import nta.engine.planner.physical.TupleComparator;
+import nta.storage.Tuple;
+import nta.storage.TupleUtil;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import tajo.index.IndexMethod;
+import tajo.index.IndexWriter;
+import tajo.index.OrderIndexReader;
+
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeMap;
-
-import nta.catalog.Column;
-import nta.catalog.Schema;
-import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.planner.physical.TupleComparator;
-import nta.storage.Tuple;
-import nta.storage.TupleUtil;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-
-import tajo.index.IndexMethod;
-import tajo.index.IndexWriter;
-import tajo.index.OrderIndexReader;
 
 /**
  * @author Ryu Hyo Seok
@@ -44,25 +40,23 @@ public class BSTIndex implements IndexMethod {
   }
 
   @Override
-  public BSTIndexWriter getIndexWriter(int level, Schema keySchema,
+  public BSTIndexWriter getIndexWriter(final Path fileName, int level, Schema keySchema,
       TupleComparator comparator) throws IOException {
-    return new BSTIndexWriter(level, keySchema, comparator);
+    return new BSTIndexWriter(fileName, level, keySchema, comparator);
   }
 
   @Override
-  public BSTIndexReader getIndexReader(Fragment tablets, Schema keySchema,
+  public BSTIndexReader getIndexReader(Path fileName, Schema keySchema,
       TupleComparator comparator) throws IOException {
-    return new BSTIndexReader(tablets, keySchema, comparator);
+    return new BSTIndexReader(fileName, keySchema, comparator);
   }
 
   public class BSTIndexWriter extends IndexWriter implements Closeable {
     private FSDataOutputStream out;
     private FileSystem fs;
-    private Path tablePath;
-    private Path parentPath;
     private int level;
     private int loadNum = 4096;
-    private String fileName;
+    private Path fileName;
 
     private final Schema keySchema;
     private final TupleComparator compartor;
@@ -73,17 +67,15 @@ public class BSTIndex implements IndexMethod {
 
     /**
      * constructor
-     * 
-     * @param conf
-     * @param tablePath
+     *
      * @param level
-     *          : : IndexCreater.ONE_LEVEL_INDEX or IndexCreater.TWO_LEVEL_INDEX
+     *          : IndexCreater.ONE_LEVEL_INDEX or IndexCreater.TWO_LEVEL_INDEX
      * @throws IOException
      */
-    public BSTIndexWriter(int level, Schema keySchema,
+    public BSTIndexWriter(final Path fileName, int level, Schema keySchema,
         TupleComparator comparator) throws IOException {
+      this.fileName = fileName;
       this.level = level;
-
       this.keySchema = keySchema;
       this.compartor = comparator;
       this.collector = new KeyOffsetCollector(comparator);
@@ -98,53 +90,24 @@ public class BSTIndex implements IndexMethod {
       this.loadNum = loadNum;
     }
 
-    /**
-     * 
-     * @param conf
-     * @param tablePath
-     * @param tablets
-     * @return
-     * @throws IOException
-     */
-    public boolean createIndex(Fragment tablet) throws IOException {
-      init(tablet);
-      return true;
-    }
-
-    private void init(Fragment tablet) throws IOException {
-      this.tablePath = tablet.getPath();
-      this.parentPath = new Path(tablePath.getParent().getParent(), "index");
-      this.fileName = tablet.getId() + "." + tablet.getStartOffset() + "."
-          + "test.index";
-      Path indexPath = new Path(this.parentPath, fileName);
-
-      if (fs != null) {
-        fs.close();
+    public void open() throws IOException {
+      fs = fileName.getFileSystem(conf);
+      if (fs.exists(fileName)) {
+        throw new IOException("ERROR: index file (" + fileName + " already exists");
       }
-      fs = parentPath.getFileSystem(conf);
-      if (!fs.exists(parentPath)) {
-        fs.mkdirs(parentPath);
-      }
-
-      if (!fs.exists(indexPath)) {
-        out = fs.create(indexPath);
-      } else {
-        throw new IOException("index file is already created.");
-      }
+      out = fs.create(fileName);
     }
 
     @Override
     public void write(Tuple key, long offset) throws IOException {
-      /*
-       * if (lastestKey == null) { lastestKey = key; } else { if
-       * (compartor.compare(lastestKey, key) >= 0) { throw new
-       * IndexKeyViolationExceotion("ERROR: Key order violation (latest: " +
-       * lastestKey + ", current key: " + key); } }
-       */
       collector.put(key, offset);
     }
 
     public void flush() throws IOException {
+      out.flush();
+    }
+
+    public void close() throws IOException {
       /* two level initialize */
       if (this.level == TWO_LEVEL_INDEX) {
         rootCollector = new KeyOffsetCollector(this.compartor);
@@ -192,32 +155,41 @@ public class BSTIndex implements IndexMethod {
       keySet.clear();
       collector.clear();
 
+      FSDataOutputStream rootOut = null;
       /* root index creating phase */
       if (this.level == TWO_LEVEL_INDEX) {
         TreeMap<Tuple, LinkedList<Long>> rootMap = rootCollector.getMap();
         keySet = rootMap.keySet();
 
-        out = fs.create(new Path(this.parentPath, fileName + ".root"));
-        out.writeInt(this.loadNum);
-        out.writeInt(keySet.size());
+        rootOut = fs.create(new Path(fileName + ".root"));
+        rootOut.writeInt(this.loadNum);
+        rootOut.writeInt(keySet.size());
 
         /* root key writing */
         for (Tuple key : keySet) {
           byte[] buf = TupleUtil.toBytes(keySchema, key);
-          out.writeInt(buf.length);
-          out.write(buf);
+          rootOut.writeInt(buf.length);
+          rootOut.write(buf);
 
           LinkedList<Long> offsetList = rootMap.get(key);
           if (offsetList.size() > 1 || offsetList.size() == 0) {
             throw new IOException("Why root index doen't have one offset?");
           }
-          out.writeLong(offsetList.getFirst());
+          rootOut.writeLong(offsetList.getFirst());
 
         }
-        out.flush();
+        rootOut.flush();
+        rootOut.close();
 
         keySet.clear();
         rootCollector.clear();
+      }
+
+      if (out != null) {
+        out = null;
+      }
+      if (rootOut != null) {
+        rootOut = null;
       }
     }
 
@@ -246,16 +218,13 @@ public class BSTIndex implements IndexMethod {
         this.map.clear();
       }
     }
-
-    @Override
-    public void close() throws IOException {
-      out.flush();
-      out.close();
-      fs.close();
-    }
   }
 
   public class BSTIndexReader implements OrderIndexReader {
+    private Path fileName;
+    private final Schema keySchema;
+    private final TupleComparator comparator;
+
     private FileSystem fs;
     private FSDataInputStream indexIn;
     private FSDataInputStream subIn;
@@ -263,87 +232,36 @@ public class BSTIndex implements IndexMethod {
     private int level;
     private int entryNum;
     private int loadNum = -1;
-    private Path tablePath;
-    private Path parentPath;
-    private String fileName;
-
-    private final Schema keySchema;
-    private final TupleComparator comparator;
 
     // the cursors of BST
     private int rootCursor;
     private int keyCursor;
     private int offsetCursor;
 
-    /* functions */
     /**
-     * 
-     * @param conf
-     * @param tablets
+     *
+     * @param fileName
+     * @param keySchema
+     * @param comparator
      * @throws IOException
      */
-    public BSTIndexReader(final Fragment tablets, Schema keySchema,
-        TupleComparator comparator) throws IOException {
+    public BSTIndexReader(final Path fileName, Schema keySchema, TupleComparator comparator) throws IOException {
+      this.fileName = fileName;
       this.keySchema = keySchema;
       this.comparator = comparator;
-      init(keySchema, tablets, null);
     }
 
-    /**
-     * 
-     * @param conf
-     * @param tablets
-     * @param column
-     * @throws IOException
-     */
-    public BSTIndexReader(final Fragment tablets, Column column,
-        Schema keySchema, TupleComparator comparator) throws IOException {
-      this.keySchema = keySchema;
-      this.comparator = comparator;
-      init(keySchema, tablets, column);
-    }
-
-    private void init(final Schema schema, final Fragment tablets, Column column)
+    public void open()
         throws IOException {
+      fs = fileName.getFileSystem(conf);
 
-      this.tablePath = tablets.getPath();
-      this.parentPath = new Path(tablePath.getParent().getParent(), "index");
-
-      fs = tablePath.getFileSystem(conf);
-      if (!fs.exists(tablePath)) {
-        throw new FileNotFoundException("data file did not created");
+      /* open the index file */
+      fs = fileName.getFileSystem(conf);
+      if (!fs.exists(fileName)) {
+        throw new FileNotFoundException("ERROR: does not exist " + fileName.toString());
       }
-      fs.close();
 
-      /* index file access stream */
-      fs = parentPath.getFileSystem(conf);
-      if (!fs.exists(parentPath)) {
-        throw new FileNotFoundException("index did not created");
-      }
-      Column col = column;
-      if (col == null) {
-        for (int i = 0; i < schema.getColumnNum(); i++) {
-          col = schema.getColumn(i);
-          this.fileName = tablets.getId() + "." + tablets.getStartOffset()
-              + "." + "test.index";
-          if (fs.exists(new Path(parentPath, this.fileName))) {
-            break;
-          }
-        }
-      } else {
-        this.fileName = tablets.getId() + "." + tablets.getStartOffset() + "."
-            + "test.index";
-      }
-      indexIn = fs.open(new Path(parentPath, this.fileName));
-      /* read header */
-      /* type => level => entrynum */
-      /*
-       * this.dataType = DataType.valueOf(indexIn.readInt());
-       * 
-       * if (this.dataType != col.getDataType()) { throw new
-       * IOException("datatype is different"); }
-       */
-
+      indexIn = fs.open(this.fileName);
       this.level = indexIn.readInt();
       this.entryNum = indexIn.readInt();
 
@@ -354,7 +272,7 @@ public class BSTIndex implements IndexMethod {
       /* load on memory */
       if (this.level == TWO_LEVEL_INDEX) {
 
-        Path rootPath = new Path(parentPath, this.fileName + ".root");
+        Path rootPath = new Path(this.fileName + ".root");
         if (!fs.exists(rootPath)) {
           throw new FileNotFoundException("root index did not created");
         }
@@ -373,8 +291,7 @@ public class BSTIndex implements IndexMethod {
     }
 
     /**
-     * 
-     * @param offset
+     *
      * @return
      * @throws IOException
      */
@@ -444,7 +361,7 @@ public class BSTIndex implements IndexMethod {
         this.dataSubIndex = new Tuple[entryNum];
         this.offsetSubIndex = new long[entryNum][];
 
-        byte[] buf = null;
+        byte[] buf;
 
         for (int i = 0; i < entryNum; i++) {
           counter++;
@@ -468,7 +385,7 @@ public class BSTIndex implements IndexMethod {
         this.dataSubIndex = new Tuple[counter];
         this.offsetSubIndex = new long[counter][];
 
-        byte[] buf = null;
+        byte[] buf;
         for (int i = 0; i < counter; i++) {
           buf = new byte[in.readInt()];
           in.read(buf);
@@ -488,8 +405,8 @@ public class BSTIndex implements IndexMethod {
         throws IOException {
       this.dataIndex = new Tuple[entryNum];
       this.offsetIndex = new long[entryNum];
-      Tuple keyTuple = null;
-      byte[] buf = null;
+      Tuple keyTuple;
+      byte[] buf;
       for (int i = 0; i < entryNum; i++) {
         buf = new byte[in.readInt()];
         in.read(buf);

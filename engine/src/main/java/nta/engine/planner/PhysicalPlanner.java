@@ -3,8 +3,7 @@
  */
 package nta.engine.planner;
 
-import java.io.IOException;
-
+import com.google.common.base.Preconditions;
 import nta.catalog.Column;
 import nta.engine.SubqueryContext;
 import nta.engine.exception.InternalException;
@@ -14,7 +13,7 @@ import nta.engine.planner.logical.*;
 import nta.engine.planner.physical.*;
 import nta.storage.StorageManager;
 
-import com.google.common.base.Preconditions;
+import java.io.IOException;
 
 /**
  * This class generates a physical execution plan.
@@ -182,7 +181,7 @@ public class PhysicalPlanner {
       SubqueryContext ctx,
       IndexWriteNode indexWriteNode, PhysicalExec subOp) throws IOException {
     
-    return new IndexWriteExec(indexWriteNode,
+    return new IndexWriteExec(sm, indexWriteNode,
         ctx.getTable(indexWriteNode.getTableName()), subOp);
   }
 }

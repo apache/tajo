@@ -3,30 +3,17 @@
  */
 package nta.engine.query;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import nta.catalog.CatalogService;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
-import nta.engine.EngineService;
-import nta.engine.Query;
-import nta.engine.QueryContext;
-import nta.engine.QueryId;
-import nta.engine.QueryIdFactory;
-import nta.engine.QueryUnitId;
-import nta.engine.QueryUnitScheduler;
-import nta.engine.SubQuery;
-import nta.engine.SubQueryId;
+import nta.engine.*;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
-import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.GlobalOptimizer;
@@ -37,10 +24,11 @@ import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalRootNode;
 import nta.storage.StorageManager;
 import nta.storage.StorageUtil;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+
+import java.io.IOException;
 
 /**
  * @author jihoon
@@ -96,7 +84,7 @@ public class GlobalEngine implements EngineService {
     if (root.getSubNode().getType() == ExprType.CREATE_TABLE) {
       // create table queries are executed by the master
       CreateTableNode createTable = (CreateTableNode) root.getSubNode();
-      TableMeta meta = null;
+      TableMeta meta;
       if (createTable.hasOptions()) {
         meta = TCatUtil.newTableMeta(createTable.getSchema(), 
             createTable.getStoreType(), createTable.getOptions());
@@ -133,12 +121,7 @@ public class GlobalEngine implements EngineService {
       return sm.getTablePath(globalPlan.getRoot().getOutputName()).toString();
     }
   }
-  
-  /*
-   * (non-Javadoc)
-   * 
-   * @see nta.engine.EngineService#init()
-   */
+
   @Override
   public void init() throws IOException {
     // TODO Auto-generated method stub

@@ -3,19 +3,20 @@
  */
 package nta.engine.planner.physical;
 
-import java.io.IOException;
-
+import com.google.common.base.Preconditions;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.conf.NtaConf;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.logical.IndexWriteNode;
+import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
+import org.apache.hadoop.fs.Path;
 import tajo.index.bst.BSTIndex;
 import tajo.index.bst.BSTIndex.BSTIndexWriter;
 
-import com.google.common.base.Preconditions;
+import java.io.IOException;
 
 /**
  * @author Hyunsik Choi
@@ -29,7 +30,7 @@ public class IndexWriteExec extends PhysicalExec {
   private final TupleComparator comp;
   private final Fragment fragment;
 
-  public IndexWriteExec(IndexWriteNode annotation, Fragment frag, 
+  public IndexWriteExec(StorageManager sm, IndexWriteNode annotation, Fragment frag,
       PhysicalExec subOp) throws IOException {
     this.fragment = frag;
     this.subOp = subOp;    
@@ -38,7 +39,7 @@ public class IndexWriteExec extends PhysicalExec {
     
     indexKeys = new int[annotation.getSortSpecs().length];
     Schema keySchema = new Schema();
-    Column col = null;
+    Column col;
     for (int i = 0 ; i < annotation.getSortSpecs().length; i++) {
       col = annotation.getSortSpecs()[i].getSortKey();
       indexKeys[i] = inSchema.getColumnId(col.getQualifiedName());
@@ -47,7 +48,9 @@ public class IndexWriteExec extends PhysicalExec {
     this.comp = new TupleComparator(inSchema, annotation.getSortSpecs());
     
     BSTIndex bst = new BSTIndex(NtaConf.create());
-    this.indexWriter = bst.getIndexWriter(BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
+    Path dir = new Path(frag.getPath().getParent().getParent(), "index");
+    // TODO - to be improved
+    this.indexWriter = bst.getIndexWriter(new Path(dir, "indexfile"), BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
   }
 
   @Override
@@ -57,8 +60,8 @@ public class IndexWriteExec extends PhysicalExec {
 
   @Override
   public Tuple next() throws IOException {
-    indexWriter.createIndex(fragment);
-    Tuple tuple = null;
+    indexWriter.open();
+    Tuple tuple;
     Tuple keys = new VTuple(indexKeys.length);
     while ((tuple = subOp.next()) != null) {      
       for (int idx = 0; idx < indexKeys.length; idx++) {

@@ -1,10 +1,5 @@
 package tajo.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
@@ -13,24 +8,24 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.conf.NtaConf;
 import nta.datum.DatumFactory;
-import nta.engine.WorkerTestingUtil;
 import nta.engine.NConstants;
+import nta.engine.WorkerTestingUtil;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.planner.physical.TupleComparator;
-import nta.storage.Appender;
-import nta.storage.FileScanner;
-import nta.storage.StorageManager;
-import nta.storage.Tuple;
-import nta.storage.VTuple;
-
+import nta.storage.*;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
-
 import tajo.index.bst.BSTIndex;
 import tajo.index.bst.BSTIndex.BSTIndexReader;
 import tajo.index.bst.BSTIndex.BSTIndexWriter;
+
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestBSTIndex {
   private NtaConf conf;
@@ -95,10 +90,10 @@ public class TestBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
     
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(BSTIndex.TWO_LEVEL_INDEX, 
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindValueInCSV.idx"), BSTIndex.TWO_LEVEL_INDEX,
         keySchema, comp);    
     creater.setLoadNum(LOAD_NUM);
-    creater.createIndex(tablet);
+    creater.open();
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
@@ -119,7 +114,8 @@ public class TestBSTIndex {
     fileScanner.close();
     
     tuple = new VTuple(keySchema.getColumnNum());
-    BSTIndexReader reader = bst.getIndexReader(tablet, keySchema, comp);
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindValueInCSV.idx"), keySchema, comp);
+    reader.open();
     fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       tuple.put(0, DatumFactory.createLong(i));
@@ -176,10 +172,10 @@ public class TestBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
     
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(BSTIndex.TWO_LEVEL_INDEX, 
-        keySchema, comp);    
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindOmittedValueInCSV.idx"),
+        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
-    creater.createIndex(tablet);
+    creater.open();
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
@@ -199,8 +195,8 @@ public class TestBSTIndex {
     creater.close();
     fileScanner.close();
 
-    BSTIndexReader reader = bst.getIndexReader(tablet, keySchema, comp);
-
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindOmittedValueInCSV.idx"), keySchema, comp);
+    reader.open();
     for(int i = 1 ; i < TUPLE_NUM -1 ; i+=2) {
       keyTuple.put(0, DatumFactory.createLong(i));
       keyTuple.put(1, DatumFactory.createDouble(i));
@@ -242,10 +238,10 @@ public class TestBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
     
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(BSTIndex.TWO_LEVEL_INDEX, 
-        keySchema, comp);
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindNextKeyValueInCSV.idx"),
+        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
-    creater.createIndex(tablet);
+    creater.open();
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
@@ -265,7 +261,8 @@ public class TestBSTIndex {
     creater.close();
     fileScanner.close();    
     
-    BSTIndexReader reader = bst.getIndexReader(tablet, keySchema, comp);
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyValueInCSV.idx"), keySchema, comp);
+    reader.open();
     fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
@@ -322,10 +319,10 @@ public class TestBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
     
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(BSTIndex.TWO_LEVEL_INDEX, 
-        keySchema, comp);
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindNextKeyOmittedValueInCSV.idx"),
+        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
-    creater.createIndex(tablet);
+    creater.open();
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
@@ -345,7 +342,9 @@ public class TestBSTIndex {
     creater.close();
     fileScanner.close();    
     
-    BSTIndexReader reader = bst.getIndexReader(tablet, keySchema, comp);
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyOmittedValueInCSV.idx"),
+        keySchema, comp);
+    reader.open();
     fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple result;
     for(int i = 1 ; i < TUPLE_NUM -1 ; i+=2) {
@@ -395,10 +394,10 @@ public class TestBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
     
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(BSTIndex.TWO_LEVEL_INDEX, 
-        keySchema, comp);    
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindValueInRawBSTIndex.idx"),
+        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
-    creater.createIndex(tablet);
+    creater.open();
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
@@ -419,7 +418,8 @@ public class TestBSTIndex {
     fileScanner.close();
     
     tuple = new VTuple(keySchema.getColumnNum());
-    BSTIndexReader reader = bst.getIndexReader(tablet, keySchema, comp);
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindValueInRawBSTIndex.idx"), keySchema, comp);
+    reader.open();
     fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       tuple.put(0, DatumFactory.createLong(i));
@@ -467,10 +467,10 @@ public class TestBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
     
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(BSTIndex.TWO_LEVEL_INDEX, 
-        keySchema, comp);    
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindOmittedValueInRaw.idx"),
+        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
-    creater.createIndex(tablet);
+    creater.open();
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
@@ -491,8 +491,9 @@ public class TestBSTIndex {
     fileScanner.close();
     
     tuple = new VTuple(keySchema.getColumnNum());
-    BSTIndexReader reader = bst.getIndexReader(tablet, keySchema, comp);
-
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindOmittedValueInRaw.idx"),
+        keySchema, comp);
+    reader.open();
     for(int i = 1 ; i < TUPLE_NUM -1 ; i+=2) {
       tuple.put(0, DatumFactory.createLong(i));
       tuple.put(1, DatumFactory.createDouble(i));
@@ -534,10 +535,10 @@ public class TestBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
     
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(BSTIndex.TWO_LEVEL_INDEX, 
-        keySchema, comp);
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindOmittedValueInRaw.idx"),
+        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
-    creater.createIndex(tablet);
+    creater.open();
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
@@ -557,7 +558,8 @@ public class TestBSTIndex {
     creater.close();
     fileScanner.close();
     
-    BSTIndexReader reader = bst.getIndexReader(tablet, keySchema, comp);
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindOmittedValueInRaw.idx"), keySchema, comp);
+    reader.open();
     fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
@@ -614,10 +616,10 @@ public class TestBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
     
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(BSTIndex.TWO_LEVEL_INDEX, 
-        keySchema, comp);
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindNextKeyOmittedValueInRaw.idx"),
+        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
-    creater.createIndex(tablet);
+    creater.open();
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
@@ -637,7 +639,9 @@ public class TestBSTIndex {
     creater.close();
     fileScanner.close();
     
-    BSTIndexReader reader = bst.getIndexReader(tablet, keySchema, comp);
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyOmittedValueInRaw.idx"),
+        keySchema, comp);
+    reader.open();
     fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple result;
     for(int i = 1 ; i < TUPLE_NUM -1 ; i+=2) {
@@ -685,10 +689,10 @@ public class TestBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
     
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(BSTIndex.TWO_LEVEL_INDEX, 
-        keySchema, comp);
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindNextKeyOmittedValueInRaw.idx"),
+        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
-    creater.createIndex(tablet);
+    creater.open();
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
@@ -708,7 +712,9 @@ public class TestBSTIndex {
     creater.close();
     fileScanner.close();
     
-    BSTIndexReader reader = bst.getIndexReader(tablet, keySchema, comp);
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyOmittedValueInRaw.idx"),
+        keySchema, comp);
+    reader.open();
     fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple result;
 

@@ -1,17 +1,17 @@
 package tajo.index;
 
-import java.io.IOException;
-
 import nta.catalog.Schema;
-import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.physical.TupleComparator;
+import org.apache.hadoop.fs.Path;
+
+import java.io.IOException;
 
 /**
  * @author Hyunsik Choi
  */
 public interface IndexMethod {
-  IndexWriter getIndexWriter(int level, Schema keySchema,
+  IndexWriter getIndexWriter(final Path fileName, int level, Schema keySchema,
       TupleComparator comparator) throws IOException;
-  IndexReader getIndexReader(Fragment tablets, Schema keySchema,
+  IndexReader getIndexReader(final Path fileName, Schema keySchema,
       TupleComparator comparator) throws IOException;
 }
