@@ -6,6 +6,8 @@ import nta.catalog.TableMeta;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
+import java.io.IOException;
+
 public abstract class FileAppender implements Appender {
   protected final Configuration conf;
   protected final TableMeta meta;
@@ -18,4 +20,6 @@ public abstract class FileAppender implements Appender {
     this.schema = meta.getSchema();
     this.path = path;
   }
+
+  public abstract long getOffset() throws IOException;
 }

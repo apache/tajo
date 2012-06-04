@@ -99,8 +99,8 @@ public class TestExternalSortExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
     ProjectionExec proj = (ProjectionExec) exec;
-    SortExec inMemSort = (SortExec) proj.getsubOp();
-    SeqScanExec scan = (SeqScanExec)inMemSort.getsubOp();
+    SortExec inMemSort = (SortExec) proj.getSubOp();
+    SeqScanExec scan = (SeqScanExec)inMemSort.getSubOp();
   
     ExternalSortExec extSort = new ExternalSortExec(ctx, sm, inMemSort.getSortNode(), scan);
     proj.setsubOp(extSort);

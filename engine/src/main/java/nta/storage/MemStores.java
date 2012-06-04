@@ -58,6 +58,11 @@ public class MemStores {
 	  }
 
     @Override
+    public long getOffset() {
+      return 0l;
+    }
+
+    @Override
     public void flush() throws IOException {
       
     }
@@ -122,7 +127,6 @@ public class MemStores {
             throw new InvalidCastException("IPv6 is unsupported yet");
             
           default:
-            ;
           }       
         }     
         

@@ -524,6 +524,11 @@ public class RawFile2 extends Storage {
       }
     }
 
+    @Override
+    public long getOffset() throws IOException {
+      return out.getPos();
+    }
+
 		@Override
 		public void flush() throws IOException {
 			out.flush();
@@ -559,6 +564,6 @@ public class RawFile2 extends Storage {
     public TableStat getStats() {
       return stats.getTableStat();
     }
-	}
+  }
 }
 

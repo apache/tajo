@@ -5,7 +5,6 @@ import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.SubqueryContext;
-import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.SortNode;
 import nta.storage.*;
 import nta.storage.Scanner;
@@ -18,6 +17,7 @@ import java.util.*;
  * @author Byungnam Lim
  */
 public class ExternalSortExec extends PhysicalExec {
+  private SortNode annotation;
   private PhysicalExec subOp;
   private final Schema inputSchema;
   private final Schema outputSchema;
@@ -36,12 +36,9 @@ public class ExternalSortExec extends PhysicalExec {
   private int run;
   private final static String SORT_PREFIX = "s_";
 
-  public PhysicalExec getsubOp(){
-    return this.subOp;
-  }
-  
   public ExternalSortExec(SubqueryContext ctx, StorageManager sm, SortNode annotation,
       PhysicalExec subOp) {
+    this.annotation = annotation;
     this.subOp = subOp;
     this.sm = sm;
 
@@ -53,6 +50,14 @@ public class ExternalSortExec extends PhysicalExec {
 
     this.run = 0;
     this.workDir = ctx.getWorkDir().getAbsolutePath() + "/" + UUID.randomUUID();
+  }
+
+  public PhysicalExec getSubOp(){
+    return this.subOp;
+  }
+
+  public SortNode getAnnotation() {
+    return this.annotation;
   }
 
   @Override

@@ -134,7 +134,7 @@ public class TestBNLJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     /*ProjectionExec proj = (ProjectionExec) exec;
-    NLJoinExec nlJoin = (NLJoinExec) proj.getsubOp();
+    NLJoinExec nlJoin = (NLJoinExec) proj.getSubOp();
     SeqScanExec scanOuter = (SeqScanExec) nlJoin.getOuter();
     SeqScanExec scanInner = (SeqScanExec) nlJoin.getInner();
 
@@ -170,11 +170,11 @@ public class TestBNLJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    MergeJoinExec join = (MergeJoinExec) proj.getsubOp();
+    MergeJoinExec join = (MergeJoinExec) proj.getSubOp();
     ExternalSortExec sortOut = (ExternalSortExec) join.getouter();
     ExternalSortExec sortIn = (ExternalSortExec) join.getinner();
-    SeqScanExec scanOuter = (SeqScanExec) sortOut.getsubOp();
-    SeqScanExec scanInner = (SeqScanExec) sortIn.getsubOp();
+    SeqScanExec scanOuter = (SeqScanExec) sortOut.getSubOp();
+    SeqScanExec scanInner = (SeqScanExec) sortIn.getSubOp();
 
     BNLJoinExec bnl = new BNLJoinExec(ctx, join.getJoinNode(), scanOuter,
         scanInner);

@@ -25,14 +25,10 @@ import nta.engine.*;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
+import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.*;
 import nta.engine.planner.physical.*;
-import nta.storage.Appender;
-import nta.storage.Scanner;
-import nta.storage.StorageManager;
-import nta.storage.StorageUtil;
-import nta.storage.Tuple;
-import nta.storage.VTuple;
+import nta.storage.*;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -42,6 +38,7 @@ import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tajo.index.bst.BSTIndex;
 
 /**
  * @author Hyunsik Choi
@@ -634,5 +631,67 @@ public class TestPhysicalPlanner {
       cnt++;
     }
     assertEquals(5, cnt);
+  }
+
+  public String [] SORT_QUERY = {
+      "select name, empId from employee order by empId"
+  };
+
+  @Test
+  public final void testIndexedStoreExec() throws IOException {
+    Fragment[] frags = sm.split("employee");
+    factory = new SubqueryContext.Factory(catalog);
+
+    File workDir = NtaTestingUtility.getTestDir("testIndexedStoreExec");
+    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
+        QueryIdFactory.newScheduleUnitId(
+            QueryIdFactory.newSubQueryId(
+                QueryIdFactory.newQueryId()))),
+        new Fragment[] {frags[0]}, workDir);
+    ParseTree query = analyzer.parse(ctx, SORT_QUERY[0]);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+
+    SortExec sort = (SortExec) exec;
+    SeqScanExec scan = (SeqScanExec) sort.getSubOp();
+    QueryBlock.SortSpec [] sortSpecs = sort.getSortNode().getSortKeys();
+    IndexedStoreExec idxStoreExec = new IndexedStoreExec(ctx, sm, sort, sort.getSchema(), sort.getSchema(), sortSpecs);
+    idxStoreExec.open();
+
+    Tuple tuple;
+    exec = idxStoreExec;
+    exec.next();
+
+    Schema keySchema = new Schema();
+    keySchema.addColumn("?empId", DataType.INT);
+    QueryBlock.SortSpec [] sortSpec = new QueryBlock.SortSpec[1];
+    sortSpec[0] = new QueryBlock.SortSpec(keySchema.getColumn(0), true, false);
+    TupleComparator comp = new TupleComparator(keySchema, sortSpec);
+    BSTIndex bst = new BSTIndex(conf);
+    BSTIndex.BSTIndexReader reader = bst.getIndexReader(new Path(workDir.getAbsolutePath(), "out/index/data.idx"),
+        keySchema, comp);
+    reader.open();
+    FileScanner scanner = (FileScanner) sm.getLocalScanner(new Path(workDir.getAbsolutePath(), "out"), "data");
+
+    int cnt = 0;
+    while(scanner.next() != null) {
+      cnt++;
+    }
+    scanner.reset();
+
+    assertEquals(100 ,cnt);
+
+    Tuple keytuple = new VTuple(1);
+    for(int i = 1 ; i < 100 ; i ++) {
+      keytuple.put(0, DatumFactory.createInt(i));
+      long offsets = reader.find(keytuple);
+      scanner.seek(offsets);
+      tuple = scanner.next();
+      assertTrue("[seek check " + (i) + " ]" , ("name_" + i).equals(tuple.get(0).asChars()));
+      assertTrue("[seek check " + (i) + " ]" , i == tuple.get(1).asInt());
+    }
   }
 }

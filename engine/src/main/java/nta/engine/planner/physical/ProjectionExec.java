@@ -25,7 +25,7 @@ public class ProjectionExec extends PhysicalExec {
   private final Tuple outTuple;
   private final EvalNode [] evals;
   
-  public PhysicalExec getsubOp(){
+  public PhysicalExec getSubOp(){
     return this.subOp;
   }
   public void setsubOp(PhysicalExec s){

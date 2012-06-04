@@ -81,7 +81,7 @@ public class TestSortExec {
 
   }
 
-  String[] QUERIES = { 
+  public static String[] QUERIES = {
       "select managerId, empId, deptName from employee order by managerId, empId desc" };
 
   @Test

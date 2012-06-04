@@ -159,8 +159,13 @@ public class CSVFile2 extends Storage {
     }
 
     @Override
-    public void flush() throws IOException {
+    public long getOffset() throws IOException {
+      return fos.getPos();
+    }
 
+    @Override
+    public void flush() throws IOException {
+      fos.flush();
     }
 
     @Override

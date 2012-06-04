@@ -145,7 +145,7 @@ public class TestMergeJoinExec {
 
     /*
     ProjectionExec proj = (ProjectionExec) exec;
-    NLJoinExec nestedLoopJoin = (NLJoinExec) proj.getsubOp();
+    NLJoinExec nestedLoopJoin = (NLJoinExec) proj.getSubOp();
     SeqScanExec outerScan = (SeqScanExec) nestedLoopJoin.getOuter();
     SeqScanExec innerScan = (SeqScanExec) nestedLoopJoin.getInner();
 

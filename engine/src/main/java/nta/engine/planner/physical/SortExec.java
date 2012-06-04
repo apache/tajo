@@ -25,14 +25,6 @@ public class SortExec extends PhysicalExec {
   private boolean sorted = false;
   private Iterator<Tuple> iterator;
   private SortNode annotation;
-
-  public PhysicalExec getsubOp(){
-    return this.subOp;
-  }
-
-  public SortNode getSortNode(){
-    return this.annotation;
-  }
   
   public SortExec(SortNode annotation, PhysicalExec subOp) {
     this.subOp = subOp;
@@ -44,6 +36,14 @@ public class SortExec extends PhysicalExec {
     this.comparator =
         new TupleComparator(inputSchema, annotation.getSortKeys());
     this.tupleSlots = new ArrayList<Tuple>(1000);
+  }
+
+  public PhysicalExec getSubOp(){
+    return this.subOp;
+  }
+
+  public SortNode getSortNode(){
+    return this.annotation;
   }
   
   @Override
