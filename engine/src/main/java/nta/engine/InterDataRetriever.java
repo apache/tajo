@@ -6,7 +6,6 @@ package nta.engine;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,14 +19,16 @@ import tajo.worker.dataserver.retriever.DataRetriever;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import tajo.worker.dataserver.retriever.FileChunk;
 
 /**
  * @author Hyunsik Choi
  */
+@Deprecated
 public class InterDataRetriever implements DataRetriever {
   private final Log LOG = LogFactory.getLog(InterDataRetriever.class);
-  private Set<QueryUnitId> registered = Sets.newHashSet();
-  private Map<String, String> map = Maps.newConcurrentMap();
+  private final Set<QueryUnitId> registered = Sets.newHashSet();
+  private final Map<String, String> map = Maps.newConcurrentMap();
 
   public InterDataRetriever() {
   }
@@ -54,7 +55,7 @@ public class InterDataRetriever implements DataRetriever {
    * @see tajo.worker.dataserver.retriever.DataRetriever#handle(org.jboss.netty.channel.ChannelHandlerContext, org.jboss.netty.handler.codec.http.HttpRequest)
    */
   @Override
-  public File handle(ChannelHandlerContext ctx, HttpRequest request)
+  public FileChunk handle(ChannelHandlerContext ctx, HttpRequest request)
       throws IOException {
        
     int start = request.getUri().indexOf('?');
@@ -68,7 +69,7 @@ public class InterDataRetriever implements DataRetriever {
     
     String qid = null;
     String fn = null;
-    String [] kv = null;
+    String [] kv;
     for (String query : queries) {
       kv = query.split("=");
       if (kv[0].equals("qid")) {
@@ -80,7 +81,7 @@ public class InterDataRetriever implements DataRetriever {
     
     String baseDir = map.get(qid);
     if (baseDir == null) {
-      throw new FileNotFoundException("No such qid: " + qid.toString());
+      throw new FileNotFoundException("No such qid: " + qid);
     }
 
     File file = new File(baseDir + "/" + fn);
@@ -93,6 +94,6 @@ public class InterDataRetriever implements DataRetriever {
           + baseDir + "/" + file.getName()); 
     }
     
-    return file;
+    return new FileChunk(file, 0, file.length());
   }
 }

@@ -42,6 +42,7 @@ import org.jboss.netty.handler.stream.ChunkedFile;
 import org.jboss.netty.util.CharsetUtil;
 
 import tajo.worker.dataserver.retriever.DataRetriever;
+import tajo.worker.dataserver.retriever.FileChunk;
 
 /**
  * @author Hyunsik Choi
@@ -63,7 +64,7 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
       return;
     }
 
-    File file = null;
+    FileChunk file;
     try {
       file = retriever.handle(ctx, request);
     } catch (FileNotFoundException fnf) {
@@ -84,16 +85,16 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
       return;
     }
     
-    LOG.info("GET " + file.getAbsolutePath());
+    LOG.info("GET " + file.getFile().getAbsolutePath());
 
     RandomAccessFile raf;
     try {
-      raf = new RandomAccessFile(file, "r");
+      raf = new RandomAccessFile(file.getFile(), "r");
     } catch (FileNotFoundException fnfe) {
       sendError(ctx, NOT_FOUND);
       return;
     }
-    long fileLength = raf.length();
+    long fileLength = file.length();
 
     HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
     setContentLength(response, fileLength);

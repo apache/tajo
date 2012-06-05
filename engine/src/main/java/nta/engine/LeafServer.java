@@ -66,6 +66,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import tajo.webapp.HttpServer;
+import tajo.worker.dataserver.retriever.AdvancedDataRetriever;
 
 
 /**
@@ -108,7 +109,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       Executors.newFixedThreadPool(coreNum);  
   private final Map<QueryUnitId, Task> tasks = Maps.newConcurrentMap();
   private HttpDataServer dataServer;
-  private InterDataRetriever retriever;
+  private AdvancedDataRetriever retriever;
   private String dataServerURL;
   
   //Web server
@@ -155,7 +156,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     this.queryLauncher.start();
     this.queryEngine = new TQueryEngine(conf, catalog, zkClient);
     
-    this.retriever = new InterDataRetriever();
+    this.retriever = new AdvancedDataRetriever();
     this.dataServer = new HttpDataServer(NetUtils.createSocketAddr(hostname, 0), 
         retriever);
     this.dataServer.start();
@@ -538,8 +539,6 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       plan = GsonCreator.getInstance().fromJson(request.getSerializedData(),
           LogicalNode.class);      
       interQuery = request.getProto().getInterQuery();
-      if (interQuery == false)
-        LOG.info("Final query");
       fetcherRunners = getFetchRunners(ctx, request.getFetches());      
       ctx.setStatus(QueryStatus.INITED);
       LOG.info("=====================================================");
@@ -594,13 +593,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     }
 
     private File createWorkDir(QueryUnitId quid) throws IOException {
-      File dir = createLocalDir(getQueryUnitDir(quid).toString());
-
-      return dir;
-    }
-
-    public void startDataServer() {
-
+      return createLocalDir(getQueryUnitDir(quid).toString());
     }
     
     public void kill() {
@@ -685,7 +678,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         } else {
           ctx.setProgress(1.0f);
           if (interQuery) {
-           retriever.register(this.getId(), ctx.getWorkDir() + "/out/data");
+            PartitionRetrieverHandler partitionHandler =
+                new PartitionRetrieverHandler(ctx.getWorkDir().getAbsolutePath() + "/out/data");
+           retriever.register(this.getId(), partitionHandler);
            LOG.info("LeafServer starts to serve as HTTP data server for " 
                + getId());
           }
