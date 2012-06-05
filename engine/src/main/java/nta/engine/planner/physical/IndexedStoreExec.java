@@ -63,7 +63,7 @@ public class IndexedStoreExec extends PhysicalExec {
     BSTIndex bst = new BSTIndex(NtaConf.create());
     this.comp = new TupleComparator(keySchema, indexSortSpec);
     Path storeTablePath = new Path(ctx.getWorkDir().getAbsolutePath(), "out");
-    this.meta = TCatUtil.newTableMeta(this.outSchema, CatalogProtos.StoreType.RAW);
+    this.meta = TCatUtil.newTableMeta(this.outSchema, CatalogProtos.StoreType.CSV);
     sm.initLocalTableBase(storeTablePath, meta);
     this.appender = (FileAppender) sm.getLocalAppender(meta, new Path(storeTablePath, "data/data"));
 

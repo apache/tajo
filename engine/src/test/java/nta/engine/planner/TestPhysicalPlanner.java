@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
 import nta.catalog.CatalogService;
@@ -30,15 +31,18 @@ import nta.engine.planner.logical.*;
 import nta.engine.planner.physical.*;
 import nta.storage.*;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.index.bst.BSTIndex;
+import tajo.worker.dataserver.retriever.FileChunk;
 
 /**
  * @author Hyunsik Choi
@@ -693,5 +697,27 @@ public class TestPhysicalPlanner {
       assertTrue("[seek check " + (i) + " ]" , ("name_" + i).equals(tuple.get(0).asChars()));
       assertTrue("[seek check " + (i) + " ]" , i == tuple.get(1).asInt());
     }
+
+
+    // The below is for testing RangeRetrieverHandler.
+    RangeRetrieverHandler handler = new RangeRetrieverHandler(new File(workDir, "out"), keySchema, comp);
+    Map<String,String> kvs = Maps.newHashMap();
+    Tuple startTuple = new VTuple(1);
+    startTuple.put(0, DatumFactory.createInt(50));
+    kvs.put("start", new String(Base64.encodeBase64(TupleUtil.toBytes(keySchema, startTuple), false)));
+    Tuple endTuple = new VTuple(1);
+    endTuple.put(0, DatumFactory.createInt(80));
+    kvs.put("end", new String(Base64.encodeBase64(TupleUtil.toBytes(keySchema, endTuple), false)));
+    FileChunk chunk = handler.get(kvs);
+
+    scanner.seek(chunk.startOffset());
+    keytuple = scanner.next();
+    assertEquals(50, keytuple.get(1).asInt());
+
+    scanner.seek(chunk.startOffset() + chunk.length());
+    keytuple = scanner.next();
+    assertEquals(80, keytuple.get(1).asInt());
+
+    scanner.close();
   }
 }
