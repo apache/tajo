@@ -2,8 +2,8 @@ package tajo.index.bst;
 
 import nta.catalog.Schema;
 import nta.engine.planner.physical.TupleComparator;
+import nta.engine.utils.TupleUtil;
 import nta.storage.Tuple;
-import nta.storage.TupleUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;

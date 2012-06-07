@@ -1,22 +1,6 @@
 package nta.engine.planner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-
-import nta.catalog.CatalogService;
-import nta.catalog.Column;
-import nta.catalog.Options;
-import nta.catalog.Schema;
-import nta.catalog.TCatUtil;
-import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
-import nta.catalog.TableMeta;
+import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.Datum;
@@ -27,10 +11,13 @@ import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
-import nta.engine.planner.logical.*;
+import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.LogicalRootNode;
+import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.UnionNode;
 import nta.engine.planner.physical.*;
+import nta.engine.utils.TupleUtil;
 import nta.storage.*;
-
 import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -43,6 +30,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.index.bst.BSTIndex;
 import tajo.worker.dataserver.retriever.FileChunk;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Hyunsik Choi
