@@ -133,13 +133,22 @@ public class PhysicalPlanner {
   
   public PhysicalExec createStorePlan(SubqueryContext ctx, StoreTableNode annotation,
       PhysicalExec subOp) throws IOException {
-    PhysicalExec store;
-    if (annotation.hasPartitionKey()) { // if the partition keys are specified
-      store = new PartitionedStoreExec(ctx, sm, annotation, subOp);
-    } else {
-      store = new StoreTableExec(ctx, sm, annotation, subOp);
+    if (annotation.hasPartitionKey()) {
+      switch (annotation.getPartitionType()) {
+      case HASH:
+        return new PartitionedStoreExec(ctx, sm, annotation, subOp);
+
+      case RANGE:
+        Column [] columns = annotation.getPartitionKeys();
+        QueryBlock.SortSpec specs [] = new QueryBlock.SortSpec[columns.length];
+        for (int i = 0; i < columns.length; i++) {
+          specs[i] = new QueryBlock.SortSpec(columns[i]);
+        }
+        return new IndexedStoreExec(ctx, sm, subOp, annotation.getInputSchema(), annotation.getInputSchema(), specs);
+      }
     }
-    return store;
+
+    return new StoreTableExec(ctx, sm, annotation, subOp);
   }
 
   public PhysicalExec createScanPlan(SubqueryContext ctx, ScanNode scanNode)

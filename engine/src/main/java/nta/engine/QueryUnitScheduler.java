@@ -3,14 +3,6 @@
  */
 package nta.engine;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import com.google.common.collect.Lists;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
@@ -25,18 +17,24 @@ import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
-import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalPlanner;
 import nta.engine.query.QueryUnitRequestImpl;
 import nta.storage.StorageManager;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * @author jihoon
@@ -83,17 +81,22 @@ public class QueryUnitScheduler extends Thread {
     } else {
       LOG.info("Plan of " + plan.getId() + " : " + plan.getLogicalPlan());
       qm.addScheduleUnit(plan);
-      if (plan.getOutputType() == PARTITION_TYPE.HASH) {
-        Path tablePath = sm.getTablePath(plan.getOutputName());
-        sm.getFileSystem().mkdirs(tablePath);
-        LOG.info("Table path " + sm.getTablePath(plan.getOutputName()).toString()
-            + " is initialized for " + plan.getOutputName());
-      } else {
-        if (!sm.getFileSystem().exists(sm.getTablePath(plan.getOutputName()))) {
-          sm.initTableBase(null, plan.getOutputName());
+
+      switch (plan.getOutputType()) {
+        case HASH:
+          Path tablePath = sm.getTablePath(plan.getOutputName());
+          sm.getFileSystem().mkdirs(tablePath);
           LOG.info("Table path " + sm.getTablePath(plan.getOutputName()).toString()
               + " is initialized for " + plan.getOutputName());
-        }
+          break;
+        case RANGE: // TODO - to be improved
+
+        default:
+          if (!sm.getFileSystem().exists(sm.getTablePath(plan.getOutputName()))) {
+            sm.initTableBase(null, plan.getOutputName());
+            LOG.info("Table path " + sm.getTablePath(plan.getOutputName()).toString()
+                + " is initialized for " + plan.getOutputName());
+          }
       }
 
       QueryUnit[] units = planner.localize(plan, cm.getOnlineWorker().size());
@@ -114,6 +117,7 @@ public class QueryUnitScheduler extends Thread {
           StoreType.CSV);
       meta.setStat(stat);
       sm.writeTableMeta(sm.getTablePath(plan.getOutputName()), meta);
+      qm.getSubQuery(units[0].getId().getSubQueryId()).setTableStat(stat);
     }
   }
   

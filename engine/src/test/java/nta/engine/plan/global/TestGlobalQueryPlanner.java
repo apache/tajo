@@ -1,20 +1,6 @@
 package nta.engine.plan.global;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Iterator;
-
-import nta.catalog.CatalogService;
-import nta.catalog.FunctionDesc;
-import nta.catalog.Schema;
-import nta.catalog.TCatUtil;
-import nta.catalog.TableDesc;
-import nta.catalog.TableMeta;
+import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
@@ -34,28 +20,24 @@ import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
-import nta.engine.planner.global.ScheduleUnit;
-import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.global.MasterPlan;
 import nta.engine.planner.global.QueryUnit;
-import nta.engine.planner.logical.ExprType;
-import nta.engine.planner.logical.GroupbyNode;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.StoreTableNode;
-import nta.engine.planner.logical.UnionNode;
+import nta.engine.planner.global.ScheduleUnit;
+import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
+import nta.engine.planner.logical.*;
 import nta.engine.query.GlobalPlanner;
-import nta.storage.Appender;
-import nta.storage.CSVFile2;
-import nta.storage.StorageManager;
-import nta.storage.Tuple;
-import nta.storage.VTuple;
-
+import nta.storage.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.Iterator;
+
+import static org.junit.Assert.*;
 
 /**
  * 
@@ -168,6 +150,8 @@ public class TestGlobalQueryPlanner {
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
+    System.out.println(logicalPlan);
+
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
 
     ScheduleUnit next, prev;
@@ -218,7 +202,7 @@ public class TestGlobalQueryPlanner {
     
     prev = it.next();
     assertFalse(prev.hasChildQuery());
-    assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
+    assertEquals(PARTITION_TYPE.RANGE, prev.getOutputType());
     assertFalse(it.hasNext());
     
     ScanNode []scans = prev.getScanNodes();
@@ -259,7 +243,7 @@ public class TestGlobalQueryPlanner {
     assertEquals(ExprType.SORT, prev.getStoreTableNode().getSubNode().getType());
     assertEquals(scans[0].getInputSchema(), prev.getOutputSchema());
     assertTrue(prev.hasChildQuery());
-    assertEquals(PARTITION_TYPE.HASH, prev.getOutputType());
+    assertEquals(PARTITION_TYPE.RANGE, prev.getOutputType());
     assertFalse(it.hasNext());
     scans = prev.getScanNodes();
     assertEquals(1, scans.length);

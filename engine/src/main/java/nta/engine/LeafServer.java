@@ -1,34 +1,12 @@
 package nta.engine;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import nta.catalog.CatalogClient;
+import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.conf.NtaConf;
-import nta.engine.MasterInterfaceProtos.Command;
-import nta.engine.MasterInterfaceProtos.Fetch;
-import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
-import nta.engine.MasterInterfaceProtos.Partition;
-import nta.engine.MasterInterfaceProtos.PingRequestProto;
-import nta.engine.MasterInterfaceProtos.PingResponseProto;
-import nta.engine.MasterInterfaceProtos.QueryStatus;
-import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
-import nta.engine.MasterInterfaceProtos.ServerStatusProto;
-import nta.engine.MasterInterfaceProtos.SubQueryResponseProto;
+import nta.engine.MasterInterfaceProtos.*;
 import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.exception.InternalException;
 import nta.engine.ipc.AsyncWorkerInterface;
@@ -36,8 +14,13 @@ import nta.engine.ipc.MasterInterface;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.json.GsonCreator;
+import nta.engine.planner.global.ScheduleUnit;
+import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.SortNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.physical.PhysicalExec;
+import nta.engine.planner.physical.TupleComparator;
 import nta.engine.query.QueryUnitRequestImpl;
 import nta.engine.query.TQueryEngine;
 import nta.rpc.NettyRpc;
@@ -46,7 +29,6 @@ import nta.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import nta.storage.StorageUtil;
 import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkUtil;
-
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -58,15 +40,18 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
-
 import tajo.datachannel.Fetcher;
-import tajo.worker.dataserver.HttpDataServer;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 import tajo.webapp.HttpServer;
+import tajo.worker.dataserver.HttpDataServer;
 import tajo.worker.dataserver.retriever.AdvancedDataRetriever;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.*;
 
 
 /**
@@ -533,18 +518,35 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     private boolean killed = false;
     private boolean aborted = false;
 
+    // TODO - to be refactored
+    private ScheduleUnit.PARTITION_TYPE partitionType = null;
+    private Schema finalSchema = null;
+    private TupleComparator sortComp = null;
+
     public Task(QueryUnitRequest request) throws IOException {
       File localQueryTmpDir = createWorkDir(request.getId());
       this.ctx = ctxFactory.create(request, localQueryTmpDir);
       plan = GsonCreator.getInstance().fromJson(request.getSerializedData(),
           LogicalNode.class);      
       interQuery = request.getProto().getInterQuery();
+      if (interQuery) {
+        StoreTableNode store = (StoreTableNode) plan;
+        this.partitionType = store.getPartitionType();
+        this.finalSchema = store.getOutputSchema();
+        if (store.getSubNode().getType() == ExprType.SORT) {
+          SortNode sortNode = (SortNode) store.getSubNode();
+          this.sortComp = new TupleComparator(sortNode.getOutputSchema(), sortNode.getSortKeys());
+        }
+      }
       fetcherRunners = getFetchRunners(ctx, request.getFetches());      
       ctx.setStatus(QueryStatus.INITED);
       LOG.info("=====================================================");
       LOG.info("* Task Initialization Info ");
       LOG.info("* queryId: " + request.getId());
       LOG.info("* interQuery: " + interQuery);
+      if (interQuery) {
+        LOG.info("* partition type: " + this.partitionType);
+      }
       LOG.info("* fragments (total: " + request.getFragments().size() + ")");
       for (Fragment f: request.getFragments()) {
         LOG.info("** table id:" + f.getId());
@@ -628,9 +630,13 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
             Entry<Integer,String> entry = it.next();
             part = Partition.newBuilder();
             part.setPartitionKey(entry.getKey());
-            part.setFileName(
-                dataServerURL + "/?qid=" + getId().toString() + "&fn=" + 
-                entry.getValue());
+            if (partitionType == ScheduleUnit.PARTITION_TYPE.HASH) {
+              part.setFileName(
+                  dataServerURL + "/?qid=" + getId().toString() + "&fn=" +
+                  entry.getValue());
+            } else {
+              part.setFileName(dataServerURL + "/?qid=" + getId().toString());
+            }
             builder.addPartitions(part.build());
           } while (it.hasNext());
         }
@@ -675,12 +681,23 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           ctx.setStatus(failedStatus);
           LOG.info("Query status of " + ctx.getQueryId() + " is changed to "
               + failedStatus);
-        } else {
+        } else { // if successful
           ctx.setProgress(1.0f);
-          if (interQuery) {
-            PartitionRetrieverHandler partitionHandler =
-                new PartitionRetrieverHandler(ctx.getWorkDir().getAbsolutePath() + "/out/data");
-           retriever.register(this.getId(), partitionHandler);
+          if (interQuery) { // TODO - to be completed
+            if (partitionType == null || partitionType != ScheduleUnit.PARTITION_TYPE.RANGE) {
+              PartitionRetrieverHandler partitionHandler =
+                  new PartitionRetrieverHandler(ctx.getWorkDir().getAbsolutePath() + "/out/data");
+              retriever.register(this.getId(), partitionHandler);
+            } else {
+              RangeRetrieverHandler rangeHandler = null;
+              try {
+                rangeHandler =
+                    new RangeRetrieverHandler(new File(ctx.getWorkDir() + "/out"), finalSchema, sortComp);
+              } catch (IOException e) {
+                LOG.error("ERROR: cannot initialize RangeRetrieverHandler");
+              }
+              retriever.register(this.getId(), rangeHandler);
+            }
            LOG.info("LeafServer starts to serve as HTTP data server for " 
                + getId());
           }

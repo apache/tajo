@@ -3,13 +3,13 @@
  */
 package nta.catalog.statistics;
 
-import nta.catalog.proto.CatalogProtos.ColumnStatProto;
-import nta.catalog.proto.CatalogProtos.ColumnStatProtoOrBuilder;
-import nta.common.ProtoObject;
-
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Expose;
+import nta.catalog.proto.CatalogProtos.ColumnStatProto;
+import nta.catalog.proto.CatalogProtos.ColumnStatProtoOrBuilder;
+import nta.common.ProtoObject;
 
 /**
  * @author Hyunsik Choi
@@ -19,10 +19,10 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   private ColumnStatProto.Builder builder = null;
   private boolean viaProto = false;
 
-  private Long numDistVals = null;
-  private Long numNulls = null;
-  private Long minValue = null;
-  private Long maxValue = null;
+  @Expose private Long numDistVals = null;
+  @Expose private Long numNulls = null;
+  @Expose private Long minValue = null;
+  @Expose private Long maxValue = null;
 
   public ColumnStat() {
     builder = ColumnStatProto.newBuilder();

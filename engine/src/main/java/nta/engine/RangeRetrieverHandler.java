@@ -13,6 +13,7 @@ import tajo.worker.dataserver.retriever.RetrieverHandler;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.Map;
 
 /**
@@ -40,13 +41,17 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     // nothing to verify the file because AdvancedDataRetriever checks
     // its validity of the file.
     File data = new File(this.file, "data/data");
-    byte [] startBytes = Base64.decodeBase64(kvs.get("start"));
+    byte [] startBytes = Base64.decodeBase64(URLDecoder.decode(kvs.get("start"), "UTF-8"));
     Tuple start = TupleUtil.toTuple(schema, startBytes);
-    byte [] endBytes = Base64.decodeBase64(kvs.get("end"));
+    byte [] endBytes = Base64.decodeBase64(URLDecoder.decode(kvs.get("end"), "UTF-8"));
     Tuple end = TupleUtil.toTuple(schema, endBytes);
     long startOffset = idxReader.find(start);
-    long endOffset = idxReader.find(end);
+    long endOffset = idxReader.find(end, true);
 
-    return new FileChunk(data, startOffset, endOffset - startOffset);
+    if (endOffset != -1) {
+      return new FileChunk(data, startOffset, endOffset - startOffset);
+    } else {
+      return new FileChunk(data, startOffset, -1);
+    }
   }
 }

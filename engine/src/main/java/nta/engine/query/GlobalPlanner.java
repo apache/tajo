@@ -4,28 +4,12 @@ package nta.engine.query;
  * @author jihoon
  */
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
-import nta.catalog.CatalogService;
-import nta.catalog.Column;
-import nta.catalog.Schema;
-import nta.catalog.TCatUtil;
-import nta.catalog.TableDesc;
-import nta.catalog.TableMeta;
+import com.google.common.base.Preconditions;
+import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.statistics.TableStat;
 import nta.common.exception.NotImplementedException;
+import nta.datum.DatumFactory;
 import nta.engine.MasterInterfaceProtos.Partition;
 import nta.engine.QueryId;
 import nta.engine.QueryIdFactory;
@@ -40,27 +24,23 @@ import nta.engine.planner.global.MasterPlan;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
-import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.ExprType;
-import nta.engine.planner.logical.GroupbyNode;
-import nta.engine.planner.logical.IndexWriteNode;
-import nta.engine.planner.logical.JoinNode;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.LogicalNodeVisitor;
-import nta.engine.planner.logical.LogicalRootNode;
-import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.SortNode;
-import nta.engine.planner.logical.StoreTableNode;
-import nta.engine.planner.logical.UnaryNode;
-import nta.engine.planner.logical.UnionNode;
+import nta.engine.planner.logical.*;
+import nta.engine.utils.TupleUtil;
 import nta.storage.StorageManager;
-
+import nta.storage.Tuple;
+import nta.storage.VTuple;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 
-import com.google.common.base.Preconditions;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class GlobalPlanner {
   private static Log LOG = LogFactory.getLog(GlobalPlanner.class);
@@ -243,8 +223,11 @@ public class GlobalPlanner {
           unit.setLogicalPlan(node);
           break;
         case GROUP_BY:
-        case SORT:
           unit = makeTwoPhaseUnit(store, node, unit);
+          unit.setLogicalPlan(node);
+          break;
+        case SORT:
+          unit = makeSortUnit(store, node, unit);
           unit.setLogicalPlan(node);
           break;
         case JOIN:  // store - join
@@ -295,6 +278,9 @@ public class GlobalPlanner {
       unit = makeUnifiableUnit(rootStore, unary.getSubNode(), unit);
       break;
     case SORT:
+      unit = makeSortUnit(rootStore, plan, unit);
+      break;
+
     case GROUP_BY:
       unit = makeTwoPhaseUnit(rootStore, plan, unit);
       break;
@@ -415,6 +401,55 @@ public class GlobalPlanner {
 
     return unit;
   }
+
+  private ScheduleUnit makeSortUnit(StoreTableNode rootStore,
+    LogicalNode plan, ScheduleUnit unit) throws IOException {
+
+    UnaryNode unary = (UnaryNode) plan;
+    UnaryNode unaryChild;
+    StoreTableNode prevStore;
+    ScanNode newScan;
+    ScheduleUnit prev;
+    unaryChild = (UnaryNode) unary.getSubNode();  // groupby
+    ExprType curType = unaryChild.getType();
+    if (unaryChild.getSubNode().getType() == ExprType.STORE) {
+      // store - groupby - store
+      unaryChild = (UnaryNode) unaryChild.getSubNode(); // store
+      prevStore = (StoreTableNode) unaryChild;
+      TableMeta meta = TCatUtil.newTableMeta(prevStore.getOutputSchema(),
+          StoreType.CSV);
+      newScan = (ScanNode)insertScan(unary.getSubNode(),
+          prevStore.getTableName(), meta);
+      prev = convertMap.get(prevStore);
+      if (prev != null) {
+        prev.setParentQuery(unit);
+        unit.addChildQuery(newScan, prev);
+        if (unaryChild.getSubNode().getType() == curType) {
+          // TODO - this is duplicated code
+          prev.setOutputType(PARTITION_TYPE.RANGE);
+        } else {
+          prev.setOutputType(PARTITION_TYPE.LIST);
+        }
+      }
+      if (unaryChild.getSubNode().getType() == curType) {
+        // the second phase
+        unit.setOutputType(PARTITION_TYPE.LIST);
+      } else {
+        // the first phase
+        unit.setOutputType(PARTITION_TYPE.HASH);
+      }
+    } else if (unaryChild.getSubNode().getType() == ExprType.SCAN) {
+      // the first phase
+      // store - sort - scan
+      unit.setOutputType(PARTITION_TYPE.RANGE);
+    } else if (unaryChild.getSubNode().getType() == ExprType.UNION) {
+      _handleUnionNode(rootStore, (UnionNode)unaryChild.getSubNode(), unit,
+          null, PARTITION_TYPE.LIST);
+    } else {
+      // error
+    }
+    return unit;
+  }
   
   private ScheduleUnit makeJoinUnit(StoreTableNode rootStore, 
       LogicalNode plan, ScheduleUnit unit) throws IOException {
@@ -462,7 +497,7 @@ public class GlobalPlanner {
         prev.setParentQuery(unit);
         unit.addChildQuery((ScanNode)join.getOuterNode(), prev);
       }
-      outerStore.setPartitions(outerCols, 1);
+      outerStore.setPartitions(PARTITION_TYPE.HASH, outerCols, 1);
     } else if (join.getOuterNode().getType() != ExprType.UNION) {
       _handleUnionNode(rootStore, (UnionNode)join.getOuterNode(), unit, 
           outerCols, PARTITION_TYPE.HASH);
@@ -480,7 +515,7 @@ public class GlobalPlanner {
         prev.setParentQuery(unit);
         unit.addChildQuery((ScanNode)join.getInnerNode(), prev);
       }
-      innerStore.setPartitions(innerCols, 1);
+      innerStore.setPartitions(PARTITION_TYPE.HASH, innerCols, 1);
     } else if (join.getInnerNode().getType() == ExprType.UNION) {
       _handleUnionNode(rootStore, (UnionNode)join.getInnerNode(), unit,
           innerCols, PARTITION_TYPE.HASH);
@@ -518,7 +553,7 @@ public class GlobalPlanner {
         cur.addChildQuery((ScanNode)union.getOuterNode(), prev);
       }
       if (cols != null) {
-        store.setPartitions(cols, 1);
+        store.setPartitions(PARTITION_TYPE.LIST, cols, 1);
       }
     } else if (union.getOuterNode().getType() == ExprType.UNION) {
       _handleUnionNode(rootStore, (UnionNode)union.getOuterNode(), cur, cols, 
@@ -537,7 +572,7 @@ public class GlobalPlanner {
         cur.addChildQuery((ScanNode)union.getInnerNode(), prev);
       }
       if (cols != null) {
-        store.setPartitions(cols, 1);
+        store.setPartitions(PARTITION_TYPE.LIST, cols, 1);
       }
     } else if (union.getInnerNode().getType() == ExprType.UNION) {
       _handleUnionNode(rootStore, (UnionNode)union.getInnerNode(), cur, cols, 
@@ -596,34 +631,36 @@ public class GlobalPlanner {
     ScheduleUnit parentQueryUnit = unit.getParentQuery();
     if (parentQueryUnit != null) {
       if (parentQueryUnit.getStoreTableNode().getSubNode().getType() == ExprType.JOIN) {
-        unit.getStoreTableNode().setPartitions(
+        unit.getStoreTableNode().setPartitions(unit.getOutputType(),
             unit.getStoreTableNode().getPartitionKeys(), n);
       }
     }
 
+    StoreTableNode store = unit.getStoreTableNode();
+    Column[] keys = null;
     // set the partition number for group by and sort
     if (unit.getOutputType() == PARTITION_TYPE.HASH) {
-      StoreTableNode store = unit.getStoreTableNode();
-      Column[] keys = null;
       if (store.getSubNode().getType() == ExprType.GROUP_BY) {
         GroupbyNode groupby = (GroupbyNode)store.getSubNode();
         keys = groupby.getGroupingColumns();
-      } else if (store.getSubNode().getType() == ExprType.SORT) {
+      }
+    } else if (unit.getOutputType() == PARTITION_TYPE.RANGE) {
+      if (store.getSubNode().getType() == ExprType.SORT) {
         SortNode sort = (SortNode)store.getSubNode();
         keys = new Column[sort.getSortKeys().length];
         for (int i = 0; i < keys.length; i++) {
           keys[i] = sort.getSortKeys()[i].getSortKey();
         }
       }
-      if (keys != null) {
-        if (keys.length == 0) {
-          store.setPartitions(new Column[]{}, 1);
-        } else {
-          store.setPartitions(keys, n);
-        }
+    }
+    if (keys != null) {
+      if (keys.length == 0) {
+        store.setPartitions(unit.getOutputType(), new Column[]{}, 1);
       } else {
-        // TODO: error
+        store.setPartitions(unit.getOutputType(), keys, n);
       }
+    } else {
+      // TODO: error
     }
     return unit;
   }
@@ -664,9 +701,70 @@ public class GlobalPlanner {
         // make fetches from the previous query units
         uriList = new ArrayList<URI>();
         fragList = new ArrayList<Fragment>();
-        for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
-          for (Partition p : qu.getPartitions()) {
-            uriList.add(new URI(p.getFileName()));
+
+        ScheduleUnit prev = unit.getChildIterator().next();
+        if (prev.getOutputType() == PARTITION_TYPE.RANGE) {
+          StoreTableNode store = (StoreTableNode) prev.getLogicalPlan();
+          SortNode sort = (SortNode) store.getSubNode();
+          Schema sortSchema = sort.getOutputSchema();
+          TableStat stat = qm.getSubQuery(prev.getId().getSubQueryId()).getTableStat();
+          Tuple startTuple = new VTuple(sortSchema.getColumnNum());
+          Tuple endTuple = new VTuple(sortSchema.getColumnNum());
+          for (int i = 0; i < sortSchema.getColumnNum(); i++) {
+            Column col = sortSchema.getColumn(i);
+            switch (col.getDataType()) {
+              case BYTE:
+                startTuple.put(i, DatumFactory.createByte(stat.getColumnStats().get(i).getMinValue().byteValue()));
+                endTuple.put(i, DatumFactory.createByte(stat.getColumnStats().get(i).getMaxValue().byteValue()));
+                break;
+              case CHAR:
+                startTuple.put(i, DatumFactory.createChar(stat.getColumnStats().get(i).getMinValue().byteValue()));
+                endTuple.put(i, DatumFactory.createChar(stat.getColumnStats().get(i).getMaxValue().byteValue()));
+                break;
+              case SHORT:
+                startTuple.put(i, DatumFactory.createShort(stat.getColumnStats().get(i).getMinValue().shortValue()));
+                endTuple.put(i, DatumFactory.createShort(stat.getColumnStats().get(i).getMaxValue().shortValue()));
+                break;
+              case INT:
+                startTuple.put(i, DatumFactory.createInt(stat.getColumnStats().get(i).getMinValue().intValue()));
+                endTuple.put(i, DatumFactory.createInt(stat.getColumnStats().get(i).getMaxValue().intValue()));
+                break;
+              case LONG:
+                startTuple.put(i, DatumFactory.createLong(stat.getColumnStats().get(i).getMinValue()));
+                endTuple.put(i, DatumFactory.createLong(stat.getColumnStats().get(i).getMaxValue()));
+                break;
+              case FLOAT:
+                startTuple.put(i, DatumFactory.createFloat(stat.getColumnStats().get(i).getMinValue().floatValue()));
+                endTuple.put(i, DatumFactory.createFloat(stat.getColumnStats().get(i).getMaxValue().floatValue()));
+                break;
+              case DOUBLE:
+                startTuple.put(i, DatumFactory.createDouble(stat.getColumnStats().get(i).getMinValue().doubleValue()));
+                endTuple.put(i, DatumFactory.createDouble(stat.getColumnStats().get(i).getMaxValue().doubleValue()));
+                break;
+              default:
+                throw new UnsupportedOperationException();
+            }
+          }
+
+          System.out.println(">>>>> start: " + startTuple);
+          System.out.println(">>>>> end: " + endTuple);
+          String req =
+              "start=" +
+                  URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(sortSchema, startTuple))), "UTF-8")
+                  + "&end=" +
+                  URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(sortSchema, endTuple))), "UTF-8");
+
+          for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
+            for (Partition p : qu.getPartitions()) {
+              uriList.add(new URI(p.getFileName() + "&" + req));
+              System.out.println("Partition: " + uriList.get(uriList.size() - 1));
+            }
+          }
+        } else {
+          for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
+            for (Partition p : qu.getPartitions()) {
+              uriList.add(new URI(p.getFileName()));
+            }
           }
         }
         
@@ -680,9 +778,10 @@ public class GlobalPlanner {
       } else {
         fragList = new ArrayList<Fragment>();
         // set fragments for each scan
-        if (unit.hasChildQuery() && 
-            unit.getChildQuery(scan).getOutputType() == 
-            PARTITION_TYPE.HASH) {
+        if (unit.hasChildQuery() &&
+            (unit.getChildQuery(scan).getOutputType() == PARTITION_TYPE.HASH ||
+            unit.getChildQuery(scan).getOutputType() == PARTITION_TYPE.RANGE)
+            ) {
           files = sm.getFileSystem().listStatus(tablepath);
         } else {
           files = new FileStatus[1];
@@ -785,30 +884,32 @@ public class GlobalPlanner {
         }
       }
       switch (prev.getOutputType()) {
-      case BROADCAST:
+        case BROADCAST:
         throw new NotImplementedException();
-      case HASH:
-        if (scan.isLocal()) {
-          unitList = assignFetchesByHash(unit, unitList, scan,
-              fetchMap.get(scan), maxQueryUnitNum);
-          unitList = assignEqualFragment(unitList, scan, 
-              fragMap.get(scan).get(0));
-        } else {
-          unitList = assignFragmentsByHash(unit, unitList, scan,
-              fragMap.get(scan), maxQueryUnitNum);
-        }
-        break;
-      case LIST:
-        if (scan.isLocal()) {
-          unitList = assignFetchesByRoundRobin(unit, unitList, scan, 
-              fetchMap.get(scan), maxQueryUnitNum);
-          unitList = assignEqualFragment(unitList, scan, 
-              fragMap.get(scan).get(0));
-        } else {
-          unitList = assignFragmentsByRoundRobin(unit, unitList, scan,
-              fragMap.get(scan), maxQueryUnitNum);
-        }
-        break;
+
+        case HASH:
+          if (scan.isLocal()) {
+            unitList = assignFetchesByHash(unit, unitList, scan,
+                fetchMap.get(scan), maxQueryUnitNum);
+            unitList = assignEqualFragment(unitList, scan,
+                fragMap.get(scan).get(0));
+          } else {
+            unitList = assignFragmentsByHash(unit, unitList, scan,
+                fragMap.get(scan), maxQueryUnitNum);
+          }
+          break;
+        case RANGE:
+        case LIST:
+          if (scan.isLocal()) {
+            unitList = assignFetchesByRoundRobin(unit, unitList, scan,
+                fetchMap.get(scan), maxQueryUnitNum);
+            unitList = assignEqualFragment(unitList, scan,
+                fragMap.get(scan).get(0));
+          } else {
+            unitList = assignFragmentsByRoundRobin(unit, unitList, scan,
+                fragMap.get(scan), maxQueryUnitNum);
+          }
+          break;
       }
     } else {
       unitList = assignFragmentsByRoundRobin(unit, unitList, scan,

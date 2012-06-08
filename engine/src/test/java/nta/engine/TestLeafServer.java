@@ -1,23 +1,7 @@
 package nta.engine;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import nta.catalog.CatalogService;
-import nta.catalog.Column;
-import nta.catalog.Schema;
-import nta.catalog.TCatUtil;
-import nta.catalog.TableDesc;
-import nta.catalog.TableMeta;
+import com.google.common.collect.Lists;
+import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.TableStat;
@@ -33,16 +17,12 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.PlannerUtil;
-import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.query.QueryUnitRequestImpl;
-import nta.storage.Appender;
+import nta.storage.*;
 import nta.storage.Scanner;
-import nta.storage.StorageManager;
-import nta.storage.StorageUtil;
-import nta.storage.Tuple;
-import nta.storage.VTuple;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -50,10 +30,13 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
-
 import tajo.datachannel.Fetcher;
 
-import com.google.common.collect.Lists;
+import java.io.File;
+import java.net.URI;
+import java.util.*;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Hyunsik Choi
@@ -213,7 +196,7 @@ public class TestLeafServer {
     int numPartitions = 2;
     Column key1 = new Column("employee.deptName", DataType.STRING);
     StoreTableNode storeNode = new StoreTableNode("testInterQuery");
-    storeNode.setPartitions(new Column[] { key1 }, numPartitions);
+    storeNode.setPartitions(ScheduleUnit.PARTITION_TYPE.HASH, new Column[] { key1 }, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     plan = LogicalOptimizer.optimize(ctx, plan);   
     

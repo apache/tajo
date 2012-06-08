@@ -9,7 +9,10 @@ import nta.conf.NtaConf;
 import nta.engine.SubqueryContext;
 import nta.engine.parser.QueryBlock;
 import nta.engine.utils.TupleUtil;
-import nta.storage.*;
+import nta.storage.FileAppender;
+import nta.storage.StorageManager;
+import nta.storage.Tuple;
+import nta.storage.VTuple;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import tajo.index.bst.BSTIndex;
@@ -36,13 +39,14 @@ public class IndexedStoreExec extends PhysicalExec {
   private TableMeta meta;
 
   public IndexedStoreExec(SubqueryContext ctx, StorageManager sm, PhysicalExec subOp, Schema inSchema,
-                          Schema outSchema, QueryBlock.SortSpec [] sortSpecs) {
+                          Schema outSchema, QueryBlock.SortSpec [] sortSpecs) throws IOException {
     this.ctx = ctx;
     this.sm = sm;
     this.subOp = subOp;
     this.inSchema = inSchema;
     this.outSchema = outSchema;
     this.sortSpecs = sortSpecs;
+    open();
   }
 
   public void open() throws IOException {
@@ -95,6 +99,11 @@ public class IndexedStoreExec extends PhysicalExec {
     appender.close();
     indexWriter.flush();
     indexWriter.close();
+
+    // Collect statistics data
+    //    ctx.addStatSet(annotation.getType().toString(), appender.getStats());
+    ctx.setResultStats(appender.getStats());
+    ctx.addRepartition(0, ctx.getQueryId().toString());
 
     return null;
   }

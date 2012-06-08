@@ -11,6 +11,7 @@ import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
+import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalRootNode;
 import nta.engine.planner.logical.StoreTableNode;
@@ -352,7 +353,7 @@ public class TestPhysicalPlanner {
     Column key1 = new Column("score.deptName", DataType.STRING);
     Column key2 = new Column("score.class", DataType.STRING);
     StoreTableNode storeNode = new StoreTableNode("partition");
-    storeNode.setPartitions(new Column[] { key1, key2 }, numPartitions);
+    storeNode.setPartitions(ScheduleUnit.PARTITION_TYPE.HASH, new Column[] { key1, key2 }, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     plan = LogicalOptimizer.optimize(ctx, plan);
 
@@ -406,7 +407,7 @@ public class TestPhysicalPlanner {
 
     int numPartitions = 1;
     StoreTableNode storeNode = new StoreTableNode("emptyset");
-    storeNode.setPartitions(new Column[] {}, numPartitions);
+    storeNode.setPartitions(ScheduleUnit.PARTITION_TYPE.HASH, new Column[] {}, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     plan = LogicalOptimizer.optimize(ctx, plan);
 
@@ -657,7 +658,6 @@ public class TestPhysicalPlanner {
     SeqScanExec scan = (SeqScanExec) sort.getSubOp();
     QueryBlock.SortSpec [] sortSpecs = sort.getSortNode().getSortKeys();
     IndexedStoreExec idxStoreExec = new IndexedStoreExec(ctx, sm, sort, sort.getSchema(), sort.getSchema(), sortSpecs);
-    idxStoreExec.open();
 
     Tuple tuple;
     exec = idxStoreExec;
@@ -710,7 +710,7 @@ public class TestPhysicalPlanner {
 
     scanner.seek(chunk.startOffset() + chunk.length());
     keytuple = scanner.next();
-    assertEquals(80, keytuple.get(1).asInt());
+    assertEquals(81, keytuple.get(1).asInt());
 
     scanner.close();
   }

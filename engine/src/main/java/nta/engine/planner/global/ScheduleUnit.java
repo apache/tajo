@@ -3,25 +3,14 @@
  */
 package nta.engine.planner.global;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
+import com.google.common.base.Preconditions;
 import nta.catalog.Schema;
 import nta.engine.AbstractQuery;
 import nta.engine.QueryUnitId;
 import nta.engine.ScheduleUnitId;
-import nta.engine.planner.logical.BinaryNode;
-import nta.engine.planner.logical.ExprType;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.StoreTableNode;
-import nta.engine.planner.logical.UnaryNode;
+import nta.engine.planner.logical.*;
 
-import com.google.common.base.Preconditions;
+import java.util.*;
 
 /**
  * @author jihoon
@@ -30,9 +19,12 @@ import com.google.common.base.Preconditions;
 public class ScheduleUnit extends AbstractQuery {
   
   public enum PARTITION_TYPE {
+    /** for hash partitioning */
     HASH,
     LIST,
-    BROADCAST
+    BROADCAST,
+    /** for range partitioning */
+    RANGE
   }
 
   private ScheduleUnitId id;

@@ -3,13 +3,14 @@
  */
 package nta.engine;
 
+import nta.catalog.statistics.TableStat;
+import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.global.ScheduleUnit;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import nta.engine.planner.global.QueryUnit;
-import nta.engine.planner.global.ScheduleUnit;
 
 /**
  * @author jihoon
@@ -19,6 +20,7 @@ public class SubQuery extends AbstractQuery {
 
   private final SubQueryId id;
   private Map<ScheduleUnitId, ScheduleUnit> units;
+  private TableStat resultStats;
   
   public SubQuery(SubQueryId id) {
     this.id = id;
@@ -47,5 +49,13 @@ public class SubQuery extends AbstractQuery {
   
   public QueryUnit getQueryUnit(QueryUnitId id) {
     return this.getScheduleUnit(id.getScheduleUnitId()).getQueryUnit(id);
+  }
+
+  public void setTableStat(TableStat stat) {
+    this.resultStats = stat;
+  }
+
+  public TableStat getTableStat() {
+    return this.resultStats;
   }
 }

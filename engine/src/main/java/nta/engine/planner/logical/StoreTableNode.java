@@ -1,11 +1,11 @@
 package nta.engine.planner.logical;
 
-import nta.catalog.Column;
-import nta.engine.json.GsonCreator;
-import nta.engine.utils.TUtil;
-
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
+import nta.catalog.Column;
+import nta.engine.json.GsonCreator;
+import nta.engine.planner.global.ScheduleUnit;
+import nta.engine.utils.TUtil;
 
 /**
  * @author Hyunsik Choi
@@ -13,6 +13,7 @@ import com.google.gson.annotations.Expose;
  */
 public class StoreTableNode extends UnaryNode implements Cloneable {
   @Expose private String tableName;
+  @Expose private ScheduleUnit.PARTITION_TYPE partitionType;
   @Expose private int numPartitions;
   @Expose private Column [] partitionKeys;
   @Expose private boolean local;
@@ -56,14 +57,19 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     this.numPartitions = 0;
   }
   
-  public final void setPartitions(Column [] keys, int numPartitions) {
+  public final void setPartitions(ScheduleUnit.PARTITION_TYPE type, Column [] keys, int numPartitions) {
     Preconditions.checkArgument(keys.length >= 0, 
         "At least one partition key must be specified.");
     Preconditions.checkArgument(numPartitions > 0,
         "The number of partitions must be positive: %s", numPartitions);
-    
+
+    this.partitionType = type;
     this.partitionKeys = keys;
     this.numPartitions = numPartitions;
+  }
+
+  public ScheduleUnit.PARTITION_TYPE getPartitionType() {
+    return this.partitionType;
   }
   
   @Override

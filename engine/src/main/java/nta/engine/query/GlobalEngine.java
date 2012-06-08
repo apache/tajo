@@ -37,7 +37,7 @@ import java.io.IOException;
 public class GlobalEngine implements EngineService {
   private final static Log LOG = LogFactory.getLog(GlobalEngine.class);
 
-  private Configuration conf;
+  private final Configuration conf;
   private final CatalogService catalog;
   private final QueryAnalyzer analyzer;
   private final QueryContext.Factory factory;
