@@ -2,7 +2,6 @@ package tajo.worker.dataserver.retriever;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.RandomAccessFile;
 
 /**
  * @author Hyunsik Choi
@@ -32,6 +31,6 @@ public class FileChunk {
 
   public String toString() {
     return file.getAbsolutePath() +
-        "(start=" + startOffset() + ", length=" + length + ")";
+        " (start=" + startOffset() + ", length=" + length + ")";
   }
 }

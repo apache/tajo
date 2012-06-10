@@ -63,6 +63,9 @@ public class BSTIndex implements IndexMethod {
     private final KeyOffsetCollector collector;
     private KeyOffsetCollector rootCollector;
 
+    private Tuple min;
+    private Tuple max;
+
     // private Tuple lastestKey = null;
 
     /**
@@ -100,7 +103,25 @@ public class BSTIndex implements IndexMethod {
 
     @Override
     public void write(Tuple key, long offset) throws IOException {
+      if (min == null || compartor.compare(key, min) < 0) {
+        min = key;
+      }
+      if (max == null || compartor.compare(max, key) < 0) {
+        max = key;
+      }
       collector.put(key, offset);
+    }
+
+    public Tuple getMin() {
+      return this.min;
+    }
+
+    public Tuple getMax() {
+      return this.max;
+    }
+
+    public TupleComparator getCompartor() {
+      return this.compartor;
     }
 
     public void flush() throws IOException {
@@ -122,6 +143,12 @@ public class BSTIndex implements IndexMethod {
       // header write => type = > level => entryNum
       out.writeInt(this.level);
       out.writeInt(entryNum);
+      byte [] minBytes = TupleUtil.toBytes(keySchema, min);
+      out.writeInt(minBytes.length);
+      out.write(minBytes);
+      byte [] maxBytes = TupleUtil.toBytes(keySchema, max);
+      out.writeInt(maxBytes.length);
+      out.write(maxBytes);
       out.flush();
 
       int loadCount = this.loadNum - 1;
@@ -232,6 +259,8 @@ public class BSTIndex implements IndexMethod {
     private int level;
     private int entryNum;
     private int loadNum = -1;
+    private Tuple min;
+    private Tuple max;
 
     // the cursors of BST
     private int rootCursor;
@@ -264,6 +293,12 @@ public class BSTIndex implements IndexMethod {
       indexIn = fs.open(this.fileName);
       this.level = indexIn.readInt();
       this.entryNum = indexIn.readInt();
+      byte [] minBytes = new byte[indexIn.readInt()];
+      indexIn.read(minBytes);
+      this.min = TupleUtil.toTuple(keySchema, minBytes);
+      byte [] maxBytes = new byte[indexIn.readInt()];
+      indexIn.read(maxBytes);
+      this.max = TupleUtil.toTuple(keySchema, maxBytes);
 
       fillData();
     }
@@ -295,7 +330,7 @@ public class BSTIndex implements IndexMethod {
      * @return
      * @throws IOException
      */
-    public long find(Tuple key) throws IOException {
+    public synchronized  long find(Tuple key) throws IOException {
       return find(key, false);
     }
 
@@ -401,6 +436,14 @@ public class BSTIndex implements IndexMethod {
       }
     }
 
+    public Tuple getMin() {
+      return this.min;
+    }
+
+    public Tuple getMax() {
+      return this.max;
+    }
+
     private void fillRootIndex(int entryNum, FSDataInputStream in)
         throws IOException {
       this.dataIndex = new Tuple[entryNum];
@@ -438,6 +481,9 @@ public class BSTIndex implements IndexMethod {
       int pos = -1;
 
       pos = binarySearch(this.dataIndex, key, 0, this.dataIndex.length);
+      if (pos == -1) {
+        return -1;
+      }
       rootCursor = pos;
       fillLeafIndex(loadNum, subIn, this.offsetIndex[pos]);
       pos = binarySearch(this.dataSubIndex, key, 0, this.dataSubIndex.length);

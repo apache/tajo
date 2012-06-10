@@ -426,6 +426,15 @@ public class PlannerUtil {
     return specs;
   }
 
+  public static Schema sortSpecsToSchema(SortSpec [] sortSpecs) {
+    Schema schema = new Schema();
+    for (SortSpec spec : sortSpecs) {
+      schema.addColumn(spec.getSortKey());
+    }
+
+    return schema;
+  }
+
   /**
    * is it join qual or not?
    * TODO - this method does not support the self join (NTA-740)

@@ -1,6 +1,5 @@
 package nta.engine;
 
-import nta.conf.NtaConf;
 import nta.engine.utils.JVMClusterUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -20,7 +19,7 @@ public class LocalTajoCluster {
 	private JVMClusterUtil.MasterThread masterThread;
 	private final List<JVMClusterUtil.LeafServerThread> leafThreads
 	  = new CopyOnWriteArrayList<JVMClusterUtil.LeafServerThread>();
-	private final static int DEFAULT_NO = 1;
+	private final static int DEFAULT_NO = 4;
 	private final Configuration conf;
 
 	public LocalTajoCluster(final Configuration conf) throws Exception {
@@ -34,7 +33,7 @@ public class LocalTajoCluster {
 
 		addMaster(conf, 0);
 
-    Configuration c = null;
+    Configuration c;
 		for(int i=0; i < numLeafServers; i++) {
       c = new Configuration(conf);
 

@@ -95,6 +95,12 @@ public class ExternalSortExec extends PhysicalExec {
       if (tupleSlots.size() != 0) {
         firstPhase(tupleSlots);
       }
+
+      if (run == 0) {
+        // if there are no data
+        return null;
+      }
+
       runNum = run;
 
       int iterator = 0;

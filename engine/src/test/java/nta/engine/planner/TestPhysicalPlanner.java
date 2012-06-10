@@ -654,9 +654,9 @@ public class TestPhysicalPlanner {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    SortExec sort = (SortExec) exec;
+    ExternalSortExec sort = (ExternalSortExec) exec;
     SeqScanExec scan = (SeqScanExec) sort.getSubOp();
-    QueryBlock.SortSpec [] sortSpecs = sort.getSortNode().getSortKeys();
+    QueryBlock.SortSpec [] sortSpecs = sort.getAnnotation().getSortKeys();
     IndexedStoreExec idxStoreExec = new IndexedStoreExec(ctx, sm, sort, sort.getSchema(), sort.getSchema(), sortSpecs);
 
     Tuple tuple;
@@ -708,9 +708,10 @@ public class TestPhysicalPlanner {
     keytuple = scanner.next();
     assertEquals(50, keytuple.get(1).asInt());
 
-    scanner.seek(chunk.startOffset() + chunk.length());
-    keytuple = scanner.next();
-    assertEquals(81, keytuple.get(1).asInt());
+    long endOffset = chunk.startOffset() + chunk.length();
+    while((keytuple = scanner.next()) != null && scanner.getNextOffset() <= endOffset) {
+      assertTrue(keytuple.get(1).asInt() <= 80);
+    }
 
     scanner.close();
   }

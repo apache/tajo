@@ -5,11 +5,11 @@ package nta.engine.query;
  */
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.TableStat;
 import nta.common.exception.NotImplementedException;
-import nta.datum.DatumFactory;
 import nta.engine.MasterInterfaceProtos.Partition;
 import nta.engine.QueryId;
 import nta.engine.QueryIdFactory;
@@ -27,18 +27,18 @@ import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.logical.*;
 import nta.engine.utils.TupleUtil;
 import nta.storage.StorageManager;
-import nta.storage.Tuple;
-import nta.storage.VTuple;
-import org.apache.commons.codec.binary.Base64;
+import nta.storage.TupleRange;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
+import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -687,6 +687,8 @@ public class GlobalPlanner {
     // set partition numbers for two phase algorithms
     // TODO: the following line might occur a bug. see the line 623
     unit = setPartitionNumberForTwoPhase(unit, n);
+
+    Schema sortSchema = null;
     
     // make fetches and fragments for each scan
     Path tablepath = null;
@@ -706,58 +708,19 @@ public class GlobalPlanner {
         if (prev.getOutputType() == PARTITION_TYPE.RANGE) {
           StoreTableNode store = (StoreTableNode) prev.getLogicalPlan();
           SortNode sort = (SortNode) store.getSubNode();
-          Schema sortSchema = sort.getOutputSchema();
+          sortSchema = PlannerUtil.sortSpecsToSchema(sort.getSortKeys());
           TableStat stat = qm.getSubQuery(prev.getId().getSubQueryId()).getTableStat();
-          Tuple startTuple = new VTuple(sortSchema.getColumnNum());
-          Tuple endTuple = new VTuple(sortSchema.getColumnNum());
-          for (int i = 0; i < sortSchema.getColumnNum(); i++) {
-            Column col = sortSchema.getColumn(i);
-            switch (col.getDataType()) {
-              case BYTE:
-                startTuple.put(i, DatumFactory.createByte(stat.getColumnStats().get(i).getMinValue().byteValue()));
-                endTuple.put(i, DatumFactory.createByte(stat.getColumnStats().get(i).getMaxValue().byteValue()));
-                break;
-              case CHAR:
-                startTuple.put(i, DatumFactory.createChar(stat.getColumnStats().get(i).getMinValue().byteValue()));
-                endTuple.put(i, DatumFactory.createChar(stat.getColumnStats().get(i).getMaxValue().byteValue()));
-                break;
-              case SHORT:
-                startTuple.put(i, DatumFactory.createShort(stat.getColumnStats().get(i).getMinValue().shortValue()));
-                endTuple.put(i, DatumFactory.createShort(stat.getColumnStats().get(i).getMaxValue().shortValue()));
-                break;
-              case INT:
-                startTuple.put(i, DatumFactory.createInt(stat.getColumnStats().get(i).getMinValue().intValue()));
-                endTuple.put(i, DatumFactory.createInt(stat.getColumnStats().get(i).getMaxValue().intValue()));
-                break;
-              case LONG:
-                startTuple.put(i, DatumFactory.createLong(stat.getColumnStats().get(i).getMinValue()));
-                endTuple.put(i, DatumFactory.createLong(stat.getColumnStats().get(i).getMaxValue()));
-                break;
-              case FLOAT:
-                startTuple.put(i, DatumFactory.createFloat(stat.getColumnStats().get(i).getMinValue().floatValue()));
-                endTuple.put(i, DatumFactory.createFloat(stat.getColumnStats().get(i).getMaxValue().floatValue()));
-                break;
-              case DOUBLE:
-                startTuple.put(i, DatumFactory.createDouble(stat.getColumnStats().get(i).getMinValue().doubleValue()));
-                endTuple.put(i, DatumFactory.createDouble(stat.getColumnStats().get(i).getMaxValue().doubleValue()));
-                break;
-              default:
-                throw new UnsupportedOperationException();
-            }
-          }
-
-          System.out.println(">>>>> start: " + startTuple);
-          System.out.println(">>>>> end: " + endTuple);
-          String req =
-              "start=" +
-                  URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(sortSchema, startTuple))), "UTF-8")
-                  + "&end=" +
-                  URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(sortSchema, endTuple))), "UTF-8");
-
+          TupleRange mergedRange = TupleUtil.columnStatToRange(sort.getOutputSchema(), sortSchema, stat.getColumnStats());
+          System.out.println(">>>>> merged range - start: " + mergedRange.getStart());
+          System.out.println(">>>>> merged range - end: " + mergedRange.getEnd());
+          TupleRange [] ranges = TupleUtil.getPartitions(sortSchema, n, mergedRange);
+          String [] queries = TupleUtil.rangesToQueries(sortSchema, ranges);
           for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
             for (Partition p : qu.getPartitions()) {
-              uriList.add(new URI(p.getFileName() + "&" + req));
-              System.out.println("Partition: " + uriList.get(uriList.size() - 1));
+              for (String query : queries) {
+                uriList.add(new URI(p.getFileName() + "&" + query));
+                System.out.println("Partition: " + uriList.get(uriList.size() - 1));
+              }
             }
           }
         } else {
@@ -802,7 +765,7 @@ public class GlobalPlanner {
 
     List<QueryUnit> unitList = null;
     if (scans.length == 1) {
-      unitList = makeUnaryQueryUnit(unit, n, fragMap, fetchMap);
+      unitList = makeUnaryQueryUnit(unit, n, fragMap, fetchMap, sortSchema);
     } else if (scans.length == 2) {
       unitList = makeBinaryQueryUnit(unit, n, fragMap, fetchMap);
     }
@@ -868,7 +831,7 @@ public class GlobalPlanner {
    */
   private List<QueryUnit> makeUnaryQueryUnit(ScheduleUnit unit, int n,
       Map<ScanNode, List<Fragment>> fragMap, 
-      Map<ScanNode, List<URI>> fetchMap) {
+      Map<ScanNode, List<URI>> fetchMap, Schema rangeSchema) throws UnsupportedEncodingException {
     List<QueryUnit> unitList = new ArrayList<QueryUnit>();
     int maxQueryUnitNum = 0;
     ScanNode scan = unit.getScanNodes()[0];
@@ -899,6 +862,17 @@ public class GlobalPlanner {
           }
           break;
         case RANGE:
+          if (scan.isLocal()) {
+            unitList = assignFetchesByRange(unit, unitList, scan,
+                fetchMap.get(scan), maxQueryUnitNum, rangeSchema);
+            unitList = assignEqualFragment(unitList, scan,
+                fragMap.get(scan).get(0));
+          } else {
+            unitList = assignFragmentsByHash(unit, unitList, scan,
+                fragMap.get(scan), maxQueryUnitNum);
+          }
+          break;
+
         case LIST:
           if (scan.isLocal()) {
             unitList = assignFetchesByRoundRobin(unit, unitList, scan,
@@ -997,6 +971,31 @@ public class GlobalPlanner {
     }
     return unitList;
   }
+
+  private List<QueryUnit> assignFetchesByRange(ScheduleUnit scheduleUnit,
+                                              List<QueryUnit> unitList, ScanNode scan, List<URI> uriList, int n,
+                                              Schema rangeSchema)
+      throws UnsupportedEncodingException {
+    Map<TupleRange, Set<URI>> partitions = rangeFetches(rangeSchema, uriList); // grouping urls by range
+    QueryUnit unit = null;
+    int i = 0;
+    Iterator<Entry<TupleRange, Set<URI>>> it = partitions.entrySet().iterator();
+    Entry<TupleRange, Set<URI>> e;
+    while (it.hasNext()) {
+      e = it.next();
+      if (unitList.size() == n) {
+        unit = unitList.get(i++);
+        if (i == unitList.size()) {
+          i = 0;
+        }
+      } else {
+        unit = newQueryUnit(scheduleUnit);
+        unitList.add(unit);
+      }
+      unit.addFetches(scan.getTableId(), Lists.newArrayList(e.getValue()));
+    }
+    return unitList;
+  }
   
   /**
    * Unary QueryUnit들에 list 파티션된 fetch를 할당
@@ -1074,6 +1073,25 @@ public class GlobalPlanner {
     }
     
     return hashed;
+  }
+
+  private Map<TupleRange, Set<URI>> rangeFetches(Schema schema, List<URI> uriList) throws UnsupportedEncodingException {
+    SortedMap<TupleRange, Set<URI>> map = Maps.newTreeMap();
+    TupleRange range;
+    Set<URI> uris;
+    for (URI uri : uriList) {
+      range = TupleUtil.queryToRange(schema, uri.getQuery());
+      if (map.containsKey(range)) {
+        uris = map.get(range);
+        uris.add(uri);
+      } else {
+        uris = Sets.newHashSet();
+        uris.add(uri);
+        map.put(range, uris);
+      }
+    }
+
+    return map;
   }
   
   /**

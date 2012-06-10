@@ -14,6 +14,7 @@ import nta.engine.ipc.MasterInterface;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.json.GsonCreator;
+import nta.engine.planner.PlannerUtil;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
@@ -257,7 +258,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
 
       // remove the znode
       ZkUtil.concat(NConstants.ZNODE_LEAFSERVERS, serverName);
-      
+
       try {
         webServer.stop();
       } catch (Exception e) {
@@ -532,10 +533,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       if (interQuery) {
         StoreTableNode store = (StoreTableNode) plan;
         this.partitionType = store.getPartitionType();
-        this.finalSchema = store.getOutputSchema();
         if (store.getSubNode().getType() == ExprType.SORT) {
           SortNode sortNode = (SortNode) store.getSubNode();
-          this.sortComp = new TupleComparator(sortNode.getOutputSchema(), sortNode.getSortKeys());
+          this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
+          this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
         }
       }
       fetcherRunners = getFetchRunners(ctx, request.getFetches());      
@@ -702,7 +703,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
                + getId());
           }
           ctx.setStatus(QueryStatus.FINISHED);
-          LOG.info("Query status of " + ctx + " is changed to " 
+          LOG.info("Query status of " + ctx.getQueryId() + " is changed to "
               + QueryStatus.FINISHED);
         }
       }

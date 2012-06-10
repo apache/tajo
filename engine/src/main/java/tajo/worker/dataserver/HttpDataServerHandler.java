@@ -65,58 +65,59 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
       sendError(ctx, INTERNAL_SERVER_ERROR);
       return;
     }
-    
-    LOG.info("GET " + file.getFile().getAbsolutePath());
 
-    RandomAccessFile raf;
-    try {
-      raf = new RandomAccessFile(file.getFile(), "r");
-    } catch (FileNotFoundException fnfe) {
-      sendError(ctx, NOT_FOUND);
-      return;
-    }
-
-    long fileLength;
-    if (file.length() == -1) {
-      fileLength = file.getFile().length();
-    } else {
-      fileLength = file.length();
-    }
-
-    HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-    setContentLength(response, fileLength);
-
-    Channel ch = e.getChannel();
-
-    // Write the initial line and the header.
-    ch.write(response);
     // Write the content.
-    ChannelFuture writeFuture;
-    if (ch.getPipeline().get(SslHandler.class) != null) {
-      // Cannot use zero-copy with HTTPS.
-      writeFuture = ch.write(new ChunkedFile(raf, 0, fileLength, 8192));
-    } else {
-      // No encryption - use zero-copy.
-      final FileRegion region = new DefaultFileRegion(raf.getChannel(), 0,
-          fileLength);
-      writeFuture = ch.write(region);
-      writeFuture.addListener(new ChannelFutureProgressListener() {
-        public void operationComplete(ChannelFuture future) {
-          region.releaseExternalResources();
-        }
+    Channel ch = e.getChannel();
+    if (file == null) {
+      HttpResponse response = new DefaultHttpResponse(HTTP_1_1, NO_CONTENT);
+      ch.write(response);
+      if (!isKeepAlive(request)) {
+        ch.close();
+      }
+    }  else {
+      LOG.info("Fetch request received: " + file);
 
-        public void operationProgressed(ChannelFuture future, long amount,
-            long current, long total) {
-          System.out.printf("%s: %d / %d (+%d)%n", "file", current, total,
-              amount);
-        }
-      });
-    }
+      RandomAccessFile raf;
+      try {
+        raf = new RandomAccessFile(file.getFile(), "r");
+      } catch (FileNotFoundException fnfe) {
+        sendError(ctx, NOT_FOUND);
+        return;
+      }
 
-    // Decide whether to close the connection or not.
-    if (!isKeepAlive(request)) {
-      // Close the connection when the whole content is written out.
-      writeFuture.addListener(ChannelFutureListener.CLOSE);
+      HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+      setContentLength(response, file.length());
+
+      ChannelFuture writeFuture;
+      // Write the initial line and the header.
+      ch.write(response);
+
+      if (ch.getPipeline().get(SslHandler.class) != null) {
+        // Cannot use zero-copy with HTTPS.
+        writeFuture = ch.write(new ChunkedFile(raf, file.startOffset(), file.length(), 8192));
+      } else {
+        // No encryption - use zero-copy.
+        final FileRegion region = new DefaultFileRegion(raf.getChannel(), file.startOffset(),
+            file.length());
+        writeFuture = ch.write(region);
+        writeFuture.addListener(new ChannelFutureProgressListener() {
+          public void operationComplete(ChannelFuture future) {
+            region.releaseExternalResources();
+          }
+
+          public void operationProgressed(ChannelFuture future, long amount,
+                                          long current, long total) {
+            System.out.printf("%s: %d / %d (+%d)%n", "file", current, total,
+                amount);
+          }
+        });
+      }
+
+      // Decide whether to close the connection or not.
+      if (!isKeepAlive(request)) {
+        // Close the connection when the whole content is written out.
+        writeFuture.addListener(ChannelFutureListener.CLOSE);
+      }
     }
   }
 

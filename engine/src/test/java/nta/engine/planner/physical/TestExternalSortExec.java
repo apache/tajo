@@ -1,12 +1,5 @@
 package nta.engine.planner.physical;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Random;
-
 import nta.catalog.CatalogService;
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
@@ -30,10 +23,16 @@ import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Random;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Byungnam Lim
@@ -98,18 +97,18 @@ public class TestExternalSortExec {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
-    ProjectionExec proj = (ProjectionExec) exec;
+/*    ProjectionExec proj = (ProjectionExec) exec;
     SortExec inMemSort = (SortExec) proj.getSubOp();
     SeqScanExec scan = (SeqScanExec)inMemSort.getSubOp();
   
     ExternalSortExec extSort = new ExternalSortExec(ctx, sm, inMemSort.getSortNode(), scan);
-    proj.setsubOp(extSort);
+    proj.setsubOp(extSort);*/
 
     Tuple tuple;
     Datum preVal = null;
     Datum curVal;
     int cnt = 0;
-    while ((tuple = proj.next()) != null) {
+    while ((tuple = exec.next()) != null) {
       curVal = tuple.get(0);
       if (preVal != null) {
         assertTrue(preVal.lessThanEqual(curVal).asBool());
@@ -121,9 +120,9 @@ public class TestExternalSortExec {
 
     // for rescan test
     preVal = null;
-    proj.rescan();
+    exec.rescan();
     cnt = 0;
-    while ((tuple = proj.next()) != null) {
+    while ((tuple = exec.next()) != null) {
       curVal = tuple.get(0);
       if (preVal != null) {
         assertTrue(preVal.lessThanEqual(curVal).asBool());

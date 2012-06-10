@@ -2,14 +2,22 @@ package nta.engine.utils;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.statistics.ColumnStat;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.storage.StorageUtil;
 import nta.storage.Tuple;
 import nta.storage.TupleRange;
 import nta.storage.VTuple;
+import org.apache.commons.codec.binary.Base64;
+import tajo.worker.dataserver.HttpUtil;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Map;
 
 public class TupleUtil {
   public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
@@ -109,11 +117,11 @@ public class TupleUtil {
     return tuple;
   }
 
-  public static TupleRange [] getPartitions(Schema schema, int partNum, Tuple start, Tuple end) {
-    boolean splittable = false;
-
+  public static TupleRange [] getPartitions(Schema schema, int partNum, TupleRange range) {
+    Tuple start = range.getStart();
+    Tuple end = range.getEnd();
     Column col;
-    TupleRange [] ranges = new TupleRange[partNum];
+    TupleRange [] partitioned = new TupleRange[partNum];
 
     Datum[] term = new Datum[schema.getColumnNum()];
     Datum[] prevValues = new Datum[schema.getColumnNum()];
@@ -301,9 +309,77 @@ public class TupleUtil {
             throw new UnsupportedOperationException();
         }
       }
-      ranges[p] = new TupleRange(sTuple, eTuple);
+      partitioned[p] = new TupleRange(schema, sTuple, eTuple);
     }
 
-    return ranges;
+    return partitioned;
+  }
+
+  public static String rangeToQuery(Schema schema, TupleRange range) throws UnsupportedEncodingException {
+    return "start=" + URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(schema, range.getStart()))),
+            "UTF-8") +
+            "&end=" + URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(schema, range.getEnd()))),
+            "UTF-8");
+  }
+
+  public static String [] rangesToQueries(Schema schema, TupleRange[] ranges) throws UnsupportedEncodingException {
+    String [] params = new String[ranges.length];
+    for (int i = 0; i < ranges.length; i++) {
+      params[i] =
+        rangeToQuery(schema, ranges[i]);
+    }
+    return params;
+  }
+
+  public static TupleRange queryToRange(Schema schema, String query) throws UnsupportedEncodingException {
+    Map<String,String> params = HttpUtil.getParamsFromQuery(query);
+
+    byte [] startBytes = Base64.decodeBase64(URLDecoder.decode(params.get("start"), "UTF-8"));
+    byte [] endBytes = Base64.decodeBase64(URLDecoder.decode(params.get("end"), "UTF-8"));
+
+    return new TupleRange(schema, TupleUtil.toTuple(schema, startBytes), TupleUtil.toTuple(schema, endBytes));
+  }
+
+  public static TupleRange columnStatToRange(Schema schema, Schema target, List<ColumnStat> colStats) {
+    int [] sortKeyIds = TupleUtil.getTargetIds(schema, target);
+    Tuple startTuple = new VTuple(sortKeyIds.length);
+    Tuple endTuple = new VTuple(sortKeyIds.length);
+    for (int i = 0; i < sortKeyIds.length; i++) {
+      Column col = target.getColumn(i);
+      int s = sortKeyIds[i];
+      switch (col.getDataType()) {
+        case BYTE:
+          startTuple.put(i, DatumFactory.createByte(colStats.get(s).getMinValue().byteValue()));
+          endTuple.put(i, DatumFactory.createByte(colStats.get(s).getMaxValue().byteValue()));
+          break;
+        case CHAR:
+          startTuple.put(i, DatumFactory.createChar(colStats.get(s).getMinValue().byteValue()));
+          endTuple.put(i, DatumFactory.createChar(colStats.get(s).getMaxValue().byteValue()));
+          break;
+        case SHORT:
+          startTuple.put(i, DatumFactory.createShort(colStats.get(s).getMinValue().shortValue()));
+          endTuple.put(i, DatumFactory.createShort(colStats.get(s).getMaxValue().shortValue()));
+          break;
+        case INT:
+          startTuple.put(i, DatumFactory.createInt(colStats.get(s).getMinValue().intValue()));
+          endTuple.put(i, DatumFactory.createInt(colStats.get(s).getMaxValue().intValue()));
+          break;
+        case LONG:
+          startTuple.put(i, DatumFactory.createLong(colStats.get(s).getMinValue()));
+          endTuple.put(i, DatumFactory.createLong(colStats.get(s).getMaxValue()));
+          break;
+        case FLOAT:
+          startTuple.put(i, DatumFactory.createFloat(colStats.get(s).getMinValue().floatValue()));
+          endTuple.put(i, DatumFactory.createFloat(colStats.get(s).getMaxValue().floatValue()));
+          break;
+        case DOUBLE:
+          startTuple.put(i, DatumFactory.createDouble(colStats.get(s).getMinValue().doubleValue()));
+          endTuple.put(i, DatumFactory.createDouble(colStats.get(s).getMaxValue().doubleValue()));
+          break;
+        default:
+          throw new UnsupportedOperationException();
+      }
+    }
+    return new TupleRange(target, startTuple, endTuple);
   }
 }

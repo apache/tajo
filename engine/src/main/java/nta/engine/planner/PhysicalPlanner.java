@@ -182,7 +182,7 @@ public class PhysicalPlanner {
   
   public PhysicalExec createSortPlan(SubqueryContext ctx,
       SortNode sortNode, PhysicalExec subOp) throws IOException {
-    return new SortExec(sortNode, subOp);
+    return new ExternalSortExec(ctx, sm, sortNode, subOp);
   }
   
   public PhysicalExec createIndexWritePlan(

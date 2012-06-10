@@ -9,6 +9,8 @@ import nta.engine.planner.physical.TupleComparator;
 import nta.engine.utils.TupleUtil;
 import org.junit.Test;
 
+import java.io.UnsupportedEncodingException;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -80,7 +82,7 @@ public class TestTupleUtil {
     eTuple.put(5, DatumFactory.createFloat(150));
     eTuple.put(6, DatumFactory.createDouble(170));
 
-    TupleRange [] ranges = TupleUtil.getPartitions(schema, 5, sTuple, eTuple);
+    TupleRange [] ranges = TupleUtil.getPartitions(schema, 5, new TupleRange(schema, sTuple, eTuple));
     assertEquals(5, ranges.length);
     TupleComparator comp = new TupleComparator(schema, PlannerUtil.schemaToSortSpecs(schema));
     TupleRange prev = ranges[0];
@@ -89,5 +91,28 @@ public class TestTupleUtil {
       assertTrue(comp.compare(prev.getEnd(), ranges[i].getEnd()) < 0);
       prev = ranges[i];
     }
+  }
+
+  @Test
+  public void testQueryToRange() throws UnsupportedEncodingException {
+    Schema schema = new Schema();
+    schema.addColumn("intval", DataType.INT);
+    schema.addColumn("floatval", DataType.FLOAT);
+
+    Tuple s = new VTuple(2);
+    s.put(0, DatumFactory.createInt(5));
+    s.put(1, DatumFactory.createFloat(10));
+
+    Tuple e = new VTuple(2);
+    e.put(0, DatumFactory.createInt(10));
+    e.put(1, DatumFactory.createFloat(20));
+
+    TupleRange expected = new TupleRange(schema, s, e);
+    String query = TupleUtil.rangeToQuery(schema, expected);
+
+    TupleRange range = TupleUtil.queryToRange(schema, query);
+    System.out.println("query: " + query);
+    System.out.println("range: " + range);
+    assertEquals(expected, range);
   }
 }

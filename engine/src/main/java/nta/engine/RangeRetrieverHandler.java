@@ -5,7 +5,10 @@ import nta.conf.NtaConf;
 import nta.engine.planner.physical.TupleComparator;
 import nta.engine.utils.TupleUtil;
 import nta.storage.Tuple;
+import nta.storage.TupleRange;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import tajo.index.bst.BSTIndex;
 import tajo.worker.dataserver.retriever.FileChunk;
@@ -21,18 +24,30 @@ import java.util.Map;
  *
  * It retrieves the file chunk ranged between start and end keys.
  * The start key is inclusive, but the end key is exclusive.
+ *
+ * Internally, there are four cases:
+ * <ul>
+ *   <li>out of scope: the index range does not overlapped with the query range.</li>
+ *   <li>overlapped: the index range is partially overlapped with the query range. </li>
+ *   <li>included: the index range is included in the start and end keys</li>
+ *   <li>covered: the start and end keys are covered by the index range.</li>
+ * </ul>
  */
 public class RangeRetrieverHandler implements RetrieverHandler {
+  private static final Log LOG = LogFactory.getLog(RangeRetrieverHandler.class);
   private final File file;
   private final BSTIndex.BSTIndexReader idxReader;
   private final Schema schema;
+  private final TupleComparator comp;
 
   public RangeRetrieverHandler(File outDir, Schema schema, TupleComparator comp) throws IOException {
     this.file = outDir;
     BSTIndex index = new BSTIndex(NtaConf.create());
     this.schema = schema;
+    this.comp = comp;
+
     this.idxReader =
-        index.getIndexReader(new Path(outDir.getAbsolutePath(), "index/data.idx"), this.schema, comp);
+        index.getIndexReader(new Path(outDir.getAbsolutePath(), "index/data.idx"), this.schema, this.comp);
     this.idxReader.open();
   }
 
@@ -45,13 +60,37 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     Tuple start = TupleUtil.toTuple(schema, startBytes);
     byte [] endBytes = Base64.decodeBase64(URLDecoder.decode(kvs.get("end"), "UTF-8"));
     Tuple end = TupleUtil.toTuple(schema, endBytes);
+
+    //if (LOG.isDebugEnabled()) {
+    LOG.info(">>>>> Request " + data.getAbsolutePath() + " (start="+start+", end="+end+")");
+    //}
+
+    // eliminate the case 1
+    if (comp.compare(end, idxReader.getMin()) < 0 || comp.compare(idxReader.getMax(), start) < 0) {
+      return null;
+    }
+
     long startOffset = idxReader.find(start);
     long endOffset = idxReader.find(end, true);
 
-    if (endOffset != -1) {
-      return new FileChunk(data, startOffset, endOffset - startOffset);
-    } else {
-      return new FileChunk(data, startOffset, -1);
+    // if startOffset == -1 then case 2-1 or case 3
+    if (startOffset == -1) {
+      // if case 2-1 or case 3
+      startOffset = idxReader.find(start, true);
     }
+
+    if (startOffset == -1) {
+      throw new IllegalStateException("startOffset " + startOffset + " is negative \n" +
+          "State Dump (the requested range: "
+          + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getMin() + ", idx max: "
+          + idxReader.getMax());
+    }
+
+    // if greater than indexed values
+    if (endOffset == -1 && comp.compare(idxReader.getMin(), end) < 0) {
+      endOffset = data.length();
+    }
+
+    return new FileChunk(data, startOffset, endOffset - startOffset);
   }
 }
