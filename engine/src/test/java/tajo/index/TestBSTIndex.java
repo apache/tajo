@@ -23,9 +23,9 @@ import tajo.index.bst.BSTIndex.BSTIndexReader;
 import tajo.index.bst.BSTIndex.BSTIndexWriter;
 
 import java.io.IOException;
+import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestBSTIndex {
   private NtaConf conf;
@@ -97,7 +97,7 @@ public class TestBSTIndex {
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -138,7 +138,7 @@ public class TestBSTIndex {
   }
 
   @Test
-  public void testFindValueInCSVWithAppendWriter() throws IOException {
+  public void testBuildIndexWithAppender() throws IOException {
     meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 
     sm.initTableBase(meta, "table1");
@@ -155,7 +155,7 @@ public class TestBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindValueInCSVWithAppendWriter.idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "BuildIndexWithAppender.idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
@@ -186,7 +186,7 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
 
     tuple = new VTuple(keySchema.getColumnNum());
-    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindValueInCSVWithAppendWriter.idx"), keySchema, comp);
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "BuildIndexWithAppender.idx"), keySchema, comp);
     reader.open();
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
@@ -251,7 +251,7 @@ public class TestBSTIndex {
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -317,7 +317,7 @@ public class TestBSTIndex {
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -398,7 +398,7 @@ public class TestBSTIndex {
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -473,7 +473,7 @@ public class TestBSTIndex {
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -546,7 +546,7 @@ public class TestBSTIndex {
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -614,7 +614,7 @@ public class TestBSTIndex {
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -695,7 +695,7 @@ public class TestBSTIndex {
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -768,7 +768,7 @@ public class TestBSTIndex {
     
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -851,7 +851,7 @@ public class TestBSTIndex {
 
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -920,7 +920,7 @@ public class TestBSTIndex {
 
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -949,14 +949,45 @@ public class TestBSTIndex {
     assertEquals(TUPLE_NUM - 1, max.get(0).asLong());
   }
 
+  private class ConcurrentAccessor implements Runnable {
+    final BSTIndexReader reader;
+    final Random rnd = new Random(System.currentTimeMillis());
+    boolean failed = false;
+
+    ConcurrentAccessor(BSTIndexReader reader) {
+      this.reader = reader;
+    }
+
+    public boolean isFailed() {
+      return this.failed;
+    }
+
+    @Override
+    public void run() {
+      Tuple findKey = new VTuple(2);
+      int keyVal;
+      for (int i = 0; i < 10000; i++) {
+        keyVal = rnd.nextInt(10000);
+        findKey.put(0, DatumFactory.createInt(keyVal));
+        findKey.put(1, DatumFactory.createLong(keyVal));
+        try {
+          assertTrue(reader.find(findKey) != -1);
+        } catch (Exception e) {
+          e.printStackTrace();
+          this.failed = true;
+        }
+      }
+    }
+  }
+
   @Test
-  public void testTest2() throws IOException {
+  public void testConcurrentAccess() throws IOException, InterruptedException {
     meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
 
     sm.initTableBase(meta, "table1");
     Appender appender = sm.getAppender(meta, "table1", "table1.csv");
     Tuple tuple;
-    for(int i = 5 ; i < TUPLE_NUM; i ++ ) {
+    for(int i = 0 ; i < TUPLE_NUM; i ++ ) {
       tuple = new VTuple(5);
       tuple.put(0, DatumFactory.createInt(i));
       tuple.put(1, DatumFactory.createLong(i));
@@ -982,14 +1013,14 @@ public class TestBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindNextKeyOmittedValueInRaw.idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "ConcurrentAccess.idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
     FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
-    long offset = 0;
+    long offset;
     while (true) {
       keyTuple = new VTuple(2);
       offset = fileScanner.getNextOffset();
@@ -1005,22 +1036,21 @@ public class TestBSTIndex {
     creater.close();
     fileScanner.close();
 
-    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyOmittedValueInRaw.idx"),
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "ConcurrentAccess.idx"),
         keySchema, comp);
     reader.open();
-    fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
-    Tuple result;
 
-    keyTuple = new VTuple(2);
-    keyTuple.put(0, DatumFactory.createInt(20000));
-    keyTuple.put(1, DatumFactory.createLong(20000));
-    long offsets = reader.find(keyTuple);
-    if (offset == -1) {
-      System.out.println("no exists!");
+    Thread [] threads = new Thread[5];
+    ConcurrentAccessor [] accs = new ConcurrentAccessor[5];
+    for (int i = 0; i < threads.length; i++) {
+      accs[i] = new ConcurrentAccessor(reader);
+      threads[i] = new Thread(accs[i]);
+      threads[i].start();
     }
-    fileScanner.seek(offsets);
-    result = fileScanner.next();
-    System.out.println("offset: " + offsets);
-    System.out.println("result: " + result);
+
+    for (int i = 0; i < threads.length; i++) {
+      threads[i].join();
+      assertFalse(accs[i].isFailed());
+    }
   }
 }

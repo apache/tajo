@@ -27,7 +27,9 @@ import java.util.TreeMap;
  * This is two-level binary search tree index. This is one of the value-list 
  * index structure. Thus, it is inefficient in the case where 
  * the many of the values are same. Also, the BST shows the fast performance 
- * when the selectivity of rows to be retrieved is less than 5%. 
+ * when the selectivity of rows to be retrieved is less than 5%.
+ * BSTIndexWriter is not thread-safe, whereas BSTIndexReader is thread-safe.
+ *
  */
 public class BSTIndex implements IndexMethod {
   public static final int ONE_LEVEL_INDEX = 1;
@@ -84,12 +86,7 @@ public class BSTIndex implements IndexMethod {
       this.collector = new KeyOffsetCollector(comparator);
     }
 
-    /**
-     * 
-     * @param loadNum
-     */
-
-    public void setLoadNum(int loadNum) {
+   public void setLoadNum(int loadNum) {
       this.loadNum = loadNum;
     }
 
@@ -247,6 +244,9 @@ public class BSTIndex implements IndexMethod {
     }
   }
 
+  /**
+   * BSTIndexReader is thread-safe.
+   */
   public class BSTIndexReader implements OrderIndexReader {
     private Path fileName;
     private final Schema keySchema;
@@ -266,6 +266,9 @@ public class BSTIndex implements IndexMethod {
     private int rootCursor;
     private int keyCursor;
     private int offsetCursor;
+
+    // mutex
+    private final Integer mutex = new Integer(0);
 
     /**
      *
@@ -330,60 +333,64 @@ public class BSTIndex implements IndexMethod {
      * @return
      * @throws IOException
      */
-    public synchronized  long find(Tuple key) throws IOException {
+    public long find(Tuple key) throws IOException {
       return find(key, false);
     }
 
     @Override
     public long find(Tuple key, boolean nextKey) throws IOException {
-      int pos = -1;
-      switch (this.level) {
-      case ONE_LEVEL_INDEX:
-        pos = oneLevBS(key);
-        break;
-      case TWO_LEVEL_INDEX:
-        pos = twoLevBS(key, this.loadNum + 1);
-        break;
-      }
-      
-      if (nextKey) {
-        if (pos + 1 >= this.offsetSubIndex.length) {
-          return -1;
+      synchronized (mutex) {
+        int pos = -1;
+        switch (this.level) {
+          case ONE_LEVEL_INDEX:
+            pos = oneLevBS(key);
+            break;
+          case TWO_LEVEL_INDEX:
+            pos = twoLevBS(key, this.loadNum + 1);
+            break;
         }
-        keyCursor = pos + 1;
-        offsetCursor = 0;
-      } else {
-        if (correctable) {
-          keyCursor = pos;
+
+        if (nextKey) {
+          if (pos + 1 >= this.offsetSubIndex.length) {
+            return -1;
+          }
+          keyCursor = pos + 1;
           offsetCursor = 0;
         } else {
-          return -1;
-        }
-      }
-
-      return this.offsetSubIndex[keyCursor][offsetCursor];
-    }
-
-    public long next() throws IOException {
-      if (offsetSubIndex[keyCursor].length - 1 > offsetCursor) {
-        offsetCursor++;
-      } else {
-        if (offsetSubIndex.length - 1 > keyCursor) {
-          keyCursor++;
-          offsetCursor = 0;
-        } else {
-          if (offsetIndex.length -1 > rootCursor) {
-            rootCursor++;
-            fillLeafIndex(loadNum + 1, subIn, this.offsetIndex[rootCursor]);
-            keyCursor = 1;
+          if (correctable) {
+            keyCursor = pos;
             offsetCursor = 0;
           } else {
             return -1;
           }
         }
-      }
 
-      return this.offsetSubIndex[keyCursor][offsetCursor];
+        return this.offsetSubIndex[keyCursor][offsetCursor];
+      }
+    }
+
+    public long next() throws IOException {
+      synchronized (mutex) {
+        if (offsetSubIndex[keyCursor].length - 1 > offsetCursor) {
+          offsetCursor++;
+        } else {
+          if (offsetSubIndex.length - 1 > keyCursor) {
+            keyCursor++;
+            offsetCursor = 0;
+          } else {
+            if (offsetIndex.length -1 > rootCursor) {
+              rootCursor++;
+              fillLeafIndex(loadNum + 1, subIn, this.offsetIndex[rootCursor]);
+              keyCursor = 1;
+              offsetCursor = 0;
+            } else {
+              return -1;
+            }
+          }
+        }
+
+        return this.offsetSubIndex[keyCursor][offsetCursor];
+      }
     }
 
     private void fillLeafIndex(int entryNum, FSDataInputStream in, long pos)
