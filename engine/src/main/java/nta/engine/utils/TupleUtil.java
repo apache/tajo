@@ -315,18 +315,26 @@ public class TupleUtil {
     return partitioned;
   }
 
-  public static String rangeToQuery(Schema schema, TupleRange range) throws UnsupportedEncodingException {
-    return "start=" + URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(schema, range.getStart()))),
-            "UTF-8") +
-            "&end=" + URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(schema, range.getEnd()))),
-            "UTF-8");
+  public static String rangeToQuery(Schema schema, TupleRange range, boolean last) throws UnsupportedEncodingException {
+    StringBuilder sb = new StringBuilder();
+      sb.append("start=")
+        .append(URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(schema, range.getStart()))), "UTF-8"))
+        .append("&")
+        .append("end=")
+        .append(URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(schema, range.getEnd()))), "UTF-8"));
+
+    if (last) {
+      sb.append("&final=true");
+    }
+
+    return sb.toString();
   }
 
   public static String [] rangesToQueries(Schema schema, TupleRange[] ranges) throws UnsupportedEncodingException {
     String [] params = new String[ranges.length];
     for (int i = 0; i < ranges.length; i++) {
       params[i] =
-        rangeToQuery(schema, ranges[i]);
+        rangeToQuery(schema, ranges[i], i == (ranges.length - 1));
     }
     return params;
   }

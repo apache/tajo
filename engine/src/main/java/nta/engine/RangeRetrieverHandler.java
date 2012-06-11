@@ -30,7 +30,7 @@ import java.util.Map;
  *   <li>out of scope: the index range does not overlapped with the query range.</li>
  *   <li>overlapped: the index range is partially overlapped with the query range. </li>
  *   <li>included: the index range is included in the start and end keys</li>
- *   <li>covered: the start and end keys are covered by the index range.</li>
+ *   <li>covered: the index range covers the query range (i.e., start and end keys).</li>
  * </ul>
  */
 public class RangeRetrieverHandler implements RetrieverHandler {
@@ -58,25 +58,60 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     File data = new File(this.file, "data/data");
     byte [] startBytes = Base64.decodeBase64(URLDecoder.decode(kvs.get("start"), "UTF-8"));
     Tuple start = TupleUtil.toTuple(schema, startBytes);
-    byte [] endBytes = Base64.decodeBase64(URLDecoder.decode(kvs.get("end"), "UTF-8"));
-    Tuple end = TupleUtil.toTuple(schema, endBytes);
+    byte [] endBytes = null;
+    Tuple end = null;
+    endBytes = Base64.decodeBase64(URLDecoder.decode(kvs.get("end"), "UTF-8"));
+    end = TupleUtil.toTuple(schema, endBytes);
+    boolean last = kvs.containsKey("final");
 
     //if (LOG.isDebugEnabled()) {
-    LOG.info(">>>>> Request " + data.getAbsolutePath() + " (start="+start+", end="+end+")");
+    LOG.info(">>>>> Request " + data.getAbsolutePath() + " (start="+start+", end="+ end +
+        (last ? ", last=true" : "") + ")");
     //}
+
+    // debug
+    if (start.get(0).asInt() == 1) {
+      System.out.println("may cause ERROR");
+    }
 
     // eliminate the case 1
     if (comp.compare(end, idxReader.getMin()) < 0 || comp.compare(idxReader.getMax(), start) < 0) {
       return null;
     }
 
-    long startOffset = idxReader.find(start);
-    long endOffset = idxReader.find(end, true);
+    long startOffset = -1;
+    long endOffset;
+    try {
+      startOffset = idxReader.find(start);
+    } catch (IOException ioe) {
+      LOG.error("State Dump (the requested range: "
+          + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getMin() + ", idx max: "
+          + idxReader.getMax());
+      throw new IOException(ioe);
+    }
+    try {
+      endOffset = idxReader.find(end);
+      if (endOffset == -1) {
+        endOffset = idxReader.find(end, true);
+      }
+    } catch (IOException ioe) {
+      LOG.error("State Dump (the requested range: "
+          + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getMin() + ", idx max: "
+          + idxReader.getMax());
+      throw new IOException(ioe);
+    }
 
     // if startOffset == -1 then case 2-1 or case 3
-    if (startOffset == -1) {
+    if (startOffset == -1) { // this is a hack
       // if case 2-1 or case 3
-      startOffset = idxReader.find(start, true);
+      try {
+        startOffset = idxReader.find(start, true);
+      } catch (IOException ioe) {
+        LOG.error("State Dump (the requested range: "
+            + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getMin() + ", idx max: "
+            + idxReader.getMax());
+        throw new IOException(ioe);
+      }
     }
 
     if (startOffset == -1) {
@@ -87,7 +122,7 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     }
 
     // if greater than indexed values
-    if (endOffset == -1 && comp.compare(idxReader.getMin(), end) < 0) {
+    if (last || (endOffset == -1 && comp.compare(idxReader.getMax(), end) < 0)) {
       endOffset = data.length();
     }
 

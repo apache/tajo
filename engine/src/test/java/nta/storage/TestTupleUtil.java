@@ -8,8 +8,10 @@ import nta.engine.planner.PlannerUtil;
 import nta.engine.planner.physical.TupleComparator;
 import nta.engine.utils.TupleUtil;
 import org.junit.Test;
+import tajo.worker.dataserver.HttpUtil;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -108,11 +110,17 @@ public class TestTupleUtil {
     e.put(1, DatumFactory.createFloat(20));
 
     TupleRange expected = new TupleRange(schema, s, e);
-    String query = TupleUtil.rangeToQuery(schema, expected);
+    String query = TupleUtil.rangeToQuery(schema, expected, false);
 
     TupleRange range = TupleUtil.queryToRange(schema, query);
     System.out.println("query: " + query);
     System.out.println("range: " + range);
+    assertEquals(expected, range);
+
+    query = TupleUtil.rangeToQuery(schema, expected, true);
+    Map<String,String> params = HttpUtil.getParamsFromQuery(query);
+    assertTrue(params.containsKey("final"));
+    range = TupleUtil.queryToRange(schema, query);
     assertEquals(expected, range);
   }
 }

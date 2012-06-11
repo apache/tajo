@@ -711,8 +711,6 @@ public class GlobalPlanner {
           sortSchema = PlannerUtil.sortSpecsToSchema(sort.getSortKeys());
           TableStat stat = qm.getSubQuery(prev.getId().getSubQueryId()).getTableStat();
           TupleRange mergedRange = TupleUtil.columnStatToRange(sort.getOutputSchema(), sortSchema, stat.getColumnStats());
-          System.out.println(">>>>> merged range - start: " + mergedRange.getStart());
-          System.out.println(">>>>> merged range - end: " + mergedRange.getEnd());
           TupleRange [] ranges = TupleUtil.getPartitions(sortSchema, n, mergedRange);
           String [] queries = TupleUtil.rangesToQueries(sortSchema, ranges);
           for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
@@ -727,6 +725,7 @@ public class GlobalPlanner {
           for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
             for (Partition p : qu.getPartitions()) {
               uriList.add(new URI(p.getFileName()));
+              System.out.println("Partition: " + uriList.get(uriList.size() - 1));
             }
           }
         }
@@ -868,8 +867,8 @@ public class GlobalPlanner {
             unitList = assignEqualFragment(unitList, scan,
                 fragMap.get(scan).get(0));
           } else {
-            unitList = assignFragmentsByHash(unit, unitList, scan,
-                fragMap.get(scan), maxQueryUnitNum);
+            unitList = assignFetchesByRange(unit, unitList, scan,
+                fetchMap.get(scan), maxQueryUnitNum, rangeSchema);
           }
           break;
 

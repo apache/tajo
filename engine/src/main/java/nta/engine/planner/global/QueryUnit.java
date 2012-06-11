@@ -202,12 +202,8 @@ public class QueryUnit extends AbstractQuery {
 	  this.stats = stats;
 	}
 	
-	public void addPartitions(List<Partition> partitions) {
-	  this.partitions.addAll(partitions);
-	}
-	
-	public void addPartition(Partition partition) {
-	  this.partitions.add(partition);
+	public void setPartitions(List<Partition> partitions) {
+	  this.partitions = Collections.unmodifiableList(partitions);
 	}
 	
 	public TableStat getStats() {

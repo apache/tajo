@@ -102,7 +102,7 @@ public class QueryManager {
       unit.setProgress(progress.getProgress());
       unit.setStatus(progress.getStatus());
       if (progress.getPartitionsCount() > 0) {
-        unit.addPartitions(progress.getPartitionsList());
+        unit.setPartitions(progress.getPartitionsList());
       }
       if (progress.hasResultStats()) {
         unit.setStats(new TableStat(progress.getResultStats()));
