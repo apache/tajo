@@ -48,7 +48,7 @@ public class SubqueryContext extends Context {
   private boolean stopped = false;
   
   @VisibleForTesting
-  SubqueryContext(QueryUnitId queryId, Fragment [] fragments, File workDir) {
+  SubqueryContext(final QueryUnitId queryId, final Fragment [] fragments, final File workDir) {
     this.queryId = queryId;
     
     for(Fragment t : fragments) {

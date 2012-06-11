@@ -801,7 +801,7 @@ public class GlobalPlanner {
         throw new NotImplementedException();
       case HASH:
         if (scans[0].isLocal()) {
-          unitList = assignFetchesByHash(unit, unitList,
+          unitList = assignFetchesToBinaryByHash(unit, unitList,
               fetchMap, maxQueryUnitNum);
           unitList = assignEqualFragment(unitList, fragMap);
         } else {
@@ -851,7 +851,7 @@ public class GlobalPlanner {
 
         case HASH:
           if (scan.isLocal()) {
-            unitList = assignFetchesByHash(unit, unitList, scan,
+            unitList = assignFetchesToUnaryByHash(unit, unitList, scan,
                 fetchMap.get(scan), maxQueryUnitNum);
             unitList = assignEqualFragment(unitList, scan,
                 fragMap.get(scan).get(0));
@@ -907,7 +907,7 @@ public class GlobalPlanner {
    * @param n
    * @return
    */
-  private List<QueryUnit> assignFetchesByHash(ScheduleUnit scheduleUnit, 
+  private List<QueryUnit> assignFetchesToBinaryByHash(ScheduleUnit scheduleUnit,
       List<QueryUnit> unitList, Map<ScanNode, List<URI>> fetchMap, int n) {
     QueryUnit unit = null;
     int i = 0;
@@ -917,19 +917,21 @@ public class GlobalPlanner {
     Entry<String, Map<ScanNode, List<URI>>> e = null;
     while (it.hasNext()) {
       e = it.next();
-      if (unitList.size() == n) {
-        unit = unitList.get(i++);
-        if (i == unitList.size()) {
-          i = 0;
+      if (e.getValue().size() == 2) { // only if two matched partitions
+        if (unitList.size() == n) {
+          unit = unitList.get(i++);
+          if (i == unitList.size()) {
+            i = 0;
+          }
+        } else {
+          unit = newQueryUnit(scheduleUnit);
+          unitList.add(unit);
         }
-      } else {
-        unit = newQueryUnit(scheduleUnit);
-        unitList.add(unit);
-      }
-      Map<ScanNode, List<URI>> m = e.getValue();
-      for (ScanNode scan : m.keySet()) {
-        for (URI uri : m.get(scan)) {
-          unit.addFetch(scan.getTableId(), uri);
+        Map<ScanNode, List<URI>> m = e.getValue();
+        for (ScanNode scan : m.keySet()) {
+          for (URI uri : m.get(scan)) {
+            unit.addFetch(scan.getTableId(), uri);
+          }
         }
       }
     }
@@ -947,7 +949,7 @@ public class GlobalPlanner {
    * @param n
    * @return
    */
-  private List<QueryUnit> assignFetchesByHash(ScheduleUnit scheduleUnit, 
+  private List<QueryUnit> assignFetchesToUnaryByHash(ScheduleUnit scheduleUnit,
       List<QueryUnit> unitList, ScanNode scan, List<URI> uriList, int n) {
     Map<String, List<URI>> hashed = hashFetches(uriList); // hash key, uri
     QueryUnit unit = null;
@@ -1027,7 +1029,7 @@ public class GlobalPlanner {
   
   private Map<String, Map<ScanNode, List<URI>>> hashFetches(Map<ScanNode, 
       List<URI>> uriMap) {
-    SortedMap<String, Map<ScanNode, List<URI>>> hashed = 
+    SortedMap<String, Map<ScanNode, List<URI>>> hashed =
         new TreeMap<String, Map<ScanNode,List<URI>>>();
     String uriPath, key;
     Map<ScanNode, List<URI>> m = null;
