@@ -64,14 +64,9 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     end = TupleUtil.toTuple(schema, endBytes);
     boolean last = kvs.containsKey("final");
 
-    //if (LOG.isDebugEnabled()) {
-    LOG.info(">>>>> Request " + data.getAbsolutePath() + " (start="+start+", end="+ end +
+    if (LOG.isDebugEnabled()) {
+      LOG.info(">>>>> Request " + data.getAbsolutePath() + " (start="+start+", end="+ end +
         (last ? ", last=true" : "") + ")");
-    //}
-
-    // debug
-    if (start.get(0).asInt() == 1) {
-      System.out.println("may cause ERROR");
     }
 
     // eliminate the case 1
@@ -79,7 +74,7 @@ public class RangeRetrieverHandler implements RetrieverHandler {
       return null;
     }
 
-    long startOffset = -1;
+    long startOffset;
     long endOffset;
     try {
       startOffset = idxReader.find(start);

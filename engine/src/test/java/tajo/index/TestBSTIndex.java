@@ -810,13 +810,13 @@ public class TestBSTIndex {
   }
 
   @Test
-  public void testTest() throws IOException {
+  public void testFindMinValue() throws IOException {
     meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 
     sm.initTableBase(meta, "table1");
     Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
     Tuple tuple;
-    for(int i = 0 ; i < TUPLE_NUM; i ++ ) {
+    for(int i = 5 ; i < TUPLE_NUM + 5; i ++ ) {
       tuple = new VTuple(5);
       tuple.put(0, DatumFactory.createInt(i));
       tuple.put(1, DatumFactory.createLong(i));
@@ -873,11 +873,16 @@ public class TestBSTIndex {
     fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     tuple.put(0, DatumFactory.createLong(0));
     tuple.put(1, DatumFactory.createDouble(0));
+
     offset = reader.find(tuple);
+    assertEquals(-1, offset);
+
+    offset = reader.find(tuple , true);
+    assertTrue(offset >= 0);
     fileScanner.seek(offset);
     tuple = fileScanner.next();
-    System.out.println("offset:" + offset);
-    System.out.println("result:" + tuple);
+    assertEquals(5, tuple.get(1).asInt());
+    assertEquals(5l, tuple.get(2).asLong());
   }
 
   @Test

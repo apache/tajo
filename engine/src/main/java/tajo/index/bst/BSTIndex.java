@@ -268,7 +268,7 @@ public class BSTIndex implements IndexMethod {
     private int offsetCursor;
 
     // mutex
-    private final Integer mutex = new Integer(0);
+    private final Integer mutex = 0;
 
     /**
      *
@@ -477,24 +477,21 @@ public class BSTIndex implements IndexMethod {
     private boolean correctable = true;
 
     private int oneLevBS(Tuple key) throws IOException {
-      int pos = -1;
-
       correctable = true;
-      pos = binarySearch(this.dataSubIndex, key, 0, this.dataSubIndex.length);
+      int pos = binarySearch(this.dataSubIndex, key, 0, this.dataSubIndex.length);
       return pos;
     }
 
     private int twoLevBS(Tuple key, int loadNum) throws IOException {
-      int pos = -1;
-
-      pos = binarySearch(this.dataIndex, key, 0, this.dataIndex.length);
-      if (pos == -1) {
-        return -1;
+      int pos = binarySearch(this.dataIndex, key, 0, this.dataIndex.length);
+      if(pos > 0) {
+        rootCursor = pos;
+      } else {
+        rootCursor = 0;
       }
-      rootCursor = pos;
-      fillLeafIndex(loadNum, subIn, this.offsetIndex[pos]);
+      fillLeafIndex(loadNum, subIn, this.offsetIndex[rootCursor]);
       pos = binarySearch(this.dataSubIndex, key, 0, this.dataSubIndex.length);
-
+       
       return pos;
     }
 
