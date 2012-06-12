@@ -82,6 +82,15 @@ public class TestQueryAnalyzer {
     schema3.addColumn("class", DataType.STRING);
     schema3.addColumn("branch_name", DataType.STRING);
 
+    Schema schema4 = new Schema();
+    schema4.addColumn("char_col", DataType.CHAR);
+    schema4.addColumn("short_col", DataType.SHORT);
+    schema4.addColumn("int_col", DataType.INT);
+    schema4.addColumn("long_col", DataType.LONG);
+    schema4.addColumn("float_col", DataType.FLOAT);
+    schema4.addColumn("double_col", DataType.DOUBLE);
+    schema4.addColumn("string_col", DataType.STRING);
+
     TableMeta meta = TCatUtil.newTableMeta(schema1, StoreType.CSV);
     TableDesc people = new TableDescImpl("people", meta, new Path("file:///"));
     cat.addTable(people);
@@ -95,6 +104,11 @@ public class TestQueryAnalyzer {
         new Options(),
         new Path("file:///"));
     cat.addTable(branch);
+
+    TableDesc allType = TCatUtil.newTableDesc("alltype", schema4, StoreType.CSV,
+        new Options(),
+        new Path("file:///"));
+    cat.addTable(allType);
     
     FunctionDesc funcMeta = new FunctionDesc("sumtest", TestSum.class,
         FunctionType.GENERAL, DataType.INT, 
@@ -130,36 +144,6 @@ public class TestQueryAnalyzer {
       // create table def
       "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data' with ('csv.delimiter'='|')" // 10     
   };
-
-  @Test
-  public final void testNewEvalTree() {    
-    Tuple tuples[] = new Tuple[1000000];
-    for (int i = 0; i < 1000000; i++) {
-      tuples[i] = new VTuple(4);
-      tuples[i].put(new Datum[] {
-          DatumFactory.createInt(i),
-          DatumFactory.createString("hyunsik_" + i),
-          DatumFactory.createInt(i + 500),
-          DatumFactory.createInt(i)});
-    }
-    
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
-
-    assertEquals(1, block.getNumFromTables());
-
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
-    EvalNode expr = block.getWhereCondition();
-
-    long start = System.currentTimeMillis();
-    for (Tuple t : tuples) {
-      expr.eval(schema1, t);
-    }
-    long end = System.currentTimeMillis();
-
-    System.out.println("elapsed time: " + (end - start));
-  }
  
   @Test
   public final void testSelectStatement() {
@@ -557,5 +541,44 @@ public class TestQueryAnalyzer {
     assertEquals(StatementType.SELECT, tree.getType());
     block = (QueryBlock) tree;
     assertFalse(block.isDistinct());
+  }
+
+  @Test
+  public final void testTypeInferring() {
+    Context ctx = factory.create();
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where char_col = 'a'");
+    assertEquals(DataType.CHAR, block.getWhereCondition().getRightExpr().getValueType());
+
+    ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where short_col = 1");
+    assertEquals(DataType.SHORT, block.getWhereCondition().getRightExpr().getValueType());
+
+    ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where int_col = 1");
+    assertEquals(DataType.INT, block.getWhereCondition().getRightExpr().getValueType());
+
+    ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where long_col = 1");
+    assertEquals(DataType.LONG, block.getWhereCondition().getRightExpr().getValueType());
+
+    ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where float_col = 1");
+    assertEquals(DataType.INT, block.getWhereCondition().getRightExpr().getValueType());
+
+    ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where float_col = 1.0");
+    assertEquals(DataType.FLOAT, block.getWhereCondition().getRightExpr().getValueType());
+
+    ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where int_col = 1.0");
+    assertEquals(DataType.DOUBLE, block.getWhereCondition().getRightExpr().getValueType());
+
+    ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where double_col = 1.0");
+    assertEquals(DataType.DOUBLE, block.getWhereCondition().getRightExpr().getValueType());
+
+    ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where string_col = 'a'");
+    assertEquals(DataType.STRING, block.getWhereCondition().getRightExpr().getValueType());
   }
 }

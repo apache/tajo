@@ -1,5 +1,8 @@
 package nta.engine.parser;
 
+import nta.datum.DatumFactory;
+import nta.engine.exec.eval.*;
+import org.antlr.runtime.tree.Tree;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -65,6 +68,49 @@ public class ParseUtil {
           + typeStr + "'");
       // TODO - needs exception handling
       return null;
+    }
+  }
+
+  public static boolean isConstant(final Tree tree) {
+    switch (tree.getType()) {
+      case NQLParser.DIGIT:
+      case NQLParser.REAL:
+      case NQLParser.STRING:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  public static EvalNode.Type getTypeByParseCode(int parseCode) {
+    switch(parseCode) {
+      case NQLParser.AND:
+        return EvalNode.Type.AND;
+      case NQLParser.OR:
+        return EvalNode.Type.OR;
+      case NQLParser.LIKE:
+        return EvalNode.Type.LIKE;
+      case NQLParser.EQUAL:
+        return EvalNode.Type.EQUAL;
+      case NQLParser.LTH:
+        return EvalNode.Type.LTH;
+      case NQLParser.LEQ:
+        return EvalNode.Type.LEQ;
+      case NQLParser.GTH:
+        return EvalNode.Type.GTH;
+      case NQLParser.GEQ:
+        return EvalNode.Type.GEQ;
+      case NQLParser.NOT:
+        return EvalNode.Type.NOT;
+      case NQLParser.PLUS:
+        return EvalNode.Type.PLUS;
+      case NQLParser.MINUS:
+        return EvalNode.Type.MINUS;
+      case NQLParser.MULTIPLY:
+        return EvalNode.Type.MULTIPLY;
+      case NQLParser.DIVIDE:
+        return EvalNode.Type.DIVIDE;
+      default: throw new InvalidEvalException();
     }
   }
 }

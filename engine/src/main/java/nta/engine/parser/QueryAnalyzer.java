@@ -1,5 +1,6 @@
 package nta.engine.parser;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import nta.catalog.*;
 import nta.catalog.exception.NoSuchTableException;
@@ -13,6 +14,7 @@ import nta.engine.QueryContext;
 import nta.engine.exception.InternalException;
 import nta.engine.exec.eval.*;
 import nta.engine.exec.eval.EvalNode.Type;
+import nta.engine.exec.eval.InvalidEvalException;
 import nta.engine.parser.QueryBlock.*;
 import nta.engine.planner.JoinType;
 import nta.engine.query.exception.*;
@@ -764,67 +766,46 @@ public final class QueryAnalyzer {
   public EvalNode createEvalTree(final Context ctx, 
       final Tree ast, QueryBlock query) {
     switch(ast.getType()) {
-        
+
+    // constants
     case NQLParser.DIGIT:
       return new ConstEval(DatumFactory.createInt(
           Integer.valueOf(ast.getText())));
-      
+
     case NQLParser.REAL:
       return new ConstEval(DatumFactory.createDouble(
           Double.valueOf(ast.getText())));
 
     case NQLParser.STRING:
       return new ConstEval(DatumFactory.createString(ast.getText()));
-    
-    case NQLParser.AND:
-      return new BinaryEval(Type.AND, createEvalTree(ctx, ast.getChild(0), query), 
-          createEvalTree(ctx, ast.getChild(1), query));
-    case NQLParser.OR:
-      return new BinaryEval(Type.OR, createEvalTree(ctx, ast.getChild(0), query), 
-          createEvalTree(ctx, ast.getChild(1), query));
-      
-    case NQLParser.LIKE:
-      return parseLike(ctx, ast, query);
-      
-    case NQLParser.EQUAL:
-      return new BinaryEval(Type.EQUAL, createEvalTree(ctx, ast.getChild(0), query), 
-          createEvalTree(ctx, ast.getChild(1), query));
-    case NQLParser.LTH: 
-      return new BinaryEval(Type.LTH, createEvalTree(ctx, ast.getChild(0), query), 
-          createEvalTree(ctx, ast.getChild(1), query));
-    case NQLParser.LEQ: 
-      return new BinaryEval(Type.LEQ, createEvalTree(ctx, ast.getChild(0), query), 
-          createEvalTree(ctx, ast.getChild(1), query));
-    case NQLParser.GTH: 
-      return new BinaryEval(Type.GTH, createEvalTree(ctx, ast.getChild(0), query), 
-          createEvalTree(ctx, ast.getChild(1), query));
-    case NQLParser.GEQ: 
-      return new BinaryEval(Type.GEQ, createEvalTree(ctx, ast.getChild(0), query), 
-          createEvalTree(ctx, ast.getChild(1), query));        
+
+    // unary expression
     case NQLParser.NOT:
       return new NotEval(createEvalTree(ctx, ast.getChild(0), query));
-      
-    case NQLParser.PLUS: 
-      return new BinaryEval(Type.PLUS, createEvalTree(ctx, ast.getChild(0), query), 
-          createEvalTree(ctx, ast.getChild(1), query));
-    case NQLParser.MINUS: 
-      return new BinaryEval(Type.MINUS, createEvalTree(ctx, ast.getChild(0), query), 
-          createEvalTree(ctx, ast.getChild(1), query));
-    case NQLParser.MULTIPLY: 
-      return new BinaryEval(Type.MULTIPLY, 
-          createEvalTree(ctx, ast.getChild(0), query),
-          createEvalTree(ctx, ast.getChild(1), query));
-      
-    case NQLParser.DIVIDE: 
-      return new BinaryEval(Type.DIVIDE, createEvalTree(ctx, ast.getChild(0), query), 
-          createEvalTree(ctx, ast.getChild(1), query));
-      
+
+    // binary expressions
+    case NQLParser.LIKE:
+        return parseLike(ctx, ast, query);
+    case NQLParser.AND:
+    case NQLParser.OR:
+    case NQLParser.EQUAL:
+    case NQLParser.NOT_EQUAL:
+    case NQLParser.LTH:
+    case NQLParser.LEQ:
+    case NQLParser.GTH:
+    case NQLParser.GEQ:
+    case NQLParser.PLUS:
+    case NQLParser.MINUS:
+    case NQLParser.MULTIPLY:
+    case NQLParser.DIVIDE:
+      return parseBinaryExpr(ctx, ast, query);
+
+    // others
     case NQLParser.COLUMN:
       return createEvalTree(ctx, ast.getChild(0), query);
       
     case NQLParser.FIELD_NAME:              
-      Column column = checkAndGetColumnByAST(ctx, (CommonTree) ast);     
-  
+      Column column = checkAndGetColumnByAST(ctx, (CommonTree) ast);
       return new FieldEval(column); 
       
     case NQLParser.FUNCTION:
@@ -883,6 +864,80 @@ public final class QueryAnalyzer {
     default:
     }
     return null;
+  }
+
+  public EvalNode parseDigitByTypeInfer(Context ctx, Tree tree, QueryBlock block, DataType type) {
+    switch (type) {
+      case SHORT:
+        return new ConstEval(DatumFactory.createShort(tree.getText()));
+      case INT:
+        return new ConstEval(DatumFactory.createInt(tree.getText()));
+      case LONG:
+        return new ConstEval(DatumFactory.createLong(tree.getText()));
+      default: return createEvalTree(ctx, tree, block);
+    }
+  }
+
+  private EvalNode parseRealByTypeInfer(Context ctx, Tree tree, QueryBlock block, DataType type) {
+    switch (type) {
+      case FLOAT:
+        return new ConstEval(DatumFactory.createFloat(tree.getText()));
+      case DOUBLE:
+        return new ConstEval(DatumFactory.createDouble(tree.getText()));
+      default: return createEvalTree(ctx, tree, block);
+    }
+  }
+
+  private EvalNode parseStringByTypeInfer(Context ctx, Tree tree, QueryBlock block, DataType type) {
+    switch (type) {
+      case CHAR:
+        return new ConstEval(DatumFactory.createChar(tree.getText().charAt(0)));
+      case STRING:
+        return new ConstEval(DatumFactory.createString(tree.getText()));
+      default: return createEvalTree(ctx, tree, block);
+    }
+  }
+
+  @VisibleForTesting
+  EvalNode parseBinaryExpr(Context ctx, Tree tree, QueryBlock block) {
+    int constId = -1;
+    int fieldId = -1;
+
+    for (int i = 0; i < 2; i++) {
+      if (ParseUtil.isConstant(tree.getChild(i))) {
+        constId = i;
+      } else if (tree.getChild(i).getType() == NQLParser.FIELD_NAME) {
+        fieldId = i;
+      }
+    }
+
+    if (constId != -1 && fieldId != -1) {
+      EvalNode [] exprs = new EvalNode[2];
+      exprs[fieldId] = (FieldEval) createEvalTree(ctx, tree.getChild(fieldId), block);
+
+      Tree constAst = tree.getChild(constId);
+      switch (tree.getChild(constId).getType()) {
+        case NQLParser.DIGIT:
+          exprs[constId] = parseDigitByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType());
+          break;
+        case NQLParser.REAL:
+          exprs[constId] = parseRealByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType());
+          break;
+        case NQLParser.STRING:
+          exprs[constId] = parseStringByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType());
+          break;
+        default: throw new  InvalidEvalException();
+      }
+
+      if (constId == 0) {
+        return new BinaryEval(ParseUtil.getTypeByParseCode(tree.getType()), exprs[constId], exprs[fieldId]);
+      } else {
+        return new BinaryEval(ParseUtil.getTypeByParseCode(tree.getType()), exprs[fieldId], exprs[constId]);
+      }
+    } else {
+      return new BinaryEval(ParseUtil.getTypeByParseCode(tree.getType()),
+          createEvalTree(ctx, tree.getChild(0), block), createEvalTree(ctx, tree.getChild(1), block));
+    }
   }
   
   /**
