@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -128,5 +129,14 @@ public class TestSelectQuery extends TpchTestBase {
       cnt++;
     }
     assertEquals(3, cnt);
+  }
+
+  @Test
+  public final void testRealValueCompare() throws Exception {
+    ResultSet res = execute("select ps_supplycost from partsupp where ps_supplycost = 771.64");
+
+    res.next();
+    assertTrue(771.64f == res.getFloat(1));
+    assertFalse(res.next());
   }
 }
