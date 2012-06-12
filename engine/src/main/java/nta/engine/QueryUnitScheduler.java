@@ -9,6 +9,9 @@ import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.StatisticsUtil;
 import nta.catalog.statistics.TableStat;
+import nta.engine.MasterInterfaceProtos.Command;
+import nta.engine.MasterInterfaceProtos.CommandRequestProto;
+import nta.engine.MasterInterfaceProtos.CommandType;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
@@ -167,7 +170,6 @@ public class QueryUnitScheduler extends Thread {
       Thread.sleep(WAIT_PERIOD);
       wait = false;
       for (QueryUnit unit : units) {
-//        WaitStatus inprogress = qm.getWaitStatus(unit.getId());
         LOG.info("==== uid: " + unit.getId() + 
             " status: " + unit.getInProgressStatus() + 
             " left time: " + unit.getLeftTime());
@@ -176,9 +178,22 @@ public class QueryUnitScheduler extends Thread {
           unit.updateExpireTime(WAIT_PERIOD);
           wait = true;
           if (unit.getLeftTime() <= 0) {
+            // TODO: Aggregate commands and send together
+            // send stop
+            Command.Builder cmd = Command.newBuilder();
+            cmd.setId(unit.getId().getProto()).setType(CommandType.STOP);
+            wc.requestCommand(unit.getHost(), 
+                CommandRequestProto.newBuilder().addCommand(cmd.build()).build());
             requestBackupTask(unit);
             unit.resetExpireTime();
           }
+//        } else if (unit.getInProgressStatus().
+//            getStatus() == QueryStatus.FINISHED) {
+//          // TODO: Aggregate commands and send together
+//          Command.Builder cmd = Command.newBuilder();
+//          cmd.setId(unit.getId().getProto()).setType(CommandType.FINALIZE);
+//          wc.requestCommand(unit.getHost(), 
+//              CommandRequestProto.newBuilder().addCommand(cmd.build()).build());
         }
       }
     }

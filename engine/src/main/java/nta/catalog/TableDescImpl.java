@@ -61,7 +61,7 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>,
     if (tableId != null) {
       return this.tableId;
     }
-    if (!proto.hasId()) {
+    if (!p.hasId()) {
       return null;
     }
     this.tableId = p.getId();

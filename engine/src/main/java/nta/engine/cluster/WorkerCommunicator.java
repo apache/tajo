@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import nta.engine.MasterInterfaceProtos.CommandRequestProto;
+import nta.engine.MasterInterfaceProtos.CommandResponseProto;
 import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
 import nta.engine.MasterInterfaceProtos.ServerStatusProto;
 import nta.engine.MasterInterfaceProtos.SubQueryResponseProto;
@@ -129,6 +131,23 @@ public class WorkerCommunicator extends ZkListener {
     }
     leaf.getServerStatus(cb, NullProto.newBuilder().build());
     return cb;
+  }
+  
+  public Callback<CommandResponseProto> requestCommand(String serverName, 
+      CommandRequestProto request) throws UnknownWorkerException {
+    Callback<CommandResponseProto> cb = new Callback<CommandResponseProto>();
+    AsyncWorkerClientInterface leaf = hm.get(serverName);
+    if (leaf == null) {
+      throw new UnknownWorkerException("server name: " + serverName);
+    }
+    leaf.requestCommand(cb, request);
+    
+    return cb;
+  }
+  
+  public Callback<CommandResponseProto> requestCommand(String serverName, 
+      int port, CommandRequestProto request) throws UnknownWorkerException {
+    return this.requestCommand(serverName + ":" + port, request);
   }
 
   @Override

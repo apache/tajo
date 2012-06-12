@@ -59,6 +59,13 @@ message PingResponseProto {
     repeated Command command = 1;
 }
 
+message CommandRequestProto {
+    repeated Command command = 1;
+}
+
+message CommandResponseProto {
+}
+
 message Command {
     required QueryUnitIdProto id = 1;
     required CommandType type = 2;

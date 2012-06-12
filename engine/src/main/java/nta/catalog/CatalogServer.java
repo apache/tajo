@@ -221,6 +221,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
       return (TableDescProto) this.store.getTable(tableId).getProto();
     } catch (IOException ioe) {
       // TODO - handle exception
+      LOG.error(ioe);
       return null;
     } finally {
       rlock.unlock();

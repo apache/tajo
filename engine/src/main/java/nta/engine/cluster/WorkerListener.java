@@ -17,6 +17,8 @@ import nta.engine.query.PingRequestImpl;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 
@@ -26,6 +28,7 @@ import org.apache.hadoop.net.NetUtils;
  */
 public class WorkerListener implements Runnable, MasterInterface {
   
+  private final static Log LOG = LogFactory.getLog(WorkerListener.class);
   private final ProtoParamRpcServer rpcServer;
   private InetSocketAddress bindAddr;
   private String addr;
@@ -74,6 +77,7 @@ public class WorkerListener implements Runnable, MasterInterface {
   @Override
   public PingResponseProto reportQueryUnit(PingRequestProto proto) {
     PingRequest report = new PingRequestImpl(proto);
+    LOG.info("Master received report: " + proto.getServerName() + ", " + proto.getStatusCount());
     for (InProgressStatusProto status : report.getProgressList()) {
       QueryUnitId uid = new QueryUnitId(status.getId());
       try {

@@ -6,9 +6,12 @@ import nta.catalog.CatalogClient;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.conf.NtaConf;
+import nta.engine.MasterInterfaceProtos.CommandRequestProto;
+import nta.engine.MasterInterfaceProtos.CommandResponseProto;
 import nta.engine.MasterInterfaceProtos.*;
 import nta.engine.cluster.MasterAddressTracker;
 import nta.engine.exception.InternalException;
+import nta.engine.exception.UnfinishedTaskException;
 import nta.engine.ipc.AsyncWorkerInterface;
 import nta.engine.ipc.MasterInterface;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -202,11 +205,23 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       }
 
       if (!this.stopped) {
+        long before = -1;
+        long sleeptime = 3000;
+        long time;
         this.isOnline = true;
         while (!this.stopped) {
-          Thread.sleep(1000);
-          long time = System.currentTimeMillis();
+          time = System.currentTimeMillis();
+          if (before == -1) {
+            sleeptime = 3000;
+          } else {
+            sleeptime = 3000 - (time - before);
+            if (sleeptime > 0) {
+              Thread.sleep(sleeptime);
+            }
+          }
+          
           PingResponseProto response = sendHeartbeat(time);
+          before = time;
                     
           QueryUnitId qid;
           Task task;
@@ -227,7 +242,6 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
               || status == QueryStatus.ABORTED 
               || status == QueryStatus.KILLED) {
                 task.finalize();          
-                tasks.remove(qid);
                 LOG.info("Query unit ( " + qid + ") is finalized");
               } else {
                 LOG.error("ERROR: Illegal State of " + qid + "(" + status + ")");
@@ -289,9 +303,15 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     
     // builds one status for each in-progress query
     QueryStatus qs;
+//    LOG.info("========================================");
+//    LOG.info("server name: " + serverName);
+//    LOG.info("tasks: ");
+//    LOG.info(serverName + " # of tasks: " + tasks.size());
     for (Task task : tasks.values()) {
+//      LOG.info(task);
       qs = task.getStatus();
       if (qs == QueryStatus.ABORTED 
+          || qs == QueryStatus.KILLED
           || qs == QueryStatus.FINISHED) {
         // TODO - in-progress queries should be kept until this leafserver 
         // ensures that this report is delivered.
@@ -302,8 +322,13 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       list.add(status);
     }
     
-    ping.addAllStatus(list);    
-    return master.reportQueryUnit(ping.build());
+    ping.addAllStatus(list);
+    PingRequestProto proto = ping.build();
+//    LOG.info(serverName + " send heartbeat");
+//    LOG.info("========================================");
+    PingResponseProto res = master.reportQueryUnit(proto);
+//    LOG.info(serverName + " received PingResponse");
+    return res;
   }
 
   private class ShutdownHook implements Runnable {
@@ -541,33 +566,33 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       }
       fetcherRunners = getFetchRunners(ctx, request.getFetches());      
       ctx.setStatus(QueryStatus.INITED);
-      LOG.info("=====================================================");
-      LOG.info("* Task Initialization Info ");
-      LOG.info("* queryId: " + request.getId());
-      LOG.info("* interQuery: " + interQuery);
-      if (interQuery) {
-        LOG.info("* partition type: " + this.partitionType);
-      }
-      LOG.info("* fragments (total: " + request.getFragments().size() + ")");
-      for (Fragment f: request.getFragments()) {
-        LOG.info("** table id:" + f.getId());
-        LOG.info("** path:" + f.getPath());
-        LOG.info("** start offset:" + f.getStartOffset());
-        LOG.info("** length :" + f.getLength());
-        LOG.info("** store type :" + f.getMeta().getStoreType());
-        LOG.info("** schema :\n" + f.getMeta().getSchema());
-        LOG.info("----------------------------------");
-      }
-      LOG.info("* fetches (total:" + request.getFetches().size() + ") :");
-      for (Fetch f : request.getFetches()) {
-        LOG.info("** matched table: " + f.getName());
-        LOG.info("** url: " + f.getUrls());
-        LOG.info("----------------------------------");
-      }
-      LOG.info("* local task dir: " + localQueryTmpDir.getAbsolutePath());
-      LOG.info("* plan:\n");
-      LOG.info(plan.toString());
-      LOG.info("=====================================================");
+//      LOG.info("=====================================================");
+//      LOG.info("* Task Initialization Info ");
+//      LOG.info("* queryId: " + request.getId());
+//      LOG.info("* interQuery: " + interQuery);
+//      if (interQuery) {
+//        LOG.info("* partition type: " + this.partitionType);
+//      }
+//      LOG.info("* fragments (total: " + request.getFragments().size() + ")");
+//      for (Fragment f: request.getFragments()) {
+//        LOG.info("** table id:" + f.getId());
+//        LOG.info("** path:" + f.getPath());
+//        LOG.info("** start offset:" + f.getStartOffset());
+//        LOG.info("** length :" + f.getLength());
+//        LOG.info("** store type :" + f.getMeta().getStoreType());
+//        LOG.info("** schema :\n" + f.getMeta().getSchema());
+//        LOG.info("----------------------------------");
+//      }
+//      LOG.info("* fetches (total:" + request.getFetches().size() + ") :");
+//      for (Fetch f : request.getFetches()) {
+//        LOG.info("** matched table: " + f.getName());
+//        LOG.info("** url: " + f.getUrls());
+//        LOG.info("----------------------------------");
+//      }
+//      LOG.info("* local task dir: " + localQueryTmpDir.getAbsolutePath());
+//      LOG.info("* plan:\n");
+//      LOG.info(plan.toString());
+//      LOG.info("=====================================================");
     }
 
     public void init() throws InternalException {      
@@ -579,6 +604,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     
     public QueryStatus getStatus() {
       return ctx.getStatus();
+    }
+    
+    public String toString() {
+      return "queryId: " + this.getId() + " status: " + this.getStatus();
     }
     
     public void setStatus(QueryStatus status) {
@@ -602,11 +631,25 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     public void kill() {
       killed = true;
       ctx.stop();
-      ctx.setStatus(QueryStatus.KILLED);    
+      ctx.setStatus(QueryStatus.KILLED);
     }
     
     public void finalize() {
       // remove itself from worker
+      // 끝난건지 확인
+      if (ctx.getStatus() == QueryStatus.FINISHED) {
+        try {
+          // ctx.getWorkDir() 지우기
+          localFS.delete(new Path(ctx.getWorkDir().getAbsolutePath()), true);
+          // tasks에서 자기 지우기
+          tasks.remove(this.getId());
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      } else {
+        LOG.error(new UnfinishedTaskException("QueryUnitId: " 
+            + ctx.getQueryId() + " status: " + ctx.getStatus()));
+      }
     }
 
     public InProgressStatusProto getReport() {
@@ -749,5 +792,39 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     LeafServer leafServer = new LeafServer(conf);
 
     leafServer.start();
+  }
+
+  @Override
+  public CommandResponseProto requestCommand(CommandRequestProto request) {
+    QueryUnitId uid;
+    for (Command cmd : request.getCommandList()) {
+      uid = new QueryUnitId(cmd.getId());
+      Task task = tasks.get(uid);
+      QueryStatus status = task.getStatus();
+      switch (cmd.getType()) {
+      case FINALIZE:
+        if (status == QueryStatus.FINISHED 
+        || status == QueryStatus.DATASERVER
+        || status == QueryStatus.ABORTED 
+        || status == QueryStatus.KILLED) {
+          task.finalize();          
+          LOG.info("Query unit ( " + uid + ") is finalized");
+        } else {
+          LOG.error("ERROR: Illegal State of " + uid + "(" + status + ")");
+        }
+        break;
+      case STOP:
+        if (status == QueryStatus.INPROGRESS) {
+          task.kill();
+          LOG.info("Query unit ( " + uid + ") is killed");
+        } else {
+          LOG.error("ERROR: Illegal State of " + uid + "(" + status + ")");
+        }
+        break;
+      default:
+        break;
+      }
+    }
+    return null;
   }
 }

@@ -53,7 +53,7 @@ public class CSVFile2 extends Storage {
   }
 
   public static class CSVAppender extends FileAppender {
-    private final Path path;
+//    private final Path path;
     private final TableMeta meta;
     private final Schema schema;
     private final FileSystem fs;
@@ -66,17 +66,19 @@ public class CSVFile2 extends Storage {
     public CSVAppender(Configuration conf, final TableMeta meta,
         final Path path, boolean statsEnabled) throws IOException {
       super(conf, meta, path);
-      this.path = new Path(path, "data");
+//      this.path = new Path(path, "data");
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = meta.getSchema();
 
       if (!fs.exists(path.getParent())) {
-        throw new FileNotFoundException(this.path.toString());
+//        throw new FileNotFoundException(this.path.toString());
+        throw new FileNotFoundException(path.toString());
       }
 
       if (fs.exists(path)) {
-        throw new AlreadyExistsStorageException(this.path);
+//        throw new AlreadyExistsStorageException(this.path);
+        throw new AlreadyExistsStorageException(path);
       }
 
       fos = fs.create(path);

@@ -30,7 +30,7 @@ import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
  */
 public class QueryUnit extends AbstractQuery {
   
-  private final static int EXPIRE_TIME = 5000;
+  private final static int EXPIRE_TIME = 15000;
 
 	private QueryUnitId id;
 	private StoreTableNode store = null;
