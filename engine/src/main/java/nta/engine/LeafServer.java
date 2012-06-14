@@ -372,10 +372,14 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   }
    
   public File createLocalDir(String...subdir) throws IOException {
-    Path tmpDir = StorageUtil.concatPath(new Path(workDir.toURI()),
+    Path tmpDir = StorageUtil.concatPath(new Path(workDir.toString()),
       subdir);
     localFS.mkdirs(tmpDir);
-    return new File(tmpDir.toUri());
+    if(tmpDir.toUri().isAbsolute()){
+      return new File(tmpDir.toUri());
+    } else {
+      return new File(new Path("file:"+tmpDir).toUri());
+    }
   }
   
   public static Path getQueryUnitDir(QueryUnitId quid) {
