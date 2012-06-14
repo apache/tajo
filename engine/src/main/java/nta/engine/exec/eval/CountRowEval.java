@@ -27,7 +27,7 @@ public class CountRowEval extends FuncCallEval {
   }
   
   @Override
-  public void eval(Schema schema, Tuple tuple, Datum... args) {
+  public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum... args) {
     Tuple v = new VTuple(1);
     if (args.length == 1)
       v.put(0, args[0]);
@@ -35,7 +35,7 @@ public class CountRowEval extends FuncCallEval {
   }
 
   @Override
-  public Datum terminate() {
+  public Datum terminate(EvalContext ctx) {
     return instance.terminate();
   }
 }

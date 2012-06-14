@@ -182,31 +182,37 @@ public class TestEvalTree {
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
     QueryContext ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
+    EvalContext evalCtx;
     expr = block.getWhereCondition();
-    expr.eval(peopleSchema, tuple);
-    assertEquals(true, expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, peopleSchema, tuple);
+    assertEquals(true, expr.terminate(evalCtx).asBool());
 
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
     expr = block.getWhereCondition();
-    expr.eval(peopleSchema, tuple);
-    assertEquals(15000, expr.terminate().asInt());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, peopleSchema, tuple);
+    assertEquals(15000, expr.terminate(evalCtx).asInt());
     assertCloneEqual(expr);
 
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
     expr = block.getWhereCondition();
-    expr.eval(peopleSchema, tuple);
-    assertEquals(15050, expr.terminate().asInt());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, peopleSchema, tuple);
+    assertEquals(15050, expr.terminate(evalCtx).asInt());
     assertCloneEqual(expr);
     
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
     expr = block.getWhereCondition();
-    expr.eval(peopleSchema, tuple);
-    assertEquals(15050, expr.terminate().asInt());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, peopleSchema, tuple);
+    assertEquals(15050, expr.terminate(evalCtx).asInt());
     assertCloneEqual(expr);
     
     // Aggregation function test
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[4]);
     expr = block.getTargetList()[0].getEvalTree();
+    evalCtx = expr.newContext();
     Datum accumulated = DatumFactory.createInt(0);
     
     final int tuplenum = 10;
@@ -220,8 +226,8 @@ public class TestEvalTree {
     
     int sum = 0;
     for (int i=0; i < tuplenum; i++) {
-      expr.eval(peopleSchema, tuples[i], accumulated);
-      accumulated = expr.terminate();
+      expr.eval(null, peopleSchema, tuples[i], accumulated);
+      accumulated = expr.terminate(evalCtx);
       sum = sum + (i+1);
       assertEquals(sum, accumulated.asInt());
     }
@@ -240,14 +246,15 @@ public class TestEvalTree {
     schema1.addColumn("table1.score", DataType.INT);
     
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
+    EvalContext evalCtx = expr.newContext();
     assertCloneEqual(expr);
     VTuple tuple = new VTuple(2);
     tuple.put(0, DatumFactory.createInt(1)); // put 0th field
     tuple.put(1, DatumFactory.createInt(99)); // put 0th field
 
     // the result of evaluation must be 100.
-    expr.eval(schema1, tuple);
-    assertEquals(expr.terminate().asInt(), 100);
+    expr.eval(evalCtx, schema1, tuple);
+    assertEquals(expr.terminate(evalCtx).asInt(), 100);
   }
 
   public static class MockTrueEval extends EvalNode {
@@ -257,13 +264,18 @@ public class TestEvalTree {
     }
 
     @Override
-    public Datum terminate() {
+    public String getName() {
+      return this.getClass().getName();
+    }
+
+    @Override
+    public Datum terminate(EvalContext ctx) {
       return DatumFactory.createBool(true);
     }
 
     @Override
-    public String getName() {
-      return this.getClass().getName();
+    public EvalContext newContext() {
+      return null;
     }
 
     @Override
@@ -280,7 +292,12 @@ public class TestEvalTree {
     }
 
     @Override
-    public Datum terminate() {
+    public EvalContext newContext() {
+      return null;
+    }
+
+    @Override
+    public Datum terminate(EvalContext ctx) {
       return DatumFactory.createBool(false);
     }
 
@@ -301,20 +318,24 @@ public class TestEvalTree {
     MockFalseExpr falseExpr = new MockFalseExpr();
 
     BinaryEval andExpr = new BinaryEval(Type.AND, trueExpr, trueExpr);
-    andExpr.eval(null, null);
-    assertTrue(andExpr.terminate().asBool());
+    EvalContext evalCtx = andExpr.newContext();
+    andExpr.eval(evalCtx, null, null);
+    assertTrue(andExpr.terminate(evalCtx).asBool());
 
     andExpr = new BinaryEval(Type.AND, falseExpr, trueExpr);
-    andExpr.eval(null, null);
-    assertFalse(andExpr.terminate().asBool());
+    evalCtx = andExpr.newContext();
+    andExpr.eval(evalCtx, null, null);
+    assertFalse(andExpr.terminate(evalCtx).asBool());
 
     andExpr = new BinaryEval(Type.AND, trueExpr, falseExpr);
-    andExpr.eval(null, null);
-    assertFalse(andExpr.terminate().asBool());
+    evalCtx= andExpr.newContext();
+    andExpr.eval(evalCtx, null, null);
+    assertFalse(andExpr.terminate(evalCtx).asBool());
 
     andExpr = new BinaryEval(Type.AND, falseExpr, falseExpr);
-    andExpr.eval(null, null);
-    assertFalse(andExpr.terminate().asBool());
+    evalCtx= andExpr.newContext();
+    andExpr.eval(evalCtx, null, null);
+    assertFalse(andExpr.terminate(evalCtx).asBool());
   }
 
   @Test
@@ -323,20 +344,24 @@ public class TestEvalTree {
     MockFalseExpr falseExpr = new MockFalseExpr();
 
     BinaryEval orExpr = new BinaryEval(Type.OR, trueExpr, trueExpr);
-    orExpr.eval(null, null);
-    assertTrue(orExpr.terminate().asBool());
+    EvalContext evalCtx= orExpr.newContext();
+    orExpr.eval(evalCtx, null, null);
+    assertTrue(orExpr.terminate(evalCtx).asBool());
 
     orExpr = new BinaryEval(Type.OR, falseExpr, trueExpr);
-    orExpr.eval(null, null);
-    assertTrue(orExpr.terminate().asBool());
+    evalCtx= orExpr.newContext();
+    orExpr.eval(evalCtx, null, null);
+    assertTrue(orExpr.terminate(evalCtx).asBool());
 
     orExpr = new BinaryEval(Type.OR, trueExpr, falseExpr);
-    orExpr.eval(null, null);
-    assertTrue(orExpr.terminate().asBool());
+    evalCtx= orExpr.newContext();
+    orExpr.eval(evalCtx, null, null);
+    assertTrue(orExpr.terminate(evalCtx).asBool());
 
     orExpr = new BinaryEval(Type.OR, falseExpr, falseExpr);
-    orExpr.eval(null, null);
-    assertFalse(orExpr.terminate().asBool());
+    evalCtx = orExpr.newContext();
+    orExpr.eval(evalCtx, null, null);
+    assertFalse(orExpr.terminate(evalCtx).asBool());
   }
 
   @Test
@@ -349,57 +374,74 @@ public class TestEvalTree {
     e1 = new ConstEval(DatumFactory.createInt(9));
     e2 = new ConstEval(DatumFactory.createInt(34));
     expr = new BinaryEval(Type.LTH, e1, e2);
-    expr.eval(null, null);
-    assertTrue(expr.terminate().asBool());
+    EvalContext evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertTrue(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.LEQ, e1, e2);
-    expr.eval(null, null);
-    assertTrue(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertTrue(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.LTH, e2, e1);
-    expr.eval(null, null);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertFalse(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.LEQ, e2, e1);
-    expr.eval(null, null);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertFalse(expr.terminate(evalCtx).asBool());
 
     expr = new BinaryEval(Type.GTH, e2, e1);
-    expr.eval(null, null);
-    assertTrue(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertTrue(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.GEQ, e2, e1);
-    expr.eval(null, null);
-    assertTrue(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertTrue(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.GTH, e1, e2);
-    expr.eval(null, null);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertFalse(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.GEQ, e1, e2);
-    expr.eval(null, null);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertFalse(expr.terminate(evalCtx).asBool());
 
     BinaryEval plus = new BinaryEval(Type.PLUS, e1, e2);
+    evalCtx = expr.newContext();
     expr = new BinaryEval(Type.LTH, e1, plus);
-    expr.eval(null, null);
-    assertTrue(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertTrue(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.LEQ, e1, plus);
-    expr.eval(null, null);
-    assertTrue(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertTrue(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.LTH, plus, e1);
-    expr.eval(null, null);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertFalse(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.LEQ, plus, e1);
-    expr.eval(null, null);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertFalse(expr.terminate(evalCtx).asBool());
 
     expr = new BinaryEval(Type.GTH, plus, e1);
-    expr.eval(null, null);
-    assertTrue(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertTrue(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.GEQ, plus, e1);
-    expr.eval(null, null);
-    assertTrue(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertTrue(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.GTH, e1, plus);
-    expr.eval(null, null);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertFalse(expr.terminate(evalCtx).asBool());
     expr = new BinaryEval(Type.GEQ, e1, plus);
-    expr.eval(null, null);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertFalse(expr.terminate(evalCtx).asBool());
   }
 
   @Test
@@ -412,32 +454,36 @@ public class TestEvalTree {
     e1 = new ConstEval(DatumFactory.createInt(9));
     e2 = new ConstEval(DatumFactory.createInt(34));
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
-    expr.eval(null, null);
-    assertEquals(expr.terminate().asInt(), 43);
+    EvalContext evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertEquals(expr.terminate(evalCtx).asInt(), 43);
     assertCloneEqual(expr);
     
     // MINUS
     e1 = new ConstEval(DatumFactory.createInt(5));
     e2 = new ConstEval(DatumFactory.createInt(2));
     expr = new BinaryEval(Type.MINUS, e1, e2);
-    expr.eval(null, null);
-    assertEquals(expr.terminate().asInt(), 3);
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertEquals(expr.terminate(evalCtx).asInt(), 3);
     assertCloneEqual(expr);
     
     // MULTIPLY
     e1 = new ConstEval(DatumFactory.createInt(5));
     e2 = new ConstEval(DatumFactory.createInt(2));
     expr = new BinaryEval(Type.MULTIPLY, e1, e2);
-    expr.eval(null, null);
-    assertEquals(expr.terminate().asInt(), 10);
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertEquals(expr.terminate(evalCtx).asInt(), 10);
     assertCloneEqual(expr);
     
     // DIVIDE
     e1 = new ConstEval(DatumFactory.createInt(10));
     e2 = new ConstEval(DatumFactory.createInt(5));
     expr = new BinaryEval(Type.DIVIDE, e1, e2);
-    expr.eval(null, null);
-    assertEquals(expr.terminate().asInt(), 2);
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertEquals(expr.terminate(evalCtx).asInt(), 2);
     assertCloneEqual(expr);
   }
 
@@ -453,8 +499,9 @@ public class TestEvalTree {
     assertEquals(DataType.INT, expr.getValueType());
 
     expr = new BinaryEval(Type.LTH, e1, e2);
-    expr.eval(null, null);
-    assertTrue(expr.terminate().asBool());
+    EvalContext evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertTrue(expr.terminate(evalCtx).asBool());
     assertEquals(DataType.BOOLEAN, expr.getValueType());
 
     e1 = new ConstEval(DatumFactory.createDouble(9.3));
@@ -550,32 +597,40 @@ public class TestEvalTree {
     e1 = new ConstEval(DatumFactory.createInt(9));
     e2 = new ConstEval(DatumFactory.createInt(34));
     expr = new BinaryEval(Type.LTH, e1, e2);
-    expr.eval(null, null);
-    assertTrue(expr.terminate().asBool());
+    EvalContext evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertTrue(expr.terminate(evalCtx).asBool());
     NotEval not = new NotEval(expr);
-    not.eval(null, null);
-    assertFalse(not.terminate().asBool());
+    evalCtx = not .newContext();
+    not.eval(evalCtx, null, null);
+    assertFalse(not.terminate(evalCtx).asBool());
     
     expr = new BinaryEval(Type.LEQ, e1, e2);
-    expr.eval(null, null);
-    assertTrue(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertTrue(expr.terminate(evalCtx).asBool());
     not = new NotEval(expr);
-    not.eval(null, null);
-    assertFalse(not.terminate().asBool());
+    evalCtx = not.newContext();
+    not.eval(evalCtx, null, null);
+    assertFalse(not.terminate(evalCtx).asBool());
     
     expr = new BinaryEval(Type.LTH, e2, e1);
-    expr.eval(null, null);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertFalse(expr.terminate(evalCtx).asBool());
     not = new NotEval(expr);
-    not.eval(null, null);
-    assertTrue(not.terminate().asBool());
+    evalCtx = not.newContext();
+    not.eval(evalCtx, null, null);
+    assertTrue(not.terminate(evalCtx).asBool());
     
     expr = new BinaryEval(Type.LEQ, e2, e1);
-    expr.eval(null, null);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, null, null);
+    assertFalse(expr.terminate(evalCtx).asBool());
     not = new NotEval(expr);
-    not.eval(null, null);
-    assertTrue(not.terminate().asBool());
+    evalCtx = not.newContext();
+    not.eval(evalCtx, null, null);
+    assertTrue(not.terminate(evalCtx).asBool());
     
     // Evaluation Test
     QueryBlock block;
@@ -583,12 +638,13 @@ public class TestEvalTree {
     QueryContext ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, NOT[0]);
     expr = block.getWhereCondition();
-    expr.eval(peopleSchema, tuples[0]);
-    assertTrue(expr.terminate().asBool());
-    expr.eval(peopleSchema, tuples[1]);
-    assertFalse(expr.terminate().asBool());
-    expr.eval(peopleSchema, tuples[2]);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, peopleSchema, tuples[0]);
+    assertTrue(expr.terminate(evalCtx).asBool());
+    expr.eval(evalCtx, peopleSchema, tuples[1]);
+    assertFalse(expr.terminate(evalCtx).asBool());
+    expr.eval(evalCtx, peopleSchema, tuples[2]);
+    assertFalse(expr.terminate(evalCtx).asBool());
   }
   
   static String[] LIKE = {
@@ -607,31 +663,34 @@ public class TestEvalTree {
     QueryContext ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, LIKE[0]);
     expr = block.getWhereCondition();
-    expr.eval(peopleSchema, tuples[0]);
-    assertTrue(expr.terminate().asBool());
-    expr.eval(peopleSchema, tuples[1]);
-    assertFalse(expr.terminate().asBool());
-    expr.eval(peopleSchema, tuples[2]);
-    assertTrue(expr.terminate().asBool());
+    EvalContext evalCtx = expr.newContext();
+    expr.eval(evalCtx, peopleSchema, tuples[0]);
+    assertTrue(expr.terminate(evalCtx).asBool());
+    expr.eval(evalCtx, peopleSchema, tuples[1]);
+    assertFalse(expr.terminate(evalCtx).asBool());
+    expr.eval(evalCtx, peopleSchema, tuples[2]);
+    assertTrue(expr.terminate(evalCtx).asBool());
     
     // prefix
     block = (QueryBlock) analyzer.parse(ctx, LIKE[1]);
     expr = block.getWhereCondition();
-    expr.eval(peopleSchema, tuples[0]);
-    assertTrue(expr.terminate().asBool());
-    expr.eval(peopleSchema, tuples[1]);
-    assertTrue(expr.terminate().asBool());
-    expr.eval(peopleSchema, tuples[2]);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, peopleSchema, tuples[0]);
+    assertTrue(expr.terminate(evalCtx).asBool());
+    expr.eval(evalCtx, peopleSchema, tuples[1]);
+    assertTrue(expr.terminate(evalCtx).asBool());
+    expr.eval(evalCtx, peopleSchema, tuples[2]);
+    assertFalse(expr.terminate(evalCtx).asBool());
 
     // Not Test
     block = (QueryBlock) analyzer.parse(ctx, LIKE[2]);
     expr = block.getWhereCondition();
-    expr.eval(peopleSchema, tuples[0]);
-    assertFalse(expr.terminate().asBool());
-    expr.eval(peopleSchema, tuples[1]);
-    assertTrue(expr.terminate().asBool());
-    expr.eval(peopleSchema, tuples[2]);
-    assertFalse(expr.terminate().asBool());
+    evalCtx = expr.newContext();
+    expr.eval(evalCtx, peopleSchema, tuples[0]);
+    assertFalse(expr.terminate(evalCtx).asBool());
+    expr.eval(evalCtx, peopleSchema, tuples[1]);
+    assertTrue(expr.terminate(evalCtx).asBool());
+    expr.eval(evalCtx, peopleSchema, tuples[2]);
+    assertFalse(expr.terminate(evalCtx).asBool());
   }
 }

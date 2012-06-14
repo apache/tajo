@@ -39,17 +39,17 @@ public class SortAggregateExec extends AggregationExec {
       if (prevKey == null || prevKey.equals(curKey)) {
         if (prevKey == null) {
           for(int i = 0; i < outputSchema.getColumnNum(); i++) {
-            evals[i].eval(inputSchema, tuple);
-            this.newAggTuple .put(i, evals[i].terminate());
+            evals[i].eval(evalContexts[i], inputSchema, tuple);
+            this.newAggTuple .put(i, evals[i].terminate(evalContexts[i]));
           }
           prevKey = curKey;
           this.aggTuple = this.newAggTuple;
         } else {
           // aggregate
           for (int idx : measurelist) {
-            evals[idx].eval(inputSchema, tuple,
+            evals[idx].eval(evalContexts[idx], inputSchema, tuple,
                 aggTuple.get(idx));
-            aggTuple.put(idx, evals[idx].terminate());
+            aggTuple.put(idx, evals[idx].terminate(evalContexts[idx]));
           }
         }
       } else {
@@ -57,8 +57,8 @@ public class SortAggregateExec extends AggregationExec {
         finalTuple = aggTuple;
         this.aggTuple = new VTuple(outputSchema.getColumnNum());
         for(int i = 0; i < outputSchema.getColumnNum(); i++) {
-          evals[i].eval(inputSchema, tuple);
-          this.aggTuple .put(i, evals[i].terminate());
+          evals[i].eval(evalContexts[i], inputSchema, tuple);
+          this.aggTuple .put(i, evals[i].terminate(evalContexts[i]));
         }
         prevKey = curKey;
         return finalTuple;

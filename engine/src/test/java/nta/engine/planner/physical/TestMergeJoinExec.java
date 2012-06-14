@@ -177,7 +177,7 @@ public class TestMergeJoinExec {
     MergeJoinExec mergeJoin = new MergeJoinExec(ctx,
         nestedLoopJoin.getJoinNode(), outerSortExec, innerSortExec, outerSortKeys,
         innerSortKeys);
-    proj.setsubOp(mergeJoin);
+    proj.setSubOp(mergeJoin);
     exec = proj;*/
 
     Tuple tuple;

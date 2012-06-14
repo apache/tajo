@@ -22,6 +22,11 @@ import nta.storage.Tuple;
 public class BinaryEval extends EvalNode implements Cloneable {
 	@Expose private DataType returnType = null;
 
+  private class BinaryEvalCtx implements EvalContext {
+    EvalContext left;
+    EvalContext right;
+  }
+
 	/**
 	 * @param type
 	 */
@@ -51,10 +56,19 @@ public class BinaryEval extends EvalNode implements Cloneable {
 				right.getValueType());
 		}
 	}
-	
-	public BinaryEval(PartialBinaryExpr expr) {
+
+  public BinaryEval(PartialBinaryExpr expr) {
 	  this(expr.type, expr.leftExpr, expr.rightExpr);
 	}
+
+  @Override
+  public EvalContext newContext() {
+    BinaryEvalCtx newCtx =  new BinaryEvalCtx();
+    newCtx.left = leftExpr.newContext();
+    newCtx.right = rightExpr.newContext();
+
+    return newCtx;
+  }
 
   private DataType determineType(DataType left, DataType right) {
     switch (left) {
@@ -110,38 +124,43 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	 * @see nta.query.executor.eval.Expr#evalBool(nta.storage.Tuple)
 	 */
 	@Override
-	public void eval(Schema schema, Tuple tuple, Datum...args) {
-	  leftExpr.eval(schema, tuple);
-    rightExpr.eval(schema, tuple);
+	public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum...args) {
+    BinaryEvalCtx binCtx = (BinaryEvalCtx) ctx;
+	  leftExpr.eval(binCtx.left, schema, tuple);
+    rightExpr.eval(binCtx.right, schema, tuple);
 	}
 
   @Override
-  public Datum terminate() {
+  public Datum terminate(EvalContext ctx) {
+    BinaryEvalCtx binCtx = (BinaryEvalCtx) ctx;
+
     switch(type) {
       case AND:
-        return DatumFactory.createBool(leftExpr.terminate().asBool() && rightExpr.terminate().asBool());
+        return DatumFactory.createBool(leftExpr.terminate(binCtx.left).asBool()
+            && rightExpr.terminate(binCtx.right).asBool());
       case OR:
-        return DatumFactory.createBool(leftExpr.terminate().asBool() || rightExpr.terminate().asBool());
+        return DatumFactory.createBool(leftExpr.terminate(binCtx.left).asBool()
+            || rightExpr.terminate(binCtx.right).asBool());
 
       case EQUAL:
-        return leftExpr.terminate().equalsTo(rightExpr.terminate());
+        return leftExpr.terminate(binCtx.left).equalsTo(rightExpr.terminate(binCtx.right));
       case LTH:
-        return leftExpr.terminate().lessThan(rightExpr.terminate());
+        return leftExpr.terminate(binCtx.left).lessThan(rightExpr.terminate(binCtx.right));
       case LEQ:
-        return leftExpr.terminate().lessThanEqual(rightExpr.terminate());
+        return leftExpr.terminate(binCtx.left).lessThanEqual(rightExpr.terminate(binCtx.right));
       case GTH:
-        return leftExpr.terminate().greaterThan(rightExpr.terminate());
+        return leftExpr.terminate(binCtx.left).greaterThan(rightExpr.terminate(binCtx.right));
       case GEQ:
-        return leftExpr.terminate().greaterThanEqual(rightExpr.terminate());
+        return leftExpr.terminate(binCtx.left).greaterThanEqual(rightExpr.terminate(binCtx.right));
 
       case PLUS:
-        return leftExpr.terminate().plus(rightExpr.terminate());
+        return leftExpr.terminate(binCtx.left).plus(rightExpr.terminate(binCtx.right));
       case MINUS:
-        return leftExpr.terminate().minus(rightExpr.terminate());
+        return leftExpr.terminate(binCtx.left).minus(rightExpr.terminate(binCtx.right));
       case MULTIPLY:
-        return leftExpr.terminate().multiply(rightExpr.terminate());
+        return leftExpr.terminate(binCtx.left).multiply(rightExpr.terminate(binCtx.right));
       case DIVIDE:
-        return leftExpr.terminate().divide(rightExpr.terminate());
+        return leftExpr.terminate(binCtx.left).divide(rightExpr.terminate(binCtx.right));
       default:
         throw new InvalidEvalException();
     }

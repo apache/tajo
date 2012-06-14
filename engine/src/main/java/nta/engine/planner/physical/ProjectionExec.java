@@ -7,6 +7,7 @@ import java.io.IOException;
 
 import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
+import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.planner.logical.ProjectionNode;
 import nta.storage.Tuple;
@@ -24,15 +25,9 @@ public class ProjectionExec extends PhysicalExec {
   
   private final Tuple outTuple;
   private final EvalNode [] evals;
+  private final EvalContext [] evalContexts;
   
-  public PhysicalExec getSubOp(){
-    return this.subOp;
-  }
-  public void setsubOp(PhysicalExec s){
-    this.subOp = s;
-  }
-
-  public ProjectionExec(SubqueryContext ctx, ProjectionNode projNode, 
+  public ProjectionExec(SubqueryContext ctx, ProjectionNode projNode,
       PhysicalExec subOp) {
     this.projNode = projNode;    
     this.inSchema = projNode.getInputSchema();
@@ -42,10 +37,19 @@ public class ProjectionExec extends PhysicalExec {
     this.outTuple = new VTuple(outSchema.getColumnNum());
     
     evals = new EvalNode[projNode.getTargetList().length];
-    
+    evalContexts = new EvalContext[projNode.getTargetList().length];
+
     for (int i = 0; i < projNode.getTargetList().length; i++) {
       evals[i] = projNode.getTargetList()[i].getEvalTree();
+      evalContexts[i] = evals[i].newContext();
     }
+  }
+
+  public PhysicalExec getSubOp(){
+    return this.subOp;
+  }
+  public void setSubOp(PhysicalExec s){
+    this.subOp = s;
   }
 
   @Override
@@ -61,8 +65,8 @@ public class ProjectionExec extends PhysicalExec {
     }
      
     for (int i = 0; i < evals.length; i++) {
-      evals[i].eval(inSchema, tuple);
-      outTuple.put(i, evals[i].terminate());
+      evals[i].eval(evalContexts[i], inSchema, tuple);
+      outTuple.put(i, evals[i].terminate(evalContexts[i]));
     }
     
     return outTuple;

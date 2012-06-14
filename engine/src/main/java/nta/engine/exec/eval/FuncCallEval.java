@@ -35,22 +35,23 @@ public class FuncCallEval extends FuncEval {
     * @see nta.query.executor.eval.Expr#evalVal(nta.storage.Tuple)
     */
 	@Override
-	public void eval(Schema schema, Tuple tuple, Datum...args) {
+	public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum...args) {
     this.schema = schema;
     this.tuple = tuple;
 	}
 
   @Override
-  public Datum terminate() {
+  public Datum terminate(EvalContext ctx) {
+    FuncCallCtx localCtx = (FuncCallCtx) ctx;
     if (this.params == null) {
-      params = new VTuple(givenArgs.length);
+      params = new VTuple(argEvals.length);
     }
 
-    if(givenArgs != null) {
+    if(argEvals != null) {
       params.clear();
-      for(int i=0;i < givenArgs.length; i++) {
-        givenArgs[i].eval(schema, tuple);
-        params.put(i, givenArgs[i].terminate());
+      for(int i=0;i < argEvals.length; i++) {
+        argEvals[i].eval(localCtx.argCtxs[i], schema, tuple);
+        params.put(i, argEvals[i].terminate(localCtx.argCtxs[i]));
       }
     }
     instance.eval(params);
@@ -76,7 +77,7 @@ public class FuncCallEval extends FuncEval {
 	
 	@Override
 	public int hashCode() {
-	  return Objects.hashCode(desc, instance);
+	  return Objects.hashCode(funcDesc, instance);
 	}
 	
 	@Override

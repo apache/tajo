@@ -26,24 +26,26 @@ public class AggFuncCallEval extends FuncEval {
   }
 
   @Override
-  public void eval(Schema schema, Tuple tuple, Datum... args) {
+  public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum... args) {
     this.schema = schema;
     this.tuple = tuple;
     this.args = args;
   }
 
   @Override
-  public Datum terminate() {
+  public Datum terminate(EvalContext ctx) {
+    FuncCallCtx localCtx = (FuncCallCtx) ctx;
+
     if (params == null) {
-      this.params = new VTuple(givenArgs.length + 1);
+      this.params = new VTuple(argEvals.length + 1);
     }
 
-    if (givenArgs != null) {
+    if (argEvals != null) {
       params.clear();
 
-      for (int i = 0; i < givenArgs.length; i++) {
-        givenArgs[i].eval(schema, tuple);
-        params.put(i, givenArgs[i].terminate());
+      for (int i = 0; i < argEvals.length; i++) {
+        argEvals[i].eval(localCtx.argCtxs[i], schema, tuple);
+        params.put(i, argEvals[i].terminate(localCtx.argCtxs[i]));
       }
     }
 

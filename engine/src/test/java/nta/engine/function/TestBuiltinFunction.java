@@ -13,6 +13,7 @@ import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
+import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
@@ -99,13 +100,14 @@ public class TestBuiltinFunction {
 
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     expr = block.getTargetList()[0].getEvalTree();
+    EvalContext exprCtx = expr.newContext();
     Datum accumulated = DatumFactory.createInt(0);
 
     int sum = 0;
     for (int i = 0; i < tuplenum; i++) {
       System.out.println(tuples[i]);
-      expr.eval(schema, tuples[i], accumulated);
-      accumulated = expr.terminate();
+      expr.eval(exprCtx, schema, tuples[i], accumulated);
+      accumulated = expr.terminate(exprCtx);
       sum += 1;
       assertEquals(sum, accumulated.asInt());
     }
@@ -126,14 +128,17 @@ public class TestBuiltinFunction {
     Datum accumulated1 = DatumFactory.createInt(0);
     Datum accumulated2 = DatumFactory.createInt(0);
     Datum accumulated3 = DatumFactory.createInt(0);
+    EvalContext evalCtx1 = expr1.newContext();
+    EvalContext evalCtx2 = expr2.newContext();
+    EvalContext evalCtx3 = expr3.newContext();
 
     for (int i = 0; i < tuplenum; i++) {
-      expr1.eval(schema, tuples[i], accumulated1);
-      expr2.eval(schema, tuples[i], accumulated2);
-      expr3.eval(schema, tuples[i], accumulated3);
-      accumulated1 = expr1.terminate();
-      accumulated2 = expr2.terminate();
-      accumulated3 = expr3.terminate();
+      expr1.eval(evalCtx1, schema, tuples[i], accumulated1);
+      expr2.eval(evalCtx2, schema, tuples[i], accumulated2);
+      expr3.eval(evalCtx3, schema, tuples[i], accumulated3);
+      accumulated1 = expr1.terminate(evalCtx1);
+      accumulated2 = expr2.terminate(evalCtx2);
+      accumulated3 = expr3.terminate(evalCtx3);
     }
 
     assertEquals(10, accumulated1.asLong());

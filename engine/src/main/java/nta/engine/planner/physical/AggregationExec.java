@@ -6,6 +6,7 @@ import nta.catalog.Schema;
 import nta.datum.DatumFactory;
 import nta.engine.SubqueryContext;
 import nta.engine.exec.eval.ConstEval;
+import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.GroupbyNode;
@@ -30,6 +31,7 @@ public abstract class AggregationExec extends PhysicalExec {
   protected int keylist [];
   protected int measurelist [];
   protected final EvalNode evals [];
+  protected EvalContext evalContexts [];
 
   public AggregationExec(SubqueryContext ctx, GroupbyNode annotation,
                            PhysicalExec subOp) throws IOException {
@@ -67,12 +69,15 @@ public abstract class AggregationExec extends PhysicalExec {
     }
 
     evals = new EvalNode[annotation.getTargetList().length];
+    evalContexts = new EvalContext[annotation.getTargetList().length];
     for (int i = 0; i < annotation.getTargetList().length; i++) {
       QueryBlock.Target t = annotation.getTargetList()[i];
       if (t.getEvalTree().getType() == EvalNode.Type.FIELD && !nonNullGroupingFields.contains(t.getColumnSchema())) {
         evals[i] = new ConstEval(DatumFactory.createNullDatum());
+        evalContexts[i] = evals[i].newContext();
       } else {
         evals[i] = t.getEvalTree();
+        evalContexts[i] = evals[i].newContext();
       }
     }
   }

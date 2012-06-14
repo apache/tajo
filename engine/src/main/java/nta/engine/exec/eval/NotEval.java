@@ -26,6 +26,13 @@ public class NotEval extends EvalNode implements Cloneable {
   }
 
   @Override
+  public EvalContext newContext() {
+    NotEvalCtx newCtx = new NotEvalCtx();
+    newCtx.subExprCtx = subExpr.newContext();
+    return newCtx;
+  }
+
+  @Override
   public DataType getValueType() {
     return DataType.BOOLEAN;
   }
@@ -36,13 +43,13 @@ public class NotEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public void eval(Schema schema, Tuple tuple, Datum... args) {
-    subExpr.eval(schema, tuple);
+  public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum... args) {
+    subExpr.eval(((NotEvalCtx)ctx).subExprCtx, schema, tuple);
   }
 
   @Override
-  public Datum terminate() {
-    return DatumFactory.createBool(!subExpr.terminate().asBool());
+  public Datum terminate(EvalContext ctx) {
+    return DatumFactory.createBool(!subExpr.terminate(((NotEvalCtx)ctx).subExprCtx).asBool());
   }
 
   @Override
@@ -77,5 +84,9 @@ public class NotEval extends EvalNode implements Cloneable {
     NotEval eval = (NotEval) super.clone();
     eval.subExpr = (EvalNode) this.subExpr.clone();
     return eval;
+  }
+
+  private class NotEvalCtx implements EvalContext {
+    EvalContext subExprCtx;
   }
 }

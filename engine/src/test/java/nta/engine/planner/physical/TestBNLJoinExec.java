@@ -178,7 +178,7 @@ public class TestBNLJoinExec {
 
     BNLJoinExec bnl = new BNLJoinExec(ctx, join.getJoinNode(), scanOuter,
         scanInner);
-    proj.setsubOp(bnl);
+    proj.setSubOp(bnl);
 
     Tuple tuple;
     int i = 1;

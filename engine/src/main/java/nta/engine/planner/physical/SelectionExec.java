@@ -2,6 +2,7 @@ package nta.engine.planner.physical;
 
 import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
+import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.planner.logical.SelectionNode;
 import nta.engine.utils.TupleUtil;
@@ -11,11 +12,7 @@ import nta.storage.VTuple;
 import java.io.IOException;
 
 /**
-<<<<<<< HEAD
  * @author : hyunsik
-=======
- * @author : Hyunsik Choi
->>>>>>> b3768f2c52e09ec4a3eadc9d1ee187c435e25ce4
  */
 public class SelectionExec extends PhysicalExec  {
   private final SelectionNode annotation;
@@ -24,6 +21,7 @@ public class SelectionExec extends PhysicalExec  {
   private final Schema outSchema;
 
   private final EvalNode qual;
+  private final EvalContext qualCtx;
   private final Tuple outputTuple;
   // projection
   private int [] targetIds;
@@ -36,6 +34,7 @@ public class SelectionExec extends PhysicalExec  {
     this.subOp = subOp;
 
     this.qual = this.annotation.getQual();
+    this.qualCtx = this.qual.newContext();
     // for projection
     if (!inSchema.equals(outSchema)) {
       targetIds = TupleUtil.getTargetIds(inSchema, outSchema);
@@ -53,8 +52,8 @@ public class SelectionExec extends PhysicalExec  {
   public Tuple next() throws IOException {
     Tuple tuple = null;
     while ((tuple = subOp.next()) != null) {
-      qual.eval(inSchema, tuple);
-      if (qual.terminate().asBool()) {
+      qual.eval(qualCtx, inSchema, tuple);
+      if (qual.terminate(qualCtx).asBool()) {
         if (targetIds != null) {
           TupleUtil.project(tuple, outputTuple, targetIds);
           return outputTuple;

@@ -22,6 +22,11 @@ public class PartialBinaryExpr extends EvalNode {
   }
 
   @Override
+  public EvalContext newContext() {
+    return null;
+  }
+
+  @Override
   public DataType getValueType() {
     return null;
   }
@@ -30,25 +35,25 @@ public class PartialBinaryExpr extends EvalNode {
   public String getName() {
     return "nonamed";
   }
-  
-  public String toString() {
-    return 
-        (leftExpr != null ? leftExpr.toString() : "[EMPTY]") 
-        + " " + type + " " 
-        + (rightExpr != null ? rightExpr.toString() : "[EMPTY]");
-  }
 
   @Override
-  public void eval(Schema schema, Tuple tuple, Datum... args) {
+  public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum... args) {
     throw new InvalidEvalException(
         "ERROR: the partial binary expression cannot be evluated: "
             + this.toString() );
   }
 
   @Override
-  public Datum terminate() {
+  public Datum terminate(EvalContext ctx) {
     throw new InvalidEvalException(
         "ERROR: the partial binary expression cannot be terminated: "
             + this.toString() );
+  }
+  
+  public String toString() {
+    return 
+        (leftExpr != null ? leftExpr.toString() : "[EMPTY]") 
+        + " " + type + " " 
+        + (rightExpr != null ? rightExpr.toString() : "[EMPTY]");
   }
 }

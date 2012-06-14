@@ -7,6 +7,7 @@ import java.io.IOException;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.logical.ScanNode;
@@ -26,6 +27,7 @@ public class SeqScanExec extends PhysicalExec {
   private Tuple tuple = null;
   private int [] targetIds = null;
   private EvalNode qual = null;
+  private EvalContext qualCtx;
   private Schema inputSchema;
   private Schema outputSchema;
 
@@ -37,6 +39,11 @@ public class SeqScanExec extends PhysicalExec {
       Fragment [] fragments) throws IOException {
     this.annotation = annotation;
     this.qual = annotation.getQual();
+    if (qual == null) {
+      qualCtx = null;
+    } else {
+      qualCtx = this.qual.newContext();
+    }
     this.inputSchema = annotation.getInputSchema();
     this.outputSchema = annotation.getOutputSchema();
     
@@ -68,8 +75,8 @@ public class SeqScanExec extends PhysicalExec {
       }
     } else {
       while ((tuple = scanner.next()) != null) {
-        qual.eval(inputSchema, tuple);
-        if (qual.terminate().asBool()) {
+        qual.eval(qualCtx, inputSchema, tuple);
+        if (qual.terminate(qualCtx).asBool()) {
           Tuple newTuple = new VTuple(outputSchema.getColumnNum());
           int i=0;
           for(int cid : targetIds) {

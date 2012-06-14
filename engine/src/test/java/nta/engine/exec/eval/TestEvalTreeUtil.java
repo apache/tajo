@@ -197,14 +197,16 @@ public class TestEvalTreeUtil {
     FieldEval field = (FieldEval) first.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
     assertEquals(Type.LTH, first.getType());
-    first.getRightExpr().eval(null,  null);
-    assertEquals(10, first.getRightExpr().terminate().asInt());
+    EvalContext firstRCtx = first.getRightExpr().newContext();
+    first.getRightExpr().eval(firstRCtx, null,  null);
+    assertEquals(10, first.getRightExpr().terminate(firstRCtx).asInt());
     
     field = (FieldEval) second.getRightExpr();
     assertEquals(col1, field.getColumnRef());
     assertEquals(Type.LTH, second.getType());
-    second.getLeftExpr().eval(null,  null);
-    assertEquals(4, second.getLeftExpr().terminate().asInt());
+    EvalContext secondLCtx = second.getLeftExpr().newContext();
+    second.getLeftExpr().eval(secondLCtx, null,  null);
+    assertEquals(4, second.getLeftExpr().terminate(secondLCtx).asInt());
   }
   
   @Test
@@ -230,13 +232,15 @@ public class TestEvalTreeUtil {
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     Target [] targets = block.getTargetList();
     EvalNode node = AlgebraicUtil.simplify(targets[0].getEvalTree());
+    EvalContext nodeCtx = node.newContext();
     assertEquals(Type.CONST, node.getType());
-    node.eval(null, null);
-    assertEquals(7, node.terminate().asInt());
+    node.eval(nodeCtx, null, null);
+    assertEquals(7, node.terminate(nodeCtx).asInt());
     node = AlgebraicUtil.simplify(targets[1].getEvalTree());
     assertEquals(Type.CONST, node.getType());
-    node.eval(null, null);
-    assertTrue(7.0d == node.terminate().asDouble());
+    nodeCtx = node.newContext();
+    node.eval(nodeCtx, null, null);
+    assertTrue(7.0d == node.terminate(nodeCtx).asDouble());
     
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
@@ -275,8 +279,9 @@ public class TestEvalTreeUtil {
     assertEquals(Type.GTH, transposed.getType());
     FieldEval field = (FieldEval) transposed.getLeftExpr(); 
     assertEquals(col1, field.getColumnRef());
-    transposed.getRightExpr().eval(null, null);
-    assertEquals(1, transposed.getRightExpr().terminate().asInt());
+    EvalContext evalCtx = transposed.getRightExpr().newContext();
+    transposed.getRightExpr().eval(evalCtx, null, null);
+    assertEquals(1, transposed.getRightExpr().terminate(evalCtx).asInt());
             
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[4]);
@@ -286,7 +291,8 @@ public class TestEvalTreeUtil {
     assertEquals(Type.LTH, transposed.getType());
     field = (FieldEval) transposed.getLeftExpr(); 
     assertEquals(col1, field.getColumnRef());
-    transposed.getRightExpr().eval(null, null);
-    assertEquals(2, transposed.getRightExpr().terminate().asInt());
+    evalCtx = transposed.getRightExpr().newContext();
+    transposed.getRightExpr().eval(evalCtx, null, null);
+    assertEquals(2, transposed.getRightExpr().terminate(evalCtx).asInt());
   }
 }

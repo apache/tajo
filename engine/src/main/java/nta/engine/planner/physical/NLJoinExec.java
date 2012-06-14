@@ -2,6 +2,7 @@ package nta.engine.planner.physical;
 
 import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
+import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.planner.logical.JoinNode;
 import nta.engine.utils.TupleUtil;
@@ -39,6 +40,7 @@ public class NLJoinExec extends PhysicalExec {
   private Tuple outerTuple = null;
   private Tuple innerTuple = null;
   private Tuple outputTuple = null;
+  private EvalContext qualCtx;
 
   // projection
   private final int [] targetIds;
@@ -49,7 +51,10 @@ public class NLJoinExec extends PhysicalExec {
     this.inner = inner;
     this.inSchema = ann.getInputSchema();
     this.outSchema = ann.getOutputSchema();
-    this.joinQual = ann.getJoinQual();
+    if (ann.hasJoinQual()) {
+      this.joinQual = ann.getJoinQual();
+      this.qualCtx = this.joinQual.newContext();
+    }
     this.ann = ann;
 
     // for projection
@@ -80,8 +85,8 @@ public class NLJoinExec extends PhysicalExec {
 
       frameTuple.set(outerTuple, innerTuple);
       if (joinQual != null) {
-        joinQual.eval(inSchema, frameTuple);
-        if (joinQual.terminate().asBool()) {
+        joinQual.eval(qualCtx, inSchema, frameTuple);
+        if (joinQual.terminate(qualCtx).asBool()) {
           TupleUtil.project(frameTuple, outputTuple, targetIds);
           return outputTuple;
         }

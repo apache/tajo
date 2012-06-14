@@ -27,7 +27,12 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
 	}
 
   @Override
-  public Datum terminate() {
+  public EvalContext newContext() {
+    return null;
+  }
+
+  @Override
+  public Datum terminate(EvalContext ctx) {
     return this.datum;
   }
 
@@ -44,9 +49,8 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
 		Gson gson = GsonCreator.getInstance();
 		return gson.toJson(this, EvalNode.class);
 	}
-	
 
-	@Override
+  @Override
 	public DataType getValueType() {
 		switch(this.datum.type()) {
       case CHAR: return DataType.CHAR;

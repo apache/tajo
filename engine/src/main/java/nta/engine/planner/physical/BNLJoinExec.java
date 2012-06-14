@@ -2,6 +2,7 @@ package nta.engine.planner.physical;
 
 import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
+import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.planner.logical.JoinNode;
 import nta.engine.utils.TupleUtil;
@@ -19,6 +20,7 @@ public class BNLJoinExec extends PhysicalExec {
   private Schema inSchema;
   private Schema outSchema;
   private EvalNode joinQual;
+  private EvalContext qualCtx;
 
   // sub operations
   private PhysicalExec outer;
@@ -52,6 +54,7 @@ public class BNLJoinExec extends PhysicalExec {
     this.inSchema = ann.getInputSchema();
     this.outSchema = ann.getOutputSchema();
     this.joinQual = ann.getJoinQual();
+    this.qualCtx = this.joinQual.newContext();
     this.ann = ann;
     this.outerTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.innerTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
@@ -159,8 +162,8 @@ public class BNLJoinExec extends PhysicalExec {
 
       frameTuple.set(outerTuple, innerIterator.next());
       if (joinQual != null) {
-        joinQual.eval(inSchema, frameTuple);
-        if (joinQual.terminate().asBool()) {
+        joinQual.eval(qualCtx, inSchema, frameTuple);
+        if (joinQual.terminate(qualCtx).asBool()) {
           TupleUtil.project(frameTuple, outputTuple, targetIds);
           return outputTuple;
         }

@@ -31,6 +31,8 @@ public abstract class EvalNode implements Cloneable {
 		this.leftExpr = left;
 		this.rightExpr = right;
 	}
+
+  public abstract EvalContext newContext();
 	
 	public Type getType() {
 		return this.type;
@@ -75,9 +77,9 @@ public abstract class EvalNode implements Cloneable {
     return gson.toJson(this, EvalNode.class);
 	}
 	
-	public void eval(Schema schema, Tuple tuple, Datum...args) {}
+	public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum...args) {}
 
-  public abstract Datum terminate();
+  public abstract Datum terminate(EvalContext ctx);
 
 	public void preOrder(EvalNodeVisitor visitor) {
 	  visitor.visit(this);

@@ -18,48 +18,59 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  */
 public abstract class FuncEval extends EvalNode {
-	@Expose protected FunctionDesc desc;
-	@Expose protected EvalNode [] givenArgs;
+	@Expose protected FunctionDesc funcDesc;
+	@Expose protected EvalNode [] argEvals;
 
-	public FuncEval(Type type, FunctionDesc desc, EvalNode[] givenArgs) {
+	public FuncEval(Type type, FunctionDesc funcDesc, EvalNode[] argEvals) {
 		super(type);
-		this.desc = desc;
-		this.givenArgs = givenArgs;
+		this.funcDesc = funcDesc;
+		this.argEvals = argEvals;
 	}
+
+  @Override
+  public EvalContext newContext() {
+    FuncCallCtx newCtx = new FuncCallCtx();
+    newCtx.argCtxs = new EvalContext[argEvals.length];
+    for (int i = 0; i < argEvals.length; i++) {
+      newCtx.argCtxs[i] = argEvals[i].newContext();
+    }
+
+    return newCtx;
+  }
 	
 	public EvalNode [] getArgs() {
-	  return this.givenArgs;
+	  return this.argEvals;
 	}
 
   public void setArgs(EvalNode [] args) {
-    this.givenArgs = args;
+    this.argEvals = args;
   }
 	
 	public DataType getValueType() {
-		return this.desc.getReturnType();
+		return this.funcDesc.getReturnType();
 	}
 
   public abstract void init();
 
 	@Override
-	public abstract void eval(Schema schema, Tuple tuple, Datum...args);
+	public abstract void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum...args);
 
-  public abstract Datum terminate();
+  public abstract Datum terminate(EvalContext ctx);
 
 	@Override
 	public String getName() {
-		return desc.getSignature();
+		return funcDesc.getSignature();
 	}
 
   @Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		for(int i=0; i < givenArgs.length; i++) {
-			sb.append(givenArgs[i]);
-			if(i+1 < givenArgs.length)
+		for(int i=0; i < argEvals.length; i++) {
+			sb.append(argEvals[i]);
+			if(i+1 < argEvals.length)
 				sb.append(",");
 		}
-		return desc.getSignature()+"("+sb+")";
+		return funcDesc.getSignature()+"("+sb+")";
 	}
 
   @Override
@@ -74,8 +85,8 @@ public abstract class FuncEval extends EvalNode {
       FuncEval other = (FuncEval) obj;
 
       boolean b1 = this.type == other.type;
-      boolean b2 = TUtil.checkEquals(desc, other.desc);
-      boolean b3 = TUtil.checkEquals(givenArgs, other.givenArgs);
+      boolean b2 = TUtil.checkEquals(funcDesc, other.funcDesc);
+      boolean b3 = TUtil.checkEquals(argEvals, other.argEvals);
       return b1 && b2 && b3;
 	  }
 	  
@@ -84,23 +95,23 @@ public abstract class FuncEval extends EvalNode {
 	
 	@Override
 	public int hashCode() {
-	  return Objects.hashCode(desc, givenArgs);
+	  return Objects.hashCode(funcDesc, argEvals);
 	}
 	
 	@Override
   public Object clone() throws CloneNotSupportedException {
     FuncEval eval = (FuncEval) super.clone();
-    eval.desc = (FunctionDesc) desc.clone();
-    eval.givenArgs = new EvalNode[givenArgs.length];
-    for (int i = 0; i < givenArgs.length; i++) {
-      eval.givenArgs[i] = (EvalNode) givenArgs[i].clone();
+    eval.funcDesc = (FunctionDesc) funcDesc.clone();
+    eval.argEvals = new EvalNode[argEvals.length];
+    for (int i = 0; i < argEvals.length; i++) {
+      eval.argEvals[i] = (EvalNode) argEvals[i].clone();
     }    
     return eval;
   }
 	
 	@Override
   public void preOrder(EvalNodeVisitor visitor) {
-    for (EvalNode eval : givenArgs) {
+    for (EvalNode eval : argEvals) {
       eval.postOrder(visitor);
     }
     visitor.visit(this);
@@ -108,9 +119,13 @@ public abstract class FuncEval extends EvalNode {
 	
 	@Override
 	public void postOrder(EvalNodeVisitor visitor) {
-	  for (EvalNode eval : givenArgs) {
+	  for (EvalNode eval : argEvals) {
 	    eval.postOrder(visitor);
 	  }
 	  visitor.visit(this);
 	}
+
+  protected class FuncCallCtx implements EvalContext {
+    EvalContext [] argCtxs;
+  }
 }
