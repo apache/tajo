@@ -89,7 +89,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
       Path dataFile =
           StorageUtil.concatPath(storeTablePath, "data",
               "" + partition);
-      Log.info(">>>>>> " + dataFile.toString());
+//      Log.info(">>>>>> " + dataFile.toString());
       appender = sm.getLocalAppender(meta, dataFile);      
       appenderMap.put(partition, appender);
       ctx.addRepartition(partition, dataFile.getName());

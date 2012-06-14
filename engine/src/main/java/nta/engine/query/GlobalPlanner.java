@@ -717,7 +717,7 @@ public class GlobalPlanner {
             for (Partition p : qu.getPartitions()) {
               for (String query : queries) {
                 uriList.add(new URI(p.getFileName() + "&" + query));
-                System.out.println("Partition: " + uriList.get(uriList.size() - 1));
+//                System.out.println("Partition: " + uriList.get(uriList.size() - 1));
               }
             }
           }
@@ -725,7 +725,7 @@ public class GlobalPlanner {
           for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
             for (Partition p : qu.getPartitions()) {
               uriList.add(new URI(p.getFileName()));
-              System.out.println("Partition: " + uriList.get(uriList.size() - 1));
+//              System.out.println("Partition: " + uriList.get(uriList.size() - 1));
             }
           }
         }
