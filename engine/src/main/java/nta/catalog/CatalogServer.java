@@ -286,9 +286,9 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   @Override
   public void addTable(final TableDescProto proto)
       throws AlreadyExistsTableException {
-    Preconditions.checkArgument(proto.hasId() == true,
+    Preconditions.checkArgument(proto.hasId(),
         "Must be set to the table name");
-    Preconditions.checkArgument(proto.hasPath() == true,
+    Preconditions.checkArgument(proto.hasPath(),
         "Must be set to the table URI");
 
     wlock.lock();
@@ -311,7 +311,6 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 
     } catch (IOException ioe) {
       LOG.error(ioe);
-      return;
     } finally {
       wlock.unlock();
       LOG.info("Table " + proto.getId() + " is added to the catalog ("
@@ -495,7 +494,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     }
 
     functions.remove(canonicalName);
-    LOG.info("Function " + canonicalName + " is unregistered.");
+    LOG.info("GeneralFunction " + canonicalName + " is unregistered.");
   }
 
   @Override

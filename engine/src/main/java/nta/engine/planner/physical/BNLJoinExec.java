@@ -159,7 +159,8 @@ public class BNLJoinExec extends PhysicalExec {
 
       frameTuple.set(outerTuple, innerIterator.next());
       if (joinQual != null) {
-        if (joinQual.eval(inSchema, frameTuple).asBool()) {
+        joinQual.eval(inSchema, frameTuple);
+        if (joinQual.terminate().asBool()) {
           TupleUtil.project(frameTuple, outputTuple, targetIds);
           return outputTuple;
         }

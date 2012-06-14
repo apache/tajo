@@ -1,38 +1,60 @@
 package nta.engine.exec.eval;
 
+import com.google.gson.annotations.Expose;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.datum.Datum;
-import nta.engine.json.GsonCreator;
 import nta.engine.function.Function;
+import nta.engine.json.GsonCreator;
 import nta.storage.Tuple;
+import nta.storage.VTuple;
 
-public class AggFuncCallEval extends FuncCallEval {
+public class AggFuncCallEval extends FuncEval {
+  @Expose protected Function instance;
+  private Schema schema;
+  private Tuple params;
+  private Tuple tuple;
+  private Datum [] args;
+
   public AggFuncCallEval(FunctionDesc desc, Function instance, EvalNode[] givenArgs) {
-    super(desc, instance, givenArgs);
+    super(Type.AGG_FUNCTION, desc, givenArgs);
+    this.instance = instance;
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple, Datum... args) {
-    Datum[] data = null;
+  public void init() {
+  }
+
+  @Override
+  public void eval(Schema schema, Tuple tuple, Datum... args) {
+    this.schema = schema;
+    this.tuple = tuple;
+    this.args = args;
+  }
+
+  @Override
+  public Datum terminate() {
+    if (params == null) {
+      this.params = new VTuple(givenArgs.length + 1);
+    }
 
     if (givenArgs != null) {
-      data = new Datum[givenArgs.length+args.length];
+      params.clear();
 
       for (int i = 0; i < givenArgs.length; i++) {
-        data[i] = givenArgs[i].eval(schema, tuple);
+        givenArgs[i].eval(schema, tuple);
+        params.put(i, givenArgs[i].terminate());
       }
-    } else {
-      data = new Datum[1];
     }
-    
+
     // TODO - should consider multiple variables
     if(args.length > 0)
-      data[data.length-1] = args[0];
+      params.put(params.size()-1, args[0]);
 
-    return instance.invoke(data);
+    instance.eval(params);
+    return instance.terminate();
   }
-  
+
   public String toJSON() {
 	  return GsonCreator.getInstance().toJson(this, EvalNode.class);
   }

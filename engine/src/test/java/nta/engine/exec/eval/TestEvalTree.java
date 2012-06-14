@@ -16,10 +16,11 @@ import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
+import nta.datum.IntDatum;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode.Type;
-import nta.engine.function.Function;
+import nta.engine.function.GeneralFunction;
 import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
@@ -95,7 +96,9 @@ public class TestEvalTree {
     util.shutdownMiniZKCluster();
   }
 
-  public static class TestSum extends Function {
+  public static class TestSum extends GeneralFunction {
+    private Integer x;
+    private Integer y;
 
     public TestSum() {
       super(new Column[] { new Column("arg1", DataType.INT),
@@ -103,41 +106,55 @@ public class TestEvalTree {
     }
 
     @Override
-    public Datum invoke(Datum... data) {
-      if(data[1] == null)
-        return data[0];
-      return data[0].plus(data[1]);
+    public void init() {
+      //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
-    public DataType getResType() {
-      return DataType.INT;
+    public void eval(Tuple params) {
+      x =  params.get(0).asInt();
+      y =  params.get(1).asInt();
+    }
+
+    @Override
+    public Datum terminate() {
+      return DatumFactory.createInt(x + y);
     }
     
     public String toJSON() {
-    	return GsonCreator.getInstance().toJson(this, Function.class);
+    	return GsonCreator.getInstance().toJson(this, GeneralFunction.class);
     }
   }
   
-  public static class TestAggSum extends Function {
+  public static class TestAggSum extends GeneralFunction<IntDatum> {
+    private IntDatum curVal = null;
+    private IntDatum sumVal = null;
 
     public TestAggSum() {
       super(new Column[] { new Column("arg1", DataType.INT)});
     }
 
     @Override
-    public Datum invoke(Datum... data) {
-      return data[0].plus(data[1]);
+    public void init() {
     }
 
     @Override
-    public DataType getResType() {
-      return DataType.INT;
+    public void eval(Tuple params) {
+      curVal = params.getInt(0);
+      sumVal = params.getInt(1);
+    }
+
+    public IntDatum terminate() {
+      if (sumVal == null) {
+        return curVal;
+      } else {
+        return (IntDatum) curVal.plus(sumVal);
+      }
     }
     
     public String toJSON() {
     	Gson gson = GsonCreator.getInstance();
-    	return gson.toJson(this, Function.class);
+    	return gson.toJson(this, GeneralFunction.class);
     }
   }
 
@@ -166,22 +183,25 @@ public class TestEvalTree {
     QueryContext ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     expr = block.getWhereCondition();
-    assertEquals(true, expr.eval(peopleSchema, tuple)
-        .asBool());
+    expr.eval(peopleSchema, tuple);
+    assertEquals(true, expr.terminate().asBool());
 
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
     expr = block.getWhereCondition();
-    assertEquals(15000, expr.eval(peopleSchema, tuple).asInt());
+    expr.eval(peopleSchema, tuple);
+    assertEquals(15000, expr.terminate().asInt());
     assertCloneEqual(expr);
 
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
     expr = block.getWhereCondition();
-    assertEquals(15050, expr.eval(peopleSchema, tuple).asInt());
+    expr.eval(peopleSchema, tuple);
+    assertEquals(15050, expr.terminate().asInt());
     assertCloneEqual(expr);
     
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
     expr = block.getWhereCondition();
-    assertEquals(15050, expr.eval(peopleSchema, tuple).asInt());
+    expr.eval(peopleSchema, tuple);
+    assertEquals(15050, expr.terminate().asInt());
     assertCloneEqual(expr);
     
     // Aggregation function test
@@ -200,7 +220,8 @@ public class TestEvalTree {
     
     int sum = 0;
     for (int i=0; i < tuplenum; i++) {
-      accumulated = expr.eval(peopleSchema, tuples[i], accumulated);
+      expr.eval(peopleSchema, tuples[i], accumulated);
+      accumulated = expr.terminate();
       sum = sum + (i+1);
       assertEquals(sum, accumulated.asInt());
     }
@@ -225,7 +246,8 @@ public class TestEvalTree {
     tuple.put(1, DatumFactory.createInt(99)); // put 0th field
 
     // the result of evaluation must be 100.
-    assertEquals(expr.eval(schema1, tuple).asInt(), 100);
+    expr.eval(schema1, tuple);
+    assertEquals(expr.terminate().asInt(), 100);
   }
 
   public static class MockTrueEval extends EvalNode {
@@ -235,7 +257,7 @@ public class TestEvalTree {
     }
 
     @Override
-    public Datum eval(Schema schema, Tuple tuple, Datum... args) {
+    public Datum terminate() {
       return DatumFactory.createBool(true);
     }
 
@@ -258,7 +280,7 @@ public class TestEvalTree {
     }
 
     @Override
-    public Datum eval(Schema schema, Tuple tuple, Datum... args) {
+    public Datum terminate() {
       return DatumFactory.createBool(false);
     }
 
@@ -279,16 +301,20 @@ public class TestEvalTree {
     MockFalseExpr falseExpr = new MockFalseExpr();
 
     BinaryEval andExpr = new BinaryEval(Type.AND, trueExpr, trueExpr);
-    assertTrue(andExpr.eval(null, null).asBool());
+    andExpr.eval(null, null);
+    assertTrue(andExpr.terminate().asBool());
 
     andExpr = new BinaryEval(Type.AND, falseExpr, trueExpr);
-    assertFalse(andExpr.eval(null, null).asBool());
+    andExpr.eval(null, null);
+    assertFalse(andExpr.terminate().asBool());
 
     andExpr = new BinaryEval(Type.AND, trueExpr, falseExpr);
-    assertFalse(andExpr.eval(null, null).asBool());
+    andExpr.eval(null, null);
+    assertFalse(andExpr.terminate().asBool());
 
     andExpr = new BinaryEval(Type.AND, falseExpr, falseExpr);
-    assertFalse(andExpr.eval(null, null).asBool());
+    andExpr.eval(null, null);
+    assertFalse(andExpr.terminate().asBool());
   }
 
   @Test
@@ -297,16 +323,20 @@ public class TestEvalTree {
     MockFalseExpr falseExpr = new MockFalseExpr();
 
     BinaryEval orExpr = new BinaryEval(Type.OR, trueExpr, trueExpr);
-    assertTrue(orExpr.eval(null, null).asBool());
+    orExpr.eval(null, null);
+    assertTrue(orExpr.terminate().asBool());
 
     orExpr = new BinaryEval(Type.OR, falseExpr, trueExpr);
-    assertTrue(orExpr.eval(null, null).asBool());
+    orExpr.eval(null, null);
+    assertTrue(orExpr.terminate().asBool());
 
     orExpr = new BinaryEval(Type.OR, trueExpr, falseExpr);
-    assertTrue(orExpr.eval(null, null).asBool());
+    orExpr.eval(null, null);
+    assertTrue(orExpr.terminate().asBool());
 
     orExpr = new BinaryEval(Type.OR, falseExpr, falseExpr);
-    assertFalse(orExpr.eval(null, null).asBool());
+    orExpr.eval(null, null);
+    assertFalse(orExpr.terminate().asBool());
   }
 
   @Test
@@ -319,41 +349,57 @@ public class TestEvalTree {
     e1 = new ConstEval(DatumFactory.createInt(9));
     e2 = new ConstEval(DatumFactory.createInt(34));
     expr = new BinaryEval(Type.LTH, e1, e2);
-    assertTrue(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertTrue(expr.terminate().asBool());
     expr = new BinaryEval(Type.LEQ, e1, e2);
-    assertTrue(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertTrue(expr.terminate().asBool());
     expr = new BinaryEval(Type.LTH, e2, e1);
-    assertFalse(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertFalse(expr.terminate().asBool());
     expr = new BinaryEval(Type.LEQ, e2, e1);
-    assertFalse(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertFalse(expr.terminate().asBool());
 
     expr = new BinaryEval(Type.GTH, e2, e1);
-    assertTrue(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertTrue(expr.terminate().asBool());
     expr = new BinaryEval(Type.GEQ, e2, e1);
-    assertTrue(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertTrue(expr.terminate().asBool());
     expr = new BinaryEval(Type.GTH, e1, e2);
-    assertFalse(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertFalse(expr.terminate().asBool());
     expr = new BinaryEval(Type.GEQ, e1, e2);
-    assertFalse(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertFalse(expr.terminate().asBool());
 
     BinaryEval plus = new BinaryEval(Type.PLUS, e1, e2);
     expr = new BinaryEval(Type.LTH, e1, plus);
-    assertTrue(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertTrue(expr.terminate().asBool());
     expr = new BinaryEval(Type.LEQ, e1, plus);
-    assertTrue(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertTrue(expr.terminate().asBool());
     expr = new BinaryEval(Type.LTH, plus, e1);
-    assertFalse(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertFalse(expr.terminate().asBool());
     expr = new BinaryEval(Type.LEQ, plus, e1);
-    assertFalse(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertFalse(expr.terminate().asBool());
 
     expr = new BinaryEval(Type.GTH, plus, e1);
-    assertTrue(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertTrue(expr.terminate().asBool());
     expr = new BinaryEval(Type.GEQ, plus, e1);
-    assertTrue(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertTrue(expr.terminate().asBool());
     expr = new BinaryEval(Type.GTH, e1, plus);
-    assertFalse(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertFalse(expr.terminate().asBool());
     expr = new BinaryEval(Type.GEQ, e1, plus);
-    assertFalse(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertFalse(expr.terminate().asBool());
   }
 
   @Test
@@ -366,28 +412,32 @@ public class TestEvalTree {
     e1 = new ConstEval(DatumFactory.createInt(9));
     e2 = new ConstEval(DatumFactory.createInt(34));
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
-    assertEquals(expr.eval(null, null).asInt(), 43);
+    expr.eval(null, null);
+    assertEquals(expr.terminate().asInt(), 43);
     assertCloneEqual(expr);
     
     // MINUS
     e1 = new ConstEval(DatumFactory.createInt(5));
     e2 = new ConstEval(DatumFactory.createInt(2));
     expr = new BinaryEval(Type.MINUS, e1, e2);
-    assertEquals(expr.eval(null, null).asInt(), 3);
+    expr.eval(null, null);
+    assertEquals(expr.terminate().asInt(), 3);
     assertCloneEqual(expr);
     
     // MULTIPLY
     e1 = new ConstEval(DatumFactory.createInt(5));
     e2 = new ConstEval(DatumFactory.createInt(2));
     expr = new BinaryEval(Type.MULTIPLY, e1, e2);
-    assertEquals(expr.eval(null, null).asInt(), 10);
+    expr.eval(null, null);
+    assertEquals(expr.terminate().asInt(), 10);
     assertCloneEqual(expr);
     
     // DIVIDE
     e1 = new ConstEval(DatumFactory.createInt(10));
     e2 = new ConstEval(DatumFactory.createInt(5));
     expr = new BinaryEval(Type.DIVIDE, e1, e2);
-    assertEquals(expr.eval(null, null).asInt(), 2);
+    expr.eval(null, null);
+    assertEquals(expr.terminate().asInt(), 2);
     assertCloneEqual(expr);
   }
 
@@ -403,7 +453,8 @@ public class TestEvalTree {
     assertEquals(DataType.INT, expr.getValueType());
 
     expr = new BinaryEval(Type.LTH, e1, e2);
-    assertTrue(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertTrue(expr.terminate().asBool());
     assertEquals(DataType.BOOLEAN, expr.getValueType());
 
     e1 = new ConstEval(DatumFactory.createDouble(9.3));
@@ -499,24 +550,32 @@ public class TestEvalTree {
     e1 = new ConstEval(DatumFactory.createInt(9));
     e2 = new ConstEval(DatumFactory.createInt(34));
     expr = new BinaryEval(Type.LTH, e1, e2);
-    assertTrue(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertTrue(expr.terminate().asBool());
     NotEval not = new NotEval(expr);
-    assertFalse(not.eval(null, null).asBool());
+    not.eval(null, null);
+    assertFalse(not.terminate().asBool());
     
     expr = new BinaryEval(Type.LEQ, e1, e2);
-    assertTrue(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertTrue(expr.terminate().asBool());
     not = new NotEval(expr);
-    assertFalse(not.eval(null, null).asBool());
+    not.eval(null, null);
+    assertFalse(not.terminate().asBool());
     
     expr = new BinaryEval(Type.LTH, e2, e1);
-    assertFalse(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertFalse(expr.terminate().asBool());
     not = new NotEval(expr);
-    assertTrue(not.eval(null, null).asBool());
+    not.eval(null, null);
+    assertTrue(not.terminate().asBool());
     
     expr = new BinaryEval(Type.LEQ, e2, e1);
-    assertFalse(expr.eval(null, null).asBool());
+    expr.eval(null, null);
+    assertFalse(expr.terminate().asBool());
     not = new NotEval(expr);
-    assertTrue(not.eval(null, null).asBool());
+    not.eval(null, null);
+    assertTrue(not.terminate().asBool());
     
     // Evaluation Test
     QueryBlock block;
@@ -524,12 +583,12 @@ public class TestEvalTree {
     QueryContext ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, NOT[0]);
     expr = block.getWhereCondition();
-    assertTrue(expr.eval(peopleSchema, tuples[0])
-        .asBool());
-    assertFalse(expr.eval(peopleSchema, tuples[1])
-        .asBool());
-    assertFalse(expr.eval(peopleSchema, tuples[2])
-        .asBool());
+    expr.eval(peopleSchema, tuples[0]);
+    assertTrue(expr.terminate().asBool());
+    expr.eval(peopleSchema, tuples[1]);
+    assertFalse(expr.terminate().asBool());
+    expr.eval(peopleSchema, tuples[2]);
+    assertFalse(expr.terminate().asBool());
   }
   
   static String[] LIKE = {
@@ -548,31 +607,31 @@ public class TestEvalTree {
     QueryContext ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, LIKE[0]);
     expr = block.getWhereCondition();
-    assertTrue(expr.eval(peopleSchema, tuples[0])
-        .asBool());
-    assertFalse(expr.eval(peopleSchema, tuples[1])
-        .asBool());
-    assertTrue(expr.eval(peopleSchema, tuples[2])
-        .asBool());
+    expr.eval(peopleSchema, tuples[0]);
+    assertTrue(expr.terminate().asBool());
+    expr.eval(peopleSchema, tuples[1]);
+    assertFalse(expr.terminate().asBool());
+    expr.eval(peopleSchema, tuples[2]);
+    assertTrue(expr.terminate().asBool());
     
     // prefix
     block = (QueryBlock) analyzer.parse(ctx, LIKE[1]);
     expr = block.getWhereCondition();
-    assertTrue(expr.eval(peopleSchema, tuples[0])
-        .asBool());
-    assertTrue(expr.eval(peopleSchema, tuples[1])
-        .asBool());
-    assertFalse(expr.eval(peopleSchema, tuples[2])
-        .asBool());
+    expr.eval(peopleSchema, tuples[0]);
+    assertTrue(expr.terminate().asBool());
+    expr.eval(peopleSchema, tuples[1]);
+    assertTrue(expr.terminate().asBool());
+    expr.eval(peopleSchema, tuples[2]);
+    assertFalse(expr.terminate().asBool());
 
     // Not Test
     block = (QueryBlock) analyzer.parse(ctx, LIKE[2]);
     expr = block.getWhereCondition();
-    assertFalse(expr.eval(peopleSchema, tuples[0])
-        .asBool());
-    assertTrue(expr.eval(peopleSchema, tuples[1])
-        .asBool());
-    assertFalse(expr.eval(peopleSchema, tuples[2])
-        .asBool());
+    expr.eval(peopleSchema, tuples[0]);
+    assertFalse(expr.terminate().asBool());
+    expr.eval(peopleSchema, tuples[1]);
+    assertTrue(expr.terminate().asBool());
+    expr.eval(peopleSchema, tuples[2]);
+    assertFalse(expr.terminate().asBool());
   }
 }

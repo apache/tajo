@@ -104,7 +104,8 @@ public class TestBuiltinFunction {
     int sum = 0;
     for (int i = 0; i < tuplenum; i++) {
       System.out.println(tuples[i]);
-      accumulated = expr.eval(schema, tuples[i], accumulated);
+      expr.eval(schema, tuples[i], accumulated);
+      accumulated = expr.terminate();
       sum += 1;
       assertEquals(sum, accumulated.asInt());
     }
@@ -127,9 +128,12 @@ public class TestBuiltinFunction {
     Datum accumulated3 = DatumFactory.createInt(0);
 
     for (int i = 0; i < tuplenum; i++) {
-      accumulated1 = expr1.eval(schema, tuples[i], accumulated1);
-      accumulated2 = expr2.eval(schema, tuples[i], accumulated2);
-      accumulated3 = expr3.eval(schema, tuples[i], accumulated3);
+      expr1.eval(schema, tuples[i], accumulated1);
+      expr2.eval(schema, tuples[i], accumulated2);
+      expr3.eval(schema, tuples[i], accumulated3);
+      accumulated1 = expr1.terminate();
+      accumulated2 = expr2.terminate();
+      accumulated3 = expr3.terminate();
     }
 
     assertEquals(10, accumulated1.asLong());

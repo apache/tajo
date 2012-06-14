@@ -2,28 +2,37 @@ package nta.engine.function;
 
 import nta.catalog.Column;
 import nta.catalog.proto.CatalogProtos.DataType;
-import nta.datum.Datum;
 import nta.datum.DatumFactory;
+import nta.datum.LongDatum;
+import nta.storage.Tuple;
 
 /**
  * @author Hyunsik Choi
  */
-public final class MinLong extends Function {
+public final class MinLong extends GeneralFunction<LongDatum> {
+  private Long minVal;
+  private Long curVal;
+
   public MinLong() {
     super(new Column[] { new Column("arg1", DataType.LONG)});
   }
 
   @Override
-  public Datum invoke(final Datum... datums) {
-    if (datums.length == 1) {
-      return datums[0];
-    }
-    return DatumFactory
-        .createLong(Math.min(datums[0].asLong(), datums[1].asLong()));
+  public void init() {
   }
 
   @Override
-  public DataType getResType() {
-    return DataType.LONG;
+  public void eval(Tuple params) {
+    curVal = params.get(0).asLong();
+    minVal = params.get(1).asLong();
+  }
+
+  @Override
+  public LongDatum terminate() {
+    if (minVal == null) {
+      return DatumFactory.createLong(curVal);
+    }
+    return DatumFactory
+        .createLong(Math.min(minVal, curVal));
   }
 }

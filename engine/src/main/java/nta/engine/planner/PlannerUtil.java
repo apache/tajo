@@ -150,9 +150,9 @@ public class PlannerUtil {
     
       Target [] targets = gp.getTargetList();
       for (int i = 0; i < gp.getTargetList().length; i++) {
-        if (targets[i].getEvalTree().getType() == Type.FUNCTION) {
+        if (targets[i].getEvalTree().getType() == Type.AGG_FUNCTION) {
           Column tobe = child.getOutputSchema().getColumn(i);        
-          FuncCallEval eval = (FuncCallEval) targets[i].getEvalTree();
+          AggFuncCallEval eval = (AggFuncCallEval) targets[i].getEvalTree();
 //          Collection<Column> tobeChanged =
 //              EvalTreeUtil.findDistinctRefColumns(eval);
 //          EvalTreeUtil.changeColumnRef(eval, tobeChanged.iterator().next(),

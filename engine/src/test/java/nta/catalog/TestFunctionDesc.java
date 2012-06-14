@@ -33,7 +33,7 @@ public class TestFunctionDesc {
     assertEquals(FunctionType.GENERAL, desc.getFuncType());
     assertEquals(DataType.INT, desc.getReturnType());
     assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
-        desc.getDefinedArgs());
+        desc.getParamTypes());
 
     WorkerTestingUtil.buildTestDir(TEST_PATH);
     File save = new File(TEST_PATH + "/save.dat");
@@ -48,7 +48,7 @@ public class TestFunctionDesc {
     assertEquals(FunctionType.GENERAL, newDesc.getFuncType());
     assertEquals(DataType.INT, newDesc.getReturnType());
     assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
-        newDesc.getDefinedArgs());
+        newDesc.getParamTypes());
 
     assertEquals(desc.getProto(), newDesc.getProto());
   }
@@ -68,7 +68,7 @@ public class TestFunctionDesc {
 	    assertEquals(FunctionType.GENERAL, fromJson.getFuncType());
 	    assertEquals(DataType.INT, fromJson.getReturnType());
 	    assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
-	    		fromJson.getDefinedArgs());
+	    		fromJson.getParamTypes());
 
 	    assertEquals(desc.getProto(), fromJson.getProto());
   }

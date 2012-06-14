@@ -140,7 +140,8 @@ public class AlgebraicUtil {
       // If both are constants, they can be evaluated immediately.
       if (left.getType() == Type.CONST
           && right.getType() == Type.CONST) {
-        return new ConstEval(expr.eval(null, null));        
+        expr.eval(null, null);
+        return new ConstEval(expr.terminate());
       } else {
         return new BinaryEval(expr.getType(), left, right);            
       }

@@ -68,11 +68,11 @@ public class DatumFactory {
 	  return new FloatDatum(Float.valueOf(val));
 	}
 	
-	public static Datum createDouble(double val) {
+	public static DoubleDatum createDouble(double val) {
 		return new DoubleDatum(val);
 	}
 	
-	public static Datum createDouble(String val) {
+	public static DoubleDatum createDouble(String val) {
 	  return new DoubleDatum(Double.valueOf(val));
 	}
 	

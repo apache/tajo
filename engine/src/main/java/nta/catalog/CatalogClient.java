@@ -198,7 +198,7 @@ public class CatalogClient implements CatalogService {
     for (int i = 0; i < size; i++) {
       builder.addParameterTypes(paramTypes[i]);
     }
-    return FunctionDesc.create(proxy.getFunctionMeta(builder.build()));
+    return new FunctionDesc(proxy.getFunctionMeta(builder.build()));
   }
 
   @Override

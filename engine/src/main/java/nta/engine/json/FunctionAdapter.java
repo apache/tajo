@@ -47,5 +47,4 @@ public class FunctionAdapter implements JsonDeserializer<Function>, JsonSerializ
     }
     return context.deserialize(jsonObject.get("property"), clazz);
   }
-
 }

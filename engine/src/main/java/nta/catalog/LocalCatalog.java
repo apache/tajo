@@ -153,7 +153,7 @@ public class LocalCatalog implements CatalogService {
     for (int i = 0; i < size; i++) {
       builder.addParameterTypes(paramTypes[i]);
     }
-    return FunctionDesc.create(catalog.getFunctionMeta(builder.build()));
+    return new FunctionDesc(catalog.getFunctionMeta(builder.build()));
   }
 
   @Override

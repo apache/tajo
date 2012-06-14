@@ -5,36 +5,40 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.datum.DatumType;
+import nta.datum.LongDatum;
+import nta.storage.Tuple;
 
 /**
  * @author Hyunsik Choi
  */
-public final class CountValue extends Function {
-  private Datum one = DatumFactory.createLong(1);
+public final class CountValue extends GeneralFunction<LongDatum> {
+  private long count;
   
   public CountValue() {
     super(new Column[] { new Column("arg1", DataType.ANY)});
   }
 
   @Override
-  public Datum invoke(final Datum... datums) {
-    if (datums.length == 1) {
-      if (datums[0].type() != DatumType.NULL) {
-        return DatumFactory.createLong(1);
+  public void init() {
+  }
+
+  @Override
+  public void eval(final Tuple params) {
+    if (!params.contains(1)) {
+      if (params.get(0).type() != DatumType.NULL) {
+        count = 0;
       } else {
-        return DatumFactory.createLong(0);
+        count = 1;
       }
     }
 
-    if (datums[0].type() != DatumType.NULL) {
-      return datums[1].plus(one);
-    } else {
-      return datums[1];
+    if (params.get(0).type() != DatumType.NULL) {
+      count++;
     }
   }
 
   @Override
-  public DataType getResType() {
-    return DataType.LONG;
+  public LongDatum terminate() {
+    return DatumFactory.createLong(count);
   }
 }

@@ -56,7 +56,7 @@ public class LikeEval extends BinaryEval {
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple, Datum... args) {
+  public void eval(Schema schema, Tuple tuple, Datum... args) {
     if (fieldId == null) {
       fieldId = schema.getColumnId(column.getQualifiedName());
       compile(this.pattern);
@@ -67,7 +67,9 @@ public class LikeEval extends BinaryEval {
     } else {
       result.setValue(compiled.matcher(str.asChars()).matches());
     }
-    
+  }
+
+  public Datum terminate() {
     return result;
   }
   

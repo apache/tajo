@@ -3,6 +3,7 @@ package nta.storage;
 import java.net.InetAddress;
 import java.util.Arrays;
 
+import com.google.gson.annotations.Expose;
 import nta.datum.*;
 import nta.datum.exception.InvalidCastException;
 
@@ -11,8 +12,8 @@ import nta.datum.exception.InvalidCastException;
  * 
  */
 public class VTuple implements Tuple {
-	public Datum [] values;
-	private long offset;
+	@Expose public Datum [] values;
+	@Expose private long offset;
 	
 	public VTuple(int size) {
 		values = new Datum [size];
@@ -22,6 +23,11 @@ public class VTuple implements Tuple {
     this.values = new Datum[tuple.size()];
     System.arraycopy(((VTuple)tuple).values, 0, values, 0, tuple.size());
     this.offset = ((VTuple)tuple).offset;
+  }
+
+  public VTuple(Datum [] datum) {
+    this(datum.length);
+    put(datum);
   }
 
 	@Override

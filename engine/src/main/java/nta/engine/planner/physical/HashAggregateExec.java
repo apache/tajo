@@ -67,18 +67,17 @@ public class HashAggregateExec extends AggregationExec {
       if(tupleSlots.containsKey(keyTuple)) {
         Tuple tmpTuple = tupleSlots.get(keyTuple);
         for(int i = 0; i < measurelist.length; i++) {
-          Datum datum =
-            evals[measurelist[i]].eval(inputSchema, tuple, 
+          evals[measurelist[i]].eval(inputSchema, tuple,
                 tmpTuple.get(measurelist[i]));
+          Datum datum = evals[measurelist[i]].terminate();
           tmpTuple.put(measurelist[i], datum);
           tupleSlots.put(keyTuple, tmpTuple);
         }
       } else { // if the key occurs firstly
         this.tuple = new VTuple(outputSchema.getColumnNum());
         for(int i = 0; i < outputSchema.getColumnNum(); i++) {
-          Datum datum =
-              evals[i].eval(inputSchema, tuple);
-          
+          evals[i].eval(inputSchema, tuple);
+          Datum datum = evals[i].terminate();
           this.tuple.put(i, datum);
         }
         tupleSlots.put(keyTuple, this.tuple);

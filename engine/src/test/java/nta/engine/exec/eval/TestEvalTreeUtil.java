@@ -197,12 +197,14 @@ public class TestEvalTreeUtil {
     FieldEval field = (FieldEval) first.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
     assertEquals(Type.LTH, first.getType());
-    assertEquals(10, first.getRightExpr().eval(null,  null).asInt());
+    first.getRightExpr().eval(null,  null);
+    assertEquals(10, first.getRightExpr().terminate().asInt());
     
     field = (FieldEval) second.getRightExpr();
     assertEquals(col1, field.getColumnRef());
     assertEquals(Type.LTH, second.getType());
-    assertEquals(4, second.getLeftExpr().eval(null,  null).asInt());
+    second.getLeftExpr().eval(null,  null);
+    assertEquals(4, second.getLeftExpr().terminate().asInt());
   }
   
   @Test
@@ -229,10 +231,12 @@ public class TestEvalTreeUtil {
     Target [] targets = block.getTargetList();
     EvalNode node = AlgebraicUtil.simplify(targets[0].getEvalTree());
     assertEquals(Type.CONST, node.getType());
-    assertEquals(7, node.eval(null, null).asInt());
+    node.eval(null, null);
+    assertEquals(7, node.terminate().asInt());
     node = AlgebraicUtil.simplify(targets[1].getEvalTree());
     assertEquals(Type.CONST, node.getType());
-    assertTrue(7.0d == node.eval(null, null).asDouble());
+    node.eval(null, null);
+    assertTrue(7.0d == node.terminate().asDouble());
     
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
@@ -270,8 +274,9 @@ public class TestEvalTreeUtil {
     EvalNode transposed = AlgebraicUtil.transpose(node, col1);
     assertEquals(Type.GTH, transposed.getType());
     FieldEval field = (FieldEval) transposed.getLeftExpr(); 
-    assertEquals(col1, field.getColumnRef());    
-    assertEquals(1, transposed.getRightExpr().eval(null, null).asInt());
+    assertEquals(col1, field.getColumnRef());
+    transposed.getRightExpr().eval(null, null);
+    assertEquals(1, transposed.getRightExpr().terminate().asInt());
             
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[4]);
@@ -280,7 +285,8 @@ public class TestEvalTreeUtil {
     transposed = AlgebraicUtil.transpose(node, col1);
     assertEquals(Type.LTH, transposed.getType());
     field = (FieldEval) transposed.getLeftExpr(); 
-    assertEquals(col1, field.getColumnRef());    
-    assertEquals(2, transposed.getRightExpr().eval(null, null).asInt());
+    assertEquals(col1, field.getColumnRef());
+    transposed.getRightExpr().eval(null, null);
+    assertEquals(2, transposed.getRightExpr().terminate().asInt());
   }
 }

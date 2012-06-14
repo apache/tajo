@@ -16,6 +16,7 @@ import com.google.gson.annotations.Expose;
 public class FieldEval extends EvalNode implements Cloneable {
 	@Expose private Column column;
 	@Expose	private int fieldId = -1;
+  private Datum datum;
 	
 	public FieldEval(String columnName, DataType domain) {
 		super(Type.FIELD);
@@ -28,15 +29,19 @@ public class FieldEval extends EvalNode implements Cloneable {
 	}
 
 	@Override
-	public Datum eval(Schema schema, Tuple tuple, Datum...args) {
+	public void eval(Schema schema, Tuple tuple, Datum...args) {
 	  if (fieldId == -1) {
 	    fieldId = schema.getColumnId(column.getQualifiedName());
 	  }
-
-	  return tuple.get(fieldId);
+	  datum = tuple.get(fieldId);
 	}
-	
-	@Override
+
+  @Override
+  public Datum terminate() {
+    return this.datum;
+  }
+
+  @Override
 	public DataType getValueType() {
 		return column.getDataType();
 	}

@@ -4,26 +4,36 @@ import nta.catalog.Column;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
+import nta.datum.IntDatum;
+import nta.storage.Tuple;
 
 /**
  * @author Hyunsik Choi
  */
-public final class MaxInt extends Function {
+public final class MaxInt extends GeneralFunction<IntDatum> {
+  private Datum maxVal;
+  private Datum curVal;
+
   public MaxInt() {
     super(new Column[] { new Column("arg1", DataType.INT)});
   }
 
   @Override
-  public Datum invoke(final Datum... datums) {
-    if (datums.length == 1) {
-      return datums[0];
-    }
-    return DatumFactory
-        .createInt(Math.max(datums[0].asInt(), datums[1].asInt()));
+  public void init() {
   }
 
   @Override
-  public DataType getResType() {
-    return DataType.INT;
+  public void eval(Tuple params) {
+    curVal = params.get(0);
+    maxVal = params.get(1);
+  }
+
+  @Override
+  public IntDatum terminate() {
+    if (maxVal == null) {
+      return (IntDatum) curVal;
+    }
+    return DatumFactory
+        .createInt(Math.max(maxVal.asInt(), curVal.asInt()));
   }
 }

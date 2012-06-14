@@ -1,74 +1,56 @@
 package nta.engine.function;
 
-import nta.catalog.Column;
-import nta.catalog.proto.CatalogProtos.DataType;
-import nta.datum.Datum;
-import nta.engine.exec.eval.EvalNode;
-import nta.engine.utils.TUtil;
-
 import com.google.common.base.Objects;
+import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import nta.catalog.Column;
+import nta.datum.Datum;
+import nta.engine.json.GsonCreator;
+import nta.engine.utils.TUtil;
+import nta.storage.Tuple;
 
 /**
  * @author Hyunsik Choi
  */
-public abstract class Function implements Cloneable {
-	@Expose
-	protected String signature;
-	@Expose
-  protected Column [] definedArgs;
-	@Expose
-	protected EvalNode [] givenArgs;
-	
-	public final static Column [] NoArgs = new Column [] {};
-	
-	public Function(Column [] definedArgs) {
-		this.definedArgs = definedArgs;
-	}
-	
-	public final Column [] getDefinedArgs() {
-		return this.definedArgs;
-	}
-	
-	public void setSignature(String signature) {
-	  this.signature = signature;
-	}
-	
-	public String getSignature() {
-	  return signature;
-	}
-	
-	public abstract Datum invoke(Datum ... datums);
-	public abstract DataType getResType();
-	
-	public enum Type {
-	  AGG,
-	  GENERAL;
-	}
-	
-	@Override
-	public boolean equals(Object obj) {
-	  if (obj instanceof Function) {
-	    Function other = (Function) obj;
-	    return TUtil.checkEquals(signature, other.signature)
-	        && TUtil.checkEquals(definedArgs, other.definedArgs)
-	        && TUtil.checkEquals(givenArgs, other.givenArgs);	    
-	  } else {
-	    return false;
-	  }
-	}
-	
-	@Override
-	public int hashCode() {
-	  return Objects.hashCode(signature, givenArgs);
-	}
-		
-	public Object clone() throws CloneNotSupportedException {
-	  Function func = (Function) super.clone();
-	  func.signature = signature;
-	  func.definedArgs = definedArgs != null ? definedArgs.clone() : null;
-	  func.givenArgs = givenArgs != null ? givenArgs.clone() : null;
-	  
-	  return func;
-	}
+public abstract class Function<T extends Datum> implements Cloneable {
+  @Expose protected Column[] definedParams;
+  public final static Column [] NoArgs = new Column [] {};
+
+  public Function(Column[] definedArgs) {
+    this.definedParams = definedArgs;
+  }
+
+  public abstract void init();
+
+  public abstract void eval(Tuple params);
+
+  public abstract void merge(Tuple...params);
+
+  public abstract T terminate();
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof GeneralFunction) {
+      GeneralFunction other = (GeneralFunction) obj;
+      return TUtil.checkEquals(definedParams, other.definedParams);
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(definedParams);
+  }
+
+  public Object clone() throws CloneNotSupportedException {
+    GeneralFunction func = (GeneralFunction) super.clone();
+    func.definedParams = definedParams != null ? definedParams.clone() : null;
+    return func;
+  }
+
+  public String toJSON() {
+    Gson gson = GsonCreator.getInstance();
+    return gson.toJson(this, Function.class);
+  }
 }

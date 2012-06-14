@@ -1,6 +1,3 @@
-/**
- * 
- */
 package nta.catalog;
 
 import java.lang.reflect.Constructor;
@@ -13,6 +10,7 @@ import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.common.ProtoObject;
 import nta.engine.exception.InternalException;
 import nta.engine.function.Function;
+import nta.engine.function.GeneralFunction;
 import nta.engine.json.GsonCreator;
 
 import com.google.gson.Gson;
@@ -20,36 +18,30 @@ import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
- * 
  */
 public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
   private FunctionDescProto proto = FunctionDescProto.getDefaultInstance();
   private FunctionDescProto.Builder builder = null;
   private boolean viaProto = false;
   
-  @Expose
-  private String signature;
-  @Expose
-  private Class<? extends Function> funcClass;
-  @Expose
-  private FunctionType funcType;
-  @Expose
-  private DataType returnType;
-  @Expose
-  private DataType [] parameterTypes;
+  @Expose private String signature;
+  @Expose private Class<? extends Function> funcClass;
+  @Expose private FunctionType funcType;
+  @Expose private DataType returnType;
+  @Expose private DataType [] params;
 
   public FunctionDesc() {
     this.builder = FunctionDescProto.newBuilder();
   }
   
   public FunctionDesc(String signature, Class<? extends Function> clazz,
-      FunctionType funcType, DataType retType, DataType [] parameterTypes) {
+      FunctionType funcType, DataType retType, DataType [] params) {
     this();
     this.signature = signature.toLowerCase();
     this.funcClass = clazz;
     this.funcType = funcType;
     this.returnType = retType;
-    this.parameterTypes = parameterTypes;
+    this.params = params;
   }
   
   public FunctionDesc(FunctionDescProto proto) {
@@ -62,10 +54,6 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
       DataType retType, DataType... argTypes) throws ClassNotFoundException {
     this(signature, (Class<? extends Function>) Class.forName(className), type,
         retType, argTypes);
-  }
-  
-  public static FunctionDesc create(FunctionDescProto proto) {
-    return new FunctionDesc(proto);
   }
   
   /**
@@ -123,17 +111,17 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
     return this.funcType;
   }
 
-  public DataType [] getDefinedArgs() {
+  public DataType [] getParamTypes() {
     FunctionDescProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.parameterTypes != null) {
-      return this.parameterTypes;
+    if (this.params != null) {
+      return this.params;
     }
     if (p.getParameterTypesCount() == 0) {
       return null;
     }
-    this.parameterTypes = p.getParameterTypesList().toArray(
+    this.params = p.getParameterTypesList().toArray(
         new DataType[p.getParameterTypesCount()]);
-    return this.parameterTypes;
+    return this.params;
   }
 
   public DataType getReturnType() {
@@ -166,7 +154,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
     desc.builder = this.builder == null?null:this.builder.clone();
     
     desc.signature = this.signature;
-    desc.parameterTypes = this.parameterTypes;
+    desc.params = this.params;
     
     desc.returnType = this.returnType;
     desc.viaProto = this.viaProto;
@@ -203,8 +191,8 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
     if (this.returnType != null) {
       builder.setReturnType(this.returnType);
     }
-    if (this.parameterTypes != null) {
-      builder.addAllParameterTypes(Arrays.asList(parameterTypes));
+    if (this.params != null) {
+      builder.addAllParameterTypes(Arrays.asList(params));
     }
   }
   
@@ -226,7 +214,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
 	  if (funcClass == null && p.hasClassName()) {
 		  try {
 			  this.funcClass = 
-			      (Class<? extends Function>)Class.forName(p.getClassName());
+			      (Class<? extends GeneralFunction>)Class.forName(p.getClassName());
 		  } catch (ClassNotFoundException e) {
 			  throw new InternalException("The function class ("+p.getClassName()+") cannot be loaded");
 		  }
@@ -237,10 +225,10 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
 	  if (returnType == null && p.hasReturnType()) {
 		  returnType = p.getReturnType();
 	  }
-	  if (parameterTypes == null && p.getParameterTypesCount() > 0) {
-		  parameterTypes = new DataType[p.getParameterTypesCount()];
+	  if (params == null && p.getParameterTypesCount() > 0) {
+		  params = new DataType[p.getParameterTypesCount()];
 		  for (int i = 0; i < p.getParameterTypesCount(); i++) {
-			  parameterTypes[i] = p.getParameterTypes(i);
+			  params[i] = p.getParameterTypes(i);
 		  }
 	  }
   }

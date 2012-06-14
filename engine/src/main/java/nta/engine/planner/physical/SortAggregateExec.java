@@ -1,7 +1,6 @@
 package nta.engine.planner.physical;
 
 import nta.catalog.Schema;
-import nta.datum.Datum;
 import nta.engine.SubqueryContext;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.storage.Tuple;
@@ -40,18 +39,17 @@ public class SortAggregateExec extends AggregationExec {
       if (prevKey == null || prevKey.equals(curKey)) {
         if (prevKey == null) {
           for(int i = 0; i < outputSchema.getColumnNum(); i++) {
-            Datum datum =
-                evals[i].eval(inputSchema, tuple);
-            this.newAggTuple .put(i, datum);
+            evals[i].eval(inputSchema, tuple);
+            this.newAggTuple .put(i, evals[i].terminate());
           }
           prevKey = curKey;
           this.aggTuple = this.newAggTuple;
         } else {
           // aggregate
           for (int idx : measurelist) {
-            Datum datum = evals[idx].eval(inputSchema, tuple,
+            evals[idx].eval(inputSchema, tuple,
                 aggTuple.get(idx));
-            aggTuple.put(idx, datum);
+            aggTuple.put(idx, evals[idx].terminate());
           }
         }
       } else {
@@ -59,9 +57,8 @@ public class SortAggregateExec extends AggregationExec {
         finalTuple = aggTuple;
         this.aggTuple = new VTuple(outputSchema.getColumnNum());
         for(int i = 0; i < outputSchema.getColumnNum(); i++) {
-          Datum datum =
           evals[i].eval(inputSchema, tuple);
-          this.aggTuple .put(i, datum);
+          this.aggTuple .put(i, evals[i].terminate());
         }
         prevKey = curKey;
         return finalTuple;

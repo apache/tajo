@@ -53,7 +53,8 @@ public class SelectionExec extends PhysicalExec  {
   public Tuple next() throws IOException {
     Tuple tuple = null;
     while ((tuple = subOp.next()) != null) {
-      if (qual.eval(inSchema, tuple).asBool()) {
+      qual.eval(inSchema, tuple);
+      if (qual.terminate().asBool()) {
         if (targetIds != null) {
           TupleUtil.project(tuple, outputTuple, targetIds);
           return outputTuple;

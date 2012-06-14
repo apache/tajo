@@ -80,7 +80,8 @@ public class NLJoinExec extends PhysicalExec {
 
       frameTuple.set(outerTuple, innerTuple);
       if (joinQual != null) {
-        if (joinQual.eval(inSchema, frameTuple).asBool()) {
+        joinQual.eval(inSchema, frameTuple);
+        if (joinQual.terminate().asBool()) {
           TupleUtil.project(frameTuple, outputTuple, targetIds);
           return outputTuple;
         }

@@ -75,9 +75,10 @@ public abstract class EvalNode implements Cloneable {
     return gson.toJson(this, EvalNode.class);
 	}
 	
-	public abstract Datum eval(Schema schema, Tuple tuple, Datum...args);
-	
-	
+	public void eval(Schema schema, Tuple tuple, Datum...args) {}
+
+  public abstract Datum terminate();
+
 	public void preOrder(EvalNodeVisitor visitor) {
 	  visitor.visit(this);
 	  leftExpr.preOrder(visitor);
@@ -91,7 +92,8 @@ public abstract class EvalNode implements Cloneable {
 	}
 	
 	public static enum Type {
-	  AND,
+    AGG_FUNCTION,
+    AND,
 	  OR,
 	  EQUAL,
 	  NOT_EQUAL,

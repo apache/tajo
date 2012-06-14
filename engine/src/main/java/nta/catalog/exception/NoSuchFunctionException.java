@@ -9,6 +9,6 @@ public class NoSuchFunctionException extends RuntimeException {
 	public NoSuchFunctionException() {}
 
 	public NoSuchFunctionException(String funcName) {
-		super("No Such Function in Catalog: "+funcName);
+		super("No Such GeneralFunction in Catalog: "+funcName);
 	}
 }

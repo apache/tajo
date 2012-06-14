@@ -67,8 +67,9 @@ public class SeqScanExec extends PhysicalExec {
         return null;
       }
     } else {
-      while ((tuple = scanner.next()) != null) {        
-        if (qual.eval(inputSchema, tuple).asBool()) {
+      while ((tuple = scanner.next()) != null) {
+        qual.eval(inputSchema, tuple);
+        if (qual.terminate().asBool()) {
           Tuple newTuple = new VTuple(outputSchema.getColumnNum());
           int i=0;
           for(int cid : targetIds) {

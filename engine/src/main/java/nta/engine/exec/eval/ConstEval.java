@@ -6,12 +6,9 @@ package nta.engine.exec.eval;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
-import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
-import nta.datum.DatumType;
 import nta.engine.json.GsonCreator;
-import nta.storage.Tuple;
 
 /**
  * @author Hyunsik Choi
@@ -28,18 +25,12 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
 		super(Type.CONST);
 		this.datum = datum;
 	}
-	
-	public DatumType getDatumType() {
-		return this.datum.type();
-	}	
 
-	/* (non-Javadoc)
-	 * @see nta.query.executor.expr.Expr#evalVal(nta.storage.Tuple)
-	 */
-	@Override
-	public Datum eval(Schema schema, Tuple tuple, Datum...args) {
-		return this.datum;
-	}
+  @Override
+  public Datum terminate() {
+    return this.datum;
+  }
+
 
   public Datum getValue() {
     return this.datum;

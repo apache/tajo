@@ -1,11 +1,7 @@
-/**
- * 
- */
 package nta.engine.exec.eval;
 
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
-import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.engine.function.Function;
 import nta.engine.json.GsonCreator;
@@ -15,71 +11,53 @@ import nta.storage.Tuple;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import nta.storage.VTuple;
 
 /**
  * @author Hyunsik Choi
  */
-public class FuncCallEval extends EvalNode {
-	@Expose
-	protected FunctionDesc desc;
-	@Expose
-  protected Function instance;
-	@Expose
-	protected EvalNode [] givenArgs;
+public class FuncCallEval extends FuncEval {
+	@Expose protected Function instance;
+  private Tuple tuple;
+  private Tuple params = null;
+  private Schema schema;
 
-	public FuncCallEval(FunctionDesc desc, Function instance, 
-	    EvalNode [] givenArgs) {
-		super(Type.FUNCTION);
-		this.desc = desc;
+	public FuncCallEval(FunctionDesc desc, Function instance, EvalNode [] givenArgs) {
+		super(Type.FUNCTION, desc, givenArgs);
 		this.instance = instance;
-		this.givenArgs = givenArgs;
-	}
-	
-	public EvalNode [] getArgs() {
-	  return this.givenArgs;
-	}
-
-  public void setArgs(EvalNode [] args) {
-    this.givenArgs = args;
   }
-	
-	public DataType getValueType() {
-		return this.desc.getReturnType();
-	}
 
-	/* (non-Javadoc)
-	 * @see nta.query.executor.eval.Expr#evalVal(nta.storage.Tuple)
-	 */
+  @Override
+  public void init() {
+  }
+
+  /* (non-Javadoc)
+    * @see nta.query.executor.eval.Expr#evalVal(nta.storage.Tuple)
+    */
 	@Override
-	public Datum eval(Schema schema, Tuple tuple, Datum...args) {		
-		Datum [] data = null;
-		
-		if(givenArgs != null) {
-			data = new Datum[givenArgs.length];
-
-			for(int i=0;i < givenArgs.length; i++) {
-				data[i] = givenArgs[i].eval(schema, tuple);
-			}
-		}
-
-		return instance.invoke(data);
+	public void eval(Schema schema, Tuple tuple, Datum...args) {
+    this.schema = schema;
+    this.tuple = tuple;
 	}
 
-	@Override
-	public String getName() {
-		return desc.getSignature();
-	}
-	
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		for(int i=0; i < givenArgs.length; i++) {
-			sb.append(givenArgs[i]);
-			if(i+1 < givenArgs.length)
-				sb.append(",");
-		}
-		return desc.getSignature()+"("+sb+")";
-	}
-	
+  @Override
+  public Datum terminate() {
+    if (this.params == null) {
+      params = new VTuple(givenArgs.length);
+    }
+
+    if(givenArgs != null) {
+      params.clear();
+      for(int i=0;i < givenArgs.length; i++) {
+        givenArgs[i].eval(schema, tuple);
+        params.put(i, givenArgs[i].terminate());
+      }
+    }
+    instance.eval(params);
+    return instance.terminate();
+  }
+
+  @Override
 	public String toJSON() {
 	  Gson gson = GsonCreator.getInstance();
     return gson.toJson(this, EvalNode.class);
@@ -89,13 +67,8 @@ public class FuncCallEval extends EvalNode {
 	public boolean equals(Object obj) {
 	  if (obj instanceof FuncCallEval) {
       FuncCallEval other = (FuncCallEval) obj;
-
-      boolean b1 = this.type == other.type;
-      boolean b2 = TUtil.checkEquals(instance, other.instance);
-      boolean b3 = TUtil.checkEquals(desc, other.desc);
-      boolean b4 = TUtil.checkEquals(givenArgs, other.givenArgs);
-      
-      return b1 && b2 && b3 && b4;
+      return super.equals(other) &&
+          TUtil.checkEquals(instance, other.instance);
 	  }
 	  
 	  return false;
@@ -109,28 +82,7 @@ public class FuncCallEval extends EvalNode {
 	@Override
   public Object clone() throws CloneNotSupportedException {
     FuncCallEval eval = (FuncCallEval) super.clone();
-    eval.desc = (FunctionDesc) desc.clone();
     eval.instance = (Function) instance.clone();
-    eval.givenArgs = new EvalNode[givenArgs.length];
-    for (int i = 0; i < givenArgs.length; i++) {
-      eval.givenArgs[i] = (EvalNode) givenArgs[i].clone();
-    }    
     return eval;
   }
-	
-	@Override
-  public void preOrder(EvalNodeVisitor visitor) {
-    for (EvalNode eval : givenArgs) {
-      eval.postOrder(visitor);
-    }
-    visitor.visit(this);
-  }
-	
-	@Override
-	public void postOrder(EvalNodeVisitor visitor) {
-	  for (EvalNode eval : givenArgs) {
-	    eval.postOrder(visitor);
-	  }
-	  visitor.visit(this);
-	}
 }

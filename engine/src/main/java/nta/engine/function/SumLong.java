@@ -5,27 +5,36 @@ package nta.engine.function;
 
 import nta.catalog.Column;
 import nta.catalog.proto.CatalogProtos.DataType;
-import nta.datum.Datum;
+import nta.datum.LongDatum;
+import nta.storage.Tuple;
 
 /**
  * @author Hyunsik Choi
  */
-public final class SumLong extends Function {
+public final class SumLong extends GeneralFunction {
+  private LongDatum curVal;
+  private LongDatum sumVal;
+
   public SumLong() {
     super(new Column[] { new Column("arg1", DataType.LONG)});
   }
 
   @Override
-  public Datum invoke(final Datum... data) {
-    if(data.length == 1) {
-      return data[0];
-    }
-    
-    return data[0].plus(data[1]);
+  public void init() {
   }
 
   @Override
-  public DataType getResType() {
-    return DataType.LONG;
+  public void eval(Tuple params) {
+    curVal = params.getLong(0);
+    sumVal = params.getLong(1);
+  }
+
+  @Override
+  public LongDatum terminate() {
+    if (sumVal == null) {
+      return curVal;
+    } else {
+      return (LongDatum) sumVal.plus(curVal);
+    }
   }
 }

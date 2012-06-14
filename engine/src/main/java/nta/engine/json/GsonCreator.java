@@ -9,6 +9,7 @@ import nta.datum.Datum;
 import nta.datum.json.DatumAdapter;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.function.Function;
+import nta.engine.function.GeneralFunction;
 import nta.engine.planner.logical.LogicalNode;
 
 import org.apache.hadoop.fs.Path;

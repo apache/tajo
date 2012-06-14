@@ -110,38 +110,44 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	 * @see nta.query.executor.eval.Expr#evalBool(nta.storage.Tuple)
 	 */
 	@Override
-	public Datum eval(Schema schema, Tuple tuple, Datum...args) {
-		switch(type) {
-		case AND:
-			return DatumFactory.createBool(leftExpr.eval(schema, tuple).asBool() && rightExpr.eval(schema, tuple).asBool());
-		case OR:
-			return DatumFactory.createBool(leftExpr.eval(schema, tuple).asBool() || rightExpr.eval(schema, tuple).asBool());
-			
-		case EQUAL:
-			return leftExpr.eval(schema, tuple).equalsTo(rightExpr.eval(schema, tuple));
-		case LTH:
-			return leftExpr.eval(schema, tuple).lessThan(rightExpr.eval(schema, tuple));
-		case LEQ:
-			return leftExpr.eval(schema, tuple).lessThanEqual(rightExpr.eval(schema, tuple));
-		case GTH:
-			return leftExpr.eval(schema, tuple).greaterThan(rightExpr.eval(schema, tuple));
-		case GEQ:
-			return leftExpr.eval(schema, tuple).greaterThanEqual(rightExpr.eval(schema, tuple));
-			
-		case PLUS:
-			return leftExpr.eval(schema, tuple).plus(rightExpr.eval(schema, tuple));			
-		case MINUS:
-			return leftExpr.eval(schema, tuple).minus(rightExpr.eval(schema, tuple));
-		case MULTIPLY:
-			return leftExpr.eval(schema, tuple).multiply(rightExpr.eval(schema, tuple));
-		case DIVIDE:
-			return leftExpr.eval(schema, tuple).divide(rightExpr.eval(schema, tuple));
-		default:
-			throw new InvalidEvalException();
-		}
+	public void eval(Schema schema, Tuple tuple, Datum...args) {
+	  leftExpr.eval(schema, tuple);
+    rightExpr.eval(schema, tuple);
 	}
 
-	@Override
+  @Override
+  public Datum terminate() {
+    switch(type) {
+      case AND:
+        return DatumFactory.createBool(leftExpr.terminate().asBool() && rightExpr.terminate().asBool());
+      case OR:
+        return DatumFactory.createBool(leftExpr.terminate().asBool() || rightExpr.terminate().asBool());
+
+      case EQUAL:
+        return leftExpr.terminate().equalsTo(rightExpr.terminate());
+      case LTH:
+        return leftExpr.terminate().lessThan(rightExpr.terminate());
+      case LEQ:
+        return leftExpr.terminate().lessThanEqual(rightExpr.terminate());
+      case GTH:
+        return leftExpr.terminate().greaterThan(rightExpr.terminate());
+      case GEQ:
+        return leftExpr.terminate().greaterThanEqual(rightExpr.terminate());
+
+      case PLUS:
+        return leftExpr.terminate().plus(rightExpr.terminate());
+      case MINUS:
+        return leftExpr.terminate().minus(rightExpr.terminate());
+      case MULTIPLY:
+        return leftExpr.terminate().multiply(rightExpr.terminate());
+      case DIVIDE:
+        return leftExpr.terminate().divide(rightExpr.terminate());
+      default:
+        throw new InvalidEvalException();
+    }
+  }
+
+  @Override
 	public String getName() {
 		return "?";
 	}

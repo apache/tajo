@@ -61,7 +61,8 @@ public class ProjectionExec extends PhysicalExec {
     }
      
     for (int i = 0; i < evals.length; i++) {
-      outTuple.put(i, evals[i].eval(inSchema, tuple));
+      evals[i].eval(inSchema, tuple);
+      outTuple.put(i, evals[i].terminate());
     }
     
     return outTuple;

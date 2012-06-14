@@ -18,9 +18,6 @@ import nta.storage.Tuple;
 public class NotEval extends EvalNode implements Cloneable {
   @Expose private EvalNode subExpr;
 
-  /**
-   * @param type
-   */
   public NotEval(EvalNode subExpr) {
     super(Type.NOT);
     Preconditions.checkArgument(
@@ -39,8 +36,13 @@ public class NotEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple, Datum... args) {
-    return DatumFactory.createBool(!subExpr.eval(schema, tuple).asBool());
+  public void eval(Schema schema, Tuple tuple, Datum... args) {
+    subExpr.eval(schema, tuple);
+  }
+
+  @Override
+  public Datum terminate() {
+    return DatumFactory.createBool(!subExpr.terminate().asBool());
   }
 
   @Override

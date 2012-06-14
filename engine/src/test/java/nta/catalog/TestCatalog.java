@@ -14,12 +14,13 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.Datum;
-import nta.datum.DatumFactory;
+import nta.datum.IntDatum;
 import nta.engine.NConstants;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
-import nta.engine.function.Function;
+import nta.engine.function.GeneralFunction;
 import nta.storage.CSVFile2;
+import nta.storage.Tuple;
 import nta.util.FileUtil;
 import nta.zookeeper.ZkClient;
 
@@ -40,33 +41,8 @@ public class TestCatalog {
 	static final String FieldName1="f1";
 	static final String FieldName2="f2";
 	static final String FieldName3="f3";	
-	
-	static final DataType Type1 = DataType.BYTE;
-	static final DataType Type2 = DataType.INT;
-	static final DataType Type3 = DataType.LONG;
-	
-	static final int Len2 = 10;
-	static final int Len3 = 12;
-	
-	Column field1;
-	Column field2;
-	Column field3;	
-	
-	static final String RelName1="rel1";
-	static final String RelName2="rel2";
-	
-	TableDescImpl rel1;
-	TableDescImpl rel2;
-	
-	int fid1;
-	int fid2;
-	int fid3;
-	
-	int rid1;
-	int rid2;
-	
+
 	Schema schema1;
-	Schema schema2;
 	
 	static NtaTestingUtility util;
 	static CatalogService catalog;
@@ -152,7 +128,8 @@ public class TestCatalog {
 	  catalog.deleteTable(desc.getId());
 	}
 	
-	public static class TestFunc1 extends Function {
+	public static class TestFunc1 extends GeneralFunction {
+    private Datum param;
 		public TestFunc1() {
 			super(					
 					new Column [] {
@@ -161,18 +138,23 @@ public class TestCatalog {
 			);
 		}
 
-		@Override
-		public Datum invoke(Datum... datums) {
-			return DatumFactory.createInt(1);
-		}
+    @Override
+    public void init() {
+    }
 
-		@Override
-		public DataType getResType() {
-			return DataType.INT;
-		}
+    @Override
+    public void eval(Tuple params) {
+      param = params.get(0);
+    }
+
+    @Override
+    public Datum terminate() {
+      return param;
+    }
 	}
 	
-	 public static class TestFunc2 extends Function {
+	 public static class TestFunc2 extends GeneralFunction {
+     private Datum param;
 	    public TestFunc2() {
 	      super(          
 	          new Column [] {
@@ -182,15 +164,19 @@ public class TestCatalog {
 	      );
 	    }
 
-	    @Override
-	    public Datum invoke(Datum... datums) {
-	      return DatumFactory.createInt(1);
-	    }
+     @Override
+     public void init() {
+     }
 
-	    @Override
-	    public DataType getResType() {
-	      return DataType.INT;
-	    }
+     @Override
+     public void eval(Tuple params) {
+       param = params.get(1);
+     }
+
+     @Override
+     public Datum terminate() {
+       return param;
+     }
 	  } 
 
 	@Test
@@ -212,14 +198,14 @@ public class TestCatalog {
   @Test
   public final void testUnregisterFunc() throws Exception {    
     assertFalse(catalog
-        .containFunction("test3", new DataType[] { DataType.INT }));
+        .containFunction("test3", DataType.INT));
     FunctionDesc meta = new FunctionDesc("test3", TestFunc1.class,
         FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
     catalog.registerFunction(meta);
     assertTrue(catalog.containFunction("test3", DataType.INT));
     catalog.unregisterFunction("test3", DataType.INT);
     assertFalse(catalog
-        .containFunction("test3", new DataType[] { DataType.INT }));
+        .containFunction("test3", DataType.INT));
 
     assertFalse(catalog.containFunction("test3", DataType.INT, DataType.BYTES));
     FunctionDesc overload = new FunctionDesc("test3", TestFunc2.class,

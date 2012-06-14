@@ -44,7 +44,8 @@ public class EvalExprExec extends PhysicalExec {
     Target [] targets = annotation.getExprs();
     Tuple t = new VTuple(targets.length);
     for (int i = 0; i < targets.length; i++) {
-      t.put(i, targets[i].getEvalTree().eval(inputSchema, null));
+      targets[i].getEvalTree().eval(inputSchema, null);
+      t.put(i, targets[i].getEvalTree().terminate());
     }
     return t;
   }
