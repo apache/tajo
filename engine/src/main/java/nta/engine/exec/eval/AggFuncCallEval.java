@@ -4,40 +4,34 @@ import com.google.gson.annotations.Expose;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
 import nta.datum.Datum;
-import nta.engine.function.Function;
+import nta.engine.function.AggFunction;
+import nta.engine.function.FunctionContext;
 import nta.engine.json.GsonCreator;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 public class AggFuncCallEval extends FuncEval {
-  @Expose protected Function instance;
+  @Expose protected AggFunction instance;
   private Schema schema;
   private Tuple params;
-  private Tuple tuple;
-  private Datum [] args;
 
-  public AggFuncCallEval(FunctionDesc desc, Function instance, EvalNode[] givenArgs) {
+  public AggFuncCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
     super(Type.AGG_FUNCTION, desc, givenArgs);
     this.instance = instance;
   }
 
   @Override
-  public void init() {
+  public EvalContext newContext() {
+    AggFunctionCtx newCtx = new AggFunctionCtx(argEvals, instance.newContext());
+
+    return newCtx;
   }
 
   @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum... args) {
-    this.schema = schema;
-    this.tuple = tuple;
-    this.args = args;
-  }
-
-  @Override
-  public Datum terminate(EvalContext ctx) {
-    FuncCallCtx localCtx = (FuncCallCtx) ctx;
-
+  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
+    AggFunctionCtx localCtx = (AggFunctionCtx) ctx;
     if (params == null) {
-      this.params = new VTuple(argEvals.length + 1);
+      this.params = new VTuple(argEvals.length);
     }
 
     if (argEvals != null) {
@@ -49,15 +43,24 @@ public class AggFuncCallEval extends FuncEval {
       }
     }
 
-    // TODO - should consider multiple variables
-    if(args.length > 0)
-      params.put(params.size()-1, args[0]);
+    instance.eval(localCtx.funcCtx, params);
+  }
 
-    instance.eval(params);
-    return instance.terminate();
+  @Override
+  public Datum terminate(EvalContext ctx) {
+    return instance.terminate(((AggFunctionCtx)ctx).funcCtx);
   }
 
   public String toJSON() {
 	  return GsonCreator.getInstance().toJson(this, EvalNode.class);
+  }
+
+  protected class AggFunctionCtx extends FuncCallCtx {
+    FunctionContext funcCtx;
+
+    AggFunctionCtx(EvalNode [] argEvals, FunctionContext funcCtx) {
+      super(argEvals);
+      this.funcCtx = funcCtx;
+    }
   }
 }

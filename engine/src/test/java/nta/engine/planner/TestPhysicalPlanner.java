@@ -203,9 +203,9 @@ public class TestPhysicalPlanner {
     int i = 0;
     Tuple tuple;
     while ((tuple = exec.next()) != null) {
-      assertEquals(6, tuple.getInt(2).asInt()); // sum
-      assertEquals(3, tuple.getInt(3).asInt()); // max
-      assertEquals(1, tuple.getInt(4).asInt()); // min
+      assertEquals(6, tuple.get(2).asInt()); // sum
+      assertEquals(3, tuple.get(3).asInt()); // max
+      assertEquals(1, tuple.get(4).asInt()); // min
       i++;
     }
     assertEquals(10, i);
@@ -232,9 +232,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     while ((tuple = exec.next()) != null) {
       assertEquals(DatumFactory.createNullDatum(), tuple.get(1));
-      assertEquals(12, tuple.getInt(2).asInt()); // sum
-      assertEquals(3, tuple.getInt(3).asInt()); // max
-      assertEquals(1, tuple.getInt(4).asInt()); // min
+      assertEquals(12, tuple.get(2).asInt()); // sum
+      assertEquals(3, tuple.get(3).asInt()); // max
+      assertEquals(1, tuple.get(4).asInt()); // min
       i++;
     }    
     assertEquals(5, i);
@@ -274,9 +274,9 @@ public class TestPhysicalPlanner {
     int i = 0;
     Tuple tuple;
     while ((tuple = exec.next()) != null) {
-      assertEquals(6, tuple.getInt(2).asInt()); // sum
-      assertEquals(3, tuple.getInt(3).asInt()); // max
-      assertEquals(1, tuple.getInt(4).asInt()); // min
+      assertEquals(6, tuple.get(2).asInt()); // sum
+      assertEquals(3, tuple.get(3).asInt()); // max
+      assertEquals(1, tuple.get(4).asInt()); // min
       i++;
     }
     assertEquals(10, i);
@@ -320,9 +320,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
-      assertEquals(6, tuple.getInt(2).asInt()); // sum
-      assertEquals(3, tuple.getInt(3).asInt()); // max
-      assertEquals(1, tuple.getInt(4).asInt()); // min
+      assertEquals(6, tuple.get(2).asInt()); // sum
+      assertEquals(3, tuple.get(3).asInt()); // max
+      assertEquals(1, tuple.get(4).asInt()); // min
       i++;
     }
     assertEquals(10, i);
@@ -376,9 +376,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
-      assertEquals(6, tuple.getInt(2).asInt()); // sum
-      assertEquals(3, tuple.getInt(3).asInt()); // max
-      assertEquals(1, tuple.getInt(4).asInt()); // min
+      assertEquals(6, tuple.get(2).asInt()); // sum
+      assertEquals(3, tuple.get(3).asInt()); // max
+      assertEquals(1, tuple.get(4).asInt()); // min
       i++;
     }
     assertEquals(10, i);
@@ -430,9 +430,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
-      assertEquals(60, tuple.getInt(2).asInt()); // sum
-      assertEquals(3, tuple.getInt(3).asInt()); // max
-      assertEquals(1, tuple.getInt(4).asInt()); // min
+      assertEquals(60, tuple.get(2).asInt()); // sum
+      assertEquals(3, tuple.get(3).asInt()); // max
+      assertEquals(1, tuple.get(4).asInt()); // min
       i++;
     }
     assertEquals(1, i);

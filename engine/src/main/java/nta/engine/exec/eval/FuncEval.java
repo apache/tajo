@@ -29,12 +29,7 @@ public abstract class FuncEval extends EvalNode {
 
   @Override
   public EvalContext newContext() {
-    FuncCallCtx newCtx = new FuncCallCtx();
-    newCtx.argCtxs = new EvalContext[argEvals.length];
-    for (int i = 0; i < argEvals.length; i++) {
-      newCtx.argCtxs[i] = argEvals[i].newContext();
-    }
-
+    FuncCallCtx newCtx = new FuncCallCtx(argEvals);
     return newCtx;
   }
 	
@@ -50,10 +45,8 @@ public abstract class FuncEval extends EvalNode {
 		return this.funcDesc.getReturnType();
 	}
 
-  public abstract void init();
-
 	@Override
-	public abstract void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum...args);
+	public abstract void eval(EvalContext ctx, Schema schema, Tuple tuple);
 
   public abstract Datum terminate(EvalContext ctx);
 
@@ -127,5 +120,11 @@ public abstract class FuncEval extends EvalNode {
 
   protected class FuncCallCtx implements EvalContext {
     EvalContext [] argCtxs;
+    FuncCallCtx(EvalNode [] argEvals) {
+      argCtxs = new EvalContext[argEvals.length];
+      for (int i = 0; i < argEvals.length; i++) {
+        argCtxs[i] = argEvals[i].newContext();
+      }
+    }
   }
 }

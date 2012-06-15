@@ -37,7 +37,7 @@ public class PartialBinaryExpr extends EvalNode {
   }
 
   @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum... args) {
+  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
     throw new InvalidEvalException(
         "ERROR: the partial binary expression cannot be evluated: "
             + this.toString() );

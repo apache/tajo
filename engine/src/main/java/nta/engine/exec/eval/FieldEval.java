@@ -29,7 +29,7 @@ public class FieldEval extends EvalNode implements Cloneable {
 	}
 
 	@Override
-	public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum...args) {
+	public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
 	  if (fieldId == -1) {
 	    fieldId = schema.getColumnId(column.getQualifiedName());
 	  }

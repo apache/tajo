@@ -14,7 +14,6 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.Datum;
-import nta.datum.IntDatum;
 import nta.engine.NConstants;
 import nta.engine.NtaEngineMaster;
 import nta.engine.NtaTestingUtility;
@@ -139,17 +138,8 @@ public class TestCatalog {
 		}
 
     @Override
-    public void init() {
-    }
-
-    @Override
-    public void eval(Tuple params) {
-      param = params.get(0);
-    }
-
-    @Override
-    public Datum terminate() {
-      return param;
+    public Datum eval(Tuple params) {
+      return params.get(0);
     }
 	}
 	
@@ -165,17 +155,8 @@ public class TestCatalog {
 	    }
 
      @Override
-     public void init() {
-     }
-
-     @Override
-     public void eval(Tuple params) {
-       param = params.get(1);
-     }
-
-     @Override
-     public Datum terminate() {
-       return param;
+     public Datum eval(Tuple params) {
+       return params.get(1);
      }
 	  } 
 

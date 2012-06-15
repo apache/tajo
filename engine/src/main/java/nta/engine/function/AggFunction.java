@@ -10,23 +10,22 @@ import nta.storage.Tuple;
  * @author Hyunsik Choi
  */
 public abstract class AggFunction<T extends Datum> extends Function<T> {
+
   public AggFunction(Column[] definedArgs) {
     super(definedArgs);
   }
 
-  @Override
-  public abstract void init();
+  public abstract FunctionContext newContext();
 
-  @Override
-  public abstract void eval(Tuple params);
+  public abstract void eval(FunctionContext ctx, Tuple params);
 
-  public void merge(Tuple...parts) {
-    for (Tuple part : parts) {
-      eval(part);
-    }
+  public void merge(FunctionContext ctx, Tuple part) {
+    eval(ctx, part);
   }
-  public abstract Tuple getPartialResult();
-  public abstract T terminate();
+
+  public abstract Tuple getPartialResult(FunctionContext ctx);
+
+  public abstract T terminate(FunctionContext ctx);
 
   public String toJSON() {
     Gson gson = GsonCreator.getInstance();

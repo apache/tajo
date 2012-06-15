@@ -22,7 +22,6 @@ import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.exception.InternalException;
 import nta.engine.exec.eval.EvalNode.Type;
-import nta.engine.exec.eval.TestEvalTree.TestAggSum;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
@@ -67,12 +66,7 @@ public class TestEvalTreeUtil {
         FunctionType.GENERAL, DataType.INT,
         new DataType [] { DataType.INT, DataType.INT});
     catalog.registerFunction(funcMeta);
-    
-    funcMeta = new FunctionDesc("aggsum", TestAggSum.class,
-        FunctionType.AGGREGATION, DataType.INT, 
-        new DataType [] { DataType.INT});
-    catalog.registerFunction(funcMeta);
-    
+
     factory = new QueryContext.Factory(catalog);
     analyzer = new QueryAnalyzer(catalog);
     

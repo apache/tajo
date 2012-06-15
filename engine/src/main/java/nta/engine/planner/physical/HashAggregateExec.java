@@ -11,8 +11,8 @@ import java.util.Map.Entry;
 
 import com.google.common.annotations.VisibleForTesting;
 import nta.catalog.Schema;
-import nta.datum.Datum;
 import nta.engine.SubqueryContext;
+import nta.engine.exec.eval.EvalContext;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -24,9 +24,9 @@ import nta.storage.VTuple;
  */
 public class HashAggregateExec extends AggregationExec {
   private Tuple tuple = null;
-  private Map<Tuple, Tuple> tupleSlots;
+  private Map<Tuple, EvalContext []> tupleSlots;
   private boolean computed = false;
-  private Iterator<Entry<Tuple, Tuple>> iterator = null;
+  private Iterator<Entry<Tuple, EvalContext []>> iterator = null;
 
   /**
    * @throws IOException 
@@ -35,7 +35,7 @@ public class HashAggregateExec extends AggregationExec {
   public HashAggregateExec(SubqueryContext ctx, GroupbyNode annotation,
                            PhysicalExec subOp) throws IOException {
     super(ctx, annotation, subOp);
-    tupleSlots = new HashMap<Tuple, Tuple>(1000);
+    tupleSlots = new HashMap<Tuple, EvalContext[]>(1000);
     this.tuple = new VTuple(outputSchema.getColumnNum());
   }
 
@@ -65,22 +65,17 @@ public class HashAggregateExec extends AggregationExec {
       }
       
       if(tupleSlots.containsKey(keyTuple)) {
-        Tuple tmpTuple = tupleSlots.get(keyTuple);
-        for(int i = 0; i < measurelist.length; i++) {
-          evals[measurelist[i]].eval(evalContexts[i], inputSchema, tuple,
-                tmpTuple.get(measurelist[i]));
-          Datum datum = evals[measurelist[i]].terminate(evalContexts[i]);
-          tmpTuple.put(measurelist[i], datum);
-          tupleSlots.put(keyTuple, tmpTuple);
+        EvalContext [] tmpTuple = tupleSlots.get(keyTuple);
+        for(int i = 0; i < measureList.length; i++) {
+          evals[measureList[i]].eval(tmpTuple[measureList[i]], inputSchema, tuple);
         }
       } else { // if the key occurs firstly
-        this.tuple = new VTuple(outputSchema.getColumnNum());
+        EvalContext evalCtx [] = new EvalContext[outputSchema.getColumnNum()];
         for(int i = 0; i < outputSchema.getColumnNum(); i++) {
-          evals[i].eval(evalContexts[i], inputSchema, tuple);
-          Datum datum = evals[i].terminate(evalContexts[i]);
-          this.tuple.put(i, datum);
+          evalCtx[i] = evals[i].newContext();
+          evals[i].eval(evalCtx[i], inputSchema, tuple);
         }
-        tupleSlots.put(keyTuple, this.tuple);
+        tupleSlots.put(keyTuple, evalCtx);
       }
     }
   }
@@ -94,7 +89,12 @@ public class HashAggregateExec extends AggregationExec {
     }
         
     if(iterator.hasNext()) {
-      return iterator.next().getValue();
+      EvalContext [] ctx =  iterator.next().getValue();
+      Tuple tuple = new VTuple(outputSchema.getColumnNum());
+      for (int i = 0; i < ctx.length; i++) {
+        tuple.put(i, evals[i].terminate(ctx[i]));
+      }
+      return tuple;
     } else {
       return null;
     }

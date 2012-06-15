@@ -56,7 +56,7 @@ public class LikeEval extends BinaryEval {
   }
 
   @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum... args) {
+  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
     if (fieldId == null) {
       fieldId = schema.getColumnId(column.getQualifiedName());
       compile(this.pattern);

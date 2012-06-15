@@ -13,8 +13,9 @@ import nta.engine.Context;
 import nta.engine.QueryContext;
 import nta.engine.exception.InternalException;
 import nta.engine.exec.eval.*;
-import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.InvalidEvalException;
+import nta.engine.function.AggFunction;
+import nta.engine.function.GeneralFunction;
 import nta.engine.parser.QueryBlock.*;
 import nta.engine.planner.JoinType;
 import nta.engine.query.exception.*;
@@ -825,10 +826,10 @@ public final class QueryAnalyzer {
       FunctionDesc funcDesc = catalog.getFunction(signature, paramTypes);
       try {
         if (funcDesc.getFuncType() == FunctionType.GENERAL)
-          return new FuncCallEval(funcDesc, funcDesc.newInstance(), givenArgs);
+          return new FuncCallEval(funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
         else {
           query.setAggregation();
-          return new AggFuncCallEval(funcDesc, funcDesc.newInstance(), givenArgs);
+          return new AggFuncCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
         }
       } catch (InternalException e) {
         e.printStackTrace();
@@ -843,7 +844,7 @@ public final class QueryAnalyzer {
           new DataType [] {DataType.ANY});
       query.setAggregation();
       try {
-        return new AggFuncCallEval(countVals, countVals.newInstance(), 
+        return new AggFuncCallEval(countVals, (AggFunction) countVals.newInstance(),
             new EvalNode [] {colRef});
       } catch (InternalException e1) {
         e1.printStackTrace();
@@ -854,7 +855,7 @@ public final class QueryAnalyzer {
       FunctionDesc countRows = catalog.getFunction("count", new DataType [] {});
       query.setAggregation();
       try {
-        return new CountRowEval(countRows, countRows.newInstance(),
+        return new CountRowEval(countRows, (AggFunction) countRows.newInstance(),
             new EvalNode [] {});
       } catch (InternalException e) {
         e.printStackTrace();

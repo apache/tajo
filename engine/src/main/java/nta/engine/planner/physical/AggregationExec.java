@@ -29,7 +29,7 @@ public abstract class AggregationExec extends PhysicalExec {
 
   protected Set<Column> nonNullGroupingFields;
   protected int keylist [];
-  protected int measurelist [];
+  protected int measureList[];
   protected final EvalNode evals [];
   protected EvalContext evalContexts [];
 
@@ -43,7 +43,7 @@ public abstract class AggregationExec extends PhysicalExec {
     this.subOp = subOp;
 
     nonNullGroupingFields = Sets.newHashSet();
-    // getting key list
+    // keylist will contain a list of IDs of grouping column
     keylist = new int[annotation.getGroupingColumns().length];
     Column col;
     for (int idx = 0; idx < annotation.getGroupingColumns().length; idx++) {
@@ -52,10 +52,10 @@ public abstract class AggregationExec extends PhysicalExec {
       nonNullGroupingFields.add(col);
     }
 
-    // getting value list
+    // measureList will contain a list of IDs of measure fields
     int valueIdx = 0;
-    measurelist = new int[annotation.getTargetList().length - keylist.length];
-    if (measurelist.length > 0) {
+    measureList = new int[annotation.getTargetList().length - keylist.length];
+    if (measureList.length > 0) {
       search: for (int inputIdx = 0; inputIdx < annotation.getTargetList().length; inputIdx++) {
         for (int key : keylist) { // eliminate key field
           if (annotation.getTargetList()[inputIdx].getColumnSchema().getColumnName()
@@ -63,7 +63,7 @@ public abstract class AggregationExec extends PhysicalExec {
             continue search;
           }
         }
-        measurelist[valueIdx] = inputIdx;
+        measureList[valueIdx] = inputIdx;
         valueIdx++;
       }
     }

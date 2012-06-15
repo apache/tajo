@@ -16,7 +16,6 @@ import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
-import nta.datum.IntDatum;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode.Type;
@@ -31,8 +30,6 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.google.gson.Gson;
 
 /**
  * @author Hyunsik Choi
@@ -63,11 +60,6 @@ public class TestEvalTree {
     FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
         FunctionType.GENERAL, DataType.INT, 
         new DataType [] { DataType.INT, DataType.INT});
-    cat.registerFunction(funcMeta);
-    
-    funcMeta = new FunctionDesc("aggsum", TestAggSum.class,
-        FunctionType.AGGREGATION, DataType.INT, 
-        new DataType [] { DataType.INT});
     cat.registerFunction(funcMeta);
     
     factory = new QueryContext.Factory(cat);
@@ -106,55 +98,14 @@ public class TestEvalTree {
     }
 
     @Override
-    public void init() {
-      //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public void eval(Tuple params) {
+    public Datum eval(Tuple params) {
       x =  params.get(0).asInt();
       y =  params.get(1).asInt();
-    }
-
-    @Override
-    public Datum terminate() {
       return DatumFactory.createInt(x + y);
     }
     
     public String toJSON() {
     	return GsonCreator.getInstance().toJson(this, GeneralFunction.class);
-    }
-  }
-  
-  public static class TestAggSum extends GeneralFunction<IntDatum> {
-    private IntDatum curVal = null;
-    private IntDatum sumVal = null;
-
-    public TestAggSum() {
-      super(new Column[] { new Column("arg1", DataType.INT)});
-    }
-
-    @Override
-    public void init() {
-    }
-
-    @Override
-    public void eval(Tuple params) {
-      curVal = params.getInt(0);
-      sumVal = params.getInt(1);
-    }
-
-    public IntDatum terminate() {
-      if (sumVal == null) {
-        return curVal;
-      } else {
-        return (IntDatum) curVal.plus(sumVal);
-      }
-    }
-    
-    public String toJSON() {
-    	Gson gson = GsonCreator.getInstance();
-    	return gson.toJson(this, GeneralFunction.class);
     }
   }
 
@@ -163,7 +114,7 @@ public class TestEvalTree {
       "select name, score, age from people where score * age", // 1
       "select name, score, age from people where sum(score * age, 50)", // 2
       "select 2+3", // 3
-      "select aggsum(score) from people", // 4
+      "select sum(score) from people", // 4
       "select name from people where NOT (20 > 30)", // 5
   };
 
@@ -213,7 +164,6 @@ public class TestEvalTree {
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[4]);
     expr = block.getTargetList()[0].getEvalTree();
     evalCtx = expr.newContext();
-    Datum accumulated = DatumFactory.createInt(0);
     
     final int tuplenum = 10;
     Tuple [] tuples = new Tuple[tuplenum];
@@ -226,10 +176,9 @@ public class TestEvalTree {
     
     int sum = 0;
     for (int i=0; i < tuplenum; i++) {
-      expr.eval(null, peopleSchema, tuples[i], accumulated);
-      accumulated = expr.terminate(evalCtx);
+      expr.eval(evalCtx, peopleSchema, tuples[i]);
       sum = sum + (i+1);
-      assertEquals(sum, accumulated.asInt());
+      assertEquals(sum, expr.terminate(evalCtx).asInt());
     }
   }
   

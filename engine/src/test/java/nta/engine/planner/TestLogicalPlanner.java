@@ -11,7 +11,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
 import nta.engine.exec.eval.EvalNode;
-import nta.engine.function.SumInt;
+import nta.engine.function.builtin.NewSumInt;
 import nta.engine.json.GsonCreator;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
@@ -75,8 +75,8 @@ public class TestLogicalPlanner {
         new Path("file:///"));
     catalog.addTable(score);
 
-    FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class,
-        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
+    FunctionDesc funcDesc = new FunctionDesc("sumtest", NewSumInt.class,
+        FunctionType.AGGREGATION, DataType.INT, new DataType[] { DataType.INT });
 
 
     // TPC-H Schema for Complex Queries

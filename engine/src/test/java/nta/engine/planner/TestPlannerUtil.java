@@ -15,7 +15,7 @@ import nta.engine.exec.eval.BinaryEval;
 import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.FieldEval;
-import nta.engine.function.SumInt;
+import nta.engine.function.builtin.NewSumInt;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
@@ -83,8 +83,8 @@ public class TestPlannerUtil {
         new Path("file:///"));
     catalog.addTable(score);
 
-    FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class,
-        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
+    FunctionDesc funcDesc = new FunctionDesc("sumtest", NewSumInt.class,
+        FunctionType.AGGREGATION, DataType.INT, new DataType[] { DataType.INT });
 
     catalog.registerFunction(funcDesc);
     analyzer = new QueryAnalyzer(catalog);

@@ -9,7 +9,6 @@ import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
@@ -101,15 +100,12 @@ public class TestBuiltinFunction {
     block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     expr = block.getTargetList()[0].getEvalTree();
     EvalContext exprCtx = expr.newContext();
-    Datum accumulated = DatumFactory.createInt(0);
 
     int sum = 0;
     for (int i = 0; i < tuplenum; i++) {
-      System.out.println(tuples[i]);
-      expr.eval(exprCtx, schema, tuples[i], accumulated);
-      accumulated = expr.terminate(exprCtx);
+      expr.eval(exprCtx, schema, tuples[i]);
       sum += 1;
-      assertEquals(sum, accumulated.asInt());
+      assertEquals(sum, expr.terminate(exprCtx).asInt());
     }
   }
 
@@ -125,24 +121,18 @@ public class TestBuiltinFunction {
     expr1 = block.getTargetList()[0].getEvalTree();
     expr2 = block.getTargetList()[1].getEvalTree();
     expr3 = block.getTargetList()[2].getEvalTree();
-    Datum accumulated1 = DatumFactory.createInt(0);
-    Datum accumulated2 = DatumFactory.createInt(0);
-    Datum accumulated3 = DatumFactory.createInt(0);
     EvalContext evalCtx1 = expr1.newContext();
     EvalContext evalCtx2 = expr2.newContext();
     EvalContext evalCtx3 = expr3.newContext();
 
     for (int i = 0; i < tuplenum; i++) {
-      expr1.eval(evalCtx1, schema, tuples[i], accumulated1);
-      expr2.eval(evalCtx2, schema, tuples[i], accumulated2);
-      expr3.eval(evalCtx3, schema, tuples[i], accumulated3);
-      accumulated1 = expr1.terminate(evalCtx1);
-      accumulated2 = expr2.terminate(evalCtx2);
-      accumulated3 = expr3.terminate(evalCtx3);
+      expr1.eval(evalCtx1, schema, tuples[i]);
+      expr2.eval(evalCtx2, schema, tuples[i]);
+      expr3.eval(evalCtx3, schema, tuples[i]);
     }
 
-    assertEquals(10, accumulated1.asLong());
-    assertEquals(8, accumulated2.asLong());
-    assertEquals(7, accumulated3.asLong());
+    assertEquals(10, expr1.terminate(evalCtx1).asInt());
+    assertEquals(8, expr2.terminate(evalCtx2).asInt());
+    assertEquals(7, expr3.terminate(evalCtx3).asInt());
   }
 }

@@ -12,12 +12,8 @@ import java.util.StringTokenizer;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import nta.catalog.exception.AlreadyExistsFunction;
-import nta.catalog.exception.AlreadyExistsIndexException;
-import nta.catalog.exception.AlreadyExistsTableException;
-import nta.catalog.exception.NoSuchFunctionException;
-import nta.catalog.exception.NoSuchIndexException;
-import nta.catalog.exception.NoSuchTableException;
+import nta.catalog.exception.*;
+import nta.catalog.exception.AlreadyExistsFunctionException;
 import nta.catalog.proto.CatalogProtos.ContainFunctionRequest;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
@@ -35,20 +31,7 @@ import nta.catalog.store.CatalogStore;
 import nta.catalog.store.DBStore;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
-import nta.engine.function.CountRows;
-import nta.engine.function.CountValue;
-import nta.engine.function.MaxDouble;
-import nta.engine.function.MaxFloat;
-import nta.engine.function.MaxInt;
-import nta.engine.function.MaxLong;
-import nta.engine.function.MinDouble;
-import nta.engine.function.MinFloat;
-import nta.engine.function.MinInt;
-import nta.engine.function.MinLong;
-import nta.engine.function.SumDouble;
-import nta.engine.function.SumFloat;
-import nta.engine.function.SumInt;
-import nta.engine.function.SumLong;
+import nta.engine.function.builtin.*;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
@@ -471,7 +454,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
         TCatUtil.getCanonicalName(funcDesc.getSignature(),
             funcDesc.getParameterTypesList());
     if (functions.containsKey(canonicalName)) {
-      throw new AlreadyExistsFunction(canonicalName);
+      throw new AlreadyExistsFunctionException(canonicalName);
     }
 
     functions.put(canonicalName, funcDesc);
@@ -536,52 +519,62 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 
     // Sum
     sqlFuncs
-        .add(new FunctionDesc("sum", SumInt.class, FunctionType.AGGREGATION,
+        .add(new FunctionDesc("sum", NewSumInt.class, FunctionType.AGGREGATION,
             DataType.INT, new DataType[] { DataType.INT }));
-    sqlFuncs.add(new FunctionDesc("sum", SumLong.class,
+    sqlFuncs.add(new FunctionDesc("sum", NewSumLong.class,
         FunctionType.AGGREGATION, DataType.LONG,
         new DataType[] { DataType.LONG }));
-    sqlFuncs.add(new FunctionDesc("sum", SumFloat.class,
+    sqlFuncs.add(new FunctionDesc("sum", NewSumFloat.class,
         FunctionType.AGGREGATION, DataType.FLOAT,
         new DataType[] { DataType.FLOAT }));
-    sqlFuncs.add(new FunctionDesc("sum", SumDouble.class,
+    sqlFuncs.add(new FunctionDesc("sum", NewSumDouble.class,
         FunctionType.AGGREGATION, DataType.DOUBLE,
         new DataType[] { DataType.DOUBLE }));
 
     // Max
     sqlFuncs
-        .add(new FunctionDesc("max", MaxInt.class, FunctionType.AGGREGATION,
+        .add(new FunctionDesc("max", NewMaxInt.class, FunctionType.AGGREGATION,
             DataType.INT, new DataType[] { DataType.INT }));
-    sqlFuncs.add(new FunctionDesc("max", MaxLong.class,
+    sqlFuncs.add(new FunctionDesc("max", NewMaxLong.class,
         FunctionType.AGGREGATION, DataType.LONG,
         new DataType[] { DataType.LONG }));
-    sqlFuncs.add(new FunctionDesc("max", MaxFloat.class,
+    sqlFuncs.add(new FunctionDesc("max", NewMaxDouble.class,
         FunctionType.AGGREGATION, DataType.FLOAT,
         new DataType[] { DataType.FLOAT }));
-    sqlFuncs.add(new FunctionDesc("max", MaxDouble.class,
+    sqlFuncs.add(new FunctionDesc("max", NewMaxDouble.class,
         FunctionType.AGGREGATION, DataType.DOUBLE,
         new DataType[] { DataType.DOUBLE }));
 
     // Min
     sqlFuncs
-        .add(new FunctionDesc("min", MinInt.class, FunctionType.AGGREGATION,
+        .add(new FunctionDesc("min", NewMinInt.class, FunctionType.AGGREGATION,
             DataType.INT, new DataType[] { DataType.INT }));
-    sqlFuncs.add(new FunctionDesc("min", MinLong.class,
+    sqlFuncs.add(new FunctionDesc("min", NewMinLong.class,
         FunctionType.AGGREGATION, DataType.LONG,
         new DataType[] { DataType.LONG }));
-    sqlFuncs.add(new FunctionDesc("min", MinFloat.class,
+    sqlFuncs.add(new FunctionDesc("min", NewMinDouble.class,
         FunctionType.AGGREGATION, DataType.FLOAT,
         new DataType[] { DataType.FLOAT }));
-    sqlFuncs.add(new FunctionDesc("min", MinDouble.class,
+    sqlFuncs.add(new FunctionDesc("min", NewMinDouble.class,
         FunctionType.AGGREGATION, DataType.DOUBLE,
         new DataType[] { DataType.DOUBLE }));
+    sqlFuncs.add(new FunctionDesc("min", NewMinString.class,
+        FunctionType.AGGREGATION, DataType.STRING,
+        new DataType[] { DataType.STRING }));
 
     // Count
-    sqlFuncs.add(new FunctionDesc("count", CountValue.class,
+    sqlFuncs.add(new FunctionDesc("count", NewCountValue.class,
         FunctionType.AGGREGATION, DataType.LONG,
         new DataType[] { DataType.ANY }));
-    sqlFuncs.add(new FunctionDesc("count", CountRows.class,
+    sqlFuncs.add(new FunctionDesc("count", NewCountRows.class,
         FunctionType.AGGREGATION, DataType.LONG, new DataType[] {}));
+
+    sqlFuncs.add(new FunctionDesc("avg", AvgDouble.class,
+        FunctionType.AGGREGATION, DataType.DOUBLE,
+        new DataType[] { DataType.FLOAT }));
+    sqlFuncs.add(new FunctionDesc("avg", AvgDouble.class,
+        FunctionType.AGGREGATION, DataType.DOUBLE,
+        new DataType[] { DataType.DOUBLE }));
 
     for (FunctionDesc func : sqlFuncs) {
       registerFunction(func.getProto());

@@ -219,6 +219,18 @@ public class EvalTreeUtil {
       _containColumnRef(expr.getRightExpr(), target, exprSet);
     }    
   }
+
+  public static boolean isComparisonOperator(EvalNode expr) {
+    return expr.getType() == Type.EQUAL ||
+        expr.getType() == Type.LEQ ||
+        expr.getType() == Type.LTH ||
+        expr.getType() == Type.GEQ ||
+        expr.getType() == Type.GTH;
+  }
+
+  public static boolean isLogicalOperator(EvalNode expr) {
+    return expr.getType() == Type.AND || expr.getType() == Type.OR;
+  }
   
   public static class ChangeColumnRefVisitor implements EvalNodeVisitor {    
     private final String findColumn;
@@ -296,17 +308,5 @@ public class EvalTreeUtil {
     public Map<EvalNode.Type, Integer> getCounter() {
       return counter;
     }
-  }
-
-  public static boolean isComparisonOperator(EvalNode expr) {
-    return expr.getType() == Type.EQUAL ||
-        expr.getType() == Type.LEQ ||
-        expr.getType() == Type.LTH ||
-        expr.getType() == Type.GEQ ||
-        expr.getType() == Type.GTH;
-  }
-
-  public static boolean isLogicalOperator(EvalNode expr) {
-    return expr.getType() == Type.AND || expr.getType() == Type.OR;
   }
 }

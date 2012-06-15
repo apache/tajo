@@ -26,7 +26,7 @@ public class FunctionAdapter implements JsonDeserializer<Function>, JsonSerializ
       JsonSerializationContext context) {
     JsonObject jsonObj = new JsonObject();
     String className = src.getClass().getCanonicalName();
-    jsonObj.addProperty("classname", className);
+    jsonObj.addProperty("className", className);
     JsonElement jsonElem = context.serialize(src);
     jsonObj.add("property", jsonElem);
     return jsonObj;
@@ -36,7 +36,7 @@ public class FunctionAdapter implements JsonDeserializer<Function>, JsonSerializ
   public Function deserialize(JsonElement json, Type typeOfT,
       JsonDeserializationContext context) throws JsonParseException {
     JsonObject jsonObject = json.getAsJsonObject();
-    String className = jsonObject.get("classname").getAsJsonPrimitive().getAsString();
+    String className = jsonObject.get("className").getAsJsonPrimitive().getAsString();
     
     Class clazz = null;
     try {

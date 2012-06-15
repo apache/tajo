@@ -124,7 +124,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	 * @see nta.query.executor.eval.Expr#evalBool(nta.storage.Tuple)
 	 */
 	@Override
-	public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum...args) {
+	public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
     BinaryEvalCtx binCtx = (BinaryEvalCtx) ctx;
 	  leftExpr.eval(binCtx.left, schema, tuple);
     rightExpr.eval(binCtx.right, schema, tuple);

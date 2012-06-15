@@ -77,7 +77,7 @@ public abstract class EvalNode implements Cloneable {
     return gson.toJson(this, EvalNode.class);
 	}
 	
-	public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum...args) {}
+	public void eval(EvalContext ctx, Schema schema, Tuple tuple) {}
 
   public abstract Datum terminate(EvalContext ctx);
 

@@ -15,15 +15,7 @@ public abstract class GeneralFunction<T extends Datum> extends Function<T> {
     super(definedArgs);
   }
 
-  public abstract void eval(Tuple params);
-
-  @Override
-  public void merge(Tuple...parts) {
-    eval(parts[parts.length - 1]);
-  }
-
-  @Override
-  public abstract T terminate();
+  public abstract Datum eval(Tuple params);
 
 	public enum Type {
 	  AGG,

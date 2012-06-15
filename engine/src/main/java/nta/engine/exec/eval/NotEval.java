@@ -43,7 +43,7 @@ public class NotEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public void eval(EvalContext ctx, Schema schema, Tuple tuple, Datum... args) {
+  public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
     subExpr.eval(((NotEvalCtx)ctx).subExprCtx, schema, tuple);
   }
 
