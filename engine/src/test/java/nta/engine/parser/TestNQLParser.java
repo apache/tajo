@@ -587,9 +587,40 @@ public class TestNQLParser {
   public void testConstEval() throws RecognitionException {
     NQLParser p = parseExpr(exprs[26]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
-    System.out.println(node.toStringTree());
     assertEquals(NQLParser.EQUAL, node.getType());
     assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
     assertEquals(NQLParser.STRING, node.getChild(1).getType());
+  }
+
+  static String [] caseStatements = {
+      "select case when p_type like 'PROMO%' then l_extendedprice * (1 - l_discount) when p_type = 'MOCC' then l_extendedprice - 100 else 0 end as cond from lineitem",
+  };
+
+  @Test
+  public void testCaseWhen() throws RecognitionException {
+    NQLParser p = parseExpr(caseStatements[0]);
+    CommonTree node = (CommonTree) p.statement().getTree();
+
+    assertEquals(NQLParser.SEL_LIST, node.getChild(1).getType());
+    CommonTree selList = (CommonTree) node.getChild(1);
+    assertEquals(1, selList.getChildCount());
+    assertEquals(NQLParser.COLUMN, selList.getChild(0).getType());
+
+    CommonTree column = (CommonTree) selList.getChild(0);
+    assertEquals(NQLParser.CASE, column.getChild(0).getType());
+    CommonTree caseStatement = (CommonTree) column.getChild(0);
+
+    assertEquals(3, caseStatement.getChildCount());
+    assertEquals(NQLParser.WHEN, caseStatement.getChild(0).getType());
+    assertEquals(NQLParser.WHEN, caseStatement.getChild(1).getType());
+    assertEquals(NQLParser.ELSE, caseStatement.getChild(2).getType());
+
+    CommonTree cond1 = (CommonTree) caseStatement.getChild(0);
+    CommonTree cond2 = (CommonTree) caseStatement.getChild(1);
+    CommonTree elseStmt = (CommonTree) caseStatement.getChild(2);
+
+    assertEquals(NQLParser.LIKE, cond1.getChild(0).getType());
+    assertEquals(NQLParser.EQUAL, cond2.getChild(0).getType());
+    assertEquals(NQLParser.DIGIT, elseStmt.getChild(0).getType());
   }
 }

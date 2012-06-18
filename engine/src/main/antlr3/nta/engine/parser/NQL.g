@@ -388,6 +388,7 @@ boolean_primary
   : predicate
   | expr
   | LEFT_PAREN! bool_expr RIGHT_PAREN!
+  | case_expression
   ;
 
 predicate 
@@ -453,6 +454,37 @@ unsigned_numerical_literal
 sign
   : PLUS | MINUS
   ;
+
+////////////////////////////////
+// Case Statement
+////////////////////////////////
+case_expression
+  : case_specification
+  ;
+
+case_specification
+  : searched_case
+  ;
+
+searched_case
+  : CASE s=searched_when_clauses e=else_clause END -> ^(CASE $s $e)
+  ;
+
+searched_when_clauses
+  : searched_when_clause searched_when_clause* -> searched_when_clause+
+  ;
+
+searched_when_clause
+  : WHEN c=search_condition THEN r=result -> ^(WHEN $c $r)
+  ;
+
+else_clause
+  : ELSE r=result -> ^(ELSE $r)
+  ;
+
+result
+  : bool_expr
+  ;
 	
 ////////////////////////////////	
 // Lexer Section  
@@ -463,6 +495,7 @@ ALL : 'all';
 AND : 'and';
 ASC : 'asc';
 BY : 'by';
+CASE : 'case';
 COUNT : 'count';
 CREATE : 'create';
 CROSS : 'cross';
@@ -470,6 +503,8 @@ CUBE : 'cube';
 DESC : 'desc';
 DISTINCT : 'distinct';
 DROP : 'drop';
+END : 'end';
+ELSE : 'else';
 EXCEPT : 'except';
 FALSE : 'false';
 FIRST : 'first';
@@ -500,12 +535,14 @@ RIGHT : 'right';
 ROLLUP : 'rollup';
 SELECT : 'select';
 TABLE : 'table';
+THEN : 'then';
 TRUE : 'true';
 UNION : 'union';
 UNIQUE : 'unique';
 UNKNOWN: 'unknown';
 USING : 'using';
 VALUES : 'values';
+WHEN : 'when';
 WHERE : 'where';
 WITH : 'with';
 
