@@ -19,8 +19,6 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.IndexMethod;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.datum.Datum;
-import nta.datum.DatumFactory;
 import nta.engine.Context;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
@@ -33,13 +31,12 @@ import nta.engine.parser.QueryBlock.JoinClause;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.planner.JoinType;
 import nta.engine.query.exception.InvalidQueryException;
-import nta.storage.Tuple;
-import nta.storage.VTuple;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tajo.benchmark.TPCH;
 
 /**
  * This unit test examines the correctness of QueryAnalyzer that analyzes 
@@ -109,6 +106,19 @@ public class TestQueryAnalyzer {
         new Options(),
         new Path("file:///"));
     cat.addTable(allType);
+
+    TPCH tpch = new TPCH();
+    tpch.loadSchemas();
+    Schema lineitemSchema = tpch.getSchema("lineitem");
+    Schema partSchema = tpch.getSchema("part");
+    TableDesc lineitem = TCatUtil.newTableDesc("lineitem", lineitemSchema, StoreType.CSV,
+        new Options(),
+        new Path("file:///"));
+    TableDesc part = TCatUtil.newTableDesc("part", partSchema, StoreType.CSV,
+        new Options(),
+        new Path("file:///"));
+    cat.addTable(lineitem);
+    cat.addTable(part);
     
     FunctionDesc funcMeta = new FunctionDesc("sumtest", TestSum.class,
         FunctionType.GENERAL, DataType.INT, 
@@ -580,5 +590,18 @@ public class TestQueryAnalyzer {
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where string_col = 'a'");
     assertEquals(DataType.STRING, block.getWhereCondition().getRightExpr().getValueType());
+  }
+
+  @Test
+  public void testCaseWhen() {
+    Context ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx,
+        "select case when p_type like 'PROMO%' then l_extendedprice * (1 - l_discount) "+
+        "when p_type = 'MOCC' then l_extendedprice - 100 else 0 end as cond from lineitem, part");
+    assertEquals(StatementType.SELECT, tree.getType());
+    QueryBlock block = (QueryBlock) tree;
+    assertTrue(block.getTargetList()[0].hasAlias());
+    assertEquals("cond", block.getTargetList()[0].getAlias());
+    assertEquals(DataType.DOUBLE, block.getTargetList()[0].getEvalTree().getValueType());
   }
 }

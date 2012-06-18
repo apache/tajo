@@ -258,6 +258,24 @@ public class IntDatum extends NumericDatum {
   }
 
   @Override
+  public Datum modular(Datum datum) {
+    switch (datum.type()) {
+      case SHORT:
+        return DatumFactory.createInt(val % datum.asShort());
+      case INT:
+        return DatumFactory.createInt(val % datum.asInt());
+      case LONG:
+        return DatumFactory.createLong(val % datum.asLong());
+      case FLOAT:
+        return DatumFactory.createFloat(val % datum.asFloat());
+      case DOUBLE:
+        return DatumFactory.createDouble(val % datum.asDouble());
+      default:
+        throw new InvalidOperationException(datum.type());
+    }
+  }
+
+  @Override
   public void inverseSign() {
     this.val = - val;
   }

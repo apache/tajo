@@ -592,7 +592,7 @@ public class TestNQLParser {
     assertEquals(NQLParser.STRING, node.getChild(1).getType());
   }
 
-  static String [] caseStatements = {
+  public static String [] caseStatements = {
       "select case when p_type like 'PROMO%' then l_extendedprice * (1 - l_discount) when p_type = 'MOCC' then l_extendedprice - 100 else 0 end as cond from lineitem",
   };
 

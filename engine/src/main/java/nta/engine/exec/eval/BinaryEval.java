@@ -50,7 +50,8 @@ public class BinaryEval extends EvalNode implements Cloneable {
 			type == Type.PLUS ||
 			type == Type.MINUS ||
 			type == Type.MULTIPLY ||
-			type == Type.DIVIDE
+			type == Type.DIVIDE ||
+      type == Type.MODULAR
 		) {
 			this.returnType = determineType(left.getValueType(), 
 				right.getValueType());
@@ -161,6 +162,8 @@ public class BinaryEval extends EvalNode implements Cloneable {
         return leftExpr.terminate(binCtx.left).multiply(rightExpr.terminate(binCtx.right));
       case DIVIDE:
         return leftExpr.terminate(binCtx.left).divide(rightExpr.terminate(binCtx.right));
+      case MODULAR:
+        return leftExpr.terminate(binCtx.left).modular(rightExpr.terminate(binCtx.right));
       default:
         throw new InvalidEvalException();
     }

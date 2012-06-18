@@ -1,11 +1,12 @@
 package tajo.engine;
 
+import com.google.common.collect.Lists;
 import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.Test;
-import tajo.client.ResultSetUtil;
 
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -138,5 +139,17 @@ public class TestSelectQuery extends TpchTestBase {
     res.next();
     assertTrue(771.64f == res.getFloat(1));
     assertFalse(res.next());
+  }
+
+  //@Test
+  public final void testCaseWhen() throws Exception {
+    List<String> result = Lists.newArrayList(new String [] {"odd", "odd", "even", "odd", "odd"});
+    ResultSet res = execute("select case when (l_orderkey % 2) = 0 then 'even' else 'odd' end as mod from lineitem");
+    int cnt = 0;
+    while(res.next()) {
+      assertEquals(result.get(cnt), res.getString(1));
+      cnt++;
+    }
+    assertEquals(5, cnt);
   }
 }

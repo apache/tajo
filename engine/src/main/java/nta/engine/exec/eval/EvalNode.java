@@ -106,12 +106,15 @@ public abstract class EvalNode implements Cloneable {
 	  NOT,
 	  PLUS,
     MINUS,
+    MODULAR,
     MULTIPLY,
     DIVIDE,
 	  FIELD,
     FUNCTION,
     LIKE,
     CONST,
+    CASE,
+    WHEN
 	}
 	
 	@Override

@@ -1,6 +1,5 @@
 package nta.engine.parser;
 
-import nta.datum.DatumFactory;
 import nta.engine.exec.eval.*;
 import org.antlr.runtime.tree.Tree;
 import org.apache.commons.logging.Log;
@@ -110,6 +109,8 @@ public class ParseUtil {
         return EvalNode.Type.MULTIPLY;
       case NQLParser.DIVIDE:
         return EvalNode.Type.DIVIDE;
+      case NQLParser.MODULAR:
+        return EvalNode.Type.MODULAR;
       default: throw new InvalidEvalException();
     }
   }

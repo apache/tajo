@@ -105,6 +105,10 @@ public abstract class Datum implements Comparable<Datum> {
 	public Datum divide(Datum datum) {
 	  throw new InvalidOperationException(datum.type);
 	}
+
+  public Datum modular(Datum datum) {
+    throw new InvalidOperationException(datum.type);
+  }
 	
 	public BoolDatum equalsTo(Datum datum) {
 	  return DatumFactory.createBool(compareTo(datum) == 0);

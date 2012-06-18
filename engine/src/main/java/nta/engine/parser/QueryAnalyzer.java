@@ -799,6 +799,7 @@ public final class QueryAnalyzer {
     case NQLParser.MINUS:
     case NQLParser.MULTIPLY:
     case NQLParser.DIVIDE:
+    case NQLParser.MODULAR:
       return parseBinaryExpr(ctx, ast, query);
 
     // others
@@ -861,10 +862,57 @@ public final class QueryAnalyzer {
         e.printStackTrace();
       }
       break;
+
+    case NQLParser.CASE:
+      return parseCaseWhen(ctx, ast, query);
       
     default:
     }
     return null;
+  }
+
+  /**
+   * The EBNF of case statement
+   * <pre>
+   * searched_case
+   * : CASE s=searched_when_clauses e=else_clause END -> ^(CASE $s $e)
+   * ;
+   *
+   * searched_when_clauses
+   * : searched_when_clause searched_when_clause* -> searched_when_clause+
+   * ;
+   *
+   * searched_when_clause
+   * : WHEN c=search_condition THEN r=result -> ^(WHEN $c $r)
+   * ;
+   *
+   * else_clause
+   * : ELSE r=result -> ^(ELSE $r)
+   * ;
+   * </pre>
+   * @param ctx
+   * @param tree
+   * @param block
+   * @return
+   */
+  public CaseWhenEval parseCaseWhen(Context ctx, Tree tree, QueryBlock block) {
+    int idx = 0;
+
+    CaseWhenEval caseEval = new CaseWhenEval();
+    EvalNode cond;
+    EvalNode thenResult;
+    Tree when;
+    for (; tree.getChild(idx).getType() == NQLParser.WHEN && idx < tree.getChildCount(); idx++) {
+      when = tree.getChild(idx);
+      cond = createEvalTree(ctx, when.getChild(0), block);
+      thenResult = createEvalTree(ctx, when.getChild(1), block);
+      caseEval.addWhen(cond, thenResult);
+    }
+
+    EvalNode elseResult = createEvalTree(ctx, tree.getChild(idx).getChild(0), block);
+    caseEval.setElseResult(elseResult);
+
+    return caseEval;
   }
 
   public EvalNode parseDigitByTypeInfer(Context ctx, Tree tree, QueryBlock block, DataType type) {
