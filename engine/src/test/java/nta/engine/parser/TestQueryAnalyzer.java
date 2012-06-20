@@ -7,21 +7,16 @@ import static org.junit.Assert.assertTrue;
 import java.util.Iterator;
 import java.util.List;
 
-import nta.catalog.CatalogService;
-import nta.catalog.FunctionDesc;
-import nta.catalog.Options;
-import nta.catalog.Schema;
-import nta.catalog.TCatUtil;
-import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
-import nta.catalog.TableMeta;
+import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
 import nta.catalog.proto.CatalogProtos.IndexMethod;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.datum.DatumFactory;
 import nta.engine.Context;
 import nta.engine.NtaTestingUtility;
 import nta.engine.QueryContext;
+import nta.engine.exec.eval.ConstEval;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
@@ -603,5 +598,12 @@ public class TestQueryAnalyzer {
     assertTrue(block.getTargetList()[0].hasAlias());
     assertEquals("cond", block.getTargetList()[0].getAlias());
     assertEquals(DataType.DOUBLE, block.getTargetList()[0].getEvalTree().getValueType());
+  }
+
+  @Test
+  public void testTarget() throws CloneNotSupportedException {
+    QueryBlock.Target t1 = new QueryBlock.Target(new ConstEval(DatumFactory.createInt(5)), 0);
+    QueryBlock.Target t2 = (QueryBlock.Target) t1.clone();
+    assertEquals(t1,t2);
   }
 }

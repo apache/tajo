@@ -8,7 +8,7 @@ import java.io.IOException;
 import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
 import nta.engine.exec.eval.EvalContext;
-import nta.engine.exec.eval.EvalNode;
+import nta.engine.planner.Projector;
 import nta.engine.planner.logical.ProjectionNode;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -18,38 +18,33 @@ import nta.storage.VTuple;
  */
 public class ProjectionExec extends PhysicalExec {
   private final ProjectionNode projNode;
-  private PhysicalExec subOp;
+  private PhysicalExec child;
       
   private final Schema inSchema;
   private final Schema outSchema;
   
   private final Tuple outTuple;
-  private final EvalNode [] evals;
+
+  // for projection
   private final EvalContext [] evalContexts;
+  private final Projector projector;
   
   public ProjectionExec(SubqueryContext ctx, ProjectionNode projNode,
-      PhysicalExec subOp) {
+      PhysicalExec child) {
     this.projNode = projNode;    
     this.inSchema = projNode.getInputSchema();
     this.outSchema = projNode.getOutputSchema();
-    this.subOp = subOp;
-    
+    this.child = child;
     this.outTuple = new VTuple(outSchema.getColumnNum());
-    
-    evals = new EvalNode[projNode.getTargetList().length];
-    evalContexts = new EvalContext[projNode.getTargetList().length];
-
-    for (int i = 0; i < projNode.getTargetList().length; i++) {
-      evals[i] = projNode.getTargetList()[i].getEvalTree();
-      evalContexts[i] = evals[i].newContext();
-    }
+    this.projector = new Projector(inSchema, outSchema, projNode.getTargets());
+    this.evalContexts = projector.renew();
   }
 
-  public PhysicalExec getSubOp(){
-    return this.subOp;
+  public PhysicalExec getChild(){
+    return this.child;
   }
-  public void setSubOp(PhysicalExec s){
-    this.subOp = s;
+  public void setChild(PhysicalExec s){
+    this.child = s;
   }
 
   @Override
@@ -59,21 +54,18 @@ public class ProjectionExec extends PhysicalExec {
 
   @Override
   public Tuple next() throws IOException {
-    Tuple tuple = subOp.next();
+    Tuple tuple = child.next();
     if (tuple ==  null) {
       return null;
     }
-     
-    for (int i = 0; i < evals.length; i++) {
-      evals[i].eval(evalContexts[i], inSchema, tuple);
-      outTuple.put(i, evals[i].terminate(evalContexts[i]));
-    }
-    
+
+    projector.eval(evalContexts, tuple);
+    projector.terminate(evalContexts, outTuple);
     return outTuple;
   }
 
   @Override
   public void rescan() throws IOException {
-    subOp.rescan();
+    child.rescan();
   }
 }

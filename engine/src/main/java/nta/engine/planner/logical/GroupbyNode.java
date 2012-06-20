@@ -56,7 +56,7 @@ public class GroupbyNode extends UnaryNode implements Cloneable {
     return this.targets != null;
   }
 
-  public Target[] getTargetList() {
+  public Target[] getTargets() {
     return this.targets;
   }
 

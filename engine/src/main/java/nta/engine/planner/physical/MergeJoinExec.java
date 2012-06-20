@@ -7,16 +7,18 @@ import java.util.List;
 
 import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
+import nta.engine.exec.eval.EvalContext;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.planner.PlannerUtil;
+import nta.engine.planner.Projector;
 import nta.engine.planner.logical.JoinNode;
-import nta.engine.utils.TupleUtil;
 import nta.storage.FrameTuple;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 public class MergeJoinExec extends PhysicalExec {
   // from logical plan
+  private JoinNode joinNode;
   private Schema inSchema;
   private Schema outSchema;
 
@@ -28,8 +30,8 @@ public class MergeJoinExec extends PhysicalExec {
   private FrameTuple frameTuple;
   private Tuple outerTuple = null;
   private Tuple innerTuple = null;
-  private Tuple outputTuple = null;
-  private Tuple outernext = null;
+  private Tuple outTuple = null;
+  private Tuple outerNext = null;
 
   private final List<Tuple> outerTupleSlots;
   private final List<Tuple> innerTupleSlots;
@@ -42,28 +44,18 @@ public class MergeJoinExec extends PhysicalExec {
   private final static int INITIAL_TUPLE_SLOT = 10000;
   
   private boolean end = false;
-  
-  private JoinNode ann;
 
   // projection
-  private final int[] targetIds;
-  
-  public PhysicalExec getinner(){
-    return this.inner;
-  }
-  public PhysicalExec getouter(){
-    return this.outer;
-  }
-  public JoinNode getJoinNode(){
-    return this.ann;
-  }
+  private final Projector projector;
+  private final EvalContext [] evalContexts;
 
-  public MergeJoinExec(SubqueryContext ctx, JoinNode ann, PhysicalExec outer,
+  public MergeJoinExec(SubqueryContext ctx, JoinNode joinNode, PhysicalExec outer,
       PhysicalExec inner, SortSpec [] outerSortKey, SortSpec [] innerSortKey) {
     this.outer = outer;
     this.inner = inner;
-    this.inSchema = ann.getInputSchema();
-    this.outSchema = ann.getOutputSchema();
+    this.joinNode = joinNode;
+    this.inSchema = joinNode.getInputSchema();
+    this.outSchema = joinNode.getOutputSchema();
 
     this.outerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
@@ -74,17 +66,29 @@ public class MergeJoinExec extends PhysicalExec {
     this.joincomparator = new JoinTupleComparator(outer.getSchema(),
         inner.getSchema(), sortSpecs);
     this.tupleComparator = PlannerUtil.getComparatorsFromJoinQual(
-        ann.getJoinQual(), outer.getSchema(), inner.getSchema());
+        joinNode.getJoinQual(), outer.getSchema(), inner.getSchema());
     this.outerIterator = outerTupleSlots.iterator();
     this.innerIterator = innerTupleSlots.iterator();
-    this.ann = ann;
     
     // for projection
-    targetIds = TupleUtil.getTargetIds(inSchema, outSchema);
+    this.projector = new Projector(inSchema, outSchema, joinNode.getTargets());
+    this.evalContexts = projector.renew();
 
     // for join
     frameTuple = new FrameTuple();
-    outputTuple = new VTuple(outSchema.getColumnNum());
+    outTuple = new VTuple(outSchema.getColumnNum());
+  }
+
+  public PhysicalExec getInner(){
+    return this.inner;
+  }
+
+  public PhysicalExec getOuter(){
+    return this.outer;
+  }
+
+  public JoinNode getJoinNode(){
+    return this.joinNode;
   }
 
   public Tuple next() throws IOException {
@@ -127,7 +131,7 @@ public class MergeJoinExec extends PhysicalExec {
         }
       } while (tupleComparator[0].compare(previous, outerTuple) == 0);
       outerIterator = outerTupleSlots.iterator();
-      outernext = outerIterator.next();
+      outerNext = outerIterator.next();
       
       previous = innerTuple;
       do {
@@ -142,13 +146,14 @@ public class MergeJoinExec extends PhysicalExec {
     }
     
     if(!innerIterator.hasNext()){
-      outernext = outerIterator.next();
+      outerNext = outerIterator.next();
       innerIterator = innerTupleSlots.iterator();
     }
     
-    frameTuple.set(outernext, innerIterator.next());
-    TupleUtil.project(frameTuple, outputTuple, targetIds);
-    return outputTuple;
+    frameTuple.set(outerNext, innerIterator.next());
+    projector.eval(evalContexts, frameTuple);
+    projector.terminate(evalContexts, outTuple);
+    return outTuple;
   }
 
   @Override

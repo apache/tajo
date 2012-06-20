@@ -20,7 +20,7 @@ import java.util.Set;
 public abstract class AggregationExec extends PhysicalExec {
   protected final SubqueryContext ctx;
   protected GroupbyNode annotation;
-  protected PhysicalExec subOp;
+  protected PhysicalExec child;
 
   @SuppressWarnings("unused")
   protected final EvalNode havingQual;
@@ -33,32 +33,32 @@ public abstract class AggregationExec extends PhysicalExec {
   protected final EvalNode evals [];
   protected EvalContext evalContexts [];
 
-  public AggregationExec(SubqueryContext ctx, GroupbyNode annotation,
-                           PhysicalExec subOp) throws IOException {
+  public AggregationExec(SubqueryContext ctx, GroupbyNode groupbyNode,
+                           PhysicalExec child) throws IOException {
     this.ctx = ctx;
-    this.annotation = annotation;
-    this.havingQual = annotation.getHavingCondition();
-    this.inputSchema = annotation.getInputSchema();
-    this.outputSchema = annotation.getOutputSchema();
-    this.subOp = subOp;
+    this.annotation = groupbyNode;
+    this.havingQual = groupbyNode.getHavingCondition();
+    this.inputSchema = groupbyNode.getInputSchema();
+    this.outputSchema = groupbyNode.getOutputSchema();
+    this.child = child;
 
     nonNullGroupingFields = Sets.newHashSet();
     // keylist will contain a list of IDs of grouping column
-    keylist = new int[annotation.getGroupingColumns().length];
+    keylist = new int[groupbyNode.getGroupingColumns().length];
     Column col;
-    for (int idx = 0; idx < annotation.getGroupingColumns().length; idx++) {
-      col = annotation.getGroupingColumns()[idx];
+    for (int idx = 0; idx < groupbyNode.getGroupingColumns().length; idx++) {
+      col = groupbyNode.getGroupingColumns()[idx];
       keylist[idx] = inputSchema.getColumnId(col.getQualifiedName());
       nonNullGroupingFields.add(col);
     }
 
     // measureList will contain a list of IDs of measure fields
     int valueIdx = 0;
-    measureList = new int[annotation.getTargetList().length - keylist.length];
+    measureList = new int[groupbyNode.getTargets().length - keylist.length];
     if (measureList.length > 0) {
-      search: for (int inputIdx = 0; inputIdx < annotation.getTargetList().length; inputIdx++) {
+      search: for (int inputIdx = 0; inputIdx < groupbyNode.getTargets().length; inputIdx++) {
         for (int key : keylist) { // eliminate key field
-          if (annotation.getTargetList()[inputIdx].getColumnSchema().getColumnName()
+          if (groupbyNode.getTargets()[inputIdx].getColumnSchema().getColumnName()
               .equals(inputSchema.getColumn(key).getColumnName())) {
             continue search;
           }
@@ -68,10 +68,10 @@ public abstract class AggregationExec extends PhysicalExec {
       }
     }
 
-    evals = new EvalNode[annotation.getTargetList().length];
-    evalContexts = new EvalContext[annotation.getTargetList().length];
-    for (int i = 0; i < annotation.getTargetList().length; i++) {
-      QueryBlock.Target t = annotation.getTargetList()[i];
+    evals = new EvalNode[groupbyNode.getTargets().length];
+    evalContexts = new EvalContext[groupbyNode.getTargets().length];
+    for (int i = 0; i < groupbyNode.getTargets().length; i++) {
+      QueryBlock.Target t = groupbyNode.getTargets()[i];
       if (t.getEvalTree().getType() == EvalNode.Type.FIELD && !nonNullGroupingFields.contains(t.getColumnSchema())) {
         evals[i] = new ConstEval(DatumFactory.createNullDatum());
         evalContexts[i] = evals[i].newContext();

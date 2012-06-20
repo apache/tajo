@@ -467,11 +467,7 @@ case_specification
   ;
 
 searched_case
-  : CASE s=searched_when_clauses e=else_clause END -> ^(CASE $s $e)
-  ;
-
-searched_when_clauses
-  : searched_when_clause searched_when_clause* -> searched_when_clause+
+  : CASE^ (searched_when_clause)+ (else_clause)? END!
   ;
 
 searched_when_clause

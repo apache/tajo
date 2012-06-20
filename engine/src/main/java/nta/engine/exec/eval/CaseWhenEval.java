@@ -6,6 +6,7 @@ import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos;
 import nta.datum.BoolDatum;
 import nta.datum.Datum;
+import nta.datum.DatumFactory;
 import nta.storage.Tuple;
 
 import java.util.List;
@@ -31,7 +32,7 @@ public class CaseWhenEval extends EvalNode {
 
   @Override
   public EvalContext newContext() {
-    return new CaseContext(whens, elseResult.newContext());
+    return new CaseContext(whens, elseResult != null ? elseResult.newContext() : null);
   }
 
   @Override
@@ -49,7 +50,10 @@ public class CaseWhenEval extends EvalNode {
     for (int i = 0; i < whens.size(); i++) {
       whens.get(i).eval(caseCtx.contexts[i], schema, tuple);
     }
-    elseResult.eval(caseCtx.elseCtx, schema, tuple);
+
+    if (elseResult != null) { // without else clause
+      elseResult.eval(caseCtx.elseCtx, schema, tuple);
+    }
   }
 
   @Override
@@ -60,8 +64,11 @@ public class CaseWhenEval extends EvalNode {
         return whens.get(i).getThenResult(caseCtx.contexts[i]);
       }
     }
-
-    return elseResult.terminate(caseCtx.elseCtx);
+    if (elseResult != null) { // without else clause
+      return elseResult.terminate(caseCtx.elseCtx);
+    } else {
+      return DatumFactory.createNullDatum();
+    }
   }
 
   public String toString() {
@@ -81,7 +88,9 @@ public class CaseWhenEval extends EvalNode {
     for (WhenClause when : whens) {
       when.preOrder(visitor);
     }
-    elseResult.preOrder(visitor);
+    if (elseResult != null) { // without else clause
+      elseResult.preOrder(visitor);
+    }
   }
 
   @Override
@@ -89,7 +98,9 @@ public class CaseWhenEval extends EvalNode {
     for (WhenClause when : whens) {
       when.postOrder(visitor);
     }
-    elseResult.postOrder(visitor);
+    if (elseResult != null) { // without else clause
+      elseResult.postOrder(visitor);
+    }
     visitor.visit(this);
   }
 

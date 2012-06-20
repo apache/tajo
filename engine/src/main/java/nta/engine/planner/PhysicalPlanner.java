@@ -174,7 +174,7 @@ public class PhysicalPlanner {
       SortNode sortNode = new SortNode(specs);
       sortNode.setInputSchema(subOp.getSchema());
       sortNode.setOutputSchema(subOp.getSchema());
-      //SortExec sortExec = new SortExec(sortNode, subOp);
+      //SortExec sortExec = new SortExec(sortNode, child);
       ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
       return new SortAggregateExec(ctx, groupbyNode, sortExec);
     }

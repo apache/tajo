@@ -31,9 +31,13 @@ public class ProjectionNode extends UnaryNode {
 		this.targets = targets;
 	}
 	
-	public Target [] getTargetList() {
+	public Target [] getTargets() {
 	  return this.targets;
 	}
+
+  public void setTargetList(Target [] targets) {
+    this.targets = targets;
+  }
 	
 	public void setSubNode(LogicalNode subNode) {
 	  super.setSubNode(subNode);

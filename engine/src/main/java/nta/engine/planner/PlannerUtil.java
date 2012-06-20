@@ -5,6 +5,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.proto.CatalogProtos;
+import nta.engine.Context;
 import nta.engine.exec.eval.*;
 import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.parser.QueryBlock.SortSpec;
@@ -148,8 +150,8 @@ public class PlannerUtil {
       gp.setInputSchema(child.getOutputSchema());
       gp.setOutputSchema(child.getOutputSchema());
     
-      Target [] targets = gp.getTargetList();
-      for (int i = 0; i < gp.getTargetList().length; i++) {
+      Target [] targets = gp.getTargets();
+      for (int i = 0; i < gp.getTargets().length; i++) {
         if (targets[i].getEvalTree().getType() == Type.AGG_FUNCTION) {
           Column tobe = child.getOutputSchema().getColumn(i);        
           AggFuncCallEval eval = (AggFuncCallEval) targets[i].getEvalTree();
@@ -333,7 +335,7 @@ public class PlannerUtil {
       case PROJECTION:
         ProjectionNode projNode = (ProjectionNode) node;
 
-        for (Target t : projNode.getTargetList()) {
+        for (Target t : projNode.getTargets()) {
           temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
           if (!temp.isEmpty()) {
             collected.addAll(temp);
@@ -354,7 +356,7 @@ public class PlannerUtil {
       case GROUP_BY:
         GroupbyNode groupByNode = (GroupbyNode)node;
         collected.addAll(Lists.newArrayList(groupByNode.getGroupingColumns()));
-        for (Target t : groupByNode.getTargetList()) {
+        for (Target t : groupByNode.getTargets()) {
           temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
           if (!temp.isEmpty()) {
             collected.addAll(temp);
@@ -411,7 +413,7 @@ public class PlannerUtil {
     FieldEval eval;
     for (int i = 0; i < schema.getColumnNum(); i++) {
       eval = new FieldEval(schema.getColumn(i));
-      targets[i] = new Target(eval);
+      targets[i] = new Target(eval, i);
     }
     return targets;
   }
@@ -516,5 +518,23 @@ public class PlannerUtil {
     public List<Column []> getPairs() {
       return this.pairs;
     }
+  }
+
+  public static Schema getTargetToSchema(Context ctx, Target [] targets) {
+    Schema schema = new Schema();
+    for(Target t : targets) {
+      CatalogProtos.DataType type = t.getEvalTree().getValueType();
+      String name;
+      if (t.hasAlias()) {
+        name = t.getAlias();
+      } else if (t.getEvalTree().getName().equals("?")) {
+        name = ctx.getUnnamedColumn();
+      } else {
+        name = t.getEvalTree().getName();
+      }
+      schema.addColumn(name, type);
+    }
+
+    return schema;
   }
 }

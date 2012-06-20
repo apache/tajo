@@ -1,7 +1,10 @@
 package nta.catalog;
 
 
+import com.sun.org.apache.xerces.internal.impl.xs.SchemaNamespaceSupport;
 import nta.engine.parser.QueryBlock;
+
+import java.util.Collection;
 
 public class SchemaUtil {
   public static Schema merge(Schema left, Schema right) {
@@ -37,5 +40,30 @@ public class SchemaUtil {
     }
     
     return common;
+  }
+
+  public static Schema mergeAllWithNoDup(Collection<Column>...columnList) {
+    Schema merged = new Schema();
+    for (Collection<Column> columns : columnList) {
+      for (Column col : columns) {
+        if (merged.contains(col.getQualifiedName())) {
+          continue;
+        }
+        merged.addColumn(col);
+      }
+    }
+
+    return merged;
+  }
+
+  public static Schema getProjectedSchema(Schema inSchema, Collection<Column> columns) {
+    Schema projected = new Schema();
+    for (Column col : columns) {
+      if (inSchema.contains(col.getQualifiedName())) {
+        projected.addColumn(col);
+      }
+    }
+
+    return projected;
   }
 }

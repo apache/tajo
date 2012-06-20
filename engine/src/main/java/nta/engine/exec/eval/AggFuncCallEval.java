@@ -10,9 +10,8 @@ import nta.engine.json.GsonCreator;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
-public class AggFuncCallEval extends FuncEval {
+public class AggFuncCallEval extends FuncEval implements Cloneable {
   @Expose protected AggFunction instance;
-  private Schema schema;
   private Tuple params;
 
   public AggFuncCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
@@ -53,6 +52,11 @@ public class AggFuncCallEval extends FuncEval {
 
   public String toJSON() {
 	  return GsonCreator.getInstance().toJson(this, EvalNode.class);
+  }
+
+  public Object clone() throws CloneNotSupportedException {
+    AggFuncCallEval agg = (AggFuncCallEval) super.clone();
+    return agg;
   }
 
   protected class AggFunctionCtx extends FuncCallCtx {

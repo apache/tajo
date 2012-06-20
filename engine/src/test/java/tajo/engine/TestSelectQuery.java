@@ -1,12 +1,12 @@
 package tajo.engine;
 
-import com.google.common.collect.Lists;
+import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.sql.ResultSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -23,7 +23,7 @@ public class TestSelectQuery extends TpchTestBase {
 
   @Test
   public final void testSelect() throws Exception {
-    ResultSet res = execute("select l_orderkey,l_partkey from lineitem");
+    ResultSet res = execute("select l_orderkey, l_partkey from lineitem");
     res.next();
     assertEquals(1, res.getInt(1));
     assertEquals(155190, res.getInt(2));
@@ -35,6 +35,38 @@ public class TestSelectQuery extends TpchTestBase {
     res.next();
     assertEquals(2, res.getInt(1));
     assertEquals(106170, res.getInt(2));
+  }
+
+  @Test
+  public final void testSelect2() throws Exception {
+    ResultSet res = execute("select l_orderkey, l_partkey, l_orderkey + l_partkey as plus from lineitem");
+    res.next();
+    assertEquals(1, res.getInt(1));
+    assertEquals(155190, res.getInt(2));
+    assertEquals(155191, res.getInt(3));
+
+    res.next();
+    assertEquals(1, res.getInt(1));
+    assertEquals(67310, res.getInt(2));
+    assertEquals(67311, res.getInt(3));
+
+    res.next();
+    assertEquals(2, res.getInt(1));
+    assertEquals(106170, res.getInt(2));
+    assertEquals(106172, res.getInt(3));
+  }
+
+  @Test
+  public final void testSelect3() throws Exception {
+    ResultSet res = execute("select l_orderkey + l_partkey as plus from lineitem");
+    res.next();
+    assertEquals(155191, res.getInt(1));
+
+    res.next();
+    assertEquals(67311, res.getInt(1));
+
+    res.next();
+    assertEquals(106172, res.getInt(1));
   }
 
   @Test
@@ -141,15 +173,50 @@ public class TestSelectQuery extends TpchTestBase {
     assertFalse(res.next());
   }
 
-  //@Test
+  @Test
   public final void testCaseWhen() throws Exception {
-    List<String> result = Lists.newArrayList(new String [] {"odd", "odd", "even", "odd", "odd"});
-    ResultSet res = execute("select case when (l_orderkey % 2) = 0 then 'even' else 'odd' end as mod from lineitem");
+    ResultSet res = execute("select r_regionkey, " +
+        "case when r_regionkey = 1 then 'one' " +
+        "when r_regionkey = 2 then 'two' " +
+        "when r_regionkey = 3 then 'three' " +
+        "when r_regionkey = 4 then 'four' " +
+        "else 'zero' " +
+        "end as cond from region");
+    Map<Integer, String> result = Maps.newHashMap();
+    result.put(0, "zero");
+    result.put(1, "one");
+    result.put(2, "two");
+    result.put(3, "three");
+    result.put(4, "four");
     int cnt = 0;
     while(res.next()) {
-      assertEquals(result.get(cnt), res.getString(1));
+      assertEquals(result.get(res.getInt(1)), res.getString(2));
       cnt++;
     }
+
+    assertEquals(5, cnt);
+  }
+
+  @Test
+  public final void testCaseWhenWithoutElse() throws Exception {
+    ResultSet res = execute("select r_regionkey, " +
+        "case when r_regionkey = 1 then 'one' " +
+        "when r_regionkey = 2 then 'two' " +
+        "when r_regionkey = 3 then 'three' " +
+        "when r_regionkey = 4 then 'four' " +
+        "end as cond from region");
+    Map<Integer, String> result = Maps.newHashMap();
+    result.put(0, "NULL");
+    result.put(1, "one");
+    result.put(2, "two");
+    result.put(3, "three");
+    result.put(4, "four");
+    int cnt = 0;
+    while(res.next()) {
+      assertEquals(result.get(res.getInt(1)), res.getString(2));
+      cnt++;
+    }
+
     assertEquals(5, cnt);
   }
 }

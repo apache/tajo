@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos.DataType;
@@ -307,6 +308,29 @@ public class EvalTreeUtil {
     
     public Map<EvalNode.Type, Integer> getCounter() {
       return counter;
+    }
+  }
+
+  public static List<AggFuncCallEval> findDistinctAggFunction(EvalNode expr) {
+    AllAggFunctionFinder finder = new AllAggFunctionFinder();
+    expr.postOrder(finder);
+    return Lists.newArrayList(finder.getAggregationFunction());
+  }
+
+  public static class AllAggFunctionFinder implements EvalNodeVisitor {
+    private Set<AggFuncCallEval> aggFucntions = Sets.newHashSet();
+    private AggFuncCallEval field = null;
+
+    @Override
+    public void visit(EvalNode node) {
+      if (node.getType() == Type.AGG_FUNCTION) {
+        field = (AggFuncCallEval) node;
+        aggFucntions.add(field);
+      }
+    }
+
+    public Set<AggFuncCallEval> getAggregationFunction() {
+      return this.aggFucntions;
     }
   }
 }

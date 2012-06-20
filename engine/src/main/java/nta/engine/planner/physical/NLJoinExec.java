@@ -4,8 +4,8 @@ import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
 import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
+import nta.engine.planner.Projector;
 import nta.engine.planner.logical.JoinNode;
-import nta.engine.utils.TupleUtil;
 import nta.storage.FrameTuple;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -23,47 +23,51 @@ public class NLJoinExec extends PhysicalExec {
   private PhysicalExec inner;
     
   private JoinNode ann;
-  
-  public PhysicalExec getOuter(){
-    return this.outer;
-  }
-  public PhysicalExec getInner(){
-    return this.inner;
-  }
-  public JoinNode getJoinNode(){
-    return this.ann;
-  }
 
   // temporal tuples and states for nested loop join
   private boolean needNewOuter;
   private FrameTuple frameTuple;
   private Tuple outerTuple = null;
   private Tuple innerTuple = null;
-  private Tuple outputTuple = null;
+  private Tuple outTuple = null;
   private EvalContext qualCtx;
 
   // projection
-  private final int [] targetIds;
+  private final EvalContext [] evalContexts;
+  private final Projector projector;
 
-  public NLJoinExec(SubqueryContext ctx, JoinNode ann, PhysicalExec outer,
+  public NLJoinExec(SubqueryContext ctx, JoinNode joinNode, PhysicalExec outer,
       PhysicalExec inner) {    
     this.outer = outer;
     this.inner = inner;
-    this.inSchema = ann.getInputSchema();
-    this.outSchema = ann.getOutputSchema();
-    if (ann.hasJoinQual()) {
-      this.joinQual = ann.getJoinQual();
+    this.inSchema = joinNode.getInputSchema();
+    this.outSchema = joinNode.getOutputSchema();
+    if (joinNode.hasJoinQual()) {
+      this.joinQual = joinNode.getJoinQual();
       this.qualCtx = this.joinQual.newContext();
     }
-    this.ann = ann;
+    this.ann = joinNode;
 
     // for projection
-    targetIds = TupleUtil.getTargetIds(inSchema, outSchema);
+    projector = new Projector(inSchema, outSchema, joinNode.getTargets());
+    evalContexts = projector.renew();
 
     // for join
     needNewOuter = true;
     frameTuple = new FrameTuple();
-    outputTuple = new VTuple(outSchema.getColumnNum());
+    outTuple = new VTuple(outSchema.getColumnNum());
+  }
+
+  public PhysicalExec getOuter(){
+    return this.outer;
+  }
+
+  public PhysicalExec getInner(){
+    return this.inner;
+  }
+
+  public JoinNode getJoinNode(){
+    return this.ann;
   }
 
   public Tuple next() throws IOException {
@@ -87,12 +91,14 @@ public class NLJoinExec extends PhysicalExec {
       if (joinQual != null) {
         joinQual.eval(qualCtx, inSchema, frameTuple);
         if (joinQual.terminate(qualCtx).asBool()) {
-          TupleUtil.project(frameTuple, outputTuple, targetIds);
-          return outputTuple;
+          projector.eval(evalContexts, frameTuple);
+          projector.terminate(evalContexts, outTuple);
+          return outTuple;
         }
       } else {
-        TupleUtil.project(frameTuple, outputTuple, targetIds);
-        return outputTuple;
+        projector.eval(evalContexts, frameTuple);
+        projector.terminate(evalContexts, outTuple);
+        return outTuple;
       }
     }
   }

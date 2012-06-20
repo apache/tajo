@@ -460,7 +460,7 @@ public final class QueryAnalyzer {
       for (int i = 0; i < ast.getChildCount(); i++) {        
         node = (CommonTree) ast.getChild(i);
         evalTree = createEvalTree(ctx, node, block);
-        targets[i] = new Target(evalTree); 
+        targets[i] = new Target(evalTree, i);
         if (node.getChildCount() > 1) {          
           alias = node.getChild(node.getChildCount() - 1).getChild(0).getText();
           targets[i].setAlias(alias);
@@ -898,19 +898,23 @@ public final class QueryAnalyzer {
   public CaseWhenEval parseCaseWhen(Context ctx, Tree tree, QueryBlock block) {
     int idx = 0;
 
+    System.out.println(tree.toStringTree());
+
     CaseWhenEval caseEval = new CaseWhenEval();
     EvalNode cond;
     EvalNode thenResult;
     Tree when;
-    for (; tree.getChild(idx).getType() == NQLParser.WHEN && idx < tree.getChildCount(); idx++) {
+    for (; idx < tree.getChildCount() && tree.getChild(idx).getType() == NQLParser.WHEN; idx++) {
       when = tree.getChild(idx);
       cond = createEvalTree(ctx, when.getChild(0), block);
       thenResult = createEvalTree(ctx, when.getChild(1), block);
       caseEval.addWhen(cond, thenResult);
     }
 
-    EvalNode elseResult = createEvalTree(ctx, tree.getChild(idx).getChild(0), block);
-    caseEval.setElseResult(elseResult);
+    if (tree.getChild(idx) != null && tree.getChild(idx).getType() == NQLParser.ELSE) {
+      EvalNode elseResult = createEvalTree(ctx, tree.getChild(idx).getChild(0), block);
+      caseEval.setElseResult(elseResult);
+    }
 
     return caseEval;
   }

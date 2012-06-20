@@ -79,12 +79,12 @@ public class TestGlobalEngine {
 
   private String[] query = {
 //      "select deptname, sum(score) from score group by deptname having sum(score) > 30",
-      "select deptname, year, sum(score) from score group by deptname, year",
-      "select deptname from score",
-      "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname",
-      "create table test (id int, name string) using csv location '/tmp/data' with ('csv.delimiter'='|')",
-      "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname and score.score > 50",
-      "select deptname, year, sum(score) from score group by cube (deptname, year)"
+      "select deptname, year, sum(score) from score group by deptname, year", // 0
+      "select deptname from score", // 1
+      "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname", // 2
+      "create table test (id int, name string) using csv location '/tmp/data' with ('csv.delimiter'='|')", // 3
+      "select dept.deptname, score.score from dept,score where score.deptname = dept.deptname and score.score > 50", // 4
+      "select deptname, year, sum(score) from score group by cube (deptname, year)" // 5
   };
   private static Map<CompositeKey, Integer> groupbyResult;
   private static Map<CompositeKey, Integer> cubebyResult;

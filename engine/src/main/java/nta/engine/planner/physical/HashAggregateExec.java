@@ -41,7 +41,7 @@ public class HashAggregateExec extends AggregationExec {
 
   @VisibleForTesting
   public PhysicalExec getSubOp() {
-    return this.subOp;
+    return this.child;
   }
 
   @VisibleForTesting
@@ -51,13 +51,13 @@ public class HashAggregateExec extends AggregationExec {
 
   @VisibleForTesting
   public void setSubOp(PhysicalExec subOp) {
-    this.subOp = subOp;
+    this.child = subOp;
   }
   
   private void compute() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
-    while((tuple = subOp.next()) != null && !ctx.isStopped()) {
+    while((tuple = child.next()) != null && !ctx.isStopped()) {
       keyTuple = new VTuple(keylist.length);
       // build one key tuple
       for(int i = 0; i < keylist.length; i++) {

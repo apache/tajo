@@ -97,24 +97,35 @@ public abstract class EvalNode implements Cloneable {
     AGG_FUNCTION,
     AND,
 	  OR,
-	  EQUAL,
-	  NOT_EQUAL,
-	  LTH,
-	  LEQ,
-	  GTH,
-	  GEQ,
-	  NOT,
-	  PLUS,
-    MINUS,
-    MODULAR,
-    MULTIPLY,
-    DIVIDE,
+	  EQUAL("="),
+	  NOT_EQUAL("<>"),
+	  LTH("<"),
+	  LEQ("<="),
+	  GTH(">"),
+	  GEQ(">="),
+	  NOT("!"),
+	  PLUS("+"),
+    MINUS("-"),
+    MODULAR("%"),
+    MULTIPLY("*"),
+    DIVIDE("/"),
 	  FIELD,
     FUNCTION,
     LIKE,
     CONST,
     CASE,
-    WHEN
+    WHEN;
+
+    private String represent;
+    Type() {
+    }
+    Type(String represent) {
+      this.represent = represent;
+    }
+
+    public String toString() {
+      return represent == null ? this.name() : represent;
+    }
 	}
 	
 	@Override

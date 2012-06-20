@@ -3,12 +3,13 @@
  */
 package nta.engine.planner.logical;
 
-import nta.catalog.Schema;
 import com.google.gson.annotations.Expose;
 
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.json.GsonCreator;
+import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.FromTable;
+import nta.engine.parser.QueryBlock.Target;
 import nta.engine.utils.TUtil;
 
 /**
@@ -16,14 +17,10 @@ import nta.engine.utils.TUtil;
  *
  */
 public class ScanNode extends LogicalNode {
-	@Expose
-  private FromTable table;
-	@Expose
-  private EvalNode qual;
-	@Expose
-  private Schema targetList;
-	@Expose
-	private boolean local;
+	@Expose private FromTable table;
+	@Expose private EvalNode qual;
+	@Expose private QueryBlock.Target[] targets;
+	@Expose private boolean local;
 	
 	public ScanNode() {
 		super();
@@ -44,10 +41,6 @@ public class ScanNode extends LogicalNode {
 	
 	public boolean hasAlias() {
 	  return table.hasAlias();
-	}
-	
-	public String getAlias() {
-	  return table.getAlias();
 	}
 	
 	public boolean hasQual() {
@@ -71,15 +64,15 @@ public class ScanNode extends LogicalNode {
 	}
 	
 	public boolean hasTargetList() {
-	  return this.targetList != null;
+	  return this.targets != null;
 	}
 	
-	public void setTargetList(Schema targets) {
-	  this.targetList = targets;
+	public void setTargets(Target [] targets) {
+	  this.targets = targets;
 	}
 	
-	public Schema getTargetList() {
-	  return this.targetList;
+	public Target [] getTargets() {
+	  return this.targets;
 	}
 	
 	public String toString() {
@@ -95,7 +88,15 @@ public class ScanNode extends LogicalNode {
 	  }
 	  
 	  if (hasTargetList()) {
-	    sb.append(", \"target list\": ").append(this.targetList);
+	    sb.append(", \"target list\": ");
+      boolean first = true;
+      for (Target target : targets) {
+        if (!first) {
+          sb.append(", ");
+        }
+        sb.append(target);
+        first = false;
+      }
 	  }
 	  
 	  sb.append(",");
@@ -116,7 +117,7 @@ public class ScanNode extends LogicalNode {
 	    boolean eq = super.equals(other); 
 	    eq = eq && TUtil.checkEquals(this.table, other.table);
 	    eq = eq && TUtil.checkEquals(this.qual, other.qual);
-	    eq = eq && TUtil.checkEquals(this.targetList, other.targetList);
+	    eq = eq && TUtil.checkEquals(this.targets, other.targets);
 	    
 	    return eq;
 	  }	  
@@ -135,7 +136,10 @@ public class ScanNode extends LogicalNode {
 	  }
 	  
 	  if (hasTargetList()) {
-	    scanNode.targetList = (Schema) targetList.clone();
+	    scanNode.targets = new Target[targets.length];
+      for (int i = 0; i < targets.length; i++) {
+        scanNode.targets[i] = (Target) targets[i].clone();
+      }
 	  }
 	  
 	  return scanNode;

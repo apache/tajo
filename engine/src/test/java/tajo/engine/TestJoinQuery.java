@@ -81,4 +81,35 @@ public class TestJoinQuery extends TpchTestBase {
 
     assertFalse(res.next());
   }
+
+  @Test
+  public void testJoinRefEval() throws Exception {
+    ResultSet res = execute("select r_regionkey, n_regionkey, (r_regionkey + n_regionkey) as plus from region, nation where r_regionkey = n_regionkey");
+    int r, n;
+    while(res.next()) {
+      r = res.getInt(1);
+      n = res.getInt(2);
+      assertEquals(r + n, res.getInt(3));
+    }
+  }
+
+  @Test
+  public void testJoinAndCaseWhen() throws Exception {
+    ResultSet res = execute("select r_regionkey, n_regionkey, " +
+    "case when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 1) then 'one' " +
+    "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 2) then 'two' " +
+    "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 3) then 'three' " +
+    "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 4) then 'four' " +
+    "else 'zero' " +
+    "end as cond from region, nation where r_regionkey = n_regionkey");
+    Map<Integer, String> result = Maps.newHashMap();
+    result.put(0, "zero");
+    result.put(1, "one");
+    result.put(2, "two");
+    result.put(3, "three");
+    result.put(4, "four");
+    while(res.next()) {
+      assertEquals(result.get(res.getInt(1)), res.getString(3));
+    }
+  }
 }

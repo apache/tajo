@@ -530,6 +530,7 @@ public class TestEvalTree {
   private void assertCloneEqual(EvalNode eval) throws CloneNotSupportedException {
     EvalNode copy = (EvalNode) eval.clone();
     assertEquals(eval, copy);
+    assertFalse(eval == copy);
   }
   
   static String[] NOT = {

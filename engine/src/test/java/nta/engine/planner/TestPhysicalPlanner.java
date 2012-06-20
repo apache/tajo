@@ -305,7 +305,6 @@ public class TestPhysicalPlanner {
         workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[8]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-
     plan = LogicalOptimizer.optimize(ctx, plan);
 
     TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutputSchema(),

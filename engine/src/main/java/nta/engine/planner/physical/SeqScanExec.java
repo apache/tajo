@@ -5,11 +5,11 @@ package nta.engine.planner.physical;
 
 import java.io.IOException;
 
-import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.planner.Projector;
 import nta.engine.planner.logical.ScanNode;
 import nta.storage.Scanner;
 import nta.storage.StorageManager;
@@ -21,69 +21,57 @@ import nta.storage.VTuple;
  * 
  */
 public class SeqScanExec extends PhysicalExec {
-  private final ScanNode annotation;
+  private final ScanNode scanNode;
   private Scanner scanner = null;
-  
-  private Tuple tuple = null;
-  private int [] targetIds = null;
+
   private EvalNode qual = null;
   private EvalContext qualCtx;
-  private Schema inputSchema;
-  private Schema outputSchema;
+  private Schema inSchema;
+  private Schema outSchema;
+
+  private final Projector projector;
+  private EvalContext [] evalContexts;
 
   /**
    * @throws IOException 
 	 * 
 	 */
-  public SeqScanExec(StorageManager sm, ScanNode annotation,
+  public SeqScanExec(StorageManager sm, ScanNode scanNode,
       Fragment [] fragments) throws IOException {
-    this.annotation = annotation;
-    this.qual = annotation.getQual();
+    this.scanNode = scanNode;
+    this.qual = scanNode.getQual();
     if (qual == null) {
       qualCtx = null;
     } else {
       qualCtx = this.qual.newContext();
     }
-    this.inputSchema = annotation.getInputSchema();
-    this.outputSchema = annotation.getOutputSchema();
-    
+    this.inSchema = scanNode.getInputSchema();
+    this.outSchema = scanNode.getOutputSchema();
     this.scanner = sm.getScanner(fragments[0].getMeta(), fragments);
-    Schema targets = annotation.hasTargetList() ? annotation.getTargetList() :
-      annotation.getOutputSchema();
-    this.targetIds = new int[targets.getColumnNum()];    
-    
-    int i=0;
-    for (Column target : targets.getColumns()) {
-      targetIds[i] = inputSchema.getColumnId(target.getQualifiedName());
-      i++;
-    }
+    this.projector = new Projector(inSchema, outSchema, scanNode.getTargets());
+    this.evalContexts = projector.renew();
   }
 
   @Override
   public Tuple next() throws IOException {
-    if (!annotation.hasQual()) {
+    Tuple tuple;
+    Tuple outTuple = new VTuple(outSchema.getColumnNum());
+
+    if (!scanNode.hasQual()) {
       if ((tuple = scanner.next()) != null) {
-        Tuple newTuple = new VTuple(outputSchema.getColumnNum());
-        int i=0;
-        for(int cid : targetIds) {
-          newTuple.put(i, tuple.get(cid));
-          i++;
-        }
-        return newTuple;
+        projector.eval(evalContexts, tuple);
+        projector.terminate(evalContexts, outTuple);
+        return outTuple;
       } else {
         return null;
       }
     } else {
       while ((tuple = scanner.next()) != null) {
-        qual.eval(qualCtx, inputSchema, tuple);
+        qual.eval(qualCtx, inSchema, tuple);
         if (qual.terminate(qualCtx).asBool()) {
-          Tuple newTuple = new VTuple(outputSchema.getColumnNum());
-          int i=0;
-          for(int cid : targetIds) {
-            newTuple.put(i, tuple.get(cid));
-            i++;
-          }          
-          return newTuple;
+          projector.eval(evalContexts, tuple);
+          projector.terminate(evalContexts, outTuple);
+          return outTuple;
         }
       }
       return null;
@@ -92,7 +80,7 @@ public class SeqScanExec extends PhysicalExec {
 
   @Override
   public Schema getSchema() {
-    return outputSchema;
+    return outSchema;
   }
 
   @Override

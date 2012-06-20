@@ -20,10 +20,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * This class creates a logical plan from a parse tree ({@link QueryBlock})
@@ -47,9 +44,13 @@ public class LogicalPlanner {
    */
   public static LogicalNode createPlan(Context ctx, ParseTree query) {
     LogicalNode plan;
-    
-    plan = createPlanInternal(ctx, query);
-    
+
+    try {
+      plan = createPlanInternal(ctx, query);
+    } catch (CloneNotSupportedException e) {
+      throw new InvalidQueryException(e);
+    }
+
     LogicalRootNode root = new LogicalRootNode();
     root.setInputSchema(plan.getOutputSchema());
     root.setOutputSchema(plan.getOutputSchema());
@@ -58,7 +59,7 @@ public class LogicalPlanner {
     return root;
   }
   
-  private static LogicalNode createPlanInternal(Context ctx, ParseTree query) {
+  private static LogicalNode createPlanInternal(Context ctx, ParseTree query) throws CloneNotSupportedException {
     LogicalNode plan;
     
     switch(query.getType()) {
@@ -95,7 +96,7 @@ public class LogicalPlanner {
   }
   
   private static LogicalNode buildSetPlan(Context ctx,
-      SetStmt stmt) {
+      SetStmt stmt) throws CloneNotSupportedException {
     BinaryNode bin;
     switch (stmt.getType()) {
     case UNION:
@@ -133,7 +134,7 @@ public class LogicalPlanner {
   }
   
   private static LogicalNode buildCreateTablePlan(Context ctx, 
-      CreateTableStmt query) {
+      CreateTableStmt query) throws CloneNotSupportedException {
     LogicalNode node = null;
     if (query.hasDefinition())  {
       CreateTableNode createTable = 
@@ -164,7 +165,7 @@ public class LogicalPlanner {
    * @param query
    * @return the planed logical plan
    */
-  private static LogicalNode buildSelectPlan(Context ctx, QueryBlock query) {
+  private static LogicalNode buildSelectPlan(Context ctx, QueryBlock query) throws CloneNotSupportedException {
     LogicalNode subroot;
     EvalNode whereCondition = null;
     EvalNode [] cnf = null;
@@ -254,7 +255,17 @@ public class LogicalPlanner {
         prjNode.setSubNode(subroot);
       }
       prjNode.setInputSchema(subroot.getOutputSchema());
-      Schema projected = getProjectedSchema(ctx, query.getTargetList());
+
+      // All aggregate functions are evaluated before the projection.
+      // So, the targets for aggregate functions should be updated.
+      LogicalOptimizer.TargetListManager tlm = new LogicalOptimizer.TargetListManager(ctx);
+      for (int i = 0; i < tlm.getTargets().length; i++) {
+        if (EvalTreeUtil.findDistinctAggFunction(tlm.getTarget(i).getEvalTree()).size() > 0) {
+          tlm.setEvaluated(i);
+        }
+      }
+      prjNode.setTargetList(tlm.getUpdatedTarget());
+      Schema projected = getProjectedSchema(ctx, tlm.getUpdatedTarget());
       prjNode.setOutputSchema(projected);
       subroot = prjNode;
     }
@@ -287,7 +298,11 @@ public class LogicalPlanner {
     try {
     if ((cuboids.size() - idx) > 2) {
       GroupbyNode g1 = new GroupbyNode(cuboids.get(idx));
-      g1.setTargetList(ctx.getTargetList());
+      Target [] clone = new Target[ctx.getTargetList().length];
+      for (int i = 0; i < ctx.getTargetList().length; i++) {
+        clone[i] = (Target) ctx.getTargetList()[i].clone();
+      }
+      g1.setTargetList(clone);
       g1.setSubNode((LogicalNode) subNode.clone());
       g1.setInputSchema(g1.getSubNode().getOutputSchema());
       Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
@@ -299,14 +314,22 @@ public class LogicalPlanner {
       return union;
     } else {
       GroupbyNode g1 = new GroupbyNode(cuboids.get(idx));
-      g1.setTargetList(ctx.getTargetList());
+      Target [] clone = new Target[ctx.getTargetList().length];
+      for (int i = 0; i < ctx.getTargetList().length; i++) {
+        clone[i] = (Target) ctx.getTargetList()[i].clone();
+      }
+      g1.setTargetList(clone);
       g1.setSubNode((LogicalNode) subNode.clone());
       g1.setInputSchema(g1.getSubNode().getOutputSchema());      
       Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
       g1.setOutputSchema(outSchema);
       
       GroupbyNode g2 = new GroupbyNode(cuboids.get(idx+1));
-      g2.setTargetList(ctx.getTargetList());
+      clone = new Target[ctx.getTargetList().length];
+      for (int i = 0; i < ctx.getTargetList().length; i++) {
+        clone[i] = (Target) ctx.getTargetList()[i].clone();
+      }
+      g2.setTargetList(clone);
       g2.setSubNode((LogicalNode) subNode.clone());
       g2.setInputSchema(g1.getSubNode().getOutputSchema());
       outSchema = getProjectedSchema(ctx, ctx.getTargetList());
@@ -542,6 +565,24 @@ public class LogicalPlanner {
     }
 
     return subroot;
+  }
+
+  public static Schema getProjectedSchema(Context ctx, Collection<Target> targets) {
+    Schema projected = new Schema();
+    for(Target t : targets) {
+      DataType type = t.getEvalTree().getValueType();
+      String name;
+      if (t.hasAlias()) {
+        name = t.getAlias();
+      } else if (t.getEvalTree().getName().equals("?")) {
+        name = ctx.getUnnamedColumn();
+      } else {
+        name = t.getEvalTree().getName();
+      }
+      projected.addColumn(name,type);
+    }
+
+    return projected;
   }
   
   public static Schema getProjectedSchema(Context ctx, Target [] targets) {

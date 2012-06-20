@@ -98,11 +98,11 @@ public class TestExternalSortExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
 /*    ProjectionExec proj = (ProjectionExec) exec;
-    SortExec inMemSort = (SortExec) proj.getSubOp();
-    SeqScanExec scan = (SeqScanExec)inMemSort.getSubOp();
+    SortExec inMemSort = (SortExec) proj.getChild();
+    SeqScanExec scan = (SeqScanExec)inMemSort.getChild();
   
     ExternalSortExec extSort = new ExternalSortExec(ctx, sm, inMemSort.getSortNode(), scan);
-    proj.setSubOp(extSort);*/
+    proj.setChild(extSort);*/
 
     Tuple tuple;
     Datum preVal = null;

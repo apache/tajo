@@ -17,7 +17,7 @@ import nta.storage.Tuple;
 /**
  * @author Hyunsik Choi
  */
-public abstract class FuncEval extends EvalNode {
+public abstract class FuncEval extends EvalNode implements Cloneable {
 	@Expose protected FunctionDesc funcDesc;
 	@Expose protected EvalNode [] argEvals;
 

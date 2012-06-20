@@ -268,6 +268,7 @@ public class TestLogicalPlanner {
     assertEquals("score", inner.getTableId());
 
     LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
+    System.out.println(optimized);
     assertSchema(expectedJoinSchema, optimized.getOutputSchema());
   }
   
@@ -388,6 +389,7 @@ public class TestLogicalPlanner {
     Schema expected = tpch.getOutSchema("q2");
     assertSchema(expected, plan.getOutputSchema());
     LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
+    System.out.println(optimized);
     assertSchema(expected, optimized.getOutputSchema());
   }
   

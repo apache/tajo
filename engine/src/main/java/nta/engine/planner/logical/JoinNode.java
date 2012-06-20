@@ -5,6 +5,7 @@ package nta.engine.planner.logical;
 
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.json.GsonCreator;
+import nta.engine.parser.QueryBlock;
 import nta.engine.planner.JoinType;
 
 import com.google.gson.annotations.Expose;
@@ -16,6 +17,7 @@ import com.google.gson.annotations.Expose;
 public class JoinNode extends BinaryNode implements Cloneable {
   @Expose private JoinType joinType;
   @Expose private EvalNode joinQual;
+  @Expose private QueryBlock.Target [] targets;
 
   public JoinNode(JoinType joinType, LogicalNode left) {
     super(ExprType.JOIN);
@@ -48,6 +50,18 @@ public class JoinNode extends BinaryNode implements Cloneable {
 
   public EvalNode getJoinQual() {
     return this.joinQual;
+  }
+
+  public boolean hasTargetList() {
+    return this.targets != null;
+  }
+
+  public QueryBlock.Target[] getTargets() {
+    return this.targets;
+  }
+
+  public void setTargetList(QueryBlock.Target[] targets) {
+    this.targets = targets;
   }
 
   @Override

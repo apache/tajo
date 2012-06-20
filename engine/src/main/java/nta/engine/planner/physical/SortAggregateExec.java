@@ -2,6 +2,7 @@ package nta.engine.planner.physical;
 
 import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
+import nta.engine.planner.Projector;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
@@ -15,14 +16,14 @@ import java.io.IOException;
  */
 public class SortAggregateExec extends AggregationExec {
   private Tuple prevKey = null;
-  private Tuple newAggTuple = null;
-  private Tuple aggTuple = null;
   private boolean finished = false;
+  private final Projector projector;
 
-  public SortAggregateExec(SubqueryContext ctx, GroupbyNode annotation,
+
+  public SortAggregateExec(SubqueryContext ctx, GroupbyNode groupbyNode,
                            PhysicalExec subOp) throws IOException {
-    super(ctx, annotation, subOp);
-    this.newAggTuple = new VTuple(outputSchema.getColumnNum());
+    super(ctx, groupbyNode, subOp);
+    this.projector = new Projector(inputSchema, outputSchema, groupbyNode.getTargets());
   }
 
   @Override
@@ -30,7 +31,7 @@ public class SortAggregateExec extends AggregationExec {
     Tuple curKey;
     Tuple tuple;
     Tuple finalTuple = null;
-    while(!ctx.isStopped() && (tuple = subOp.next()) != null) {
+    while(!ctx.isStopped() && (tuple = child.next()) != null) {
       // build a key tuple
       curKey = new VTuple(keylist.length);
       for(int i = 0; i < keylist.length; i++) {
@@ -64,7 +65,7 @@ public class SortAggregateExec extends AggregationExec {
         prevKey = curKey;
         return finalTuple;
       }
-    }
+    } // while loop
 
     if (!finished) {
       finalTuple = new VTuple(outputSchema.getColumnNum());
@@ -85,6 +86,6 @@ public class SortAggregateExec extends AggregationExec {
   public void rescan() throws IOException {
     prevKey = null;
     finished = false;
-    subOp.rescan();
+    child.rescan();
   }
 }

@@ -145,7 +145,7 @@ public class TestMergeJoinExec {
 
     /*
     ProjectionExec proj = (ProjectionExec) exec;
-    NLJoinExec nestedLoopJoin = (NLJoinExec) proj.getSubOp();
+    NLJoinExec nestedLoopJoin = (NLJoinExec) proj.getChild();
     SeqScanExec outerScan = (SeqScanExec) nestedLoopJoin.getOuter();
     SeqScanExec innerScan = (SeqScanExec) nestedLoopJoin.getInner();
 
@@ -177,7 +177,7 @@ public class TestMergeJoinExec {
     MergeJoinExec mergeJoin = new MergeJoinExec(ctx,
         nestedLoopJoin.getJoinNode(), outerSortExec, innerSortExec, outerSortKeys,
         innerSortKeys);
-    proj.setSubOp(mergeJoin);
+    proj.setChild(mergeJoin);
     exec = proj;*/
 
     Tuple tuple;

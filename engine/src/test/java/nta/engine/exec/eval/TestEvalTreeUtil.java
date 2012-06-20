@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import nta.catalog.CatalogService;
@@ -27,6 +28,7 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.Target;
 
+import nta.engine.planner.PlannerUtil;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -288,5 +290,17 @@ public class TestEvalTreeUtil {
     evalCtx = transposed.getRightExpr().newContext();
     transposed.getRightExpr().eval(evalCtx, null, null);
     assertEquals(2, transposed.getRightExpr().terminate(evalCtx).asInt());
+  }
+
+  @Test
+  public final void testFindDistinctAggFunctions() {
+    QueryContext ctx = factory.create();
+    QueryBlock block = (QueryBlock) analyzer.parse(ctx, "select sum(score) + max(age) from people");
+    List<AggFuncCallEval> list = EvalTreeUtil.findDistinctAggFunction(block.getTargetList()[0].getEvalTree());
+    assertEquals(2, list.size());
+    Set<String> result = Sets.newHashSet(new String [] {"max", "sum"});
+    for (AggFuncCallEval eval : list) {
+      assertTrue(result.contains(eval.getName()));
+    }
   }
 }

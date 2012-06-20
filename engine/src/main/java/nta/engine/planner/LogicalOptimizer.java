@@ -12,17 +12,15 @@ import nta.catalog.SchemaUtil;
 import nta.engine.Context;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalTreeUtil;
-import nta.engine.parser.QueryBlock.SortSpec;
+import nta.engine.exec.eval.FieldEval;
+import nta.engine.parser.QueryBlock;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.*;
 import nta.engine.query.exception.InvalidQueryException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * This class optimizes a logical plan corresponding to one query block.
@@ -56,8 +54,12 @@ public class LogicalOptimizer {
         pushSelection(ctx, toBeOptimized);
       }
 
-      pushProjection(ctx, toBeOptimized);
-      
+      try {
+        pushProjection(ctx, toBeOptimized);
+      } catch (CloneNotSupportedException e) {
+        throw new InvalidQueryException(e);
+      }
+
       break;
     default:
     }
@@ -66,29 +68,12 @@ public class LogicalOptimizer {
   }
   
   /**
-   * This method pushes down the projection list into the appropriate and 
-   * below logical operators.
-   * @param ctx
-   * @param plan
-   */
-  private static void pushProjection(Context ctx, LogicalNode plan) {
-    pushDownProjection(ctx, plan);
-
-    // TODO - Only if the projection all is pushed down, the projection ca be removed.
-    LogicalNode parent = PlannerUtil.
-        findTopParentNode(plan, ExprType.PROJECTION);
-    if (parent != null) {
-      PlannerUtil.deleteNode(parent);
-    }
-  }
-  
-  /**
    * This method pushes down the selection into the appropriate sub 
    * logical operators.
    * <br />
    * 
    * There are three operators that can have search conditions.
-   * Selection, Join, and GroupBy clause can have search conditions.
+   * Selection, Join, and GroupBy clause.
    * However, the search conditions of Join and GroupBy cannot be pushed down 
    * into child operators because they can be used when the data layout change
    * caused by join and grouping relations.
@@ -148,7 +133,7 @@ public class LogicalOptimizer {
 
       List<EvalNode> matched = Lists.newArrayList();
       for (EvalNode eval : cnf) {
-        if (selectionPushable(eval, plan)) {
+        if (canBeEvaluated(eval, plan)) {
           matched.add(eval);
         }
       }
@@ -183,7 +168,7 @@ public class LogicalOptimizer {
     case SCAN:
       matched = Lists.newArrayList();
       for (EvalNode eval : cnf) {
-        if (selectionPushable(eval, plan)) {
+        if (canBeEvaluated(eval, plan)) {
           matched.add(eval);
         }
       }
@@ -221,18 +206,10 @@ public class LogicalOptimizer {
     }
   }
   
-  public static boolean selectionPushable(EvalNode eval, LogicalNode node) {
+  public static boolean canBeEvaluated(EvalNode eval, LogicalNode node) {
     Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(eval);
-    if (node.getType() == ExprType.SCAN) {
-      ScanNode scanNode = (ScanNode) node;
-      String tableId = scanNode.getTableId();
-      for (Column col : columnRefs) {
-        if (!col.getTableName().equals(tableId)) {
-          return false;
-        }
-      }    
-      return true;
-    } else if (node.getType() == ExprType.JOIN) {
+
+    if (node.getType() == ExprType.JOIN) {
       JoinNode joinNode = (JoinNode) node;
       Set<String> tableIds = Sets.newHashSet();
       // getting distinct table references
@@ -268,13 +245,26 @@ public class LogicalOptimizer {
       
       return false;
     } else {
-      return false;
+      for (Column col : columnRefs) {
+        if (!node.getInputSchema().contains(col.getQualifiedName())) {
+          return false;
+        }
+      }
+
+      return true;
     }
   }
 
-  public static LogicalNode pushDownProjection(Context ctx, LogicalNode plan) {
-    Set<Column> set = Sets.newHashSet();
-   return shrinkSchema(ctx, plan, set, false);
+  /**
+   * This method pushes down the projection list into the appropriate and
+   * below logical operators.
+   * @param ctx
+   * @param plan
+   */
+  private static void pushProjection(Context ctx, LogicalNode plan) throws CloneNotSupportedException {
+    Stack<LogicalNode> stack = new Stack<LogicalNode>();
+    OptimizationContext optCtx = new OptimizationContext(ctx);
+    pushProjectionRecursive(optCtx, plan, stack, new HashSet<Column>());
   }
 
   /**
@@ -289,139 +279,200 @@ public class LogicalOptimizer {
    *
    * @param ctx
    * @param node
-   * @param necessary
-   * @param projected
+   * //@param necessary - columns necessary for above logical nodes, but it excepts the fields for the target list
+   * //@param targetList
    * @return
    */
-  private static LogicalNode shrinkSchema(Context ctx, LogicalNode node, Set<Column> necessary, boolean projected) {
-    Set<Column> temp;
+  private static LogicalNode pushProjectionRecursive(OptimizationContext ctx, LogicalNode node, Stack<LogicalNode> stack,
+                                                     Set<Column> necessary) throws CloneNotSupportedException {
     LogicalNode outer;
     LogicalNode inner;
     switch (node.getType()) {
       case ROOT: // It does not support the projection
         LogicalRootNode root = (LogicalRootNode) node;
-        outer = shrinkSchema(ctx, root.getSubNode(), necessary, projected);
+        stack.add(root);
+        outer = pushProjectionRecursive(ctx, root.getSubNode(), stack, necessary);
         root.setInputSchema(outer.getOutputSchema());
         root.setOutputSchema(outer.getOutputSchema());
         break;
 
+      case STORE:
+        StoreTableNode store = (StoreTableNode) node;
+        stack.add(store);
+        outer = pushProjectionRecursive(ctx, store.getSubNode(), stack, necessary);
+        store.setInputSchema(outer.getOutputSchema());
+        store.setOutputSchema(outer.getOutputSchema());
+        break;
 
       case PROJECTION:
         ProjectionNode projNode = (ProjectionNode) node;
-        for (Target t : projNode.getTargetList()) {
-          temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
-          if (!temp.isEmpty()) {
-            necessary.addAll(temp);
-          }
-        }
 
-        outer = shrinkSchema(ctx, projNode.getSubNode(), necessary, projected);
-        projNode.setInputSchema(outer.getOutputSchema());
-        break;
+        stack.add(projNode);
+        outer = pushProjectionRecursive(ctx, projNode.getSubNode(), stack, necessary);
+        stack.pop();
+
+        if (ctx.getTargetListManager().isAllEvaluated()) {
+          ((ProjectionNode) node).getSubNode().setOutputSchema(ctx.getTargetListManager().getUpdatedSchema());
+          LogicalNode parent = stack.peek();
+          ((UnaryNode)parent).setSubNode(((ProjectionNode) node).getSubNode());
+        } else {
+          // the output schema is not changed.
+          projNode.setInputSchema(outer.getOutputSchema());
+          projNode.setTargetList(ctx.getTargetListManager().getUpdatedTarget());
+        }
+        return ((ProjectionNode) node).getSubNode();
 
       case SELECTION: // It does not support the projection
         SelectionNode selNode = (SelectionNode) node;
-        // because selection does not support the projection
-        //selNode.setOutputSchema(shrinkOutSchema(selNode.getInputSchema(), necessary));
 
-        temp = EvalTreeUtil.findDistinctRefColumns(selNode.getQual());
-        if (!temp.isEmpty()) {
-          necessary.addAll(temp);
+        if (selNode.getQual() != null) {
+          necessary.addAll(EvalTreeUtil.findDistinctRefColumns(selNode.getQual()));
         }
 
-        outer = shrinkSchema(ctx, selNode.getSubNode(), necessary, projected);
+        stack.add(selNode);
+        outer = pushProjectionRecursive(ctx, selNode.getSubNode(), stack, necessary);
+        stack.pop();
         selNode.setInputSchema(outer.getOutputSchema());
         selNode.setOutputSchema(outer.getOutputSchema());
         break;
 
-      case GROUP_BY:
+      case GROUP_BY: {
         GroupbyNode groupByNode = (GroupbyNode)node;
-        // TODO - to be improved
 
-        necessary.addAll(Lists.newArrayList(groupByNode.getGroupingColumns()));
-        for (Target t : groupByNode.getTargetList()) {
-          temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
-          if (!temp.isEmpty()) {
-            necessary.addAll(temp);
-          }
+        if (groupByNode.hasHavingCondition()) {
+          necessary.addAll(EvalTreeUtil.findDistinctRefColumns(groupByNode.getHavingCondition()));
         }
 
-        // it guarantees that the the top operator of the logical operator tree
-        // serves as the projection node.
-        if (!projected) {
-          groupByNode.setOutputSchema(
-              LogicalPlanner.getProjectedSchema(ctx, ctx.getTargetList()));
-        }
-
-        if(groupByNode.hasHavingCondition()) {
-          temp = EvalTreeUtil.findDistinctRefColumns(groupByNode.
-              getHavingCondition());
-          if (!temp.isEmpty()) {
-            necessary.addAll(temp);
-          }
-        }
-        outer = shrinkSchema(ctx, groupByNode.getSubNode(), necessary, true);
+        stack.add(groupByNode);
+        outer = pushProjectionRecursive(ctx, groupByNode.getSubNode(), stack, necessary);
+        stack.pop();
         groupByNode.setInputSchema(outer.getOutputSchema());
-        break;
+        // set all targets
+        groupByNode.setTargetList(ctx.getTargetListManager().getUpdatedTarget());
+
+        TargetListManager targets = ctx.getTargetListManager();
+        List<Target> groupbyPushable = Lists.newArrayList();
+        List<Integer> groupbyPushableId = Lists.newArrayList();
+
+        EvalNode expr;
+        for (int i = 0; i < targets.size(); i++) {
+          expr = targets.getTarget(i).getEvalTree();
+          if (canBeEvaluated(expr, groupByNode) &&
+              EvalTreeUtil.findDistinctAggFunction(expr).size() > 0 && expr.getType() != EvalNode.Type.FIELD) {
+            targets.setEvaluated(i);
+            groupbyPushable.add((Target) targets.getTarget(i).clone());
+            groupbyPushableId.add(i);
+          }
+        }
+
+        return groupByNode;
+      }
 
       case SORT: // It does not support the projection
         SortNode sortNode = (SortNode) node;
-        for (SortSpec key : sortNode.getSortKeys()) {
-          necessary.add(key.getSortKey());
+
+        for (QueryBlock.SortSpec spec : sortNode.getSortKeys()) {
+          necessary.add(spec.getSortKey());
         }
 
-        outer = shrinkSchema(ctx, sortNode.getSubNode(), necessary, projected);
+        stack.add(sortNode);
+        outer = pushProjectionRecursive(ctx, sortNode.getSubNode(), stack, necessary);
+        stack.pop();
         sortNode.setInputSchema(outer.getOutputSchema());
         sortNode.setOutputSchema(outer.getOutputSchema());
         break;
 
 
-      case JOIN:
+      case JOIN: {
         JoinNode joinNode = (JoinNode) node;
+        Set<Column> parentNecessary = Sets.newHashSet(necessary);
 
-        if (!projected) {
-          // it guarantees that the the top operator of the logical operator tree
-          // serves as the projection node.
-          joinNode.setOutputSchema(LogicalPlanner.getProjectedSchema(ctx, ctx.getTargetList()));
-        } else {
-          joinNode.setOutputSchema(shrinkOutSchema(joinNode.getInputSchema(), necessary));
-        }
         if (joinNode.hasJoinQual()) {
-          temp = EvalTreeUtil.findDistinctRefColumns(joinNode.getJoinQual());
-          if (!temp.isEmpty()) {
-            necessary.addAll(temp);
-          }
+          necessary.addAll(EvalTreeUtil.findDistinctRefColumns(joinNode.getJoinQual()));
         }
 
-        outer = shrinkSchema(ctx, joinNode.getOuterNode(), necessary, true);
-        inner = shrinkSchema(ctx, joinNode.getInnerNode(), necessary, true);
+        stack.add(joinNode);
+        outer = pushProjectionRecursive(ctx, joinNode.getOuterNode(), stack, necessary);
+        inner = pushProjectionRecursive(ctx, joinNode.getInnerNode(), stack, necessary);
+        stack.pop();
         Schema merged = SchemaUtil.merge(outer.getOutputSchema(), inner.getOutputSchema());
         joinNode.setInputSchema(merged);
+
+        TargetListManager targets = ctx.getTargetListManager();
+        List<Target> joinPushable = Lists.newArrayList();
+        List<Integer> joinPushableId = Lists.newArrayList();
+        EvalNode expr;
+        for (int i = 0; i < targets.size(); i++) {
+          expr = targets.getTarget(i).getEvalTree();
+          if (canBeEvaluated(expr, joinNode) && EvalTreeUtil.findDistinctAggFunction(expr).size() == 0
+              && expr.getType() != EvalNode.Type.FIELD) {
+            targets.setEvaluated(i);
+            joinPushable.add(targets.getTarget(i));
+            joinPushableId.add(i);
+          }
+        }
+        if (joinPushable.size() > 0) {
+          joinNode.setTargetList(targets.targets);
+        }
+
+        Schema outSchema = shrinkOutSchema(joinNode.getInputSchema(), targets.getUpdatedSchema().getColumns());
+        for (Integer t : joinPushableId) {
+          outSchema.addColumn(targets.getEvaluatedColumn(t));
+        }
+        outSchema = SchemaUtil.mergeAllWithNoDup(outSchema.getColumns(),
+            SchemaUtil.getProjectedSchema(joinNode.getInputSchema(),parentNecessary).getColumns());
+        joinNode.setOutputSchema(outSchema);
         break;
+      }
 
       case UNION:  // It does not support the projection
         UnionNode unionNode = (UnionNode) node;
-        shrinkSchema(ctx, unionNode.getOuterNode(), necessary, projected);
-        shrinkSchema(ctx, unionNode.getInnerNode(), necessary, projected);
+        stack.add(unionNode);
+        OptimizationContext outerCtx = new OptimizationContext(ctx.ctx);
+        OptimizationContext innerCtx = new OptimizationContext(ctx.ctx);
+        pushProjectionRecursive(outerCtx, unionNode.getOuterNode(), stack, necessary);
+        pushProjectionRecursive(innerCtx, unionNode.getInnerNode(), stack, necessary);
+        stack.pop();
+
+        // if this is the final union, we assume that all targets are evalauted
+        // TODO - is it always correct?
+        if (stack.peek().getType() != ExprType.UNION) {
+          ctx.getTargetListManager().setEvaluatedAll();
+        }
         break;
 
-      case SCAN:
+      case SCAN: {
         ScanNode scanNode = (ScanNode) node;
-        if (!projected) {
-          // it guarantees that the the top operator of the logical operator tree
-          // serves as the projection node.
-          scanNode.setOutputSchema(LogicalPlanner.getProjectedSchema(ctx, ctx.getTargetList()));
-        } else {
-          scanNode.setOutputSchema(shrinkOutSchema(scanNode.getInputSchema(), necessary));
-        }
+        TargetListManager targets = ctx.getTargetListManager();
+        List<Integer> scanPushableId = Lists.newArrayList();
+        List<Target> scanPushable = Lists.newArrayList();
+        EvalNode expr;
+        for (int i = 0; i < targets.size(); i++) {
+          expr = targets.getTarget(i).getEvalTree();
+          if (expr.getType() == EvalNode.Type.FIELD) {
+            targets.setEvaluated(i);
+          }
 
-        if (scanNode.hasQual()) {
-          temp = EvalTreeUtil.findDistinctRefColumns(scanNode.getQual());
-          if (!temp.isEmpty()) {
-            necessary.addAll(temp);
+          if (canBeEvaluated(expr, scanNode) && EvalTreeUtil.findDistinctAggFunction(expr).size() == 0 &&
+              expr.getType() != EvalNode.Type.FIELD) {
+            targets.setEvaluated(i);
+            scanPushable.add(targets.getTarget(i));
+            scanPushableId.add(i);
           }
         }
+
+        if (scanPushable.size() > 0) {
+          scanNode.setTargets(scanPushable.toArray(new Target[scanPushable.size()]));
+        }
+        Schema outSchema = shrinkOutSchema(scanNode.getInputSchema(), targets.getUpdatedSchema().getColumns());
+        for (Integer t : scanPushableId) {
+          outSchema.addColumn(targets.getEvaluatedColumn(t));
+        }
+        outSchema = SchemaUtil.mergeAllWithNoDup(outSchema.getColumns(), SchemaUtil.getProjectedSchema(scanNode.getInputSchema(),necessary).getColumns());
+        scanNode.setOutputSchema(outSchema);
+
         break;
+      }
 
       default:
     }
@@ -429,7 +480,7 @@ public class LogicalOptimizer {
     return node;
   }
 
-  private static Schema shrinkOutSchema(Schema inSchema, Set<Column> necessary) {
+  private static Schema shrinkOutSchema(Schema inSchema, Collection<Column> necessary) {
     Schema projected = new Schema();
     for(Column col : inSchema.getColumns()) {
       if(necessary.contains(col)) {
@@ -437,5 +488,120 @@ public class LogicalOptimizer {
       }
     }
     return projected;
+  }
+
+  public static class OptimizationContext {
+    Context ctx;
+    TargetListManager targetListManager;
+
+    public OptimizationContext(Context ctx) {
+      this.ctx = ctx;
+      this.targetListManager = new TargetListManager(ctx);
+    }
+
+    public TargetListManager getTargetListManager() {
+      return this.targetListManager;
+    }
+  }
+
+  public static class TargetListManager {
+    private Context ctx;
+    private boolean [] evaluated;
+    private Target [] targets;
+
+    public TargetListManager(Context ctx) {
+      this.ctx = ctx;
+      if (ctx.getTargetList() == null) {
+        evaluated = new boolean[0];
+      } else {
+        evaluated = new boolean[ctx.getTargetList().length];
+      }
+      this.targets = ctx.getTargetList();
+    }
+
+    public Target getTarget(int id) {
+      return targets[id];
+    }
+
+    public Target [] getTargets() {
+      return this.targets;
+    }
+
+    public int size() {
+      return targets.length;
+    }
+
+    public void setEvaluated(int id) {
+      evaluated[id] = true;
+    }
+
+    public void setEvaluatedAll() {
+      for (int i = 0; i < evaluated.length; i++) {
+        evaluated[i] = true;
+      }
+    }
+
+    private boolean isEvaluated(int id) {
+      return evaluated[id];
+    }
+
+    public Target [] getUpdatedTarget() throws CloneNotSupportedException {
+      Target [] updated = new Target[evaluated.length];
+      for (int i = 0; i < evaluated.length; i++) {
+        if (evaluated[i]) {
+          Column col = getEvaluatedColumn(i);
+          updated[i] = new Target(new FieldEval(col), i);
+        } else {
+          updated[i] = (Target) targets[i].clone();
+        }
+      }
+      return updated;
+    }
+
+    public Schema getUpdatedSchema() {
+      Schema schema = new Schema();
+      for (int i = 0; i < evaluated.length; i++) {
+        if (evaluated[i]) {
+          Column col = getEvaluatedColumn(i);
+          schema.addColumn(col);
+        } else {
+          Collection<Column> cols = getColumnRefs(i);
+          for (Column col : cols) {
+            if (!schema.contains(col.getQualifiedName())) {
+              schema.addColumn(col);
+            }
+          }
+        }
+      }
+
+      return schema;
+    }
+
+    public Collection<Column> getColumnRefs(int id) {
+      return EvalTreeUtil.findDistinctRefColumns(targets[id].getEvalTree());
+    }
+
+    public Column getEvaluatedColumn(int id) {
+      Target t = targets[id];
+      String name;
+      if (t.hasAlias()) {
+        name = t.getAlias();
+      } else if (t.getEvalTree().getName().equals("?")) {
+        name = ctx.getUnnamedColumn();
+      } else {
+        name = t.getEvalTree().getName();
+      }
+      return new Column(name, t.getEvalTree().getValueType());
+    }
+
+    public boolean isAllEvaluated() {
+      for (boolean isEval : evaluated) {
+        if (!isEval) {
+          return false;
+        }
+      }
+
+      return true;
+    }
   }
 }

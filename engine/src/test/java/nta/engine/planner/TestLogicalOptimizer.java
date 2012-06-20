@@ -192,7 +192,7 @@ public class TestLogicalOptimizer {
     assertFalse(joinNode.hasJoinQual());
     
     // Test for Pushable
-    assertTrue(LogicalOptimizer.selectionPushable(selNode.getQual(), joinNode));
+    assertTrue(LogicalOptimizer.canBeEvaluated(selNode.getQual(), joinNode));
     
     // Optimized plan
     LogicalNode optimized = LogicalOptimizer.optimize(ctx, plan);
@@ -221,6 +221,6 @@ public class TestLogicalOptimizer {
     assertEquals(ExprType.SCAN, selNode.getSubNode().getType());
     ScanNode scanNode = (ScanNode) selNode.getSubNode();
     // Test for Join Node
-    assertTrue(LogicalOptimizer.selectionPushable(selNode.getQual(), scanNode));
+    assertTrue(LogicalOptimizer.canBeEvaluated(selNode.getQual(), scanNode));
   }
 }

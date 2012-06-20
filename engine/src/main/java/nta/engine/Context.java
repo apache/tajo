@@ -89,5 +89,13 @@ public abstract class Context {
   
   public void mergeContext(Context ctx) {
     aliasMap.putAll(ctx.aliasMap);
+    if (this.targets == null) {
+      this.targets = ctx.targets;
+    } else {
+      /*
+      if (!TUtil.checkEquals(this.targets, ctx.targets)) {
+        throw new InvalidQueryException("target lists of queries are not matched");
+      }*/
+    }
   }
 }
