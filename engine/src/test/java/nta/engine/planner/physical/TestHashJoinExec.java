@@ -132,14 +132,14 @@ public class TestHashJoinExec {
 
     
     ProjectionExec proj = (ProjectionExec) exec;
-    MergeJoinExec join = (MergeJoinExec) proj.getsubOp();
-    ExternalSortExec sortout = (ExternalSortExec) join.getouter();
-    ExternalSortExec sortin = (ExternalSortExec) join.getinner();
-    SeqScanExec scanout = (SeqScanExec) sortout.getsubOp();
-    SeqScanExec scanin = (SeqScanExec) sortin.getsubOp();
+    MergeJoinExec join = (MergeJoinExec) proj.getChild();
+    ExternalSortExec sortout = (ExternalSortExec) join.getOuter();
+    ExternalSortExec sortin = (ExternalSortExec) join.getInner();
+    SeqScanExec scanout = (SeqScanExec) sortout.getSubOp();
+    SeqScanExec scanin = (SeqScanExec) sortin.getSubOp();
     
     HashJoinExec hashjoin = new HashJoinExec(ctx, join.getJoinNode(), scanout, scanin);
-    proj.setsubOp(hashjoin);
+    proj.setChild(hashjoin);
     
     exec = proj;
 
