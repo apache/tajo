@@ -78,7 +78,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
           case SHORT:
           case INT: return DataType.INT;
           case LONG: return DataType.LONG;
-          case FLOAT:
+          case FLOAT: return DataType.FLOAT;
           case DOUBLE: return DataType.DOUBLE;
           default: throw new InvalidEvalException();
         }

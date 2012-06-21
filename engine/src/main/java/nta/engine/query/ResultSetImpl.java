@@ -537,7 +537,7 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public int getInt(int fieldId) throws SQLException {
-    Datum datum = cur.getInt(fieldId - 1);
+    Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
     return datum.asInt();
   }

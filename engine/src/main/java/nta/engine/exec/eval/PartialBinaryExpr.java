@@ -49,7 +49,18 @@ public class PartialBinaryExpr extends EvalNode {
         "ERROR: the partial binary expression cannot be terminated: "
             + this.toString() );
   }
-  
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof PartialBinaryExpr) {
+      PartialBinaryExpr other = (PartialBinaryExpr) obj;
+      return type.equals(other.type) &&
+          leftExpr.equals(other.leftExpr) &&
+          rightExpr.equals(other.rightExpr);
+    }
+    return false;
+  }
+
   public String toString() {
     return 
         (leftExpr != null ? leftExpr.toString() : "[EMPTY]") 

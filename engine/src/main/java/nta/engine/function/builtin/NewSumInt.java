@@ -16,7 +16,7 @@ public class NewSumInt extends AggFunction<Datum> {
 
   public NewSumInt() {
     super(new Column[] {
-        new Column("val", CatalogProtos.DataType.LONG)
+        new Column("val", CatalogProtos.DataType.INT)
     });
   }
 

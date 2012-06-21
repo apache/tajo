@@ -15,7 +15,7 @@ import java.util.List;
  * @author Hyunsik Choi
  */
 public class CaseWhenEval extends EvalNode {
-  @Expose private List<WhenClause> whens = Lists.newArrayList();
+  @Expose private List<WhenEval> whens = Lists.newArrayList();
   @Expose private EvalNode elseResult;
 
   public CaseWhenEval() {
@@ -23,7 +23,7 @@ public class CaseWhenEval extends EvalNode {
   }
 
   public void addWhen(EvalNode condition, EvalNode result) {
-    whens.add(new WhenClause(condition, result));
+    whens.add(new WhenEval(condition, result));
   }
 
   public void setElseResult(EvalNode elseResult) {
@@ -73,7 +73,7 @@ public class CaseWhenEval extends EvalNode {
 
   public String toString() {
     StringBuilder sb = new StringBuilder("CASE\n");
-    for (WhenClause when : whens) {
+    for (WhenEval when : whens) {
      sb.append(when).append("\n");
     }
 
@@ -85,7 +85,7 @@ public class CaseWhenEval extends EvalNode {
   @Override
   public void preOrder(EvalNodeVisitor visitor) {
     visitor.visit(this);
-    for (WhenClause when : whens) {
+    for (WhenEval when : whens) {
       when.preOrder(visitor);
     }
     if (elseResult != null) { // without else clause
@@ -95,7 +95,7 @@ public class CaseWhenEval extends EvalNode {
 
   @Override
   public void postOrder(EvalNodeVisitor visitor) {
-    for (WhenClause when : whens) {
+    for (WhenEval when : whens) {
       when.postOrder(visitor);
     }
     if (elseResult != null) { // without else clause
@@ -104,11 +104,27 @@ public class CaseWhenEval extends EvalNode {
     visitor.visit(this);
   }
 
-  public static class WhenClause extends EvalNode {
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof CaseWhenEval) {
+      CaseWhenEval other = (CaseWhenEval) obj;
+
+      for (int i = 0; i < other.whens.size(); i++) {
+        if (!whens.get(i).equals(other.whens.get(i))) {
+          return false;
+        }
+      }
+      return elseResult.equals(other.elseResult);
+    } else {
+      return false;
+    }
+  }
+
+  public static class WhenEval extends EvalNode {
     @Expose private EvalNode condition;
     @Expose private EvalNode result;
 
-    public WhenClause(EvalNode condition, EvalNode result) {
+    public WhenEval(EvalNode condition, EvalNode result) {
       super(Type.WHEN);
       this.condition = condition;
       this.result = result;
@@ -131,6 +147,7 @@ public class CaseWhenEval extends EvalNode {
 
     public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
       condition.eval(((WhenContext) ctx).condCtx, schema, tuple);
+      result.eval(((WhenContext) ctx).condCtx, schema, tuple);
     }
 
     @Override
@@ -177,13 +194,24 @@ public class CaseWhenEval extends EvalNode {
       result.postOrder(visitor);
       visitor.visit(this);
     }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof WhenEval) {
+       WhenEval other = (WhenEval) obj;
+        return this.condition == other.condition
+            && this.result == other.result;
+      } else {
+        return false;
+      }
+    }
   }
 
   private class CaseContext implements EvalContext {
     EvalContext [] contexts;
     EvalContext elseCtx;
 
-    CaseContext(List<WhenClause> whens, EvalContext elseCtx) {
+    CaseContext(List<WhenEval> whens, EvalContext elseCtx) {
       contexts = new EvalContext[whens.size()];
       for (int i = 0; i < whens.size(); i++) {
         contexts[i] = whens.get(i).newContext();

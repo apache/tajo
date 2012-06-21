@@ -57,8 +57,22 @@ public class VTuple implements Tuple {
 	public void put(int fieldId, Datum value) {
 		values[fieldId] = value;
 	}
-	
-	public void put(Datum [] values) {
+
+  @Override
+  public void put(int fieldId, Datum[] values) {
+    for (int i = fieldId, j = 0; j < values.length; i++, j++) {
+      values[i] = values[j];
+    }
+  }
+
+  @Override
+  public void put(int fieldId, Tuple tuple) {
+    for (int i = fieldId, j = 0; j < tuple.size(); i++, j++) {
+      values[i] = tuple.get(j);
+    }
+  }
+
+  public void put(Datum [] values) {
     System.arraycopy(values, 0, this.values, 0, size());
 	}
 	

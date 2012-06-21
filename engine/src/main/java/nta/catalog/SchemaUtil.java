@@ -1,7 +1,5 @@
 package nta.catalog;
 
-
-import com.sun.org.apache.xerces.internal.impl.xs.SchemaNamespaceSupport;
 import nta.engine.parser.QueryBlock;
 
 import java.util.Collection;

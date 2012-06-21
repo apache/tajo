@@ -14,6 +14,7 @@ import nta.storage.VTuple;
  * @author Hyunsik Choi
  *
  */
+@Deprecated
 public class CountRowEval extends AggFuncCallEval {
 
   /**

@@ -223,6 +223,11 @@ public class TestEvalTree {
     }
 
     @Override
+    public boolean equals(Object obj) {
+      return true;
+    }
+
+    @Override
     public EvalContext newContext() {
       return null;
     }
@@ -248,6 +253,11 @@ public class TestEvalTree {
     @Override
     public Datum terminate(EvalContext ctx) {
       return DatumFactory.createBool(false);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return true;
     }
 
     @Override

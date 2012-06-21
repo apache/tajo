@@ -80,6 +80,16 @@ public class NotEval extends EvalNode implements Cloneable {
   }
 
   @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof NotEval) {
+      NotEval other = (NotEval) obj;
+      return this.subExpr.equals(other.subExpr);
+    } else {
+      return false;
+    }
+  }
+
+  @Override
   public Object clone() throws CloneNotSupportedException {
     NotEval eval = (NotEval) super.clone();
     eval.subExpr = (EvalNode) this.subExpr.clone();

@@ -25,7 +25,7 @@ public class SlowFunc extends AggFunction {
 
   @Override
   public FunctionContext newContext() {
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
+    return null;
   }
 
   @Override

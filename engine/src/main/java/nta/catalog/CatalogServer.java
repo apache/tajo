@@ -538,7 +538,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     sqlFuncs.add(new FunctionDesc("max", NewMaxLong.class,
         FunctionType.AGGREGATION, DataType.LONG,
         new DataType[] { DataType.LONG }));
-    sqlFuncs.add(new FunctionDesc("max", NewMaxDouble.class,
+    sqlFuncs.add(new FunctionDesc("max", NewMaxFloat.class,
         FunctionType.AGGREGATION, DataType.FLOAT,
         new DataType[] { DataType.FLOAT }));
     sqlFuncs.add(new FunctionDesc("max", NewMaxDouble.class,

@@ -12,6 +12,7 @@ import nta.storage.VTuple;
 
 public class AggFuncCallEval extends FuncEval implements Cloneable {
   @Expose protected AggFunction instance;
+  @Expose boolean mergePhase = false;
   private Tuple params;
 
   public AggFuncCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
@@ -42,7 +43,11 @@ public class AggFuncCallEval extends FuncEval implements Cloneable {
       }
     }
 
-    instance.eval(localCtx.funcCtx, params);
+    if (mergePhase) {
+      instance.merge(localCtx.funcCtx, params);
+    } else {
+      instance.eval(localCtx.funcCtx, params);
+    }
   }
 
   @Override
@@ -57,6 +62,10 @@ public class AggFuncCallEval extends FuncEval implements Cloneable {
   public Object clone() throws CloneNotSupportedException {
     AggFuncCallEval agg = (AggFuncCallEval) super.clone();
     return agg;
+  }
+
+  public void setMergePhase() {
+    this.mergePhase = true;
   }
 
   protected class AggFunctionCtx extends FuncCallCtx {

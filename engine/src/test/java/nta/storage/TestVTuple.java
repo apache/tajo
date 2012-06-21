@@ -108,4 +108,23 @@ public class TestVTuple {
     
     assertNotSame(t1.hashCode(),t3.hashCode());
 	}
+
+  @Test
+  public void testPutTuple() {
+    Tuple t1 = new VTuple(5);
+
+    t1.put(0, DatumFactory.createInt(1));
+    t1.put(1, DatumFactory.createInt(2));
+    t1.put(2, DatumFactory.createInt(3));
+
+    Tuple t2 = new VTuple(2);
+    t2.put(0, DatumFactory.createInt(4));
+    t2.put(1, DatumFactory.createInt(5));
+
+    t1.put(3, t2);
+
+    for (int i = 0; i < 5; i++) {
+      assertEquals(i+1, t1.get(i).asInt());
+    }
+  }
 }

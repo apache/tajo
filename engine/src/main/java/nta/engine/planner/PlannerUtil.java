@@ -8,7 +8,6 @@ import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos;
 import nta.engine.Context;
 import nta.engine.exec.eval.*;
-import nta.engine.exec.eval.EvalNode.Type;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.*;
@@ -17,9 +16,7 @@ import nta.engine.query.exception.InvalidQueryException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Hyunsik Choi
@@ -145,24 +142,52 @@ public class PlannerUtil {
     Preconditions.checkNotNull(gp);
         
     try {
+      // cloning groupby node
       GroupbyNode child = (GroupbyNode) gp.clone();
-      gp.setSubNode(child);
-      gp.setInputSchema(child.getOutputSchema());
-      gp.setOutputSchema(child.getOutputSchema());
-    
-      Target [] targets = gp.getTargets();
-      for (int i = 0; i < gp.getTargets().length; i++) {
-        if (targets[i].getEvalTree().getType() == Type.AGG_FUNCTION) {
-          Column tobe = child.getOutputSchema().getColumn(i);        
-          AggFuncCallEval eval = (AggFuncCallEval) targets[i].getEvalTree();
-//          Collection<Column> tobeChanged =
-//              EvalTreeUtil.findDistinctRefColumns(eval);
-//          EvalTreeUtil.changeColumnRef(eval, tobeChanged.iterator().next(),
-//              tobe);
-          eval.setArgs(new EvalNode [] {new FieldEval(tobe)});
+
+      List<Target> newChildTargets = Lists.newArrayList();
+      Target [] secondTargets = gp.getTargets();
+      Target [] firstTargets = child.getTargets();
+
+      Target second;
+      Target first;
+      int firstTargetId = 0;
+      for (int i = 0; i < firstTargets.length; i++) {
+        second = secondTargets[i];
+        first = firstTargets[i];
+
+        List<AggFuncCallEval> secondFuncs = EvalTreeUtil.findDistinctAggFunction(second.getEvalTree());
+        List<AggFuncCallEval> firstFuncs = EvalTreeUtil.findDistinctAggFunction(first.getEvalTree());
+
+        if (firstFuncs.size() == 0) {
+          newChildTargets.add(first);
+          firstTargetId++;
+        } else {
+          for (AggFuncCallEval func : firstFuncs) {
+            Target newTarget = new Target(func, firstTargetId++);
+            newTarget.setAlias("column_"+ firstTargetId);
+
+            AggFuncCallEval secondFunc = null;
+            for (AggFuncCallEval sf : secondFuncs) {
+              if (func.equals(sf)) {
+                secondFunc = sf;
+                break;
+              }
+            }
+            secondFunc.setArgs(new EvalNode [] {new FieldEval(
+                new Column("column_"+firstTargetId, newTarget.getEvalTree().getValueType()))});
+            secondFunc.setMergePhase();
+            newChildTargets.add(newTarget);
+          }
         }
       }
-      
+
+      Target [] targetArray = newChildTargets.toArray(new Target[newChildTargets.size()]);
+      child.setTargetList(targetArray);
+      child.setOutputSchema(PlannerUtil.targetToSchema(targetArray));
+      // set the groupby chaining
+      gp.setSubNode(child);
+      gp.setInputSchema(child.getOutputSchema());
     } catch (CloneNotSupportedException e) {
       LOG.error(e);
     }
@@ -520,7 +545,7 @@ public class PlannerUtil {
     }
   }
 
-  public static Schema getTargetToSchema(Context ctx, Target [] targets) {
+  public static Schema targetToSchema(Context ctx, Target[] targets) {
     Schema schema = new Schema();
     for(Target t : targets) {
       CatalogProtos.DataType type = t.getEvalTree().getValueType();
@@ -536,5 +561,29 @@ public class PlannerUtil {
     }
 
     return schema;
+  }
+
+  public static Schema targetToSchema(Target[] targets) {
+    Schema schema = new Schema();
+    for(Target t : targets) {
+      CatalogProtos.DataType type = t.getEvalTree().getValueType();
+      String name;
+      if (t.hasAlias()) {
+        name = t.getAlias();
+      } else {
+        name = t.getEvalTree().getName();
+      }
+      schema.addColumn(name, type);
+    }
+
+    return schema;
+  }
+
+  public static EvalNode [] columnsToEvals(Column [] columns) {
+    EvalNode [] exprs = new EvalNode[columns.length];
+    for (int i = 0; i < columns.length; i++) {
+      exprs[i] = new FieldEval(columns[i]);
+    }
+    return exprs;
   }
 }

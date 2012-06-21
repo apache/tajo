@@ -127,6 +127,8 @@ public abstract class EvalNode implements Cloneable {
       return represent == null ? this.name() : represent;
     }
 	}
+
+  public abstract boolean equals(Object obj);
 	
 	@Override
 	public Object clone() throws CloneNotSupportedException {

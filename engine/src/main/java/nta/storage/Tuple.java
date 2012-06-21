@@ -22,6 +22,10 @@ public interface Tuple {
 	public void clear();
 	
 	public void put(int fieldId, Datum value);
+
+  public void put(int fieldId, Datum [] values);
+
+  public void put(int fieldId, Tuple tuple);
 	
 	public void put(Datum [] values);
 	

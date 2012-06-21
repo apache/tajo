@@ -856,7 +856,7 @@ public final class QueryAnalyzer {
       FunctionDesc countRows = catalog.getFunction("count", new DataType [] {});
       query.setAggregation();
       try {
-        return new CountRowEval(countRows, (AggFunction) countRows.newInstance(),
+        return new AggFuncCallEval(countRows, (AggFunction) countRows.newInstance(),
             new EvalNode [] {});
       } catch (InternalException e) {
         e.printStackTrace();
@@ -897,8 +897,6 @@ public final class QueryAnalyzer {
    */
   public CaseWhenEval parseCaseWhen(Context ctx, Tree tree, QueryBlock block) {
     int idx = 0;
-
-    System.out.println(tree.toStringTree());
 
     CaseWhenEval caseEval = new CaseWhenEval();
     EvalNode cond;

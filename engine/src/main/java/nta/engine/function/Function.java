@@ -21,8 +21,8 @@ public abstract class Function<T extends Datum> implements Cloneable {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof GeneralFunction) {
-      GeneralFunction other = (GeneralFunction) obj;
+    if (obj instanceof Function) {
+      Function other = (Function) obj;
       return TUtil.checkEquals(definedParams, other.definedParams);
     } else {
       return false;
