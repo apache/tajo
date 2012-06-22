@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>kr.ac.korea.dbserver</groupId>
   <artifactId>nta</artifactId>
-  <version>0.1.5-SNAPSHOT</version>
+  <version>0.1.6-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Nta</name>
   <description>Network Traffic Analyzer</description>
@@ -27,7 +27,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <hadoop.version>0.24.0-SNAPSHOT</hadoop.version>
     <yarn.version>0.24.0-SNAPSHOT</yarn.version>
-    <nta.version>0.1.5-SNAPSHOT</nta.version>
+    <nta.version>0.1.6-SNAPSHOT</nta.version>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
