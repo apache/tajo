@@ -2,6 +2,7 @@ package nta.engine.exec.eval;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.SchemaUtil;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.engine.json.GsonCreator;
@@ -47,8 +48,8 @@ public class FieldEval extends EvalNode implements Cloneable {
   }
 
   @Override
-	public DataType getValueType() {
-		return column.getDataType();
+	public DataType [] getValueType() {
+		return SchemaUtil.newNoNameSchema(column.getDataType());
 	}
 	
   public Column getColumnRef() {

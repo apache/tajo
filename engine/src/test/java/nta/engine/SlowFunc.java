@@ -34,8 +34,13 @@ public class SlowFunc extends AggFunction {
   }
 
   @Override
-  public Tuple getPartialResult(FunctionContext ctx) {
+  public Datum getPartialResult(FunctionContext ctx) {
     return null;
+  }
+
+  @Override
+  public DataType[] getPartialResultType() {
+    return new DataType[] {DataType.STRING};
   }
 
   @Override

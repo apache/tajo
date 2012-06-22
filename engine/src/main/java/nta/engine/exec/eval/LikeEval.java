@@ -6,6 +6,7 @@ package nta.engine.exec.eval;
 import com.google.gson.annotations.Expose;
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.SchemaUtil;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.BoolDatum;
 import nta.datum.Datum;
@@ -22,6 +23,7 @@ public class LikeEval extends BinaryEval {
   @Expose private boolean not;
   @Expose private Column column;
   @Expose private String pattern;
+  private static final DataType [] RES_TYPE = SchemaUtil.newNoNameSchema(DataType.BOOLEAN);
 
   // temporal variables
   private Integer fieldId = null;
@@ -46,8 +48,8 @@ public class LikeEval extends BinaryEval {
   }
 
   @Override
-  public DataType getValueType() {
-    return DataType.BOOLEAN;
+  public DataType [] getValueType() {
+    return RES_TYPE;
   }
 
   @Override

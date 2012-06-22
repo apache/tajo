@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 
 import nta.catalog.Schema;
+import nta.catalog.SchemaUtil;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
@@ -17,6 +18,7 @@ import nta.storage.Tuple;
  */
 public class NotEval extends EvalNode implements Cloneable {
   @Expose private EvalNode subExpr;
+  private static final DataType [] RES_TYPE = SchemaUtil.newNoNameSchema(DataType.BOOLEAN);
 
   public NotEval(EvalNode subExpr) {
     super(Type.NOT);
@@ -33,8 +35,8 @@ public class NotEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public DataType getValueType() {
-    return DataType.BOOLEAN;
+  public DataType [] getValueType() {
+    return RES_TYPE;
   }
 
   @Override

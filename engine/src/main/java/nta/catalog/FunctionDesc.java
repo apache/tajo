@@ -27,7 +27,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
   @Expose private String signature;
   @Expose private Class<? extends Function> funcClass;
   @Expose private FunctionType funcType;
-  @Expose private DataType returnType;
+  @Expose private DataType [] returnType;
   @Expose private DataType [] params;
 
   public FunctionDesc() {
@@ -35,7 +35,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
   }
   
   public FunctionDesc(String signature, Class<? extends Function> clazz,
-      FunctionType funcType, DataType retType, DataType [] params) {
+      FunctionType funcType, DataType [] retType, DataType [] params) {
     this();
     this.signature = signature.toLowerCase();
     this.funcClass = clazz;
@@ -51,7 +51,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
 
   @SuppressWarnings("unchecked")
   public FunctionDesc(String signature, String className, FunctionType type,
-      DataType retType, DataType... argTypes) throws ClassNotFoundException {
+      DataType [] retType, DataType... argTypes) throws ClassNotFoundException {
     this(signature, (Class<? extends Function>) Class.forName(className), type,
         retType, argTypes);
   }
@@ -124,15 +124,15 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
     return this.params;
   }
 
-  public DataType getReturnType() {
+  public DataType [] getReturnType() {
     FunctionDescProtoOrBuilder p = viaProto ? proto : builder;
     if (this.returnType != null) {
-      return this.returnType;
+      return SchemaUtil.newNoNameSchema(this.returnType);
     }
     if (!p.hasReturnType()) {
       return null;
     }
-    this.returnType = p.getReturnType();
+    this.returnType = SchemaUtil.newNoNameSchema(p.getReturnType());
     return this.returnType;
     
   }
@@ -189,7 +189,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
       builder.setType(this.funcType);
     }
     if (this.returnType != null) {
-      builder.setReturnType(this.returnType);
+      builder.setReturnType(this.returnType[0]);
     }
     if (this.params != null) {
       builder.addAllParameterTypes(Arrays.asList(params));
@@ -223,7 +223,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
 		  funcType = p.getType();
 	  }
 	  if (returnType == null && p.hasReturnType()) {
-		  returnType = p.getReturnType();
+		  returnType = SchemaUtil.newNoNameSchema(p.getReturnType());
 	  }
 	  if (params == null && p.getParameterTypesCount() > 0) {
 		  params = new DataType[p.getParameterTypesCount()];

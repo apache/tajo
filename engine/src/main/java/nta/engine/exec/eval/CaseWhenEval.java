@@ -3,7 +3,9 @@ package nta.engine.exec.eval;
 import com.google.common.collect.Lists;
 import com.google.gson.annotations.Expose;
 import nta.catalog.Schema;
+import nta.catalog.SchemaUtil;
 import nta.catalog.proto.CatalogProtos;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.BoolDatum;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
@@ -36,7 +38,7 @@ public class CaseWhenEval extends EvalNode {
   }
 
   @Override
-  public CatalogProtos.DataType getValueType() {
+  public CatalogProtos.DataType[] getValueType() {
     return whens.get(0).getResultExpr().getValueType();
   }
 
@@ -136,8 +138,8 @@ public class CaseWhenEval extends EvalNode {
     }
 
     @Override
-    public CatalogProtos.DataType getValueType() {
-      return CatalogProtos.DataType.BOOLEAN;
+    public DataType [] getValueType() {
+      return SchemaUtil.newNoNameSchema(CatalogProtos.DataType.BOOLEAN);
     }
 
     @Override

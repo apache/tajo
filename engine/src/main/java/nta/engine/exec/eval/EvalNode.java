@@ -64,9 +64,9 @@ public abstract class EvalNode implements Cloneable {
     }
   }
 	
-	public abstract DataType getValueType();
+	public abstract DataType [] getValueType();
 	
-	public abstract String getName(); 
+	public abstract String getName();
 	
 	public String toString() {
 		return "("+this.type+"("+leftExpr.toString()+" "+rightExpr.toString()+"))";

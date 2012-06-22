@@ -60,8 +60,9 @@ public class TestLogicalOptimizer {
         new Path("file:///"));
     catalog.addTable(score);
 
-    FunctionDesc funcDesc = new FunctionDesc("sumtest", NewSumInt.class,
-        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
+    FunctionDesc funcDesc = new FunctionDesc("sumtest", NewSumInt.class, FunctionType.GENERAL,
+        new DataType[] {DataType.INT},
+        new DataType[] {DataType.INT});
 
     catalog.registerFunction(funcDesc);
     analyzer = new QueryAnalyzer(catalog);

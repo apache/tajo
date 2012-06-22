@@ -3,6 +3,7 @@ package nta.engine.exec.eval;
 import com.google.gson.annotations.Expose;
 import nta.catalog.FunctionDesc;
 import nta.catalog.Schema;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.engine.function.AggFunction;
 import nta.engine.function.FunctionContext;
@@ -12,7 +13,7 @@ import nta.storage.VTuple;
 
 public class AggFuncCallEval extends FuncEval implements Cloneable {
   @Expose protected AggFunction instance;
-  @Expose boolean mergePhase = false;
+  @Expose boolean firstPhase = false;
   private Tuple params;
 
   public AggFuncCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
@@ -43,16 +44,29 @@ public class AggFuncCallEval extends FuncEval implements Cloneable {
       }
     }
 
-    if (mergePhase) {
-      instance.merge(localCtx.funcCtx, params);
-    } else {
+    if (firstPhase) {
       instance.eval(localCtx.funcCtx, params);
+    } else {
+      instance.merge(localCtx.funcCtx, params);
     }
   }
 
   @Override
   public Datum terminate(EvalContext ctx) {
-    return instance.terminate(((AggFunctionCtx)ctx).funcCtx);
+    if (firstPhase) {
+      return instance.getPartialResult(((AggFunctionCtx)ctx).funcCtx);
+    } else {
+      return instance.terminate(((AggFunctionCtx)ctx).funcCtx);
+    }
+  }
+
+  @Override
+  public DataType [] getValueType() {
+    if (firstPhase) {
+      return instance.getPartialResultType();
+    } else {
+      return funcDesc.getReturnType();
+    }
   }
 
   public String toJSON() {
@@ -64,8 +78,8 @@ public class AggFuncCallEval extends FuncEval implements Cloneable {
     return agg;
   }
 
-  public void setMergePhase() {
-    this.mergePhase = true;
+  public void setFirstPhase() {
+    this.firstPhase = true;
   }
 
   protected class AggFunctionCtx extends FuncCallCtx {

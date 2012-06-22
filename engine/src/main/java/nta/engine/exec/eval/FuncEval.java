@@ -41,7 +41,7 @@ public abstract class FuncEval extends EvalNode implements Cloneable {
     this.argEvals = args;
   }
 	
-	public DataType getValueType() {
+	public DataType [] getValueType() {
 		return this.funcDesc.getReturnType();
 	}
 

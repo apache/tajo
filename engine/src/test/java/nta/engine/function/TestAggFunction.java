@@ -1,5 +1,6 @@
 package nta.engine.function;
 
+import nta.datum.ArrayDatum;
 import nta.datum.DatumFactory;
 import nta.engine.function.builtin.AvgLong;
 import nta.storage.Tuple;
@@ -41,7 +42,8 @@ public class TestAggFunction {
     }
     assertTrue(55 / 10 == avg.terminate(ctx2).asDouble());
 
-    avg.merge(ctx, avg.getPartialResult(ctx2));
+
+    avg.merge(ctx, new VTuple(((ArrayDatum)avg.getPartialResult(ctx2)).toArray()));
     assertTrue((15 + 55) / (5 + 10) == avg.terminate(ctx).asDouble());
   }
 }

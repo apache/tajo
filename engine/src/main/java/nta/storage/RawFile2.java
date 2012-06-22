@@ -6,10 +6,12 @@ import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.catalog.statistics.TableStat;
 import nta.catalog.statistics.TableStatistics;
+import nta.datum.ArrayDatum;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.json.GsonCreator;
 import nta.storage.exception.AlreadyExistsStorageException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -300,61 +302,71 @@ public class RawFile2 extends Storage {
       }
       Column col = null;
       for (i = 0; i < schema.getColumnNum(); i++) {
-    	  Datum datum;
+        Datum datum;
         if (contains[i]) {
           col = schema.getColumn(i);
           switch (col.getDataType()) {
-          case BOOLEAN:
-          datum = DatumFactory.createBool(din.readBoolean());
-            this.curTupleOffset += datum.size();
-            tuple.put(i, datum);
-            break;
-          case BYTE:
-        	datum = DatumFactory.createByte(din.readByte());
-        	this.curTupleOffset += datum.size();
-            tuple.put(i, datum );
-            break;
-          case CHAR:
-            datum = DatumFactory.createChar(din.readChar());
-            this.curTupleOffset += datum.size();
-            tuple.put(i, datum);
-            break;
-          case SHORT:
-        	datum = DatumFactory.createShort(din.readShort());
-        	this.curTupleOffset += datum.size();
-            tuple.put(i, datum );
-            break;
-          case INT:
-            datum = DatumFactory.createInt(din.readInt());
-        	this.curTupleOffset += datum.size();
-            tuple.put(i, datum );
-            break;
-          case LONG:
-        	datum = DatumFactory.createLong(din.readLong());   
-        	this.curTupleOffset += datum.size();  
-            tuple.put(i, datum );
-            break;
-          case FLOAT:
-        	datum = DatumFactory.createFloat(din.readFloat());  
-        	this.curTupleOffset += datum.size();  
-            tuple.put(i, datum);
-            break;
-          case DOUBLE:
-        	datum = DatumFactory.createDouble(din.readDouble());
-        	this.curTupleOffset += datum.size();
-            tuple.put(i, datum);
-            break;
-          case STRING:
-        	this.curTupleOffset += DatumFactory.createShort((short)0).size();  
-            short len = din.readShort();
-            byte[] buf = new byte[len];
-            din.read(buf, 0, len);
-            datum = DatumFactory.createString(new String(buf));
-            this.curTupleOffset += datum.size();
-            tuple.put(i, datum);
-            break;
+            case BOOLEAN:
+              datum = DatumFactory.createBool(din.readBoolean());
+              this.curTupleOffset += datum.size();
+              tuple.put(i, datum);
+              break;
+
+            case BYTE:
+              datum = DatumFactory.createByte(din.readByte());
+              this.curTupleOffset += datum.size();
+              tuple.put(i, datum );
+              break;
+
+            case CHAR:
+              datum = DatumFactory.createChar(din.readChar());
+              this.curTupleOffset += datum.size();
+              tuple.put(i, datum);
+              break;
+
+            case SHORT:
+              datum = DatumFactory.createShort(din.readShort());
+              this.curTupleOffset += datum.size();
+              tuple.put(i, datum );
+              break;
+
+            case INT:
+              datum = DatumFactory.createInt(din.readInt());
+              this.curTupleOffset += datum.size();
+              tuple.put(i, datum );
+              break;
+
+            case LONG:
+              datum = DatumFactory.createLong(din.readLong());
+              this.curTupleOffset += datum.size();
+              tuple.put(i, datum );
+              break;
+
+            case FLOAT:
+              datum = DatumFactory.createFloat(din.readFloat());
+              this.curTupleOffset += datum.size();
+              tuple.put(i, datum);
+              break;
+
+            case DOUBLE:
+              datum = DatumFactory.createDouble(din.readDouble());
+              this.curTupleOffset += datum.size();
+              tuple.put(i, datum);
+              break;
+
+            case STRING:
+              this.curTupleOffset += DatumFactory.createShort((short)0).size();
+              short len = din.readShort();
+              byte[] buf = new byte[len];
+              din.read(buf, 0, len);
+              datum = DatumFactory.createString(new String(buf));
+              this.curTupleOffset += datum.size();
+              tuple.put(i, datum);
+              break;
+
             case BYTES:
               int bytesLen = din.readInt();
+              this.curTupleOffset += 4;
               byte [] bytesBuf = new byte[bytesLen];
               din.read(bytesBuf);
               this.curTupleOffset += bytesLen;
@@ -362,16 +374,27 @@ public class RawFile2 extends Storage {
               tuple.put(i, datum);
               break;
 
-          case IPv4:
+            case IPv4:
+              byte[] ipv4 = new byte[4];
+              din.read(ipv4, 0, 4);
+              datum = DatumFactory.createIPv4(ipv4);
+              this.curTupleOffset += datum.size();
+              tuple.put(i, datum);
+              break;
 
-        	byte[] ipv4 = new byte[4];
-            din.read(ipv4, 0, 4);
-            datum = DatumFactory.createIPv4(ipv4);
-            this.curTupleOffset += datum.size();
-            tuple.put(i, datum);
-            break;
-          default:
-            break;
+            case ARRAY:
+              int bufSize = din.readInt();
+              this.curTupleOffset += 4;
+              byte [] bytes = new byte[bufSize];
+              din.read(bytes);
+              this.curTupleOffset += bufSize;
+              String json = new String(bytes);
+              ArrayDatum array = (ArrayDatum) GsonCreator.getInstance().fromJson(json, Datum.class);
+              tuple.put(i, array);
+              break;
+
+            default:
+              break;
           }
         } else {
           tuple.put(i, DatumFactory.createNullDatum());
@@ -451,73 +474,80 @@ public class RawFile2 extends Storage {
 			out.flush();
 			lastSyncPos = out.getPos();
 		}
-		
-		@Override
-		public void addTuple(Tuple t) throws IOException {
-			checkAndWriteSync();
-			Column col;
-			for (int i = 0; i < schema.getColumnNum(); i++) {
-				out.writeBoolean(!t.isNull(i));
-			}
-			for (int i = 0; i < schema.getColumnNum(); i++) {
+
+    @Override
+    public void addTuple(Tuple t) throws IOException {
+      checkAndWriteSync();
+      Column col;
+      for (int i = 0; i < schema.getColumnNum(); i++) {
+        out.writeBoolean(!t.isNull(i));
+      }
+      for (int i = 0; i < schema.getColumnNum(); i++) {
         if (statsEnabled) {
           stats.analyzeField(i, t.get(i));
         }
 
-				if (!t.isNull(i)) {
-					col = schema.getColumn(i);
-					switch (col.getDataType()) {
-          case BOOLEAN:
-            out.writeBoolean(t.getBoolean(i).asBool());
-            break;
-					case BYTE:
-						out.writeByte(t.getByte(i).asByte());
-						break;
+        if (!t.isNull(i)) {
+          col = schema.getColumn(i);
+          switch (col.getDataType()) {
+            case BOOLEAN:
+              out.writeBoolean(t.getBoolean(i).asBool());
+              break;
+            case BYTE:
+              out.writeByte(t.getByte(i).asByte());
+              break;
             case CHAR:
               out.writeChar(t.getChar(i).asChar());
               break;
-					case STRING:
-						byte[] buf = t.getString(i).asByteArray();
-						if (buf.length > 256) {
-							buf = new byte[256];
-							byte[] str = t.getString(i).asByteArray();
-							System.arraycopy(str, 0, buf, 0, 256);
-						} 
-						out.writeShort(buf.length);
-						out.write(buf, 0, buf.length);
-						break;
-					case SHORT:
-						out.writeShort(t.getShort(i).asShort());
-						break;
-					case INT:
-						out.writeInt(t.getInt(i).asInt());
-						break;
-					case LONG:
-						out.writeLong(t.getLong(i).asLong());
-						break;
-					case FLOAT:
-						out.writeFloat(t.getFloat(i).asFloat());
-						break;
-					case DOUBLE:
-						out.writeDouble(t.getDouble(i).asDouble());
-						break;
+            case STRING:
+              byte[] buf = t.getString(i).asByteArray();
+              if (buf.length > 256) {
+                buf = new byte[256];
+                byte[] str = t.getString(i).asByteArray();
+                System.arraycopy(str, 0, buf, 0, 256);
+              }
+              out.writeShort(buf.length);
+              out.write(buf, 0, buf.length);
+              break;
+            case SHORT:
+              out.writeShort(t.getShort(i).asShort());
+              break;
+            case INT:
+              out.writeInt(t.getInt(i).asInt());
+              break;
+            case LONG:
+              out.writeLong(t.getLong(i).asLong());
+              break;
+            case FLOAT:
+              out.writeFloat(t.getFloat(i).asFloat());
+              break;
+            case DOUBLE:
+              out.writeDouble(t.getDouble(i).asDouble());
+              break;
             case BYTES:
               byte [] bytes = t.getBytes(i).asByteArray();
-            out.writeInt(bytes.length);
+              out.writeInt(bytes.length);
               out.write(bytes);
               break;
-					case IPv4:
-						out.write(t.getIPv4Bytes(i));
-						break;
-					case IPv6:
-						out.write(t.getIPv6Bytes(i));
-						break;
-					default:
-						break;
-					}
-				}
-			}
-			
+            case IPv4:
+              out.write(t.getIPv4Bytes(i));
+              break;
+            case IPv6:
+              out.write(t.getIPv6Bytes(i));
+            case ARRAY: {
+              ArrayDatum array = (ArrayDatum) t.get(i);
+              String json = array.toJSON();
+              byte [] byteArray = json.getBytes();
+              out.writeInt(byteArray.length);
+              out.write(byteArray);
+              break;
+            }
+            default:
+              break;
+          }
+        }
+      }
+
       // Statistical section
       if (statsEnabled) {
         stats.incrementRow();

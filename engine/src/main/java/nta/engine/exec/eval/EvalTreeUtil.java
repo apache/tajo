@@ -10,6 +10,7 @@ import java.util.Set;
 import com.google.common.collect.Lists;
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.SchemaUtil;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.engine.exception.InternalException;
 import nta.engine.exec.eval.EvalNode.Type;
@@ -103,7 +104,7 @@ public class EvalTreeUtil {
     for (EvalNode expr : evalNodes) {
       schema.addColumn(
           expr.getName(),
-          getDomainByExpr(inputSchema, expr));
+          getDomainByExpr(inputSchema, expr)[0]);
     }
     
     return schema;
@@ -115,13 +116,13 @@ public class EvalTreeUtil {
     for (Target target : targets) {
       schema.addColumn(
           target.hasAlias() ? target.getAlias() : target.getEvalTree().getName(),
-          getDomainByExpr(inputSchema, target.getEvalTree()));
+          getDomainByExpr(inputSchema, target.getEvalTree())[0]);
     }
     
     return schema;
   }
   
-  public static DataType getDomainByExpr(Schema inputSchema, EvalNode expr) 
+  public static DataType [] getDomainByExpr(Schema inputSchema, EvalNode expr)
       throws InternalException {
     switch (expr.getType()) {
     case AND:      
@@ -138,11 +139,12 @@ public class EvalTreeUtil {
     case DIVIDE:
     case CONST:
     case FUNCTION:
-      return expr.getValueType();
-      
+        return expr.getValueType();
+
     case FIELD:
       FieldEval fieldEval = (FieldEval) expr;
-      return inputSchema.getColumn(fieldEval.getName()).getDataType();
+      return SchemaUtil.newNoNameSchema(inputSchema.getColumn(fieldEval.getName()).getDataType());
+
       
     default:
       throw new InternalException("Unknown expr type: " 

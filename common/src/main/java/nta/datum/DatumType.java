@@ -22,5 +22,6 @@ public enum DatumType {
 	ENUM,
 	IPv4,
 	IPv6,
-	ALL
+	ALL,
+  ARRAY
 }

@@ -7,7 +7,9 @@ import java.util.List;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableDesc;
+import nta.catalog.proto.CatalogProtos;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.engine.exec.eval.AggFuncCallEval;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.json.GsonCreator;
 import nta.engine.planner.JoinType;
@@ -353,7 +355,12 @@ public class QueryBlock extends ParseTree {
     
     public Target(EvalNode eval, int targetId) {
       this.eval = eval;
-      this.column = new Column(eval.getName(), eval.getValueType());
+      if (eval.getType() == EvalNode.Type.AGG_FUNCTION &&
+          ((AggFuncCallEval)eval).getValueType().length > 1) { // hack for partial result
+        this.column = new Column(eval.getName(), CatalogProtos.DataType.ARRAY);
+      } else {
+        this.column = new Column(eval.getName(), eval.getValueType()[0]);
+      }
       this.targetId = targetId;
     }
     

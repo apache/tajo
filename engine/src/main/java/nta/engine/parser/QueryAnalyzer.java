@@ -818,7 +818,7 @@ public final class QueryAnalyzer {
 
       for (int i = 0; i < ast.getChildCount(); i++) {
         givenArgs[i] = createEvalTree(ctx, ast.getChild(i), query);
-        paramTypes[i] = givenArgs[i].getValueType();
+        paramTypes[i] = givenArgs[i].getValueType()[0];
       }
       if (!catalog.containFunction(signature, paramTypes)) {
         throw new UndefinedFunctionException(TCatUtil.
@@ -969,13 +969,13 @@ public final class QueryAnalyzer {
       Tree constAst = tree.getChild(constId);
       switch (tree.getChild(constId).getType()) {
         case NQLParser.DIGIT:
-          exprs[constId] = parseDigitByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType());
+          exprs[constId] = parseDigitByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType()[0]);
           break;
         case NQLParser.REAL:
-          exprs[constId] = parseRealByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType());
+          exprs[constId] = parseRealByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType()[0]);
           break;
         case NQLParser.STRING:
-          exprs[constId] = parseStringByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType());
+          exprs[constId] = parseStringByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType()[0]);
           break;
         default: throw new  InvalidEvalException();
       }

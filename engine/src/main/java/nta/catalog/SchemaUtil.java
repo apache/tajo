@@ -1,7 +1,10 @@
 package nta.catalog;
 
+import nta.catalog.proto.CatalogProtos;
 import nta.engine.parser.QueryBlock;
+import nta.catalog.proto.CatalogProtos.DataType;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 public class SchemaUtil {
@@ -63,5 +66,10 @@ public class SchemaUtil {
     }
 
     return projected;
+  }
+
+  public static CatalogProtos.DataType[] newNoNameSchema(CatalogProtos.DataType... types) {
+    DataType [] dataTypes = types.clone();
+    return dataTypes;
   }
 }

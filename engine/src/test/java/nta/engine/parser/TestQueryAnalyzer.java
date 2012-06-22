@@ -115,8 +115,8 @@ public class TestQueryAnalyzer {
     cat.addTable(lineitem);
     cat.addTable(part);
     
-    FunctionDesc funcMeta = new FunctionDesc("sumtest", TestSum.class,
-        FunctionType.GENERAL, DataType.INT, 
+    FunctionDesc funcMeta = new FunctionDesc("sumtest", TestSum.class, FunctionType.GENERAL,
+        new DataType [] {DataType.INT},
         new DataType [] {DataType.INT});
 
     cat.registerFunction(funcMeta);
@@ -552,39 +552,39 @@ public class TestQueryAnalyzer {
   public final void testTypeInferring() {
     Context ctx = factory.create();
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where char_col = 'a'");
-    assertEquals(DataType.CHAR, block.getWhereCondition().getRightExpr().getValueType());
+    assertEquals(DataType.CHAR, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where short_col = 1");
-    assertEquals(DataType.SHORT, block.getWhereCondition().getRightExpr().getValueType());
+    assertEquals(DataType.SHORT, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where int_col = 1");
-    assertEquals(DataType.INT, block.getWhereCondition().getRightExpr().getValueType());
+    assertEquals(DataType.INT, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where long_col = 1");
-    assertEquals(DataType.LONG, block.getWhereCondition().getRightExpr().getValueType());
+    assertEquals(DataType.LONG, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where float_col = 1");
-    assertEquals(DataType.INT, block.getWhereCondition().getRightExpr().getValueType());
+    assertEquals(DataType.INT, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where float_col = 1.0");
-    assertEquals(DataType.FLOAT, block.getWhereCondition().getRightExpr().getValueType());
+    assertEquals(DataType.FLOAT, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where int_col = 1.0");
-    assertEquals(DataType.DOUBLE, block.getWhereCondition().getRightExpr().getValueType());
+    assertEquals(DataType.DOUBLE, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where double_col = 1.0");
-    assertEquals(DataType.DOUBLE, block.getWhereCondition().getRightExpr().getValueType());
+    assertEquals(DataType.DOUBLE, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
     ctx = factory.create();
     block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where string_col = 'a'");
-    assertEquals(DataType.STRING, block.getWhereCondition().getRightExpr().getValueType());
+    assertEquals(DataType.STRING, block.getWhereCondition().getRightExpr().getValueType()[0]);
   }
 
   @Test
@@ -597,7 +597,7 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) tree;
     assertTrue(block.getTargetList()[0].hasAlias());
     assertEquals("cond", block.getTargetList()[0].getAlias());
-    assertEquals(DataType.DOUBLE, block.getTargetList()[0].getEvalTree().getValueType());
+    assertEquals(DataType.DOUBLE, block.getTargetList()[0].getEvalTree().getValueType()[0]);
   }
 
   @Test

@@ -27,7 +27,7 @@ public class PartialBinaryExpr extends EvalNode {
   }
 
   @Override
-  public DataType getValueType() {
+  public DataType [] getValueType() {
     return null;
   }
 

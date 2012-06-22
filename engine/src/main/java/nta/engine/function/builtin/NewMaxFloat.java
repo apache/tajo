@@ -1,14 +1,13 @@
 package nta.engine.function.builtin;
 
 import nta.catalog.Column;
-import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.function.AggFunction;
 import nta.engine.function.FunctionContext;
 import nta.storage.Tuple;
-import nta.storage.VTuple;
 
 /**
  * @author Hyunsik Choi
@@ -32,10 +31,13 @@ public class NewMaxFloat extends AggFunction<Datum> {
   }
 
   @Override
-  public Tuple getPartialResult(FunctionContext ctx) {
-    Tuple part = new VTuple(1);
-    part.put(0, DatumFactory.createFloat(((MaxContext)ctx).max));
-    return part;
+  public Datum getPartialResult(FunctionContext ctx) {
+    return DatumFactory.createFloat(((MaxContext)ctx).max);
+  }
+
+  @Override
+  public DataType[] getPartialResultType() {
+    return new DataType[] {DataType.FLOAT};
   }
 
   @Override

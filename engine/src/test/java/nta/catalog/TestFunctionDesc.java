@@ -25,13 +25,13 @@ public class TestFunctionDesc {
 
   @Test
   public void testGetSignature() throws IOException {
-    FunctionDesc desc = new FunctionDesc("sum", TestSum.class,
-        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT,
-            DataType.LONG });
+    FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
+        new DataType [] {DataType.INT},
+        new DataType [] {DataType.INT,DataType.LONG});
     assertEquals("sum", desc.getSignature());
     assertEquals(TestSum.class, desc.getFuncClass());
     assertEquals(FunctionType.GENERAL, desc.getFuncType());
-    assertEquals(DataType.INT, desc.getReturnType());
+    assertEquals(DataType.INT, desc.getReturnType()[0]);
     assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
         desc.getParamTypes());
 
@@ -46,7 +46,7 @@ public class TestFunctionDesc {
     assertEquals("sum", newDesc.getSignature());
     assertEquals(TestSum.class, newDesc.getFuncClass());
     assertEquals(FunctionType.GENERAL, newDesc.getFuncType());
-    assertEquals(DataType.INT, newDesc.getReturnType());
+    assertEquals(DataType.INT, newDesc.getReturnType()[0]);
     assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
         newDesc.getParamTypes());
 
@@ -55,9 +55,9 @@ public class TestFunctionDesc {
   
   @Test
   public void testJson() throws InternalException {
-	  FunctionDesc desc = new FunctionDesc("sum", TestSum.class,
-		        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT,
-		            DataType.LONG });
+	  FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
+        new DataType [] {DataType.INT},
+        new DataType [] {DataType.INT,DataType.LONG});
 	  String json = desc.toJSON();
 	  System.out.println(json);
 	  Gson gson = GsonCreator.getInstance();
@@ -66,7 +66,7 @@ public class TestFunctionDesc {
 	  assertEquals("sum", fromJson.getSignature());
 	    assertEquals(TestSum.class, fromJson.getFuncClass());
 	    assertEquals(FunctionType.GENERAL, fromJson.getFuncType());
-	    assertEquals(DataType.INT, fromJson.getReturnType());
+	    assertEquals(DataType.INT, fromJson.getReturnType()[0]);
 	    assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
 	    		fromJson.getParamTypes());
 
@@ -75,9 +75,9 @@ public class TestFunctionDesc {
   
   @Test
   public void testClone() throws CloneNotSupportedException {
-    FunctionDesc desc = new FunctionDesc("sum", TestSum.class,
-        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT,
-            DataType.LONG });
+    FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
+        new DataType [] {DataType.INT},
+        new DataType [] {DataType.INT,DataType.LONG});
     FunctionDesc cloned = (FunctionDesc)desc.clone();
     assertTrue("reference chk" , !(desc == cloned));
     assertTrue("getClass() chk", desc.getClass() == cloned.getClass());

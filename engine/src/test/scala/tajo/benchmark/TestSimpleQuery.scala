@@ -1,14 +1,9 @@
 package tajo.benchmark
 
-import tajo.client.TajoClient
-import nta.conf.NtaConf
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import org.apache.hadoop.conf.Configuration
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
-import nta.engine.NtaTestingUtility
-import java.io.File
-import nta.catalog.TConstants
 
 @RunWith(classOf[JUnitRunner])
 class TestSimpleQuery extends FunSuite with BeforeAndAfterAll {

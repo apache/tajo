@@ -164,8 +164,10 @@ public class PlannerUtil {
           firstTargetId++;
         } else {
           for (AggFuncCallEval func : firstFuncs) {
+            func.setFirstPhase();
             Target newTarget = new Target(func, firstTargetId++);
             newTarget.setAlias("column_"+ firstTargetId);
+
 
             AggFuncCallEval secondFunc = null;
             for (AggFuncCallEval sf : secondFuncs) {
@@ -174,9 +176,13 @@ public class PlannerUtil {
                 break;
               }
             }
-            secondFunc.setArgs(new EvalNode [] {new FieldEval(
-                new Column("column_"+firstTargetId, newTarget.getEvalTree().getValueType()))});
-            secondFunc.setMergePhase();
+            if (func.getValueType().length > 1) { // hack for partial result
+              secondFunc.setArgs(new EvalNode [] {new FieldEval(
+                  new Column("column_"+firstTargetId, CatalogProtos.DataType.ARRAY))});
+            } else {
+              secondFunc.setArgs(new EvalNode [] {new FieldEval(
+                  new Column("column_"+firstTargetId, newTarget.getEvalTree().getValueType()[0]))});
+            }
             newChildTargets.add(newTarget);
           }
         }
@@ -548,7 +554,7 @@ public class PlannerUtil {
   public static Schema targetToSchema(Context ctx, Target[] targets) {
     Schema schema = new Schema();
     for(Target t : targets) {
-      CatalogProtos.DataType type = t.getEvalTree().getValueType();
+      CatalogProtos.DataType type = t.getEvalTree().getValueType()[0];
       String name;
       if (t.hasAlias()) {
         name = t.getAlias();
@@ -566,7 +572,12 @@ public class PlannerUtil {
   public static Schema targetToSchema(Target[] targets) {
     Schema schema = new Schema();
     for(Target t : targets) {
-      CatalogProtos.DataType type = t.getEvalTree().getValueType();
+      CatalogProtos.DataType type;
+      if (t.getEvalTree().getValueType().length > 1) {
+        type = CatalogProtos.DataType.ARRAY;
+      } else {
+        type = t.getEvalTree().getValueType()[0];
+      }
       String name;
       if (t.hasAlias()) {
         name = t.getAlias();

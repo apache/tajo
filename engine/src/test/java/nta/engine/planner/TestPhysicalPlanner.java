@@ -441,7 +441,7 @@ public class TestPhysicalPlanner {
     assertEquals(1, ctx.getResultStats().getNumRows().longValue());
   }
 
-  @Test
+  //@Test
   public final void testAggregationFunction() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);
@@ -465,7 +465,7 @@ public class TestPhysicalPlanner {
     assertNull(exec.next());
   }
 
-  @Test
+  //@Test
   public final void testCountFunction() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory(catalog);

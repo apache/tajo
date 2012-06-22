@@ -591,7 +591,7 @@ public class LogicalOptimizer {
       } else {
         name = t.getEvalTree().getName();
       }
-      return new Column(name, t.getEvalTree().getValueType());
+      return new Column(name, t.getEvalTree().getValueType()[0]);
     }
 
     public boolean isAllEvaluated() {

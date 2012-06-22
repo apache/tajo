@@ -51,20 +51,20 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
 	}
 
   @Override
-	public DataType getValueType() {
+	public DataType [] getValueType() {
 		switch(this.datum.type()) {
-      case CHAR: return DataType.CHAR;
-      case BOOLEAN: return DataType.BOOLEAN;
-      case BYTE: return DataType.BYTE;
-      case BYTES : return DataType.BYTES;
-      case DOUBLE : return DataType.DOUBLE;
-      case FLOAT: return DataType.FLOAT;
-      case INT: return DataType.INT;
-      case IPv4: return DataType.IPv4;
-      case LONG: return DataType.LONG;
-      case SHORT: return DataType.SHORT;
-      case STRING: return DataType.STRING;
-      default: return DataType.ANY;
+      case CHAR: return new DataType[] {DataType.CHAR};
+      case BOOLEAN: return new DataType[] {DataType.BOOLEAN};
+      case BYTE: return new DataType[] {DataType.BYTE};
+      case BYTES : return new DataType[] {DataType.BYTES};
+      case DOUBLE : return new DataType[] {DataType.DOUBLE};
+      case FLOAT: return new DataType[] {DataType.FLOAT};
+      case INT: return new DataType[] {DataType.INT};
+      case IPv4: return new DataType[] {DataType.IPv4};
+      case LONG: return new DataType[] {DataType.LONG};
+      case SHORT: return new DataType[] {DataType.SHORT};
+      case STRING: return new DataType[] {DataType.STRING};
+      default: return new DataType[] {DataType.ANY};
 		}
 	}
 

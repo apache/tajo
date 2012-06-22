@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 
 import nta.catalog.Schema;
+import nta.catalog.SchemaUtil;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
@@ -20,7 +21,7 @@ import nta.storage.Tuple;
  *
  */
 public class BinaryEval extends EvalNode implements Cloneable {
-	@Expose private DataType returnType = null;
+	@Expose private DataType [] returnType = null;
 
   private class BinaryEvalCtx implements EvalContext {
     EvalContext left;
@@ -45,7 +46,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 			type == Type.LEQ ||
 			type == Type.GEQ
 		) {
-			this.returnType = DataType.BOOLEAN;
+			this.returnType = SchemaUtil.newNoNameSchema(DataType.BOOLEAN);
 		} else if (
 			type == Type.PLUS ||
 			type == Type.MINUS ||
@@ -53,8 +54,8 @@ public class BinaryEval extends EvalNode implements Cloneable {
 			type == Type.DIVIDE ||
       type == Type.MODULAR
 		) {
-			this.returnType = determineType(left.getValueType(), 
-				right.getValueType());
+			this.returnType = SchemaUtil.newNoNameSchema(determineType(left.getValueType()[0],
+				right.getValueType()[0]));
 		}
 	}
 
@@ -175,7 +176,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	}
 	
 	@Override
-	public DataType getValueType() {
+	public DataType [] getValueType() {
 		if (returnType == null) {
 		  
 		}

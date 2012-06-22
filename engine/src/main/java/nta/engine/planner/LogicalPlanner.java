@@ -570,7 +570,7 @@ public class LogicalPlanner {
   public static Schema getProjectedSchema(Context ctx, Collection<Target> targets) {
     Schema projected = new Schema();
     for(Target t : targets) {
-      DataType type = t.getEvalTree().getValueType();
+      DataType type = t.getEvalTree().getValueType()[0];
       String name;
       if (t.hasAlias()) {
         name = t.getAlias();
@@ -588,7 +588,7 @@ public class LogicalPlanner {
   public static Schema getProjectedSchema(Context ctx, Target [] targets) {
     Schema projected = new Schema();
     for(Target t : targets) {
-      DataType type = t.getEvalTree().getValueType();
+      DataType type = t.getEvalTree().getValueType()[0];
       String name;
       if (t.hasAlias()) {
         name = t.getAlias();

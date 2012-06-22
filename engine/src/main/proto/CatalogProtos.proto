@@ -23,6 +23,7 @@ enum DataType {
     NULL = 15;
     ANY = 16;
     ALL = 17;
+    ARRAY = 18;
 }
 
 enum StoreType {

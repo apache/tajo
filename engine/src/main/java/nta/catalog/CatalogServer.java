@@ -518,63 +518,63 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     List<FunctionDesc> sqlFuncs = new ArrayList<FunctionDesc>();
 
     // Sum
-    sqlFuncs
-        .add(new FunctionDesc("sum", NewSumInt.class, FunctionType.AGGREGATION,
-            DataType.INT, new DataType[] { DataType.INT }));
-    sqlFuncs.add(new FunctionDesc("sum", NewSumLong.class,
-        FunctionType.AGGREGATION, DataType.LONG,
-        new DataType[] { DataType.LONG }));
-    sqlFuncs.add(new FunctionDesc("sum", NewSumFloat.class,
-        FunctionType.AGGREGATION, DataType.FLOAT,
-        new DataType[] { DataType.FLOAT }));
-    sqlFuncs.add(new FunctionDesc("sum", NewSumDouble.class,
-        FunctionType.AGGREGATION, DataType.DOUBLE,
-        new DataType[] { DataType.DOUBLE }));
+    sqlFuncs.add(new FunctionDesc("sum", NewSumInt.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.INT},
+        new DataType[] {DataType.INT}));
+    sqlFuncs.add(new FunctionDesc("sum", NewSumLong.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.LONG},
+        new DataType[] {DataType.LONG}));
+    sqlFuncs.add(new FunctionDesc("sum", NewSumFloat.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.FLOAT},
+        new DataType[] {DataType.FLOAT}));
+    sqlFuncs.add(new FunctionDesc("sum", NewSumDouble.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.DOUBLE},
+        new DataType[] {DataType.DOUBLE}));
 
     // Max
-    sqlFuncs
-        .add(new FunctionDesc("max", NewMaxInt.class, FunctionType.AGGREGATION,
-            DataType.INT, new DataType[] { DataType.INT }));
-    sqlFuncs.add(new FunctionDesc("max", NewMaxLong.class,
-        FunctionType.AGGREGATION, DataType.LONG,
-        new DataType[] { DataType.LONG }));
-    sqlFuncs.add(new FunctionDesc("max", NewMaxFloat.class,
-        FunctionType.AGGREGATION, DataType.FLOAT,
-        new DataType[] { DataType.FLOAT }));
-    sqlFuncs.add(new FunctionDesc("max", NewMaxDouble.class,
-        FunctionType.AGGREGATION, DataType.DOUBLE,
-        new DataType[] { DataType.DOUBLE }));
+    sqlFuncs.add(new FunctionDesc("max", NewMaxInt.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.INT},
+        new DataType[] {DataType.INT}));
+    sqlFuncs.add(new FunctionDesc("max", NewMaxLong.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.LONG},
+        new DataType[] {DataType.LONG}));
+    sqlFuncs.add(new FunctionDesc("max", NewMaxFloat.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.FLOAT},
+        new DataType[] {DataType.FLOAT}));
+    sqlFuncs.add(new FunctionDesc("max", NewMaxDouble.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.DOUBLE},
+        new DataType[] {DataType.DOUBLE}));
 
     // Min
-    sqlFuncs
-        .add(new FunctionDesc("min", NewMinInt.class, FunctionType.AGGREGATION,
-            DataType.INT, new DataType[] { DataType.INT }));
-    sqlFuncs.add(new FunctionDesc("min", NewMinLong.class,
-        FunctionType.AGGREGATION, DataType.LONG,
-        new DataType[] { DataType.LONG }));
-    sqlFuncs.add(new FunctionDesc("min", NewMinDouble.class,
-        FunctionType.AGGREGATION, DataType.FLOAT,
-        new DataType[] { DataType.FLOAT }));
-    sqlFuncs.add(new FunctionDesc("min", NewMinDouble.class,
-        FunctionType.AGGREGATION, DataType.DOUBLE,
-        new DataType[] { DataType.DOUBLE }));
-    sqlFuncs.add(new FunctionDesc("min", NewMinString.class,
-        FunctionType.AGGREGATION, DataType.STRING,
-        new DataType[] { DataType.STRING }));
+    sqlFuncs.add(new FunctionDesc("min", NewMinInt.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.INT},
+        new DataType[] {DataType.INT}));
+    sqlFuncs.add(new FunctionDesc("min", NewMinLong.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.LONG},
+        new DataType[] {DataType.LONG}));
+    sqlFuncs.add(new FunctionDesc("min", NewMinDouble.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.FLOAT},
+        new DataType[] {DataType.FLOAT }));
+    sqlFuncs.add(new FunctionDesc("min", NewMinDouble.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.DOUBLE},
+        new DataType[] {DataType.DOUBLE}));
+    sqlFuncs.add(new FunctionDesc("min", NewMinString.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.STRING},
+        new DataType[] {DataType.STRING}));
 
     // Count
-    sqlFuncs.add(new FunctionDesc("count", NewCountValue.class,
-        FunctionType.AGGREGATION, DataType.LONG,
-        new DataType[] { DataType.ANY }));
-    sqlFuncs.add(new FunctionDesc("count", NewCountRows.class,
-        FunctionType.AGGREGATION, DataType.LONG, new DataType[] {}));
-
-    sqlFuncs.add(new FunctionDesc("avg", AvgDouble.class,
-        FunctionType.AGGREGATION, DataType.DOUBLE,
-        new DataType[] { DataType.FLOAT }));
-    sqlFuncs.add(new FunctionDesc("avg", AvgDouble.class,
-        FunctionType.AGGREGATION, DataType.DOUBLE,
-        new DataType[] { DataType.DOUBLE }));
+    sqlFuncs.add(new FunctionDesc("count", NewCountValue.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.LONG},
+        new DataType[] {DataType.ANY}));
+    sqlFuncs.add(new FunctionDesc("count", NewCountRows.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.LONG},
+        new DataType[] {}));
+    sqlFuncs.add(new FunctionDesc("avg", AvgDouble.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.DOUBLE},
+        new DataType[] {DataType.FLOAT}));
+    sqlFuncs.add(new FunctionDesc("avg", AvgDouble.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.DOUBLE},
+        new DataType[] {DataType.DOUBLE}));
 
     for (FunctionDesc func : sqlFuncs) {
       registerFunction(func.getProto());

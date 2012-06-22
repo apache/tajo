@@ -2,12 +2,12 @@ package nta.engine.function.builtin;
 
 import nta.catalog.Column;
 import nta.catalog.proto.CatalogProtos;
+import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.function.AggFunction;
 import nta.engine.function.FunctionContext;
 import nta.storage.Tuple;
-import nta.storage.VTuple;
 
 /**
  * @author Hyunsik Choi
@@ -32,11 +32,13 @@ public class NewSumInt extends AggFunction<Datum> {
   }
 
   @Override
-  public Tuple getPartialResult(FunctionContext ctx) {
-    SumIntContext sumCtx = (SumIntContext) ctx;
-    Tuple part = new VTuple(2);
-    part.put(0, DatumFactory.createInt(sumCtx.sum));
-    return part;
+  public Datum getPartialResult(FunctionContext ctx) {
+    return DatumFactory.createInt(((SumIntContext)ctx).sum);
+  }
+
+  @Override
+  public DataType[] getPartialResultType() {
+    return new DataType[] {DataType.INT};
   }
 
   @Override

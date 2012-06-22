@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * @author Hyunsik Choi
  */
-abstract class TpchTestBase {
+public class TpchTestBase {
   String [] names;
   String [][] tables;
   Schema[] schemas;

@@ -83,8 +83,9 @@ public class TestPlannerUtil {
         new Path("file:///"));
     catalog.addTable(score);
 
-    FunctionDesc funcDesc = new FunctionDesc("sumtest", NewSumInt.class,
-        FunctionType.AGGREGATION, DataType.INT, new DataType[] { DataType.INT });
+    FunctionDesc funcDesc = new FunctionDesc("sumtest", NewSumInt.class, FunctionType.AGGREGATION,
+        new DataType [] {DataType.INT},
+        new DataType [] {DataType.INT});
 
     catalog.registerFunction(funcDesc);
     analyzer = new QueryAnalyzer(catalog);

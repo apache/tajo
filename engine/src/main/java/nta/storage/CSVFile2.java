@@ -12,10 +12,12 @@ import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.catalog.statistics.TableStat;
 import nta.catalog.statistics.TableStatistics;
+import nta.datum.ArrayDatum;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.datum.DatumType;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.json.GsonCreator;
 import nta.storage.exception.AlreadyExistsStorageException;
 
 import org.apache.commons.codec.binary.Base64;
@@ -143,9 +145,24 @@ public class CSVFile2 extends Storage {
             break;
           case IPv6:
             sb.append(tuple.getIPv6(i));
+          case ARRAY:
+            /*sb.append("[");
+            boolean first = true;
+            ArrayDatum array = (ArrayDatum) tuple.get(i);
+            for (Datum field : array.toArray()) {
+              if (first) {
+                first = false;
+              } else {
+                sb.append(delimiter);
+              }
+             sb.append(field.asChars());
+            }
+            sb.append("]");*/
+            ArrayDatum array = (ArrayDatum) tuple.get(i);
+            sb.append(array.toJSON());
             break;
           default:
-            break;
+            throw new UnsupportedOperationException("Cannot write such field: " + tuple.get(i).type());
           }
         }
         sb.append(delimiter);
@@ -455,6 +472,10 @@ public class CSVFile2 extends Storage {
                 break;
               case IPv4:
                 tuple.put(i,DatumFactory.createIPv4(cell));
+                break;
+              case ARRAY:
+                Datum data = GsonCreator.getInstance().fromJson(cell, Datum.class);
+                tuple.put(i, data);
                 break;
               }
             }

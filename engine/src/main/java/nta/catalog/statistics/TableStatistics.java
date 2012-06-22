@@ -73,12 +73,18 @@ public class TableStatistics {
       numNulls[idx]++;
     }
 
-    if (numericFields[idx]) {
-      if (maxValues[idx] < datum.asLong()) {
-        maxValues[idx] = datum.asLong();
-      }
-      if (minValues[idx] > datum.asLong()) {
-        minValues[idx] = datum.asLong();
+    if (datum.type() == DatumType.LONG ||
+        datum.type() == DatumType.INT ||
+        datum.type() == DatumType.SHORT ||
+        datum.type() == DatumType.FLOAT ||
+        datum.type() == DatumType.DOUBLE) {
+      if (numericFields[idx]) {
+        if (maxValues[idx] < datum.asLong()) {
+          maxValues[idx] = datum.asLong();
+        }
+        if (minValues[idx] > datum.asLong()) {
+          minValues[idx] = datum.asLong();
+        }
       }
     }
   }

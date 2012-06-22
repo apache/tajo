@@ -80,8 +80,8 @@ public class TestNtaTestingUtility {
     TableDesc desc = TCatUtil.newTableDesc("employee", employeeMeta, 
         sm.getTablePath("employee")); 
     catalog.addTable(desc);
-    FunctionDesc func = new FunctionDesc("sleep", SlowFunc.class, 
-        FunctionType.AGGREGATION, DataType.STRING, new DataType [] {DataType.STRING});
+    FunctionDesc func = new FunctionDesc("sleep", SlowFunc.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.STRING}, new DataType [] {DataType.STRING});
     catalog.registerFunction(func);
   }
 

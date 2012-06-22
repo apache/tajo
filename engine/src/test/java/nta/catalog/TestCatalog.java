@@ -163,8 +163,8 @@ public class TestCatalog {
 	@Test
 	public final void testRegisterFunc() throws Exception { 
 		assertFalse(catalog.containFunction("test2"));
-		FunctionDesc meta = new FunctionDesc("test2", TestFunc1.class, 
-		    FunctionType.GENERAL, DataType.INT, 
+		FunctionDesc meta = new FunctionDesc("test2", TestFunc1.class, FunctionType.GENERAL,
+        new DataType [] {DataType.INT},
 		    new DataType [] {DataType.INT});
 
     catalog.registerFunction(meta);
@@ -180,8 +180,8 @@ public class TestCatalog {
   public final void testUnregisterFunc() throws Exception {    
     assertFalse(catalog
         .containFunction("test3", DataType.INT));
-    FunctionDesc meta = new FunctionDesc("test3", TestFunc1.class,
-        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT });
+    FunctionDesc meta = new FunctionDesc("test3", TestFunc1.class, FunctionType.GENERAL,
+        new DataType [] {DataType.INT}, new DataType[] { DataType.INT });
     catalog.registerFunction(meta);
     assertTrue(catalog.containFunction("test3", DataType.INT));
     catalog.unregisterFunction("test3", DataType.INT);
@@ -189,9 +189,9 @@ public class TestCatalog {
         .containFunction("test3", DataType.INT));
 
     assertFalse(catalog.containFunction("test3", DataType.INT, DataType.BYTES));
-    FunctionDesc overload = new FunctionDesc("test3", TestFunc2.class,
-        FunctionType.GENERAL, DataType.INT, new DataType[] { DataType.INT,
-            DataType.BYTES });
+    FunctionDesc overload = new FunctionDesc("test3", TestFunc2.class, FunctionType.GENERAL,
+        new DataType [] {DataType.INT},
+        new DataType [] {DataType.INT,DataType.BYTES});
     catalog.registerFunction(overload);
     assertTrue(catalog.containFunction("test3", DataType.INT, DataType.BYTES));
   }

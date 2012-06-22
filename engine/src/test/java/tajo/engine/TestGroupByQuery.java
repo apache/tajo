@@ -1,7 +1,6 @@
 package tajo.engine;
 
 import org.junit.Test;
-import tajo.client.ResultSetUtil;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -45,11 +44,5 @@ public class TestGroupByQuery extends TpchTestBase {
     ResultSet res = execute(query);
     res.next();
     assertEquals(33, res.getInt(1));
-  }
-
-  //@Test
-  public final void testAvgDouble() throws Exception {
-    ResultSet res = execute("select avg(l_discount) as revenue from lineitem");
-    System.out.println(ResultSetUtil.prettyFormat(res));
   }
 }

@@ -57,9 +57,9 @@ public class TestEvalTree {
     TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
     cat.addTable(desc);
 
-    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
-        FunctionType.GENERAL, DataType.INT, 
-        new DataType [] { DataType.INT, DataType.INT});
+    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
+        new DataType [] {DataType.INT},
+        new DataType [] {DataType.INT, DataType.INT});
     cat.registerFunction(funcMeta);
     
     factory = new QueryContext.Factory(cat);
@@ -233,8 +233,8 @@ public class TestEvalTree {
     }
 
     @Override
-    public DataType getValueType() {
-      return DataType.BOOLEAN;
+    public DataType [] getValueType() {
+      return new DataType [] {DataType.BOOLEAN};
     }
 
   }
@@ -266,8 +266,8 @@ public class TestEvalTree {
     }
 
     @Override
-    public DataType getValueType() {
-      return DataType.BOOLEAN;
+    public DataType [] getValueType() {
+      return new DataType [] {DataType.BOOLEAN};
     }
   }
 
@@ -455,18 +455,18 @@ public class TestEvalTree {
     e1 = new ConstEval(DatumFactory.createInt(9));
     e2 = new ConstEval(DatumFactory.createInt(34));
     BinaryEval expr = new BinaryEval(Type.PLUS, e1, e2);
-    assertEquals(DataType.INT, expr.getValueType());
+    assertEquals(DataType.INT, expr.getValueType()[0]);
 
     expr = new BinaryEval(Type.LTH, e1, e2);
     EvalContext evalCtx = expr.newContext();
     expr.eval(evalCtx, null, null);
     assertTrue(expr.terminate(evalCtx).asBool());
-    assertEquals(DataType.BOOLEAN, expr.getValueType());
+    assertEquals(DataType.BOOLEAN, expr.getValueType()[0]);
 
     e1 = new ConstEval(DatumFactory.createDouble(9.3));
     e2 = new ConstEval(DatumFactory.createDouble(34.2));
     expr = new BinaryEval(Type.PLUS, e1, e2);
-    assertEquals(DataType.DOUBLE, expr.getValueType());
+    assertEquals(DataType.DOUBLE, expr.getValueType()[0]);
   }
   
   @Test

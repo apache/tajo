@@ -75,8 +75,9 @@ public class TestLogicalPlanner {
         new Path("file:///"));
     catalog.addTable(score);
 
-    FunctionDesc funcDesc = new FunctionDesc("sumtest", NewSumInt.class,
-        FunctionType.AGGREGATION, DataType.INT, new DataType[] { DataType.INT });
+    FunctionDesc funcDesc = new FunctionDesc("sumtest", NewSumInt.class, FunctionType.AGGREGATION,
+        new DataType [] {DataType.INT},
+        new DataType [] {DataType.INT});
 
 
     // TPC-H Schema for Complex Queries

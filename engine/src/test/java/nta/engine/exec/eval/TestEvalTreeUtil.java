@@ -64,9 +64,9 @@ public class TestEvalTreeUtil {
     TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
     catalog.addTable(desc);
 
-    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
-        FunctionType.GENERAL, DataType.INT,
-        new DataType [] { DataType.INT, DataType.INT});
+    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
+        new DataType [] {DataType.INT},
+        new DataType [] {DataType.INT,DataType.INT});
     catalog.registerFunction(funcMeta);
 
     factory = new QueryContext.Factory(catalog);

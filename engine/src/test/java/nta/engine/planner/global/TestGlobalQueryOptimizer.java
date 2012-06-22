@@ -82,8 +82,9 @@ public class TestGlobalQueryOptimizer {
     conf = new NtaConf(util.getConfiguration());
     catalog = util.getMiniCatalogCluster().getCatalog();
     StorageManager sm = new StorageManager(util.getConfiguration());
-    FunctionDesc funcDesc = new FunctionDesc("sumtest", TestSum.class,
-        FunctionType.GENERAL, DataType.INT, new DataType[] {DataType.INT});
+    FunctionDesc funcDesc = new FunctionDesc("sumtest", TestSum.class, FunctionType.GENERAL,
+        new DataType [] {DataType.INT},
+        new DataType [] {DataType.INT});
     catalog.registerFunction(funcDesc);
     FileSystem fs = sm.getFileSystem();
 

@@ -2,6 +2,7 @@ package nta.engine.function;
 
 import com.google.gson.Gson;
 import nta.catalog.Column;
+import nta.catalog.proto.CatalogProtos;
 import nta.datum.Datum;
 import nta.engine.json.GsonCreator;
 import nta.storage.Tuple;
@@ -23,7 +24,9 @@ public abstract class AggFunction<T extends Datum> extends Function<T> {
     eval(ctx, part);
   }
 
-  public abstract Tuple getPartialResult(FunctionContext ctx);
+  public abstract Datum getPartialResult(FunctionContext ctx);
+
+  public abstract CatalogProtos.DataType [] getPartialResultType();
 
   public abstract T terminate(FunctionContext ctx);
 
