@@ -19,7 +19,7 @@ public class LocalTajoCluster {
 	private JVMClusterUtil.MasterThread masterThread;
 	private final List<JVMClusterUtil.LeafServerThread> leafThreads
 	  = new CopyOnWriteArrayList<JVMClusterUtil.LeafServerThread>();
-	private final static int DEFAULT_NO = 4;
+	private final static int DEFAULT_NO = 2;
 	private final Configuration conf;
 
 	public LocalTajoCluster(final Configuration conf) throws Exception {

@@ -36,7 +36,9 @@ public class TableStatistics {
     CatalogProtos.DataType type;
     for (int i = 0; i < schema.getColumnNum(); i++) {
       type = schema.getColumn(i).getDataType();
-      if (type == CatalogProtos.DataType.SHORT ||
+      if (type == CatalogProtos.DataType.CHAR ||
+          type == CatalogProtos.DataType.BYTE ||
+          type == CatalogProtos.DataType.SHORT ||
           type == CatalogProtos.DataType.INT ||
           type == CatalogProtos.DataType.LONG ||
           type == CatalogProtos.DataType.FLOAT ||
@@ -73,11 +75,7 @@ public class TableStatistics {
       numNulls[idx]++;
     }
 
-    if (datum.type() == DatumType.LONG ||
-        datum.type() == DatumType.INT ||
-        datum.type() == DatumType.SHORT ||
-        datum.type() == DatumType.FLOAT ||
-        datum.type() == DatumType.DOUBLE) {
+    if (datum.type() != DatumType.ARRAY) {
       if (numericFields[idx]) {
         if (maxValues[idx] < datum.asLong()) {
           maxValues[idx] = datum.asLong();

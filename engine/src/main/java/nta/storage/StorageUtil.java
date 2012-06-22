@@ -25,6 +25,7 @@ public class StorageUtil {
   public static int getColByteSize(Column col) {
     switch(col.getDataType()) {
     case BOOLEAN: return 1;
+    case CHAR: return 1;
     case BYTE: return 1;
     case SHORT: return 2;
     case INT: return 4;
