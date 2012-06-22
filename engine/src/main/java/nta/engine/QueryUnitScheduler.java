@@ -210,8 +210,10 @@ public class QueryUnitScheduler extends Thread {
     Path path = new Path(sm.getTablePath(q.getOutputName()), 
         q.getId().toString());
     fs.delete(path, true);
+    String prevHost = q.getHost();
     String hostName = cm.getProperHost(q);
-    if (hostName == null) {
+    if (hostName == null ||
+        hostName.equals(prevHost)) {
       hostName = cm.getRandomHost();
     }
     q.setHost(hostName);
