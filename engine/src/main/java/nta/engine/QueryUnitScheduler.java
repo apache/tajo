@@ -18,9 +18,11 @@ import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
+import nta.engine.planner.PlannerUtil;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.logical.ExprType;
+import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalPlanner;
 import nta.engine.query.QueryUnitRequestImpl;
@@ -102,7 +104,16 @@ public class QueryUnitScheduler extends Thread {
           }
       }
 
-      QueryUnit[] units = planner.localize(plan, cm.getOnlineWorker().size());
+      // TODO - the below code should be extracted to a separate method
+      int numTasks;
+      GroupbyNode grpNode = (GroupbyNode) PlannerUtil.findTopNode(plan.getLogicalPlan(), ExprType.GROUP_BY);
+      if (plan.getParentQuery() == null && grpNode != null && grpNode.getGroupingColumns().length == 0) {
+        numTasks = 1;
+      } else {
+        numTasks = cm.getOnlineWorker().size();
+      }
+
+      QueryUnit[] units = planner.localize(plan, numTasks);
       String hostName;
       for (QueryUnit q : units) {
         hostName = cm.getProperHost(q);
