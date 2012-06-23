@@ -814,16 +814,13 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           task.finalize();          
           LOG.info("Query unit ( " + uid + ") is finalized");
         } else {
-          LOG.error("ERROR: Illegal State of " + uid + "(" + status + ")");
+          task.kill();
+          LOG.info("Query unit ( " + uid + ") is stopped");
         }
         break;
       case STOP:
-        if (status == QueryStatus.INPROGRESS) {
-          task.kill();
-          LOG.info("Query unit ( " + uid + ") is killed");
-        } else {
-          LOG.error("ERROR: Illegal State of " + uid + "(" + status + ")");
-        }
+        task.kill();
+        LOG.info("Query unit ( " + uid + ") is stopped");
         break;
       default:
         break;
