@@ -66,7 +66,11 @@ public class AdvancedDataRetriever implements DataRetriever {
     RetrieverHandler handler = handlerMap.get(params.get("qid"));
     FileChunk chunk = handler.get(params);
     if (chunk == null) {
-      throw new FileNotFoundException("No such a file corresponding to " + params.containsKey("qid"));
+      if (params.containsKey("qid")) { // if there is no content corresponding to the query
+        return null;
+      } else { // if there is no
+        throw new FileNotFoundException("No such a file corresponding to " + params.get("qid"));
+      }
     }
 
     File file = chunk.getFile();

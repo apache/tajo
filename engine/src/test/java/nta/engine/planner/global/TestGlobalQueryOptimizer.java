@@ -27,11 +27,7 @@ import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
-import nta.engine.planner.logical.ExprType;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.ScanNode;
-import nta.engine.planner.logical.SortNode;
-import nta.engine.planner.logical.StoreTableNode;
+import nta.engine.planner.logical.*;
 import nta.engine.query.GlobalPlanner;
 import nta.storage.Appender;
 import nta.storage.CSVFile2;
@@ -143,8 +139,10 @@ public class TestGlobalQueryOptimizer {
     
     ScheduleUnit unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
-    assertEquals(ExprType.SORT, store.getSubNode().getType());
-    SortNode sort = (SortNode) store.getSubNode();
+    assertEquals(ExprType.PROJECTION, store.getSubNode().getType());
+    ProjectionNode proj = (ProjectionNode) store.getSubNode();
+    assertEquals(ExprType.SORT, proj.getSubNode().getType());
+    SortNode sort = (SortNode) proj.getSubNode();
     assertEquals(ExprType.SCAN, sort.getSubNode().getType());
     ScanNode scan = (ScanNode) sort.getSubNode();
     

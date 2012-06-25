@@ -10,11 +10,8 @@ import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.TableStat;
 import nta.common.exception.NotImplementedException;
+import nta.engine.*;
 import nta.engine.MasterInterfaceProtos.Partition;
-import nta.engine.QueryId;
-import nta.engine.QueryIdFactory;
-import nta.engine.ScheduleUnitId;
-import nta.engine.SubQueryId;
 import nta.engine.cluster.QueryManager;
 import nta.engine.exec.eval.EvalTreeUtil;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -700,18 +697,25 @@ public class GlobalPlanner {
         tablepath = catalog.getTableDesc(scan.getTableId()).getPath();
       }
       if (scan.isLocal()) {
+        ScheduleUnit prev = unit.getChildIterator().next();
+        TableStat stat = qm.getSubQuery(prev.getId().getSubQueryId()).getTableStat();
+        if (stat.getNumRows() == 0) {
+          return new QueryUnit[0];
+        }
         // make fetches from the previous query units
         uriList = new ArrayList<URI>();
         fragList = new ArrayList<Fragment>();
 
-        ScheduleUnit prev = unit.getChildIterator().next();
         if (prev.getOutputType() == PARTITION_TYPE.RANGE) {
           StoreTableNode store = (StoreTableNode) prev.getLogicalPlan();
           SortNode sort = (SortNode) store.getSubNode();
           sortSchema = PlannerUtil.sortSpecsToSchema(sort.getSortKeys());
-          TableStat stat = qm.getSubQuery(prev.getId().getSubQueryId()).getTableStat();
           TupleRange mergedRange = TupleUtil.columnStatToRange(sort.getOutputSchema(), sortSchema, stat.getColumnStats());
-          TupleRange [] ranges = TupleUtil.getPartitions(sortSchema, n, mergedRange);
+          long card = TupleUtil.computeCardinality(sortSchema, mergedRange);
+          if (card > Integer.MAX_VALUE) card = Integer.MAX_VALUE;
+          int partNum = card > n ? n : (int) card;
+          LOG.info("Try to divide " + mergedRange + " into " + partNum + " sub ranges (total units: " + n + ")");
+          TupleRange [] ranges = TupleUtil.getPartitions(sortSchema, partNum, mergedRange);
           String [] queries = TupleUtil.rangesToQueries(sortSchema, ranges);
           for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
             for (Partition p : qu.getPartitions()) {

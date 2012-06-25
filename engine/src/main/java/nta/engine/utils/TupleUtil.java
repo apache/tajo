@@ -1,5 +1,7 @@
 package nta.engine.utils;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.statistics.ColumnStat;
@@ -18,6 +20,7 @@ import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TupleUtil {
   public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
@@ -117,6 +120,59 @@ public class TupleUtil {
     return tuple;
   }
 
+  /**
+   * It computes the value cardinality of a tuple range.
+   *
+   * @param schema
+   * @param range
+   * @return
+   */
+  public static long computeCardinality(Schema schema, TupleRange range) {
+    Tuple start = range.getStart();
+    Tuple end = range.getEnd();
+    Column col;
+
+    long cardinality = 1;
+    long columnCard;
+    for (int i = 0; i < schema.getColumnNum(); i++) {
+      col = schema.getColumn(i);
+      switch (col.getDataType()) {
+        case CHAR:
+          columnCard = end.get(i).asChar() - start.get(i).asChar();
+          break;
+        case BYTE:
+          columnCard = end.get(i).asByte() - start.get(i).asByte();
+          break;
+        case SHORT:
+          columnCard = end.get(i).asShort() - start.get(i).asShort();
+          break;
+        case INT:
+          columnCard = end.get(i).asInt() - start.get(i).asInt();
+          break;
+        case LONG:
+          columnCard = end.get(i).asLong() - start.get(i).asLong();
+          break;
+        case FLOAT:
+          columnCard = end.get(i).asInt() - start.get(i).asInt();
+          break;
+        case DOUBLE:
+          columnCard = end.get(i).asLong() - start.get(i).asLong();
+          break;
+        case STRING:
+          columnCard = end.get(i).asChars().charAt(0) - start.get(i).asChars().charAt(0);
+          break;
+        default:
+          throw new UnsupportedOperationException(col.getDataType() + " is not supported yet");
+      }
+
+      if (columnCard > 0) {
+        cardinality *= columnCard;
+      }
+    }
+
+    return cardinality;
+  }
+
   public static TupleRange [] getPartitions(Schema schema, int partNum, TupleRange range) {
     Tuple start = range.getStart();
     Tuple end = range.getEnd();
@@ -212,7 +268,15 @@ public class TupleUtil {
           term[i] = DatumFactory.createDouble(rangeDouble);
           break;
         case STRING:
-          throw new UnsupportedOperationException();
+          char sChars = start.get(i).asChars().charAt(0);
+          char eChars = end.get(i).asChars().charAt(0);
+          int rangeString = 0;
+          if ((eChars - sChars) > partNum) {
+            rangeString = ((eChars - sChars) / partNum);
+          } else {
+            rangeString = 1;
+          }
+          term[i] = DatumFactory.createString(((char)rangeString) + "");
         case IPv4:
           throw new UnsupportedOperationException();
         case BYTES:
@@ -281,7 +345,7 @@ public class TupleUtil {
 
           case FLOAT:
             float endFloat = (prevValues[i].asFloat() + term[i].asFloat());
-            if (endFloat > end.get(i).asInt()) {
+            if (endFloat > end.get(i).asFloat()) {
               eTuple.put(i, end.get(i));
             } else {
               // TODO - to consider overflow
@@ -349,44 +413,57 @@ public class TupleUtil {
   }
 
   public static TupleRange columnStatToRange(Schema schema, Schema target, List<ColumnStat> colStats) {
-    int [] sortKeyIds = TupleUtil.getTargetIds(schema, target);
-    Tuple startTuple = new VTuple(sortKeyIds.length);
-    Tuple endTuple = new VTuple(sortKeyIds.length);
-    for (int i = 0; i < sortKeyIds.length; i++) {
-      Column col = target.getColumn(i);
-      int s = sortKeyIds[i];
+    Map<Column, ColumnStat> statSet = Maps.newHashMap();
+    for (ColumnStat stat : colStats) {
+      statSet.put(stat.getColumn(), stat);
+    }
+
+    for (Column col : target.getColumns()) {
+      Preconditions.checkState(statSet.containsKey(col),
+          "ERROR: Invalid Column Stats (column stats: " + colStats + ", there exists not target " + col);
+    }
+
+    Tuple startTuple = new VTuple(target.getColumnNum());
+    Tuple endTuple = new VTuple(target.getColumnNum());
+    int i = 0;
+    for (Column col : target.getColumns()) {
       switch (col.getDataType()) {
         case BYTE:
-          startTuple.put(i, DatumFactory.createByte(colStats.get(s).getMinValue().byteValue()));
-          endTuple.put(i, DatumFactory.createByte(colStats.get(s).getMaxValue().byteValue()));
+          startTuple.put(i, DatumFactory.createByte(statSet.get(col).getMinValue().byteValue()));
+          endTuple.put(i, DatumFactory.createByte(statSet.get(col).getMaxValue().byteValue()));
           break;
         case CHAR:
-          startTuple.put(i, DatumFactory.createChar(colStats.get(s).getMinValue().byteValue()));
-          endTuple.put(i, DatumFactory.createChar(colStats.get(s).getMaxValue().byteValue()));
+          startTuple.put(i, DatumFactory.createChar(statSet.get(col).getMinValue().byteValue()));
+          endTuple.put(i, DatumFactory.createChar(statSet.get(col).getMaxValue().byteValue()));
           break;
         case SHORT:
-          startTuple.put(i, DatumFactory.createShort(colStats.get(s).getMinValue().shortValue()));
-          endTuple.put(i, DatumFactory.createShort(colStats.get(s).getMaxValue().shortValue()));
+          startTuple.put(i, DatumFactory.createShort(statSet.get(col).getMinValue().shortValue()));
+          endTuple.put(i, DatumFactory.createShort(statSet.get(col).getMaxValue().shortValue()));
           break;
         case INT:
-          startTuple.put(i, DatumFactory.createInt(colStats.get(s).getMinValue().intValue()));
-          endTuple.put(i, DatumFactory.createInt(colStats.get(s).getMaxValue().intValue()));
+          startTuple.put(i, DatumFactory.createInt(statSet.get(col).getMinValue().intValue()));
+          endTuple.put(i, DatumFactory.createInt(statSet.get(col).getMaxValue().intValue()));
           break;
         case LONG:
-          startTuple.put(i, DatumFactory.createLong(colStats.get(s).getMinValue()));
-          endTuple.put(i, DatumFactory.createLong(colStats.get(s).getMaxValue()));
+          startTuple.put(i, DatumFactory.createLong(statSet.get(col).getMinValue()));
+          endTuple.put(i, DatumFactory.createLong(statSet.get(col).getMaxValue()));
           break;
         case FLOAT:
-          startTuple.put(i, DatumFactory.createFloat(colStats.get(s).getMinValue().floatValue()));
-          endTuple.put(i, DatumFactory.createFloat(colStats.get(s).getMaxValue().floatValue()));
+          startTuple.put(i, DatumFactory.createFloat(statSet.get(col).getMinValue().floatValue()));
+          endTuple.put(i, DatumFactory.createFloat(statSet.get(col).getMaxValue().floatValue()));
           break;
         case DOUBLE:
-          startTuple.put(i, DatumFactory.createDouble(colStats.get(s).getMinValue().doubleValue()));
-          endTuple.put(i, DatumFactory.createDouble(colStats.get(s).getMaxValue().doubleValue()));
+          startTuple.put(i, DatumFactory.createDouble(statSet.get(col).getMinValue().doubleValue()));
+          endTuple.put(i, DatumFactory.createDouble(statSet.get(col).getMaxValue().doubleValue()));
           break;
+        case STRING:
+          startTuple.put(i, DatumFactory.createString((char)statSet.get(col).getMinValue().intValue()+""));
+          endTuple.put(i, DatumFactory.createString((char)statSet.get(col).getMaxValue().intValue()+""));
+        break;
         default:
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException(col.getDataType() + " is not supported yet");
       }
+      i++;
     }
     return new TupleRange(target, startTuple, endTuple);
   }

@@ -3,6 +3,8 @@ package nta.catalog.statistics;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import nta.catalog.Column;
+import nta.catalog.proto.CatalogProtos;
 import org.junit.Test;
 
 /**
@@ -21,7 +23,7 @@ public class TestTableStat {
     int numCols = 3;
     ColumnStat [] cols = new ColumnStat[numCols];
     for (int i = 0; i < numCols; i++) {
-      cols[i] = new ColumnStat();
+      cols[i] = new ColumnStat(new Column("col_" + i, CatalogProtos.DataType.LONG));
       cols[i].setNumDistVals(1024 * i);
       cols[i].setNumNulls(100 * i);
       stat.addColumnStat(cols[i]);

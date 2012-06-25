@@ -3,6 +3,8 @@ package nta.catalog.statistics;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import nta.catalog.Column;
+import nta.catalog.proto.CatalogProtos;
 import org.junit.Test;
 
 /**
@@ -12,7 +14,7 @@ public class TestColumnStat {
 
   @Test
   public final void testColumnStat() {
-    ColumnStat stat = new ColumnStat();
+    ColumnStat stat = new ColumnStat(new Column("test", CatalogProtos.DataType.LONG));
     stat.setNumDistVals(1000);
     stat.setNumNulls(999);
     
@@ -26,7 +28,7 @@ public class TestColumnStat {
 
   @Test
   public final void testEqualsObject() {
-    ColumnStat stat = new ColumnStat();
+    ColumnStat stat = new ColumnStat(new Column("test", CatalogProtos.DataType.LONG));
     stat.setNumDistVals(1000);
     stat.setNumNulls(999);
     
@@ -36,7 +38,7 @@ public class TestColumnStat {
 
   @Test
   public final void testClone() throws CloneNotSupportedException {
-    ColumnStat stat = new ColumnStat();
+    ColumnStat stat = new ColumnStat(new Column("test", CatalogProtos.DataType.LONG));
     stat.setNumDistVals(1000);
     stat.setNumNulls(999);
     

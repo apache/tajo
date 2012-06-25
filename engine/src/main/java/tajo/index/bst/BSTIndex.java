@@ -106,6 +106,7 @@ public class BSTIndex implements IndexMethod {
       if (max == null || compartor.compare(max, key) < 0) {
         max = key;
       }
+
       collector.put(key, offset);
     }
 
@@ -140,12 +141,14 @@ public class BSTIndex implements IndexMethod {
       // header write => type = > level => entryNum
       out.writeInt(this.level);
       out.writeInt(entryNum);
-      byte [] minBytes = TupleUtil.toBytes(keySchema, min);
-      out.writeInt(minBytes.length);
-      out.write(minBytes);
-      byte [] maxBytes = TupleUtil.toBytes(keySchema, max);
-      out.writeInt(maxBytes.length);
-      out.write(maxBytes);
+      if (entryNum > 0) {
+        byte [] minBytes = TupleUtil.toBytes(keySchema, min);
+        out.writeInt(minBytes.length);
+        out.write(minBytes);
+        byte [] maxBytes = TupleUtil.toBytes(keySchema, max);
+        out.writeInt(maxBytes.length);
+        out.write(maxBytes);
+      }
       out.flush();
 
       int loadCount = this.loadNum - 1;
@@ -296,12 +299,14 @@ public class BSTIndex implements IndexMethod {
       indexIn = fs.open(this.fileName);
       this.level = indexIn.readInt();
       this.entryNum = indexIn.readInt();
-      byte [] minBytes = new byte[indexIn.readInt()];
-      indexIn.read(minBytes);
-      this.min = TupleUtil.toTuple(keySchema, minBytes);
-      byte [] maxBytes = new byte[indexIn.readInt()];
-      indexIn.read(maxBytes);
-      this.max = TupleUtil.toTuple(keySchema, maxBytes);
+      if (entryNum > 0) { // if there is no any entry, do not read min/max values
+        byte [] minBytes = new byte[indexIn.readInt()];
+        indexIn.read(minBytes);
+        this.min = TupleUtil.toTuple(keySchema, minBytes);
+        byte [] maxBytes = new byte[indexIn.readInt()];
+        indexIn.read(maxBytes);
+        this.max = TupleUtil.toTuple(keySchema, maxBytes);
+      }
 
       fillData();
     }

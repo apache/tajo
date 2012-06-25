@@ -70,7 +70,14 @@ public class ResultSetImpl implements ResultSet {
       throws IOException {
     this.conf = conf;
     this.fs = path.getFileSystem(this.conf);
-    this.meta = getMeta(this.conf, path);
+    // TODO - to be improved. It can be solved to get the query finish status from master.
+    try {
+      this.meta = getMeta(this.conf, path);
+    } catch (FileNotFoundException fnf) {
+      this.totalRow = 0;
+      init();
+      return;
+    }
     this.totalRow = meta.getStat().getNumRows();
     Fragment[] frags = getFragments(meta, path);
     
@@ -993,6 +1000,9 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public boolean next() throws SQLException {
     try {
+      if (totalRow <= 0)
+        return false;
+
       cur = scanner.next();
       curRow++;
       if (cur != null) {

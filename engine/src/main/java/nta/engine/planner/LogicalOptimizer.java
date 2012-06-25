@@ -311,16 +311,21 @@ public class LogicalOptimizer {
         outer = pushProjectionRecursive(ctx, projNode.getSubNode(), stack, necessary);
         stack.pop();
 
-        if (ctx.getTargetListManager().isAllEvaluated()) {
-          ((ProjectionNode) node).getSubNode().setOutputSchema(ctx.getTargetListManager().getUpdatedSchema());
-          LogicalNode parent = stack.peek();
-          ((UnaryNode)parent).setSubNode(((ProjectionNode) node).getSubNode());
+        LogicalNode childNode = projNode.getSubNode();
+        if (ctx.getTargetListManager().isAllEvaluated() // if all exprs are evaluated
+            && (childNode.getType() == ExprType.JOIN ||
+               childNode.getType() == ExprType.GROUP_BY ||
+               childNode.getType() == ExprType.SCAN)) { // if the child node is projectable
+            projNode.getSubNode().setOutputSchema(ctx.getTargetListManager().getUpdatedSchema());
+            LogicalNode parent = stack.peek();
+            ((UnaryNode)parent).setSubNode(projNode.getSubNode());
+            return projNode.getSubNode();
         } else {
           // the output schema is not changed.
           projNode.setInputSchema(outer.getOutputSchema());
           projNode.setTargetList(ctx.getTargetListManager().getUpdatedTarget());
         }
-        return ((ProjectionNode) node).getSubNode();
+        return projNode;
 
       case SELECTION: // It does not support the projection
         SelectionNode selNode = (SelectionNode) node;

@@ -13,7 +13,7 @@ import nta.storage.Tuple;
 /**
  * @author Hyunsik Choi
  */
-public class NewMaxDouble extends AggFunction<Datum> {
+public class NewMaxDouble extends AggFunction<DoubleDatum> {
 
   public NewMaxDouble() {
     super(new Column[] {

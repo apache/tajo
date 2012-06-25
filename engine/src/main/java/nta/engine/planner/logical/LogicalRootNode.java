@@ -11,7 +11,7 @@ public class LogicalRootNode extends UnaryNode implements Cloneable {
   }
   
   public String toString() {
-    return getSubNode().toString();  
+    return "Logical Plan Root\n\n" + getSubNode().toString();
   }
   
   @Override

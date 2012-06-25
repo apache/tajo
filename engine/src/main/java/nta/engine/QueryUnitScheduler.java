@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.catalog.statistics.ColumnStat;
 import nta.catalog.statistics.StatisticsUtil;
 import nta.catalog.statistics.TableStat;
 import nta.engine.MasterInterfaceProtos.Command;
@@ -77,7 +78,8 @@ public class QueryUnitScheduler extends Thread {
     if (plan.hasChildQuery()) {
       Iterator<ScheduleUnit> it = plan.getChildIterator();
       while (it.hasNext()) {
-        recursiveExecuteQueryUnit(it.next());
+        ScheduleUnit su = it.next();
+        recursiveExecuteQueryUnit(su);
       }
     }
     
@@ -114,24 +116,37 @@ public class QueryUnitScheduler extends Thread {
       }
 
       QueryUnit[] units = planner.localize(plan, numTasks);
-      String hostName;
-      for (QueryUnit q : units) {
-        hostName = cm.getProperHost(q);
-        if (hostName == null) {
-          hostName = cm.getRandomHost();
+      // if there is empty input (or intermediate) data,
+      // we don't need to execute this query.
+      if (units.length == 0) {
+        TableMeta meta = TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV);
+        TableStat stat = new TableStat();
+        for (int i = 0; i < plan.getOutputSchema().getColumnNum(); i++) {
+          stat.addColumnStat(new ColumnStat(plan.getOutputSchema().getColumn(i)));
         }
-        q.setHost(hostName);
-        pendingQueue.add(q);
-        qm.updateQueryAssignInfo(hostName, q);
+        qm.getSubQuery(plan.getId().getSubQueryId()).setTableStat(stat);
+        plan.setStatus(QueryStatus.FINISHED);
+        return;
+      } else {
+        String hostName;
+        for (QueryUnit q : units) {
+          hostName = cm.getProperHost(q);
+          if (hostName == null) {
+            hostName = cm.getRandomHost();
+          }
+          q.setHost(hostName);
+          pendingQueue.add(q);
+          qm.updateQueryAssignInfo(hostName, q);
+        }
+        requestPendingQueryUnits();
+
+        TableStat stat = waitForFinishScheduleUnit(plan);
+        TableMeta meta = TCatUtil.newTableMeta(plan.getOutputSchema(),
+            StoreType.CSV);
+        meta.setStat(stat);
+        sm.writeTableMeta(sm.getTablePath(plan.getOutputName()), meta);
+        qm.getSubQuery(units[0].getId().getSubQueryId()).setTableStat(stat);
       }
-      requestPendingQueryUnits();
-      
-      TableStat stat = waitForFinishScheduleUnit(plan);
-      TableMeta meta = TCatUtil.newTableMeta(plan.getOutputSchema(), 
-          StoreType.CSV);
-      meta.setStat(stat);
-      sm.writeTableMeta(sm.getTablePath(plan.getOutputName()), meta);
-      qm.getSubQuery(units[0].getId().getSubQueryId()).setTableStat(stat);
     }
   }
   

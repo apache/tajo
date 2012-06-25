@@ -552,7 +552,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     sqlFuncs.add(new FunctionDesc("min", NewMinLong.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.LONG},
         new DataType[] {DataType.LONG}));
-    sqlFuncs.add(new FunctionDesc("min", NewMinDouble.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("min", NewMinFloat.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.FLOAT},
         new DataType[] {DataType.FLOAT }));
     sqlFuncs.add(new FunctionDesc("min", NewMinDouble.class, FunctionType.AGGREGATION,
@@ -562,6 +562,20 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
         new DataType[] {DataType.STRING},
         new DataType[] {DataType.STRING}));
 
+    // AVG
+    sqlFuncs.add(new FunctionDesc("avg", AvgInt.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.FLOAT},
+        new DataType[] {DataType.INT}));
+    sqlFuncs.add(new FunctionDesc("avg", AvgLong.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.DOUBLE},
+        new DataType[] {DataType.LONG}));
+    sqlFuncs.add(new FunctionDesc("avg", AvgFloat.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.FLOAT},
+        new DataType[] {DataType.FLOAT}));
+    sqlFuncs.add(new FunctionDesc("avg", AvgDouble.class, FunctionType.AGGREGATION,
+        new DataType[] {DataType.DOUBLE},
+        new DataType[] {DataType.DOUBLE}));
+
     // Count
     sqlFuncs.add(new FunctionDesc("count", NewCountValue.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.LONG},
@@ -569,12 +583,6 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     sqlFuncs.add(new FunctionDesc("count", NewCountRows.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.LONG},
         new DataType[] {}));
-    sqlFuncs.add(new FunctionDesc("avg", AvgDouble.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.DOUBLE},
-        new DataType[] {DataType.FLOAT}));
-    sqlFuncs.add(new FunctionDesc("avg", AvgDouble.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.DOUBLE},
-        new DataType[] {DataType.DOUBLE}));
 
     for (FunctionDesc func : sqlFuncs) {
       registerFunction(func.getProto());

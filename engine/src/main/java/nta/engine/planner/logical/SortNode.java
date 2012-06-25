@@ -61,7 +61,7 @@ public final class SortNode extends UnaryNode implements Cloneable {
   }
   
   public String toString() {
-    StringBuilder sb = new StringBuilder("Order By ");
+    StringBuilder sb = new StringBuilder("Sort [key= ");
     for (int i = 0; i < sortKeys.length; i++) {    
       sb.append(sortKeys[i].getSortKey().getQualifiedName()).append(" ")
           .append(sortKeys[i].isAscending() ? "asc" : "desc");
@@ -69,6 +69,10 @@ public final class SortNode extends UnaryNode implements Cloneable {
         sb.append(",");
       }
     }
+    sb.append("]");
+
+    sb.append("\n\"out schema: " + getOutputSchema()
+        + "\n\"in schema: " + getInputSchema());
     return sb.toString()+"\n"
         + getSubNode().toString();
   }

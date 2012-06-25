@@ -42,7 +42,8 @@ public class TableStatistics {
           type == CatalogProtos.DataType.INT ||
           type == CatalogProtos.DataType.LONG ||
           type == CatalogProtos.DataType.FLOAT ||
-          type == CatalogProtos.DataType.DOUBLE) {
+          type == CatalogProtos.DataType.DOUBLE ||
+          type == CatalogProtos.DataType.STRING) {
         numericFields[i] = true;
       } else {
         numericFields[i] = false;
@@ -77,11 +78,21 @@ public class TableStatistics {
 
     if (datum.type() != DatumType.ARRAY) {
       if (numericFields[idx]) {
-        if (maxValues[idx] < datum.asLong()) {
-          maxValues[idx] = datum.asLong();
-        }
-        if (minValues[idx] > datum.asLong()) {
-          minValues[idx] = datum.asLong();
+        // TODO - it is ad-hoc way. It should be improved
+        if (datum.type() == DatumType.STRING) {
+          if (maxValues[idx] < datum.asChars().charAt(0)) {
+            maxValues[idx] = datum.asChars().charAt(0);
+          }
+          if (minValues[idx] > datum.asChars().charAt(0)) {
+            minValues[idx] = datum.asChars().charAt(0);
+          }
+        } else {
+          if (maxValues[idx] < datum.asLong()) {
+            maxValues[idx] = datum.asLong();
+          }
+          if (minValues[idx] > datum.asLong()) {
+            minValues[idx] = datum.asLong();
+          }
         }
       }
     }
@@ -92,7 +103,7 @@ public class TableStatistics {
 
     ColumnStat columnStat;
     for (int i = 0; i < schema.getColumnNum(); i++) {
-      columnStat = new ColumnStat();
+      columnStat = new ColumnStat(schema.getColumn(i));
       columnStat.setNumNulls(numNulls[i]);
       columnStat.setMinValue(minValues[i]);
       columnStat.setMaxValue(maxValues[i]);

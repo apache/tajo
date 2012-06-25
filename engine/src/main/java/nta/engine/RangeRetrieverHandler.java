@@ -64,13 +64,17 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     end = TupleUtil.toTuple(schema, endBytes);
     boolean last = kvs.containsKey("final");
 
-    if (LOG.isDebugEnabled()) {
-      LOG.info(">>>>> Request " + data.getAbsolutePath() + " (start="+start+", end="+ end +
+    LOG.info("GET Request for " + data.getAbsolutePath() + " (start="+start+", end="+ end +
         (last ? ", last=true" : "") + ")");
-    }
 
-    // eliminate the case 1
-    if (comp.compare(end, idxReader.getMin()) < 0 || comp.compare(idxReader.getMax(), start) < 0) {
+    if (idxReader.getMin() == null && idxReader.getMax() == null) { // if # of rows is zero
+      LOG.info("There is no contents");
+      return null;
+    }
+    if (comp.compare(end, idxReader.getMin()) < 0 ||
+        comp.compare(idxReader.getMax(), start) < 0) {
+      LOG.info("Out of score (indexed data [" + idxReader.getMin() + ", " + idxReader.getMax() +
+          "], but request start:" + start + ", end: " + end);
       return null;
     }
 

@@ -299,16 +299,30 @@ public class PlannerUtil {
   
   private static class LogicalNodeFinder implements LogicalNodeVisitor {
     private List<LogicalNode> list = new ArrayList<LogicalNode>();
-    private ExprType tofind;
+    private final ExprType [] tofind;
+    private boolean topmost = false;
+    private boolean finished = false;
 
-    public LogicalNodeFinder(ExprType type) {
+    public LogicalNodeFinder(ExprType...type) {
       this.tofind = type;
+    }
+
+    public LogicalNodeFinder(ExprType [] type, boolean topmost) {
+      this(type);
+      this.topmost = topmost;
     }
 
     @Override
     public void visit(LogicalNode node) {
-      if (node.getType() == tofind) {
-        list.add(node);
+      if (!finished) {
+        for (ExprType type : tofind) {
+          if (node.getType() == type) {
+            list.add(node);
+          }
+          if (topmost && list.size() > 0) {
+            finished = true;
+          }
+        }
       }
     }
 

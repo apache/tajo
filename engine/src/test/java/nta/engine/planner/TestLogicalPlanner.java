@@ -704,14 +704,16 @@ public class TestLogicalPlanner {
   public final void testCubeBy() {
     QueryContext ctx = factory.create();
     ParseTree block = analyzer.parse(ctx, CUBE_ROLLUP[0]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);    
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
     plan = LogicalOptimizer.optimize(ctx, plan);
     
     Set<Set<Column>> cuboids = Sets.newHashSet();
     
     LogicalRootNode root = (LogicalRootNode) plan;
-    assertEquals(ExprType.UNION, root.getSubNode().getType());
-    UnionNode u0 = (UnionNode) root.getSubNode();
+    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
+    assertEquals(ExprType.UNION, projNode.getSubNode().getType());
+    UnionNode u0 = (UnionNode) projNode.getSubNode();
     assertEquals(ExprType.GROUP_BY, u0.getOuterNode().getType());
     assertEquals(ExprType.UNION, u0.getInnerNode().getType());
     GroupbyNode grp = (GroupbyNode) u0.getOuterNode();

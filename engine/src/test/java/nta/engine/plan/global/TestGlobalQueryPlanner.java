@@ -151,8 +151,6 @@ public class TestGlobalQueryPlanner {
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
-    System.out.println(logicalPlan);
-
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
 
     ScheduleUnit next, prev;
@@ -234,7 +232,9 @@ public class TestGlobalQueryPlanner {
     next = globalPlan.getRoot();
     assertTrue(next.hasChildQuery());
     assertEquals(PARTITION_TYPE.LIST, next.getOutputType());
-    assertEquals(ExprType.SORT, next.getStoreTableNode().getSubNode().getType());
+    assertEquals(ExprType.PROJECTION, next.getStoreTableNode().getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) next.getStoreTableNode().getSubNode();
+    assertEquals(ExprType.SORT, projNode.getSubNode().getType());
     ScanNode []scans = next.getScanNodes();
     assertEquals(1, scans.length);
     Iterator<ScheduleUnit> it= next.getChildIterator();
@@ -309,13 +309,15 @@ public class TestGlobalQueryPlanner {
         "select age, sum(salary) from table0 group by cube (age, id)");
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
-    
+
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
     
     ScheduleUnit unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
-    assertEquals(ExprType.UNION, store.getSubNode().getType());
-    UnionNode union = (UnionNode) store.getSubNode();
+    assertEquals(ExprType.PROJECTION, store.getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) store.getSubNode();
+    assertEquals(ExprType.UNION, projNode.getSubNode().getType());
+    UnionNode union = (UnionNode) projNode.getSubNode();
     assertEquals(ExprType.SCAN, union.getOuterNode().getType());
     assertEquals(ExprType.UNION, union.getInnerNode().getType());
     union = (UnionNode) union.getInnerNode();

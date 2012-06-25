@@ -12,10 +12,7 @@ import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.global.ScheduleUnit;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.planner.logical.LogicalRootNode;
-import nta.engine.planner.logical.StoreTableNode;
-import nta.engine.planner.logical.UnionNode;
+import nta.engine.planner.logical.*;
 import nta.engine.planner.physical.*;
 import nta.engine.utils.TupleUtil;
 import nta.storage.*;
@@ -653,7 +650,8 @@ public class TestPhysicalPlanner {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    ExternalSortExec sort = (ExternalSortExec) exec;
+    ProjectionExec proj = (ProjectionExec) exec;
+    ExternalSortExec sort = (ExternalSortExec) proj.getChild();
     SeqScanExec scan = (SeqScanExec) sort.getSubOp();
     QueryBlock.SortSpec [] sortSpecs = sort.getAnnotation().getSortKeys();
     IndexedStoreExec idxStoreExec = new IndexedStoreExec(ctx, sm, sort, sort.getSchema(), sort.getSchema(), sortSpecs);

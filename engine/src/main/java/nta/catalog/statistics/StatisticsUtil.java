@@ -27,20 +27,23 @@ public class StatisticsUtil {
     TableStat aggregated = new TableStat();
 
     ColumnStat [] css = null;
-    if (tableStats.get(0).getColumnStats().size() > 0) {
+    if (tableStats.size() > 0 && tableStats.get(0).getColumnStats().size() > 0) {
       css = new ColumnStat[tableStats.get(0).getColumnStats().size()];
       for (int i = 0; i < css.length; i++) {
-        css[i] = new ColumnStat();
+        css[i] = new ColumnStat(tableStats.get(0).getColumnStats().get(i).getColumn());
       }
     }
 
     for (TableStat ts : tableStats) {
+      // aggregate column stats for each table
       for (int i = 0; i < ts.getColumnStats().size(); i++) {
         css[i].setNumDistVals(css[i].getNumDistValues() + ts.getColumnStats().get(i).getNumDistValues());
         css[i].setNumNulls(css[i].getNumNulls() + ts.getColumnStats().get(i).getNumNulls());
         css[i].setMinValue(Math.min(css[i].getMinValue(), ts.getColumnStats().get(i).getMinValue()));
         css[i].setMaxValue(Math.max(css[i].getMaxValue(), ts.getColumnStats().get(i).getMaxValue()));
       }
+
+      // aggregate table stats for each table
       aggregated.setNumRows(aggregated.getNumRows() + ts.getNumRows());
       aggregated.setNumBytes(aggregated.getNumBytes() + ts.getNumBytes());
       aggregated.setNumBlocks(aggregated.getNumBlocks() + ts.getNumBlocks());

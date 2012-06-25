@@ -110,11 +110,46 @@ public class TestTupleUtil {
     e.put(1, DatumFactory.createFloat(20));
 
     TupleRange expected = new TupleRange(schema, s, e);
+    int card = (int) TupleUtil.computeCardinality(schema, expected);
+    assertEquals(50, card);
+    int partNum = TupleUtil.getPartitions(schema, 5, expected).length;
+    assertEquals(5, partNum);
+
+    // TODO - getPartitions should be improved to consider all fields
+    //partNum = TupleUtil.getPartitions(schema, 10, expected).length;
+    //assertEquals(10, partNum);
+
     String query = TupleUtil.rangeToQuery(schema, expected, false);
 
     TupleRange range = TupleUtil.queryToRange(schema, query);
-    System.out.println("query: " + query);
-    System.out.println("range: " + range);
+    assertEquals(expected, range);
+
+    query = TupleUtil.rangeToQuery(schema, expected, true);
+    Map<String,String> params = HttpUtil.getParamsFromQuery(query);
+    assertTrue(params.containsKey("final"));
+    range = TupleUtil.queryToRange(schema, query);
+    assertEquals(expected, range);
+  }
+
+  @Test
+  public void testQueryToRangeWithOneRange() throws UnsupportedEncodingException {
+    Schema schema = new Schema();
+    schema.addColumn("partkey", DataType.FLOAT);
+
+    Tuple s = new VTuple(1);
+    s.put(0, DatumFactory.createFloat(28082));
+    Tuple e = new VTuple(1);
+    e.put(0, DatumFactory.createFloat(28082));
+
+    TupleRange expected = new TupleRange(schema, s, e);
+    int card = (int) TupleUtil.computeCardinality(schema, expected);
+    assertEquals(1, card);
+    int partNum = TupleUtil.getPartitions(schema, card, expected).length;
+    assertEquals(1, partNum);
+
+    String query = TupleUtil.rangeToQuery(schema, expected, false);
+
+    TupleRange range = TupleUtil.queryToRange(schema, query);
     assertEquals(expected, range);
 
     query = TupleUtil.rangeToQuery(schema, expected, true);

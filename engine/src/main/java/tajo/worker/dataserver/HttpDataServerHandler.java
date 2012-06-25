@@ -107,8 +107,7 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
 
           public void operationProgressed(ChannelFuture future, long amount,
                                           long current, long total) {
-            System.out.printf("%s: %d / %d (+%d)%n", "file", current, total,
-                amount);
+            //System.out.printf("%s: %d / %d (+%d)%n", "file", current, total, amount);
           }
         });
       }

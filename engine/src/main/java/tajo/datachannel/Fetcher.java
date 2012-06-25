@@ -108,7 +108,7 @@ public class Fetcher {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
         throws Exception {
-      if (!readingChunks || e.getMessage() instanceof HttpResponse) {
+      if (!readingChunks) {
         HttpResponse response = (HttpResponse) e.getMessage();
 
         StringBuilder sb = new StringBuilder();
@@ -136,7 +136,7 @@ public class Fetcher {
         this.raf = new RandomAccessFile(file, "rw");
         this.fc = raf.getChannel();
 
-        if (response.getStatus().getCode() == 200 && response.isChunked()) {
+        if (response.isChunked()) {
           readingChunks = true;
         } else {
           ChannelBuffer content = response.getContent();

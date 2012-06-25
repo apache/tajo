@@ -6,6 +6,8 @@ package nta.engine.planner.global;
 import java.io.IOException;
 import java.util.Iterator;
 
+import nta.catalog.Column;
+import nta.catalog.proto.CatalogProtos;
 import nta.catalog.statistics.ColumnStat;
 import nta.catalog.statistics.TableStat;
 import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
@@ -97,7 +99,7 @@ public class MockupQueryUnitScheduler {
 
     private TableStat buildStatSet() {
       TableStat statSet = new TableStat();
-      ColumnStat cs1 = new ColumnStat();
+      ColumnStat cs1 = new ColumnStat(new Column("test", CatalogProtos.DataType.LONG));
       cs1.setNumDistVals(1);
       cs1.setNumNulls(2);
       cs1.setMinValue(5);

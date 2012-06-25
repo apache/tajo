@@ -7,6 +7,7 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+import nta.catalog.Column;
 import nta.catalog.proto.CatalogProtos.ColumnStatProto;
 import nta.catalog.proto.CatalogProtos.ColumnStatProtoOrBuilder;
 import nta.common.ProtoObject;
@@ -19,13 +20,15 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   private ColumnStatProto.Builder builder = null;
   private boolean viaProto = false;
 
+  @Expose private Column column = null;
   @Expose private Long numDistVals = null;
   @Expose private Long numNulls = null;
   @Expose private Long minValue = null;
   @Expose private Long maxValue = null;
 
-  public ColumnStat() {
+  public ColumnStat(Column column) {
     builder = ColumnStatProto.newBuilder();
+    this.column = column;
     numDistVals = 0l;
     numNulls = 0l;
     minValue = Long.MAX_VALUE;
@@ -35,6 +38,19 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   public ColumnStat(ColumnStatProto proto) {
     this.proto = proto;
     this.viaProto = true;
+  }
+
+  public Column getColumn() {
+    ColumnStatProtoOrBuilder p = viaProto ? proto : builder;
+    if (column != null) {
+      return column;
+    }
+    if (!p.hasColumn()) {
+      return null;
+    }
+    this.column = new Column(p.getColumn());
+
+    return this.column;
   }
 
   public Long getNumDistValues() {
@@ -119,8 +135,11 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof ColumnStat) {
       ColumnStat other = (ColumnStat) obj;
-      return getNumDistValues().equals(other.getNumDistValues())
-          && getNumNulls().equals(other.getNumNulls());
+      return getColumn().equals(other.getColumn())
+          && getNumDistValues().equals(other.getNumDistValues())
+          && getNumNulls().equals(other.getNumNulls())
+          && getMinValue().equals(other.getMinValue())
+          && getMaxValue().equals(other.getMaxValue());
     } else {
       return false;
     }
@@ -133,13 +152,17 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   public Object clone() throws CloneNotSupportedException {
     ColumnStat stat = (ColumnStat) super.clone();
     initFromProto();
+    stat.column = (Column) this.column.clone();
     stat.numDistVals = numDistVals;
     stat.numNulls = numNulls;
+    stat.minValue = minValue;
+    stat.maxValue = maxValue;
 
     return stat;
   }
 
   public String toString() {
+    initFromProto();
     Gson gson = new GsonBuilder().setPrettyPrinting().
         excludeFieldsWithoutExposeAnnotation().create();
     return gson.toJson(this);
@@ -148,6 +171,9 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   @Override
   public void initFromProto() {
     ColumnStatProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.column == null && p.hasColumn()) {
+      this.column = new Column(p.getColumn());
+    }
     if (this.numDistVals == null && p.hasNumDistVal()) {
       this.numDistVals = p.getNumDistVal();
     }
@@ -176,6 +202,9 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   private void mergeLocalToBuilder() {
     if (builder == null) {
       builder = ColumnStatProto.newBuilder(proto);
+    }
+    if (this.column != null) {
+      builder.setColumn(this.column.getProto());
     }
     if (this.numDistVals != null) {
       builder.setNumDistVal(this.numDistVals);
