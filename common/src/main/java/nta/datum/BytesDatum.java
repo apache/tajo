@@ -19,10 +19,7 @@ import nta.datum.json.GsonCreator;
 public class BytesDatum extends Datum {
 	@Expose private byte[] val;
 	private ByteBuffer bb = null;
-	
-	/**
-	 * 
-	 */
+
 	public BytesDatum() {
 		super(DatumType.BYTES);
 	}

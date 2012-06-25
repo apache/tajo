@@ -78,6 +78,11 @@ public class NullDatum extends Datum {
   }
 
   @Override
+  public int compareTo(Datum datum) {
+    return 0;
+  }
+
+  @Override
   public int hashCode() {
     return 23244; // one of the prime number
   }

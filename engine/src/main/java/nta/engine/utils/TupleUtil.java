@@ -4,9 +4,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.proto.CatalogProtos;
 import nta.catalog.statistics.ColumnStat;
-import nta.datum.Datum;
-import nta.datum.DatumFactory;
+import nta.datum.*;
 import nta.storage.StorageUtil;
 import nta.storage.Tuple;
 import nta.storage.TupleRange;
@@ -20,7 +20,6 @@ import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class TupleUtil {
   public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
@@ -427,44 +426,36 @@ public class TupleUtil {
     Tuple endTuple = new VTuple(target.getColumnNum());
     int i = 0;
     for (Column col : target.getColumns()) {
-      switch (col.getDataType()) {
-        case BYTE:
-          startTuple.put(i, DatumFactory.createByte(statSet.get(col).getMinValue().byteValue()));
-          endTuple.put(i, DatumFactory.createByte(statSet.get(col).getMaxValue().byteValue()));
-          break;
-        case CHAR:
-          startTuple.put(i, DatumFactory.createChar(statSet.get(col).getMinValue().byteValue()));
-          endTuple.put(i, DatumFactory.createChar(statSet.get(col).getMaxValue().byteValue()));
-          break;
-        case SHORT:
-          startTuple.put(i, DatumFactory.createShort(statSet.get(col).getMinValue().shortValue()));
-          endTuple.put(i, DatumFactory.createShort(statSet.get(col).getMaxValue().shortValue()));
-          break;
-        case INT:
-          startTuple.put(i, DatumFactory.createInt(statSet.get(col).getMinValue().intValue()));
-          endTuple.put(i, DatumFactory.createInt(statSet.get(col).getMaxValue().intValue()));
-          break;
-        case LONG:
-          startTuple.put(i, DatumFactory.createLong(statSet.get(col).getMinValue()));
-          endTuple.put(i, DatumFactory.createLong(statSet.get(col).getMaxValue()));
-          break;
-        case FLOAT:
-          startTuple.put(i, DatumFactory.createFloat(statSet.get(col).getMinValue().floatValue()));
-          endTuple.put(i, DatumFactory.createFloat(statSet.get(col).getMaxValue().floatValue()));
-          break;
-        case DOUBLE:
-          startTuple.put(i, DatumFactory.createDouble(statSet.get(col).getMinValue().doubleValue()));
-          endTuple.put(i, DatumFactory.createDouble(statSet.get(col).getMaxValue().doubleValue()));
-          break;
-        case STRING:
-          startTuple.put(i, DatumFactory.createString((char)statSet.get(col).getMinValue().intValue()+""));
-          endTuple.put(i, DatumFactory.createString((char)statSet.get(col).getMaxValue().intValue()+""));
-        break;
-        default:
-          throw new UnsupportedOperationException(col.getDataType() + " is not supported yet");
-      }
+      startTuple.put(i, statSet.get(col).getMinValue());
+      endTuple.put(i, statSet.get(col).getMaxValue());
       i++;
     }
     return new TupleRange(target, startTuple, endTuple);
+  }
+
+  public static Datum createFromBytes(CatalogProtos.DataType type, byte [] bytes) {
+    switch (type) {
+      case BOOLEAN:
+        return new BoolDatum(bytes);
+      case BYTE:
+        return new ByteDatum(bytes);
+      case CHAR:
+        return new CharDatum(bytes);
+      case SHORT:
+        return new ShortDatum(bytes);
+      case INT:
+        return new IntDatum(bytes);
+      case LONG:
+        return new LongDatum(bytes);
+      case FLOAT:
+        return new FloatDatum(bytes);
+      case DOUBLE:
+        return new DoubleDatum(bytes);
+      case STRING:
+        return new StringDatum(bytes);
+      case IPv4:
+        return new IPv4Datum(bytes);
+      default: throw new UnsupportedOperationException(type + " is not supported yet");
+    }
   }
 }

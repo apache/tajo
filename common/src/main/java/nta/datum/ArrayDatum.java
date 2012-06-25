@@ -35,6 +35,11 @@ public class ArrayDatum extends Datum {
     return 0;
   }
 
+  @Override
+  public int compareTo(Datum datum) {
+    return 0; // TODO - to be implemented
+  }
+
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("[");

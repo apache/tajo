@@ -83,13 +83,6 @@ public abstract class Datum implements Comparable<Datum> {
 	
 	public abstract int size();
 	
-	public abstract String toJSON();
-	
-	@Override
-	public String toString() {
-		return asChars();
-	}
-	
 	public Datum plus(Datum datum) {
 	  throw new InvalidOperationException(datum.type);
 	}
@@ -113,6 +106,7 @@ public abstract class Datum implements Comparable<Datum> {
 	public BoolDatum equalsTo(Datum datum) {
 	  return DatumFactory.createBool(compareTo(datum) == 0);
 	}
+
 	public BoolDatum lessThan(Datum datum) {
     return DatumFactory.createBool(compareTo(datum) < 0);
 	}
@@ -129,17 +123,12 @@ public abstract class Datum implements Comparable<Datum> {
     return DatumFactory.createBool(compareTo(datum) >= 0);
 	}
 	
-	public int compareTo(Datum o) {
-		BoolDatum bd = this.lessThan(o);
-    if (bd.asBool()) {
-      return -1;
-    } else {
-			bd = this.greaterThan(o);
-			if (bd.asBool()) {
-        return 1;
-      } else {
-        return 0;
-      }
-		}
-	}
+  public abstract int compareTo(Datum datum);
+
+  public abstract String toJSON();
+
+  @Override
+  public String toString() {
+    return asChars();
+  }
 }

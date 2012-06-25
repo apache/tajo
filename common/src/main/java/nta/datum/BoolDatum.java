@@ -3,8 +3,6 @@
  */
 package nta.datum;
 
-import java.nio.ByteBuffer;
-
 import nta.datum.exception.InvalidOperationException;
 import nta.datum.json.GsonCreator;
 
@@ -16,10 +14,24 @@ import com.google.gson.annotations.Expose;
 public class BoolDatum extends Datum {
 	@Expose private boolean val;
 
+  public BoolDatum() {
+    super(DatumType.BOOLEAN);
+  }
+
 	public BoolDatum(boolean val) {
-		super(DatumType.BOOLEAN);
+		this();
 		this.val = val;
 	}
+
+  public BoolDatum(byte byteVal) {
+    this();
+    this.val = byteVal == 1;
+  }
+
+
+  public BoolDatum(byte [] bytes) {
+    this(bytes[0]);
+  }
 	
 	public boolean asBool() {
 		return val;
@@ -31,7 +43,7 @@ public class BoolDatum extends Datum {
 	
 	@Override
 	public short asShort() {	
-		return (short) (val == true ? 1 : 0);
+		return (short) (val ? 1 : 0);
 	}
 
 	/* (non-Javadoc)
@@ -39,7 +51,7 @@ public class BoolDatum extends Datum {
 	 */
 	@Override
 	public int asInt() {
-		return val == true ? 1 : 0;
+		return val ? 1 : 0;
 	}
 
 	/* (non-Javadoc)
@@ -47,7 +59,7 @@ public class BoolDatum extends Datum {
 	 */
 	@Override
 	public long asLong() {
-		return val == true ? 1 : 0;
+		return val ? 1 : 0;
 	}
 
 	/* (non-Javadoc)
@@ -55,7 +67,7 @@ public class BoolDatum extends Datum {
 	 */
 	@Override
 	public byte asByte() {
-		return (byte) (val == true ? 0x01 : 0x00);
+		return (byte) (val ? 0x01 : 0x00);
 	}
 
 	/* (non-Javadoc)
@@ -63,9 +75,9 @@ public class BoolDatum extends Datum {
 	 */
 	@Override
 	public byte[] asByteArray() {
-	  ByteBuffer bb = ByteBuffer.allocate(1);
-	  bb.put(asByte());
-	  return bb.array();
+	  byte [] bytes = new byte[1];
+    bytes[0] = asByte();
+	  return bytes;
 	}
 
 	/* (non-Javadoc)
@@ -73,7 +85,7 @@ public class BoolDatum extends Datum {
 	 */
 	@Override
 	public float asFloat() {
-		return val == true ? 1 : 0;
+		return val ? 1 : 0;
 	}
 
 	/* (non-Javadoc)
@@ -81,7 +93,7 @@ public class BoolDatum extends Datum {
 	 */
 	@Override
 	public double asDouble() {
-		return val == true ? 1 : 0;
+		return val ? 1 : 0;
 	}
 
 	/* (non-Javadoc)
@@ -89,7 +101,7 @@ public class BoolDatum extends Datum {
 	 */
 	@Override
 	public String asChars() {
-		return val == true ? "true" : "false";
+		return val ? "true" : "false";
 	}
 	
 	public String toJSON() {
@@ -103,7 +115,7 @@ public class BoolDatum extends Datum {
   
   @Override
   public int hashCode() {
-    return val == true ? 1 : 0;
+    return val ? 7907 : 0; // 7907 is one of the prime numbers
   }
   
   @Override
@@ -130,9 +142,9 @@ public class BoolDatum extends Datum {
   public int compareTo(Datum datum) {
     switch (datum.type()) {
     case BOOLEAN:
-      if (val == true && datum.asBool() == false) {
+      if (val && !datum.asBool()) {
         return -1;
-      } else if (val == false && datum.asBool() == true) {
+      } else if (val && datum.asBool()) {
         return 1;
       } else {
         return 0;

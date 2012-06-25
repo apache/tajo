@@ -4,11 +4,8 @@
 package nta.datum;
 
 import com.google.gson.annotations.Expose;
-import nta.datum.exception.InvalidCastException;
 import nta.datum.exception.InvalidOperationException;
 import nta.datum.json.GsonCreator;
-
-import java.nio.ByteBuffer;
 
 /**
  * @author Hyunsik Choi
@@ -25,6 +22,10 @@ public class CharDatum extends Datum {
 		this();
 		this.val = (char)val;
 	}
+
+  public CharDatum(byte [] bytes) {
+    this(bytes[0]);
+  }
 
 	public CharDatum(char val) {
 	  this();
@@ -53,9 +54,9 @@ public class CharDatum extends Datum {
 
   @Override
 	public byte[] asByteArray() {
-		ByteBuffer bb = ByteBuffer.allocate(1);
-		bb.putChar(val);
-		return bb.array();
+		byte [] bytes = new byte[1];
+    bytes[0] = (byte) val;
+		return bytes;
 	}
 
   @Override

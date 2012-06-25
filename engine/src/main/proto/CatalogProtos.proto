@@ -143,6 +143,6 @@ message ColumnStatProto {
     required ColumnProto column = 1;
     optional int64 numDistVal = 2;
     optional int64 numNulls = 3;
-    optional int64 minValue = 4;
-    optional int64 maxValue = 5;
+    optional bytes minValue = 4;
+    optional bytes maxValue = 5;
 }

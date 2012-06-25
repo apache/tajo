@@ -10,6 +10,7 @@ import nta.catalog.Column;
 import nta.catalog.proto.CatalogProtos;
 import nta.catalog.statistics.ColumnStat;
 import nta.catalog.statistics.TableStat;
+import nta.datum.DatumFactory;
 import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.QueryIdFactory;
@@ -102,8 +103,8 @@ public class MockupQueryUnitScheduler {
       ColumnStat cs1 = new ColumnStat(new Column("test", CatalogProtos.DataType.LONG));
       cs1.setNumDistVals(1);
       cs1.setNumNulls(2);
-      cs1.setMinValue(5);
-      cs1.setMaxValue(100);
+      cs1.setMinValue(DatumFactory.createLong(5));
+      cs1.setMaxValue(DatumFactory.createLong(100));
       statSet.addColumnStat(cs1);
       //statSet.setAvgRows(3);
       statSet.setNumBlocks(4);

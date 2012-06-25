@@ -4,6 +4,8 @@ import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos;
 import nta.datum.Datum;
 import nta.datum.DatumType;
+import nta.storage.Tuple;
+import nta.storage.VTuple;
 
 /**
  * This class is not thread-safe.
@@ -12,41 +14,34 @@ import nta.datum.DatumType;
  */
 public class TableStatistics {
   private Schema schema;
-  private long [] minValues;
-  private long [] maxValues;
+  private Tuple minValues;
+  private Tuple maxValues;
   private long [] numNulls;
   private long numRows = 0;
   private long numBytes = 0;
 
 
-  private boolean [] numericFields;
+  private boolean [] comparable;
 
   public TableStatistics(Schema schema) {
     this.schema = schema;
-    minValues = new long[schema.getColumnNum()];
-    maxValues = new long[schema.getColumnNum()];
-    for (int i = 0; i < schema.getColumnNum(); i++) {
+    minValues = new VTuple(schema.getColumnNum());
+    maxValues = new VTuple(schema.getColumnNum());
+    /*for (int i = 0; i < schema.getColumnNum(); i++) {
       minValues[i] = Long.MAX_VALUE;
       maxValues[i] = Long.MIN_VALUE;
-    }
+    }*/
 
     numNulls = new long[schema.getColumnNum()];
-    numericFields = new boolean[schema.getColumnNum()];
+    comparable = new boolean[schema.getColumnNum()];
 
     CatalogProtos.DataType type;
     for (int i = 0; i < schema.getColumnNum(); i++) {
       type = schema.getColumn(i).getDataType();
-      if (type == CatalogProtos.DataType.CHAR ||
-          type == CatalogProtos.DataType.BYTE ||
-          type == CatalogProtos.DataType.SHORT ||
-          type == CatalogProtos.DataType.INT ||
-          type == CatalogProtos.DataType.LONG ||
-          type == CatalogProtos.DataType.FLOAT ||
-          type == CatalogProtos.DataType.DOUBLE ||
-          type == CatalogProtos.DataType.STRING) {
-        numericFields[i] = true;
+      if (type == CatalogProtos.DataType.ARRAY) {
+        comparable[i] = false;
       } else {
-        numericFields[i] = false;
+        comparable[i] = true;
       }
     }
   }
@@ -74,25 +69,18 @@ public class TableStatistics {
   public void analyzeField(int idx, Datum datum) {
     if (datum.type() == DatumType.NULL) {
       numNulls[idx]++;
+      return;
     }
 
     if (datum.type() != DatumType.ARRAY) {
-      if (numericFields[idx]) {
-        // TODO - it is ad-hoc way. It should be improved
-        if (datum.type() == DatumType.STRING) {
-          if (maxValues[idx] < datum.asChars().charAt(0)) {
-            maxValues[idx] = datum.asChars().charAt(0);
-          }
-          if (minValues[idx] > datum.asChars().charAt(0)) {
-            minValues[idx] = datum.asChars().charAt(0);
-          }
-        } else {
-          if (maxValues[idx] < datum.asLong()) {
-            maxValues[idx] = datum.asLong();
-          }
-          if (minValues[idx] > datum.asLong()) {
-            minValues[idx] = datum.asLong();
-          }
+      if (comparable[idx]) {
+        if (!maxValues.contains(idx) ||
+            maxValues.get(idx).compareTo(datum) < 0) {
+          maxValues.put(idx, datum);
+        }
+        if (!minValues.contains(idx) ||
+            minValues.get(idx).compareTo(datum) > 0) {
+          minValues.put(idx, datum);
         }
       }
     }
@@ -105,8 +93,8 @@ public class TableStatistics {
     for (int i = 0; i < schema.getColumnNum(); i++) {
       columnStat = new ColumnStat(schema.getColumn(i));
       columnStat.setNumNulls(numNulls[i]);
-      columnStat.setMinValue(minValues[i]);
-      columnStat.setMaxValue(maxValues[i]);
+      columnStat.setMinValue(minValues.get(i));
+      columnStat.setMaxValue(maxValues.get(i));
       stat.addColumnStat(columnStat);
     }
 

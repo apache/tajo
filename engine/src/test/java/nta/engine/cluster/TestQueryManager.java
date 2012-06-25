@@ -98,9 +98,11 @@ public class TestQueryManager {
       assertEquals(QueryStatus.FINISHED, unit.getInProgressStatus().getStatus());
       stats.add(unit.getStats());
     }
-    TableStat stat = StatisticsUtil.aggregate(stats);
-    assertEquals(5, stat.getColumnStats().get(0).getMinValue().longValue());
-    assertEquals(100, stat.getColumnStats().get(0).getMaxValue().longValue());
+    TableStat stat = null;
+    stat = StatisticsUtil.aggregate(stats);
+
+    assertEquals(5, stat.getColumnStats().get(0).getMinValue().asLong());
+    assertEquals(100, stat.getColumnStats().get(0).getMaxValue().asLong());
     assertEquals(3, stat.getColumnStats().get(0).getNumDistValues().longValue());
     assertEquals(6, stat.getColumnStats().get(0).getNumNulls().longValue());
     //assertEquals(6l, statSet.getAvgRows().longValue());

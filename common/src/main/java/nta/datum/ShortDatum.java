@@ -9,12 +9,22 @@ import nta.datum.json.GsonCreator;
 
 public class ShortDatum extends NumericDatum {
   private static final int size = 2;  
-  @Expose private int val;
-	
+  @Expose private short val;
+
+  public ShortDatum() {
+    super(DatumType.SHORT);
+  }
+
 	public ShortDatum(short val) {
-		super(DatumType.SHORT);
+		this();
 		this.val = val;		
 	}
+
+  public ShortDatum(byte [] bytes) {
+    this();
+    ByteBuffer bb = ByteBuffer.wrap(bytes);
+    this.val = bb.getShort();
+  }
 	
 	@Override
 	public short asShort() {	
@@ -33,8 +43,8 @@ public class ShortDatum extends NumericDatum {
 
 	@Override
 	public byte [] asByteArray() {
-		ByteBuffer bb = ByteBuffer.allocate(4);
-		bb.putInt(val);
+		ByteBuffer bb = ByteBuffer.allocate(2);
+		bb.putShort(val);
 		return bb.array();
 	}
 
@@ -97,74 +107,50 @@ public class ShortDatum extends NumericDatum {
   }
 
   @Override
-  public BoolDatum lessThan(Datum datum) {
+  public int compareTo(Datum datum) {
     switch (datum.type()) {
-    case SHORT:
-      return DatumFactory.createBool(val < datum.asShort());
-    case INT:
-      return DatumFactory.createBool(val < datum.asInt());
-    case LONG:
-      return DatumFactory.createBool(val < datum.asLong());
-    case FLOAT:
-      return DatumFactory.createBool(val < datum.asFloat());
-    case DOUBLE:
-      return DatumFactory.createBool(val < datum.asDouble());
-    default:
-      throw new InvalidOperationException();
-    }
-  }
-
-  @Override
-  public BoolDatum lessThanEqual(Datum datum) {
-    switch (datum.type()) {
-    case SHORT:
-      return DatumFactory.createBool(val <= datum.asShort());
-    case INT:
-      return DatumFactory.createBool(val <= datum.asInt());
-    case LONG:
-      return DatumFactory.createBool(val <= datum.asLong());
-    case FLOAT:
-      return DatumFactory.createBool(val <= datum.asFloat());
-    case DOUBLE:
-      return DatumFactory.createBool(val <= datum.asDouble());
-    default:
-      throw new InvalidOperationException(datum.toString());
-    }
-  }
-
-  @Override
-  public BoolDatum greaterThan(Datum datum) {
-    switch (datum.type()) {
-    case SHORT:
-      return DatumFactory.createBool(val > datum.asShort());
-    case INT:
-      return DatumFactory.createBool(val > datum.asInt());
-    case LONG:
-      return DatumFactory.createBool(val > datum.asLong());
-    case FLOAT:
-      return DatumFactory.createBool(val > datum.asFloat());
-    case DOUBLE:
-      return DatumFactory.createBool(val > datum.asDouble());
-    default:
-      throw new InvalidOperationException(datum.type());
-    }
-  }
-
-  @Override
-  public BoolDatum greaterThanEqual(Datum datum) {
-    switch (datum.type()) {
-    case SHORT:
-      return DatumFactory.createBool(val >= datum.asShort());
-    case INT:
-      return DatumFactory.createBool(val >= datum.asInt());
-    case LONG:
-      return DatumFactory.createBool(val >= datum.asLong());
-    case FLOAT:
-      return DatumFactory.createBool(val >= datum.asFloat());
-    case DOUBLE:
-      return DatumFactory.createBool(val >= datum.asDouble());
-    default:
-      throw new InvalidOperationException();
+      case SHORT:
+        if (val < datum.asShort()) {
+          return -1;
+        } else if (datum.asShort() < val) {
+          return 1;
+        } else {
+          return 0;
+        }
+      case INT:
+        if (val < datum.asInt()) {
+          return -1;
+        } else if (datum.asInt() < val) {
+          return 1;
+        } else {
+          return 0;
+        }
+      case LONG:
+        if (val < datum.asLong()) {
+          return -1;
+        } else if (datum.asLong() < val) {
+          return 1;
+        } else {
+          return 0;
+        }
+      case FLOAT:
+        if (val < datum.asFloat()) {
+          return -1;
+        } else if (datum.asFloat() < val) {
+          return 1;
+        } else {
+          return 0;
+        }
+      case DOUBLE:
+        if (val < datum.asDouble()) {
+          return -1;
+        } else if (datum.asDouble() < val) {
+          return 1;
+        } else {
+          return 0;
+        }
+      default:
+        throw new InvalidOperationException(datum.type());
     }
   }
 
@@ -260,6 +246,6 @@ public class ShortDatum extends NumericDatum {
 
   @Override
   public void inverseSign() {
-    this.val = -val;
+    this.val = (short) -val;
   }
 }

@@ -28,6 +28,12 @@ public class LongDatum extends NumericDatum {
 		this.val = val;
 	}
 
+  public LongDatum(byte [] bytes) {
+    this();
+    ByteBuffer bb = ByteBuffer.wrap(bytes);
+    val = bb.getLong();
+  }
+
   @Override
 	public boolean asBool() {
 		throw new InvalidCastException();
@@ -103,90 +109,66 @@ public class LongDatum extends NumericDatum {
   @Override
   public BoolDatum equalsTo(Datum datum) {
     switch (datum.type()) {
-    case SHORT:
-      return DatumFactory.createBool(val == datum.asShort());
-    case INT:
-      return DatumFactory.createBool(val == datum.asInt());
-    case LONG:
-      return DatumFactory.createBool(val == datum.asLong());
-    case FLOAT:
-      return DatumFactory.createBool(val == datum.asFloat());
-    case DOUBLE:
-      return DatumFactory.createBool(val == datum.asDouble());
-    default:
-      throw new InvalidOperationException(datum.type());
+      case SHORT:
+        return DatumFactory.createBool(val == datum.asShort());
+      case INT:
+        return DatumFactory.createBool(val == datum.asInt());
+      case LONG:
+        return DatumFactory.createBool(val == datum.asLong());
+      case FLOAT:
+        return DatumFactory.createBool(val == datum.asFloat());
+      case DOUBLE:
+        return DatumFactory.createBool(val == datum.asDouble());
+      default:
+        throw new InvalidOperationException(datum.type());
     }
   }
 
   @Override
-  public BoolDatum lessThan(Datum datum) {
+  public int compareTo(Datum datum) {
     switch (datum.type()) {
-    case SHORT:
-      return DatumFactory.createBool(val < datum.asShort());
-    case INT:
-      return DatumFactory.createBool(val < datum.asInt());
-    case LONG:
-      return DatumFactory.createBool(val < datum.asLong());
-    case FLOAT:
-      return DatumFactory.createBool(val < datum.asFloat());
-    case DOUBLE:
-      return DatumFactory.createBool(val < datum.asDouble());
-    default:
-      throw new InvalidOperationException();
-    }
-  }
-
-  @Override
-  public BoolDatum lessThanEqual(Datum datum) {
-    switch (datum.type()) {
-    case SHORT:
-      return DatumFactory.createBool(val <= datum.asShort());
-    case INT:
-      return DatumFactory.createBool(val <= datum.asInt());
-    case LONG:
-      return DatumFactory.createBool(val <= datum.asLong());
-    case FLOAT:
-      return DatumFactory.createBool(val <= datum.asFloat());
-    case DOUBLE:
-      return DatumFactory.createBool(val <= datum.asDouble());
-    default:
-      throw new InvalidOperationException(datum.toString());
-    }
-  }
-
-  @Override
-  public BoolDatum greaterThan(Datum datum) {
-    switch (datum.type()) {
-    case SHORT:
-      return DatumFactory.createBool(val > datum.asShort());
-    case INT:
-      return DatumFactory.createBool(val > datum.asInt());
-    case LONG:
-      return DatumFactory.createBool(val > datum.asLong());
-    case FLOAT:
-      return DatumFactory.createBool(val > datum.asFloat());
-    case DOUBLE:
-      return DatumFactory.createBool(val > datum.asDouble());
-    default:
-      throw new InvalidOperationException(datum.type());
-    }
-  }
-
-  @Override
-  public BoolDatum greaterThanEqual(Datum datum) {
-    switch (datum.type()) {
-    case SHORT:
-      return DatumFactory.createBool(val >= datum.asShort());
-    case INT:
-      return DatumFactory.createBool(val >= datum.asInt());
-    case LONG:
-      return DatumFactory.createBool(val >= datum.asLong());
-    case FLOAT:
-      return DatumFactory.createBool(val >= datum.asFloat());
-    case DOUBLE:
-      return DatumFactory.createBool(val >= datum.asDouble());
-    default:
-      throw new InvalidOperationException();
+      case SHORT:
+        if (val < datum.asShort()) {
+          return -1;
+        } else if (datum.asShort() < val) {
+          return 1;
+        } else {
+          return 0;
+        }
+      case INT:
+        if (val < datum.asInt()) {
+          return -1;
+        } else if (datum.asInt() < val) {
+          return 1;
+        } else {
+          return 0;
+        }
+      case LONG:
+        if (val < datum.asLong()) {
+          return -1;
+        } else if (datum.asLong() < val) {
+          return 1;
+        } else {
+          return 0;
+        }
+      case FLOAT:
+        if (val < datum.asFloat()) {
+          return -1;
+        } else if (datum.asFloat() < val) {
+          return 1;
+        } else {
+          return 0;
+        }
+      case DOUBLE:
+        if (val < datum.asDouble()) {
+          return -1;
+        } else if (datum.asDouble() < val) {
+          return 1;
+        } else {
+          return 0;
+        }
+      default:
+        throw new InvalidOperationException(datum.type());
     }
   }
 

@@ -16,10 +16,6 @@ import nta.engine.json.GsonCreator;
  */
 public class ConstEval extends EvalNode implements Comparable<ConstEval>, Cloneable {
 	@Expose Datum datum = null;
-
-	public ConstEval() {
-		super(Type.CONST);
-	}
 	
 	public ConstEval(Datum datum) {
 		super(Type.CONST);

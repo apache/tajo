@@ -7,10 +7,14 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+import com.google.protobuf.ByteString;
 import nta.catalog.Column;
 import nta.catalog.proto.CatalogProtos.ColumnStatProto;
 import nta.catalog.proto.CatalogProtos.ColumnStatProtoOrBuilder;
 import nta.common.ProtoObject;
+import nta.datum.Datum;
+import nta.engine.utils.TUtil;
+import nta.engine.utils.TupleUtil;
 
 /**
  * @author Hyunsik Choi
@@ -23,16 +27,14 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
   @Expose private Column column = null;
   @Expose private Long numDistVals = null;
   @Expose private Long numNulls = null;
-  @Expose private Long minValue = null;
-  @Expose private Long maxValue = null;
+  @Expose private Datum minValue = null;
+  @Expose private Datum maxValue = null;
 
   public ColumnStat(Column column) {
     builder = ColumnStatProto.newBuilder();
     this.column = column;
     numDistVals = 0l;
     numNulls = 0l;
-    minValue = Long.MAX_VALUE;
-    maxValue = Long.MIN_VALUE;
   }
 
   public ColumnStat(ColumnStatProto proto) {
@@ -71,7 +73,11 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
     this.numDistVals = numDistVals;
   }
 
-  public Long getMinValue() {
+  public boolean minIsNotSet() {
+    return minValue == null && (!proto.hasMinValue());
+  }
+
+  public Datum getMinValue() {
     ColumnStatProtoOrBuilder p = viaProto ? proto : builder;
     if (minValue != null) {
       return this.minValue;
@@ -79,17 +85,21 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
     if (!p.hasMinValue()) {
       return null;
     }
-    this.minValue = p.getMinValue();
+    this.minValue = TupleUtil.createFromBytes(getColumn().getDataType(), p.getMinValue().toByteArray());
 
     return this.minValue;
   }
 
-  public void setMinValue(long minValue) {
+  public void setMinValue(Datum minValue) {
     setModified();
     this.minValue = minValue;
   }
 
-  public Long getMaxValue() {
+  public boolean maxIsNotSet() {
+    return maxValue == null && (!proto.hasMaxValue());
+  }
+
+  public Datum getMaxValue() {
     ColumnStatProtoOrBuilder p = viaProto ? proto : builder;
     if (maxValue != null) {
       return this.maxValue;
@@ -97,12 +107,12 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
     if (!p.hasMaxValue()) {
       return null;
     }
-    this.maxValue = p.getMaxValue();
+    this.maxValue = TupleUtil.createFromBytes(column.getDataType(), p.getMaxValue().toByteArray());
 
     return this.maxValue;
   }
 
-  public void setMaxValue(long maxValue) {
+  public void setMaxValue(Datum maxValue) {
     setModified();
     this.maxValue = maxValue;
   }
@@ -138,8 +148,8 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
       return getColumn().equals(other.getColumn())
           && getNumDistValues().equals(other.getNumDistValues())
           && getNumNulls().equals(other.getNumNulls())
-          && getMinValue().equals(other.getMinValue())
-          && getMaxValue().equals(other.getMaxValue());
+          && TUtil.checkEquals(getMinValue(), other.getMinValue())
+          && TUtil.checkEquals(getMaxValue(), other.getMaxValue());
     } else {
       return false;
     }
@@ -181,10 +191,10 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
       this.numNulls = p.getNumNulls();
     }
     if (this.minValue == null && p.hasMinValue()) {
-      this.minValue = p.getMinValue();
+      this.minValue = TupleUtil.createFromBytes(column.getDataType(), p.getMinValue().toByteArray());
     }
     if (this.maxValue == null && p.hasMaxValue()) {
-      this.maxValue = p.getMaxValue();
+      this.maxValue = TupleUtil.createFromBytes(column.getDataType(), p.getMaxValue().toByteArray());
     }
   }
 
@@ -213,10 +223,10 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
       builder.setNumNulls(this.numNulls);
     }
     if (this.minValue != null) {
-      builder.setMinValue(this.minValue);
+      builder.setMinValue(ByteString.copyFrom(this.minValue.asByteArray()));
     }
     if (this.maxValue != null) {
-      builder.setMaxValue(this.maxValue);
+      builder.setMaxValue(ByteString.copyFrom(this.maxValue.asByteArray()));
     }
   }
 }

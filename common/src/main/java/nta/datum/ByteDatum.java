@@ -3,8 +3,6 @@
  */
 package nta.datum;
 
-import java.nio.ByteBuffer;
-
 import com.google.gson.annotations.Expose;
 
 import nta.datum.exception.InvalidOperationException;
@@ -26,6 +24,10 @@ public class ByteDatum extends Datum {
 		this();
 		this.val = val;
 	}
+
+  public ByteDatum(byte [] bytes) {
+    this(bytes[0]);
+  }
 	
 	public ByteDatum(char val) {
 	  this();
@@ -54,9 +56,9 @@ public class ByteDatum extends Datum {
 
   @Override
 	public byte[] asByteArray() {
-		ByteBuffer bb = ByteBuffer.allocate(1);
-		bb.put(val);
-		return bb.array();
+    byte [] bytes = new byte[1];
+    bytes[0] = this.val;
+		return bytes;
 	}
 
   @Override

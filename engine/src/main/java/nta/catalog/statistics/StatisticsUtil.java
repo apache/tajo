@@ -37,10 +37,17 @@ public class StatisticsUtil {
     for (TableStat ts : tableStats) {
       // aggregate column stats for each table
       for (int i = 0; i < ts.getColumnStats().size(); i++) {
-        css[i].setNumDistVals(css[i].getNumDistValues() + ts.getColumnStats().get(i).getNumDistValues());
-        css[i].setNumNulls(css[i].getNumNulls() + ts.getColumnStats().get(i).getNumNulls());
-        css[i].setMinValue(Math.min(css[i].getMinValue(), ts.getColumnStats().get(i).getMinValue()));
-        css[i].setMaxValue(Math.max(css[i].getMaxValue(), ts.getColumnStats().get(i).getMaxValue()));
+        ColumnStat cs = ts.getColumnStats().get(i);
+        css[i].setNumDistVals(css[i].getNumDistValues() + cs.getNumDistValues());
+        css[i].setNumNulls(css[i].getNumNulls() + cs.getNumNulls());
+        if (!cs.minIsNotSet() && (css[i].minIsNotSet() ||
+            css[i].getMinValue().compareTo(cs.getMinValue()) > 0)) {
+          css[i].setMinValue(cs.getMinValue());
+        }
+        if (!cs.maxIsNotSet() && (css[i].maxIsNotSet() ||
+            css[i].getMaxValue().compareTo(cs.getMaxValue()) < 0)) {
+          css[i].setMaxValue(ts.getColumnStats().get(i).getMaxValue());
+        }
       }
 
       // aggregate table stats for each table

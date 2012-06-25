@@ -25,6 +25,11 @@ public class StringDatum extends Datum {
 		this.val = val;
 	}
 
+  public StringDatum(byte [] bytes) {
+    this();
+    this.val = new String(bytes);
+  }
+
 	@Override
 	public boolean asBool() {	
 		throw new InvalidCastException();
