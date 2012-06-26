@@ -122,6 +122,7 @@
                 <argument>src/main/proto/MasterWorkerProtos.proto</argument>
                 <argument>src/main/proto/ClientServiceProtos.proto</argument>
                 <argument>src/main/proto/CatalogProtos.proto</argument>
+                <argument>src/main/proto/PeriodicQueryProtos.proto</argument>
               </arguments>
             </configuration>
             <goals>
