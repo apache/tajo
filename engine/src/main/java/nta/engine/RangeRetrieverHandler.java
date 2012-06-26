@@ -16,7 +16,6 @@ import tajo.worker.dataserver.retriever.RetrieverHandler;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.util.Map;
 
 /**
@@ -56,11 +55,11 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     // nothing to verify the file because AdvancedDataRetriever checks
     // its validity of the file.
     File data = new File(this.file, "data/data");
-    byte [] startBytes = Base64.decodeBase64(URLDecoder.decode(kvs.get("start"), "UTF-8"));
+    byte [] startBytes = Base64.decodeBase64(kvs.get("start"));
     Tuple start = TupleUtil.toTuple(schema, startBytes);
     byte [] endBytes = null;
     Tuple end = null;
-    endBytes = Base64.decodeBase64(URLDecoder.decode(kvs.get("end"), "UTF-8"));
+    endBytes = Base64.decodeBase64(kvs.get("end"));
     end = TupleUtil.toTuple(schema, endBytes);
     boolean last = kvs.containsKey("final");
 

@@ -721,7 +721,6 @@ public class GlobalPlanner {
             for (Partition p : qu.getPartitions()) {
               for (String query : queries) {
                 uriList.add(new URI(p.getFileName() + "&" + query));
-//                System.out.println("Partition: " + uriList.get(uriList.size() - 1));
               }
             }
           }
@@ -1085,7 +1084,7 @@ public class GlobalPlanner {
     TupleRange range;
     Set<URI> uris;
     for (URI uri : uriList) {
-      range = TupleUtil.queryToRange(schema, uri.getQuery());
+      range = TupleUtil.queryToRange(schema, uri.getQuery()); // URI.getQuery() returns a url-decoded query string.
       if (map.containsKey(range)) {
         uris = map.get(range);
         uris.add(uri);

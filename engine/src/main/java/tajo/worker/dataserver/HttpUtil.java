@@ -4,7 +4,6 @@ import com.google.common.collect.Maps;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Map;
 
@@ -16,6 +15,13 @@ public class HttpUtil {
     return getParamsFromQuery(uri.getQuery());
   }
 
+  /**
+   * It parses a query string into key/value pairs
+   *
+   * @param queryString decoded query string
+   * @return key/value pairs parsed from a given query string
+   * @throws UnsupportedEncodingException
+   */
   public static Map<String, String> getParamsFromQuery(String queryString) throws UnsupportedEncodingException {
     String [] queries = queryString.split("&");
 
@@ -23,7 +29,7 @@ public class HttpUtil {
     String [] param;
     for (String q : queries) {
       param = q.split("=");
-      params.put(URLDecoder.decode(param[0], "UTF-8"), URLDecoder.decode(param[1], "UTF-8"));
+      params.put(param[0], param[1]);
     }
 
     return params;

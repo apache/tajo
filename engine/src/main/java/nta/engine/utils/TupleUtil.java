@@ -17,7 +17,6 @@ import org.apache.commons.logging.LogFactory;
 import tajo.worker.dataserver.HttpUtil;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
@@ -398,20 +397,16 @@ public class TupleUtil {
     String startBase64 = new String(Base64.encodeBase64(startBytes));
     String endBase64 = new String(Base64.encodeBase64(endBytes));
 
-    String startURLEncoded = URLEncoder.encode(startBase64, "UTF-8");
-    String endURLEncoded = URLEncoder.encode(endBase64, "UTF-8");
-
       sb.append("start=")
-        .append(startURLEncoded)
+        .append(startBase64)
         .append("&")
         .append("end=")
-        .append(endURLEncoded);
+        .append(endBase64);
 
     if (last) {
       sb.append("&final=true");
     }
 
-    LOG.info("rangeToQuery: " + sb.toString());
     return sb.toString();
   }
 

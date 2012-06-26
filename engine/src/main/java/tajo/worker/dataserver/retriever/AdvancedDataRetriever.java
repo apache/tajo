@@ -53,7 +53,7 @@ public class AdvancedDataRetriever implements DataRetriever {
     if (startIdx < 0) {
       throw new IllegalArgumentException("Wrong request: " + request.getUri());
     }
-    
+
     String query = request.getUri().substring(startIdx + 1);
     LOG.info("QUERY: " + query);
 
