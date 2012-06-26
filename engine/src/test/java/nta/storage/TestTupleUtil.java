@@ -158,4 +158,26 @@ public class TestTupleUtil {
     range = TupleUtil.queryToRange(schema, query);
     assertEquals(expected, range);
   }
+
+  @Test
+  /**
+   * It verifies NTA-805.
+   */
+  public void testRangeToQueryHeavyTest() throws UnsupportedEncodingException {
+    Schema schema = new Schema();
+    schema.addColumn("c_custkey", DataType.INT);
+    Tuple s = new VTuple(1);
+    s.put(0, DatumFactory.createInt(4));
+    Tuple e = new VTuple(1);
+    e.put(0, DatumFactory.createInt(149995));
+    TupleRange expected = new TupleRange(schema, s, e);
+    TupleRange [] ranges = TupleUtil.getPartitions(schema, 31, expected);
+
+    String query;
+    for (TupleRange range : ranges) {
+      query = TupleUtil.rangeToQuery(schema, range, false);
+      TupleRange result = TupleUtil.queryToRange(schema, query);
+      assertEquals(range, result);
+    }
+  }
 }

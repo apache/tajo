@@ -12,16 +12,20 @@ import nta.storage.Tuple;
 import nta.storage.TupleRange;
 import nta.storage.VTuple;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import tajo.worker.dataserver.HttpUtil;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
 public class TupleUtil {
+  /** class logger **/
+  private static final Log LOG = LogFactory.getLog(TupleUtil.class);
+
   public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
     int[] targetIds = new int[outSchema.getColumnNum()];
     int i = 0;
@@ -276,6 +280,7 @@ public class TupleUtil {
             rangeString = 1;
           }
           term[i] = DatumFactory.createString(((char)rangeString) + "");
+          break;
         case IPv4:
           throw new UnsupportedOperationException();
         case BYTES:
@@ -363,7 +368,15 @@ public class TupleUtil {
             prevValues[i] = DatumFactory.createDouble(endDouble);
             break;
           case STRING:
-            throw new UnsupportedOperationException();
+            String endString = ((char)(prevValues[i].asChars().charAt(0) + term[i].asChars().charAt(0))) + "";
+            if (endString.charAt(0) > end.get(i).asChars().charAt(0)) {
+              eTuple.put(i, end.get(i));
+            } else {
+              // TODO - to consider overflow
+              eTuple.put(i, DatumFactory.createString(endString));
+            }
+            prevValues[i] = DatumFactory.createString(endString);
+            break;
           case IPv4:
             throw new UnsupportedOperationException();
           case BYTES:
@@ -380,16 +393,25 @@ public class TupleUtil {
 
   public static String rangeToQuery(Schema schema, TupleRange range, boolean last) throws UnsupportedEncodingException {
     StringBuilder sb = new StringBuilder();
+    byte [] startBytes = TupleUtil.toBytes(schema, range.getStart());
+    byte [] endBytes = TupleUtil.toBytes(schema, range.getEnd());
+    String startBase64 = new String(Base64.encodeBase64(startBytes));
+    String endBase64 = new String(Base64.encodeBase64(endBytes));
+
+    String startURLEncoded = URLEncoder.encode(startBase64, "UTF-8");
+    String endURLEncoded = URLEncoder.encode(endBase64, "UTF-8");
+
       sb.append("start=")
-        .append(URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(schema, range.getStart()))), "UTF-8"))
+        .append(startURLEncoded)
         .append("&")
         .append("end=")
-        .append(URLEncoder.encode(new String(Base64.encodeBase64(TupleUtil.toBytes(schema, range.getEnd()))), "UTF-8"));
+        .append(endURLEncoded);
 
     if (last) {
       sb.append("&final=true");
     }
 
+    LOG.info("rangeToQuery: " + sb.toString());
     return sb.toString();
   }
 
@@ -404,10 +426,10 @@ public class TupleUtil {
 
   public static TupleRange queryToRange(Schema schema, String query) throws UnsupportedEncodingException {
     Map<String,String> params = HttpUtil.getParamsFromQuery(query);
-
-    byte [] startBytes = Base64.decodeBase64(URLDecoder.decode(params.get("start"), "UTF-8"));
-    byte [] endBytes = Base64.decodeBase64(URLDecoder.decode(params.get("end"), "UTF-8"));
-
+    String startUrlDecoded = params.get("start");
+    String endUrlDecoded = params.get("end");
+    byte [] startBytes = Base64.decodeBase64(startUrlDecoded);
+    byte [] endBytes = Base64.decodeBase64(endUrlDecoded);
     return new TupleRange(schema, TupleUtil.toTuple(schema, startBytes), TupleUtil.toTuple(schema, endBytes));
   }
 

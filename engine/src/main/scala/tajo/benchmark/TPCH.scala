@@ -26,8 +26,9 @@ class TPCH extends BenchmarkSet {
       .addColumn("l_extendedprice", DataType.FLOAT) // 5
       .addColumn("l_discount", DataType.FLOAT) // 6
       .addColumn("l_tax", DataType.FLOAT) // 7
-      .addColumn("l_returnflag", DataType.CHAR) // 8
-      .addColumn("l_linestatus", DataType.CHAR) // 9
+      // TODO - This is temporal solution. 8 and 9 are actually Char type.
+      .addColumn("l_returnflag", DataType.STRING) // 8
+      .addColumn("l_linestatus", DataType.STRING) // 9
       // TODO - This is temporal solution. 10,11, and 12 are actually Date type.
       .addColumn("l_shipdate", DataType.STRING) // 10
       .addColumn("l_commitdate", DataType.STRING) // 11
@@ -39,6 +40,7 @@ class TPCH extends BenchmarkSet {
     schemas += ("customer" -> (new Schema)
       .addColumn("c_custkey", DataType.INT)
       .addColumn("c_name", DataType.STRING)
+      .addColumn("c_address", DataType.STRING)
       .addColumn("c_nationkey", DataType.INT)
       .addColumn("c_phone", DataType.STRING)
       .addColumn("c_acctbal", DataType.FLOAT)
