@@ -1,6 +1,9 @@
 package nta.catalog.statistics;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
 
 import java.util.List;
 
@@ -8,6 +11,8 @@ import java.util.List;
  * @author Hyunsik Choi
  */
 public class StatisticsUtil {
+  private static final Log LOG = LogFactory.getLog(StatisticsUtil.class);
+
   public static StatSet aggregate(List<StatSet> statSets) {
     StatSet aggregated = new StatSet();
 
@@ -38,6 +43,10 @@ public class StatisticsUtil {
       // aggregate column stats for each table
       for (int i = 0; i < ts.getColumnStats().size(); i++) {
         ColumnStat cs = ts.getColumnStats().get(i);
+        if (cs == null) {
+          LOG.warn("ERROR: One of column stats is NULL (expected column: " + css[i].getColumn() + ")");
+          continue;
+        }
         css[i].setNumDistVals(css[i].getNumDistValues() + cs.getNumDistValues());
         css[i].setNumNulls(css[i].getNumNulls() + cs.getNumNulls());
         if (!cs.minIsNotSet() && (css[i].minIsNotSet() ||

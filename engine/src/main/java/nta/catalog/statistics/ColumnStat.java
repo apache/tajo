@@ -107,7 +107,7 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
     if (!p.hasMaxValue()) {
       return null;
     }
-    this.maxValue = TupleUtil.createFromBytes(column.getDataType(), p.getMaxValue().toByteArray());
+    this.maxValue = TupleUtil.createFromBytes(getColumn().getDataType(), p.getMaxValue().toByteArray());
 
     return this.maxValue;
   }
@@ -191,10 +191,10 @@ public class ColumnStat implements ProtoObject<ColumnStatProto>, Cloneable {
       this.numNulls = p.getNumNulls();
     }
     if (this.minValue == null && p.hasMinValue()) {
-      this.minValue = TupleUtil.createFromBytes(column.getDataType(), p.getMinValue().toByteArray());
+      this.minValue = TupleUtil.createFromBytes(getColumn().getDataType(), p.getMinValue().toByteArray());
     }
     if (this.maxValue == null && p.hasMaxValue()) {
-      this.maxValue = TupleUtil.createFromBytes(column.getDataType(), p.getMaxValue().toByteArray());
+      this.maxValue = TupleUtil.createFromBytes(getColumn().getDataType(), p.getMaxValue().toByteArray());
     }
   }
 
