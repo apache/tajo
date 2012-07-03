@@ -32,12 +32,10 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
   public static final String LOCALHOST = "localhost";
   public static final int PORT = 9098;
   
-  private static TajoClient tajoClient = null;
+  private TajoClient tajoClient = null;
   private static final String DIRPATH = "timerquery";
-  
   private String workDir = DIRPATH;
   private BufferedReader reader;
-  private File resultFile;
   private BufferedWriter queryWriter;
   private File queryFile;
   private HashMap<String, QueryInfo> queryMap = null;
@@ -77,24 +75,17 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
     this.queryMap = new HashMap<String, QueryInfo>();
     this.taskMap = new HashMap<String, ScheduledExecutorService>();
     
-    /*writer for store resultPath*/
-    resultFile = new File(baseDir + "/resultpath");
-    if(!resultFile.getParentFile().exists()) {
-      resultFile.getParentFile().mkdirs();
-    }
-    if(!resultFile.exists()) {
-      resultFile.createNewFile();
-    }
-    
     /*writer for store new periodic queries*/
     queryFile = new File(baseDir + "/querylist");
     if(!queryFile.exists()) {
+      queryFile.getParentFile().mkdirs();
       queryFile.createNewFile();
     }
     queryWriter = new BufferedWriter(new OutputStreamWriter(
         new FileOutputStream(queryFile , true)));
     
     /*reading queries*/
+    /*query SPLITWORD content SPLITWORD period*/
     reader = new BufferedReader(new InputStreamReader(
         new FileInputStream(baseDir + "/querylist")));
     String query = "";
@@ -124,7 +115,7 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
     Set<String> queries = queryMap.keySet();
     for( String query : queries) {
       long period = queryMap.get(query).getPeriod();
-      QueryTask task = new QueryTask(query ,period );
+      QueryTask task = new QueryTask(query);
       final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
       exec.scheduleAtFixedRate(task, 0, period, TimeUnit.MILLISECONDS );
       this.taskMap.put(query, exec);
@@ -138,7 +129,7 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
         final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
         
         long period = queryMap.get(query).getPeriod();
-        QueryTask task = new QueryTask(query ,period );
+        QueryTask task = new QueryTask(query);
         exec.scheduleAtFixedRate(task, 0, period , TimeUnit.MILLISECONDS);
         this.taskMap.put(query, exec);
         return true;
@@ -151,7 +142,7 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
   private boolean stopQuery(String query) throws Exception {
     if(queryMap.containsKey(query)) {
       if(taskMap.containsKey(query)) {
-        ScheduledExecutorService exec = taskMap.get(query);
+        ScheduledExecutorService exec = taskMap.remove(query);
         exec.shutdown();
         return true;
       }
@@ -180,7 +171,7 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
   private boolean addAndStartNewPeriodicQuery (String query, 
       String content, long period) throws IOException {
     if(addNewPeriodicQuery(query, content, period)) {
-      QueryTask task = new QueryTask(query , period);
+      QueryTask task = new QueryTask(query);
       final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
       exec.scheduleAtFixedRate(task, 0, period , TimeUnit.MILLISECONDS);
       taskMap.put(query, exec);
@@ -209,7 +200,7 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
   
     queryWriter.flush();
     queryWriter.close();
-    
+    System.out.println("Daemon is closed");
   }
   
   public String getPath() {
@@ -220,31 +211,34 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
   
   private class QueryTask implements Runnable {
     private String query;
-    private long period;
-    public QueryTask(String query , long period) {
+    public QueryTask(String query) {
       this.query = query;
-      this.period = period;
     }
     @Override
     public void run() {
+      long startTime;
+      long endTime;
       try {
         //TO-DO : To consider multiple queries store in the same resultpath variable
+        /*path  SPLITWORD  startTime  SPLITWORD endTime*/
         if (tajoClient != null) {
-          String _query = query;
-          if(query.contains("TODAY")) {
-            _query = query.replace("TODAY" , "1318687200");
-          }
-          tajoClient.executeQuery(_query);
+          
+          startTime = System.currentTimeMillis();
+          tajoClient.executeQuery(query);
+          endTime = System.currentTimeMillis();
+          
           String filePath = workDir + "/" + query.hashCode() + ".query";
           BufferedWriter writer = new BufferedWriter(
               new OutputStreamWriter(new FileOutputStream(filePath , true)));
+          
           synchronized(tajoClient){
-          writer.append(tajoClient.getResultPath() + "\n");
+          writer.append(tajoClient.getResultPath() + SPLITWORD + 
+              startTime + SPLITWORD + endTime + "\n");
           writer.flush();
           writer.close();
           }
         }
-        /*resultPath writing phase*/
+
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -252,9 +246,8 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
   }
   
   public void removeFiles(){
-    this.resultFile.delete();
     this.queryFile.delete();
-    this.resultFile.getParentFile().delete();
+    this.queryFile.getParentFile().delete();
   }
   
   public void run() {
@@ -383,6 +376,34 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
       throw new RemoteException(e);
     }
   }
+  @Override
+  public QueryResultInfoResponse getQueryResultInfo(ChooseQueryRequest request) {
+    QueryResultInfoResponse.Builder builder = QueryResultInfoResponse.newBuilder();
+    try {
+      String filePath = workDir + "/" + request.getQuery().hashCode() + ".query";
+      BufferedReader reader = new BufferedReader(
+          new InputStreamReader(new FileInputStream(filePath)));
+      String str;
+      String path = "";
+      while((str = reader.readLine()) != null) {
+        path = str;
+      }
+      String [] info = path.split(PeriodicQueryDaemon.SPLITWORD);
+      builder.setQuery(info[0]);
+      builder.setStartTime(Long.parseLong(info[1]));
+      builder.setEndTime(Long.parseLong(info[2]));
+      return builder.build();
+    }catch (FileNotFoundException ee) { 
+      builder.setQuery("null");
+      builder.setStartTime(-1); //dummy
+      builder.setEndTime(-1);
+      return builder.build();
+    } 
+    catch (Exception e) {
+      throw new RemoteException(e);
+    }
+  }
+  
   
   public class QueryInfo {
     private String query;
@@ -403,7 +424,7 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
       return this.period;
     }
   }
-
+  
   
   public static void main (String [] args) throws Exception {
     InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost" , 9004);

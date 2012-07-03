@@ -47,7 +47,7 @@ public class PeriodicQueryClient {
   public boolean cancelPeriodicQuery(String query) {
     ChooseQueryRequest.Builder builder = ChooseQueryRequest.newBuilder();
     builder.setQuery(query);
-    return service.executePeriodicQuery(builder.build()).getFinished();
+    return service.cancelPeriodicQuery(builder.build()).getFinished();
   }
   
   public List<QueryStatusProto> getQueryList() {
@@ -74,4 +74,10 @@ public class PeriodicQueryClient {
     }
     return new ResultSetImpl(new NtaConf(), path);
   }
+  
+  public QueryResultInfoResponse getQueryResultInfo(String query) {
+    return service.getQueryResultInfo(
+        ChooseQueryRequest.newBuilder().setQuery(query).build());
+  }
+  
 }

@@ -13,5 +13,6 @@ public interface PeriodicQueryService {
   public NullProto cancelAllPeirodicQuery(NullProto request);
   public QueryListResponse getQueryList(NullProto request);
   public ExecuteQueryRespose getQueryResultPath(ChooseQueryRequest request);
-  
+  public QueryResultInfoResponse getQueryResultInfo(ChooseQueryRequest request);
+
 }

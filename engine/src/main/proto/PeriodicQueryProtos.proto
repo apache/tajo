@@ -21,3 +21,9 @@ message ChooseQueryRequest {
 message QueryListResponse {
 	repeated QueryStatusProto query = 1;
 }
+
+message QueryResultInfoResponse {
+	required string query = 1;
+	required int64 startTime = 2;
+	required int64 endTime = 3;
+}

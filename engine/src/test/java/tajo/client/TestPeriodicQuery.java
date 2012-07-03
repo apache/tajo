@@ -59,7 +59,7 @@ public class TestPeriodicQuery {
   @AfterClass
   public static void tearDown() throws IOException {
     daemon.shutdown();
-//    daemon.removeFiles();
+    daemon.removeFiles();
     utility.shutdownMiniCluster();
   }
   @Test
