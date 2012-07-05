@@ -168,7 +168,7 @@ public class TupleUtil {
       }
 
       if (columnCard > 0) {
-        cardinality *= columnCard;
+        cardinality *= columnCard + 1;
       }
     }
 
@@ -272,7 +272,7 @@ public class TupleUtil {
         case STRING:
           char sChars = start.get(i).asChars().charAt(0);
           char eChars = end.get(i).asChars().charAt(0);
-          int rangeString = 0;
+          int rangeString;
           if ((eChars - sChars) > partNum) {
             rangeString = ((eChars - sChars) / partNum);
           } else {

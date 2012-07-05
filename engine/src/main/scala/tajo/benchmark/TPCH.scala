@@ -75,7 +75,7 @@ class TPCH extends BenchmarkSet {
       .addColumn("o_orderstatus", DataType.STRING)
       .addColumn("o_totalprice", DataType.FLOAT)
       // TODO - This is temporal solution. o_orderdate is actually Date type.
-      .addColumn("o_orderdate", DataType.DATE)
+      .addColumn("o_orderdate", DataType.STRING)
       .addColumn("o_orderpriority", DataType.STRING)
       .addColumn("o_clerk", DataType.STRING)
       .addColumn("o_shippriority", DataType.INT)

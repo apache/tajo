@@ -5,6 +5,8 @@ import nta.catalog.proto.CatalogProtos.DataType;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
 import nta.engine.planner.PlannerUtil;
+import nta.engine.planner.RangePartitionAlgorithm;
+import nta.engine.planner.UniformRangePartition;
 import nta.engine.planner.physical.TupleComparator;
 import nta.engine.utils.TupleUtil;
 import org.junit.Test;
@@ -84,8 +86,9 @@ public class TestTupleUtil {
     eTuple.put(5, DatumFactory.createFloat(150));
     eTuple.put(6, DatumFactory.createDouble(170));
 
-    TupleRange [] ranges = TupleUtil.getPartitions(schema, 5, new TupleRange(schema, sTuple, eTuple));
-    assertEquals(5, ranges.length);
+    RangePartitionAlgorithm partitioner = new UniformRangePartition(schema, new TupleRange(schema, sTuple, eTuple));
+    TupleRange [] ranges = partitioner.partition(5);
+    assertTrue(5 <= ranges.length);
     TupleComparator comp = new TupleComparator(schema, PlannerUtil.schemaToSortSpecs(schema));
     TupleRange prev = ranges[0];
     for (int i = 1; i < ranges.length; i++) {
@@ -111,12 +114,12 @@ public class TestTupleUtil {
 
     TupleRange expected = new TupleRange(schema, s, e);
     int card = (int) TupleUtil.computeCardinality(schema, expected);
-    assertEquals(50, card);
+    assertEquals(66, card);
     int partNum = TupleUtil.getPartitions(schema, 5, expected).length;
     assertEquals(5, partNum);
 
-    // TODO - getPartitions should be improved to consider all fields
-    //partNum = TupleUtil.getPartitions(schema, 10, expected).length;
+    // TODO - partition should be improved to consider all fields
+    //partNum = TupleUtil.partition(schema, 10, expected).length;
     //assertEquals(10, partNum);
 
     String query = TupleUtil.rangeToQuery(schema, expected, false);
@@ -172,6 +175,33 @@ public class TestTupleUtil {
     e.put(0, DatumFactory.createInt(149995));
     TupleRange expected = new TupleRange(schema, s, e);
     TupleRange [] ranges = TupleUtil.getPartitions(schema, 31, expected);
+
+    String query;
+    for (TupleRange range : ranges) {
+      query = TupleUtil.rangeToQuery(schema, range, false);
+      TupleRange result = TupleUtil.queryToRange(schema, query);
+      assertEquals(range, result);
+    }
+  }
+
+  @Test
+  /**
+   * It verifies NTA-807
+   */
+  public void testRangeToQueryTest() throws UnsupportedEncodingException {
+    Schema schema = new Schema();
+    schema.addColumn("l_returnflag", DataType.STRING);
+    schema.addColumn("l_linestatus", DataType.STRING);
+    Tuple s = new VTuple(2);
+    s.put(0, DatumFactory.createString("A"));
+    s.put(1, DatumFactory.createString("F"));
+    Tuple e = new VTuple(2);
+    e.put(0, DatumFactory.createString("R"));
+    e.put(1, DatumFactory.createString("O"));
+    TupleRange expected = new TupleRange(schema, s, e);
+
+    RangePartitionAlgorithm partitioner = new UniformRangePartition(schema, expected, true);
+    TupleRange [] ranges = partitioner.partition(31);
 
     String query;
     for (TupleRange range : ranges) {

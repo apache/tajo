@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.TableProto;
@@ -194,6 +195,24 @@ public class StorageManager {
     }
     }
     
+    return scanner;
+  }
+
+  public Scanner getScanner(TableMeta meta, Fragment [] tablets, Schema inputSchema) throws IOException {
+    Scanner scanner = null;
+
+    switch(meta.getStoreType()) {
+      case RAW: {
+        scanner = new RawFile2(conf).
+            openScanner(inputSchema, tablets);
+        break;
+      }
+      case CSV: {
+        scanner = new CSVFile2(conf).openScanner(inputSchema, tablets);
+        break;
+      }
+    }
+
     return scanner;
   }
 	

@@ -47,7 +47,7 @@ public class SeqScanExec extends PhysicalExec {
     }
     this.inSchema = scanNode.getInputSchema();
     this.outSchema = scanNode.getOutputSchema();
-    this.scanner = sm.getScanner(fragments[0].getMeta(), fragments);
+    this.scanner = sm.getScanner(fragments[0].getMeta(), fragments, scanNode.getInputSchema());
     this.projector = new Projector(inSchema, outSchema, scanNode.getTargets());
     this.evalContexts = projector.renew();
   }

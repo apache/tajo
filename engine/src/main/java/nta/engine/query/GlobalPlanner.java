@@ -17,6 +17,8 @@ import nta.engine.exec.eval.EvalTreeUtil;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryBlock.FromTable;
 import nta.engine.planner.PlannerUtil;
+import nta.engine.planner.RangePartitionAlgorithm;
+import nta.engine.planner.UniformRangePartition;
 import nta.engine.planner.global.MasterPlan;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
@@ -34,6 +36,7 @@ import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -711,11 +714,13 @@ public class GlobalPlanner {
           SortNode sort = (SortNode) store.getSubNode();
           sortSchema = PlannerUtil.sortSpecsToSchema(sort.getSortKeys());
           TupleRange mergedRange = TupleUtil.columnStatToRange(sort.getOutputSchema(), sortSchema, stat.getColumnStats());
-          long card = TupleUtil.computeCardinality(sortSchema, mergedRange);
-          if (card > Integer.MAX_VALUE) card = Integer.MAX_VALUE;
-          int partNum = card > n ? n : (int) card;
-          LOG.info("Try to divide " + mergedRange + " into " + partNum + " sub ranges (total units: " + n + ")");
-          TupleRange [] ranges = TupleUtil.getPartitions(sortSchema, partNum, mergedRange);
+          RangePartitionAlgorithm partitioner = new UniformRangePartition(sortSchema, mergedRange);
+          BigDecimal card = partitioner.getTotalCardinality();
+          if (card.compareTo(new BigDecimal(n)) < 0) {
+            n = card.intValue();
+          }
+          LOG.info("Try to divide " + mergedRange + " into " + n + " sub ranges (total units: " + n + ")");
+          TupleRange [] ranges = partitioner.partition(n);
           String [] queries = TupleUtil.rangesToQueries(sortSchema, ranges);
           for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
             for (Partition p : qu.getPartitions()) {
