@@ -63,6 +63,7 @@ public class TajoCli {
       System.exit(-1);
     }
     
+    // firstly, the specific address (option -a) is used
     String addr;
     if (entryAddr == null && cmd.hasOption("a")) {
       addr = cmd.getOptionValue("a");
@@ -73,20 +74,29 @@ public class TajoCli {
       conf.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
     }
 
-    if(this.entryAddr == null && cmd.hasOption("z")) {
-      zkAddr = cmd.getOptionValue("z");
-      zkClient = new ZkClient(zkAddr);
-      masterTracker = new ServerNodeTracker(zkClient, NConstants.ZNODE_CLIENTSERVICE);
-      masterTracker.start();
-      byte [] entryAddrBytes;
-      do {
-        entryAddrBytes = masterTracker.blockUntilAvailable(WAIT_TIME);
-        sout.println("Waiting the zookeeper (" + zkAddr + ")");
-      } while (entryAddrBytes == null);
+    // if there is no "-a" option,
+    if(this.entryAddr == null) {
+      // it checks if the '-z' option is given
+      if (cmd.hasOption("z")) {
+        zkAddr = cmd.getOptionValue("z");
+        zkClient = new ZkClient(zkAddr);
+        masterTracker = new ServerNodeTracker(zkClient, NConstants.ZNODE_CLIENTSERVICE);
+        masterTracker.start();
+        byte [] entryAddrBytes;
+        do {
+          entryAddrBytes = masterTracker.blockUntilAvailable(WAIT_TIME);
+          sout.println("Waiting the zookeeper (" + zkAddr + ")");
+        } while (entryAddrBytes == null);
 
-      this.entryAddr = new String(entryAddrBytes);
-      conf.set(NConstants.ZOOKEEPER_ADDRESS, this.zkAddr);
-      conf.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
+        this.entryAddr = new String(entryAddrBytes);
+        conf.set(NConstants.ZOOKEEPER_ADDRESS, this.zkAddr);
+        conf.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
+      } else if (conf.get(NConstants.CLIENT_SERVICE_ADDRESS) != null &&
+          !conf.get(NConstants.CLUSTER_DISTRIBUTED).equals(NConstants.CLUSTER_IS_LOCAL)) {
+        // it checks if the client service address is given in configuration and distributed mode.
+        // if so, it sets entryAddr.
+        entryAddr = conf.get(NConstants.CLIENT_SERVICE_ADDRESS);
+      }
     }
 
     // if the remote tajo cluster is set, entryAddr is not null.
@@ -100,7 +110,6 @@ public class TajoCli {
       sout.println("Executing the tajo cluster in local mode");
     }
     client = new TajoClient(conf);
-    sout.println("Connected...");
   }
   
   public int executeShell() throws Exception {

@@ -43,6 +43,11 @@
 </property>
 
 <property>
+  <name>tajo.clientservice.addr</name>
+  <value>localhost:9004</value>
+</property>
+
+<property>
   <name>catalog.master.addr</name>
   <value>127.0.0.1:9002</value>
 </property>

@@ -67,6 +67,7 @@ public class TajoClient {
     service =
         (ClientService) NettyRpc.getProtoParamBlockingRpcProxy(
             ClientService.class, addr);
+    LOG.info("Connected to tajo client service (" + addr.getHostName() + ": " + addr.getPort() +")");
   }
 
   private void initLocalCluster(Configuration conf) throws IOException {

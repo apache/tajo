@@ -12,7 +12,7 @@ public final class NConstants {
 	public static final String LEAFSERVER_PORT="engine.leafserver.port";
 	public static final int DEFAULT_LEAFSERVER_PORT=9003;
 	
-	public static final String CLIENT_SERVICE_ADDRESS="client.service.addr";
+	public static final String CLIENT_SERVICE_ADDRESS="tajo.clientservice.addr";
 	public static final String DEFAULT_CLIENT_SERVICE_ADDRESS="localhost:9004";
   public static final int DEFAULT_CLIENT_SERVICE_PORT = 9004;
 	
