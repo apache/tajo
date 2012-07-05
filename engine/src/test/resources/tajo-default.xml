@@ -32,6 +32,12 @@
 </property>
 
 <property>
+  <name>tajo.extsort.buffer</name>
+  <value>400000</value>
+  <description>how many tuples are sorted via in-memory</description>
+</property>
+
+<property>
   <name>engine.master.addr</name>
   <value>localhost:9001</value>
 </property>

@@ -135,7 +135,7 @@ public class TestNLJoinExec {
     System.out.println(plan);
     //LogicalOptimizer.optimize(ctx, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     int i = 0;
@@ -166,7 +166,7 @@ public class TestNLJoinExec {
     System.out.println(plan);
     //LogicalOptimizer.optimize(ctx, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
     Tuple tuple;

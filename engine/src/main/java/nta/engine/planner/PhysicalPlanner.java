@@ -12,6 +12,7 @@ import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.*;
 import nta.engine.planner.physical.*;
 import nta.storage.StorageManager;
+import org.apache.hadoop.conf.Configuration;
 
 import java.io.IOException;
 
@@ -23,8 +24,10 @@ import java.io.IOException;
  */
 public class PhysicalPlanner {
   private final StorageManager sm;
+  private final Configuration conf;
 
-  public PhysicalPlanner(StorageManager sm) {
+  public PhysicalPlanner(Configuration conf, StorageManager sm) {
+    this.conf = conf;
     this.sm = sm;
   }
 
@@ -122,9 +125,9 @@ public class PhysicalPlanner {
       default:
         QueryBlock.SortSpec [][] sortSpecs =
           PlannerUtil.getSortKeysFromJoinQual(joinNode.getJoinQual(), outer.getSchema(), inner.getSchema());
-        ExternalSortExec outerSort = new ExternalSortExec(ctx, sm,
+        ExternalSortExec outerSort = new ExternalSortExec(conf, ctx, sm,
             new SortNode(sortSpecs[0], outer.getSchema(), outer.getSchema()), outer);
-        ExternalSortExec innerSort = new ExternalSortExec(ctx, sm,
+        ExternalSortExec innerSort = new ExternalSortExec(conf, ctx, sm,
             new SortNode(sortSpecs[1], inner.getSchema(), inner.getSchema()), inner);
 
         return new MergeJoinExec(ctx, joinNode, outerSort, innerSort, sortSpecs[0], sortSpecs[1]);
@@ -175,14 +178,14 @@ public class PhysicalPlanner {
       sortNode.setInputSchema(subOp.getSchema());
       sortNode.setOutputSchema(subOp.getSchema());
       //SortExec sortExec = new SortExec(sortNode, child);
-      ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
+      ExternalSortExec sortExec = new ExternalSortExec(conf, ctx, sm, sortNode, subOp);
       return new SortAggregateExec(ctx, groupbyNode, sortExec);
     }
   }
   
   public PhysicalExec createSortPlan(SubqueryContext ctx,
       SortNode sortNode, PhysicalExec subOp) throws IOException {
-    return new ExternalSortExec(ctx, sm, sortNode, subOp);
+    return new ExternalSortExec(conf, ctx, sm, sortNode, subOp);
   }
   
   public PhysicalExec createIndexWritePlan(

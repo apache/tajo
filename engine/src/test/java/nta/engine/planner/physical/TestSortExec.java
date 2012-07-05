@@ -99,7 +99,7 @@ public class TestSortExec {
 
     LogicalOptimizer.optimize(ctx, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     Tuple tuple;

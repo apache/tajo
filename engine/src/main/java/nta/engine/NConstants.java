@@ -53,9 +53,11 @@ public final class NConstants {
 	
 	public static final String ZNODE_CATALOG="/catalog";
 
-	public static final String RAWFILE_SYNC_INTERVAL = "rawfile.sync.interval";	
+	public static final String RAWFILE_SYNC_INTERVAL = "rawfile.sync.interval";
+
+  public static final String EXTERNAL_SORT_BUFFER = "tajo.extsort.buffer";
 
 	private NConstants() {
-	  
+
 	}
 }

@@ -46,7 +46,7 @@ public class TQueryEngine {
     LOG.info("Tajo data dir is set " + dataPath);
         
     this.storageManager = new StorageManager(conf);
-    this.phyPlanner = new PhysicalPlanner(storageManager);
+    this.phyPlanner = new PhysicalPlanner(conf, storageManager);
   }
   
   public PhysicalExec createPlan(SubqueryContext ctx, LogicalNode plan) 

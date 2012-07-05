@@ -130,7 +130,7 @@ public class TestBNLJoinExec {
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     //LogicalOptimizer.optimize(ctx, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     /*ProjectionExec proj = (ProjectionExec) exec;
@@ -166,7 +166,7 @@ public class TestBNLJoinExec {
     System.out.println(plan);
     // LogicalOptimizer.optimize(ctx, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;

@@ -140,7 +140,7 @@ public class TestMergeJoinExec {
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     /*

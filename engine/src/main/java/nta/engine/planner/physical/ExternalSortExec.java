@@ -4,6 +4,7 @@ import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.StoreType;
+import nta.engine.NConstants;
 import nta.engine.SubqueryContext;
 import nta.engine.planner.logical.SortNode;
 import nta.storage.*;
@@ -32,21 +33,23 @@ public class ExternalSortExec extends PhysicalExec {
 
 
   private final String workDir;
-  private final int MAXSIZE = 800000;
+  private int SORT_BUFFER_SIZE;
   private int run;
   private final static String SORT_PREFIX = "s_";
 
-  public ExternalSortExec(SubqueryContext ctx, StorageManager sm, SortNode annotation,
+  public ExternalSortExec(org.apache.hadoop.conf.Configuration conf, SubqueryContext ctx, StorageManager sm, SortNode annotation,
       PhysicalExec subOp) {
     this.annotation = annotation;
     this.subOp = subOp;
     this.sm = sm;
 
+    this.SORT_BUFFER_SIZE = Integer.valueOf(conf.get(NConstants.EXTERNAL_SORT_BUFFER));
+
     this.inputSchema = annotation.getInputSchema();
     this.outputSchema = annotation.getOutputSchema();
 
     this.comparator = new TupleComparator(inputSchema, annotation.getSortKeys());
-    this.tupleSlots = new ArrayList<Tuple>(MAXSIZE);
+    this.tupleSlots = new ArrayList<Tuple>(SORT_BUFFER_SIZE);
 
     this.run = 0;
     this.workDir = ctx.getWorkDir().getAbsolutePath() + "/" + UUID.randomUUID();
@@ -87,7 +90,7 @@ public class ExternalSortExec extends PhysicalExec {
       int runNum;
       while ((tuple = subOp.next()) != null) { // partition sort start
         tupleSlots.add(new VTuple(tuple));
-        if (tupleSlots.size() == MAXSIZE) {
+        if (tupleSlots.size() == SORT_BUFFER_SIZE) {
           firstPhase(tupleSlots);
         }
       }

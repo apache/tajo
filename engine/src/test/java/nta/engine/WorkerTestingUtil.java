@@ -115,7 +115,7 @@ public class WorkerTestingUtil {
     ParseTree tree = analyzer.parse(ctx, query);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
     plan = LogicalOptimizer.optimize(ctx, plan);
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ResultSet result = new ResultSetImpl(conf, new File(workDir, "out").getAbsolutePath());
