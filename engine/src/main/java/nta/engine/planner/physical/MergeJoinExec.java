@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
 import nta.engine.exec.eval.EvalContext;
+import nta.engine.exec.eval.EvalNode;
 import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.planner.PlannerUtil;
 import nta.engine.planner.Projector;
@@ -21,6 +23,8 @@ public class MergeJoinExec extends PhysicalExec {
   private JoinNode joinNode;
   private Schema inSchema;
   private Schema outSchema;
+  private EvalNode joinQual;
+  private EvalContext qualCtx;
 
   // sub operations
   private PhysicalExec outer;
@@ -51,9 +55,13 @@ public class MergeJoinExec extends PhysicalExec {
 
   public MergeJoinExec(SubqueryContext ctx, JoinNode joinNode, PhysicalExec outer,
       PhysicalExec inner, SortSpec [] outerSortKey, SortSpec [] innerSortKey) {
+    Preconditions.checkArgument(joinNode.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +
+        "but there is no join condition");
     this.outer = outer;
     this.inner = inner;
     this.joinNode = joinNode;
+    this.joinQual = joinNode.getJoinQual();
+    this.qualCtx = this.joinQual.newContext();
     this.inSchema = joinNode.getInputSchema();
     this.outSchema = joinNode.getOutputSchema();
 
@@ -93,67 +101,72 @@ public class MergeJoinExec extends PhysicalExec {
 
   public Tuple next() throws IOException {
     Tuple previous;
-    
-    if (!outerIterator.hasNext() && !innerIterator.hasNext()) {
-      if(end){
-        return null;
-      }
-      
-      if(outerTuple == null){
-        outerTuple = outer.next();
-      }
-      if(innerTuple == null){
-        innerTuple = inner.next();
-      }
-      
-      outerTupleSlots.clear();
-      innerTupleSlots.clear();
-      
-      int cmp;
-      while ((cmp = joincomparator.compare(outerTuple, innerTuple)) != 0) {
-        if (cmp > 0) {
-          innerTuple = inner.next();
-        } else if (cmp < 0) {
-          outerTuple = outer.next();
-        }
-        if (innerTuple == null || outerTuple == null) {
+
+    for (;;) {
+      if (!outerIterator.hasNext() && !innerIterator.hasNext()) {
+        if(end){
           return null;
         }
+
+        if(outerTuple == null){
+          outerTuple = outer.next();
+        }
+        if(innerTuple == null){
+          innerTuple = inner.next();
+        }
+
+        outerTupleSlots.clear();
+        innerTupleSlots.clear();
+
+        int cmp;
+        while ((cmp = joincomparator.compare(outerTuple, innerTuple)) != 0) {
+          if (cmp > 0) {
+            innerTuple = inner.next();
+          } else if (cmp < 0) {
+            outerTuple = outer.next();
+          }
+          if (innerTuple == null || outerTuple == null) {
+            return null;
+          }
+        }
+
+        previous = outerTuple;
+        do {
+          outerTupleSlots.add(outerTuple);
+          outerTuple = outer.next();
+          if (outerTuple == null) {
+            end = true;
+            break;
+          }
+        } while (tupleComparator[0].compare(previous, outerTuple) == 0);
+        outerIterator = outerTupleSlots.iterator();
+        outerNext = outerIterator.next();
+
+        previous = innerTuple;
+        do {
+          innerTupleSlots.add(innerTuple);
+          innerTuple = inner.next();
+          if (innerTuple == null) {
+            end = true;
+            break;
+          }
+        } while (tupleComparator[1].compare(previous, innerTuple) == 0);
+        innerIterator = innerTupleSlots.iterator();
       }
-      
-      previous = outerTuple;
-      do {
-        outerTupleSlots.add(outerTuple);
-        outerTuple = outer.next();
-        if (outerTuple == null) {
-          end = true;
-          break;
-        }
-      } while (tupleComparator[0].compare(previous, outerTuple) == 0);
-      outerIterator = outerTupleSlots.iterator();
-      outerNext = outerIterator.next();
-      
-      previous = innerTuple;
-      do {
-        innerTupleSlots.add(innerTuple);
-        innerTuple = inner.next();
-        if (innerTuple == null) {
-          end = true;
-          break;
-        }
-      } while (tupleComparator[1].compare(previous, innerTuple) == 0);
-      innerIterator = innerTupleSlots.iterator();
+
+      if(!innerIterator.hasNext()){
+        outerNext = outerIterator.next();
+        innerIterator = innerTupleSlots.iterator();
+      }
+
+      frameTuple.set(outerNext, innerIterator.next());
+      joinQual.eval(qualCtx, inSchema, frameTuple);
+      if (joinQual.terminate(qualCtx).asBool()) {
+        projector.eval(evalContexts, frameTuple);
+        projector.terminate(evalContexts, outTuple);
+        return outTuple;
+      }
     }
-    
-    if(!innerIterator.hasNext()){
-      outerNext = outerIterator.next();
-      innerIterator = innerTupleSlots.iterator();
-    }
-    
-    frameTuple.set(outerNext, innerIterator.next());
-    projector.eval(evalContexts, frameTuple);
-    projector.terminate(evalContexts, outTuple);
-    return outTuple;
   }
 
   @Override
