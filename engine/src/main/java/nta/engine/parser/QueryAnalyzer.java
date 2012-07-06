@@ -303,34 +303,44 @@ public final class QueryAnalyzer {
    */
   private void parseFromClause(final Context ctx,
                                final QueryBlock block, final CommonTree ast) {
-    if (ast.getChild(0).getType() == NQLParser.JOIN) { // explicit join
-      JoinClause joinClause = parseExplicitJoinClause(ctx, block, 
-          (CommonTree) ast.getChild(0));
+    // implicit join or the from clause on single relation
+    boolean isPrevJoin = false;
+    FromTable table = null;
+    JoinClause joinClause = null;
+    CommonTree node;
+    for (int i = 0; i < ast.getChildCount(); i++) {
+      node = (CommonTree) ast.getChild(i);
+
+      switch (node.getType()) {
+
+        case NQLParser.TABLE:
+          // table (AS ID)?
+          // 0 - a table name, 1 - table alias
+          table = parseTable(ctx, node);
+          ctx.renameTable(table);
+          block.addFromTable(table);
+          break;
+        case NQLParser.JOIN:
+          JoinClause newJoin = parseExplicitJoinClause(ctx, block, node);
+          if (isPrevJoin) {
+            newJoin.setLeft(joinClause);
+            joinClause = newJoin;
+          } else {
+            newJoin.setLeft(table);
+            isPrevJoin = true;
+            joinClause = newJoin;
+          }
+          break;
+        default:
+          throw new NQLSyntaxException("Wrong statements");
+      } // switch
+    } // for each derievedTable
+
+    if (joinClause != null) {
       block.setJoinClause(joinClause);
-
-    } else {
-      // implicit join or the from clause on single relation
-      FromTable table;
-      CommonTree node;
-      for (int i = 0; i < ast.getChildCount(); i++) {
-        node = (CommonTree) ast.getChild(i);
-
-        switch (node.getType()) {
-
-          case NQLParser.TABLE:
-            // table (AS ID)?
-            // 0 - a table name, 1 - table alias
-            table = parseTable(ctx, block, node);
-            ctx.renameTable(table.getTableName(),
-                table.hasAlias() ? table.getAlias() : table.getTableName());
-            block.addFromTable(table);
-            break;
-
-          default:
-        } // switch
-      } // for each derievedTable
     }
   }
+
   
   private JoinClause parseExplicitJoinClause(final Context ctx, final QueryBlock block, 
       final CommonTree ast) {
@@ -338,63 +348,95 @@ public final class QueryAnalyzer {
     int idx = 0;
     int parsedJoinType = ast.getChild(idx).getType();
     JoinType joinType = null;
+
+    JoinClause joinClause = null;
     
     switch (parsedJoinType) {
-    case NQLParser.NATURAL_JOIN:
-      joinType = JoinType.NATURAL;
-      break;    
-    case NQLParser.INNER_JOIN:
-      joinType = JoinType.INNER;      
+      case NQLParser.CROSS:
+      case NQLParser.UNION:
+        joinClause = parseCrossAndUnionJoin(ctx, ast);
+        break;
+
+      case NQLParser.NATURAL:
+        joinClause = parseNaturalJoinClause(ctx, ast, block);
       break;
-    case NQLParser.OUTER_JOIN:
-      CommonTree outerAST = (CommonTree) ast.getChild(0);
-      if (outerAST.getChild(0).getType() == NQLParser.LEFT) {
-        joinType = JoinType.LEFT_OUTER;
-      } else if (outerAST.getChild(0).getType() == NQLParser.RIGHT) {
-        joinType = JoinType.RIGHT_OUTER;
-      }
-      break;
-    case NQLParser.CROSS_JOIN:
-      joinType = JoinType.CROSS_JOIN;
-      break;
-    }
-    
-    idx++; // 1
-    FromTable left = parseTable(ctx, block, (CommonTree) ast.getChild(idx));
-    ctx.renameTable(left.getTableName(),
-        left.hasAlias() ? left.getAlias() : left.getTableName());
-    JoinClause joinClause = new JoinClause(joinType, left);
-    
-    idx++; // 2
-    if (ast.getChild(idx).getType() == NQLParser.JOIN) {
-      joinClause.setRight(parseExplicitJoinClause(ctx, block, 
-          (CommonTree) ast.getChild(idx)));
-    } else {
-      FromTable right = parseTable(ctx, block, 
-          (CommonTree) ast.getChild(idx));
-      ctx.renameTable(right.getTableName(),
-          right.hasAlias() ? right.getAlias() : right.getTableName());
-      block.addFromTable(right);
-      joinClause.setRight(right);
-    }
-    
-    idx++; // 3
-    if (ast.getChild(idx) != null) {
-      if (joinType == JoinType.NATURAL) {
-        throw new InvalidQueryException("Cross or natural join cannot have join conditions");
-      }
-      
-      CommonTree joinQual = (CommonTree) ast.getChild(idx);
-      if (joinQual.getType() == NQLParser.ON) {
-        EvalNode joinCond = parseJoinCondition(ctx, block, joinQual);
-        joinClause.setJoinQual(joinCond);
-      } else if (joinQual.getType() == NQLParser.USING) {
-        Column [] joinColumns = parseJoinColumns(ctx, block, joinQual);
-        joinClause.setJoinColumns(joinColumns);
-      }
+
+      case NQLParser.INNER:
+      case NQLParser.OUTER:
+        joinClause = parseQualifiedJoinClause(ctx, ast, block, 0);
+        break;
+
+      default: // default join (without join type) is inner join
+        joinClause = parseQualifiedJoinClause(ctx, ast, block, 0);
     }
     
     return joinClause;
+  }
+
+  private JoinClause parseNaturalJoinClause(Context ctx, Tree ast, QueryBlock block) {
+    JoinClause join = parseQualifiedJoinClause(ctx, ast, block, 1);
+    join.setNatural();
+    return join;
+  }
+
+  private JoinClause parseQualifiedJoinClause(Context ctx, Tree ast, QueryBlock block, final int idx) {
+    int childIdx = idx;
+    JoinClause join = null;
+    if (ast.getChild(childIdx).getType() == NQLParser.TABLE) { // default join
+      join = new JoinClause(JoinType.INNER);
+      join.setRight(parseTable(ctx, (CommonTree) ast.getChild(childIdx)));
+      ctx.renameTable(join.getRight());
+    } else {
+      if (ast.getChild(childIdx).getType() == NQLParser.INNER) {
+        join = new JoinClause(JoinType.INNER);
+      } else if (ast.getChild(childIdx).getType() == NQLParser.OUTER) {
+        switch (ast.getChild(childIdx).getChild(0).getType()) {
+          case NQLParser.LEFT:
+            join = new JoinClause(JoinType.LEFT_OUTER);
+            break;
+          case NQLParser.RIGHT:
+            join = new JoinClause(JoinType.RIGHT_OUTER);
+            break;
+          case NQLParser.FULL:
+            join = new JoinClause(JoinType.FULL_OUTER);
+            break;
+          default:
+            throw new NQLSyntaxException("wrong join type");
+        }
+      }
+      childIdx++;
+      join.setRight(parseTable(ctx, (CommonTree) ast.getChild(childIdx)));
+      ctx.renameTable(join.getRight());
+    }
+    childIdx++;
+    if (ast.getChildCount() > childIdx) {
+      CommonTree joinQual = (CommonTree) ast.getChild(childIdx);
+      if (joinQual.getType() == NQLParser.ON) {
+        EvalNode joinCond = parseJoinCondition(ctx, block, joinQual);
+        join.setJoinQual(joinCond);
+      } else if (joinQual.getType() == NQLParser.USING) {
+        Column [] joinColumns = parseJoinColumns(ctx, block, joinQual);
+        join.setJoinColumns(joinColumns);
+      }
+    }
+
+    return join;
+  }
+
+  private JoinClause parseCrossAndUnionJoin(Context ctx, Tree ast) {
+    JoinType joinType;
+    if (ast.getChild(0).getType() == NQLParser.CROSS) {
+      joinType = JoinType.CROSS_JOIN;
+    } else if (ast.getChild(0).getType() == NQLParser.UNION) {
+      joinType = JoinType.UNION;
+    } else {
+      throw new IllegalStateException("Neither the AST has cross join or union join:\n" + ast.toStringTree());
+    }
+    JoinClause join = new JoinClause(joinType);
+    Preconditions.checkState(ast.getChild(1).getType() == NQLParser.TABLE);
+    join.setRight(parseTable(ctx, (CommonTree) ast.getChild(1)));
+    ctx.renameTable(join.getRight());
+    return join;
   }
   
   private Column [] parseJoinColumns(Context ctx, QueryBlock block, 
@@ -411,8 +453,7 @@ public final class QueryAnalyzer {
     return createEvalTree(ctx, ast.getChild(0), block);
   }
   
-  private static FromTable parseTable(final Context ctx, final QueryBlock block,
-      final CommonTree tableAST) {
+  private static FromTable parseTable(final Context ctx, final CommonTree tableAST) {
     String tableName = tableAST.getChild(0).getText();
     TableDesc desc = checkAndGetTableByName(ctx, tableName);
     FromTable table;

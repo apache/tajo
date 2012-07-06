@@ -32,6 +32,16 @@ class TestTPCH extends AssertionsForJUnit {
     assertFalse(res.next())
   }
 
+  @Test def testQ2FiveWayJoin() {
+    val res = tpch.execute(
+      "select s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone, s_comment, ps_supplycost " +
+        "from region join nation on n_regionkey = r_regionkey and r_name = 'EUROPE' " +
+        "join supplier on s_nationkey = n_nationkey " +
+        "join partsupp on s_suppkey = ps_suppkey " +
+        "join part on p_partkey = ps_partkey and p_type like '%BRASS' and p_size = 15");
+    println(ResultSetUtil.prettyFormat(res))
+  }
+
   @Test final def testTPCH14Expr {
     val query: String = "select 100 * sum(" + "case when p_type like 'PROMO%' then l_extendedprice else 0 end) / sum(l_extendedprice * (1 - l_discount)) " + "as promo_revenue from lineitem, part where l_partkey = p_partkey"
     val res: ResultSet = tpch.execute(query)

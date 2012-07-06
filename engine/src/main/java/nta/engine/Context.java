@@ -31,9 +31,14 @@ public abstract class Context {
   public Collection<String> getInputTables() {
     return aliasMap.values();
   }
+
+  public void renameTable(final String tableName, final String alias) {
+    aliasMap.put(alias, tableName);
+  }
   
-  public void renameTable(final String tableName, final String aliasName) {
-    aliasMap.put(aliasName, tableName);
+  public void renameTable(final QueryBlock.FromTable table) {
+    String alias = table.hasAlias() ? table.getAlias() : table.getTableName();
+    aliasMap.put(alias, table.getTableName());
   }
   
   public String getActualTableName(final String aliasName) {

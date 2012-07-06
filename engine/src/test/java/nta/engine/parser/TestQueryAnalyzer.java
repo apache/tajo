@@ -365,20 +365,31 @@ public class TestQueryAnalyzer {
   };
   
   @Test
+  /**
+   *           join
+   *          /    \
+   *       join    branch
+   *    /       \
+   * people  student
+   */
   public final void testNaturalJoinClause() {
     Context ctx = factory.create();
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[0]);
     JoinClause join = block.getJoinClause();
-    assertEquals(JoinType.NATURAL, join.getJoinType());
-    assertEquals("people", join.getLeft().getTableName());
-    assertEquals("p", join.getLeft().getAlias());    
-    assertTrue(join.hasRightJoin());
-
-    assertEquals("student", join.getRightJoin().getLeft().getTableName());
-    assertEquals("branch", join.getRightJoin().getRight().getTableName());
+    assertEquals(JoinType.INNER, join.getJoinType());
+    assertTrue(join.isNatural());
+    assertEquals("branch", join.getRight().getTableName());
+    assertTrue(join.hasLeftJoin());
+    assertEquals("people", join.getLeftJoin().getLeft().getTableName());
+    assertEquals("student", join.getLeftJoin().getRight().getTableName());
   }
   
   @Test
+  /**
+   *       join
+   *    /       \
+   * people student
+   */
   public final void testInnerJoinClause() {
     Context ctx = factory.create();
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[1]);
@@ -423,12 +434,10 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[3]);
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.CROSS_JOIN, join.getJoinType());
-    assertEquals("people", join.getLeft().getTableName());
-    assertEquals("p", join.getLeft().getAlias());    
-    assertTrue(join.hasRightJoin());
-
-    assertEquals("student", join.getRightJoin().getLeft().getTableName());
-    assertEquals("branch", join.getRightJoin().getRight().getTableName());
+    assertEquals("branch", join.getRight().getTableName());
+    assertTrue(join.hasLeftJoin());
+    assertEquals("people", join.getLeftJoin().getLeft().getTableName());
+    assertEquals("student", join.getLeftJoin().getRight().getTableName());
   }
   
   @Test

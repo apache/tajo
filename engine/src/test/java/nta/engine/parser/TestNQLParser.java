@@ -164,92 +164,213 @@ public class TestNQLParser {
     "select name, addr from people natural join student natural join professor", // 0
     "select name, addr from people inner join student on people.name = student.name", // 1
     "select name, addr from people inner join student using (id, name)", // 2
-    "select name, addr from people cross join student cross join professor", // 3
-    "select name, addr from people left outer join student on people.name = student.name", // 4
-    "select name, addr from people right outer join student on people.name = student.name" // 5
+    "select name, addr from people join student using (id, name)", // 3
+    "select name, addr from people cross join student", // 4
+    "select name, addr from people left outer join student on people.name = student.name", // 5
+    "select name, addr from people right outer join student on people.name = student.name", // 6
+    "select * from table1 " +
+        "cross join table2 " +
+        "join table3 on table1.id = table3.id " +
+        "inner join table4 on table1.id = table4.id " +
+        "left outer join table5 on table1.id = table5.id " +
+        "right outer join table6 on table1.id = table6.id " +
+        "full outer join table7 on table1.id = table7.id " +
+        "natural join table8 " +
+        "natural inner join table9 " +
+        "natural left outer join table10 " +
+        "natural right outer join table11 " +
+        "natural full outer join table12 ",
+         // 7 - all possible join clauses*/
+    "select s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone, s_comment, ps_supplycost " + // 8
+      "from region join nation on n_regionkey = r_regionkey and r_name = 'EUROPE' " +
+      "join supplier on s_nationekey = n_nationkey " +
+      "join partsupp on s_suppkey = ps_ps_suppkey " +
+      "join part on p_partkey = ps_partkey and p_type like '%BRASS' and p_size = 15"
   };
   
   @Test
+  /**
+   *                 from
+   *        ---------------------
+   *       /     |               \
+   *      /      \                \
+   *   TABLE     join              join
+   *   /       /     \            /     \
+   *  people  NATURAL TABLE     NATURAL TABLE
+   *                    /                 /
+   *                  student          professor
+   */
   public void testNaturalJoinClause() {
-    // l=derivedTable 'natural' t=join_type? 'join' r=tableRef -> ^(JOIN NATURAL_JOIN $t? $l $r)
     Tree tree = parseQuery(JOINS[0]);
     assertEquals(tree.getType(), NQLParser.SELECT);
     assertEquals(NQLParser.FROM, tree.getChild(0).getType());
     CommonTree fromAST = (CommonTree) tree.getChild(0);
-    assertEquals(NQLParser.JOIN, fromAST.getChild(0).getType());
-    CommonTree joinAST = (CommonTree) fromAST.getChild(0);
-    assertEquals(NQLParser.NATURAL_JOIN, joinAST.getChild(0).getType());
-    assertEquals("people", joinAST.getChild(1).getChild(0).getText());
-    assertEquals(NQLParser.JOIN, joinAST.getChild(2).getType());
-    joinAST = (CommonTree) joinAST.getChild(2);
-    assertEquals("student", joinAST.getChild(1).getChild(0).getText());
-    assertEquals("professor", joinAST.getChild(2).getChild(0).getText());
+    assertEquals(NQLParser.TABLE, fromAST.getChild(0).getType());
+    assertEquals("people", fromAST.getChild(0).getChild(0).getText());
+    assertEquals(NQLParser.JOIN, fromAST.getChild(1).getType());
+    assertEquals(NQLParser.NATURAL, fromAST.getChild(1).getChild(0).getType());
+    assertEquals("student", fromAST.getChild(1).getChild(1).getChild(0).getText());
+    assertEquals(NQLParser.JOIN, fromAST.getChild(2).getType());
+    assertEquals(NQLParser.NATURAL, fromAST.getChild(2).getChild(0).getType());
+    assertEquals("professor", fromAST.getChild(2).getChild(1).getChild(0).getText());
   }
   
   @Test
   public void testInnerJoinClause() {
-    // l=derivedTable t=join_type? JOIN r=tableRef s=join_specification -> ^(JOIN $t? $l $r $s)
-    // 
-    Tree tree = parseQuery(JOINS[1]);    
+    Tree tree = parseQuery(JOINS[1]);
     assertEquals(tree.getType(), NQLParser.SELECT);
     assertEquals(NQLParser.FROM, tree.getChild(0).getType());
     CommonTree fromAST = (CommonTree) tree.getChild(0);
-    assertEquals(NQLParser.JOIN, fromAST.getChild(0).getType());
-    CommonTree joinAST = (CommonTree) fromAST.getChild(0);
-    assertEquals(NQLParser.INNER_JOIN, joinAST.getChild(0).getType());
-    assertEquals("people", joinAST.getChild(1).getChild(0).getText());
-    assertEquals("student", joinAST.getChild(2).getChild(0).getText());
-    assertEquals(NQLParser.ON, joinAST.getChild(3).getType());
+    assert2WayJoinAST(fromAST, NQLParser.INNER);
+    assertEquals(NQLParser.ON, fromAST.getChild(1).getChild(2).getType());
     
     tree = parseQuery(JOINS[2]);
     assertEquals(tree.getType(), NQLParser.SELECT);
+    fromAST = (CommonTree) tree.getChild(0);
+    assert2WayJoinAST(fromAST, NQLParser.INNER);
+    assertEquals(NQLParser.USING, fromAST.getChild(1).getChild(2).getType());
+    assertEquals(2, fromAST.getChild(1).getChild(2).getChildCount());
+
+    /**
+     *       from
+     *       /     \
+     *     TABLE          join
+     *      /       /             \
+     *    people   TABLE        using
+     *              /       /              \
+     *            student  FIELD_NAME  FIELD_NAME
+     *                      /              \
+     *                     id              name
+     */
+    tree = parseQuery(JOINS[3]);
+    fromAST = (CommonTree) tree.getChild(0);
+    assertEquals(tree.getType(), NQLParser.SELECT);
+    assertEquals(NQLParser.TABLE, fromAST.getChild(0).getType());
+    assertEquals("people", fromAST.getChild(0).getChild(0).getText());
+    assertEquals(NQLParser.JOIN, fromAST.getChild(1).getType());
+    assertEquals(NQLParser.TABLE, fromAST.getChild(1).getChild(0).getType());
+    assertEquals("student", fromAST.getChild(1).getChild(0).getChild(0).getText());
+    assertEquals(NQLParser.USING, fromAST.getChild(1).getChild(1).getType());
+    assertEquals(2, fromAST.getChild(1).getChild(1).getChildCount());
+  }
+
+  private void assert2WayJoinAST(Tree fromAST, int joinType) {
+    assertEquals(NQLParser.TABLE, fromAST.getChild(0).getType());
+    assertEquals("people", fromAST.getChild(0).getChild(0).getText());
+    assertEquals(NQLParser.JOIN, fromAST.getChild(1).getType());
+    assertEquals(joinType, fromAST.getChild(1).getChild(0).getType());
+    assertEquals(NQLParser.TABLE, fromAST.getChild(1).getChild(1).getType());
+    assertEquals("student", fromAST.getChild(1).getChild(1).getChild(0).getText());
   }
   
   @Test
   public void testCrossJoinClause() {
-    // l=derivedTable CROSS JOIN r=tableRef -> ^(JOIN CROSS_JOIN $l $r)
-    Tree tree = parseQuery(JOINS[3]);
-    assertEquals(tree.getType(), NQLParser.SELECT);
-    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
-    CommonTree fromAST = (CommonTree) tree.getChild(0);
-    assertEquals(NQLParser.JOIN, fromAST.getChild(0).getType());
-    CommonTree joinAST = (CommonTree) fromAST.getChild(0);
-    assertEquals(NQLParser.CROSS_JOIN, joinAST.getChild(0).getType());
-    assertEquals("people", joinAST.getChild(1).getChild(0).getText());
-    joinAST = (CommonTree) joinAST.getChild(2);
-    assertEquals(NQLParser.CROSS_JOIN, joinAST.getChild(0).getType());
-    assertEquals("student", joinAST.getChild(1).getChild(0).getText());
-    assertEquals("professor", joinAST.getChild(2).getChild(0).getText());    
-  }
-  
-  @Test
-  public void testLeftOuterJoinClause() {
     Tree tree = parseQuery(JOINS[4]);
     assertEquals(tree.getType(), NQLParser.SELECT);
     assertEquals(NQLParser.FROM, tree.getChild(0).getType());
     CommonTree fromAST = (CommonTree) tree.getChild(0);
-    assertEquals(NQLParser.JOIN, fromAST.getChild(0).getType());
-    CommonTree joinAST = (CommonTree) fromAST.getChild(0);
-    assertEquals(NQLParser.OUTER_JOIN, joinAST.getChild(0).getType());
-    assertEquals(NQLParser.LEFT, joinAST.getChild(0).getChild(0).getType());
-    assertEquals("people", joinAST.getChild(1).getChild(0).getText());
-    assertEquals("student", joinAST.getChild(2).getChild(0).getText());
-    assertEquals(NQLParser.ON, joinAST.getChild(3).getType());
+    assert2WayJoinAST(fromAST, NQLParser.CROSS);
   }
   
   @Test
-  public void testRightOuterJoinClause() {
+  public void testLeftOuterJoinClause() {
     Tree tree = parseQuery(JOINS[5]);
     assertEquals(tree.getType(), NQLParser.SELECT);
     assertEquals(NQLParser.FROM, tree.getChild(0).getType());
     CommonTree fromAST = (CommonTree) tree.getChild(0);
-    assertEquals(NQLParser.JOIN, fromAST.getChild(0).getType());
-    CommonTree joinAST = (CommonTree) fromAST.getChild(0);
-    assertEquals(NQLParser.OUTER_JOIN, joinAST.getChild(0).getType());
-    assertEquals(NQLParser.RIGHT, joinAST.getChild(0).getChild(0).getType());
-    assertEquals("people", joinAST.getChild(1).getChild(0).getText());
-    assertEquals("student", joinAST.getChild(2).getChild(0).getText());
-    assertEquals(NQLParser.ON, joinAST.getChild(3).getType());
+    assert2WayJoinAST(fromAST, NQLParser.OUTER);
+    assertEquals(NQLParser.LEFT, fromAST.getChild(1).getChild(0).getChild(0).getType());
+    assertEquals(NQLParser.ON, fromAST.getChild(1).getChild(2).getType());
+    assertEquals(1, fromAST.getChild(1).getChild(2).getChildCount());
+  }
+  
+  @Test
+  public void testRightOuterJoinClause() {
+    Tree tree = parseQuery(JOINS[6]);
+    assertEquals(tree.getType(), NQLParser.SELECT);
+    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    CommonTree fromAST = (CommonTree) tree.getChild(0);
+    assert2WayJoinAST(fromAST, NQLParser.OUTER);
+    assertEquals(NQLParser.RIGHT, fromAST.getChild(1).getChild(0).getChild(0).getType());
+    assertEquals(NQLParser.ON, fromAST.getChild(1).getChild(2).getType());
+    assertEquals(1, fromAST.getChild(1).getChild(2).getChildCount());
+  }
+
+  @Test
+  public void testAllJoinTypes() {
+    Tree tree = parseQuery(JOINS[7]);
+    System.out.println(tree.toStringTree());
+    assertEquals(tree.getType(), NQLParser.SELECT);
+    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    CommonTree fromAST = (CommonTree) tree.getChild(0);
+
+    assertEquals(12,fromAST.getChildCount());
+    assertEquals(NQLParser.TABLE, fromAST.getChild(0).getType());
+
+    assertEquals(NQLParser.JOIN, fromAST.getChild(1).getType());
+    Tree join = fromAST.getChild(1);
+    assertEquals(NQLParser.CROSS, join.getChild(0).getType());
+    assertEquals("table2", join.getChild(1).getChild(0).getText());
+
+    assertEquals(NQLParser.JOIN, fromAST.getChild(2).getType());
+    join = fromAST.getChild(2);
+    assertEquals(NQLParser.TABLE, join.getChild(0).getType());
+    assertEquals("table3", join.getChild(0).getChild(0).getText());
+
+    assertEquals(NQLParser.JOIN, fromAST.getChild(3).getType());
+    join = fromAST.getChild(3);
+    assertEquals(NQLParser.INNER, join.getChild(0).getType());
+    assertEquals("table4", join.getChild(1).getChild(0).getText());
+
+    assertEquals(NQLParser.JOIN, fromAST.getChild(4).getType());
+    join = fromAST.getChild(4);
+    assertEquals(NQLParser.OUTER, join.getChild(0).getType());
+    assertEquals(NQLParser.LEFT, join.getChild(0).getChild(0).getType());
+    assertEquals("table5", join.getChild(1).getChild(0).getText());
+
+    assertEquals(NQLParser.JOIN, fromAST.getChild(5).getType());
+    join = fromAST.getChild(5);
+    assertEquals(NQLParser.OUTER, join.getChild(0).getType());
+    assertEquals(NQLParser.RIGHT, join.getChild(0).getChild(0).getType());
+    assertEquals("table6", join.getChild(1).getChild(0).getText());
+
+    assertEquals(NQLParser.JOIN, fromAST.getChild(6).getType());
+    join = fromAST.getChild(6);
+    assertEquals(NQLParser.OUTER, join.getChild(0).getType());
+    assertEquals(NQLParser.FULL, join.getChild(0).getChild(0).getType());
+    assertEquals("table7", join.getChild(1).getChild(0).getText());
+
+    assertEquals(NQLParser.JOIN, fromAST.getChild(7).getType());
+    join = fromAST.getChild(7);
+    assertEquals(NQLParser.NATURAL, join.getChild(0).getType());
+    assertEquals("table8", join.getChild(1).getChild(0).getText());
+
+    assertEquals(NQLParser.JOIN, fromAST.getChild(8).getType());
+    join = fromAST.getChild(8);
+    assertEquals(NQLParser.NATURAL, join.getChild(0).getType());
+    assertEquals(NQLParser.INNER, join.getChild(1).getType());
+    assertEquals("table9", join.getChild(2).getChild(0).getText());
+
+    assertEquals(NQLParser.JOIN, fromAST.getChild(9).getType());
+    join = fromAST.getChild(9);
+    assertEquals(NQLParser.NATURAL, join.getChild(0).getType());
+    assertEquals(NQLParser.OUTER, join.getChild(1).getType());
+    assertEquals(NQLParser.LEFT, join.getChild(1).getChild(0).getType());
+    assertEquals("table10", join.getChild(2).getChild(0).getText());
+
+    assertEquals(NQLParser.JOIN, fromAST.getChild(10).getType());
+    join = fromAST.getChild(10);
+    assertEquals(NQLParser.NATURAL, join.getChild(0).getType());
+    assertEquals(NQLParser.OUTER, join.getChild(1).getType());
+    assertEquals(NQLParser.RIGHT, join.getChild(1).getChild(0).getType());
+    assertEquals("table11", join.getChild(2).getChild(0).getText());
+
+    assertEquals(NQLParser.JOIN, fromAST.getChild(11).getType());
+    join = fromAST.getChild(11);
+    assertEquals(NQLParser.NATURAL, join.getChild(0).getType());
+    assertEquals(NQLParser.OUTER, join.getChild(1).getType());
+    assertEquals(NQLParser.FULL, join.getChild(1).getChild(0).getType());
+    assertEquals("table12", join.getChild(2).getChild(0).getText());
   }
   
   private final static String setClauses [] = {
@@ -593,7 +714,13 @@ public class TestNQLParser {
   }
 
   public static String [] caseStatements = {
-      "select case when p_type like 'PROMO%' then l_extendedprice * (1 - l_discount) when p_type = 'MOCC' then l_extendedprice - 100 else 0 end as cond from lineitem",
+      "select " +
+          "case " +
+          "when p_type like 'PROMO%' then l_extendedprice * (1 - l_discount) " +
+          "when p_type = 'MOCC' then l_extendedprice - 100 " +
+          "else 0 end " +
+          "as cond " +
+          "from lineitem"
   };
 
   @Test

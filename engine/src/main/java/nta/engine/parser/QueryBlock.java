@@ -264,9 +264,10 @@ public class QueryBlock extends ParseTree {
     @Expose private JoinType joinType;
     @Expose private FromTable left;
     @Expose private FromTable right;
-    @Expose private JoinClause rightJoin;
+    @Expose private JoinClause leftJoin;
     @Expose private EvalNode joinQual;
     @Expose private Column [] joinColumns;
+    @Expose private boolean natural = false;
     
     @SuppressWarnings("unused")
     private JoinClause() {
@@ -277,31 +278,43 @@ public class QueryBlock extends ParseTree {
       this.joinType = joinType;
     }
     
-    public JoinClause(final JoinType joinType, final FromTable left) {
+    public JoinClause(final JoinType joinType, final FromTable right) {
       this.joinType = joinType;
-      this.left = left;
+      this.right = right;
     }
     
     public JoinClause(final JoinType joinType, final FromTable left, 
         final FromTable right) {
-      this(joinType, left);
-      this.right = right;
+      this(joinType, right);
+      this.left = left;
     }
     
     public JoinType getJoinType() {
       return this.joinType;
     }
+
+    public void setNatural() {
+      this.natural = true;
+    }
+
+    public boolean isNatural() {
+      return this.natural;
+    }
     
     public void setRight(FromTable right) {
       this.right = right;
     }
-    
-    public void setRight(JoinClause right) {
-      this.rightJoin = right;
+
+    public void setLeft(FromTable left) {
+      this.left = left;
+    }
+
+    public void setLeft(JoinClause left) {
+      this.leftJoin = left;
     }
     
-    public boolean hasRightJoin() {
-      return rightJoin != null;
+    public boolean hasLeftJoin() {
+      return leftJoin != null;
     }
     
     public FromTable getLeft() {
@@ -312,12 +325,12 @@ public class QueryBlock extends ParseTree {
       return this.right;
     }
     
-    public JoinClause getRightJoin() {
-      return this.rightJoin;
+    public JoinClause getLeftJoin() {
+      return this.leftJoin;
     }
     
-    public void setJoinQual(EvalNode cond) {
-      this.joinQual = cond;
+    public void setJoinQual(EvalNode qual) {
+      this.joinQual = qual;
     }
     
     public boolean hasJoinQual() {

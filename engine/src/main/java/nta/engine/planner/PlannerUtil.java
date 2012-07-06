@@ -539,7 +539,7 @@ public class PlannerUtil {
 
     @Override
     public void visit(EvalNode node) {
-      if (EvalTreeUtil.isComparisonOperator(node)) {
+      if (EvalTreeUtil.isJoinQual(node)) {
         Column [] pair = new Column[2];
 
         for (int i = 0; i <= 1; i++) { // access left, right sub expression

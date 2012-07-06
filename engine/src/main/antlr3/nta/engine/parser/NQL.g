@@ -15,7 +15,6 @@ tokens {
   COUNT_ROWS;
   CREATE_INDEX;
   CREATE_TABLE;
-  CROSS_JOIN;
   DROP_TABLE;
   DESC_TABLE;
   EMPTY_GROUPING_SET;
@@ -23,11 +22,8 @@ tokens {
   FIELD_DEF;
   FUNCTION;    
   FUNC_ARGS;
-  GROUP_BY;  
-  INNER_JOIN;
-  NATURAL_JOIN;
-  NULL_ORDER;  
-  OUTER_JOIN;  
+  GROUP_BY;
+  NULL_ORDER;
   ORDER;
   ORDER_BY;
   PARAM;
@@ -211,7 +207,7 @@ table
 
 // TODO - to be improved
 funcCall
-	:	ID LEFT_PAREN funcArgs? RIGHT_PAREN -> ^(FUNCTION[$ID.text] funcArgs?)
+	: ID LEFT_PAREN funcArgs? RIGHT_PAREN -> ^(FUNCTION[$ID.text] funcArgs?)
 	| COUNT LEFT_PAREN funcArgs RIGHT_PAREN -> ^(COUNT_VAL funcArgs)
 	| COUNT LEFT_PAREN MULTIPLY RIGHT_PAREN -> ^(COUNT_ROWS)
 	;
@@ -232,25 +228,37 @@ table_reference
   : table_primary
   | joined_table
   ;
-  
+
 joined_table
-  : cross_join 
-  | l=table_primary JOIN r=table_reference s=join_specification -> ^(JOIN INNER_JOIN $l $r $s)
-  | l=table_primary t=join_type JOIN r=table_reference s=join_specification -> ^(JOIN $t $l $r $s)  
+  : table_primary (cross_join | qualified_join | natural_join | union_join)+
+  ;
+
+joined_table_prim
+  : cross_join
+  | qualified_join
   | natural_join
+  | union_join
   ;
-  
+
 cross_join
-  : l=table_primary CROSS JOIN r=table_reference -> ^(JOIN CROSS_JOIN $l $r)
+  : CROSS JOIN r=table_primary -> ^(JOIN CROSS $r)
   ;
-  
+
+qualified_join
+  : (t=join_type)? JOIN r=table_primary s=join_specification -> ^(JOIN $t? $r $s)
+  ;
+
 natural_join
-  : l=table_primary NATURAL t=join_type? JOIN r=table_reference -> ^(JOIN NATURAL_JOIN $t? $l $r)
+  : NATURAL (t=join_type)? JOIN r=table_primary -> ^(JOIN NATURAL $t? $r)
+  ;
+
+union_join
+  : UNION JOIN r=table_primary -> ^(JOIN UNION $r)
   ;
 
 join_type
-  : INNER -> ^(INNER_JOIN)
-  | t=outer_join_type? OUTER -> ^(OUTER_JOIN $t)
+  : INNER
+  | t=outer_join_type? OUTER -> ^(OUTER $t)
   ;
   
 outer_join_type

@@ -231,6 +231,12 @@ public class EvalTreeUtil {
         expr.getType() == Type.GTH;
   }
 
+  public static boolean isJoinQual(EvalNode expr) {
+    return isComparisonOperator(expr) &&
+        expr.getLeftExpr().getType() == Type.FIELD &&
+        expr.getRightExpr().getType() == Type.FIELD;
+  }
+
   public static boolean isLogicalOperator(EvalNode expr) {
     return expr.getType() == Type.AND || expr.getType() == Type.OR;
   }

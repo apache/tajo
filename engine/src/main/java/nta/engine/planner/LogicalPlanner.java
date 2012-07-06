@@ -376,8 +376,16 @@ public class LogicalPlanner {
   
   private static LogicalNode createExplicitJoinTree_(Context ctx,
                                                      JoinClause joinClause) {
-    JoinNode join = new JoinNode(joinClause.getJoinType(),
-        new ScanNode(joinClause.getLeft()));
+
+    JoinNode join = null;
+    if (joinClause.hasLeftJoin()) {
+      LogicalNode outer = createExplicitJoinTree_(ctx, joinClause.getLeftJoin());
+      join = new JoinNode(joinClause.getJoinType(), outer);
+      join.setInner(new ScanNode(joinClause.getRight()));
+    } else {
+      join = new JoinNode(joinClause.getJoinType(), new ScanNode(joinClause.getLeft()),
+          new ScanNode(joinClause.getRight()));
+    }
     if (joinClause.hasJoinQual()) {
       join.setJoinQual(joinClause.getJoinQual());
     } else if (joinClause.hasJoinColumns()) { 
@@ -385,15 +393,9 @@ public class LogicalPlanner {
       // TODO - to be implemented. Now, tajo only support 'ON' join clause.
     }
     
-    if (joinClause.hasRightJoin()) {
-      join.setInner(createExplicitJoinTree_(ctx, joinClause.getRightJoin()));
-    } else {
-      join.setInner(new ScanNode(joinClause.getRight()));      
-    }
-    
     // Determine Join Schemas
     Schema merged;
-    if (join.getJoinType() == JoinType.NATURAL) {
+    if (joinClause.isNatural()) {
       merged = getNaturalJoin(join.getOuterNode(), join.getInnerNode());
     } else {
       merged = SchemaUtil.merge(join.getOuterNode().getOutputSchema(),
@@ -405,7 +407,7 @@ public class LogicalPlanner {
     
     // Determine join quals
     // if natural join, should have the equi join conditions on common columns
-    if (join.getJoinType() == JoinType.NATURAL) {
+    if (joinClause.isNatural()) {
       Schema leftSchema = join.getOuterNode().getOutputSchema();
       Schema rightSchema = join.getInnerNode().getOutputSchema();
       Schema commons = SchemaUtil.getCommons(
