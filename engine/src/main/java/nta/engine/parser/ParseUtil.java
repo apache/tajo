@@ -91,6 +91,8 @@ public class ParseUtil {
         return EvalNode.Type.LIKE;
       case NQLParser.EQUAL:
         return EvalNode.Type.EQUAL;
+      case NQLParser.NOT_EQUAL:
+        return EvalNode.Type.NOT_EQUAL;
       case NQLParser.LTH:
         return EvalNode.Type.LTH;
       case NQLParser.LEQ:
@@ -111,7 +113,7 @@ public class ParseUtil {
         return EvalNode.Type.DIVIDE;
       case NQLParser.MODULAR:
         return EvalNode.Type.MODULAR;
-      default: throw new InvalidEvalException();
+      default: throw new InvalidEvalException("We does not support " + parseCode + " type AST yet");
     }
   }
 }

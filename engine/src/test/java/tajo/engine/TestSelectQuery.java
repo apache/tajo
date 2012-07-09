@@ -7,7 +7,6 @@ import nta.engine.NtaTestingUtility;
 import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.Test;
-import tajo.client.ResultSetUtil;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -260,6 +259,18 @@ public class TestSelectQuery extends TpchTestBase {
         "select * from nulltable where col2 is not null");
     assertTrue(res.next());
     assertEquals(1, res.getInt(1));
+    assertTrue(res.next());
+    assertEquals(3, res.getInt(1));
+    assertFalse(res.next());
+  }
+
+  @Test
+  public final void testNotEqual() throws Exception {
+    ResultSet res = execute("select l_orderkey from lineitem where l_orderkey != 1");
+    assertTrue(res.next());
+    assertEquals(2, res.getInt(1));
+    assertTrue(res.next());
+    assertEquals(3, res.getInt(1));
     assertTrue(res.next());
     assertEquals(3, res.getInt(1));
     assertFalse(res.next());

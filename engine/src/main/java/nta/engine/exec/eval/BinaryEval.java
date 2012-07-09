@@ -146,6 +146,9 @@ public class BinaryEval extends EvalNode implements Cloneable {
 
       case EQUAL:
         return leftExpr.terminate(binCtx.left).equalsTo(rightExpr.terminate(binCtx.right));
+      case NOT_EQUAL:
+        return DatumFactory.createBool(!leftExpr.terminate(binCtx.left).equalsTo(rightExpr.terminate(binCtx.right)).
+            asBool());
       case LTH:
         return leftExpr.terminate(binCtx.left).lessThan(rightExpr.terminate(binCtx.right));
       case LEQ:
@@ -166,7 +169,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
       case MODULAR:
         return leftExpr.terminate(binCtx.left).modular(rightExpr.terminate(binCtx.right));
       default:
-        throw new InvalidEvalException();
+        throw new InvalidEvalException("We does not support " + type + " expression yet");
     }
   }
 
