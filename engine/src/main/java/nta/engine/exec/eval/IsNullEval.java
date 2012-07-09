@@ -22,13 +22,15 @@ public class IsNullEval extends BinaryEval {
   @Expose private Column columnRef;
   @Expose private Integer fieldId = null;
 
-  // volatile variable
-  private BoolDatum result;
-
   public IsNullEval(boolean not, FieldEval field) {
     super(Type.IS, field, NULL_EVAL);
     this.isNot = not;
     this.columnRef = field.getColumnRef();
+  }
+
+  @Override
+  public EvalContext newContext() {
+    return new IsNullEvalCtx();
   }
 
   @Override
@@ -43,15 +45,20 @@ public class IsNullEval extends BinaryEval {
 
   @Override
   public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
+    IsNullEvalCtx isNullCtx = (IsNullEvalCtx) ctx;
     if (fieldId == null) {
       fieldId = schema.getColumnId(columnRef.getQualifiedName());
     }
-    result = DatumFactory.createBool(tuple.get(fieldId).isNull());
+    if (isNot) {
+      isNullCtx.result.setValue(!tuple.get(fieldId).isNull());
+    } else {
+      isNullCtx.result.setValue(tuple.get(fieldId).isNull());
+    }
   }
 
   @Override
   public Datum terminate(EvalContext ctx) {
-    return result;
+    return ((IsNullEvalCtx)ctx).result;
   }
 
   public boolean isNot() {
@@ -76,5 +83,13 @@ public class IsNullEval extends BinaryEval {
     isNullEval.fieldId = fieldId;
 
     return isNullEval;
+  }
+
+  private class IsNullEvalCtx implements EvalContext {
+    BoolDatum result;
+
+    IsNullEvalCtx() {
+      this.result = DatumFactory.createBool(false);
+    }
   }
 }

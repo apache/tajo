@@ -1,8 +1,13 @@
 package tajo.engine;
 
+import nta.catalog.Options;
+import nta.catalog.Schema;
+import nta.catalog.proto.CatalogProtos;
+import nta.engine.NtaTestingUtility;
 import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.Test;
+import tajo.client.ResultSetUtil;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -218,5 +223,45 @@ public class TestSelectQuery extends TpchTestBase {
     }
 
     assertEquals(5, cnt);
+  }
+
+  @Test
+  public final void testIsNull() throws Exception {
+    String [] table = new String[] {"nulltable"};
+    Schema schema = new Schema();
+    schema.addColumn("col1", CatalogProtos.DataType.INT);
+    schema.addColumn("col2", CatalogProtos.DataType.STRING);
+    Schema [] schemas = new Schema[] {schema};
+    String [] data = {
+      "1|filled|",
+      "2||",
+      "3|filled|"
+    };
+    ResultSet res = NtaTestingUtility.run(table, schemas, new Options(), new String [][] {data},
+        "select * from nulltable where col2 is null");
+    assertTrue(res.next());
+    assertEquals(2, res.getInt(1));
+    assertFalse(res.next());
+  }
+
+  @Test
+  public final void testIsNotNull() throws Exception {
+    String [] table = new String[] {"nulltable"};
+    Schema schema = new Schema();
+    schema.addColumn("col1", CatalogProtos.DataType.INT);
+    schema.addColumn("col2", CatalogProtos.DataType.STRING);
+    Schema [] schemas = new Schema[] {schema};
+    String [] data = {
+        "1|filled|",
+        "2||",
+        "3|filled|"
+    };
+    ResultSet res = NtaTestingUtility.run(table, schemas, new Options(), new String [][] {data},
+        "select * from nulltable where col2 is not null");
+    assertTrue(res.next());
+    assertEquals(1, res.getInt(1));
+    assertTrue(res.next());
+    assertEquals(3, res.getInt(1));
+    assertFalse(res.next());
   }
 }
