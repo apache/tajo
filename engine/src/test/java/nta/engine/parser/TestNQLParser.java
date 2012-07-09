@@ -299,7 +299,6 @@ public class TestNQLParser {
   @Test
   public void testAllJoinTypes() {
     Tree tree = parseQuery(JOINS[7]);
-    System.out.println(tree.toStringTree());
     assertEquals(tree.getType(), NQLParser.SELECT);
     assertEquals(NQLParser.FROM, tree.getChild(0).getType());
     CommonTree fromAST = (CommonTree) tree.getChild(0);
@@ -504,7 +503,12 @@ public class TestNQLParser {
       "not (90 > 100)", // 23
       "type like '%top'", // 24
       "type not like 'top%'", // 25
-      "col = 'value'" // 26
+      "col = 'value'", // 26
+      "col is null", // 27
+      "col is not null", // 28
+      "col = null", // 29
+      "col != null" // 30
+
   };
 
   public static NQLParser parseExpr(String expr) {
@@ -711,6 +715,43 @@ public class TestNQLParser {
     assertEquals(NQLParser.EQUAL, node.getType());
     assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
     assertEquals(NQLParser.STRING, node.getChild(1).getType());
+  }
+
+  @Test
+  public void testIsNull() throws RecognitionException {
+    NQLParser p = parseExpr(exprs[27]);
+    CommonTree node = (CommonTree) p.search_condition().getTree();
+    assertEquals(NQLParser.IS, node.getType());
+    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
+    assertEquals(NQLParser.NULL, node.getChild(1).getType());
+  }
+
+  @Test
+  public void testIsNotNull() throws RecognitionException {
+    NQLParser p = parseExpr(exprs[28]);
+    CommonTree node = (CommonTree) p.search_condition().getTree();
+    assertEquals(NQLParser.IS, node.getType());
+    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
+    assertEquals(NQLParser.NULL, node.getChild(1).getType());
+    assertEquals(NQLParser.NOT, node.getChild(2).getType());
+  }
+
+  @Test
+  public void testEqualNull() throws RecognitionException {
+    NQLParser p = parseExpr(exprs[29]);
+    CommonTree node = (CommonTree) p.search_condition().getTree();
+    assertEquals(NQLParser.EQUAL, node.getType());
+    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
+    assertEquals(NQLParser.NULL, node.getChild(1).getType());
+  }
+
+  @Test
+  public void testNotEqualNull() throws RecognitionException {
+    NQLParser p = parseExpr(exprs[30]);
+    CommonTree node = (CommonTree) p.search_condition().getTree();
+    assertEquals(NQLParser.NOT_EQUAL, node.getType());
+    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
+    assertEquals(NQLParser.NULL, node.getChild(1).getType());
   }
 
   public static String [] caseStatements = {

@@ -403,6 +403,7 @@ predicate
   : comparison_predicate
   | in_predicate
   | like_predicate
+  | null_predicate
   ;
 
 in_predicate
@@ -411,6 +412,10 @@ in_predicate
 	
 like_predicate
   : f=fieldName NOT? LIKE s=string_value_expr -> ^(LIKE NOT? $f $s)
+  ;
+
+null_predicate
+  : f=expr IS (n=NOT)? NULL -> ^(IS $f NULL $n?)
   ;
 	
 comparison_predicate
@@ -444,6 +449,7 @@ atom
 literal
   : string_value_expr
   | signed_numerical_literal
+  | NULL
   ;
 	
 string_value_expr
