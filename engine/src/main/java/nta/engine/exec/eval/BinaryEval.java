@@ -128,8 +128,8 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	@Override
 	public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
     BinaryEvalCtx binCtx = (BinaryEvalCtx) ctx;
-	  leftExpr.eval(binCtx.left, schema, tuple);
-    rightExpr.eval(binCtx.right, schema, tuple);
+	  leftExpr.eval(binCtx == null ? null : binCtx.left, schema, tuple);
+    rightExpr.eval(binCtx == null ? null : binCtx.right, schema, tuple);
 	}
 
   @Override
