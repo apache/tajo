@@ -24,6 +24,10 @@ public abstract class Datum implements Comparable<Datum> {
 	public DatumType type() {
 		return this.type;
 	}
+
+  public boolean isNull() {
+    return type == DatumType.NULL;
+  }
 	
 	public boolean asBool() {
     throw new InvalidCastException(type + " cannot be casted to BOOL type");

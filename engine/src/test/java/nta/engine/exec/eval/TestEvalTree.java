@@ -653,4 +653,40 @@ public class TestEvalTree {
     expr.eval(evalCtx, peopleSchema, tuples[2]);
     assertFalse(expr.terminate(evalCtx).asBool());
   }
+
+  static String[] IS_NULL = {
+      "select name, score, age from people where name is null", // 0"
+      "select name, score, age from people where name is not null", // 1"
+  };
+
+  @Test
+  public void testIsNullEval() {
+    QueryBlock block;
+    EvalNode expr;
+
+    // suffix
+    Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
+    QueryContext ctx = factory.create();
+    block = (QueryBlock) analyzer.parse(ctx, IS_NULL[0]);
+    expr = block.getWhereCondition();
+
+    assertIsNull(expr);
+
+    block = (QueryBlock) analyzer.parse(ctx, IS_NULL[1]);
+    expr = block.getWhereCondition();
+
+    IsNullEval nullEval = (IsNullEval) expr;
+    assertTrue(nullEval.isNot());
+    assertIsNull(expr);
+  }
+
+  private void assertIsNull(EvalNode isNullEval) {
+    assertEquals(Type.IS, isNullEval.getType());
+    assertEquals(Type.FIELD, isNullEval.getLeftExpr().getType());
+    FieldEval left = (FieldEval) isNullEval.getLeftExpr();
+    assertEquals("name", left.getColumnName());
+    assertEquals(Type.CONST, isNullEval.getRightExpr().getType());
+    ConstEval constEval = (ConstEval) isNullEval.getRightExpr();
+    assertEquals(DatumFactory.createNullDatum(), constEval.getValue());
+  }
 }

@@ -828,6 +828,10 @@ public final class QueryAnalyzer {
     // binary expressions
     case NQLParser.LIKE:
         return parseLike(ctx, ast, query);
+
+    case NQLParser.IS:
+      return parseIsNullPredicate(ctx, ast, query);
+
     case NQLParser.AND:
     case NQLParser.OR:
     case NQLParser.EQUAL:
@@ -910,6 +914,19 @@ public final class QueryAnalyzer {
     default:
     }
     return null;
+  }
+
+  public IsNullEval parseIsNullPredicate(Context ctx, Tree tree, QueryBlock block) {
+    boolean not;
+
+    Preconditions.checkArgument(tree.getType() == NQLParser.IS, "The AST is not IS (NOT) NULL clause");
+    int idx = 0;
+
+    FieldEval field = (FieldEval) createEvalTree(ctx, tree.getChild(idx++), block);
+    Preconditions.checkArgument(tree.getChild(idx++).getType() == NQLParser.NULL,
+        "We does not support another kind of IS clause yet");
+    not = tree.getChildCount() == (idx + 1) && tree.getChild(idx).getType() == NQLParser.NOT;
+    return new IsNullEval(not, field);
   }
 
   /**

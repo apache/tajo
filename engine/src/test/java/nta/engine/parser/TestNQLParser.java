@@ -730,6 +730,7 @@ public class TestNQLParser {
   public void testIsNotNull() throws RecognitionException {
     NQLParser p = parseExpr(exprs[28]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
+    System.out.println(node.toStringTree());
     assertEquals(NQLParser.IS, node.getType());
     assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
     assertEquals(NQLParser.NULL, node.getChild(1).getType());

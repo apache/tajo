@@ -98,6 +98,7 @@ public abstract class EvalNode implements Cloneable {
     AND,
 	  OR,
 	  EQUAL("="),
+    IS,
 	  NOT_EQUAL("<>"),
 	  LTH("<"),
 	  LEQ("<="),
