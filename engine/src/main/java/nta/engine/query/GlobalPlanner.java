@@ -13,7 +13,6 @@ import nta.common.exception.NotImplementedException;
 import nta.engine.*;
 import nta.engine.MasterInterfaceProtos.Partition;
 import nta.engine.cluster.QueryManager;
-import nta.engine.exec.eval.EvalTreeUtil;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryBlock.FromTable;
 import nta.engine.planner.PlannerUtil;
@@ -465,16 +464,11 @@ public class GlobalPlanner {
     
     // TODO: set partition for store nodes
     if (join.hasJoinQual()) {
-      // repartition
-      Set<Column> cols = EvalTreeUtil.findDistinctRefColumns(join.getJoinQual());
-      Iterator<Column> it = cols.iterator();
-      while (it.hasNext()) {
-        Column col = it.next();
-        if (outerSchema.contains(col.getQualifiedName())) {
-          outerCollist.add(col);
-        } else if (innerSchema.contains(col.getQualifiedName())) {
-          innerCollist.add(col);
-        }
+      // getting repartition keys
+      List<Column[]> cols = PlannerUtil.getJoinKeyPairs(join.getJoinQual(), outerSchema, innerSchema);
+      for (Column [] pair : cols) {
+        outerCollist.add(pair[0]);
+        innerCollist.add(pair[1]);
       }
     } else {
       // broadcast
