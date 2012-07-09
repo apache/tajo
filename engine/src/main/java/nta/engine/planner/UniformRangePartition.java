@@ -52,12 +52,14 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
 
   @Override
   public TupleRange[] partition(int partNum) {
-    Preconditions.checkArgument(totalCard.compareTo(new BigDecimal(partNum)) > 0,
+    Preconditions.checkArgument(partNum > 0, "The number of partitions must be positive, but the given number: "
+        + partNum);
+    Preconditions.checkArgument(totalCard.compareTo(new BigDecimal(partNum)) >= 0,
         "the number of partition cannot exceed total cardinality (" + totalCard + ")");
 
     int varId;
     for (varId = 0; varId < cardForEachDigit.length; varId++) {
-      if (cardForEachDigit[varId].compareTo(new BigDecimal(partNum)) > 0)
+      if (cardForEachDigit[varId].compareTo(new BigDecimal(partNum)) >= 0)
         break;
     }
     this.variableId = varId;
