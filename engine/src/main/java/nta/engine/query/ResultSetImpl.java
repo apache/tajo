@@ -24,7 +24,9 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
 
 import nta.catalog.TableMeta;
@@ -45,10 +47,11 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.thirdparty.guava.common.collect.Lists;
 
 /**
  * @author jihoon
- *
+ * 
  */
 public class ResultSetImpl implements ResultSet {
   private final String cursorName = "tajo";
@@ -60,17 +63,16 @@ public class ResultSetImpl implements ResultSet {
   private int curRow;
   private long totalRow;
   private boolean wasNull;
-  
-  public ResultSetImpl(Configuration conf, String path) 
-      throws IOException {
+
+  public ResultSetImpl(Configuration conf, String path) throws IOException {
     this(conf, new Path(path));
   }
-  
-  public ResultSetImpl(Configuration conf, Path path) 
-      throws IOException {
+
+  public ResultSetImpl(Configuration conf, Path path) throws IOException {
     this.conf = conf;
     this.fs = path.getFileSystem(this.conf);
-    // TODO - to be improved. It can be solved to get the query finish status from master.
+    // TODO - to be improved. It can be solved to get the query finish status
+    // from master.
     try {
       this.meta = getMeta(this.conf, path);
     } catch (FileNotFoundException fnf) {
@@ -80,7 +82,7 @@ public class ResultSetImpl implements ResultSet {
     }
     this.totalRow = meta.getStat().getNumRows();
     Fragment[] frags = getFragments(meta, path);
-    
+
     switch (meta.getStoreType()) {
     case CSV:
       scanner = new CSVFile2(this.conf).openScanner(meta.getSchema(), frags);
@@ -91,38 +93,44 @@ public class ResultSetImpl implements ResultSet {
     }
     init();
   }
-  
+
   private void init() {
     cur = null;
     curRow = 0;
   }
-  
-  private TableMeta getMeta(Configuration conf, Path tablePath) 
+
+  private TableMeta getMeta(Configuration conf, Path tablePath)
       throws IOException {
     Path tableMetaPath = new Path(tablePath, ".meta");
     if (!fs.exists(tableMetaPath)) {
-      throw new FileNotFoundException(".meta file not found in "+
-          tablePath.toString());
+      throw new FileNotFoundException(".meta file not found in "
+          + tablePath.toString());
     }
     FSDataInputStream in = fs.open(tableMetaPath);
-    TableProto tableProto = (TableProto) FileUtil.loadProto(in, 
+    TableProto tableProto = (TableProto) FileUtil.loadProto(in,
         TableProto.getDefaultInstance());
     return new TableMetaImpl(tableProto);
   }
-  
-  private Fragment[] getFragments(TableMeta meta, Path tablePath) 
+
+  private Fragment[] getFragments(TableMeta meta, Path tablePath)
       throws IOException {
+    List<Fragment> fraglist = Lists.newArrayList();
     FileStatus[] files = fs.listStatus(new Path(tablePath, "data"));
-    Fragment [] frags = new Fragment[files.length];
+    // Fragment [] frags = new Fragment[files.length];
     String tbname = tablePath.getName();
-    for (int i = 0; i < frags.length; i++) {
-      frags[i] = new Fragment(tbname+"_"+i, files[i].getPath(), 
-          meta, 0l, files[i].getLen());
+    for (int i = 0; i < files.length; i++) {
+      if (files[i].getLen() == 0) {
+        continue;
+      }
+      fraglist.add(new Fragment(tbname + "_" + i, files[i].getPath(), meta, 0l,
+          files[i].getLen()));
     }
-    return frags;
+    return fraglist.toArray(new Fragment[fraglist.size()]);
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.Wrapper#isWrapperFor(java.lang.Class)
    */
   @Override
@@ -130,7 +138,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.Wrapper#unwrap(java.lang.Class)
    */
   @Override
@@ -138,7 +148,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#absolute(int)
    */
   @Override
@@ -146,15 +158,20 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#afterLast()
    */
   @Override
   public void afterLast() throws SQLException {
-    while (this.next());
+    while (this.next())
+      ;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#beforeFirst()
    */
   @Override
@@ -167,7 +184,9 @@ public class ResultSetImpl implements ResultSet {
     }
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#cancelRowUpdates()
    */
   @Override
@@ -175,7 +194,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#clearWarnings()
    */
   @Override
@@ -184,7 +205,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#close()
    */
   @Override
@@ -198,7 +221,9 @@ public class ResultSetImpl implements ResultSet {
     }
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#deleteRow()
    */
   @Override
@@ -206,7 +231,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#findColumn(java.lang.String)
    */
   @Override
@@ -214,7 +241,9 @@ public class ResultSetImpl implements ResultSet {
     return this.meta.getSchema().getColumnIdByName(colName);
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#first()
    */
   @Override
@@ -223,7 +252,9 @@ public class ResultSetImpl implements ResultSet {
     return this.next();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getArray(int)
    */
   @Override
@@ -232,7 +263,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getArray(java.lang.String)
    */
   @Override
@@ -241,7 +274,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getAsciiStream(int)
    */
   @Override
@@ -250,7 +285,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getAsciiStream(java.lang.String)
    */
   @Override
@@ -259,7 +296,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBigDecimal(int)
    */
   @Override
@@ -268,7 +307,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBigDecimal(java.lang.String)
    */
   @Override
@@ -277,7 +318,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBigDecimal(int, int)
    */
   @Override
@@ -286,7 +329,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBigDecimal(java.lang.String, int)
    */
   @Override
@@ -295,7 +340,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBinaryStream(int)
    */
   @Override
@@ -304,7 +351,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBinaryStream(java.lang.String)
    */
   @Override
@@ -313,7 +362,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBlob(int)
    */
   @Override
@@ -321,7 +372,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBlob(java.lang.String)
    */
   @Override
@@ -329,7 +382,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBoolean(int)
    */
   @Override
@@ -339,7 +394,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asBool();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBoolean(java.lang.String)
    */
   @Override
@@ -349,7 +406,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asBool();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getByte(int)
    */
   @Override
@@ -359,7 +418,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asByte();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getByte(java.lang.String)
    */
   @Override
@@ -369,7 +430,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asByte();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBytes(int)
    */
   @Override
@@ -379,7 +442,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asByteArray();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getBytes(java.lang.String)
    */
   @Override
@@ -389,7 +454,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asByteArray();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getCharacterStream(int)
    */
   @Override
@@ -398,7 +465,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getCharacterStream(java.lang.String)
    */
   @Override
@@ -407,7 +476,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getClob(int)
    */
   @Override
@@ -415,7 +486,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getClob(java.lang.String)
    */
   @Override
@@ -423,7 +496,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getConcurrency()
    */
   @Override
@@ -431,7 +506,9 @@ public class ResultSetImpl implements ResultSet {
     return ResultSet.CONCUR_READ_ONLY;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getCursorName()
    */
   @Override
@@ -439,7 +516,9 @@ public class ResultSetImpl implements ResultSet {
     return cursorName;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getDate(int)
    */
   @Override
@@ -448,7 +527,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getDate(java.lang.String)
    */
   @Override
@@ -457,7 +538,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getDate(int, java.util.Calendar)
    */
   @Override
@@ -466,7 +549,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getDate(java.lang.String, java.util.Calendar)
    */
   @Override
@@ -475,7 +560,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getDouble(int)
    */
   @Override
@@ -485,7 +572,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asDouble();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getDouble(java.lang.String)
    */
   @Override
@@ -495,7 +584,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asDouble();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getFetchDirection()
    */
   @Override
@@ -503,7 +594,9 @@ public class ResultSetImpl implements ResultSet {
     return ResultSet.FETCH_FORWARD;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getFetchSize()
    */
   @Override
@@ -511,17 +604,21 @@ public class ResultSetImpl implements ResultSet {
     return 0;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getFloat(int)
    */
   @Override
   public float getFloat(int fieldId) throws SQLException {
-    Datum datum =  cur.get(fieldId - 1);
+    Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
     return datum.asFloat();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getFloat(java.lang.String)
    */
   @Override
@@ -531,7 +628,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asFloat();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getHoldability()
    */
   @Override
@@ -539,7 +638,9 @@ public class ResultSetImpl implements ResultSet {
     return 0;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getInt(int)
    */
   @Override
@@ -549,7 +650,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asInt();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getInt(java.lang.String)
    */
   @Override
@@ -559,7 +662,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asInt();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getLong(int)
    */
   @Override
@@ -569,7 +674,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asLong();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getLong(java.lang.String)
    */
   @Override
@@ -579,7 +686,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asLong();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getMetaData()
    */
   @Override
@@ -587,7 +696,9 @@ public class ResultSetImpl implements ResultSet {
     return new ResultSetMetaDataImpl(meta);
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getNCharacterStream(int)
    */
   @Override
@@ -596,7 +707,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getNCharacterStream(java.lang.String)
    */
   @Override
@@ -605,7 +718,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getNClob(int)
    */
   @Override
@@ -613,7 +728,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getNClob(java.lang.String)
    */
   @Override
@@ -621,7 +738,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getNString(int)
    */
   @Override
@@ -630,7 +749,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getNString(java.lang.String)
    */
   @Override
@@ -639,7 +760,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getObject(int)
    */
   @Override
@@ -654,7 +777,9 @@ public class ResultSetImpl implements ResultSet {
     return d;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getObject(java.lang.String)
    */
   @Override
@@ -668,7 +793,9 @@ public class ResultSetImpl implements ResultSet {
     return d;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getObject(int, java.util.Map)
    */
   @Override
@@ -678,7 +805,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getObject(java.lang.String, java.util.Map)
    */
   @Override
@@ -688,7 +817,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getRef(int)
    */
   @Override
@@ -696,7 +827,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getRef(java.lang.String)
    */
   @Override
@@ -704,7 +837,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getRow()
    */
   @Override
@@ -712,7 +847,9 @@ public class ResultSetImpl implements ResultSet {
     return curRow;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getRowId(int)
    */
   @Override
@@ -721,7 +858,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getRowId(java.lang.String)
    */
   @Override
@@ -730,7 +869,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getSQLXML(int)
    */
   @Override
@@ -738,7 +879,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getSQLXML(java.lang.String)
    */
   @Override
@@ -746,7 +889,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getShort(int)
    */
   @Override
@@ -756,7 +901,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asShort();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getShort(java.lang.String)
    */
   @Override
@@ -766,7 +913,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asShort();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getStatement()
    */
   @Override
@@ -774,7 +923,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getString(int)
    */
   @Override
@@ -784,7 +935,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asChars();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getString(java.lang.String)
    */
   @Override
@@ -794,7 +947,9 @@ public class ResultSetImpl implements ResultSet {
     return datum.asChars();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getTime(int)
    */
   @Override
@@ -803,7 +958,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getTime(java.lang.String)
    */
   @Override
@@ -812,7 +969,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getTime(int, java.util.Calendar)
    */
   @Override
@@ -821,7 +980,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getTime(java.lang.String, java.util.Calendar)
    */
   @Override
@@ -830,7 +991,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getTimestamp(int)
    */
   @Override
@@ -839,7 +1002,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getTimestamp(java.lang.String)
    */
   @Override
@@ -848,7 +1013,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getTimestamp(int, java.util.Calendar)
    */
   @Override
@@ -857,7 +1024,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getTimestamp(java.lang.String, java.util.Calendar)
    */
   @Override
@@ -866,7 +1035,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getType()
    */
   @Override
@@ -874,7 +1045,9 @@ public class ResultSetImpl implements ResultSet {
     return ResultSet.TYPE_FORWARD_ONLY;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getURL(int)
    */
   @Override
@@ -883,7 +1056,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getURL(java.lang.String)
    */
   @Override
@@ -892,7 +1067,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getUnicodeStream(int)
    */
   @Override
@@ -900,7 +1077,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getUnicodeStream(java.lang.String)
    */
   @Override
@@ -908,7 +1087,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getWarnings()
    */
   @Override
@@ -917,7 +1098,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#insertRow()
    */
   @Override
@@ -925,7 +1108,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#isAfterLast()
    */
   @Override
@@ -933,7 +1118,9 @@ public class ResultSetImpl implements ResultSet {
     return this.curRow > this.totalRow;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#isBeforeFirst()
    */
   @Override
@@ -941,7 +1128,9 @@ public class ResultSetImpl implements ResultSet {
     return this.curRow == 0;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#isClosed()
    */
   @Override
@@ -949,7 +1138,9 @@ public class ResultSetImpl implements ResultSet {
     return this.curRow == -1;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#isFirst()
    */
   @Override
@@ -957,7 +1148,9 @@ public class ResultSetImpl implements ResultSet {
     return this.curRow == 1;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#isLast()
    */
   @Override
@@ -965,7 +1158,9 @@ public class ResultSetImpl implements ResultSet {
     return this.curRow == this.totalRow;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#last()
    */
   @Override
@@ -978,7 +1173,9 @@ public class ResultSetImpl implements ResultSet {
     return true;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#moveToCurrentRow()
    */
   @Override
@@ -986,7 +1183,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#moveToInsertRow()
    */
   @Override
@@ -994,7 +1193,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#next()
    */
   @Override
@@ -1014,7 +1215,9 @@ public class ResultSetImpl implements ResultSet {
     return false;
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#previous()
    */
   @Override
@@ -1022,7 +1225,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#refreshRow()
    */
   @Override
@@ -1030,7 +1235,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#relative(int)
    */
   @Override
@@ -1039,7 +1246,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#rowDeleted()
    */
   @Override
@@ -1047,7 +1256,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#rowInserted()
    */
   @Override
@@ -1055,7 +1266,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#rowUpdated()
    */
   @Override
@@ -1063,7 +1276,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#setFetchDirection(int)
    */
   @Override
@@ -1071,7 +1286,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#setFetchSize(int)
    */
   @Override
@@ -1079,7 +1296,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateArray(int, java.sql.Array)
    */
   @Override
@@ -1087,7 +1306,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateArray(java.lang.String, java.sql.Array)
    */
   @Override
@@ -1095,7 +1316,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateAsciiStream(int, java.io.InputStream)
    */
   @Override
@@ -1103,8 +1326,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateAsciiStream(java.lang.String, java.io.InputStream)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateAsciiStream(java.lang.String,
+   * java.io.InputStream)
    */
   @Override
   public void updateAsciiStream(String arg0, InputStream arg1)
@@ -1112,7 +1338,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateAsciiStream(int, java.io.InputStream, int)
    */
   @Override
@@ -1121,8 +1349,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateAsciiStream(java.lang.String, java.io.InputStream, int)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateAsciiStream(java.lang.String,
+   * java.io.InputStream, int)
    */
   @Override
   public void updateAsciiStream(String arg0, InputStream arg1, int arg2)
@@ -1130,7 +1361,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateAsciiStream(int, java.io.InputStream, long)
    */
   @Override
@@ -1139,8 +1372,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateAsciiStream(java.lang.String, java.io.InputStream, long)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateAsciiStream(java.lang.String,
+   * java.io.InputStream, long)
    */
   @Override
   public void updateAsciiStream(String arg0, InputStream arg1, long arg2)
@@ -1148,7 +1384,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBigDecimal(int, java.math.BigDecimal)
    */
   @Override
@@ -1156,8 +1394,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateBigDecimal(java.lang.String, java.math.BigDecimal)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateBigDecimal(java.lang.String,
+   * java.math.BigDecimal)
    */
   @Override
   public void updateBigDecimal(String arg0, BigDecimal arg1)
@@ -1165,7 +1406,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBinaryStream(int, java.io.InputStream)
    */
   @Override
@@ -1174,8 +1417,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateBinaryStream(java.lang.String, java.io.InputStream)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateBinaryStream(java.lang.String,
+   * java.io.InputStream)
    */
   @Override
   public void updateBinaryStream(String arg0, InputStream arg1)
@@ -1183,7 +1429,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBinaryStream(int, java.io.InputStream, int)
    */
   @Override
@@ -1192,8 +1440,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateBinaryStream(java.lang.String, java.io.InputStream, int)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateBinaryStream(java.lang.String,
+   * java.io.InputStream, int)
    */
   @Override
   public void updateBinaryStream(String arg0, InputStream arg1, int arg2)
@@ -1201,7 +1452,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBinaryStream(int, java.io.InputStream, long)
    */
   @Override
@@ -1210,8 +1463,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateBinaryStream(java.lang.String, java.io.InputStream, long)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateBinaryStream(java.lang.String,
+   * java.io.InputStream, long)
    */
   @Override
   public void updateBinaryStream(String arg0, InputStream arg1, long arg2)
@@ -1219,7 +1475,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBlob(int, java.sql.Blob)
    */
   @Override
@@ -1227,7 +1485,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBlob(java.lang.String, java.sql.Blob)
    */
   @Override
@@ -1235,7 +1495,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBlob(int, java.io.InputStream)
    */
   @Override
@@ -1243,7 +1505,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBlob(java.lang.String, java.io.InputStream)
    */
   @Override
@@ -1251,7 +1515,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBlob(int, java.io.InputStream, long)
    */
   @Override
@@ -1260,8 +1526,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateBlob(java.lang.String, java.io.InputStream, long)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateBlob(java.lang.String, java.io.InputStream,
+   * long)
    */
   @Override
   public void updateBlob(String arg0, InputStream arg1, long arg2)
@@ -1269,7 +1538,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBoolean(int, boolean)
    */
   @Override
@@ -1277,7 +1548,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBoolean(java.lang.String, boolean)
    */
   @Override
@@ -1285,7 +1558,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateByte(int, byte)
    */
   @Override
@@ -1293,7 +1568,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateByte(java.lang.String, byte)
    */
   @Override
@@ -1301,7 +1578,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBytes(int, byte[])
    */
   @Override
@@ -1309,7 +1588,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateBytes(java.lang.String, byte[])
    */
   @Override
@@ -1317,7 +1598,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateCharacterStream(int, java.io.Reader)
    */
   @Override
@@ -1325,8 +1608,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateCharacterStream(java.lang.String, java.io.Reader)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateCharacterStream(java.lang.String,
+   * java.io.Reader)
    */
   @Override
   public void updateCharacterStream(String arg0, Reader arg1)
@@ -1334,7 +1620,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateCharacterStream(int, java.io.Reader, int)
    */
   @Override
@@ -1343,8 +1631,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateCharacterStream(java.lang.String, java.io.Reader, int)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateCharacterStream(java.lang.String,
+   * java.io.Reader, int)
    */
   @Override
   public void updateCharacterStream(String arg0, Reader arg1, int arg2)
@@ -1352,7 +1643,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateCharacterStream(int, java.io.Reader, long)
    */
   @Override
@@ -1361,8 +1654,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateCharacterStream(java.lang.String, java.io.Reader, long)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateCharacterStream(java.lang.String,
+   * java.io.Reader, long)
    */
   @Override
   public void updateCharacterStream(String arg0, Reader arg1, long arg2)
@@ -1370,7 +1666,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateClob(int, java.sql.Clob)
    */
   @Override
@@ -1378,7 +1676,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateClob(java.lang.String, java.sql.Clob)
    */
   @Override
@@ -1386,7 +1686,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateClob(int, java.io.Reader)
    */
   @Override
@@ -1394,7 +1696,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateClob(java.lang.String, java.io.Reader)
    */
   @Override
@@ -1402,7 +1706,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateClob(int, java.io.Reader, long)
    */
   @Override
@@ -1410,7 +1716,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateClob(java.lang.String, java.io.Reader, long)
    */
   @Override
@@ -1419,7 +1727,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateDate(int, java.sql.Date)
    */
   @Override
@@ -1427,7 +1737,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateDate(java.lang.String, java.sql.Date)
    */
   @Override
@@ -1435,7 +1747,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateDouble(int, double)
    */
   @Override
@@ -1443,7 +1757,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateDouble(java.lang.String, double)
    */
   @Override
@@ -1451,7 +1767,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateFloat(int, float)
    */
   @Override
@@ -1459,7 +1777,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateFloat(java.lang.String, float)
    */
   @Override
@@ -1467,7 +1787,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateInt(int, int)
    */
   @Override
@@ -1475,7 +1797,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateInt(java.lang.String, int)
    */
   @Override
@@ -1483,7 +1807,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateLong(int, long)
    */
   @Override
@@ -1491,7 +1817,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateLong(java.lang.String, long)
    */
   @Override
@@ -1499,7 +1827,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNCharacterStream(int, java.io.Reader)
    */
   @Override
@@ -1507,8 +1837,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateNCharacterStream(java.lang.String, java.io.Reader)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateNCharacterStream(java.lang.String,
+   * java.io.Reader)
    */
   @Override
   public void updateNCharacterStream(String arg0, Reader arg1)
@@ -1516,7 +1849,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNCharacterStream(int, java.io.Reader, long)
    */
   @Override
@@ -1525,8 +1860,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateNCharacterStream(java.lang.String, java.io.Reader, long)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateNCharacterStream(java.lang.String,
+   * java.io.Reader, long)
    */
   @Override
   public void updateNCharacterStream(String arg0, Reader arg1, long arg2)
@@ -1534,7 +1872,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNClob(int, java.sql.NClob)
    */
   @Override
@@ -1542,7 +1882,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNClob(java.lang.String, java.sql.NClob)
    */
   @Override
@@ -1550,7 +1892,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNClob(int, java.io.Reader)
    */
   @Override
@@ -1558,7 +1902,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNClob(java.lang.String, java.io.Reader)
    */
   @Override
@@ -1566,7 +1912,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNClob(int, java.io.Reader, long)
    */
   @Override
@@ -1574,7 +1922,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNClob(java.lang.String, java.io.Reader, long)
    */
   @Override
@@ -1583,7 +1933,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNString(int, java.lang.String)
    */
   @Override
@@ -1591,7 +1943,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNString(java.lang.String, java.lang.String)
    */
   @Override
@@ -1599,7 +1953,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNull(int)
    */
   @Override
@@ -1607,7 +1963,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateNull(java.lang.String)
    */
   @Override
@@ -1615,7 +1973,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateObject(int, java.lang.Object)
    */
   @Override
@@ -1623,7 +1983,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateObject(java.lang.String, java.lang.Object)
    */
   @Override
@@ -1631,7 +1993,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateObject(int, java.lang.Object, int)
    */
   @Override
@@ -1639,8 +2003,11 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateObject(java.lang.String, java.lang.Object, int)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateObject(java.lang.String, java.lang.Object,
+   * int)
    */
   @Override
   public void updateObject(String arg0, Object arg1, int arg2)
@@ -1648,7 +2015,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateRef(int, java.sql.Ref)
    */
   @Override
@@ -1656,7 +2025,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateRef(java.lang.String, java.sql.Ref)
    */
   @Override
@@ -1664,7 +2035,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateRow()
    */
   @Override
@@ -1672,7 +2045,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateRowId(int, java.sql.RowId)
    */
   @Override
@@ -1680,7 +2055,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateRowId(java.lang.String, java.sql.RowId)
    */
   @Override
@@ -1688,7 +2065,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateSQLXML(int, java.sql.SQLXML)
    */
   @Override
@@ -1696,7 +2075,9 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateSQLXML(java.lang.String, java.sql.SQLXML)
    */
   @Override
@@ -1705,7 +2086,9 @@ public class ResultSetImpl implements ResultSet {
 
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateShort(int, short)
    */
   @Override
@@ -1714,7 +2097,9 @@ public class ResultSetImpl implements ResultSet {
 
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateShort(java.lang.String, short)
    */
   @Override
@@ -1723,7 +2108,9 @@ public class ResultSetImpl implements ResultSet {
 
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateString(int, java.lang.String)
    */
   @Override
@@ -1732,7 +2119,9 @@ public class ResultSetImpl implements ResultSet {
 
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateString(java.lang.String, java.lang.String)
    */
   @Override
@@ -1741,7 +2130,9 @@ public class ResultSetImpl implements ResultSet {
 
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateTime(int, java.sql.Time)
    */
   @Override
@@ -1750,7 +2141,9 @@ public class ResultSetImpl implements ResultSet {
 
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateTime(java.lang.String, java.sql.Time)
    */
   @Override
@@ -1759,7 +2152,9 @@ public class ResultSetImpl implements ResultSet {
 
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#updateTimestamp(int, java.sql.Timestamp)
    */
   @Override
@@ -1768,8 +2163,11 @@ public class ResultSetImpl implements ResultSet {
 
   }
 
-  /* (non-Javadoc)
-   * @see java.sql.ResultSet#updateTimestamp(java.lang.String, java.sql.Timestamp)
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#updateTimestamp(java.lang.String,
+   * java.sql.Timestamp)
    */
   @Override
   public void updateTimestamp(String arg0, Timestamp arg1) throws SQLException {
@@ -1777,7 +2175,9 @@ public class ResultSetImpl implements ResultSet {
 
   }
 
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#wasNull()
    */
   @Override
