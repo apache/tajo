@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.Map.Entry;
 
+import com.google.common.collect.Lists;
 import nta.catalog.Schema;
 import nta.catalog.statistics.TableStat;
 import nta.engine.AbstractQuery;
@@ -138,6 +139,15 @@ public class QueryUnit extends AbstractQuery {
 	public List<Fragment> getFragments(String key) {
 		return this.fragMap.get(key);
 	}
+
+  public List<Fragment> getAllFragments() {
+    List<Fragment> fragments = Lists.newArrayList();
+    for (List<Fragment> frags : fragMap.values()) {
+      fragments.addAll(frags);
+    }
+
+    return fragments;
+  }
 	
 	public LogicalNode getLogicalPlan() {
 	  return this.plan;

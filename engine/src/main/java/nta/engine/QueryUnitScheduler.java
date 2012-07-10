@@ -33,12 +33,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -138,6 +136,23 @@ public class QueryUnitScheduler extends Thread {
           pendingQueue.add(q);
           qm.updateQueryAssignInfo(hostName, q);
         }
+
+        // this is for debugging
+        Map<String,Integer> assigned = Maps.newTreeMap();
+        for (QueryUnit qt : units) {
+          if (assigned.containsKey(qt.getHost())) {
+            assigned.put(qt.getHost(), assigned.get(qt.getHost()) + qt.getAllFragments().size());
+          } else {
+            assigned.put(qt.getHost(), qt.getAllFragments().size());
+          }
+        }
+        LOG.info("=======================");
+        LOG.info("= Assigned Info");
+        for (Map.Entry<String,Integer> entry : assigned.entrySet()) {
+          LOG.info("Host: " + entry.getKey() + ", # of Tasks: " + entry.getValue());
+        }
+        LOG.info("=======================");
+
         requestPendingQueryUnits();
 
         TableStat stat = waitForFinishScheduleUnit(plan);
