@@ -27,7 +27,7 @@ import static org.jboss.netty.channel.Channels.pipeline;
  */
 public class Fetcher {
   private final static Log LOG = LogFactory.getLog(Fetcher.class);
-  
+
   private final URI uri;
   private final File file;
 
@@ -67,8 +67,8 @@ public class Fetcher {
       return null;
     }
 
-    String query = uri.getPath() + (uri.getQuery() != null ? "?" 
-        + uri.getQuery() : "");
+    String query = uri.getPath()
+        + (uri.getQuery() != null ? "?" + uri.getQuery() : "");
     // Prepare the HTTP request.
     HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
         HttpMethod.GET, query);
@@ -86,10 +86,10 @@ public class Fetcher {
 
     // Shut down executor threads to exit.
     bootstrap.releaseExternalResources();
-    
+
     return file;
   }
-  
+
   public URI getURI() {
     return this.uri;
   }
@@ -100,7 +100,7 @@ public class Fetcher {
     private RandomAccessFile raf;
     private FileChannel fc;
     private long length = -1;
-    
+
     public HttpClientHandler(File file) throws FileNotFoundException {
       this.file = file;
     }
@@ -113,20 +113,23 @@ public class Fetcher {
 
         StringBuilder sb = new StringBuilder();
         if (LOG.isDebugEnabled()) {
-          sb.append("STATUS: ")
-              .append(response.getStatus()).append(", VERSION: ")
-              .append(response.getProtocolVersion())
+          sb.append("STATUS: ").append(response.getStatus())
+              .append(", VERSION: ").append(response.getProtocolVersion())
               .append(", HEADER: ");
-          if (!response.getHeaderNames().isEmpty()) {
-            for (String name : response.getHeaderNames()) {
-              for (String value : response.getHeaders(name)) {
+        }
+        if (!response.getHeaderNames().isEmpty()) {
+          for (String name : response.getHeaderNames()) {
+            for (String value : response.getHeaders(name)) {
+              if (LOG.isDebugEnabled()) {
                 sb.append(name + " = " + value);
-                if (this.length == -1 && name.equals("Content-Length")) {
-                  this.length = Long.valueOf(value);
-                }
+              }
+              if (this.length == -1 && name.equals("Content-Length")) {
+                this.length = Long.valueOf(value);
               }
             }
           }
+        }
+        if (LOG.isDebugEnabled()) {
           LOG.debug(sb.toString());
         }
 
@@ -154,11 +157,11 @@ public class Fetcher {
           fc.close();
           raf.close();
           if (fileLength == length) {
-            LOG.info("Data fetch is done (total received bytes: "
-                + fileLength +")");
+            LOG.info("Data fetch is done (total received bytes: " + fileLength
+                + ")");
           } else {
-            LOG.info("Data fetch is done, but cannot get all data " +
-                "(received/total: " + fileLength + "/" + length + ")");
+            LOG.info("Data fetch is done, but cannot get all data "
+                + "(received/total: " + fileLength + "/" + length + ")");
           }
         } else {
           fc.write(chunk.getContent().toByteBuffer());
@@ -170,10 +173,11 @@ public class Fetcher {
   public static class HttpClientPipelineFactory implements
       ChannelPipelineFactory {
     private final File file;
+
     public HttpClientPipelineFactory(File file) {
       this.file = file;
     }
-    
+
     @Override
     public ChannelPipeline getPipeline() throws Exception {
       ChannelPipeline pipeline = pipeline();
