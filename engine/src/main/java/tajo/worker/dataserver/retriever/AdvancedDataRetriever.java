@@ -55,7 +55,6 @@ public class AdvancedDataRetriever implements DataRetriever {
     }
 
     String query = request.getUri().substring(startIdx + 1);
-    LOG.info("QUERY: " + query);
 
     Map<String,String> params = HttpUtil.getParamsFromQuery(query);
 

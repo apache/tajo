@@ -93,8 +93,10 @@ public class StorageManager {
     fs.mkdirs(dataDir);
     if (meta != null)
       writeTableMetaLocal(tablePath, meta);
-    
-    LOG.info("Initialized table root (" + tablePath + ")");
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Initialized table root (" + tablePath + ")");
+    }
     return dataDir;
 	}
 	
@@ -111,8 +113,10 @@ public class StorageManager {
     fs.mkdirs(dataDir);
     if (meta != null)
       writeTableMeta(tablePath, meta);
-    
-    LOG.info("Initialized table root (" + tablePath + ")");
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Initialized table root (" + tablePath + ")");
+    }
     return dataDir;
 	}
 	

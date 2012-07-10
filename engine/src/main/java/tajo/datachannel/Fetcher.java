@@ -112,21 +112,23 @@ public class Fetcher {
         HttpResponse response = (HttpResponse) e.getMessage();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("STATUS: ")
-            .append(response.getStatus()).append(", VERSION: ")
-            .append(response.getProtocolVersion())
-            .append(", HEADER: ");
-        if (!response.getHeaderNames().isEmpty()) {
-          for (String name : response.getHeaderNames()) {
-            for (String value : response.getHeaders(name)) {
-              sb.append(name + " = " + value);
-              if (this.length == -1 && name.equals("Content-Length")) {
-                this.length = Long.valueOf(value);
+        if (LOG.isDebugEnabled()) {
+          sb.append("STATUS: ")
+              .append(response.getStatus()).append(", VERSION: ")
+              .append(response.getProtocolVersion())
+              .append(", HEADER: ");
+          if (!response.getHeaderNames().isEmpty()) {
+            for (String name : response.getHeaderNames()) {
+              for (String value : response.getHeaders(name)) {
+                sb.append(name + " = " + value);
+                if (this.length == -1 && name.equals("Content-Length")) {
+                  this.length = Long.valueOf(value);
+                }
               }
             }
           }
+          LOG.debug(sb.toString());
         }
-        LOG.info(sb.toString());
 
         if (response.getStatus() == HttpResponseStatus.NO_CONTENT) {
           LOG.info("There are no data corresponding to the request");

@@ -195,10 +195,27 @@ public class QueryUnitScheduler extends Thread {
     while (wait) {
       Thread.sleep(WAIT_PERIOD);
       wait = false;
+
+      int inited = 0;
+      int pending = 0;
+      int inprogress = 0;
+      int success = 0;
+      int aborted = 0;
+      int killed = 0;
+
       for (QueryUnit unit : units) {
-        LOG.info("==== uid: " + unit.getId() + 
+/*        LOG.info("==== uid: " + unit.getId() +
             " status: " + unit.getInProgressStatus() + 
-            " left time: " + unit.getLeftTime());
+            " left time: " + unit.getLeftTime());*/
+        switch (unit.getInProgressStatus().getStatus()) {
+          case INITED: inited++; break;
+          case PENDING: pending++; break;
+          case INPROGRESS: inprogress++; break;
+          case FINISHED: success++; break;
+          case ABORTED: aborted++; break;
+          case KILLED: killed++; break;
+        }
+
         if (unit.getInProgressStatus().
             getStatus() != QueryStatus.FINISHED) {
           unit.updateExpireTime(WAIT_PERIOD);
@@ -222,6 +239,10 @@ public class QueryUnitScheduler extends Thread {
 //              CommandRequestProto.newBuilder().addCommand(cmd.build()).build());
         }
       }
+
+      LOG.info("Job " + scheduleUnit.getId() + " In Progress (Total: " + units.length
+          + ", Finished: " + success + ", Inited: " + inited + ", Pending: " + pending
+          + ", Running: " + inprogress + ", Aborted: " + aborted + ", Killed: " + killed);
     }
     List<TableStat> stats = Lists.newArrayList();
     for (QueryUnit unit : units ) {

@@ -241,7 +241,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
               || status == QueryStatus.DATASERVER
               || status == QueryStatus.ABORTED 
               || status == QueryStatus.KILLED) {
-                task.finalize();          
+                task.finalize();
                 LOG.info("Query unit ( " + qid + ") is finalized");
               } else {
                 LOG.error("ERROR: Illegal State of " + qid + "(" + status + ")");
@@ -570,33 +570,24 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       }
       fetcherRunners = getFetchRunners(ctx, request.getFetches());      
       ctx.setStatus(QueryStatus.INITED);
-      LOG.info("=====================================================");
-      LOG.info("* Task Initialization Info ");
-      LOG.info("* queryId: " + request.getId());
-      LOG.info("* interQuery: " + interQuery);
-      if (interQuery) {
-        LOG.info("* partition type: " + this.partitionType);
-      }
-      LOG.info("* fragments (total: " + request.getFragments().size() + ")");
+      LOG.info("==================================");
+      LOG.info("* Subquery " + request.getId() + " is initialized");
+      LOG.info("* InterQuery: " + interQuery
+          + (interQuery ? ", Use " + this.partitionType  + " partitioning":""));
+
+      LOG.info("* Fragments (num: " + request.getFragments().size() + ")");
       for (Fragment f: request.getFragments()) {
-        LOG.info("** table id:" + f.getId());
-        LOG.info("** path:" + f.getPath());
-        LOG.info("** start offset:" + f.getStartOffset());
-        LOG.info("** length :" + f.getLength());
-        LOG.info("** store type :" + f.getMeta().getStoreType());
-        LOG.info("** schema :\n" + f.getMeta().getSchema());
-        LOG.info("----------------------------------");
+        LOG.info("==> Table Id:" + f.getId() + ", path:" + f.getPath() + "(" + f.getMeta().getStoreType() + "), " +
+            "(start:" + f.getStartOffset() + ", length: " + f.getLength() + ")");
       }
-      LOG.info("* fetches (total:" + request.getFetches().size() + ") :");
+      LOG.info("* Fetches (total:" + request.getFetches().size() + ") :");
       for (Fetch f : request.getFetches()) {
-        LOG.info("** matched table: " + f.getName());
-        LOG.info("** url: " + f.getUrls());
-        LOG.info("----------------------------------");
+        LOG.info("==> Table Id: " + f.getName() + ", url: " + f.getUrls());
       }
-      LOG.info("* local task dir: " + localQueryTmpDir.getAbsolutePath());
+      LOG.info("* Local task dir: " + localQueryTmpDir.getAbsolutePath());
       LOG.info("* plan:\n");
       LOG.info(plan.toString());
-      LOG.info("=====================================================");
+      LOG.info("==================================");
     }
 
     public void init() throws InternalException {      
