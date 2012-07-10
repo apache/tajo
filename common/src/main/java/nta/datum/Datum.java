@@ -108,7 +108,12 @@ public abstract class Datum implements Comparable<Datum> {
   }
 	
 	public BoolDatum equalsTo(Datum datum) {
-	  return DatumFactory.createBool(compareTo(datum) == 0);
+    if (this.isNull() || datum.isNull()) {
+    // TODO - comparing any value against null will be always unknown
+      return DatumFactory.createBool(false);
+    } else {
+	    return DatumFactory.createBool(compareTo(datum) == 0);
+    }
 	}
 
 	public BoolDatum lessThan(Datum datum) {
