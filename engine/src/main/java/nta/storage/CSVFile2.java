@@ -167,7 +167,9 @@ public class CSVFile2 extends Storage {
         }
         sb.append(delimiter);
       }
-      sb.deleteCharAt(sb.length() - 1);
+      if(sb.length() > 0) {
+        sb.deleteCharAt(sb.length() - 1);
+      }
       sb.append('\n');
       fos.writeBytes(sb.toString());
       
