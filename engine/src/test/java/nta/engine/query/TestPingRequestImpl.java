@@ -34,7 +34,7 @@ public class TestPingRequestImpl {
                 QueryIdFactory.newSubQueryId(
                     QueryIdFactory.newQueryId()))).getProto())
         .setProgress(0.5f)
-        .setStatus(QueryStatus.FINISHED);
+        .setStatus(QueryStatus.QUERY_FINISHED);
     list.add(builder.build());
     
     builder = InProgressStatusProto.newBuilder()
@@ -43,7 +43,7 @@ public class TestPingRequestImpl {
                 QueryIdFactory.newSubQueryId(
                     QueryIdFactory.newQueryId()))).getProto())
         .setProgress(0.5f)
-        .setStatus(QueryStatus.FINISHED);
+        .setStatus(QueryStatus.QUERY_FINISHED);
     list.add(builder.build());
     
     PingRequest r1 = new PingRequestImpl(System.currentTimeMillis(), 

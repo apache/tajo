@@ -95,7 +95,7 @@ public class TestQueryManager {
     s.addAll(qm.getAssignedWorkers(plan));
     List<TableStat> stats = Lists.newArrayList();
     for (QueryUnit unit : plan.getQueryUnits()) {
-      assertEquals(QueryStatus.FINISHED, unit.getInProgressStatus().getStatus());
+      assertEquals(QueryStatus.QUERY_FINISHED, unit.getInProgressStatus().getStatus());
       stats.add(unit.getStats());
     }
     TableStat stat = null;

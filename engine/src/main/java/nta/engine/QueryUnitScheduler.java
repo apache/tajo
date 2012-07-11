@@ -123,7 +123,7 @@ public class QueryUnitScheduler extends Thread {
           stat.addColumnStat(new ColumnStat(plan.getOutputSchema().getColumn(i)));
         }
         qm.getSubQuery(plan.getId().getSubQueryId()).setTableStat(stat);
-        plan.setStatus(QueryStatus.FINISHED);
+        plan.setStatus(QueryStatus.QUERY_FINISHED);
         return;
       } else {
         String hostName;
@@ -223,16 +223,16 @@ public class QueryUnitScheduler extends Thread {
             " status: " + unit.getInProgressStatus() + 
             " left time: " + unit.getLeftTime());*/
         switch (unit.getInProgressStatus().getStatus()) {
-          case INITED: inited++; break;
-          case PENDING: pending++; break;
-          case INPROGRESS: inprogress++; break;
-          case FINISHED: success++; break;
-          case ABORTED: aborted++; break;
-          case KILLED: killed++; break;
+          case QUERY_INITED: inited++; break;
+          case QUERY_PENDING: pending++; break;
+          case QUERY_INPROGRESS: inprogress++; break;
+          case QUERY_FINISHED: success++; break;
+          case QUERY_ABORTED: aborted++; break;
+          case QUERY_KILLED: killed++; break;
         }
 
         if (unit.getInProgressStatus().
-            getStatus() != QueryStatus.FINISHED) {
+            getStatus() != QueryStatus.QUERY_FINISHED) {
           unit.updateExpireTime(WAIT_PERIOD);
           wait = true;
           if (unit.getLeftTime() <= 0) {

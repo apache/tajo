@@ -387,7 +387,7 @@ public class TestGlobalQueryPlanner {
       InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder();
       builder.setId(unit.getId().getProto())
       .setProgress(1.0f)
-      .setStatus(QueryStatus.FINISHED);
+      .setStatus(QueryStatus.QUERY_FINISHED);
       
       qm.updateProgress(unit.getId(), builder.build());
     }

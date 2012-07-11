@@ -229,7 +229,7 @@ public class TestLeafServer {
     Path secData = sm.initLocalTableBase(new Path(TEST_PATH + "/sec"), secMeta);
     
     for (InProgressStatusProto ips : list) {
-      if (ips.getStatus() == QueryStatus.FINISHED) {
+      if (ips.getStatus() == QueryStatus.QUERY_FINISHED) {
         long sum = 0;
         List<Partition> partitions = ips.getPartitionsList();
         assertEquals(2, partitions.size());
@@ -299,7 +299,7 @@ public class TestLeafServer {
         // Because this query is to store, it should have the statistics info 
         // of the store data. The below 'assert' examines the existence of 
         // the statistics info.
-        if (ips.getStatus() == QueryStatus.FINISHED) {
+        if (ips.getStatus() == QueryStatus.QUERY_FINISHED) {
           reported.add(new QueryUnitId(ips.getId()));
         }
       }

@@ -16,7 +16,7 @@ public class InProgressStatus {
   
   public InProgressStatus() {
     this.setProgress(0.f);
-    this.setStatus(QueryStatus.INITED);
+    this.setStatus(QueryStatus.QUERY_INITED);
   }
   
   public InProgressStatus(float progress, QueryStatus status) {

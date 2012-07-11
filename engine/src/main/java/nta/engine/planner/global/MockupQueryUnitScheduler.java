@@ -85,11 +85,11 @@ public class MockupQueryUnitScheduler {
           Thread.sleep(1000);
           builder.setId(id.getProto());
           builder.setProgress(i/3.f);
-          builder.setStatus(QueryStatus.INPROGRESS);
+          builder.setStatus(QueryStatus.QUERY_INPROGRESS);
           builder.setResultStats(buildStatSet().getProto());
           qm.updateProgress(id, builder.build());
         }
-        builder.setStatus(QueryStatus.FINISHED);
+        builder.setStatus(QueryStatus.QUERY_FINISHED);
         qm.updateProgress(id, builder.build());
       } catch (InterruptedException e) {
         e.printStackTrace();

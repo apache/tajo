@@ -96,9 +96,9 @@ public class QueryManager {
       InProgressStatusProto progress) throws NoSuchQueryIdException {
     QueryUnit unit = queries.get(queryUnitId.getQueryId()).getQueryUnit(queryUnitId);
     if (unit != null
-        && (unit.getStatus() != MasterInterfaceProtos.QueryStatus.FINISHED
-        || unit.getStatus() != MasterInterfaceProtos.QueryStatus.ABORTED
-        || unit.getStatus() != MasterInterfaceProtos.QueryStatus.KILLED)) {
+        && (unit.getStatus() != MasterInterfaceProtos.QueryStatus.QUERY_FINISHED
+        || unit.getStatus() != MasterInterfaceProtos.QueryStatus.QUERY_ABORTED
+        || unit.getStatus() != MasterInterfaceProtos.QueryStatus.QUERY_KILLED)) {
       unit.setProgress(progress.getProgress());
       unit.setStatus(progress.getStatus());
       if (progress.getPartitionsCount() > 0) {

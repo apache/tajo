@@ -237,10 +237,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
 
             switch (cmd.getType()) {
             case FINALIZE:
-              if (status == QueryStatus.FINISHED 
-              || status == QueryStatus.DATASERVER
-              || status == QueryStatus.ABORTED 
-              || status == QueryStatus.KILLED) {
+              if (status == QueryStatus.QUERY_FINISHED
+              || status == QueryStatus.QUERY_DATASERVER
+              || status == QueryStatus.QUERY_ABORTED
+              || status == QueryStatus.QUERY_KILLED) {
                 task.finalize();
                 LOG.info("Query unit ( " + qid + ") is finalized");
               } else {
@@ -249,7 +249,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
 
               break;
             case STOP:
-              if (status == QueryStatus.INPROGRESS) {
+              if (status == QueryStatus.QUERY_INPROGRESS) {
                 task.kill();
                 LOG.info("Query unit ( " + qid + ") is killed");
               } else {
@@ -265,7 +265,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       LOG.fatal("Unhandled exception. Starting shutdown.", t);
     } finally {     
       for (Task t : tasks.values()) {
-        if (t.getStatus() != QueryStatus.FINISHED) {
+        if (t.getStatus() != QueryStatus.QUERY_FINISHED) {
           t.kill();
         }
       }
@@ -310,9 +310,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     for (Task task : tasks.values()) {
 //      LOG.info(task);
       qs = task.getStatus();
-      if (qs == QueryStatus.ABORTED 
-          || qs == QueryStatus.KILLED
-          || qs == QueryStatus.FINISHED) {
+      if (qs == QueryStatus.QUERY_ABORTED
+          || qs == QueryStatus.QUERY_KILLED
+          || qs == QueryStatus.QUERY_FINISHED) {
         // TODO - in-progress queries should be kept until this leafserver 
         // ensures that this report is delivered.
         tobeRemoved.add(task.getId());
@@ -509,7 +509,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     
     public void schedule(Task task) {      
       this.blockingQueue.add(task);
-      task.setStatus(QueryStatus.PENDING);
+      task.setStatus(QueryStatus.QUERY_PENDING);
     }
     
     public void shutdown() {
@@ -569,7 +569,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         }
       }
       fetcherRunners = getFetchRunners(ctx, request.getFetches());      
-      ctx.setStatus(QueryStatus.INITED);
+      ctx.setStatus(QueryStatus.QUERY_INITED);
       LOG.info("==================================");
       LOG.info("* Subquery " + request.getId() + " is initialized");
       LOG.info("* InterQuery: " + interQuery
@@ -626,13 +626,13 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     public void kill() {
       killed = true;
       ctx.stop();
-      ctx.setStatus(QueryStatus.KILLED);
+      ctx.setStatus(QueryStatus.QUERY_KILLED);
     }
     
     public void finalize() {
       // remove itself from worker
       // 끝난건지 확인
-      if (ctx.getStatus() == QueryStatus.FINISHED) {
+      if (ctx.getStatus() == QueryStatus.QUERY_FINISHED) {
         try {
           // ctx.getWorkDir() 지우기
           localFS.delete(new Path(ctx.getWorkDir().getAbsolutePath()), true);
@@ -661,7 +661,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       }
       
       
-      if (ctx.getStatus() == QueryStatus.FINISHED && interQuery) {
+      if (ctx.getStatus() == QueryStatus.QUERY_FINISHED && interQuery) {
         Iterator<Entry<Integer,String>> it = ctx.getRepartitions();
         if (it.hasNext()) {          
           do {
@@ -687,7 +687,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     @Override
     public void run() {
       try {
-        ctx.setStatus(QueryStatus.INPROGRESS);
+        ctx.setStatus(QueryStatus.QUERY_INPROGRESS);
         LOG.info("Query status of " + ctx.getQueryId() + " is changed to " + getStatus());
         if (ctx.hasFetchPhase()) {
           // If the fetch is still in progress, the query unit must wait for 
@@ -713,9 +713,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           ctx.setProgress(0.0f);
           QueryStatus failedStatus = null;
           if (killed) {
-            failedStatus = QueryStatus.KILLED;
+            failedStatus = QueryStatus.QUERY_KILLED;
           } else if (aborted) {
-            failedStatus = QueryStatus.ABORTED;
+            failedStatus = QueryStatus.QUERY_ABORTED;
           }
           ctx.setStatus(failedStatus);
           LOG.info("Query status of " + ctx.getQueryId() + " is changed to "
@@ -740,9 +740,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
            LOG.info("LeafServer starts to serve as HTTP data server for " 
                + getId());
           }
-          ctx.setStatus(QueryStatus.FINISHED);
+          ctx.setStatus(QueryStatus.QUERY_FINISHED);
           LOG.info("Query status of " + ctx.getQueryId() + " is changed to "
-              + QueryStatus.FINISHED);
+              + QueryStatus.QUERY_FINISHED);
         }
       }
     }
@@ -798,10 +798,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       QueryStatus status = task.getStatus();
       switch (cmd.getType()) {
       case FINALIZE:
-        if (status == QueryStatus.FINISHED 
-        || status == QueryStatus.DATASERVER
-        || status == QueryStatus.ABORTED 
-        || status == QueryStatus.KILLED) {
+        if (status == QueryStatus.QUERY_FINISHED
+        || status == QueryStatus.QUERY_DATASERVER
+        || status == QueryStatus.QUERY_ABORTED
+        || status == QueryStatus.QUERY_KILLED) {
           task.finalize();          
           LOG.info("Query unit ( " + uid + ") is finalized");
         } else {

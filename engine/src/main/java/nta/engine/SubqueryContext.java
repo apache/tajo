@@ -65,7 +65,7 @@ public class SubqueryContext extends Context {
     this.workDir = workDir;
     this.repartitions = Maps.newHashMap();
     
-    status = QueryStatus.INITED;
+    status = QueryStatus.QUERY_INITED;
   }
   
   public QueryStatus getStatus() {

@@ -26,5 +26,5 @@ bin=`cd "$bin"; pwd`
 # start dfs daemons
 "$bin"/start-zkserver.sh --config $HADOOP_CONF_DIR
 
-# start mapred daemons
+# start tajo daemons
 "$bin"/start-tajo.sh --config $HADOOP_CONF_DIR
