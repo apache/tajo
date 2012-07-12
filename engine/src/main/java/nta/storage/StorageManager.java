@@ -388,10 +388,10 @@ public class StorageManager {
           start += defaultBlockSize;
           remainFileSize -= defaultBlockSize;
         }
-        listTablets.add(new Fragment(tablePath.getName(), file.getPath(), meta, start,
+        listTablets.add(new Fragment(tableName, file.getPath(), meta, start,
             remainFileSize));
       } else {
-        listTablets.add(new Fragment(tablePath.getName(), file.getPath(), meta, 0,
+        listTablets.add(new Fragment(tableName, file.getPath(), meta, 0,
             remainFileSize));
       }
     }
