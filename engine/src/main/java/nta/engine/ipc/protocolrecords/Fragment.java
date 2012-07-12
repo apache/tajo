@@ -168,7 +168,14 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   @Override
   public int compareTo(Fragment t) {
     if (getPath().equals(t.getPath())) {
-      return (int) (this.getStartOffset() - t.getStartOffset());
+      long diff = this.getStartOffset() - t.getStartOffset();
+      if (diff < 0) {
+        return -1;
+      } else if (diff > 0) {
+        return 1;
+      } else {
+        return 0;
+      }
     } else {
       return -1;
     }

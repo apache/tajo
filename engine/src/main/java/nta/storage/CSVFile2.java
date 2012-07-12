@@ -2,11 +2,9 @@ package nta.storage;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
+import com.google.common.collect.Lists;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
@@ -207,7 +205,7 @@ public class CSVFile2 extends Storage {
   public static class CSVScanner extends FileScanner {
     private FileSystem fs;
     private FSDataInputStream fis;
-    private SortedSet<Fragment> tabletSet;
+    private List<Fragment> tabletList;
     private Iterator<Fragment> tabletIter;
     private Fragment curTablet;
     private long startOffset, length;
@@ -243,13 +241,12 @@ public class CSVFile2 extends Storage {
       if (this.delimiter.equals("|")) {
         this.delimiter = "\\|";
       }
-      
-      // set tablets iterator.
-      this.tabletSet = new TreeSet<Fragment>();
+
       this.offsetCurIndexMap = new HashMap<Long, Integer>();
-      for (Fragment t : tablets)
-        this.tabletSet.add(t);
-      this.tabletIter = tabletSet.iterator();
+      // set tablets iterator.
+      this.tabletList = Lists.newArrayList(tablets);
+      Collections.sort(this.tabletList);
+      this.tabletIter = tabletList.iterator();
       openNextTablet();
     }
     

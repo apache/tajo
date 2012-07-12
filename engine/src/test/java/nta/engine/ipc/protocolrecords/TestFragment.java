@@ -3,6 +3,7 @@ package nta.engine.ipc.protocolrecords;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.SortedSet;
 
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
@@ -12,6 +13,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.json.GsonCreator;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -89,6 +91,23 @@ public class TestFragment {
     for(int i = 0; i < num; i++) {
       assertEquals("tablet1_"+i, tablets[i].getId());
     }
+  }
+
+  @Test
+  public final void testCompareTo2() {
+    final int num = 1860;
+    Fragment [] tablets = new Fragment[num];
+    for (int i = num - 1; i >= 0; i--) {
+      tablets[i]
+          = new Fragment("tablet1_"+i, new Path("tablet0"), meta1, (long)i * 6553500,
+          (long)(i+1) * 6553500);
+    }
+
+    SortedSet sortedSet = Sets.newTreeSet();
+    for (Fragment frag : tablets) {
+      sortedSet.add(frag);
+    }
+    assertEquals(num, sortedSet.size());
   }
   
 //  @Test
