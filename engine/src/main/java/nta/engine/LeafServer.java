@@ -140,7 +140,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     
     this.zkClient = new ZkClient(this.conf);
     this.catalog = new CatalogClient(zkClient);
-    this.ctxFactory = new SubqueryContext.Factory(catalog);
+    this.ctxFactory = new SubqueryContext.Factory();
     this.queryLauncher = new QueryLauncher();
     this.queryLauncher.start();
     this.queryEngine = new TQueryEngine(conf, catalog, zkClient);

@@ -87,7 +87,7 @@ public class TestSortExec {
   @Test
   public final void testNext() throws IOException {
     Fragment[] frags = sm.split("employee");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("TestSortExec");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(

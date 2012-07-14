@@ -123,7 +123,7 @@ public class TestNLJoinExec {
     
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);
     
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("CrossJoin");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
@@ -154,7 +154,7 @@ public class TestNLJoinExec {
     
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);
     
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("InnerJoin");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(

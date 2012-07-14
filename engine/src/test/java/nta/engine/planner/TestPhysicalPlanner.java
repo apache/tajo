@@ -122,7 +122,7 @@ public class TestPhysicalPlanner {
     appender.flush();
     appender.close();
     catalog.addTable(score);
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     analyzer = new QueryAnalyzer(catalog);
   }
 
@@ -155,7 +155,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testCreateScanPlan() throws IOException {
     Fragment[] frags = sm.split("employee");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     QueryUnitId id = QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -292,7 +292,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testStorePlan() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     QueryUnitId id = QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
@@ -331,7 +331,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testPartitionedStorePlan() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
 
     QueryUnitId id = QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
@@ -388,7 +388,7 @@ public class TestPhysicalPlanner {
   public final void testPartitionedStorePlanWithEmptyGroupingSet()
       throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
 
     QueryUnitId id = QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
@@ -441,7 +441,7 @@ public class TestPhysicalPlanner {
   //@Test
   public final void testAggregationFunction() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("testAggregationFunction");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
@@ -465,7 +465,7 @@ public class TestPhysicalPlanner {
   //@Test
   public final void testCountFunction() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("testCountFunction");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
@@ -487,7 +487,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testGroupByWithNullValue() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("testGroupByWithNullValue");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
@@ -511,7 +511,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testUnionPlan() throws IOException {
     Fragment[] frags = sm.split("employee");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("testUnionPlan");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
@@ -539,7 +539,7 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testEvalExpr() throws IOException {
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("testEvalExpr");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
@@ -574,7 +574,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testCreateIndex() throws IOException {
     Fragment[] frags = sm.split("employee");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("testCreateIndex");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
         QueryIdFactory.newScheduleUnitId(
@@ -602,7 +602,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testDuplicateEliminate() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
 
     File workDir = NtaTestingUtility.getTestDir("testDuplicateEliminate");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
@@ -635,7 +635,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testIndexedStoreExec() throws IOException {
     Fragment[] frags = sm.split("employee");
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
 
     File workDir = NtaTestingUtility.getTestDir("testIndexedStoreExec");
     SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(

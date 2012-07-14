@@ -92,7 +92,7 @@ public class WorkerTestingUtil {
   public WorkerTestingUtil(Configuration conf) throws IOException {
     this.conf = conf;
     this.catalog = new LocalCatalog(conf);
-    factory = new SubqueryContext.Factory(catalog);
+    factory = new SubqueryContext.Factory();
     analyzer = new QueryAnalyzer(catalog);
   }
 
