@@ -8,12 +8,15 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import nta.catalog.exception.*;
 import nta.catalog.exception.AlreadyExistsFunctionException;
+import nta.catalog.exception.AlreadyExistsIndexException;
+import nta.catalog.exception.AlreadyExistsTableException;
+import nta.catalog.exception.NoSuchFunctionException;
+import nta.catalog.exception.NoSuchIndexException;
+import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.CatalogProtos.ContainFunctionRequest;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionDescProto;
@@ -31,7 +34,25 @@ import nta.catalog.store.CatalogStore;
 import nta.catalog.store.DBStore;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
-import nta.engine.function.builtin.*;
+import nta.engine.function.builtin.AvgDouble;
+import nta.engine.function.builtin.AvgFloat;
+import nta.engine.function.builtin.AvgInt;
+import nta.engine.function.builtin.AvgLong;
+import nta.engine.function.builtin.NewCountRows;
+import nta.engine.function.builtin.NewCountValue;
+import nta.engine.function.builtin.NewMaxDouble;
+import nta.engine.function.builtin.NewMaxFloat;
+import nta.engine.function.builtin.NewMaxInt;
+import nta.engine.function.builtin.NewMaxLong;
+import nta.engine.function.builtin.NewMinDouble;
+import nta.engine.function.builtin.NewMinFloat;
+import nta.engine.function.builtin.NewMinInt;
+import nta.engine.function.builtin.NewMinLong;
+import nta.engine.function.builtin.NewMinString;
+import nta.engine.function.builtin.NewSumDouble;
+import nta.engine.function.builtin.NewSumFloat;
+import nta.engine.function.builtin.NewSumInt;
+import nta.engine.function.builtin.NewSumLong;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
@@ -84,9 +105,6 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   @SuppressWarnings("unused")
   private volatile boolean isOnline = false;
   
-  private Map<String, List<FragmentServInfo>> fragmentServingInfo
-  = new HashMap<String, List<FragmentServInfo>>();
-
   public CatalogServer(final Configuration conf) throws IOException {
     this.conf = conf;
 
@@ -225,45 +243,6 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
       // TODO - handle exception
       return null;
     }
-  }
-
-  public void resetHostsByTable() {
-    this.fragmentServingInfo.clear();
-  }
-
-  public List<FragmentServInfo> getFragmentServingInfo(String tableId) {
-    return fragmentServingInfo.get(tableId);
-  }
-  
-  public void updateAllFragmentServingInfo(List<String> onlineServers) throws IOException {
-    long before = System.currentTimeMillis();
-    fragmentServingInfo.clear();
-    Iterator<String> it = store.getAllTableNames().iterator();
-    List<FragmentServInfo> locInfos, servInfos;
-    int index = 0;
-    StringTokenizer tokenizer;
-    String serverName;
-    
-    while (it.hasNext()) {
-      TableDescProto td = (TableDescProto) store.getTable(it.next()).getProto();
-      locInfos = getFragmentLocInfo(td);
-      servInfos = new ArrayList<FragmentServInfo>();
-      // TODO: select the proper online server
-      for (FragmentServInfo servInfo : locInfos) {
-        // round robin
-        if (index == onlineServers.size()) {
-          index = 0;
-        }
-        serverName = onlineServers.get(index++);
-        tokenizer = new StringTokenizer(serverName, ":");
-        servInfo.setHost(tokenizer.nextToken(), 
-            Integer.valueOf(tokenizer.nextToken()));
-        servInfos.add(servInfo);
-      }
-      fragmentServingInfo.put(td.getId(), servInfos);
-    }
-    long after = System.currentTimeMillis();
-    LOG.info("updateAllTabletServingInfo processing time: " + (after-before) + "msc");
   }
 
   @Override

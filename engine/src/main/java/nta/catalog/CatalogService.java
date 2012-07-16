@@ -83,8 +83,4 @@ public interface CatalogService {
    * @return
    */
   boolean containFunction(String signature, DataType...paramTypes);
-  
-  List<FragmentServInfo> getHostByTable(String tableId);
-  
-  void updateAllTabletServingInfo(List<String> onlineServers) throws IOException;
 }

@@ -110,7 +110,7 @@ public class QueryUnitScheduler extends Thread {
       if (plan.getParentQuery() == null && grpNode != null && grpNode.getGroupingColumns().length == 0) {
         numTasks = 1;
       } else {
-        numTasks = cm.getOnlineWorker().size();
+        numTasks = cm.getOnlineWorkers().size();
       }
 
       QueryUnit[] units = planner.localize(plan, numTasks);

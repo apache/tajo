@@ -36,6 +36,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 public class ClusterManager {
+  private final int FRAG_DIST_THRESHOLD = 3;
   private final Log LOG = LogFactory.getLog(ClusterManager.class);
 
   public class WorkerInfo {
@@ -51,22 +52,48 @@ public class ClusterManager {
     public long totalSpace;
   }
   
+  private class FragmentAssignInfo 
+  implements Comparable<FragmentAssignInfo> {
+    String serverName;
+    int fragmentNum;
+    
+    public FragmentAssignInfo(String serverName, int fragmentNum) {
+      this.serverName = serverName;
+      this.fragmentNum = fragmentNum;
+    }
+    
+    public FragmentAssignInfo updateFragmentNum() {
+      this.fragmentNum++;
+      return this;
+    }
+    
+    @Override
+    public int compareTo(FragmentAssignInfo o) {
+      return this.fragmentNum - o.fragmentNum;
+    }
+  }
+  
   private Configuration conf;
   private final WorkerCommunicator wc;
   private final CatalogClient catalog;
   private final LeafServerTracker tracker;
 
+  private Map<String, List<String>> DNSNameToHostsMap = 
+      new HashMap<String, List<String>>();
   private Map<String, HashSet<Fragment>> fragLoc = 
       new HashMap<String, HashSet<Fragment>>();
   private Map<Fragment, String> workerLoc = 
       new HashMap<Fragment, String>();
-
+  private PriorityQueue<FragmentAssignInfo> assignInfos = 
+      new PriorityQueue<FragmentAssignInfo>();
+  
   public ClusterManager(WorkerCommunicator wc, Configuration conf,
       LeafServerTracker tracker) throws IOException {
     this.wc = wc;
     this.conf = conf;
     this.catalog = new CatalogClient(this.conf);
     this.tracker = tracker;
+    
   }
 
   public WorkerInfo getWorkerInfo(String workerName) throws RemoteException,
@@ -90,9 +117,26 @@ public class ClusterManager {
   public List<QueryUnitId> getProcessingQuery(String workerName) {
     return null;
   }
-
-  public List<String> getOnlineWorker() {
-    return tracker.getMembers();
+  
+  public void updateOnlineWorker() {
+    String DNSName;
+    List<String> workers;
+    DNSNameToHostsMap.clear();
+    for (String worker : tracker.getMembers()) {
+      DNSName = worker.split(":")[0];
+      if (DNSNameToHostsMap.containsKey(DNSName)) {
+        workers = DNSNameToHostsMap.get(DNSName);
+      } else {
+        workers = new ArrayList<String>();
+      }
+      workers.add(worker);
+      DNSNameToHostsMap.put(DNSName, workers);
+      assignInfos.add(new FragmentAssignInfo(worker, 0));
+    }
+  }
+  
+  public Map<String, List<String>> getOnlineWorkers() {
+    return this.DNSNameToHostsMap;
   }
 
   public String getWorkerbyFrag(Fragment fragment) throws Exception {
@@ -103,66 +147,81 @@ public class ClusterManager {
     return fragLoc.get(workerName);
   }
   
-  private class FragmentAssignInfo 
-  implements Comparable<FragmentAssignInfo> {
-    String serverName;
-    int fragmentNum;
-    
-    public FragmentAssignInfo(String serverName, int fragmentNum) {
-      this.serverName = serverName;
-      this.fragmentNum = fragmentNum;
+  public void updateFragmentServingInfo(String table) 
+      throws IOException {
+    int fileIdx, blockIdx;
+    TableDescProto td = (TableDescProto) catalog.getTableDesc(table).getProto();
+    FileSystem fs = FileSystem.get(conf);
+    Path path = new Path(td.getPath());
+    BlockLocation[] blocks;
+
+    // get files of the table
+    FileStatus[] files = fs.listStatus(new Path(path + "/data"));
+    if (files == null || files.length == 0) {
+      throw new FileNotFoundException(path.toString() + "/data");
     }
-    
-    public FragmentAssignInfo updateFragmentNum() {
-      this.fragmentNum++;
-      return this;
-    }
-    
-    @Override
-    public int compareTo(FragmentAssignInfo o) {
-      return this.fragmentNum - o.fragmentNum;
+
+    for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
+      // get blocks of each file
+      blocks = fs.getFileBlockLocations(files[fileIdx], 0,
+          files[fileIdx].getLen());
+      for (blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
+        // make fragments
+        Fragment f = new Fragment(td.getId(),
+            files[fileIdx].getPath(), new TableMetaImpl(td.getMeta()),
+            blocks[blockIdx].getOffset(), blocks[blockIdx].getLength());
+        // get hosts of each block and assign fragment to the proper host
+        String host = getServHostForFragment(f, blocks[blockIdx].getHosts());
+        String worker = getRandomWorkerNameOfHost(host);
+        updateFragLoc(new FragmentServInfo(worker, f), worker);
+      }
     }
   }
-
-  public void updateAllFragmentServingInfo(List<String> onlineServers) throws IOException {
-    fragLoc.clear();
-    workerLoc.clear();
+  
+  private String getRandomWorkerNameOfHost(String host) {
+    Random rand = new Random();
+    List<String> workers = DNSNameToHostsMap.get(host);
+    return workers.get(rand.nextInt(workers.size()));
+  }
+  
+  private String getServHostForFragment(Fragment f, String[] hosts) {
+    String host = null;
+    int i;
+    int assignNum;
+    if(fragLoc.containsKey(hosts[0])) {
+      assignNum = fragLoc.get(hosts[0]).size();
+    } else {
+      assignNum = 0;
+    }
+    for (i = 0; i < hosts.length; i++) {
+      if (fragLoc.containsKey(hosts[i])) {
+        if (assignNum > FRAG_DIST_THRESHOLD + fragLoc.get(hosts[i]).size()) {
+          break;
+        }
+      }
+    }
     
-    Map<String, PriorityQueue<FragmentAssignInfo>> servers = 
-        new HashMap<String, PriorityQueue<FragmentAssignInfo>>();
-    PriorityQueue<FragmentAssignInfo> assignInfos;
-    String host;
-    for (String serverName : onlineServers) {
-      host = serverName.split(":")[0];
-      if (servers.containsKey(host)) {
-        assignInfos = servers.get(host);
+    if (i == hosts.length
+        && DNSNameToHostsMap.containsKey(hosts[0].split(":")[0])) {
+      host = hosts[0];
+    } else {
+      if (i < hosts.length) {
+        if (fragLoc.containsKey(hosts[i])) {
+          assignNum = fragLoc.get(hosts[i]).size();
+        } else {
+          assignNum = 0;
+        }
+        if ((assignInfos.peek().fragmentNum + FRAG_DIST_THRESHOLD) >= assignNum
+            && DNSNameToHostsMap.containsKey(hosts[i].split(":")[0])) {
+          host = hosts[i];
+        } else {
+          host = assignInfos.peek().serverName;
+        }
       } else {
-        assignInfos = new PriorityQueue<FragmentAssignInfo>();
-      }
-      assignInfos.add(new FragmentAssignInfo(serverName, 0));
-      servers.put(host, assignInfos);
-    }
-    
-    Iterator<String> it = catalog.getAllTableNames().iterator();
-    List<FragmentServInfo> locInfos;
-    FragmentAssignInfo assignInfo = null;
-    while (it.hasNext()) {
-      TableDescProto td = (TableDescProto) catalog.getTableDesc(it.next())
-          .getProto();
-      locInfos = getFragmentLocInfo(td);
-      
-      // TODO: select the proper online server
-      for (FragmentServInfo locInfo : locInfos) {
-        assignInfos = servers.get(locInfo.getHostName());
-        if (assignInfos == null) {
-          assignInfos = servers.values().iterator().next();
-        } 
-        assignInfo = assignInfos.poll();
-        locInfo.setHost(assignInfo.serverName);
-        assignInfos.add(assignInfo.updateFragmentNum());
-        updateFragLoc(locInfo, assignInfo.serverName);
+        host = assignInfos.peek().serverName;
       }
     }
+    return host.split(":")[0];
   }
 
   private void updateFragLoc(FragmentServInfo servInfo, String workerName) {
@@ -174,8 +233,22 @@ public class ClusterManager {
     }
     tempFrag.add(servInfo.getFragment());
     fragLoc.put(workerName, tempFrag);
-    
     workerLoc.put(servInfo.getFragment(), workerName);
+    
+    FragmentAssignInfo info = null;
+    Iterator<FragmentAssignInfo> it = assignInfos.iterator();
+    while (it.hasNext()) {
+      info = it.next();
+      if (info.serverName.equals(workerName)) {
+        assignInfos.remove(info);
+        break;
+      }
+    }
+    if (info == null) {
+      // error
+    }
+    info.fragmentNum = tempFrag.size();
+    assignInfos.add(info);
   }
 
   private List<FragmentServInfo> getFragmentLocInfo(TableDescProto desc)
@@ -217,8 +290,12 @@ public class ClusterManager {
   public String getRandomHost() 
       throws Exception {
     Random rand = new Random();
-    List<String> serverNames = this.getOnlineWorker();
-    return serverNames.get(rand.nextInt(serverNames.size()));
+    for (List<String> serverNames : DNSNameToHostsMap.values()) {
+      if (rand.nextBoolean()) {
+        return serverNames.get(rand.nextInt(serverNames.size()));
+      }
+    }
+    return DNSNameToHostsMap.values().iterator().next().get(0);
   }
   
   /**
@@ -253,7 +330,7 @@ public class ClusterManager {
       pq.add(new FragmentAssignInfo(e.getKey(), e.getValue()));
     }
     
-    List<String> serverNames = this.getOnlineWorker();
+    Set<String> serverNames = DNSNameToHostsMap.keySet();
     // 가장 많은 fragment를 담당하는 worker부터 online worker에 있는지 확인
     for (FragmentAssignInfo assignInfo : pq) {
       if (serverNames.contains(assignInfo.serverName)) {

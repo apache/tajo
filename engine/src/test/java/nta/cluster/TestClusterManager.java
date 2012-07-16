@@ -5,6 +5,8 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -42,7 +44,7 @@ public class TestClusterManager {
   private static ClusterManager cm;
   private static NtaTestingUtility util;
   private static WorkerCommunicator wc;
-  private List<String> workers;
+  private Collection<List<String>> workersCollection;
 
   final static int CLUST_NUM = 4;
   final static int tbNum = 5;
@@ -61,6 +63,8 @@ public class TestClusterManager {
     cm = master.getClusterManager();
     assertNotNull(wc);
     assertNotNull(cm);
+    
+    cm.updateOnlineWorker();
   }
 
   @AfterClass
@@ -70,24 +74,28 @@ public class TestClusterManager {
 
   @Test
   public void testGetOnlineWorker() throws Exception {
-    workers = cm.getOnlineWorker();
-    assertEquals(workers.size(), CLUST_NUM);
+    int i = 0;
+    for (List<String> workers : cm.getOnlineWorkers().values()) {
+      i += workers.size();
+    }
+    assertEquals(i, CLUST_NUM);
   }
 
   @Test
   public void testGetWorkerInfo() throws Exception {
-    workers = cm.getOnlineWorker();
-    for (String worker : workers) {
+    workersCollection = cm.getOnlineWorkers().values();
+    for (List<String> worker : workersCollection) {
+      for (String w : worker) {
+        WorkerInfo wi = cm.getWorkerInfo(w);
+        assertNotNull(wi.availableProcessors);
+        assertNotNull(wi.freeMemory);
+        assertNotNull(wi.totalMemory);
 
-      WorkerInfo wi = cm.getWorkerInfo(worker);
-      assertNotNull(wi.availableProcessors);
-      assertNotNull(wi.freeMemory);
-      assertNotNull(wi.totalMemory);
-
-      List<DiskInfo> disks = wi.disks;
-      for (DiskInfo di : disks) {
-        assertNotNull(di.freeSpace);
-        assertNotNull(di.totalSpace);
+        List<DiskInfo> disks = wi.disks;
+        for (DiskInfo di : disks) {
+          assertNotNull(di.freeSpace);
+          assertNotNull(di.totalSpace);
+        }
       }
     }
   }
@@ -137,17 +145,22 @@ public class TestClusterManager {
 
       TableDesc desc = new TableDescImpl("HostsByTable" + i, meta, tbPath);
       local.addTable(desc);
+      
+      cm.updateFragmentServingInfo(desc.getId());
     }
 
-    cm.updateAllFragmentServingInfo(cm.getOnlineWorker());
-    workers = cm.getOnlineWorker();
+    workersCollection = cm.getOnlineWorkers().values();
 
     List<Set<Fragment>> frags = new ArrayList<Set<Fragment>>();
-
-    for (int n = 0; n < CLUST_NUM; n++) {
-      LOG.info(">>>>> " + cm.getFragbyWorker(workers.get(n)).size());
-      frags.add(cm.getFragbyWorker(workers.get(n)));
+    i = 0;
+    for (List<String> workers : workersCollection) {
+      i+= workers.size();
+      for (String w : workers) {
+        LOG.info(">>>>> " + cm.getFragbyWorker(w).size());
+        frags.add(cm.getFragbyWorker(w));
+      }
     }
+    assertEquals(CLUST_NUM, i);
 
     for (int n = 0; n < CLUST_NUM; n++) {
       for (Fragment frag : frags.get(n)) {

@@ -214,15 +214,4 @@ public class CatalogClient implements CatalogService {
     return proxy.containFunction(builder.build()).getValue();
   }
 
-  @Override
-  public final List<FragmentServInfo> getHostByTable(final String tableId) {
-    // TODO - to be implemented
-    return null;
-  }
-
-  @Override
-  public void updateAllTabletServingInfo(final List<String> onlineServers)
-      throws IOException {
-    // TODO - to be implemented
-  }
 }

@@ -312,8 +312,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
 	}
 
   public static void main(String[] args) throws Exception {
-    Configuration conf = new NtaConf();
-    
+    NtaConf conf = new NtaConf();
     NtaEngineMaster master = new NtaEngineMaster(conf);
 
     master.start();
@@ -324,12 +323,6 @@ public class NtaEngineMaster extends Thread implements ClientService {
   /////////////////////////////////////////////////////////////////////////////
   @Override
   public ExecuteQueryRespose executeQuery(ExecuteQueryRequest query) throws RemoteException {
-    try {
-      cm.updateAllFragmentServingInfo(cm.getOnlineWorker());
-    } catch (IOException ioe) {
-      LOG.error(ioe);
-      throw new RemoteException(ioe);
-    }
     String path;
     long elapsed;
     try {

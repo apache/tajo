@@ -169,17 +169,6 @@ public class LocalCatalog implements CatalogService {
     return catalog.containFunction(builder.build()).getValue();
   }
 
-  @Override
-  public final List<FragmentServInfo> getHostByTable(final String tableId) {    
-    return catalog.getFragmentServingInfo(tableId);
-  }
-  
-  @Override
-  public final void updateAllTabletServingInfo(final List<String> onlineServers)
-      throws IOException {
-    catalog.updateAllFragmentServingInfo(onlineServers);
-  }
-  
   public CatalogServer getServer() {
 	  return this.catalog;
   }

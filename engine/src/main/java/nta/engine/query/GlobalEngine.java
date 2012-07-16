@@ -3,17 +3,29 @@
  */
 package nta.engine.query;
 
+import java.io.IOException;
+
 import nta.catalog.CatalogService;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
-import nta.engine.*;
+import nta.engine.EngineService;
+import nta.engine.Query;
+import nta.engine.QueryContext;
+import nta.engine.QueryId;
+import nta.engine.QueryIdFactory;
+import nta.engine.QueryUnitScheduler;
+import nta.engine.SubQuery;
+import nta.engine.SubQueryId;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
+import nta.engine.parser.QueryBlock;
+import nta.engine.parser.QueryBlock.FromTable;
+import nta.engine.parser.SetStmt;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.GlobalOptimizer;
@@ -24,11 +36,10 @@ import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalRootNode;
 import nta.storage.StorageManager;
 import nta.storage.StorageUtil;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-
-import java.io.IOException;
 
 /**
  * @author jihoon
@@ -99,7 +110,8 @@ public class GlobalEngine implements EngineService {
       return desc.getId();
     } else {
       // other queries are executed by workers
-      // TODO: Queries should be maintained by the GlobalEngine or another class
+      prepareQueryExecution(ctx);
+      
       QueryId qid = QueryIdFactory.newQueryId();
       qm.addQuery(new Query(qid));
       LOG.info("=== Query " + qid + " is initialized");
@@ -121,7 +133,14 @@ public class GlobalEngine implements EngineService {
       return sm.getTablePath(globalPlan.getRoot().getOutputName()).toString();
     }
   }
-
+  
+  private void prepareQueryExecution(QueryContext ctx) throws IOException {
+    cm.updateOnlineWorker();
+    for (String table : ctx.getInputTables()) {
+      cm.updateFragmentServingInfo(table);
+    }
+  }
+  
   @Override
   public void init() throws IOException {
     // TODO Auto-generated method stub
