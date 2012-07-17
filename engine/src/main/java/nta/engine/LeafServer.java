@@ -486,16 +486,39 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       this.ctx = ctx;
       this.fetcher = fetcher;
     }
+
     @Override
     public void run() {
-//      ctx.setStatus(QueryStatus.FETCHING);
-      try {
-        fetcher.get();
-      } catch (IOException e) {
-        LOG.error("Fetch failed: " + fetcher.getURI(), e);
+      int retryNum = 0;
+      int maxRetryNum = 5;
+      int retryWaitTime = 1000;
+
+      try { // for releasing fetch latch
+        while(retryNum < maxRetryNum) {
+          if (retryNum > 0) {
+            try {
+              Thread.sleep(retryWaitTime);
+            } catch (InterruptedException e) {
+              LOG.error(e);
+            }
+            LOG.info("Retry on the fetch: " + fetcher.getURI() + " (" + retryNum + ")");
+          }
+          try {
+            File fetched = fetcher.get();
+            if (fetched != null) {
+              break;
+            }
+          } catch (IOException e) {
+            LOG.error("Fetch failed: " + fetcher.getURI(), e);
+          }
+          retryNum++;
+        }
       } finally {
         ctx.getFetchLatch().countDown();
-//        ctx.setStatus(QueryStatus.PENDING);
+      }
+
+      if (retryNum == maxRetryNum) {
+        LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
       }
     }
   }

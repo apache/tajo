@@ -54,6 +54,8 @@ public class Fetcher {
     ClientBootstrap bootstrap = new ClientBootstrap(
         new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
             Executors.newCachedThreadPool()));
+    bootstrap.setOption("connectTimeoutMillis", 5000L); // set 5 sec
+    bootstrap.setOption("receiveBufferSize", 1048576); // set 1M
     ChannelPipelineFactory factory = new HttpClientPipelineFactory(file);
     bootstrap.setPipelineFactory(factory);
 
@@ -62,9 +64,8 @@ public class Fetcher {
     // Wait until the connection attempt succeeds or fails.
     Channel channel = future.awaitUninterruptibly().getChannel();
     if (!future.isSuccess()) {
-      future.getCause().printStackTrace();
       bootstrap.releaseExternalResources();
-      return null;
+      throw new IOException(future.getCause());
     }
 
     String query = uri.getPath()

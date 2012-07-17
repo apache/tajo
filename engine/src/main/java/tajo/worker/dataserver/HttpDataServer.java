@@ -32,7 +32,8 @@ public class HttpDataServer {
       final DataRetriever retriever) {
     this.addr = addr;
     this.factory = new NioServerSocketChannelFactory(
-        Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+        Executors.newCachedThreadPool(), Executors.newCachedThreadPool(),
+        Runtime.getRuntime().availableProcessors() * 2);
 
     // Configure the server.
     this.bootstrap = new ServerBootstrap(factory);
