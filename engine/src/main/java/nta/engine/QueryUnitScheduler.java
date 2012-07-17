@@ -56,6 +56,7 @@ public class QueryUnitScheduler extends Thread {
   private final ClusterManager cm;
   private final QueryManager qm;
   private final ScheduleUnit plan;
+  private List<String> workerQueue;
   
   private BlockingQueue<QueryUnit> pendingQueue = 
       new LinkedBlockingQueue<QueryUnit>();
@@ -69,6 +70,10 @@ public class QueryUnitScheduler extends Thread {
     this.wc = wc;
     this.planner = planner;
     this.plan = plan;
+    workerQueue = Lists.newArrayList();
+    for (List<String> workers : cm.getOnlineWorkers().values()) {
+      workerQueue.addAll(workers);
+    }
   }
   
   private void recursiveExecuteQueryUnit(ScheduleUnit plan) 
@@ -127,11 +132,14 @@ public class QueryUnitScheduler extends Thread {
         return;
       } else {
         String hostName;
+
         for (QueryUnit q : units) {
-          hostName = cm.getProperHost(q);
+          hostName = workerQueue.remove(0);
+          workerQueue.add(hostName);
+          /*hostName = cm.getProperHost(q);
           if (hostName == null) {
             hostName = cm.getRandomHost();
-          }
+          }*/
           q.setHost(hostName);
           pendingQueue.add(q);
           qm.updateQueryAssignInfo(hostName, q);
