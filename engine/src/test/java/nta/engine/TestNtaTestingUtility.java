@@ -3,6 +3,7 @@ package nta.engine;
 import static org.junit.Assert.assertFalse;
 
 import java.util.Arrays;
+import java.util.List;
 
 import nta.catalog.CatalogService;
 import nta.catalog.FunctionDesc;
@@ -21,6 +22,8 @@ import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
+import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.query.QueryUnitRequestImpl;
 import nta.storage.Appender;
@@ -89,37 +92,55 @@ public class TestNtaTestingUtility {
   public void tearDown() throws Exception {
     util.shutdownMiniCluster();
   }
- 
+
   @Test
   public final void test() throws Exception {
     Fragment[] frags = sm.split("employee", 40000);
     int splitIdx = (int) Math.ceil(frags.length / 2.f);
     QueryIdFactory.reset();
-    ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(
-        QueryIdFactory.newSubQueryId(
-            QueryIdFactory.newQueryId()));
+    QueryId queryId = QueryIdFactory.newQueryId();
+    SubQueryId subQueryId = QueryIdFactory.newSubQueryId(queryId);
+    ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(subQueryId);
+    Query query = new Query(queryId);
+    SubQuery subQuery = new SubQuery(subQueryId);
+    ScheduleUnit scheduleUnit = new ScheduleUnit(sid);
+    subQuery.addScheduleUnit(scheduleUnit);
+    query.addSubQuery(subQuery);
+    util.getMiniTajoCluster().getMaster().getQueryManager().addQuery(query);
+
     QueryUnitId qid;
     QueryContext ctx;
-    ParseTree query;
+    ParseTree queryTree;
     LogicalNode plan;
     QueryUnitRequest req;
     Thread.sleep(2000);
-      
+
     sm.initTableBase(frags[0].getMeta(), "testNtaTestingUtil");
+
+    List<QueryUnit> queryUnits = Lists.newArrayList();
+    List<QueryUnitRequest> queryUnitRequests = Lists.newArrayList();
     for (int i = 0; i < 4; i++) {
       qid = QueryIdFactory.newQueryUnitId(sid);
       ctx = qcFactory.create();
-      query = analyzer.parse(ctx, 
+      queryTree = analyzer.parse(ctx,
           "testNtaTestingUtil := select deptName, sleep(name) from employee group by deptName");
-      plan = LogicalPlanner.createPlan(ctx, query);
+      plan = LogicalPlanner.createPlan(ctx, queryTree);
       plan = LogicalOptimizer.optimize(ctx, plan);
+      QueryUnit unit = new QueryUnit(qid);
+      queryUnits.add(unit);
       req = new QueryUnitRequestImpl(
           qid, Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
           "", false, plan.toJSON());
-      util.getMiniTajoCluster().getLeafServerThreads().get(i)
-        .getLeafServer().requestQueryUnit(req.getProto());
+      queryUnitRequests.add(req);
     }
-    
+    scheduleUnit.setQueryUnits(queryUnits.toArray(new QueryUnit[queryUnits.size()]));
+
+    for (int i = 0; i < 4; i++) {
+      util.getMiniTajoCluster().getLeafServerThreads().get(i)
+          .getLeafServer().requestQueryUnit(queryUnitRequests.get(i).getProto());
+    }
+
+
     Thread.sleep(3000);
     LeafServer leaf0 = util.getMiniTajoCluster().getLeafServer(0);
     leaf0.shutdown("Aborted!");
@@ -127,15 +148,15 @@ public class TestNtaTestingUtility {
     Thread.sleep(1000);
     LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(1);
     leaf1.shutdown("Aborted!");
-    
+
     Thread.sleep(1000);
     LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(2);
     leaf2.shutdown("Aborted!");
-    
+
     Thread.sleep(1000);
     LeafServer leaf3 = util.getMiniTajoCluster().getLeafServer(3);
     leaf3.shutdown("Aborted!");
-    
+
     assertFalse(leaf0.isAlive());
     assertFalse(leaf1.isAlive());
     assertFalse(leaf2.isAlive());
