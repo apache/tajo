@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -19,13 +20,21 @@ import nta.catalog.TableDescImpl;
 import nta.catalog.TableMeta;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
-import nta.engine.NtaEngineMaster;
-import nta.engine.NtaTestingUtility;
+import nta.engine.*;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.ClusterManager.DiskInfo;
 import nta.engine.cluster.ClusterManager.WorkerInfo;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.parser.ParseTree;
+import nta.engine.parser.QueryAnalyzer;
+import nta.engine.planner.LogicalOptimizer;
+import nta.engine.planner.LogicalPlanner;
+import nta.engine.planner.global.GlobalOptimizer;
+import nta.engine.planner.global.MasterPlan;
+import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.logical.LogicalNode;
+import nta.engine.query.GlobalPlanner;
 import nta.storage.CSVFile2;
 import nta.util.FileUtil;
 
@@ -45,6 +54,8 @@ public class TestClusterManager {
   private static NtaTestingUtility util;
   private static WorkerCommunicator wc;
   private Collection<List<String>> workersCollection;
+  private static CatalogService local;
+  private static NtaEngineMaster master;
 
   final static int CLUST_NUM = 4;
   final static int tbNum = 5;
@@ -57,7 +68,7 @@ public class TestClusterManager {
     util.startMiniCluster(CLUST_NUM);
     Thread.sleep(4000);
 
-    NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
+    master = util.getMiniTajoCluster().getMaster();
     assertNotNull(master);
     wc = master.getWorkerCommunicator();
     cm = master.getClusterManager();
@@ -65,44 +76,8 @@ public class TestClusterManager {
     assertNotNull(cm);
     
     cm.updateOnlineWorker();
-  }
 
-  @AfterClass
-  public static void tearDown() throws IOException {
-    util.shutdownMiniCluster();
-  }
-
-  @Test
-  public void testGetOnlineWorker() throws Exception {
-    int i = 0;
-    for (List<String> workers : cm.getOnlineWorkers().values()) {
-      i += workers.size();
-    }
-    assertEquals(i, CLUST_NUM);
-  }
-
-  @Test
-  public void testGetWorkerInfo() throws Exception {
-    workersCollection = cm.getOnlineWorkers().values();
-    for (List<String> worker : workersCollection) {
-      for (String w : worker) {
-        WorkerInfo wi = cm.getWorkerInfo(w);
-        assertNotNull(wi.availableProcessors);
-        assertNotNull(wi.freeMemory);
-        assertNotNull(wi.totalMemory);
-
-        List<DiskInfo> disks = wi.disks;
-        for (DiskInfo di : disks) {
-          assertNotNull(di.freeSpace);
-          assertNotNull(di.totalSpace);
-        }
-      }
-    }
-  }
-
-  @Test
-  public void testGetFragAndWorker() throws Exception {
-    CatalogService local = util.getMiniTajoCluster().getMaster()
+    local = util.getMiniTajoCluster().getMaster()
         .getCatalog();
 
     int i, j;
@@ -145,14 +120,50 @@ public class TestClusterManager {
 
       TableDesc desc = new TableDescImpl("HostsByTable" + i, meta, tbPath);
       local.addTable(desc);
-      
+
       cm.updateFragmentServingInfo(desc.getId());
     }
+  }
 
+  @AfterClass
+  public static void tearDown() throws IOException {
+    util.shutdownMiniCluster();
+  }
+
+  @Test
+  public void testGetOnlineWorker() throws Exception {
+    int i = 0;
+    for (List<String> workers : cm.getOnlineWorkers().values()) {
+      i += workers.size();
+    }
+    assertEquals(i, CLUST_NUM);
+  }
+
+  @Test
+  public void testGetWorkerInfo() throws Exception {
+    workersCollection = cm.getOnlineWorkers().values();
+    for (List<String> worker : workersCollection) {
+      for (String w : worker) {
+        WorkerInfo wi = cm.getWorkerInfo(w);
+        assertNotNull(wi.availableProcessors);
+        assertNotNull(wi.freeMemory);
+        assertNotNull(wi.totalMemory);
+
+        List<DiskInfo> disks = wi.disks;
+        for (DiskInfo di : disks) {
+          assertNotNull(di.freeSpace);
+          assertNotNull(di.totalSpace);
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testGetFragAndWorker() throws Exception {
     workersCollection = cm.getOnlineWorkers().values();
 
     List<Set<Fragment>> frags = new ArrayList<Set<Fragment>>();
-    i = 0;
+    int i = 0;
     for (List<String> workers : workersCollection) {
       i+= workers.size();
       for (String w : workers) {
@@ -167,6 +178,32 @@ public class TestClusterManager {
         String workerName = cm.getWorkerbyFrag(frag);
         assertNotNull(workerName);
       }
+    }
+  }
+
+  @Test
+  public void testGetProperHost() throws Exception, URISyntaxException {
+    QueryAnalyzer analyzer = new QueryAnalyzer(local);
+    QueryContext.Factory factory = new QueryContext.Factory(local);
+    String query = "select id, age, name from HostsByTable0";
+    QueryContext ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx, query);
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+
+    // build the master plan
+    GlobalPlanner globalPlanner = new GlobalPlanner(
+        master.getStorageManager(), master.getQueryManager(), local);
+    GlobalOptimizer globalOptimizer = new GlobalOptimizer();
+    QueryId qid = QueryIdFactory.newQueryId();
+    SubQueryId subId = QueryIdFactory.newSubQueryId(qid);
+    MasterPlan globalPlan = globalPlanner.build(subId, plan);
+    globalPlan = globalOptimizer.optimize(globalPlan.getRoot());
+    QueryUnit[] units = globalPlanner.localize(globalPlan.getRoot(),
+        CLUST_NUM);
+    ClusterManager cm = master.getClusterManager();
+    for (QueryUnit unit : units) {
+      assertNotNull(cm.getProperHost(unit));
     }
   }
 }

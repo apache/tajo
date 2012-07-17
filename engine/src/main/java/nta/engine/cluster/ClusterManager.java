@@ -2,16 +2,8 @@ package nta.engine.cluster;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.PriorityQueue;
-import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import nta.catalog.CatalogClient;
@@ -84,7 +76,9 @@ public class ClusterManager {
       new HashMap<String, HashSet<Fragment>>();
   private Map<Fragment, String> workerLoc = 
       new HashMap<Fragment, String>();
-  private PriorityQueue<FragmentAssignInfo> assignInfos = 
+  private PriorityQueue<FragmentAssignInfo> servingInfos =
+      new PriorityQueue<FragmentAssignInfo>();
+  private PriorityQueue<FragmentAssignInfo> assignInfos =
       new PriorityQueue<FragmentAssignInfo>();
   
   public ClusterManager(WorkerCommunicator wc, Configuration conf,
@@ -131,7 +125,7 @@ public class ClusterManager {
       }
       workers.add(worker);
       DNSNameToHostsMap.put(DNSName, workers);
-      assignInfos.add(new FragmentAssignInfo(worker, 0));
+      servingInfos.add(new FragmentAssignInfo(worker, 0));
     }
   }
   
@@ -179,7 +173,7 @@ public class ClusterManager {
   }
   
   private String getRandomWorkerNameOfHost(String host) {
-    Random rand = new Random();
+    Random rand = new Random(System.currentTimeMillis());
     List<String> workers = DNSNameToHostsMap.get(host);
     return workers.get(rand.nextInt(workers.size()));
   }
@@ -211,14 +205,14 @@ public class ClusterManager {
         } else {
           assignNum = 0;
         }
-        if ((assignInfos.peek().fragmentNum + FRAG_DIST_THRESHOLD) >= assignNum
+        if ((servingInfos.peek().fragmentNum + FRAG_DIST_THRESHOLD) >= assignNum
             && DNSNameToHostsMap.containsKey(hosts[i].split(":")[0])) {
           host = hosts[i];
         } else {
-          host = assignInfos.peek().serverName;
+          host = servingInfos.peek().serverName;
         }
       } else {
-        host = assignInfos.peek().serverName;
+        host = servingInfos.peek().serverName;
       }
     }
     return host.split(":")[0];
@@ -236,11 +230,11 @@ public class ClusterManager {
     workerLoc.put(servInfo.getFragment(), workerName);
     
     FragmentAssignInfo info = null;
-    Iterator<FragmentAssignInfo> it = assignInfos.iterator();
+    Iterator<FragmentAssignInfo> it = servingInfos.iterator();
     while (it.hasNext()) {
       info = it.next();
       if (info.serverName.equals(workerName)) {
-        assignInfos.remove(info);
+        servingInfos.remove(info);
         break;
       }
     }
@@ -248,7 +242,7 @@ public class ClusterManager {
       // error
     }
     info.fragmentNum = tempFrag.size();
-    assignInfos.add(info);
+    servingInfos.add(info);
   }
 
   private List<FragmentServInfo> getFragmentLocInfo(TableDescProto desc)
@@ -289,7 +283,7 @@ public class ClusterManager {
    */
   public String getRandomHost() 
       throws Exception {
-    Random rand = new Random();
+    Random rand = new Random(System.currentTimeMillis());
     for (List<String> serverNames : DNSNameToHostsMap.values()) {
       if (rand.nextBoolean()) {
         return serverNames.get(rand.nextInt(serverNames.size()));
@@ -330,11 +324,14 @@ public class ClusterManager {
       pq.add(new FragmentAssignInfo(e.getKey(), e.getValue()));
     }
     
-    Set<String> serverNames = DNSNameToHostsMap.keySet();
+//    Set<String> serverNames = DNSNameToHostsMap.keySet();
+    Collection<List<String>> serverCollection = DNSNameToHostsMap.values();
     // 가장 많은 fragment를 담당하는 worker부터 online worker에 있는지 확인
     for (FragmentAssignInfo assignInfo : pq) {
-      if (serverNames.contains(assignInfo.serverName)) {
-        return assignInfo.serverName;
+      for (List<String> serverNames : serverCollection) {
+        if (serverNames.contains(assignInfo.serverName)) {
+          return assignInfo.serverName;
+        }
       }
     }
     return null;
