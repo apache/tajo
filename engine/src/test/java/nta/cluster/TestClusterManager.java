@@ -1,23 +1,6 @@
 package nta.cluster;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-
-import nta.catalog.CatalogService;
-import nta.catalog.Schema;
-import nta.catalog.TCatUtil;
-import nta.catalog.TableDesc;
-import nta.catalog.TableDescImpl;
-import nta.catalog.TableMeta;
+import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.*;
@@ -37,7 +20,6 @@ import nta.engine.planner.logical.LogicalNode;
 import nta.engine.query.GlobalPlanner;
 import nta.storage.CSVFile2;
 import nta.util.FileUtil;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -46,6 +28,12 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestClusterManager {
   static final Log LOG = LogFactory.getLog(TestClusterManager.class);
@@ -163,26 +151,34 @@ public class TestClusterManager {
     workersCollection = cm.getOnlineWorkers().values();
 
     List<Set<Fragment>> frags = new ArrayList<Set<Fragment>>();
+
     int i = 0;
     for (List<String> workers : workersCollection) {
       i+= workers.size();
       for (String w : workers) {
-        LOG.info(">>>>> " + cm.getFragbyWorker(w).size());
-        frags.add(cm.getFragbyWorker(w));
+        if (cm.getFragbyWorker(w) != null) {
+          frags.add(cm.getFragbyWorker(w));
+        }
       }
     }
-    assertEquals(CLUST_NUM, i);
 
-    for (int n = 0; n < CLUST_NUM; n++) {
-      for (Fragment frag : frags.get(n)) {
-        String workerName = cm.getWorkerbyFrag(frag);
+    String prevName;
+    for (Set<Fragment> fragmentSet : frags) {
+      prevName = "";
+      for (Fragment fragment : fragmentSet) {
+        String workerName = cm.getWorkerbyFrag(fragment);
         assertNotNull(workerName);
+        if (!prevName.equals("")) {
+          assertEquals(prevName, workerName);
+        } else {
+          prevName = workerName;
+        }
       }
     }
   }
 
   @Test
-  public void testGetProperHost() throws Exception, URISyntaxException {
+  public void testGetProperHost() throws Exception {
     QueryAnalyzer analyzer = new QueryAnalyzer(local);
     QueryContext.Factory factory = new QueryContext.Factory(local);
     String query = "select id, age, name from HostsByTable0";
