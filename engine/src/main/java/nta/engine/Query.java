@@ -18,10 +18,12 @@ import nta.engine.planner.global.ScheduleUnit;
 public class Query extends AbstractQuery {
 
   private final QueryId id;
+  private String queryStr;
   private Map<SubQueryId, SubQuery> subqueries;
   
-  public Query(QueryId id) {
+  public Query(QueryId id, String queryStr) {
     this.id = id;
+    this.queryStr = queryStr;
     subqueries = new HashMap<SubQueryId, SubQuery>();
   }
   
@@ -31,6 +33,10 @@ public class Query extends AbstractQuery {
   
   public QueryId getId() {
     return this.id;
+  }
+
+  public String getQueryStr() {
+    return this.queryStr;
   }
 
   public Iterator<SubQuery> getSubQueryIterator() {

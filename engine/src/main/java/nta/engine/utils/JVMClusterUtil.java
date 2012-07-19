@@ -81,7 +81,7 @@ public class JVMClusterUtil {
 
 	public static String startup(final JVMClusterUtil.MasterThread masters,
 		final List<JVMClusterUtil.LeafServerThread> leafservers) {
-		if (masters == null) {
+    if (masters == null) {
 			return null;
 		}
 
@@ -103,8 +103,6 @@ public class JVMClusterUtil {
 	public static void shutdown(final MasterThread master, final List<LeafServerThread> leafServers) {
 		LOG.debug("Shutting down NtaEngine Cluster");		
 		
-		master.master.shutdown();
-		
 		for(LeafServerThread t: leafServers) {
 			if(t.isAlive()) {
 				try {
@@ -115,7 +113,9 @@ public class JVMClusterUtil {
 				}
 			}
 		}
-		
+
+    master.master.shutdown();
+
 		LOG.info("Shutdown of "+
 			((master != null) ? "1" : "0") + " master and "+
 			((leafServers != null) ? leafServers.size() : "0") +

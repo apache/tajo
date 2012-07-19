@@ -101,7 +101,7 @@ public class TestGlobalEngine {
     Thread.sleep(2000);
     master = util.getMiniTajoCluster().getMaster();
     conf = util.getConfiguration();
-    sm = new StorageManager(conf);
+    sm = master.getStorageManager();
 
     catalog = master.getCatalog();
     groupbyResult = new HashMap<CompositeKey, Integer>();

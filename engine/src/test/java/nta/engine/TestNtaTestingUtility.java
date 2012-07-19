@@ -101,7 +101,8 @@ public class TestNtaTestingUtility {
     QueryId queryId = QueryIdFactory.newQueryId();
     SubQueryId subQueryId = QueryIdFactory.newSubQueryId(queryId);
     ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(subQueryId);
-    Query query = new Query(queryId);
+    Query query = new Query(queryId,
+        "testNtaTestingUtil := select deptName, sleep(name) from employee group by deptName");
     SubQuery subQuery = new SubQuery(subQueryId);
     ScheduleUnit scheduleUnit = new ScheduleUnit(sid);
     subQuery.addScheduleUnit(scheduleUnit);

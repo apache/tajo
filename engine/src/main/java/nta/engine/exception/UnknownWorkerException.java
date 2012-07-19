@@ -13,20 +13,18 @@ public class UnknownWorkerException extends Exception {
    * 
    */
   private static final long serialVersionUID = -3677733092100608744L;
+  private String unknownName;
 
-  public UnknownWorkerException() {
-    
+  public UnknownWorkerException(String unknownName) {
+    this.unknownName = unknownName;
   }
-  
-  public UnknownWorkerException(String message) {
-    super(message);
-  }
-  
-  public UnknownWorkerException(Exception e) {
+
+  public UnknownWorkerException(String unknownName, Exception e) {
     super(e);
+    this.unknownName = unknownName;
   }
-  
-  public UnknownWorkerException(String message, Exception e) {
-    super(message, e);
+
+  public String getUnknownName() {
+    return this.unknownName;
   }
 }

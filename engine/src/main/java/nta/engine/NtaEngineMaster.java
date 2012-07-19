@@ -68,7 +68,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
   private final Configuration conf;
   private FileSystem defaultFS;
 
-  private volatile boolean stopped = false;
+  private volatile boolean stopped = true;
 
   private final String clientServiceAddr;
   private final ZkClient zkClient;
@@ -192,7 +192,8 @@ public class NtaEngineMaster extends Thread implements ClientService {
     
     this.queryEngine = new GlobalEngine(conf, catalog, storeManager, wc, qm, cm);
     this.queryEngine.init();
-    services.add(queryEngine); 
+    services.add(queryEngine);
+    stopped = false;
   }
 
   private void becomeMaster() throws IOException, KeeperException,
@@ -243,20 +244,6 @@ public class NtaEngineMaster extends Thread implements ClientService {
   }
 
   public void shutdown() {
-    try {
-      webServer.stop();
-    } catch (Exception e1) {
-      // TODO Auto-generated catch block
-      e1.printStackTrace();
-    }
-    tracker.close();
-    this.stopped = true;
-    this.server.shutdown();
-    if (wc != null) {
-      this.wc.close();
-    }
-    this.wl.stop();
-
     for (EngineService service : services) {
       try {
         service.shutdown();
@@ -264,6 +251,23 @@ public class NtaEngineMaster extends Thread implements ClientService {
         LOG.error(e);
       }
     }
+    if (wc != null) {
+      this.wc.close();
+    }
+    this.wl.stop();
+    tracker.close();
+    this.server.shutdown();
+    if (zkServer != null) {
+      zkServer.shutdown();
+    }
+
+    try {
+      webServer.stop();
+    } catch (Exception e1) {
+      // TODO Auto-generated catch block
+      e1.printStackTrace();
+    }
+    this.stopped = true;
   }
 
   public List<String> getOnlineServer() throws KeeperException,

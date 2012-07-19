@@ -65,7 +65,7 @@ public class TestQueryManager {
     root.setSubNode(store);
     
     QueryId qid = QueryIdFactory.newQueryId();
-    Query query = new Query(qid);
+    Query query = new Query(qid, "test query");
     qm.addQuery(query);
     SubQueryId subId = QueryIdFactory.newSubQueryId(qid);
     SubQuery subQuery = new SubQuery(subId);

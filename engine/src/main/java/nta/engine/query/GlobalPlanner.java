@@ -11,7 +11,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.TableStat;
 import nta.common.exception.NotImplementedException;
 import nta.engine.*;
-import nta.engine.MasterInterfaceProtos.Partition;
+import nta.engine.MasterInterfaceProtos.*;
 import nta.engine.cluster.QueryManager;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.QueryBlock.FromTable;
@@ -897,6 +897,7 @@ public class GlobalPlanner {
     QueryUnit unit = new QueryUnit(
         QueryIdFactory.newQueryUnitId(scheduleUnit.getId()));
     unit.setLogicalPlan(scheduleUnit.getLogicalPlan());
+    qm.updateQueryUnitStatus(unit.getId(), 1, QueryStatus.QUERY_INITED);
     return unit;
   }
   

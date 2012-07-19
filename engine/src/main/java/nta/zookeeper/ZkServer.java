@@ -67,6 +67,7 @@ public class ZkServer {
 	
 	public void shutdown() {
 		zkServer.shutdown();
+    while (zkServer.isRunning());
 	}
 	
 	public static void main(String [] args) throws IOException {

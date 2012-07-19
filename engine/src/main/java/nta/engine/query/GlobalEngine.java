@@ -9,17 +9,12 @@ import nta.catalog.CatalogService;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
-import nta.engine.EngineService;
-import nta.engine.Query;
-import nta.engine.QueryContext;
-import nta.engine.QueryId;
-import nta.engine.QueryIdFactory;
-import nta.engine.QueryUnitScheduler;
-import nta.engine.SubQuery;
-import nta.engine.SubQueryId;
+import nta.engine.*;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
+import nta.engine.exception.IllegalQueryStatusException;
 import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
@@ -30,6 +25,7 @@ import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.GlobalOptimizer;
 import nta.engine.planner.global.MasterPlan;
+import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
@@ -82,7 +78,9 @@ public class GlobalEngine implements EngineService {
     catalog.addTable(meta);
   }
   
-  public String executeQuery(String querystr) throws InterruptedException, IOException, NoSuchQueryIdException {
+  public String executeQuery(String querystr)
+      throws InterruptedException, IOException,
+      NoSuchQueryIdException, IllegalQueryStatusException {
     LOG.info("* issued query: " + querystr);
     // build the logical plan
     QueryContext ctx = factory.create();
@@ -113,14 +111,19 @@ public class GlobalEngine implements EngineService {
       prepareQueryExecution(ctx);
       
       QueryId qid = QueryIdFactory.newQueryId();
-      qm.addQuery(new Query(qid));
-      LOG.info("=== Query " + qid + " is initialized");
+      Query query = new Query(qid, querystr);
+      qm.addQuery(query);
+      qm.updateQueryStatus(qid, QueryStatus.QUERY_INITED);
+      qm.updateQueryStatus(qid, QueryStatus.QUERY_PENDING);
       SubQueryId subId = QueryIdFactory.newSubQueryId(qid);
       SubQuery subQuery = new SubQuery(subId);
-      LOG.info("=== SubQuery " + subId + " is initialized");
       qm.addSubQuery(subQuery);
+      qm.updateSubQueryStatus(subId, QueryStatus.QUERY_INITED);
+      qm.updateSubQueryStatus(subId, QueryStatus.QUERY_PENDING);
       
       // build the master plan
+      qm.updateQueryStatus(qid, QueryStatus.QUERY_INPROGRESS);
+      qm.updateSubQueryStatus(subId, QueryStatus.QUERY_INPROGRESS);
       MasterPlan globalPlan = globalPlanner.build(subId, plan);
       globalPlan = globalOptimizer.optimize(globalPlan.getRoot());
       
@@ -130,10 +133,67 @@ public class GlobalEngine implements EngineService {
       queryUnitScheduler.start();
       queryUnitScheduler.join();
 
+      finalizeQuery(query);
+
       return sm.getTablePath(globalPlan.getRoot().getOutputName()).toString();
     }
   }
-  
+
+  public void finalizeQuery(Query query)
+      throws IllegalQueryStatusException {
+    QueryStatus status = updateQueryStatus(query);
+    switch (status) {
+      case QUERY_FINISHED:
+        LOG.info("Query " + query.getId() + " is finished.");
+        break;
+      case QUERY_ABORTED:
+        LOG.info("Query " + query.getId() + " is aborted!!");
+        break;
+      case QUERY_KILLED:
+        LOG.info("Query " + query.getId() + " is killed!!");
+        break;
+      default:
+        throw new IllegalQueryStatusException(
+            "Illegal final status of query " +
+                query.getId() + ": " + status);
+    }
+  }
+
+  private QueryStatus updateSubQueryStatus(SubQuery subQuery) {
+    int i = 0, size = subQuery.getScheduleUnits().size();
+    QueryStatus subQueryStatus = QueryStatus.QUERY_ABORTED;
+    for (ScheduleUnit su : subQuery.getScheduleUnits()) {
+      if (qm.getScheduleUnitStatus(su)
+        != QueryStatus.QUERY_FINISHED) {
+        break;
+      }
+      ++i;
+    }
+    if (i > 0 && i == size) {
+      subQueryStatus = QueryStatus.QUERY_FINISHED;
+    }
+    qm.updateSubQueryStatus(subQuery.getId(),
+        subQueryStatus);
+    return subQueryStatus;
+  }
+
+  private QueryStatus updateQueryStatus(Query query) {
+    int i = 0, size = query.getSubQueries().size();
+    QueryStatus queryStatus = QueryStatus.QUERY_ABORTED;
+    for (SubQuery sq : query.getSubQueries()) {
+      if (updateSubQueryStatus(sq)
+        != QueryStatus.QUERY_FINISHED) {
+        break;
+      }
+      ++i;
+    }
+    if (i > 0 && i == size) {
+      queryStatus = QueryStatus.QUERY_FINISHED;
+    }
+    qm.updateQueryStatus(query.getId(), queryStatus);
+    return queryStatus;
+  }
+
   private void prepareQueryExecution(QueryContext ctx) throws IOException {
     cm.updateOnlineWorker();
     for (String table : ctx.getInputTables()) {

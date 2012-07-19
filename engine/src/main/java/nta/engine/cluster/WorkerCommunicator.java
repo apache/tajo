@@ -111,7 +111,7 @@ public class WorkerCommunicator extends ZkListener {
     Callback<SubQueryResponseProto> cb = new Callback<SubQueryResponseProto>();
     AsyncWorkerClientInterface leaf = hm.get(serverName);
     if (leaf == null) {
-      throw new UnknownWorkerException("server name: " + serverName);
+      throw new UnknownWorkerException(serverName);
     }
     leaf.requestQueryUnit(cb, requestProto);
     return cb;
@@ -127,7 +127,7 @@ public class WorkerCommunicator extends ZkListener {
     Callback<ServerStatusProto> cb = new Callback<ServerStatusProto>();
     AsyncWorkerClientInterface leaf = hm.get(serverName);
     if (leaf == null) {
-      throw new UnknownWorkerException("server name: " + serverName);
+      throw new UnknownWorkerException(serverName);
     }
     leaf.getServerStatus(cb, NullProto.newBuilder().build());
     return cb;
@@ -138,7 +138,7 @@ public class WorkerCommunicator extends ZkListener {
     Callback<CommandResponseProto> cb = new Callback<CommandResponseProto>();
     AsyncWorkerClientInterface leaf = hm.get(serverName);
     if (leaf == null) {
-      throw new UnknownWorkerException("server name: " + serverName);
+      throw new UnknownWorkerException(serverName);
     }
     leaf.requestCommand(cb, request);
     
