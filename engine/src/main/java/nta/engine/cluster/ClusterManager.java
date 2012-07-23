@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 
 public class ClusterManager {
   private final int FRAG_DIST_THRESHOLD = 3;
@@ -43,8 +44,8 @@ public class ClusterManager {
     public long freeSpace;
     public long totalSpace;
   }
-  
-  private class FragmentAssignInfo 
+
+  private class FragmentAssignInfo
   implements Comparable<FragmentAssignInfo> {
     String serverName;
     int fragmentNum;
@@ -78,16 +79,16 @@ public class ClusterManager {
       new HashMap<Fragment, String>();
   private PriorityQueue<FragmentAssignInfo> servingInfos =
       new PriorityQueue<FragmentAssignInfo>();
-  private PriorityQueue<FragmentAssignInfo> assignInfos =
-      new PriorityQueue<FragmentAssignInfo>();
-  
+
+  private Map<Fragment, FragmentServingInfo> servingInfoMap;
+
   public ClusterManager(WorkerCommunicator wc, Configuration conf,
       LeafServerTracker tracker) throws IOException {
     this.wc = wc;
     this.conf = conf;
     this.catalog = new CatalogClient(this.conf);
     this.tracker = tracker;
-    
+    servingInfoMap = Maps.newHashMap();
   }
 
   public WorkerInfo getWorkerInfo(String workerName) throws RemoteException,
@@ -111,7 +112,7 @@ public class ClusterManager {
   public List<QueryUnitId> getProcessingQuery(String workerName) {
     return null;
   }
-  
+
   public void updateOnlineWorker() {
     String DNSName;
     List<String> workers;
@@ -170,6 +171,22 @@ public class ClusterManager {
         updateFragLoc(new FragmentServInfo(worker, f), worker);
       }
     }
+  }
+
+  public void updateFragmentServingInfo2(String table) throws IOException {
+    TableDescProto td = (TableDescProto) catalog.getTableDesc(table).getProto();
+    FileSystem fs = FileSystem.get(conf);
+    Path path = new Path(td.getPath());
+
+    Map<String, StoredBlockInfo> storedBlockInfoMap =
+        ClusterManagerUtils.makeStoredBlockInfoForHosts(fs, path);
+    Map<Fragment, FragmentServingInfo> assignMap =
+        ClusterManagerUtils.assignFragments(td, storedBlockInfoMap.values());
+    this.servingInfoMap.putAll(assignMap);
+  }
+
+  public Map<Fragment, FragmentServingInfo> getServingInfoMap() {
+    return this.servingInfoMap;
   }
   
   private String getRandomWorkerNameOfHost(String host) {
@@ -314,8 +331,8 @@ public class ClusterManager {
         map.put(serverName, 1);
       }
     }
-    PriorityQueue<FragmentAssignInfo> pq = 
-        new PriorityQueue<ClusterManager.FragmentAssignInfo>();
+    PriorityQueue<FragmentAssignInfo> pq =
+        new PriorityQueue<FragmentAssignInfo>();
     Iterator<Entry<String,Integer>> it = map.entrySet().iterator();
     Entry<String,Integer> e;
     while (it.hasNext()) {

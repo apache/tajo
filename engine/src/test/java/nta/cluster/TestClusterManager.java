@@ -7,6 +7,7 @@ import nta.engine.*;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.ClusterManager.DiskInfo;
 import nta.engine.cluster.ClusterManager.WorkerInfo;
+import nta.engine.cluster.FragmentServingInfo;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.parser.ParseTree;
@@ -19,6 +20,8 @@ import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.query.GlobalPlanner;
 import nta.storage.CSVFile2;
+import nta.storage.StorageManager;
+import nta.storage.StorageUtil;
 import nta.util.FileUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -200,6 +203,24 @@ public class TestClusterManager {
     ClusterManager cm = master.getClusterManager();
     for (QueryUnit unit : units) {
       assertNotNull(cm.getProperHost(unit));
+    }
+  }
+
+  @Test
+  public void testUpdateFragmentServingInfo2() throws IOException {
+    ClusterManager cm = master.getClusterManager();
+    StorageManager sm = master.getStorageManager();
+    int fragNum = 0;
+    for (int i = 0; i < tbNum; i++) {
+      cm.updateFragmentServingInfo2("HostsByTable"+i);
+      TableDesc desc = local.getTableDesc("HostsByTable"+i);
+      fragNum += sm.split(desc.getPath()).length;
+    }
+
+    Map<Fragment, FragmentServingInfo> map = cm.getServingInfoMap();
+    assertEquals(fragNum, map.size());
+    for (FragmentServingInfo info : map.values()) {
+      assertEquals(1, info.getHostNum());
     }
   }
 }
