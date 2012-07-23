@@ -35,11 +35,13 @@ public class ScheduleUnit extends AbstractQuery {
   private Map<ScanNode, ScheduleUnit> prevs;
   private PARTITION_TYPE outputType;
   private QueryUnit[] queryUnits;
+  private boolean hasJoinPlan;
   
   public ScheduleUnit(ScheduleUnitId id) {
     this.id = id;
     prevs = new HashMap<ScanNode, ScheduleUnit>();
     scanlist = new ArrayList<ScanNode>();
+    hasJoinPlan = false;
   }
   
   public void setOutputType(PARTITION_TYPE type) {
@@ -48,7 +50,8 @@ public class ScheduleUnit extends AbstractQuery {
   
   public void setLogicalPlan(LogicalNode plan) {
     Preconditions.checkArgument(plan.getType() == ExprType.STORE);
-    
+
+    hasJoinPlan = false;
     this.plan = plan;
     store = (StoreTableNode) plan;
     LogicalNode node = plan;
@@ -61,12 +64,19 @@ public class ScheduleUnit extends AbstractQuery {
         s.add(s.size(), unary.getSubNode());
       } else if (node instanceof BinaryNode) {
         BinaryNode binary = (BinaryNode) node;
+        if (binary.getType() == ExprType.JOIN) {
+          hasJoinPlan = true;
+        }
         s.add(s.size(), binary.getOuterNode());
         s.add(s.size(), binary.getInnerNode());
       } else if (node instanceof ScanNode) {
         scanlist.add((ScanNode)node);
       }
     }
+  }
+
+  public boolean hasJoinPlan() {
+    return this.hasJoinPlan;
   }
   
   public void setParentQuery(ScheduleUnit next) {

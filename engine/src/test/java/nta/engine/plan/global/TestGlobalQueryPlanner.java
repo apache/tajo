@@ -382,7 +382,7 @@ public class TestGlobalQueryPlanner {
       
       // fragment
       for (ScanNode scan : unit.getScanNodes()) {
-        assertNotNull(unit.getFragments(scan.getTableId()));  
+        assertNotNull(unit.getFragment(scan.getTableId()));
       }
       InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder();
       builder.setId(unit.getId().getProto())

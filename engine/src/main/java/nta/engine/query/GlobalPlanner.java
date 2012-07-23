@@ -783,29 +783,29 @@ public class GlobalPlanner {
   /**
    * 2개의 scan을 가진 QueryUnit들에 fragment와 fetch를 할당
    * 
-   * @param unit
+   * @param scheduleUnit
    * @param n
    * @param fragMap
    * @param fetchMap
    * @return
    */
-  private List<QueryUnit> makeBinaryQueryUnit(ScheduleUnit unit, int n, 
+  private List<QueryUnit> makeBinaryQueryUnit(ScheduleUnit scheduleUnit, int n,
       Map<ScanNode, List<Fragment>> fragMap, 
       Map<ScanNode, List<URI>> fetchMap) {
-    List<QueryUnit> unitList = new ArrayList<QueryUnit>();
+    List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
     int maxQueryUnitNum = n;
-    ScanNode[] scans = unit.getScanNodes();
+    ScanNode[] scans = scheduleUnit.getScanNodes();
     
-    if (unit.hasChildQuery()) {
-      ScheduleUnit prev = unit.getChildQuery(scans[0]);
+    if (scheduleUnit.hasChildQuery()) {
+      ScheduleUnit prev = scheduleUnit.getChildQuery(scans[0]);
       switch (prev.getOutputType()) {
       case BROADCAST:
         throw new NotImplementedException();
       case HASH:
         if (scans[0].isLocal()) {
-          unitList = assignFetchesToBinaryByHash(unit, unitList,
+          queryUnits = assignFetchesToBinaryByHash(scheduleUnit, queryUnits,
               fetchMap, maxQueryUnitNum);
-          unitList = assignEqualFragment(unitList, fragMap);
+          queryUnits = assignEqualFragment(queryUnits, fragMap);
         } else {
           throw new NotImplementedException();
         }
@@ -814,31 +814,65 @@ public class GlobalPlanner {
         throw new NotImplementedException();
       }
     } else {
-      unitList = assignFragmentsByRoundRobin(unit, unitList, fragMap, 
-          maxQueryUnitNum);
+//      unitList = assignFragmentsByRoundRobin(unit, unitList, fragMap,
+//          maxQueryUnitNum);
+      queryUnits = makeQueryUnitsForBinaryPlan(scheduleUnit,
+          queryUnits, fragMap);
     }
 
-    return unitList;
+    return queryUnits;
+  }
+
+  public List<QueryUnit> makeQueryUnitsForBinaryPlan(
+      ScheduleUnit scheduleUnit, List<QueryUnit> queryUnits,
+      Map<ScanNode, List<Fragment>> fragmentMap) {
+    QueryUnit queryUnit;
+    if (scheduleUnit.hasJoinPlan()) {
+      // make query units for every composition of fragments of each scan
+      Preconditions.checkArgument(fragmentMap.size()==2);
+      String innerId, outerId;
+      List<Fragment> innerFrags, outerFrags;
+      Iterator<Entry<ScanNode, List<Fragment>>> it =
+          fragmentMap.entrySet().iterator();
+      Entry<ScanNode, List<Fragment>> e = it.next();
+      innerId = e.getKey().getTableId();
+      innerFrags = e.getValue();
+      e = it.next();
+      outerId = e.getKey().getTableId();
+      outerFrags = e.getValue();
+      for (Fragment outer : outerFrags) {
+        for (Fragment inner : innerFrags) {
+          queryUnit = newQueryUnit(scheduleUnit);
+          queryUnit.setFragment(innerId, inner);
+          queryUnit.setFragment(outerId, outer);
+          queryUnits.add(queryUnit);
+        }
+      }
+    } else {
+      throw new NotImplementedException();
+    }
+
+    return queryUnits;
   }
   
   /**
    * 1개의 scan을 가진 QueryUnit들에 대해 fragment와 fetch를 할당
    * 
-   * @param unit
+   * @param scheduleUnit
    * @param n
    * @param fragMap
    * @param fetchMap
    * @return
    */
-  private List<QueryUnit> makeUnaryQueryUnit(ScheduleUnit unit, int n,
+  private List<QueryUnit> makeUnaryQueryUnit(ScheduleUnit scheduleUnit, int n,
       Map<ScanNode, List<Fragment>> fragMap, 
       Map<ScanNode, List<URI>> fetchMap, Schema rangeSchema) throws UnsupportedEncodingException {
-    List<QueryUnit> unitList = new ArrayList<QueryUnit>();
+    List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
     int maxQueryUnitNum = 0;
-    ScanNode scan = unit.getScanNodes()[0];
+    ScanNode scan = scheduleUnit.getScanNodes()[0];
     maxQueryUnitNum = n;
-    if (unit.hasChildQuery()) {
-      ScheduleUnit prev = unit.getChildQuery(scan);
+    if (scheduleUnit.hasChildQuery()) {
+      ScheduleUnit prev = scheduleUnit.getChildQuery(scan);
       if (prev.getStoreTableNode().getSubNode().getType() == 
           ExprType.GROUP_BY) {
         GroupbyNode groupby = (GroupbyNode) prev.getStoreTableNode().
@@ -853,44 +887,56 @@ public class GlobalPlanner {
 
         case HASH:
           if (scan.isLocal()) {
-            unitList = assignFetchesToUnaryByHash(unit, unitList, scan,
-                fetchMap.get(scan), maxQueryUnitNum);
-            unitList = assignEqualFragment(unitList, scan,
+            queryUnits = assignFetchesToUnaryByHash(scheduleUnit,
+                queryUnits, scan, fetchMap.get(scan), maxQueryUnitNum);
+            queryUnits = assignEqualFragment(queryUnits, scan,
                 fragMap.get(scan).get(0));
           } else {
-            unitList = assignFragmentsByHash(unit, unitList, scan,
-                fragMap.get(scan), maxQueryUnitNum);
+            throw new NotImplementedException();
           }
           break;
         case RANGE:
           if (scan.isLocal()) {
-            unitList = assignFetchesByRange(unit, unitList, scan,
-                fetchMap.get(scan), maxQueryUnitNum, rangeSchema);
-            unitList = assignEqualFragment(unitList, scan,
+            queryUnits = assignFetchesByRange(scheduleUnit,
+                queryUnits, scan, fetchMap.get(scan),
+                maxQueryUnitNum, rangeSchema);
+            queryUnits = assignEqualFragment(queryUnits, scan,
                 fragMap.get(scan).get(0));
           } else {
-            unitList = assignFetchesByRange(unit, unitList, scan,
-                fetchMap.get(scan), maxQueryUnitNum, rangeSchema);
+            throw new NotImplementedException();
           }
           break;
 
         case LIST:
           if (scan.isLocal()) {
-            unitList = assignFetchesByRoundRobin(unit, unitList, scan,
-                fetchMap.get(scan), maxQueryUnitNum);
-            unitList = assignEqualFragment(unitList, scan,
+            queryUnits = assignFetchesByRoundRobin(scheduleUnit,
+                queryUnits, scan, fetchMap.get(scan), maxQueryUnitNum);
+            queryUnits = assignEqualFragment(queryUnits, scan,
                 fragMap.get(scan).get(0));
           } else {
-            unitList = assignFragmentsByRoundRobin(unit, unitList, scan,
-                fragMap.get(scan), maxQueryUnitNum);
+            throw new NotImplementedException();
           }
           break;
       }
     } else {
-      unitList = assignFragmentsByRoundRobin(unit, unitList, scan,
-          fragMap.get(scan), maxQueryUnitNum);
+//      queryUnits = assignFragmentsByRoundRobin(scheduleUnit, queryUnits, scan,
+//          fragMap.get(scan), maxQueryUnitNum);
+      queryUnits = makeQueryUnitsForEachFragment(scheduleUnit,
+          queryUnits, scan, fragMap.get(scan));
     }
-    return unitList;
+    return queryUnits;
+  }
+
+  private List<QueryUnit> makeQueryUnitsForEachFragment(
+      ScheduleUnit scheduleUnit, List<QueryUnit> queryUnits,
+      ScanNode scan, List<Fragment> fragments) {
+    QueryUnit queryUnit;
+    for (Fragment fragment : fragments) {
+      queryUnit = newQueryUnit(scheduleUnit);
+      queryUnit.setFragment(scan.getTableId(), fragment);
+      queryUnits.add(queryUnit);
+    }
+    return queryUnits;
   }
   
   private QueryUnit newQueryUnit(ScheduleUnit scheduleUnit) {
@@ -1124,7 +1170,7 @@ public class GlobalPlanner {
    * @param n
    * @return
    */
-  private List<QueryUnit> assignFragmentsByHash(ScheduleUnit scheduleUnit, 
+  /*private List<QueryUnit> assignFragmentsByHash(ScheduleUnit scheduleUnit,
       List<QueryUnit> unitList, ScanNode scan, List<Fragment> fragList, int n) {
     Collection<List<Fragment>> hashed = hashFragments(fragList);
     QueryUnit unit = null;
@@ -1142,7 +1188,7 @@ public class GlobalPlanner {
       unit.addFragments(scan.getTableId(), frags);
     }
     return unitList;
-  }
+  }*/
   
   /**
    * Binary QueryUnit들에 hash 파티션된 fragment를 할당
@@ -1153,7 +1199,7 @@ public class GlobalPlanner {
    * @param n
    * @return
    */
-  private List<QueryUnit> assignFragmentsByRoundRobin(ScheduleUnit scheduleUnit,
+  /*private List<QueryUnit> assignFragmentsByRoundRobin(ScheduleUnit scheduleUnit,
       List<QueryUnit> unitList, Map<ScanNode, List<Fragment>> fragMap, int n) {
     QueryUnit unit = null;
     int i = 0;
@@ -1179,7 +1225,7 @@ public class GlobalPlanner {
     }
     
     return unitList;
-  }
+  }*/
 
   /**
    * Unary QueryUnit들에 list 파티션된 fragment를 할당
@@ -1191,7 +1237,7 @@ public class GlobalPlanner {
    * @param n
    * @return
    */
-  private List<QueryUnit> assignFragmentsByRoundRobin(ScheduleUnit scheduleUnit,
+  /*private List<QueryUnit> assignFragmentsByRoundRobin(ScheduleUnit scheduleUnit,
       List<QueryUnit> unitList, ScanNode scan, List<Fragment> frags, int n) {
     QueryUnit unit = null;
     int i = 0;
@@ -1208,7 +1254,7 @@ public class GlobalPlanner {
       unit.addFragment(scan.getTableId(), f);
     }
     return unitList;
-  }
+  }*/
   
   /**
    * Unary QueryUnit들에 대하여 동일한 fragment를 할당
@@ -1221,7 +1267,8 @@ public class GlobalPlanner {
   private List<QueryUnit> assignEqualFragment(List<QueryUnit> unitList, 
       ScanNode scan, Fragment frag) {
     for (int i = 0; i < unitList.size(); i++) {
-      unitList.get(i).addFragment(scan.getTableId(), frag);
+//      unitList.get(i).addFragment(scan.getTableId(), frag);
+      unitList.get(i).setFragment(scan.getTableId(), frag);
     }
     
     return unitList;
@@ -1237,7 +1284,9 @@ public class GlobalPlanner {
       Map<ScanNode, List<Fragment>> fragMap) {
     for (int i = 0; i < unitList.size(); i++) {
       for (ScanNode scan : fragMap.keySet()) {
-        unitList.get(i).addFragment(scan.getTableId(), fragMap.get(scan).get(0));
+//        unitList.get(i).addFragment(scan.getTableId(), fragMap.get(scan).get(0));
+        unitList.get(i).setFragment(scan.getTableId(),
+            fragMap.get(scan).get(0));
       }
     }
     return unitList;

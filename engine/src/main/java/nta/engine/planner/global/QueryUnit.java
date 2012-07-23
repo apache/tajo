@@ -23,6 +23,7 @@ import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.UnaryNode;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 
 /**
@@ -39,7 +40,7 @@ public class QueryUnit extends AbstractQuery {
 	private List<ScanNode> scan;
 	
 	private String hostName;
-	private Map<String, List<Fragment>> fragMap;
+	private Map<String, Fragment> fragMap;
 	private Map<String, Set<URI>> fetchMap;
 	
 	private int expire;
@@ -49,8 +50,8 @@ public class QueryUnit extends AbstractQuery {
 	public QueryUnit(QueryUnitId id) {
 		this.id = id;
 		scan = new ArrayList<ScanNode>();
-    fetchMap = new HashMap<String, Set<URI>>();
-    fragMap = new HashMap<String, List<Fragment>>();
+    fetchMap = Maps.newHashMap();
+    fragMap = Maps.newHashMap();
     partitions = new ArrayList<Partition>();
     expire = QueryUnit.EXPIRE_TIME;
 	}
@@ -82,7 +83,7 @@ public class QueryUnit extends AbstractQuery {
 		this.hostName = host;
 	}
 	
-	public void addFragment(String key, Fragment fragment) {
+	/*public void addFragment(String key, Fragment fragment) {
 	  List<Fragment> frags;
 	  if (fragMap.containsKey(key)) {
 	    frags = fragMap.get(key);
@@ -103,32 +104,36 @@ public class QueryUnit extends AbstractQuery {
 	  for (Fragment frag : fragList) {
 	    this.addFragment(key, frag);
 	  }
+	}*/
+
+  public void setFragment(String tableId, Fragment fragment) {
+    this.fragMap.put(tableId, fragment);
+  }
+	
+	public void addFetch(String tableId, String uri) throws URISyntaxException {
+	  this.addFetch(tableId, new URI(uri));
 	}
 	
-	public void addFetch(String key, String uri) throws URISyntaxException {
-	  this.addFetch(key, new URI(uri));
-	}
-	
-	public void addFetch(String key, URI uri) {
+	public void addFetch(String tableId, URI uri) {
 	  Set<URI> uris;
-	  if (fetchMap.containsKey(key)) {
-	    uris = fetchMap.get(key);
+	  if (fetchMap.containsKey(tableId)) {
+	    uris = fetchMap.get(tableId);
 	  } else {
 	    uris = Sets.newHashSet();
 	  }
 	  uris.add(uri);
-    fetchMap.put(key, uris);
+    fetchMap.put(tableId, uris);
 	}
 	
-	public void addFetches(String key, List<URI> urilist) {
+	public void addFetches(String tableId, List<URI> urilist) {
 	  Set<URI> uris;
-    if (fetchMap.containsKey(key)) {
-      uris = fetchMap.get(key);
+    if (fetchMap.containsKey(tableId)) {
+      uris = fetchMap.get(tableId);
     } else {
       uris = Sets.newHashSet();
     }
     uris.addAll(urilist);
-    fetchMap.put(key, uris);
+    fetchMap.put(tableId, uris);
 	}
 	
 	public void setFetches(Map<String, Set<URI>> fetches) {
@@ -136,8 +141,8 @@ public class QueryUnit extends AbstractQuery {
 	  this.fetchMap.putAll(fetches);
 	}
 	
-	public List<Fragment> getFragments(String key) {
-		return this.fragMap.get(key);
+	/*public List<Fragment> getFragments(String tableId) {
+		return this.fragMap.get(tableId);
 	}
 
   public List<Fragment> getAllFragments() {
@@ -147,6 +152,14 @@ public class QueryUnit extends AbstractQuery {
     }
 
     return fragments;
+  }*/
+
+  public Fragment getFragment(String tableId) {
+    return this.fragMap.get(tableId);
+  }
+
+  public Collection<Fragment> getAllFragments() {
+    return fragMap.values();
   }
 	
 	public LogicalNode getLogicalPlan() {
@@ -192,11 +205,9 @@ public class QueryUnit extends AbstractQuery {
 	@Override
 	public String toString() {
 		String str = new String(plan.getType() + " ");
-		for (Entry<String, List<Fragment>> e : fragMap.entrySet()) {
+		for (Entry<String, Fragment> e : fragMap.entrySet()) {
 		  str += e.getKey() + " : ";
-		  for (Fragment t : e.getValue()) {
-	      str += t + " ";
-	    }
+      str += e.getValue() + " ";
 		}
 		for (Entry<String, Set<URI>> e : fetchMap.entrySet()) {
       str += e.getKey() + " : ";

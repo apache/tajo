@@ -230,7 +230,7 @@ public class QueryUnitScheduler extends Thread {
       QueryUnit q = pendingQueue.take();
       List<Fragment> fragList = new ArrayList<Fragment>();
       for (ScanNode scan : q.getScanNodes()) {
-        fragList.addAll(q.getFragments(scan.getTableId()));
+        fragList.add(q.getFragment(scan.getTableId()));
       }
       QueryUnitRequest request = new QueryUnitRequestImpl(q.getId(), fragList, 
           q.getOutputName(), false, q.getLogicalPlan().toJSON());
