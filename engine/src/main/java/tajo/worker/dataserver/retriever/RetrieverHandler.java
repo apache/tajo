@@ -1,6 +1,7 @@
 package tajo.worker.dataserver.retriever;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -9,9 +10,9 @@ import java.util.Map;
 public interface RetrieverHandler {
   /**
    *
-   * @param kvs url-decoded key/value pairs
+   * @param params url-decoded params
    * @return a desired part of a file
    * @throws IOException
    */
-  public FileChunk get(Map<String, String> kvs) throws IOException;
+  public FileChunk [] get(Map<String, List<String>> params) throws IOException;
 }

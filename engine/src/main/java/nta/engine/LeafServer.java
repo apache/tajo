@@ -747,6 +747,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           ctx.setProgress(1.0f);
           if (interQuery) { // TODO - to be completed
             if (partitionType == null || partitionType != ScheduleUnit.PARTITION_TYPE.RANGE) {
+              //PartitionRetrieverHandler partitionHandler =
+                  //new PartitionRetrieverHandler(ctx.getWorkDir().getAbsolutePath() + "/out/data");
               PartitionRetrieverHandler partitionHandler =
                   new PartitionRetrieverHandler(ctx.getWorkDir().getAbsolutePath() + "/out/data");
               retriever.register(this.getId(), partitionHandler);

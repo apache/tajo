@@ -1,5 +1,6 @@
 package nta.engine.planner;
 
+import com.google.common.collect.Lists;
 import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
@@ -31,6 +32,7 @@ import tajo.worker.dataserver.retriever.FileChunk;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -692,20 +694,22 @@ public class TestPhysicalPlanner {
 
     // The below is for testing RangeRetrieverHandler.
     RangeRetrieverHandler handler = new RangeRetrieverHandler(new File(workDir, "out"), keySchema, comp);
-    Map<String,String> kvs = Maps.newHashMap();
+    Map<String,List<String>> kvs = Maps.newHashMap();
     Tuple startTuple = new VTuple(1);
     startTuple.put(0, DatumFactory.createInt(50));
-    kvs.put("start", new String(Base64.encodeBase64(TupleUtil.toBytes(keySchema, startTuple), false)));
+    kvs.put("start", Lists.newArrayList(
+        new String(Base64.encodeBase64(TupleUtil.toBytes(keySchema, startTuple), false))));
     Tuple endTuple = new VTuple(1);
     endTuple.put(0, DatumFactory.createInt(80));
-    kvs.put("end", new String(Base64.encodeBase64(TupleUtil.toBytes(keySchema, endTuple), false)));
-    FileChunk chunk = handler.get(kvs);
+    kvs.put("end", Lists.newArrayList(
+        new String(Base64.encodeBase64(TupleUtil.toBytes(keySchema, endTuple), false))));
+    FileChunk [] chunk = handler.get(kvs);
 
-    scanner.seek(chunk.startOffset());
+    scanner.seek(chunk[0].startOffset());
     keytuple = scanner.next();
     assertEquals(50, keytuple.get(1).asInt());
 
-    long endOffset = chunk.startOffset() + chunk.length();
+    long endOffset = chunk[0].startOffset() + chunk[0].length();
     while((keytuple = scanner.next()) != null && scanner.getNextOffset() <= endOffset) {
       assertTrue(keytuple.get(1).asInt() <= 80);
     }

@@ -24,7 +24,7 @@ public class DirectoryRetriever implements DataRetriever {
   }
 
   @Override
-  public FileChunk handle(ChannelHandlerContext ctx, HttpRequest request)
+  public FileChunk [] handle(ChannelHandlerContext ctx, HttpRequest request)
       throws IOException {
     final String path = HttpDataServerHandler.sanitizeUri(request.getUri());
     if (path == null) {
@@ -39,7 +39,7 @@ public class DirectoryRetriever implements DataRetriever {
       throw new FileAccessForbiddenException("No such file: " 
           + baseDir + "/" + path); 
     }
-    
-    return new FileChunk(file, 0, file.length());
+
+    return new FileChunk[] {new FileChunk(file, 0, file.length())};
   }
 }

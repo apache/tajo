@@ -16,6 +16,7 @@ import tajo.worker.dataserver.retriever.RetrieverHandler;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -51,15 +52,15 @@ public class RangeRetrieverHandler implements RetrieverHandler {
   }
 
   @Override
-  public FileChunk get(Map<String, String> kvs) throws IOException {
+  public FileChunk [] get(Map<String, List<String>> kvs) throws IOException {
     // nothing to verify the file because AdvancedDataRetriever checks
     // its validity of the file.
     File data = new File(this.file, "data/data");
-    byte [] startBytes = Base64.decodeBase64(kvs.get("start"));
+    byte [] startBytes = Base64.decodeBase64(kvs.get("start").get(0));
     Tuple start = TupleUtil.toTuple(schema, startBytes);
     byte [] endBytes = null;
     Tuple end = null;
-    endBytes = Base64.decodeBase64(kvs.get("end"));
+    endBytes = Base64.decodeBase64(kvs.get("end").get(0));
     end = TupleUtil.toTuple(schema, endBytes);
     boolean last = kvs.containsKey("final");
 
@@ -124,6 +125,6 @@ public class RangeRetrieverHandler implements RetrieverHandler {
       endOffset = data.length();
     }
 
-    return new FileChunk(data, startOffset, endOffset - startOffset);
+    return new FileChunk[] {new FileChunk(data, startOffset, endOffset - startOffset)};
   }
 }

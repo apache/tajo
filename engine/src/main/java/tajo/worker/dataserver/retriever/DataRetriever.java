@@ -9,6 +9,6 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
  * @author Hyunsik Choi
  */
 public interface DataRetriever {  
-  FileChunk handle(ChannelHandlerContext ctx, HttpRequest request)
+  FileChunk [] handle(ChannelHandlerContext ctx, HttpRequest request)
       throws IOException;
 }

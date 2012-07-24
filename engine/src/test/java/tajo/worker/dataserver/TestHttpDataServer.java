@@ -41,7 +41,7 @@ public class TestHttpDataServer {
     Random rnd = new Random();
     FileWriter writer = new FileWriter(TEST_DATA+"/"+"testHttp");
     String watermark = "test_"+rnd.nextInt();
-    writer.write(watermark);
+    writer.write(watermark+"\n");
     writer.flush();
     writer.close();
 
@@ -58,6 +58,7 @@ public class TestHttpDataServer {
     String line = null;    
     boolean found = false;
     while ((line = in.readLine()) != null) {
+      System.out.println(line);
       if (line.equals(watermark))
         found = true;
     }    
@@ -157,6 +158,7 @@ public class TestHttpDataServer {
     String line = null;    
     boolean found = false;
     while ((line = in.readLine()) != null) {
+      System.out.println(line);
       if (line.equals(watermark))
         found = true;
     }    

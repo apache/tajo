@@ -32,6 +32,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
+import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -1000,7 +1001,7 @@ public class GlobalPlanner {
    */
   private List<QueryUnit> assignFetchesToUnaryByHash(ScheduleUnit scheduleUnit,
       List<QueryUnit> unitList, ScanNode scan, List<URI> uriList, int n) {
-    Map<String, List<URI>> hashed = hashFetches(uriList); // hash key, uri
+    Map<String, List<URI>> hashed = hashFetches(scheduleUnit.getId(), uriList); // hash key, uri
     QueryUnit unit = null;
     int i = 0;
     // TODO: units에 hashed 할당
@@ -1076,10 +1077,8 @@ public class GlobalPlanner {
     return unitList;
   }
   
-  private Map<String, Map<ScanNode, List<URI>>> hashFetches(Map<ScanNode, 
-      List<URI>> uriMap) {
-    SortedMap<String, Map<ScanNode, List<URI>>> hashed =
-        new TreeMap<String, Map<ScanNode,List<URI>>>();
+  private Map<String, Map<ScanNode, List<URI>>> hashFetches(Map<ScanNode, List<URI>> uriMap) {
+    SortedMap<String, Map<ScanNode, List<URI>>> hashed = new TreeMap<String, Map<ScanNode,List<URI>>>();
     String uriPath, key;
     Map<ScanNode, List<URI>> m = null;
     List<URI> uriList = null;
@@ -1102,11 +1101,41 @@ public class GlobalPlanner {
         hashed.put(key, m);
       }
     }
+
+    SortedMap<String, Map<ScanNode, List<URI>>> finalHashed = new TreeMap<String, Map<ScanNode,List<URI>>>();
+    for (Entry<String, Map<ScanNode, List<URI>>> entry : hashed.entrySet()) {
+      finalHashed.put(entry.getKey(), combineURIByHostForBinary(entry.getValue()));
+    }
     
-    return hashed;
+    return finalHashed;
+  }
+
+  private Map<ScanNode, List<URI>> combineURIByHostForBinary(Map<ScanNode, List<URI>> hashed) {
+    Map<ScanNode, List<URI>> finalHashed = Maps.newHashMap();
+    for (Entry<ScanNode, List<URI>> urisByKey : hashed.entrySet()) {
+      Map<String, List<String>> param = new QueryStringDecoder(urisByKey.getValue().get(0)).getParameters();
+      QueryUnitId quid = new QueryUnitId(param.get("qid").get(0));
+      ScheduleUnitId sid = quid.getScheduleUnitId();
+      String fn = param.get("fn").get(0);
+
+      Map<String, List<String>> quidByHost = Maps.newHashMap();
+      for(URI uri : urisByKey.getValue()) {
+        final Map<String,List<String>> params =
+            new QueryStringDecoder(uri).getParameters();
+
+        if (quidByHost.containsKey(uri.getHost())) {
+          quidByHost.get(uri.getHost() + ":" + uri.getPort()).add(params.get("qid").get(0));
+        } else {
+          quidByHost.put(uri.getHost() + ":" + uri.getPort(), Lists.newArrayList(params.get("qid")));
+        }
+      }
+      finalHashed.put(urisByKey.getKey(), mergeURI(quidByHost, sid.toString(), fn));
+    }
+
+    return finalHashed;
   }
   
-  private Map<String, List<URI>> hashFetches(List<URI> uriList) {
+  private Map<String, List<URI>> hashFetches(ScheduleUnitId id, List<URI> uriList) {
     SortedMap<String, List<URI>> hashed = new TreeMap<String, List<URI>>();
     String uriPath, key;
     for (URI uri : uriList) {
@@ -1122,7 +1151,55 @@ public class GlobalPlanner {
       }
     }
     
-    return hashed;
+    return combineURIByHost(hashed);
+  }
+
+  private Map<String, List<URI>> combineURIByHost(Map<String, List<URI>> hashed) {
+    Map<String, List<URI>> finalHashed = Maps.newTreeMap();
+    for (Entry<String, List<URI>> urisByKey : hashed.entrySet()) {
+
+      QueryUnitId quid = new QueryUnitId(
+          new QueryStringDecoder(urisByKey.getValue().get(0)).getParameters().get("qid").get(0));
+      ScheduleUnitId sid = quid.getScheduleUnitId();
+
+      Map<String,List<String>> quidByHost = Maps.newHashMap();
+      for(URI uri : urisByKey.getValue()) {
+        final Map<String,List<String>> params =
+            new QueryStringDecoder(uri).getParameters();
+
+        if (quidByHost.containsKey(uri.getHost())) {
+          quidByHost.get(uri.getHost() + ":" + uri.getPort()).add(params.get("qid").get(0));
+        } else {
+          quidByHost.put(uri.getHost() + ":" + uri.getPort(), Lists.newArrayList(params.get("qid")));
+        }
+      }
+      finalHashed.put(urisByKey.getKey(), mergeURI(quidByHost, sid.toString(), urisByKey.getKey()));
+    }
+
+    return finalHashed;
+  }
+
+  private List<URI> mergeURI(Map<String, List<String>> quidByKey, String sid, String fn) {
+    List<URI> uris = Lists.newArrayList();
+    for (Entry<String, List<String>> quidByHost : quidByKey.entrySet()) {
+      StringBuilder sb = new StringBuilder("http://")
+      .append(quidByHost.getKey()).append("/").append("?fn="+fn).append("&sid="+sid);
+
+      sb.append("&qid=");
+      boolean first = true;
+      for (String qid : quidByHost.getValue()) {
+        if (first) {
+          first = false;
+        } else {
+          sb.append(",");
+        }
+        QueryUnitId quid = new QueryUnitId(qid);
+        sb.append(quid.getId());
+      }
+      uris.add(URI.create(sb.toString()));
+    }
+
+    return uris;
   }
 
   private Map<TupleRange, Set<URI>> rangeFetches(Schema schema, List<URI> uriList) throws UnsupportedEncodingException {

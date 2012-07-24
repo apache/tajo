@@ -55,7 +55,7 @@ public class InterDataRetriever implements DataRetriever {
    * @see tajo.worker.dataserver.retriever.DataRetriever#handle(org.jboss.netty.channel.ChannelHandlerContext, org.jboss.netty.handler.codec.http.HttpRequest)
    */
   @Override
-  public FileChunk handle(ChannelHandlerContext ctx, HttpRequest request)
+  public FileChunk [] handle(ChannelHandlerContext ctx, HttpRequest request)
       throws IOException {
        
     int start = request.getUri().indexOf('?');
@@ -94,6 +94,6 @@ public class InterDataRetriever implements DataRetriever {
           + baseDir + "/" + file.getName()); 
     }
     
-    return new FileChunk(file, 0, file.length());
+    return new FileChunk[] {new FileChunk(file, 0, file.length())};
   }
 }

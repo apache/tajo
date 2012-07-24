@@ -45,7 +45,7 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
       return;
     }
 
-    FileChunk file;
+    FileChunk [] file;
     try {
       file = retriever.handle(ctx, request);
     } catch (FileNotFoundException fnf) {
@@ -75,49 +75,59 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
         ch.close();
       }
     }  else {
-      LOG.info("Fetch request received: " + file);
-
-      RandomAccessFile raf;
-      try {
-        raf = new RandomAccessFile(file.getFile(), "r");
-      } catch (FileNotFoundException fnfe) {
-        sendError(ctx, NOT_FOUND);
-        return;
-      }
+      //LOG.info("Fetch request received: " + file);
 
       HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-      setContentLength(response, file.length());
+      long totalSize = 0;
+      for (FileChunk chunk : file) {
+        totalSize += chunk.length();
+      }
+      setContentLength(response, totalSize);
 
-      ChannelFuture writeFuture;
       // Write the initial line and the header.
       ch.write(response);
 
-      if (ch.getPipeline().get(SslHandler.class) != null) {
-        // Cannot use zero-copy with HTTPS.
-        writeFuture = ch.write(new ChunkedFile(raf, file.startOffset(), file.length(), 8192));
-      } else {
-        // No encryption - use zero-copy.
-        final FileRegion region = new DefaultFileRegion(raf.getChannel(), file.startOffset(),
-            file.length());
-        writeFuture = ch.write(region);
-        writeFuture.addListener(new ChannelFutureProgressListener() {
-          public void operationComplete(ChannelFuture future) {
-            region.releaseExternalResources();
-          }
-
-          public void operationProgressed(ChannelFuture future, long amount,
-                                          long current, long total) {
-            //System.out.printf("%s: %d / %d (+%d)%n", "file", current, total, amount);
-          }
-        });
+      ChannelFuture writeFuture = null;
+      for (FileChunk chunk : file) {
+        writeFuture = sendFile(ctx, ch, chunk);
+        if (writeFuture == null) {
+          sendError(ctx, NOT_FOUND);
+          return;
+        }
       }
 
-      // Decide whether to close the connection or not.
-      if (!isKeepAlive(request)) {
-        // Close the connection when the whole content is written out.
-        writeFuture.addListener(ChannelFutureListener.CLOSE);
-      }
+      // Close the connection when the whole content is written out.
+      writeFuture.addListener(ChannelFutureListener.CLOSE);
     }
+  }
+
+  private ChannelFuture sendFile(ChannelHandlerContext ctx, Channel ch, FileChunk file) throws IOException {
+    RandomAccessFile raf;
+    try {
+      raf = new RandomAccessFile(file.getFile(), "r");
+    } catch (FileNotFoundException fnfe) {
+      return null;
+    }
+
+    ChannelFuture writeFuture;
+    // Write the initial line and the header.
+
+    if (ch.getPipeline().get(SslHandler.class) != null) {
+      // Cannot use zero-copy with HTTPS.
+      writeFuture = ch.write(new ChunkedFile(raf, file.startOffset(), file.length(), 8192));
+    } else {
+      // No encryption - use zero-copy.
+      final FileRegion region = new DefaultFileRegion(raf.getChannel(), file.startOffset(),
+          file.length());
+      writeFuture = ch.write(region);
+      writeFuture.addListener(new ChannelFutureListener() {
+        public void operationComplete(ChannelFuture future) {
+          region.releaseExternalResources();
+        }
+      });
+    }
+
+    return writeFuture;
   }
 
   @Override
