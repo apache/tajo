@@ -18,6 +18,7 @@ import java.util.Map;
  */
 public class TpchTestBase {
   String [] names;
+  String [] paths;
   String [][] tables;
   Schema[] schemas;
   Map<String, Integer> nameMap = Maps.newHashMap();
@@ -25,6 +26,7 @@ public class TpchTestBase {
 
   public TpchTestBase() throws IOException {
     names = new String[] {"customer", "lineitem", "nation", "orders", "part", "partsupp", "region", "supplier"};
+    paths = new String[names.length];
     for (int i = 0; i < names.length; i++) {
       nameMap.put(names[i], i);
     }
@@ -43,6 +45,7 @@ public class TpchTestBase {
     for (int i = 0; i < names.length; i++) {
       file = new File("src/test/tpch/" + names[i] + ".tbl");
       tables[i] = FileUtil.readTextFile(file).split("\n");
+      paths[i] = file.getAbsolutePath();
     }
   }
 
@@ -53,6 +56,7 @@ public class TpchTestBase {
   public ResultSet execute(String query) throws Exception {
     Options opt = new Options();
     opt.put(CSVFile2.DELIMITER, "|");
-    return NtaTestingUtility.run(names, schemas, opt, tables, query);
+//    return NtaTestingUtility.runInLocal(names, schemas, opt, tables, query);
+    return NtaTestingUtility.run(names, paths, schemas, opt, tables, query);
   }
 }

@@ -334,13 +334,15 @@ public class CSVFile2 extends Storage {
         if (tabletable() < 1) {
           // end of tablet.
           long mark = fis.getPos();
-          int i;
-          for (i = 1; fis.readByte() != LF; i++) ;
-          fis.seek(mark);
-          byte[] extra = new byte[i - 1];
-          fis.read(extra);
-          if (i > 1) { // i=1 case : read line feed.
-            tupleList[tupleList.length - 1] = new String(tupleList[tupleList.length - 1] + new String(extra));
+          if (fis.available() > 0) {
+            int i;
+            for (i = 1; fis.readByte() != LF; i++) ;
+            fis.seek(mark);
+            byte[] extra = new byte[i - 1];
+            fis.read(extra);
+            if (i > 1) { // i=1 case : read line feed.
+              tupleList[tupleList.length - 1] = new String(tupleList[tupleList.length - 1] + new String(extra));
+            }
           }
           validIndex = tupleList.length;
         } else {

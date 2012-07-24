@@ -21,6 +21,7 @@ import nta.zookeeper.MiniZooKeeperCluster;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
@@ -167,6 +168,10 @@ public class NtaTestingUtility {
 
   public MiniDFSCluster getMiniDFSCluster() {
     return this.dfsCluster;
+  }
+
+  public FileSystem getDefaultFileSystem() {
+    return this.defaultFS;
   }
 
   ////////////////////////////////////////////////////////
@@ -415,11 +420,11 @@ public class NtaTestingUtility {
     LOG.info("Minicluster is down");
   }
 
-  public static ResultSet run(String [] tableNames,
-                              Schema[] schemas,
-                              Options option,
-                              String [][] tables,
-                              String query) throws Exception {
+  public static ResultSet runInLocal(String[] tableNames,
+                                     Schema[] schemas,
+                                     Options option,
+                                     String[][] tables,
+                                     String query) throws Exception {
     NtaTestingUtility util = new NtaTestingUtility();
     util.startMiniClusterInLocal(1);
     Configuration conf = util.getConfiguration();
@@ -435,6 +440,45 @@ public class NtaTestingUtility {
       writeLines(tableFile, tables[i]);
       TableMeta meta = TCatUtil.newTableMeta(schemas[i], CatalogProtos.StoreType.CSV, option);
       client.createTable(tableNames[i], new Path(tableDir.getAbsolutePath()), meta);
+    }
+    Thread.sleep(1000);
+    ResultSet res = client.executeQuery(query);
+    util.shutdownMiniCluster();
+    return res;
+  }
+
+  public static ResultSet run(String[] names,
+                              String[] tablepaths,
+                              Schema[] schemas,
+                              Options option,
+                              String[][] tables,
+                              String query) throws Exception {
+    NtaTestingUtility util = new NtaTestingUtility();
+    util.startMiniCluster(1);
+    Configuration conf = util.getConfiguration();
+    TajoClient client = new TajoClient(conf);
+
+    FileSystem fs = util.getDefaultFileSystem();
+    Path rootDir = util.getMiniTajoCluster().getMaster().
+        getStorageManager().getDataRoot();
+    fs.mkdirs(rootDir);
+    for (int i = 0; i < tablepaths.length; i++) {
+      Path localPath = new Path(tablepaths[i]);
+      Path tablePath = new Path(rootDir, names[i]);
+      fs.mkdirs(tablePath);
+      Path dataPath = new Path(tablePath, "data");
+      fs.mkdirs(dataPath);
+      Path dfsPath = new Path(dataPath, localPath.getName());
+      fs.copyFromLocalFile(localPath, dfsPath);
+      FSDataInputStream fis = fs.open(dfsPath);
+      System.out.println("********** table: " + names[i] + "**********");
+      while (fis.available()> 0) {
+        System.out.println(fis.readLine());
+      }
+      System.out.println("********************");
+      TableMeta meta = TCatUtil.newTableMeta(schemas[i],
+          CatalogProtos.StoreType.CSV, option);
+      client.createTable(names[i], tablePath, meta);
     }
     Thread.sleep(1000);
     ResultSet res = client.executeQuery(query);
@@ -500,7 +544,7 @@ public class NtaTestingUtility {
           .addColumn("f2", CatalogProtos.DataType.STRING)
           .addColumn("f3", CatalogProtos.DataType.STRING);
 
-    ResultSet res = run(names, schemas, tables, "select f1 from table1");
+    ResultSet res = runInLocal(names, schemas, tables, "select f1 from table1");
     res.next();
     System.out.println(res.getString(0));
     res.next();
