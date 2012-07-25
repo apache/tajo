@@ -1,9 +1,9 @@
 create table orders (
-	o_orderkey int, /* primary key */
-	o_custkey int,
+	o_orderkey long, /* primary key */
+	o_custkey long,
 	o_orderstatus string,
-	o_totalprice float,
-	o_orderdate date,
+	o_totalprice double,
+	o_orderdate string,
 	o_orderpriority string,
 	o_clerk string,
 	o_shippriority int,
