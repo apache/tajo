@@ -39,7 +39,7 @@ public class DirectoryRetriever implements DataRetriever {
       throw new FileAccessForbiddenException("No such file: " 
           + baseDir + "/" + path); 
     }
-
+    
     return new FileChunk[] {new FileChunk(file, 0, file.length())};
   }
 }

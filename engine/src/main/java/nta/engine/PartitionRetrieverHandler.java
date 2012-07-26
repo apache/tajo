@@ -19,11 +19,11 @@ public class PartitionRetrieverHandler implements RetrieverHandler {
   }
 
   @Override
-  public FileChunk [] get(Map<String, List<String>> kvs) throws IOException {
+  public FileChunk get(Map<String, List<String>> kvs) throws IOException {
     // nothing to verify the file because AdvancedDataRetriever checks
     // its validity of the file.
     File file = new File(baseDir + "/" + kvs.get("fn").get(0));
 
-    return new FileChunk[] {new FileChunk(file, 0, file.length())};
+    return new FileChunk(file, 0, file.length());
   }
 }

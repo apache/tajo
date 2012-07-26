@@ -10,9 +10,9 @@ import java.util.Map;
 public interface RetrieverHandler {
   /**
    *
-   * @param params url-decoded params
+   * @param kvs url-decoded key/value pairs
    * @return a desired part of a file
    * @throws IOException
    */
-  public FileChunk [] get(Map<String, List<String>> params) throws IOException;
+  public FileChunk get(Map<String, List<String>> kvs) throws IOException;
 }

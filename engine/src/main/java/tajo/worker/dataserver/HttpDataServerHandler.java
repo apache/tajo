@@ -75,8 +75,6 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
         ch.close();
       }
     }  else {
-      //LOG.info("Fetch request received: " + file);
-
       HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
       long totalSize = 0;
       for (FileChunk chunk : file) {
@@ -88,6 +86,7 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
       ch.write(response);
 
       ChannelFuture writeFuture = null;
+
       for (FileChunk chunk : file) {
         writeFuture = sendFile(ctx, ch, chunk);
         if (writeFuture == null) {
@@ -96,8 +95,11 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
         }
       }
 
-      // Close the connection when the whole content is written out.
-      writeFuture.addListener(ChannelFutureListener.CLOSE);
+      // Decide whether to close the connection or not.
+      if (!isKeepAlive(request)) {
+        // Close the connection when the whole content is written out.
+        writeFuture.addListener(ChannelFutureListener.CLOSE);
+      }
     }
   }
 
@@ -110,15 +112,12 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
     }
 
     ChannelFuture writeFuture;
-    // Write the initial line and the header.
-
     if (ch.getPipeline().get(SslHandler.class) != null) {
       // Cannot use zero-copy with HTTPS.
       writeFuture = ch.write(new ChunkedFile(raf, file.startOffset(), file.length(), 8192));
     } else {
       // No encryption - use zero-copy.
-      final FileRegion region = new DefaultFileRegion(raf.getChannel(), file.startOffset(),
-          file.length());
+      final FileRegion region = new DefaultFileRegion(raf.getChannel(), file.startOffset(), file.length());
       writeFuture = ch.write(region);
       writeFuture.addListener(new ChannelFutureListener() {
         public void operationComplete(ChannelFuture future) {

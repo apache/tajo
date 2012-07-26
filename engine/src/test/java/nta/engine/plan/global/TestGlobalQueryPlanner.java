@@ -1,5 +1,6 @@
 package nta.engine.plan.global;
 
+import com.google.common.collect.Lists;
 import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
@@ -18,6 +19,7 @@ import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.exec.eval.TestEvalTree.TestSum;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
+import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.MasterPlan;
@@ -28,14 +30,22 @@ import nta.engine.planner.logical.*;
 import nta.engine.query.GlobalPlanner;
 import nta.storage.*;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 import org.apache.zookeeper.KeeperException;
+import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import static org.mockito.Mockito.*;
 
 import static org.junit.Assert.*;
 
@@ -391,5 +401,92 @@ public class TestGlobalQueryPlanner {
       
       qm.updateProgress(unit.getId(), builder.build());
     }
+  }
+
+  @Test
+  public void testHashFetches() {
+    URI[] uris = {
+        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_000835&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001064&fn=0"),
+        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_001059&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104&fn=1"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001059&fn=1")
+    };
+
+    Map<String, List<URI>> hashed = GlobalPlanner.hashFetches(null, Lists.newArrayList(uris));
+    assertEquals(2, hashed.size());
+    List<URI> res = hashed.get("0");
+    assertEquals(2, res.size());
+    res = hashed.get("1");
+    assertEquals(1, res.size());
+    QueryStringDecoder decoder = new QueryStringDecoder(res.get(0));
+    Map<String, List<String>> params = decoder.getParameters();
+    String [] qids = params.get("qid").get(0).split(",");
+    assertEquals(2, qids.length);
+    assertEquals("104", qids[0]);
+    assertEquals("1059", qids[1]);
+  }
+
+  @Test
+  public void testHashFetchesForBinary() {
+    URI[] urisOuter = {
+        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_000835&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001064&fn=0"),
+        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_001059&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104&fn=1"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001059&fn=1")
+    };
+
+    URI[] urisInner = {
+        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_004_000111&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000123&fn=0"),
+        URI.create("http://192.168.0.17:35385/?qid=query_20120726371_000_001_004_00134&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000155&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000255&fn=1"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_001356&fn=1")
+    };
+
+    Schema schema1 = new Schema();
+    schema1.addColumn("col1", DataType.INT);
+    TableMeta meta1 = new TableMetaImpl(schema1, StoreType.CSV, Options.create());
+    TableDesc desc1 = new TableDescImpl("table1", meta1, new Path("/"));
+    TableDesc desc2 = new TableDescImpl("table2", meta1, new Path("/"));
+
+    QueryBlock.FromTable table1 = new QueryBlock.FromTable(desc1);
+    QueryBlock.FromTable table2 = new QueryBlock.FromTable(desc2);
+    ScanNode scan1 = new ScanNode(table1);
+    ScanNode scan2 = new ScanNode(table2);
+
+    Map<ScanNode, List<URI>> uris = Maps.newHashMap();
+    uris.put(scan1, Lists.newArrayList(urisOuter));
+    uris.put(scan2, Lists.newArrayList(urisInner));
+
+    Map<String, Map<ScanNode, List<URI>>> hashed = GlobalPlanner.hashFetches(uris);
+    assertEquals(2, hashed.size());
+    assertTrue(hashed.keySet().contains("0"));
+    assertTrue(hashed.keySet().contains("1"));
+
+    assertTrue(hashed.get("0").containsKey(scan1));
+    assertTrue(hashed.get("0").containsKey(scan2));
+
+    assertEquals(2, hashed.get("0").get(scan1).size());
+    assertEquals(3, hashed.get("0").get(scan2).size());
+
+    QueryStringDecoder decoder = new QueryStringDecoder(hashed.get("0").get(scan1).get(0));
+    System.out.println(hashed.get("0").get(scan1).get(0));
+    Map<String, List<String>> params = decoder.getParameters();
+    String [] qids = params.get("qid").get(0).split(",");
+    assertEquals(2, qids.length);
+    assertEquals("1064", qids[0]);
+    assertEquals("104", qids[1]);
+
+    decoder = new QueryStringDecoder(hashed.get("0").get(scan1).get(1));
+    params = decoder.getParameters();
+    qids = params.get("qid").get(0).split(",");
+    assertEquals(2, qids.length);
+    assertEquals("835", qids[0]);
+    assertEquals("1059", qids[1]);
   }
 }

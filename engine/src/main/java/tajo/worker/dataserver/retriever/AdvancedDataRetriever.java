@@ -12,7 +12,10 @@ import org.apache.commons.logging.LogFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+import tajo.worker.dataserver.FileAccessForbiddenException;
+import tajo.worker.dataserver.HttpUtil;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -52,52 +55,57 @@ public class AdvancedDataRetriever implements DataRetriever {
   @Override
   public FileChunk [] handle(ChannelHandlerContext ctx, HttpRequest request)
       throws IOException {
-    int startIdx = request.getUri().indexOf('?');
-    if (startIdx < 0) {
-      throw new IllegalArgumentException("Wrong request: " + request.getUri());
-    }
 
-    final Map<String,List<String>> q =
+    final Map<String, List<String>> params =
       new QueryStringDecoder(request.getUri()).getParameters();
 
-    if (!q.containsKey("qid")) {
-      throw new FileNotFoundException("No such qid: " + q.containsKey("qid"));
+    if (!params.containsKey("qid")) {
+      throw new FileNotFoundException("No such qid: " + params.containsKey("qid"));
     }
 
-    if (q.containsKey("start") || q.containsKey("end")) {
-      RetrieverHandler handler = handlerMap.get(q.get("qid").get(0));
-      FileChunk [] chunk = handler.get(q);
+    if (params.containsKey("sid")) {
+      List<FileChunk> chunks = Lists.newArrayList();
+      List<String> qids = splitMaps(params.get("qid"));
+      for (String qid : qids) {
+        QueryUnitId quid = new QueryUnitId(new ScheduleUnitId(params.get("sid").get(0)),
+            Integer.parseInt(qid));
+        RetrieverHandler handler = handlerMap.get(quid.toString());
+        FileChunk chunk = handler.get(params);
+        chunks.add(chunk);
+      }
+      return chunks.toArray(new FileChunk[chunks.size()]);
+    } else {
+      RetrieverHandler handler = handlerMap.get(params.get("qid").get(0));
+      FileChunk chunk = handler.get(params);
       if (chunk == null) {
-        if (q.containsKey("qid")) { // if there is no content corresponding to the query
+        if (params.containsKey("qid")) { // if there is no content corresponding to the query
           return null;
         } else { // if there is no
-          throw new FileNotFoundException("No such a file corresponding to " + q.get("qid"));
+          throw new FileNotFoundException("No such a file corresponding to " + params.get("qid"));
         }
       }
 
-      return chunk;
-    } else {
-      List<FileChunk> chunks = Lists.newArrayList();
-      List<String> qids = splitMaps(q.get("qid"));
-      for (String qid : qids) {
-        QueryUnitId quid = new QueryUnitId(new ScheduleUnitId(q.get("sid").get(0)),
-            Integer.parseInt(qid));
-        RetrieverHandler handler = handlerMap.get(quid.toString());
-        FileChunk [] chunk = handler.get(q);
-        chunks.addAll(Lists.newArrayList(chunk));
+      File file = chunk.getFile();
+      if (file.isHidden() || !file.exists()) {
+        throw new FileNotFoundException("No such file: " + file.getAbsolutePath());
+      }
+      if (!file.isFile()) {
+        throw new FileAccessForbiddenException(file.getAbsolutePath() + " is not file");
       }
 
-      return chunks.toArray(new FileChunk[chunks.size()]);
+      return new FileChunk[] {chunk};
     }
   }
 
-  private List<String> splitMaps(List<String> fns) {
-    if (null == fns) {
+  private List<String> splitMaps(List<String> qids) {
+    if (null == qids) {
+      LOG.error("QueryUnitId is EMPTY");
       return null;
     }
+
     final List<String> ret = new ArrayList<String>();
-    for (String s : fns) {
-      Collections.addAll(ret, s.split(","));
+    for (String qid : qids) {
+      Collections.addAll(ret, qid.split(","));
     }
     return ret;
   }

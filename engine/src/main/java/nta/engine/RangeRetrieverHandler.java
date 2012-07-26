@@ -52,7 +52,7 @@ public class RangeRetrieverHandler implements RetrieverHandler {
   }
 
   @Override
-  public FileChunk [] get(Map<String, List<String>> kvs) throws IOException {
+  public FileChunk get(Map<String, List<String>> kvs) throws IOException {
     // nothing to verify the file because AdvancedDataRetriever checks
     // its validity of the file.
     File data = new File(this.file, "data/data");
@@ -125,6 +125,6 @@ public class RangeRetrieverHandler implements RetrieverHandler {
       endOffset = data.length();
     }
 
-    return new FileChunk[] {new FileChunk(data, startOffset, endOffset - startOffset)};
+    return new FileChunk(data, startOffset, endOffset - startOffset);
   }
 }

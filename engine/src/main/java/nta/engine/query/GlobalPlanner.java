@@ -4,6 +4,7 @@ package nta.engine.query;
  * @author jihoon
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import nta.catalog.*;
@@ -1076,9 +1077,11 @@ public class GlobalPlanner {
     }
     return unitList;
   }
-  
-  private Map<String, Map<ScanNode, List<URI>>> hashFetches(Map<ScanNode, List<URI>> uriMap) {
-    SortedMap<String, Map<ScanNode, List<URI>>> hashed = new TreeMap<String, Map<ScanNode,List<URI>>>();
+
+  @VisibleForTesting
+  public static Map<String, Map<ScanNode, List<URI>>> hashFetches(Map<ScanNode, List<URI>> uriMap) {
+    SortedMap<String, Map<ScanNode, List<URI>>> hashed =
+        new TreeMap<String, Map<ScanNode,List<URI>>>();
     String uriPath, key;
     Map<ScanNode, List<URI>> m = null;
     List<URI> uriList = null;
@@ -1110,32 +1113,33 @@ public class GlobalPlanner {
     return finalHashed;
   }
 
-  private Map<ScanNode, List<URI>> combineURIByHostForBinary(Map<ScanNode, List<URI>> hashed) {
+  private static Map<ScanNode, List<URI>> combineURIByHostForBinary(Map<ScanNode, List<URI>> hashed) {
     Map<ScanNode, List<URI>> finalHashed = Maps.newHashMap();
     for (Entry<ScanNode, List<URI>> urisByKey : hashed.entrySet()) {
       Map<String, List<String>> param = new QueryStringDecoder(urisByKey.getValue().get(0)).getParameters();
       QueryUnitId quid = new QueryUnitId(param.get("qid").get(0));
       ScheduleUnitId sid = quid.getScheduleUnitId();
       String fn = param.get("fn").get(0);
-
       Map<String, List<String>> quidByHost = Maps.newHashMap();
       for(URI uri : urisByKey.getValue()) {
         final Map<String,List<String>> params =
             new QueryStringDecoder(uri).getParameters();
-
-        if (quidByHost.containsKey(uri.getHost())) {
+        if (quidByHost.containsKey(uri.getHost() + ":" + uri.getPort())) {
           quidByHost.get(uri.getHost() + ":" + uri.getPort()).add(params.get("qid").get(0));
         } else {
           quidByHost.put(uri.getHost() + ":" + uri.getPort(), Lists.newArrayList(params.get("qid")));
         }
       }
+
       finalHashed.put(urisByKey.getKey(), mergeURI(quidByHost, sid.toString(), fn));
     }
 
     return finalHashed;
   }
-  
-  private Map<String, List<URI>> hashFetches(ScheduleUnitId id, List<URI> uriList) {
+
+
+  @VisibleForTesting
+  public static Map<String, List<URI>> hashFetches(ScheduleUnitId sid, List<URI> uriList) {
     SortedMap<String, List<URI>> hashed = new TreeMap<String, List<URI>>();
     String uriPath, key;
     for (URI uri : uriList) {
@@ -1154,20 +1158,17 @@ public class GlobalPlanner {
     return combineURIByHost(hashed);
   }
 
-  private Map<String, List<URI>> combineURIByHost(Map<String, List<URI>> hashed) {
+  private static Map<String, List<URI>> combineURIByHost(Map<String, List<URI>> hashed) {
     Map<String, List<URI>> finalHashed = Maps.newTreeMap();
     for (Entry<String, List<URI>> urisByKey : hashed.entrySet()) {
-
       QueryUnitId quid = new QueryUnitId(
           new QueryStringDecoder(urisByKey.getValue().get(0)).getParameters().get("qid").get(0));
       ScheduleUnitId sid = quid.getScheduleUnitId();
-
       Map<String,List<String>> quidByHost = Maps.newHashMap();
       for(URI uri : urisByKey.getValue()) {
         final Map<String,List<String>> params =
             new QueryStringDecoder(uri).getParameters();
-
-        if (quidByHost.containsKey(uri.getHost())) {
+        if (quidByHost.containsKey(uri.getHost() + ":" + uri.getPort())) {
           quidByHost.get(uri.getHost() + ":" + uri.getPort()).add(params.get("qid").get(0));
         } else {
           quidByHost.put(uri.getHost() + ":" + uri.getPort(), Lists.newArrayList(params.get("qid")));
@@ -1175,16 +1176,14 @@ public class GlobalPlanner {
       }
       finalHashed.put(urisByKey.getKey(), mergeURI(quidByHost, sid.toString(), urisByKey.getKey()));
     }
-
     return finalHashed;
   }
 
-  private List<URI> mergeURI(Map<String, List<String>> quidByKey, String sid, String fn) {
+  private static List<URI> mergeURI(Map<String, List<String>> quidByKey, String sid, String fn) {
     List<URI> uris = Lists.newArrayList();
     for (Entry<String, List<String>> quidByHost : quidByKey.entrySet()) {
       StringBuilder sb = new StringBuilder("http://")
-      .append(quidByHost.getKey()).append("/").append("?fn="+fn).append("&sid="+sid);
-
+          .append(quidByHost.getKey()).append("/").append("?fn="+fn).append("&sid="+sid);
       sb.append("&qid=");
       boolean first = true;
       for (String qid : quidByHost.getValue()) {
@@ -1193,12 +1192,12 @@ public class GlobalPlanner {
         } else {
           sb.append(",");
         }
+
         QueryUnitId quid = new QueryUnitId(qid);
         sb.append(quid.getId());
       }
       uris.add(URI.create(sb.toString()));
     }
-
     return uris;
   }
 

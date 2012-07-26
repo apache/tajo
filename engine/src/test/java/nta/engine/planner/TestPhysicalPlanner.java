@@ -247,7 +247,7 @@ public class TestPhysicalPlanner {
         QueryIdFactory.newScheduleUnitId(
             QueryIdFactory.newSubQueryId(
                 QueryIdFactory.newQueryId()))),
-        new Fragment[] { frags[0] }, workDir);
+        new Fragment[]{frags[0]}, workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[7]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     plan = LogicalOptimizer.optimize(ctx, plan);
@@ -351,7 +351,7 @@ public class TestPhysicalPlanner {
     Column key1 = new Column("score.deptName", DataType.STRING);
     Column key2 = new Column("score.class", DataType.STRING);
     StoreTableNode storeNode = new StoreTableNode("partition");
-    storeNode.setPartitions(ScheduleUnit.PARTITION_TYPE.HASH, new Column[] { key1, key2 }, numPartitions);
+    storeNode.setPartitions(ScheduleUnit.PARTITION_TYPE.HASH, new Column[]{key1, key2}, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     plan = LogicalOptimizer.optimize(ctx, plan);
 
@@ -703,13 +703,13 @@ public class TestPhysicalPlanner {
     endTuple.put(0, DatumFactory.createInt(80));
     kvs.put("end", Lists.newArrayList(
         new String(Base64.encodeBase64(TupleUtil.toBytes(keySchema, endTuple), false))));
-    FileChunk [] chunk = handler.get(kvs);
+    FileChunk chunk = handler.get(kvs);
 
-    scanner.seek(chunk[0].startOffset());
+    scanner.seek(chunk.startOffset());
     keytuple = scanner.next();
     assertEquals(50, keytuple.get(1).asInt());
 
-    long endOffset = chunk[0].startOffset() + chunk[0].length();
+    long endOffset = chunk.startOffset() + chunk.length();
     while((keytuple = scanner.next()) != null && scanner.getNextOffset() <= endOffset) {
       assertTrue(keytuple.get(1).asInt() <= 80);
     }

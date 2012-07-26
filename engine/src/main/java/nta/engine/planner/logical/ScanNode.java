@@ -3,6 +3,7 @@
  */
 package nta.engine.planner.logical;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 
 import nta.engine.exec.eval.EvalNode;
@@ -108,6 +109,11 @@ public class ScanNode extends LogicalNode {
 	public String toJSON() {
 	  return GsonCreator.getInstance().toJson(this, LogicalNode.class);
 	}
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(this.table, this.qual, this.targets);
+  }
 	
 	@Override
 	public boolean equals(Object obj) {
