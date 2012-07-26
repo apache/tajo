@@ -530,7 +530,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       = Executors.newFixedThreadPool(coreNum);
     private boolean stopped = false;    
     
-    public void schedule(Task task) {      
+    public void schedule(Task task) throws InterruptedException {      
       this.blockingQueue.put(task);
       task.setStatus(QueryStatus.QUERY_PENDING);
     }
