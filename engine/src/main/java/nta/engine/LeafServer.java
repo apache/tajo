@@ -321,10 +321,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       status = task.getReport();
       list.add(status);
     }
-    
+
     ping.addAllStatus(list);
     PingRequestProto proto = ping.build();
-//    LOG.info(serverName + " send heartbeat");
+//    LOG.info(serverName + " send heartbeat: " + tasks.size());
 //    LOG.info("========================================");
     PingResponseProto res = master.reportQueryUnit(proto);
 //    LOG.info(serverName + " received PingResponse");
@@ -530,7 +530,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       = Executors.newFixedThreadPool(coreNum);
     private boolean stopped = false;    
     
-    public void schedule(Task task) throws InterruptedException {      
+    public void schedule(Task task) throws InterruptedException {
       this.blockingQueue.put(task);
       task.setStatus(QueryStatus.QUERY_PENDING);
     }

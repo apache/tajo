@@ -117,4 +117,9 @@ public class StoredBlockInfo
   public Path getPathOfCurrentBlock() {
     return this.current.getKey();
   }
+
+  @Override
+  public String toString() {
+    return "< " + this.host + " : " + this.numBlocks + " >";
+  }
 }

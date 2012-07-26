@@ -21,10 +21,7 @@ import nta.zookeeper.MiniZooKeeperCluster;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import tajo.client.TajoClient;
 
@@ -451,7 +448,6 @@ public class NtaTestingUtility {
                               String[] tablepaths,
                               Schema[] schemas,
                               Options option,
-                              String[][] tables,
                               String query) throws Exception {
     NtaTestingUtility util = new NtaTestingUtility();
     util.startMiniCluster(1);
@@ -470,12 +466,6 @@ public class NtaTestingUtility {
       fs.mkdirs(dataPath);
       Path dfsPath = new Path(dataPath, localPath.getName());
       fs.copyFromLocalFile(localPath, dfsPath);
-      FSDataInputStream fis = fs.open(dfsPath);
-      System.out.println("********** table: " + names[i] + "**********");
-      while (fis.available()> 0) {
-        System.out.println(fis.readLine());
-      }
-      System.out.println("********************");
       TableMeta meta = TCatUtil.newTableMeta(schemas[i],
           CatalogProtos.StoreType.CSV, option);
       client.createTable(names[i], tablePath, meta);
@@ -486,13 +476,48 @@ public class NtaTestingUtility {
     return res;
   }
 
-  /**
-   * Write lines to a file.
-   *
-   * @param file File to write lines to
-   * @param lines Strings written to the file
-   * @throws IOException
-   */
+  public static ResultSet run(String[] names,
+                              Schema[] schemas,
+                              Options option,
+                              String[][] tables,
+                              String query) throws Exception {
+    NtaTestingUtility util = new NtaTestingUtility();
+    util.startMiniCluster(1);
+    Configuration conf = util.getConfiguration();
+    TajoClient client = new TajoClient(conf);
+
+    FileSystem fs = util.getDefaultFileSystem();
+    Path rootDir = util.getMiniTajoCluster().getMaster().
+        getStorageManager().getDataRoot();
+    fs.mkdirs(rootDir);
+    for (int i = 0; i < names.length; i++) {
+      Path tablePath = new Path(rootDir, names[i]);
+      fs.mkdirs(tablePath);
+      Path dataPath = new Path(tablePath, "data");
+      fs.mkdirs(dataPath);
+      Path dfsPath = new Path(dataPath, names[i] + ".tbl");
+      FSDataOutputStream out = fs.create(dfsPath);
+      for (int j = 0; j < tables[i].length; j++) {
+        out.write((tables[i][j]+"\n").getBytes());
+      }
+      out.close();
+      TableMeta meta = TCatUtil.newTableMeta(schemas[i],
+          CatalogProtos.StoreType.CSV, option);
+      client.createTable(names[i], tablePath, meta);
+    }
+    Thread.sleep(1000);
+    ResultSet res = client.executeQuery(query);
+    util.shutdownMiniCluster();
+    return res;
+  }
+
+    /**
+    * Write lines to a file.
+    *
+    * @param file File to write lines to
+    * @param lines Strings written to the file
+    * @throws IOException
+    */
   private static void writeLines(File file, String... lines)
       throws IOException {
     Writer writer = Files.newWriter(file, Charsets.UTF_8);

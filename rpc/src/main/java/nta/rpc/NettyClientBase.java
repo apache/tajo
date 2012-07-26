@@ -42,7 +42,7 @@ public class NettyClientBase {
     // TODO - should be configurable
     this.bootstrap.setOption("connectTimeoutMillis", 10000);
     this.bootstrap.setOption("connectResponseTimeoutMillis", 10000);
-    this.bootstrap.setOption("receiveBufferSize", 1048576);
+    this.bootstrap.setOption("receiveBufferSize", 1048576*2);
     this.bootstrap.setOption("tcpNoDelay", false);
     this.bootstrap.setOption("keepAlive", true);
 

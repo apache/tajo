@@ -23,7 +23,7 @@ public class ProtoPipelineFactory implements ChannelPipelineFactory {
 
   public ChannelPipeline getPipeline() throws Exception {
     ChannelPipeline p = Channels.pipeline();
-    p.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576, 0, 4,
+    p.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(1048576*2, 0, 4,
         0, 4));
     p.addLast("protobufDecoder", new ProtobufDecoder(defaultInstance));
     p.addLast("frameEncoder", new LengthFieldPrepender(4));

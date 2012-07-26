@@ -19,6 +19,10 @@ public class FragmentServingInfo {
     this.nextHost = 0;
   }
 
+  public void addPrimaryHost(String host) {
+    hosts.add(0, host);
+  }
+
   public void addHost(String host) {
     hosts.add(host);
   }

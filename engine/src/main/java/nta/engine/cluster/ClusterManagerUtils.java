@@ -1,10 +1,13 @@
 package nta.engine.cluster;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos;
 import nta.engine.ipc.protocolrecords.Fragment;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -12,14 +15,13 @@ import org.apache.hadoop.fs.Path;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.PriorityQueue;
+import java.util.*;
 
 /**
  * @author jihoon
  */
 public class ClusterManagerUtils {
+  private static Log LOG = LogFactory.getLog(ClusterManagerUtils.class);
 
   public static Map<String, StoredBlockInfo> makeStoredBlockInfoForHosts(
       FileSystem fs, Path path) throws IOException {
@@ -56,59 +58,62 @@ public class ClusterManagerUtils {
   public static Map<Fragment, FragmentServingInfo> assignFragments(
       CatalogProtos.TableDescProto td, Collection<StoredBlockInfo> storedBlockInfos)
       throws IOException {
-    PriorityQueue<StoredBlockInfo> in = new PriorityQueue<StoredBlockInfo>();
-    PriorityQueue<StoredBlockInfo> out = new PriorityQueue<StoredBlockInfo>();
-    PriorityQueue<StoredBlockInfo> tmp;
+    StoredBlockInfo[] arrBlockInfo =
+        new StoredBlockInfo[storedBlockInfos.size()];
+    arrBlockInfo = storedBlockInfos.toArray(arrBlockInfo);
+    Arrays.sort(arrBlockInfo);
+    List<StoredBlockInfo> storedBlockInfoList =
+        Lists.newArrayList(arrBlockInfo);
+    List<StoredBlockInfo> tobeRemoved = Lists.newArrayList();
     Map<BlockLocation, FragmentServingInfo> assignInfo =
         Maps.newHashMap();
 
-    for (StoredBlockInfo sbi : storedBlockInfos) {
-      in.add(sbi);
-    }
-
-    BlockLocation bl;
-    StoredBlockInfo sbi;
-    FragmentServingInfo fsi;
     Path currentPath;
-    while (!in.isEmpty()) {
-      sbi = in.peek();
-      bl = sbi.nextBlock();
-      currentPath = sbi.getPathOfCurrentBlock();
+    BlockLocation bl;
+    FragmentServingInfo fsi;
 
-      // assign the fragment
-      if (assignInfo.containsKey(bl)) {
-        fsi = assignInfo.get(bl);
-      } else {
-        fsi = new FragmentServingInfo(new Fragment(td.getId(),
-            currentPath, new TableMetaImpl(td.getMeta()),
-            bl.getOffset(), bl.getLength()));
-      }
-      fsi.addHost(sbi.getHost());
-      for (String h : bl.getHosts()) {
-        if (h.equals(sbi.getHost())) {
+    int i, j;
+    while (!storedBlockInfoList.isEmpty()) {
+      tobeRemoved.clear();
+      for (i = 0; i < storedBlockInfoList.size(); i++) {
+        StoredBlockInfo info = storedBlockInfoList.get(i);
+        if (tobeRemoved.contains(info)) {
           continue;
         }
-        fsi.addHost(h);
-      }
-      assignInfo.put(bl, fsi);
+        bl = info.nextBlock();
+        currentPath = info.getPathOfCurrentBlock();
 
-      // update queue
-      while (!in.isEmpty()) {
-        sbi = in.peek();
-        in.remove(sbi);
+        // assign the fragment
+        if (assignInfo.containsKey(bl)) {
+          fsi = assignInfo.get(bl);
+        } else {
+          fsi = new FragmentServingInfo(new Fragment(td.getId(),
+              currentPath, new TableMetaImpl(td.getMeta()),
+              bl.getOffset(), bl.getLength()));
+        }
+        fsi.addPrimaryHost(info.getHost());
         for (String h : bl.getHosts()) {
-          if (sbi.getHost().equals(h)) {
-            sbi.removeBlock(currentPath, bl);
-            sbi.initIteration();
+          if (h.equals(info.getHost())) {
+            continue;
+          }
+          fsi.addHost(h);
+        }
+        assignInfo.put(bl, fsi);
+
+        for (j = 0; j < storedBlockInfoList.size(); j++) {
+          StoredBlockInfo cand = storedBlockInfoList.get(j);
+          for (String h : bl.getHosts()) {
+            if (cand.getHost().equals(h)) {
+              cand.removeBlock(currentPath, bl);
+              cand.initIteration();
+            }
+          }
+          if (cand.getBlockNum() == 0) {
+            tobeRemoved.add(cand);
           }
         }
-        if (sbi.getBlockNum() > 0) {
-          out.add(sbi);
-        }
       }
-      tmp = out;
-      out = in;
-      in = tmp;
+      storedBlockInfoList.removeAll(tobeRemoved);
     }
 
     Map<Fragment, FragmentServingInfo> outMap = Maps.newHashMap();

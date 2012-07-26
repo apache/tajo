@@ -40,7 +40,7 @@ public class NettyServerBase {
     bootstrap.setOption("child.keepAlive", true);
     bootstrap.setOption("child.connectTimeoutMillis", 10000);
     bootstrap.setOption("child.connectResponseTimeoutMillis", 10000);
-    bootstrap.setOption("child.receiveBufferSize", 1048576);
+    bootstrap.setOption("child.receiveBufferSize", 1048576*2);
   }
 
   public InetSocketAddress getBindAddress() {

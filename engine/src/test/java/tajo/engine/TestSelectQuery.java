@@ -237,7 +237,7 @@ public class TestSelectQuery extends TpchTestBase {
       "2||",
       "3|filled|"
     };
-    ResultSet res = NtaTestingUtility.runInLocal(table, schemas, new Options(), new String[][]{data},
+    ResultSet res = NtaTestingUtility.run(table, schemas, new Options(), new String[][]{data},
         "select * from nulltable where col2 is null");
     assertTrue(res.next());
     assertEquals(2, res.getInt(1));
@@ -256,7 +256,7 @@ public class TestSelectQuery extends TpchTestBase {
         "2||",
         "3|filled|"
     };
-    ResultSet res = NtaTestingUtility.runInLocal(table, schemas, new Options(), new String[][]{data},
+    ResultSet res = NtaTestingUtility.run(table, schemas, new Options(), new String[][]{data},
         "select * from nulltable where col2 is not null");
     assertTrue(res.next());
     assertEquals(1, res.getInt(1));
@@ -286,7 +286,7 @@ public class TestSelectQuery extends TpchTestBase {
     };
     Options opts = new Options();
     opts.put(CSVFile2.DELIMITER, ",");
-    ResultSet res = NtaTestingUtility.runInLocal(table, schemas, opts, new String[][]{data},
+    ResultSet res = NtaTestingUtility.run(table, schemas, opts, new String[][]{data},
         "select * from nulltable where col1 is null and col2 is null and col3 is null and col4 = 43578");
     assertTrue(res.next());
     assertEquals(43578, res.getLong(4));

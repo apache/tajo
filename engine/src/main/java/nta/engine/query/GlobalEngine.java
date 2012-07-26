@@ -197,7 +197,7 @@ public class GlobalEngine implements EngineService {
   private void prepareQueryExecution(QueryContext ctx) throws IOException {
     cm.updateOnlineWorker();
     for (String table : ctx.getInputTables()) {
-      cm.updateFragmentServingInfo(table);
+      cm.updateFragmentServingInfo2(table);
     }
   }
   

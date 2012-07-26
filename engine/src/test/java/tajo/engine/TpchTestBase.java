@@ -57,6 +57,6 @@ public class TpchTestBase {
     Options opt = new Options();
     opt.put(CSVFile2.DELIMITER, "|");
 //    return NtaTestingUtility.runInLocal(names, schemas, opt, tables, query);
-    return NtaTestingUtility.run(names, paths, schemas, opt, tables, query);
+    return NtaTestingUtility.run(names, paths, schemas, opt, query);
   }
 }

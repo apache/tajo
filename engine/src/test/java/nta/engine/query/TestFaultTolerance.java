@@ -3,17 +3,19 @@ package nta.engine.query;
 import com.google.common.base.Charsets;
 import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.*;
+import nta.datum.DatumFactory;
 import nta.engine.*;
 import nta.engine.ClientServiceProtos.*;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.QueryUnitStatus;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
-import nta.storage.StorageManager;
-import nta.storage.StorageUtil;
+import nta.storage.*;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.thirdparty.guava.common.io.Files;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -31,19 +33,23 @@ import static org.junit.Assert.*;
  */
 public class TestFaultTolerance {
 
-  public static final String TEST_DIRECTORY = "target/test-data";
+  public static final String TEST_DIRECTORY = "/tajo";
 
-  private MockupCluster cluster;
+  private static MockupCluster cluster;
   private static Configuration conf;
   private static ExecuteQueryRequest.Builder queryRequestBuilder;
   private static Schema schema;
   private static TableMeta testMeta;
   private static TableDesc testDesc;
-  private static File tableDir;
   private static String query;
 
   @BeforeClass
-  public static void setup() throws IOException {
+  public static void setup() throws Exception {
+    cluster = new MockupCluster(6, 2, 2);
+    conf = cluster.getConf();
+
+    cluster.start();
+
     query = "select * from test";
     queryRequestBuilder = ExecuteQueryRequest.newBuilder();
     queryRequestBuilder.setQuery(query);
@@ -53,20 +59,26 @@ public class TestFaultTolerance {
     schema.addColumn("year", DataType.INT);
     testMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 
-    String randomStr = UUID.randomUUID().toString();
-    File dir = new File(TEST_DIRECTORY, randomStr).getAbsoluteFile();
-    dir.mkdir();
-    dir.deleteOnExit();
-    tableDir = new File(dir, "test");
-    tableDir.mkdir();
-    File dataDir = new File(tableDir, "data");
-    dataDir.mkdir();
-    File tableFile = new File(dataDir, "test.dat");
-    Writer writer = Files.newWriter(tableFile, Charsets.UTF_8);
+    StorageManager sm = cluster.getMaster().getStorageManager();
+    Appender appender = sm.getTableAppender(testMeta, "test");
     for (int i = 0; i < 10; i++) {
-      writer.write("dept"+i+","+(i+10)+","+(i+1900)+"\n");
+      Tuple t = new VTuple(3);
+      t.put(0, DatumFactory.createString("dept"+i));
+      t.put(1, DatumFactory.createInt(i+10));
+      t.put(2, DatumFactory.createInt(i+1900));
+      appender.addTuple(t);
     }
-    writer.close();
+    appender.close();
+
+    testDesc = new TableDescImpl("test", schema, StoreType.CSV,
+        new Options(), sm.getTablePath("test"));
+    cluster.getMaster().getCatalog().addTable(testDesc);
+
+  }
+
+  @AfterClass
+  public static void terminate() throws Exception {
+    cluster.shutdown();
   }
 
   private void assertQueryResult(QueryManager qm) {
@@ -96,26 +108,16 @@ public class TestFaultTolerance {
 
   @Test
   public void testAbort() throws Exception {
-    cluster = new MockupCluster(6, 2, 2);
-    conf = cluster.getConf();
-    cluster.start();
-    Thread.sleep(3000);
+//    Thread.sleep(3000);
     NtaEngineMaster master = cluster.getMaster();
-    testDesc = new TableDescImpl("test", schema, StoreType.CSV,
-        new Options(), new Path(tableDir.getAbsolutePath()));
-    StorageUtil.writeTableMeta(conf,
-        new Path(tableDir.getAbsolutePath()), testMeta);
-    master.getCatalog().addTable(testDesc);
     master.executeQuery(queryRequestBuilder.build());
 
     QueryManager qm = master.getQueryManager();
     assertQueryResult(qm);
-
-    cluster.shutdown();
   }
 
   public void testDeadWorker() throws Exception {
-    cluster = new MockupCluster(3, 0, 2);
+    /*cluster = new MockupCluster(3, 0, 2);
     conf = cluster.getConf();
     cluster.start();
     NtaEngineMaster master = cluster.getMaster();
@@ -129,6 +131,6 @@ public class TestFaultTolerance {
     QueryManager qm = master.getQueryManager();
     assertQueryResult(qm);
 
-    cluster.shutdown();
+    cluster.shutdown();*/
   }
 }

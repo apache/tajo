@@ -22,6 +22,7 @@ public class MockupCluster {
   private final int numNormalWorkers;
   private final int numAbortWorkers;
   private final int numShutdownWorkers;
+  private final NtaTestingUtility util;
 
   public MockupCluster(int numWorkers) throws Exception {
     this(numWorkers, 0, 0);
@@ -30,10 +31,14 @@ public class MockupCluster {
   public MockupCluster(int numWorkers,
                        int numAbortWorkers, int numShutdownWorkers)
       throws Exception {
-    this.conf = new NtaConf();
-    this.conf.set(NConstants.MASTER_ADDRESS, "localhost:0");
-    this.conf.set(NConstants.CATALOG_ADDRESS, "localhost:0");
-    this.conf.set(NConstants.LEAFSERVER_PORT, "0");
+    this.util = new NtaTestingUtility();
+    this.util.startMiniDFSCluster(numWorkers);
+    this.conf = util.getConfiguration();
+    conf.set(NConstants.ENGINE_BASE_DIR,
+        util.getMiniDFSCluster().getFileSystem().getUri()+"/tajo");
+    conf.set(NConstants.MASTER_ADDRESS, "localhost:0");
+    conf.set(NConstants.CATALOG_ADDRESS, "localhost:0");
+    conf.set(NConstants.LEAFSERVER_PORT, "0");
 
     this.numWorkers = numWorkers;
     this.numAbortWorkers = numAbortWorkers;
@@ -88,7 +93,7 @@ public class MockupCluster {
     }
   }
 
-  public void shutdown() {
+  public void shutdown() throws Exception {
     if (this.workers != null) {
       for(MockupWorker t: this.workers) {
         if (t.isAlive()) {
@@ -102,6 +107,7 @@ public class MockupCluster {
       }
     }
     master.shutdown();
+    this.util.shutdownMiniDFSCluster();
   }
 
   public void join() {

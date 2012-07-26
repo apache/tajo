@@ -76,9 +76,13 @@ public class WorkerListener implements Runnable, MasterInterface {
    */
   @Override
   public PingResponseProto reportQueryUnit(PingRequestProto proto) {
+//    LOG.info("master received reports from " + proto.getServerName() +
+//        ": " + proto.getStatusCount());
+
     PingRequest report = new PingRequestImpl(proto);
     for (InProgressStatusProto status : report.getProgressList()) {
       QueryUnitId uid = new QueryUnitId(status.getId());
+//      LOG.info(uid + " will be changed to " + status.getStatus());
       try {
         qm.updateProgress(uid, status);
       } catch (NoSuchQueryIdException e) {

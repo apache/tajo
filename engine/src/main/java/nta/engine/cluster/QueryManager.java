@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Maps;
 import nta.catalog.statistics.TableStat;
 import nta.engine.*;
 import nta.engine.cluster.QueryUnitStatus.QueryUnitAttempt;
@@ -42,7 +43,7 @@ public class QueryManager {
   
   private Map<QueryUnit, String> serverByQueryUnit;
   private Map<String, List<QueryUnit>> queryUnitsByServer;
-  
+
   public QueryManager() {
     MapMaker mapMaker = new MapMaker().concurrencyLevel(4);
     
@@ -129,8 +130,6 @@ public class QueryManager {
     }
     unitStatus.setAttempt(attempt);
     queryUnitStatusMap.put(queryUnitId, unitStatus);
-    LOG.info(attemptId + "th QueryUnit status of " + queryUnitId +
-        " is changed to " + status);
   }
 
   public QueryStatus getSubQueryStatus(SubQuery subQuery) {
@@ -185,7 +184,7 @@ public class QueryManager {
     queryUnitsByServer.put(servername, units);
   }
   
-  public synchronized void updateProgress(QueryUnitId queryUnitId, 
+  public void updateProgress(QueryUnitId queryUnitId,
       InProgressStatusProto progress) throws NoSuchQueryIdException {
     QueryUnit unit = queries.get(queryUnitId.getQueryId()).getQueryUnit(queryUnitId);
     if (unit != null

@@ -17,6 +17,7 @@ import nta.engine.MasterInterfaceProtos.CommandType;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
 import nta.engine.cluster.ClusterManager;
+import nta.engine.cluster.FragmentServingInfo;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.exception.EmptyClusterException;
@@ -30,6 +31,7 @@ import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalPlanner;
+import nta.engine.query.GlobalPlannerUtils;
 import nta.engine.query.QueryUnitRequestImpl;
 import nta.storage.StorageManager;
 import org.apache.commons.logging.Log;
@@ -38,6 +40,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
+import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 
 import java.net.URI;
 import java.util.*;
@@ -61,13 +64,13 @@ public class QueryUnitScheduler extends Thread {
   private final ClusterManager cm;
   private final QueryManager qm;
   private final ScheduleUnit plan;
-  private List<String> workerList;
-  private List<String> failedWorkers;
+  private List<String> onlineWorkers;
+  private Set<String> failedWorkers;
   
   private BlockingQueue<QueryUnit> pendingQueue = 
       new LinkedBlockingQueue<QueryUnit>();
   private Map<QueryUnitId, Integer> queryUnitAttemptMap;
-  
+
   public QueryUnitScheduler(Configuration conf, StorageManager sm, 
       ClusterManager cm, QueryManager qm, WorkerCommunicator wc, 
       GlobalPlanner planner, ScheduleUnit plan) {
@@ -77,19 +80,19 @@ public class QueryUnitScheduler extends Thread {
     this.wc = wc;
     this.planner = planner;
     this.plan = plan;
-    workerList = Lists.newArrayList();
-    failedWorkers = Lists.newArrayList();
+    onlineWorkers = Lists.newArrayList();
+    failedWorkers = Sets.newHashSet();
     updateWorkers();
     queryUnitAttemptMap = Maps.newHashMap();
   }
 
   private void updateWorkers() {
     cm.updateOnlineWorker();
-    workerList.clear();
+    onlineWorkers.clear();
     for (List<String> workers : cm.getOnlineWorkers().values()) {
-      workerList.addAll(workers);
+      onlineWorkers.addAll(workers);
     }
-    workerList.removeAll(failedWorkers);
+    onlineWorkers.removeAll(failedWorkers);
   }
 
   private void recursiveExecuteScheduleUnit(ScheduleUnit plan)
@@ -163,7 +166,7 @@ public class QueryUnitScheduler extends Thread {
             QueryStatus.QUERY_FINISHED);
         return;
       } else {
-        units = prepareExecutionOfQueryUnits(units);
+        units = prepareExecutionOfQueryUnits(units, plan.hasChildQuery());
 
         // this is for debugging
         Map<String,Integer> assigned = Maps.newTreeMap();
@@ -198,9 +201,10 @@ public class QueryUnitScheduler extends Thread {
     }
   }
 
-  private QueryUnit[] prepareExecutionOfQueryUnits(QueryUnit[] units)
-      throws EmptyClusterException {
-    String hostName;
+  private QueryUnit[] prepareExecutionOfQueryUnits(QueryUnit[] units,
+                                                   boolean hasChild)
+      throws Exception {
+    /*String hostName;
 
     for (QueryUnit q : units) {
       hostName = getHost(q);
@@ -208,23 +212,30 @@ public class QueryUnitScheduler extends Thread {
       pendingQueue.add(q);
       qm.updateQueryAssignInfo(hostName, q);
       this.queryUnitAttemptMap.put(q.getId(), 1);
+    }*/
+    if (hasChild) {
+      for (QueryUnit q : units) {
+        q.setHost(cm.getRandomHost());
+      }
+    } else {
+      Map<Fragment, FragmentServingInfo> servingMap =
+          Maps.newHashMap();
+      for (QueryUnit q : units) {
+        for (Fragment f : q.getAllFragments()) {
+          servingMap.put(f, cm.getServingInfoMap().get(f));
+        }
+      }
+      units = GlobalPlannerUtils.buildQueryDistributionPlan(
+          servingMap, cm.getOnlineWorkers(), failedWorkers, units);
+    }
+    for (QueryUnit q : units) {
+      pendingQueue.add(q);
+      qm.updateQueryAssignInfo(q.getHost(), q);
+      this.queryUnitAttemptMap.put(q.getId(), 1);
     }
     return units;
   }
 
-  private String getHost(QueryUnit unit) throws EmptyClusterException {
-    if (workerList.size() == 0) {
-      throw new EmptyClusterException();
-    }
-    String hostName = workerList.remove(0);
-    workerList.add(hostName);
-    /*hostName = cm.getProperHost(q);
-    if (hostName == null) {
-      hostName = cm.getRandomHost();
-    }*/
-    return hostName;
-  }
-  
   private void requestPendingQueryUnits() throws Exception {
     while (!pendingQueue.isEmpty()) {
       QueryUnit q = pendingQueue.take();
@@ -253,14 +264,12 @@ public class QueryUnitScheduler extends Thread {
       }
       LOG.info("=====================================================================");
       LOG.info("QueryUnitRequest " + request.getId() + " is sent to " + (q.getHost()));
-      LOG.info("Fragments: " + request.getFragments());
       LOG.info("QueryStep's output name " + q.getStoreTableNode().getTableName());
       if (request.isInterQuery()) {
         LOG.info("InterQuery is enabled");
       } else {
         LOG.info("InterQuery is disabled");
       }
-      LOG.info("Fetches: " + request.getFetches());
       LOG.info("=====================================================================");
     }
   }
@@ -423,7 +432,7 @@ public class QueryUnitScheduler extends Thread {
     fs.delete(path, true);
     failedWorkers.add(q.getHost());
     updateWorkers();
-    String hostName = getHost(q);
+    String hostName = cm.getRandomHost();
     q.setHost(hostName);
     LOG.info("QueryUnit " + q.getId() + " is assigned to " + 
         q.getHost() + " as the backup task");
