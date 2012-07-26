@@ -21,10 +21,10 @@
 bin=`dirname "$0"`
 bin=`cd "$bin"; pwd`
 
-. "$bin"/hadoop-config.sh
+. "$bin"/tajo-config.sh
 
-# start dfs daemons
-"$bin"/start-zkserver.sh --config $HADOOP_CONF_DIR
+# start zookeeper daemons
+"$bin"/start-zkserver.sh --config $TAJO_CONF_DIR
 
 # start tajo daemons
-"$bin"/start-tajo.sh --config $HADOOP_CONF_DIR
+"$bin"/start-tajo.sh --config $TAJO_CONF_DIR

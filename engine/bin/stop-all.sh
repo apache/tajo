@@ -21,7 +21,7 @@
 bin=`dirname "$0"`
 bin=`cd "$bin"; pwd`
 
-. "$bin"/hadoop-config.sh
+. "$bin"/tajo-config.sh
 
-"$bin"/stop-mapred.sh --config $HADOOP_CONF_DIR
-"$bin"/stop-dfs.sh --config $HADOOP_CONF_DIR
+"$bin"/stop-tajo.sh --config $TAJO_CONF_DIR
+"$bin"/stop-zkserver.sh --config $TAJO_CONF_DIR
