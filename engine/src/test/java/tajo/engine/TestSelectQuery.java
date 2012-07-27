@@ -1,12 +1,12 @@
 package tajo.engine;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos;
 import nta.engine.NtaTestingUtility;
 import nta.storage.CSVFile2;
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
-import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.Test;
 
 import java.io.IOException;

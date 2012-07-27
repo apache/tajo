@@ -1,8 +1,8 @@
 package nta.engine.cluster;
 
+import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 
 import java.util.*;
 import java.util.Map.Entry;

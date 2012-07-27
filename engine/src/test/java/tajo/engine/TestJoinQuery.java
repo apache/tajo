@@ -1,7 +1,7 @@
 package tajo.engine;
 
+import com.google.common.collect.Maps;
 import nta.util.FileUtil;
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 import org.junit.Test;
 
 import java.io.File;

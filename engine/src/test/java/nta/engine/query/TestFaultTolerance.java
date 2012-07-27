@@ -1,6 +1,5 @@
 package nta.engine.query;
 
-import com.google.common.base.Charsets;
 import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.*;
 import nta.datum.DatumFactory;
@@ -12,19 +11,11 @@ import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.storage.*;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.thirdparty.guava.common.io.Files;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Writer;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 import static org.junit.Assert.*;
 

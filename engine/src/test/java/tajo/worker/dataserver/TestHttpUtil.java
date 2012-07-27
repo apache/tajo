@@ -1,6 +1,6 @@
 package tajo.worker.dataserver;
 
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
+import com.google.common.collect.Maps;
 import org.junit.Test;
 
 import java.io.UnsupportedEncodingException;

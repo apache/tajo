@@ -1,11 +1,11 @@
 package tajo.engine;
 
+import com.google.common.collect.Maps;
 import nta.catalog.Options;
 import nta.catalog.Schema;
 import nta.engine.NtaTestingUtility;
 import nta.storage.CSVFile2;
 import nta.util.FileUtil;
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 import tajo.benchmark.TPCH;
 
 import java.io.File;

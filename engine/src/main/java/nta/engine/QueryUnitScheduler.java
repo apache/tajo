@@ -4,6 +4,8 @@
 package nta.engine;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.protobuf.Message;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
@@ -39,8 +41,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
-import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 
 import java.net.URI;
 import java.util.*;

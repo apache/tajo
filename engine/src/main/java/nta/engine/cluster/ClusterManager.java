@@ -3,9 +3,9 @@ package nta.engine.cluster;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 
+import com.google.common.collect.Maps;
 import nta.catalog.CatalogClient;
 import nta.catalog.FragmentServInfo;
 import nta.catalog.TableMetaImpl;
@@ -15,8 +15,6 @@ import nta.engine.MasterInterfaceProtos.ServerStatusProto.Disk;
 import nta.engine.QueryUnitId;
 import nta.engine.exception.UnknownWorkerException;
 import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.planner.global.QueryUnit;
-import nta.engine.planner.logical.ScanNode;
 import nta.rpc.RemoteException;
 
 import org.apache.commons.logging.Log;
@@ -26,7 +24,6 @@ import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 
 public class ClusterManager {
   private final int FRAG_DIST_THRESHOLD = 3;

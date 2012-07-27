@@ -1,19 +1,15 @@
 package nta.engine.planner.logical.join;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import nta.catalog.Column;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalTreeUtil;
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 
 import java.util.*;
 
 /**
- * Created with IntelliJ IDEA.
- * User: hyunsik
- * Date: 5/22/12
- * Time: 9:13 AM
- * To change this template use File | Settings | File Templates.
+ * @author Hyunsik Choi
  */
 public class JoinTree {
   private Map<String,List<Edge>> map

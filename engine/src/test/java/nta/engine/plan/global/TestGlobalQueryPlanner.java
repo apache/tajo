@@ -1,6 +1,7 @@
 package nta.engine.plan.global;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.FunctionType;
@@ -31,7 +32,6 @@ import nta.engine.query.GlobalPlanner;
 import nta.storage.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 import org.apache.zookeeper.KeeperException;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.AfterClass;

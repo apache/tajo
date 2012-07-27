@@ -7,6 +7,8 @@ package nta.engine.query;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.TableStat;
@@ -31,8 +33,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
-import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 
 import java.io.IOException;

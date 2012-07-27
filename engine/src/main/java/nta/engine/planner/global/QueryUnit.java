@@ -8,7 +8,8 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.Map.Entry;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import nta.catalog.Schema;
 import nta.catalog.statistics.TableStat;
 import nta.engine.AbstractQuery;
@@ -23,8 +24,6 @@ import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.UnaryNode;
 
 import com.google.common.base.Preconditions;
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
-import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 
 /**
  * @author jihoon

@@ -1,6 +1,7 @@
 package nta.engine.planner;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import nta.catalog.Column;
 import nta.catalog.Schema;
@@ -18,7 +19,6 @@ import nta.engine.query.exception.InvalidQueryException;
 import nta.engine.query.exception.NotSupportQueryException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
 
 import java.util.*;
 

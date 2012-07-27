@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.Arrays;
 import java.util.SortedSet;
 
+import com.google.common.collect.Sets;
 import nta.catalog.Schema;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
@@ -13,7 +14,6 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.json.GsonCreator;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 
