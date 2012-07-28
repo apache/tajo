@@ -51,7 +51,7 @@ public class CSVFile2 extends Storage {
       throws IOException {
     return new CSVScanner(conf, schema, tablets);
   }
-
+  
   public static class CSVAppender extends FileAppender {
 //    private final Path path;
     private final TableMeta meta;

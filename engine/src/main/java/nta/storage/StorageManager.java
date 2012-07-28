@@ -12,6 +12,7 @@ import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos.TableProto;
+import nta.common.exception.NotImplementedException;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -206,13 +207,49 @@ public class StorageManager {
     Scanner scanner = null;
 
     switch(meta.getStoreType()) {
+    case RAW: {
+      scanner = new RawFile2(conf).
+      openScanner(inputSchema, tablets);
+      break;
+    }
+    case CSV: {
+      scanner = new CSVFile2(conf).openScanner(inputSchema, tablets);
+      break;
+    }
+    }
+
+    return scanner;
+  }
+  
+  public Scanner getScanner(TableMeta meta, Fragment fragment) throws IOException {
+    Scanner scanner = null;
+    
+    switch(meta.getStoreType()) {
+    case RAW: {
+//      scanner = new RawFile2(conf).
+//          openScanner(meta.getSchema(), fragment);   
+      throw new NotImplementedException();
+    }
+    case CSV: {
+      scanner = new SingleCSVFile(conf).openSingleScanner(meta.getSchema(), fragment);
+      break;
+    }
+    }
+    
+    return scanner;
+  }
+
+  public Scanner getScanner(TableMeta meta, Fragment fragment, Schema inputSchema) throws IOException {
+    Scanner scanner = null;
+
+    switch(meta.getStoreType()) {
       case RAW: {
-        scanner = new RawFile2(conf).
-            openScanner(inputSchema, tablets);
-        break;
+//        scanner = new RawFile2(conf).
+//            openScanner(inputSchema, tablets);
+        throw new NotImplementedException();
       }
       case CSV: {
-        scanner = new CSVFile2(conf).openScanner(inputSchema, tablets);
+        scanner = new SingleCSVFile(conf).openSingleScanner(inputSchema, fragment);
         break;
       }
     }
