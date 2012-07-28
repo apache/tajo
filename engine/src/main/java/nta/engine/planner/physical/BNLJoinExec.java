@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class BNLJoinExec extends PhysicalExec {
+  private final SubqueryContext ctx;
   // from logical plan
   private Schema inSchema;
   private Schema outSchema;
@@ -49,6 +50,7 @@ public class BNLJoinExec extends PhysicalExec {
 
   public BNLJoinExec(SubqueryContext ctx, JoinNode ann, PhysicalExec outer,
       PhysicalExec inner) {
+    this.ctx = ctx;
     this.outer = outer;
     this.inner = inner;
     this.inSchema = ann.getInputSchema();
@@ -98,7 +100,7 @@ public class BNLJoinExec extends PhysicalExec {
     if((innext = inner.next()) == null){
       innerEnd = true;
     }
-    while (true) {
+    while (!ctx.isStopped()) {
       if (!innerIterator.hasNext()) { // if inneriterator ended
         if (outerIterator.hasNext()) { // if outertupleslot remains
           outerTuple = outerIterator.next();
@@ -172,6 +174,8 @@ public class BNLJoinExec extends PhysicalExec {
         return outputTuple;
       }
     }
+
+    return null;
   }
 
   @Override

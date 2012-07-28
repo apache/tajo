@@ -18,7 +18,6 @@ import nta.storage.StorageManager;
 import nta.storage.StorageUtil;
 import nta.storage.Tuple;
 import org.apache.hadoop.fs.Path;
-import org.mortbay.log.Log;
 
 import java.io.IOException;
 import java.text.NumberFormat;
@@ -86,18 +85,19 @@ public final class PartitionedStoreExec extends PhysicalExec {
   private Appender getAppender(int partition) throws IOException {
     Appender appender = appenderMap.get(partition);
     if (appender == null) {
-      Path dataFile =
-          StorageUtil.concatPath(storeTablePath, "data",
-              "" + partition);
+      Path dataFile = getDataFile(partition);
 //      Log.info(">>>>>> " + dataFile.toString());
       appender = sm.getLocalAppender(meta, dataFile);      
       appenderMap.put(partition, appender);
-      ctx.addRepartition(partition, dataFile.getName());
     } else {
       appender = appenderMap.get(partition);
     }
     
     return appender;
+  }
+
+  private Path getDataFile(int partition) {
+    return StorageUtil.concatPath(storeTablePath, "data", "" + partition);
   }
 
   @Override
@@ -112,10 +112,15 @@ public final class PartitionedStoreExec extends PhysicalExec {
     }
     
     List<TableStat> statSet = new ArrayList<TableStat>();
-    for (Appender app : appenderMap.values()) {
+    for (Map.Entry<Integer, Appender> entry : appenderMap.entrySet()) {
+      int partNum = entry.getKey();
+      Appender app = entry.getValue();
       app.flush();
       app.close();
       statSet.add(app.getStats());
+      if (app.getStats().getNumRows() > 0) {
+        ctx.addRepartition(partNum, getDataFile(partNum).getName());
+      }
     }
     
     // Collect and aggregated statistics data

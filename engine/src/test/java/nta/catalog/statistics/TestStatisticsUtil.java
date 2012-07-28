@@ -1,6 +1,8 @@
 package nta.catalog.statistics;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import nta.engine.TCommonProtos.StatType;
 
 import org.junit.Test;
@@ -35,5 +37,14 @@ public class TestStatisticsUtil {
     StatSet agg = StatisticsUtil.aggregate(Lists.newArrayList(group, group2));
     assertEquals(500, agg.getStat(StatType.TABLE_NUM_ROWS).getValue());
     assertEquals(100, agg.getStat(StatType.TABLE_NUM_BLOCKS).getValue());
+  }
+
+  @Test
+  public void testEmptyAggregate() {
+    TableStat stat1 = new TableStat();
+    TableStat stat2 = new TableStat();
+    TableStat stat3 = new TableStat();
+
+    assertNotNull(StatisticsUtil.aggregate(Lists.newArrayList(stat1, stat2, stat3)));
   }
 }

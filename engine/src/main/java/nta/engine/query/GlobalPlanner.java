@@ -709,12 +709,26 @@ public class GlobalPlanner {
           StoreTableNode store = (StoreTableNode) prev.getLogicalPlan();
           SortNode sort = (SortNode) store.getSubNode();
           sortSchema = PlannerUtil.sortSpecsToSchema(sort.getSortKeys());
+
+          // calculate the number of tasks based on the data size
+          int mb = (int) Math.ceil((double)stat.getNumBytes() / 1048576);
+          LOG.info("Total size of intermediate data is approximately " + mb + " MB");
+
+          n = (int) Math.ceil((double)mb / 64); // determine the number of task by considering 1 task per 64MB
+          LOG.info("The desired number of tasks is set to " + n);
+
+          // calculate the number of maximum query ranges
           TupleRange mergedRange = TupleUtil.columnStatToRange(sort.getOutputSchema(), sortSchema, stat.getColumnStats());
           RangePartitionAlgorithm partitioner = new UniformRangePartition(sortSchema, mergedRange);
           BigDecimal card = partitioner.getTotalCardinality();
+
+          // if the number of the range cardinality is less than the desired number of tasks,
+          // we set the the number of tasks to the number of range cardinality.
           if (card.compareTo(new BigDecimal(n)) < 0) {
+            LOG.info("The range cardinality is less then the desired number of tasks (" + n + ")");
             n = card.intValue();
           }
+
           LOG.info("Try to divide " + mergedRange + " into " + n + " sub ranges (total units: " + n + ")");
           TupleRange [] ranges = partitioner.partition(n);
           String [] queries = TupleUtil.rangesToQueries(sortSchema, ranges);

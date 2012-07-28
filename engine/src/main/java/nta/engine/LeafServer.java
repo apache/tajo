@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import nta.catalog.CatalogClient;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
+import nta.catalog.statistics.TableStat;
 import nta.conf.NtaConf;
 import nta.engine.MasterInterfaceProtos.CommandRequestProto;
 import nta.engine.MasterInterfaceProtos.CommandResponseProto;
@@ -681,6 +682,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       }*/
       if (ctx.hasResultStats()) {
         builder.setResultStats(ctx.getResultStats().getProto());
+      } else {
+        builder.setResultStats(new TableStat().getProto());
       }
       
       
@@ -724,9 +727,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
             ctx.changeFragment(inputTable, frags);
           }
         }
-        
-        this.executor = queryEngine.createPlan(ctx, plan);
-        while(executor.next() != null && !killed) {
+        if (ctx.getFragmentSize() > 0) {
+          this.executor = queryEngine.createPlan(ctx, plan);
+          while(executor.next() != null && !killed) {
+          }
         }
       } catch (Exception e) {
         LOG.error(ExceptionUtils.getStackTrace(e));

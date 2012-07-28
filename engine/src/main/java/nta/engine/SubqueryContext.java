@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 
-import nta.catalog.CatalogService;
 import nta.catalog.statistics.StatSet;
 import nta.catalog.statistics.TableStat;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
@@ -191,6 +190,10 @@ public class SubqueryContext extends Context {
   @Override
   public Fragment getTable(String id) {
     return fragmentMap.get(id).get(0);
+  }
+
+  public int getFragmentSize() {
+    return fragmentMap.size();
   }
   
   @Override
