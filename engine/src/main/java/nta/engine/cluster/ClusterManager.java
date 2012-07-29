@@ -73,6 +73,7 @@ public class ClusterManager {
       new HashMap<String, List<String>>();
 
   private Map<Fragment, FragmentServingInfo> servingInfoMap;
+  private Random rand = new Random(System.currentTimeMillis());
 
   public ClusterManager(WorkerCommunicator wc, Configuration conf,
       LeafServerTracker tracker) throws IOException {
@@ -145,7 +146,6 @@ public class ClusterManager {
   }
   
   private String getRandomWorkerNameOfHost(String host) {
-    Random rand = new Random(System.currentTimeMillis());
     List<String> workers = DNSNameToHostsMap.get(host);
     return workers.get(rand.nextInt(workers.size()));
   }
@@ -188,7 +188,6 @@ public class ClusterManager {
    */
   public String getRandomHost() 
       throws Exception {
-    Random rand = new Random(System.currentTimeMillis());
     int n = rand.nextInt(DNSNameToHostsMap.size());
     Iterator<List<String>> it = DNSNameToHostsMap.values().iterator();
     for (int i = 0; i < n-1; i++) {
