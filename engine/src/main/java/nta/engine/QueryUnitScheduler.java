@@ -18,10 +18,7 @@ import nta.engine.MasterInterfaceProtos.CommandRequestProto;
 import nta.engine.MasterInterfaceProtos.CommandType;
 import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
-import nta.engine.cluster.ClusterManager;
-import nta.engine.cluster.FragmentServingInfo;
-import nta.engine.cluster.QueryManager;
-import nta.engine.cluster.WorkerCommunicator;
+import nta.engine.cluster.*;
 import nta.engine.exception.EmptyClusterException;
 import nta.engine.exception.UnknownWorkerException;
 import nta.engine.ipc.protocolrecords.Fragment;
@@ -73,7 +70,7 @@ public class QueryUnitScheduler extends Thread {
 
   public QueryUnitScheduler(Configuration conf, StorageManager sm, 
       ClusterManager cm, QueryManager qm, WorkerCommunicator wc, 
-      GlobalPlanner planner, ScheduleUnit plan) {
+      GlobalPlanner planner, ScheduleUnit plan) throws EmptyClusterException {
     this.sm = sm;
     this.cm = cm;
     this.qm = qm;
@@ -86,13 +83,16 @@ public class QueryUnitScheduler extends Thread {
     queryUnitAttemptMap = Maps.newHashMap();
   }
 
-  private void updateWorkers() {
+  private void updateWorkers() throws EmptyClusterException {
     cm.updateOnlineWorker();
     onlineWorkers.clear();
     for (List<String> workers : cm.getOnlineWorkers().values()) {
       onlineWorkers.addAll(workers);
     }
     onlineWorkers.removeAll(failedWorkers);
+    if (onlineWorkers.size() == 0) {
+      throw new EmptyClusterException();
+    }
   }
 
   private void recursiveExecuteScheduleUnit(ScheduleUnit plan)
@@ -206,7 +206,7 @@ public class QueryUnitScheduler extends Thread {
       throws Exception {
     if (hasChild) {
       for (QueryUnit q : units) {
-        q.setHost(cm.getRandomHost());
+        q.setHost(cm.getRandomHost(failedWorkers));
       }
     } else {
       Map<Fragment, FragmentServingInfo> servingMap =
@@ -291,22 +291,10 @@ public class QueryUnitScheduler extends Thread {
         status = unit.getInProgressStatus().getStatus();
         qm.updateQueryUnitStatus(unit.getId(),
             queryUnitAttemptMap.get(unit.getId()), status);
-        switch (status) {
-          case QUERY_INITED: inited++; break;
-          case QUERY_PENDING: pending++; break;
-          case QUERY_INPROGRESS: inprogress++; break;
-          case QUERY_FINISHED: success++; break;
-          case QUERY_ABORTED: aborted++; break;
-          case QUERY_KILLED: killed++; break;
-        }
 
         switch (status) {
           case QUERY_KILLED:
-            // send command
-            cmd = Command.newBuilder();
-            cmd.setId(unit.getId().getProto()).setType(CommandType.STOP);
-            requestToWC(unit.getHost(), CommandRequestProto.newBuilder().
-                addCommand(cmd.build()).build());
+            sendCommand(unit, CommandType.STOP);
             break;
           case QUERY_ABORTED:
             LOG.info("QueryUnit " + unit.getId() + " is aborted!!");
@@ -343,6 +331,22 @@ public class QueryUnitScheduler extends Thread {
         }
       }
 
+      for (QueryUnit unit : scheduleUnit.getQueryUnits()) {
+        QueryUnitStatus.QueryUnitAttempt attempt =
+            qm.getQueryUnitStatus(unit.getId()).
+            getAttempt(queryUnitAttemptMap.get(unit.getId()));
+
+        switch (qm.getQueryUnitStatus(unit.getId()).
+            getAttempt(queryUnitAttemptMap.get(unit.getId())).getStatus()) {
+          case QUERY_INITED: inited++; break;
+          case QUERY_PENDING: pending++; break;
+          case QUERY_INPROGRESS: inprogress++; break;
+          case QUERY_FINISHED: success++; break;
+          case QUERY_ABORTED: aborted++; break;
+          case QUERY_KILLED: killed++; break;
+        }
+      }
+
       LOG.info("Job " + scheduleUnit.getId() + " In Progress (Total: " + units.length
           + ", Finished: " + success + ", Inited: " + inited + ", Pending: " + pending
           + ", Running: " + inprogress + ", Aborted: " + aborted + ", Killed: " + killed);
@@ -354,15 +358,44 @@ public class QueryUnitScheduler extends Thread {
     }
     qm.updateScheduleUnitStatus(scheduleUnit.getId(), finalScheduleUnitStatus);
     if (finalScheduleUnitStatus == QueryStatus.QUERY_FINISHED) {
-      List<TableStat> stats = Lists.newArrayList();
-      for (QueryUnit unit : units ) {
-        stats.add(unit.getStats());
+      if (scheduleUnit.hasChildQuery()) {
+        finalizePrevScheduleUnit(scheduleUnit);
       }
-      TableStat tableStat = StatisticsUtil.aggregate(stats);
-      return tableStat;
+      return generateStat(scheduleUnit);
     } else {
       return null;
     }
+  }
+
+  private void sendCommand(QueryUnit unit, CommandType type)
+      throws Exception {
+    Command.Builder cmd = Command.newBuilder();
+    cmd.setId(unit.getId().getProto()).setType(type);
+    requestToWC(unit.getHost(), CommandRequestProto.newBuilder().
+        addCommand(cmd.build()).build());
+  }
+
+  private void finalizePrevScheduleUnit(ScheduleUnit scheduleUnit)
+      throws Exception {
+    ScheduleUnit prevScheduleUnit;
+    for (ScanNode scan : scheduleUnit.getScanNodes()) {
+      prevScheduleUnit = scheduleUnit.getChildQuery(scan);
+      if (prevScheduleUnit.getStoreTableNode().getSubNode().getType()
+          != ExprType.UNION) {
+        for (QueryUnit unit : prevScheduleUnit.getQueryUnits()) {
+          sendCommand(unit, CommandType.FINALIZE);
+        }
+      }
+    }
+  }
+
+  private TableStat generateStat(ScheduleUnit scheduleUnit) {
+    List<TableStat> stats = Lists.newArrayList();
+    for (QueryUnit unit : scheduleUnit.getQueryUnits() ) {
+      stats.add(unit.getStats());
+    }
+    TableStat tableStat = StatisticsUtil.aggregate(stats);
+    return tableStat;
   }
 
   private boolean requestToWC(String host, Message proto) throws Exception {
@@ -394,6 +427,8 @@ public class QueryUnitScheduler extends Thread {
           QueryStatus.QUERY_ABORTED);
       queryUnitAttemptMap.put(unit.getId(), ++retryCnt);
       commitBackupTask(unit);
+      qm.updateQueryUnitStatus(unit.getId(), retryCnt,
+          QueryStatus.QUERY_SUBMITED);
       return true;
     } else {
       // Cancel the executed query
@@ -402,10 +437,7 @@ public class QueryUnitScheduler extends Thread {
   }
 
   private void commitBackupTask(QueryUnit unit) throws Exception {
-    Command.Builder cmd = Command.newBuilder();
-    cmd.setId(unit.getId().getProto()).setType(CommandType.STOP);
-    requestToWC(unit.getHost(),
-        CommandRequestProto.newBuilder().addCommand(cmd.build()).build());
+    sendCommand(unit, CommandType.STOP);
     requestBackupTask(unit);
     unit.resetExpireTime();
   }
@@ -423,7 +455,7 @@ public class QueryUnitScheduler extends Thread {
     fs.delete(path, true);
     failedWorkers.add(q.getHost());
     updateWorkers();
-    String hostName = cm.getRandomHost();
+    String hostName = cm.getRandomHost(failedWorkers);
     q.setHost(hostName);
     LOG.info("QueryUnit " + q.getId() + " is assigned to " + 
         q.getHost() + " as the backup task");

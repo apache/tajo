@@ -11,6 +11,9 @@ import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.storage.*;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.thirdparty.guava.common.io.Files;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,7 +39,7 @@ public class TestFaultTolerance {
 
   @BeforeClass
   public static void setup() throws Exception {
-    cluster = new MockupCluster(6, 2, 2);
+    cluster = new MockupCluster(6, 0, 4);
     conf = cluster.getConf();
 
     cluster.start();

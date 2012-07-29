@@ -8,9 +8,8 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.TableStat;
 import nta.datum.Datum;
 import nta.datum.DatumFactory;
-import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
-import nta.engine.MasterInterfaceProtos.Partition;
-import nta.engine.MasterInterfaceProtos.QueryStatus;
+import nta.engine.MasterInterfaceProtos.*;
+import nta.engine.cluster.QueryManager;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 import nta.engine.parser.ParseTree;
@@ -18,6 +17,7 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.PlannerUtil;
+import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.StoreTableNode;
@@ -30,9 +30,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import tajo.datachannel.Fetcher;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
@@ -164,6 +166,90 @@ public class TestLeafServer {
     int j = 0;
     @SuppressWarnings("unused")
     Tuple tuple = null;
+    while (scanner.next() != null) {
+      j++;
+    }
+
+    assertEquals(tupleNum, j);
+  }
+
+  @Test
+  public final void testCommand() throws Exception {
+    Fragment[] frags = sm.split("employee", 40000);
+
+    int splitIdx = (int) Math.ceil(frags.length / 2.f);
+    QueryIdFactory.reset();
+
+    LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(0);
+    LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(1);
+
+    ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(
+        QueryIdFactory.newSubQueryId(
+            QueryIdFactory.newQueryId()));
+    QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(sid);
+    QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(sid);
+
+    QueryContext ctx = qcFactory.create();
+    ParseTree query = analyzer.parse(ctx,
+        "testLeafServer := select name, empId, deptName from employee");
+    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    plan = LogicalOptimizer.optimize(ctx, plan);
+
+    NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
+    QueryManager qm = master.getQueryManager();
+    Query q = new Query(qid1.getQueryId(),
+        "testLeafServer := select name, empId, deptName from employee");
+    qm.addQuery(q);
+    SubQuery subQuery = new SubQuery(qid1.getSubQueryId());
+    qm.addSubQuery(subQuery);
+    ScheduleUnit su = new ScheduleUnit(qid1.getScheduleUnitId());
+    qm.addScheduleUnit(su);
+    sm.initTableBase(frags[0].getMeta(), "testLeafServer");
+    QueryUnit [] qu = new QueryUnit[2];
+    qu[0] = new QueryUnit(qid1);
+    qu[1] = new QueryUnit(qid2);
+    su.setQueryUnits(qu);
+    qm.updateQueryUnitStatus(qid1, 1, QueryStatus.QUERY_INITED);
+    qm.updateQueryUnitStatus(qid2, 1, QueryStatus.QUERY_INITED);
+    QueryUnitRequest req1 = new QueryUnitRequestImpl(
+        qid1, Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
+        "", false, plan.toJSON());
+
+    QueryUnitRequest req2 = new QueryUnitRequestImpl(
+        qid2, Lists.newArrayList(Arrays.copyOfRange(frags, splitIdx,
+        frags.length)), "", false, plan.toJSON());
+
+    assertNotNull(leaf1.requestQueryUnit(req1.getProto()));
+    Thread.sleep(1000);
+    assertNotNull(leaf2.requestQueryUnit(req2.getProto()));
+    Thread.sleep(1000);
+
+    // for the report sending test
+    Set<QueryUnitId> submitted = new HashSet<QueryUnitId>();
+    submitted.add(req1.getId());
+    submitted.add(req2.getId());
+
+    QueryStatus s1, s2;
+    do {
+      s1 = leaf1.getTask(qid1).getStatus();
+      s2 = leaf2.getTask(qid2).getStatus();
+    } while (s1 != QueryStatus.QUERY_FINISHED
+        && s2 != QueryStatus.QUERY_FINISHED);
+
+    Command.Builder cmd = Command.newBuilder();
+    cmd.setId(qid1.getProto()).setType(CommandType.FINALIZE);
+    leaf1.requestCommand(CommandRequestProto.newBuilder().
+        addCommand(cmd.build()).build());
+    cmd = Command.newBuilder();
+    cmd.setId(qid2.getProto()).setType(CommandType.FINALIZE);
+    leaf2.requestCommand(CommandRequestProto.newBuilder().
+        addCommand(cmd.build()).build());
+
+    assertNull(leaf1.getTask(qid1));
+    assertNull(leaf2.getTask(qid2));
+
+    Scanner scanner = sm.getTableScanner("testLeafServer");
+    int j = 0;
     while (scanner.next() != null) {
       j++;
     }

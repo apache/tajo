@@ -257,7 +257,7 @@ public class CSVFile2 extends Storage {
       
       // set tablet information.
       if (tabletIter.hasNext()) {
-        curTablet = tabletIter.next();     
+        curTablet = tabletIter.next();
         this.fs = curTablet.getPath().getFileSystem(this.conf);
         this.fis = this.fs.open(curTablet.getPath());
         this.startOffset = curTablet.getStartOffset();
@@ -267,10 +267,10 @@ public class CSVFile2 extends Storage {
           this.length = curTablet.getLength();
         }
         long available = tabletable();//(this.startOffset + this.length) - fis.getPos();
-        
+
         // set correct start offset.
         if (startOffset != 0) {
-          if (startOffset < available) {  
+          if (startOffset < available) {
             fis.seek(startOffset - 1);
             while ( (fis.readByte()) != LF) {
             }

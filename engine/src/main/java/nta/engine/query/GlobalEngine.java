@@ -10,18 +10,21 @@ import nta.catalog.TCatUtil;
 import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.engine.*;
-import nta.engine.MasterInterfaceProtos.QueryStatus;
+import nta.engine.MasterInterfaceProtos.*;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
+import nta.engine.exception.EmptyClusterException;
 import nta.engine.exception.IllegalQueryStatusException;
 import nta.engine.exception.NoSuchQueryIdException;
+import nta.engine.exception.UnknownWorkerException;
 import nta.engine.parser.ParseTree;
 import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.GlobalOptimizer;
 import nta.engine.planner.global.MasterPlan;
+import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.ExprType;
@@ -77,7 +80,8 @@ public class GlobalEngine implements EngineService {
   
   public String executeQuery(String querystr)
       throws InterruptedException, IOException,
-      NoSuchQueryIdException, IllegalQueryStatusException {
+      NoSuchQueryIdException, IllegalQueryStatusException,
+      UnknownWorkerException, EmptyClusterException {
     LOG.info("* issued query: " + querystr);
     // build the logical plan
     QueryContext ctx = factory.create();
@@ -137,7 +141,8 @@ public class GlobalEngine implements EngineService {
   }
 
   public void finalizeQuery(Query query)
-      throws IllegalQueryStatusException {
+      throws IllegalQueryStatusException, UnknownWorkerException {
+    sendFinalize(query);
     QueryStatus status = updateQueryStatus(query);
     switch (status) {
       case QUERY_FINISHED:
@@ -153,6 +158,19 @@ public class GlobalEngine implements EngineService {
         throw new IllegalQueryStatusException(
             "Illegal final status of query " +
                 query.getId() + ": " + status);
+    }
+  }
+
+  public void sendFinalize(Query query) throws UnknownWorkerException {
+    Command.Builder cmd = Command.newBuilder();
+    for (SubQuery subQuery : query.getSubQueries()) {
+      for (ScheduleUnit scheduleUnit : subQuery.getScheduleUnits()) {
+        for (QueryUnit queryUnit : scheduleUnit.getQueryUnits()) {
+          cmd.setId(queryUnit.getId().getProto()).setType(CommandType.FINALIZE);
+          wc.requestCommand(queryUnit.getHost(),
+              CommandRequestProto.newBuilder().addCommand(cmd.build()).build());
+        }
+      }
     }
   }
 

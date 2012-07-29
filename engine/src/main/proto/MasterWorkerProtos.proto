@@ -7,14 +7,15 @@ import "CatalogProtos.proto";
 import "TCommonProtos.proto";
 
 enum QueryStatus {
-  QUERY_INITED = 0;
-  QUERY_FETCHING = 1;
-  QUERY_PENDING = 2;
-  QUERY_INPROGRESS = 3;
-  QUERY_FINISHED = 4;
-  QUERY_DATASERVER = 5;
-  QUERY_KILLED = 6;
-  QUERY_ABORTED = 7;
+  QUERY_SUBMITED = 0;
+  QUERY_INITED = 1;
+  QUERY_FETCHING = 2;
+  QUERY_PENDING = 3;
+  QUERY_INPROGRESS = 4;
+  QUERY_FINISHED = 5;
+  QUERY_DATASERVER = 6;
+  QUERY_KILLED = 7;
+  QUERY_ABORTED = 8;
 }
 
 message InProgressStatusProto {

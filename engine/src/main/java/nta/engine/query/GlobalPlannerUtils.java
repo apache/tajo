@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.*;
 import nta.engine.cluster.FragmentServingInfo;
+import nta.engine.exception.UnknownWorkerException;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.global.QueryUnit;
 import org.apache.commons.logging.Log;
@@ -38,7 +39,7 @@ public class GlobalPlannerUtils {
       Map<String, List<String>> DNSNameToHostsMap,
       Set<String> failedHost,
       QueryUnit[] queryUnits
-  ) {
+  ) throws UnknownWorkerException {
     Map<String, Collection<QueryUnit>> map = Maps.newHashMap();
     ListMultimap<String, QueryUnit> distStatus =
         Multimaps.newListMultimap(map,
@@ -122,6 +123,9 @@ public class GlobalPlannerUtils {
     int rrIdx = 0;
     for (Map.Entry<String, Collection<QueryUnit>> e : list) {
       hosts = DNSNameToHostsMap.get(e.getKey());
+      if (hosts == null) {
+        throw new UnknownWorkerException(e.getKey() + "");
+      }
       for (QueryUnit unit : e.getValue()) {
         while (failedHost.contains(hosts.get(rrIdx))) {
           if (++rrIdx == hosts.size()) {
@@ -130,7 +134,7 @@ public class GlobalPlannerUtils {
         }
         unit.setHost(hosts.get(rrIdx++));
         if (rrIdx == hosts.size()) {
-           rrIdx = 0;
+          rrIdx = 0;
         }
       }
     }

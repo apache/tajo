@@ -97,7 +97,7 @@ public class TestGlobalEngine {
   @Before
   public void setup() throws Exception {
     util = new NtaTestingUtility();
-    util.startMiniCluster(3);
+    util.startMiniCluster(1);
     Thread.sleep(2000);
     master = util.getMiniTajoCluster().getMaster();
     conf = util.getConfiguration();

@@ -186,14 +186,18 @@ public class ClusterManager {
    * @return
    * @throws Exception
    */
-  public String getRandomHost() 
+  public String getRandomHost(Set<String> failedWorkers)
       throws Exception {
-    int n = rand.nextInt(DNSNameToHostsMap.size());
-    Iterator<List<String>> it = DNSNameToHostsMap.values().iterator();
-    for (int i = 0; i < n-1; i++) {
-      it.next();
-    }
-    List<String> hosts = it.next();
-    return hosts.get(rand.nextInt(hosts.size()));
+    String randomHost;
+    do {
+      int n = rand.nextInt(DNSNameToHostsMap.size());
+      Iterator<List<String>> it = DNSNameToHostsMap.values().iterator();
+      for (int i = 0; i < n-1; i++) {
+        it.next();
+      }
+      List<String> hosts = it.next();
+      randomHost = hosts.get(rand.nextInt(hosts.size()));
+    } while (failedWorkers.contains(randomHost));
+    return randomHost;
   }
 }

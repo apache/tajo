@@ -523,6 +523,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       }
     }
   }
+
+  public Task getTask(QueryUnitId id) {
+    return this.tasks.get(id);
+  }
   
   private class QueryLauncher extends Thread {
     private final BlockingQueue<Task> blockingQueue
