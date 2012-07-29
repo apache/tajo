@@ -204,15 +204,6 @@ public class QueryUnitScheduler extends Thread {
   private QueryUnit[] prepareExecutionOfQueryUnits(QueryUnit[] units,
                                                    boolean hasChild)
       throws Exception {
-    /*String hostName;
-
-    for (QueryUnit q : units) {
-      hostName = getHost(q);
-      q.setHost(hostName);
-      pendingQueue.add(q);
-      qm.updateQueryAssignInfo(hostName, q);
-      this.queryUnitAttemptMap.put(q.getId(), 1);
-    }*/
     if (hasChild) {
       for (QueryUnit q : units) {
         q.setHost(cm.getRandomHost());

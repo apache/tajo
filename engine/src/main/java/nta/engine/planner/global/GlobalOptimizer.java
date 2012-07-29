@@ -56,7 +56,8 @@ public class GlobalOptimizer {
       it = prevs.iterator();
       while (it.hasNext()) {
         prev = it.next();
-        if (prev.getOutputType() == PARTITION_TYPE.LIST) {
+        if (prev.getStoreTableNode().getSubNode().getType() != ExprType.UNION &&
+            prev.getOutputType() == PARTITION_TYPE.LIST) {
           mergeLogicalUnits(cur, prev);
         }
       }

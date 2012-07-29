@@ -584,6 +584,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           LogicalNode.class);      
       interQuery = request.getProto().getInterQuery();
       if (interQuery) {
+        ctx.setInterQuery();
         StoreTableNode store = (StoreTableNode) plan;
         this.partitionType = store.getPartitionType();
         if (store.getSubNode().getType() == ExprType.SORT) {
@@ -699,6 +700,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
               part.setFileName(
                   dataServerURL + "/?qid=" + getId().toString() + "&fn=" +
                   entry.getValue());
+            } else if (partitionType == ScheduleUnit.PARTITION_TYPE.LIST) {
+              part.setFileName(dataServerURL + "/?qid=" + getId().toString() +
+                  "&fn=0");
             } else {
               part.setFileName(dataServerURL + "/?qid=" + getId().toString());
             }

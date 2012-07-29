@@ -143,7 +143,7 @@ public class TestGlobalQueryPlanner {
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
-    
+
     ScheduleUnit unit = globalPlan.getRoot();
     assertFalse(unit.hasChildQuery());
     assertEquals(PARTITION_TYPE.LIST, unit.getOutputType());
@@ -201,13 +201,23 @@ public class TestGlobalQueryPlanner {
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
-    
+
     ScheduleUnit next, prev;
     
     next = globalPlan.getRoot();
+    assertEquals(ExprType.PROJECTION,
+        next.getStoreTableNode().getSubNode().getType());
     assertTrue(next.hasChildQuery());
     assertEquals(PARTITION_TYPE.LIST, next.getOutputType());
     Iterator<ScheduleUnit> it= next.getChildIterator();
+
+    prev = it.next();
+    assertEquals(ExprType.SORT,
+        prev.getStoreTableNode().getSubNode().getType());
+    assertTrue(prev.hasChildQuery());
+    assertEquals(PARTITION_TYPE.LIST, prev.getOutputType());
+    it= prev.getChildIterator();
+    next = prev;
     
     prev = it.next();
     assertFalse(prev.hasChildQuery());
@@ -231,11 +241,10 @@ public class TestGlobalQueryPlanner {
     ParseTree tree = analyzer.parse(ctx,
         "select table0.age,table0.salary,table1.salary from table0,table1 where table0.salary = table1.salary order by table0.age");
     LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
-    System.out.println(logicalPlan);
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
-    
+
     ScheduleUnit next, prev;
     
     // the second phase of the sort
@@ -243,11 +252,16 @@ public class TestGlobalQueryPlanner {
     assertTrue(next.hasChildQuery());
     assertEquals(PARTITION_TYPE.LIST, next.getOutputType());
     assertEquals(ExprType.PROJECTION, next.getStoreTableNode().getSubNode().getType());
-    ProjectionNode projNode = (ProjectionNode) next.getStoreTableNode().getSubNode();
-    assertEquals(ExprType.SORT, projNode.getSubNode().getType());
     ScanNode []scans = next.getScanNodes();
     assertEquals(1, scans.length);
     Iterator<ScheduleUnit> it= next.getChildIterator();
+
+    prev = it.next();
+    assertEquals(ExprType.SORT, prev.getStoreTableNode().getSubNode().getType());
+    assertEquals(PARTITION_TYPE.LIST, prev.getOutputType());
+    scans = prev.getScanNodes();
+    assertEquals(1, scans.length);
+    it= prev.getChildIterator();
     
     // the first phase of the sort
     prev = it.next();
@@ -297,7 +311,7 @@ public class TestGlobalQueryPlanner {
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
     
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
-    
+
     ScheduleUnit unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
     assertEquals(ExprType.JOIN, store.getSubNode().getType());
@@ -321,13 +335,18 @@ public class TestGlobalQueryPlanner {
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
-    
+
     ScheduleUnit unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
     assertEquals(ExprType.PROJECTION, store.getSubNode().getType());
     ProjectionNode projNode = (ProjectionNode) store.getSubNode();
-    assertEquals(ExprType.UNION, projNode.getSubNode().getType());
-    UnionNode union = (UnionNode) projNode.getSubNode();
+    ScanNode[] scans = unit.getScanNodes();
+    assertEquals(1, scans.length);
+
+    unit = unit.getChildQuery(scans[0]);
+    store = unit.getStoreTableNode();
+    assertEquals(ExprType.UNION, store.getSubNode().getType());
+    UnionNode union = (UnionNode) store.getSubNode();
     assertEquals(ExprType.SCAN, union.getOuterNode().getType());
     assertEquals(ExprType.UNION, union.getInnerNode().getType());
     union = (UnionNode) union.getInnerNode();
@@ -368,7 +387,7 @@ public class TestGlobalQueryPlanner {
     logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
-    
+
     recursiveTestLocalize(globalPlan.getRoot());
   }
   
@@ -475,7 +494,6 @@ public class TestGlobalQueryPlanner {
     assertEquals(3, hashed.get("0").get(scan2).size());
 
     QueryStringDecoder decoder = new QueryStringDecoder(hashed.get("0").get(scan1).get(0));
-    System.out.println(hashed.get("0").get(scan1).get(0));
     Map<String, List<String>> params = decoder.getParameters();
     String [] qids = params.get("qid").get(0).split(",");
     assertEquals(2, qids.length);

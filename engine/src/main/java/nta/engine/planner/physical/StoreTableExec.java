@@ -13,7 +13,9 @@ import nta.engine.SubqueryContext;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
+import nta.storage.StorageUtil;
 import nta.storage.Tuple;
+import org.apache.hadoop.fs.Path;
 
 /**
  * This physical operator stores a relation into a table.
@@ -45,8 +47,15 @@ public class StoreTableExec extends PhysicalExec {
     this.outputSchema = this.annotation.getOutputSchema();
     
     TableMeta meta = TCatUtil.newTableMeta(this.outputSchema, StoreType.CSV);
-    this.appender = sm.getAppender(meta,this.annotation.getTableName(),
-        ctx.getQueryId().toString());
+    if (ctx.isInterQuery()) {
+      Path storeTablePath = new Path(ctx.getWorkDir().getAbsolutePath(), "out");
+      sm.initLocalTableBase(storeTablePath, meta);
+      this.appender = sm.getLocalAppender(meta,
+          StorageUtil.concatPath(storeTablePath, "data", "0"));
+    } else {
+      this.appender = sm.getAppender(meta,this.annotation.getTableName(),
+          ctx.getQueryId().toString());
+    }
   }
 
   /* (non-Javadoc)

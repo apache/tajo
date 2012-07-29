@@ -45,6 +45,7 @@ public class SubqueryContext extends Context {
   private Map<Integer, String> repartitions;
   private File fetchIn;
   private boolean stopped = false;
+  private boolean interQuery = false;
   
   @VisibleForTesting
   SubqueryContext(final QueryUnitId queryId, final Fragment [] fragments, final File workDir) {
@@ -105,6 +106,14 @@ public class SubqueryContext extends Context {
   
   public boolean isStopped() {
     return this.stopped;
+  }
+
+  public void setInterQuery() {
+    this.interQuery = true;
+  }
+
+  public boolean isInterQuery() {
+    return this.interQuery;
   }
   
   public void stop() {

@@ -108,6 +108,7 @@ public class GlobalPlanner {
     @Override
     public void visit(LogicalNode node) {
       String tableId;
+      StoreTableNode store;
       if (node.getType() == ExprType.GROUP_BY) {
         // transform group by to two-phase plan 
         GroupbyNode groupby = (GroupbyNode) node;
@@ -142,14 +143,14 @@ public class GlobalPlanner {
         if (join.getOuterNode().getType() != ExprType.UNION &&
             join.getOuterNode().getType() != ExprType.STORE) {
           tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
-          StoreTableNode store = new StoreTableNode(tableId);
+          store = new StoreTableNode(tableId);
           store.setLocal(true);
           PlannerUtil.insertOuterNode(node, store);
         }
         if (join.getInnerNode().getType() != ExprType.UNION &&
             join.getInnerNode().getType() != ExprType.STORE) {
           tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
-          StoreTableNode store = new StoreTableNode(tableId);
+          store = new StoreTableNode(tableId);
           store.setLocal(true);
           PlannerUtil.insertInnerNode(node, store);
         }
@@ -160,16 +161,23 @@ public class GlobalPlanner {
         if (union.getOuterNode().getType() != ExprType.UNION &&
             union.getOuterNode().getType() != ExprType.STORE) {
           tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
-          StoreTableNode store = new StoreTableNode(tableId);
+          store = new StoreTableNode(tableId);
           store.setLocal(true);
           PlannerUtil.insertOuterNode(node, store);
         }
         if (union.getInnerNode().getType() != ExprType.UNION &&
             union.getInnerNode().getType() != ExprType.STORE) {
           tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
-          StoreTableNode store = new StoreTableNode(tableId);
+          store = new StoreTableNode(tableId);
           store.setLocal(true);
           PlannerUtil.insertInnerNode(node, store);
+        }
+      } else if (node instanceof UnaryNode) {
+        UnaryNode unary = (UnaryNode)node;
+        if (unary.getType() != ExprType.STORE &&
+            unary.getSubNode().getType() != ExprType.STORE) {
+          tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
+          insertStore(tableId, unary);
         }
       }
     }
@@ -220,11 +228,11 @@ public class GlobalPlanner {
           break;
         case SELECTION:
         case PROJECTION:
-          unit = makeUnifiableUnit(store, store.getSubNode(), unit);
+          unit = makeUnaryUnit(store, node, unit);
           unit.setLogicalPlan(node);
           break;
         case GROUP_BY:
-          unit = makeTwoPhaseUnit(store, node, unit);
+          unit = makeGroupbyUnit(store, node, unit);
           unit.setLogicalPlan(node);
           break;
         case SORT:
@@ -267,23 +275,43 @@ public class GlobalPlanner {
    * @return
    * @throws IOException
    */
-  private ScheduleUnit makeUnifiableUnit(StoreTableNode rootStore, 
-      LogicalNode plan, ScheduleUnit unit) throws IOException {
+  private ScheduleUnit makeUnaryUnit(StoreTableNode rootStore,
+                                     LogicalNode plan, ScheduleUnit unit) throws IOException {
+    ScanNode newScan;
+    ScheduleUnit prev;
     UnaryNode unary = (UnaryNode) plan;
-    switch (unary.getSubNode().getType()) {
+    UnaryNode child = (UnaryNode) unary.getSubNode();
+    StoreTableNode prevStore = (StoreTableNode)child.getSubNode();
+
+    // add scan
+    TableMeta meta = TCatUtil.newTableMeta(prevStore.getOutputSchema(),
+        StoreType.CSV);
+    newScan = (ScanNode)insertScan(child,
+        prevStore.getTableName(), meta);
+    prev = convertMap.get(prevStore);
+
+    if (prev != null) {
+      prev.setParentQuery(unit);
+      unit.addChildQuery(newScan, prev);
+      prev.setOutputType(PARTITION_TYPE.LIST);
+    }
+
+    unit.setOutputType(PARTITION_TYPE.LIST);
+
+    /*switch (unary.getSubNode().getType()) {
     case SCAN:
       unit = makeScanUnit(unit);
       break;
     case SELECTION:
     case PROJECTION:
-      unit = makeUnifiableUnit(rootStore, unary.getSubNode(), unit);
+      unit = makeUnaryUnit(rootStore, unary.getSubNode(), unit);
       break;
     case SORT:
       unit = makeSortUnit(rootStore, plan, unit);
       break;
 
     case GROUP_BY:
-      unit = makeTwoPhaseUnit(rootStore, plan, unit);
+      unit = makeGroupbyUnit(rootStore, plan, unit);
       break;
     case JOIN:
       unit = makeJoinUnit(rootStore, plan, unit);
@@ -291,7 +319,7 @@ public class GlobalPlanner {
     case UNION:
       unit = makeUnionUnit(rootStore, plan, unit);
       break;
-    }
+    }*/
     return unit;
   }
   
@@ -304,8 +332,8 @@ public class GlobalPlanner {
    * @return
    * @throws IOException
    */
-  private ScheduleUnit makeTwoPhaseUnit(StoreTableNode rootStore, 
-      LogicalNode plan, ScheduleUnit unit) throws IOException {
+  private ScheduleUnit makeGroupbyUnit(StoreTableNode rootStore,
+                                       LogicalNode plan, ScheduleUnit unit) throws IOException {
     UnaryNode unary = (UnaryNode) plan;
     UnaryNode unaryChild;
     StoreTableNode prevStore;
@@ -319,24 +347,26 @@ public class GlobalPlanner {
       prevStore = (StoreTableNode) unaryChild;
       TableMeta meta = TCatUtil.newTableMeta(prevStore.getOutputSchema(), 
           StoreType.CSV);
-      newScan = (ScanNode)insertScan(unary.getSubNode(), 
+      newScan = (ScanNode)insertScan(unary.getSubNode(),
           prevStore.getTableName(), meta);
       prev = convertMap.get(prevStore);
       if (prev != null) {
         prev.setParentQuery(unit);
         unit.addChildQuery(newScan, prev);
-        if (unaryChild.getSubNode().getType() == curType) {
-          prev.setOutputType(PARTITION_TYPE.HASH);
-        } else {
-          prev.setOutputType(PARTITION_TYPE.LIST);
-        }
       }
+
       if (unaryChild.getSubNode().getType() == curType) {
         // the second phase
         unit.setOutputType(PARTITION_TYPE.LIST);
+        if (prev != null) {
+          prev.setOutputType(PARTITION_TYPE.HASH);
+        }
       } else {
         // the first phase
         unit.setOutputType(PARTITION_TYPE.HASH);
+        if (prev != null) {
+          prev.setOutputType(PARTITION_TYPE.LIST);
+        }
       }
     } else if (unaryChild.getSubNode().getType() == ExprType.SCAN) {
       // the first phase
@@ -623,7 +653,7 @@ public class GlobalPlanner {
   private ScheduleUnit setPartitionNumberForTwoPhase(ScheduleUnit unit, int n) {
     // if the next query is join, 
     // set the partition number for the current logicalUnit
-    // TODO: union handling when join has union as its child
+    // TODO: the union handling is required when a join has unions as its child
     ScheduleUnit parentQueryUnit = unit.getParentQuery();
     if (parentQueryUnit != null) {
       if (parentQueryUnit.getStoreTableNode().getSubNode().getType() == ExprType.JOIN) {
@@ -656,7 +686,7 @@ public class GlobalPlanner {
         store.setPartitions(unit.getOutputType(), keys, n);
       }
     } else {
-      // TODO: error
+      store.setListPartition();
     }
     return unit;
   }
@@ -718,8 +748,11 @@ public class GlobalPlanner {
           LOG.info("The desired number of tasks is set to " + n);
 
           // calculate the number of maximum query ranges
-          TupleRange mergedRange = TupleUtil.columnStatToRange(sort.getOutputSchema(), sortSchema, stat.getColumnStats());
-          RangePartitionAlgorithm partitioner = new UniformRangePartition(sortSchema, mergedRange);
+          TupleRange mergedRange =
+              TupleUtil.columnStatToRange(sort.getOutputSchema(),
+                  sortSchema, stat.getColumnStats());
+          RangePartitionAlgorithm partitioner =
+              new UniformRangePartition(sortSchema, mergedRange);
           BigDecimal card = partitioner.getTotalCardinality();
 
           // if the number of the range cardinality is less than the desired number of tasks,
@@ -729,7 +762,8 @@ public class GlobalPlanner {
             n = card.intValue();
           }
 
-          LOG.info("Try to divide " + mergedRange + " into " + n + " sub ranges (total units: " + n + ")");
+          LOG.info("Try to divide " + mergedRange + " into " + n +
+              " sub ranges (total units: " + n + ")");
           TupleRange [] ranges = partitioner.partition(n);
           String [] queries = TupleUtil.rangesToQueries(sortSchema, ranges);
           for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
@@ -740,7 +774,22 @@ public class GlobalPlanner {
             }
           }
         } else {
-          for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
+          ScheduleUnit child = unit.getChildQuery(scan);
+          QueryUnit[] units = null;
+          if (child.getStoreTableNode().getSubNode().getType() ==
+              ExprType.UNION) {
+            List<QueryUnit> list = Lists.newArrayList();
+            for (ScanNode s : child.getScanNodes()) {
+              for (QueryUnit qu : child.getChildQuery(s).getQueryUnits()) {
+                list.add(qu);
+              }
+            }
+            units = new QueryUnit[list.size()];
+            units = list.toArray(units);
+          } else {
+            units = child.getQueryUnits();
+          }
+          for (QueryUnit qu : units) {
             for (Partition p : qu.getPartitions()) {
               uriList.add(new URI(p.getFileName()));
 //              System.out.println("Partition: " + uriList.get(uriList.size() - 1));

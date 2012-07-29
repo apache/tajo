@@ -186,7 +186,8 @@ public class QueryManager {
   
   public void updateProgress(QueryUnitId queryUnitId,
       InProgressStatusProto progress) throws NoSuchQueryIdException {
-    QueryUnit unit = queries.get(queryUnitId.getQueryId()).getQueryUnit(queryUnitId);
+    QueryUnit unit = queries.get(queryUnitId.getQueryId()).
+        getQueryUnit(queryUnitId);
     if (unit != null
         && (unit.getStatus() != QueryStatus.QUERY_FINISHED
         || unit.getStatus() != QueryStatus.QUERY_ABORTED

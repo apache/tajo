@@ -56,6 +56,12 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     this.partitionKeys = null;
     this.numPartitions = 0;
   }
+
+  public final void setListPartition() {
+    this.partitionType = ScheduleUnit.PARTITION_TYPE.LIST;
+    this.partitionKeys = null;
+    this.numPartitions = 0;
+  }
   
   public final void setPartitions(ScheduleUnit.PARTITION_TYPE type, Column [] keys, int numPartitions) {
     Preconditions.checkArgument(keys.length >= 0, 
