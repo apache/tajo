@@ -129,6 +129,9 @@ public class GlobalPlannerUtils {
           }
         }
         unit.setHost(hosts.get(rrIdx++));
+        if (rrIdx == hosts.size()) {
+           rrIdx = 0;
+        }
       }
     }
 
