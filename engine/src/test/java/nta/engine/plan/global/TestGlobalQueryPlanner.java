@@ -29,6 +29,7 @@ import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.logical.*;
 import nta.engine.query.GlobalPlanner;
+import nta.engine.query.GlobalPlannerUtils;
 import nta.storage.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -66,6 +67,7 @@ public class TestGlobalQueryPlanner {
   private static QueryAnalyzer analyzer;
   private static SubQueryId subQueryId;
   private static QueryManager qm;
+  private static StorageManager sm;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -86,7 +88,7 @@ public class TestGlobalQueryPlanner {
 
     conf = new NtaConf(util.getConfiguration());
     catalog = util.getMiniCatalogCluster().getCatalog();
-    StorageManager sm = new StorageManager(util.getConfiguration());
+    sm = new StorageManager(util.getConfiguration());
     FunctionDesc funcDesc = new FunctionDesc("sumtest", TestSum.class, FunctionType.GENERAL,
         new DataType[] {DataType.INT},
         new DataType[] {DataType.INT});
@@ -506,5 +508,56 @@ public class TestGlobalQueryPlanner {
     assertEquals(2, qids.length);
     assertEquals("835", qids[0]);
     assertEquals("1059", qids[1]);
+  }
+
+  @Test
+  public void testCreateMultilevelGroupby()
+      throws IOException, CloneNotSupportedException {
+    QueryContext ctx = factory.create();
+    ParseTree tree = analyzer.parse(ctx,
+        "store1 := select age, sumtest(salary) from table0 group by age");
+    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
+    logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
+
+    MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
+
+    ScheduleUnit second, first, mid;
+    ScanNode secondScan, firstScan, midScan;
+
+    second = globalPlan.getRoot();
+    assertTrue(second.getScanNodes().length == 1);
+
+    first = second.getChildQuery(second.getScanNodes()[0]);
+
+    GroupbyNode firstGroupby, secondGroupby, midGroupby;
+    secondGroupby = (GroupbyNode) second.getStoreTableNode().getSubNode();
+
+    Column[] originKeys = secondGroupby.getGroupingColumns();
+    Column[] newKeys = new Column[2];
+    newKeys[0] = new Column("age", DataType.INT);
+    newKeys[1] = new Column("name", DataType.STRING);
+
+    mid = planner.createMultilevelGroupby(first, newKeys);
+    midGroupby = (GroupbyNode) mid.getStoreTableNode().getSubNode();
+    firstGroupby = (GroupbyNode) first.getStoreTableNode().getSubNode();
+
+    secondScan = second.getScanNodes()[0];
+    midScan = mid.getScanNodes()[0];
+    firstScan = first.getScanNodes()[0];
+
+    assertTrue(first.getParentQuery().equals(mid));
+    assertTrue(mid.getParentQuery().equals(second));
+    assertTrue(second.getChildQuery(secondScan).equals(mid));
+    assertTrue(mid.getChildQuery(midScan).equals(first));
+    assertEquals(first.getOutputName(), midScan.getTableId());
+    assertEquals(first.getOutputSchema(), midScan.getInputSchema());
+    assertEquals(mid.getOutputName(), secondScan.getTableId());
+    assertEquals(mid.getOutputSchema(), secondScan.getOutputSchema());
+    assertArrayEquals(newKeys, firstGroupby.getGroupingColumns());
+    assertArrayEquals(newKeys, midGroupby.getGroupingColumns());
+    assertArrayEquals(originKeys, secondGroupby.getGroupingColumns());
+    assertFalse(firstScan.isLocal());
+    assertTrue(midScan.isLocal());
+    assertTrue(secondScan.isLocal());
   }
 }

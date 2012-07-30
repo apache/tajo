@@ -284,10 +284,10 @@ public class GlobalPlanner {
     StoreTableNode prevStore = (StoreTableNode)child.getSubNode();
 
     // add scan
-    TableMeta meta = TCatUtil.newTableMeta(prevStore.getOutputSchema(),
-        StoreType.CSV);
-    newScan = (ScanNode)insertScan(child,
-        prevStore.getTableName(), meta);
+    newScan = GlobalPlannerUtils.newScanPlan(prevStore.getOutputSchema(),
+        prevStore.getTableName(), sm.getTablePath(prevStore.getTableName()));
+    newScan.setLocal(true);
+    child.setSubNode(newScan);
     prev = convertMap.get(prevStore);
 
     if (prev != null) {
@@ -345,10 +345,11 @@ public class GlobalPlanner {
       // store - groupby - store
       unaryChild = (UnaryNode) unaryChild.getSubNode(); // store
       prevStore = (StoreTableNode) unaryChild;
-      TableMeta meta = TCatUtil.newTableMeta(prevStore.getOutputSchema(), 
-          StoreType.CSV);
-      newScan = (ScanNode)insertScan(unary.getSubNode(),
-          prevStore.getTableName(), meta);
+      newScan = GlobalPlannerUtils.newScanPlan(prevStore.getOutputSchema(),
+          prevStore.getTableName(),
+          sm.getTablePath(prevStore.getTableName()));
+      newScan.setLocal(true);
+      ((UnaryNode) unary.getSubNode()).setSubNode(newScan);
       prev = convertMap.get(prevStore);
       if (prev != null) {
         prev.setParentQuery(unit);
@@ -447,10 +448,10 @@ public class GlobalPlanner {
       // store - groupby - store
       unaryChild = (UnaryNode) unaryChild.getSubNode(); // store
       prevStore = (StoreTableNode) unaryChild;
-      TableMeta meta = TCatUtil.newTableMeta(prevStore.getOutputSchema(),
-          StoreType.CSV);
-      newScan = (ScanNode)insertScan(unary.getSubNode(),
-          prevStore.getTableName(), meta);
+      newScan = GlobalPlannerUtils.newScanPlan(prevStore.getOutputSchema(),
+          prevStore.getTableName(), sm.getTablePath(prevStore.getTableName()));
+      newScan.setLocal(true);
+      ((UnaryNode) unary.getSubNode()).setSubNode(newScan);
       prev = convertMap.get(prevStore);
       if (prev != null) {
         prev.setParentQuery(unit);
@@ -605,19 +606,78 @@ public class GlobalPlanner {
           prevOutputType);
     }
   }
-  
-  private LogicalNode insertScan(LogicalNode parent, String tableId, TableMeta meta) 
-      throws IOException {
-    TableDesc desc = TCatUtil.newTableDesc(tableId, meta, sm.getTablePath(tableId));
-    ScanNode newScan = new ScanNode(new FromTable(desc));
+
+  @VisibleForTesting
+  public ScheduleUnit createMultilevelGroupby(
+      ScheduleUnit firstPhaseGroupby, Column[] keys)
+      throws CloneNotSupportedException, IOException {
+    ScheduleUnit secondPhaseGroupby = firstPhaseGroupby.getParentQuery();
+    Preconditions.checkState(secondPhaseGroupby.getScanNodes().length == 1);
+
+    ScanNode secondScan = secondPhaseGroupby.getScanNodes()[0];
+    GroupbyNode secondGroupby = (GroupbyNode) secondPhaseGroupby.
+        getStoreTableNode().getSubNode();
+    ScheduleUnit newPhaseGroupby = new ScheduleUnit(
+        QueryIdFactory.newScheduleUnitId(
+            firstPhaseGroupby.getId().getSubQueryId()));
+    LogicalNode tmp = PlannerUtil.findTopParentNode(
+        firstPhaseGroupby.getLogicalPlan(), ExprType.GROUP_BY);
+    GroupbyNode firstGroupby = null;
+    if (tmp instanceof UnaryNode) {
+      firstGroupby = (GroupbyNode) ((UnaryNode)tmp).getSubNode();
+      GroupbyNode newFirstGroupby = GlobalPlannerUtils.newGroupbyPlan(
+          firstGroupby.getInputSchema(),
+          firstGroupby.getOutputSchema(),
+          keys,
+          firstGroupby.getHavingCondition(),
+          firstGroupby.getTargets()
+      );
+      newFirstGroupby.setSubNode(firstGroupby.getSubNode());
+      ((UnaryNode) tmp).setSubNode(newFirstGroupby);
+    }
+
+    // create a new schedule unit containing the group by plan
+    StoreTableNode newStore = GlobalPlannerUtils.newStorePlan(
+        secondScan.getInputSchema(),
+        newPhaseGroupby.getId().toString());
+    newStore.setLocal(true);
+    ScanNode newScan = GlobalPlannerUtils.newScanPlan(
+        firstPhaseGroupby.getOutputSchema(),
+        firstPhaseGroupby.getOutputName(),
+        sm.getTablePath(firstPhaseGroupby.getOutputName()));
     newScan.setLocal(true);
-    newScan.setInputSchema(meta.getSchema());
-    newScan.setOutputSchema(meta.getSchema());
-    ((UnaryNode)parent).setSubNode(newScan);
-    return newScan;
+    GroupbyNode newGroupby = GlobalPlannerUtils.newGroupbyPlan(
+        newScan.getOutputSchema(),
+        newStore.getInputSchema(),
+        keys,
+        secondGroupby.getHavingCondition(),
+        secondGroupby.getTargets());
+    newGroupby.setSubNode(newScan);
+    newStore.setSubNode(newGroupby);
+    newPhaseGroupby.setLogicalPlan(newStore);
+
+    secondPhaseGroupby.removeChildQuery(secondScan);
+
+    // update the scan node of last phase
+    secondScan = GlobalPlannerUtils.newScanPlan(secondScan.getInputSchema(),
+        newPhaseGroupby.getOutputName(),
+        sm.getTablePath(newPhaseGroupby.getOutputName()));
+    secondScan.setLocal(true);
+    secondGroupby.setSubNode(secondScan);
+    secondPhaseGroupby.setLogicalPlan(secondPhaseGroupby.getLogicalPlan());
+
+    // insert the new schedule unit
+    // between the first phase and the second phase
+    secondPhaseGroupby.addChildQuery(secondScan, newPhaseGroupby);
+    newPhaseGroupby.addChildQuery(newPhaseGroupby.getScanNodes()[0],
+        firstPhaseGroupby);
+    newPhaseGroupby.setParentQuery(secondPhaseGroupby);
+    firstPhaseGroupby.setParentQuery(newPhaseGroupby);
+
+    return newPhaseGroupby;
   }
   
-  private LogicalNode insertOuterScan(BinaryNode parent, String tableId, 
+  private LogicalNode insertOuterScan(BinaryNode parent, String tableId,
       TableMeta meta) throws IOException {
     TableDesc desc = TCatUtil.newTableDesc(tableId, meta, sm.getTablePath(tableId));
     ScanNode scan = new ScanNode(new FromTable(desc));

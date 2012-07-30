@@ -3,13 +3,24 @@ package nta.engine.query;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.*;
+import nta.catalog.*;
+import nta.catalog.proto.CatalogProtos;
+import nta.catalog.proto.CatalogProtos.*;
+import nta.engine.QueryIdFactory;
 import nta.engine.cluster.FragmentServingInfo;
 import nta.engine.exception.UnknownWorkerException;
+import nta.engine.exec.eval.EvalNode;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.parser.QueryBlock;
+import nta.engine.planner.PlannerUtil;
 import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.global.ScheduleUnit;
+import nta.engine.planner.logical.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -140,5 +151,38 @@ public class GlobalPlannerUtils {
     }
 
     return queryUnits;
+  }
+
+  public static StoreTableNode newStorePlan(Schema outputSchema,
+                                            String outputTableId) {
+    StoreTableNode store = new StoreTableNode(outputTableId);
+    store.setInputSchema(outputSchema);
+    store.setOutputSchema(outputSchema);
+    return store;
+  }
+
+  public static ScanNode newScanPlan(Schema inputSchema,
+                                     String inputTableId,
+                                     Path inputPath) {
+    TableMeta meta = TCatUtil.newTableMeta(inputSchema, StoreType.CSV);
+    TableDesc desc = TCatUtil.newTableDesc(inputTableId, meta, inputPath);
+    ScanNode newScan = new ScanNode(new QueryBlock.FromTable(desc));
+    newScan.setInputSchema(desc.getMeta().getSchema());
+    newScan.setOutputSchema(desc.getMeta().getSchema());
+    return newScan;
+  }
+
+  public static GroupbyNode newGroupbyPlan(Schema inputSchema,
+                                           Schema outputSchema,
+                                           Column[] keys,
+                                           EvalNode havingCondition,
+                                           QueryBlock.Target[] targets) {
+    GroupbyNode groupby = new GroupbyNode(keys);
+    groupby.setInputSchema(inputSchema);
+    groupby.setOutputSchema(outputSchema);
+    groupby.setHavingCondition(havingCondition);
+    groupby.setTargetList(targets);
+
+    return groupby;
   }
 }
