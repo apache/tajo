@@ -7,7 +7,7 @@ import nta.engine.ipc.protocolrecords.Fragment;
 
 import org.apache.hadoop.conf.Configuration;
 
-public abstract class FileScanner implements Scanner {
+public abstract class FileScanner implements SeekableScanner {
   
   protected final Configuration conf;
   protected final Schema schema;
@@ -20,9 +20,8 @@ public abstract class FileScanner implements Scanner {
     this.tablets = tablets;
   }
 
-  public abstract void seek(long offset) throws IOException;
-  public abstract long getNextOffset() throws IOException;
   public abstract long tabletable() throws IOException;
+
   @Override
 	public Schema getSchema() {
 	  return schema;

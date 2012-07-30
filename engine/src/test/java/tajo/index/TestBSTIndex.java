@@ -94,14 +94,14 @@ public class TestBSTIndex {
         keySchema, comp);    
     creater.setLoadNum(LOAD_NUM);
     creater.open();
-    
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
       
       keyTuple.put(0, tuple.get(1));
@@ -111,27 +111,27 @@ public class TestBSTIndex {
     
     creater.flush();
     creater.close();
-    fileScanner.close();
+    scanner.close();
     
     tuple = new VTuple(keySchema.getColumnNum());
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       tuple.put(0, DatumFactory.createLong(i));
       tuple.put(1, DatumFactory.createDouble(i));
       long offsets = reader.find(tuple);
-      fileScanner.seek(offsets);
-      tuple = fileScanner.next();
-      assertTrue("[seek check " + (i) + " ]" , (i) == (tuple.get(1).asLong()));
+      scanner.seek(offsets);
+      tuple = scanner.next();
+      assertTrue("[seek check " + (i) + " ]", (i) == (tuple.get(1).asLong()));
       assertTrue("[seek check " + (i) + " ]" , (i) == (tuple.get(2).asDouble()));
       
       offsets = reader.next();
       if (offsets == -1) {
         continue;
       }
-      fileScanner.seek(offsets);
-      tuple = fileScanner.next();
+      scanner.seek(offsets);
+      tuple = scanner.next();
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (tuple.get(0).asInt()));
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (tuple.get(1).asLong()));
     }
@@ -188,22 +188,22 @@ public class TestBSTIndex {
     tuple = new VTuple(keySchema.getColumnNum());
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "BuildIndexWithAppender.idx"), keySchema, comp);
     reader.open();
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       tuple.put(0, DatumFactory.createLong(i));
       tuple.put(1, DatumFactory.createDouble(i));
       long offsets = reader.find(tuple);
-      fileScanner.seek(offsets);
-      tuple = fileScanner.next();
-      assertTrue("[seek check " + (i) + " ]" , (i) == (tuple.get(1).asLong()));
+      scanner.seek(offsets);
+      tuple = scanner.next();
+      assertTrue("[seek check " + (i) + " ]", (i) == (tuple.get(1).asLong()));
       assertTrue("[seek check " + (i) + " ]" , (i) == (tuple.get(2).asDouble()));
 
       offsets = reader.next();
       if (offsets == -1) {
         continue;
       }
-      fileScanner.seek(offsets);
-      tuple = fileScanner.next();
+      scanner.seek(offsets);
+      tuple = scanner.next();
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (tuple.get(0).asInt()));
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (tuple.get(1).asLong()));
     }
@@ -248,14 +248,14 @@ public class TestBSTIndex {
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
-    
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
       
       keyTuple.put(0, tuple.get(1));
@@ -265,7 +265,7 @@ public class TestBSTIndex {
     
     creater.flush();
     creater.close();
-    fileScanner.close();
+    scanner.close();
 
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindOmittedValueInCSV.idx"), keySchema, comp);
     reader.open();
@@ -315,13 +315,13 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
     
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
       
       keyTuple.put(0, tuple.get(0));
@@ -331,28 +331,29 @@ public class TestBSTIndex {
     
     creater.flush();
     creater.close();
-    fileScanner.close();    
+    scanner.close();
     
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       keyTuple = new VTuple(2);
       keyTuple.put(0, DatumFactory.createInt(i));
       keyTuple.put(1, DatumFactory.createLong(i));
       long offsets = reader.find(keyTuple, true);
-      fileScanner.seek(offsets);
-      result = fileScanner.next();
-      assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(0).asInt()));
+      scanner.seek(offsets);
+      result = scanner.next();
+      assertTrue("[seek check " + (i + 1) + " ]",
+          (i + 1) == (result.get(0).asInt()));
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(1).asLong()));
       
       offsets = reader.next();
       if (offsets == -1) {
         continue;
       }
-      fileScanner.seek(offsets);
-      result = fileScanner.next();
+      scanner.seek(offsets);
+      result = scanner.next();
       assertTrue("[seek check " + (i + 2) + " ]" , (i + 2) == (result.get(0).asLong()));
       assertTrue("[seek check " + (i + 2) + " ]" , (i + 2) == (result.get(1).asDouble()));
     }
@@ -395,14 +396,14 @@ public class TestBSTIndex {
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
-    
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
       
       keyTuple.put(0, tuple.get(0));
@@ -412,20 +413,20 @@ public class TestBSTIndex {
     
     creater.flush();
     creater.close();
-    fileScanner.close();    
+    scanner.close();
     
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyOmittedValueInCSV.idx"),
         keySchema, comp);
     reader.open();
-    fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple result;
     for(int i = 1 ; i < TUPLE_NUM -1 ; i+=2) {
       keyTuple = new VTuple(2);
       keyTuple.put(0, DatumFactory.createInt(i));
       keyTuple.put(1, DatumFactory.createLong(i));
       long offsets = reader.find(keyTuple, true);
-      fileScanner.seek(offsets);
-      result = fileScanner.next();
+      scanner.seek(offsets);
+      result = scanner.next();
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(0).asInt()));
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(1).asLong()));
     }
@@ -470,14 +471,14 @@ public class TestBSTIndex {
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
-    
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
       
       keyTuple.put(0, tuple.get(1));
@@ -487,18 +488,18 @@ public class TestBSTIndex {
     
     creater.flush();
     creater.close();
-    fileScanner.close();
+    scanner.close();
     
     tuple = new VTuple(keySchema.getColumnNum());
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindValueInRawBSTIndex.idx"), keySchema, comp);
     reader.open();
-    fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       tuple.put(0, DatumFactory.createLong(i));
       tuple.put(1, DatumFactory.createDouble(i));
       long offsets = reader.find(tuple, false);
-      fileScanner.seek(offsets);
-      tuple = fileScanner.next();
+      scanner.seek(offsets);
+      tuple = scanner.next();
       assertTrue("[seek check " + (i) + " ]" , (i) == (tuple.get(1).asLong()));
       assertTrue("[seek check " + (i) + " ]" , (i) == (tuple.get(2).asDouble()));
     }
@@ -543,14 +544,14 @@ public class TestBSTIndex {
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
-    
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
       
       keyTuple.put(0, tuple.get(1));
@@ -560,7 +561,7 @@ public class TestBSTIndex {
     
     creater.flush();
     creater.close();
-    fileScanner.close();
+    scanner.close();
     
     tuple = new VTuple(keySchema.getColumnNum());
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindOmittedValueInRaw.idx"),
@@ -611,14 +612,14 @@ public class TestBSTIndex {
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
-    
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
       
       keyTuple.put(0, tuple.get(0));
@@ -628,28 +629,29 @@ public class TestBSTIndex {
     
     creater.flush();
     creater.close();
-    fileScanner.close();
+    scanner.close();
     
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindOmittedValueInRaw.idx"), keySchema, comp);
     reader.open();
-    fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       keyTuple = new VTuple(2);
       keyTuple.put(0, DatumFactory.createInt(i));
       keyTuple.put(1, DatumFactory.createLong(i));
       long offsets = reader.find(keyTuple, true);
-      fileScanner.seek(offsets);
-      result = fileScanner.next();
-      assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(0).asInt()));
+      scanner.seek(offsets);
+      result = scanner.next();
+      assertTrue("[seek check " + (i + 1) + " ]",
+          (i + 1) == (result.get(0).asInt()));
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(1).asLong()));
       
       offsets = reader.next();
       if (offsets == -1) {
         continue;
       }
-      fileScanner.seek(offsets);
-      result = fileScanner.next();
+      scanner.seek(offsets);
+      result = scanner.next();
       assertTrue("[seek check " + (i + 2) + " ]" , (i + 2) == (result.get(0).asLong()));
       assertTrue("[seek check " + (i + 2) + " ]" , (i + 2) == (result.get(1).asDouble()));
     }
@@ -692,14 +694,14 @@ public class TestBSTIndex {
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
-    
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
       
       keyTuple.put(0, tuple.get(0));
@@ -709,20 +711,20 @@ public class TestBSTIndex {
     
     creater.flush();
     creater.close();
-    fileScanner.close();
+    scanner.close();
     
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyOmittedValueInRaw.idx"),
         keySchema, comp);
     reader.open();
-    fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple result;
     for(int i = 1 ; i < TUPLE_NUM -1 ; i+=2) {
       keyTuple = new VTuple(2);
       keyTuple.put(0, DatumFactory.createInt(i));
       keyTuple.put(1, DatumFactory.createLong(i));
       long offsets = reader.find(keyTuple, true);
-      fileScanner.seek(offsets);
-      result = fileScanner.next();
+      scanner.seek(offsets);
+      result = scanner.next();
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(0).asInt()));
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(1).asLong()));      
     }
@@ -765,14 +767,14 @@ public class TestBSTIndex {
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
-    
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
       
       keyTuple.put(0, tuple.get(0));
@@ -782,28 +784,28 @@ public class TestBSTIndex {
     
     creater.flush();
     creater.close();
-    fileScanner.close();
+    scanner.close();
     
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyOmittedValueInRaw.idx"),
         keySchema, comp);
     reader.open();
-    fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple result;
 
     keyTuple = new VTuple(2);
     keyTuple.put(0, DatumFactory.createInt(0));
     keyTuple.put(1, DatumFactory.createLong(0));
     long offsets = reader.find(keyTuple);
-    fileScanner.seek(offsets);
-    result = fileScanner.next();
+    scanner.seek(offsets);
+    result = scanner.next();
     assertTrue("[seek check " + 0 + " ]" , (0) == (result.get(0).asInt()));
     assertTrue("[seek check " + 0 + " ]" , (0) == (result.get(1).asLong()));
       
     for (int i = 1; i < TUPLE_NUM; i++) {
       offsets = reader.next();
       
-      fileScanner.seek(offsets);
-      result = fileScanner.next();
+      scanner.seek(offsets);
+      result = scanner.next();
       assertEquals(i, result.get(0).asInt());
       assertEquals(i, result.get(1).asLong());
     }
@@ -849,13 +851,13 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
 
       keyTuple.put(0, tuple.get(1));
@@ -865,12 +867,12 @@ public class TestBSTIndex {
 
     creater.flush();
     creater.close();
-    fileScanner.close();
+    scanner.close();
 
     tuple = new VTuple(keySchema.getColumnNum());
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "Test.idx"), keySchema, comp);
     reader.open();
-    fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     tuple.put(0, DatumFactory.createLong(0));
     tuple.put(1, DatumFactory.createDouble(0));
 
@@ -879,8 +881,8 @@ public class TestBSTIndex {
 
     offset = reader.find(tuple , true);
     assertTrue(offset >= 0);
-    fileScanner.seek(offset);
-    tuple = fileScanner.next();
+    scanner.seek(offset);
+    tuple = scanner.next();
     assertEquals(5, tuple.get(1).asInt());
     assertEquals(5l, tuple.get(2).asLong());
   }
@@ -923,13 +925,13 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
 
       keyTuple.put(0, tuple.get(0));
@@ -939,7 +941,7 @@ public class TestBSTIndex {
 
     creater.flush();
     creater.close();
-    fileScanner.close();
+    scanner.close();
 
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyOmittedValueInRaw.idx"),
         keySchema, comp);
@@ -1023,13 +1025,13 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    FileScanner fileScanner  = (FileScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple keyTuple;
     long offset;
     while (true) {
       keyTuple = new VTuple(2);
-      offset = fileScanner.getNextOffset();
-      tuple = fileScanner.next();
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
       if (tuple == null) break;
 
       keyTuple.put(0, tuple.get(0));
@@ -1039,7 +1041,7 @@ public class TestBSTIndex {
 
     creater.flush();
     creater.close();
-    fileScanner.close();
+    scanner.close();
 
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "ConcurrentAccess.idx"),
         keySchema, comp);

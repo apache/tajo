@@ -195,7 +195,11 @@ public class StorageManager {
       break;
     }
     case CSV: {
-      scanner = new CSVFile2(conf).openScanner(meta.getSchema(), tablets);
+      if (tablets.length == 1) {
+        scanner = new SingleCSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
+      } else {
+        scanner = new CSVFile2(conf).openScanner(meta.getSchema(), tablets);
+      }
       break;
     }
     }
@@ -213,7 +217,11 @@ public class StorageManager {
       break;
     }
     case CSV: {
-      scanner = new CSVFile2(conf).openScanner(inputSchema, tablets);
+      if (tablets.length == 1) {
+        scanner = new SingleCSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
+      } else {
+        scanner = new CSVFile2(conf).openScanner(inputSchema, tablets);
+      }
       break;
     }
     }

@@ -191,7 +191,7 @@ public class SingleCSVFile extends SingleStorge {
     }
   }
 
-  public static class CSVScanner extends SingleFileScanner {
+  public static class CSVScanner extends SingleFileScanner implements SeekableScanner {
     public CSVScanner(Configuration conf, final Schema schema,
         final Fragment fragment) throws IOException {
       super(conf, schema, fragment);

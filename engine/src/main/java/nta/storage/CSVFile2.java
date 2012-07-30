@@ -30,7 +30,8 @@ import org.apache.hadoop.fs.Path;
 /**
  * @author Haemi Yang
  * @author Jimin Kim
- * 
+ *
+ * @deprecated
  */
 public class CSVFile2 extends Storage {
   public static final String DELIMITER = "csvfile.delimiter";
@@ -51,7 +52,7 @@ public class CSVFile2 extends Storage {
       throws IOException {
     return new CSVScanner(conf, schema, tablets);
   }
-  
+
   public static class CSVAppender extends FileAppender {
 //    private final Path path;
     private final TableMeta meta;
