@@ -3,11 +3,11 @@
  */
 package nta.engine.planner.logical;
 
+import com.google.gson.annotations.Expose;
+import nta.engine.json.GsonCreator;
 import nta.engine.parser.QueryBlock.Target;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.Expose;
 
 /**
  * @author Hyunsik Choi
@@ -25,7 +25,8 @@ public class EvalExprNode extends LogicalNode {
 
   @Override
   public String toJSON() {
-    return null;
+    Gson gson = GsonCreator.getInstance();
+    return gson.toJson(this);
   }
   
   public Target [] getExprs() {
@@ -34,9 +35,21 @@ public class EvalExprNode extends LogicalNode {
   
   @Override
   public String toString() {
-    Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation()
-        .setPrettyPrinting().create();
-    return gson.toJson(this);
+    StringBuilder sb = new StringBuilder();
+    sb.append("\"EvalExpr\": {");
+    sb.append("\"targets\": [");
+
+    for (int i = 0; i < exprs.length; i++) {
+      sb.append("\"").append(exprs[i]).append("\"");
+      if( i < exprs.length - 1) {
+        sb.append(",");
+      }
+    }
+    sb.append("],");
+    sb.append("\n  \"out schema\": ").append(getOutputSchema()).append(",");
+    sb.append("\n  \"in schema\": ").append(getInputSchema());
+    sb.append("}");
+    return sb.toString();
   }
   
   @Override

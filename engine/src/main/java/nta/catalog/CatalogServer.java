@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.google.common.collect.Lists;
 import nta.catalog.exception.AlreadyExistsFunctionException;
 import nta.catalog.exception.AlreadyExistsIndexException;
 import nta.catalog.exception.AlreadyExistsTableException;
@@ -34,25 +35,7 @@ import nta.catalog.store.CatalogStore;
 import nta.catalog.store.DBStore;
 import nta.conf.NtaConf;
 import nta.engine.NConstants;
-import nta.engine.function.builtin.AvgDouble;
-import nta.engine.function.builtin.AvgFloat;
-import nta.engine.function.builtin.AvgInt;
-import nta.engine.function.builtin.AvgLong;
-import nta.engine.function.builtin.NewCountRows;
-import nta.engine.function.builtin.NewCountValue;
-import nta.engine.function.builtin.NewMaxDouble;
-import nta.engine.function.builtin.NewMaxFloat;
-import nta.engine.function.builtin.NewMaxInt;
-import nta.engine.function.builtin.NewMaxLong;
-import nta.engine.function.builtin.NewMinDouble;
-import nta.engine.function.builtin.NewMinFloat;
-import nta.engine.function.builtin.NewMinInt;
-import nta.engine.function.builtin.NewMinLong;
-import nta.engine.function.builtin.NewMinString;
-import nta.engine.function.builtin.NewSumDouble;
-import nta.engine.function.builtin.NewSumFloat;
-import nta.engine.function.builtin.NewSumInt;
-import nta.engine.function.builtin.NewSumLong;
+import nta.engine.function.builtin.*;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
@@ -564,6 +547,15 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
         new DataType[] {}));
 
     for (FunctionDesc func : sqlFuncs) {
+      registerFunction(func.getProto());
+    }
+
+    List<FunctionDesc> extendedFuncs = Lists.newArrayList();
+    extendedFuncs.add(new FunctionDesc("random", RandomInt.class, FunctionType.GENERAL,
+        new DataType[] {DataType.INT},
+        new DataType[] {DataType.INT}));
+
+    for (FunctionDesc func : extendedFuncs) {
       registerFunction(func.getProto());
     }
   }

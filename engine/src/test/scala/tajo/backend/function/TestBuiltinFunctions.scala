@@ -5,6 +5,7 @@ import tajo.engine.TpchTestBase
 import org.junit.Test
 import org.junit.Assert._
 import java.sql.ResultSet
+import tajo.client.ResultSetUtil
 
 /**
  * @author Hyunsik Choi
@@ -40,5 +41,9 @@ class TestBuiltinFunctions extends AssertionsForJUnit {
     res.next
     assertTrue(0.08f == res.getFloat(2))
     assertFalse(res.next)
+  }
+
+  @Test def testRandom() = {
+    val res = tpch.execute("select l_orderkey, random(3) as rndnum from lineitem group by l_orderkey, rndnum")
   }
 }

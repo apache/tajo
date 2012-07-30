@@ -509,6 +509,7 @@ public final class QueryAnalyzer {
       }
       
       block.setTargetList(targets);
+      ctx.setTargets(targets);
     }    
   }
   
@@ -723,13 +724,27 @@ public final class QueryAnalyzer {
       if(schema.contains(table+"."+columnName)) {
         column = schema.getColumn(table+"."+columnName);
         count++;
-      }      
-      
-      // if there are more than one column, we cannot expect
-      // that this column belongs to which table.
-      if(count > 1) 
-        throw new AmbiguousFieldException(columnName);
+      }
     }
+
+    if (ctx.getTargetList() != null) {
+      for (Target target : ctx.getTargetList()) {
+        if (target.hasAlias() && target.getAlias().equals(columnName)) {
+          try {
+            column = (Column) target.getColumnSchema().clone();
+            column.setName(target.getAlias());
+          } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+          }
+          count++;
+        }
+      }
+    }
+
+    // if there are more than one column, we cannot expect
+    // that this column belongs to which table.
+    if(count > 1)
+      throw new AmbiguousFieldException(columnName);
     
     if(column == null) { // if there are no matched column
       throw new InvalidQueryException("ERROR: column \"" + columnName
