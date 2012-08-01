@@ -62,8 +62,7 @@ public class QueryUnitScheduler extends Thread {
   private final QueryManager qm;
   private final ScheduleUnit plan;
   private List<String> onlineWorkers;
-  private Set<String> failedWorkers;
-  
+
   private BlockingQueue<QueryUnit> pendingQueue = 
       new LinkedBlockingQueue<QueryUnit>();
   private Map<QueryUnitId, Integer> queryUnitAttemptMap;
@@ -78,7 +77,6 @@ public class QueryUnitScheduler extends Thread {
     this.planner = planner;
     this.plan = plan;
     onlineWorkers = Lists.newArrayList();
-    failedWorkers = Sets.newHashSet();
     updateWorkers();
     queryUnitAttemptMap = Maps.newHashMap();
   }
@@ -89,7 +87,7 @@ public class QueryUnitScheduler extends Thread {
     for (List<String> workers : cm.getOnlineWorkers().values()) {
       onlineWorkers.addAll(workers);
     }
-    onlineWorkers.removeAll(failedWorkers);
+    onlineWorkers.removeAll(cm.getFailedWorkers());
     if (onlineWorkers.size() == 0) {
       throw new EmptyClusterException();
     }
@@ -206,7 +204,7 @@ public class QueryUnitScheduler extends Thread {
       throws Exception {
     if (hasChild) {
       for (QueryUnit q : units) {
-        q.setHost(cm.getRandomHost(failedWorkers));
+        q.setHost(cm.getRandomHost());
       }
     } else {
       Map<Fragment, FragmentServingInfo> servingMap =
@@ -217,7 +215,7 @@ public class QueryUnitScheduler extends Thread {
         }
       }
       units = GlobalPlannerUtils.buildQueryDistributionPlan(
-          servingMap, cm.getOnlineWorkers(), failedWorkers, units);
+          servingMap, cm.getOnlineWorkers(), cm.getFailedWorkers(), units);
     }
     for (QueryUnit q : units) {
       pendingQueue.add(q);
@@ -444,7 +442,7 @@ public class QueryUnitScheduler extends Thread {
 
   private void handleUnknownWorkerException(UnknownWorkerException e) {
     LOG.info(e);
-    failedWorkers.add(e.getUnknownName());
+    cm.addFailedWorker(e.getUnknownName());
     LOG.info(e.getUnknownName() + " is excluded from the query planning.");
   }
   
@@ -453,9 +451,9 @@ public class QueryUnitScheduler extends Thread {
     Path path = new Path(sm.getTablePath(q.getOutputName()), 
         q.getId().toString());
     fs.delete(path, true);
-    failedWorkers.add(q.getHost());
+    cm.addFailedWorker(q.getHost());
     updateWorkers();
-    String hostName = cm.getRandomHost(failedWorkers);
+    String hostName = cm.getRandomHost();
     q.setHost(hostName);
     LOG.info("QueryUnit " + q.getId() + " is assigned to " + 
         q.getHost() + " as the backup task");

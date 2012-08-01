@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 
 public class ClusterManager {
   private final int FRAG_DIST_THRESHOLD = 3;
@@ -74,6 +75,7 @@ public class ClusterManager {
 
   private Map<Fragment, FragmentServingInfo> servingInfoMap;
   private Random rand = new Random(System.currentTimeMillis());
+  private Set<String> failedWorkers;
 
   public ClusterManager(WorkerCommunicator wc, Configuration conf,
       LeafServerTracker tracker) throws IOException {
@@ -81,7 +83,8 @@ public class ClusterManager {
     this.conf = conf;
     this.catalog = new CatalogClient(this.conf);
     this.tracker = tracker;
-    servingInfoMap = Maps.newHashMap();
+    this.servingInfoMap = Maps.newHashMap();
+    this.failedWorkers = Sets.newHashSet();
     this.clusterSize = 0;
   }
 
@@ -147,6 +150,7 @@ public class ClusterManager {
   
   private String getRandomWorkerNameOfHost(String host) {
     List<String> workers = DNSNameToHostsMap.get(host);
+    workers.removeAll(failedWorkers);
     return workers.get(rand.nextInt(workers.size()));
   }
 
@@ -186,7 +190,7 @@ public class ClusterManager {
    * @return
    * @throws Exception
    */
-  public String getRandomHost(Set<String> failedWorkers)
+  public String getRandomHost()
       throws Exception {
     String randomHost;
     do {
@@ -199,5 +203,21 @@ public class ClusterManager {
       randomHost = hosts.get(rand.nextInt(hosts.size()));
     } while (failedWorkers.contains(randomHost));
     return randomHost;
+  }
+
+  public Set<String> getFailedWorkers() {
+    return this.failedWorkers;
+  }
+
+  public void addFailedWorker(String worker) {
+    this.failedWorkers.add(worker);
+  }
+
+  public boolean isExist(String worker) {
+    return this.failedWorkers.contains(worker);
+  }
+
+  public void removeFailedWorker(String worker) {
+    this.failedWorkers.remove(worker);
   }
 }
