@@ -52,7 +52,11 @@ public class StoredBlockInfo
       List<BlockLocation> set = fileToBlocksMap.get(filename);
       if (set.contains(bl)) {
         numBlocks--;
-        return set.remove(bl);
+        boolean result = set.remove(bl);
+        if (set.size() == 0) {
+          fileToBlocksMap.remove(filename);
+        }
+        return result;
       }
       return false;
     } else {
@@ -81,10 +85,14 @@ public class StoredBlockInfo
     return this.numBlocks - storedBlockInfo.numBlocks;
   }
 
-  public void initIteration() {
+  public void resetIteration() {
     outerIt = fileToBlocksMap.entrySet().iterator();
-    current = outerIt.next();
-    innerIt = current.getValue().iterator();
+    if (outerIt.hasNext()) {
+      current = outerIt.next();
+      innerIt = current.getValue().iterator();
+    } else {
+      current = null;
+    }
   }
 
   public boolean hasNextBlock() {

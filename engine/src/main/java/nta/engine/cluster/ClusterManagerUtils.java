@@ -2,9 +2,8 @@ package nta.engine.cluster;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import nta.catalog.TableDesc;
 import nta.catalog.TableMetaImpl;
-import nta.catalog.proto.CatalogProtos;
+import nta.catalog.proto.CatalogProtos.TableDescProto;
 import nta.engine.ipc.protocolrecords.Fragment;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -56,7 +55,7 @@ public class ClusterManagerUtils {
   }
 
   public static Map<Fragment, FragmentServingInfo> assignFragments(
-      CatalogProtos.TableDescProto td, Collection<StoredBlockInfo> storedBlockInfos)
+      TableDescProto td, Collection<StoredBlockInfo> storedBlockInfos)
       throws IOException {
     StoredBlockInfo[] arrBlockInfo =
         new StoredBlockInfo[storedBlockInfos.size()];
@@ -105,7 +104,7 @@ public class ClusterManagerUtils {
           for (String h : bl.getHosts()) {
             if (cand.getHost().equals(h)) {
               cand.removeBlock(currentPath, bl);
-              cand.initIteration();
+              cand.resetIteration();
             }
           }
           if (cand.getBlockNum() == 0) {
