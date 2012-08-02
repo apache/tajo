@@ -409,7 +409,8 @@ public class LogicalOptimizer {
         EvalNode expr;
         for (int i = 0; i < targets.size(); i++) {
           expr = targets.getTarget(i).getEvalTree();
-          if (canBeEvaluated(expr, joinNode) && EvalTreeUtil.findDistinctAggFunction(expr).size() == 0
+          if (canBeEvaluated(expr, joinNode)
+              && EvalTreeUtil.findDistinctAggFunction(expr).size() == 0
               && expr.getType() != EvalNode.Type.FIELD) {
             targets.setEvaluated(i);
             joinPushable.add(targets.getTarget(i));
@@ -454,15 +455,14 @@ public class LogicalOptimizer {
         EvalNode expr;
         for (int i = 0; i < targets.size(); i++) {
           expr = targets.getTarget(i).getEvalTree();
-          if (expr.getType() == EvalNode.Type.FIELD) {
-            targets.setEvaluated(i);
-          }
-
-          if (canBeEvaluated(expr, scanNode) && EvalTreeUtil.findDistinctAggFunction(expr).size() == 0 &&
-              expr.getType() != EvalNode.Type.FIELD) {
-            targets.setEvaluated(i);
-            scanPushable.add(targets.getTarget(i));
-            scanPushableId.add(i);
+          if (!targets.isEvaluated(i) && canBeEvaluated(expr, scanNode)) {
+            if (expr.getType() == EvalNode.Type.FIELD) {
+              targets.setEvaluated(i);
+            } else if (EvalTreeUtil.findDistinctAggFunction(expr).size() == 0) {
+              targets.setEvaluated(i);
+              scanPushable.add(targets.getTarget(i));
+              scanPushableId.add(i);
+            }
           }
         }
 
