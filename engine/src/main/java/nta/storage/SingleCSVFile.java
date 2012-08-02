@@ -27,9 +27,10 @@ import org.apache.hadoop.fs.Path;
 
 /**
  * @author Haemi Yang
- *
+ * @author Byungnam Lim
+ * 
  */
-public class SingleCSVFile extends SingleStorge{
+public class SingleCSVFile extends SingleStorge {
   public static final String DELIMITER = "csvfile.delimiter";
   public static final String DELIMITER_DEFAULT = "|";
   private static final Log LOG = LogFactory.getLog(SingleCSVFile.class);
@@ -48,7 +49,7 @@ public class SingleCSVFile extends SingleStorge{
       throws IOException {
     return new CSVScanner(conf, schema, fragment);
   }
-  
+
   public static class CSVAppender extends FileAppender {
     private final TableMeta meta;
     private final Schema schema;
@@ -136,28 +137,23 @@ public class SingleCSVFile extends SingleStorge{
           case IPv6:
             sb.append(tuple.getIPv6(i));
           case ARRAY:
-            /*sb.append("[");
-          boolean first = true;
-          ArrayDatum array = (ArrayDatum) tuple.get(i);
-          for (Datum field : array.toArray()) {
-            if (first) {
-              first = false;
-            } else {
-              sb.append(delimiter);
-            }
-           sb.append(field.asChars());
-          }
-          sb.append("]");*/
+            /*
+             * sb.append("["); boolean first = true; ArrayDatum array =
+             * (ArrayDatum) tuple.get(i); for (Datum field : array.toArray()) {
+             * if (first) { first = false; } else { sb.append(delimiter); }
+             * sb.append(field.asChars()); } sb.append("]");
+             */
             ArrayDatum array = (ArrayDatum) tuple.get(i);
             sb.append(array.toJSON());
             break;
           default:
-            throw new UnsupportedOperationException("Cannot write such field: " + tuple.get(i).type());
+            throw new UnsupportedOperationException("Cannot write such field: "
+                + tuple.get(i).type());
           }
         }
         sb.append(delimiter);
       }
-      if(sb.length() > 0) {
+      if (sb.length() > 0) {
         sb.deleteCharAt(sb.length() - 1);
       }
       sb.append('\n');
@@ -193,105 +189,119 @@ public class SingleCSVFile extends SingleStorge{
       return this.stats.getTableStat();
     }
   }
-  
+
   public static class CSVScanner extends SingleFileScanner {
-    public CSVScanner(Configuration conf, final Schema schema, final Fragment fragment)
-      throws IOException {
+    public CSVScanner(Configuration conf, final Schema schema,
+        final Fragment fragment) throws IOException {
       super(conf, schema, fragment);
       init(conf, schema, fragment);
     }
-    
+
     private static final byte LF = '\n';
     private final static long DEFAULT_BUFFER_SIZE = 65536;
     private long bufSize;
     private String delimiter;
     private FileSystem fs;
     private FSDataInputStream fis;
-    private long startOffset, length, available, currentPos;
+    private long startOffset, length, startPos;
     private byte[] buf = null;
     private String[] tuples = null;
-    private int currentIdx = 0;
-    
-    public void init(Configuration conf, final Schema schema, final Fragment fragment) 
-      throws IOException {
-      
+    private int currentIdx = 0, validIdx = 0;
+    private byte[] tail = null;
+
+    public void init(Configuration conf, final Schema schema,
+        final Fragment fragment) throws IOException {
+
       // Buffer size, Delimiter
       this.bufSize = DEFAULT_BUFFER_SIZE;
-      this.delimiter = fragment.getMeta().getOption(DELIMITER, DELIMITER_DEFAULT);
+      this.delimiter = fragment.getMeta().getOption(DELIMITER,
+          DELIMITER_DEFAULT);
       if (this.delimiter.equals("|")) {
         this.delimiter = "\\|";
       }
-      
+
       // Fragment information
       this.fs = fragment.getPath().getFileSystem(this.conf);
       this.fis = this.fs.open(fragment.getPath());
       this.startOffset = fragment.getStartOffset();
       this.length = fragment.getLength();
-      
-      // Fragment start position
+      tuples = new String[0];
+
       if (startOffset != 0) {
         fis.seek(startOffset - 1);
-        while ((fis.readByte()) != LF) {
+        while (fis.readByte() != LF) {
         }
       }
-      fragmentable();
-      page();
+      startPos = fis.getPos();
     }
-    
-    private long fragmentable() throws IOException {
-      currentPos = fis.getPos();
-      available = startOffset + length - currentPos;
-      return available;
-    }
-    
-    private void page() throws IOException {
 
-      // Buffer size
+    private long fragmentable() throws IOException {
+      return startOffset + length - fis.getPos();
+    }
+
+    private void page() throws IOException {
+      // Buffer size set
       if (fragmentable() < bufSize) {
         bufSize = fragmentable();
       } else {
         bufSize = DEFAULT_BUFFER_SIZE;
       }
-      
+
       // Read
-      buf = new byte[(int) bufSize];
-      fis.read(buf);
-      check();
-    }
-    
-    private void check() throws IOException {
-      tuples = new String(buf).split("\n");
-      
-      int cnt = 0;
-      if (buf[buf.length -1] != LF && fis.available() > 0) {
-        
-        // Count bytes
-        fragmentable();
-        for (; fis.readByte() != LF; cnt++) ;
-        fis.seek(currentPos);
-        
-        // Read bytes
-        byte temp[] = new byte[cnt];
-        fis.read(temp);
-        fis.readByte(); // Read line feed
-        
-        // Replace tuple
-        tuples[tuples.length - 1] = new String(tuples[tuples.length - 1] + new String(temp));
+      if (fis.getPos() == startPos) {
+        buf = new byte[(int) bufSize];
+        fis.read(buf);
+        tail = new byte[0];
+        tuples = new String(buf).split("\n");
+      } else {
+        buf = new byte[(int) bufSize];
+        fis.read(buf);
+        tuples = (new String(tail) + new String(buf)).split("\n");
+      }
+
+      // Check tail
+      if ((char) buf[buf.length - 1] != LF) {
+        if (fragmentable() < 1) {
+          long savedPos = fis.getPos();
+          int cnt = 0;
+          while (fis.readByte() != LF) {
+            cnt++;
+          }
+          fis.seek(savedPos);
+
+          byte[] temp = new byte[cnt];
+
+          // Read bytes
+          fis.read(temp);
+          fis.readByte(); // Read line feed
+
+          // Replace tuple
+          tuples[tuples.length - 1] = new String(tuples[tuples.length - 1]
+              + new String(temp));
+          validIdx = tuples.length;
+        } else {
+          tail = tuples[tuples.length - 1].getBytes();
+          validIdx = tuples.length - 1;
+        }
+      } else {
+        tail = new byte[0];
+        validIdx = tuples.length;
       }
     }
 
     @Override
     public Tuple next() throws IOException {
       try {
-        if (currentIdx == tuples.length) {
+        if (currentIdx == validIdx) {
           if (fragmentable() < 1) {
+            fis.close();
             return null;
           } else {
             currentIdx = 0; // Index initialization
             page();
           }
         }
-        
+
         String[] cells = tuples[currentIdx++].split(delimiter);
         VTuple tuple = new VTuple(schema.getColumnNum());
         Column field;
@@ -311,13 +321,15 @@ public class SingleCSVFile extends SingleStorge{
                 tuple.put(i, DatumFactory.createBool(cell));
                 break;
               case BYTE:
-                tuple.put(i, DatumFactory.createByte(Base64.decodeBase64(cell)[0]));
+                tuple.put(i,
+                    DatumFactory.createByte(Base64.decodeBase64(cell)[0]));
                 break;
               case CHAR:
                 tuple.put(i, DatumFactory.createChar(cell.charAt(0)));
                 break;
               case BYTES:
-                tuple.put(i, DatumFactory.createBytes(Base64.decodeBase64(cell)));
+                tuple.put(i,
+                    DatumFactory.createBytes(Base64.decodeBase64(cell)));
                 break;
               case SHORT:
                 tuple.put(i, DatumFactory.createShort(cell));
@@ -338,10 +350,11 @@ public class SingleCSVFile extends SingleStorge{
                 tuple.put(i, DatumFactory.createString(cell));
                 break;
               case IPv4:
-                tuple.put(i,DatumFactory.createIPv4(cell));
+                tuple.put(i, DatumFactory.createIPv4(cell));
                 break;
               case ARRAY:
-                Datum data = GsonCreator.getInstance().fromJson(cell, Datum.class);
+                Datum data = GsonCreator.getInstance().fromJson(cell,
+                    Datum.class);
                 tuple.put(i, data);
                 break;
               }
