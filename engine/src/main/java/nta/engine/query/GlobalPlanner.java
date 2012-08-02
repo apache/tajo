@@ -710,7 +710,8 @@ public class GlobalPlanner {
     return new MasterPlan(root);
   }
   
-  private ScheduleUnit setPartitionNumberForTwoPhase(ScheduleUnit unit, int n) {
+  private ScheduleUnit setPartitionNumberForTwoPhase(ScheduleUnit unit, final int n) {
+    Column[] keys = null;
     // if the next query is join, 
     // set the partition number for the current logicalUnit
     // TODO: the union handling is required when a join has unions as its child
@@ -719,11 +720,11 @@ public class GlobalPlanner {
       if (parentQueryUnit.getStoreTableNode().getSubNode().getType() == ExprType.JOIN) {
         unit.getStoreTableNode().setPartitions(unit.getOutputType(),
             unit.getStoreTableNode().getPartitionKeys(), n);
+        keys = unit.getStoreTableNode().getPartitionKeys();
       }
     }
 
     StoreTableNode store = unit.getStoreTableNode();
-    Column[] keys = null;
     // set the partition number for group by and sort
     if (unit.getOutputType() == PARTITION_TYPE.HASH) {
       if (store.getSubNode().getType() == ExprType.GROUP_BY) {
@@ -914,11 +915,11 @@ public class GlobalPlanner {
    * @param fetchMap
    * @return
    */
-  private List<QueryUnit> makeBinaryQueryUnit(ScheduleUnit scheduleUnit, int n,
+  private List<QueryUnit> makeBinaryQueryUnit(ScheduleUnit scheduleUnit, final int n,
       Map<ScanNode, List<Fragment>> fragMap, 
       Map<ScanNode, List<URI>> fetchMap) {
     List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
-    int maxQueryUnitNum = n;
+    final int maxQueryUnitNum = n;
     ScanNode[] scans = scheduleUnit.getScanNodes();
     
     if (scheduleUnit.hasChildQuery()) {
@@ -1082,7 +1083,7 @@ public class GlobalPlanner {
    * @return
    */
   private List<QueryUnit> assignFetchesToBinaryByHash(ScheduleUnit scheduleUnit,
-      List<QueryUnit> unitList, Map<ScanNode, List<URI>> fetchMap, int n) {
+      List<QueryUnit> unitList, Map<ScanNode, List<URI>> fetchMap, final int n) {
     QueryUnit unit = null;
     int i = 0;
     Map<String, Map<ScanNode, List<URI>>> hashed = hashFetches(fetchMap);

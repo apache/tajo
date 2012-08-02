@@ -150,6 +150,7 @@ public class QueryUnitScheduler extends Thread {
       }
 
       QueryUnit[] units = planner.localize(plan, numTasks);
+
       // if there is empty input (or intermediate) data,
       // we don't need to execute this query.
       if (units.length == 0) {
