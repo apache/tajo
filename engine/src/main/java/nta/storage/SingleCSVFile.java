@@ -2,6 +2,7 @@ package nta.storage;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.HashMap;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
@@ -206,8 +207,12 @@ public class SingleCSVFile extends SingleStorge {
     private long startOffset, length, startPos;
     private byte[] buf = null;
     private String[] tuples = null;
+    private long[] tupleOffsets = null;
     private int currentIdx = 0, validIdx = 0;
     private byte[] tail = null;
+    private long pageStart = -1;
+    private long prevTailLen = -1;
+    private HashMap<Long, Integer> curTupleOffsetMap = null;
 
     public void init(Configuration conf, final Schema schema,
         final Fragment fragment) throws IOException {
@@ -233,6 +238,7 @@ public class SingleCSVFile extends SingleStorge {
         }
       }
       startPos = fis.getPos();
+      page();
     }
 
     private long fragmentable() throws IOException {
@@ -240,7 +246,12 @@ public class SingleCSVFile extends SingleStorge {
     }
 
     private void page() throws IOException {
+      // Index initialization
+      currentIdx = 0;
       // Buffer size set
+      if (fragmentable() < 1) {
+        return;
+      }
       if (fragmentable() < bufSize) {
         bufSize = fragmentable();
       } else {
@@ -248,6 +259,13 @@ public class SingleCSVFile extends SingleStorge {
       }
 
       // Read
+      if (this.tail == null || this.tail.length == 0) {
+        this.pageStart = fis.getPos();
+        this.prevTailLen = 0;
+      } else {
+        this.pageStart = fis.getPos() - this.tail.length;
+        this.prevTailLen = this.tail.length;
+      }
       if (fis.getPos() == startPos) {
         buf = new byte[(int) bufSize];
         fis.read(buf);
@@ -287,6 +305,23 @@ public class SingleCSVFile extends SingleStorge {
         tail = new byte[0];
         validIdx = tuples.length;
       }
+      makeTupleOffset();
+    }
+
+    private void makeTupleOffset() {
+      long curTupleOffset = 0;
+      this.tupleOffsets = null;
+      this.tupleOffsets = new long[this.validIdx];
+      
+      this.curTupleOffsetMap = null;
+      this.curTupleOffsetMap = new HashMap<Long, Integer>();
+      
+      for (int i = 0; i < this.validIdx; i++) {
+        this.tupleOffsets[i] = curTupleOffset + this.pageStart;
+        this.curTupleOffsetMap.put(tupleOffsets[i], i);
+        curTupleOffset += (this.tuples[i]  + "\n").getBytes().length;
+      }
+      
     }
 
     @Override
@@ -297,7 +332,6 @@ public class SingleCSVFile extends SingleStorge {
             fis.close();
             return null;
           } else {
-            currentIdx = 0; // Index initialization
             page();
           }
         }
@@ -377,6 +411,41 @@ public class SingleCSVFile extends SingleStorge {
     @Override
     public void close() throws IOException {
       fis.close();
+    }
+
+    @Override
+    public void seek(long offset) throws IOException {
+      if (this.curTupleOffsetMap.containsKey(offset)) {
+        this.currentIdx = this.curTupleOffsetMap.get(offset);
+      } else if (offset >= this.pageStart + this.bufSize 
+          + this.prevTailLen - this.tail.length || offset <= this.pageStart) {
+        fis.seek(offset);
+        tail = new byte[0];
+        buf = new byte[(int) DEFAULT_BUFFER_SIZE];
+        bufSize = DEFAULT_BUFFER_SIZE;
+        this.currentIdx = 0;
+        this.validIdx = 0;
+        // pageBuffer();
+      } else {
+        throw new IOException("invalid offset " +
+           " < pageStart : " +  this.pageStart + " , " + 
+           "  pagelength : " + this.bufSize + " , " + 
+           "  tail lenght : " + this.tail.length + 
+           "  input offset : " + offset + " >");
+      }
+
+    }
+
+    @Override
+    public long getNextOffset() throws IOException {
+      if (this.currentIdx == this.validIdx) {
+        if (fragmentable() < 1) {
+          return -1;
+        } else {
+          page();
+        }
+      }
+      return this.tupleOffsets[currentIdx];
     }
   }
 }
