@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Preconditions;
 import nta.engine.MasterInterfaceProtos.CommandRequestProto;
 import nta.engine.MasterInterfaceProtos.CommandResponseProto;
 import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
@@ -24,6 +25,7 @@ import nta.zookeeper.ZkClient;
 import nta.zookeeper.ZkListener;
 import nta.zookeeper.ZkUtil;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.KeeperException;
@@ -135,13 +137,14 @@ public class WorkerCommunicator extends ZkListener {
   
   public Callback<CommandResponseProto> requestCommand(String serverName, 
       CommandRequestProto request) throws UnknownWorkerException {
+    Preconditions.checkArgument(serverName != null);
     Callback<CommandResponseProto> cb = new Callback<CommandResponseProto>();
     AsyncWorkerClientInterface leaf = hm.get(serverName);
     if (leaf == null) {
       throw new UnknownWorkerException(serverName);
     }
     leaf.requestCommand(cb, request);
-    
+
     return cb;
   }
   

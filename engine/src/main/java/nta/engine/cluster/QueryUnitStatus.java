@@ -34,13 +34,18 @@ public class QueryUnitStatus {
 
   private QueryUnitId queryUnitId;
   private Map<Integer, QueryUnitAttempt> attemptMap;
+  private int lastAttemptId;
 
   public QueryUnitStatus(QueryUnitId queryUnitId) {
     this.queryUnitId = queryUnitId;
     this.attemptMap = Maps.newHashMap();
+    this.lastAttemptId = -1;
   }
 
-  public void setAttempt(QueryUnitAttempt attempt) {
+  public void putAttempt(QueryUnitAttempt attempt) {
+    if (lastAttemptId < attempt.getId()) {
+      lastAttemptId = attempt.getId();
+    }
     attemptMap.put(attempt.getId(), attempt);
   }
 
@@ -54,5 +59,13 @@ public class QueryUnitStatus {
 
   public Map<Integer, QueryUnitAttempt> getAttemptMap() {
     return this.attemptMap;
+  }
+
+  public QueryUnitAttempt getLastAttempt() {
+    return this.attemptMap.get(lastAttemptId);
+  }
+
+  public int getLastAttemptId() {
+    return this.lastAttemptId;
   }
 }

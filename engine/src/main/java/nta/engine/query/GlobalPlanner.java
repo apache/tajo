@@ -788,7 +788,7 @@ public class GlobalPlanner {
       }
       if (scan.isLocal()) {
         ScheduleUnit prev = unit.getChildIterator().next();
-        TableStat stat = qm.getSubQuery(prev.getId().getSubQueryId()).getTableStat();
+        TableStat stat = prev.getStats();
         if (stat.getNumRows() == 0) {
           return new QueryUnit[0];
         }

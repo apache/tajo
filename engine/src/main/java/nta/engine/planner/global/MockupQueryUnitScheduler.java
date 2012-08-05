@@ -49,6 +49,9 @@ public class MockupQueryUnitScheduler {
     
     qm.addScheduleUnit(plan);
     QueryUnit[] units = localize(plan, 3);
+    for (QueryUnit unit : units) {
+      qm.updateQueryUnitStatus(unit.getId(), 1, QueryStatus.QUERY_SUBMITED);
+    }
     MockupWorkerListener [] listener = new MockupWorkerListener[3];
     for (int i = 0; i < 3; i++) {
       listener[i] = new MockupWorkerListener(units[i].getId());

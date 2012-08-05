@@ -128,11 +128,16 @@ public class GlobalEngine implements EngineService {
       MasterPlan globalPlan = globalPlanner.build(subId, plan);
       globalPlan = globalOptimizer.optimize(globalPlan.getRoot());
       
-      QueryUnitScheduler queryUnitScheduler = new QueryUnitScheduler(
+      /*QueryUnitScheduler queryUnitScheduler = new QueryUnitScheduler(
           conf, sm, cm, qm, wc, globalPlanner, globalPlan.getRoot());
       qm.addQueryUnitScheduler(subQuery, queryUnitScheduler);
       queryUnitScheduler.start();
-      queryUnitScheduler.join();
+      queryUnitScheduler.join();*/
+
+      ScheduleUnitExecutor executor = new ScheduleUnitExecutor(conf,
+          wc, globalPlanner, cm, qm, sm, globalPlan);
+      executor.start();
+      executor.join();
 
       finalizeQuery(query);
 
@@ -142,7 +147,7 @@ public class GlobalEngine implements EngineService {
 
   public void finalizeQuery(Query query)
       throws IllegalQueryStatusException, UnknownWorkerException {
-    sendFinalize(query);
+//    sendFinalize(query);
     QueryStatus status = updateQueryStatus(query);
     switch (status) {
       case QUERY_FINISHED:

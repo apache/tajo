@@ -48,7 +48,7 @@ public class GlobalPlannerUtils {
   public static QueryUnit[] buildQueryDistributionPlan(
       Map<Fragment, FragmentServingInfo> servingMap,
       Map<String, List<String>> DNSNameToHostsMap,
-      Set<String> failedHost,
+//      Set<String> failedHost,
       QueryUnit[] queryUnits
   ) throws UnknownWorkerException {
     Map<String, Collection<QueryUnit>> map = Maps.newHashMap();
@@ -138,11 +138,13 @@ public class GlobalPlannerUtils {
         throw new UnknownWorkerException(e.getKey() + "");
       }
       for (QueryUnit unit : e.getValue()) {
+/*
         while (failedHost.contains(hosts.get(rrIdx))) {
           if (++rrIdx == hosts.size()) {
             rrIdx = 0;
           }
         }
+*/
         unit.setHost(hosts.get(rrIdx++));
         if (rrIdx == hosts.size()) {
           rrIdx = 0;

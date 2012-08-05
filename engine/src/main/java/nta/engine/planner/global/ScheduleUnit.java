@@ -5,10 +5,12 @@ package nta.engine.planner.global;
 
 import com.google.common.base.Preconditions;
 import nta.catalog.Schema;
+import nta.catalog.statistics.TableStat;
 import nta.engine.AbstractQuery;
 import nta.engine.QueryUnitId;
 import nta.engine.ScheduleUnitId;
 import nta.engine.planner.logical.*;
+import nta.engine.query.Priority;
 
 import java.util.*;
 
@@ -22,6 +24,7 @@ public class ScheduleUnit extends AbstractQuery {
     /** for hash partitioning */
     HASH,
     LIST,
+    /** for map-side join */
     BROADCAST,
     /** for range partitioning */
     RANGE
@@ -36,12 +39,16 @@ public class ScheduleUnit extends AbstractQuery {
   private PARTITION_TYPE outputType;
   private QueryUnit[] queryUnits;
   private boolean hasJoinPlan;
+  private boolean hasUnionPlan;
+  private Priority priority;
+  private TableStat stats;
   
   public ScheduleUnit(ScheduleUnitId id) {
     this.id = id;
     prevs = new HashMap<ScanNode, ScheduleUnit>();
     scanlist = new ArrayList<ScanNode>();
     hasJoinPlan = false;
+    hasUnionPlan = false;
   }
   
   public void setOutputType(PARTITION_TYPE type) {
@@ -52,6 +59,7 @@ public class ScheduleUnit extends AbstractQuery {
     Preconditions.checkArgument(plan.getType() == ExprType.STORE);
 
     hasJoinPlan = false;
+    hasUnionPlan = false;
     this.plan = plan;
     store = (StoreTableNode) plan;
     LogicalNode node = plan;
@@ -66,6 +74,8 @@ public class ScheduleUnit extends AbstractQuery {
         BinaryNode binary = (BinaryNode) node;
         if (binary.getType() == ExprType.JOIN) {
           hasJoinPlan = true;
+        } else if (binary.getType() == ExprType.UNION) {
+          hasUnionPlan = true;
         }
         s.add(s.size(), binary.getOuterNode());
         s.add(s.size(), binary.getInnerNode());
@@ -77,6 +87,10 @@ public class ScheduleUnit extends AbstractQuery {
 
   public boolean hasJoinPlan() {
     return this.hasJoinPlan;
+  }
+
+  public boolean hasUnionPlan() {
+    return this.hasUnionPlan;
   }
   
   public void setParentQuery(ScheduleUnit next) {
@@ -106,6 +120,20 @@ public class ScheduleUnit extends AbstractQuery {
   
   public void addScan(ScanNode scan) {
     scanlist.add(scan);
+  }
+
+  public void setPriority(Priority priority) {
+    this.priority = priority;
+  }
+
+  public void setPriority(int priority) {
+    if (this.priority == null) {
+      this.priority = new Priority(priority);
+    }
+  }
+
+  public void setStats(TableStat stat) {
+    this.stats = stat;
   }
   
   public ScheduleUnit getParentQuery() {
@@ -172,15 +200,24 @@ public class ScheduleUnit extends AbstractQuery {
     }
     return null;
   }
-  
+
+  public Priority getPriority() {
+    return this.priority;
+  }
+
+  public TableStat getStats() {
+    return this.stats;
+  }
+
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append(plan.toString());
+    sb.append(this.id);
+/*    sb.append(" plan: " + plan.toString());
     sb.append("next: " + next + " prevs:");
     Iterator<ScheduleUnit> it = getChildIterator();
     while (it.hasNext()) {
       sb.append(" " + it.next());
-    }
+    }*/
     return sb.toString();
   }
   

@@ -9,7 +9,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.Maps;
 import nta.catalog.statistics.TableStat;
 import nta.engine.*;
 import nta.engine.cluster.QueryUnitStatus.QueryUnitAttempt;
@@ -128,7 +127,7 @@ public class QueryManager {
     } else {
       attempt.setStatus(status);
     }
-    unitStatus.setAttempt(attempt);
+    unitStatus.putAttempt(attempt);
     queryUnitStatusMap.put(queryUnitId, unitStatus);
   }
 
@@ -193,7 +192,10 @@ public class QueryManager {
         || unit.getStatus() != QueryStatus.QUERY_ABORTED
         || unit.getStatus() != QueryStatus.QUERY_KILLED)) {
       unit.setProgress(progress.getProgress());
-      unit.setStatus(progress.getStatus());
+      //unit.setStatus(progress.getStatus());
+      updateQueryUnitStatus(unit.getId(),
+          queryUnitStatusMap.get(unit.getId()).getLastAttemptId(),
+          progress.getStatus());
       if (progress.getPartitionsCount() > 0) {
         unit.setPartitions(progress.getPartitionsList());
       }

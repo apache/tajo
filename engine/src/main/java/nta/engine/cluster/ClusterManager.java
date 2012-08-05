@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import nta.catalog.CatalogClient;
 import nta.catalog.FragmentServInfo;
 import nta.catalog.TableMetaImpl;
@@ -15,6 +17,7 @@ import nta.engine.MasterInterfaceProtos.ServerStatusProto.Disk;
 import nta.engine.QueryUnitId;
 import nta.engine.exception.UnknownWorkerException;
 import nta.engine.ipc.protocolrecords.Fragment;
+import nta.rpc.Callback;
 import nta.rpc.RemoteException;
 
 import org.apache.commons.logging.Log;
@@ -24,7 +27,6 @@ import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.thirdparty.guava.common.collect.Sets;
 
 public class ClusterManager {
   private final int FRAG_DIST_THRESHOLD = 3;
@@ -34,6 +36,7 @@ public class ClusterManager {
     public int availableProcessors;
     public long freeMemory;
     public long totalMemory;
+    public int taskNum;
 
     public List<DiskInfo> disks = new ArrayList<DiskInfo>();
   }
@@ -70,11 +73,10 @@ public class ClusterManager {
   private final LeafServerTracker tracker;
 
   private int clusterSize;
-  private Map<String, List<String>> DNSNameToHostsMap = 
-      new HashMap<String, List<String>>();
-
+  private Map<String, List<String>> DNSNameToHostsMap;
   private Map<Fragment, FragmentServingInfo> servingInfoMap;
   private Random rand = new Random(System.currentTimeMillis());
+  private Map<String, Integer> resourcePool;
   private Set<String> failedWorkers;
 
   public ClusterManager(WorkerCommunicator wc, Configuration conf,
@@ -83,27 +85,40 @@ public class ClusterManager {
     this.conf = conf;
     this.catalog = new CatalogClient(this.conf);
     this.tracker = tracker;
-    this.servingInfoMap = Maps.newHashMap();
+    this.DNSNameToHostsMap = Maps.newConcurrentMap();
+    this.servingInfoMap = Maps.newConcurrentMap();
+    this.resourcePool = Maps.newConcurrentMap();
     this.failedWorkers = Sets.newHashSet();
     this.clusterSize = 0;
   }
 
   public WorkerInfo getWorkerInfo(String workerName) throws RemoteException,
       InterruptedException, ExecutionException, UnknownWorkerException {
-    ServerStatusProto status = wc.getServerStatus(workerName).get();
-    ServerStatusProto.System system = status.getSystem();
-    WorkerInfo info = new WorkerInfo();
-    info.availableProcessors = system.getAvailableProcessors();
-    info.freeMemory = system.getFreeMemory();
-    info.totalMemory = system.getTotalMemory();
-
-    for (Disk diskStatus : status.getDiskList()) {
-      DiskInfo diskInfo = new DiskInfo();
-      diskInfo.freeSpace = diskStatus.getFreeSpace();
-      diskInfo.totalSpace = diskStatus.getTotalSpace();
-      info.disks.add(diskInfo);
+    Callback<ServerStatusProto> callback = wc.getServerStatus(workerName);
+    for (int i = 0; i < 3 && !callback.isDone(); i++) {
+      Thread.sleep(100);
     }
-    return info;
+    if (callback.isDone()) {
+      ServerStatusProto status = callback.get();
+      ServerStatusProto.System system = status.getSystem();
+      WorkerInfo info = new WorkerInfo();
+      info.availableProcessors = system.getAvailableProcessors();
+      info.freeMemory = system.getFreeMemory();
+      info.totalMemory = system.getTotalMemory();
+      info.taskNum = status.getTaskNum();
+
+      for (Disk diskStatus : status.getDiskList()) {
+        DiskInfo diskInfo = new DiskInfo();
+        diskInfo.freeSpace = diskStatus.getFreeSpace();
+        diskInfo.totalSpace = diskStatus.getTotalSpace();
+        info.disks.add(diskInfo);
+      }
+      return info;
+    } else {
+      LOG.error("Failed to get the resource information!!");
+      return null;
+    }
+
   }
 
   public List<QueryUnitId> getProcessingQuery(String workerName) {
@@ -123,11 +138,54 @@ public class ClusterManager {
         workers = new ArrayList<String>();
       }
       workers.add(worker);
-      clusterSize++;
-      DNSNameToHostsMap.put(DNSName, workers);
+      workers.removeAll(failedWorkers);
+      if (workers.size() > 0) {
+        clusterSize++;
+        DNSNameToHostsMap.put(DNSName, workers);
+      }
     }
   }
-  
+
+  public void resetResourceInfo()
+      throws UnknownWorkerException, InterruptedException,
+      ExecutionException {
+    WorkerInfo info;
+    for (List<String> hosts : DNSNameToHostsMap.values()) {
+      for (String host : hosts) {
+        info = getWorkerInfo(host);
+        Preconditions.checkState(info.availableProcessors-info.taskNum > 0);
+        // TODO: correct free resource computation is required
+        resourcePool.put(host,
+            (info.availableProcessors-info.taskNum) * 30);
+      }
+    }
+  }
+
+  public boolean existFreeResource() {
+    return resourcePool.size() > 0;
+  }
+
+  public boolean hasFreeResource(String host) {
+    return resourcePool.containsKey(host);
+  }
+
+  public void getResource(String host) {
+    int resource = resourcePool.get(host);
+    if (--resource == 0) {
+      resourcePool.remove(host);
+    } else {
+      resourcePool.put(host, resource);
+    }
+  }
+
+  public void addResource(String host) {
+    if (resourcePool.containsKey(host)) {
+      resourcePool.put(host, resourcePool.get(host).intValue()+1);
+    } else {
+      resourcePool.put(host, 1);
+    }
+  }
+
   public Map<String, List<String>> getOnlineWorkers() {
     return this.DNSNameToHostsMap;
   }
@@ -146,6 +204,10 @@ public class ClusterManager {
 
   public Map<Fragment, FragmentServingInfo> getServingInfoMap() {
     return this.servingInfoMap;
+  }
+
+  public FragmentServingInfo getServingInfo(Fragment fragment) {
+    return this.servingInfoMap.get(fragment);
   }
   
   private String getRandomWorkerNameOfHost(String host) {
@@ -190,34 +252,30 @@ public class ClusterManager {
    * @return
    * @throws Exception
    */
-  public String getRandomHost()
-      throws Exception {
-    String randomHost;
-    do {
-      int n = rand.nextInt(DNSNameToHostsMap.size());
-      Iterator<List<String>> it = DNSNameToHostsMap.values().iterator();
-      for (int i = 0; i < n-1; i++) {
-        it.next();
-      }
-      List<String> hosts = it.next();
-      randomHost = hosts.get(rand.nextInt(hosts.size()));
-    } while (failedWorkers.contains(randomHost));
+  public String getRandomHost() {
+    int n = rand.nextInt(resourcePool.size());
+    Iterator<String> it = resourcePool.keySet().iterator();
+    for (int i = 0; i < n-1; i++) {
+      it.next();
+    }
+    String randomHost = it.next();
+    this.getResource(randomHost);
     return randomHost;
   }
 
-  public Set<String> getFailedWorkers() {
+  public synchronized Set<String> getFailedWorkers() {
     return this.failedWorkers;
   }
 
-  public void addFailedWorker(String worker) {
+  public synchronized void addFailedWorker(String worker) {
     this.failedWorkers.add(worker);
   }
 
-  public boolean isExist(String worker) {
+  public synchronized boolean isExist(String worker) {
     return this.failedWorkers.contains(worker);
   }
 
-  public void removeFailedWorker(String worker) {
+  public synchronized void removeFailedWorker(String worker) {
     this.failedWorkers.remove(worker);
   }
 }

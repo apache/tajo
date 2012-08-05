@@ -216,11 +216,11 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
             sleeptime = 3000;
           } else {
             sleeptime = 3000 - (time - before);
-            if (sleeptime > 0) {
-              Thread.sleep(sleeptime);
-            }
           }
-          
+          if (sleeptime > 0) {
+            Thread.sleep(sleeptime);
+          }
+
           PingResponseProto response = sendHeartbeat(time);
           before = time;
                     
@@ -450,6 +450,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   public ServerStatusProto getServerStatus(NullProto request) {
     // serverStatus builder
     ServerStatusProto.Builder serverStatus = ServerStatusProto.newBuilder();
+    // TODO: compute the available number of task slots
+    serverStatus.setTaskNum(tasks.size());
 
     // system(CPU, memory) status builder
     ServerStatusProto.System.Builder systemStatus = ServerStatusProto.System
@@ -832,6 +834,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     for (Command cmd : request.getCommandList()) {
       uid = new QueryUnitId(cmd.getId());
       Task task = tasks.get(uid);
+      if (task == null) {
+        LOG.warn("Unknown task: " + uid);
+        return null;
+      }
       QueryStatus status = task.getStatus();
       switch (cmd.getType()) {
       case FINALIZE:

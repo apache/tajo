@@ -5,7 +5,6 @@ package nta.engine;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.protobuf.Message;
 import nta.catalog.TCatUtil;
 import nta.catalog.TableMeta;
@@ -13,11 +12,7 @@ import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.catalog.statistics.ColumnStat;
 import nta.catalog.statistics.StatisticsUtil;
 import nta.catalog.statistics.TableStat;
-import nta.engine.MasterInterfaceProtos.Command;
-import nta.engine.MasterInterfaceProtos.CommandRequestProto;
-import nta.engine.MasterInterfaceProtos.CommandType;
-import nta.engine.MasterInterfaceProtos.QueryStatus;
-import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
+import nta.engine.MasterInterfaceProtos.*;
 import nta.engine.cluster.*;
 import nta.engine.exception.EmptyClusterException;
 import nta.engine.exception.UnknownWorkerException;
@@ -87,7 +82,7 @@ public class QueryUnitScheduler extends Thread {
     for (List<String> workers : cm.getOnlineWorkers().values()) {
       onlineWorkers.addAll(workers);
     }
-    onlineWorkers.removeAll(cm.getFailedWorkers());
+//    onlineWorkers.removeAll(cm.getFailedWorkers());
     if (onlineWorkers.size() == 0) {
       throw new EmptyClusterException();
     }
@@ -159,7 +154,7 @@ public class QueryUnitScheduler extends Thread {
         for (int i = 0; i < plan.getOutputSchema().getColumnNum(); i++) {
           stat.addColumnStat(new ColumnStat(plan.getOutputSchema().getColumn(i)));
         }
-        qm.getSubQuery(plan.getId().getSubQueryId()).setTableStat(stat);
+        plan.setStats(stat);
         //plan.setStatus(QueryStatus.QUERY_FINISHED);
         qm.updateScheduleUnitStatus(plan.getId(),
             QueryStatus.QUERY_FINISHED);
@@ -216,7 +211,8 @@ public class QueryUnitScheduler extends Thread {
         }
       }
       units = GlobalPlannerUtils.buildQueryDistributionPlan(
-          servingMap, cm.getOnlineWorkers(), cm.getFailedWorkers(), units);
+          servingMap, cm.getOnlineWorkers(), /*cm.getFailedWorkers(), */
+          units);
     }
     for (QueryUnit q : units) {
       pendingQueue.add(q);
@@ -287,9 +283,10 @@ public class QueryUnitScheduler extends Thread {
 
       for (QueryUnit unit : units) {
         retryQueryUnit = false;
-        status = unit.getInProgressStatus().getStatus();
+        /*status = unit.getInProgressStatus().getStatus();
         qm.updateQueryUnitStatus(unit.getId(),
-            queryUnitAttemptMap.get(unit.getId()), status);
+            queryUnitAttemptMap.get(unit.getId()), status);*/
+        status = qm.getQueryUnitStatus(unit.getId()).getLastAttempt().getStatus();
 
         switch (status) {
           case QUERY_KILLED:
@@ -331,10 +328,6 @@ public class QueryUnitScheduler extends Thread {
       }
 
       for (QueryUnit unit : scheduleUnit.getQueryUnits()) {
-        QueryUnitStatus.QueryUnitAttempt attempt =
-            qm.getQueryUnitStatus(unit.getId()).
-            getAttempt(queryUnitAttemptMap.get(unit.getId()));
-
         switch (qm.getQueryUnitStatus(unit.getId()).
             getAttempt(queryUnitAttemptMap.get(unit.getId())).getStatus()) {
           case QUERY_INITED: inited++; break;

@@ -21,6 +21,7 @@ import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -175,7 +176,37 @@ public abstract class MockupWorker
 
   @Override
   public ServerStatusProto getServerStatus(PrimitiveProtos.NullProto request) {
-    return null;
+    // serverStatus builder
+    ServerStatusProto.Builder serverStatus = ServerStatusProto.newBuilder();
+    // TODO: compute the available number of task slots
+    serverStatus.setTaskNum(taskQueue.size());
+
+    // system(CPU, memory) status builder
+    ServerStatusProto.System.Builder systemStatus = ServerStatusProto.System
+        .newBuilder();
+
+    systemStatus.setAvailableProcessors(Runtime.getRuntime()
+        .availableProcessors());
+    systemStatus.setFreeMemory(Runtime.getRuntime().freeMemory());
+    systemStatus.setMaxMemory(Runtime.getRuntime().maxMemory());
+    systemStatus.setTotalMemory(Runtime.getRuntime().totalMemory());
+
+    serverStatus.setSystem(systemStatus);
+
+    // disk status builder
+    File[] roots = File.listRoots();
+    for (File root : roots) {
+      ServerStatusProto.Disk.Builder diskStatus = ServerStatusProto.Disk
+          .newBuilder();
+
+      diskStatus.setAbsolutePath(root.getAbsolutePath());
+      diskStatus.setTotalSpace(root.getTotalSpace());
+      diskStatus.setFreeSpace(root.getFreeSpace());
+      diskStatus.setUsableSpace(root.getUsableSpace());
+
+      serverStatus.addDisk(diskStatus);
+    }
+    return serverStatus.build();
   }
 
   @Override
