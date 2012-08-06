@@ -140,7 +140,7 @@ public class ClusterManager {
       workers.add(worker);
       workers.removeAll(failedWorkers);
       if (workers.size() > 0) {
-        clusterSize++;
+        clusterSize += workers.size();
         DNSNameToHostsMap.put(DNSName, workers);
       }
     }
@@ -212,7 +212,6 @@ public class ClusterManager {
   
   private String getRandomWorkerNameOfHost(String host) {
     List<String> workers = DNSNameToHostsMap.get(host);
-    workers.removeAll(failedWorkers);
     return workers.get(rand.nextInt(workers.size()));
   }
 
@@ -253,14 +252,34 @@ public class ClusterManager {
    * @throws Exception
    */
   public String getRandomHost() {
-    int n = rand.nextInt(resourcePool.size());
+    if (!existFreeResource()) {
+      return null;
+    }
+
+    String result = null;
+    while (result == null) {
+      int n = rand.nextInt(DNSNameToHostsMap.size());
+      Iterator<String> it = DNSNameToHostsMap.keySet().iterator();
+      for (int i = 0; i < n-1; i++) {
+        it.next();
+      }
+      String randomhost = it.next();
+      String worker = getRandomWorkerNameOfHost(randomhost);
+      if (hasFreeResource(worker)) {
+        result = worker;
+      }
+    }
+    this.getResource(result);
+    return result;
+
+    /*int n = rand.nextInt(resourcePool.size());
     Iterator<String> it = resourcePool.keySet().iterator();
     for (int i = 0; i < n-1; i++) {
       it.next();
     }
     String randomHost = it.next();
     this.getResource(randomHost);
-    return randomHost;
+    return randomHost;*/
   }
 
   public synchronized Set<String> getFailedWorkers() {
