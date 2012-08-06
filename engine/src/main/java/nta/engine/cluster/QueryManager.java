@@ -105,15 +105,16 @@ public class QueryManager {
         " is changed to " + status);
   }
 
-  public void updateScheduleUnitStatus(ScheduleUnitId scheduleUnitId,
-                                       QueryStatus status) {
+  public void updateScheduleUnitStatus(final ScheduleUnitId scheduleUnitId,
+                                       final QueryStatus status) {
     scheduleUnitStatusMap.put(scheduleUnitId, status);
     LOG.info("ScheduleUnit status of " + scheduleUnitId +
         " is changed to " + status);
   }
 
-  public void updateQueryUnitStatus(QueryUnitId queryUnitId,
-                                    int attemptId, QueryStatus status) {
+  public void updateQueryUnitStatus(final QueryUnitId queryUnitId,
+                                    final int attemptId,
+                                    final QueryStatus status) {
     QueryUnitStatus unitStatus;
     QueryUnitAttempt attempt;
     if (queryUnitStatusMap.containsKey(queryUnitId)) {
@@ -187,10 +188,7 @@ public class QueryManager {
       InProgressStatusProto progress) throws NoSuchQueryIdException {
     QueryUnit unit = queries.get(queryUnitId.getQueryId()).
         getQueryUnit(queryUnitId);
-    if (unit != null
-        && (unit.getStatus() != QueryStatus.QUERY_FINISHED
-        || unit.getStatus() != QueryStatus.QUERY_ABORTED
-        || unit.getStatus() != QueryStatus.QUERY_KILLED)) {
+    if (unit != null) {
       unit.setProgress(progress.getProgress());
       //unit.setStatus(progress.getStatus());
       updateQueryUnitStatus(unit.getId(),

@@ -12,14 +12,14 @@ import java.util.Map;
 public class QueryUnitStatus {
   public static class QueryUnitAttempt {
     private int id;
-    private QueryStatus status;
+    private volatile QueryStatus status;
 
     public QueryUnitAttempt(int id, QueryStatus status) {
       this.id = id;
       this.status = status;
     }
 
-    public void setStatus(QueryStatus status) {
+    public synchronized void setStatus(QueryStatus status) {
       this.status = status;
     }
 
@@ -34,15 +34,15 @@ public class QueryUnitStatus {
 
   private QueryUnitId queryUnitId;
   private Map<Integer, QueryUnitAttempt> attemptMap;
-  private int lastAttemptId;
+  private volatile int lastAttemptId;
 
   public QueryUnitStatus(QueryUnitId queryUnitId) {
     this.queryUnitId = queryUnitId;
-    this.attemptMap = Maps.newHashMap();
+    this.attemptMap = Maps.newConcurrentMap();
     this.lastAttemptId = -1;
   }
 
-  public void putAttempt(QueryUnitAttempt attempt) {
+  public synchronized void putAttempt(QueryUnitAttempt attempt) {
     if (lastAttemptId < attempt.getId()) {
       lastAttemptId = attempt.getId();
     }

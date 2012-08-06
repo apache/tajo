@@ -271,20 +271,22 @@ public class ScheduleUnitExecutor extends Thread {
             this.shutdown();
           }
 
-          ScheduleUnit scheduleUnit = takeScheduleUnit();
-          if (scheduleUnit != null) {
+          ScheduleUnit scheduleUnit;
+          while ((scheduleUnit = takeScheduleUnit()) != null) {
             LOG.info("Schedule unit plan: \n" + scheduleUnit.getLogicalPlan());
             if (scheduleUnit.hasUnionPlan()) {
               finishUnionUnit(scheduleUnit);
             } else {
               qm.addScheduleUnit(scheduleUnit);
               qm.updateScheduleUnitStatus(scheduleUnit.getId(),
-                  QueryStatus.QUERY_INPROGRESS);
+                  QueryStatus.QUERY_PENDING);
 
               initOutputDir(scheduleUnit.getOutputName(),
                   scheduleUnit.getOutputType());
               int numTasks = getTaskNum(scheduleUnit);
               QueryUnit[] units = planner.localize(scheduleUnit, numTasks);
+              qm.updateScheduleUnitStatus(scheduleUnit.getId(),
+                  QueryStatus.QUERY_INPROGRESS);
               inprogressQueue.put(scheduleUnit);
 
               if (units.length == 0) {
@@ -672,7 +674,6 @@ public class ScheduleUnitExecutor extends Thread {
     private void updateInprogressQueue() throws Exception {
       List<ScheduleUnit> finished = Lists.newArrayList();
       for (ScheduleUnit scheduleUnit : inprogressQueue) {
-        int success = 0;
         int inited = 0;
         int pending = 0;
         int inprogress = 0;
@@ -709,7 +710,7 @@ public class ScheduleUnitExecutor extends Thread {
         }
         LOG.info("\n--- Status of " + scheduleUnit.getId() + " ---\n" + ""
             + " In Progress (Submitted: " + submitted
-            + ", Finished: " + success + ", Inited: " + inited + ", Pending: "
+            + ", Finished: " + finish + ", Inited: " + inited + ", Pending: "
             + pending + ", Running: " + inprogress + ", Aborted: " + aborted
             + ", Killed: " + killed);
 
@@ -829,7 +830,13 @@ public class ScheduleUnitExecutor extends Thread {
         }
         q.setHost(selectWorker(q, fragList));
         qm.updateQueryAssignInfo(q.getHost(), q);
-        queryUnitAttemptMap.put(q.getId(), 1);
+        int attemptId;
+        if (queryUnitAttemptMap.containsKey(q.getId())) {
+          attemptId = queryUnitAttemptMap.get(q.getId());
+        } else {
+          attemptId = 1;
+        }
+        queryUnitAttemptMap.put(q.getId(), attemptId);
         QueryUnitRequest request = createQueryUnitRequest(q, fragList);
 
         if (!requestToWC(q.getHost(), request.getProto())) {
@@ -837,6 +844,8 @@ public class ScheduleUnitExecutor extends Thread {
         }
         printQueryUnitRequestInfo(q, request);
         submittedQueryUnits.add(q);
+        qm.updateQueryUnitStatus(q.getId(), queryUnitAttemptMap.get(q.getId()),
+            QueryStatus.QUERY_SUBMITED);
       }
     }
 

@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.google.common.collect.Maps;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 
@@ -24,7 +25,7 @@ public class Query extends AbstractQuery {
   public Query(QueryId id, String queryStr) {
     this.id = id;
     this.queryStr = queryStr;
-    subqueries = new HashMap<SubQueryId, SubQuery>();
+    subqueries = Maps.newHashMap();
   }
   
   public void addSubQuery(SubQuery q) {
