@@ -3,6 +3,7 @@
  */
 package nta.engine.query;
 
+import java.io.File;
 import java.io.IOException;
 
 import nta.catalog.CatalogService;
@@ -11,6 +12,9 @@ import nta.catalog.TableDesc;
 import nta.catalog.TableMeta;
 import nta.engine.*;
 import nta.engine.MasterInterfaceProtos.*;
+import nta.catalog.TableMetaImpl;
+import nta.catalog.proto.CatalogProtos;
+import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.QueryManager;
 import nta.engine.cluster.WorkerCommunicator;
@@ -30,12 +34,15 @@ import nta.engine.planner.logical.CreateTableNode;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.LogicalRootNode;
+import nta.engine.planner.logical.StoreTableNode;
 import nta.storage.StorageManager;
 import nta.storage.StorageUtil;
+import nta.util.FileUtil;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 
 /**
  * @author jihoon
@@ -55,11 +62,10 @@ public class GlobalEngine implements EngineService {
   private WorkerCommunicator wc;
   private QueryManager qm;
   private ClusterManager cm;
-  
+
   public GlobalEngine(Configuration conf, CatalogService cat,
-      StorageManager sm, WorkerCommunicator wc,
-      QueryManager qm, ClusterManager cm)
-      throws IOException {
+      StorageManager sm, WorkerCommunicator wc, QueryManager qm,
+      ClusterManager cm) throws IOException {
     this.conf = conf;
     this.catalog = cat;
     this.wc = wc;
@@ -69,8 +75,7 @@ public class GlobalEngine implements EngineService {
     this.analyzer = new QueryAnalyzer(cat);
     this.factory = new QueryContext.Factory(catalog);
 
-    this.globalPlanner = new GlobalPlanner(this.sm, this.qm, 
-        this.catalog);
+    this.globalPlanner = new GlobalPlanner(this.sm, this.qm, this.catalog);
     this.globalOptimizer = new GlobalOptimizer();
   }
 
@@ -89,28 +94,33 @@ public class GlobalEngine implements EngineService {
     LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
     plan = LogicalOptimizer.optimize(ctx, plan);
     LOG.info("* logical plan:\n" + plan);
-    
+
     LogicalRootNode root = (LogicalRootNode) plan;
+
     if (root.getSubNode().getType() == ExprType.CREATE_TABLE) {
       // create table queries are executed by the master
       CreateTableNode createTable = (CreateTableNode) root.getSubNode();
       TableMeta meta;
       if (createTable.hasOptions()) {
-        meta = TCatUtil.newTableMeta(createTable.getSchema(), 
+        meta = TCatUtil.newTableMeta(createTable.getSchema(),
             createTable.getStoreType(), createTable.getOptions());
       } else {
-        meta = TCatUtil.newTableMeta(createTable.getSchema(), 
+        meta = TCatUtil.newTableMeta(createTable.getSchema(),
             createTable.getStoreType());
       }
       StorageUtil.writeTableMeta(conf, createTable.getPath(), meta);
-      TableDesc desc = TCatUtil.newTableDesc(createTable.getTableName(), meta, 
+      TableDesc desc = TCatUtil.newTableDesc(createTable.getTableName(), meta,
           createTable.getPath());
       catalog.addTable(desc);
       return desc.getId();
     } else {
+      boolean hasStoreNode = false;
+      if (root.getSubNode().getType() == ExprType.STORE) {
+        hasStoreNode = true;
+      }
       // other queries are executed by workers
       prepareQueryExecution(ctx);
-      
+
       QueryId qid = QueryIdFactory.newQueryId();
       Query query = new Query(qid, querystr);
       qm.addQuery(query);
@@ -140,6 +150,15 @@ public class GlobalEngine implements EngineService {
       executor.join();
 
       finalizeQuery(query);
+
+      if (hasStoreNode) {
+        // create table queries are executed by the master
+        StoreTableNode stn = (StoreTableNode) root.getSubNode();
+        TableDesc desc = TCatUtil.newTableDesc(stn.getTableName(),
+            sm.getTableMeta(globalPlan.getRoot().getOutputName()),
+            sm.getTablePath(globalPlan.getRoot().getOutputName()));
+        catalog.addTable(desc);
+      }
 
       return sm.getTablePath(globalPlan.getRoot().getOutputName()).toString();
     }
@@ -220,7 +239,7 @@ public class GlobalEngine implements EngineService {
       cm.updateFragmentServingInfo2(table);
     }
   }
-  
+
   @Override
   public void init() throws IOException {
     // TODO Auto-generated method stub
