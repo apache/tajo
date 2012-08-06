@@ -970,7 +970,7 @@ public class ScheduleUnitExecutor extends Thread {
       if (sleeptime > 0) {
         Thread.sleep(sleeptime);
       }
-      before = cur;
+      before = System.currentTimeMillis();
     }
   }
 }
