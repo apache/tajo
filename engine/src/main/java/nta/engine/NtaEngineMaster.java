@@ -337,7 +337,8 @@ public class NtaEngineMaster extends Thread implements ClientService {
     } catch (Exception e) {
       throw new RemoteException(e);
     }
-    
+
+    LOG.info("Query execution time: " + elapsed);
     ExecuteQueryRespose.Builder build = ExecuteQueryRespose.newBuilder();
     build.setPath(path);
     build.setResponseTime(elapsed);

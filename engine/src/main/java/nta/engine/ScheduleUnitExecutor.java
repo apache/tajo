@@ -672,15 +672,27 @@ public class ScheduleUnitExecutor extends Thread {
     private void updateInprogressQueue() throws Exception {
       List<ScheduleUnit> finished = Lists.newArrayList();
       for (ScheduleUnit scheduleUnit : inprogressQueue) {
+        int success = 0;
+        int inited = 0;
+        int pending = 0;
+        int inprogress = 0;
+        int aborted = 0;
+        int killed = 0;
         int finish = 0;
+        int submitted = 0;
         for (QueryUnit queryUnit : scheduleUnit.getQueryUnits()) {
           QueryUnitStatus queryUnitStatus =
               qm.getQueryUnitStatus(queryUnit.getId());
           QueryStatus status = queryUnitStatus.getLastAttempt().getStatus();
           switch (status) {
+            case QUERY_SUBMITED: submitted++; break;
+            case QUERY_INITED: inited++; break;
+            case QUERY_PENDING: pending++; break;
+            case QUERY_INPROGRESS: inprogress++; break;
             case QUERY_FINISHED: finish++; break;
+            case QUERY_KILLED: killed++; break;
             case QUERY_ABORTED:
-            case QUERY_KILLED:
+              aborted++;
               if (queryUnitStatus.getLastAttemptId() <
                   QueryUnitSubmitter.RETRY_LIMIT) {
                 // wait
@@ -695,6 +707,12 @@ public class ScheduleUnitExecutor extends Thread {
               break;
           }
         }
+        LOG.info("\n--- Status of " + scheduleUnit.getId() + " ---\n" + ""
+            + " In Progress (Submitted: " + submitted
+            + ", Finished: " + success + ", Inited: " + inited + ", Pending: "
+            + pending + ", Running: " + inprogress + ", Aborted: " + aborted
+            + ", Killed: " + killed);
+
         if (finish == scheduleUnit.getQueryUnits().length) {
           TableStat stat = generateStat(scheduleUnit);
           writeStat(scheduleUnit, stat);
@@ -793,7 +811,8 @@ public class ScheduleUnitExecutor extends Thread {
         }
       }
 
-      LOG.info(" In Progress (Submitted: " + submittedQueryUnits.size()
+      LOG.info("\n--- Status of all submitted query units ---\n" + ""
+          + " In Progress (Submitted: " + submittedQueryUnits.size()
           + ", Finished: " + success + ", Inited: " + inited + ", Pending: "
           + pending + ", Running: " + inprogress + ", Aborted: " + aborted
           + ", Killed: " + killed);
