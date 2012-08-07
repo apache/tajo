@@ -860,20 +860,24 @@ public class ScheduleUnitExecutor extends Thread {
       if (info == null) {
         return cm.getRandomHost();
       }
-      List<String> workers = cm.getOnlineWorkers().get(info.getPrimaryHost());
-      for (String worker : workers) {
-        if (cm.hasFreeResource(worker)) {
-          cm.getResource(worker);
-          return worker;
-        }
-      }
-      String backup;
-      while ((backup=info.getNextBackupHost()) != null) {
-        workers = cm.getOnlineWorkers().get(backup);
+      if (cm.getOnlineWorkers().containsKey(info.getPrimaryHost())) {
+        List<String> workers = cm.getOnlineWorkers().get(info.getPrimaryHost());
         for (String worker : workers) {
           if (cm.hasFreeResource(worker)) {
             cm.getResource(worker);
             return worker;
+          }
+        }
+      }
+      String backup;
+      while ((backup=info.getNextBackupHost()) != null) {
+        if (cm.getOnlineWorkers().containsKey(backup)) {
+          List<String>workers = cm.getOnlineWorkers().get(backup);
+          for (String worker : workers) {
+            if (cm.hasFreeResource(worker)) {
+              cm.getResource(worker);
+              return worker;
+            }
           }
         }
       }
