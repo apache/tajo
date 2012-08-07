@@ -144,6 +144,9 @@ public class ClusterManager {
         DNSNameToHostsMap.put(DNSName, workers);
       }
     }
+    for (String failed : failedWorkers) {
+      resourcePool.remove(failed);
+    }
   }
 
   public void resetResourceInfo()
@@ -153,10 +156,12 @@ public class ClusterManager {
     for (List<String> hosts : DNSNameToHostsMap.values()) {
       for (String host : hosts) {
         info = getWorkerInfo(host);
-        Preconditions.checkState(info.availableProcessors-info.taskNum > 0);
+        //Preconditions.checkState(info.availableProcessors-info.taskNum >= 0);
         // TODO: correct free resource computation is required
-        resourcePool.put(host,
-            (info.availableProcessors-info.taskNum) * 30);
+        if (info.availableProcessors-info.taskNum > 0) {
+          resourcePool.put(host,
+              (info.availableProcessors-info.taskNum) * 30);
+        }
       }
     }
   }

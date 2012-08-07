@@ -599,6 +599,7 @@ public class ScheduleUnitExecutor extends Thread {
       status = Status.INPROGRESS;
       try {
         updateWorkers();
+        cm.resetResourceInfo();
 
         while (status == Status.INPROGRESS) {
           this.sleeper.sleep(3000);
@@ -668,7 +669,6 @@ public class ScheduleUnitExecutor extends Thread {
       if (onlineWorkers.size() == 0) {
         throw new EmptyClusterException();
       }
-      cm.resetResourceInfo();
     }
 
     private void updateInprogressQueue() throws Exception {
