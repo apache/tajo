@@ -432,18 +432,31 @@ public class DBStore implements CatalogStore {
 
   @Override
   public final void deleteTable(final String name) throws IOException {
-    String sql =
-      "DELETE FROM " + TB_TABLES
-      + " WHERE " + C_TABLE_ID +" = '" + name + "'";
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
-    
     Statement stmt = null;
     wlock.lock(); 
     try {
       stmt = conn.createStatement();
-      stmt.executeUpdate(sql);
+      String sql = "DELETE FROM " + TB_COLUMNS +
+          " WHERE " + C_TABLE_ID + " = '" + name + "'";
+      LOG.info(sql);
+      stmt.execute(sql);
+
+      sql = "DELETE FROM " + TB_OPTIONS +
+          " WHERE " + C_TABLE_ID + " = '" + name + "'";
+      LOG.info(sql);
+      stmt.execute(sql);
+
+      sql = "DELETE FROM " + TB_STATISTICS +
+          " WHERE " + C_TABLE_ID + " = '" + name + "'";
+      LOG.info(sql);
+      stmt.execute(sql);
+
+      sql = "DELETE FROM " + TB_TABLES +
+           " WHERE " + C_TABLE_ID +" = '" + name + "'";
+      LOG.info(sql);
+      stmt.execute(sql);
+
+      //stmt.executeBatch();
     } catch (SQLException se) {
       throw new IOException(se);
     } finally {

@@ -19,6 +19,7 @@ import nta.catalog.TableUtil;
 import nta.catalog.exception.AlreadyExistsTableException;
 import nta.catalog.exception.NoSuchTableException;
 import nta.catalog.proto.CatalogProtos.TableDescProto;
+import nta.catalog.statistics.TableStat;
 import nta.conf.NtaConf;
 import nta.engine.ClientServiceProtos.AttachTableRequest;
 import nta.engine.ClientServiceProtos.AttachTableResponse;
@@ -51,6 +52,7 @@ import nta.zookeeper.ZkUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
@@ -361,6 +363,21 @@ public class NtaEngineMaster extends Thread implements ClientService {
     } catch (IOException e) {
       throw new RemoteException(e);
     }
+
+    if (meta.getStat() == null) {
+      long totalSize = 0;
+      try {
+        totalSize = calculateSize(new Path(path, "data"));
+      } catch (IOException e) {
+        LOG.error("Cannot calculate the size of the relation", e);
+      }
+
+      meta = new TableMetaImpl(meta.getProto());
+      TableStat stat = new TableStat();
+      stat.setNumBytes(totalSize);
+      meta.setStat(stat);
+    }
+
     TableDesc desc = new TableDescImpl(request.getName(), meta, path);
     catalog.addTable(desc);
     LOG.info("Table " + desc.getId() + " is attached.");
@@ -379,6 +396,16 @@ public class NtaEngineMaster extends Thread implements ClientService {
     LOG.info("Table " + name + " is detached.");
   }
 
+  private long calculateSize(Path path) throws IOException {
+    FileSystem fs = path.getFileSystem(conf);
+    long totalSize = 0;
+    for (FileStatus status : fs.listStatus(path)) {
+      totalSize += status.getLen();
+    }
+
+    return totalSize;
+  }
+
   @Override
   public CreateTableResponse createTable(CreateTableRequest request)
       throws RemoteException {    
@@ -387,13 +414,24 @@ public class NtaEngineMaster extends Thread implements ClientService {
 
     Path path = new Path(request.getPath());
     LOG.info(path.toUri());
-    
-    TableDesc desc = new TableDescImpl(request.getName(), 
-        new TableMetaImpl(request.getMeta()), path);
+
+    long totalSize = 0;
+    try {
+      totalSize = calculateSize(new Path(path, "data"));
+    } catch (IOException e) {
+      LOG.error("Cannot calculate the size of the relation", e);
+    }
+
+    TableMeta meta = new TableMetaImpl(request.getMeta());
+    TableStat stat = new TableStat();
+    stat.setNumBytes(totalSize);
+    meta.setStat(stat);
+
+    TableDesc desc = new TableDescImpl(request.getName(),meta, path);
     try {
       StorageUtil.writeTableMeta(conf, path, desc.getMeta());
     } catch (IOException e) {
-      e.printStackTrace();
+      LOG.error("Cannot write the table meta file", e);
     }
     catalog.addTable(desc);
     LOG.info("Table " + desc.getId() + " is attached.");

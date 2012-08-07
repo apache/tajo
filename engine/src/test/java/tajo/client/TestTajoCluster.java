@@ -127,5 +127,6 @@ public class TestTajoCluster {
     TableDesc desc = tajo.getTableDesc(tableName1);
     assertNotNull(desc);
     assertEquals(tableName1, desc.getId());
+    assertTrue(desc.getMeta().getStat().getNumBytes() > 0);
   }
 }

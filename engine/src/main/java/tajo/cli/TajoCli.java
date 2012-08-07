@@ -251,6 +251,10 @@ public class TajoCli {
     sb.append("\ntable name: ").append(desc.getId()).append("\n");
     sb.append("table path: ").append(desc.getPath()).append("\n");
     sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
+    if (desc.getMeta().getStat() != null) {
+      sb.append("number of rows: ").append(desc.getMeta().getStat().getNumRows()).append("\n");
+      sb.append("volume (bytes): ").append(desc.getMeta().getStat().getNumBytes()).append("\n");
+    }
     sb.append("schema: \n");
     
     for(int i = 0; i < desc.getMeta().getSchema().getColumnNum(); i++) {

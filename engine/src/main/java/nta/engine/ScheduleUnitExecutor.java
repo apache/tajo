@@ -464,7 +464,7 @@ public class ScheduleUnitExecutor extends Thread {
           grpNode != null && grpNode.getGroupingColumns().length == 0) {
         numTasks = 1;
       } else {
-        numTasks = cm.getOnlineWorkers().size() * 4;
+        numTasks = cm.getOnlineWorkers().size();
       }
       return numTasks;
     }
