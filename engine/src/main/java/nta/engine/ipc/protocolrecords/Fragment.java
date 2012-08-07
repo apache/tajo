@@ -1,5 +1,6 @@
 package nta.engine.ipc.protocolrecords;
 
+import nta.annotation.Optional;
 import nta.annotation.Required;
 import nta.catalog.TCatUtil;
 import nta.catalog.Schema;
@@ -38,6 +39,8 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   private long startOffset;
   @Expose @Required
   private long length;
+  @Expose @Optional
+  private Boolean distCached;
 
   public Fragment() {
     builder = TabletProto.newBuilder();
@@ -138,7 +141,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
     if (this.startOffset > -1) {
       return this.startOffset;
     }
-    if (!proto.hasStartOffset()) {
+    if (!p.hasStartOffset()) {
       return -1;
     }
     this.startOffset = p.getStartOffset();
@@ -151,11 +154,29 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
     if (this.length > -1) {
       return this.length;
     }
-    if (!proto.hasLength()) {
+    if (!p.hasLength()) {
       return -1;
     }
     this.length = p.getLength();
     return this.length;
+  }
+
+  public Boolean isDistCached() {
+    TabletProtoOrBuilder p = viaProto ? proto : builder;
+
+    if (this.distCached != null) {
+      return distCached;
+    }
+    if (!p.hasDistCached()) {
+      return null;
+    }
+    this.distCached = p.getDistCached();
+    return this.distCached;
+  }
+
+  public void setDistCached() {
+    setModified();
+    this.distCached = true;
   }
 
   /**
@@ -187,7 +208,8 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
       Fragment t = (Fragment) o;
       if (getPath().equals(t.getPath())
           && t.getStartOffset() == this.getStartOffset()
-          && t.getLength() == this.getLength()) {
+          && t.getLength() == this.getLength()
+          && t.isDistCached() == this.isDistCached()) {
         return true;
       }
     }
@@ -196,7 +218,8 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(getPath(), getStartOffset());
+    return Objects.hashCode(getPath(), getStartOffset(), getLength(),
+        isDistCached());
   }
   
   public Object clone() throws CloneNotSupportedException {
@@ -208,6 +231,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
     frag.fragmentId = fragmentId;
     frag.path = path;
     frag.meta = (TableMeta) (meta != null ? meta.clone() : null);
+    frag.distCached = distCached;
     
     return frag;
   }
@@ -216,7 +240,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   public String toString() {
     return "\"fragment\": {\"id\": \""+fragmentId+"\", \"path\": "
     		+getPath() + "\", \"start\": " + this.getStartOffset() + ",\"length\": "
-        + getLength() + "}";
+        + getLength() + ", \"distCached\": " + distCached + "}" ;
   }
 
   @Override
@@ -261,6 +285,10 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
     if (this.path != null) {
       builder.setPath(this.path.toString());
     }
+
+    if (this.distCached != null) {
+      builder.setDistCached(this.distCached);
+    }
   }
   
   private void mergeProtoToLocal() {
@@ -280,6 +308,9 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 	  if (length == -1 && p.hasLength()) {
 		  length = p.getLength();
 	  }
+    if (distCached == null && p.hasDistCached()) {
+      distCached = p.getDistCached();
+    }
   }
 
   @Override

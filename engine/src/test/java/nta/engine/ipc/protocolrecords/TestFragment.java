@@ -1,6 +1,7 @@
 package nta.engine.ipc.protocolrecords;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.SortedSet;
@@ -40,12 +41,14 @@ public class TestFragment {
   public final void testGetAndSetFields() {    
     Fragment fragment1 = new Fragment("table1_1", new Path("/table0"), 
         meta1, 0, 500);
+    fragment1.setDistCached();
 
     assertEquals("table1_1", fragment1.getId());
     assertEquals(new Path("/table0"), fragment1.getPath());
     assertEquals(meta1.getStoreType(), fragment1.getMeta().getStoreType());
     assertEquals(meta1.getSchema().getColumnNum(), 
         fragment1.getMeta().getSchema().getColumnNum());
+    assertTrue(fragment1.isDistCached());
     for(int i=0; i < meta1.getSchema().getColumnNum(); i++) {
       assertEquals(meta1.getSchema().getColumn(i).getColumnName(), 
           fragment1.getMeta().getSchema().getColumn(i).getColumnName());
@@ -113,6 +116,7 @@ public class TestFragment {
 //  @Test
   public final void testJson() {
 	  Fragment frag1 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500);
+    frag1.setDistCached();
 	  String json = frag1.toString();
 	  System.out.println(json);
 	  Gson gson = GsonCreator.getInstance();
@@ -122,5 +126,6 @@ public class TestFragment {
 	  assertEquals(frag1.getStartOffset(), fromJson.getStartOffset());
 	  assertEquals(frag1.getLength(), fromJson.getLength());
 	  assertEquals(frag1.getMeta(), fromJson.getMeta());
+    assertEquals(frag1.isDistCached(), fromJson.isDistCached());
   }
 }

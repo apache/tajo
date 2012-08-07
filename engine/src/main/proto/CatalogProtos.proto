@@ -57,6 +57,7 @@ message TabletProto {
 	required int64 length = 4;
 	required TableProto meta = 5;
 	optional TableStatProto stat = 6;
+  optional bool distCached = 7 [default = false];
 }
 
 message TableProto {
