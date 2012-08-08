@@ -965,12 +965,7 @@ public class ScheduleUnitExecutor extends Thread {
       fs.delete(path, true);
       cm.addFailedWorker(q.getHost());
       updateWorkers();
-      String hostName = cm.getRandomHost();
-      q.setHost(hostName);
-      LOG.info("QueryUnit " + q.getId() + " is assigned to " +
-          q.getHost() + " as the backup task");
       pendingQueue.add(q);
-      //requestPendingQueryUnits();
     }
   }
 

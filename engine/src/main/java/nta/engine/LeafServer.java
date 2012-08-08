@@ -252,6 +252,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
             case STOP:
               if (status == QueryStatus.QUERY_INPROGRESS) {
                 task.kill();
+                tasks.remove(task.getId());
                 LOG.info("Query unit ( " + qid + ") is killed");
               } else {
                 LOG.error("ERROR: Illegal State of " + qid + "(" + status + ")");
@@ -854,6 +855,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         break;
       case STOP:
         task.kill();
+        tasks.remove(task.getId());
         LOG.info("Query unit ( " + uid + ") is stopped");
         break;
       default:
