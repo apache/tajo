@@ -70,7 +70,7 @@ public class TestQueryManager {
     SubQueryId subId = QueryIdFactory.newSubQueryId(qid);
     SubQuery subQuery = new SubQuery(subId);
     qm.addSubQuery(subQuery);
-    GlobalPlanner planner = new GlobalPlanner(null, null, null);
+    GlobalPlanner planner = new GlobalPlanner(null, null, null, null);
     ScheduleUnit plan = planner.build(subId, root).getRoot();
     MockupQueryUnitScheduler mockScheduler = new MockupQueryUnitScheduler(planner, 
         qm, plan);

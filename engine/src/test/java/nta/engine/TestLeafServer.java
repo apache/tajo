@@ -34,7 +34,6 @@ import org.junit.Test;
 import tajo.datachannel.Fetcher;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
@@ -176,6 +175,13 @@ public class TestLeafServer {
   @Test
   public final void testCommand() throws Exception {
     Fragment[] frags = sm.split("employee", 40000);
+    for (Fragment f : frags) {
+      f.setDistCached();
+    }
+
+    for (Fragment f : frags) {
+      System.out.println(f);
+    }
 
     int splitIdx = (int) Math.ceil(frags.length / 2.f);
     QueryIdFactory.reset();
@@ -214,6 +220,8 @@ public class TestLeafServer {
     QueryUnitRequest req1 = new QueryUnitRequestImpl(
         qid1, Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
         "", false, plan.toJSON());
+
+    System.out.println(req1);
 
     QueryUnitRequest req2 = new QueryUnitRequestImpl(
         qid2, Lists.newArrayList(Arrays.copyOfRange(frags, splitIdx,

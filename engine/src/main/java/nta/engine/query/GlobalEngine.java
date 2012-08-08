@@ -6,13 +6,10 @@ package nta.engine.query;
 import java.io.File;
 import java.io.IOException;
 
-import nta.catalog.CatalogService;
-import nta.catalog.TCatUtil;
-import nta.catalog.TableDesc;
-import nta.catalog.TableMeta;
+import nta.catalog.*;
+import nta.catalog.statistics.TableStat;
 import nta.engine.*;
 import nta.engine.MasterInterfaceProtos.*;
-import nta.catalog.TableMetaImpl;
 import nta.catalog.proto.CatalogProtos;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.engine.cluster.ClusterManager;
@@ -75,7 +72,7 @@ public class GlobalEngine implements EngineService {
     this.analyzer = new QueryAnalyzer(cat);
     this.factory = new QueryContext.Factory(catalog);
 
-    this.globalPlanner = new GlobalPlanner(this.sm, this.qm, this.catalog);
+    this.globalPlanner = new GlobalPlanner(conf, this.sm, this.qm, this.catalog);
     this.globalOptimizer = new GlobalOptimizer();
   }
 
@@ -108,6 +105,17 @@ public class GlobalEngine implements EngineService {
         meta = TCatUtil.newTableMeta(createTable.getSchema(),
             createTable.getStoreType());
       }
+
+      long totalSize = 0;
+      try {
+        totalSize = sm.calculateSize(createTable.getPath());
+      } catch (IOException e) {
+        LOG.error("Cannot calculate the size of the relation", e);
+      }
+      TableStat stat = new TableStat();
+      stat.setNumBytes(totalSize);
+      meta.setStat(stat);
+
       StorageUtil.writeTableMeta(conf, createTable.getPath(), meta);
       TableDesc desc = TCatUtil.newTableDesc(createTable.getTableName(), meta,
           createTable.getPath());

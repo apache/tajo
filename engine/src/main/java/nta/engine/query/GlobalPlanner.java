@@ -31,6 +31,7 @@ import nta.storage.StorageManager;
 import nta.storage.TupleRange;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
@@ -46,13 +47,18 @@ import java.util.Map.Entry;
 public class GlobalPlanner {
   private static Log LOG = LogFactory.getLog(GlobalPlanner.class);
 
+  private Configuration conf;
   private StorageManager sm;
   private QueryManager qm;
   private CatalogService catalog;
   private SubQueryId subId;
 
-  public GlobalPlanner(StorageManager sm, QueryManager qm, CatalogService catalog)
+  public GlobalPlanner(Configuration conf,
+                       StorageManager sm,
+                       QueryManager qm,
+                       CatalogService catalog)
       throws IOException {
+    this.conf = conf;
     this.sm = sm;
     this.qm = qm;
     this.catalog = catalog;
@@ -139,6 +145,62 @@ public class GlobalPlanner {
         // transform join to two-phase plan 
         // the first phase of two-phase join can be any logical nodes
         JoinNode join = (JoinNode) node;
+
+        if (join.getOuterNode().getType() == ExprType.SCAN &&
+            join.getInnerNode().getType() == ExprType.SCAN) {
+          ScanNode outerScan = (ScanNode) join.getOuterNode();
+          ScanNode innerScan = (ScanNode) join.getInnerNode();
+          TableMeta outerMeta =
+              catalog.getTableDesc(outerScan.getTableId()).getMeta();
+          TableMeta innerMeta =
+              catalog.getTableDesc(innerScan.getTableId()).getMeta();
+          long threshold = conf.getLong(NConstants.BROADCAST_JOIN_THRESHOLD,
+              NConstants.DEFAULT_BROADCAST_JOIN_THRESHOLD);
+          // if the broadcast join is available
+
+          boolean outerSmall = false;
+          boolean innerSmall = false;
+          if (!outerScan.isLocal() && outerMeta.getStat() != null &&
+              outerMeta.getStat().getNumBytes() <= threshold) {
+            outerSmall = true;
+            LOG.info("The relation (" + outerScan.getTableId() +
+                ") is less than " + threshold);
+          }
+          if (!innerScan.isLocal() && innerMeta.getStat() != null &&
+              innerMeta.getStat().getNumBytes() <= threshold) {
+            innerSmall = true;
+            LOG.info("The relation (" + innerScan.getTableId() +
+                ") is less than " + threshold);
+          }
+
+          if (outerSmall && innerSmall) {
+            if (outerMeta.getStat().getNumBytes() <=
+                innerMeta.getStat().getNumBytes()) {
+              outerScan.setBroadcast();
+              LOG.info("The relation " + outerScan.getTableId()
+                  + " is broadcasted");
+            } else {
+              innerScan.setBroadcast();
+              LOG.info("The relation " + innerScan.getTableId()
+                  + " is broadcasted");
+            }
+          } else {
+            if (outerSmall) {
+              outerScan.setBroadcast();
+              LOG.info("The relation (" + outerScan.getTableId()
+                  + ") is broadcasted");
+            } else if (innerSmall) {
+              innerScan.setBroadcast();
+              LOG.info("The relation (" + innerScan.getTableId()
+                  + ") is broadcasted");
+            }
+          }
+
+          if (outerScan.isBroadcast() || innerScan.isBroadcast()) {
+            return;
+          }
+        }
+
         // insert stores for the first phase
         if (join.getOuterNode().getType() != ExprType.UNION &&
             join.getOuterNode().getType() != ExprType.STORE) {
@@ -492,6 +554,7 @@ public class GlobalPlanner {
     Schema outerSchema = join.getOuterNode().getOutputSchema();
     Schema innerSchema = join.getInnerNode().getOutputSchema();
     unit.setOutputType(PARTITION_TYPE.LIST);
+
     List<Column> outerCollist = new ArrayList<Column>();
     List<Column> innerCollist = new ArrayList<Column>();   
     
@@ -525,9 +588,11 @@ public class GlobalPlanner {
         unit.addChildQuery((ScanNode)join.getOuterNode(), prev);
       }
       outerStore.setPartitions(PARTITION_TYPE.HASH, outerCols, 1);
-    } else if (join.getOuterNode().getType() != ExprType.UNION) {
+    } else if (join.getOuterNode().getType() == ExprType.UNION) {
       _handleUnionNode(rootStore, (UnionNode)join.getOuterNode(), unit, 
           outerCols, PARTITION_TYPE.HASH);
+    } else {
+
     }
     
     // inner
@@ -879,7 +944,11 @@ public class GlobalPlanner {
         }
         for (FileStatus file : files) {
           // make fragments
-          frags = sm.split(file.getPath());
+          if (scan.isBroadcast()) {
+            frags = sm.splitBroadcastTable(file.getPath());
+          } else {
+            frags = sm.split(file.getPath());
+          }
           for (Fragment f : frags) {
             // TODO: the fragment ID should be set before
             f.setId(scan.getTableId());
@@ -956,26 +1025,58 @@ public class GlobalPlanner {
     if (scheduleUnit.hasJoinPlan()) {
       // make query units for every composition of fragments of each scan
       Preconditions.checkArgument(fragmentMap.size()==2);
-      String innerId, outerId;
-      List<Fragment> innerFrags, outerFrags;
-      Iterator<Entry<ScanNode, List<Fragment>>> it =
-          fragmentMap.entrySet().iterator();
-      Entry<ScanNode, List<Fragment>> e = it.next();
-      innerId = e.getKey().getTableId();
-      innerFrags = e.getValue();
-      e = it.next();
-      outerId = e.getKey().getTableId();
-      outerFrags = e.getValue();
-      for (Fragment outer : outerFrags) {
-        for (Fragment inner : innerFrags) {
+
+      ScanNode [] scanNodes = scheduleUnit.getScanNodes();
+      String innerId = null, outerId = null;
+
+      // If one relation is set to broadcast, it meaning that the relation
+      // is less than one block size. That is, the relation has only
+      // one fragment. If this assumption is kept, the below code is always
+      // correct.
+      if (scanNodes[0].isBroadcast() || scanNodes[1].isBroadcast()) {
+        List<Fragment> broadcastFrag = null;
+        List<Fragment> baseFrag = null;
+        if (scanNodes[0].isBroadcast()) {
+          broadcastFrag = fragmentMap.get(scanNodes[0]);
+          baseFrag = fragmentMap.get(scanNodes[1]);
+
+          innerId = scanNodes[0].getTableId();
+          outerId = scanNodes[1].getTableId();
+        } else if (scanNodes[1].isBroadcast()) {
+          broadcastFrag = fragmentMap.get(scanNodes[1]);
+          baseFrag = fragmentMap.get(scanNodes[0]);
+
+          innerId = scanNodes[1].getTableId();
+          outerId = scanNodes[0].getTableId();
+        }
+
+        for (Fragment outer : baseFrag) {
           queryUnit = newQueryUnit(scheduleUnit);
-          queryUnit.setFragment(innerId, inner);
           queryUnit.setFragment(outerId, outer);
+          for (Fragment inner : broadcastFrag) {
+            queryUnit.setFragment(innerId, inner);
+          }
           queryUnits.add(queryUnit);
         }
+      } else {
+        List<Fragment> innerFrags, outerFrags;
+        Iterator<Entry<ScanNode, List<Fragment>>> it =
+            fragmentMap.entrySet().iterator();
+        Entry<ScanNode, List<Fragment>> e = it.next();
+        innerId = e.getKey().getTableId();
+        innerFrags = e.getValue();
+        e = it.next();
+        outerId = e.getKey().getTableId();
+        outerFrags = e.getValue();
+        for (Fragment outer : outerFrags) {
+          for (Fragment inner : innerFrags) {
+            queryUnit = newQueryUnit(scheduleUnit);
+            queryUnit.setFragment(innerId, inner);
+            queryUnit.setFragment(outerId, outer);
+            queryUnits.add(queryUnit);
+          }
+        }
       }
-    } else {
-      throw new NotImplementedException();
     }
 
     return queryUnits;

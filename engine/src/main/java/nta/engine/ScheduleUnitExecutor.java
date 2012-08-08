@@ -515,9 +515,21 @@ public class ScheduleUnitExecutor extends Thread {
       // TODO: consider the map-side join
       Map<String, QueryUnitCluster> clusterMap = Maps.newHashMap();
       for (QueryUnit unit : queryUnits) {
+
+        String selectedScanTable = null;
+        for (ScanNode scanNode : unit.getScanNodes()) {
+          if (scanNode.isBroadcast()) {
+            selectedScanTable = scanNode.getTableId();
+            break;
+          }
+        }
+
+        if (selectedScanTable == null) {
+          selectedScanTable = unit.getScanNodes()[0].getTableId();
+        }
+
         FragmentServingInfo info = cm.getServingInfo(
-            unit.getFragment(
-                unit.getScanNodes()[0].getTableId()));
+            unit.getFragment(selectedScanTable));
         QueryUnitCluster cluster;
         if (clusterMap.containsKey(info.getPrimaryHost())) {
           cluster = clusterMap.get(info.getPrimaryHost());

@@ -57,6 +57,10 @@ public final class NConstants {
 
   public static final String EXTERNAL_SORT_BUFFER = "tajo.extsort.buffer";
 
+  public static final String BROADCAST_JOIN_THRESHOLD = "tajo.join.broadcast.threshold";
+  /** 5MB */
+  public static final long DEFAULT_BROADCAST_JOIN_THRESHOLD = 5 * 1048576;
+
 	private NConstants() {
 
 	}

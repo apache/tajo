@@ -38,10 +38,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
@@ -101,20 +98,24 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   private HttpDataServer dataServer;
   private AdvancedDataRetriever retriever;
   private String dataServerURL;
+  private final LocalDirAllocator lDirAllocator;
   
   //Web server
   private HttpServer webServer;
 
   public LeafServer(final Configuration conf) {
     this.conf = conf;
+    lDirAllocator = new LocalDirAllocator(NConstants.WORKER_TMP_DIR);
     LOG.info(conf.get(NConstants.WORKER_TMP_DIR));
     this.workDir = new File(conf.get(NConstants.WORKER_TMP_DIR));
   }
   
   private void prepareServing() throws IOException {
     NtaConf c = NtaConf.create(this.conf);
-    c.set("fs.default.name", "file:///");
-    localFS = LocalFileSystem.get(c);
+    defaultFS = FileSystem.get(URI.create(conf.get(NConstants.ENGINE_BASE_DIR)),
+        conf);
+
+    localFS = FileSystem.getLocal(conf);
     Path workDirPath = new Path(workDir.toURI());
     if (!localFS.exists(workDirPath)) {
       localFS.mkdirs(workDirPath);
@@ -373,15 +374,10 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     shutdown(reason);
   }
    
-  public File createLocalDir(String...subdir) throws IOException {
-    Path tmpDir = StorageUtil.concatPath(new Path(workDir.toString()),
-      subdir);
-    localFS.mkdirs(tmpDir);
-    if(tmpDir.toUri().isAbsolute()){
-      return new File(tmpDir.toUri());
-    } else {
-      return new File(new Path("file:"+tmpDir).toUri());
-    }
+  public File createLocalDir(Path path) throws IOException {
+    localFS.mkdirs(path);
+    Path qualified = localFS.makeQualified(path);
+    return new File(qualified.toUri());
   }
   
   public static Path getQueryUnitDir(QueryUnitId quid) {
@@ -420,18 +416,20 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   }  
   
   private List<Fetcher> getFetchRunners(SubqueryContext ctx, 
-      List<Fetch> fetches) {    
+      List<Fetch> fetches) throws IOException {
 
-    if (fetches.size() > 0) {      
-      File inputDir = new File(ctx.getWorkDir(), "in");
-      inputDir.mkdirs();
+    if (fetches.size() > 0) {
+      Path inputDir = lDirAllocator.
+          getLocalPathForWrite(
+              getQueryUnitDir(ctx.getQueryId()).toString() + "/in", conf);
+      createLocalDir(inputDir);
       File storeDir;
       
       int i = 0;
       File storeFile;
       List<Fetcher> runnerList = Lists.newArrayList();      
       for (Fetch f : fetches) {
-        storeDir = new File(inputDir, f.getName());
+        storeDir = new File(inputDir.toString(), f.getName());
         if (!storeDir.exists()) {
           storeDir.mkdirs();
         }
@@ -440,7 +438,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         runnerList.add(fetcher);
         i++;
       }
-      ctx.addFetchPhase(runnerList.size(), inputDir);
+      ctx.addFetchPhase(runnerList.size(), new File(inputDir.toString()));
       return runnerList;
     } else {
       return Lists.newArrayList();
@@ -572,7 +570,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   
   public class Task implements Runnable {
     private final SubqueryContext ctx;
-    private final List<Fetcher> fetcherRunners;
+    private List<Fetcher> fetcherRunners;
     private final LogicalNode plan;
     private PhysicalExec executor;
     private boolean interQuery;    
@@ -600,7 +598,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
         }
       }
-      fetcherRunners = getFetchRunners(ctx, request.getFetches());      
+      // for localizing the intermediate data
+      localize(request);
+
       ctx.setStatus(QueryStatus.QUERY_INITED);
       LOG.info("==================================");
       LOG.info("* Subquery " + request.getId() + " is initialized");
@@ -623,6 +623,38 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     }
 
     public void init() throws InternalException {      
+    }
+
+    public void localize(QueryUnitRequest request) throws IOException {
+      fetcherRunners = getFetchRunners(ctx, request.getFetches());
+
+      List<Fragment> cached = Lists.newArrayList();
+      for (Fragment frag : request.getFragments()) {
+        if (frag.isDistCached()) {
+          cached.add(frag);
+        }
+      }
+
+      if (cached.size() > 0) {
+        Path inputDir = lDirAllocator.
+            getLocalPathForWrite(
+                getQueryUnitDir(ctx.getQueryId()).toString() + "/in", conf);
+
+        if (!localFS.exists(inputDir)) {
+          createLocalDir(inputDir);
+        }
+
+        Path qualified = localFS.makeQualified(inputDir);
+        Path inFile;
+
+        int i = fetcherRunners.size();
+        for (Fragment cache : cached) {
+          inFile = new Path(qualified, "in_" + i);
+          defaultFS.copyToLocalFile(cache.getPath(), inFile);
+          cache.setPath(inFile);
+          i++;
+        }
+      }
     }
 
     public QueryUnitId getId() {
@@ -652,7 +684,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     }
 
     private File createWorkDir(QueryUnitId quid) throws IOException {
-      return createLocalDir(getQueryUnitDir(quid).toString());
+      Path subDir = getQueryUnitDir(quid);
+      Path path = lDirAllocator.getLocalPathForWrite(subDir.toString(), conf);
+      return createLocalDir(path);
     }
     
     public void kill() {

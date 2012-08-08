@@ -380,7 +380,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
 
     TableDesc desc = new TableDescImpl(request.getName(), meta, path);
     catalog.addTable(desc);
-    LOG.info("Table " + desc.getId() + " is attached.");
+    LOG.info("Table " + desc.getId() + " is attached (" + meta.getStat().getNumBytes() + ")");
     
     return AttachTableResponse.newBuilder().
         setDesc((TableDescProto) desc.getProto()).build();
@@ -434,7 +434,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
       LOG.error("Cannot write the table meta file", e);
     }
     catalog.addTable(desc);
-    LOG.info("Table " + desc.getId() + " is attached.");
+    LOG.info("Table " + desc.getId() + " is created (" + meta.getStat().getNumBytes() + ")");
     
     return CreateTableResponse.newBuilder().
         setDesc((TableDescProto) desc.getProto()).build();

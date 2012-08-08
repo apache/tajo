@@ -13,6 +13,7 @@ import nta.catalog.proto.CatalogProtos.TabletProtoOrBuilder;
 import nta.engine.SchemaObject;
 import nta.engine.json.GsonCreator;
 
+import nta.engine.utils.TUtil;
 import org.apache.hadoop.fs.Path;
 
 import com.google.common.base.Objects;
@@ -36,15 +37,15 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   @Expose @Required
   private TableMeta meta;
   @Expose @Required
-  private long startOffset;
+  private Long startOffset;
   @Expose @Required
-  private long length;
+  private Long length;
+
   @Expose @Optional
   private Boolean distCached;
 
   public Fragment() {
     builder = TabletProto.newBuilder();
-    startOffset = length = -1;
   }
 
   public Fragment(String fragmentId, Path path, TableMeta meta, long start,
@@ -58,8 +59,13 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   }
 
   public Fragment(TabletProto proto) {
-    this(proto.getId(), new Path(proto.getPath()), new TableMetaImpl(
-        proto.getMeta()), proto.getStartOffset(), proto.getLength());
+    this();
+    TableMeta newMeta = new TableMetaImpl(proto.getMeta());
+    this.set(proto.getId(), new Path(proto.getPath()), newMeta,
+        proto.getStartOffset(), proto.getLength());
+    if (proto.hasDistCached() && proto.getDistCached()) {
+      distCached = true;
+    }
   }
 
   private void set(String fragmentId, Path path, TableMeta meta, long start,
@@ -78,7 +84,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
       return this.fragmentId;
     }
 
-    if (!proto.hasId()) {
+    if (!p.hasId()) {
       return null;
     }
     this.fragmentId = p.getId();
@@ -99,7 +105,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
     if (this.path != null) {
       return this.path;
     }
-    if (!proto.hasPath()) {
+    if (!p.hasPath()) {
       return null;
     }
     this.path = new Path(p.getPath());
@@ -122,7 +128,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
     if (this.meta != null) {
       return this.meta;
     }
-    if (!proto.hasMeta()) {
+    if (!p.hasMeta()) {
       return null;
     }
     this.meta = new TableMetaImpl(p.getMeta());
@@ -135,27 +141,27 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
     this.meta = meta;
   }
 
-  public long getStartOffset() {
+  public Long getStartOffset() {
     TabletProtoOrBuilder p = viaProto ? proto : builder;
 
-    if (this.startOffset > -1) {
+    if (this.startOffset != null) {
       return this.startOffset;
     }
     if (!p.hasStartOffset()) {
-      return -1;
+      return null;
     }
     this.startOffset = p.getStartOffset();
     return this.startOffset;
   }
 
-  public long getLength() {
+  public Long getLength() {
     TabletProtoOrBuilder p = viaProto ? proto : builder;
 
-    if (this.length > -1) {
+    if (this.length != null) {
       return this.length;
     }
     if (!p.hasLength()) {
-      return -1;
+      return null;
     }
     this.length = p.getLength();
     return this.length;
@@ -168,7 +174,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
       return distCached;
     }
     if (!p.hasDistCached()) {
-      return null;
+      return false;
     }
     this.distCached = p.getDistCached();
     return this.distCached;
@@ -207,9 +213,9 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
     if (o instanceof Fragment) {
       Fragment t = (Fragment) o;
       if (getPath().equals(t.getPath())
-          && t.getStartOffset() == this.getStartOffset()
-          && t.getLength() == this.getLength()
-          && t.isDistCached() == this.isDistCached()) {
+          && TUtil.checkEquals(t.getStartOffset(), this.getStartOffset())
+          && TUtil.checkEquals(t.getLength(), this.getLength())
+          && TUtil.checkEquals(t.isDistCached(), this.isDistCached())) {
         return true;
       }
     }
@@ -270,7 +276,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
       builder.setId(this.fragmentId);
     }
 
-    if (this.startOffset > -1) {
+    if (this.startOffset != null) {
       builder.setStartOffset(this.startOffset);
     }
 
@@ -278,7 +284,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
       builder.setMeta(meta.getProto());
     }
 
-    if (this.length > -1) {
+    if (this.length!= null) {
       builder.setLength(this.length);
     }
 
@@ -302,10 +308,10 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 	  if (meta == null && p.hasMeta()) {
 		  meta = new TableMetaImpl(p.getMeta());
 	  }
-	  if (startOffset == -1 && p.hasStartOffset()) {
+	  if (startOffset == null && p.hasStartOffset()) {
 		  startOffset = p.getStartOffset();
 	  }
-	  if (length == -1 && p.hasLength()) {
+	  if (length == null && p.hasLength()) {
 		  length = p.getLength();
 	  }
     if (distCached == null && p.hasDistCached()) {

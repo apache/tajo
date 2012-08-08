@@ -85,7 +85,7 @@ public class TestGlobalQueryOptimizer {
     FileSystem fs = sm.getFileSystem();
 
     qm = new QueryManager();
-    planner = new GlobalPlanner(new StorageManager(conf), qm, catalog);
+    planner = new GlobalPlanner(conf, new StorageManager(conf), qm, catalog);
     analyzer = new QueryAnalyzer(catalog);
     factory = new QueryContext.Factory(catalog);
 

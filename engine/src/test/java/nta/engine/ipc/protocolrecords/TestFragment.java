@@ -55,8 +55,8 @@ public class TestFragment {
       assertEquals(meta1.getSchema().getColumn(i).getDataType(), 
           fragment1.getMeta().getSchema().getColumn(i).getDataType());
     }
-    assertEquals(0, fragment1.getStartOffset());
-    assertEquals(500, fragment1.getLength());
+    assertTrue(0 == fragment1.getStartOffset());
+    assertTrue(500 == fragment1.getLength());
   }
 
   @Test
@@ -75,8 +75,8 @@ public class TestFragment {
       assertEquals(meta1.getSchema().getColumn(i).getDataType(), 
           fragment1.getMeta().getSchema().getColumn(i).getDataType());
     }
-    assertEquals(0, fragment1.getStartOffset());
-    assertEquals(500, fragment1.getLength());
+    assertTrue(0 == fragment1.getStartOffset());
+    assertTrue(500 == fragment1.getLength());
   }
 
   @Test

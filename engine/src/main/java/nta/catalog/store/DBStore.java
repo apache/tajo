@@ -44,7 +44,9 @@ public class DBStore implements CatalogStore {
   private final String driver;
   private final String jdbcUri;
   private Connection conn;  
-  
+
+  private static final int VERSION = 1;
+
   private static final String TB_META = "META";
   private static final String TB_TABLES = "TABLES";
   private static final String TB_COLUMNS = "COLUMNS";
@@ -58,41 +60,105 @@ public class DBStore implements CatalogStore {
   private Lock rlock = lock.readLock();
   private Lock wlock = lock.writeLock();
   
-  public DBStore(final Configuration conf) throws InternalException {
+  public DBStore(final Configuration conf)
+      throws InternalException {
     this.conf = conf;
     
     this.driver =
         this.conf.get(TConstants.JDBC_DRIVER, TConstants.DEFAULT_JDBC_DRIVER);
     this.jdbcUri =
         this.conf.get(TConstants.JDBC_URI);
-    
-      try {
-        Class.forName(driver).newInstance();
-        LOG.info("Loaded the JDBC driver (" + driver +")");
-      } catch (Exception e) {
-        throw new InternalException("Cannot load JDBC driver " + driver, e);
-      }
-      
-      try {
-        LOG.info("Trying to connect database (" + jdbcUri + ")");
-        conn = DriverManager.getConnection(jdbcUri + ";create=true");
-        LOG.info("Connected to database (" + jdbcUri +")");
-      } catch (SQLException e) {
-        throw new InternalException("Cannot connect to database (" + jdbcUri 
-            +")", e);
-      }
-      
-      try {
+
+    try {
+      Class.forName(driver).newInstance();
+      LOG.info("Loaded the JDBC driver (" + driver +")");
+    } catch (Exception e) {
+      throw new InternalException("Cannot load JDBC driver " + driver, e);
+    }
+
+    try {
+      LOG.info("Trying to connect database (" + jdbcUri + ")");
+      conn = DriverManager.getConnection(jdbcUri + ";create=true");
+      LOG.info("Connected to database (" + jdbcUri +")");
+    } catch (SQLException e) {
+      throw new InternalException("Cannot connect to database (" + jdbcUri
+          +")", e);
+    }
+
+    try {
       if (!isInitialized()) {
         LOG.info("The base tables of CatalogServer are created.");
         createBaseTable();
       } else {
         LOG.info("The base tables of CatalogServer already is initialized.");
       }
-      } catch (SQLException se) {
-        throw new InternalException(
-            "Cannot initialize the persistent storage of Catalog", se);
+    } catch (SQLException se) {
+      throw new InternalException(
+          "Cannot initialize the persistent storage of Catalog", se);
+    }
+
+    int dbVersion = 0;
+    try {
+      dbVersion = needUpgrade();
+    } catch (SQLException e) {
+      throw new InternalException(
+          "Cannot check if the DB need to be upgraded", e);
+    }
+
+//    if (dbVersion < VERSION) {
+//      LOG.info("DB Upgrade is needed");
+//      try {
+//        upgrade(dbVersion, VERSION);
+//      } catch (SQLException e) {
+//        LOG.error(e.getMessage());
+//        throw new InternalException("DB upgrade is failed.", e);
+//      }
+//    }
+  }
+
+  private int needUpgrade() throws SQLException {
+    String sql = "SELECT VERSION FROM " + TB_META;
+    Statement stmt = conn.createStatement();
+    ResultSet res = stmt.executeQuery(sql);
+
+    if (res.next() == false) { // if this db version is 0
+      insertVersion();
+      return 0;
+    } else {
+      return res.getInt(1);
+    }
+  }
+
+  private void insertVersion() throws SQLException {
+    String sql = "INSERT INTO " + TB_META + " values (0)";
+    Statement stmt = conn.createStatement();
+    stmt.executeUpdate(sql);
+    stmt.close();
+  }
+
+  private void upgrade(int from, int to) throws SQLException {
+    String sql = null;
+    Statement stmt;
+    if (from == 0 ) {
+      if (to == 1) {
+        sql = "DROP INDEX idx_options_key";
+        LOG.info(sql);
+
+        stmt = conn.createStatement();
+        stmt.addBatch(sql);
+
+        sql =
+            "CREATE INDEX idx_options_key on " + TB_OPTIONS + " (" + C_TABLE_ID + ")";
+        stmt.addBatch(sql);
+        LOG.info(sql);
+        stmt.executeBatch();
+        stmt.close();
+
+        LOG.info("DB Upgraded from " + from + " to " + to);
+      } else {
+        LOG.info("DB Upgraded from " + from + " to " + to);
       }
+    }
   }
 
   // TODO - DDL and index statements should be renamed
@@ -177,7 +243,7 @@ public class DBStore implements CatalogStore {
       stmt.addBatch(options_ddl);
       
       String idx_options_key = 
-          "CREATE UNIQUE INDEX idx_options_key on " + TB_OPTIONS + " (key_)";
+          "CREATE INDEX idx_options_key on " + TB_OPTIONS + " (" + C_TABLE_ID + ")";
       if (LOG.isDebugEnabled()) {
         LOG.debug(idx_options_key);
       }
@@ -228,8 +294,8 @@ public class DBStore implements CatalogStore {
       String stats_ddl = "CREATE TABLE " + TB_STATISTICS + "("
           + C_TABLE_ID + " VARCHAR(256) NOT NULL REFERENCES TABLES (" + C_TABLE_ID + ") "
           + "ON DELETE CASCADE, "
-          + "num_rows INT, "
-          + "num_bytes INT)";
+          + "num_rows BIGINT, "
+          + "num_bytes BIGINT)";
       if (LOG.isDebugEnabled()) {
         LOG.debug(stats_ddl);
       }
@@ -433,40 +499,79 @@ public class DBStore implements CatalogStore {
   @Override
   public final void deleteTable(final String name) throws IOException {
     Statement stmt = null;
-    wlock.lock(); 
+    String sql = null;
     try {
-      stmt = conn.createStatement();
-      String sql = "DELETE FROM " + TB_COLUMNS +
-          " WHERE " + C_TABLE_ID + " = '" + name + "'";
-      LOG.info(sql);
-      stmt.execute(sql);
+      wlock.lock();
+      try {
+        stmt = conn.createStatement();
+        sql = "DELETE FROM " + TB_COLUMNS +
+            " WHERE " + C_TABLE_ID + " = '" + name + "'";
+        LOG.info(sql);
+        stmt.execute(sql);
+      } catch (SQLException se) {
+        throw new IOException(se);
+      } finally {
+        try {
+          if (stmt != null) {
+            stmt.close();
+          }
+        } catch (SQLException e) {
+        }
+      }
 
-      sql = "DELETE FROM " + TB_OPTIONS +
-          " WHERE " + C_TABLE_ID + " = '" + name + "'";
-      LOG.info(sql);
-      stmt.execute(sql);
+      try {
+        sql = "DELETE FROM " + TB_OPTIONS +
+            " WHERE " + C_TABLE_ID + " = '" + name + "'";
+        LOG.info(sql);
+        stmt = conn.createStatement();
+        stmt.execute(sql);
+      } catch (SQLException se) {
+        throw new IOException(se);
+      } finally {
+        try {
+          if (stmt != null) {
+            stmt.close();
+          }
+        } catch (SQLException e) {
+        }
+      }
 
-      sql = "DELETE FROM " + TB_STATISTICS +
-          " WHERE " + C_TABLE_ID + " = '" + name + "'";
-      LOG.info(sql);
-      stmt.execute(sql);
+      try {
+        sql = "DELETE FROM " + TB_STATISTICS +
+            " WHERE " + C_TABLE_ID + " = '" + name + "'";
+        LOG.info(sql);
+        stmt = conn.createStatement();
+        stmt.execute(sql);
+      } catch (SQLException se) {
+        throw new IOException(se);
+      } finally {
+        try {
+          if (stmt != null) {
+            stmt.close();
+          }
+        } catch (SQLException e) {
+        }
+      }
 
-      sql = "DELETE FROM " + TB_TABLES +
-           " WHERE " + C_TABLE_ID +" = '" + name + "'";
-      LOG.info(sql);
-      stmt.execute(sql);
+      try {
+        sql = "DELETE FROM " + TB_TABLES +
+            " WHERE " + C_TABLE_ID +" = '" + name + "'";
+        LOG.info(sql);
+        stmt = conn.createStatement();
+        stmt.execute(sql);
+      } catch (SQLException se) {
+        throw new IOException(se);
+      } finally {
+        try {
+          if (stmt != null) {
+            stmt.close();
+          }
+        } catch (SQLException e) {
+        }
+      }
 
-      //stmt.executeBatch();
-    } catch (SQLException se) {
-      throw new IOException(se);
     } finally {
       wlock.unlock();
-      try {
-        if (stmt != null) {
-          stmt.close();
-        }
-      } catch (SQLException e) {
-      }      
     }
   }
 
@@ -564,8 +669,8 @@ public class DBStore implements CatalogStore {
 
         if (res.next()) {
           stat = new TableStat();
-          stat.setNumRows(res.getInt("num_rows"));
-          stat.setNumBytes(res.getInt("num_bytes"));
+          stat.setNumRows(res.getLong("num_rows"));
+          stat.setNumBytes(res.getLong("num_bytes"));
         }
       } catch (SQLException se) {
         throw new IOException(se);

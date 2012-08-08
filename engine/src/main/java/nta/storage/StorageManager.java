@@ -402,6 +402,25 @@ public class StorageManager {
     Path tablePath = new Path(dataRoot, tableName);
     return split(tableName, tablePath, fragmentSize);
   }
+
+  public Fragment [] splitBroadcastTable(Path tablePath) throws IOException {
+    FileSystem fs = tablePath.getFileSystem(conf);
+    TableMeta meta = getTableMeta(tablePath);
+    List<Fragment> listTablets = new ArrayList<Fragment>();
+    Fragment tablet;
+
+    FileStatus[] fileLists = fs.listStatus(new Path(tablePath, "data"));
+    for (FileStatus file : fileLists) {
+      tablet = new Fragment(tablePath.getName(), file.getPath(), meta, 0,
+          file.getLen());
+      listTablets.add(tablet);
+    }
+
+    Fragment[] tablets = new Fragment[listTablets.size()];
+    listTablets.toArray(tablets);
+
+    return tablets;
+  }
 	
 	public Fragment[] split(Path tablePath) throws IOException {
 	  FileSystem fs = tablePath.getFileSystem(conf);
@@ -478,5 +497,18 @@ public class StorageManager {
     FileUtil.writeProto(out, meta.getProto());
     out.flush();
     out.close();
+  }
+
+  public long calculateSize(Path tablePath) throws IOException {
+    FileSystem fs = tablePath.getFileSystem(conf);
+    long totalSize = 0;
+    Path dataPath = new Path(tablePath, "data");
+    if (fs.exists(dataPath)) {
+      for (FileStatus status : fs.listStatus(new Path(tablePath, "data"))) {
+        totalSize += status.getLen();
+      }
+    }
+
+    return totalSize;
   }
 }

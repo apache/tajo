@@ -76,10 +76,13 @@ public class TestTableDesc {
   public void testFragmentToJson() throws CloneNotSupportedException {
 	  TableDesc tmp = new Fragment("frag1", new Path("/"), info, 0, 10);
 	  testClone(tmp);
+    System.out.println("1");
 	  Fragment frag = new Fragment((TabletProto)tmp.getProto());
 	  testClone(frag);
+    System.out.println("2");
 	  String json = frag.toJSON();
 	  System.out.println(json);
+    System.out.println("3");
 	  Fragment fromJson = (Fragment)GsonCreator.getInstance().fromJson(json, TableDesc.class);
 	  System.out.println(fromJson.toJSON());
 	  assertEquals(frag.getId(), fromJson.getId());

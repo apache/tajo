@@ -22,6 +22,7 @@ public class ScanNode extends LogicalNode {
 	@Expose private EvalNode qual;
 	@Expose private QueryBlock.Target[] targets;
 	@Expose private boolean local;
+  @Expose private boolean broadcast;
 	
 	public ScanNode() {
 		super();
@@ -75,6 +76,14 @@ public class ScanNode extends LogicalNode {
 	public Target [] getTargets() {
 	  return this.targets;
 	}
+
+  public boolean isBroadcast() {
+    return broadcast;
+  }
+
+  public void setBroadcast() {
+    broadcast = true;
+  }
 	
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();	  
@@ -83,6 +92,10 @@ public class ScanNode extends LogicalNode {
 	  if (hasAlias()) {
 	    sb.append(",\"alias\": \"").append(table.getAlias());
 	  }
+
+    if (isBroadcast()) {
+      sb.append(",\"broadcast\": true\"");
+    }
 	  
 	  if (hasQual()) {
 	    sb.append(", \"qual\": \"").append(this.qual).append("\"");
