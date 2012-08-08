@@ -34,7 +34,7 @@ public class QueryUnitStatus {
 
   private QueryUnitId queryUnitId;
   private Map<Integer, QueryUnitAttempt> attemptMap;
-  private volatile int lastAttemptId;
+  private Integer lastAttemptId;
 
   public QueryUnitStatus(QueryUnitId queryUnitId) {
     this.queryUnitId = queryUnitId;
@@ -43,8 +43,10 @@ public class QueryUnitStatus {
   }
 
   public synchronized void putAttempt(QueryUnitAttempt attempt) {
-    if (lastAttemptId < attempt.getId()) {
-      lastAttemptId = attempt.getId();
+    synchronized (lastAttemptId) {
+      if (lastAttemptId < attempt.getId()) {
+        lastAttemptId = attempt.getId();
+      }
     }
     attemptMap.put(attempt.getId(), attempt);
   }
@@ -66,6 +68,6 @@ public class QueryUnitStatus {
   }
 
   public int getLastAttemptId() {
-    return this.lastAttemptId;
+    return this.lastAttemptId.intValue();
   }
 }

@@ -105,14 +105,15 @@ public class QueryManager {
         " is changed to " + status);
   }
 
-  public void updateScheduleUnitStatus(final ScheduleUnitId scheduleUnitId,
-                                       final QueryStatus status) {
+  public synchronized void updateScheduleUnitStatus(
+      final ScheduleUnitId scheduleUnitId,
+      final QueryStatus status) {
     scheduleUnitStatusMap.put(scheduleUnitId, status);
     LOG.info("ScheduleUnit status of " + scheduleUnitId +
         " is changed to " + status);
   }
 
-  public void updateQueryUnitStatus(final QueryUnitId queryUnitId,
+  public synchronized void updateQueryUnitStatus(final QueryUnitId queryUnitId,
                                     final int attemptId,
                                     final QueryStatus status) {
     QueryUnitStatus unitStatus;
@@ -171,7 +172,7 @@ public class QueryManager {
     return queryStatusMap.get(queryId);
   }
   
-  public synchronized void updateQueryAssignInfo(String servername, 
+  public void updateQueryAssignInfo(String servername,
       QueryUnit unit) {
     serverByQueryUnit.put(unit, servername);
     List<QueryUnit> units;
@@ -183,7 +184,7 @@ public class QueryManager {
     units.add(unit);
     queryUnitsByServer.put(servername, units);
   }
-  
+
   public void updateProgress(QueryUnitId queryUnitId,
       InProgressStatusProto progress) throws NoSuchQueryIdException {
     QueryUnit unit = queries.get(queryUnitId.getQueryId()).

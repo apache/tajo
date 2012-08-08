@@ -242,15 +242,15 @@ public class QueryUnit extends AbstractQuery {
 	 * Expire time
 	 */
 	
-	public void setExpireTime(int expire) {
+	public synchronized void setExpireTime(int expire) {
 	  this.expire = expire;
 	}
 	
-	public void updateExpireTime(int period) {
+	public synchronized void updateExpireTime(int period) {
 	  this.setExpireTime(this.expire - period);
 	}
 	
-	public void resetExpireTime() {
+	public synchronized void resetExpireTime() {
 	  this.setExpireTime(QueryUnit.EXPIRE_TIME);
 	}
 	
