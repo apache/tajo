@@ -56,7 +56,7 @@ public class MockupCluster {
       workers.add(new MockupAbortWorker(conf));
     }
     for (i = 0; i < numShutdownWorkers; i++) {
-      workers.add(new MockupShutdownWorker(conf, 5000));
+      workers.add(new MockupShutdownWorker(conf, 10000));
     }
   }
 

@@ -54,6 +54,7 @@ public class ScheduleUnitExecutor extends Thread {
   }
 
   private final static Log LOG = LogFactory.getLog(ScheduleUnitExecutor.class);
+  private final static int WAIT_PERIOD = 3000;
 
   private BlockingQueue<ScheduleUnit> inprogressQueue;
   private BlockingQueue<QueryUnit> pendingQueue;
@@ -103,7 +104,7 @@ public class ScheduleUnitExecutor extends Thread {
     this.submitter.start();
     while (this.status == Status.INPROGRESS) {
       try {
-        this.sleeper.sleep(3000);
+        this.sleeper.sleep(WAIT_PERIOD);
 
         if (scheduler.getStatus() == Status.FINISHED &&
             submitter.getStatus() == Status.FINISHED) {
@@ -266,7 +267,7 @@ public class ScheduleUnitExecutor extends Thread {
 
       while (status == Status.INPROGRESS) {
         try {
-          this.sleeper.sleep(3000);
+          this.sleeper.sleep(WAIT_PERIOD);
           if (this.isFinished()) {
             this.shutdown();
           }
@@ -602,7 +603,7 @@ public class ScheduleUnitExecutor extends Thread {
         cm.resetResourceInfo();
 
         while (status == Status.INPROGRESS) {
-          this.sleeper.sleep(3000);
+          this.sleeper.sleep(WAIT_PERIOD);
           if (this.isFinished()) {
             this.shutdown();
           }
@@ -759,8 +760,10 @@ public class ScheduleUnitExecutor extends Thread {
 
     private void updateSubmittedQueryUnitStatus() throws Exception {
       // TODO
-      boolean retry = false;
+      boolean retryRequired;
+      boolean wait;
       QueryStatus status;
+      int submitted = 0;
       int inited = 0;
       int pending = 0;
       int inprogress = 0;
@@ -769,19 +772,27 @@ public class ScheduleUnitExecutor extends Thread {
       int killed = 0;
       List<QueryUnit> toBeRemoved = Lists.newArrayList();
       for (QueryUnit unit : submittedQueryUnits) {
-        retry = false;
+        retryRequired = false;
+        wait = false;
         status = qm.getQueryUnitStatus(unit.getId()).getLastAttempt()
             .getStatus();
 
         switch (status) {
+          case QUERY_SUBMITED:
+            wait = true;
+            submitted++;
+            break;
           case QUERY_INITED:
             inited++;
+            wait = true;
             break;
           case QUERY_PENDING:
             pending++;
+            wait = true;
             break;
           case QUERY_INPROGRESS:
             inprogress++;
+            wait = true;
             break;
           case QUERY_FINISHED:
             toBeRemoved.add(unit);
@@ -789,7 +800,8 @@ public class ScheduleUnitExecutor extends Thread {
             cm.addResource(unit.getHost());
             break;
           case QUERY_ABORTED:
-            retry = true;
+            toBeRemoved.add(unit);
+            retryRequired = true;
             aborted++;
             break;
           case QUERY_KILLED:
@@ -802,7 +814,16 @@ public class ScheduleUnitExecutor extends Thread {
             break;
         }
 
-        if (retry) {
+        if (wait) {
+          unit.updateExpireTime(WAIT_PERIOD);
+          if (unit.getLeftTime() <= 0) {
+            LOG.info("QueryUnit " + unit.getId() + " is expired!!");
+            toBeRemoved.add(unit);
+            retryRequired = true;
+          }
+        }
+
+        if (retryRequired) {
           if (!retryQueryUnit(unit)) {
             LOG.info("The query " + unit.getId() + " is aborted with + "
                 + status + " after " + RETRY_LIMIT + " retries.");
@@ -814,9 +835,9 @@ public class ScheduleUnitExecutor extends Thread {
 
       LOG.info("\n--- Status of all submitted query units ---\n" + ""
           + " In Progress (Submitted: " + submittedQueryUnits.size()
-          + ", Finished: " + success + ", Inited: " + inited + ", Pending: "
-          + pending + ", Running: " + inprogress + ", Aborted: " + aborted
-          + ", Killed: " + killed);
+          + ", Finished: " + success + ", Inited: " + submitted + ", Inited: "
+          + inited + ", Pending: " + pending + ", Running: " + inprogress
+          + ", Aborted: " + aborted + ", Killed: " + killed);
       submittedQueryUnits.removeAll(toBeRemoved);
     }
 
@@ -839,10 +860,10 @@ public class ScheduleUnitExecutor extends Thread {
         queryUnitAttemptMap.put(q.getId(), attemptId);
         QueryUnitRequest request = createQueryUnitRequest(q, fragList);
 
+        printQueryUnitRequestInfo(q, request);
         if (!requestToWC(q.getHost(), request.getProto())) {
           retryQueryUnit(q);
         }
-        printQueryUnitRequestInfo(q, request);
         submittedQueryUnits.add(q);
         qm.updateQueryUnitStatus(q.getId(), queryUnitAttemptMap.get(q.getId()),
             QueryStatus.QUERY_SUBMITED);
