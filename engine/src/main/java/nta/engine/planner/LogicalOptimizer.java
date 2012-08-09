@@ -9,17 +9,25 @@ import com.google.common.collect.Sets;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.catalog.SchemaUtil;
+import nta.catalog.TableMeta;
 import nta.engine.Context;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.exec.eval.EvalTreeUtil;
 import nta.engine.exec.eval.FieldEval;
 import nta.engine.parser.QueryBlock;
+import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.parser.QueryBlock.Target;
 import nta.engine.planner.logical.*;
 import nta.engine.query.exception.InvalidQueryException;
+import nta.storage.StorageManager;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 
+import tajo.index.IndexUtil;
+
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -45,7 +53,6 @@ public class LogicalOptimizer {
     
     switch (ctx.getStatementType()) {
     case SELECT:
-    //case UNION: // TODO - to be implemented
     //case EXCEPT:
     //case INTERSECT:
     case CREATE_TABLE:
@@ -61,12 +68,91 @@ public class LogicalOptimizer {
       }
 
       break;
+    case UNION: // TODO - to be implemented
+      pushUnion ( ctx , toBeOptimized);
+      break;
     default:
     }
     
     return toBeOptimized;
   }
   
+  private static void pushUnion (Context ctx , LogicalNode plan) {
+    switch(plan.getType()) {
+      case ROOT:
+        pushUnion(ctx , ((LogicalRootNode)plan).getSubNode());
+        break;
+      case UNION:
+        pushUnion(ctx , ((UnionNode)plan).getOuterNode());
+        pushUnion(ctx , ((UnionNode)plan).getInnerNode());
+        break;
+      case PROJECTION:
+        if(PlannerUtil.findTopNode(plan, ExprType.SELECTION) != null) {
+          pushSelection(ctx, plan);
+        }
+        break;
+    }
+  }
+  
+  public static LogicalNode pushIndex(LogicalNode plan , StorageManager sm) throws IOException {
+    if(PlannerUtil.findTopNode(plan, ExprType.SCAN) == null) {
+      return plan;
+    }
+    LogicalNode toBeOptimized;
+    try {
+      toBeOptimized = (LogicalNode) plan.clone();
+    } catch (CloneNotSupportedException e) {
+      LOG.error(e);
+      throw new InvalidQueryException("Cannot clone: " + plan);
+    }
+  
+    changeScanToIndexNode(null ,toBeOptimized , sm);
+    return toBeOptimized;
+    
+  }
+  private static void changeScanToIndexNode
+    (LogicalNode parent , LogicalNode cur , StorageManager sm ) throws IOException {
+    if( cur instanceof BinaryNode ) {
+      changeScanToIndexNode(cur , ((BinaryNode)cur).getOuterNode() , sm);
+      changeScanToIndexNode(cur , ((BinaryNode)cur).getInnerNode() , sm);
+    } else {
+      switch(cur.getType()) {
+      case CREATE_INDEX:
+        return;
+      case SCAN:
+        ScanNode scan = (ScanNode)cur;
+        EvalNode qual = scan.getQual();
+        if(qual == null) { 
+          return;
+        }else {
+          String tableName = scan.getTableId();
+          Path path = new Path(sm.getTablePath(tableName), "index");
+         
+          if(sm.getFileSystem().exists(path)) {
+            
+            TableMeta meta = sm.getTableMeta(path);       
+            IndexScanNode node;
+            if ((node = IndexUtil.indexEval(scan, meta.getOptions())) == null) {
+              return;
+            }
+            if( parent instanceof BinaryNode ) {
+              if (scan.equals(((BinaryNode)parent).getOuterNode())) {
+                ((BinaryNode)parent).setOuter(node);
+              } else {
+                ((BinaryNode)parent).setInner(node);
+               }
+            } else {
+              ((UnaryNode)parent).setSubNode(node);
+            }
+          }
+          return;
+        }
+      default:
+        changeScanToIndexNode(cur , ((UnaryNode)cur).getSubNode() , sm);
+        break;
+      }
+    }
+  }
   /**
    * This method pushes down the selection into the appropriate sub 
    * logical operators.

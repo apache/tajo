@@ -8,6 +8,7 @@ package nta.engine.planner.logical;
  *
  */
 public enum ExprType {
+  BST_INDEX_SCAN,
   CREATE_INDEX,
   CREATE_TABLE,	
 	DESC_TABLE,

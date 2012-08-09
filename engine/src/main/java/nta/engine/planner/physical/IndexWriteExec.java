@@ -13,6 +13,8 @@ import nta.storage.StorageManager;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 import org.apache.hadoop.fs.Path;
+
+import tajo.index.IndexUtil;
 import tajo.index.bst.BSTIndex;
 import tajo.index.bst.BSTIndex.BSTIndexWriter;
 
@@ -28,11 +30,9 @@ public class IndexWriteExec extends PhysicalExec {
   
   private final BSTIndexWriter indexWriter;
   private final TupleComparator comp;
-  private final Fragment fragment;
 
   public IndexWriteExec(StorageManager sm, IndexWriteNode annotation, Fragment frag,
       PhysicalExec subOp) throws IOException {
-    this.fragment = frag;
     this.subOp = subOp;    
     inSchema = annotation.getInputSchema();
     Preconditions.checkArgument(inSchema.equals(subOp.getSchema()));
@@ -45,12 +45,14 @@ public class IndexWriteExec extends PhysicalExec {
       indexKeys[i] = inSchema.getColumnId(col.getQualifiedName());
       keySchema.addColumn(inSchema.getColumn(col.getQualifiedName()));
     }
-    this.comp = new TupleComparator(inSchema, annotation.getSortSpecs());
+    this.comp = new TupleComparator(keySchema, annotation.getSortSpecs());
     
     BSTIndex bst = new BSTIndex(NtaConf.create());
-    Path dir = new Path(frag.getPath().getParent().getParent(), "index");
+    Path dir = new Path(sm.getTablePath(annotation.getTableName()) , "index");
     // TODO - to be improved
-    this.indexWriter = bst.getIndexWriter(new Path(dir, "indexfile"), BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
+    this.indexWriter = bst.getIndexWriter(new Path(dir, 
+        IndexUtil.getIndexNameOfFrag(frag, annotation.getSortSpecs())),
+        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
   }
 
   @Override
@@ -61,11 +63,12 @@ public class IndexWriteExec extends PhysicalExec {
   @Override
   public Tuple next() throws IOException {
     indexWriter.open();
-    Tuple tuple;
-    Tuple keys = new VTuple(indexKeys.length);
-    while ((tuple = subOp.next()) != null) {      
+    VTuple tuple;
+    
+    while ((tuple = (VTuple)subOp.next()) != null) {
+      Tuple keys = new VTuple(indexKeys.length);
       for (int idx = 0; idx < indexKeys.length; idx++) {
-        keys.put(idx, tuple.get(idx));
+        keys.put(idx, tuple.get(indexKeys[idx]));
       }
       indexWriter.write(keys, tuple.getOffset());
     }

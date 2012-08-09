@@ -32,7 +32,17 @@ public class FieldEval extends EvalNode implements Cloneable {
 	@Override
 	public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
 	  if (fieldId == -1) {
-	    fieldId = schema.getColumnId(column.getQualifiedName());
+	    if(schema.contains(column.getQualifiedName())) {
+	     fieldId = schema.getColumnId(column.getQualifiedName());
+	    } else {
+	      if(schema.getColumnNum() != 0) {
+	        String schemaColQualName = schema.getColumn(0).getTableName() + 
+	            "." +  column.getColumnName();
+	        fieldId = schema.getColumnId(schemaColQualName);
+	      } else {
+	        fieldId = schema.getColumnId(column.getQualifiedName());
+	      }
+	    }
 	  }
 	  datum = tuple.get(fieldId);
 	}

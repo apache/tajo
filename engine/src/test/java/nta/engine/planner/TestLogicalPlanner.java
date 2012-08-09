@@ -757,10 +757,12 @@ public class TestLogicalPlanner {
     UnionNode union = (UnionNode) root.getSubNode();
     assertEquals(ExprType.PROJECTION, union.getOuterNode().getType());
     ProjectionNode projL = (ProjectionNode) union.getOuterNode();
-    assertEquals(ExprType.SELECTION, projL.getSubNode().getType());
+//    assertEquals(ExprType.SELECTION, projL.getSubNode().getType());
+    assertEquals(ExprType.SCAN, projL.getSubNode().getType());
     assertEquals(ExprType.PROJECTION, union.getInnerNode().getType());
     ProjectionNode projR = (ProjectionNode) union.getInnerNode();
-    assertEquals(ExprType.SELECTION, projR.getSubNode().getType());
+//    assertEquals(ExprType.SELECTION, projR.getSubNode().getType());
+    assertEquals(ExprType.SCAN, projL.getSubNode().getType());
     
     // for testing multiple set statements
     ctx = factory.create();

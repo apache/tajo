@@ -61,6 +61,7 @@ public class SeqScanExec extends PhysicalExec {
       if ((tuple = scanner.next()) != null) {
         projector.eval(evalContexts, tuple);
         projector.terminate(evalContexts, outTuple);
+        outTuple.setOffset(tuple.getOffset());
         return outTuple;
       } else {
         return null;

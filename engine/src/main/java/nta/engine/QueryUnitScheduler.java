@@ -18,11 +18,13 @@ import nta.engine.exception.EmptyClusterException;
 import nta.engine.exception.UnknownWorkerException;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
+import nta.engine.json.GsonCreator;
 import nta.engine.planner.PlannerUtil;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
+import nta.engine.planner.logical.IndexWriteNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalPlanner;
 import nta.engine.query.GlobalPlannerUtils;
@@ -33,6 +35,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+
+import tajo.index.IndexUtil;
+import tajo.index.bst.BSTIndex;
 
 import java.net.URI;
 import java.util.*;
@@ -105,7 +110,7 @@ public class QueryUnitScheduler extends Thread {
       }
     }
     
-    if (plan.getStoreTableNode().getSubNode().getType() == ExprType.UNION) {
+    if (plan.getStoreTableNode() != null && plan.getStoreTableNode().getSubNode().getType() == ExprType.UNION) {
       // union operators are not executed
     } else {
       LOG.info("Plan of " + plan.getId() + " : " + plan.getLogicalPlan());
@@ -181,12 +186,34 @@ public class QueryUnitScheduler extends Thread {
         requestPendingQueryUnits();
 
         TableStat stat = waitForFinishScheduleUnit(plan);
+
         if (qm.getScheduleUnitStatus(plan) == QueryStatus.QUERY_FINISHED) {
-          TableMeta meta = TCatUtil.newTableMeta(plan.getOutputSchema(),
-              StoreType.CSV);
-          meta.setStat(stat);
-          sm.writeTableMeta(sm.getTablePath(plan.getOutputName()), meta);
-          qm.getSubQuery(units[0].getId().getSubQueryId()).setTableStat(stat);
+          if(plan.getLogicalPlan().getType() == ExprType.CREATE_INDEX) {
+            IndexWriteNode index = (IndexWriteNode)plan.getLogicalPlan();
+            Path indexPath = new Path(
+                sm.getTablePath(index.getTableName()) , "index");
+            TableMeta meta;
+            if(sm.getFileSystem().exists(new Path(indexPath , ".meta"))) {
+              meta = sm.getTableMeta(indexPath);
+            } else {
+              meta = TCatUtil.newTableMeta
+                  (plan.getOutputSchema(), StoreType.CSV);
+            }      
+            String indexName = IndexUtil.getIndexName(index.getTableName()
+                , index.getSortSpecs());
+            String json = GsonCreator.getInstance().
+                toJson(index.getSortSpecs());
+            meta.putOption(indexName, json);
+            
+            sm.writeTableMeta(indexPath, meta);
+            
+          } else  {
+            TableMeta meta = TCatUtil.newTableMeta(plan.getOutputSchema(),
+                StoreType.CSV);
+            meta.setStat(stat);
+            sm.writeTableMeta(sm.getTablePath(plan.getOutputName()), meta);
+            qm.getSubQuery(units[0].getId().getSubQueryId()).setTableStat(stat);
+          }
         } else {
           LOG.error("ScheduleUnit " + plan.getId() +
               " is terminated with " + qm.getScheduleUnitStatus(plan));

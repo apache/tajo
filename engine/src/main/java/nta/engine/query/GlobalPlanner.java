@@ -81,8 +81,13 @@ public class GlobalPlanner {
     if (root.getSubNode().getType() == ExprType.CREATE_INDEX) {
       indexNode = (IndexWriteNode) root.getSubNode();
       root = (UnaryNode)root.getSubNode();
-    } 
-    if (root.getSubNode().getType() != ExprType.STORE) {
+      
+      StoreIndexNode store = new StoreIndexNode(
+          QueryIdFactory.newScheduleUnitId(subQueryId).toString());
+      store.setLocal(false);
+      PlannerUtil.insertNode(root, store);
+      
+    } else if (root.getSubNode().getType() != ExprType.STORE) {
       insertStore(QueryIdFactory.newScheduleUnitId(subQueryId).toString(), 
           root).setLocal(false);
     }
@@ -224,14 +229,28 @@ public class GlobalPlanner {
             union.getOuterNode().getType() != ExprType.STORE) {
           tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
           store = new StoreTableNode(tableId);
-          store.setLocal(true);
+          if(union.getOuterNode().getType() == ExprType.GROUP_BY) {
+            /*This case is for cube by operator
+             * TODO : more complicated conidtion*/
+            store.setLocal(true);
+          } else {
+            /* This case is for union query*/
+            store.setLocal(false);
+          }
           PlannerUtil.insertOuterNode(node, store);
         }
         if (union.getInnerNode().getType() != ExprType.UNION &&
             union.getInnerNode().getType() != ExprType.STORE) {
           tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
           store = new StoreTableNode(tableId);
-          store.setLocal(true);
+          if(union.getInnerNode().getType() == ExprType.GROUP_BY) {
+            /*This case is for cube by operator
+             * TODO : more complicated conidtion*/
+            store.setLocal(false);
+          }else {
+            /* This case is for union query*/
+            store.setLocal(false);
+          }
           PlannerUtil.insertInnerNode(node, store);
         }
       } else if (node instanceof UnaryNode) {
@@ -284,6 +303,7 @@ public class GlobalPlanner {
         unit = new ScheduleUnit(id);
 
         switch (store.getSubNode().getType()) {
+        case BST_INDEX_SCAN:
         case SCAN:  // store - scan
           unit = makeScanUnit(unit);
           unit.setLogicalPlan(node);
@@ -325,6 +345,15 @@ public class GlobalPlanner {
   
   private ScheduleUnit makeScanUnit(ScheduleUnit unit) {
     unit.setOutputType(PARTITION_TYPE.LIST);
+    return unit;
+  }
+  
+  private ScheduleUnit makeBSTIndexUnit(LogicalNode plan, ScheduleUnit unit) {
+    switch(((IndexWriteNode)plan).getSubNode().getType()){
+    case SCAN:
+      unit = makeScanUnit(unit);
+      unit.setLogicalPlan(((IndexWriteNode)plan).getSubNode());
+    }
     return unit;
   }
   
@@ -767,10 +796,16 @@ public class GlobalPlanner {
   private MasterPlan convertToGlobalPlan(SubQueryId subQueryId,
       IndexWriteNode index, LogicalNode logicalPlan) throws IOException {
     recursiveBuildScheduleUnit(logicalPlan);
-    ScheduleUnit root = convertMap.get(((LogicalRootNode)logicalPlan).getSubNode());
+    ScheduleUnit root = null;
+    
     if (index != null) {
-      index.setSubNode(root.getLogicalPlan());
+      ScheduleUnitId id = QueryIdFactory.newScheduleUnitId(subId);
+      ScheduleUnit unit = new ScheduleUnit(id);
+      root = makeScanUnit(unit);
       root.setLogicalPlan(index);
+    } else {
+      root = convertMap.get(((LogicalRootNode)logicalPlan).getSubNode());
+      root.getStoreTableNode().setLocal(false);
     }
     return new MasterPlan(root);
   }

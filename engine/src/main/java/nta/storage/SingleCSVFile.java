@@ -335,11 +335,11 @@ public class SingleCSVFile extends SingleStorge {
             page();
           }
         }
-
+        long offset = this.tupleOffsets[currentIdx];
         String[] cells = tuples[currentIdx++].split(delimiter);
         VTuple tuple = new VTuple(schema.getColumnNum());
         Column field;
-
+        tuple.setOffset(offset);
         for (int i = 0; i < schema.getColumnNum(); i++) {
           field = schema.getColumn(i);
           if (cells.length <= i) {

@@ -5,6 +5,7 @@ package nta.engine.planner.logical;
 
 import nta.catalog.Options;
 import nta.catalog.proto.CatalogProtos.IndexMethod;
+import nta.engine.json.GsonCreator;
 import nta.engine.parser.CreateIndexStmt;
 import nta.engine.parser.QueryBlock.SortSpec;
 
@@ -65,10 +66,11 @@ public class IndexWriteNode extends UnaryNode {
     return this.params;
   }
 
-  @Override
   public String toJSON() {
-    Gson gson = new GsonBuilder().create();
-    return gson.toJson(this);
+    for( int i = 0 ; i < this.sortSpecs.length ; i ++ ) {
+      sortSpecs[i].getSortKey().initFromProto();
+    }
+    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
   
   @Override

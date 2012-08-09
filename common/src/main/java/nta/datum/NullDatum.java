@@ -1,5 +1,7 @@
 package nta.datum;
 
+import nta.util.Bytes;
+
 /**
  * @author Hyunsik Choi
  */
@@ -30,32 +32,32 @@ public class NullDatum extends Datum {
 
   @Override
   public short asShort() {
-    return 0;
+    return Short.MIN_VALUE;
   }
 
   @Override
   public int asInt() {
-    return 0;
+    return Integer.MIN_VALUE;
   }
 
   @Override
   public long asLong() {
-    return 0;
+    return Long.MIN_VALUE;
   }
 
   @Override
   public byte[] asByteArray() {
-    return null;
+    return Bytes.toBytes("NULL");
   }
 
   @Override
   public float asFloat() {
-    return 0;
+    return Float.NaN;
   }
 
   @Override
   public double asDouble() {
-    return 0;
+    return Double.NaN;
   }
 
   @Override

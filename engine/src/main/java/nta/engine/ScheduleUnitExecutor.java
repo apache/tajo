@@ -16,6 +16,7 @@ import nta.engine.exception.EmptyClusterException;
 import nta.engine.exception.UnknownWorkerException;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
+import nta.engine.json.GsonCreator;
 import nta.engine.planner.PlannerUtil;
 import nta.engine.planner.global.MasterPlan;
 import nta.engine.planner.global.QueryUnit;
@@ -23,6 +24,7 @@ import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.logical.ExprType;
 import nta.engine.planner.logical.GroupbyNode;
+import nta.engine.planner.logical.IndexWriteNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.query.GlobalPlanner;
 import nta.engine.query.Priority;
@@ -34,6 +36,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+
+import tajo.index.IndexUtil;
 
 import java.io.IOException;
 import java.net.URI;
@@ -48,9 +52,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class ScheduleUnitExecutor extends Thread {
   private enum Status {
-    INPROGRESS,
-    FINISHED,
-    ABORTED,
+    INPROGRESS, FINISHED, ABORTED,
   }
 
   private final static Log LOG = LogFactory.getLog(ScheduleUnitExecutor.class);
@@ -75,13 +77,9 @@ public class ScheduleUnitExecutor extends Thread {
 
   private Sleeper sleeper;
 
-  public ScheduleUnitExecutor(Configuration conf,
-                              WorkerCommunicator wc,
-                              GlobalPlanner planner,
-                              ClusterManager cm,
-                              QueryManager qm,
-                              StorageManager sm,
-                              MasterPlan masterPlan) {
+  public ScheduleUnitExecutor(Configuration conf, WorkerCommunicator wc,
+      GlobalPlanner planner, ClusterManager cm, QueryManager qm,
+      StorageManager sm, MasterPlan masterPlan) {
     this.conf = conf;
     this.wc = wc;
     this.planner = planner;
@@ -106,11 +104,11 @@ public class ScheduleUnitExecutor extends Thread {
       try {
         this.sleeper.sleep(WAIT_PERIOD);
 
-        if (scheduler.getStatus() == Status.FINISHED &&
-            submitter.getStatus() == Status.FINISHED) {
+        if (scheduler.getStatus() == Status.FINISHED
+            && submitter.getStatus() == Status.FINISHED) {
           shutdown(id + " is finished!");
-        } else if (scheduler.getStatus() == Status.ABORTED ||
-            submitter.getStatus() == Status.ABORTED) {
+        } else if (scheduler.getStatus() == Status.ABORTED
+            || submitter.getStatus() == Status.ABORTED) {
           scheduler.abort();
           submitter.abort();
           abort(id + " is aborted!");
@@ -162,20 +160,38 @@ public class ScheduleUnitExecutor extends Thread {
 
   private void writeStat(ScheduleUnit scheduleUnit, TableStat stat)
       throws IOException {
-    TableMeta meta = TCatUtil.newTableMeta(
-        scheduleUnit.getOutputSchema(), StoreType.CSV);
-    meta.setStat(stat);
-    sm.writeTableMeta(sm.getTablePath(scheduleUnit.getOutputName()),
-        meta);
+
+    if (scheduleUnit.getLogicalPlan().getType() == ExprType.CREATE_INDEX) {
+      IndexWriteNode index = (IndexWriteNode) scheduleUnit.getLogicalPlan();
+      Path indexPath = new Path(sm.getTablePath(index.getTableName()), "index");
+      TableMeta meta;
+      if (sm.getFileSystem().exists(new Path(indexPath, ".meta"))) {
+        meta = sm.getTableMeta(indexPath);
+      } else {
+        meta = TCatUtil.newTableMeta(scheduleUnit.getOutputSchema(), StoreType.CSV);
+      }
+      String indexName = IndexUtil.getIndexName(index.getTableName(),
+          index.getSortSpecs());
+      String json = GsonCreator.getInstance().toJson(index.getSortSpecs());
+      meta.putOption(indexName, json);
+
+      sm.writeTableMeta(indexPath, meta);
+
+    } else {
+      TableMeta meta = TCatUtil.newTableMeta(scheduleUnit.getOutputSchema(),
+          StoreType.CSV);
+      meta.setStat(stat);
+      sm.writeTableMeta(sm.getTablePath(scheduleUnit.getOutputName()), meta);
+    }
   }
 
   private boolean requestToWC(String host, Message proto) throws Exception {
     boolean result = true;
     try {
       if (proto instanceof QueryUnitRequestProto) {
-        wc.requestQueryUnit(host, (QueryUnitRequestProto)proto);
+        wc.requestQueryUnit(host, (QueryUnitRequestProto) proto);
       } else if (proto instanceof CommandRequestProto) {
-        wc.requestCommand(host, (CommandRequestProto)proto);
+        wc.requestCommand(host, (CommandRequestProto) proto);
       }
     } catch (UnknownWorkerException e) {
       handleUnknownWorkerException(e);
@@ -190,12 +206,11 @@ public class ScheduleUnitExecutor extends Thread {
     LOG.info(e.getUnknownName() + " is excluded from the query planning.");
   }
 
-  private void sendCommand(QueryUnit unit, CommandType type)
-      throws Exception {
+  private void sendCommand(QueryUnit unit, CommandType type) throws Exception {
     Command.Builder cmd = Command.newBuilder();
     cmd.setId(unit.getId().getProto()).setType(type);
-    requestToWC(unit.getHost(), CommandRequestProto.newBuilder().
-        addCommand(cmd.build()).build());
+    requestToWC(unit.getHost(),
+        CommandRequestProto.newBuilder().addCommand(cmd.build()).build());
   }
 
   class QueryScheduler extends Thread {
@@ -203,8 +218,7 @@ public class ScheduleUnitExecutor extends Thread {
     private PriorityQueue<ScheduleUnit> scheduleQueue;
     private Sleeper sleeper;
 
-    public class QueryUnitCluster
-        implements Comparable<QueryUnitCluster> {
+    public class QueryUnitCluster implements Comparable<QueryUnitCluster> {
       private String host;
       private Set<QueryUnit> queryUnits;
       private Iterator<QueryUnit> it;
@@ -249,8 +263,8 @@ public class ScheduleUnitExecutor extends Thread {
     }
 
     public QueryScheduler() {
-      this.scheduleQueue = new PriorityQueue<ScheduleUnit>(
-          1, new PriorityComparator());
+      this.scheduleQueue = new PriorityQueue<ScheduleUnit>(1,
+          new PriorityComparator());
       this.sleeper = new Sleeper();
     }
 
@@ -294,14 +308,13 @@ public class ScheduleUnitExecutor extends Thread {
                 finishScheduleUnitForEmptyInput(scheduleUnit);
               } else {
                 // insert query units to the pending queue
-                scheduleQueryUnits(units,
-                    scheduleUnit.hasChildQuery());
+                scheduleQueryUnits(units, scheduleUnit.hasChildQuery());
                 // printAssingedInfo(units);
               }
             }
           }
-          LOG.info("*** Scheduled / in-progress queries: (" + scheduleQueue.size() +
-              " / " + inprogressQueue.size() + ")");
+          LOG.info("*** Scheduled / in-progress queries: ("
+              + scheduleQueue.size() + " / " + inprogressQueue.size() + ")");
         } catch (InterruptedException e) {
           LOG.error(ExceptionUtils.getStackTrace(e));
           abort();
@@ -380,7 +393,7 @@ public class ScheduleUnitExecutor extends Thread {
             maxPriority = su.getPriority().get();
           }
         }
-        priority = maxPriority+1;
+        priority = maxPriority + 1;
       } else {
         priority = 0;
       }
@@ -418,8 +431,7 @@ public class ScheduleUnitExecutor extends Thread {
     private boolean isReady(ScheduleUnit scheduleUnit) {
       if (scheduleUnit.hasChildQuery()) {
         for (ScheduleUnit child : scheduleUnit.getChildQueries()) {
-          if (qm.getScheduleUnitStatus(child.getId()) !=
-              QueryStatus.QUERY_FINISHED) {
+          if (qm.getScheduleUnitStatus(child.getId()) != QueryStatus.QUERY_FINISHED) {
             return false;
           }
         }
@@ -440,20 +452,20 @@ public class ScheduleUnitExecutor extends Thread {
     private void initOutputDir(String outputName, PARTITION_TYPE type)
         throws IOException {
       switch (type) {
-        case HASH:
-          Path tablePath = sm.getTablePath(outputName);
-          sm.getFileSystem().mkdirs(tablePath);
+      case HASH:
+        Path tablePath = sm.getTablePath(outputName);
+        sm.getFileSystem().mkdirs(tablePath);
+        LOG.info("Table path " + sm.getTablePath(outputName).toString()
+            + " is initialized for " + outputName);
+        break;
+      case RANGE: // TODO - to be improved
+
+      default:
+        if (!sm.getFileSystem().exists(sm.getTablePath(outputName))) {
+          sm.initTableBase(null, outputName);
           LOG.info("Table path " + sm.getTablePath(outputName).toString()
               + " is initialized for " + outputName);
-          break;
-        case RANGE: // TODO - to be improved
-
-        default:
-          if (!sm.getFileSystem().exists(sm.getTablePath(outputName))) {
-            sm.initTableBase(null, outputName);
-            LOG.info("Table path " + sm.getTablePath(outputName).toString()
-                + " is initialized for " + outputName);
-          }
+        }
       }
     }
 
@@ -461,8 +473,8 @@ public class ScheduleUnitExecutor extends Thread {
       int numTasks;
       GroupbyNode grpNode = (GroupbyNode) PlannerUtil.findTopNode(
           scheduleUnit.getLogicalPlan(), ExprType.GROUP_BY);
-      if (scheduleUnit.getParentQuery() == null &&
-          grpNode != null && grpNode.getGroupingColumns().length == 0) {
+      if (scheduleUnit.getParentQuery() == null && grpNode != null
+          && grpNode.getGroupingColumns().length == 0) {
         numTasks = 1;
       } else {
         numTasks = cm.getOnlineWorkers().size();
@@ -474,8 +486,8 @@ public class ScheduleUnitExecutor extends Thread {
         throws IOException {
       TableStat stat = new TableStat();
       for (int i = 0; i < scheduleUnit.getOutputSchema().getColumnNum(); i++) {
-        stat.addColumnStat(new ColumnStat(
-            scheduleUnit.getOutputSchema().getColumn(i)));
+        stat.addColumnStat(new ColumnStat(scheduleUnit.getOutputSchema()
+            .getColumn(i)));
       }
       scheduleUnit.setStats(stat);
       writeStat(scheduleUnit, stat);
@@ -494,8 +506,7 @@ public class ScheduleUnitExecutor extends Thread {
     /**
      * Insert query units to the pending queue
      */
-    private void scheduleQueryUnits(QueryUnit[] units,
-                                    boolean hasChild)
+    private void scheduleQueryUnits(QueryUnit[] units, boolean hasChild)
         throws Exception {
       if (hasChild) {
         scheduleQueryUnitByFIFO(units);
@@ -515,7 +526,6 @@ public class ScheduleUnitExecutor extends Thread {
       // TODO: consider the map-side join
       Map<String, QueryUnitCluster> clusterMap = Maps.newHashMap();
       for (QueryUnit unit : queryUnits) {
-
         String selectedScanTable = null;
         for (ScanNode scanNode : unit.getScanNodes()) {
           if (scanNode.isBroadcast()) {
@@ -540,11 +550,9 @@ public class ScheduleUnitExecutor extends Thread {
         clusterMap.put(cluster.getHost(), cluster);
       }
 
-      List<QueryUnitCluster> clusters =
-          Lists.newArrayList(clusterMap.values());
+      List<QueryUnitCluster> clusters = Lists.newArrayList(clusterMap.values());
       return clusters;
     }
-
 
     /**
      * Sort query unit clusters by their size
@@ -626,8 +634,8 @@ public class ScheduleUnitExecutor extends Thread {
 
           // execute query units from the pending queue
           requestPendingQueryUnits();
-          LOG.info("=== Pending queries / submitted queries: (" +
-              pendingQueue.size() + " / " + submittedQueryUnits.size() + ")");
+          LOG.info("=== Pending queries / submitted queries: ("
+              + pendingQueue.size() + " / " + submittedQueryUnits.size() + ")");
         }
       } catch (InterruptedException e) {
         LOG.error(ExceptionUtils.getStackTrace(e));
@@ -647,12 +655,11 @@ public class ScheduleUnitExecutor extends Thread {
       } else {
         return false;
       }
-      /*if (isSchedulerFinished()) {
-        return inprogressQueue.isEmpty() &&
-            submittedQueryUnits.isEmpty() && pendingQueue.isEmpty();
-      } else {
-        return false;
-      }*/
+      /*
+       * if (isSchedulerFinished()) { return inprogressQueue.isEmpty() &&
+       * submittedQueryUnits.isEmpty() && pendingQueue.isEmpty(); } else {
+       * return false; }
+       */
     }
 
     public void shutdown() {
@@ -670,9 +677,8 @@ public class ScheduleUnitExecutor extends Thread {
       return status;
     }
 
-    private void updateWorkers()
-        throws EmptyClusterException, UnknownWorkerException,
-        ExecutionException, InterruptedException {
+    private void updateWorkers() throws EmptyClusterException,
+        UnknownWorkerException, ExecutionException, InterruptedException {
       cm.updateOnlineWorker();
       onlineWorkers.clear();
       for (List<String> workers : cm.getOnlineWorkers().values()) {
@@ -695,8 +701,8 @@ public class ScheduleUnitExecutor extends Thread {
         int finish = 0;
         int submitted = 0;
         for (QueryUnit queryUnit : scheduleUnit.getQueryUnits()) {
-          QueryUnitStatus queryUnitStatus =
-              qm.getQueryUnitStatus(queryUnit.getId());
+          QueryUnitStatus queryUnitStatus = qm.getQueryUnitStatus(queryUnit
+              .getId());
           QueryStatus status = queryUnitStatus.getLastAttempt().getStatus();
           switch (status) {
             case QUERY_SUBMITED: submitted++; break;
@@ -749,7 +755,7 @@ public class ScheduleUnitExecutor extends Thread {
 
     private TableStat generateStat(ScheduleUnit scheduleUnit) {
       List<TableStat> stats = Lists.newArrayList();
-      for (QueryUnit unit : scheduleUnit.getQueryUnits() ) {
+      for (QueryUnit unit : scheduleUnit.getQueryUnits()) {
         stats.add(unit.getStats());
       }
       TableStat tableStat = StatisticsUtil.aggregate(stats);
@@ -761,8 +767,7 @@ public class ScheduleUnitExecutor extends Thread {
       ScheduleUnit prevScheduleUnit;
       for (ScanNode scan : scheduleUnit.getScanNodes()) {
         prevScheduleUnit = scheduleUnit.getChildQuery(scan);
-        if (prevScheduleUnit.getStoreTableNode().getSubNode().getType()
-            != ExprType.UNION) {
+        if (prevScheduleUnit.getStoreTableNode().getSubNode().getType() != ExprType.UNION) {
           for (QueryUnit unit : prevScheduleUnit.getQueryUnits()) {
             sendCommand(unit, CommandType.FINALIZE);
           }
@@ -918,7 +923,7 @@ public class ScheduleUnitExecutor extends Thread {
     }
 
     private QueryUnitRequest createQueryUnitRequest(QueryUnit q,
-                                                    List<Fragment> fragList) {
+        List<Fragment> fragList) {
       QueryUnitRequest request = new QueryUnitRequestImpl(q.getId(), fragList,
           q.getOutputName(), false, q.getLogicalPlan().toJSON());
 
@@ -938,7 +943,8 @@ public class ScheduleUnitExecutor extends Thread {
     }
 
     private void printQueryUnitRequestInfo(QueryUnit q, QueryUnitRequest request) {
-      LOG.info("QueryUnitRequest " + request.getId() + " is sent to " + (q.getHost()));
+      LOG.info("QueryUnitRequest " + request.getId() + " is sent to "
+          + (q.getHost()));
     }
 
     private boolean retryQueryUnit(QueryUnit unit) throws Exception {
@@ -972,8 +978,8 @@ public class ScheduleUnitExecutor extends Thread {
 
     private void requestBackupTask(QueryUnit q) throws Exception {
       FileSystem fs = sm.getFileSystem();
-      Path path = new Path(sm.getTablePath(q.getOutputName()),
-          q.getId().toString());
+      Path path = new Path(sm.getTablePath(q.getOutputName()), q.getId()
+          .toString());
       fs.delete(path, true);
       cm.addFailedWorker(q.getHost());
       updateWorkers();

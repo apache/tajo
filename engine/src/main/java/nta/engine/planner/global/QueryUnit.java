@@ -18,6 +18,7 @@ import nta.engine.QueryUnitId;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.logical.BinaryNode;
 import nta.engine.planner.logical.ExprType;
+import nta.engine.planner.logical.IndexWriteNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.StoreTableNode;
@@ -56,10 +57,15 @@ public class QueryUnit extends AbstractQuery {
 	}
 	
 	public void setLogicalPlan(LogicalNode plan) {
-    Preconditions.checkArgument(plan.getType() == ExprType.STORE);
+    Preconditions.checkArgument(plan.getType() == ExprType.STORE ||
+        plan.getType() == ExprType.CREATE_INDEX);
     
 	  this.plan = plan;
-	  store = (StoreTableNode) plan;
+	  if (plan instanceof StoreTableNode) {
+      store = (StoreTableNode) plan;      
+    } else {
+      store = (StoreTableNode) ((IndexWriteNode)plan).getSubNode();
+    }
 	  LogicalNode node = plan;
 	  ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
 	  s.add(node);

@@ -1,6 +1,9 @@
 package tajo.index.bst;
 
+import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.engine.ipc.protocolrecords.Fragment;
+import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.planner.physical.TupleComparator;
 import nta.engine.utils.TupleUtil;
 import nta.storage.Tuple;
@@ -40,7 +43,7 @@ public class BSTIndex implements IndexMethod {
   public BSTIndex(final Configuration conf) {
     this.conf = conf;
   }
-
+  
   @Override
   public BSTIndexWriter getIndexWriter(final Path fileName, int level, Schema keySchema,
       TupleComparator comparator) throws IOException {
@@ -67,6 +70,7 @@ public class BSTIndex implements IndexMethod {
 
     private Tuple min;
     private Tuple max;
+
 
     // private Tuple lastestKey = null;
 
@@ -150,7 +154,7 @@ public class BSTIndex implements IndexMethod {
         out.write(maxBytes);
       }
       out.flush();
-
+      
       int loadCount = this.loadNum - 1;
       for (Tuple key : keySet) {
 
@@ -165,7 +169,7 @@ public class BSTIndex implements IndexMethod {
         byte[] buf = TupleUtil.toBytes(this.keySchema, key);
         out.writeInt(buf.length);
         out.write(buf);
-
+        
         /**/
         LinkedList<Long> offsetList = keyOffsetMap.get(key);
         /* offset num writing */
@@ -250,7 +254,7 @@ public class BSTIndex implements IndexMethod {
   /**
    * BSTIndexReader is thread-safe.
    */
-  public class BSTIndexReader implements OrderIndexReader {
+  public class BSTIndexReader implements OrderIndexReader , Closeable{
     private Path fileName;
     private final Schema keySchema;
     private final TupleComparator comparator;
@@ -397,6 +401,10 @@ public class BSTIndex implements IndexMethod {
         return this.offsetSubIndex[keyCursor][offsetCursor];
       }
     }
+    
+    public boolean isCurInMemory() {
+      return (offsetSubIndex[keyCursor].length - 1 >= offsetCursor);
+    }
 
     private void fillLeafIndex(int entryNum, FSDataInputStream in, long pos)
         throws IOException {
@@ -538,6 +546,12 @@ public class BSTIndex implements IndexMethod {
         }
       }
       return offset;
+    }
+
+    @Override
+    public void close() throws IOException {
+      this.indexIn.close();
+      this.subIn.close();
     }
   }
 }

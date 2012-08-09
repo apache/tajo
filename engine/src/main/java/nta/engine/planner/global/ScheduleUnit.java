@@ -14,6 +14,7 @@ import nta.engine.query.Priority;
 
 import java.util.*;
 
+
 /**
  * @author jihoon
  *
@@ -56,12 +57,17 @@ public class ScheduleUnit extends AbstractQuery {
   }
   
   public void setLogicalPlan(LogicalNode plan) {
-    Preconditions.checkArgument(plan.getType() == ExprType.STORE);
-
     hasJoinPlan = false;
-    hasUnionPlan = false;
+    Preconditions.checkArgument(plan.getType() == ExprType.STORE 
+        || plan.getType() == ExprType.CREATE_INDEX);
+
     this.plan = plan;
-    store = (StoreTableNode) plan;
+    if (plan instanceof StoreTableNode) {
+      store = (StoreTableNode) plan;      
+    } else {
+      store = (StoreTableNode) ((IndexWriteNode)plan).getSubNode();
+    }
+    
     LogicalNode node = plan;
     ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
     s.add(node);

@@ -29,6 +29,8 @@ public class StatisticsUtil {
   }
 
   public static TableStat aggregate(List<TableStat> tableStats) {
+    if(tableStats == null || tableStats.size() == 0 || tableStats.get(0) == null)
+      return null;
     TableStat aggregated = new TableStat();
 
     ColumnStat [] css = null;

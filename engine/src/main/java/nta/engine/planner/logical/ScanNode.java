@@ -85,6 +85,14 @@ public class ScanNode extends LogicalNode {
     broadcast = true;
   }
 	
+	public FromTable getFromTable() {
+	  return this.table;
+	}
+	
+	public void setFromTable(FromTable from) {
+	  this.table = from;
+	}
+	
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();	  
 	  sb.append("\"Scan\" : {\"table\":\"")

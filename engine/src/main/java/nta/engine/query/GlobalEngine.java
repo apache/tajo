@@ -90,6 +90,7 @@ public class GlobalEngine implements EngineService {
     ParseTree tree = analyzer.parse(ctx, querystr);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
     plan = LogicalOptimizer.optimize(ctx, plan);
+    plan = LogicalOptimizer.pushIndex(plan, sm);
     LOG.info("* logical plan:\n" + plan);
 
     LogicalRootNode root = (LogicalRootNode) plan;

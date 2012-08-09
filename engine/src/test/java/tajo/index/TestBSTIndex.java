@@ -123,8 +123,8 @@ public class TestBSTIndex {
       long offsets = reader.find(tuple);
       scanner.seek(offsets);
       tuple = scanner.next();
-      assertTrue("[seek check " + (i) + " ]", (i) == (tuple.get(1).asLong()));
-      assertTrue("[seek check " + (i) + " ]" , (i) == (tuple.get(2).asDouble()));
+      assertTrue("seek check [" + (i) + " ," +(tuple.get(1).asLong())+ "]" , (i) == (tuple.get(1).asLong()));
+      assertTrue("seek check [" + (i) + " ,"  +(tuple.get(2).asDouble())+"]" , (i) == (tuple.get(2).asDouble()));
       
       offsets = reader.next();
       if (offsets == -1) {

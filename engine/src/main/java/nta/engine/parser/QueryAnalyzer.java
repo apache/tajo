@@ -282,7 +282,6 @@ public final class QueryAnalyzer {
     
     SortSpec [] sortSpecs = parseSortSpecifiers(ctx, 
         (CommonTree) ast.getChild(idx++));
-
     CreateIndexStmt stmt = new CreateIndexStmt(idxName, unique, tbName, 
         sortSpecs);
     if (method != null) {
@@ -292,7 +291,6 @@ public final class QueryAnalyzer {
     if (params != null) {
       stmt.setParams(params);
     }
-      
     return stmt;
   }
   

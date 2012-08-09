@@ -24,8 +24,8 @@ import static org.junit.Assert.assertTrue;
 public class TestSelectQuery extends TpchTestBase {
   public TestSelectQuery() throws IOException {
     super();
-  }
-
+  }  
+  
   @Test
   public final void testSelect() throws Exception {
     ResultSet res = execute("select l_orderkey, l_partkey from lineitem");

@@ -148,7 +148,7 @@ public class TestGlobalEngine {
       } else {
         cubebyResult.put(compkey, cubebyResult.get(compkey)+i+1);
       }
-      CompositeKey idkey = new CompositeKey(id, 0);
+      CompositeKey idkey = new CompositeKey(id, NullDatum.get().asInt());
       if (!cubebyResult.containsKey(idkey)) {
         cubebyResult.put(idkey, i+1);
       } else {
@@ -315,7 +315,7 @@ public class TestGlobalEngine {
     Tuple tuple;
     String deptname;
     int year;
-
+    
     while ((tuple = scanner.next()) != null) {
       deptname = tuple.get(0).asChars();
       year = tuple.get(1).asInt();

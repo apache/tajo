@@ -28,7 +28,7 @@ public enum StatementType {
 	// INDEX
 	CREATE_INDEX,
 	DROP_INDEX,
-	
+
 	// Control
 	SHOW_TABLES,
 	DESC_TABLE,

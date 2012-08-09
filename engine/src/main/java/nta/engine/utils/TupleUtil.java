@@ -11,6 +11,8 @@ import nta.storage.StorageUtil;
 import nta.storage.Tuple;
 import nta.storage.TupleRange;
 import nta.storage.VTuple;
+import nta.util.Bytes;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -92,24 +94,73 @@ public class TupleUtil {
       col = schema.getColumn(i);
 
       switch (col.getDataType()) {
-        case BYTE: tuple.put(i, DatumFactory.createByte(bb.get())); break;
-        case CHAR: tuple.put(i, DatumFactory.createChar(bb.get())); break;
+        case BYTE:
+          byte b = bb.get();
+          if(b == 0) {
+            tuple.put(i, DatumFactory.createNullDatum());
+          }else {
+            tuple.put(i, DatumFactory.createByte(b));
+          }break;
+        case CHAR: 
+          byte c = bb.get();
+          if(c == 0) {
+            tuple.put(i, DatumFactory.createNullDatum());
+          }else {
+            tuple.put(i, DatumFactory.createChar(c));
+          }break;
         case BOOLEAN: tuple.put(i, DatumFactory.createBool(bb.get())); break;
-        case SHORT: tuple.put(i, DatumFactory.createShort(bb.getShort())); break;
-        case INT: tuple.put(i, DatumFactory.createInt(bb.getInt())); break;
-        case LONG: tuple.put(i, DatumFactory.createLong(bb.getLong())); break;
-        case FLOAT: tuple.put(i, DatumFactory.createFloat(bb.getFloat())); break;
-        case DOUBLE: tuple.put(i, DatumFactory.createDouble(bb.getDouble())); break;
+        case SHORT: 
+          short s = bb.getShort();
+          if(s < Short.MIN_VALUE + 1) {
+            tuple.put(i, DatumFactory.createNullDatum());
+          }else {
+            tuple.put(i, DatumFactory.createShort(s));
+          }break;
+        case INT:
+          int i_ = bb.getInt();
+          if ( i_ < Integer.MIN_VALUE + 1) {
+            tuple.put(i, DatumFactory.createNullDatum());
+          }else {
+          tuple.put(i, DatumFactory.createInt(i_)); 
+          }break;
+        case LONG:
+          long l = bb.getLong();
+          if ( l < Long.MIN_VALUE + 1) {
+            tuple.put(i, DatumFactory.createNullDatum());
+          }else {
+            tuple.put(i, DatumFactory.createLong(l));
+          }break;
+        case FLOAT:
+          float f = bb.getFloat();
+          if (Float.isNaN(f)) {
+            tuple.put(i, DatumFactory.createNullDatum());
+          }else {
+            tuple.put(i, DatumFactory.createFloat(f));
+          }break;
+        case DOUBLE:
+          double d = bb.getDouble();
+          if(Double.isNaN(d)) {
+            tuple.put(i, DatumFactory.createNullDatum());
+          }else {
+            tuple.put(i, DatumFactory.createDouble(d)); 
+          }break;
         case STRING:
           byte [] _string = new byte[bb.getInt()];
           bb.get(_string);
-          tuple.put(i, DatumFactory.createString(new String(_string)));
-          break;
+          String str = new String(_string);
+          if(str.compareTo("NULL") == 0) {
+            tuple.put(i, DatumFactory.createNullDatum());
+          }else {
+          tuple.put(i, DatumFactory.createString(str));
+          }break;
         case BYTES:
           byte [] _bytes = new byte[bb.getInt()];
           bb.get(_bytes);
+          if(Bytes.compareTo(bytes, Bytes.toBytes("NULL")) == 0) {
+            tuple.put(i, DatumFactory.createNullDatum());
+          }else {
           tuple.put(i, DatumFactory.createBytes(_bytes));
-          break;
+          }break;
         case IPv4:
           byte [] _ipv4 = new byte[4];
           bb.get(_ipv4);
