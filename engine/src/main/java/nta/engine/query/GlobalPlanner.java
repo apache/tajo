@@ -1205,7 +1205,7 @@ public class GlobalPlanner {
     QueryUnit unit = new QueryUnit(
         QueryIdFactory.newQueryUnitId(scheduleUnit.getId()));
     unit.setLogicalPlan(scheduleUnit.getLogicalPlan());
-    qm.updateQueryUnitStatus(unit.getId(), 1, QueryStatus.QUERY_INITED);
+    qm.updateQueryUnitStatus(unit.getId(), QueryStatus.QUERY_NEW);
     return unit;
   }
   
@@ -1377,7 +1377,8 @@ public class GlobalPlanner {
     Map<ScanNode, List<URI>> finalHashed = Maps.newHashMap();
     for (Entry<ScanNode, List<URI>> urisByKey : hashed.entrySet()) {
       Map<String, List<String>> param = new QueryStringDecoder(urisByKey.getValue().get(0)).getParameters();
-      QueryUnitId quid = new QueryUnitId(param.get("qid").get(0));
+      QueryUnitAttemptId quid = new QueryUnitAttemptId(
+          new QueryStringDecoder(urisByKey.getValue().get(0)).getParameters().get("qid").get(0));
       ScheduleUnitId sid = quid.getScheduleUnitId();
       String fn = param.get("fn").get(0);
       Map<String, List<String>> quidByHost = Maps.newHashMap();
@@ -1421,7 +1422,7 @@ public class GlobalPlanner {
   private static Map<String, List<URI>> combineURIByHost(Map<String, List<URI>> hashed) {
     Map<String, List<URI>> finalHashed = Maps.newTreeMap();
     for (Entry<String, List<URI>> urisByKey : hashed.entrySet()) {
-      QueryUnitId quid = new QueryUnitId(
+      QueryUnitAttemptId quid = new QueryUnitAttemptId(
           new QueryStringDecoder(urisByKey.getValue().get(0)).getParameters().get("qid").get(0));
       ScheduleUnitId sid = quid.getScheduleUnitId();
       Map<String,List<String>> quidByHost = Maps.newHashMap();
@@ -1453,7 +1454,8 @@ public class GlobalPlanner {
           sb.append(",");
         }
 
-        QueryUnitId quid = new QueryUnitId(qid);
+        QueryUnitAttemptId quid = new QueryUnitAttemptId(qid);
+        sb.append(quid.getQueryUnitId().getId() + "_");
         sb.append(quid.getId());
       }
       uris.add(URI.create(sb.toString()));

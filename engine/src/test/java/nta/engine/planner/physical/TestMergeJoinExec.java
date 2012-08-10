@@ -134,9 +134,8 @@ public class TestMergeJoinExec {
 
     factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("InnerJoin");
-    SubqueryContext ctx = factory.create(QueryIdFactory
-        .newQueryUnitId(QueryIdFactory.newScheduleUnitId(QueryIdFactory
-            .newSubQueryId(QueryIdFactory.newQueryId()))), merged, workDir);
+    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+        merged, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
 

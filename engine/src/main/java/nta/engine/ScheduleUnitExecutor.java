@@ -20,6 +20,7 @@ import nta.engine.json.GsonCreator;
 import nta.engine.planner.PlannerUtil;
 import nta.engine.planner.global.MasterPlan;
 import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.global.QueryUnitAttempt;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
 import nta.engine.planner.logical.ExprType;
@@ -206,7 +207,8 @@ public class ScheduleUnitExecutor extends Thread {
     LOG.info(e.getUnknownName() + " is excluded from the query planning.");
   }
 
-  private void sendCommand(QueryUnit unit, CommandType type) throws Exception {
+  private void sendCommand(QueryUnitAttempt unit, CommandType type)
+      throws Exception {
     Command.Builder cmd = Command.newBuilder();
     cmd.setId(unit.getId().getProto()).setType(type);
     requestToWC(unit.getHost(),
@@ -293,16 +295,14 @@ public class ScheduleUnitExecutor extends Thread {
               finishUnionUnit(scheduleUnit);
             } else {
               qm.addScheduleUnit(scheduleUnit);
-              qm.updateScheduleUnitStatus(scheduleUnit.getId(),
-                  QueryStatus.QUERY_PENDING);
 
               initOutputDir(scheduleUnit.getOutputName(),
                   scheduleUnit.getOutputType());
               int numTasks = getTaskNum(scheduleUnit);
               QueryUnit[] units = planner.localize(scheduleUnit, numTasks);
+              inprogressQueue.put(scheduleUnit);
               qm.updateScheduleUnitStatus(scheduleUnit.getId(),
                   QueryStatus.QUERY_INPROGRESS);
-              inprogressQueue.put(scheduleUnit);
 
               if (units.length == 0) {
                 finishScheduleUnitForEmptyInput(scheduleUnit);
@@ -399,6 +399,8 @@ public class ScheduleUnitExecutor extends Thread {
       }
       scheduleUnit.setPriority(priority);
       scheduleQueue.add(scheduleUnit);
+      qm.updateScheduleUnitStatus(scheduleUnit.getId(),
+          QueryStatus.QUERY_PENDING);
     }
 
     private ScheduleUnit takeScheduleUnit() {
@@ -574,6 +576,7 @@ public class ScheduleUnitExecutor extends Thread {
         throws InterruptedException {
       for (QueryUnit unit : units) {
         pendingQueue.put(unit);
+        qm.updateQueryUnitStatus(unit.getId(), QueryStatus.QUERY_PENDING);
       }
     }
 
@@ -590,6 +593,7 @@ public class ScheduleUnitExecutor extends Thread {
             QueryUnit unit = cluster.next();
             cluster.removeQueryUnit(unit);
             pendingQueue.put(unit);
+            qm.updateQueryUnitStatus(unit.getId(), QueryStatus.QUERY_PENDING);
           } else {
             toBeRemoved.add(cluster);
           }
@@ -602,14 +606,12 @@ public class ScheduleUnitExecutor extends Thread {
   class QueryUnitSubmitter extends Thread {
     public final static int RETRY_LIMIT = 3;
     private List<String> onlineWorkers;
-    private Map<QueryUnitId, Integer> queryUnitAttemptMap;
-    private Set<QueryUnit> submittedQueryUnits;
+    private Set<QueryUnitAttempt> submittedQueryUnits;
     private Status status;
     private Sleeper sleeper;
 
     public QueryUnitSubmitter() {
       onlineWorkers = Lists.newArrayList();
-      queryUnitAttemptMap = Maps.newHashMap();
       submittedQueryUnits = Sets.newHashSet();
       this.sleeper = new Sleeper();
     }
@@ -668,9 +670,14 @@ public class ScheduleUnitExecutor extends Thread {
 
     public void abort() {
       status = Status.ABORTED;
-      pendingQueue.clear();
+      for (QueryUnit unit : pendingQueue) {
+        qm.updateQueryUnitStatus(unit.getId(), QueryStatus.QUERY_ABORTED);
+      }
+
       // TODO: send stop commands
-      submittedQueryUnits.clear();
+      for (QueryUnitAttempt attempt : submittedQueryUnits) {
+        attempt.setStatus(QueryStatus.QUERY_ABORTED);
+      }
     }
 
     public Status getStatus() {
@@ -701,9 +708,12 @@ public class ScheduleUnitExecutor extends Thread {
         int finish = 0;
         int submitted = 0;
         for (QueryUnit queryUnit : scheduleUnit.getQueryUnits()) {
-          QueryUnitStatus queryUnitStatus = qm.getQueryUnitStatus(queryUnit
-              .getId());
-          QueryStatus status = queryUnitStatus.getLastAttempt().getStatus();
+          QueryUnitAttempt attempt = queryUnit.getLastAttempt();
+          if (attempt == null) continue;
+          //qm.updateQueryUnitStatus(queryUnit.getId(), attempt.getStatus());
+          //QueryStatus status = qm.getQueryUnitStatus(queryUnit.getId());
+          QueryStatus status = attempt.getStatus();
+
           switch (status) {
             case QUERY_SUBMITED: submitted++; break;
             case QUERY_INITED: inited++; break;
@@ -713,7 +723,7 @@ public class ScheduleUnitExecutor extends Thread {
             case QUERY_KILLED: killed++; break;
             case QUERY_ABORTED:
               aborted++;
-              if (queryUnitStatus.getLastAttemptId() <
+              if (queryUnit.getRetryCount() <
                   QueryUnitSubmitter.RETRY_LIMIT) {
                 // wait
               } else {
@@ -744,7 +754,7 @@ public class ScheduleUnitExecutor extends Thread {
           }
           if (scheduleUnit.equals(plan.getRoot())) {
             for (QueryUnit unit : scheduleUnit.getQueryUnits()) {
-              sendCommand(unit, CommandType.FINALIZE);
+              sendCommand(unit.getLastAttempt(), CommandType.FINALIZE);
             }
           }
           finished.add(scheduleUnit);
@@ -769,7 +779,7 @@ public class ScheduleUnitExecutor extends Thread {
         prevScheduleUnit = scheduleUnit.getChildQuery(scan);
         if (prevScheduleUnit.getStoreTableNode().getSubNode().getType() != ExprType.UNION) {
           for (QueryUnit unit : prevScheduleUnit.getQueryUnits()) {
-            sendCommand(unit, CommandType.FINALIZE);
+            sendCommand(unit.getLastAttempt(), CommandType.FINALIZE);
           }
         }
       }
@@ -787,12 +797,11 @@ public class ScheduleUnitExecutor extends Thread {
       int success = 0;
       int aborted = 0;
       int killed = 0;
-      List<QueryUnit> toBeRemoved = Lists.newArrayList();
-      for (QueryUnit unit : submittedQueryUnits) {
+      List<QueryUnitAttempt> toBeRemoved = Lists.newArrayList();
+      for (QueryUnitAttempt unit : submittedQueryUnits) {
         retryRequired = false;
         wait = false;
-        status = qm.getQueryUnitStatus(unit.getId()).getLastAttempt()
-            .getStatus();
+        status = unit.getStatus();
 
         switch (status) {
           case QUERY_SUBMITED:
@@ -835,6 +844,7 @@ public class ScheduleUnitExecutor extends Thread {
           unit.updateExpireTime(WAIT_PERIOD);
           if (unit.getLeftTime() <= 0) {
             LOG.info("QueryUnit " + unit.getId() + " is expired!!");
+            unit.setStatus(QueryStatus.QUERY_ABORTED);
             toBeRemoved.add(unit);
             retryRequired = true;
           }
@@ -851,8 +861,8 @@ public class ScheduleUnitExecutor extends Thread {
       }
 
       LOG.info("\n--- Status of all submitted query units ---\n" + ""
-          + " In Progress (Submitted: " + submittedQueryUnits.size()
-          + ", Finished: " + success + ", Inited: " + submitted + ", Inited: "
+          + " In Progress (Total: " + submittedQueryUnits.size()
+          + ", Finished: " + success + ", Submitted: " + submitted + ", Inited: "
           + inited + ", Pending: " + pending + ", Running: " + inprogress
           + ", Aborted: " + aborted + ", Killed: " + killed);
       submittedQueryUnits.removeAll(toBeRemoved);
@@ -866,24 +876,17 @@ public class ScheduleUnitExecutor extends Thread {
         for (ScanNode scan : q.getScanNodes()) {
           fragList.add(q.getFragment(scan.getTableId()));
         }
-        q.setHost(selectWorker(q, fragList));
-        qm.updateQueryAssignInfo(q.getHost(), q);
-        int attemptId;
-        if (queryUnitAttemptMap.containsKey(q.getId())) {
-          attemptId = queryUnitAttemptMap.get(q.getId());
-        } else {
-          attemptId = 1;
-        }
-        queryUnitAttemptMap.put(q.getId(), attemptId);
-        QueryUnitRequest request = createQueryUnitRequest(q, fragList);
+        QueryUnitAttempt attempt = q.newAttempt();
+        attempt.setHost(selectWorker(q, fragList));
+        qm.updateQueryAssignInfo(attempt.getHost(), q);
+        QueryUnitRequest request = createQueryUnitRequest(attempt, fragList);
 
-        printQueryUnitRequestInfo(q, request);
-        if (!requestToWC(q.getHost(), request.getProto())) {
-          retryQueryUnit(q);
+        printQueryUnitRequestInfo(attempt, request);
+        if (!requestToWC(attempt.getHost(), request.getProto())) {
+          retryQueryUnit(attempt);
         }
-        submittedQueryUnits.add(q);
-        qm.updateQueryUnitStatus(q.getId(), queryUnitAttemptMap.get(q.getId()),
-            QueryStatus.QUERY_SUBMITED);
+        submittedQueryUnits.add(attempt);
+        attempt.setStatus(QueryStatus.QUERY_SUBMITED);
       }
     }
 
@@ -922,17 +925,18 @@ public class ScheduleUnitExecutor extends Thread {
       return cm.getRandomHost();
     }
 
-    private QueryUnitRequest createQueryUnitRequest(QueryUnit q,
-        List<Fragment> fragList) {
+    private QueryUnitRequest createQueryUnitRequest(QueryUnitAttempt q,
+                                                    List<Fragment> fragList) {
       QueryUnitRequest request = new QueryUnitRequestImpl(q.getId(), fragList,
-          q.getOutputName(), false, q.getLogicalPlan().toJSON());
+          q.getQueryUnit().getOutputName(), false,
+          q.getQueryUnit().getLogicalPlan().toJSON());
 
-      if (q.getStoreTableNode().isLocal()) {
+      if (q.getQueryUnit().getStoreTableNode().isLocal()) {
         request.setInterQuery();
       }
 
-      for (ScanNode scan : q.getScanNodes()) {
-        Collection<URI> fetches = q.getFetch(scan);
+      for (ScanNode scan : q.getQueryUnit().getScanNodes()) {
+        Collection<URI> fetches = q.getQueryUnit().getFetch(scan);
         if (fetches != null) {
           for (URI fetch : fetches) {
             request.addFetch(scan.getTableId(), fetch);
@@ -942,27 +946,19 @@ public class ScheduleUnitExecutor extends Thread {
       return request;
     }
 
-    private void printQueryUnitRequestInfo(QueryUnit q, QueryUnitRequest request) {
+    private void printQueryUnitRequestInfo(QueryUnitAttempt q,
+                                           QueryUnitRequest request) {
       LOG.info("QueryUnitRequest " + request.getId() + " is sent to "
           + (q.getHost()));
     }
 
-    private boolean retryQueryUnit(QueryUnit unit) throws Exception {
-      int retryCnt = 0;
-      if (queryUnitAttemptMap.containsKey(unit.getId())) {
-        retryCnt = queryUnitAttemptMap.get(unit.getId());
-      } else {
-        LOG.error("Unregistered query unit: " + unit.getId());
-        return false;
-      }
+    private boolean retryQueryUnit(QueryUnitAttempt attempt) throws Exception {
+      QueryUnit unit = attempt.getQueryUnit();
+      int retryCnt = unit.getRetryCount();
 
       if (retryCnt < RETRY_LIMIT) {
-        qm.updateQueryUnitStatus(unit.getId(), retryCnt,
-            QueryStatus.QUERY_ABORTED);
-        queryUnitAttemptMap.put(unit.getId(), ++retryCnt);
-        commitBackupTask(unit);
-        qm.updateQueryUnitStatus(unit.getId(), retryCnt,
-            QueryStatus.QUERY_SUBMITED);
+        qm.updateQueryUnitStatus(unit.getId(), QueryStatus.QUERY_ABORTED);
+        commitBackupTask(attempt);
         return true;
       } else {
         // Cancel the executed query
@@ -970,9 +966,10 @@ public class ScheduleUnitExecutor extends Thread {
       }
     }
 
-    private void commitBackupTask(QueryUnit unit) throws Exception {
+    private void commitBackupTask(QueryUnitAttempt unit) throws Exception {
       sendCommand(unit, CommandType.STOP);
-      requestBackupTask(unit);
+      cm.addFailedWorker(unit.getHost());
+      requestBackupTask(unit.getQueryUnit());
       unit.resetExpireTime();
     }
 
@@ -981,7 +978,6 @@ public class ScheduleUnitExecutor extends Thread {
       Path path = new Path(sm.getTablePath(q.getOutputName()), q.getId()
           .toString());
       fs.delete(path, true);
-      cm.addFailedWorker(q.getHost());
       updateWorkers();
       pendingQueue.add(q);
     }

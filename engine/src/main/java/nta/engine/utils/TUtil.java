@@ -1,5 +1,8 @@
 package nta.engine.utils;
 
+import nta.engine.QueryIdFactory;
+import nta.engine.QueryUnitAttemptId;
+
 import java.util.Arrays;
 
 /**
@@ -48,5 +51,13 @@ public class TUtil {
     T[] result = Arrays.copyOf(first, first.length + second.length);
     System.arraycopy(second, 0, result, first.length, second.length);
     return result;
+  }
+
+  public  static QueryUnitAttemptId newQueryUnitAttemptId() {
+    return QueryIdFactory.newQueryUnitAttemptId(
+        QueryIdFactory.newQueryUnitId(
+            QueryIdFactory.newScheduleUnitId(
+                QueryIdFactory.newSubQueryId(
+                    QueryIdFactory.newQueryId()))), 0);
   }
 }

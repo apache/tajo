@@ -42,11 +42,11 @@ public class MockupNormalWorker extends MockupWorker {
           PingResponseProto response = sendHeartbeat(time);
           before = time;
 
-          QueryUnitId qid;
+          QueryUnitAttemptId qid;
           MockupTask task;
           QueryStatus status;
           for (Command cmd : response.getCommandList()) {
-            qid = new QueryUnitId(cmd.getId());
+            qid = new QueryUnitAttemptId(cmd.getId());
             if (!taskMap.containsKey(qid)) {
               LOG.error("ERROR: no such task " + qid);
               continue;

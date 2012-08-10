@@ -14,6 +14,8 @@ import nta.catalog.Schema;
 import nta.catalog.statistics.TableStat;
 import nta.engine.AbstractQuery;
 import nta.engine.MasterInterfaceProtos.Partition;
+import nta.engine.QueryIdFactory;
+import nta.engine.QueryUnitAttemptId;
 import nta.engine.QueryUnitId;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.planner.logical.BinaryNode;
@@ -31,21 +33,20 @@ import com.google.common.base.Preconditions;
  *
  */
 public class QueryUnit extends AbstractQuery {
-  
-  private final static int EXPIRE_TIME = 15000;
 
 	private QueryUnitId id;
 	private StoreTableNode store = null;
 	private LogicalNode plan = null;
 	private List<ScanNode> scan;
 	
-	private String hostName;
 	private Map<String, Fragment> fragMap;
 	private Map<String, Set<URI>> fetchMap;
 	
-	private int expire;
-	private List<Partition> partitions;
+  private List<Partition> partitions;
 	private TableStat stats;
+
+  private Map<Integer, QueryUnitAttempt> attemptMap;
+  private Integer lastAttemptId;
 	
 	public QueryUnit(QueryUnitId id) {
 		this.id = id;
@@ -53,7 +54,8 @@ public class QueryUnit extends AbstractQuery {
     fetchMap = Maps.newHashMap();
     fragMap = Maps.newHashMap();
     partitions = new ArrayList<Partition>();
-    expire = QueryUnit.EXPIRE_TIME;
+    attemptMap = Maps.newConcurrentMap();
+    lastAttemptId = -1;
 	}
 	
 	public void setLogicalPlan(LogicalNode plan) {
@@ -83,33 +85,6 @@ public class QueryUnit extends AbstractQuery {
 	    }
 	  }
 	}
-	
-	public void setHost(String host) {
-		this.hostName = host;
-	}
-	
-	/*public void addFragment(String key, Fragment fragment) {
-	  List<Fragment> frags;
-	  if (fragMap.containsKey(key)) {
-	    frags = fragMap.get(key);
-	  } else {
-	    frags = new ArrayList<Fragment>();
-	  }
-	  frags.add(fragment);
-		this.fragMap.put(key, frags);
-	}
-	
-	public void addFragments(String key, Fragment[] fragments) {
-	  for (Fragment frag : fragments) {
-      this.addFragment(key, frag);
-    }
-	}
-	
-	public void addFragments(String key, List<Fragment> fragList) {
-	  for (Fragment frag : fragList) {
-	    this.addFragment(key, frag);
-	  }
-	}*/
 
   public void setFragment(String tableId, Fragment fragment) {
     this.fragMap.put(tableId, fragment);
@@ -146,19 +121,6 @@ public class QueryUnit extends AbstractQuery {
 	  this.fetchMap.putAll(fetches);
 	}
 	
-	/*public List<Fragment> getFragments(String tableId) {
-		return this.fragMap.get(tableId);
-	}
-
-  public List<Fragment> getAllFragments() {
-    List<Fragment> fragments = Lists.newArrayList();
-    for (List<Fragment> frags : fragMap.values()) {
-      fragments.addAll(frags);
-    }
-
-    return fragments;
-  }*/
-
   public Fragment getFragment(String tableId) {
     return this.fragMap.get(tableId);
   }
@@ -186,11 +148,7 @@ public class QueryUnit extends AbstractQuery {
 	public Collection<URI> getFetch(ScanNode scan) {
 	  return this.fetchMap.get(scan.getTableId());
 	}
-	
-	public String getHost() {
-		return this.hostName;
-	}
-	
+
 	public String getOutputName() {
 		return this.store.getTableName();
 	}
@@ -243,24 +201,28 @@ public class QueryUnit extends AbstractQuery {
 	public int getPartitionNum() {
 	  return this.partitions.size();
 	}
-	
-	/*
-	 * Expire time
-	 */
-	
-	public synchronized void setExpireTime(int expire) {
-	  this.expire = expire;
-	}
-	
-	public synchronized void updateExpireTime(int period) {
-	  this.setExpireTime(this.expire - period);
-	}
-	
-	public synchronized void resetExpireTime() {
-	  this.setExpireTime(QueryUnit.EXPIRE_TIME);
-	}
-	
-	public int getLeftTime() {
-	  return this.expire;
-	}
+
+  public QueryUnitAttempt newAttempt() {
+    QueryUnitAttempt attempt = new QueryUnitAttempt(
+        QueryIdFactory.newQueryUnitAttemptId(this.getId(),
+            ++lastAttemptId), this);
+    this.attemptMap.put(attempt.getId().getId(), attempt);
+    return attempt;
+  }
+
+  public QueryUnitAttempt getAttempt(QueryUnitAttemptId attemptId) {
+    return this.getAttempt(attemptId.getId());
+  }
+
+  public QueryUnitAttempt getAttempt(int attempt) {
+    return this.attemptMap.get(attempt);
+  }
+
+  public QueryUnitAttempt getLastAttempt() {
+    return this.attemptMap.get(this.lastAttemptId);
+  }
+
+  public int getRetryCount () {
+    return this.lastAttemptId;
+  }
 }

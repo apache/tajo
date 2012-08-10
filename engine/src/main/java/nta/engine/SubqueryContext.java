@@ -37,7 +37,7 @@ public class SubqueryContext extends Context {
   private QueryStatus status;
   private final Map<String, StatSet> stats;
   private TableStat resultStats;
-  private QueryUnitId queryId;
+  private QueryUnitAttemptId queryId;
   private final File workDir;
   private boolean needFetch = false;
   private CountDownLatch doneFetchPhaseSignal;
@@ -48,7 +48,7 @@ public class SubqueryContext extends Context {
   private boolean interQuery = false;
   
   @VisibleForTesting
-  SubqueryContext(final QueryUnitId queryId, final Fragment [] fragments, final File workDir) {
+  SubqueryContext(final QueryUnitAttemptId queryId, final Fragment [] fragments, final File workDir) {
     this.queryId = queryId;
     
     for(Fragment t : fragments) {
@@ -168,7 +168,7 @@ public class SubqueryContext extends Context {
     }
     
     @VisibleForTesting
-    public SubqueryContext create(QueryUnitId id, Fragment [] frags, 
+    public SubqueryContext create(QueryUnitAttemptId id, Fragment [] frags,
         File workDir) {
       return new SubqueryContext(id, frags, workDir);
     }
@@ -184,7 +184,7 @@ public class SubqueryContext extends Context {
     return this.workDir;
   }
   
-  public QueryUnitId getQueryId() {
+  public QueryUnitAttemptId getQueryId() {
     return this.queryId;
   }
   

@@ -14,7 +14,7 @@ import nta.catalog.proto.CatalogProtos.SchemaProtoOrBuilder;
 import nta.engine.MasterInterfaceProtos.Fetch;
 import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
 import nta.engine.MasterInterfaceProtos.QueryUnitRequestProtoOrBuilder;
-import nta.engine.QueryUnitId;
+import nta.engine.QueryUnitAttemptId;
 import nta.engine.ipc.protocolrecords.Fragment;
 import nta.engine.ipc.protocolrecords.QueryUnitRequest;
 
@@ -28,7 +28,7 @@ import com.google.gson.annotations.Expose;
 public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
   @Expose
-	private QueryUnitId id;
+	private QueryUnitAttemptId id;
   @Expose
 	private List<Fragment> fragments;
   @Expose
@@ -53,7 +53,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		this.isUpdated = false;
 	}
 	
-	public QueryUnitRequestImpl(QueryUnitId id, List<Fragment> fragments, 
+	public QueryUnitRequestImpl(QueryUnitAttemptId id, List<Fragment> fragments,
 			String outputTable, boolean clusteredOutput, 
 			String serializedData) {
 		this();
@@ -67,7 +67,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		isUpdated = false;
 	}
 	
-	public void set(QueryUnitId id, List<Fragment> fragments, 
+	public void set(QueryUnitAttemptId id, List<Fragment> fragments,
 			String outputTable, boolean clusteredOutput, 
 			String serializedData) {
 		this.id = id;
@@ -87,7 +87,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	}
 
 	@Override
-	public QueryUnitId getId() {
+	public QueryUnitAttemptId getId() {
 		QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
 		if (id != null) {
 			return this.id;
@@ -95,7 +95,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		if (!p.hasId()) {
 			return null;
 		}
-		this.id = new QueryUnitId(p.getId());
+		this.id = new QueryUnitAttemptId(p.getId());
 		return this.id;
 	}
 
@@ -206,7 +206,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
 	private void mergeLocalToBuilder() {
 		if (id != null) {
-			builder.setId(this.id.toString());
+			builder.setId(this.id.getProto());
 		}
 		if (fragments != null) {
 			for (int i = 0; i < fragments.size(); i++) {
@@ -243,7 +243,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
   public void initFromProto() {
     QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
     if (id == null && p.hasId()) {
-      this.id = new QueryUnitId(p.getId());
+      this.id = new QueryUnitAttemptId(p.getId());
     }
     if (fragments == null && p.getFragmentsCount() > 0) {
       this.fragments = new ArrayList<Fragment>();

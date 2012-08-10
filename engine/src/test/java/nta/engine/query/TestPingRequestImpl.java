@@ -13,6 +13,7 @@ import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.QueryIdFactory;
 import nta.engine.ipc.PingRequest;
 
+import nta.engine.utils.TUtil;
 import org.junit.Test;
 
 /**
@@ -29,19 +30,13 @@ public class TestPingRequestImpl {
       = new ArrayList<InProgressStatusProto>();
     
     InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder()
-        .setId(QueryIdFactory.newQueryUnitId(
-            QueryIdFactory.newScheduleUnitId(
-                QueryIdFactory.newSubQueryId(
-                    QueryIdFactory.newQueryId()))).getProto())
+        .setId(TUtil.newQueryUnitAttemptId().getProto())
         .setProgress(0.5f)
         .setStatus(QueryStatus.QUERY_FINISHED);
     list.add(builder.build());
     
     builder = InProgressStatusProto.newBuilder()
-        .setId(QueryIdFactory.newQueryUnitId(
-            QueryIdFactory.newScheduleUnitId(
-                QueryIdFactory.newSubQueryId(
-                    QueryIdFactory.newQueryId()))).getProto())
+        .setId(TUtil.newQueryUnitAttemptId().getProto())
         .setProgress(0.5f)
         .setStatus(QueryStatus.QUERY_FINISHED);
     list.add(builder.build());

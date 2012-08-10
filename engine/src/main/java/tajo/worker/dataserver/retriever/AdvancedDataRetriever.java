@@ -5,6 +5,7 @@ package tajo.worker.dataserver.retriever;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import nta.engine.QueryUnitAttemptId;
 import nta.engine.QueryUnitId;
 import nta.engine.ScheduleUnitId;
 import org.apache.commons.logging.Log;
@@ -33,7 +34,7 @@ public class AdvancedDataRetriever implements DataRetriever {
   public AdvancedDataRetriever() {
   }
   
-  public void register(QueryUnitId id, RetrieverHandler handler) {
+  public void register(QueryUnitAttemptId id, RetrieverHandler handler) {
     synchronized (handlerMap) {
       if (!handlerMap.containsKey(id.toString())) {
         handlerMap.put(id.toString(), handler);
@@ -41,7 +42,7 @@ public class AdvancedDataRetriever implements DataRetriever {
     } 
   }
   
-  public void unregister(QueryUnitId id) {
+  public void unregister(QueryUnitAttemptId id) {
     synchronized (handlerMap) {
       if (handlerMap.containsKey(id.toString())) {
         handlerMap.remove(id.toString());
@@ -67,9 +68,12 @@ public class AdvancedDataRetriever implements DataRetriever {
       List<FileChunk> chunks = Lists.newArrayList();
       List<String> qids = splitMaps(params.get("qid"));
       for (String qid : qids) {
-        QueryUnitId quid = new QueryUnitId(new ScheduleUnitId(params.get("sid").get(0)),
-            Integer.parseInt(qid));
-        RetrieverHandler handler = handlerMap.get(quid.toString());
+        String[] ids = qid.split("_");
+        ScheduleUnitId suid = new ScheduleUnitId(params.get("sid").get(0));
+        QueryUnitId quid = new QueryUnitId(suid, Integer.parseInt(ids[0]));
+        QueryUnitAttemptId attemptId = new QueryUnitAttemptId(quid,
+            Integer.parseInt(ids[1]));
+        RetrieverHandler handler = handlerMap.get(attemptId.toString());
         FileChunk chunk = handler.get(params);
         chunks.add(chunk);
       }

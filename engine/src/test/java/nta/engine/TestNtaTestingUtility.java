@@ -23,6 +23,7 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.global.QueryUnitAttempt;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.query.QueryUnitRequestImpl;
@@ -129,8 +130,10 @@ public class TestNtaTestingUtility {
       plan = LogicalOptimizer.optimize(ctx, plan);
       QueryUnit unit = new QueryUnit(qid);
       queryUnits.add(unit);
+      QueryUnitAttempt attempt = unit.newAttempt();
       req = new QueryUnitRequestImpl(
-          qid, Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
+          attempt.getId(),
+          Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
           "", false, plan.toJSON());
       queryUnitRequests.add(req);
     }

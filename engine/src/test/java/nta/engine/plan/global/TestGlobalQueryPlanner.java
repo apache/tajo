@@ -379,60 +379,16 @@ public class TestGlobalQueryPlanner {
       assertEquals(ExprType.SCAN, groupby.getSubNode().getType());
     }
   }
-  
-  //@Test
-  public void testLocalize() throws IOException, URISyntaxException, NoSuchQueryIdException {
-    QueryContext ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx,
-        "select table0.age,table0.salary,table1.salary from table0 inner join table1 on table0.salary = table1.salary");
-    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
-    logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
-
-    MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
-
-    recursiveTestLocalize(globalPlan.getRoot());
-  }
-  
-  private void recursiveTestLocalize(ScheduleUnit plan) 
-      throws IOException, URISyntaxException, NoSuchQueryIdException {
-    if (plan.hasChildQuery()) {
-      Iterator<ScheduleUnit> it = plan.getChildIterator();
-      while (it.hasNext()) {
-        recursiveTestLocalize(it.next());
-      }
-    }
-    
-    QueryUnit[] units = planner.localize(plan, 3);
-    assertEquals(3, units.length);
-    for (QueryUnit unit : units) {
-      // partition
-      if (plan.getOutputType() == PARTITION_TYPE.HASH) {
-        assertTrue(unit.getStoreTableNode().getNumPartitions() > 1);
-        assertNotNull(unit.getStoreTableNode().getPartitionKeys());
-      }
-      
-      // fragment
-      for (ScanNode scan : unit.getScanNodes()) {
-        assertNotNull(unit.getFragment(scan.getTableId()));
-      }
-      InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder();
-      builder.setId(unit.getId().getProto())
-      .setProgress(1.0f)
-      .setStatus(QueryStatus.QUERY_FINISHED);
-      
-      qm.updateProgress(unit.getId(), builder.build());
-    }
-  }
 
   @Test
   public void testHashFetches() {
     URI[] uris = {
-        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_000835&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001064&fn=0"),
-        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_001059&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104&fn=1"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001059&fn=1")
+        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_000835_00&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001064_00&fn=0"),
+        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_001059_00&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104_00&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104_00&fn=1"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001059_00&fn=1")
     };
 
     Map<String, List<URI>> hashed = GlobalPlanner.hashFetches(null, Lists.newArrayList(uris));
@@ -445,28 +401,28 @@ public class TestGlobalQueryPlanner {
     Map<String, List<String>> params = decoder.getParameters();
     String [] qids = params.get("qid").get(0).split(",");
     assertEquals(2, qids.length);
-    assertEquals("104", qids[0]);
-    assertEquals("1059", qids[1]);
+    assertEquals("104_0", qids[0]);
+    assertEquals("1059_0", qids[1]);
   }
 
   @Test
   public void testHashFetchesForBinary() {
     URI[] urisOuter = {
-        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_000835&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001064&fn=0"),
-        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_001059&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104&fn=1"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001059&fn=1")
+        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_000835_00&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001064_00&fn=0"),
+        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_001059_00&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104_00&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104_00&fn=1"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001059_00&fn=1")
     };
 
     URI[] urisInner = {
-        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_004_000111&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000123&fn=0"),
-        URI.create("http://192.168.0.17:35385/?qid=query_20120726371_000_001_004_00134&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000155&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000255&fn=1"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_001356&fn=1")
+        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_004_000111_00&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000123_00&fn=0"),
+        URI.create("http://192.168.0.17:35385/?qid=query_20120726371_000_001_004_00134_00&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000155_00&fn=0"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000255_00&fn=1"),
+        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_001356_00&fn=1")
     };
 
     Schema schema1 = new Schema();
@@ -499,15 +455,15 @@ public class TestGlobalQueryPlanner {
     Map<String, List<String>> params = decoder.getParameters();
     String [] qids = params.get("qid").get(0).split(",");
     assertEquals(2, qids.length);
-    assertEquals("1064", qids[0]);
-    assertEquals("104", qids[1]);
+    assertEquals("1064_0", qids[0]);
+    assertEquals("104_0", qids[1]);
 
     decoder = new QueryStringDecoder(hashed.get("0").get(scan1).get(1));
     params = decoder.getParameters();
     qids = params.get("qid").get(0).split(",");
     assertEquals(2, qids.length);
-    assertEquals("835", qids[0]);
-    assertEquals("1059", qids[1]);
+    assertEquals("835_0", qids[0]);
+    assertEquals("1059_0", qids[1]);
   }
 
   @Test

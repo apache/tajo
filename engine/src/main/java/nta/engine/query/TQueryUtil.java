@@ -67,22 +67,9 @@ public class TQueryUtil {
     return tableStat;
   }
   
-  public static QueryUnit cloneExceptFragments(QueryUnit unit) {
-    QueryUnit clone = new QueryUnit(
-        QueryIdFactory.newQueryUnitId(unit.getId().getScheduleUnitId()));
-    try {
-      clone.setLogicalPlan((LogicalNode) unit.getLogicalPlan().clone());
-    } catch (CloneNotSupportedException e) {
-      e.printStackTrace();
-    }
-    clone.setHost(unit.getHost());
-
-    return clone;
-  }
-  
   public static InProgressStatusProto getInProgressStatusProto(QueryUnit unit) {
     InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder();
-    builder.setId(unit.getId().getProto());
+    builder.setId(unit.getLastAttempt().getId().getProto());
     builder.setStatus(unit.getStatus());
     builder.setProgress(unit.getProgress());
     builder.addAllPartitions(unit.getPartitions());

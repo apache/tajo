@@ -194,7 +194,7 @@ public class GlobalEngine implements EngineService {
     }
   }
 
-  public void sendFinalize(Query query) throws UnknownWorkerException {
+  /*public void sendFinalize(Query query) throws UnknownWorkerException {
     Command.Builder cmd = Command.newBuilder();
     for (SubQuery subQuery : query.getSubQueries()) {
       for (ScheduleUnit scheduleUnit : subQuery.getScheduleUnits()) {
@@ -205,7 +205,7 @@ public class GlobalEngine implements EngineService {
         }
       }
     }
-  }
+  }*/
 
   private QueryStatus updateSubQueryStatus(SubQuery subQuery) {
     int i = 0, size = subQuery.getScheduleUnits().size();

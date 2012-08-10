@@ -256,7 +256,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
     if (wc != null) {
       this.wc.close();
     }
-    this.wl.stop();
+    this.wl.shutdown();
     tracker.close();
     this.server.shutdown();
     if (zkServer != null) {

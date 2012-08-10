@@ -26,6 +26,7 @@ import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.PhysicalPlanner;
 import nta.engine.planner.logical.LogicalNode;
+import nta.engine.utils.TUtil;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.Tuple;
@@ -89,10 +90,8 @@ public class TestSortExec {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("TestSortExec");
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
-        QueryIdFactory.newScheduleUnitId(
-            QueryIdFactory.newSubQueryId(
-                QueryIdFactory.newQueryId()))),
+    SubqueryContext ctx = factory.create(
+        TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);

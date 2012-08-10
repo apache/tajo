@@ -29,6 +29,7 @@ import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.PhysicalPlanner;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
+import nta.engine.utils.TUtil;
 import nta.storage.Appender;
 import nta.storage.FileAppender;
 import nta.storage.FileScanner;
@@ -129,9 +130,7 @@ public class TestBSTIndexExec {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory();
     File workDir = NtaTestingUtility.getTestDir("TestBSTIndex");
-    SubqueryContext ctx = factory.create(QueryIdFactory
-        .newQueryUnitId(QueryIdFactory.newScheduleUnitId(QueryIdFactory
-            .newSubQueryId(QueryIdFactory.newQueryId()))),
+    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERY);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);

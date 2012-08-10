@@ -5,18 +5,18 @@ package nta.engine;
  * @author jihoon
  */
 public class MockupTask {
-  private QueryUnitId unitId;
+  private QueryUnitAttemptId unitId;
   private MasterInterfaceProtos.QueryStatus status;
   private int leftTime;
 
-  public MockupTask(QueryUnitId unitId,
+  public MockupTask(QueryUnitAttemptId unitId,
                     int runTime) {
     this.unitId = unitId;
     this.status = MasterInterfaceProtos.QueryStatus.QUERY_INPROGRESS;
     this.leftTime = runTime;
   }
 
-  public QueryUnitId getId() {
+  public QueryUnitAttemptId getId() {
     return this.unitId;
   }
 

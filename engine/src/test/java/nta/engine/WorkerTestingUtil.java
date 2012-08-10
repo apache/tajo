@@ -24,6 +24,7 @@ import nta.engine.planner.PhysicalPlanner;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.physical.PhysicalExec;
 import nta.engine.query.ResultSetImpl;
+import nta.engine.utils.TUtil;
 import nta.storage.Appender;
 import nta.storage.StorageManager;
 import nta.storage.StorageUtil;
@@ -108,9 +109,7 @@ public class WorkerTestingUtil {
       }
     }
 
-    SubqueryContext ctx = factory.create(QueryIdFactory.newQueryUnitId(
-        QueryIdFactory.newScheduleUnitId(QueryIdFactory.newSubQueryId(
-                QueryIdFactory.newQueryId()))),
+    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         frags.toArray(new Fragment[frags.size()]), workDir);
     ParseTree tree = analyzer.parse(ctx, query);
     LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);

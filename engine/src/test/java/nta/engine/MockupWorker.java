@@ -54,7 +54,7 @@ public abstract class MockupWorker
 
   protected final Type type;
 
-  protected Map<QueryUnitId, MockupTask> taskMap;
+  protected Map<QueryUnitAttemptId, MockupTask> taskMap;
   protected List<MockupTask> taskQueue;
   protected boolean stopped;
 
@@ -120,7 +120,7 @@ public abstract class MockupWorker
     return this.type;
   }
 
-  public InProgressStatusProto getReport(QueryUnitId queryUnitId,
+  public InProgressStatusProto getReport(QueryUnitAttemptId queryUnitId,
                                          QueryStatus status) {
     InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder();
     builder.setId(queryUnitId.getProto())
@@ -148,9 +148,9 @@ public abstract class MockupWorker
 
   @Override
   public CommandResponseProto requestCommand(CommandRequestProto request) {
-    QueryUnitId uid;
+    QueryUnitAttemptId uid;
     for (Command cmd : request.getCommandList()) {
-      uid = new QueryUnitId(cmd.getId());
+      uid = new QueryUnitAttemptId(cmd.getId());
       MockupTask task = this.taskMap.get(uid);
       QueryStatus status = task.getStatus();
       switch (cmd.getType()) {
@@ -259,7 +259,7 @@ public abstract class MockupWorker
         = new ArrayList<InProgressStatusProto>();
     InProgressStatusProto status;
     // to be removed
-    List<QueryUnitId> tobeRemoved = new ArrayList<QueryUnitId>();
+    List<QueryUnitAttemptId> tobeRemoved = Lists.newArrayList();
 
     // builds one status for each in-progress query
     for (MockupTask task : taskMap.values()) {
@@ -289,7 +289,7 @@ public abstract class MockupWorker
     zkClient.close();
   }
 
-  public Map<QueryUnitId, MockupTask> getTasks() {
+  public Map<QueryUnitAttemptId, MockupTask> getTasks() {
     return this.taskMap;
   }
 }

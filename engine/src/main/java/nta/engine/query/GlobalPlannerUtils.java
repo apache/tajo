@@ -45,7 +45,7 @@ public class GlobalPlannerUtils {
     }
   }
 
-  public static QueryUnit[] buildQueryDistributionPlan(
+ /* public static QueryUnit[] buildQueryDistributionPlan(
       Map<Fragment, FragmentServingInfo> servingMap,
       Map<String, List<String>> DNSNameToHostsMap,
 //      Set<String> failedHost,
@@ -78,11 +78,11 @@ public class GlobalPlannerUtils {
       distStatus.put(host, unit);
     }
 
-    /*LOG.info("===== before re-balancing =====");
+    *//*LOG.info("===== before re-balancing =====");
     for (Map.Entry<String, Collection<QueryUnit>> e : map.entrySet()) {
       LOG.info(e.getKey() + " : " + e.getValue().size());
     }
-    LOG.info("\n");*/
+    LOG.info("\n");*//*
 
     // re-balancing the query distribution
     Preconditions.checkState(queryUnits.length >= servingMap.size());
@@ -121,11 +121,11 @@ public class GlobalPlannerUtils {
       }
     }
 
-    /*LOG.info("===== after re-balancing " + maxQueryUnitNum + " =====");
+    *//*LOG.info("===== after re-balancing " + maxQueryUnitNum + " =====");
     for (Map.Entry<String, Collection<QueryUnit>> e : list) {
       LOG.info(e.getKey() + " : " + e.getValue().size());
     }
-    LOG.info("\n");*/
+    LOG.info("\n");*//*
 
     LOG.info(moveNum + " query units among " +
         queryUnits.length + " are moved!");
@@ -138,13 +138,13 @@ public class GlobalPlannerUtils {
         throw new UnknownWorkerException(e.getKey() + "");
       }
       for (QueryUnit unit : e.getValue()) {
-/*
+*//*
         while (failedHost.contains(hosts.get(rrIdx))) {
           if (++rrIdx == hosts.size()) {
             rrIdx = 0;
           }
         }
-*/
+*//*
         unit.setHost(hosts.get(rrIdx++));
         if (rrIdx == hosts.size()) {
           rrIdx = 0;
@@ -153,7 +153,7 @@ public class GlobalPlannerUtils {
     }
 
     return queryUnits;
-  }
+  }*/
 
   public static StoreTableNode newStorePlan(Schema outputSchema,
                                             String outputTableId) {

@@ -9,7 +9,7 @@ import java.util.List;
 import nta.common.ProtoObject;
 import nta.engine.MasterInterfaceProtos.Fetch;
 import nta.engine.MasterInterfaceProtos.QueryUnitRequestProto;
-import nta.engine.QueryUnitId;
+import nta.engine.QueryUnitAttemptId;
 
 /**
  * @author jihoon
@@ -17,7 +17,7 @@ import nta.engine.QueryUnitId;
  */
 public interface QueryUnitRequest extends ProtoObject<QueryUnitRequestProto> {
 
-	public QueryUnitId getId();
+	public QueryUnitAttemptId getId();
 	public List<Fragment> getFragments();
 	public String getOutputTableId();
 	public boolean isClusteredOutput();

@@ -7,19 +7,20 @@ import "CatalogProtos.proto";
 import "TCommonProtos.proto";
 
 enum QueryStatus {
-  QUERY_SUBMITED = 0;
-  QUERY_INITED = 1;
-  QUERY_FETCHING = 2;
-  QUERY_PENDING = 3;
-  QUERY_INPROGRESS = 4;
-  QUERY_FINISHED = 5;
-  QUERY_DATASERVER = 6;
-  QUERY_KILLED = 7;
-  QUERY_ABORTED = 8;
+  QUERY_NEW = 0;
+  QUERY_SUBMITED = 1;
+  QUERY_INITED = 2;
+  QUERY_FETCHING = 3;
+  QUERY_PENDING = 4;
+  QUERY_INPROGRESS = 5;
+  QUERY_FINISHED = 6;
+  QUERY_DATASERVER = 7;
+  QUERY_KILLED = 8;
+  QUERY_ABORTED = 9;
 }
 
 message InProgressStatusProto {
-    required QueryUnitIdProto id = 1;
+    required QueryUnitAttemptIdProto id = 1;
     required float progress = 2;
     required QueryStatus status = 3;
     optional StatSetProto stats = 4;
@@ -28,7 +29,7 @@ message InProgressStatusProto {
 }
 
 message QueryUnitRequestProto {
-    required string id = 1;
+    required QueryUnitAttemptIdProto id = 1;
     repeated TabletProto fragments = 2;
     required string outputTable = 3;
     required bool clusteredOutput = 4;
@@ -68,7 +69,7 @@ message CommandResponseProto {
 }
 
 message Command {
-    required QueryUnitIdProto id = 1;
+    required QueryUnitAttemptIdProto id = 1;
     required CommandType type = 2;
 }
 

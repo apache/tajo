@@ -49,11 +49,11 @@ public class MockupShutdownWorker extends MockupWorker {
           MasterInterfaceProtos.PingResponseProto response = sendHeartbeat(time);
           before = time;
 
-          QueryUnitId qid;
+          QueryUnitAttemptId qid;
           MockupTask task;
           MasterInterfaceProtos.QueryStatus status;
           for (MasterInterfaceProtos.Command cmd : response.getCommandList()) {
-            qid = new QueryUnitId(cmd.getId());
+            qid = new QueryUnitAttemptId(cmd.getId());
             if (!taskMap.containsKey(qid)) {
               LOG.error("ERROR: no such task " + qid);
               continue;

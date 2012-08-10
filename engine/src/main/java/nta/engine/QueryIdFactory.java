@@ -38,4 +38,9 @@ public class QueryIdFactory {
   public synchronized static QueryUnitId newQueryUnitId(ScheduleUnitId scheduleUnitId) {
     return new QueryUnitId(scheduleUnitId, nextId.incrementAndGet());
   }
+
+  public synchronized static QueryUnitAttemptId newQueryUnitAttemptId(
+      final QueryUnitId queryUnitId, final int attemptId) {
+    return new QueryUnitAttemptId(queryUnitId, attemptId);
+  }
 }

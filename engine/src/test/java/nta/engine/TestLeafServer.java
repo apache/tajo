@@ -18,10 +18,12 @@ import nta.engine.planner.LogicalOptimizer;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.PlannerUtil;
 import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.global.QueryUnitAttempt;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.query.QueryUnitRequestImpl;
+import nta.engine.utils.TUtil;
 import nta.storage.*;
 import nta.storage.Scanner;
 import org.apache.commons.logging.Log;
@@ -140,11 +142,13 @@ public class TestLeafServer {
     
     sm.initTableBase(frags[0].getMeta(), "testLeafServer");
     QueryUnitRequest req1 = new QueryUnitRequestImpl(
-        qid1, Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
+        QueryIdFactory.newQueryUnitAttemptId(qid1, 0),
+        Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
         "", false, plan.toJSON());
     
     QueryUnitRequest req2 = new QueryUnitRequestImpl(
-        qid2, Lists.newArrayList(Arrays.copyOfRange(frags, splitIdx,
+        QueryIdFactory.newQueryUnitAttemptId(qid2, 0),
+        Lists.newArrayList(Arrays.copyOfRange(frags, splitIdx,
             frags.length)), "", false, plan.toJSON());
 
     assertNotNull(leaf1.requestQueryUnit(req1.getProto()));
@@ -154,8 +158,7 @@ public class TestLeafServer {
     
     // for the report sending test
     NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
-    Set<QueryUnitId> reported = new HashSet<QueryUnitId>();
-    Set<QueryUnitId> submitted = new HashSet<QueryUnitId>();
+    Set<QueryUnitAttemptId> submitted = Sets.newHashSet();
     submitted.add(req1.getId());
     submitted.add(req2.getId());
 
@@ -215,16 +218,18 @@ public class TestLeafServer {
     qu[0] = new QueryUnit(qid1);
     qu[1] = new QueryUnit(qid2);
     su.setQueryUnits(qu);
-    qm.updateQueryUnitStatus(qid1, 1, QueryStatus.QUERY_INITED);
-    qm.updateQueryUnitStatus(qid2, 1, QueryStatus.QUERY_INITED);
+    qm.updateQueryUnitStatus(qid1, QueryStatus.QUERY_INITED);
+    qm.updateQueryUnitStatus(qid2, QueryStatus.QUERY_INITED);
+    QueryUnitAttempt attempt0 = qu[0].newAttempt();
+    QueryUnitAttempt attempt1 = qu[1].newAttempt();
     QueryUnitRequest req1 = new QueryUnitRequestImpl(
-        qid1, Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
+        attempt0.getId(),
+        Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
         "", false, plan.toJSON());
 
-    System.out.println(req1);
-
     QueryUnitRequest req2 = new QueryUnitRequestImpl(
-        qid2, Lists.newArrayList(Arrays.copyOfRange(frags, splitIdx,
+        attempt1.getId(),
+        Lists.newArrayList(Arrays.copyOfRange(frags, splitIdx,
         frags.length)), "", false, plan.toJSON());
 
     assertNotNull(leaf1.requestQueryUnit(req1.getProto()));
@@ -233,28 +238,28 @@ public class TestLeafServer {
     Thread.sleep(1000);
 
     // for the report sending test
-    Set<QueryUnitId> submitted = new HashSet<QueryUnitId>();
+    Set<QueryUnitAttemptId> submitted = Sets.newHashSet();
     submitted.add(req1.getId());
     submitted.add(req2.getId());
 
     QueryStatus s1, s2;
     do {
-      s1 = leaf1.getTask(qid1).getStatus();
-      s2 = leaf2.getTask(qid2).getStatus();
+      s1 = leaf1.getTask(req1.getId()).getStatus();
+      s2 = leaf2.getTask(req2.getId()).getStatus();
     } while (s1 != QueryStatus.QUERY_FINISHED
         && s2 != QueryStatus.QUERY_FINISHED);
 
     Command.Builder cmd = Command.newBuilder();
-    cmd.setId(qid1.getProto()).setType(CommandType.FINALIZE);
+    cmd.setId(req1.getId().getProto()).setType(CommandType.FINALIZE);
     leaf1.requestCommand(CommandRequestProto.newBuilder().
         addCommand(cmd.build()).build());
     cmd = Command.newBuilder();
-    cmd.setId(qid2.getProto()).setType(CommandType.FINALIZE);
+    cmd.setId(req2.getId().getProto()).setType(CommandType.FINALIZE);
     leaf2.requestCommand(CommandRequestProto.newBuilder().
         addCommand(cmd.build()).build());
 
-    assertNull(leaf1.getTask(qid1));
-    assertNull(leaf2.getTask(qid2));
+    assertNull(leaf1.getTask(req1.getId()));
+    assertNull(leaf2.getTask(req2.getId()));
 
     Scanner scanner = sm.getTableScanner("testLeafServer");
     int j = 0;
@@ -296,12 +301,14 @@ public class TestLeafServer {
     
     sm.initTableBase(frags[0].getMeta(), "testInterQuery");
     QueryUnitRequest req1 = new QueryUnitRequestImpl(
-        qid1, Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
+        TUtil.newQueryUnitAttemptId(),
+        Lists.newArrayList(Arrays.copyOfRange(frags, 0, splitIdx)),
         "", false, plan.toJSON());
     req1.setInterQuery();
     
     QueryUnitRequest req2 = new QueryUnitRequestImpl(
-        qid2, Lists.newArrayList(Arrays.copyOfRange(frags, splitIdx,
+        TUtil.newQueryUnitAttemptId(),
+        Lists.newArrayList(Arrays.copyOfRange(frags, splitIdx,
             frags.length)), "", false, plan.toJSON());
     req2.setInterQuery();
 
@@ -312,7 +319,7 @@ public class TestLeafServer {
     // for the report sending test
     NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
     Collection<InProgressStatusProto> list = master.getProgressQueries();
-    Set<QueryUnitId> submitted = Sets.newHashSet();
+    Set<QueryUnitAttemptId> submitted = Sets.newHashSet();
     submitted.add(req1.getId());
     submitted.add(req2.getId());
     
@@ -363,7 +370,7 @@ public class TestLeafServer {
         "final");
     Fragment emptyFrag = new Fragment("interquery", new Path("/"), newMeta, 0l, 0l);
     QueryUnitRequest req3 = new QueryUnitRequestImpl(
-        qid3, Lists.newArrayList(emptyFrag),
+        TUtil.newQueryUnitAttemptId(), Lists.newArrayList(emptyFrag),
         "", false, plan.toJSON());
     assertTrue("InProgress list must be positive.", list.size() != 0);
     for (InProgressStatusProto ips : list) {
@@ -380,8 +387,8 @@ public class TestLeafServer {
   }
   
   public void assertSubmittedAndReported(NtaEngineMaster master, 
-      Set<QueryUnitId> submitted) throws InterruptedException {
-    Set<QueryUnitId> reported = new HashSet<QueryUnitId>();
+      Set<QueryUnitAttemptId> submitted) throws InterruptedException {
+    Set<QueryUnitAttemptId> reported = Sets.newHashSet();
     Collection<InProgressStatusProto> list = master.getProgressQueries();
     int i = 0;
     while (i < 10) { // waiting for the report messages 
@@ -394,7 +401,7 @@ public class TestLeafServer {
         // of the store data. The below 'assert' examines the existence of 
         // the statistics info.
         if (ips.getStatus() == QueryStatus.QUERY_FINISHED) {
-          reported.add(new QueryUnitId(ips.getId()));
+          reported.add(new QueryUnitAttemptId(ips.getId()));
         }
       }
 

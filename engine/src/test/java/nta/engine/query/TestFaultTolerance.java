@@ -4,19 +4,18 @@ import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.*;
 import nta.datum.DatumFactory;
 import nta.engine.*;
+import nta.engine.MasterInterfaceProtos.*;
 import nta.engine.ClientServiceProtos.*;
 import nta.engine.cluster.QueryManager;
-import nta.engine.cluster.QueryUnitStatus;
 import nta.engine.planner.global.QueryUnit;
+import nta.engine.planner.global.QueryUnitAttempt;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.storage.*;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.thirdparty.guava.common.io.Files;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import sun.util.LocaleServiceProviderPool;
 
 import java.util.Map;
 
@@ -83,18 +82,17 @@ public class TestFaultTolerance {
     ScheduleUnit scheduleUnit = subQuery.getScheduleUnitIterator().next();
     QueryUnit[] queryUnits = scheduleUnit.getQueryUnits();
     for (QueryUnit queryUnit : queryUnits) {
-      QueryUnitStatus queryUnitStatus =
+      QueryStatus queryUnitStatus =
           qm.getQueryUnitStatus(queryUnit.getId());
-      Map<Integer, QueryUnitStatus.QueryUnitAttempt> map =
-          queryUnitStatus.getAttemptMap();
-      for (Map.Entry<Integer, QueryUnitStatus.QueryUnitAttempt> e
-          : map.entrySet()) {
-        if (e.getKey() == map.size()) {
-          assertEquals(MasterInterfaceProtos.QueryStatus.QUERY_FINISHED,
-              e.getValue().getStatus());
+
+      for (int i = 0; i <= queryUnit.getRetryCount(); i++) {
+        QueryUnitAttempt attempt = queryUnit.getAttempt(i);
+        if (i == queryUnit.getRetryCount()) {
+          assertEquals(QueryStatus.QUERY_FINISHED,
+              attempt.getStatus());
         } else {
-          assertEquals(MasterInterfaceProtos.QueryStatus.QUERY_ABORTED,
-              e.getValue().getStatus());
+          assertEquals(QueryStatus.QUERY_ABORTED,
+              attempt.getStatus());
         }
       }
     }

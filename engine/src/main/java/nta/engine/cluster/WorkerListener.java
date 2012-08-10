@@ -9,14 +9,17 @@ import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.PingRequestProto;
 import nta.engine.MasterInterfaceProtos.PingResponseProto;
 import nta.engine.NConstants;
+import nta.engine.QueryUnitAttemptId;
 import nta.engine.QueryUnitId;
 import nta.engine.exception.NoSuchQueryIdException;
 import nta.engine.ipc.MasterInterface;
 import nta.engine.ipc.PingRequest;
+import nta.engine.planner.global.QueryUnitAttempt;
 import nta.engine.query.PingRequestImpl;
 import nta.rpc.NettyRpc;
 import nta.rpc.ProtoParamRpcServer;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -26,7 +29,7 @@ import org.apache.hadoop.net.NetUtils;
  * @author jihoon
  *
  */
-public class WorkerListener implements Runnable, MasterInterface {
+public class WorkerListener extends Thread implements MasterInterface {
   
   private final static Log LOG = LogFactory.getLog(WorkerListener.class);
   private final ProtoParamRpcServer rpcServer;
@@ -45,6 +48,10 @@ public class WorkerListener implements Runnable, MasterInterface {
     this.rpcServer = NettyRpc.getProtoParamRpcServer(this, 
         MasterInterface.class, initIsa);
     this.qm = qm;
+    this.stopped = false;
+    this.rpcServer.start();
+    this.bindAddr = rpcServer.getBindAddress();
+    this.addr = bindAddr.getHostName() + ":" + bindAddr.getPort();
   }
   
   public InetSocketAddress getBindAddress() {
@@ -59,15 +66,7 @@ public class WorkerListener implements Runnable, MasterInterface {
     return this.stopped;
   }
   
-  public void start() {
-    this.stopped = false;
-    this.rpcServer.start();
-    this.bindAddr = rpcServer.getBindAddress();
-    this.addr = bindAddr.getHostName() + ":" + bindAddr.getPort();
-  }
-  
-  public void stop() {
-    this.rpcServer.shutdown();
+  public void shutdown() {
     this.stopped = true;
   }
 
@@ -81,12 +80,10 @@ public class WorkerListener implements Runnable, MasterInterface {
 
     PingRequest report = new PingRequestImpl(proto);
     for (InProgressStatusProto status : report.getProgressList()) {
-      QueryUnitId uid = new QueryUnitId(status.getId());
-      try {
-        qm.updateProgress(uid, status);
-      } catch (NoSuchQueryIdException e) {
-        e.printStackTrace();
-      }
+      QueryUnitAttemptId uid = new QueryUnitAttemptId(status.getId());
+      //qm.updateProgress(uid, status);
+      QueryUnitAttempt attempt = qm.getQueryUnitAttempt(uid);
+      attempt.updateProgress(status);
     }
     PingResponseProto.Builder response 
       = PingResponseProto.newBuilder();
@@ -101,8 +98,9 @@ public class WorkerListener implements Runnable, MasterInterface {
         Thread.sleep(1000);
       }
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      LOG.error(ExceptionUtils.getFullStackTrace(e));
+    } finally {
+      rpcServer.shutdown();
     }
   }
-
 }

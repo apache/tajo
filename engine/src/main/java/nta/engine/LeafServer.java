@@ -94,7 +94,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   private final int coreNum = Runtime.getRuntime().availableProcessors();
   private final ExecutorService fetchLauncher = 
       Executors.newFixedThreadPool(coreNum);  
-  private final Map<QueryUnitId, Task> tasks = Maps.newConcurrentMap();
+  private final Map<QueryUnitAttemptId, Task> tasks = Maps.newConcurrentMap();
   private HttpDataServer dataServer;
   private AdvancedDataRetriever retriever;
   private String dataServerURL;
@@ -225,11 +225,11 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           PingResponseProto response = sendHeartbeat(time);
           before = time;
                     
-          QueryUnitId qid;
+          QueryUnitAttemptId qid;
           Task task;
           QueryStatus status;
           for (Command cmd : response.getCommandList()) {
-            qid = new QueryUnitId(cmd.getId());
+            qid = new QueryUnitAttemptId(cmd.getId());
             if (!tasks.containsKey(qid)) {
               LOG.error("ERROR: no such task " + qid);
               continue;
@@ -302,7 +302,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       = new ArrayList<InProgressStatusProto>();
     InProgressStatusProto status;
     // to be removed
-    List<QueryUnitId> tobeRemoved = new ArrayList<QueryUnitId>();
+    List<QueryUnitAttemptId> tobeRemoved = Lists.newArrayList();
     
     // builds one status for each in-progress query
     QueryStatus qs;
@@ -380,13 +380,11 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     return new File(qualified.toUri());
   }
   
-  public static Path getQueryUnitDir(QueryUnitId quid) {
+  public static Path getQueryUnitDir(QueryUnitAttemptId quid) {
     Path workDir = 
-        StorageUtil.concatPath(            
-            quid.getScheduleUnitId().getSubQueryId()
-            .getQueryId().toString(),
-            String.valueOf(quid.getScheduleUnitId().getSubQueryId().getId()),
-            String.valueOf((quid.getScheduleUnitId().getId())),
+        StorageUtil.concatPath(
+            quid.getScheduleUnitId().toString(),
+            String.valueOf(quid.getQueryUnitId().getId()),
             String.valueOf(quid.getId()));
     return workDir;
   }
@@ -525,7 +523,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     }
   }
 
-  public Task getTask(QueryUnitId id) {
+  public Task getTask(QueryUnitAttemptId id) {
     return this.tasks.get(id);
   }
   
@@ -657,7 +655,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       }
     }
 
-    public QueryUnitId getId() {
+    public QueryUnitAttemptId getId() {
       return ctx.getQueryId();
     }
     
@@ -683,7 +681,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       }
     }
 
-    private File createWorkDir(QueryUnitId quid) throws IOException {
+    private File createWorkDir(QueryUnitAttemptId quid) throws IOException {
       Path subDir = getQueryUnitDir(quid);
       Path path = lDirAllocator.getLocalPathForWrite(subDir.toString(), conf);
       return createLocalDir(path);
@@ -708,7 +706,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           e.printStackTrace();
         }
       } else {
-        LOG.error(new UnfinishedTaskException("QueryUnitId: " 
+        LOG.error(new UnfinishedTaskException("QueryUnitAttemptId: "
             + ctx.getQueryId() + " status: " + ctx.getStatus()));
       }
     }
@@ -865,9 +863,9 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
 
   @Override
   public CommandResponseProto requestCommand(CommandRequestProto request) {
-    QueryUnitId uid;
+    QueryUnitAttemptId uid;
     for (Command cmd : request.getCommandList()) {
-      uid = new QueryUnitId(cmd.getId());
+      uid = new QueryUnitAttemptId(cmd.getId());
       Task task = tasks.get(uid);
       if (task == null) {
         LOG.warn("Unknown task: " + uid);
