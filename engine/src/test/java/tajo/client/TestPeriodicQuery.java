@@ -98,9 +98,5 @@ public class TestPeriodicQuery {
       i ++;
     }
     reader.close();
-    
   }
-
- 
-  
 }

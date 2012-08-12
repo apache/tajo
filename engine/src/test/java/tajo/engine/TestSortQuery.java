@@ -1,5 +1,7 @@
 package tajo.engine;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -11,14 +13,27 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Hyunsik Choi
  */
-public class TestSortQuery extends TpchTestBase {
+public class TestSortQuery {
+  static TpchTestBase tpch;
   public TestSortQuery() throws IOException {
     super();
   }
 
+  @BeforeClass
+  public static void setUp() throws Exception {
+    tpch = new TpchTestBase();
+    tpch.setUp();
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    tpch.tearDown();
+  }
+
   @Test
   public final void testSort() throws Exception {
-    ResultSet res = execute("select l_linenumber, l_orderkey from lineitem order by l_orderkey");
+    ResultSet res = tpch.execute(
+        "select l_linenumber, l_orderkey from lineitem order by l_orderkey");
     int cnt = 0;
     Long prev = null;
     while(res.next()) {

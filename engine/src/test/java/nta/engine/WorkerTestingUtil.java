@@ -43,7 +43,7 @@ public class WorkerTestingUtil {
 
 	public static void buildTestDir(String dir) throws IOException {
 		Path path = new Path(dir);
-		FileSystem fs = path.getFileSystem(new Configuration());
+		FileSystem fs = FileSystem.getLocal(new Configuration());
 		if(fs.exists(path))
 			fs.delete(path, true);
 

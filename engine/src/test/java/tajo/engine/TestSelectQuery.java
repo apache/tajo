@@ -7,6 +7,8 @@ import nta.catalog.Schema;
 import nta.catalog.proto.CatalogProtos;
 import nta.engine.NtaTestingUtility;
 import nta.storage.CSVFile2;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -21,14 +23,26 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Hyunsik Choi
  */
-public class TestSelectQuery extends TpchTestBase {
+public class TestSelectQuery {
+  private static TpchTestBase tpch;
   public TestSelectQuery() throws IOException {
     super();
-  }  
+  }
+
+  @BeforeClass
+  public static void setUp() throws Exception {
+    tpch = new TpchTestBase();
+    tpch.setUp();
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    tpch.tearDown();
+  }
   
   @Test
   public final void testSelect() throws Exception {
-    ResultSet res = execute("select l_orderkey, l_partkey from lineitem");
+    ResultSet res = tpch.execute("select l_orderkey, l_partkey from lineitem");
     res.next();
     assertEquals(1, res.getInt(1));
     assertEquals(1, res.getInt(2));
@@ -44,7 +58,7 @@ public class TestSelectQuery extends TpchTestBase {
 
   @Test
   public final void testSelect2() throws Exception {
-    ResultSet res = execute("select l_orderkey, l_partkey, l_orderkey + l_partkey as plus from lineitem");
+    ResultSet res = tpch.execute("select l_orderkey, l_partkey, l_orderkey + l_partkey as plus from lineitem");
     res.next();
     assertEquals(1, res.getInt(1));
     assertEquals(1, res.getInt(2));
@@ -63,7 +77,7 @@ public class TestSelectQuery extends TpchTestBase {
 
   @Test
   public final void testSelect3() throws Exception {
-    ResultSet res = execute("select l_orderkey + l_partkey as plus from lineitem");
+    ResultSet res = tpch.execute("select l_orderkey + l_partkey as plus from lineitem");
     res.next();
     assertEquals(2, res.getInt(1));
 
@@ -76,7 +90,7 @@ public class TestSelectQuery extends TpchTestBase {
 
   @Test
   public final void testSelectAsterik() throws Exception {
-    ResultSet res = execute("select * from lineitem");
+    ResultSet res = tpch.execute("select * from lineitem");
     res.next();
     assertEquals(1, res.getInt(1));
     assertEquals(1, res.getInt(2));
@@ -123,7 +137,8 @@ public class TestSelectQuery extends TpchTestBase {
     result1.add("3,1");
     result1.add("3,2");
 
-    ResultSet res = execute("select distinct l_orderkey, l_linenumber from lineitem");
+    ResultSet res = tpch.execute(
+        "select distinct l_orderkey, l_linenumber from lineitem");
     int cnt = 0;
     while(res.next()) {
       assertTrue(result1.contains(res.getInt(1) + "," + res.getInt(2)));
@@ -131,8 +146,8 @@ public class TestSelectQuery extends TpchTestBase {
     }
     assertEquals(5, cnt);
 
-    res = execute("select distinct l_orderkey from lineitem");
-    Set<Integer> result2 = Sets.newHashSet(new Integer[]{1,2,3});
+    res = tpch.execute("select distinct l_orderkey from lineitem");
+    Set<Integer> result2 = Sets.newHashSet(1,2,3);
     cnt = 0;
     while (res.next()) {
       assertTrue(result2.contains(res.getInt(1)));
@@ -143,10 +158,11 @@ public class TestSelectQuery extends TpchTestBase {
 
   @Test
   public final void testLikeClause() throws Exception {
-    Set<String> result = Sets.newHashSet(new String[]
-        {"ALGERIA", "ETHIOPIA", "INDIA", "INDONESIA", "ROMANIA", "SAUDI ARABIA", "RUSSIA"});
+    Set<String> result = Sets.newHashSet(
+        "ALGERIA", "ETHIOPIA", "INDIA", "INDONESIA", "ROMANIA", "SAUDI ARABIA", "RUSSIA");
 
-    ResultSet res = execute("select n_name from nation where n_name like '%IA'");
+    ResultSet res = tpch.execute(
+        "select n_name from nation where n_name like '%IA'");
     int cnt = 0;
     while(res.next()) {
       assertTrue(result.contains(res.getString(1)));
@@ -157,10 +173,10 @@ public class TestSelectQuery extends TpchTestBase {
 
   @Test
   public final void testStringCompare() throws Exception {
-    Set<Integer> result = Sets.newHashSet(new Integer[]
-        {1,3});
+    Set<Integer> result = Sets.newHashSet(1,3);
 
-    ResultSet res = execute("select l_orderkey from lineitem where l_shipdate <= '1996-03-22'");
+    ResultSet res = tpch.execute(
+        "select l_orderkey from lineitem where l_shipdate <= '1996-03-22'");
     int cnt = 0;
     while(res.next()) {
       assertTrue(result.contains(res.getInt(1)));
@@ -171,7 +187,7 @@ public class TestSelectQuery extends TpchTestBase {
 
   @Test
   public final void testRealValueCompare() throws Exception {
-    ResultSet res = execute("select ps_supplycost from partsupp where ps_supplycost = 771.64");
+    ResultSet res = tpch.execute("select ps_supplycost from partsupp where ps_supplycost = 771.64");
 
     res.next();
     assertTrue(771.64f == res.getFloat(1));
@@ -180,13 +196,15 @@ public class TestSelectQuery extends TpchTestBase {
 
   @Test
   public final void testCaseWhen() throws Exception {
-    ResultSet res = execute("select r_regionkey, " +
-        "case when r_regionkey = 1 then 'one' " +
-        "when r_regionkey = 2 then 'two' " +
-        "when r_regionkey = 3 then 'three' " +
-        "when r_regionkey = 4 then 'four' " +
-        "else 'zero' " +
-        "end as cond from region");
+    ResultSet res = tpch.execute(
+        "select r_regionkey, " +
+            "case when r_regionkey = 1 then 'one' " +
+            "when r_regionkey = 2 then 'two' " +
+            "when r_regionkey = 3 then 'three' " +
+            "when r_regionkey = 4 then 'four' " +
+            "else 'zero' " +
+            "end as cond from region");
+
     Map<Integer, String> result = Maps.newHashMap();
     result.put(0, "zero");
     result.put(1, "one");
@@ -204,12 +222,13 @@ public class TestSelectQuery extends TpchTestBase {
 
   @Test
   public final void testCaseWhenWithoutElse() throws Exception {
-    ResultSet res = execute("select r_regionkey, " +
+    ResultSet res = tpch.execute("select r_regionkey, " +
         "case when r_regionkey = 1 then 'one' " +
         "when r_regionkey = 2 then 'two' " +
         "when r_regionkey = 3 then 'three' " +
         "when r_regionkey = 4 then 'four' " +
         "end as cond from region");
+
     Map<Integer, String> result = Maps.newHashMap();
     result.put(0, "NULL");
     result.put(1, "one");
@@ -225,7 +244,7 @@ public class TestSelectQuery extends TpchTestBase {
     assertEquals(5, cnt);
   }
 
-  @Test
+  // TODO - to be changed
   public final void testIsNull() throws Exception {
     String [] table = new String[] {"nulltable"};
     Schema schema = new Schema();
@@ -244,7 +263,7 @@ public class TestSelectQuery extends TpchTestBase {
     assertFalse(res.next());
   }
 
-  @Test
+  // TODO - to be changed
   public final void testIsNotNull() throws Exception {
     String [] table = new String[] {"nulltable"};
     Schema schema = new Schema();
@@ -265,7 +284,7 @@ public class TestSelectQuery extends TpchTestBase {
     assertFalse(res.next());
   }
 
-  @Test
+  // TODO - to be changed
   public final void testIsNotNull2() throws Exception {
     String [] table = new String[] {"nulltable"};
     Schema schema = new Schema();
@@ -295,7 +314,8 @@ public class TestSelectQuery extends TpchTestBase {
 
   @Test
   public final void testNotEqual() throws Exception {
-    ResultSet res = execute("select l_orderkey from lineitem where l_orderkey != 1");
+    ResultSet res = tpch.execute(
+        "select l_orderkey from lineitem where l_orderkey != 1");
     assertTrue(res.next());
     assertEquals(2, res.getInt(1));
     assertTrue(res.next());

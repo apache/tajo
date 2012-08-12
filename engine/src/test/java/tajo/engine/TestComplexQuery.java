@@ -1,5 +1,7 @@
 package tajo.engine;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -11,15 +13,27 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author jihoon
  */
-public class TestComplexQuery extends TpchTestBase {
+public class TestComplexQuery {
+  private static TpchTestBase tpch;
 
   public TestComplexQuery() throws IOException {
     super();
   }
 
+  @BeforeClass
+  public static void setUp() throws Exception {
+    tpch = new TpchTestBase();
+    tpch.setUp();
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    tpch.tearDown();
+  }
+
   @Test
   public final void testSortAfterGroupby() throws Exception {
-    ResultSet res = execute("select max(l_quantity), l_orderkey "
+    ResultSet res = tpch.execute("select max(l_quantity), l_orderkey "
         + "from lineitem group by l_orderkey order by l_orderkey");
 
     int cnt = 0;

@@ -7,6 +7,8 @@ import nta.engine.parser.QueryBlock.SortSpec;
 import nta.engine.planner.physical.TupleComparator;
 import nta.engine.utils.TupleUtil;
 import nta.storage.Tuple;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -35,6 +37,8 @@ import java.util.TreeMap;
  *
  */
 public class BSTIndex implements IndexMethod {
+  private static final Log LOG = LogFactory.getLog(BSTIndex.class);
+
   public static final int ONE_LEVEL_INDEX = 1;
   public static final int TWO_LEVEL_INDEX = 2;
 

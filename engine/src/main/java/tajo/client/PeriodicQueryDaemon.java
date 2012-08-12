@@ -193,7 +193,9 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
     Set<String> taskSet = taskMap.keySet();
     for(String query : taskSet) {
       ScheduledExecutorService exec = taskMap.get(query);
-      exec.shutdown();
+      if (exec != null) {
+        exec.shutdown();
+      }
     }
     taskMap.clear();
     /*data flushing*/

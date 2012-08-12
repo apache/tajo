@@ -2,6 +2,8 @@ package tajo.engine;
 
 import com.google.common.collect.Maps;
 import nta.util.FileUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
@@ -14,15 +16,27 @@ import static org.junit.Assert.*;
 /**
  * @author Hyunsik Choi
  */
-public class TestJoinQuery extends TpchTestBase {
+public class TestJoinQuery {
+  static TpchTestBase tpch;
 
   public TestJoinQuery() throws IOException {
     super();
   }
 
+  @BeforeClass
+  public static void setUp() throws Exception {
+    tpch = new TpchTestBase();
+    tpch.setUp();
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    tpch.tearDown();
+  }
+
   @Test
   public final void testCrossJoin() throws Exception {
-    ResultSet res = execute("select n_name, r_name, n_regionkey, r_regionkey from nation, region");
+    ResultSet res = tpch.execute("select n_name, r_name, n_regionkey, r_regionkey from nation, region");
 
     int cnt = 0;
     while(res.next()) {
@@ -34,7 +48,8 @@ public class TestJoinQuery extends TpchTestBase {
 
   @Test
   public final void testCrossJoinWithExplicitJoinQual() throws Exception {
-    ResultSet res = execute("select n_name, r_name, n_regionkey, r_regionkey from nation, region where n_regionkey = r_regionkey");
+    ResultSet res = tpch.execute(
+        "select n_name, r_name, n_regionkey, r_regionkey from nation, region where n_regionkey = r_regionkey");
     int cnt = 0;
     while(res.next()) {
       cnt++;
@@ -45,7 +60,8 @@ public class TestJoinQuery extends TpchTestBase {
 
   @Test
   public final void testTPCHQ2Join() throws Exception {
-    ResultSet res = execute(FileUtil.readTextFile(new File("src/test/queries/tpch_q2_simplified.tql")));
+    ResultSet res = tpch.execute(FileUtil
+        .readTextFile(new File("src/test/queries/tpch_q2_simplified.tql")));
 
     Object [][] result = new Object[3][3];
 
@@ -84,7 +100,7 @@ public class TestJoinQuery extends TpchTestBase {
 
   @Test
   public void testJoinRefEval() throws Exception {
-    ResultSet res = execute("select r_regionkey, n_regionkey, (r_regionkey + n_regionkey) as plus from region, nation where r_regionkey = n_regionkey");
+    ResultSet res = tpch.execute("select r_regionkey, n_regionkey, (r_regionkey + n_regionkey) as plus from region, nation where r_regionkey = n_regionkey");
     int r, n;
     while(res.next()) {
       r = res.getInt(1);
@@ -95,13 +111,16 @@ public class TestJoinQuery extends TpchTestBase {
 
   @Test
   public void testJoinAndCaseWhen() throws Exception {
-    ResultSet res = execute("select r_regionkey, n_regionkey, " +
-    "case when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 1) then 'one' " +
-    "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 2) then 'two' " +
-    "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 3) then 'three' " +
-    "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 4) then 'four' " +
-    "else 'zero' " +
-    "end as cond from region, nation where r_regionkey = n_regionkey");
+    ResultSet res = tpch.execute("select r_regionkey, n_regionkey, " +
+        "case when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 1) then 'one' " +
+        "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 2) then 'two' " +
+        "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 3) then 'three' " +
+        "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 4) then 'four' " +
+        "else 'zero' " +
+        "end as cond from region, nation where r_regionkey = n_regionkey");
+
+
+
     Map<Integer, String> result = Maps.newHashMap();
     result.put(0, "zero");
     result.put(1, "one");

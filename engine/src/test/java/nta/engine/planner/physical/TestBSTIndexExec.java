@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -39,6 +40,7 @@ import nta.storage.Tuple;
 import nta.storage.VTuple;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
@@ -52,7 +54,7 @@ public class TestBSTIndexExec {
 
   private NtaConf conf;
   private final String TEST_PATH = "target/test-data/TestPhysicalPlanner";
-  private final Path idxPath = new Path(TEST_PATH, "test.idx");
+  private Path idxPath;
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
   private SubqueryContext.Factory factory;
@@ -69,8 +71,11 @@ public class TestBSTIndexExec {
   public void setup() throws Exception {
     this.randomValues = new HashMap<Integer , Integer> ();
     this.conf = new NtaConf();
-    WorkerTestingUtil.buildTestDir(TEST_PATH);
-    sm = StorageManager.get(conf, TEST_PATH);
+    File testDir = NtaTestingUtility.getTestDir("TestPhysicalPlanner");
+    FileSystem fs = FileSystem.getLocal(conf);
+    sm = StorageManager.get(conf, fs.makeQualified(new Path(testDir.toURI())));
+
+    idxPath = new Path(URI.create(testDir.toURI() + "/test.idx"));
 
     Schema schema = new Schema();
     schema.addColumn("managerId", DataType.INT);
