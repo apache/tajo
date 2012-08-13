@@ -674,6 +674,11 @@ public class ScheduleUnitExecutor extends Thread {
 
       // TODO: send stop commands
       for (QueryUnitAttempt attempt : submittedQueryUnits) {
+        try {
+          sendCommand(attempt, CommandType.STOP);
+        } catch (Exception e) {
+          LOG.error(ExceptionUtils.getFullStackTrace(e));
+        }
         attempt.setStatus(QueryStatus.QUERY_ABORTED);
       }
     }
@@ -1001,6 +1006,7 @@ public class ScheduleUnitExecutor extends Thread {
     }
 
     private void commitBackupTask(QueryUnitAttempt unit) throws Exception {
+      LOG.info("Commit backup task: " + unit.getQueryUnit().getId());
       sendCommand(unit, CommandType.STOP);
       cm.addFailedWorker(unit.getHost());
       requestBackupTask(unit.getQueryUnit());
