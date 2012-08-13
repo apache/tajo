@@ -11,6 +11,7 @@ import nta.conf.NtaConf;
 import nta.engine.NConstants;
 import nta.engine.cluster.ServerName;
 import nta.engine.cluster.ServerNodeTracker;
+import nta.util.FileUtil;
 import nta.zookeeper.ZkClient;
 import org.apache.commons.cli.*;
 import org.apache.hadoop.conf.Configuration;
@@ -253,7 +254,9 @@ public class TajoCli {
     sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
     if (desc.getMeta().getStat() != null) {
       sb.append("number of rows: ").append(desc.getMeta().getStat().getNumRows()).append("\n");
-      sb.append("volume (bytes): ").append(desc.getMeta().getStat().getNumBytes()).append("\n");
+      sb.append("volume (bytes): ").append(
+          FileUtil.humanReadableByteCount(desc.getMeta().getStat().getNumBytes(),
+              true)).append("\n");
     }
     sb.append("schema: \n");
     
