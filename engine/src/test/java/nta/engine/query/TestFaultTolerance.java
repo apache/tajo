@@ -77,13 +77,13 @@ public class TestFaultTolerance {
   private void assertQueryResult(QueryManager qm) {
     Query q = qm.getQuery(query);
     assertEquals(MasterInterfaceProtos.QueryStatus.QUERY_FINISHED,
-        qm.getQueryStatus(q));
+        q.getStatus());
     SubQuery subQuery = q.getSubQueryIterator().next();
     ScheduleUnit scheduleUnit = subQuery.getScheduleUnitIterator().next();
     QueryUnit[] queryUnits = scheduleUnit.getQueryUnits();
     for (QueryUnit queryUnit : queryUnits) {
       QueryStatus queryUnitStatus =
-          qm.getQueryUnitStatus(queryUnit.getId());
+          queryUnit.getStatus();
 
       for (int i = 0; i <= queryUnit.getRetryCount(); i++) {
         QueryUnitAttempt attempt = queryUnit.getAttempt(i);

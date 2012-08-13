@@ -69,7 +69,7 @@ public class ClusterManager {
   
   private Configuration conf;
   private final WorkerCommunicator wc;
-  private final CatalogClient catalog;
+  private CatalogClient catalog;
   private final LeafServerTracker tracker;
 
   private int clusterSize;
@@ -83,13 +83,16 @@ public class ClusterManager {
       LeafServerTracker tracker) throws IOException {
     this.wc = wc;
     this.conf = conf;
-    this.catalog = new CatalogClient(this.conf);
     this.tracker = tracker;
     this.DNSNameToHostsMap = Maps.newConcurrentMap();
     this.servingInfoMap = Maps.newConcurrentMap();
     this.resourcePool = Maps.newConcurrentMap();
     this.failedWorkers = Sets.newHashSet();
     this.clusterSize = 0;
+  }
+
+  public void init() throws IOException {
+    this.catalog = new CatalogClient(this.conf);
   }
 
   public WorkerInfo getWorkerInfo(String workerName) throws RemoteException,

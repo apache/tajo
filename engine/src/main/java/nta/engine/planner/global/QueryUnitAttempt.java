@@ -69,13 +69,15 @@ public class QueryUnitAttempt extends AbstractQuery {
   }
 
   public void updateProgress(InProgressStatusProto progress) {
-    this.setProgress(progress.getProgress());
-    this.setStatus(progress.getStatus());
-    if (progress.getPartitionsCount() > 0) {
-      this.getQueryUnit().setPartitions(progress.getPartitionsList());
-    }
-    if (progress.hasResultStats()) {
-      this.getQueryUnit().setStats(new TableStat(progress.getResultStats()));
+    if (status != progress.getStatus()) {
+      this.setProgress(progress.getProgress());
+      this.setStatus(progress.getStatus());
+      if (progress.getPartitionsCount() > 0) {
+        this.getQueryUnit().setPartitions(progress.getPartitionsList());
+      }
+      if (progress.hasResultStats()) {
+        this.getQueryUnit().setStats(new TableStat(progress.getResultStats()));
+      }
     }
     this.resetExpireTime();
   }

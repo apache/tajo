@@ -856,12 +856,12 @@ public class GlobalPlanner {
    * 입력 받은 ScheduleUnit을 QueryUnit들로 localize
    * 
    * @param unit localize할 ScheduleUnit
-   * @param n localize된 QueryUnit의 최대 개수
+   * @param maxTaskNum localize된 QueryUnit의 최대 개수
    * @return
    * @throws IOException
    * @throws URISyntaxException
    */
-  public QueryUnit[] localize(ScheduleUnit unit, int n) 
+  public QueryUnit[] localize(ScheduleUnit unit, int maxTaskNum)
       throws IOException, URISyntaxException {
     FileStatus[] files;
     Fragment[] frags;
@@ -873,7 +873,7 @@ public class GlobalPlanner {
     
     // set partition numbers for two phase algorithms
     // TODO: the following line might occur a bug. see the line 623
-    unit = setPartitionNumberForTwoPhase(unit, n);
+    unit = setPartitionNumberForTwoPhase(unit, maxTaskNum);
 
     Schema sortSchema = null;
     
@@ -905,8 +905,8 @@ public class GlobalPlanner {
           int mb = (int) Math.ceil((double)stat.getNumBytes() / 1048576);
           LOG.info("Total size of intermediate data is approximately " + mb + " MB");
 
-          n = (int) Math.ceil((double)mb / 64); // determine the number of task by considering 1 task per 64MB
-          LOG.info("The desired number of tasks is set to " + n);
+          maxTaskNum = (int) Math.ceil((double)mb / 64); // determine the number of task by considering 1 task per 64MB
+          LOG.info("The desired number of tasks is set to " + maxTaskNum);
 
           // calculate the number of maximum query ranges
           TupleRange mergedRange =
@@ -918,14 +918,14 @@ public class GlobalPlanner {
 
           // if the number of the range cardinality is less than the desired number of tasks,
           // we set the the number of tasks to the number of range cardinality.
-          if (card.compareTo(new BigDecimal(n)) < 0) {
-            LOG.info("The range cardinality is less then the desired number of tasks (" + n + ")");
-            n = card.intValue();
+          if (card.compareTo(new BigDecimal(maxTaskNum)) < 0) {
+            LOG.info("The range cardinality is less then the desired number of tasks (" + maxTaskNum + ")");
+            maxTaskNum = card.intValue();
           }
 
-          LOG.info("Try to divide " + mergedRange + " into " + n +
-              " sub ranges (total units: " + n + ")");
-          TupleRange [] ranges = partitioner.partition(n);
+          LOG.info("Try to divide " + mergedRange + " into " + maxTaskNum +
+              " sub ranges (total units: " + maxTaskNum + ")");
+          TupleRange [] ranges = partitioner.partition(maxTaskNum);
           String [] queries = TupleUtil.rangesToQueries(sortSchema, ranges);
           for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
             for (Partition p : qu.getPartitions()) {
@@ -996,9 +996,9 @@ public class GlobalPlanner {
 
     List<QueryUnit> unitList = null;
     if (scans.length == 1) {
-      unitList = makeUnaryQueryUnit(unit, n, fragMap, fetchMap, sortSchema);
+      unitList = makeUnaryQueryUnit(unit, maxTaskNum, fragMap, fetchMap, sortSchema);
     } else if (scans.length == 2) {
-      unitList = makeBinaryQueryUnit(unit, n, fragMap, fetchMap);
+      unitList = makeBinaryQueryUnit(unit, maxTaskNum, fragMap, fetchMap);
     }
     // TODO: The partition number should be set here,
     // because the number of query units is decided above.
@@ -1205,7 +1205,7 @@ public class GlobalPlanner {
     QueryUnit unit = new QueryUnit(
         QueryIdFactory.newQueryUnitId(scheduleUnit.getId()));
     unit.setLogicalPlan(scheduleUnit.getLogicalPlan());
-    qm.updateQueryUnitStatus(unit.getId(), QueryStatus.QUERY_NEW);
+    unit.setStatus(QueryStatus.QUERY_NEW);
     return unit;
   }
   

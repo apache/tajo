@@ -6,6 +6,7 @@ package nta.engine;
 import nta.catalog.statistics.TableStat;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -21,6 +22,7 @@ public class SubQuery extends AbstractQuery {
   private final SubQueryId id;
   private Map<ScheduleUnitId, ScheduleUnit> units;
   private TableStat resultStats;
+  private QueryStatus status;
   
   public SubQuery(SubQueryId id) {
     this.id = id;
@@ -57,5 +59,13 @@ public class SubQuery extends AbstractQuery {
 
   public TableStat getTableStat() {
     return this.resultStats;
+  }
+
+  public void setStatus(QueryStatus status) {
+    this.status = status;
+  }
+
+  public QueryStatus getStatus() {
+    return this.status;
   }
 }

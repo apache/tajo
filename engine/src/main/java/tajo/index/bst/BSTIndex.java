@@ -296,8 +296,6 @@ public class BSTIndex implements IndexMethod {
 
     public void open()
         throws IOException {
-      fs = fileName.getFileSystem(conf);
-
       /* open the index file */
       fs = fileName.getFileSystem(conf);
       if (!fs.exists(fileName)) {

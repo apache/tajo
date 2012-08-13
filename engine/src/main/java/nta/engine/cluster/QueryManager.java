@@ -3,13 +3,8 @@
  */
 package nta.engine.cluster;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import nta.catalog.statistics.TableStat;
+import com.google.common.collect.MapMaker;
+import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.*;
 import nta.engine.MasterInterfaceProtos.*;
 import nta.engine.exception.NoSuchQueryIdException;
@@ -18,11 +13,10 @@ import nta.engine.planner.global.QueryUnitAttempt;
 import nta.engine.planner.global.ScheduleUnit;
 import nta.engine.query.InProgressStatus;
 import nta.engine.query.TQueryUtil;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.google.common.collect.MapMaker;
+import java.util.*;
 
 /**
  *
@@ -33,11 +27,6 @@ public class QueryManager {
   private final Log LOG = LogFactory.getLog(QueryManager.class);
 
   private Map<QueryId, Query> queries;
-  private Map<QueryId, QueryStatus> queryStatusMap;
-  private Map<SubQueryId, QueryStatus> subQueryStatusMap;
-  private Map<ScheduleUnitId, QueryStatus> scheduleUnitStatusMap;
-  private Map<QueryUnitId, QueryStatus> queryUnitStatusMap;
-  
   private Map<QueryUnit, String> serverByQueryUnit;
   private Map<String, List<QueryUnit>> queryUnitsByServer;
 
@@ -45,10 +34,6 @@ public class QueryManager {
     MapMaker mapMaker = new MapMaker().concurrencyLevel(4);
     
     queries = mapMaker.makeMap();
-    queryStatusMap = mapMaker.makeMap();
-    subQueryStatusMap = mapMaker.makeMap();
-    scheduleUnitStatusMap = mapMaker.makeMap();
-    queryUnitStatusMap = mapMaker.makeMap();
     serverByQueryUnit = mapMaker.makeMap();
     queryUnitsByServer = mapMaker.makeMap();
   }
@@ -94,67 +79,6 @@ public class QueryManager {
     }
   }
 
-  public void updateSubQueryStatus(SubQueryId subQueryId,
-                                   QueryStatus status) {
-    subQueryStatusMap.put(subQueryId, status);
-    LOG.info("SubQuery status of " + subQueryId +
-        " is changed to " + status);
-  }
-
-  public synchronized void updateScheduleUnitStatus(
-      final ScheduleUnitId scheduleUnitId,
-      final QueryStatus status) {
-    scheduleUnitStatusMap.put(scheduleUnitId, status);
-    LOG.info("ScheduleUnit status of " + scheduleUnitId +
-        " is changed to " + status);
-  }
-
-  public synchronized void updateQueryUnitStatus(final QueryUnitId queryUnitId,
-                                    final QueryStatus status) {
-    queryUnitStatusMap.put(queryUnitId, status);
-    LOG.info("QueryUnit status of " + queryUnitId +
-        " is changed to " + status);
-  }
-
-  public QueryStatus getSubQueryStatus(SubQuery subQuery) {
-    return this.getSubQueryStatus(subQuery.getId());
-  }
-
-  public QueryStatus getSubQueryStatus(SubQueryId subQueryId) {
-    return subQueryStatusMap.get(subQueryId);
-  }
-
-  public QueryStatus getScheduleUnitStatus(ScheduleUnit scheduleUnit) {
-    return this.getScheduleUnitStatus(scheduleUnit.getId());
-  }
-
-  public QueryStatus getScheduleUnitStatus(ScheduleUnitId scheduleUnitId) {
-    return scheduleUnitStatusMap.get(scheduleUnitId);
-  }
-
-  public QueryStatus getQueryUnitStatus(QueryUnitId queryUnitId) {
-    return queryUnitStatusMap.get(queryUnitId);
-  }
-
-  public void updateQueryStatus(Query query, QueryStatus status) {
-    updateQueryStatus(query.getId(), status);
-  }
-
-  public synchronized void updateQueryStatus(QueryId queryId,
-         QueryStatus status) {
-    queryStatusMap.put(queryId, status);
-    LOG.info("Query status of " + queryId +
-        " is changed to " + status);
-  }
-
-  public QueryStatus getQueryStatus(Query query) {
-    return getQueryStatus(query.getId());
-  }
-
-  public QueryStatus getQueryStatus(QueryId queryId) {
-    return queryStatusMap.get(queryId);
-  }
-  
   public void updateQueryAssignInfo(String servername,
       QueryUnit unit) {
     serverByQueryUnit.put(unit, servername);
@@ -168,32 +92,6 @@ public class QueryManager {
     queryUnitsByServer.put(servername, units);
   }
 
-  /**
-   *
-   * @param attemptId
-   * @param progress
-   * @throws NoSuchQueryIdException
-   */
-  @Deprecated
-  public void updateProgress(QueryUnitAttemptId attemptId,
-      InProgressStatusProto progress) throws NoSuchQueryIdException {
-    QueryUnitAttempt unit = queries.get(attemptId.getQueryId()).
-        getQueryUnit(attemptId.getQueryUnitId()).getLastAttempt();
-    if (unit != null) {
-      unit.setProgress(progress.getProgress());
-      unit.setStatus(progress.getStatus());
-      if (progress.getPartitionsCount() > 0) {
-        unit.getQueryUnit().setPartitions(progress.getPartitionsList());
-      }
-      if (progress.hasResultStats()) {
-        unit.getQueryUnit().setStats(new TableStat(progress.getResultStats()));
-      }
-      unit.resetExpireTime();
-    } else {
-      throw new NoSuchQueryIdException("QueryUnitAttemptId: " + attemptId);
-    }
-  }
-  
   public Query getQuery(QueryId queryId) {
     return this.queries.get(queryId);
   }

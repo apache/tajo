@@ -6,6 +6,7 @@ import nta.catalog.CatalogClient;
 import nta.catalog.Schema;
 import nta.catalog.TableMeta;
 import nta.catalog.statistics.TableStat;
+import nta.common.Sleeper;
 import nta.conf.NtaConf;
 import nta.engine.MasterInterfaceProtos.CommandRequestProto;
 import nta.engine.MasterInterfaceProtos.CommandResponseProto;
@@ -103,11 +104,14 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   //Web server
   private HttpServer webServer;
 
+  private Sleeper sleeper;
+
   public LeafServer(final Configuration conf) {
     this.conf = conf;
     lDirAllocator = new LocalDirAllocator(NConstants.WORKER_TMP_DIR);
     LOG.info(conf.get(NConstants.WORKER_TMP_DIR));
     this.workDir = new File(conf.get(NConstants.WORKER_TMP_DIR));
+    sleeper = new Sleeper();
   }
   
   private void prepareServing() throws IOException {
@@ -207,25 +211,15 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
       }
 
       if (!this.stopped) {
-        long before = -1;
-        long sleeptime = 3000;
-        long time;
         this.isOnline = true;
         while (!this.stopped) {
-          time = System.currentTimeMillis();
-          if (before == -1) {
-            sleeptime = 3000;
-          } else {
-            sleeptime = 3000 - (time - before);
-          }
-          if (sleeptime > 0) {
-            Thread.sleep(sleeptime);
-          }
+          sleeper.sleep(3000);
+          long time = System.currentTimeMillis();
 
           PingResponseProto response = sendHeartbeat(time);
-          before = time;
-                    
-          QueryUnitAttemptId qid;
+          LOG.info("sent heart beat!!");
+
+          /*QueryUnitAttemptId qid;
           Task task;
           QueryStatus status;
           for (Command cmd : response.getCommandList()) {
@@ -261,7 +255,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
               
               break;
             }
-          }
+          }*/
         }
       }
     } catch (Throwable t) {
@@ -567,6 +561,21 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   }  
   
   public class Task implements Runnable {
+    class ProgressIndicator implements Runnable {
+
+      @Override
+      public void run() {
+        try {
+          while (!finished) {
+            Thread.sleep(3000);
+            LOG.info("processed rows: " + progress);
+          }
+        } catch (InterruptedException e) {
+
+        }
+      }
+    }
+
     private final SubqueryContext ctx;
     private List<Fetcher> fetcherRunners;
     private final LogicalNode plan;
@@ -574,6 +583,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     private boolean interQuery;    
     private boolean killed = false;
     private boolean aborted = false;
+    private boolean finished = false;
+    private int progress = 0;
 
     // TODO - to be refactored
     private ScheduleUnit.PARTITION_TYPE partitionType = null;
@@ -762,6 +773,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           // If the fetch is still in progress, the query unit must wait for 
           // complete.
           ctx.getFetchLatch().await();
+          LOG.info(ctx.getQueryId() + "All fetches are done!");
           Collection<String> inputs = Lists.newArrayList(ctx.getInputTables());
           for (String inputTable: inputs) {
             File tableDir = new File(ctx.getFetchIn(), inputTable);
@@ -771,14 +783,18 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           }
         }
         if (ctx.getFragmentSize() > 0) {
+          ProgressIndicator indicator = new ProgressIndicator();
+          new Thread(indicator).start();
           this.executor = queryEngine.createPlan(ctx, plan);
           while(executor.next() != null && !killed) {
+            ++progress;
           }
         }
       } catch (Exception e) {
         LOG.error(ExceptionUtils.getStackTrace(e));
         aborted = true;
       } finally {
+        finished = true;
         if (killed || aborted) {
           ctx.setProgress(0.0f);
           QueryStatus failedStatus = null;

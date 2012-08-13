@@ -133,17 +133,15 @@ public class GlobalEngine implements EngineService {
       QueryId qid = QueryIdFactory.newQueryId();
       Query query = new Query(qid, querystr);
       qm.addQuery(query);
-      qm.updateQueryStatus(qid, QueryStatus.QUERY_INITED);
-      qm.updateQueryStatus(qid, QueryStatus.QUERY_PENDING);
+      query.setStatus(QueryStatus.QUERY_INITED);
       SubQueryId subId = QueryIdFactory.newSubQueryId(qid);
       SubQuery subQuery = new SubQuery(subId);
       qm.addSubQuery(subQuery);
-      qm.updateSubQueryStatus(subId, QueryStatus.QUERY_INITED);
-      qm.updateSubQueryStatus(subId, QueryStatus.QUERY_PENDING);
-      
+      subQuery.setStatus(QueryStatus.QUERY_INITED);
+
       // build the master plan
-      qm.updateQueryStatus(qid, QueryStatus.QUERY_INPROGRESS);
-      qm.updateSubQueryStatus(subId, QueryStatus.QUERY_INPROGRESS);
+      query.setStatus(QueryStatus.QUERY_INPROGRESS);
+      subQuery.setStatus(QueryStatus.QUERY_INPROGRESS);
       MasterPlan globalPlan = globalPlanner.build(subId, plan);
       globalPlan = globalOptimizer.optimize(globalPlan.getRoot());
       
@@ -211,8 +209,7 @@ public class GlobalEngine implements EngineService {
     int i = 0, size = subQuery.getScheduleUnits().size();
     QueryStatus subQueryStatus = QueryStatus.QUERY_ABORTED;
     for (ScheduleUnit su : subQuery.getScheduleUnits()) {
-      if (qm.getScheduleUnitStatus(su)
-        != QueryStatus.QUERY_FINISHED) {
+      if (su.getStatus() != QueryStatus.QUERY_FINISHED) {
         break;
       }
       ++i;
@@ -220,8 +217,7 @@ public class GlobalEngine implements EngineService {
     if (i > 0 && i == size) {
       subQueryStatus = QueryStatus.QUERY_FINISHED;
     }
-    qm.updateSubQueryStatus(subQuery.getId(),
-        subQueryStatus);
+    subQuery.setStatus(subQueryStatus);
     return subQueryStatus;
   }
 
@@ -238,7 +234,7 @@ public class GlobalEngine implements EngineService {
     if (i > 0 && i == size) {
       queryStatus = QueryStatus.QUERY_FINISHED;
     }
-    qm.updateQueryStatus(query.getId(), queryStatus);
+    query.setStatus(queryStatus);
     return queryStatus;
   }
 

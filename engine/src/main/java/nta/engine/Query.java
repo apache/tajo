@@ -3,14 +3,14 @@
  */
 package nta.engine;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import com.google.common.collect.Maps;
 import nta.engine.planner.global.QueryUnit;
 import nta.engine.planner.global.ScheduleUnit;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
+
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * @author jihoon
@@ -21,6 +21,7 @@ public class Query extends AbstractQuery {
   private final QueryId id;
   private String queryStr;
   private Map<SubQueryId, SubQuery> subqueries;
+  private QueryStatus status;
   
   public Query(QueryId id, String queryStr) {
     this.id = id;
@@ -58,5 +59,13 @@ public class Query extends AbstractQuery {
   
   public QueryUnit getQueryUnit(QueryUnitId id) {
     return this.getScheduleUnit(id.getScheduleUnitId()).getQueryUnit(id);
+  }
+
+  public QueryStatus getStatus() {
+    return this.status;
+  }
+
+  public void setStatus(QueryStatus status) {
+    this.status = status;
   }
 }

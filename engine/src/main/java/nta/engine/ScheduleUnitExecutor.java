@@ -1,5 +1,6 @@
 package nta.engine;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -10,6 +11,7 @@ import nta.catalog.proto.CatalogProtos.*;
 import nta.catalog.statistics.ColumnStat;
 import nta.catalog.statistics.StatisticsUtil;
 import nta.catalog.statistics.TableStat;
+import nta.common.Sleeper;
 import nta.engine.MasterInterfaceProtos.*;
 import nta.engine.cluster.*;
 import nta.engine.exception.EmptyClusterException;
@@ -141,6 +143,10 @@ public class ScheduleUnitExecutor extends Thread {
 
   public Status getSubmitterStatus() {
     return submitter.getStatus();
+  }
+
+  public QueryUnitSubmitter getSubmitter() {
+    return this.submitter;
   }
 
   public void shutdown(final String msg) {
@@ -301,8 +307,7 @@ public class ScheduleUnitExecutor extends Thread {
               int numTasks = getTaskNum(scheduleUnit);
               QueryUnit[] units = planner.localize(scheduleUnit, numTasks);
               inprogressQueue.put(scheduleUnit);
-              qm.updateScheduleUnitStatus(scheduleUnit.getId(),
-                  QueryStatus.QUERY_INPROGRESS);
+              scheduleUnit.setStatus(QueryStatus.QUERY_INPROGRESS);
 
               if (units.length == 0) {
                 finishScheduleUnitForEmptyInput(scheduleUnit);
@@ -342,12 +347,12 @@ public class ScheduleUnitExecutor extends Thread {
     public void abort() {
       status = Status.ABORTED;
       for (ScheduleUnit unit : scheduleQueue) {
-        qm.updateScheduleUnitStatus(unit.getId(), QueryStatus.QUERY_ABORTED);
+        unit.setStatus(QueryStatus.QUERY_ABORTED);
       }
       scheduleQueue.clear();
 
       for (ScheduleUnit unit : inprogressQueue) {
-        qm.updateScheduleUnitStatus(unit.getId(), QueryStatus.QUERY_ABORTED);
+        unit.setStatus(QueryStatus.QUERY_ABORTED);
       }
       inprogressQueue.clear();
     }
@@ -399,8 +404,7 @@ public class ScheduleUnitExecutor extends Thread {
       }
       scheduleUnit.setPriority(priority);
       scheduleQueue.add(scheduleUnit);
-      qm.updateScheduleUnitStatus(scheduleUnit.getId(),
-          QueryStatus.QUERY_PENDING);
+      scheduleUnit.setStatus(QueryStatus.QUERY_PENDING);
     }
 
     private ScheduleUnit takeScheduleUnit() {
@@ -433,7 +437,8 @@ public class ScheduleUnitExecutor extends Thread {
     private boolean isReady(ScheduleUnit scheduleUnit) {
       if (scheduleUnit.hasChildQuery()) {
         for (ScheduleUnit child : scheduleUnit.getChildQueries()) {
-          if (qm.getScheduleUnitStatus(child.getId()) != QueryStatus.QUERY_FINISHED) {
+          if (child.getStatus() !=
+              QueryStatus.QUERY_FINISHED) {
             return false;
           }
         }
@@ -479,7 +484,7 @@ public class ScheduleUnitExecutor extends Thread {
           && grpNode.getGroupingColumns().length == 0) {
         numTasks = 1;
       } else {
-        numTasks = cm.getOnlineWorkers().size();
+        numTasks = cm.getOnlineWorkers().size() * 2;
       }
       return numTasks;
     }
@@ -493,8 +498,7 @@ public class ScheduleUnitExecutor extends Thread {
       }
       scheduleUnit.setStats(stat);
       writeStat(scheduleUnit, stat);
-      qm.updateScheduleUnitStatus(scheduleUnit.getId(),
-          QueryStatus.QUERY_FINISHED);
+      scheduleUnit.setStatus(QueryStatus.QUERY_FINISHED);
     }
 
     private void finishUnionUnit(ScheduleUnit unit) throws IOException {
@@ -502,7 +506,7 @@ public class ScheduleUnitExecutor extends Thread {
       TableStat stat = generateUnionStat(unit);
       unit.setStats(stat);
       writeStat(unit, stat);
-      qm.updateScheduleUnitStatus(unit.getId(), QueryStatus.QUERY_FINISHED);
+      unit.setStatus(QueryStatus.QUERY_FINISHED);
     }
 
     /**
@@ -576,7 +580,7 @@ public class ScheduleUnitExecutor extends Thread {
         throws InterruptedException {
       for (QueryUnit unit : units) {
         pendingQueue.put(unit);
-        qm.updateQueryUnitStatus(unit.getId(), QueryStatus.QUERY_PENDING);
+        unit.setStatus(QueryStatus.QUERY_PENDING);
       }
     }
 
@@ -593,7 +597,7 @@ public class ScheduleUnitExecutor extends Thread {
             QueryUnit unit = cluster.next();
             cluster.removeQueryUnit(unit);
             pendingQueue.put(unit);
-            qm.updateQueryUnitStatus(unit.getId(), QueryStatus.QUERY_PENDING);
+            unit.setStatus(QueryStatus.QUERY_PENDING);
           } else {
             toBeRemoved.add(cluster);
           }
@@ -652,7 +656,7 @@ public class ScheduleUnitExecutor extends Thread {
     }
 
     public boolean isFinished() {
-      if (qm.getScheduleUnitStatus(plan.getRoot()) == QueryStatus.QUERY_FINISHED) {
+      if (plan.getRoot().getStatus() == QueryStatus.QUERY_FINISHED) {
         return true;
       } else {
         return false;
@@ -671,7 +675,7 @@ public class ScheduleUnitExecutor extends Thread {
     public void abort() {
       status = Status.ABORTED;
       for (QueryUnit unit : pendingQueue) {
-        qm.updateQueryUnitStatus(unit.getId(), QueryStatus.QUERY_ABORTED);
+        unit.setStatus(QueryStatus.QUERY_ABORTED);
       }
 
       // TODO: send stop commands
@@ -682,6 +686,16 @@ public class ScheduleUnitExecutor extends Thread {
 
     public Status getStatus() {
       return status;
+    }
+
+    @VisibleForTesting
+    public void submitQueryUnit(QueryUnitAttempt attempt) {
+      this.submittedQueryUnits.add(attempt);
+    }
+
+    @VisibleForTesting
+    public int getSubmittedNum() {
+      return this.submittedQueryUnits.size();
     }
 
     private void updateWorkers() throws EmptyClusterException,
@@ -708,11 +722,7 @@ public class ScheduleUnitExecutor extends Thread {
         int finish = 0;
         int submitted = 0;
         for (QueryUnit queryUnit : scheduleUnit.getQueryUnits()) {
-          QueryUnitAttempt attempt = queryUnit.getLastAttempt();
-          if (attempt == null) continue;
-          //qm.updateQueryUnitStatus(queryUnit.getId(), attempt.getStatus());
-          //QueryStatus status = qm.getQueryUnitStatus(queryUnit.getId());
-          QueryStatus status = attempt.getStatus();
+          QueryStatus status = queryUnit.getStatus();
 
           switch (status) {
             case QUERY_SUBMITED: submitted++; break;
@@ -747,8 +757,7 @@ public class ScheduleUnitExecutor extends Thread {
           TableStat stat = generateStat(scheduleUnit);
           writeStat(scheduleUnit, stat);
           scheduleUnit.setStats(stat);
-          qm.updateScheduleUnitStatus(scheduleUnit.getId(),
-              QueryStatus.QUERY_FINISHED);
+          scheduleUnit.setStatus(QueryStatus.QUERY_FINISHED);
           if (scheduleUnit.hasChildQuery()) {
             finalizePrevScheduleUnit(scheduleUnit);
           }
@@ -785,7 +794,8 @@ public class ScheduleUnitExecutor extends Thread {
       }
     }
 
-    private void updateSubmittedQueryUnitStatus() throws Exception {
+    @VisibleForTesting
+    public int updateSubmittedQueryUnitStatus() throws Exception {
       // TODO
       boolean retryRequired;
       boolean wait;
@@ -798,10 +808,10 @@ public class ScheduleUnitExecutor extends Thread {
       int aborted = 0;
       int killed = 0;
       List<QueryUnitAttempt> toBeRemoved = Lists.newArrayList();
-      for (QueryUnitAttempt unit : submittedQueryUnits) {
+      for (QueryUnitAttempt attempt : submittedQueryUnits) {
         retryRequired = false;
         wait = false;
-        status = unit.getStatus();
+        status = attempt.getStatus();
 
         switch (status) {
           case QUERY_SUBMITED:
@@ -821,38 +831,40 @@ public class ScheduleUnitExecutor extends Thread {
             wait = true;
             break;
           case QUERY_FINISHED:
-            toBeRemoved.add(unit);
+            toBeRemoved.add(attempt);
+            attempt.getQueryUnit().setStatus(QueryStatus.QUERY_FINISHED);
             success++;
-            cm.addResource(unit.getHost());
+            cm.addResource(attempt.getHost());
             break;
           case QUERY_ABORTED:
-            toBeRemoved.add(unit);
+            toBeRemoved.add(attempt);
             retryRequired = true;
             aborted++;
             break;
           case QUERY_KILLED:
-            toBeRemoved.add(unit);
-            sendCommand(unit, CommandType.STOP);
+            toBeRemoved.add(attempt);
+            sendCommand(attempt, CommandType.STOP);
             killed++;
-            cm.addResource(unit.getHost());
+            cm.addResource(attempt.getHost());
             break;
           default:
             break;
         }
 
         if (wait) {
-          unit.updateExpireTime(WAIT_PERIOD);
-          if (unit.getLeftTime() <= 0) {
-            LOG.info("QueryUnit " + unit.getId() + " is expired!!");
-            unit.setStatus(QueryStatus.QUERY_ABORTED);
-            toBeRemoved.add(unit);
+          attempt.updateExpireTime(WAIT_PERIOD);
+          if (attempt.getLeftTime() <= 0) {
+            LOG.info("QueryUnit " + attempt.getId() + " is expired!!");
+            attempt.setStatus(QueryStatus.QUERY_ABORTED);
+            toBeRemoved.add(attempt);
             retryRequired = true;
           }
         }
 
         if (retryRequired) {
-          if (!retryQueryUnit(unit)) {
-            LOG.info("The query " + unit.getId() + " is aborted with + "
+          if (!retryQueryUnit(attempt)) {
+            LOG.error("failed query unit: " + attempt.getQueryUnit());
+            LOG.error("The query " + attempt.getId() + " is aborted with "
                 + status + " after " + RETRY_LIMIT + " retries.");
             abort();
             break;
@@ -866,11 +878,13 @@ public class ScheduleUnitExecutor extends Thread {
           + inited + ", Pending: " + pending + ", Running: " + inprogress
           + ", Aborted: " + aborted + ", Killed: " + killed);
       submittedQueryUnits.removeAll(toBeRemoved);
+      return success;
     }
 
     private void requestPendingQueryUnits() throws Exception {
       while (cm.existFreeResource() && !pendingQueue.isEmpty()) {
         QueryUnit q = pendingQueue.take();
+        q.setStatus(QueryStatus.QUERY_INPROGRESS);
 
         List<Fragment> fragList = new ArrayList<Fragment>();
         for (ScanNode scan : q.getScanNodes()) {
@@ -883,7 +897,11 @@ public class ScheduleUnitExecutor extends Thread {
 
         printQueryUnitRequestInfo(attempt, request);
         if (!requestToWC(attempt.getHost(), request.getProto())) {
-          retryQueryUnit(attempt);
+          if (!retryQueryUnit(attempt)) {
+            LOG.info("The query " + attempt.getId() + " is aborted with + "
+                + status + " after " + RETRY_LIMIT + " retries.");
+            abort();
+          }
         }
         submittedQueryUnits.add(attempt);
         attempt.setStatus(QueryStatus.QUERY_SUBMITED);
@@ -957,7 +975,7 @@ public class ScheduleUnitExecutor extends Thread {
       int retryCnt = unit.getRetryCount();
 
       if (retryCnt < RETRY_LIMIT) {
-        qm.updateQueryUnitStatus(unit.getId(), QueryStatus.QUERY_ABORTED);
+        attempt.setStatus(QueryStatus.QUERY_ABORTED);
         commitBackupTask(attempt);
         return true;
       } else {
@@ -991,29 +1009,6 @@ public class ScheduleUnitExecutor extends Thread {
     @Override
     public int compare(ScheduleUnit s1, ScheduleUnit s2) {
       return s1.getPriority().get() - s2.getPriority().get();
-    }
-  }
-
-  class Sleeper {
-    private long before;
-    private long cur;
-
-    public Sleeper() {
-      before = -1;
-    }
-
-    public void sleep(long time) throws InterruptedException {
-      long sleeptime;
-      cur = System.currentTimeMillis();
-      if (before == -1) {
-        sleeptime = time;
-      } else {
-        sleeptime = time - (cur - before);
-      }
-      if (sleeptime > 0) {
-        Thread.sleep(sleeptime);
-      }
-      before = System.currentTimeMillis();
     }
   }
 }

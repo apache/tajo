@@ -13,6 +13,7 @@ import com.google.common.collect.Sets;
 import nta.catalog.Schema;
 import nta.catalog.statistics.TableStat;
 import nta.engine.AbstractQuery;
+import nta.engine.MasterInterfaceProtos;
 import nta.engine.MasterInterfaceProtos.Partition;
 import nta.engine.QueryIdFactory;
 import nta.engine.QueryUnitAttemptId;
@@ -25,6 +26,7 @@ import nta.engine.planner.logical.LogicalNode;
 import nta.engine.planner.logical.ScanNode;
 import nta.engine.planner.logical.StoreTableNode;
 import nta.engine.planner.logical.UnaryNode;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
 
 import com.google.common.base.Preconditions;
 
@@ -47,7 +49,8 @@ public class QueryUnit extends AbstractQuery {
 
   private Map<Integer, QueryUnitAttempt> attemptMap;
   private Integer lastAttemptId;
-	
+  private QueryStatus status;
+
 	public QueryUnit(QueryUnitId id) {
 		this.id = id;
 		scan = new ArrayList<ScanNode>();
@@ -167,7 +170,7 @@ public class QueryUnit extends AbstractQuery {
 	
 	@Override
 	public String toString() {
-		String str = new String(plan.getType() + " ");
+		String str = new String(plan.getType() + " \n");
 		for (Entry<String, Fragment> e : fragMap.entrySet()) {
 		  str += e.getKey() + " : ";
       str += e.getValue() + " ";
@@ -206,6 +209,7 @@ public class QueryUnit extends AbstractQuery {
     QueryUnitAttempt attempt = new QueryUnitAttempt(
         QueryIdFactory.newQueryUnitAttemptId(this.getId(),
             ++lastAttemptId), this);
+    attempt.setStatus(QueryStatus.QUERY_NEW);
     this.attemptMap.put(attempt.getId().getId(), attempt);
     return attempt;
   }

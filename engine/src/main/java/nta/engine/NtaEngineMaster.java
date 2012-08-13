@@ -153,8 +153,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
     // connect the zkserver
     this.zkClient = new ZkClient(conf);
 
-    this.wl = new WorkerListener(conf, qm);
-    this.wl.start();
+    this.wl = new WorkerListener(conf, qm, this);
     // Setup RPC server
     // Get the master address
     LOG.info(NtaEngineMaster.class.getSimpleName() + " is bind to "
@@ -191,7 +190,9 @@ public class NtaEngineMaster extends Thread implements ClientService {
     this.wc = new WorkerCommunicator(zkClient, tracker);
     this.wc.start();
     this.cm = new ClusterManager(wc, conf, tracker);
-    
+    cm.init();
+    this.wl.start();
+
     this.queryEngine = new GlobalEngine(conf, catalog, storeManager, wc, qm, cm);
     this.queryEngine.init();
     services.add(queryEngine);

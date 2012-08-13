@@ -23,23 +23,23 @@ public abstract class AbstractQuery {
     this.status.setStatus(status.getStatus());
   }
 
-  public synchronized void setProgress(float progress) {
+  public void setProgress(float progress) {
     this.status.setProgress(progress);
   }
   
-  public synchronized void setStatus(QueryStatus status) {
+  public void setStatus(QueryStatus status) {
     this.status.setStatus(status);
   }
   
-  public synchronized InProgressStatus getInProgressStatus() {
+  public InProgressStatus getInProgressStatus() {
     return this.status;
   }
   
-  public synchronized QueryStatus getStatus() {
+  public QueryStatus getStatus() {
     return this.status.getStatus();
   }
   
-  public synchronized float getProgress() {
+  public float getProgress() {
     return status.getProgress();
   }
 }

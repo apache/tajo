@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import nta.catalog.Schema;
 import nta.catalog.statistics.TableStat;
 import nta.engine.AbstractQuery;
+import nta.engine.MasterInterfaceProtos.QueryStatus;
 import nta.engine.QueryUnitId;
 import nta.engine.ScheduleUnitId;
 import nta.engine.planner.logical.*;
@@ -43,6 +44,7 @@ public class ScheduleUnit extends AbstractQuery {
   private boolean hasUnionPlan;
   private Priority priority;
   private TableStat stats;
+  private QueryStatus status;
   
   public ScheduleUnit(ScheduleUnitId id) {
     this.id = id;
@@ -243,5 +245,13 @@ public class ScheduleUnit extends AbstractQuery {
   
   public int compareTo(ScheduleUnit other) {
     return this.id.compareTo(other.id);
+  }
+
+  public void setStatus(QueryStatus status) {
+    this.status = status;
+  }
+
+  public QueryStatus getStatus() {
+    return this.status;
   }
 }

@@ -4,11 +4,14 @@
 package nta.engine.cluster;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import nta.common.Sleeper;
 import nta.engine.MasterInterfaceProtos.InProgressStatusProto;
 import nta.engine.MasterInterfaceProtos.PingRequestProto;
 import nta.engine.MasterInterfaceProtos.PingResponseProto;
 import nta.engine.NConstants;
+import nta.engine.NtaEngineMaster;
 import nta.engine.QueryUnitAttemptId;
 import nta.engine.QueryUnitId;
 import nta.engine.exception.NoSuchQueryIdException;
@@ -37,8 +40,11 @@ public class WorkerListener extends Thread implements MasterInterface {
   private String addr;
   private volatile boolean stopped = false;
   private QueryManager qm;
+  private NtaEngineMaster master;
+  private AtomicInteger processed;
+  private Sleeper sleeper;
   
-  public WorkerListener(Configuration conf, QueryManager qm) {
+  public WorkerListener(Configuration conf, QueryManager qm, NtaEngineMaster master) {
     String confMasterAddr = conf.get(NConstants.MASTER_ADDRESS,
         NConstants.DEFAULT_MASTER_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterAddr);
@@ -52,6 +58,9 @@ public class WorkerListener extends Thread implements MasterInterface {
     this.rpcServer.start();
     this.bindAddr = rpcServer.getBindAddress();
     this.addr = bindAddr.getHostName() + ":" + bindAddr.getPort();
+    processed = new AtomicInteger(0);
+    sleeper = new Sleeper();
+    this.master = master;
   }
   
   public InetSocketAddress getBindAddress() {
@@ -77,6 +86,9 @@ public class WorkerListener extends Thread implements MasterInterface {
   public PingResponseProto reportQueryUnit(PingRequestProto proto) {
 //    LOG.info("master received reports from " + proto.getServerName() +
 //        ": " + proto.getStatusCount());
+    if (master.getClusterManager().getFailedWorkers().contains(proto.getServerName())) {
+      LOG.info("**** Dead man alive!!!!!!");
+    }
 
     PingRequest report = new PingRequestImpl(proto);
     for (InProgressStatusProto status : report.getProgressList()) {
@@ -84,8 +96,9 @@ public class WorkerListener extends Thread implements MasterInterface {
       //qm.updateProgress(uid, status);
       QueryUnitAttempt attempt = qm.getQueryUnitAttempt(uid);
       attempt.updateProgress(status);
+      processed.incrementAndGet();
     }
-    PingResponseProto.Builder response 
+    PingResponseProto.Builder response
       = PingResponseProto.newBuilder();
     return response.build();
   }
@@ -95,7 +108,9 @@ public class WorkerListener extends Thread implements MasterInterface {
     // rpc listen
     try {
       while (!this.stopped) {
-        Thread.sleep(1000);
+        processed.set(0);
+        sleeper.sleep(1000);
+        LOG.info("processed: " + processed);
       }
     } catch (InterruptedException e) {
       LOG.error(ExceptionUtils.getFullStackTrace(e));
