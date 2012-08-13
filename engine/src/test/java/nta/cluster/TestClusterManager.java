@@ -1,32 +1,21 @@
 package nta.cluster;
 
+import com.google.common.collect.Sets;
 import nta.catalog.*;
 import nta.catalog.proto.CatalogProtos.DataType;
 import nta.catalog.proto.CatalogProtos.StoreType;
 import nta.datum.DatumFactory;
-import nta.engine.*;
+import nta.engine.NtaEngineMaster;
+import nta.engine.NtaTestingUtility;
 import nta.engine.cluster.ClusterManager;
 import nta.engine.cluster.ClusterManager.DiskInfo;
 import nta.engine.cluster.ClusterManager.WorkerInfo;
 import nta.engine.cluster.FragmentServingInfo;
 import nta.engine.cluster.WorkerCommunicator;
 import nta.engine.ipc.protocolrecords.Fragment;
-import nta.engine.parser.ParseTree;
-import nta.engine.parser.QueryAnalyzer;
-import nta.engine.planner.LogicalOptimizer;
-import nta.engine.planner.LogicalPlanner;
-import nta.engine.planner.global.GlobalOptimizer;
-import nta.engine.planner.global.MasterPlan;
-import nta.engine.planner.global.QueryUnit;
-import nta.engine.planner.logical.LogicalNode;
-import nta.engine.query.GlobalPlanner;
 import nta.storage.*;
-import nta.util.FileUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,8 +23,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class TestClusterManager {
   static final Log LOG = LogFactory.getLog(TestClusterManager.class);
@@ -64,14 +52,12 @@ public class TestClusterManager {
     assertNotNull(cm);
     
     cm.updateOnlineWorker();
+    cm.resetResourceInfo();
 
     local = util.getMiniTajoCluster().getMaster()
         .getCatalog();
 
     int i, j;
-    FSDataOutputStream fos;
-    Path tbPath;
-
     Schema schema = new Schema();
     schema.addColumn("id", DataType.INT);
     schema.addColumn("age", DataType.INT);
@@ -103,8 +89,6 @@ public class TestClusterManager {
       TableDesc desc = new TableDescImpl(tbname, meta,
           sm.getTablePath(tbname));
       local.addTable(desc);
-
-//      cm.updateFragmentServingInfo(desc.getId());
     }
   }
 
@@ -141,65 +125,6 @@ public class TestClusterManager {
     }
   }
 
-/*
-  @Test
-  public void testGetFragAndWorker() throws Exception {
-    workersCollection = cm.getOnlineWorkers().values();
-
-    List<Set<Fragment>> frags = new ArrayList<Set<Fragment>>();
-
-    int i = 0;
-    for (List<String> workers : workersCollection) {
-      i+= workers.size();
-      for (String w : workers) {
-        if (cm.getFragbyWorker(w) != null) {
-          frags.add(cm.getFragbyWorker(w));
-        }
-      }
-    }
-
-    String prevName;
-    for (Set<Fragment> fragmentSet : frags) {
-      prevName = "";
-      for (Fragment fragment : fragmentSet) {
-        String workerName = cm.getWorkerbyFrag(fragment);
-        assertNotNull(workerName);
-        if (!prevName.equals("")) {
-          assertEquals(prevName, workerName);
-        } else {
-          prevName = workerName;
-        }
-      }
-    }
-  }
-*/
-
-/*  @Test
-  public void testGetProperHost() throws Exception {
-    QueryAnalyzer analyzer = new QueryAnalyzer(local);
-    QueryContext.Factory factory = new QueryContext.Factory(local);
-    String query = "select id, age, name from HostsByTable0";
-    QueryContext ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx, query);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
-    plan = LogicalOptimizer.optimize(ctx, plan);
-
-    // build the master plan
-    GlobalPlanner globalPlanner = new GlobalPlanner(
-        master.getStorageManager(), master.getQueryManager(), local);
-    GlobalOptimizer globalOptimizer = new GlobalOptimizer();
-    QueryId qid = QueryIdFactory.newQueryId();
-    SubQueryId subId = QueryIdFactory.newSubQueryId(qid);
-    MasterPlan globalPlan = globalPlanner.build(subId, plan);
-    globalPlan = globalOptimizer.optimize(globalPlan.getRoot());
-    QueryUnit[] units = globalPlanner.localize(globalPlan.getRoot(),
-        CLUST_NUM);
-    ClusterManager cm = master.getClusterManager();
-    for (QueryUnit unit : units) {
-      assertNotNull(cm.getProperHost(unit));
-    }
-  }*/
-
   @Test
   public void testUpdateFragmentServingInfo2() throws IOException {
     ClusterManager cm = master.getClusterManager();
@@ -215,6 +140,27 @@ public class TestClusterManager {
     assertEquals(fragNum, map.size());
     for (FragmentServingInfo info : map.values()) {
       assertEquals(1, info.getHostNum());
+    }
+  }
+
+  @Test
+  public void testNextFreeHost() {
+    ClusterManager cm = master.getClusterManager();
+    ClusterManager.WorkerResource wr;
+    Set<String> onlineWorkers = Sets.newHashSet();
+    for (int i = 0; i < 4; i++) {
+      onlineWorkers.clear();
+      for (List<String> workers : cm.getOnlineWorkers().values()) {
+        onlineWorkers.addAll(workers);
+      }
+      for (int j = 0; j < CLUST_NUM; j++) {
+        String host = cm.getNextFreeHost();
+        wr = cm.getResource(host);
+        wr.getResource();
+        cm.updateResourcePool(wr);
+        assertTrue(onlineWorkers.contains(host));
+        onlineWorkers.remove(host);
+      }
     }
   }
 }

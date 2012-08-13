@@ -46,27 +46,67 @@ public class ClusterManager {
     public long totalSpace;
   }
 
-  private class FragmentAssignInfo
-  implements Comparable<FragmentAssignInfo> {
-    String serverName;
-    int fragmentNum;
-    
-    public FragmentAssignInfo(String serverName, int fragmentNum) {
-      this.serverName = serverName;
-      this.fragmentNum = fragmentNum;
+  public class WorkerResource implements Comparable<WorkerResource> {
+    private String name;
+    private Integer freeResource;
+
+    public WorkerResource(String name, int freeResource) {
+      this.name = name;
+      this.freeResource = freeResource;
     }
-    
-    public FragmentAssignInfo updateFragmentNum() {
-      this.fragmentNum++;
-      return this;
+
+    public String getName() {
+      return this.name;
     }
-    
+
+    public int getFreeResource() {
+      return this.freeResource;
+    }
+
+    public boolean hasFreeResource() {
+      return this.freeResource > 0;
+    }
+
+    public boolean getResource() {
+      if (hasFreeResource()) {
+        freeResource--;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    public void returnResource() {
+      freeResource++;
+    }
+
     @Override
-    public int compareTo(FragmentAssignInfo o) {
-      return this.fragmentNum - o.fragmentNum;
+    public int compareTo(WorkerResource workerResource) {
+      return workerResource.freeResource - this.freeResource;
+    }
+
+    @Override
+    public int hashCode() {
+      return name.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (o instanceof WorkerResource) {
+        WorkerResource wr = (WorkerResource) o;
+        if (wr.name.equals(this.name) && wr.freeResource == this.freeResource) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    @Override
+    public String toString() {
+      return name + " : " + freeResource;
     }
   }
-  
+
   private Configuration conf;
   private final WorkerCommunicator wc;
   private CatalogClient catalog;
@@ -76,7 +116,8 @@ public class ClusterManager {
   private Map<String, List<String>> DNSNameToHostsMap;
   private Map<Fragment, FragmentServingInfo> servingInfoMap;
   private Random rand = new Random(System.currentTimeMillis());
-  private Map<String, Integer> resourcePool;
+  private Map<String, WorkerResource> resourcePool;
+  private PriorityQueue<WorkerResource> sortedResources;
   private Set<String> failedWorkers;
 
   public ClusterManager(WorkerCommunicator wc, Configuration conf,
@@ -87,6 +128,7 @@ public class ClusterManager {
     this.DNSNameToHostsMap = Maps.newConcurrentMap();
     this.servingInfoMap = Maps.newConcurrentMap();
     this.resourcePool = Maps.newConcurrentMap();
+    this.sortedResources = new PriorityQueue<WorkerResource>();
     this.failedWorkers = Sets.newHashSet();
     this.clusterSize = 0;
   }
@@ -131,6 +173,7 @@ public class ClusterManager {
   public void updateOnlineWorker() {
     String DNSName;
     List<String> workers;
+    WorkerResource wr;
     DNSNameToHostsMap.clear();
     clusterSize = 0;
     for (String worker : tracker.getMembers()) {
@@ -148,7 +191,8 @@ public class ClusterManager {
       }
     }
     for (String failed : failedWorkers) {
-      resourcePool.remove(failed);
+      wr = resourcePool.remove(failed);
+      sortedResources.remove(wr);
     }
   }
 
@@ -156,42 +200,40 @@ public class ClusterManager {
       throws UnknownWorkerException, InterruptedException,
       ExecutionException {
     WorkerInfo info;
+    WorkerResource wr;
     for (List<String> hosts : DNSNameToHostsMap.values()) {
       for (String host : hosts) {
         info = getWorkerInfo(host);
         //Preconditions.checkState(info.availableProcessors-info.taskNum >= 0);
         // TODO: correct free resource computation is required
         if (info.availableProcessors-info.taskNum > 0) {
-          resourcePool.put(host,
+          wr = new WorkerResource(host,
               (info.availableProcessors-info.taskNum) * 30);
+          resourcePool.put(host, wr);
+          sortedResources.add(wr);
         }
       }
     }
   }
 
-  public boolean existFreeResource() {
-    return resourcePool.size() > 0;
+  public boolean remainFreeResource() {
+    return sortedResources.iterator().next().hasFreeResource();
   }
 
-  public boolean hasFreeResource(String host) {
-    return resourcePool.containsKey(host);
+  public WorkerResource getResource(String worker) {
+    return resourcePool.get(worker);
   }
 
-  public void getResource(String host) {
-    int resource = resourcePool.get(host);
-    if (--resource == 0) {
-      resourcePool.remove(host);
-    } else {
-      resourcePool.put(host, resource);
+  public void updateResourcePool(WorkerResource updated) {
+    WorkerResource outdated = null;
+    for (WorkerResource wr : sortedResources) {
+      if (wr.getName().equals(updated.getName())) {
+        outdated = wr;
+        break;
+      }
     }
-  }
-
-  public void addResource(String host) {
-    if (resourcePool.containsKey(host)) {
-      resourcePool.put(host, resourcePool.get(host).intValue()+1);
-    } else {
-      resourcePool.put(host, 1);
-    }
+    sortedResources.remove(outdated);
+    sortedResources.add(updated);
   }
 
   public Map<String, List<String>> getOnlineWorkers() {
@@ -259,7 +301,7 @@ public class ClusterManager {
    * @return
    * @throws Exception
    */
-  public String getRandomHost() {
+  /*public String getRandomHost() {
     int n = rand.nextInt(resourcePool.size());
     Iterator<String> it = resourcePool.keySet().iterator();
     for (int i = 0; i < n-1; i++) {
@@ -268,6 +310,10 @@ public class ClusterManager {
     String randomHost = it.next();
     this.getResource(randomHost);
     return randomHost;
+  }*/
+
+  public String getNextFreeHost() {
+    return sortedResources.iterator().next().getName();
   }
 
   public synchronized Set<String> getFailedWorkers() {

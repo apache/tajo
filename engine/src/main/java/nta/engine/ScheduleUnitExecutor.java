@@ -314,7 +314,6 @@ public class ScheduleUnitExecutor extends Thread {
               } else {
                 // insert query units to the pending queue
                 scheduleQueryUnits(units, scheduleUnit.hasChildQuery());
-                // printAssingedInfo(units);
               }
             }
           }
@@ -661,11 +660,6 @@ public class ScheduleUnitExecutor extends Thread {
       } else {
         return false;
       }
-      /*
-       * if (isSchedulerFinished()) { return inprogressQueue.isEmpty() &&
-       * submittedQueryUnits.isEmpty() && pendingQueue.isEmpty(); } else {
-       * return false; }
-       */
     }
 
     public void shutdown() {
@@ -797,6 +791,7 @@ public class ScheduleUnitExecutor extends Thread {
     @VisibleForTesting
     public int updateSubmittedQueryUnitStatus() throws Exception {
       // TODO
+      ClusterManager.WorkerResource wr;
       boolean retryRequired;
       boolean wait;
       QueryStatus status;
@@ -834,7 +829,9 @@ public class ScheduleUnitExecutor extends Thread {
             toBeRemoved.add(attempt);
             attempt.getQueryUnit().setStatus(QueryStatus.QUERY_FINISHED);
             success++;
-            cm.addResource(attempt.getHost());
+            wr = cm.getResource(attempt.getHost());
+            wr.returnResource();
+            cm.updateResourcePool(wr);
             break;
           case QUERY_ABORTED:
             toBeRemoved.add(attempt);
@@ -845,7 +842,9 @@ public class ScheduleUnitExecutor extends Thread {
             toBeRemoved.add(attempt);
             sendCommand(attempt, CommandType.STOP);
             killed++;
-            cm.addResource(attempt.getHost());
+            wr = cm.getResource(attempt.getHost());
+            wr.returnResource();
+            cm.updateResourcePool(wr);
             break;
           default:
             break;
@@ -882,7 +881,7 @@ public class ScheduleUnitExecutor extends Thread {
     }
 
     private void requestPendingQueryUnits() throws Exception {
-      while (cm.existFreeResource() && !pendingQueue.isEmpty()) {
+      while (cm.remainFreeResource() && !pendingQueue.isEmpty()) {
         QueryUnit q = pendingQueue.take();
         q.setStatus(QueryStatus.QUERY_INPROGRESS);
 
@@ -909,38 +908,55 @@ public class ScheduleUnitExecutor extends Thread {
     }
 
     private String selectWorker(QueryUnit q, List<Fragment> fragList) {
-      FragmentServingInfo info;
-      if (fragList.size() == 1) {
-        info = cm.getServingInfo(fragList.get(0));
-      } else {
-        // TODO: to be improved
-        info = cm.getServingInfo(fragList.get(0));
-      }
-      if (info == null) {
-        return cm.getRandomHost();
-      }
-      if (cm.getOnlineWorkers().containsKey(info.getPrimaryHost())) {
-        List<String> workers = cm.getOnlineWorkers().get(info.getPrimaryHost());
-        for (String worker : workers) {
-          if (cm.hasFreeResource(worker)) {
-            cm.getResource(worker);
-            return worker;
-          }
+      if (cm.remainFreeResource()) {
+        FragmentServingInfo info;
+        ClusterManager.WorkerResource wr;
+        if (fragList.size() == 1) {
+          info = cm.getServingInfo(fragList.get(0));
+        } else {
+          // TODO: to be improved
+          info = cm.getServingInfo(fragList.get(0));
         }
-      }
-      String backup;
-      while ((backup=info.getNextBackupHost()) != null) {
-        if (cm.getOnlineWorkers().containsKey(backup)) {
-          List<String>workers = cm.getOnlineWorkers().get(backup);
+        if (info == null) {
+          String host = cm.getNextFreeHost();
+          wr = cm.getResource(host);
+          wr.getResource();
+          cm.updateResourcePool(wr);
+          return host;
+        }
+        if (cm.getOnlineWorkers().containsKey(info.getPrimaryHost())) {
+          List<String> workers = cm.getOnlineWorkers().get(info.getPrimaryHost());
           for (String worker : workers) {
-            if (cm.hasFreeResource(worker)) {
-              cm.getResource(worker);
+            wr = cm.getResource(worker);
+            if (wr.hasFreeResource()) {
+              wr.getResource();
+              cm.updateResourcePool(wr);
               return worker;
             }
           }
         }
+        String backup;
+        while ((backup=info.getNextBackupHost()) != null) {
+          if (cm.getOnlineWorkers().containsKey(backup)) {
+            List<String>workers = cm.getOnlineWorkers().get(backup);
+            for (String worker : workers) {
+              wr = cm.getResource(worker);
+              if (wr.hasFreeResource()) {
+                wr.getResource();
+                cm.updateResourcePool(wr);
+                return worker;
+              }
+            }
+          }
+        }
+        backup = cm.getNextFreeHost();
+        wr = cm.getResource(backup);
+        wr.getResource();
+        cm.updateResourcePool(wr);
+        return backup;
+      } else {
+        return null;
       }
-      return cm.getRandomHost();
     }
 
     private QueryUnitRequest createQueryUnitRequest(QueryUnitAttempt q,
