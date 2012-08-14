@@ -24,6 +24,7 @@ import nta.engine.parser.QueryAnalyzer;
 import nta.engine.parser.QueryBlock;
 import nta.engine.planner.LogicalPlanner;
 import nta.engine.planner.PhysicalPlanner;
+import nta.engine.planner.logical.JoinNode;
 import nta.engine.planner.logical.LogicalNode;
 import nta.engine.utils.TUtil;
 import nta.storage.Appender;
@@ -167,14 +168,26 @@ public class TestBNLJoinExec {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    ProjectionExec proj = (ProjectionExec) exec;
-    MergeJoinExec join = (MergeJoinExec) proj.getChild();
-    ExternalSortExec sortOut = (ExternalSortExec) join.getOuter();
-    ExternalSortExec sortIn = (ExternalSortExec) join.getInner();
-    SeqScanExec scanOuter = (SeqScanExec) sortOut.getSubOp();
-    SeqScanExec scanInner = (SeqScanExec) sortIn.getSubOp();
+    SeqScanExec scanOuter = null;
+    SeqScanExec scanInner = null;
 
-    BNLJoinExec bnl = new BNLJoinExec(ctx, join.getJoinNode(), scanOuter,
+    ProjectionExec proj = (ProjectionExec) exec;
+    JoinNode joinNode = null;
+    if (proj.getChild() instanceof MergeJoinExec) {
+      MergeJoinExec join = (MergeJoinExec) proj.getChild();
+      ExternalSortExec sortOut = (ExternalSortExec) join.getOuter();
+      ExternalSortExec sortIn = (ExternalSortExec) join.getInner();
+      scanOuter = (SeqScanExec) sortOut.getSubOp();
+      scanInner = (SeqScanExec) sortIn.getSubOp();
+      joinNode = join.getJoinNode();
+    } else if (proj.getChild() instanceof HashJoinExec) {
+      HashJoinExec join = (HashJoinExec) proj.getChild();
+      scanOuter = (SeqScanExec) join.getOuter();
+      scanInner = (SeqScanExec) join.getInner();
+      joinNode = join.getPlan();
+    }
+
+    BNLJoinExec bnl = new BNLJoinExec(ctx, joinNode, scanOuter,
         scanInner);
     proj.setChild(bnl);
 

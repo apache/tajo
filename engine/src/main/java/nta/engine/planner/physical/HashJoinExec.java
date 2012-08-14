@@ -9,6 +9,7 @@ import java.util.Map;
 
 import nta.catalog.Column;
 import nta.catalog.Schema;
+import nta.catalog.SchemaUtil;
 import nta.engine.SubqueryContext;
 import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
@@ -25,6 +26,7 @@ import nta.storage.VTuple;
  */
 public class HashJoinExec extends PhysicalExec {
   // from logical plan
+  private JoinNode plan;
   private Schema inSchema;
   private Schema outSchema;
   private EvalNode joinQual;
@@ -59,7 +61,8 @@ public class HashJoinExec extends PhysicalExec {
       PhysicalExec inner) {
     this.outer = outer;
     this.inner = inner;
-    this.inSchema = joinNode.getInputSchema();
+    this.plan = joinNode;
+    this.inSchema = SchemaUtil.merge(outer.getSchema(), inner.getSchema());
     this.outSchema = joinNode.getOutputSchema();
     this.joinQual = joinNode.getJoinQual();
     this.qualCtx = joinQual.newContext();
@@ -186,5 +189,17 @@ public class HashJoinExec extends PhysicalExec {
     finished = false;
     iterator = null;
     nextOuter = true;
+  }
+
+  public PhysicalExec getOuter() {
+    return this.outer;
+  }
+
+  public PhysicalExec getInner() {
+    return this.inner;
+  }
+
+  public JoinNode getPlan() {
+    return this.plan;
   }
 }

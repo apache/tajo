@@ -1,6 +1,7 @@
 package nta.engine.planner.physical;
 
 import nta.catalog.Schema;
+import nta.catalog.SchemaUtil;
 import nta.engine.SubqueryContext;
 import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
@@ -53,7 +54,7 @@ public class BNLJoinExec extends PhysicalExec {
     this.ctx = ctx;
     this.outer = outer;
     this.inner = inner;
-    this.inSchema = ann.getInputSchema();
+    this.inSchema = SchemaUtil.merge(outer.getSchema(), inner.getSchema());
     this.outSchema = ann.getOutputSchema();
     this.joinQual = ann.getJoinQual();
     this.qualCtx = this.joinQual.newContext();

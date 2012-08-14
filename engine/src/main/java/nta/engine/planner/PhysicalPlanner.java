@@ -124,11 +124,51 @@ public class PhysicalPlanner {
     }
   }
 
+  private long estimateSizeRecursive(SubqueryContext ctx, String [] tableIds) {
+    long size = 0;
+    for (String tableId : tableIds) {
+      Fragment [] fragments = ctx.getTables(tableId);
+      for (Fragment frag : fragments) {
+        size += frag.getLength();
+      }
+    }
+    return size;
+  }
+
   public PhysicalExec createJoinPlan(SubqueryContext ctx, JoinNode joinNode,
       PhysicalExec outer, PhysicalExec inner) {
     switch (joinNode.getJoinType()) {
     case CROSS_JOIN:
       return new NLJoinExec(ctx, joinNode, outer, inner);
+
+    case INNER:
+      String [] outerLineage = PlannerUtil.getLineage(joinNode.getOuterNode());
+      String [] innerLineage = PlannerUtil.getLineage(joinNode.getInnerNode());
+      long outerSize = estimateSizeRecursive(ctx, outerLineage);
+      long innerSize = estimateSizeRecursive(ctx, innerLineage);
+
+      final long threshold = 1048576 * 32;
+
+      boolean hashJoin = false;
+      if (outerSize < threshold || innerSize < threshold) {
+        hashJoin = true;
+      }
+
+      if (hashJoin) {
+        PhysicalExec selectedOuter;
+        PhysicalExec selectedInner;
+
+        // HashJoinExec loads the inner relation to memory.
+        if (outerSize <= innerSize) {
+          selectedInner = outer;
+          selectedOuter = inner;
+        } else {
+          selectedInner = inner;
+          selectedOuter = outer;
+        }
+
+        return new HashJoinExec(ctx, joinNode, selectedOuter, selectedInner);
+      }
 
     default:
       QueryBlock.SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(

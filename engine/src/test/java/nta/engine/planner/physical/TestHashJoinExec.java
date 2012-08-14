@@ -129,18 +129,19 @@ public class TestHashJoinExec {
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    
     ProjectionExec proj = (ProjectionExec) exec;
-    MergeJoinExec join = (MergeJoinExec) proj.getChild();
-    ExternalSortExec sortout = (ExternalSortExec) join.getOuter();
-    ExternalSortExec sortin = (ExternalSortExec) join.getInner();
-    SeqScanExec scanout = (SeqScanExec) sortout.getSubOp();
-    SeqScanExec scanin = (SeqScanExec) sortin.getSubOp();
-    
-    HashJoinExec hashjoin = new HashJoinExec(ctx, join.getJoinNode(), scanout, scanin);
-    proj.setChild(hashjoin);
-    
-    exec = proj;
+    if (proj.getChild() instanceof MergeJoinExec) {
+      MergeJoinExec join = (MergeJoinExec) proj.getChild();
+      ExternalSortExec sortout = (ExternalSortExec) join.getOuter();
+      ExternalSortExec sortin = (ExternalSortExec) join.getInner();
+      SeqScanExec scanout = (SeqScanExec) sortout.getSubOp();
+      SeqScanExec scanin = (SeqScanExec) sortin.getSubOp();
+
+      HashJoinExec hashjoin = new HashJoinExec(ctx, join.getJoinNode(), scanout, scanin);
+      proj.setChild(hashjoin);
+
+      exec = proj;
+    }
 
     Tuple tuple;
     int count = 0;
