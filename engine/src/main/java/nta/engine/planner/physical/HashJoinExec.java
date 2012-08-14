@@ -10,14 +10,19 @@ import java.util.Map;
 import nta.catalog.Column;
 import nta.catalog.Schema;
 import nta.engine.SubqueryContext;
+import nta.engine.exec.eval.EvalContext;
 import nta.engine.exec.eval.EvalNode;
 import nta.engine.planner.PlannerUtil;
+import nta.engine.planner.Projector;
 import nta.engine.planner.logical.JoinNode;
-import nta.engine.utils.TupleUtil;
 import nta.storage.FrameTuple;
 import nta.storage.Tuple;
 import nta.storage.VTuple;
 
+/**
+ * @author Byung Nam Lim
+ * @author Hyunsik Choi
+ */
 public class HashJoinExec extends PhysicalExec {
   // from logical plan
   private Schema inSchema;
@@ -28,99 +33,141 @@ public class HashJoinExec extends PhysicalExec {
   private PhysicalExec outer;
   private PhysicalExec inner;
 
-  private JoinNode ann;
-
-  private List<Column[]> keylist;
-
-  public PhysicalExec getouter() {
-    return this.outer;
-  }
-
-  public PhysicalExec getinner() {
-    return this.inner;
-  }
-
-  public JoinNode getJoinNode() {
-    return this.ann;
-  }
+  private List<Column[]> joinKeyPairs;
 
   // temporal tuples and states for nested loop join
+  private boolean first = true;
   private FrameTuple frameTuple;
-  private Tuple outputTuple = null;
+  private Tuple outTuple = null;
   private Map<Tuple, List<Tuple>> tupleSlots;
   private Iterator<Tuple> iterator = null;
+  private EvalContext qualCtx;
+  private Tuple outerTuple;
+  private Tuple outerKeyTuple;
+
+  private int [] outerKeyList;
+  private int [] innerKeyList;
+
+  private boolean finished = false;
+  boolean nextOuter = true;
 
   // projection
-  private final int[] targetIds;
+  private final Projector projector;
+  private final EvalContext [] evalContexts;
 
-  public HashJoinExec(SubqueryContext ctx, JoinNode ann, PhysicalExec outer,
+  public HashJoinExec(SubqueryContext ctx, JoinNode joinNode, PhysicalExec outer,
       PhysicalExec inner) {
     this.outer = outer;
     this.inner = inner;
-    this.inSchema = ann.getInputSchema();
-    this.outSchema = ann.getOutputSchema();
-    this.joinQual = ann.getJoinQual();
-    this.ann = ann;
-    this.tupleSlots = new HashMap<Tuple, List<Tuple>>(1000);
+    this.inSchema = joinNode.getInputSchema();
+    this.outSchema = joinNode.getOutputSchema();
+    this.joinQual = joinNode.getJoinQual();
+    this.qualCtx = joinQual.newContext();
+    this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
-    Column[] col = PlannerUtil.getJoinKeyPairs(joinQual,
-        outer.getSchema(), inner.getSchema()).get(0);
-    this.keylist = new ArrayList<Column[]>();
+    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual,
+        outer.getSchema(), inner.getSchema());
 
-    for (int idx = 0; idx < col.length; idx++) {
-      keylist.add(PlannerUtil.getJoinKeyPairs(joinQual,
-          outer.getSchema(), inner.getSchema()).get(idx));
+    outerKeyList = new int[joinKeyPairs.size()];
+    innerKeyList = new int[joinKeyPairs.size()];
+
+    for (int i = 0; i < joinKeyPairs.size(); i++) {
+      outerKeyList[i] = outer.getSchema().getColumnId(joinKeyPairs.get(i)[0].getQualifiedName());
+    }
+
+    for (int i = 0; i < joinKeyPairs.size(); i++) {
+      innerKeyList[i] = inner.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
     }
 
     // for projection
-    targetIds = TupleUtil.getTargetIds(inSchema, outSchema);
+    this.projector = new Projector(inSchema, outSchema, joinNode.getTargets());
+    this.evalContexts = projector.renew();
 
     // for join
     frameTuple = new FrameTuple();
-    outputTuple = new VTuple(outSchema.getColumnNum());
+    outTuple = new VTuple(outSchema.getColumnNum());
+    outerKeyTuple = new VTuple(outerKeyList.length);
+  }
+
+  private void getKeyOuterTuple(final Tuple outerTuple, Tuple keyTuple) {
+    for (int i = 0; i < outerKeyList.length; i++) {
+      keyTuple.put(i, outerTuple.get(outerKeyList[i]));
+    }
   }
 
   public Tuple next() throws IOException {
-    Tuple t = null;
-    Tuple keyTuple = null;
-    if (tupleSlots.isEmpty()) {
-      while ((t = inner.next()) != null) {
-        keyTuple = new VTuple(keylist.size());
-        List<Tuple> newvalue = null;
-        for (int i = 0; i < keylist.size(); i++) {
-          keyTuple.put(i, t.get(inner.getSchema().getColumnId(keylist.get(i)[1].getQualifiedName())));
-        }
-        if (tupleSlots.containsKey(keyTuple)) {
-          newvalue = tupleSlots.get(keyTuple);
-          newvalue.add(t);
-          tupleSlots.put(keyTuple, newvalue);
-        } else {
-          newvalue = new ArrayList<Tuple>();
-          newvalue.add(t);
-          tupleSlots.put(keyTuple, newvalue);
-        }
-      }
+    if (first) {
+      loadInnerTable();
     }
-    
-    keyTuple = new VTuple(keylist.size());
-    while (true) {
-      if (iterator == null || !iterator.hasNext()) {
-        t = outer.next();
-        if (t == null) {
+
+    Tuple innerTuple;
+    boolean found = false;
+
+    while(!finished) {
+
+      if (nextOuter) {
+        // getting new outer
+        outerTuple = outer.next();
+        if (outerTuple == null) {
+          finished = true;
           return null;
         }
-        for (int i = 0; i < keylist.size(); i++) {
-          keyTuple.put(i, t.get(outer.getSchema().getColumnId(keylist.get(i)[0].getQualifiedName())));
+
+        // getting corresponding inner
+        getKeyOuterTuple(outerTuple, outerKeyTuple);
+        if (tupleSlots.containsKey(outerKeyTuple)) {
+          iterator = tupleSlots.get(outerKeyTuple).iterator();
+          nextOuter = false;
+        } else {
+          nextOuter = true;
+          continue;
         }
       }
 
-      if (tupleSlots.containsKey(keyTuple)) {
-        iterator = tupleSlots.get(keyTuple).iterator();
-        frameTuple.set(t, iterator.next());
-        TupleUtil.project(frameTuple, outputTuple, targetIds);
-        return outputTuple;
+      // getting next inner tuple
+      innerTuple = iterator.next();
+      frameTuple.set(outerTuple, innerTuple);
+      joinQual.eval(qualCtx, inSchema, frameTuple);
+      if (joinQual.terminate(qualCtx).asBool()) {
+        projector.eval(evalContexts, frameTuple);
+        projector.terminate(evalContexts, outTuple);
+        found = true;
+      }
+
+      if (!iterator.hasNext()) { // no more inner tuple
+        nextOuter = true;
+      }
+
+      if (found) {
+        break;
       }
     }
+
+    return outTuple;
+  }
+
+  private void loadInnerTable() throws IOException {
+    Tuple tuple;
+    Tuple keyTuple;
+
+    while ((tuple = inner.next()) != null) {
+      keyTuple = new VTuple(joinKeyPairs.size());
+      List<Tuple> newValue;
+      for (int i = 0; i < innerKeyList.length; i++) {
+        keyTuple.put(i, tuple.get(innerKeyList[i]));
+      }
+
+      if (tupleSlots.containsKey(keyTuple)) {
+        newValue = tupleSlots.get(keyTuple);
+        newValue.add(tuple);
+        tupleSlots.put(keyTuple, newValue);
+      } else {
+        newValue = new ArrayList<Tuple>();
+        newValue.add(tuple);
+        tupleSlots.put(keyTuple, newValue);
+      }
+    }
+    first = false;
   }
 
   @Override
@@ -132,8 +179,12 @@ public class HashJoinExec extends PhysicalExec {
   public void rescan() throws IOException {
     outer.rescan();
     inner.rescan();
-    iterator = null;
+
     tupleSlots.clear();
-    keylist.clear();
+    first = true;
+
+    finished = false;
+    iterator = null;
+    nextOuter = true;
   }
 }
