@@ -35,7 +35,7 @@ public class HashAggregateExec extends AggregationExec {
   public HashAggregateExec(SubqueryContext ctx, GroupbyNode annotation,
                            PhysicalExec subOp) throws IOException {
     super(ctx, annotation, subOp);
-    tupleSlots = new HashMap<Tuple, EvalContext[]>(1000);
+    tupleSlots = new HashMap<Tuple, EvalContext[]>(10000);
     this.tuple = new VTuple(outputSchema.getColumnNum());
   }
 
@@ -90,7 +90,6 @@ public class HashAggregateExec extends AggregationExec {
         
     if(iterator.hasNext()) {
       EvalContext [] ctx =  iterator.next().getValue();
-      Tuple tuple = new VTuple(outputSchema.getColumnNum());
       for (int i = 0; i < ctx.length; i++) {
         tuple.put(i, evals[i].terminate(ctx[i]));
       }

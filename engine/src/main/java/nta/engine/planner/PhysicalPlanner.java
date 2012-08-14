@@ -12,6 +12,8 @@ import nta.engine.parser.QueryBlock;
 import nta.engine.planner.logical.*;
 import nta.engine.planner.physical.*;
 import nta.storage.StorageManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
@@ -26,6 +28,7 @@ import java.io.IOException;
  * 
  */
 public class PhysicalPlanner {
+  private static final Log LOG = LogFactory.getLog(PhysicalPlanner.class);
   private final StorageManager sm;
   private final Configuration conf;
 
@@ -139,6 +142,7 @@ public class PhysicalPlanner {
       PhysicalExec outer, PhysicalExec inner) {
     switch (joinNode.getJoinType()) {
     case CROSS_JOIN:
+      LOG.info("The planner chooses NLJoinExec");
       return new NLJoinExec(ctx, joinNode, outer, inner);
 
     case INNER:
@@ -147,7 +151,7 @@ public class PhysicalPlanner {
       long outerSize = estimateSizeRecursive(ctx, outerLineage);
       long innerSize = estimateSizeRecursive(ctx, innerLineage);
 
-      final long threshold = 1048576 * 32;
+      final long threshold = 1048576 * 64; // 64MB
 
       boolean hashJoin = false;
       if (outerSize < threshold || innerSize < threshold) {
@@ -167,6 +171,7 @@ public class PhysicalPlanner {
           selectedOuter = outer;
         }
 
+        LOG.info("The planner chooses HashJoinExec");
         return new HashJoinExec(ctx, joinNode, selectedOuter, selectedInner);
       }
 
@@ -180,6 +185,7 @@ public class PhysicalPlanner {
           new SortNode(sortSpecs[1], inner.getSchema(), inner.getSchema()),
           inner);
 
+      LOG.info("The planner chooses MergeJoinExec");
       return new MergeJoinExec(ctx, joinNode, outerSort, innerSort,
           sortSpecs[0], sortSpecs[1]);
     }
@@ -222,19 +228,32 @@ public class PhysicalPlanner {
       GroupbyNode groupbyNode, PhysicalExec subOp) throws IOException {
     Column[] grpColumns = groupbyNode.getGroupingColumns();
     if (grpColumns.length == 0) {
+      LOG.info("The planner chooses HashAggregationExec");
       return new HashAggregateExec(ctx, groupbyNode, subOp);
     } else {
-      QueryBlock.SortSpec[] specs = new QueryBlock.SortSpec[grpColumns.length];
-      for (int i = 0; i < grpColumns.length; i++) {
-        specs[i] = new QueryBlock.SortSpec(grpColumns[i], true, false);
+      String [] outerLineage = PlannerUtil.getLineage(groupbyNode.getSubNode());
+      long estimatedSize = estimateSizeRecursive(ctx, outerLineage);
+      final long threshold = 1048576 * 64;
+
+      // if the relation size is less than the reshold,
+      // the hash aggregation will be used.
+      if (estimatedSize <= threshold) {
+        LOG.info("The planner chooses HashAggregationExec");
+        return new HashAggregateExec(ctx, groupbyNode, subOp);
+      } else {
+        QueryBlock.SortSpec[] specs = new QueryBlock.SortSpec[grpColumns.length];
+        for (int i = 0; i < grpColumns.length; i++) {
+          specs[i] = new QueryBlock.SortSpec(grpColumns[i], true, false);
+        }
+        SortNode sortNode = new SortNode(specs);
+        sortNode.setInputSchema(subOp.getSchema());
+        sortNode.setOutputSchema(subOp.getSchema());
+        // SortExec sortExec = new SortExec(sortNode, child);
+        ExternalSortExec sortExec = new ExternalSortExec(conf, ctx, sm, sortNode,
+            subOp);
+        LOG.info("The planner chooses SortAggregationExec");
+        return new SortAggregateExec(ctx, groupbyNode, sortExec);
       }
-      SortNode sortNode = new SortNode(specs);
-      sortNode.setInputSchema(subOp.getSchema());
-      sortNode.setOutputSchema(subOp.getSchema());
-      // SortExec sortExec = new SortExec(sortNode, child);
-      ExternalSortExec sortExec = new ExternalSortExec(conf, ctx, sm, sortNode,
-          subOp);
-      return new SortAggregateExec(ctx, groupbyNode, sortExec);
     }
   }
 

@@ -149,7 +149,7 @@ public class CaseWhenEval extends EvalNode {
 
     public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
       condition.eval(((WhenContext) ctx).condCtx, schema, tuple);
-      result.eval(((WhenContext) ctx).condCtx, schema, tuple);
+      result.eval(((WhenContext) ctx).resultCtx, schema, tuple);
     }
 
     @Override

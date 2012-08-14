@@ -351,6 +351,11 @@ public class TestPhysicalPlanner {
         workDir.getAbsolutePath(), "out");
     FileSystem fs = sm.getFileSystem();
 
+    FileStatus [] list = fs.listStatus(StorageUtil.concatPath(path, "data"));
+    for (FileStatus status : list) {
+      System.out.println(status.getPath() + ", " + status.getLen());
+    }
+
     assertEquals(numPartitions,
         fs.listStatus(StorageUtil.concatPath(path, "data")).length);
 

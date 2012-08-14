@@ -17,7 +17,6 @@ import com.google.gson.annotations.Expose;
 public class FieldEval extends EvalNode implements Cloneable {
 	@Expose private Column column;
 	@Expose	private int fieldId = -1;
-  private Datum datum;
 	
 	public FieldEval(String columnName, DataType domain) {
 		super(Type.FIELD);
@@ -44,17 +43,25 @@ public class FieldEval extends EvalNode implements Cloneable {
 	      }
 	    }
 	  }
-	  datum = tuple.get(fieldId);
+    FieldEvalContext fieldCtx = (FieldEvalContext) ctx;
+	  fieldCtx.datum = tuple.get(fieldId);
 	}
 
   @Override
   public Datum terminate(EvalContext ctx) {
-    return this.datum;
+    return ((FieldEvalContext)ctx).datum;
   }
 
   @Override
   public EvalContext newContext() {
-    return null;
+    return new FieldEvalContext();
+  }
+
+  private static class FieldEvalContext implements EvalContext {
+    private Datum datum;
+
+    public FieldEvalContext() {
+    }
   }
 
   @Override
