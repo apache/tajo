@@ -919,7 +919,8 @@ public class GlobalPlanner {
           // if the number of the range cardinality is less than the desired number of tasks,
           // we set the the number of tasks to the number of range cardinality.
           if (card.compareTo(new BigDecimal(maxTaskNum)) < 0) {
-            LOG.info("The range cardinality is less then the desired number of tasks (" + maxTaskNum + ")");
+            LOG.info("The range cardinality (" + card
+                + ") is less then the desired number of tasks (" + maxTaskNum + ")");
             maxTaskNum = card.intValue();
           }
 

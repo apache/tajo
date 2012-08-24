@@ -124,7 +124,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
     }
     
     // Collect and aggregated statistics data
-    TableStat aggregated = StatisticsUtil.aggregate(statSet);
+    TableStat aggregated = StatisticsUtil.aggregateTableStat(statSet);
     ctx.setResultStats(aggregated);
     
     return null;

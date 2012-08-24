@@ -103,7 +103,8 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("\"Store\": {\"table\": \""+tableName+"\",");
+    sb.append("\"Store\": {\"table\": \""+tableName+"\", partnum: "
+        + numPartitions);
     if (partitionKeys != null) {
       sb.append("\"partition keys: [");
       for (int i = 0; i < partitionKeys.length; i++) {
@@ -111,6 +112,7 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
         if (i < partitionKeys.length - 1)
           sb.append(",");
       }
+      sb.append("],");
     }
     
     sb.append("\n  \"out schema\": ").append(getOutputSchema()).append(",")

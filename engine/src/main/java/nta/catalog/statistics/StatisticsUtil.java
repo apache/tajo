@@ -13,7 +13,7 @@ import java.util.List;
 public class StatisticsUtil {
   private static final Log LOG = LogFactory.getLog(StatisticsUtil.class);
 
-  public static StatSet aggregate(List<StatSet> statSets) {
+  public static StatSet aggregateStatSet(List<StatSet> statSets) {
     StatSet aggregated = new StatSet();
 
     for (StatSet statSet : statSets) {
@@ -28,7 +28,7 @@ public class StatisticsUtil {
     return aggregated;
   }
 
-  public static TableStat aggregate(List<TableStat> tableStats) {
+  public static TableStat aggregateTableStat(List<TableStat> tableStats) {
     if(tableStats == null || tableStats.size() == 0 || tableStats.get(0) == null)
       return null;
     TableStat aggregated = new TableStat();

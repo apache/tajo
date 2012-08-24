@@ -34,7 +34,8 @@ public class TestStatisticsUtil {
     group2.getStat(StatType.TABLE_NUM_ROWS).incrementBy(100); // plus 100
     
     // expected that num of rows = 200 * 2 + 100, num of blocks = 50 * 2 
-    StatSet agg = StatisticsUtil.aggregate(Lists.newArrayList(group, group2));
+    StatSet agg = StatisticsUtil.aggregateStatSet(
+        Lists.newArrayList(group, group2));
     assertEquals(500, agg.getStat(StatType.TABLE_NUM_ROWS).getValue());
     assertEquals(100, agg.getStat(StatType.TABLE_NUM_BLOCKS).getValue());
   }
@@ -45,6 +46,7 @@ public class TestStatisticsUtil {
     TableStat stat2 = new TableStat();
     TableStat stat3 = new TableStat();
 
-    assertNotNull(StatisticsUtil.aggregate(Lists.newArrayList(stat1, stat2, stat3)));
+    assertNotNull(StatisticsUtil.aggregateTableStat(
+        Lists.newArrayList(stat1, stat2, stat3)));
   }
 }

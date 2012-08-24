@@ -483,7 +483,7 @@ public class ScheduleUnitExecutor extends Thread {
           && grpNode.getGroupingColumns().length == 0) {
         numTasks = 1;
       } else {
-        numTasks = cm.getOnlineWorkers().size() * 2;
+        numTasks = cm.getOnlineWorkers().size();
       }
       return numTasks;
     }
@@ -776,7 +776,7 @@ public class ScheduleUnitExecutor extends Thread {
       for (QueryUnit unit : scheduleUnit.getQueryUnits()) {
         stats.add(unit.getStats());
       }
-      TableStat tableStat = StatisticsUtil.aggregate(stats);
+      TableStat tableStat = StatisticsUtil.aggregateTableStat(stats);
       return tableStat;
     }
 
