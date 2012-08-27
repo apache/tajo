@@ -16,7 +16,7 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.NtaConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.SubqueryContext;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
@@ -63,7 +63,7 @@ public class TestBSTIndexExec {
   public void setup() throws Exception {
     this.randomValues = new HashMap<Integer , Integer> ();
     this.conf = new NtaConf();
-    File testDir = NtaTestingUtility.getTestDir("TestPhysicalPlanner");
+    File testDir = TajoTestingUtility.getTestDir("TestPhysicalPlanner");
     FileSystem fs = FileSystem.getLocal(conf);
     sm = StorageManager.get(conf, fs.makeQualified(new Path(testDir.toURI())));
 
@@ -126,7 +126,7 @@ public class TestBSTIndexExec {
     
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory();
-    File workDir = NtaTestingUtility.getTestDir("TestBSTIndex");
+    File workDir = TajoTestingUtility.getTestDir("TestBSTIndex");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERY);

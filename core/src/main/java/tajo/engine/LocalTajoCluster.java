@@ -39,7 +39,7 @@ public class LocalTajoCluster {
 
       // TODO - if non-testing local cluster, how do worker's temporal directories created?
 
-      // if LocalTajoCluster is executed by NtaTestingUtility
+      // if LocalTajoCluster is executed by TajoTestingUtility
       // each leaf server should have its own tmp directory.
       if (System.getProperty("test.build.data") != null) {
         String clusterTestBuildDir =
@@ -91,7 +91,7 @@ public class LocalTajoCluster {
 		return liveServers;
 	}
 
-	public NtaEngineMaster getMaster() {
+	public TajoMaster getMaster() {
 		return this.masterThread.getMaster();
 	}
 	

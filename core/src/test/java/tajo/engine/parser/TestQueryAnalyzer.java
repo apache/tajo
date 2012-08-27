@@ -12,7 +12,7 @@ import tajo.catalog.proto.CatalogProtos.IndexMethod;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.datum.DatumFactory;
 import tajo.engine.Context;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.QueryContext;
 import tajo.engine.exec.eval.ConstEval;
 import tajo.engine.exec.eval.EvalNode;
@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
  * @see tajo.engine.parser.QueryBlock
  */
 public class TestQueryAnalyzer {
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static CatalogService cat = null;
   private static Schema schema1 = null;
   private static QueryAnalyzer analyzer = null;
@@ -48,7 +48,7 @@ public class TestQueryAnalyzer {
   
   @BeforeClass
   public static void setUp() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
     cat = util.getMiniCatalogCluster().getCatalog();

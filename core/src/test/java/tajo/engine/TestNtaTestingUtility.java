@@ -33,7 +33,7 @@ import java.util.List;
 import static org.junit.Assert.assertFalse;
 
 public class TestNtaTestingUtility {
-  private NtaTestingUtility util;
+  private TajoTestingUtility util;
   private int num = 4;
   private CatalogService catalog;
   private Configuration conf;
@@ -44,7 +44,7 @@ public class TestNtaTestingUtility {
 
   @Before
   public void setUp() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniCluster(num);
           
     catalog = util.getMiniTajoCluster().getMaster().getCatalog();

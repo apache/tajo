@@ -46,7 +46,7 @@ import static org.junit.Assert.*;
  * @author Hyunsik Choi
  */
 public class TestPhysicalPlanner {
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static Configuration conf;
   private static CatalogService catalog;
   private static QueryAnalyzer analyzer;
@@ -60,7 +60,7 @@ public class TestPhysicalPlanner {
   @BeforeClass
   public static void setUp() throws Exception {
     QueryIdFactory.reset();
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.initTestDir();
     util.startMiniZKCluster();
     util.startCatalogCluster();
@@ -162,7 +162,7 @@ public class TestPhysicalPlanner {
   public final void testCreateScanPlan() throws IOException {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory();
-    File workDir = NtaTestingUtility.getTestDir("testCreateScanPlan");
+    File workDir = TajoTestingUtility.getTestDir("testCreateScanPlan");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[0]);
@@ -187,7 +187,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testGroupByPlan() throws IOException {
     Fragment[] frags = sm.split("score");
-    File workDir = NtaTestingUtility.getTestDir("testGroupByPlan");
+    File workDir = TajoTestingUtility.getTestDir("testGroupByPlan");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[7]);
@@ -212,7 +212,8 @@ public class TestPhysicalPlanner {
   public final void testHashGroupByPlanWithALLField() throws IOException {
     // TODO - currently, this query does not use hash-based group operator.
     Fragment[] frags = sm.split("score");
-    File workDir = NtaTestingUtility.getTestDir("testHashGroupByPlanWithALLField");
+    File workDir = TajoTestingUtility
+        .getTestDir("testHashGroupByPlanWithALLField");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[16]);
@@ -237,7 +238,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testSortGroupByPlan() throws IOException {
     Fragment[] frags = sm.split("score");
-    File workDir = NtaTestingUtility.getTestDir("testSortGroupByPlan");
+    File workDir = TajoTestingUtility.getTestDir("testSortGroupByPlan");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[]{frags[0]}, workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[7]);
@@ -288,7 +289,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory();
 
-    File workDir = NtaTestingUtility.getTestDir("testStorePlan");
+    File workDir = TajoTestingUtility.getTestDir("testStorePlan");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] },
         workDir);
@@ -328,7 +329,7 @@ public class TestPhysicalPlanner {
     QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
 
 
-    File workDir = NtaTestingUtility.getTestDir("testPartitionedStorePlan");
+    File workDir = TajoTestingUtility.getTestDir("testPartitionedStorePlan");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] },
         workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[7]);
@@ -386,7 +387,8 @@ public class TestPhysicalPlanner {
 
     QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
 
-    File workDir = NtaTestingUtility.getTestDir("testPartitionedStorePlanWithEmptyGroupingSet");
+    File workDir = TajoTestingUtility
+        .getTestDir("testPartitionedStorePlanWithEmptyGroupingSet");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] },
         workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[15]);
@@ -433,7 +435,7 @@ public class TestPhysicalPlanner {
   public final void testAggregationFunction() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory();
-    File workDir = NtaTestingUtility.getTestDir("testAggregationFunction");
+    File workDir = TajoTestingUtility.getTestDir("testAggregationFunction");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[9]);
@@ -454,7 +456,7 @@ public class TestPhysicalPlanner {
   public final void testCountFunction() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory();
-    File workDir = NtaTestingUtility.getTestDir("testCountFunction");
+    File workDir = TajoTestingUtility.getTestDir("testCountFunction");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[10]);
@@ -473,7 +475,7 @@ public class TestPhysicalPlanner {
   public final void testGroupByWithNullValue() throws IOException {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory();
-    File workDir = NtaTestingUtility.getTestDir("testGroupByWithNullValue");
+    File workDir = TajoTestingUtility.getTestDir("testGroupByWithNullValue");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[12]);
@@ -494,7 +496,7 @@ public class TestPhysicalPlanner {
   public final void testUnionPlan() throws IOException {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory();
-    File workDir = NtaTestingUtility.getTestDir("testUnionPlan");
+    File workDir = TajoTestingUtility.getTestDir("testUnionPlan");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[0]);
@@ -519,7 +521,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testEvalExpr() throws IOException {
     factory = new SubqueryContext.Factory();
-    File workDir = NtaTestingUtility.getTestDir("testEvalExpr");
+    File workDir = TajoTestingUtility.getTestDir("testEvalExpr");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { }, workDir);
     ParseTree query = analyzer.parse(ctx, QUERIES[13]);
@@ -551,7 +553,7 @@ public class TestPhysicalPlanner {
   public final void testCreateIndex() throws IOException {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory();
-    File workDir = NtaTestingUtility.getTestDir("testCreateIndex");
+    File workDir = TajoTestingUtility.getTestDir("testCreateIndex");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
     ParseTree query = analyzer.parse(ctx, createIndexStmt[0]);
@@ -577,7 +579,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("score");
     factory = new SubqueryContext.Factory();
 
-    File workDir = NtaTestingUtility.getTestDir("testDuplicateEliminate");
+    File workDir = TajoTestingUtility.getTestDir("testDuplicateEliminate");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
     ParseTree query = analyzer.parse(ctx, duplicateElimination[0]);
@@ -607,7 +609,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory();
 
-    File workDir = NtaTestingUtility.getTestDir("testIndexedStoreExec");
+    File workDir = TajoTestingUtility.getTestDir("testIndexedStoreExec");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
     ParseTree query = analyzer.parse(ctx, SORT_QUERY[0]);

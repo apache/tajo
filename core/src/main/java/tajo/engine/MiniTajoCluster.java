@@ -73,7 +73,7 @@ public class MiniTajoCluster {
 		return t;		
 	}
 	
-	public NtaEngineMaster getMaster() {
+	public TajoMaster getMaster() {
 		return this.engineCluster.getMaster();
 	}
 	

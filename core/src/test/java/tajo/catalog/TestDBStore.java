@@ -12,7 +12,7 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
 import tajo.catalog.store.DBStore;
 import tajo.conf.NtaConf;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.storage.CSVFile2;
 
 import java.io.File;
@@ -25,13 +25,13 @@ import static org.junit.Assert.*;
 public class TestDBStore {
   private static final Log LOG = LogFactory.getLog(TestDBStore.class);  
   private static Configuration conf;
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static DBStore store;
 
   @BeforeClass
   public static void setUp() throws Exception {
     conf = NtaConf.create();
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     File file = util.setupClusterTestBuildDir();
     conf.set(TConstants.JDBC_URI, "jdbc:derby:"+file.getAbsolutePath()+"/db");
     LOG.info("derby repository is set to "+conf.get(TConstants.JDBC_URI));

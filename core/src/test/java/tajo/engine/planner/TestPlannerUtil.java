@@ -9,7 +9,7 @@ import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.datum.DatumFactory;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.QueryContext;
 import tajo.engine.exec.eval.BinaryEval;
 import tajo.engine.exec.eval.ConstEval;
@@ -32,14 +32,14 @@ import static org.junit.Assert.*;
  * @author Hyunsik Choi
  */
 public class TestPlannerUtil {
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static CatalogService catalog;
   private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
 
   @BeforeClass
   public static void setUp() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();

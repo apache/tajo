@@ -3,15 +3,15 @@ package tajo.webapp;
 import org.apache.hadoop.conf.Configuration;
 import org.mortbay.jetty.Connector;
 import tajo.engine.NConstants;
-import tajo.engine.NtaEngineMaster;
+import tajo.engine.TajoMaster;
 
 import java.io.IOException;
 
 public class StaticHttpServer extends HttpServer{
   private static StaticHttpServer instance = null;
-  private NtaEngineMaster master = null;
+  private TajoMaster master = null;
   
-  private StaticHttpServer(NtaEngineMaster master , String name, String bindAddress, int port,
+  private StaticHttpServer(TajoMaster master , String name, String bindAddress, int port,
       boolean findPort, Connector connector, Configuration conf,
       String[] pathSpecs) throws IOException {
     super( name, bindAddress, port, findPort, connector, conf, pathSpecs);
@@ -20,7 +20,7 @@ public class StaticHttpServer extends HttpServer{
   public static StaticHttpServer getInstance() {
     return instance;
   }
-  public static StaticHttpServer getInstance( NtaEngineMaster master, String name,
+  public static StaticHttpServer getInstance( TajoMaster master, String name,
       String bindAddress, int port, boolean findPort, Connector connector, Configuration conf,
       String[] pathSpecs) throws IOException {
     String addr = bindAddress;
@@ -38,7 +38,7 @@ public class StaticHttpServer extends HttpServer{
     }
     return instance;
   }
-  public NtaEngineMaster getMaster() {
+  public TajoMaster getMaster() {
     
     return this.master;
   }

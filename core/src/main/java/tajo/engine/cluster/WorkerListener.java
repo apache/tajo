@@ -13,7 +13,7 @@ import tajo.engine.MasterInterfaceProtos.InProgressStatusProto;
 import tajo.engine.MasterInterfaceProtos.PingRequestProto;
 import tajo.engine.MasterInterfaceProtos.PingResponseProto;
 import tajo.engine.NConstants;
-import tajo.engine.NtaEngineMaster;
+import tajo.engine.TajoMaster;
 import tajo.engine.QueryUnitAttemptId;
 import tajo.engine.ipc.MasterInterface;
 import tajo.engine.ipc.PingRequest;
@@ -37,11 +37,11 @@ public class WorkerListener extends Thread implements MasterInterface {
   private String addr;
   private volatile boolean stopped = false;
   private QueryManager qm;
-  private NtaEngineMaster master;
+  private TajoMaster master;
   private AtomicInteger processed;
   private Sleeper sleeper;
   
-  public WorkerListener(Configuration conf, QueryManager qm, NtaEngineMaster master) {
+  public WorkerListener(Configuration conf, QueryManager qm, TajoMaster master) {
     String confMasterAddr = conf.get(NConstants.MASTER_ADDRESS,
         NConstants.DEFAULT_MASTER_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterAddr);

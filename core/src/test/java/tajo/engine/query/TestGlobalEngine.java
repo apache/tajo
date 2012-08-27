@@ -21,8 +21,8 @@ import tajo.engine.ClientServiceProtos.ExecuteQueryRequest;
 import tajo.engine.ClientServiceProtos.ExecuteQueryRespose;
 import tajo.engine.LeafServer;
 import tajo.engine.NConstants;
-import tajo.engine.NtaEngineMaster;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoMaster;
+import tajo.engine.TajoTestingUtility;
 import tajo.storage.*;
 import tajo.storage.Scanner;
 import tajo.util.FileUtil;
@@ -39,10 +39,10 @@ import static org.junit.Assert.*;
 public class TestGlobalEngine {
   private static Log LOG = LogFactory.getLog(TestGlobalEngine.class);
 
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static Configuration conf;
   private static CatalogService catalog;
-  private static NtaEngineMaster master;
+  private static TajoMaster master;
   private static StorageManager sm;
 
   private static class CompositeKey {
@@ -96,7 +96,7 @@ public class TestGlobalEngine {
 
   @Before
   public void setup() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniCluster(1);
     Thread.sleep(2000);
     master = util.getMiniTajoCluster().getMaster();

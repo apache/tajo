@@ -102,7 +102,7 @@ public class TestFaultTolerance {
   @Test
   public void testAbort() throws Exception {
 //    Thread.sleep(3000);
-    NtaEngineMaster master = cluster.getMaster();
+    TajoMaster master = cluster.getMaster();
     master.executeQuery(queryRequestBuilder.build());
 
     QueryManager qm = master.getQueryManager();
@@ -113,7 +113,7 @@ public class TestFaultTolerance {
     /*cluster = new MockupCluster(3, 0, 2);
     conf = cluster.getConf();
     cluster.start();
-    NtaEngineMaster master = cluster.getMaster();
+    TajoMaster master = cluster.getMaster();
     testDesc = new TableDescImpl("test", schema, StoreType.CSV,
         new Options(), new Path(tableDir.getAbsolutePath()));
     StorageUtil.writeTableMeta(conf,

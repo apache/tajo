@@ -15,7 +15,7 @@ import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
 import tajo.datum.DatumFactory;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.storage.Appender;
 import tajo.storage.StorageManager;
 import tajo.storage.Tuple;
@@ -32,14 +32,14 @@ import static org.junit.Assert.*;
  * 
  */
 public class TestResultSetImpl {
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static Configuration conf;
   private static StorageManager sm;
   private static TableMeta scoreMeta;
 
   @BeforeClass
   public static void setup() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniCluster(3);
     conf = util.getConfiguration();
     sm = new StorageManager(conf);

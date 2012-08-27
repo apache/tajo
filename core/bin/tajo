@@ -178,7 +178,7 @@ if [ "$COMMAND" = "classpath" ] ; then
   echo $CLASSPATH
   exit
 elif [ "$COMMAND" = "master" ] ; then
-  CLASS='tajo.engine.NtaEngineMaster'
+  CLASS='tajo.engine.TajoMaster'
   TAJO_OPTS="$TAJO_OPTS $TAJO_MASTER_OPTS"
 elif [ "$COMMAND" = "catalog" ] ; then
   CLASS='tajo.catalog.CatalogServer'

@@ -13,7 +13,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.engine.Abortable;
 import tajo.engine.NConstants;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.utils.ThreadUtil;
 
 import java.io.IOException;
@@ -25,7 +25,7 @@ import static org.junit.Assert.*;
 public class TestZkNodeTracker {
   private final static Log LOG = LogFactory.getLog(TestZkNodeTracker.class);
 
-  private final static NtaTestingUtility TEST_UTIL = new NtaTestingUtility();
+  private final static TajoTestingUtility TEST_UTIL = new TajoTestingUtility();
   private static Configuration conf;
 
   private final static Random rand = new Random();

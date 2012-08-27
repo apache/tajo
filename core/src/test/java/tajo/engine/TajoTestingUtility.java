@@ -30,8 +30,8 @@ import java.util.UUID;
 /**
  * @author Hyunsik Choi
  */
-public class NtaTestingUtility {
-	private static Log LOG = LogFactory.getLog(NtaTestingUtility.class);
+public class TajoTestingUtility {
+	private static Log LOG = LogFactory.getLog(TajoTestingUtility.class);
 	private NtaConf conf;
 
 	/**
@@ -60,7 +60,7 @@ public class NtaTestingUtility {
 	 */
 	public static final String DEFAULT_TEST_DIRECTORY = "target/test-data";
 
-	public NtaTestingUtility() {
+	public TajoTestingUtility() {
 		this.conf = new NtaConf();
 	}
 
@@ -424,7 +424,7 @@ public class NtaTestingUtility {
                                      Options option,
                                      String[][] tables,
                                      String query) throws Exception {
-    NtaTestingUtility util = new NtaTestingUtility();
+    TajoTestingUtility util = new TajoTestingUtility();
     util.startMiniClusterInLocal(1);
     Configuration conf = util.getConfiguration();
     TajoClient client = new TajoClient(conf);
@@ -451,7 +451,7 @@ public class NtaTestingUtility {
                               Schema[] schemas,
                               Options option,
                               String query) throws Exception {
-    NtaTestingUtility util = new NtaTestingUtility();
+    TajoTestingUtility util = new TajoTestingUtility();
     util.startMiniCluster(1);
     Configuration conf = util.getConfiguration();
     TajoClient client = new TajoClient(conf);
@@ -483,7 +483,7 @@ public class NtaTestingUtility {
                               Options option,
                               String[][] tables,
                               String query) throws Exception {
-    NtaTestingUtility util = new NtaTestingUtility();
+    TajoTestingUtility util = new TajoTestingUtility();
     util.startMiniCluster(1);
     Configuration conf = util.getConfiguration();
     TajoClient client = new TajoClient(conf);
@@ -539,7 +539,7 @@ public class NtaTestingUtility {
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
-		NtaTestingUtility cluster = new NtaTestingUtility();
+		TajoTestingUtility cluster = new TajoTestingUtility();
     File f = cluster.setupClusterTestBuildDir();
     System.out.println("first setupClusterTestBuildDir: " + f);
     f = cluster.setupClusterTestBuildDir();
@@ -557,7 +557,7 @@ public class NtaTestingUtility {
     f = cluster.setupClusterTestBuildDir();
     System.out.println("setupClusterTestBuildDir() after initTestDir: " + f);
 
-    NtaTestingUtility cluster2 = new NtaTestingUtility();
+    TajoTestingUtility cluster2 = new TajoTestingUtility();
     File f2 = cluster2.setupClusterTestBuildDir();
     System.out.println("first setupClusterTestBuildDir of cluster2: " + f2);
     /*

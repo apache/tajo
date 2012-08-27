@@ -12,7 +12,7 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.NtaConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.SubqueryContext;
 import tajo.engine.WorkerTestingUtil;
 import tajo.engine.ipc.protocolrecords.Fragment;
@@ -87,7 +87,7 @@ public class TestSortExec {
   public final void testNext() throws IOException {
     Fragment[] frags = sm.split("employee");
     factory = new SubqueryContext.Factory();
-    File workDir = NtaTestingUtility.getTestDir("TestSortExec");
+    File workDir = TajoTestingUtility.getTestDir("TestSortExec");
     SubqueryContext ctx = factory.create(
         TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);

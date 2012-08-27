@@ -4,7 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import tajo.engine.LeafServer;
-import tajo.engine.NtaEngineMaster;
+import tajo.engine.TajoMaster;
 
 import java.io.IOException;
 import java.util.List;
@@ -47,14 +47,14 @@ public class JVMClusterUtil {
 	}
 
 	public static class MasterThread extends Thread {
-		private final NtaEngineMaster master;
+		private final TajoMaster master;
 
-		public MasterThread(final NtaEngineMaster m, final int index) {
+		public MasterThread(final TajoMaster m, final int index) {
 			super(m, "Master:" + index + ";" + m.getMasterServerName());
 			this.master = m;
 		}
 
-		public NtaEngineMaster getMaster() {
+		public TajoMaster getMaster() {
 			return this.master;
 		}
 
@@ -71,9 +71,9 @@ public class JVMClusterUtil {
 
 	public static JVMClusterUtil.MasterThread createMasterThread(
 		final Configuration c, final int index) throws Exception {
-		NtaEngineMaster server;
+		TajoMaster server;
 
-		server = new NtaEngineMaster(c);
+		server = new TajoMaster(c);
 
 		return new JVMClusterUtil.MasterThread(server, index);
 	}

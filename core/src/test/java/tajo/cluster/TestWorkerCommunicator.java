@@ -5,7 +5,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.engine.MasterInterfaceProtos.ServerStatusProto;
 import tajo.engine.MasterInterfaceProtos.ServerStatusProto.Disk;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.cluster.LeafServerTracker;
 import tajo.engine.cluster.WorkerCommunicator;
 import tajo.rpc.RemoteException;
@@ -19,14 +19,14 @@ import static org.junit.Assert.assertNotNull;
 
 public class TestWorkerCommunicator {
 
-  private static NtaTestingUtility cluster;
+  private static TajoTestingUtility cluster;
   private static ZkClient zkClient;
   private static LeafServerTracker tracker;
   private static WorkerCommunicator wc;
 
   @BeforeClass
   public static void setUp() throws Exception {
-    cluster = new NtaTestingUtility();
+    cluster = new TajoTestingUtility();
     cluster.startMiniCluster(2);
     Thread.sleep(2000);
 

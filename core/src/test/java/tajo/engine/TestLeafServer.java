@@ -49,7 +49,7 @@ import static org.junit.Assert.*;
 public class TestLeafServer {
   private final Log LOG = LogFactory.getLog(TestLeafServer.class);
   private Configuration conf;
-  private NtaTestingUtility util;
+  private TajoTestingUtility util;
   private String TEST_PATH = "target/test-data/TestLeafServer";
   private StorageManager sm;
   private CatalogService catalog;
@@ -60,7 +60,7 @@ public class TestLeafServer {
   @Before
   public void setUp() throws Exception {
     WorkerTestingUtil.buildTestDir(TEST_PATH);
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniCluster(2);
     catalog = util.getMiniTajoCluster().getMaster().getCatalog();
     conf = util.getConfiguration();
@@ -159,7 +159,7 @@ public class TestLeafServer {
     Thread.sleep(1000);
     
     // for the report sending test
-    NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
+    TajoMaster master = util.getMiniTajoCluster().getMaster();
     Set<QueryUnitAttemptId> submitted = Sets.newHashSet();
     submitted.add(req1.getId());
     submitted.add(req2.getId());
@@ -206,7 +206,7 @@ public class TestLeafServer {
     LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
     plan = LogicalOptimizer.optimize(ctx, plan);
 
-    NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
+    TajoMaster master = util.getMiniTajoCluster().getMaster();
     QueryManager qm = master.getQueryManager();
     Query q = new Query(qid1.getQueryId(),
         "testLeafServer := select name, empId, deptName from employee");
@@ -319,7 +319,7 @@ public class TestLeafServer {
     assertNotNull(leaf2.requestQueryUnit(req2.getProto()));
     Thread.sleep(1000);
     // for the report sending test
-    NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
+    TajoMaster master = util.getMiniTajoCluster().getMaster();
     Collection<InProgressStatusProto> list = master.getProgressQueries();
     Set<QueryUnitAttemptId> submitted = Sets.newHashSet();
     submitted.add(req1.getId());
@@ -388,7 +388,7 @@ public class TestLeafServer {
     assertSubmittedAndReported(master, submitted);
   }
   
-  public void assertSubmittedAndReported(NtaEngineMaster master, 
+  public void assertSubmittedAndReported(TajoMaster master,
       Set<QueryUnitAttemptId> submitted) throws InterruptedException {
     Set<QueryUnitAttemptId> reported = Sets.newHashSet();
     Collection<InProgressStatusProto> list = master.getProgressQueries();

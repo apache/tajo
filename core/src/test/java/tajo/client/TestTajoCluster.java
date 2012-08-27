@@ -8,7 +8,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.catalog.TableDesc;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.WorkerTestingUtil;
 import tajo.storage.StorageManager;
 
@@ -18,12 +18,12 @@ import java.util.Set;
 import static org.junit.Assert.*;
 
 public class TestTajoCluster {
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static Configuration conf;
 
   @BeforeClass
   public static void setUp() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniCluster(1);
     conf = util.getConfiguration();
   }

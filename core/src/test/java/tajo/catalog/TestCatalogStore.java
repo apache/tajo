@@ -4,7 +4,7 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 
 import static org.junit.Assert.assertEquals;
 
@@ -15,7 +15,7 @@ public class TestCatalogStore {
   
   @Test
   public final void test() throws Exception {
-    NtaTestingUtility util = new NtaTestingUtility();
+    TajoTestingUtility util = new TajoTestingUtility();
     util.startMiniZKCluster();
     util.getConfiguration().set(TConstants.STORE_CLASS,
         "tajo.catalog.store.DBStore");

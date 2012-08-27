@@ -10,7 +10,7 @@ import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.QueryContext;
 import tajo.engine.exec.eval.EvalNode.Type;
 import tajo.engine.function.GeneralFunction;
@@ -26,7 +26,7 @@ import static org.junit.Assert.*;
  * @author Hyunsik Choi
  */
 public class TestEvalTree {
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static CatalogService cat;
   private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
@@ -34,7 +34,7 @@ public class TestEvalTree {
   
   @BeforeClass
   public static void setUp() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
     cat = util.getMiniCatalogCluster().getCatalog();

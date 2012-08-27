@@ -10,8 +10,8 @@ import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.datum.DatumFactory;
-import tajo.engine.NtaEngineMaster;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoMaster;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.cluster.ClusterManager;
 import tajo.engine.cluster.ClusterManager.DiskInfo;
 import tajo.engine.cluster.ClusterManager.WorkerInfo;
@@ -29,18 +29,18 @@ public class TestClusterManager {
   static final Log LOG = LogFactory.getLog(TestClusterManager.class);
   
   private static ClusterManager cm;
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static WorkerCommunicator wc;
   private Collection<List<String>> workersCollection;
   private static CatalogService local;
-  private static NtaEngineMaster master;
+  private static TajoMaster master;
 
   final static int CLUST_NUM = 4;
   final static int tbNum = 5;
 
   @BeforeClass
   public static void setUp() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniCluster(CLUST_NUM);
     Thread.sleep(4000);
 

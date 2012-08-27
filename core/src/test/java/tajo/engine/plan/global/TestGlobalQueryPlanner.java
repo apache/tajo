@@ -16,7 +16,7 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.NtaConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.QueryContext;
 import tajo.engine.QueryIdFactory;
 import tajo.engine.SubQueryId;
@@ -50,7 +50,7 @@ import static org.junit.Assert.*;
 
 public class TestGlobalQueryPlanner {
 
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static NtaConf conf;
   private static CatalogService catalog;
   private static GlobalPlanner planner;
@@ -63,7 +63,7 @@ public class TestGlobalQueryPlanner {
 
   @BeforeClass
   public static void setup() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
 
     int i, j;
 

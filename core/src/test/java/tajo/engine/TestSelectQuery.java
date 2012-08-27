@@ -253,8 +253,9 @@ public class TestSelectQuery {
       "2||",
       "3|filled|"
     };
-    ResultSet res = NtaTestingUtility.run(table, schemas, new Options(), new String[][]{data},
-        "select * from nulltable where col2 is null");
+    ResultSet res = TajoTestingUtility
+        .run(table, schemas, new Options(), new String[][]{data},
+            "select * from nulltable where col2 is null");
     assertTrue(res.next());
     assertEquals(2, res.getInt(1));
     assertFalse(res.next());
@@ -272,8 +273,9 @@ public class TestSelectQuery {
         "2||",
         "3|filled|"
     };
-    ResultSet res = NtaTestingUtility.run(table, schemas, new Options(), new String[][]{data},
-        "select * from nulltable where col2 is not null");
+    ResultSet res = TajoTestingUtility
+        .run(table, schemas, new Options(), new String[][]{data},
+            "select * from nulltable where col2 is not null");
     assertTrue(res.next());
     assertEquals(1, res.getInt(1));
     assertTrue(res.next());
@@ -302,8 +304,9 @@ public class TestSelectQuery {
     };
     Options opts = new Options();
     opts.put(CSVFile2.DELIMITER, ",");
-    ResultSet res = NtaTestingUtility.run(table, schemas, opts, new String[][]{data},
-        "select * from nulltable where col1 is null and col2 is null and col3 is null and col4 = 43578");
+    ResultSet res = TajoTestingUtility
+        .run(table, schemas, opts, new String[][]{data},
+            "select * from nulltable where col1 is null and col2 is null and col3 is null and col4 = 43578");
     assertTrue(res.next());
     assertEquals(43578, res.getLong(4));
     assertFalse(res.next());

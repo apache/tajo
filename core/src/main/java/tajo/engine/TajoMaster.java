@@ -43,8 +43,8 @@ import java.util.List;
 /**
  * @author Hyunsik Choi
  */
-public class NtaEngineMaster extends Thread implements ClientService {
-  private static final Log LOG = LogFactory.getLog(NtaEngineMaster.class);
+public class TajoMaster extends Thread implements ClientService {
+  private static final Log LOG = LogFactory.getLog(TajoMaster.class);
 
   private final Configuration conf;
   private FileSystem defaultFS;
@@ -77,7 +77,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
   //Web Server
   private StaticHttpServer webServer;
   
-  public NtaEngineMaster(final Configuration conf) throws Exception {
+  public TajoMaster(final Configuration conf) throws Exception {
 
     webServer = StaticHttpServer.getInstance(this ,"admin", null, 8080 , 
         true, null, conf, null);
@@ -135,7 +135,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
     this.wl = new WorkerListener(conf, qm, this);
     // Setup RPC server
     // Get the master address
-    LOG.info(NtaEngineMaster.class.getSimpleName() + " is bind to "
+    LOG.info(TajoMaster.class.getSimpleName() + " is bind to "
         + wl.getAddress());
     this.conf.set(NConstants.MASTER_ADDRESS, wl.getAddress());
     
@@ -191,7 +191,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
   }
 
   public void run() {
-    LOG.info("NtaEngineMaster startup");
+    LOG.info("TajoMaster startup");
     try {
       initMaster();
 
@@ -206,7 +206,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
       // TODO - adds code to stop all services and clean resources
     }
 
-    LOG.info("NtaEngineMaster main thread exiting");
+    LOG.info("TajoMaster main thread exiting");
   }
 
   public String getMasterServerName() {
@@ -299,7 +299,7 @@ public class NtaEngineMaster extends Thread implements ClientService {
 
   public static void main(String[] args) throws Exception {
     NtaConf conf = new NtaConf();
-    NtaEngineMaster master = new NtaEngineMaster(conf);
+    TajoMaster master = new TajoMaster(conf);
 
     master.start();
   }

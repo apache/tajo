@@ -9,7 +9,7 @@ import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.datum.Datum;
 import tajo.engine.NConstants;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.function.GeneralFunction;
 import tajo.storage.Tuple;
 import tajo.zookeeper.ZkClient;
@@ -30,14 +30,14 @@ public class TestCatalog {
 
 	Schema schema1;
 	
-	static NtaTestingUtility util;
+	static TajoTestingUtility util;
 	static CatalogService catalog;
 	
 	static String TEST_PATH = "target/test-data/TestCatalog";
 	
 	@BeforeClass
 	public static void setUp() throws Exception {
-	  util = new NtaTestingUtility();
+	  util = new TajoTestingUtility();
     util.startMiniCluster(3);
     catalog = util.getMiniTajoCluster().getMaster().getCatalog();
 	}

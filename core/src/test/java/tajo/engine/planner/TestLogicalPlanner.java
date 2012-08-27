@@ -13,7 +13,7 @@ import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.IndexMethod;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.QueryContext;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.function.builtin.NewSumInt;
@@ -34,7 +34,7 @@ import static org.junit.Assert.assertTrue;
  * @author Hyunsik Choi
  */
 public class TestLogicalPlanner {
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static CatalogService catalog;
   private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
@@ -42,7 +42,7 @@ public class TestLogicalPlanner {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();

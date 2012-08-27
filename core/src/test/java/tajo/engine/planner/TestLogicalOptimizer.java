@@ -8,7 +8,7 @@ import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.QueryContext;
 import tajo.engine.function.builtin.NewSumInt;
 import tajo.engine.parser.ParseTree;
@@ -19,14 +19,14 @@ import static org.junit.Assert.*;
 
 public class TestLogicalOptimizer {
 
-  private static NtaTestingUtility util;
+  private static TajoTestingUtility util;
   private static CatalogService catalog;
   private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
 
   @BeforeClass
   public static void setUp() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniZKCluster();
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();

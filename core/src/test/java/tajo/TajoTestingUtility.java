@@ -9,7 +9,6 @@ import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.client.TajoClient;
-import tajo.engine.NtaTestingUtility;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -18,7 +17,7 @@ import java.sql.ResultSet;
  * @author Hyunsik Choi
  */
 public class TajoTestingUtility {
-  private NtaTestingUtility util;
+  private tajo.engine.TajoTestingUtility util;
   private Configuration conf;
   private TajoClient client;
 
@@ -27,7 +26,7 @@ public class TajoTestingUtility {
                     Schema[] schemas,
                     Options option) throws Exception {
 
-    util = new NtaTestingUtility();
+    util = new tajo.engine.TajoTestingUtility();
     util.startMiniCluster(1);
     conf = util.getConfiguration();
 

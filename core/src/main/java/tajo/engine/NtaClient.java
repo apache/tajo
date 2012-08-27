@@ -32,7 +32,7 @@ public class NtaClient {
             QueryClientInterface.class, addr);
     this.asyncProtocol =
         (QueryClientInterface) NettyRpc.getProtoParamAsyncRpcProxy(
-            NtaEngineMaster.class, QueryClientInterface.class, addr);
+            TajoMaster.class, QueryClientInterface.class, addr);
   }
 
   /**

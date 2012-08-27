@@ -21,12 +21,12 @@ import static org.junit.Assert.assertTrue;
 public class TestNtaClient {
   NtaClient cli = null;
 
-  private static NtaTestingUtility util;
-  private static NtaEngineMaster master;
+  private static TajoTestingUtility util;
+  private static TajoMaster master;
 
   @Before
   public void setUp() throws Exception {
-    util = new NtaTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniCluster(1);
 
     master = util.getMiniTajoCluster().getMaster();

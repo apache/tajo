@@ -15,14 +15,14 @@ import static org.junit.Assert.assertNotNull;
 
 public class TestNtaEngineMaster {
   private Log LOG = LogFactory.getLog(TestNtaEngineMaster.class);
-	private NtaTestingUtility util;
+	private TajoTestingUtility util;
 	private Configuration conf;
 	
 	private final int numLeafs = 3;
 
 	@Before
 	public void setUp() throws Exception {
-		util = new NtaTestingUtility();
+		util = new TajoTestingUtility();
     util.startMiniCluster(numLeafs);
 		conf = util.getConfiguration();
 	}
@@ -47,7 +47,7 @@ public class TestNtaEngineMaster {
 
     byte[] data = ZkUtil.getDataAndWatch(zkClient, NConstants.ZNODE_MASTER);
 
-    NtaEngineMaster master = util.getMiniTajoCluster().getMaster();
+    TajoMaster master = util.getMiniTajoCluster().getMaster();
     assertEquals(master.getMasterServerName(), new String(data));
     
     data = ZkUtil.getDataAndWatch(zkClient, NConstants.ZNODE_CLIENTSERVICE);

@@ -6,7 +6,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.client.PeriodicQueryDaemon.QueryInfo;
 import tajo.client.PeriodicQueryProtos.QueryStatusProto;
-import tajo.engine.NtaTestingUtility;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.WorkerTestingUtil;
 
 import java.io.BufferedReader;
@@ -21,7 +21,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestPeriodicQuery {
 
-  private static NtaTestingUtility utility;
+  private static TajoTestingUtility utility;
   private static Configuration conf;
   private static PeriodicQueryDaemon daemon;
   private static PeriodicQueryClient client;
@@ -44,7 +44,7 @@ public class TestPeriodicQuery {
   
   @BeforeClass
   public static void setup() throws Exception {
-    utility = new NtaTestingUtility();
+    utility = new TajoTestingUtility();
     utility.startMiniCluster(1);
     conf = utility.getConfiguration();
     tajoClient = new TajoClient(conf);

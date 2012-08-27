@@ -13,14 +13,14 @@ import java.util.List;
 public class MockupCluster {
   static final Log LOG = LogFactory.getLog(MockupCluster.class);
 
-  private NtaEngineMaster master;
+  private TajoMaster master;
   private List<MockupWorker> workers;
   private final Configuration conf;
   private final int numWorkers;
   private final int numNormalWorkers;
   private final int numAbortWorkers;
   private final int numShutdownWorkers;
-  private final NtaTestingUtility util;
+  private final TajoTestingUtility util;
 
   public MockupCluster(int numWorkers) throws Exception {
     this(numWorkers, 0, 0);
@@ -29,7 +29,7 @@ public class MockupCluster {
   public MockupCluster(int numWorkers,
                        int numAbortWorkers, int numShutdownWorkers)
       throws Exception {
-    this.util = new NtaTestingUtility();
+    this.util = new TajoTestingUtility();
     this.util.startMiniDFSCluster(numWorkers);
     this.conf = util.getConfiguration();
     conf.set(NConstants.ENGINE_BASE_DIR,
@@ -42,7 +42,7 @@ public class MockupCluster {
     this.numAbortWorkers = numAbortWorkers;
     this.numShutdownWorkers = numShutdownWorkers;
     this.numNormalWorkers = numWorkers - (numAbortWorkers + numShutdownWorkers);
-    this.master = new NtaEngineMaster(conf);
+    this.master = new TajoMaster(conf);
 
     this.workers = Lists.newArrayList();
 
@@ -62,7 +62,7 @@ public class MockupCluster {
     return this.conf;
   }
 
-  public NtaEngineMaster getMaster() {
+  public TajoMaster getMaster() {
     return this.master;
   }
 
