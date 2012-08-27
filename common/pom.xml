@@ -4,7 +4,7 @@
   <parent>
     <artifactId>nta</artifactId>
     <groupId>kr.ac.korea.dbserver</groupId>
-    <version>0.1.6-SNAPSHOT</version>
+    <version>0.1.7-SNAPSHOT</version>
   </parent>
   <packaging>jar</packaging>
   <artifactId>nta-common</artifactId>
@@ -175,7 +175,7 @@
     </plugins>
   </reporting>
   <properties>
-    <nta.version>0.1.6-SNAPSHOT</nta.version>
+    <nta.version>0.1.7-SNAPSHOT</nta.version>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
