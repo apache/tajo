@@ -1,4 +1,4 @@
-option java_package = "nta.util";
+option java_package = "tajo.util";
 option java_outer_classname = "TestProtos";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;

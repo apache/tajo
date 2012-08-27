@@ -1,0 +1,149 @@
+option java_package = "tajo.catalog.proto";
+option java_outer_classname = "CatalogProtos";
+option optimize_for = SPEED;
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+enum DataType {
+    BOOLEAN = 0;
+    BYTE = 1;
+    CHAR = 2;
+    BYTES = 3;
+    SHORT = 4;
+    INT = 5;
+    BIGINT = 6;
+    LONG = 7;
+    FLOAT = 8;
+    DOUBLE = 9;
+    BIGDECIMAL = 10;
+    STRING = 11;
+    DATE = 12;
+    IPv4 = 13;
+    IPv6 = 14;
+    NULL = 15;
+    ANY = 16;
+    ALL = 17;
+    ARRAY = 18;
+}
+
+enum StoreType {
+	MEM = 0;
+	CSV = 1;
+	RAW = 2;
+}
+
+message ColumnProto {
+	required string columnName = 1;
+	required DataType dataType = 2;
+}
+
+message SchemaProto {
+	repeated ColumnProto fields = 1;
+}
+
+message KeyValueProto {
+	required string key = 1;
+	required string value = 2;
+}
+
+message KeyValueSetProto {
+	repeated KeyValueProto keyval = 1;
+}
+
+message TabletProto {
+	required string id = 1;
+	required string path = 2;
+	required int64 startOffset = 3;
+	required int64 length = 4;
+	required TableProto meta = 5;
+	optional TableStatProto stat = 6;
+  optional bool distCached = 7 [default = false];
+}
+
+message TableProto {
+    required SchemaProto schema = 1;
+    required StoreType storeType = 2;
+    required KeyValueSetProto params = 3;
+    optional TableStatProto stat = 4;
+}
+
+message TableDescProto {
+	required string id = 1;
+	required string path = 2;
+	required TableProto meta = 3;
+}
+
+enum FunctionType {
+	GENERAL = 0;
+	AGGREGATION = 1;
+}
+
+message FunctionDescProto {
+	required string signature = 1;
+	required string className = 2;
+	required FunctionType type = 3;
+	repeated DataType parameterTypes = 4;
+	required DataType returnType = 5;
+}
+
+message IndexDescProto {
+    required string name = 1;
+    required string tableId = 2;
+    required ColumnProto column = 3;
+    required IndexMethod indexMethod = 4;
+    optional bool isUnique = 5 [default = false];
+    optional bool isClustered = 6 [default = false];
+    optional bool isAscending = 7 [default = false];
+}
+
+enum IndexMethod {
+    TWO_LEVEL_BIN_TREE = 0;
+    BTREE = 1;
+    HASH = 2;
+    BITMAP = 3;
+}
+
+message GetAllTableNamesResponse {
+    repeated string tableName = 1;
+}
+
+message GetIndexRequest {
+    required string tableName = 1;
+    required string columnName = 2;
+}
+
+message GetFunctionsResponse {
+	repeated FunctionDescProto functionDesc = 1;
+}
+
+message UnregisterFunctionRequest {
+	required string signature = 1;
+	repeated DataType parameterTypes = 2;
+}
+
+message GetFunctionMetaRequest {
+	required string signature = 1;
+	repeated DataType parameterTypes = 2;
+}
+
+message ContainFunctionRequest {
+	required string signature = 1;
+	repeated DataType parameterTypes = 2;
+}
+
+message TableStatProto {
+	required int64 numRows = 1;
+	required int64 numBytes = 2;
+	optional int32 numBlocks = 3;
+	optional int32 numPartitions = 4;
+	optional int64 avgRows = 5;
+	repeated ColumnStatProto colStat = 6;
+}
+
+message ColumnStatProto {
+    required ColumnProto column = 1;
+    optional int64 numDistVal = 2;
+    optional int64 numNulls = 3;
+    optional bytes minValue = 4;
+    optional bytes maxValue = 5;
+}

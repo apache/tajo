@@ -1,4 +1,4 @@
-option java_package = "nta.rpc.test";
+option java_package = "tajo.rpc.test";
 option java_outer_classname = "DummyProtos";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;

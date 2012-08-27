@@ -2,11 +2,11 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>kr.ac.korea.dbserver</groupId>
-  <artifactId>nta</artifactId>
+  <artifactId>tajo</artifactId>
   <version>0.1.7-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>Nta</name>
-  <description>Network Traffic Analyzer</description>
+  <name>Tajo</name>
+  <description>A Distributed Data Warehouse System</description>
   <issueManagement>
     <system>Jira</system>
     <url>https://dbserver.korea.ac.kr/jira</url>
@@ -27,7 +27,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <hadoop.version>0.24.0-SNAPSHOT</hadoop.version>
     <yarn.version>0.24.0-SNAPSHOT</yarn.version>
-    <nta.version>0.1.7-SNAPSHOT</nta.version>
+    <tajo.version>0.1.7-SNAPSHOT</tajo.version>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
@@ -64,7 +64,7 @@
 
   <modules>
     <module>common</module>
-    <module>engine</module>
+    <module>core</module>
     <module>rpc</module>
   </modules>
 
@@ -332,22 +332,22 @@
       </dependency>
       <dependency>
         <groupId>kr.ac.korea.dbserver</groupId>
-        <artifactId>nta-common</artifactId>
-        <version>${nta.version}</version>
+        <artifactId>tajo-common</artifactId>
+        <version>${tajo.version}</version>
         <type>jar</type>
         <scope>compile</scope>
       </dependency>
       <dependency>
         <groupId>kr.ac.korea.dbserver</groupId>
-        <artifactId>nta-engine</artifactId>
-        <version>${nta.version}</version>
+        <artifactId>tajo-core</artifactId>
+        <version>${tajo.version}</version>
         <type>jar</type>
         <scope>compile</scope>
       </dependency>
       <dependency>
         <groupId>kr.ac.korea.dbserver</groupId>
-        <artifactId>nta-rpc</artifactId>
-        <version>${nta.version}</version>
+        <artifactId>tajo-rpc</artifactId>
+        <version>${tajo.version}</version>
         <type>jar</type>
         <scope>compile</scope>
       </dependency>

@@ -1,0 +1,55 @@
+option java_package = "tajo.engine";
+option java_outer_classname = "TCommonProtos";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+enum StatType {
+  TABLE_NUM_ROWS = 0;
+  TABLE_NUM_BLOCKS = 1;
+  TABLE_NUM_PARTITIONS = 2;
+  TABLE_AVG_ROWS = 3;
+  TABLE_NUM_BYTES = 4;
+
+  COLUMN_NUM_NDV = 4;
+  COLUMN_NUM_NULLS = 5;
+}
+
+message StatSetProto {
+    repeated StatProto stats = 1;
+}
+
+message StatProto {
+    required StatType type = 1;
+    required int64 value = 2;
+}
+
+message QueryIdProto {
+    required string timeId = 1;
+    required int32 id = 2;
+}
+
+message SubQueryIdProto {
+    required QueryIdProto queryId = 1;
+    required int32 id = 2;
+}
+
+message ScheduleUnitIdProto {
+    required SubQueryIdProto subQueryId = 1;
+    required int32 id = 2;
+}
+
+message QueryUnitAttemptIdProto {
+    required QueryUnitIdProto queryUnitId = 1;
+    required int32 id = 2;
+}
+
+message QueryUnitIdProto {
+    required ScheduleUnitIdProto scheduleUnitId = 1;
+    required int32 id = 2;
+}
+
+message ServerNameProto {
+    required string serverName = 1;
+    required string hostName = 2;
+    required int32 port = 3;
+}

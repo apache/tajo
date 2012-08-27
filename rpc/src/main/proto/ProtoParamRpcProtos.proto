@@ -1,4 +1,4 @@
-option java_package = "nta.rpc";
+option java_package = "tajo.rpc";
 option java_outer_classname = "ProtoParamRpcProtos";
 
 message Invocation {

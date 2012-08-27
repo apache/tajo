@@ -2,14 +2,14 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <artifactId>nta</artifactId>
+    <artifactId>tajo</artifactId>
     <groupId>kr.ac.korea.dbserver</groupId>
     <version>0.1.7-SNAPSHOT</version>
   </parent>
   <packaging>jar</packaging>
-  <artifactId>nta-common</artifactId>
-  <name>Nta Common</name>
-  <description>Nta Common Packages</description>
+  <artifactId>tajo-common</artifactId>
+  <name>Tajo Common</name>
+  <description>Tajo Common Package</description>
 
   <repositories>
     <repository>
@@ -175,7 +175,7 @@
     </plugins>
   </reporting>
   <properties>
-    <nta.version>0.1.7-SNAPSHOT</nta.version>
+    <tajo.version>0.1.7-SNAPSHOT</tajo.version>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
