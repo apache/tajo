@@ -1,7 +1,7 @@
 package tajo.rpc.benchmark;
 
 import tajo.rpc.NettyRpc;
-import tajo.rpc.ProtoParamRpcServer;
+import tajo.rpc.NettyRpcServer;
 import tajo.rpc.RemoteException;
 import tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 
@@ -47,7 +47,7 @@ public class BenchmarkBlockingRPC {
   public static void main(String[] args) throws InterruptedException,
       RemoteException {
 
-    ProtoParamRpcServer server =
+    NettyRpcServer server =
         NettyRpc
             .getProtoParamRpcServer(new BenchmarkImpl(),
                 BenchmarkInterface.class, new InetSocketAddress("localhost",

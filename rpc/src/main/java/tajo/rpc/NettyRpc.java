@@ -7,7 +7,7 @@ import java.net.ServerSocket;
 
 public class NettyRpc {
 
-  public static ProtoParamRpcServer getProtoParamRpcServer(Object instance,
+  public static NettyRpcServer getProtoParamRpcServer(Object instance,
       Class<?> interfaceClass, InetSocketAddress addr) {
 
     InetSocketAddress newAddress = null;
@@ -24,11 +24,11 @@ public class NettyRpc {
       newAddress = addr;
     }
 
-    return new ProtoParamRpcServer(instance, interfaceClass, newAddress);
+    return new NettyRpcServer(instance, interfaceClass, newAddress);
   }
 
   @Deprecated
-  public static ProtoParamRpcServer getProtoParamRpcServer(Object instance,
+  public static NettyRpcServer getProtoParamRpcServer(Object instance,
       InetSocketAddress addr) {
 
     InetSocketAddress newAddress = null;
@@ -45,18 +45,18 @@ public class NettyRpc {
       newAddress = addr;
     }
 
-    return new ProtoParamRpcServer(instance, newAddress);
+    return new NettyRpcServer(instance, newAddress);
   }
 
   public static Object getProtoParamAsyncRpcProxy(Class<?> serverClass,
       Class<?> clientClass, InetSocketAddress addr) {
-    return new ProtoParamAsyncRpcProxy(serverClass, clientClass, addr)
+    return new NettyAsyncRpcProxy(serverClass, clientClass, addr)
         .getProxy();
   }
 
   public static Object getProtoParamBlockingRpcProxy(Class<?> protocol,
       InetSocketAddress addr) {
-    return new ProtoParamBlockingRpcProxy(protocol, addr).getProxy();
+    return new NettyBlockingRpcProxy(protocol, addr).getProxy();
   }
 
   public static int getUnusedPort(String hostname) throws IOException {

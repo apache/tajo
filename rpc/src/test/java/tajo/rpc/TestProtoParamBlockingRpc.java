@@ -15,7 +15,7 @@ import static org.junit.Assert.assertEquals;
 public class TestProtoParamBlockingRpc {
 
   public static String MESSAGE = TestProtoParamBlockingRpc.class.getName();
-  ProtoParamRpcServer server;
+  NettyRpcServer server;
   DummyClientInterface proxy;
 
   // !. Write Interface and implement class according to communication way

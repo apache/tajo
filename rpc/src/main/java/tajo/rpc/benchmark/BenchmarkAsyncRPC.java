@@ -2,7 +2,7 @@ package tajo.rpc.benchmark;
 
 import tajo.rpc.Callback;
 import tajo.rpc.NettyRpc;
-import tajo.rpc.ProtoParamRpcServer;
+import tajo.rpc.NettyRpcServer;
 import tajo.rpc.RemoteException;
 import tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 
@@ -47,7 +47,7 @@ public class BenchmarkAsyncRPC {
   }
 
   public static void main(String[] args) throws Exception {
-    ProtoParamRpcServer rpcServer =
+    NettyRpcServer rpcServer =
         NettyRpc.getProtoParamRpcServer(new BenchmarkImpl(),
             BenchmarkServerInterface.class, new InetSocketAddress(15010));
     rpcServer.start();

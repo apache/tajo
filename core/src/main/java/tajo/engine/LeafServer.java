@@ -40,7 +40,7 @@ import tajo.engine.planner.physical.TupleComparator;
 import tajo.engine.query.QueryUnitRequestImpl;
 import tajo.engine.query.TQueryEngine;
 import tajo.rpc.NettyRpc;
-import tajo.rpc.ProtoParamRpcServer;
+import tajo.rpc.NettyRpcServer;
 import tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import tajo.storage.StorageUtil;
 import tajo.webapp.HttpServer;
@@ -71,7 +71,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
    * This servers address.
    */
   // private final Server rpcServer;
-  private ProtoParamRpcServer rpcServer;
+  private NettyRpcServer rpcServer;
   private InetSocketAddress isa;
 
   private volatile boolean stopped = false;

@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 
 public class TestProtoParamAsyncRpc {
   public static String MESSAGE = TestProtoParamAsyncRpc.class.getName();
-  ProtoParamRpcServer server;
+  NettyRpcServer server;
   DummyClientInterface proxy;
 
   public static interface DummyServerInterface {

@@ -18,8 +18,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ProtoParamAsyncRpcProxy extends NettyClientBase {
-  private static Log LOG = LogFactory.getLog(ProtoParamAsyncRpcProxy.class);
+public class NettyAsyncRpcProxy extends NettyClientBase {
+  private static Log LOG = LogFactory.getLog(NettyAsyncRpcProxy.class);
 
   private final Class<?> protocol;
   private final ClientHandler handler;
@@ -32,8 +32,8 @@ public class ProtoParamAsyncRpcProxy extends NettyClientBase {
   @SuppressWarnings("rawtypes")
   private final Map<String, Class> returnTypeMap = new HashMap<String, Class>();
 
-  public ProtoParamAsyncRpcProxy(Class<?> server, Class<?> client,
-      InetSocketAddress addr) {
+  public NettyAsyncRpcProxy(Class<?> server, Class<?> client,
+                            InetSocketAddress addr) {
     this.protocol = client;
 
     this.handler = new ClientHandler();

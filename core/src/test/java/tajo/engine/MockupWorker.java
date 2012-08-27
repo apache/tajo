@@ -16,7 +16,7 @@ import tajo.engine.ipc.MasterInterface;
 import tajo.engine.ipc.protocolrecords.QueryUnitRequest;
 import tajo.engine.query.QueryUnitRequestImpl;
 import tajo.rpc.NettyRpc;
-import tajo.rpc.ProtoParamRpcServer;
+import tajo.rpc.NettyRpcServer;
 import tajo.rpc.protocolrecords.PrimitiveProtos;
 import tajo.zookeeper.ZkClient;
 import tajo.zookeeper.ZkUtil;
@@ -43,7 +43,7 @@ public abstract class MockupWorker
   protected final static Log LOG = LogFactory.getLog(MockupWorker.class);
 
   protected final Configuration conf;
-  protected ProtoParamRpcServer rpcServer;
+  protected NettyRpcServer rpcServer;
   protected InetSocketAddress isa;
   protected String serverName;
 

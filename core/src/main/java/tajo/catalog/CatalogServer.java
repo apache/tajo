@@ -20,7 +20,7 @@ import tajo.engine.NConstants;
 import tajo.engine.function.builtin.*;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.rpc.NettyRpc;
-import tajo.rpc.ProtoParamRpcServer;
+import tajo.rpc.NettyRpcServer;
 import tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
@@ -55,7 +55,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
 	    new HashMap<String, FunctionDescProto>();
   
   // RPC variables
-  private final ProtoParamRpcServer rpcServer;
+  private final NettyRpcServer rpcServer;
   private final InetSocketAddress isa;
   private final String serverName;
   private final ZkClient zkClient;

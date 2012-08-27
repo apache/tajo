@@ -16,9 +16,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ProtoParamBlockingRpcProxy extends NettyClientBase {
+public class NettyBlockingRpcProxy extends NettyClientBase {
 
-  private static Log LOG = LogFactory.getLog(ProtoParamBlockingRpcProxy.class);
+  private static Log LOG = LogFactory.getLog(NettyBlockingRpcProxy.class);
 
   private final Class<?> protocol;
   private final ChannelPipelineFactory pipeFactory;
@@ -27,7 +27,7 @@ public class ProtoParamBlockingRpcProxy extends NettyClientBase {
   private Map<Integer, CallFuture> requests =
       new ConcurrentHashMap<Integer, CallFuture>();
 
-  public ProtoParamBlockingRpcProxy(Class<?> protocol, InetSocketAddress addr) {
+  public NettyBlockingRpcProxy(Class<?> protocol, InetSocketAddress addr) {
     this.protocol = protocol;
     this.handler = new ClientHandler();
     this.pipeFactory =

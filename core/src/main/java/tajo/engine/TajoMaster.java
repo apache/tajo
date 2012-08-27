@@ -23,7 +23,7 @@ import tajo.engine.MasterInterfaceProtos.InProgressStatusProto;
 import tajo.engine.cluster.*;
 import tajo.engine.query.GlobalEngine;
 import tajo.rpc.NettyRpc;
-import tajo.rpc.ProtoParamRpcServer;
+import tajo.rpc.NettyRpcServer;
 import tajo.rpc.RemoteException;
 import tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
@@ -68,7 +68,7 @@ public class TajoMaster extends Thread implements ClientService {
 
   private final InetSocketAddress clientServiceBindAddr;
   //private RPC.Server clientServiceServer;
-  private ProtoParamRpcServer server;
+  private NettyRpcServer server;
 
   private List<EngineService> services = new ArrayList<EngineService>();
   

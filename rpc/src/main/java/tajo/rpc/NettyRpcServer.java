@@ -16,8 +16,8 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ProtoParamRpcServer extends NettyServerBase {
-  private static Log LOG = LogFactory.getLog(ProtoParamRpcServer.class);
+public class NettyRpcServer extends NettyServerBase {
+  private static Log LOG = LogFactory.getLog(NettyRpcServer.class);
   private final Object instance;
   private final Class<?> clazz;
   private final ChannelPipelineFactory pipeline;
@@ -25,7 +25,7 @@ public class ProtoParamRpcServer extends NettyServerBase {
   private Map<String, Method> builderMethods;
 
   @Deprecated
-  public ProtoParamRpcServer(Object proxy, InetSocketAddress bindAddress) {
+  public NettyRpcServer(Object proxy, InetSocketAddress bindAddress) {
     super(bindAddress);
     this.instance = proxy;
     this.clazz = instance.getClass();
@@ -51,8 +51,8 @@ public class ProtoParamRpcServer extends NettyServerBase {
     }
   }
 
-  public ProtoParamRpcServer(Object proxy, Class<?> interfaceClass,
-      InetSocketAddress bindAddress) {
+  public NettyRpcServer(Object proxy, Class<?> interfaceClass,
+                        InetSocketAddress bindAddress) {
     super(bindAddress);
     this.instance = proxy;
     this.clazz = instance.getClass();

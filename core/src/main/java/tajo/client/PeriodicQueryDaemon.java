@@ -3,7 +3,7 @@ package tajo.client;
 import tajo.client.PeriodicQueryProtos.*;
 import tajo.engine.ClientServiceProtos.ExecuteQueryRespose;
 import tajo.rpc.NettyRpc;
-import tajo.rpc.ProtoParamRpcServer;
+import tajo.rpc.NettyRpcServer;
 import tajo.rpc.RemoteException;
 import tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 
@@ -29,7 +29,7 @@ public class PeriodicQueryDaemon implements PeriodicQueryService{
   private File queryFile;
   private HashMap<String, QueryInfo> queryMap = null;
   private HashMap<String, ScheduledExecutorService> taskMap = null;
-  private ProtoParamRpcServer server;
+  private NettyRpcServer server;
   private boolean running = true;
   
   public PeriodicQueryDaemon (TajoClient client) throws Exception {

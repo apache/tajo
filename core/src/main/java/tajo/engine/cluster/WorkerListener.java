@@ -20,7 +20,7 @@ import tajo.engine.ipc.PingRequest;
 import tajo.engine.planner.global.QueryUnitAttempt;
 import tajo.engine.query.PingRequestImpl;
 import tajo.rpc.NettyRpc;
-import tajo.rpc.ProtoParamRpcServer;
+import tajo.rpc.NettyRpcServer;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class WorkerListener extends Thread implements MasterInterface {
   
   private final static Log LOG = LogFactory.getLog(WorkerListener.class);
-  private final ProtoParamRpcServer rpcServer;
+  private final NettyRpcServer rpcServer;
   private InetSocketAddress bindAddr;
   private String addr;
   private volatile boolean stopped = false;
