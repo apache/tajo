@@ -7,8 +7,6 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
-import tajo.annotation.Optional;
-import tajo.annotation.Required;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.proto.CatalogProtos.TableProto;
 import tajo.catalog.proto.CatalogProtos.TableProtoOrBuilder;
@@ -26,13 +24,13 @@ public class TableMetaImpl implements TableMeta {
 	protected TableProto.Builder builder = null;
 	protected boolean viaProto = false;	
 	
-	@Expose @Required
+	@Expose
 	protected Schema schema;
-	@Expose @Required 
+	@Expose
 	protected StoreType storeType;
-	@Expose @Optional
+	@Expose
 	protected Options options;
-	@Expose @Optional
+	@Expose
 	protected TableStat stat;
 	
 	private TableMetaImpl() {

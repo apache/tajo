@@ -237,7 +237,7 @@ public class TajoCli {
       sout.println("detached " + cmd[1] + " from tajo");
     }
   }
-  
+
   @SuppressWarnings("unchecked")
   private void showHistory() {
     History history = reader.getHistory();

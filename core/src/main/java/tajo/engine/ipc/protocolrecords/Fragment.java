@@ -4,8 +4,6 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.Path;
-import tajo.annotation.Optional;
-import tajo.annotation.Required;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.SchemaProto;
 import tajo.catalog.proto.CatalogProtos.TabletProto;
@@ -24,18 +22,18 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   protected TabletProto.Builder builder = null;
   protected boolean viaProto = false;
 
-  @Expose @Required
+  @Expose
   private String fragmentId;
-  @Expose @Required
+  @Expose
   private Path path;
-  @Expose @Required
+  @Expose
   private TableMeta meta;
-  @Expose @Required
+  @Expose
   private Long startOffset;
-  @Expose @Required
+  @Expose
   private Long length;
 
-  @Expose @Optional
+  @Expose
   private Boolean distCached;
 
   public Fragment() {
