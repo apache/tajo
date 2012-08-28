@@ -4,11 +4,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.zookeeper.KeeperException;
 import tajo.catalog.statistics.TableStat;
+import tajo.conf.TajoConf;
 import tajo.engine.MasterInterfaceProtos.*;
 import tajo.engine.cluster.MasterAddressTracker;
 import tajo.engine.ipc.AsyncWorkerInterface;
@@ -42,7 +42,7 @@ public abstract class MockupWorker
 
   protected final static Log LOG = LogFactory.getLog(MockupWorker.class);
 
-  protected final Configuration conf;
+  protected final TajoConf conf;
   protected NettyRpcServer rpcServer;
   protected InetSocketAddress isa;
   protected String serverName;
@@ -57,7 +57,7 @@ public abstract class MockupWorker
   protected List<MockupTask> taskQueue;
   protected boolean stopped;
 
-  public MockupWorker(Configuration conf, Type type) {
+  public MockupWorker(TajoConf conf, Type type) {
     this.conf = conf;
     this.type = type;
     taskMap = Maps.newHashMap();
@@ -69,8 +69,8 @@ public abstract class MockupWorker
     String hostname = DNS.getDefaultHost(
         conf.get("nta.master.dns.interface", "default"),
         conf.get("nta.master.dns.nameserver", "default"));
-    int port = this.conf.getInt(NConstants.LEAFSERVER_PORT,
-        NConstants.DEFAULT_LEAFSERVER_PORT);
+    int port = this.conf.getIntVar(TajoConf.ConfVars.LEAFSERVER_PORT);
+
     // Creation of a HSA will force a resolve.
     InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
     if (initialIsa.getAddress() == null) {

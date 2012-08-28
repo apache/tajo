@@ -10,7 +10,7 @@ import org.apache.hadoop.fs.Path;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.*;
 import tajo.catalog.statistics.TableStat;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.engine.exception.InternalException;
 
 import java.io.IOException;
@@ -1052,6 +1052,6 @@ public class DBStore implements CatalogStore {
   
   public static void main(final String[] args) throws IOException {
     @SuppressWarnings("unused")
-    DBStore store = new DBStore(NtaConf.create());
+    DBStore store = new DBStore(new TajoConf());
   }
 }

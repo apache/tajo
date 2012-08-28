@@ -11,7 +11,7 @@ import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
 import tajo.catalog.store.DBStore;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.engine.TajoTestingUtility;
 import tajo.storage.CSVFile2;
 
@@ -30,7 +30,7 @@ public class TestDBStore {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    conf = NtaConf.create();
+    conf = new TajoConf();
     util = new TajoTestingUtility();
     File file = util.setupClusterTestBuildDir();
     conf.set(TConstants.JDBC_URI, "jdbc:derby:"+file.getAbsolutePath()+"/db");

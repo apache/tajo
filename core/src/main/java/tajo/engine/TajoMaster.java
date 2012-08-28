@@ -5,7 +5,6 @@ package tajo.engine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -17,7 +16,8 @@ import tajo.catalog.exception.NoSuchTableException;
 import tajo.catalog.proto.CatalogProtos.TableDescProto;
 import tajo.catalog.statistics.TableStat;
 import tajo.client.ClientService;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.ClientServiceProtos.*;
 import tajo.engine.MasterInterfaceProtos.InProgressStatusProto;
 import tajo.engine.cluster.*;
@@ -46,7 +46,7 @@ import java.util.List;
 public class TajoMaster extends Thread implements ClientService {
   private static final Log LOG = LogFactory.getLog(TajoMaster.class);
 
-  private final Configuration conf;
+  private final TajoConf conf;
   private FileSystem defaultFS;
 
   private volatile boolean stopped = true;
@@ -77,7 +77,7 @@ public class TajoMaster extends Thread implements ClientService {
   //Web Server
   private StaticHttpServer webServer;
   
-  public TajoMaster(final Configuration conf) throws Exception {
+  public TajoMaster(final TajoConf conf) throws Exception {
 
     webServer = StaticHttpServer.getInstance(this ,"admin", null, 8080 , 
         true, null, conf, null);
@@ -87,8 +87,8 @@ public class TajoMaster extends Thread implements ClientService {
     QueryIdFactory.reset();
 
     // Get the tajo base dir
-    this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
-    LOG.info("Base dir is set " + conf.get(NConstants.ENGINE_BASE_DIR));
+    this.basePath = new Path(conf.getVar(ConfVars.ENGINE_BASE_DIR));
+    LOG.info("Base dir is set " + basePath);
     // Get default DFS uri from the base dir
     this.defaultFS = basePath.getFileSystem(conf);
     LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
@@ -98,7 +98,7 @@ public class TajoMaster extends Thread implements ClientService {
       LOG.info("Tajo Base dir (" + basePath + ") is created.");
     }
 
-    this.dataPath = new Path(conf.get(NConstants.ENGINE_DATA_DIR));
+    this.dataPath = new Path(conf.getVar(ConfVars.ENGINE_DATA_DIR));
     LOG.info("Tajo data dir is set " + dataPath);
     if (!defaultFS.exists(dataPath)) {
       defaultFS.mkdirs(dataPath);
@@ -109,10 +109,10 @@ public class TajoMaster extends Thread implements ClientService {
 
     // The below is some mode-dependent codes
     // If tajo is local mode
-    final String mode = conf.get(NConstants.CLUSTER_DISTRIBUTED);
-    if (mode == null || mode.equals(NConstants.CLUSTER_IS_LOCAL)) {
+    final boolean mode = conf.getBoolVar(ConfVars.CLUSTER_DISTRIBUTED);
+    if (!mode) {
       LOG.info("Enabled Pseudo Distributed Mode");
-      conf.set(NConstants.ZOOKEEPER_ADDRESS, "127.0.0.1:2181");
+      conf.setVar(ConfVars.ZOOKEEPER_ADDRESS, "127.0.0.1:2181");
       this.zkServer = new ZkServer(conf);
       this.zkServer.start();
 
@@ -121,7 +121,7 @@ public class TajoMaster extends Thread implements ClientService {
       // server, the below comments should be eliminated.
       // this.catalog = new LocalCatalog(conf);
     } else { // if tajo is distributed mode
-
+      LOG.info("Enabled Distributed Mode");
       // connect to the catalog server
       // this.catalog = new CatalogClient(conf);
     }
@@ -137,10 +137,9 @@ public class TajoMaster extends Thread implements ClientService {
     // Get the master address
     LOG.info(TajoMaster.class.getSimpleName() + " is bind to "
         + wl.getAddress());
-    this.conf.set(NConstants.MASTER_ADDRESS, wl.getAddress());
+    this.conf.setVar(TajoConf.ConfVars.MASTER_ADDRESS, wl.getAddress());
     
-    String confClientServiceAddr = conf.get(NConstants.CLIENT_SERVICE_ADDRESS, 
-        NConstants.DEFAULT_CLIENT_SERVICE_ADDRESS);
+    String confClientServiceAddr = conf.getVar(ConfVars.CLIENT_SERVICE_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
     this.server = 
         NettyRpc
@@ -155,7 +154,7 @@ public class TajoMaster extends Thread implements ClientService {
     this.clientServiceAddr = clientServiceBindAddr.getHostName() + ":" +
         clientServiceBindAddr.getPort();
     LOG.info("Tajo client service master is bind to " + this.clientServiceAddr);
-    this.conf.set(NConstants.CLIENT_SERVICE_ADDRESS, this.clientServiceAddr);
+    this.conf.setVar(ConfVars.CLIENT_SERVICE_ADDRESS, this.clientServiceAddr);
     
     Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
   }
@@ -298,7 +297,7 @@ public class TajoMaster extends Thread implements ClientService {
 	}
 
   public static void main(String[] args) throws Exception {
-    NtaConf conf = new NtaConf();
+    TajoConf conf = new TajoConf();
     TajoMaster master = new TajoMaster(conf);
 
     master.start();

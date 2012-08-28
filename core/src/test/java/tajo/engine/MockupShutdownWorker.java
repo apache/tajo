@@ -2,8 +2,8 @@ package tajo.engine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.zookeeper.KeeperException;
+import tajo.conf.TajoConf;
 
 import java.io.IOException;
 
@@ -14,7 +14,7 @@ public class MockupShutdownWorker extends MockupWorker {
   private final static Log LOG = LogFactory.getLog(MockupShutdownWorker.class);
   private int lifetime;
 
-  public MockupShutdownWorker(Configuration conf, int lifetime) {
+  public MockupShutdownWorker(final TajoConf conf, final int lifetime) {
     super(conf, Type.SHUTDOWN);
     this.lifetime = lifetime;
   }

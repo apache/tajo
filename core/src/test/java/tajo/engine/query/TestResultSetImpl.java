@@ -3,7 +3,6 @@
  */
 package tajo.engine.query;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -14,6 +13,7 @@ import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
+import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
 import tajo.engine.TajoTestingUtility;
 import tajo.storage.Appender;
@@ -33,7 +33,7 @@ import static org.junit.Assert.*;
  */
 public class TestResultSetImpl {
   private static TajoTestingUtility util;
-  private static Configuration conf;
+  private static TajoConf conf;
   private static StorageManager sm;
   private static TableMeta scoreMeta;
 

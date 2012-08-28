@@ -5,15 +5,14 @@ package tajo.storage;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import tajo.catalog.Schema;
 import tajo.catalog.TableMeta;
 import tajo.catalog.TableMetaImpl;
 import tajo.catalog.proto.CatalogProtos.TableProto;
 import tajo.common.exception.NotImplementedException;
-import tajo.conf.NtaConf;
-import tajo.engine.NConstants;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.storage.exception.AlreadyExistsStorageException;
 import tajo.util.FileUtil;
@@ -32,33 +31,33 @@ import java.util.List;
 public class StorageManager {
 	private final Log LOG = LogFactory.getLog(StorageManager.class);
 
-	private final Configuration conf;
+	private final TajoConf conf;
 	private final FileSystem fs;
 	private final Path dataRoot;
 
-	public StorageManager(Configuration conf) throws IOException {
+	public StorageManager(TajoConf conf) throws IOException {
 		this.conf = conf;
 		this.fs = FileSystem.get(conf);
-		this.dataRoot = new Path(conf.get(NConstants.ENGINE_DATA_DIR));
+		this.dataRoot = new Path(conf.getVar(ConfVars.ENGINE_DATA_DIR));
 		if(!fs.exists(dataRoot)) {
 		  fs.mkdirs(dataRoot);
 		}
 		LOG.info("Storage Manager initialized");
 	}
 	
-	public static StorageManager get(Configuration conf) throws IOException {
+	public static StorageManager get(TajoConf conf) throws IOException {
 	  return new StorageManager(conf);
 	}
 	
-	public static StorageManager get(Configuration conf, String dataRoot) 
+	public static StorageManager get(TajoConf conf, String dataRoot)
 	    throws IOException {
-	  conf.set(NConstants.ENGINE_DATA_DIR, dataRoot);
+	  conf.setVar(ConfVars.ENGINE_DATA_DIR, dataRoot);
     return new StorageManager(conf);
 	}
 	
-	public static StorageManager get(Configuration conf, Path dataRoot) 
+	public static StorageManager get(TajoConf conf, Path dataRoot)
       throws IOException {
-    conf.set(NConstants.ENGINE_DATA_DIR, dataRoot.toString());
+    conf.setVar(ConfVars.ENGINE_DATA_DIR, dataRoot.toString());
     return new StorageManager(conf);
   }
 	
@@ -76,7 +75,7 @@ public class StorageManager {
 	}
 	
 	public Path initLocalTableBase(Path tablePath, TableMeta meta) throws IOException {
-	  NtaConf c = NtaConf.create(conf);
+	  TajoConf c = new TajoConf(conf);
 	  c.set("fs.default.name", "file:///");
 	  FileSystem fs = LocalFileSystem.get(c);
     if (fs.exists(tablePath)) {
@@ -155,7 +154,7 @@ public class StorageManager {
       throws IOException {
     TableMeta meta = getLocalTableMeta(tablePath);
     Path filePath = new Path(tablePath, "data/" + fileName);
-    NtaConf c = NtaConf.create(conf);
+    TajoConf c = new TajoConf(conf);
     c.set("fs.default.name", "file:///");
     FileSystem fs = LocalFileSystem.get(c);
     FileStatus status = fs.getFileStatus(filePath);
@@ -287,7 +286,7 @@ public class StorageManager {
 	
 	public Appender getLocalAppender(TableMeta meta, Path filename) 
       throws IOException {
-	  NtaConf c = NtaConf.create(conf);
+	  TajoConf c = new TajoConf(conf);
     c.set("fs.default.name", "file:///");
     
     Appender appender = null;
@@ -363,7 +362,7 @@ public class StorageManager {
   public TableMeta getLocalTableMeta(Path tablePath) throws IOException {
     TableMeta meta;
 
-    NtaConf c = NtaConf.create(conf);
+    TajoConf c = new TajoConf(conf);
     c.set("fs.default.name", "file:///");
     FileSystem fs = LocalFileSystem.get(c);
     Path tableMetaPath = new Path(tablePath, ".meta");
@@ -484,7 +483,7 @@ public class StorageManager {
 
   public void writeTableMetaLocal(Path tableRoot, TableMeta meta)
     throws  IOException {
-    NtaConf c = NtaConf.create(conf);
+    TajoConf c = new TajoConf(conf);
     c.set("fs.default.name", "file:///");
     FileSystem fs = LocalFileSystem.get(c);
     FSDataOutputStream out = fs.create(new Path(tableRoot, ".meta"));

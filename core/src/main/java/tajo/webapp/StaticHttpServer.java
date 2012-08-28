@@ -2,7 +2,8 @@ package tajo.webapp;
 
 import org.apache.hadoop.conf.Configuration;
 import org.mortbay.jetty.Connector;
-import tajo.engine.NConstants;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.TajoMaster;
 
 import java.io.IOException;
@@ -21,12 +22,13 @@ public class StaticHttpServer extends HttpServer{
     return instance;
   }
   public static StaticHttpServer getInstance( TajoMaster master, String name,
-      String bindAddress, int port, boolean findPort, Connector connector, Configuration conf,
+      String bindAddress, int port, boolean findPort, Connector connector,
+      TajoConf conf,
       String[] pathSpecs) throws IOException {
     String addr = bindAddress;
     if(instance == null) {
       if(bindAddress == null || bindAddress.compareTo("") == 0) {
-        addr = conf.get(NConstants.MASTER_ADDRESS).split(":")[0];
+        addr = conf.getVar(ConfVars.MASTER_ADDRESS).split(":")[0];
       }
       
       instance = new StaticHttpServer(master, name, addr, port,

@@ -5,7 +5,8 @@ import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.engine.NConstants;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.SubqueryContext;
 import tajo.engine.planner.logical.SortNode;
 import tajo.storage.Appender;
@@ -39,13 +40,13 @@ public class ExternalSortExec extends PhysicalExec {
   private int run;
   private final static String SORT_PREFIX = "s_";
 
-  public ExternalSortExec(org.apache.hadoop.conf.Configuration conf, SubqueryContext ctx, StorageManager sm, SortNode annotation,
+  public ExternalSortExec(TajoConf conf, SubqueryContext ctx, StorageManager sm, SortNode annotation,
       PhysicalExec subOp) {
     this.annotation = annotation;
     this.subOp = subOp;
     this.sm = sm;
 
-    this.SORT_BUFFER_SIZE = Integer.valueOf(conf.get(NConstants.EXTERNAL_SORT_BUFFER));
+    this.SORT_BUFFER_SIZE = conf.getIntVar(ConfVars.EXTERNAL_SORT_BUFFER);
 
     this.inputSchema = annotation.getInputSchema();
     this.outputSchema = annotation.getOutputSchema();

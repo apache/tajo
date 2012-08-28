@@ -4,7 +4,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -13,6 +12,7 @@ import tajo.catalog.CatalogClient;
 import tajo.catalog.FragmentServInfo;
 import tajo.catalog.TableMetaImpl;
 import tajo.catalog.proto.CatalogProtos.TableDescProto;
+import tajo.conf.TajoConf;
 import tajo.engine.MasterInterfaceProtos.ServerStatusProto;
 import tajo.engine.MasterInterfaceProtos.ServerStatusProto.Disk;
 import tajo.engine.QueryUnitId;
@@ -105,7 +105,7 @@ public class ClusterManager {
     }
   }
 
-  private Configuration conf;
+  private final TajoConf conf;
   private final WorkerCommunicator wc;
   private CatalogClient catalog;
   private final LeafServerTracker tracker;
@@ -118,7 +118,7 @@ public class ClusterManager {
   private PriorityQueue<WorkerResource> sortedResources;
   private Set<String> failedWorkers;
 
-  public ClusterManager(WorkerCommunicator wc, Configuration conf,
+  public ClusterManager(WorkerCommunicator wc, final TajoConf conf,
       LeafServerTracker tracker) throws IOException {
     this.wc = wc;
     this.conf = conf;

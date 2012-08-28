@@ -7,7 +7,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
 import org.junit.Before;
 import org.junit.Test;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.engine.WorkerTestingUtil;
 import tajo.worker.dataserver.HttpDataServer;
 import tajo.worker.dataserver.retriever.DataRetriever;
@@ -60,7 +60,7 @@ public class TestFetcher {
     fetcher.get();
     server.stop();
     
-    FileSystem fs = LocalFileSystem.get(NtaConf.create());
+    FileSystem fs = LocalFileSystem.get(new TajoConf());
     FileStatus inStatus = fs.getFileStatus(new Path(INPUT_DIR, "data"));
     FileStatus outStatus = fs.getFileStatus(new Path(OUTPUT_DIR, "data"));
     assertEquals(inStatus.getLen(), outStatus.getLen());

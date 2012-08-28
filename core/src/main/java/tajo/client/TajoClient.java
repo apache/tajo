@@ -2,7 +2,6 @@ package tajo.client;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
 import tajo.catalog.TCatUtil;
@@ -10,10 +9,10 @@ import tajo.catalog.TableDesc;
 import tajo.catalog.TableDescImpl;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.TableDescProto;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.ClientServiceProtos.*;
 import tajo.engine.LocalTajoCluster;
-import tajo.engine.NConstants;
 import tajo.engine.query.ResultSetImpl;
 import tajo.engine.utils.ProtoUtil;
 import tajo.rpc.NettyRpc;
@@ -31,35 +30,34 @@ import java.util.List;
 public class TajoClient {
   private final Log LOG = LogFactory.getLog(TajoClient.class);
   
-  private final Configuration conf;
+  private final TajoConf conf;
   private ClientService service;
   private static LocalTajoCluster cluster = null;
   private String resultPath;
 
-  public TajoClient(Configuration conf) throws IOException {
+  public TajoClient(TajoConf conf) throws IOException {
     this.conf = conf;
 
-    String mode = this.conf.get(NConstants.CLUSTER_DISTRIBUTED);
+    boolean mode = this.conf.getBoolVar(ConfVars.CLUSTER_DISTRIBUTED);
     // If cli is executed in local mode
-    if (mode == null || mode.equals(NConstants.CLUSTER_IS_LOCAL)) {
+    if (mode == false) {
       initLocalCluster(conf);
     } else {
-      String masterAddr = this.conf.get(NConstants.CLIENT_SERVICE_ADDRESS,
-          NConstants.DEFAULT_CLIENT_SERVICE_ADDRESS);
+      String masterAddr = this.conf.getVar(ConfVars.CLIENT_SERVICE_ADDRESS);
       InetSocketAddress addr = NetUtils.createSocketAddr(masterAddr);
       init(addr);
     }
   }
 
   public TajoClient(InetSocketAddress addr) throws IOException {
-    this.conf = NtaConf.create();
-    this.conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
+    this.conf = new TajoConf();
+    this.conf.setBoolVar(ConfVars.CLUSTER_DISTRIBUTED, true);
     init(addr);
   }
 
   public TajoClient(String hostname, int port) throws IOException {
-    this.conf = NtaConf.create();
-    this.conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
+    this.conf = new TajoConf();
+    this.conf.setBoolVar(ConfVars.CLUSTER_DISTRIBUTED, true);
     init(NetUtils.createSocketAddr(hostname, port));
   }
 
@@ -70,7 +68,7 @@ public class TajoClient {
     LOG.info("Connected to tajo client service (" + addr.getHostName() + ": " + addr.getPort() +")");
   }
 
-  private void initLocalCluster(Configuration conf) throws IOException {
+  private void initLocalCluster(TajoConf conf) throws IOException {
     try {
       if (cluster == null) {
         cluster = new LocalTajoCluster(conf);

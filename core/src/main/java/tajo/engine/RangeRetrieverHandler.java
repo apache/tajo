@@ -5,7 +5,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import tajo.catalog.Schema;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.engine.planner.physical.TupleComparator;
 import tajo.engine.utils.TupleUtil;
 import tajo.index.bst.BSTIndex;
@@ -42,12 +42,13 @@ public class RangeRetrieverHandler implements RetrieverHandler {
 
   public RangeRetrieverHandler(File outDir, Schema schema, TupleComparator comp) throws IOException {
     this.file = outDir;
-    BSTIndex index = new BSTIndex(NtaConf.create());
+    BSTIndex index = new BSTIndex(new TajoConf());
     this.schema = schema;
     this.comp = comp;
 
     this.idxReader =
-        index.getIndexReader(new Path(outDir.getAbsolutePath(), "index/data.idx"), this.schema, this.comp);
+        index.getIndexReader(new Path(outDir.getAbsolutePath(), "index/data.idx"),
+            this.schema, this.comp);
     this.idxReader.open();
   }
 

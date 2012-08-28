@@ -2,8 +2,8 @@ package tajo.engine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.zookeeper.KeeperException;
+import tajo.conf.TajoConf;
 import tajo.engine.MasterInterfaceProtos.Command;
 import tajo.engine.MasterInterfaceProtos.PingResponseProto;
 import tajo.engine.MasterInterfaceProtos.QueryStatus;
@@ -17,7 +17,7 @@ import java.io.IOException;
 public class MockupAbortWorker extends MockupWorker {
   private final static Log LOG = LogFactory.getLog(MockupAbortWorker.class);
 
-  public MockupAbortWorker(Configuration conf) {
+  public MockupAbortWorker(TajoConf conf) {
     super(conf, Type.ABORT);
   }
 

@@ -9,7 +9,7 @@ import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.engine.WorkerTestingUtil;
@@ -20,12 +20,12 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 
 public class TestStorageManager {
-	private NtaConf conf; 
+	private TajoConf conf;
 	private static String TEST_PATH = "target/test-data/TestStorageManager";
 	StorageManager sm = null;
 	@Before
 	public void setUp() throws Exception {
-		conf = new NtaConf();
+		conf = new TajoConf();
 		WorkerTestingUtil.buildTestDir(TEST_PATH);
     sm = StorageManager.get(conf, TEST_PATH);
 	}

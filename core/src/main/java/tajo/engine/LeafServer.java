@@ -18,7 +18,8 @@ import tajo.catalog.Schema;
 import tajo.catalog.TableMeta;
 import tajo.catalog.statistics.TableStat;
 import tajo.common.Sleeper;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.datachannel.Fetcher;
 import tajo.engine.MasterInterfaceProtos.*;
 import tajo.engine.cluster.MasterAddressTracker;
@@ -64,7 +65,7 @@ import java.util.concurrent.*;
 public class LeafServer extends Thread implements AsyncWorkerInterface {
   private static final Log LOG = LogFactory.getLog(LeafServer.class);
 
-  private final Configuration conf;
+  private final TajoConf conf;
 
   // Server States
   /**
@@ -107,18 +108,17 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
 
   private Sleeper sleeper;
 
-  public LeafServer(final Configuration conf) {
+  public LeafServer(final TajoConf conf) {
     this.conf = conf;
-    lDirAllocator = new LocalDirAllocator(NConstants.WORKER_TMP_DIR);
-    LOG.info(conf.get(NConstants.WORKER_TMP_DIR));
-    this.workDir = new File(conf.get(NConstants.WORKER_TMP_DIR));
+    lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TMP_DIR.varname);
+    LOG.info(conf.getVar(ConfVars.WORKER_TMP_DIR));
+    this.workDir = new File(conf.getVar(ConfVars.WORKER_TMP_DIR));
     sleeper = new Sleeper();
   }
   
   private void prepareServing() throws IOException {
-    NtaConf c = NtaConf.create(this.conf);
-    defaultFS = FileSystem.get(URI.create(conf.get(NConstants.ENGINE_BASE_DIR)),
-        conf);
+    defaultFS = FileSystem.get(URI.create(
+        conf.getVar(ConfVars.ENGINE_BASE_DIR)),conf);
 
     localFS = FileSystem.getLocal(conf);
     Path workDirPath = new Path(workDir.toURI());
@@ -131,8 +131,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     String hostname = DNS.getDefaultHost(
         conf.get("nta.master.dns.interface", "default"),
         conf.get("nta.master.dns.nameserver", "default"));
-    int port = this.conf.getInt(NConstants.LEAFSERVER_PORT,
-        NConstants.DEFAULT_LEAFSERVER_PORT);
+    int port = this.conf.getIntVar(ConfVars.LEAFSERVER_PORT);
+
     // Creation of a HSA will force a resolve.
     InetSocketAddress initialIsa = new InetSocketAddress(hostname, port);
     if (initialIsa.getAddress() == null) {
@@ -205,7 +205,8 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         
         webServer = new HttpServer("admin", this.isa.getHostName() ,8080 , 
             true, null, conf, null);
-        webServer.setAttribute("tajo.master.addr", conf.get(NConstants.MASTER_ADDRESS));
+        webServer.setAttribute("tajo.master.addr",
+            conf.getVar(ConfVars.MASTER_ADDRESS));
         webServer.start();
       } catch (Exception e) {
         abort(e.getMessage(), e);
@@ -850,7 +851,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     
     private Fragment[] list(File file, String name, TableMeta meta)
         throws IOException {
-      NtaConf c = NtaConf.create(conf);
+      Configuration c = new Configuration(conf);
       c.set("fs.default.name", "file:///");
       FileSystem fs = FileSystem.get(c);
       Path tablePath = new Path(file.getAbsolutePath());      
@@ -872,7 +873,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   }
 
   public static void main(String[] args) throws IOException {
-    NtaConf conf = new NtaConf();
+    TajoConf conf = new TajoConf();
     LeafServer leafServer = new LeafServer(conf);
 
     leafServer.start();

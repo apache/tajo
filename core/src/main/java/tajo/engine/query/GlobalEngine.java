@@ -5,12 +5,12 @@ package tajo.engine.query;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import tajo.catalog.CatalogService;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableDesc;
 import tajo.catalog.TableMeta;
 import tajo.catalog.statistics.TableStat;
+import tajo.conf.TajoConf;
 import tajo.engine.*;
 import tajo.engine.MasterInterfaceProtos.QueryStatus;
 import tajo.engine.cluster.ClusterManager;
@@ -40,7 +40,7 @@ import java.io.IOException;
 public class GlobalEngine implements EngineService {
   private final static Log LOG = LogFactory.getLog(GlobalEngine.class);
 
-  private final Configuration conf;
+  private final TajoConf conf;
   private final CatalogService catalog;
   private final QueryAnalyzer analyzer;
   private final QueryContext.Factory factory;
@@ -52,7 +52,7 @@ public class GlobalEngine implements EngineService {
   private QueryManager qm;
   private ClusterManager cm;
 
-  public GlobalEngine(Configuration conf, CatalogService cat,
+  public GlobalEngine(final TajoConf conf, CatalogService cat,
       StorageManager sm, WorkerCommunicator wc, QueryManager qm,
       ClusterManager cm) throws IOException {
     this.conf = conf;

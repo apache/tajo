@@ -7,7 +7,7 @@ import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.engine.SubqueryContext;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.utils.TupleUtil;
@@ -64,7 +64,7 @@ public class IndexedStoreExec extends PhysicalExec {
       indexSortSpec[i] = new QueryBlock.SortSpec(keySchema.getColumn(0));
     }
 
-    BSTIndex bst = new BSTIndex(NtaConf.create());
+    BSTIndex bst = new BSTIndex(new TajoConf());
     this.comp = new TupleComparator(keySchema, indexSortSpec);
     Path storeTablePath = new Path(ctx.getWorkDir().getAbsolutePath(), "out");
     this.meta = TCatUtil

@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -14,6 +13,7 @@ import org.junit.Test;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.datum.NullDatum;
@@ -47,7 +47,7 @@ import static org.junit.Assert.*;
  */
 public class TestPhysicalPlanner {
   private static TajoTestingUtility util;
-  private static Configuration conf;
+  private static TajoConf conf;
   private static CatalogService catalog;
   private static QueryAnalyzer analyzer;
   private static SubqueryContext.Factory factory;

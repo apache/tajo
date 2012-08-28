@@ -1,6 +1,5 @@
 package tajo;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import tajo.catalog.Options;
@@ -9,6 +8,7 @@ import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.client.TajoClient;
+import tajo.conf.TajoConf;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -16,9 +16,9 @@ import java.sql.ResultSet;
 /**
  * @author Hyunsik Choi
  */
-public class TajoTestingUtility {
+public class LocalTajoTestingUtility {
   private tajo.engine.TajoTestingUtility util;
-  private Configuration conf;
+  private TajoConf conf;
   private TajoClient client;
 
   public void setup(String[] names,

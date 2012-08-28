@@ -2,7 +2,6 @@ package tajo.zookeeper;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -11,8 +10,8 @@ import org.apache.zookeeper.ZooKeeper;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tajo.conf.TajoConf;
 import tajo.engine.Abortable;
-import tajo.engine.NConstants;
 import tajo.engine.TajoTestingUtility;
 import tajo.engine.utils.ThreadUtil;
 
@@ -26,7 +25,7 @@ public class TestZkNodeTracker {
   private final static Log LOG = LogFactory.getLog(TestZkNodeTracker.class);
 
   private final static TajoTestingUtility TEST_UTIL = new TajoTestingUtility();
-  private static Configuration conf;
+  private static TajoConf conf;
 
   private final static Random rand = new Random();
 
@@ -103,8 +102,9 @@ public class TestZkNodeTracker {
     // Create a completely separate zk connection for test triggers and avoid
     // any weird watcher interactions from the test
     final ZooKeeper zkconn =
-        new ZooKeeper(conf.get(NConstants.ZOOKEEPER_ADDRESS),
-            NConstants.DEFAULT_ZOOKEEPER_SESSION_TIMEOUT, new StubWatcher());
+        new ZooKeeper(conf.getVar(TajoConf.ConfVars.ZOOKEEPER_ADDRESS),
+            TajoConf.ConfVars.ZOOKEEPER_SESSION_TIMEOUT.defaultIntVal,
+            new StubWatcher());
 
     // Add the node with data one
     zkconn.create(node, dataOne, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);

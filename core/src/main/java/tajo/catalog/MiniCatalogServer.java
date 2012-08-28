@@ -3,7 +3,7 @@
  */
 package tajo.catalog;
 
-import org.apache.hadoop.conf.Configuration;
+import tajo.conf.TajoConf;
 
 import java.io.IOException;
 
@@ -14,7 +14,7 @@ import java.io.IOException;
 public class MiniCatalogServer {
   private CatalogServer catalogServers;
   
-  public MiniCatalogServer(Configuration conf) throws IOException {
+  public MiniCatalogServer(TajoConf conf) throws IOException {
     this.catalogServers = new CatalogServer(conf);
     this.catalogServers.start();
   }

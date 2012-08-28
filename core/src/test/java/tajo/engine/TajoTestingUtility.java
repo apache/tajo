@@ -8,7 +8,6 @@ import com.google.common.io.Closeables;
 import com.google.common.io.Files;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
@@ -17,7 +16,8 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.client.TajoClient;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.zookeeper.MiniZooKeeperCluster;
 
 import java.io.File;
@@ -32,7 +32,7 @@ import java.util.UUID;
  */
 public class TajoTestingUtility {
 	private static Log LOG = LogFactory.getLog(TajoTestingUtility.class);
-	private NtaConf conf;
+	private TajoConf conf;
 
 	/**
 	 * Set if we were passed a zkCluster.  If so, we won't shutdown zk as
@@ -61,10 +61,10 @@ public class TajoTestingUtility {
 	public static final String DEFAULT_TEST_DIRECTORY = "target/test-data";
 
 	public TajoTestingUtility() {
-		this.conf = new NtaConf();
+		this.conf = new TajoConf();
 	}
 
-	public Configuration getConfiguration() {
+	public TajoConf getConfiguration() {
 		return this.conf;
 	}
 	
@@ -198,7 +198,7 @@ public class TajoTestingUtility {
     }
     this.zkCluster = new MiniZooKeeperCluster();
     int clientPort = this.zkCluster.startup(dir, zookeeperServerNum);
-    this.conf.set(NConstants.ZOOKEEPER_ADDRESS, "127.0.0.1:"+clientPort);
+    this.conf.setVar(ConfVars.ZOOKEEPER_ADDRESS, "127.0.0.1:" + clientPort);
 
     return this.zkCluster;
   }
@@ -218,8 +218,8 @@ public class TajoTestingUtility {
   // Catalog Section
   ////////////////////////////////////////////////////////
   public MiniCatalogServer startCatalogCluster() throws Exception {
-    Configuration c = getConfiguration();
-    c.set(NConstants.CATALOG_ADDRESS, "localhost:0");
+    TajoConf c = getConfiguration();
+    c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
 
     if(clusterTestBuildDir == null) {
       clusterTestBuildDir = setupClusterTestBuildDir();
@@ -233,8 +233,8 @@ public class TajoTestingUtility {
     this.catalogCluster = new MiniCatalogServer(conf);
     CatalogServer catServer = this.catalogCluster.getCatalogServer();
     InetSocketAddress sockAddr = catServer.getBindAddress();
-    c.set(NConstants.CATALOG_ADDRESS,
-        sockAddr.getHostName()+":"+sockAddr.getPort());
+    c.setVar(ConfVars.CATALOG_ADDRESS,
+        sockAddr.getHostName() + ":" + sockAddr.getPort());
 
     return this.catalogCluster;
   }
@@ -251,28 +251,31 @@ public class TajoTestingUtility {
   // Tajo Cluster Section
   ////////////////////////////////////////////////////////
   private MiniTajoCluster startMiniTajoCluster(File testBuildDir,
-                                               final int numSlaves, boolean local) throws Exception {
-    Configuration c = getConfiguration();
-    c.set(NConstants.MASTER_ADDRESS, "localhost:0");
-    c.set(NConstants.CATALOG_ADDRESS, "localhost:0");
+                                               final int numSlaves,
+                                               boolean local) throws Exception {
+    TajoConf c = getConfiguration();
+    c.setVar(ConfVars.MASTER_ADDRESS, "localhost:0");
+    c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
     conf.set(TConstants.JDBC_URI,
         "jdbc:derby:"+clusterTestBuildDir.getAbsolutePath()+"/db");
     LOG.info("derby repository is set to "+conf.get(TConstants.JDBC_URI));
     if (!local) {
-      c.set(NConstants.ENGINE_BASE_DIR,
-          getMiniDFSCluster().getFileSystem().getUri()+"/tajo");
+      c.setVar(ConfVars.ENGINE_BASE_DIR,
+          getMiniDFSCluster().getFileSystem().getUri() + "/tajo");
     } else {
-      c.set(NConstants.ENGINE_BASE_DIR,
+      c.setVar(ConfVars.ENGINE_BASE_DIR,
           clusterTestBuildDir.getAbsolutePath() + "/tajo");
     }
-    c.set(NConstants.WORKER_BASE_DIR,
-        clusterTestBuildDir+"/worker");
-    c.set(NConstants.WORKER_TMP_DIR,
-        clusterTestBuildDir +"/worker/tmp");
+    c.setVar(ConfVars.WORKER_BASE_DIR,
+        clusterTestBuildDir + "/worker");
+    c.setVar(ConfVars.WORKER_TMP_DIR,
+        clusterTestBuildDir + "/worker/tmp");
     this.tajoCluster = new MiniTajoCluster(c, numSlaves);
 
-    this.conf.set(NConstants.MASTER_ADDRESS, c.get(NConstants.MASTER_ADDRESS));
-    this.conf.set(NConstants.CATALOG_ADDRESS, c.get(NConstants.CATALOG_ADDRESS));
+    this.conf.setVar(ConfVars.MASTER_ADDRESS,
+        c.getVar(ConfVars.MASTER_ADDRESS));
+    this.conf.setVar(ConfVars.CATALOG_ADDRESS,
+        c.getVar(ConfVars.CATALOG_ADDRESS));
 
     LOG.info("Mini Tajo cluster is up");
     return this.tajoCluster;
@@ -281,7 +284,7 @@ public class TajoTestingUtility {
   public void restartTajoCluster(int numSlaves) throws Exception {
     this.tajoCluster.shutdown();
     this.tajoCluster =
-        new MiniTajoCluster(new Configuration(this.conf), numSlaves);
+        new MiniTajoCluster(new TajoConf(this.conf), numSlaves);
 
     LOG.info("Minicluster has been restarted");
   }
@@ -326,7 +329,7 @@ public class TajoTestingUtility {
   public MiniTajoCluster startMiniCluster(final int numSlaves,
                                           final String [] dataNodeHosts) throws Exception {
     // the conf is set to the distributed mode.
-    this.conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
+    this.conf.setBoolVar(ConfVars.CLUSTER_DISTRIBUTED, true);
 
     int numDataNodes = numSlaves;
     if(dataNodeHosts != null && dataNodeHosts.length != 0) {
@@ -370,7 +373,7 @@ public class TajoTestingUtility {
 
   public MiniTajoCluster startMiniClusterInLocal(final int numSlaves) throws Exception {
     // the conf is set to the distributed mode.
-    this.conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
+    this.conf.setBoolVar(ConfVars.CLUSTER_DISTRIBUTED, true);
 
     // If we already put up a cluster, fail.
     String testBuildPath = conf.get(TEST_DIRECTORY_KEY, null);
@@ -426,7 +429,7 @@ public class TajoTestingUtility {
                                      String query) throws Exception {
     TajoTestingUtility util = new TajoTestingUtility();
     util.startMiniClusterInLocal(1);
-    Configuration conf = util.getConfiguration();
+    TajoConf conf = util.getConfiguration();
     TajoClient client = new TajoClient(conf);
 
     File tmpDir = util.setupClusterTestBuildDir();
@@ -453,7 +456,7 @@ public class TajoTestingUtility {
                               String query) throws Exception {
     TajoTestingUtility util = new TajoTestingUtility();
     util.startMiniCluster(1);
-    Configuration conf = util.getConfiguration();
+    TajoConf conf = util.getConfiguration();
     TajoClient client = new TajoClient(conf);
 
     FileSystem fs = util.getDefaultFileSystem();
@@ -485,7 +488,7 @@ public class TajoTestingUtility {
                               String query) throws Exception {
     TajoTestingUtility util = new TajoTestingUtility();
     util.startMiniCluster(1);
-    Configuration conf = util.getConfiguration();
+    TajoConf conf = util.getConfiguration();
     TajoClient client = new TajoClient(conf);
 
     FileSystem fs = util.getDefaultFileSystem();

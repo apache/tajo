@@ -5,7 +5,6 @@ package tajo.engine.query;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
@@ -15,12 +14,13 @@ import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.proto.CatalogProtos.TableProto;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.datum.DatumFactory;
 import tajo.datum.NullDatum;
 import tajo.engine.ClientServiceProtos.ExecuteQueryRequest;
 import tajo.engine.ClientServiceProtos.ExecuteQueryRespose;
 import tajo.engine.LeafServer;
-import tajo.engine.NConstants;
 import tajo.engine.TajoMaster;
 import tajo.engine.TajoTestingUtility;
 import tajo.storage.*;
@@ -40,7 +40,7 @@ public class TestGlobalEngine {
   private static Log LOG = LogFactory.getLog(TestGlobalEngine.class);
 
   private static TajoTestingUtility util;
-  private static Configuration conf;
+  private static TajoConf conf;
   private static CatalogService catalog;
   private static TajoMaster master;
   private static StorageManager sm;
@@ -182,7 +182,7 @@ public class TestGlobalEngine {
     appender.close();
 
     TableDesc score = new TableDescImpl("score", scoreSchema, StoreType.CSV,
-        new Options(), new Path(conf.get(NConstants.ENGINE_DATA_DIR), "score"));
+        new Options(), new Path(conf.getVar(ConfVars.ENGINE_DATA_DIR), "score"));
     catalog.addTable(score);
 
     appender = sm.getTableAppender(deptMeta, "dept");

@@ -1,7 +1,6 @@
 package tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
@@ -13,11 +12,11 @@ import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.TajoTestingUtility;
 import tajo.engine.SubqueryContext;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.parser.QueryBlock;
@@ -44,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 
 public class TestBSTIndexExec {
 
-  private NtaConf conf;
+  private TajoConf conf;
   private final String TEST_PATH = "target/test-data/TestPhysicalPlanner";
   private Path idxPath;
   private CatalogService catalog;
@@ -62,7 +61,7 @@ public class TestBSTIndexExec {
   @Before
   public void setup() throws Exception {
     this.randomValues = new HashMap<Integer , Integer> ();
-    this.conf = new NtaConf();
+    this.conf = new TajoConf();
     File testDir = TajoTestingUtility.getTestDir("TestPhysicalPlanner");
     FileSystem fs = FileSystem.getLocal(conf);
     sm = StorageManager.get(conf, fs.makeQualified(new Path(testDir.toURI())));
@@ -152,7 +151,7 @@ public class TestBSTIndexExec {
   }
 
   private class TmpPlanner extends PhysicalPlanner {
-    public TmpPlanner(Configuration conf, StorageManager sm) {
+    public TmpPlanner(TajoConf conf, StorageManager sm) {
       super(conf, sm);
     }
 

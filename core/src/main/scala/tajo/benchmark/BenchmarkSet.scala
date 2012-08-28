@@ -7,7 +7,8 @@ import java.io.File
 import tajo.catalog.{TConstants, Schema}
 import tajo.util.FileUtil
 import tajo.catalog.store.MemStore
-import tajo.engine.NConstants
+import tajo.conf.TajoConf
+import tajo.conf.TajoConf.ConfVars
 
 /**
  * @author Hyunsik Choi
@@ -19,10 +20,11 @@ abstract class BenchmarkSet() {
   protected var outSchemas = HashMap[String, Schema]()
   protected var datadir : String = _
 
-  def init(conf : org.apache.hadoop.conf.Configuration, _datadir : String) {
+  def init(conf : TajoConf, _datadir : String) {
     this.datadir = _datadir
-    if (System.getProperty(NConstants.MASTER_ADDRESS) != null) {
-      tajo = new TajoClient(NetUtils.createSocketAddr(System.getProperty(NConstants.MASTER_ADDRESS)))
+    if (System.getProperty(ConfVars.MASTER_ADDRESS.varname) != null) {
+      tajo = new TajoClient(NetUtils.createSocketAddr(
+        System.getProperty(ConfVars.MASTER_ADDRESS.varname)))
     } else {
       conf.set(TConstants.STORE_CLASS, classOf[MemStore].getCanonicalName)
       tajo = new TajoClient(conf)

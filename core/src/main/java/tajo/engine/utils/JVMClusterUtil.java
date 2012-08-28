@@ -2,7 +2,7 @@ package tajo.engine.utils;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
+import tajo.conf.TajoConf;
 import tajo.engine.LeafServer;
 import tajo.engine.TajoMaster;
 
@@ -38,7 +38,7 @@ public class JVMClusterUtil {
 	}
 
 	public static JVMClusterUtil.LeafServerThread createLeafServerThread(
-		final Configuration c, final int index) throws IOException {
+		final TajoConf c, final int index) throws IOException {
 		LeafServer server;
 
 		server = new LeafServer(c);
@@ -70,7 +70,7 @@ public class JVMClusterUtil {
 	}
 
 	public static JVMClusterUtil.MasterThread createMasterThread(
-		final Configuration c, final int index) throws Exception {
+		final TajoConf c, final int index) throws Exception {
 		TajoMaster server;
 
 		server = new TajoMaster(c);

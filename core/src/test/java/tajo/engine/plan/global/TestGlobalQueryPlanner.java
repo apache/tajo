@@ -13,13 +13,13 @@ import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.TajoTestingUtility;
 import tajo.engine.QueryContext;
 import tajo.engine.QueryIdFactory;
 import tajo.engine.SubQueryId;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.cluster.QueryManager;
 import tajo.engine.exec.eval.TestEvalTree.TestSum;
 import tajo.engine.parser.ParseTree;
@@ -51,7 +51,7 @@ import static org.junit.Assert.*;
 public class TestGlobalQueryPlanner {
 
   private static TajoTestingUtility util;
-  private static NtaConf conf;
+  private static TajoConf conf;
   private static CatalogService catalog;
   private static GlobalPlanner planner;
   private static Schema schema;
@@ -78,7 +78,7 @@ public class TestGlobalQueryPlanner {
 
     TableMeta meta;
 
-    conf = new NtaConf(util.getConfiguration());
+    conf = new TajoConf(util.getConfiguration());
     catalog = util.getMiniCatalogCluster().getCatalog();
     sm = new StorageManager(util.getConfiguration());
     FunctionDesc funcDesc = new FunctionDesc("sumtest", TestSum.class, FunctionType.GENERAL,

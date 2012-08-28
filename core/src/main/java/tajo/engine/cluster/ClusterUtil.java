@@ -4,7 +4,7 @@
 package tajo.engine.cluster;
 
 import org.apache.zookeeper.KeeperException;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.engine.NConstants;
 import tajo.zookeeper.ZkClient;
 
@@ -22,7 +22,7 @@ public class ClusterUtil {
       System.exit(-1);
     }
     
-    ZkClient zkClient = new ZkClient(NtaConf.create());
+    ZkClient zkClient = new ZkClient(new TajoConf());
     
     if(args[0].equalsIgnoreCase("list")) {
       List<String> list = zkClient.getChildren(NConstants.ZNODE_LEAFSERVERS);

@@ -2,17 +2,18 @@ package tajo.zookeeper;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.data.Stat;
-import tajo.engine.NConstants;
+import tajo.conf.TajoConf;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+
+import static tajo.conf.TajoConf.ConfVars.*;
 
 public class ZkClient implements Watcher {
   private final Log LOG = LogFactory.getLog(ZkClient.class);
@@ -25,27 +26,23 @@ public class ZkClient implements Watcher {
   private final List<ZkListener> listeners =
       new CopyOnWriteArrayList<ZkListener>();
 
-  public ZkClient(Configuration conf) throws IOException {
-    this(conf.get(NConstants.ZOOKEEPER_ADDRESS,
-        NConstants.DEFAULT_ZOOKEEPER_ADDRESS), conf.getInt(
-        NConstants.ZOOKEEPER_SESSION_TIMEOUT,
-        NConstants.DEFAULT_ZOOKEEPER_SESSION_TIMEOUT), conf.getInt(
-        NConstants.ZOOKEEPER_RETRY_COUNT,
-        NConstants.DEFAULT_ZOOKEEPER_RETRY_COUNT), conf.getInt(
-        NConstants.ZOOKEEPER_RETRY_INTERVALMILLS,
-        NConstants.DEFAULT_ZOOKEEPER_RETRY_INTERVALMILLS));
+  public ZkClient(final TajoConf conf) throws IOException {
+    this(conf.getVar(ZOOKEEPER_ADDRESS),
+        conf.getIntVar(ZOOKEEPER_SESSION_TIMEOUT),
+        conf.getIntVar(ZOOKEEPER_RETRY_COUNT),
+        conf.getIntVar(ZOOKEEPER_RETRY_INTERVALMILLS));
   }
 
   public ZkClient(String serverstring) throws IOException {
-    this(serverstring, NConstants.DEFAULT_ZOOKEEPER_SESSION_TIMEOUT,
-        NConstants.DEFAULT_ZOOKEEPER_RETRY_COUNT,
-        NConstants.DEFAULT_ZOOKEEPER_RETRY_INTERVALMILLS);
+    this(serverstring, ZOOKEEPER_SESSION_TIMEOUT.defaultIntVal,
+        ZOOKEEPER_RETRY_COUNT.defaultIntVal,
+        ZOOKEEPER_RETRY_INTERVALMILLS.defaultIntVal);
   }
 
   public ZkClient(String serverstring, int sessionTimeout) throws IOException {
     this(serverstring, sessionTimeout,
-        NConstants.DEFAULT_ZOOKEEPER_RETRY_COUNT,
-        NConstants.DEFAULT_ZOOKEEPER_RETRY_INTERVALMILLS);
+        ZOOKEEPER_RETRY_COUNT.defaultIntVal,
+        ZOOKEEPER_RETRY_INTERVALMILLS.defaultIntVal);
   }
 
   public ZkClient(String serverstring, int sessionTimeout, int maxRetries,

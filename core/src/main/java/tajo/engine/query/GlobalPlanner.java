@@ -11,7 +11,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
@@ -19,6 +18,8 @@ import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
 import tajo.common.exception.NotImplementedException;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.MasterInterfaceProtos.Partition;
 import tajo.engine.MasterInterfaceProtos.QueryStatus;
 import tajo.engine.*;
@@ -48,13 +49,13 @@ import java.util.Map.Entry;
 public class GlobalPlanner {
   private static Log LOG = LogFactory.getLog(GlobalPlanner.class);
 
-  private Configuration conf;
+  private TajoConf conf;
   private StorageManager sm;
   private QueryManager qm;
   private CatalogService catalog;
   private SubQueryId subId;
 
-  public GlobalPlanner(Configuration conf,
+  public GlobalPlanner(TajoConf conf,
                        StorageManager sm,
                        QueryManager qm,
                        CatalogService catalog)
@@ -160,10 +161,9 @@ public class GlobalPlanner {
               catalog.getTableDesc(outerScan.getTableId()).getMeta();
           TableMeta innerMeta =
               catalog.getTableDesc(innerScan.getTableId()).getMeta();
-          long threshold = conf.getLong(NConstants.BROADCAST_JOIN_THRESHOLD,
-              NConstants.DEFAULT_BROADCAST_JOIN_THRESHOLD);
-          // if the broadcast join is available
+          long threshold = conf.getLongVar(ConfVars.BROADCAST_JOIN_THRESHOLD);
 
+          // if the broadcast join is available
           boolean outerSmall = false;
           boolean innerSmall = false;
           if (!outerScan.isLocal() && outerMeta.getStat() != null &&

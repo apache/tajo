@@ -4,6 +4,8 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 
 import java.util.List;
 
@@ -15,7 +17,7 @@ public class MockupCluster {
 
   private TajoMaster master;
   private List<MockupWorker> workers;
-  private final Configuration conf;
+  private final TajoConf conf;
   private final int numWorkers;
   private final int numNormalWorkers;
   private final int numAbortWorkers;
@@ -32,11 +34,11 @@ public class MockupCluster {
     this.util = new TajoTestingUtility();
     this.util.startMiniDFSCluster(numWorkers);
     this.conf = util.getConfiguration();
-    conf.set(NConstants.ENGINE_BASE_DIR,
+    conf.setVar(ConfVars.ENGINE_BASE_DIR,
         util.getMiniDFSCluster().getFileSystem().getUri()+"/tajo");
-    conf.set(NConstants.MASTER_ADDRESS, "localhost:0");
-    conf.set(NConstants.CATALOG_ADDRESS, "localhost:0");
-    conf.set(NConstants.LEAFSERVER_PORT, "0");
+    conf.setVar(ConfVars.MASTER_ADDRESS, "localhost:0");
+    conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
+    conf.setIntVar(ConfVars.LEAFSERVER_PORT, 0);
 
     this.numWorkers = numWorkers;
     this.numAbortWorkers = numAbortWorkers;

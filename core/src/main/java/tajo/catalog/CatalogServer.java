@@ -15,7 +15,8 @@ import tajo.catalog.exception.*;
 import tajo.catalog.proto.CatalogProtos.*;
 import tajo.catalog.store.CatalogStore;
 import tajo.catalog.store.DBStore;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.NConstants;
 import tajo.engine.function.builtin.*;
 import tajo.engine.ipc.protocolrecords.Fragment;
@@ -44,7 +45,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class CatalogServer extends Thread implements CatalogServiceProtocol {
 
 	private final static Log LOG = LogFactory.getLog(CatalogServer.class);
-	private final Configuration conf;
+	private final TajoConf conf;
 	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	private final Lock rlock = lock.readLock();
 	private final Lock wlock = lock.writeLock();
@@ -65,7 +66,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   @SuppressWarnings("unused")
   private volatile boolean isOnline = false;
   
-  public CatalogServer(final Configuration conf) throws IOException {
+  public CatalogServer(final TajoConf conf) throws IOException {
     this.conf = conf;
 
     Constructor<?> cons = null;
@@ -87,8 +88,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     initBuiltinFunctions();
 
     // Server to handle client requests.
-    String serverAddr =
-        conf.get(NConstants.CATALOG_ADDRESS, NConstants.DEFAULT_CATALOG_ADDRESS);
+    String serverAddr = conf.getVar(ConfVars.CATALOG_ADDRESS);
     // Creation of a HSA will force a resolve.
     InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
     this.rpcServer = NettyRpc.getProtoParamRpcServer(this, CatalogServiceProtocol.class, initIsa);
@@ -538,7 +538,7 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
   }
 
   public static void main(String[] args) throws IOException {
-    NtaConf conf = new NtaConf();
+    TajoConf conf = new TajoConf();
     CatalogServer catalog = new CatalogServer(conf);
     catalog.start();
   }

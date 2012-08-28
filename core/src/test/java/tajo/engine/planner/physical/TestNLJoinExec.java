@@ -1,16 +1,16 @@
 package tajo.engine.planner.physical;
 
-import org.apache.hadoop.conf.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.TajoTestingUtility;
 import tajo.engine.SubqueryContext;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.WorkerTestingUtil;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestNLJoinExec {
-  private Configuration conf;
+  private TajoConf conf;
   private final String TEST_PATH = "target/test-data/TestNLJoinExec";
   private TajoTestingUtility util;
   private CatalogService catalog;

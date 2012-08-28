@@ -5,9 +5,9 @@ package tajo.catalog;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import tajo.catalog.proto.CatalogProtos.*;
+import tajo.conf.TajoConf;
 import tajo.engine.NConstants;
 import tajo.engine.cluster.ServerNodeTracker;
 import tajo.rpc.NettyRpc;
@@ -39,7 +39,7 @@ public class CatalogClient implements CatalogService {
    * @throws IOException
    *
    */
-  public CatalogClient(final Configuration conf) throws IOException {
+  public CatalogClient(final TajoConf conf) throws IOException {
     this.zkClient = new ZkClient(conf);
     init();
   }

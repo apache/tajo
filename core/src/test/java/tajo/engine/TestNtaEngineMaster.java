@@ -2,10 +2,10 @@ package tajo.engine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import tajo.conf.TajoConf;
 import tajo.engine.cluster.ServerNodeTracker;
 import tajo.zookeeper.ZkClient;
 import tajo.zookeeper.ZkUtil;
@@ -16,7 +16,7 @@ import static org.junit.Assert.assertNotNull;
 public class TestNtaEngineMaster {
   private Log LOG = LogFactory.getLog(TestNtaEngineMaster.class);
 	private TajoTestingUtility util;
-	private Configuration conf;
+	private TajoConf conf;
 	
 	private final int numLeafs = 3;
 

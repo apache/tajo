@@ -7,7 +7,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.Path;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.planner.logical.IndexWriteNode;
 import tajo.index.IndexUtil;
@@ -46,7 +46,7 @@ public class IndexWriteExec extends PhysicalExec {
     }
     this.comp = new TupleComparator(keySchema, annotation.getSortSpecs());
     
-    BSTIndex bst = new BSTIndex(NtaConf.create());
+    BSTIndex bst = new BSTIndex(new TajoConf());
     Path dir = new Path(sm.getTablePath(annotation.getTableName()) , "index");
     // TODO - to be improved
     this.indexWriter = bst.getIndexWriter(new Path(dir, 

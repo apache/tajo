@@ -2,7 +2,8 @@ package tajo.engine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.utils.JVMClusterUtil;
 
 import java.io.IOException;
@@ -20,22 +21,22 @@ public class LocalTajoCluster {
 	private final List<JVMClusterUtil.LeafServerThread> leafThreads
 	  = new CopyOnWriteArrayList<JVMClusterUtil.LeafServerThread>();
 	private final static int DEFAULT_NO = 2;
-	private final Configuration conf;
+	private final TajoConf conf;
 
-	public LocalTajoCluster(final Configuration conf) throws Exception {
+	public LocalTajoCluster(final TajoConf conf) throws Exception {
 		this(conf, DEFAULT_NO);		
 	}
 
-	public LocalTajoCluster(final Configuration conf, final int numLeafServers) throws Exception {
+	public LocalTajoCluster(final TajoConf conf, final int numLeafServers) throws Exception {
 		this.conf = conf;
     // all workers ports are set to 0, leading to random port.
-		this.conf.set(NConstants.LEAFSERVER_PORT, "0");
+		this.conf.setIntVar(TajoConf.ConfVars.LEAFSERVER_PORT, 0);
 
 		addMaster(conf, 0);
 
-    Configuration c;
+    TajoConf c;
 		for(int i=0; i < numLeafServers; i++) {
-      c = new Configuration(conf);
+      c = new TajoConf(conf);
 
       // TODO - if non-testing local cluster, how do worker's temporal directories created?
 
@@ -44,14 +45,14 @@ public class LocalTajoCluster {
       if (System.getProperty("test.build.data") != null) {
         String clusterTestBuildDir =
             System.getProperty("test.build.data");
-        c.set(NConstants.WORKER_TMP_DIR,
+        c.setVar(ConfVars.WORKER_TMP_DIR,
             clusterTestBuildDir + "/worker_" + i + "/tmp");
       }
 			addLeafServer(c, i);
 		}
 	}
 
-	public JVMClusterUtil.MasterThread addMaster(Configuration c, final int index)
+	public JVMClusterUtil.MasterThread addMaster(TajoConf c, final int index)
 		throws Exception {
 		JVMClusterUtil.MasterThread mt =
 			JVMClusterUtil.createMasterThread(c, index);
@@ -60,7 +61,7 @@ public class LocalTajoCluster {
 	}
 
 	public JVMClusterUtil.LeafServerThread addLeafServer(
-      Configuration c, final int index)
+      TajoConf c, final int index)
 			throws IOException {
 		JVMClusterUtil.LeafServerThread rst =
 			JVMClusterUtil.createLeafServerThread(c, index);
@@ -180,8 +181,7 @@ public class LocalTajoCluster {
 	 * @param c Configuration to check.
 	 * @return True if "nta.cluster.distributed" is false or null
 	 */
-	public static boolean isLocal(final Configuration c) {
-		final String mode = c.get(NConstants.CLUSTER_DISTRIBUTED); 
-		return mode == null || mode.equals(NConstants.CLUSTER_IS_LOCAL);
+	public static boolean isLocal(final TajoConf c) {
+		return c.getBoolVar(ConfVars.CLUSTER_DISTRIBUTED);
 	}
 }

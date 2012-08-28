@@ -3,12 +3,11 @@
  */
 package tajo.webapp;
 
-import org.apache.hadoop.conf.Configuration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mortbay.jetty.webapp.WebAppContext;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -36,7 +35,7 @@ public class TestHttpServer {
   
   @BeforeClass
   public static final void setUp() throws IOException {
-    Configuration conf = NtaConf.create();
+    TajoConf conf = new TajoConf();
     server = new HttpServer("TestHttpServer", "localhost", 0, true, null,
         conf, null);
     server.addServlet("servlet", "/servlet", DummyServlet.class);

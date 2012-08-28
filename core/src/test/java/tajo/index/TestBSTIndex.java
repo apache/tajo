@@ -10,9 +10,8 @@ import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
-import tajo.engine.NConstants;
 import tajo.engine.WorkerTestingUtil;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryBlock.SortSpec;
@@ -28,7 +27,7 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 public class TestBSTIndex {
-  private NtaConf conf;
+  private TajoConf conf;
   private StorageManager sm;
   private Schema schema;
   private TableMeta meta;
@@ -38,8 +37,8 @@ public class TestBSTIndex {
   private static final String TEST_PATH = "target/test-data/TestIndex/data";
   
   public TestBSTIndex() {
-    conf = new NtaConf();
-    conf.set(NConstants.ENGINE_DATA_DIR, TEST_PATH);
+    conf = new TajoConf();
+    conf.setVar(TajoConf.ConfVars.ENGINE_DATA_DIR, TEST_PATH);
     schema = new Schema();
     schema.addColumn(new Column("int", DataType.INT));
     schema.addColumn(new Column("long", DataType.LONG));

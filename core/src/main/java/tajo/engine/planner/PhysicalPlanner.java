@@ -6,9 +6,9 @@ package tajo.engine.planner;
 import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import tajo.catalog.Column;
+import tajo.conf.TajoConf;
 import tajo.engine.SubqueryContext;
 import tajo.engine.exception.InternalException;
 import tajo.engine.ipc.protocolrecords.Fragment;
@@ -29,9 +29,9 @@ import java.io.IOException;
 public class PhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(PhysicalPlanner.class);
   private final StorageManager sm;
-  private final Configuration conf;
+  private final TajoConf conf;
 
-  public PhysicalPlanner(Configuration conf, StorageManager sm) {
+  public PhysicalPlanner(TajoConf conf, StorageManager sm) {
     this.conf = conf;
     this.sm = sm;
   }

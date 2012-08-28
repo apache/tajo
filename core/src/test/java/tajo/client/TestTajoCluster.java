@@ -1,13 +1,13 @@
 package tajo.client;
 
 import com.google.common.collect.Sets;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.catalog.TableDesc;
+import tajo.conf.TajoConf;
 import tajo.engine.TajoTestingUtility;
 import tajo.engine.WorkerTestingUtil;
 import tajo.storage.StorageManager;
@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 
 public class TestTajoCluster {
   private static TajoTestingUtility util;
-  private static Configuration conf;
+  private static TajoConf conf;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -37,7 +37,7 @@ public class TestTajoCluster {
   public final void testAttachTable() throws IOException {
     final String tableName = "attach";
     WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName, true);
-    Configuration conf = util.getConfiguration();
+    TajoConf conf = util.getConfiguration();
     TajoClient tajo = new TajoClient(conf);
     assertFalse(tajo.existTable(tableName));
     tajo.attachTable(tableName, "/tajo/data/attach");
@@ -48,7 +48,7 @@ public class TestTajoCluster {
   
   @Test
   public final void testUpdateQuery() throws IOException {
-    Configuration conf = util.getConfiguration();
+    TajoConf conf = util.getConfiguration();
     final String tableName = "updateQuery";
     WorkerTestingUtil.writeTmpTable(conf, "/tmp", tableName, false);
     StorageManager sm = StorageManager.get(conf, "/tmp");
@@ -71,7 +71,7 @@ public class TestTajoCluster {
     StorageManager sm = StorageManager.get(conf, "/tmp");
     FileSystem fs = sm.getFileSystem();
     assertTrue(fs.exists(new Path("/tmp", tableName)));    
-    Configuration conf = util.getConfiguration();
+    TajoConf conf = util.getConfiguration();
     TajoClient tajo = new TajoClient(conf);
     assertFalse(tajo.existTable(tableName));
     tajo.createTable(tableName, new Path("/tmp", tableName), 
@@ -84,7 +84,7 @@ public class TestTajoCluster {
   
   @Test
   public final void testGetClusterInfo() throws IOException, InterruptedException {
-    Configuration conf = util.getConfiguration();
+    TajoConf conf = util.getConfiguration();
     TajoClient tajo = new TajoClient(conf);
     assertEquals(1,tajo.getClusterInfo().size());
   }
@@ -95,7 +95,7 @@ public class TestTajoCluster {
     final String tableName2 = "table2";
     WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName1, true);
     WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName2, true);
-    Configuration conf = util.getConfiguration();
+    TajoConf conf = util.getConfiguration();
     TajoClient tajo = new TajoClient(conf);
     assertFalse(tajo.existTable(tableName1));
     assertFalse(tajo.existTable(tableName2));
@@ -114,7 +114,7 @@ public class TestTajoCluster {
   public final void testGetTableDesc() throws IOException {    
     final String tableName1 = "tabledesc";
     WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName1, true);
-    Configuration conf = util.getConfiguration();
+    TajoConf conf = util.getConfiguration();
     TajoClient tajo = new TajoClient(conf);
     assertFalse(tajo.existTable(tableName1));
     tajo.attachTable(tableName1, "/tajo/data/"+tableName1);    

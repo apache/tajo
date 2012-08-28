@@ -2,18 +2,18 @@ package tajo.benchmark
 
 import org.apache.commons.logging.{LogFactory, Log}
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.conf.Configuration
 import tajo.catalog.proto.CatalogProtos.StoreType
 import tajo.catalog.proto.CatalogProtos.DataType
 import tajo.storage.CSVFile2
 import tajo.catalog.{TCatUtil, Schema}
+import tajo.conf.TajoConf
 ;
 
 class TPCH extends BenchmarkSet {
   private final val LOG : Log  = LogFactory.getLog(classOf[TPCH])
   private final val BENCHMARK_DIR: String = "benchmark/tpch"
 
-  override def init(conf : Configuration, datadir : String) {
+  override def init(conf : TajoConf, datadir : String) {
     super.init(conf, datadir)
   }
 

@@ -13,10 +13,10 @@ import tajo.catalog.Schema;
 import tajo.catalog.TableMeta;
 import tajo.catalog.statistics.TableStat;
 import tajo.catalog.statistics.TableStatistics;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.datum.ArrayDatum;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.NConstants;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.json.GsonCreator;
 import tajo.storage.exception.AlreadyExistsStorageException;
@@ -431,7 +431,7 @@ public class RawFile2 extends Storage {
     private final boolean statsEnabled;
     private TableStatistics stats;
 
-    public RawFileAppender(Configuration conf, final TableMeta meta, 
+    public RawFileAppender(Configuration conf, final TableMeta meta,
         final Path path, boolean statsEnabled) throws IOException {
       super(conf, meta, path);      
 
@@ -445,7 +445,9 @@ public class RawFile2 extends Storage {
         throw new AlreadyExistsStorageException(path);
       }
 
-      SYNC_INTERVAL = conf.getInt(NConstants.RAWFILE_SYNC_INTERVAL, SYNC_SIZE*100);     
+      SYNC_INTERVAL =
+          conf.getInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname,
+          SYNC_SIZE * 100);
       sync = new byte[SYNC_HASH_SIZE];
       lastSyncPos = 0;
 

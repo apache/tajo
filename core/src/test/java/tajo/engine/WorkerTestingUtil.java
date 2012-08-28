@@ -10,7 +10,7 @@ import org.apache.hadoop.fs.Path;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.ParseTree;
@@ -55,7 +55,7 @@ public class WorkerTestingUtil {
     mockupMeta = TCatUtil.newTableMeta(mockupSchema, StoreType.CSV);
 	}
 
-	public static void writeTmpTable(Configuration conf, String parent,
+	public static void writeTmpTable(TajoConf conf, String parent,
 	    String tbName, boolean writeMeta) throws IOException {
 	  StorageManager sm = StorageManager.get(conf, parent);
 
@@ -81,11 +81,11 @@ public class WorkerTestingUtil {
     appender.close();
 	}
 
-  private Configuration conf;
+  private TajoConf conf;
   private CatalogService catalog;
   private SubqueryContext.Factory factory;
   private QueryAnalyzer analyzer;
-  public WorkerTestingUtil(Configuration conf) throws IOException {
+  public WorkerTestingUtil(TajoConf conf) throws IOException {
     this.conf = conf;
     this.catalog = new LocalCatalog(conf);
     factory = new SubqueryContext.Factory();
@@ -95,7 +95,7 @@ public class WorkerTestingUtil {
   public ResultSet run(String [] tableNames, File [] tables, Schema [] schemas, String query)
       throws IOException {
     File workDir = createTmpTestDir();
-    StorageManager sm = StorageManager.get(NtaConf.create(), workDir.getAbsolutePath());
+    StorageManager sm = StorageManager.get(new TajoConf(), workDir.getAbsolutePath());
     List<Fragment> frags = Lists.newArrayList();
     for (int i = 0; i < tableNames.length; i++) {
       Fragment [] splits = sm.split(tableNames[i], new Path(tables[i].getAbsolutePath()));

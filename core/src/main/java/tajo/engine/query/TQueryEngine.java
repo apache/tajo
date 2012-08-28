@@ -2,11 +2,11 @@ package tajo.engine.query;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import tajo.catalog.CatalogService;
-import tajo.engine.NConstants;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.SubqueryContext;
 import tajo.engine.exception.InternalException;
 import tajo.engine.planner.PhysicalPlanner;
@@ -31,17 +31,17 @@ public class TQueryEngine {
   
   private final PhysicalPlanner phyPlanner;
   
-  public TQueryEngine(Configuration conf, CatalogService catalog, 
+  public TQueryEngine(TajoConf conf, CatalogService catalog,
       ZkClient zkClient) throws IOException {    
     // Get the tajo base dir
-    this.basePath = new Path(conf.get(NConstants.ENGINE_BASE_DIR));
-    LOG.info("Base dir is set " + conf.get(NConstants.ENGINE_BASE_DIR));
+    this.basePath = new Path(conf.getVar(ConfVars.ENGINE_BASE_DIR));
+    LOG.info("Base dir is set " + basePath);
     
     // Get default DFS uri from the base dir
     this.defaultFS = basePath.getFileSystem(conf);
     LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
 
-    this.dataPath = new Path(conf.get(NConstants.ENGINE_DATA_DIR));
+    this.dataPath = new Path(conf.getVar(ConfVars.ENGINE_DATA_DIR));
     LOG.info("Tajo data dir is set " + dataPath);
         
     this.storageManager = new StorageManager(conf);

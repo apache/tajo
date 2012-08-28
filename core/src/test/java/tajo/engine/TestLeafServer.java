@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
@@ -13,6 +12,7 @@ import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
+import tajo.conf.TajoConf;
 import tajo.datachannel.Fetcher;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -48,7 +48,7 @@ import static org.junit.Assert.*;
  */
 public class TestLeafServer {
   private final Log LOG = LogFactory.getLog(TestLeafServer.class);
-  private Configuration conf;
+  private TajoConf conf;
   private TajoTestingUtility util;
   private String TEST_PATH = "target/test-data/TestLeafServer";
   private StorageManager sm;

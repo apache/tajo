@@ -9,11 +9,11 @@ import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.TajoTestingUtility;
 import tajo.engine.SubqueryContext;
+import tajo.engine.TajoTestingUtility;
 import tajo.engine.WorkerTestingUtil;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
@@ -38,7 +38,7 @@ import static org.junit.Assert.assertTrue;
  * @author Byungnam Lim
  */
 public class TestExternalSortExec {
-  private NtaConf conf;
+  private TajoConf conf;
   private final String TEST_PATH = "target/test-data/TestExternalSortExec";
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
@@ -50,7 +50,7 @@ public class TestExternalSortExec {
 
   @Before
   public void setUp() throws Exception {
-    this.conf = new NtaConf();
+    this.conf = new TajoConf();
     WorkerTestingUtil.buildTestDir(TEST_PATH);
     sm = StorageManager.get(conf, TEST_PATH);
 

@@ -1,7 +1,7 @@
 package tajo.engine;
 
 import com.google.common.collect.Maps;
-import tajo.TajoTestingUtility;
+import tajo.LocalTajoTestingUtility;
 import tajo.benchmark.TPCH;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;
@@ -23,7 +23,7 @@ public class TpchTestBase {
   Schema[] schemas;
   Map<String, Integer> nameMap = Maps.newHashMap();
   protected TPCH tpch;
-  protected TajoTestingUtility util;
+  protected LocalTajoTestingUtility util;
 
   public TpchTestBase() throws IOException {
     names = new String[] {"customer", "lineitem", "nation", "orders", "part", "partsupp", "region", "supplier"};
@@ -56,7 +56,7 @@ public class TpchTestBase {
   }
 
   public void setUp() throws Exception {
-    util = new TajoTestingUtility();
+    util = new LocalTajoTestingUtility();
     Options opt = new Options();
     opt.put(CSVFile2.DELIMITER, "|");
     util.setup(names, paths, schemas, opt);

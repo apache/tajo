@@ -2,8 +2,7 @@ package tajo.engine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.engine.utils.JVMClusterUtil;
 
 import java.io.IOException;
@@ -11,10 +10,10 @@ import java.util.List;
 
 public class MiniTajoCluster {
 	static final Log LOG = LogFactory.getLog(MiniTajoCluster.class);
-	private Configuration conf;
+	private TajoConf conf;
 	public LocalTajoCluster engineCluster;
 	
-	public MiniTajoCluster(Configuration conf, int numLeafServers) throws Exception {
+	public MiniTajoCluster(TajoConf conf, int numLeafServers) throws Exception {
 		this.conf = conf;		
 		init(numLeafServers);
 	}
@@ -31,7 +30,7 @@ public class MiniTajoCluster {
 	}
 	
 	public JVMClusterUtil.LeafServerThread startLeafServer() throws IOException {
-		final Configuration newConf = new NtaConf(conf);
+		final TajoConf newConf = new TajoConf(conf);
 		
 		JVMClusterUtil.LeafServerThread t = null;
 		
@@ -61,7 +60,7 @@ public class MiniTajoCluster {
 	}
 	
 	public JVMClusterUtil.MasterThread startMaster() throws Exception {
-		Configuration c = new NtaConf(conf); 
+		TajoConf c = new TajoConf(conf);
 		
 		JVMClusterUtil.MasterThread t = null;
 		

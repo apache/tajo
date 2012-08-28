@@ -1,8 +1,7 @@
 package tajo.benchmark
 
 import java.lang.Class
-import org.apache.hadoop.conf.Configuration
-import tajo.conf.NtaConf
+import tajo.conf.TajoConf
 ;
 
 
@@ -16,7 +15,7 @@ object Driver {
       printUsage();
       System.exit(-1);
     }
-    val conf : Configuration = NtaConf.create()
+    val conf : TajoConf = new TajoConf()
     val clazz = Class.forName(args(0))
     val params = Array[AnyRef](conf, args(1))
     val benchmark = clazz.newInstance().asInstanceOf[BenchmarkSet]

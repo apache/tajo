@@ -3,9 +3,9 @@ package tajo.engine;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.junit.After;
 import org.junit.Before;
+import tajo.conf.TajoConf;
 import tajo.engine.MasterInterfaceProtos.InProgressStatusProto;
 import tajo.engine.MasterInterfaceProtos.PingRequestProto;
 import tajo.engine.MasterInterfaceProtos.QueryStatus;
@@ -40,7 +40,7 @@ public class ScheduleUnitExecutorTest {
   @Before
   public void setup() throws NoSuchQueryIdException, IOException {
     QueryIdFactory.reset();
-    Configuration conf = new Configuration();
+    TajoConf conf = new TajoConf();
     qm = new QueryManager();
     ClusterManager cm = new DummyClusterManager(null, conf, null);
     wl = new WorkerListener(conf, qm, null);
@@ -145,7 +145,7 @@ public class ScheduleUnitExecutorTest {
 
   public class DummyClusterManager extends ClusterManager {
 
-    public DummyClusterManager(WorkerCommunicator wc, Configuration conf, LeafServerTracker tracker) throws IOException {
+    public DummyClusterManager(WorkerCommunicator wc, TajoConf conf, LeafServerTracker tracker) throws IOException {
       super(wc, conf, tracker);
     }
   }

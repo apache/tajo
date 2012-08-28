@@ -12,7 +12,7 @@ import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
 import tajo.engine.WorkerTestingUtil;
 
@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestStorageUtil {
 
-  private NtaConf conf;
+  private TajoConf conf;
   private static String TEST_PATH = "target/test-data/TestStorageUtil";
 
   int tupleNum = 10000;
@@ -41,7 +41,7 @@ public class TestStorageUtil {
    */
   @Before
   public void setUp() throws Exception {
-    conf = new NtaConf();
+    conf = new TajoConf();
     WorkerTestingUtil.buildTestDir(TEST_PATH);
     sm = StorageManager.get(conf, TEST_PATH);
 

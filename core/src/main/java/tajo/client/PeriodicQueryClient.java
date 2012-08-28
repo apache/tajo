@@ -4,7 +4,7 @@ import tajo.client.PeriodicQueryProtos.ChooseQueryRequest;
 import tajo.client.PeriodicQueryProtos.QueryListResponse;
 import tajo.client.PeriodicQueryProtos.QueryResultInfoResponse;
 import tajo.client.PeriodicQueryProtos.QueryStatusProto;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
 import tajo.engine.query.ResultSetImpl;
 import tajo.rpc.NettyRpc;
 import tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
@@ -75,7 +75,7 @@ public class PeriodicQueryClient {
     if(path.equals("null")) {
       return null;
     }
-    return new ResultSetImpl(new NtaConf(), path);
+    return new ResultSetImpl(new TajoConf(), path);
   }
   
   public QueryResultInfoResponse getQueryResultInfo(String query) {

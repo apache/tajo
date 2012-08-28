@@ -6,11 +6,11 @@ package tajo.cli;
 import jline.ConsoleReader;
 import jline.History;
 import org.apache.commons.cli.*;
-import org.apache.hadoop.conf.Configuration;
 import tajo.catalog.Column;
 import tajo.catalog.TableDesc;
 import tajo.client.TajoClient;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.NConstants;
 import tajo.engine.cluster.ServerName;
 import tajo.engine.cluster.ServerNodeTracker;
@@ -28,7 +28,7 @@ import java.util.List;
  * @author Hyunsik Choi
  */
 public class TajoCli {
-  private final Configuration conf;
+  private final TajoConf conf;
   private static final Options options;
   private ZkClient zkClient;
   private ServerNodeTracker masterTracker;
@@ -50,9 +50,9 @@ public class TajoCli {
     options.addOption("h", "help", false, "help");
   }
   
-  public TajoCli(Configuration c, String [] args, 
+  public TajoCli(TajoConf c, String [] args,
       InputStream in, Writer out) throws Exception {
-    this.conf = new Configuration(c);
+    this.conf = new TajoConf(c);
     this.sin = in;
     this.sout = new PrintWriter(out);
     
@@ -69,10 +69,10 @@ public class TajoCli {
     if (entryAddr == null && cmd.hasOption("a")) {
       addr = cmd.getOptionValue("a");
       ServerName sn = ServerName.createWithDefaultPort(addr,
-          NConstants.DEFAULT_CLIENT_SERVICE_PORT);
+          conf.getIntVar(TajoConf.ConfVars.CLIENT_SERVICE_PORT));
 
       this.entryAddr = sn.getServerName();
-      conf.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
+      conf.setVar(TajoConf.ConfVars.CLIENT_SERVICE_ADDRESS, this.entryAddr);
     }
 
     // if there is no "-a" option,
@@ -90,19 +90,19 @@ public class TajoCli {
         } while (entryAddrBytes == null);
 
         this.entryAddr = new String(entryAddrBytes);
-        conf.set(NConstants.ZOOKEEPER_ADDRESS, this.zkAddr);
-        conf.set(NConstants.CLIENT_SERVICE_ADDRESS, this.entryAddr);
-      } else if (conf.get(NConstants.CLIENT_SERVICE_ADDRESS) != null &&
-          !conf.get(NConstants.CLUSTER_DISTRIBUTED).equals(NConstants.CLUSTER_IS_LOCAL)) {
+        conf.setVar(ConfVars.ZOOKEEPER_ADDRESS, this.zkAddr);
+        conf.setVar(ConfVars.CLIENT_SERVICE_ADDRESS, this.entryAddr);
+      } else if (conf.getVar(ConfVars.CLIENT_SERVICE_ADDRESS) != null &&
+          conf.getBoolVar(ConfVars.CLUSTER_DISTRIBUTED)) {
         // it checks if the client service address is given in configuration and distributed mode.
         // if so, it sets entryAddr.
-        entryAddr = conf.get(NConstants.CLIENT_SERVICE_ADDRESS);
+        entryAddr = conf.getVar(ConfVars.CLIENT_SERVICE_ADDRESS);
       }
     }
 
     // if the remote tajo cluster is set, entryAddr is not null.
     if (entryAddr != null) {
-      conf.set(NConstants.CLUSTER_DISTRIBUTED, "true");
+      conf.setBoolVar(ConfVars.CLUSTER_DISTRIBUTED, true);
     }
 
     if (entryAddr != null) {
@@ -274,7 +274,7 @@ public class TajoCli {
   }
 
   public static void main(String [] args) throws Exception {
-    Configuration conf = NtaConf.create();
+    TajoConf conf = new TajoConf();
     PrintWriter out = new PrintWriter(System.out);
     TajoCli shell = new TajoCli(conf, args, 
         System.in, out);

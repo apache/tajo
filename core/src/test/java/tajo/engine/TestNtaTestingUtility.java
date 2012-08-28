@@ -1,7 +1,6 @@
 package tajo.engine;
 
 import com.google.common.collect.Lists;
-import org.apache.hadoop.conf.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,6 +8,7 @@ import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.engine.ipc.protocolrecords.Fragment;
@@ -36,7 +36,7 @@ public class TestNtaTestingUtility {
   private TajoTestingUtility util;
   private int num = 4;
   private CatalogService catalog;
-  private Configuration conf;
+  private TajoConf conf;
   private StorageManager sm;
   private QueryAnalyzer analyzer;
   private QueryContext.Factory qcFactory;

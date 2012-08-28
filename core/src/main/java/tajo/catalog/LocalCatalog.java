@@ -3,8 +3,8 @@
  */
 package tajo.catalog;
 
-import org.apache.hadoop.conf.Configuration;
 import tajo.catalog.proto.CatalogProtos.*;
+import tajo.conf.TajoConf;
 import tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 
@@ -23,7 +23,7 @@ import java.util.List;
 public class LocalCatalog implements CatalogService {
   private CatalogServer catalog;
   
-  public LocalCatalog(final Configuration conf) throws IOException {
+  public LocalCatalog(final TajoConf conf) throws IOException {
     this.catalog = new CatalogServer(conf);
     this.catalog.start();
   }

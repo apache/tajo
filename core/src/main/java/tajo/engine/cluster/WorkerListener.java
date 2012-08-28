@@ -6,15 +6,15 @@ package tajo.engine.cluster;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import tajo.common.Sleeper;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.MasterInterfaceProtos.InProgressStatusProto;
 import tajo.engine.MasterInterfaceProtos.PingRequestProto;
 import tajo.engine.MasterInterfaceProtos.PingResponseProto;
-import tajo.engine.NConstants;
-import tajo.engine.TajoMaster;
 import tajo.engine.QueryUnitAttemptId;
+import tajo.engine.TajoMaster;
 import tajo.engine.ipc.MasterInterface;
 import tajo.engine.ipc.PingRequest;
 import tajo.engine.planner.global.QueryUnitAttempt;
@@ -41,9 +41,8 @@ public class WorkerListener extends Thread implements MasterInterface {
   private AtomicInteger processed;
   private Sleeper sleeper;
   
-  public WorkerListener(Configuration conf, QueryManager qm, TajoMaster master) {
-    String confMasterAddr = conf.get(NConstants.MASTER_ADDRESS,
-        NConstants.DEFAULT_MASTER_ADDRESS);
+  public WorkerListener(TajoConf conf, QueryManager qm, TajoMaster master) {
+    String confMasterAddr = conf.getVar(ConfVars.MASTER_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterAddr);
     if (initIsa.getAddress() == null) {
       throw new IllegalArgumentException("Failed resolve of " + initIsa);

@@ -11,10 +11,10 @@ import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
-import tajo.conf.NtaConf;
+import tajo.conf.TajoConf;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.NConstants;
 import tajo.engine.WorkerTestingUtil;
 import tajo.engine.ipc.protocolrecords.Fragment;
 
@@ -23,14 +23,14 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 
 public class TestCSVFile2 { 
-  private NtaConf conf;
+  private TajoConf conf;
   StorageManager sm;
   private static String TEST_PATH = "target/test-data/TestCSVFile2";
   
   @Before
   public void setup() throws Exception {
-    conf = new NtaConf();
-    conf.set(NConstants.ENGINE_DATA_DIR, TEST_PATH);
+    conf = new TajoConf();
+    conf.setVar(ConfVars.ENGINE_DATA_DIR, TEST_PATH);
     WorkerTestingUtil.buildTestDir(TEST_PATH);
     sm = StorageManager.get(conf, TEST_PATH);
   }

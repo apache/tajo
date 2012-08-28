@@ -1,11 +1,11 @@
 package tajo.client;
 
-import org.apache.hadoop.conf.Configuration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.client.PeriodicQueryDaemon.QueryInfo;
 import tajo.client.PeriodicQueryProtos.QueryStatusProto;
+import tajo.conf.TajoConf;
 import tajo.engine.TajoTestingUtility;
 import tajo.engine.WorkerTestingUtil;
 
@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 public class TestPeriodicQuery {
 
   private static TajoTestingUtility utility;
-  private static Configuration conf;
+  private static TajoConf conf;
   private static PeriodicQueryDaemon daemon;
   private static PeriodicQueryClient client;
   private static TajoClient tajoClient;
