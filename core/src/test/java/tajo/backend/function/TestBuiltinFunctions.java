@@ -1,6 +1,6 @@
 package tajo.backend.function;
 
-import org.apache.hadoop.thirdparty.guava.common.collect.Maps;
+import com.google.common.collect.Maps;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -909,9 +909,10 @@ public class ScheduleUnitExecutor extends Thread {
                 + status + " after " + RETRY_LIMIT + " retries.");
             abort();
           }
+        } else {
+          submittedQueryUnits.add(attempt);
+          attempt.setStatus(QueryStatus.QUERY_SUBMITED);
         }
-        submittedQueryUnits.add(attempt);
-        attempt.setStatus(QueryStatus.QUERY_SUBMITED);
       }
     }
 

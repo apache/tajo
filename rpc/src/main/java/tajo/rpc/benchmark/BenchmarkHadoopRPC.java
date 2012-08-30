@@ -1,6 +1,7 @@
 package tajo.rpc.benchmark;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.RPC.Server;
 import org.apache.hadoop.ipc.VersionedProtocol;
@@ -45,6 +46,19 @@ public class BenchmarkHadoopRPC {
     @Override
     public long getProtocolVersion(String arg0, long arg1) throws IOException {
       return 1l;
+    }
+
+    @Override
+    public ProtocolSignature getProtocolSignature(String protocol,
+                                                  long clientVersion, int clientMethodsHash) throws IOException {
+      ProtocolSignature ps = null;
+      try {
+        ps = ProtocolSignature.getProtocolSignature("benchmarkInterface", 0);
+      } catch (ClassNotFoundException e) {
+        e.printStackTrace();
+      }
+
+      return ps;
     }
   }
 

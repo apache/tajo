@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>kr.ac.korea.dbserver</groupId>
   <artifactId>tajo</artifactId>
-  <version>0.1.7-SNAPSHOT</version>
+  <version>0.2.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Tajo</name>
   <description>A Distributed Data Warehouse System</description>
@@ -25,9 +25,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <hadoop.version>0.24.0-SNAPSHOT</hadoop.version>
-    <yarn.version>0.24.0-SNAPSHOT</yarn.version>
-    <tajo.version>0.1.7-SNAPSHOT</tajo.version>
+    <hadoop.version>2.0.1-SNAPSHOT</hadoop.version>
+    <tajo.version>0.2.0-SNAPSHOT</tajo.version>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
@@ -232,7 +231,7 @@
         <plugin>
           <groupId>org.antlr</groupId>
           <artifactId>antlr3-maven-plugin</artifactId>
-          <version>3.3</version>
+          <version>3.4</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -298,39 +297,6 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>com.google.protobuf</groupId>
-        <artifactId>protobuf-java</artifactId>
-        <version>2.4.1</version>
-      </dependency>
-      <dependency>
-        <groupId>org.antlr</groupId>
-        <artifactId>antlr</artifactId>
-        <version>3.3</version>
-        <type>jar</type>
-        <scope>compile</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.antlr</groupId>
-        <artifactId>antlr-runtime</artifactId>
-        <version>3.3</version>
-        <type>jar</type>
-        <scope>compile</scope>
-      </dependency>
-      <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.8.2</version>
-        <type>jar</type>
-        <scope>compile</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-math</artifactId>
-        <version>2.1</version>
-        <type>jar</type>
-        <scope>compile</scope>
-      </dependency>
-      <dependency>
         <groupId>kr.ac.korea.dbserver</groupId>
         <artifactId>tajo-common</artifactId>
         <version>${tajo.version}</version>
@@ -352,6 +318,101 @@
         <scope>compile</scope>
       </dependency>
       <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-common</artifactId>
+        <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-hdfs</artifactId>
+        <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-hdfs</artifactId>
+        <type>test-jar</type>
+        <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-minicluster</artifactId>
+        <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-yarn-api</artifactId>
+        <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-yarn-common</artifactId>
+        <version>${hadoop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-yarn-server-nodemanager</artifactId>
+        <version>${hadoop.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-yarn-server-resourcemanager</artifactId>
+        <version>${hadoop.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-yarn-server-common</artifactId>
+        <version>${hadoop.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-mapreduce-client-core</artifactId>
+        <version>${hadoop.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-yarn-server-tests</artifactId>
+        <version>${hadoop.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>2.4.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr</artifactId>
+        <version>3.4</version>
+        <type>jar</type>
+        <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr-runtime</artifactId>
+        <version>3.4</version>
+        <type>jar</type>
+        <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.8.2</version>
+        <type>jar</type>
+        <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-math</artifactId>
+        <version>2.1</version>
+        <type>jar</type>
+        <scope>compile</scope>
+      </dependency>
+      <dependency>
         <groupId>commons-logging</groupId>
         <artifactId>commons-logging</artifactId>
         <version>1.1.1</version>
@@ -362,41 +423,30 @@
         <version>1.1</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-core</artifactId>
-        <version>0.20.2-cdh3u3</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-test</artifactId>
-        <version>0.20.2-cdh3u3</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.zookeeper</groupId>
-        <artifactId>zookeeper</artifactId>
-        <version>3.3.3-cdh3u1</version>
-      </dependency>
-      <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>10.0.1</version>
+        <version>13.0.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.1</version>
+        <version>2.2.2</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>1.9.0-rc1</version>
+        <version>1.9.5-rc1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.jboss.netty</groupId>
         <artifactId>netty</artifactId>
         <version>3.2.7.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.3.3-cdh3u1</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
