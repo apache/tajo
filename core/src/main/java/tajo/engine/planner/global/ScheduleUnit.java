@@ -6,12 +6,12 @@ package tajo.engine.planner.global;
 import com.google.common.base.Preconditions;
 import tajo.catalog.Schema;
 import tajo.catalog.statistics.TableStat;
-import tajo.engine.AbstractQuery;
+import tajo.master.AbstractQuery;
 import tajo.engine.MasterInterfaceProtos.QueryStatus;
-import tajo.engine.QueryUnitId;
-import tajo.engine.ScheduleUnitId;
+import tajo.QueryUnitId;
+import tajo.ScheduleUnitId;
 import tajo.engine.planner.logical.*;
-import tajo.engine.query.Priority;
+import tajo.master.Priority;
 
 import java.util.*;
 

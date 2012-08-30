@@ -6,13 +6,15 @@ package tajo.engine.cluster;
 import com.google.common.collect.MapMaker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import tajo.*;
 import tajo.engine.MasterInterfaceProtos.InProgressStatusProto;
-import tajo.engine.*;
 import tajo.engine.exception.NoSuchQueryIdException;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
 import tajo.engine.planner.global.ScheduleUnit;
-import tajo.engine.query.TQueryUtil;
+import tajo.util.TQueryUtil;
+import tajo.master.Query;
+import tajo.master.SubQuery;
 
 import java.util.*;
 

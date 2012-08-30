@@ -4,7 +4,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.mortbay.jetty.Connector;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
-import tajo.engine.TajoMaster;
+import tajo.master.TajoMaster;
 
 import java.io.IOException;
 

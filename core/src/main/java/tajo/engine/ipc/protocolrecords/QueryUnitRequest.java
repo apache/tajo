@@ -6,7 +6,7 @@ package tajo.engine.ipc.protocolrecords;
 import tajo.common.ProtoObject;
 import tajo.engine.MasterInterfaceProtos.Fetch;
 import tajo.engine.MasterInterfaceProtos.QueryUnitRequestProto;
-import tajo.engine.QueryUnitAttemptId;
+import tajo.QueryUnitAttemptId;
 
 import java.net.URI;
 import java.util.List;

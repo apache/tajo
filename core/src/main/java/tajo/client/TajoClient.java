@@ -12,7 +12,7 @@ import tajo.catalog.proto.CatalogProtos.TableDescProto;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.ClientServiceProtos.*;
-import tajo.engine.LocalTajoCluster;
+import tajo.LocalTajoCluster;
 import tajo.engine.query.ResultSetImpl;
 import tajo.engine.utils.ProtoUtil;
 import tajo.rpc.NettyRpc;

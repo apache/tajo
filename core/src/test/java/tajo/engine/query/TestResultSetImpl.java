@@ -15,7 +15,7 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
 import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
-import tajo.engine.TajoTestingUtility;
+import tajo.TajoTestingUtility;
 import tajo.storage.Appender;
 import tajo.storage.StorageManager;
 import tajo.storage.Tuple;

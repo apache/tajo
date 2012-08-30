@@ -13,7 +13,7 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.datum.DatumFactory;
-import tajo.engine.WorkerTestingUtil;
+import tajo.WorkerTestingUtil;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryBlock.SortSpec;
 import tajo.engine.planner.physical.TupleComparator;

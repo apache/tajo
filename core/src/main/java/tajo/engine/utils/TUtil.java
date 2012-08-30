@@ -1,7 +1,7 @@
 package tajo.engine.utils;
 
-import tajo.engine.QueryIdFactory;
-import tajo.engine.QueryUnitAttemptId;
+import tajo.QueryIdFactory;
+import tajo.QueryUnitAttemptId;
 
 import java.util.Arrays;
 

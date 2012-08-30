@@ -3,7 +3,11 @@ package tajo.worker.dataserver;
 import org.apache.hadoop.net.NetUtils;
 import org.junit.Before;
 import org.junit.Test;
-import tajo.engine.*;
+import tajo.QueryIdFactory;
+import tajo.QueryUnitId;
+import tajo.ScheduleUnitId;
+import tajo.WorkerTestingUtil;
+import tajo.worker.InterDataRetriever;
 import tajo.worker.dataserver.retriever.DataRetriever;
 import tajo.worker.dataserver.retriever.DirectoryRetriever;
 

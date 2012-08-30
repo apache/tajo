@@ -1,6 +1,6 @@
 package tajo.engine.planner.physical;
 
-import tajo.engine.SchemaObject;
+import tajo.SchemaObject;
 import tajo.storage.Tuple;
 
 import java.io.IOException;

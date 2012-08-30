@@ -1,6 +1,6 @@
 package tajo.storage;
 
-import tajo.engine.SchemaObject;
+import tajo.SchemaObject;
 
 import java.io.Closeable;
 import java.io.IOException;

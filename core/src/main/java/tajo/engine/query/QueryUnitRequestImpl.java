@@ -7,7 +7,7 @@ import com.google.gson.annotations.Expose;
 import tajo.engine.MasterInterfaceProtos.Fetch;
 import tajo.engine.MasterInterfaceProtos.QueryUnitRequestProto;
 import tajo.engine.MasterInterfaceProtos.QueryUnitRequestProtoOrBuilder;
-import tajo.engine.QueryUnitAttemptId;
+import tajo.QueryUnitAttemptId;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.ipc.protocolrecords.QueryUnitRequest;
 

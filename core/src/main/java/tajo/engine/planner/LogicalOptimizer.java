@@ -13,7 +13,7 @@ import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.SchemaUtil;
 import tajo.catalog.TableMeta;
-import tajo.engine.Context;
+import tajo.Context;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.exec.eval.EvalTreeUtil;
 import tajo.engine.exec.eval.FieldEval;

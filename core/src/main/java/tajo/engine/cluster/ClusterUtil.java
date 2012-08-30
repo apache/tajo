@@ -5,7 +5,7 @@ package tajo.engine.cluster;
 
 import org.apache.zookeeper.KeeperException;
 import tajo.conf.TajoConf;
-import tajo.engine.NConstants;
+import tajo.NConstants;
 import tajo.zookeeper.ZkClient;
 
 import java.io.IOException;

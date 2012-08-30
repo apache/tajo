@@ -9,7 +9,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import tajo.catalog.Column;
 import tajo.conf.TajoConf;
-import tajo.engine.SubqueryContext;
+import tajo.SubqueryContext;
 import tajo.engine.exception.InternalException;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryBlock;

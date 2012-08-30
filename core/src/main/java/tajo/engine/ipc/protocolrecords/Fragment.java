@@ -8,7 +8,7 @@ import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.SchemaProto;
 import tajo.catalog.proto.CatalogProtos.TabletProto;
 import tajo.catalog.proto.CatalogProtos.TabletProtoOrBuilder;
-import tajo.engine.SchemaObject;
+import tajo.SchemaObject;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.utils.TUtil;
 

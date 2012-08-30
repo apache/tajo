@@ -11,7 +11,7 @@ import tajo.catalog.TableDesc;
 import tajo.client.TajoClient;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
-import tajo.engine.NConstants;
+import tajo.NConstants;
 import tajo.engine.cluster.ServerName;
 import tajo.engine.cluster.ServerNodeTracker;
 import tajo.util.FileUtil;

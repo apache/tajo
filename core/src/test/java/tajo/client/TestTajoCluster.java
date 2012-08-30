@@ -8,8 +8,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.catalog.TableDesc;
 import tajo.conf.TajoConf;
-import tajo.engine.TajoTestingUtility;
-import tajo.engine.WorkerTestingUtil;
+import tajo.TajoTestingUtility;
+import tajo.WorkerTestingUtil;
 import tajo.storage.StorageManager;
 
 import java.io.IOException;

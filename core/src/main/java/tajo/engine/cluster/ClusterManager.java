@@ -15,7 +15,7 @@ import tajo.catalog.proto.CatalogProtos.TableDescProto;
 import tajo.conf.TajoConf;
 import tajo.engine.MasterInterfaceProtos.ServerStatusProto;
 import tajo.engine.MasterInterfaceProtos.ServerStatusProto.Disk;
-import tajo.engine.QueryUnitId;
+import tajo.QueryUnitId;
 import tajo.engine.exception.UnknownWorkerException;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.rpc.Callback;

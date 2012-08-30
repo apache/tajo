@@ -7,7 +7,7 @@ import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
-import tajo.engine.SubqueryContext;
+import tajo.SubqueryContext;
 import tajo.engine.planner.logical.SortNode;
 import tajo.storage.Appender;
 import tajo.storage.StorageManager;

@@ -14,7 +14,7 @@ import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
-import tajo.engine.WorkerTestingUtil;
+import tajo.WorkerTestingUtil;
 
 import java.io.IOException;
 

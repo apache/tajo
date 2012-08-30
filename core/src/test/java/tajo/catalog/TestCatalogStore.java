@@ -4,7 +4,7 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.engine.TajoTestingUtility;
+import tajo.TajoTestingUtility;
 
 import static org.junit.Assert.assertEquals;
 

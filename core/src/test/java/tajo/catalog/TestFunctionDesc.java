@@ -5,7 +5,7 @@ import org.junit.Test;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
-import tajo.engine.WorkerTestingUtil;
+import tajo.WorkerTestingUtil;
 import tajo.engine.exception.InternalException;
 import tajo.engine.exec.eval.TestEvalTree.TestSum;
 import tajo.engine.json.GsonCreator;

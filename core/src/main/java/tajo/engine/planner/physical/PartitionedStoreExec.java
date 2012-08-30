@@ -12,7 +12,7 @@ import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.StatisticsUtil;
 import tajo.catalog.statistics.TableStat;
-import tajo.engine.SubqueryContext;
+import tajo.SubqueryContext;
 import tajo.engine.planner.logical.StoreTableNode;
 import tajo.storage.Appender;
 import tajo.storage.StorageManager;

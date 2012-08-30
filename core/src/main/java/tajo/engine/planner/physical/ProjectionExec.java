@@ -4,7 +4,7 @@
 package tajo.engine.planner.physical;
 
 import tajo.catalog.Schema;
-import tajo.engine.SubqueryContext;
+import tajo.SubqueryContext;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.planner.Projector;
 import tajo.engine.planner.logical.ProjectionNode;

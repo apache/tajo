@@ -9,7 +9,7 @@ import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.SchemaUtil;
 import tajo.catalog.proto.CatalogProtos.DataType;
-import tajo.engine.Context;
+import tajo.Context;
 import tajo.engine.exec.eval.*;
 import tajo.engine.parser.*;
 import tajo.engine.parser.QueryBlock.*;

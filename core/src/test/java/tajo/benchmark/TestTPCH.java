@@ -4,7 +4,7 @@ import com.google.common.collect.Maps;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import tajo.engine.TpchTestBase;
+import tajo.TpchTestBase;
 
 import java.io.IOException;
 import java.sql.ResultSet;

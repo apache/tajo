@@ -5,7 +5,7 @@ package tajo.engine.planner.physical;
 
 import com.google.common.annotations.VisibleForTesting;
 import tajo.catalog.Schema;
-import tajo.engine.SubqueryContext;
+import tajo.SubqueryContext;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.planner.logical.GroupbyNode;
 import tajo.storage.Tuple;

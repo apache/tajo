@@ -5,7 +5,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.engine.MasterInterfaceProtos.ServerStatusProto;
 import tajo.engine.MasterInterfaceProtos.ServerStatusProto.Disk;
-import tajo.engine.TajoTestingUtility;
+import tajo.TajoTestingUtility;
 import tajo.engine.cluster.LeafServerTracker;
 import tajo.engine.cluster.WorkerCommunicator;
 import tajo.rpc.RemoteException;

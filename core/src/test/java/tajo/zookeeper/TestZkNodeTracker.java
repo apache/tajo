@@ -11,8 +11,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.conf.TajoConf;
-import tajo.engine.Abortable;
-import tajo.engine.TajoTestingUtility;
+import tajo.Abortable;
+import tajo.TajoTestingUtility;
 import tajo.engine.utils.ThreadUtil;
 
 import java.io.IOException;

@@ -17,7 +17,7 @@ import java.sql.ResultSet;
  * @author Hyunsik Choi
  */
 public class LocalTajoTestingUtility {
-  private tajo.engine.TajoTestingUtility util;
+  private TajoTestingUtility util;
   private TajoConf conf;
   private TajoClient client;
 
@@ -26,7 +26,7 @@ public class LocalTajoTestingUtility {
                     Schema[] schemas,
                     Options option) throws Exception {
 
-    util = new tajo.engine.TajoTestingUtility();
+    util = new TajoTestingUtility();
     util.startMiniCluster(1);
     conf = util.getConfiguration();
 

@@ -3,7 +3,7 @@
  */
 package tajo.engine.cluster;
 
-import tajo.engine.NConstants;
+import tajo.NConstants;
 import tajo.zookeeper.ZkClient;
 import tajo.zookeeper.ZkNodeTracker;
 

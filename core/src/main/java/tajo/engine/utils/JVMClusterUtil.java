@@ -3,8 +3,8 @@ package tajo.engine.utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import tajo.conf.TajoConf;
-import tajo.engine.LeafServer;
-import tajo.engine.TajoMaster;
+import tajo.worker.LeafServer;
+import tajo.master.TajoMaster;
 
 import java.io.IOException;
 import java.util.List;

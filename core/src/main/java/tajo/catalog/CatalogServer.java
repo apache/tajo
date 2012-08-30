@@ -17,7 +17,7 @@ import tajo.catalog.store.CatalogStore;
 import tajo.catalog.store.DBStore;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
-import tajo.engine.NConstants;
+import tajo.NConstants;
 import tajo.engine.function.builtin.*;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.rpc.NettyRpc;

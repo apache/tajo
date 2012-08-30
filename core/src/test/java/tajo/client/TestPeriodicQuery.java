@@ -6,8 +6,8 @@ import org.junit.Test;
 import tajo.client.PeriodicQueryDaemon.QueryInfo;
 import tajo.client.PeriodicQueryProtos.QueryStatusProto;
 import tajo.conf.TajoConf;
-import tajo.engine.TajoTestingUtility;
-import tajo.engine.WorkerTestingUtil;
+import tajo.TajoTestingUtility;
+import tajo.WorkerTestingUtil;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;

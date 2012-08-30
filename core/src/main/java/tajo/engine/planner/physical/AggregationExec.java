@@ -4,7 +4,7 @@ import com.google.common.collect.Sets;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.datum.DatumFactory;
-import tajo.engine.SubqueryContext;
+import tajo.SubqueryContext;
 import tajo.engine.exec.eval.ConstEval;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;

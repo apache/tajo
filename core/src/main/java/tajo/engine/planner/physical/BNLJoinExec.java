@@ -2,7 +2,7 @@ package tajo.engine.planner.physical;
 
 import tajo.catalog.Schema;
 import tajo.catalog.SchemaUtil;
-import tajo.engine.SubqueryContext;
+import tajo.SubqueryContext;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.planner.logical.JoinNode;

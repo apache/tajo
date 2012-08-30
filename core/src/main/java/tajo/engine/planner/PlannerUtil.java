@@ -8,7 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.proto.CatalogProtos;
-import tajo.engine.Context;
+import tajo.Context;
 import tajo.engine.exec.eval.*;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.logical.*;

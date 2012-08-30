@@ -6,7 +6,7 @@ package tajo.engine.query;
 import tajo.engine.MasterInterfaceProtos.QueryStatus;
 import tajo.engine.MasterInterfaceProtos.QueryUnitResponseProto;
 import tajo.engine.MasterInterfaceProtos.QueryUnitResponseProtoOrBuilder;
-import tajo.engine.QueryUnitId;
+import tajo.QueryUnitId;
 import tajo.engine.ipc.protocolrecords.QueryUnitResponse;
 
 /**

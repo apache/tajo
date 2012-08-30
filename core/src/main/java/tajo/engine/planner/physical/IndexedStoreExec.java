@@ -8,7 +8,7 @@ import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.conf.TajoConf;
-import tajo.engine.SubqueryContext;
+import tajo.SubqueryContext;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.utils.TupleUtil;
 import tajo.index.bst.BSTIndex;

@@ -10,9 +10,9 @@ import org.apache.commons.logging.LogFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
-import tajo.engine.QueryUnitAttemptId;
-import tajo.engine.QueryUnitId;
-import tajo.engine.ScheduleUnitId;
+import tajo.QueryUnitAttemptId;
+import tajo.QueryUnitId;
+import tajo.ScheduleUnitId;
 import tajo.worker.dataserver.FileAccessForbiddenException;
 
 import java.io.File;

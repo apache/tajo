@@ -12,7 +12,7 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
 import tajo.catalog.store.DBStore;
 import tajo.conf.TajoConf;
-import tajo.engine.TajoTestingUtility;
+import tajo.TajoTestingUtility;
 import tajo.storage.CSVFile2;
 
 import java.io.File;

@@ -3,7 +3,7 @@ package tajo.zookeeper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.KeeperException;
-import tajo.engine.NConstants;
+import tajo.NConstants;
 
 public abstract class ZkNodeTracker extends ZkListener {
   private static final Log LOG = LogFactory.getLog(ZkNodeTracker.class);

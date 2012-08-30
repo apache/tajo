@@ -6,7 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.KeeperException;
 import tajo.engine.MasterInterfaceProtos.*;
-import tajo.engine.NConstants;
+import tajo.NConstants;
 import tajo.engine.exception.UnknownWorkerException;
 import tajo.engine.ipc.AsyncWorkerClientInterface;
 import tajo.engine.ipc.AsyncWorkerInterface;
