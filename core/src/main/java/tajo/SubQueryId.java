@@ -3,6 +3,8 @@ package tajo;
 import tajo.common.ProtoObject;
 import tajo.engine.TCommonProtos.SubQueryIdProto;
 import tajo.engine.TCommonProtos.SubQueryIdProtoOrBuilder;
+import tajo.impl.pb.QueryIdPBImpl;
+import tajo.util.TajoIdUtils;
 
 import java.text.NumberFormat;
 
@@ -38,9 +40,9 @@ public class SubQueryId implements Comparable<SubQueryId>,
   
   public SubQueryId(String finalId) {
     this();
-    int i = finalId.lastIndexOf(QueryId.SEPERATOR);
+    int i = finalId.lastIndexOf(QueryId.SEPARATOR);
     
-    this.queryId = new QueryId(finalId.substring(0, i));
+    this.queryId = TajoIdUtils.createQueryId(finalId.substring(0, i));
     this.id = Integer.valueOf(finalId.substring(i+1));
   }
   
@@ -63,7 +65,7 @@ public class SubQueryId implements Comparable<SubQueryId>,
   
   public final String toString() {
     if (finalId == null) {
-      finalId = getQueryId().toString() + QueryId.SEPERATOR 
+      finalId = getQueryId().toString() + QueryId.SEPARATOR
           + idFormat.format(getId());
     }
     return finalId;
@@ -77,7 +79,7 @@ public class SubQueryId implements Comparable<SubQueryId>,
     if (!p.hasQueryId()) {
       return null;
     }
-    this.queryId = new QueryId(p.getQueryId());
+    this.queryId = new QueryIdPBImpl(p.getQueryId());
     return this.queryId;
   }
   
@@ -104,7 +106,7 @@ public class SubQueryId implements Comparable<SubQueryId>,
   private void mergeProtoToLocal() {
     SubQueryIdProtoOrBuilder p = viaProto ? proto : builder;
     if (queryId == null) {
-      queryId = new QueryId(p.getQueryId());
+      queryId = new QueryIdPBImpl(p.getQueryId());
     }
     if (id == -1) {
       id = p.getId();
@@ -114,7 +116,6 @@ public class SubQueryId implements Comparable<SubQueryId>,
   @Override
   public void initFromProto() {
     mergeProtoToLocal();
-    queryId.initFromProto();
   }
   
   private void mergeLocalToBuilder() {
@@ -122,7 +123,7 @@ public class SubQueryId implements Comparable<SubQueryId>,
       this.builder = SubQueryIdProto.newBuilder(proto);
     }
     if (this.queryId != null) {
-      builder.setQueryId(queryId.getProto());
+      builder.setQueryId(((QueryIdPBImpl)queryId).getProto());
     }
     if (this.id != -1) {
       builder.setId(id);

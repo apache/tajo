@@ -3,6 +3,8 @@
  */
 package tajo;
 
+import tajo.util.TajoIdUtils;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,19 +14,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  */
 public class QueryIdFactory {
-  private static String timeId;
   private static AtomicInteger nextId = 
       new AtomicInteger(-1);
   
   public static void reset() {
-    Date dateNow = new Date();
-    SimpleDateFormat dateformatYYYYMMDD = new SimpleDateFormat("yyyyMMddSS");
-    timeId = dateformatYYYYMMDD.format(dateNow);
     nextId.set(-1);
   }
 
   public synchronized static QueryId newQueryId() {
-    return new QueryId(timeId, nextId.incrementAndGet());
+    return TajoIdUtils.createQueryId(System.currentTimeMillis(), nextId.incrementAndGet());
   }
   
   public synchronized static SubQueryId newSubQueryId(QueryId queryId) {

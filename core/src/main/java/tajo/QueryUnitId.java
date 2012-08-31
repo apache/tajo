@@ -42,7 +42,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   
   public QueryUnitId(final String finalId) {
     this.finalId = finalId;
-    int i = finalId.lastIndexOf(QueryId.SEPERATOR);
+    int i = finalId.lastIndexOf(QueryId.SEPARATOR);
     this.logicalId = new ScheduleUnitId(finalId.substring(0, i));
     this.id = Integer.valueOf(finalId.substring(i+1));
   }
@@ -83,7 +83,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   public final String toString() {
     if (finalId == null) {
       finalId = this.getScheduleUnitId() + 
-          QueryId.SEPERATOR + format.format(getId());
+          QueryId.SEPARATOR + format.format(getId());
     }
     return this.finalId;
   }

@@ -23,7 +23,6 @@ public class ScheduleUnitId implements Comparable<ScheduleUnitId>,
     idFormat.setMinimumIntegerDigits(3);
   }
 
-  public static final String SEPERATOR = "_";
   private SubQueryId subQueryId = null;
   private int id = -1;
   private String finalId = null;
@@ -50,7 +49,7 @@ public class ScheduleUnitId implements Comparable<ScheduleUnitId>,
   
   public ScheduleUnitId(String finalId) {
     this.finalId = finalId;
-    int i = finalId.lastIndexOf(QueryId.SEPERATOR);
+    int i = finalId.lastIndexOf(QueryId.SEPARATOR);
     this.subQueryId = new SubQueryId(finalId.substring(0, i));
     this.id = Integer.valueOf(finalId.substring(i+1));
   }
@@ -63,7 +62,7 @@ public class ScheduleUnitId implements Comparable<ScheduleUnitId>,
   @Override
   public final String toString() {
     if (finalId == null) {
-      finalId = getSubQueryId() +  SEPERATOR + 
+      finalId = getSubQueryId() +  QueryId.SEPARATOR +
           idFormat.format(getId());
     }
     return finalId;

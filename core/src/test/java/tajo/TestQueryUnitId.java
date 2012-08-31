@@ -1,48 +1,88 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo;
 
 import org.junit.Test;
+import tajo.util.TajoIdUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.*;
 
 /**
  * @author Hyunsik Choi
  */
 public class TestQueryUnitId {
   @Test
+  public void testQueryId() {
+    long ts1 = 1315890136000l;
+    long ts2 = 1315890136001l;
+    QueryId j1 = TajoIdUtils.createQueryId(ts1, 2);
+    QueryId j2 = TajoIdUtils.createQueryId(ts1, 1);
+    QueryId j3 = TajoIdUtils.createQueryId(ts2, 1);
+    QueryId j4 = TajoIdUtils.createQueryId(ts1, 2);
+
+    assertTrue(j1.equals(j4));
+    assertFalse(j1.equals(j2));
+    assertFalse(j1.equals(j3));
+
+    assertTrue(j1.compareTo(j4) == 0);
+    assertTrue(j1.compareTo(j2) > 0);
+    assertTrue(j1.compareTo(j3) < 0);
+
+    assertTrue(j1.hashCode() == j4.hashCode());
+    assertFalse(j1.hashCode() == j2.hashCode());
+    assertFalse(j1.hashCode() == j3.hashCode());
+
+    QueryId j5 = TajoIdUtils.createQueryId(ts1, 231415);
+    assertEquals("query_" + ts1 + "_0002", j1.toString());
+    assertEquals("query_" + ts1 + "_231415", j5.toString());
+  }
+
+  @Test
   public void testQueryIds() {
-    Date dateNow = new Date();
-    SimpleDateFormat dateformatYYYYMMDD = new SimpleDateFormat("yyyyMMddSS");
-    String timeId = dateformatYYYYMMDD.format(dateNow);
+    long timeId = 1315890136000l;
     
-    QueryId queryId = new QueryId(timeId, 1);
-    assertEquals("query_" + timeId + "_001", queryId.toString());
+    QueryId queryId = TajoIdUtils.createQueryId(timeId, 1);
+    assertEquals("query_" + timeId + "_0001", queryId.toString());
     
     SubQueryId subId = new SubQueryId(queryId, 2);
-    assertEquals("query_" + timeId+"_001_002", subId.toString());
+    assertEquals("query_" + timeId +"_0001_002", subId.toString());
     
     ScheduleUnitId logicalQUeryUnitId =
         new ScheduleUnitId(subId, 6);
-    assertEquals("query_" + timeId+"_001_002_006", 
+    assertEquals("query_" + timeId +"_0001_002_006",
         logicalQUeryUnitId.toString());
     
     QueryUnitId qId = new QueryUnitId(logicalQUeryUnitId, 5);
-    assertEquals("query_" + timeId + "_001_002_006_000005", qId.toString());
+    assertEquals("query_" + timeId + "_0001_002_006_000005", qId.toString());
   }
 
   @Test
   public void testEqualsObject() {
-    Date dateNow = new Date();
-    SimpleDateFormat dateformatYYYYMMDD = new SimpleDateFormat("yyyyMMddSS");
-    String timeId = dateformatYYYYMMDD.format(dateNow);
+    long timeId = System.currentTimeMillis();
     
-    QueryId queryId1 = new QueryId(timeId, 1);
-    QueryId queryId2 = new QueryId(timeId, 2);    
+    QueryId queryId1 = TajoIdUtils.createQueryId(timeId, 1);
+    QueryId queryId2 = TajoIdUtils.createQueryId(timeId, 2);
     assertNotSame(queryId1, queryId2);    
-    QueryId queryId3 = new QueryId(timeId, 1);
+    QueryId queryId3 = TajoIdUtils.createQueryId(timeId, 1);
     assertEquals(queryId1, queryId3);
     
     SubQueryId sid1 = new SubQueryId(queryId1, 1);
@@ -69,10 +109,11 @@ public class TestQueryUnitId {
     Date dateNow = new Date();
     SimpleDateFormat dateformatYYYYMMDD = new SimpleDateFormat("yyyyMMddSS");
     String timeId = dateformatYYYYMMDD.format(dateNow);
+    long time = System.currentTimeMillis();
     
-    QueryId queryId1 = new QueryId(timeId, 1);
-    QueryId queryId2 = new QueryId(timeId, 2);
-    QueryId queryId3 = new QueryId(timeId, 1);
+    QueryId queryId1 = TajoIdUtils.createQueryId(time, 1);
+    QueryId queryId2 = TajoIdUtils.createQueryId(time, 2);
+    QueryId queryId3 = TajoIdUtils.createQueryId(time, 1);
     assertEquals(-1, queryId1.compareTo(queryId2));
     assertEquals(1, queryId2.compareTo(queryId1));
     assertEquals(0, queryId3.compareTo(queryId1));
@@ -103,7 +144,7 @@ public class TestQueryUnitId {
   public void testConstructFromString() {
     QueryIdFactory.reset();
     QueryId qid1 = QueryIdFactory.newQueryId();
-    QueryId qid2 = new QueryId(qid1.toString());
+    QueryId qid2 = TajoIdUtils.createQueryId(qid1.toString());
     assertEquals(qid1, qid2);
     
     SubQueryId sub1 = QueryIdFactory.newSubQueryId(qid1);

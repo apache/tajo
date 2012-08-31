@@ -43,7 +43,7 @@ public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId>,
 
   public QueryUnitAttemptId(final String finalId) {
     this.finalId = finalId;
-    int i = finalId.lastIndexOf(QueryId.SEPERATOR);
+    int i = finalId.lastIndexOf(QueryId.SEPARATOR);
     this.queryUnitId = new QueryUnitId(finalId.substring(0, i));
     this.id = Integer.valueOf(finalId.substring(i+1));
   }
@@ -84,7 +84,7 @@ public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId>,
   public final String toString() {
     if (finalId == null) {
       finalId = this.getQueryUnitId() +
-          QueryId.SEPERATOR + format.format(getId());
+          QueryId.SEPARATOR + format.format(getId());
     }
     return this.finalId;
   }
