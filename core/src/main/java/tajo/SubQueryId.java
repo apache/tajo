@@ -1,142 +1,98 @@
-package tajo;
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import tajo.common.ProtoObject;
-import tajo.engine.TCommonProtos.SubQueryIdProto;
-import tajo.engine.TCommonProtos.SubQueryIdProtoOrBuilder;
-import tajo.impl.pb.QueryIdPBImpl;
-import tajo.util.TajoIdUtils;
+package tajo;
 
 import java.text.NumberFormat;
 
-/**
- * @author Hyunsik Choi
- */
-public class SubQueryId implements Comparable<SubQueryId>, 
-  ProtoObject<SubQueryIdProto> {
-  private static final NumberFormat idFormat = NumberFormat.getInstance();
-  
-  static {
-    idFormat.setGroupingUsed(false);
-    idFormat.setMinimumIntegerDigits(3);
-  }
+public abstract class SubQueryId implements Comparable<SubQueryId> {
 
-  private QueryId queryId = null;
-  private int id = -1;
-  private String finalId = null;
-  
-  private SubQueryIdProto proto = SubQueryIdProto.getDefaultInstance();
-  private SubQueryIdProto.Builder builder = null;
-  private boolean viaProto = false;
-  
-  public SubQueryId() {
-    builder = SubQueryIdProto.newBuilder();
-  }
-  
-  public SubQueryId(final QueryId queryId, final int id) {
-    this();
-    this.queryId = queryId;
-    this.id = id;
-  }
-  
-  public SubQueryId(String finalId) {
-    this();
-    int i = finalId.lastIndexOf(QueryId.SEPARATOR);
-    
-    this.queryId = TajoIdUtils.createQueryId(finalId.substring(0, i));
-    this.id = Integer.valueOf(finalId.substring(i+1));
-  }
-  
-  public SubQueryId(SubQueryIdProto proto) {
-    this.proto = proto;
-    viaProto = true;
-  }
-  
-  public int getId() {
-    SubQueryIdProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.id != -1) {
-      return this.id;
-    }
-    if (!p.hasId()) {
-      return -1;
-    }
-    this.id = p.getId();
-    return this.id;
-  }
-  
-  public final String toString() {
-    if (finalId == null) {
-      finalId = getQueryId().toString() + QueryId.SEPARATOR
-          + idFormat.format(getId());
-    }
-    return finalId;
-  }
-  
-  public QueryId getQueryId() {
-    SubQueryIdProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.queryId != null) {
-      return this.queryId;
-    }
-    if (!p.hasQueryId()) {
-      return null;
-    }
-    this.queryId = new QueryIdPBImpl(p.getQueryId());
-    return this.queryId;
-  }
-  
-  @Override
-  public final boolean equals(final Object o) {
-    if (o instanceof SubQueryId) {
-      SubQueryId other = (SubQueryId) o;
-      return this.getQueryId().equals(other.getQueryId()) &&
-          this.getId()== other.getId();
-    }
-    return false;
-  }
-  
+  /**
+   * @return the associated <code>QueryId</code>
+   */
+  public abstract QueryId getQueryId();
+
+  /**
+   * @return the subquery number.
+   */
+  public abstract int getId();
+
+  public abstract void setQueryId(QueryId jobId);
+
+  public abstract void setId(int id);
+
+  protected static final String SUBQUERY = "query";
+
+  static final ThreadLocal<NumberFormat> subQueryIdFormat =
+      new ThreadLocal<NumberFormat>() {
+        @Override
+        public NumberFormat initialValue() {
+          NumberFormat fmt = NumberFormat.getInstance();
+          fmt.setGroupingUsed(false);
+          fmt.setMinimumIntegerDigits(2);
+          return fmt;
+        }
+      };
+
   @Override
   public int hashCode() {
-    return this.toString().hashCode();
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + getId();
+    result = prime * result + getQueryId().hashCode();
+    return result;
   }
 
   @Override
-  public final int compareTo(final SubQueryId o) {
-    return this.toString().compareTo(o.toString());
-  }
-  
-  private void mergeProtoToLocal() {
-    SubQueryIdProtoOrBuilder p = viaProto ? proto : builder;
-    if (queryId == null) {
-      queryId = new QueryIdPBImpl(p.getQueryId());
-    }
-    if (id == -1) {
-      id = p.getId();
-    }
-  }
-
-  @Override
-  public void initFromProto() {
-    mergeProtoToLocal();
-  }
-  
-  private void mergeLocalToBuilder() {
-    if (this.builder == null) {
-      this.builder = SubQueryIdProto.newBuilder(proto);
-    }
-    if (this.queryId != null) {
-      builder.setQueryId(((QueryIdPBImpl)queryId).getProto());
-    }
-    if (this.id != -1) {
-      builder.setId(id);
-    }
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    SubQueryId other = (SubQueryId) obj;
+    if (getId() != other.getId())
+      return false;
+    if (!getQueryId().equals(other.getQueryId()))
+      return false;
+    return true;
   }
 
   @Override
-  public SubQueryIdProto getProto() {
-    if (!viaProto) {
-      mergeLocalToBuilder();
-      proto = builder.build();
-      viaProto = true;
+  public String toString() {
+    StringBuilder builder = new StringBuilder(SUBQUERY);
+    QueryId queryId = getQueryId();
+    builder.append("_").append(queryId.getAppId().getClusterTimestamp());
+    builder.append("_").append(
+        QueryId.queryIdFormat.get().format(queryId.getAppId().getId()));
+    builder.append("_").append(
+        subQueryIdFormat.get().format(getId()));
+    return builder.toString();
+  }
+
+  @Override
+  public int compareTo(SubQueryId other) {
+    int queryIdComp = this.getQueryId().compareTo(other.getQueryId());
+    if (queryIdComp == 0) {
+      return this.getId() - other.getId();
+    } else {
+      return queryIdComp;
     }
-    return proto;
   }
 }

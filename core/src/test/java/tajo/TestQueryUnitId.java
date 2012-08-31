@@ -63,16 +63,16 @@ public class TestQueryUnitId {
     QueryId queryId = TajoIdUtils.createQueryId(timeId, 1);
     assertEquals("query_" + timeId + "_0001", queryId.toString());
     
-    SubQueryId subId = new SubQueryId(queryId, 2);
-    assertEquals("query_" + timeId +"_0001_002", subId.toString());
+    SubQueryId subId = TajoIdUtils.newSubQueryId(queryId, 2);
+    assertEquals("query_" + timeId +"_0001_02", subId.toString());
     
     ScheduleUnitId logicalQUeryUnitId =
         new ScheduleUnitId(subId, 6);
-    assertEquals("query_" + timeId +"_0001_002_006",
+    assertEquals("query_" + timeId +"_0001_02_006",
         logicalQUeryUnitId.toString());
     
     QueryUnitId qId = new QueryUnitId(logicalQUeryUnitId, 5);
-    assertEquals("query_" + timeId + "_0001_002_006_000005", qId.toString());
+    assertEquals("query_" + timeId + "_0001_02_006_000005", qId.toString());
   }
 
   @Test
@@ -85,10 +85,10 @@ public class TestQueryUnitId {
     QueryId queryId3 = TajoIdUtils.createQueryId(timeId, 1);
     assertEquals(queryId1, queryId3);
     
-    SubQueryId sid1 = new SubQueryId(queryId1, 1);
-    SubQueryId sid2 = new SubQueryId(queryId1, 2);    
+    SubQueryId sid1 = TajoIdUtils.newSubQueryId(queryId1, 1);
+    SubQueryId sid2 = TajoIdUtils.newSubQueryId(queryId1, 2);    
     assertNotSame(sid1, sid2);
-    SubQueryId sid3 = new SubQueryId(queryId1, 1);
+    SubQueryId sid3 = TajoIdUtils.newSubQueryId(queryId1, 1);
     assertEquals(sid1, sid3);
     
     ScheduleUnitId lqid1 = new ScheduleUnitId(sid1, 9);
@@ -106,9 +106,6 @@ public class TestQueryUnitId {
 
   @Test
   public void testCompareTo() {
-    Date dateNow = new Date();
-    SimpleDateFormat dateformatYYYYMMDD = new SimpleDateFormat("yyyyMMddSS");
-    String timeId = dateformatYYYYMMDD.format(dateNow);
     long time = System.currentTimeMillis();
     
     QueryId queryId1 = TajoIdUtils.createQueryId(time, 1);
@@ -118,9 +115,9 @@ public class TestQueryUnitId {
     assertEquals(1, queryId2.compareTo(queryId1));
     assertEquals(0, queryId3.compareTo(queryId1));
     
-    SubQueryId sid1 = new SubQueryId(queryId1, 1);
-    SubQueryId sid2 = new SubQueryId(queryId1, 2);    
-    SubQueryId sid3 = new SubQueryId(queryId1, 1);
+    SubQueryId sid1 = TajoIdUtils.newSubQueryId(queryId1, 1);
+    SubQueryId sid2 = TajoIdUtils.newSubQueryId(queryId1, 2);    
+    SubQueryId sid3 = TajoIdUtils.newSubQueryId(queryId1, 1);
     assertEquals(-1, sid1.compareTo(sid2));
     assertEquals(1, sid2.compareTo(sid1));
     assertEquals(0, sid3.compareTo(sid1));
@@ -148,12 +145,8 @@ public class TestQueryUnitId {
     assertEquals(qid1, qid2);
     
     SubQueryId sub1 = QueryIdFactory.newSubQueryId(qid1);
-    SubQueryId sub2 = new SubQueryId(sub1.toString());
+    SubQueryId sub2 = TajoIdUtils.newSubQueryId(sub1.toString());
     assertEquals(sub1, sub2);
-    
-//    QueryStepId step1 = QueryIdFactory.newQueryStepId();
-//    QueryStepId step2 = new QueryStepId(step1.toString());
-//    assertEquals(step1, step2);
     
     ScheduleUnitId lqid1 = QueryIdFactory.newScheduleUnitId(sub1);
     ScheduleUnitId lqid2 = new ScheduleUnitId(lqid1.toString());

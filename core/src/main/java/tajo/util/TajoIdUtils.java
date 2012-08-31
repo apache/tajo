@@ -22,6 +22,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.util.BuilderUtils;
 import org.apache.hadoop.yarn.util.Records;
 import tajo.QueryId;
+import tajo.SubQueryId;
 
 /**
  * @author Hyunsik Choi
@@ -40,10 +41,29 @@ public class TajoIdUtils {
     return newQueryId(appId, idInt);
   }
 
+  public static SubQueryId createSubQueryId(QueryId queryId,
+                                            int subQueryIdInt) {
+    return newSubQueryId(queryId, subQueryIdInt);
+  }
+
   public static QueryId newQueryId(ApplicationId appId, int id) {
     QueryId queryId = Records.newRecord(QueryId.class);
     queryId.setAppId(appId);
     queryId.setId(id);
     return queryId;
+  }
+
+  public static SubQueryId newSubQueryId(QueryId jobId, int id) {
+    SubQueryId taskId = Records.newRecord(SubQueryId.class);
+    taskId.setQueryId(jobId);
+    taskId.setId(id);
+    return taskId;
+  }
+
+  public static SubQueryId newSubQueryId(String subQueryId) {
+    String [] split = subQueryId.split(QueryId.SEPARATOR);
+    return createSubQueryId(
+        createQueryId(Long.valueOf(split[1]), Integer.parseInt(split[2])),
+        Integer.parseInt(split[3]));
   }
 }

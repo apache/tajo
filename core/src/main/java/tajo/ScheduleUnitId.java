@@ -6,6 +6,8 @@ package tajo;
 import tajo.common.ProtoObject;
 import tajo.engine.TCommonProtos.ScheduleUnitIdProto;
 import tajo.engine.TCommonProtos.ScheduleUnitIdProtoOrBuilder;
+import tajo.impl.pb.SubQueryIdPBImpl;
+import tajo.util.TajoIdUtils;
 
 import java.text.NumberFormat;
 
@@ -50,7 +52,7 @@ public class ScheduleUnitId implements Comparable<ScheduleUnitId>,
   public ScheduleUnitId(String finalId) {
     this.finalId = finalId;
     int i = finalId.lastIndexOf(QueryId.SEPARATOR);
-    this.subQueryId = new SubQueryId(finalId.substring(0, i));
+    this.subQueryId = TajoIdUtils.newSubQueryId(finalId.substring(0, i));
     this.id = Integer.valueOf(finalId.substring(i+1));
   }
 
@@ -91,7 +93,7 @@ public class ScheduleUnitId implements Comparable<ScheduleUnitId>,
     if (!p.hasSubQueryId()) {
       return null;
     }
-    this.subQueryId = new SubQueryId(p.getSubQueryId());
+    this.subQueryId = new SubQueryIdPBImpl(p.getSubQueryId());
     return this.subQueryId;
   }
   
@@ -102,7 +104,7 @@ public class ScheduleUnitId implements Comparable<ScheduleUnitId>,
   private void mergeProtoToLocal() {
     ScheduleUnitIdProtoOrBuilder p = viaProto ? proto : builder;
     if (subQueryId == null) {
-      subQueryId = new SubQueryId(p.getSubQueryId());
+      subQueryId = new SubQueryIdPBImpl(p.getSubQueryId());
     }
     if (id == -1) {
       id = p.getId();
@@ -112,7 +114,6 @@ public class ScheduleUnitId implements Comparable<ScheduleUnitId>,
   @Override
   public void initFromProto() {
     mergeProtoToLocal();
-    subQueryId.initFromProto();
   }
   
   private void mergeLocalToBuilder() {
@@ -120,7 +121,7 @@ public class ScheduleUnitId implements Comparable<ScheduleUnitId>,
       builder = ScheduleUnitIdProto.newBuilder(proto);
     }
     if (this.subQueryId != null) {
-      builder.setSubQueryId(subQueryId.getProto());
+      builder.setSubQueryId(((SubQueryIdPBImpl)subQueryId).getProto());
     }
     if (this.id != -1) {
       builder.setId(id);
