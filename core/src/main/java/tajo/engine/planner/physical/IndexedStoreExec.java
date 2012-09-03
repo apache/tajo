@@ -10,12 +10,8 @@ import tajo.catalog.proto.CatalogProtos;
 import tajo.conf.TajoConf;
 import tajo.SubqueryContext;
 import tajo.engine.parser.QueryBlock;
-import tajo.engine.utils.TupleUtil;
 import tajo.index.bst.BSTIndex;
-import tajo.storage.FileAppender;
-import tajo.storage.StorageManager;
-import tajo.storage.Tuple;
-import tajo.storage.VTuple;
+import tajo.storage.*;
 
 import java.io.IOException;
 
@@ -92,7 +88,7 @@ public class IndexedStoreExec extends PhysicalExec {
       offset = appender.getOffset();
       appender.addTuple(tuple);
       keyTuple = new VTuple(keySchema.getColumnNum());
-      TupleUtil.project(tuple, keyTuple, indexKeys);
+      RowStoreUtil.project(tuple, keyTuple, indexKeys);
       indexWriter.write(keyTuple, offset);
     }
 

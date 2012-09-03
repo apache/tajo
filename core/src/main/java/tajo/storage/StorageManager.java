@@ -15,6 +15,7 @@ import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.storage.exception.AlreadyExistsStorageException;
+import tajo.storage.rcfile.RCFileWrapper;
 import tajo.util.FileUtil;
 
 import java.io.FileNotFoundException;
@@ -187,6 +188,7 @@ public class StorageManager {
           openScanner(meta.getSchema(), tablets);     
       break;
     }
+
     case CSV: {
       if (tablets.length == 1) {
         scanner = new SingleCSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
@@ -275,6 +277,11 @@ public class StorageManager {
           filename);
       break;
     }
+
+    case RCFILE:
+      appender = new RCFileWrapper.RCFileAppender(conf, meta, filename, true);
+      break;
+
     case CSV: {
       appender = new CSVFile2(conf).getAppender(meta, filename);
       break;

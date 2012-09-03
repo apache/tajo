@@ -30,6 +30,7 @@ enum StoreType {
 	MEM = 0;
 	CSV = 1;
 	RAW = 2;
+  RCFILE = 3;
 }
 
 message ColumnProto {

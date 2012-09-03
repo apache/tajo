@@ -4,8 +4,6 @@ import org.apache.hadoop.conf.Configuration;
 import tajo.catalog.Schema;
 import tajo.engine.ipc.protocolrecords.Fragment;
 
-import java.io.IOException;
-
 public abstract class FileScanner implements SeekableScanner {
   
   protected final Configuration conf;
@@ -18,8 +16,6 @@ public abstract class FileScanner implements SeekableScanner {
     this.schema = schema;
     this.tablets = tablets;
   }
-
-  public abstract long tabletable() throws IOException;
 
   @Override
 	public Schema getSchema() {

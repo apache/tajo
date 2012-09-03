@@ -32,7 +32,6 @@ import tajo.engine.planner.logical.StoreTableNode;
 import tajo.engine.planner.logical.UnionNode;
 import tajo.engine.planner.physical.*;
 import tajo.engine.utils.TUtil;
-import tajo.engine.utils.TupleUtil;
 import tajo.index.bst.BSTIndex;
 import tajo.storage.*;
 import tajo.worker.RangeRetrieverHandler;
@@ -669,11 +668,13 @@ public class TestPhysicalPlanner {
     Tuple startTuple = new VTuple(1);
     startTuple.put(0, DatumFactory.createInt(50));
     kvs.put("start", Lists.newArrayList(
-        new String(Base64.encodeBase64(TupleUtil.toBytes(keySchema, startTuple), false))));
+        new String(Base64.encodeBase64(
+            RowStoreUtil.RowStoreEncoder.toBytes(keySchema, startTuple), false))));
     Tuple endTuple = new VTuple(1);
     endTuple.put(0, DatumFactory.createInt(80));
     kvs.put("end", Lists.newArrayList(
-        new String(Base64.encodeBase64(TupleUtil.toBytes(keySchema, endTuple), false))));
+        new String(Base64.encodeBase64(
+            RowStoreUtil.RowStoreEncoder.toBytes(keySchema, endTuple), false))));
     FileChunk chunk = handler.get(kvs);
 
     scanner.seek(chunk.startOffset());

@@ -6,8 +6,8 @@ import tajo.SubqueryContext;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.planner.logical.JoinNode;
-import tajo.engine.utils.TupleUtil;
 import tajo.storage.FrameTuple;
+import tajo.storage.RowStoreUtil;
 import tajo.storage.Tuple;
 import tajo.storage.VTuple;
 
@@ -67,7 +67,7 @@ public class BNLJoinExec extends PhysicalExec {
     this.outerEnd = false;
 
     // for projection
-    targetIds = TupleUtil.getTargetIds(inSchema, outSchema);
+    targetIds = RowStoreUtil.getTargetIds(inSchema, outSchema);
 
     // for join
     frameTuple = new FrameTuple();
@@ -167,11 +167,11 @@ public class BNLJoinExec extends PhysicalExec {
       if (joinQual != null) {
         joinQual.eval(qualCtx, inSchema, frameTuple);
         if (joinQual.terminate(qualCtx).asBool()) {
-          TupleUtil.project(frameTuple, outputTuple, targetIds);
+          RowStoreUtil.project(frameTuple, outputTuple, targetIds);
           return outputTuple;
         }
       } else {
-        TupleUtil.project(frameTuple, outputTuple, targetIds);
+        RowStoreUtil.project(frameTuple, outputTuple, targetIds);
         return outputTuple;
       }
     }

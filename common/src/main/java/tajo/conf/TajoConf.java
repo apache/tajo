@@ -64,6 +64,9 @@ public class TajoConf extends Configuration {
     //////////////////////////////////
     RAWFILE_SYNC_INTERVAL("rawfile.sync.interval", null),
 
+    // for RCFile
+    HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true),
+
     //////////////////////////////////
     // Physical Execution Configuration
     //////////////////////////////////

@@ -42,8 +42,8 @@ public class TestRawFile2 {
     
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
     
-    sm.initTableBase(meta, "table1");
-    Appender appender = sm.getAppender(meta, "table1", "file1");
+    sm.initTableBase(meta, "testRawFile");
+    Appender appender = sm.getAppender(meta, "testRawFile", "file1");
     int tupleNum = 10000;
     VTuple vTuple;
     
@@ -58,13 +58,13 @@ public class TestRawFile2 {
     TableStat stat = appender.getStats();
     assertEquals(tupleNum, stat.getNumRows().longValue());
     
-    FileStatus status = sm.listTableFiles("table1")[0];
+    FileStatus status = sm.listTableFiles("testRawFile")[0];
     long fileLen = status.getLen();
     long randomNum = (long) (Math.random() * fileLen) + 1;
     
     Fragment[] tablets = new Fragment[2];
-    tablets[0] = new Fragment("tablet1_1", status.getPath(), meta, 0, randomNum);
-    tablets[1] = new Fragment("tablet1_2", status.getPath(), meta, randomNum, (fileLen - randomNum));
+    tablets[0] = new Fragment("testRawFile", status.getPath(), meta, 0, randomNum);
+    tablets[1] = new Fragment("testRawFile", status.getPath(), meta, randomNum, (fileLen - randomNum));
 
     Scanner scanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;
@@ -84,8 +84,8 @@ public class TestRawFile2 {
     
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
     
-    sm.initTableBase(meta, "table1");
-    Appender appender = sm.getAppender(meta, "table1", "file1");
+    sm.initTableBase(meta, "testForSingleFile");
+    Appender appender = sm.getAppender(meta, "testForSingleFile", "file1");
     int tupleNum = 10000;
     VTuple vTuple;
     
@@ -98,14 +98,14 @@ public class TestRawFile2 {
     appender.close();
     
     // Read a table composed of multiple files
-    FileStatus status = sm.listTableFiles("table1")[0];
+    FileStatus status = sm.listTableFiles("testForSingleFile")[0];
     long fileLen = status.getLen();
     long randomNum = (long) (Math.random() * fileLen) + 1;
     
     Fragment[] tablets = new Fragment[3];
-    tablets[0] = new Fragment("tablet1_1", status.getPath(), meta, 0, randomNum/2);
-    tablets[1] = new Fragment("tablet1_2", status.getPath(), meta, randomNum/2, (randomNum - randomNum/2));
-    tablets[2] = new Fragment("tablet1_2", status.getPath(), meta, randomNum, (fileLen - randomNum));
+    tablets[0] = new Fragment("testForSingleFile", status.getPath(), meta, 0, randomNum/2);
+    tablets[1] = new Fragment("testForSingleFile", status.getPath(), meta, randomNum/2, (randomNum - randomNum/2));
+    tablets[2] = new Fragment("testForSingleFile", status.getPath(), meta, randomNum, (fileLen - randomNum));
 
     Scanner scanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;
@@ -125,8 +125,8 @@ public class TestRawFile2 {
     
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
     
-    sm.initTableBase(meta, "table1");
-    Appender appender = sm.getAppender(meta, "table1", "file1");
+    sm.initTableBase(meta, "testForMultiFile");
+    Appender appender = sm.getAppender(meta, "testForMultiFile", "file1");
     int tupleNum = 10000;
     VTuple vTuple;
     
@@ -138,7 +138,7 @@ public class TestRawFile2 {
     }
     appender.close();
     
-    appender = sm.getAppender(meta, "table1", "file2");
+    appender = sm.getAppender(meta, "testForMultiFile", "file2");
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(2);
       vTuple.put(0, DatumFactory.createInt(i+1000));
@@ -147,18 +147,18 @@ public class TestRawFile2 {
     }
     appender.close();
 
-    FileStatus[] status = sm.listTableFiles("table1");
+    FileStatus[] status = sm.listTableFiles("testForMultiFile");
     long fileLen = status[0].getLen();
     long randomNum = (long) (Math.random() * fileLen) + 1;
 
     Fragment[] tablets = new Fragment[4];
-    tablets[0] = new Fragment("tablet1_1", status[0].getPath(), meta, 0, randomNum);
-    tablets[1] = new Fragment("tablet1_2", status[0].getPath(), meta, randomNum, (fileLen - randomNum));
+    tablets[0] = new Fragment("testForMultiFile", status[0].getPath(), meta, 0, randomNum);
+    tablets[1] = new Fragment("testForMultiFile", status[0].getPath(), meta, randomNum, (fileLen - randomNum));
     
     fileLen = status[1].getLen();
     randomNum = (long) (Math.random() * fileLen) + 1;
-    tablets[2] = new Fragment("tablet1_2", status[1].getPath(), meta, 0, randomNum);
-    tablets[3] = new Fragment("tablet1_2", status[1].getPath(), meta, randomNum, (fileLen - randomNum));
+    tablets[2] = new Fragment("testForMultiFile", status[1].getPath(), meta, 0, randomNum);
+    tablets[3] = new Fragment("testForMultiFile", status[1].getPath(), meta, randomNum, (fileLen - randomNum));
     
     Scanner scanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;

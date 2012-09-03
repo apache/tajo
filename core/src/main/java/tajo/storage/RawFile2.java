@@ -271,9 +271,8 @@ public class RawFile2 extends Storage {
     public long getNextOffset() {
     	return this.pageStart + this.curTupleOffset;
     }
-    
-    @Override
-    public long tabletable() throws IOException{
+
+    private long tabletable() throws IOException{
       return this.end - in.getPos();
     }
     

@@ -7,8 +7,8 @@ import org.apache.hadoop.fs.Path;
 import tajo.catalog.Schema;
 import tajo.conf.TajoConf;
 import tajo.engine.planner.physical.TupleComparator;
-import tajo.engine.utils.TupleUtil;
 import tajo.index.bst.BSTIndex;
+import tajo.storage.RowStoreUtil;
 import tajo.storage.Tuple;
 import tajo.storage.TupleRange;
 import tajo.worker.dataserver.retriever.FileChunk;
@@ -58,11 +58,11 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     // its validity of the file.
     File data = new File(this.file, "data/data");
     byte [] startBytes = Base64.decodeBase64(kvs.get("start").get(0));
-    Tuple start = TupleUtil.toTuple(schema, startBytes);
+    Tuple start = RowStoreUtil.RowStoreDecoder.toTuple(schema, startBytes);
     byte [] endBytes = null;
     Tuple end = null;
     endBytes = Base64.decodeBase64(kvs.get("end").get(0));
-    end = TupleUtil.toTuple(schema, endBytes);
+    end = RowStoreUtil.RowStoreDecoder.toTuple(schema, endBytes);
     boolean last = kvs.containsKey("final");
 
     LOG.info("GET Request for " + data.getAbsolutePath() + " (start="+start+", end="+ end +

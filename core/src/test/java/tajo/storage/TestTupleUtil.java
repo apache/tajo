@@ -50,8 +50,8 @@ public class TestTupleUtil {
         DatumFactory.createIPv4("192.168.0.1")
     });
     
-    byte [] bytes = TupleUtil.toBytes(schema, tuple);
-    Tuple tuple2 = TupleUtil.toTuple(schema, bytes);
+    byte [] bytes = RowStoreUtil.RowStoreEncoder.toBytes(schema, tuple);
+    Tuple tuple2 = RowStoreUtil.RowStoreDecoder.toTuple(schema, bytes);
     
     assertEquals(tuple, tuple2);
   }

@@ -5,7 +5,7 @@ import tajo.SubqueryContext;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.planner.logical.SelectionNode;
-import tajo.engine.utils.TupleUtil;
+import tajo.storage.RowStoreUtil;
 import tajo.storage.Tuple;
 import tajo.storage.VTuple;
 
@@ -37,7 +37,7 @@ public class SelectionExec extends PhysicalExec  {
     this.qualCtx = this.qual.newContext();
     // for projection
     if (!inSchema.equals(outSchema)) {
-      targetIds = TupleUtil.getTargetIds(inSchema, outSchema);
+      targetIds = RowStoreUtil.getTargetIds(inSchema, outSchema);
     }
 
     this.outputTuple = new VTuple(outSchema.getColumnNum());
@@ -50,12 +50,12 @@ public class SelectionExec extends PhysicalExec  {
 
   @Override
   public Tuple next() throws IOException {
-    Tuple tuple = null;
+    Tuple tuple;
     while ((tuple = subOp.next()) != null) {
       qual.eval(qualCtx, inSchema, tuple);
       if (qual.terminate(qualCtx).asBool()) {
         if (targetIds != null) {
-          TupleUtil.project(tuple, outputTuple, targetIds);
+          RowStoreUtil.project(tuple, outputTuple, targetIds);
           return outputTuple;
         } else {
           return tuple;

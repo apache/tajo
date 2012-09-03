@@ -10,10 +10,7 @@ import tajo.catalog.Schema;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.catalog.statistics.ColumnStat;
 import tajo.datum.*;
-import tajo.storage.StorageUtil;
-import tajo.storage.Tuple;
-import tajo.storage.TupleRange;
-import tajo.storage.VTuple;
+import tajo.storage.*;
 import tajo.util.Bytes;
 import tajo.worker.dataserver.HttpUtil;
 
@@ -25,152 +22,6 @@ import java.util.Map;
 public class TupleUtil {
   /** class logger **/
   private static final Log LOG = LogFactory.getLog(TupleUtil.class);
-
-  public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
-    int[] targetIds = new int[outSchema.getColumnNum()];
-    int i = 0;
-    for (Column target : outSchema.getColumns()) {
-      targetIds[i] = inSchema.getColumnId(target.getQualifiedName());
-      i++;
-    }
-
-    return targetIds;
-  }
-
-  public static Tuple project(Tuple in, Tuple out, int[] targetIds) {
-    out.clear();
-    for (int idx = 0; idx < targetIds.length; idx++) {
-      out.put(idx, in.get(targetIds[idx]));
-    }
-    return out;
-  }
-
-  public static byte [] toBytes(Schema schema, Tuple tuple) {
-    int size = StorageUtil.getRowByteSize(schema);
-    ByteBuffer bb = ByteBuffer.allocate(size);
-    Column col;
-    for (int i = 0; i < schema.getColumnNum(); i++) {
-      col = schema.getColumn(i);
-      switch (col.getDataType()) {
-        case BYTE: bb.put(tuple.get(i).asByte()); break;
-        case CHAR: bb.put(tuple.get(i).asByte()); break;
-        case BOOLEAN: bb.put(tuple.get(i).asByte()); break;
-        case SHORT: bb.putShort(tuple.get(i).asShort()); break;
-        case INT: bb.putInt(tuple.get(i).asInt()); break;
-        case LONG: bb.putLong(tuple.get(i).asLong()); break;
-        case FLOAT: bb.putFloat(tuple.get(i).asFloat()); break;
-        case DOUBLE: bb.putDouble(tuple.get(i).asDouble()); break;
-        case STRING:
-          byte [] _string = tuple.get(i).asByteArray();
-          bb.putInt(_string.length);
-          bb.put(_string);
-          break;
-        case BYTES:
-          byte [] bytes = tuple.get(i).asByteArray();
-          bb.putInt(bytes.length);
-          bb.put(bytes);
-          break;
-        case IPv4:
-          byte [] ipBytes = tuple.getIPv4Bytes(i);
-          bb.put(ipBytes);
-          break;
-        case IPv6: bb.put(tuple.getIPv6Bytes(i)); break;
-        default:
-      }
-    }
-
-    bb.flip();
-    byte [] buf = new byte [bb.limit()];
-    bb.get(buf);
-    return buf;
-  }
-
-  public static Tuple toTuple(Schema schema, byte [] bytes) {
-    ByteBuffer bb = ByteBuffer.wrap(bytes);
-    Tuple tuple = new VTuple(schema.getColumnNum());
-    Column col;
-    for (int i =0; i < schema.getColumnNum(); i++) {
-      col = schema.getColumn(i);
-
-      switch (col.getDataType()) {
-        case BYTE:
-          byte b = bb.get();
-          if(b == 0) {
-            tuple.put(i, DatumFactory.createNullDatum());
-          }else {
-            tuple.put(i, DatumFactory.createByte(b));
-          }break;
-        case CHAR: 
-          byte c = bb.get();
-          if(c == 0) {
-            tuple.put(i, DatumFactory.createNullDatum());
-          }else {
-            tuple.put(i, DatumFactory.createChar(c));
-          }break;
-        case BOOLEAN: tuple.put(i, DatumFactory.createBool(bb.get())); break;
-        case SHORT: 
-          short s = bb.getShort();
-          if(s < Short.MIN_VALUE + 1) {
-            tuple.put(i, DatumFactory.createNullDatum());
-          }else {
-            tuple.put(i, DatumFactory.createShort(s));
-          }break;
-        case INT:
-          int i_ = bb.getInt();
-          if ( i_ < Integer.MIN_VALUE + 1) {
-            tuple.put(i, DatumFactory.createNullDatum());
-          }else {
-          tuple.put(i, DatumFactory.createInt(i_)); 
-          }break;
-        case LONG:
-          long l = bb.getLong();
-          if ( l < Long.MIN_VALUE + 1) {
-            tuple.put(i, DatumFactory.createNullDatum());
-          }else {
-            tuple.put(i, DatumFactory.createLong(l));
-          }break;
-        case FLOAT:
-          float f = bb.getFloat();
-          if (Float.isNaN(f)) {
-            tuple.put(i, DatumFactory.createNullDatum());
-          }else {
-            tuple.put(i, DatumFactory.createFloat(f));
-          }break;
-        case DOUBLE:
-          double d = bb.getDouble();
-          if(Double.isNaN(d)) {
-            tuple.put(i, DatumFactory.createNullDatum());
-          }else {
-            tuple.put(i, DatumFactory.createDouble(d)); 
-          }break;
-        case STRING:
-          byte [] _string = new byte[bb.getInt()];
-          bb.get(_string);
-          String str = new String(_string);
-          if(str.compareTo("NULL") == 0) {
-            tuple.put(i, DatumFactory.createNullDatum());
-          }else {
-          tuple.put(i, DatumFactory.createString(str));
-          }break;
-        case BYTES:
-          byte [] _bytes = new byte[bb.getInt()];
-          bb.get(_bytes);
-          if(Bytes.compareTo(bytes, Bytes.toBytes("NULL")) == 0) {
-            tuple.put(i, DatumFactory.createNullDatum());
-          }else {
-          tuple.put(i, DatumFactory.createBytes(_bytes));
-          }break;
-        case IPv4:
-          byte [] _ipv4 = new byte[4];
-          bb.get(_ipv4);
-          tuple.put(i, DatumFactory.createIPv4(_ipv4));
-          break;
-        case IPv6:
-          // TODO - to be implemented
-      }
-    }
-    return tuple;
-  }
 
   /**
    * It computes the value cardinality of a tuple range.
@@ -442,8 +293,10 @@ public class TupleUtil {
 
   public static String rangeToQuery(Schema schema, TupleRange range, boolean last) throws UnsupportedEncodingException {
     StringBuilder sb = new StringBuilder();
-    byte [] startBytes = TupleUtil.toBytes(schema, range.getStart());
-    byte [] endBytes = TupleUtil.toBytes(schema, range.getEnd());
+    byte [] startBytes = RowStoreUtil.RowStoreEncoder
+        .toBytes(schema, range.getStart());
+    byte [] endBytes = RowStoreUtil.RowStoreEncoder
+        .toBytes(schema, range.getEnd());
     String startBase64 = new String(Base64.encodeBase64(startBytes));
     String endBase64 = new String(Base64.encodeBase64(endBytes));
 
@@ -475,7 +328,9 @@ public class TupleUtil {
     String endUrlDecoded = params.get("end");
     byte [] startBytes = Base64.decodeBase64(startUrlDecoded);
     byte [] endBytes = Base64.decodeBase64(endUrlDecoded);
-    return new TupleRange(schema, TupleUtil.toTuple(schema, startBytes), TupleUtil.toTuple(schema, endBytes));
+    return new TupleRange(schema, RowStoreUtil.RowStoreDecoder
+        .toTuple(schema, startBytes), RowStoreUtil.RowStoreDecoder
+        .toTuple(schema, endBytes));
   }
 
   public static TupleRange columnStatToRange(Schema schema, Schema target, List<ColumnStat> colStats) {
@@ -522,6 +377,41 @@ public class TupleUtil {
         return new StringDatum(bytes);
       case IPv4:
         return new IPv4Datum(bytes);
+      default: throw new UnsupportedOperationException(type + " is not supported yet");
+    }
+  }
+
+  private final static byte [] TRUE_BYTES = new byte[] {(byte)1};
+  private final static byte [] FALSE_BYTES = new byte[] {(byte)0};
+
+  public static byte [] toBytes(CatalogProtos.DataType type, Datum datum) {
+    ByteBuffer bb = null;
+    switch (type) {
+      case BOOLEAN:
+        if (datum.asBool()) {
+          return TRUE_BYTES;
+        } else {
+          return FALSE_BYTES;
+        }
+      case BYTE:
+      case CHAR:
+        return new byte[] {datum.asByte()};
+
+      case SHORT:
+        return Bytes.toBytes(datum.asShort());
+      case INT:
+        return Bytes.toBytes(datum.asInt());
+      case LONG:
+        return Bytes.toBytes(datum.asLong());
+      case FLOAT:
+        return Bytes.toBytes(datum.asFloat());
+      case DOUBLE:
+        return Bytes.toBytes(datum.asDouble());
+      case STRING:
+        return Bytes.toBytes(datum.asChars());
+      case IPv4:
+        return datum.asByteArray();
+
       default: throw new UnsupportedOperationException(type + " is not supported yet");
     }
   }

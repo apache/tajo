@@ -9,10 +9,10 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import tajo.catalog.Schema;
 import tajo.engine.planner.physical.TupleComparator;
-import tajo.engine.utils.TupleUtil;
 import tajo.index.IndexMethod;
 import tajo.index.IndexWriter;
 import tajo.index.OrderIndexReader;
+import tajo.storage.RowStoreUtil;
 import tajo.storage.Tuple;
 
 import java.io.Closeable;
@@ -147,10 +147,10 @@ public class BSTIndex implements IndexMethod {
       out.writeInt(this.level);
       out.writeInt(entryNum);
       if (entryNum > 0) {
-        byte [] minBytes = TupleUtil.toBytes(keySchema, min);
+        byte [] minBytes = RowStoreUtil.RowStoreEncoder.toBytes(keySchema, min);
         out.writeInt(minBytes.length);
         out.write(minBytes);
-        byte [] maxBytes = TupleUtil.toBytes(keySchema, max);
+        byte [] maxBytes = RowStoreUtil.RowStoreEncoder.toBytes(keySchema, max);
         out.writeInt(maxBytes.length);
         out.write(maxBytes);
       }
@@ -167,7 +167,7 @@ public class BSTIndex implements IndexMethod {
           }
         }
         /* key writing */
-        byte[] buf = TupleUtil.toBytes(this.keySchema, key);
+        byte[] buf = RowStoreUtil.RowStoreEncoder.toBytes(this.keySchema, key);
         out.writeInt(buf.length);
         out.write(buf);
         
@@ -199,7 +199,7 @@ public class BSTIndex implements IndexMethod {
 
         /* root key writing */
         for (Tuple key : keySet) {
-          byte[] buf = TupleUtil.toBytes(keySchema, key);
+          byte[] buf = RowStoreUtil.RowStoreEncoder.toBytes(keySchema, key);
           rootOut.writeInt(buf.length);
           rootOut.write(buf);
 
@@ -305,10 +305,10 @@ public class BSTIndex implements IndexMethod {
       if (entryNum > 0) { // if there is no any entry, do not read min/max values
         byte [] minBytes = new byte[indexIn.readInt()];
         indexIn.read(minBytes);
-        this.min = TupleUtil.toTuple(keySchema, minBytes);
+        this.min = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, minBytes);
         byte [] maxBytes = new byte[indexIn.readInt()];
         indexIn.read(maxBytes);
-        this.max = TupleUtil.toTuple(keySchema, maxBytes);
+        this.max = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, maxBytes);
       }
 
       fillData();
@@ -421,7 +421,7 @@ public class BSTIndex implements IndexMethod {
           counter++;
           buf = new byte[in.readInt()];
           in.read(buf);
-          dataSubIndex[i] = TupleUtil.toTuple(keySchema, buf);
+          dataSubIndex[i] = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, buf);
 
           int offsetNum = in.readInt();
           this.offsetSubIndex[i] = new long[offsetNum];
@@ -443,7 +443,7 @@ public class BSTIndex implements IndexMethod {
         for (int i = 0; i < counter; i++) {
           buf = new byte[in.readInt()];
           in.read(buf);
-          dataSubIndex[i] = TupleUtil.toTuple(keySchema, buf);
+          dataSubIndex[i] = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, buf);
 
           int offsetNum = in.readInt();
           this.offsetSubIndex[i] = new long[offsetNum];
@@ -472,7 +472,7 @@ public class BSTIndex implements IndexMethod {
       for (int i = 0; i < entryNum; i++) {
         buf = new byte[in.readInt()];
         in.read(buf);
-        keyTuple = TupleUtil.toTuple(keySchema, buf);
+        keyTuple = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, buf);
         dataIndex[i] = keyTuple;
         this.offsetIndex[i] = in.readLong();
       }

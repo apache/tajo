@@ -404,8 +404,7 @@ public class CSVFile2 extends Storage {
       return this.tupleOffsets[curIndex];
     }
 
-    @Override
-    public long tabletable() throws IOException {
+    private long tabletable() throws IOException {
       return (this.startOffset + this.length - fis.getPos());
     }
 
