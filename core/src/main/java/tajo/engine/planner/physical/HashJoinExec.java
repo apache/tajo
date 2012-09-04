@@ -1,9 +1,9 @@
 package tajo.engine.planner.physical;
 
+import tajo.SubqueryContext;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.SchemaUtil;
-import tajo.SubqueryContext;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.planner.PlannerUtil;
@@ -59,7 +59,7 @@ public class HashJoinExec extends PhysicalExec {
     this.inner = inner;
     this.plan = joinNode;
     this.inSchema = SchemaUtil.merge(outer.getSchema(), inner.getSchema());
-    this.outSchema = joinNode.getOutputSchema();
+    this.outSchema = joinNode.getOutSchema();
     this.joinQual = joinNode.getJoinQual();
     this.qualCtx = joinQual.newContext();
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);

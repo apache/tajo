@@ -3,10 +3,10 @@
  */
 package tajo.engine.ipc.protocolrecords;
 
+import tajo.QueryUnitId;
 import tajo.common.ProtoObject;
 import tajo.engine.MasterInterfaceProtos.QueryStatus;
 import tajo.engine.MasterInterfaceProtos.QueryUnitResponseProto;
-import tajo.QueryUnitId;
 
 /**
  * @author jihoon

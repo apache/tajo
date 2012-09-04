@@ -1,8 +1,8 @@
 package tajo.engine.planner.physical;
 
+import tajo.SubqueryContext;
 import tajo.catalog.Schema;
 import tajo.catalog.SchemaUtil;
-import tajo.SubqueryContext;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.planner.logical.JoinNode;
@@ -55,7 +55,7 @@ public class BNLJoinExec extends PhysicalExec {
     this.outer = outer;
     this.inner = inner;
     this.inSchema = SchemaUtil.merge(outer.getSchema(), inner.getSchema());
-    this.outSchema = ann.getOutputSchema();
+    this.outSchema = ann.getOutSchema();
     this.joinQual = ann.getJoinQual();
     this.qualCtx = this.joinQual.newContext();
     this.ann = ann;

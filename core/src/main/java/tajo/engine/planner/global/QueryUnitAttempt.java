@@ -1,10 +1,10 @@
 package tajo.engine.planner.global;
 
+import tajo.QueryUnitAttemptId;
 import tajo.catalog.statistics.TableStat;
-import tajo.master.AbstractQuery;
 import tajo.engine.MasterInterfaceProtos.InProgressStatusProto;
 import tajo.engine.MasterInterfaceProtos.QueryStatus;
-import tajo.QueryUnitAttemptId;
+import tajo.master.AbstractQuery;
 
 /**
  * @author jihoon

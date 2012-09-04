@@ -19,8 +19,8 @@ public class IndexScanNode extends ScanNode {
     super();
     setQual(scanNode.getQual());
     setFromTable(scanNode.getFromTable());
-    setInputSchema(scanNode.getInputSchema());
-    setOutputSchema(scanNode.getOutputSchema());
+    setInSchema(scanNode.getInSchema());
+    setOutSchema(scanNode.getOutSchema());
     setLocal(scanNode.isLocal());
     setTargets(scanNode.getTargets());
     setType(ExprType.BST_INDEX_SCAN);

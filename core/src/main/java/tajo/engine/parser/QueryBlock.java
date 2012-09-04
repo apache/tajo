@@ -8,11 +8,11 @@ import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.TableDesc;
 import tajo.catalog.proto.CatalogProtos;
-import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.engine.exec.eval.AggFuncCallEval;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.planner.JoinType;
+import tajo.engine.planner.PlanningContext;
 import tajo.engine.utils.TUtil;
 
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ import java.util.List;
 
 /**
  * This class contains a set of meta data about a query statement.
- * 
+ *
  * @author Hyunsik Choi
  *
  */
@@ -45,220 +45,221 @@ public class QueryBlock extends ParseTree {
   private EvalNode havingCond = null;
   /* keys for ordering */
   private SortSpec [] sortKeys = null;
-  
-  public QueryBlock() {
-    super(StatementType.SELECT);
+
+  public QueryBlock(PlanningContext context) {
+    super(context, StatementType.SELECT);
   }
-  
+
   public StatementType getStatementType() {
     return this.type;
   }
-  
+
   public void setStoreTable(String storeTable) {
     this.storeTable = storeTable;
   }
-  
+
   public String getStoreTable() {
     return this.storeTable;
   }
-  
+
   public final void setProjectAll() {
     this.projectAll = true;
   }
-  
+
   public final boolean getProjectAll() {
     return this.projectAll;
   }
-  
+
   public final void setDistinct() {
     this.distinct = true;
   }
-  
+
   public final boolean isDistinct() {
     return this.distinct;
   }
-  
+
   public final void setTargetList(Target [] targets) {
     this.targetList = targets;
   }
-  
+
   public final Target [] getTargetList() {
     return this.targetList;
   }
-  
+
   public final boolean hasAggregation() {
     return this.aggregation || hasGroupbyClause();
   }
-  
+
   public final void setAggregation() {
     this.aggregation = true;
   }
-  
+
   public final boolean hasGroupbyClause() {
     return this.groupbyClause != null;
   }
-  
+
   public final void setGroupByClause(final GroupByClause groupbyClause) {
     this.groupbyClause = groupbyClause;
   }
-  
+
   public final GroupByClause getGroupByClause() {
     return this.groupbyClause;
   }
-  
+
   public final boolean hasHavingCond() {
     return this.havingCond != null;
   }
-  
+
   public final void setHavingCond(final EvalNode havingCond) {
     this.havingCond = havingCond;
   }
-  
+
   public final EvalNode getHavingCond() {
     return this.havingCond;
   }
-  
+
   public final boolean hasOrderByClause() {
     return this.sortKeys != null;
   }
-  
+
   public final SortSpec [] getSortKeys() {
     return this.sortKeys;
   }
-  
+
   public void setSortKeys(final SortSpec [] keys) {
     this.sortKeys = keys;
   }
-  
+
   // From Clause
   public final boolean hasFromClause() {
     return fromTables.size() > 0 || joinClause != null;
   }
-  
-  public final void addFromTable(final FromTable table) {
+
+  public final void addFromTable(final FromTable table, boolean global) {
+    super.addTableRef(table);
     this.fromTables.add(table);
   }
-  
+
   public final boolean hasExplicitJoinClause() {
     return joinClause != null;
   }
-  
+
   public final void setJoinClause(final JoinClause joinClause) {
     this.joinClause = joinClause;
   }
-  
+
   public final JoinClause getJoinClause() {
     return this.joinClause;
   }
-  
+
   public final int getNumFromTables() {
     return fromTables.size();
   }
-  
+
   public final FromTable [] getFromTables() {
     return this.fromTables.toArray(new FromTable[fromTables.size()]);
   }
-  
+
   public final boolean hasWhereClause() {
     return this.whereCond != null;
   }
-  
+
   public final void setWhereCondition(final EvalNode whereCond) {
     this.whereCond = whereCond;
   }
-  
+
   public final EvalNode getWhereCondition() {
     return this.whereCond;
   }
-  
+
   public static class GroupByClause implements Cloneable {
     @Expose private boolean isEmptyGroupSet = false;
-    @Expose private List<GroupElement> groups 
-      = new ArrayList<QueryBlock.GroupElement>();
-    
-    public GroupByClause() {      
+    @Expose private List<GroupElement> groups
+        = new ArrayList<QueryBlock.GroupElement>();
+
+    public GroupByClause() {
     }
-    
+
     public void setEmptyGroupSet() {
       isEmptyGroupSet = true;
     }
-    
+
     public void addGroupSet(GroupElement group) {
       groups.add(group);
       if (isEmptyGroupSet) {
         isEmptyGroupSet = false;
       }
     }
-    
+
     public boolean isEmptyGroupSet() {
       return this.isEmptyGroupSet;
     }
-    
+
     public List<GroupElement> getGroupSet() {
       return Collections.unmodifiableList(groups);
     }
-    
+
     public String toString() {
       Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation()
           .setPrettyPrinting().create();
       return gson.toJson(this);
     }
-    
+
     public Object clone() throws CloneNotSupportedException {
       GroupByClause g = (GroupByClause) super.clone();
       g.isEmptyGroupSet = isEmptyGroupSet;
       g.groups = new ArrayList<QueryBlock.GroupElement>(groups);
-      
+
       return g;
     }
   }
-  
+
   public static class GroupElement implements Cloneable {
     @Expose private GroupType type;
-    @Expose private Column[] columns;
-    
+    @Expose private Column [] columns;
+
     @SuppressWarnings("unused")
     private GroupElement() {
       // for gson
     }
-    
+
     public GroupElement(GroupType type, Column [] columns) {
       this.type = type;
       this.columns = columns;
     }
-    
+
     public GroupType getType() {
       return this.type;
     }
-    
+
     public Column [] getColumns() {
       return this.columns;
     }
-    
+
     public String toString() {
       Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation()
           .setPrettyPrinting().create();
       return gson.toJson(this);
     }
-    
+
     public Object clone() throws CloneNotSupportedException {
       GroupElement groups = (GroupElement) super.clone();
       groups.type = type;
-      groups.columns = new Column[columns.length];      
+      groups.columns = new Column[columns.length];
       for (int i = 0; i < columns.length; i++) {
-          groups.columns[i++] = (Column) columns[i].clone();
-      }      
+        groups.columns[i++] = (Column) columns[i].clone();
+      }
       return groups;
     }
   }
-  
+
   public static enum GroupType {
     GROUPBY,
     CUBE,
     ROLLUP,
     EMPTYSET
   }
-  
+
   public static class JoinClause implements Cloneable {
     @Expose private JoinType joinType;
     @Expose private FromTable left;
@@ -267,27 +268,27 @@ public class QueryBlock extends ParseTree {
     @Expose private EvalNode joinQual;
     @Expose private Column [] joinColumns;
     @Expose private boolean natural = false;
-    
+
     @SuppressWarnings("unused")
     private JoinClause() {
       // for gson
     }
-    
+
     public JoinClause(final JoinType joinType) {
       this.joinType = joinType;
     }
-    
+
     public JoinClause(final JoinType joinType, final FromTable right) {
       this.joinType = joinType;
       this.right = right;
     }
-    
-    public JoinClause(final JoinType joinType, final FromTable left, 
-        final FromTable right) {
+
+    public JoinClause(final JoinType joinType, final FromTable left,
+                      final FromTable right) {
       this(joinType, right);
       this.left = left;
     }
-    
+
     public JoinType getJoinType() {
       return this.joinType;
     }
@@ -299,7 +300,7 @@ public class QueryBlock extends ParseTree {
     public boolean isNatural() {
       return this.natural;
     }
-    
+
     public void setRight(FromTable right) {
       this.right = right;
     }
@@ -311,60 +312,60 @@ public class QueryBlock extends ParseTree {
     public void setLeft(JoinClause left) {
       this.leftJoin = left;
     }
-    
+
     public boolean hasLeftJoin() {
       return leftJoin != null;
     }
-    
+
     public FromTable getLeft() {
       return this.left;
     }
-    
+
     public FromTable getRight() {
       return this.right;
     }
-    
+
     public JoinClause getLeftJoin() {
       return this.leftJoin;
     }
-    
+
     public void setJoinQual(EvalNode qual) {
       this.joinQual = qual;
     }
-    
+
     public boolean hasJoinQual() {
       return this.joinQual != null;
     }
-    
+
     public EvalNode getJoinQual() {
       return this.joinQual;
     }
-    
+
     public void setJoinColumns(Column [] columns) {
       this.joinColumns = columns;
     }
-    
+
     public boolean hasJoinColumns() {
       return this.joinColumns != null;
     }
-    
+
     public Column [] getJoinColumns() {
       return this.joinColumns;
     }
-    
-    
+
+
     public String toString() {
       Gson gson = new GsonBuilder().setPrettyPrinting().create();
       return gson.toJson(this);
     }
   }
-  
+
   public static class Target implements Cloneable {
-	  @Expose private EvalNode eval; 
-	  @Expose private Column column;
-	  @Expose private String alias = null;
+    @Expose private EvalNode eval;
+    @Expose private Column column;
+    @Expose private String alias = null;
     @Expose private int targetId;
-    
+
     public Target(EvalNode eval, int targetId) {
       this.eval = eval;
       if (eval.getType() == EvalNode.Type.AGG_FUNCTION &&
@@ -375,16 +376,16 @@ public class QueryBlock extends ParseTree {
       }
       this.targetId = targetId;
     }
-    
+
     public Target(final EvalNode eval, final String alias, int targetId) {
       this(eval, targetId);
       this.alias = alias;
     }
-    
+
     public final void setAlias(String alias) {
       this.alias = alias;
     }
-    
+
     public final String getAlias() {
       return alias;
     }
@@ -392,11 +393,11 @@ public class QueryBlock extends ParseTree {
     public final boolean hasAlias() {
       return alias != null;
     }
-    
+
     public EvalNode getEvalTree() {
       return this.eval;
     }
-    
+
     public Column getColumnSchema() {
       return this.column;
     }
@@ -404,53 +405,55 @@ public class QueryBlock extends ParseTree {
     public int getTargetId() {
       return this.targetId;
     }
-    
+
     public String toString() {
-      StringBuilder sb = new StringBuilder(eval.toString());      
+      StringBuilder sb = new StringBuilder(eval.toString());
       if(hasAlias()) {
         sb.append(", alias=").append(alias);
       }
       return sb.toString();
     }
-    
+
     public boolean equals(Object obj) {
       if(obj instanceof Target) {
         Target other = (Target) obj;
-        
+
         boolean b1 = eval.equals(other.eval);
         boolean b2 = column.equals(other.column);
         boolean b3 = TUtil.checkEquals(alias, other.alias);
-        
+
         return b1 && b2 && b3;
       } else {
         return false;
       }
     }
-    
+
     public int hashCode() {
       return this.eval.getName().hashCode();
     }
-    
+
     @Override
     public Object clone() throws CloneNotSupportedException {
       Target target = (Target) super.clone();
       target.eval = (EvalNode) eval.clone();
       target.column = (Column) column.clone();
       target.alias = alias != null ? alias : null;
-      
+
       return target;
     }
-    
+
     public String toJSON() {
       return GsonCreator.getInstance().toJson(this, Target.class);
     }
   }
-  
+
   public static class FromTable implements Cloneable {
     @Expose
     private TableDesc desc;
     @Expose
     private String alias = null;
+
+    public FromTable() {}
 
     public FromTable(final TableDesc desc) {
       this.desc = desc;
@@ -460,7 +463,7 @@ public class QueryBlock extends ParseTree {
       this(desc);
       this.alias = alias;
     }
-    
+
     public final String getTableName() {
       return desc.getId();
     }
@@ -468,15 +471,15 @@ public class QueryBlock extends ParseTree {
     public final String getTableId() {
       return alias == null ? desc.getId() : alias;
     }
-    
-    public final StoreType getStoreType() {
+
+    public final CatalogProtos.StoreType getStoreType() {
       return desc.getMeta().getStoreType();
     }
-    
+
     public final Schema getSchema() {
       return desc.getMeta().getSchema();
     }
-    
+
     public final void setAlias(String alias) {
       this.alias = alias;
     }
@@ -495,85 +498,85 @@ public class QueryBlock extends ParseTree {
       else
         return desc.getId();
     }
-    
+
     public boolean equals(Object obj) {
       if (obj instanceof FromTable) {
         FromTable other = (FromTable) obj;
-        return this.desc.equals(other.desc) 
+        return this.desc.equals(other.desc)
             && TUtil.checkEquals(this.alias, other.alias);
       } else {
         return false;
       }
     }
-    
+
     @Override
     public Object clone() throws CloneNotSupportedException {
       FromTable table = (FromTable) super.clone();
       table.desc = (TableDesc) desc.clone();
       table.alias = alias;
-      
+
       return table;
     }
-    
+
     public String toJSON() {
       desc.initFromProto();
       Gson gson = GsonCreator.getInstance();
       return gson.toJson(this, FromTable.class);
     }
   }
-  
+
   public static class SortSpec implements Cloneable {
     @Expose private Column sortKey;
     @Expose private boolean ascending = true;
     @Expose private boolean nullFirst = false;
-    
+
     public SortSpec(final Column sortKey) {
       this.sortKey = sortKey;
     }
-    
+
     /**
-     * 
+     *
      * @param sortKey columns to sort
      * @param asc true if the sort order is ascending order
      * @param nullFirst
      * Otherwise, it should be false.
      */
-    public SortSpec(final Column sortKey, final boolean asc, 
-        final boolean nullFirst) {
+    public SortSpec(final Column sortKey, final boolean asc,
+                    final boolean nullFirst) {
       this(sortKey);
       this.ascending = asc;
       this.nullFirst = nullFirst;
     }
-    
+
     public final boolean isAscending() {
       return this.ascending;
     }
-    
+
     public final void setDescOrder() {
       this.ascending = false;
     }
-    
+
     public final boolean isNullFirst() {
       return this.nullFirst;
     }
-    
+
     public final void setNullFirst() {
       this.nullFirst = true;
     }
-    
+
     public final Column getSortKey() {
       return this.sortKey;
     }
-    
+
     @Override
     public Object clone() throws CloneNotSupportedException {
       SortSpec key = (SortSpec) super.clone();
       key.sortKey = (Column) sortKey.clone();
       key.ascending = ascending;
-      
+
       return key;
     }
-    
+
     public String toString() {
       return "Sortkey (key="+sortKey
           + " "+(ascending ? "asc" : "desc")+")";

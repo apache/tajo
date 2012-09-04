@@ -4,19 +4,20 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tajo.QueryContext;
+import tajo.TajoTestingUtility;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.QueryContext;
-import tajo.TajoTestingUtility;
 import tajo.engine.exec.eval.EvalNode.Type;
 import tajo.engine.function.GeneralFunction;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.parser.QueryBlock;
+import tajo.engine.planner.LogicalPlanner;
 import tajo.storage.Tuple;
 import tajo.storage.VTuple;
 
@@ -30,6 +31,7 @@ public class TestEvalTree {
   private static CatalogService cat;
   private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
+  private static LogicalPlanner planner;
   private static Tuple [] tuples = new Tuple[3];
   
   @BeforeClass
@@ -54,7 +56,8 @@ public class TestEvalTree {
     cat.registerFunction(funcMeta);
     
     factory = new QueryContext.Factory(cat);
-    analyzer = new QueryAnalyzer(cat);    
+    analyzer = new QueryAnalyzer(cat);
+    planner = new LogicalPlanner(cat);
     
     tuples[0] = new VTuple(3);
     tuples[0].put(new Datum[] {
@@ -122,29 +125,28 @@ public class TestEvalTree {
     EvalNode expr;
 
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
-    QueryContext ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
+    block = (QueryBlock) analyzer.parse(QUERIES[0]).getParseTree();
     EvalContext evalCtx;
     expr = block.getWhereCondition();
     evalCtx = expr.newContext();
     expr.eval(evalCtx, peopleSchema, tuple);
     assertEquals(true, expr.terminate(evalCtx).asBool());
 
-    block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
+    block = (QueryBlock) analyzer.parse(QUERIES[1]).getParseTree();
     expr = block.getWhereCondition();
     evalCtx = expr.newContext();
     expr.eval(evalCtx, peopleSchema, tuple);
     assertEquals(15000, expr.terminate(evalCtx).asInt());
     assertCloneEqual(expr);
 
-    block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
+    block = (QueryBlock) analyzer.parse(QUERIES[2]).getParseTree();
     expr = block.getWhereCondition();
     evalCtx = expr.newContext();
     expr.eval(evalCtx, peopleSchema, tuple);
     assertEquals(15050, expr.terminate(evalCtx).asInt());
     assertCloneEqual(expr);
     
-    block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
+    block = (QueryBlock) analyzer.parse(QUERIES[2]).getParseTree();
     expr = block.getWhereCondition();
     evalCtx = expr.newContext();
     expr.eval(evalCtx, peopleSchema, tuple);
@@ -152,7 +154,7 @@ public class TestEvalTree {
     assertCloneEqual(expr);
     
     // Aggregation function test
-    block = (QueryBlock) analyzer.parse(ctx, QUERIES[4]);
+    block = (QueryBlock) analyzer.parse(QUERIES[4]).getParseTree();
     expr = block.getTargetList()[0].getEvalTree();
     evalCtx = expr.newContext();
     
@@ -587,7 +589,7 @@ public class TestEvalTree {
     QueryBlock block;
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
     QueryContext ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, NOT[0]);
+    block = (QueryBlock) analyzer.parse(NOT[0]).getParseTree();
     expr = block.getWhereCondition();
     evalCtx = expr.newContext();
     expr.eval(evalCtx, peopleSchema, tuples[0]);
@@ -612,7 +614,7 @@ public class TestEvalTree {
     // suffix
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
     QueryContext ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, LIKE[0]);
+    block = (QueryBlock) analyzer.parse(LIKE[0]).getParseTree();
     expr = block.getWhereCondition();
     EvalContext evalCtx = expr.newContext();
     expr.eval(evalCtx, peopleSchema, tuples[0]);
@@ -623,7 +625,7 @@ public class TestEvalTree {
     assertTrue(expr.terminate(evalCtx).asBool());
     
     // prefix
-    block = (QueryBlock) analyzer.parse(ctx, LIKE[1]);
+    block = (QueryBlock) analyzer.parse(LIKE[1]).getParseTree();
     expr = block.getWhereCondition();
     evalCtx = expr.newContext();
     expr.eval(evalCtx, peopleSchema, tuples[0]);
@@ -634,7 +636,7 @@ public class TestEvalTree {
     assertFalse(expr.terminate(evalCtx).asBool());
 
     // Not Test
-    block = (QueryBlock) analyzer.parse(ctx, LIKE[2]);
+    block = (QueryBlock) analyzer.parse(LIKE[2]).getParseTree();
     expr = block.getWhereCondition();
     evalCtx = expr.newContext();
     expr.eval(evalCtx, peopleSchema, tuples[0]);
@@ -658,12 +660,12 @@ public class TestEvalTree {
     // suffix
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
     QueryContext ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, IS_NULL[0]);
+    block = (QueryBlock) analyzer.parse(IS_NULL[0]).getParseTree();
     expr = block.getWhereCondition();
 
     assertIsNull(expr);
 
-    block = (QueryBlock) analyzer.parse(ctx, IS_NULL[1]);
+    block = (QueryBlock) analyzer.parse(IS_NULL[1]).getParseTree();
     expr = block.getWhereCondition();
 
     IsNullEval nullEval = (IsNullEval) expr;

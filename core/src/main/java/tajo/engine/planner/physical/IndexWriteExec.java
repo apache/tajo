@@ -33,7 +33,7 @@ public class IndexWriteExec extends PhysicalExec {
   public IndexWriteExec(StorageManager sm, IndexWriteNode annotation, Fragment frag,
       PhysicalExec subOp) throws IOException {
     this.subOp = subOp;    
-    inSchema = annotation.getInputSchema();
+    inSchema = annotation.getInSchema();
     Preconditions.checkArgument(inSchema.equals(subOp.getSchema()));
     
     indexKeys = new int[annotation.getSortSpecs().length];

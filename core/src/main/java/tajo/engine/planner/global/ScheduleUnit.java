@@ -4,13 +4,13 @@
 package tajo.engine.planner.global;
 
 import com.google.common.base.Preconditions;
-import tajo.catalog.Schema;
-import tajo.catalog.statistics.TableStat;
-import tajo.master.AbstractQuery;
-import tajo.engine.MasterInterfaceProtos.QueryStatus;
 import tajo.QueryUnitId;
 import tajo.ScheduleUnitId;
+import tajo.catalog.Schema;
+import tajo.catalog.statistics.TableStat;
+import tajo.engine.MasterInterfaceProtos.QueryStatus;
 import tajo.engine.planner.logical.*;
+import tajo.master.AbstractQuery;
 import tajo.master.Priority;
 
 import java.util.*;
@@ -177,7 +177,7 @@ public class ScheduleUnit extends AbstractQuery {
   }
   
   public Schema getOutputSchema() {
-    return this.store.getOutputSchema();
+    return this.store.getOutSchema();
   }
   
   public StoreTableNode getStoreTableNode() {

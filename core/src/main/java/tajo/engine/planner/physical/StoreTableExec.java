@@ -4,11 +4,11 @@
 package tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import tajo.SubqueryContext;
 import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.SubqueryContext;
 import tajo.engine.planner.logical.StoreTableNode;
 import tajo.storage.Appender;
 import tajo.storage.StorageManager;
@@ -43,8 +43,8 @@ public class StoreTableExec extends PhysicalExec {
     this.ctx = ctx;
     this.annotation = annotation;
     this.subOp = subOp;
-    this.inputSchema = this.annotation.getInputSchema();
-    this.outputSchema = this.annotation.getOutputSchema();
+    this.inputSchema = this.annotation.getInSchema();
+    this.outputSchema = this.annotation.getOutSchema();
     
     TableMeta meta = TCatUtil.newTableMeta(this.outputSchema, StoreType.CSV);
     if (ctx.isInterQuery()) {

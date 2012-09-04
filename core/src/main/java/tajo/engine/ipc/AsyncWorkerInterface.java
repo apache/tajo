@@ -4,8 +4,8 @@
 package tajo.engine.ipc;
 
 import tajo.Abortable;
-import tajo.engine.MasterInterfaceProtos.*;
 import tajo.Stoppable;
+import tajo.engine.MasterInterfaceProtos.*;
 import tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 
 /**

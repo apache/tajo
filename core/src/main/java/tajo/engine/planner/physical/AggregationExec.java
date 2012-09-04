@@ -1,10 +1,10 @@
 package tajo.engine.planner.physical;
 
 import com.google.common.collect.Sets;
+import tajo.SubqueryContext;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.datum.DatumFactory;
-import tajo.SubqueryContext;
 import tajo.engine.exec.eval.ConstEval;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
@@ -38,8 +38,8 @@ public abstract class AggregationExec extends PhysicalExec {
     this.ctx = ctx;
     this.annotation = groupbyNode;
     this.havingQual = groupbyNode.getHavingCondition();
-    this.inputSchema = groupbyNode.getInputSchema();
-    this.outputSchema = groupbyNode.getOutputSchema();
+    this.inputSchema = groupbyNode.getInSchema();
+    this.outputSchema = groupbyNode.getOutSchema();
     this.child = child;
 
     nonNullGroupingFields = Sets.newHashSet();

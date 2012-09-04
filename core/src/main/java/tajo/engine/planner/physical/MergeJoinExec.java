@@ -1,8 +1,8 @@
 package tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
-import tajo.catalog.Schema;
 import tajo.SubqueryContext;
+import tajo.catalog.Schema;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.parser.QueryBlock;
@@ -62,8 +62,8 @@ public class MergeJoinExec extends PhysicalExec {
     this.joinNode = joinNode;
     this.joinQual = joinNode.getJoinQual();
     this.qualCtx = this.joinQual.newContext();
-    this.inSchema = joinNode.getInputSchema();
-    this.outSchema = joinNode.getOutputSchema();
+    this.inSchema = joinNode.getInSchema();
+    this.outSchema = joinNode.getOutSchema();
 
     this.outerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);

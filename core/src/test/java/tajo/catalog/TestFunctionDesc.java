@@ -2,10 +2,10 @@ package tajo.catalog;
 
 import com.google.gson.Gson;
 import org.junit.Test;
+import tajo.WorkerTestingUtil;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
-import tajo.WorkerTestingUtil;
 import tajo.engine.exception.InternalException;
 import tajo.engine.exec.eval.TestEvalTree.TestSum;
 import tajo.engine.json.GsonCreator;

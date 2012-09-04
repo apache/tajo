@@ -1,7 +1,7 @@
 package tajo.engine.planner.physical;
 
-import tajo.catalog.Schema;
 import tajo.SubqueryContext;
+import tajo.catalog.Schema;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.planner.logical.SelectionNode;
@@ -29,8 +29,8 @@ public class SelectionExec extends PhysicalExec  {
   public SelectionExec(SubqueryContext ctx, SelectionNode selNode,
                        PhysicalExec subOp) {
     this.annotation = selNode;
-    this.inSchema = selNode.getInputSchema();
-    this.outSchema = selNode.getOutputSchema();
+    this.inSchema = selNode.getInSchema();
+    this.outSchema = selNode.getOutSchema();
     this.subOp = subOp;
 
     this.qual = this.annotation.getQual();
@@ -45,7 +45,7 @@ public class SelectionExec extends PhysicalExec  {
 
   @Override
   public Schema getSchema() {
-    return annotation.getOutputSchema();
+    return annotation.getOutSchema();
   }
 
   @Override

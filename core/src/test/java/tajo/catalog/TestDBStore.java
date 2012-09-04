@@ -7,12 +7,12 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tajo.TajoTestingUtility;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
 import tajo.catalog.store.DBStore;
 import tajo.conf.TajoConf;
-import tajo.TajoTestingUtility;
 import tajo.storage.CSVFile2;
 
 import java.io.File;

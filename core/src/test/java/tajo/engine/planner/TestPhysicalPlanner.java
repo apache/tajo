@@ -22,7 +22,6 @@ import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.datum.NullDatum;
 import tajo.engine.ipc.protocolrecords.Fragment;
-import tajo.engine.parser.ParseTree;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.global.ScheduleUnit;
@@ -53,6 +52,7 @@ public class TestPhysicalPlanner {
   private static TajoConf conf;
   private static CatalogService catalog;
   private static QueryAnalyzer analyzer;
+  private static LogicalPlanner planner;
   private static SubqueryContext.Factory factory;
   private static StorageManager sm;
 
@@ -133,6 +133,7 @@ public class TestPhysicalPlanner {
     catalog.addTable(score);
     factory = new SubqueryContext.Factory();
     analyzer = new QueryAnalyzer(catalog);
+    planner = new LogicalPlanner(catalog);
   }
 
   @AfterClass
@@ -168,10 +169,10 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testCreateScanPlan");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[0]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    PlanningContext context = analyzer.parse(QUERIES[0]);
+    LogicalNode plan = planner.createPlan(context);
 
-    LogicalOptimizer.optimize(ctx, plan);
+    LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -193,9 +194,9 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testGroupByPlan");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[7]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(QUERIES[7]);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -219,9 +220,9 @@ public class TestPhysicalPlanner {
         .getTestDir("testHashGroupByPlanWithALLField");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[16]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(QUERIES[16]);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -244,9 +245,9 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testSortGroupByPlan");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[]{frags[0]}, workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[7]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(QUERIES[7]);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -261,10 +262,10 @@ public class TestPhysicalPlanner {
       specs[i] = new QueryBlock.SortSpec(grpColumns[i], true, false);
     }
     SortNode annotation = new SortNode(specs);
-    annotation.setInputSchema(scan.getSchema());
-    annotation.setOutputSchema(scan.getSchema());
+    annotation.setInSchema(scan.getSchema());
+    annotation.setOutSchema(scan.getSchema());
     SortExec sort = new SortExec(annotation, scan);
-    exec = new SortAggregateExec(ctx, hashAgg.getAnnotation(), sort);*/
+    exec = new SortAggregateExec(hashAgg.getAnnotation(), sort);*/
 
     int i = 0;
     Tuple tuple;
@@ -296,11 +297,11 @@ public class TestPhysicalPlanner {
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] },
         workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[8]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(QUERIES[8]);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
 
-    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutputSchema(),
+    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
         StoreType.CSV);
     sm.initTableBase(outputMeta, "grouped");
 
@@ -335,8 +336,8 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testPartitionedStorePlan");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] },
         workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[7]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    PlanningContext context = analyzer.parse(QUERIES[7]);
+    LogicalNode plan = planner.createPlan(context);
 
     int numPartitions = 3;
     Column key1 = new Column("score.deptName", DataType.STRING);
@@ -344,9 +345,9 @@ public class TestPhysicalPlanner {
     StoreTableNode storeNode = new StoreTableNode("partition");
     storeNode.setPartitions(ScheduleUnit.PARTITION_TYPE.HASH, new Column[]{key1, key2}, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    plan = LogicalOptimizer.optimize(context, plan);
 
-    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutputSchema(),
+    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
         StoreType.CSV);
     sm.initTableBase(outputMeta, "partition");
 
@@ -394,16 +395,16 @@ public class TestPhysicalPlanner {
         .getTestDir("testPartitionedStorePlanWithEmptyGroupingSet");
     SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] },
         workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[15]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    PlanningContext context = analyzer.parse(QUERIES[15]);
+    LogicalNode plan = planner.createPlan(context);
 
     int numPartitions = 1;
     StoreTableNode storeNode = new StoreTableNode("emptyset");
     storeNode.setPartitions(ScheduleUnit.PARTITION_TYPE.HASH, new Column[] {}, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    plan = LogicalOptimizer.optimize(context, plan);
 
-    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutputSchema(),
+    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
         StoreType.CSV);
     sm.initTableBase(outputMeta, "emptyset");
 
@@ -441,9 +442,9 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testAggregationFunction");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[9]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(QUERIES[9]);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -462,9 +463,9 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testCountFunction");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[10]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(QUERIES[10]);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -481,9 +482,9 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testGroupByWithNullValue");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[12]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(QUERIES[12]);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -502,9 +503,9 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testUnionPlan");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[0]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(QUERIES[0]);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
     LogicalRootNode root = (LogicalRootNode) plan;
     UnionNode union = new UnionNode(root.getSubNode(), root.getSubNode());
     root.setSubNode(union);
@@ -527,9 +528,9 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testEvalExpr");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { }, workDir);
-    ParseTree query = analyzer.parse(ctx, QUERIES[13]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(QUERIES[13]);
+    LogicalNode plan = planner.createPlan(context);
+    LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -538,9 +539,9 @@ public class TestPhysicalPlanner {
     assertEquals(true, tuple.get(0).asBool());
     assertTrue(7.0d == tuple.get(1).asDouble());
 
-    query = analyzer.parse(ctx, QUERIES[14]);
-    plan = LogicalPlanner.createPlan(ctx, query);
-    LogicalOptimizer.optimize(ctx, plan);
+    context = analyzer.parse(QUERIES[14]);
+    plan = planner.createPlan(context);
+    LogicalOptimizer.optimize(context, plan);
 
     phyPlanner = new PhysicalPlanner(conf, sm);
     exec = phyPlanner.createPlan(ctx, plan);
@@ -559,9 +560,9 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testCreateIndex");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
-    ParseTree query = analyzer.parse(ctx, createIndexStmt[0]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(createIndexStmt[0]);
+    LogicalNode plan = planner.createPlan(context);
+    LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -585,9 +586,9 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testDuplicateEliminate");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
-    ParseTree query = analyzer.parse(ctx, duplicateElimination[0]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(duplicateElimination[0]);
+    LogicalNode plan = planner.createPlan(context);
+    LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -615,9 +616,9 @@ public class TestPhysicalPlanner {
     File workDir = TajoTestingUtility.getTestDir("testIndexedStoreExec");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
-    ParseTree query = analyzer.parse(ctx, SORT_QUERY[0]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(SORT_QUERY[0]);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);

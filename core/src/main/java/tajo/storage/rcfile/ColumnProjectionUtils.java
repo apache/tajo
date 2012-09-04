@@ -18,10 +18,10 @@
 
 package tajo.storage.rcfile;
 
-import java.util.ArrayList;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.StringUtils;
+
+import java.util.ArrayList;
 
 /**
  * ColumnProjectionUtils.

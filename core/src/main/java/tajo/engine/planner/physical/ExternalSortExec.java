@@ -1,13 +1,13 @@
 package tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import tajo.SubqueryContext;
 import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
-import tajo.SubqueryContext;
 import tajo.engine.planner.logical.SortNode;
 import tajo.storage.Appender;
 import tajo.storage.StorageManager;
@@ -48,8 +48,8 @@ public class ExternalSortExec extends PhysicalExec {
 
     this.SORT_BUFFER_SIZE = conf.getIntVar(ConfVars.EXTERNAL_SORT_BUFFER);
 
-    this.inputSchema = annotation.getInputSchema();
-    this.outputSchema = annotation.getOutputSchema();
+    this.inputSchema = annotation.getInSchema();
+    this.outputSchema = annotation.getOutSchema();
 
     this.comparator = new TupleComparator(inputSchema, annotation.getSortKeys());
     this.tupleSlots = new ArrayList<Tuple>(SORT_BUFFER_SIZE);

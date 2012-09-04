@@ -5,10 +5,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import tajo.Context;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.proto.CatalogProtos;
-import tajo.Context;
 import tajo.engine.exec.eval.*;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.logical.*;
@@ -47,8 +47,8 @@ public class PlannerUtil {
     UnaryNode p = (UnaryNode) parent;
     LogicalNode c = p.getSubNode();
     UnaryNode m = (UnaryNode) newNode;
-    m.setInputSchema(c.getOutputSchema());
-    m.setOutputSchema(c.getOutputSchema());
+    m.setInSchema(c.getOutSchema());
+    m.setOutSchema(c.getOutSchema());
     m.setSubNode(c);
     p.setSubNode(m);
     
@@ -96,8 +96,8 @@ public class PlannerUtil {
     BinaryNode p = (BinaryNode) parent;
     LogicalNode c = p.getOuterNode();
     UnaryNode m = (UnaryNode) outer;
-    m.setInputSchema(c.getOutputSchema());
-    m.setOutputSchema(c.getOutputSchema());
+    m.setInSchema(c.getOutSchema());
+    m.setOutSchema(c.getOutSchema());
     m.setSubNode(c);
     p.setOuter(m);
     return p;
@@ -110,8 +110,8 @@ public class PlannerUtil {
     BinaryNode p = (BinaryNode) parent;
     LogicalNode c = p.getInnerNode();
     UnaryNode m = (UnaryNode) inner;
-    m.setInputSchema(c.getOutputSchema());
-    m.setOutputSchema(c.getOutputSchema());
+    m.setInSchema(c.getOutSchema());
+    m.setOutSchema(c.getOutSchema());
     m.setSubNode(c);
     p.setInner(m);
     return p;
@@ -128,11 +128,11 @@ public class PlannerUtil {
     LogicalNode rc = p.getInnerNode();
     UnaryNode lm = (UnaryNode)left;
     UnaryNode rm = (UnaryNode)right;
-    lm.setInputSchema(lc.getOutputSchema());
-    lm.setOutputSchema(lc.getOutputSchema());
+    lm.setInSchema(lc.getOutSchema());
+    lm.setOutSchema(lc.getOutSchema());
     lm.setSubNode(lc);
-    rm.setInputSchema(rc.getOutputSchema());
-    rm.setOutputSchema(rc.getOutputSchema());
+    rm.setInSchema(rc.getOutSchema());
+    rm.setOutSchema(rc.getOutSchema());
     rm.setSubNode(rc);
     p.setOuter(lm);
     p.setInner(rm);
@@ -193,10 +193,10 @@ public class PlannerUtil {
 
       QueryBlock.Target[] targetArray = newChildTargets.toArray(new QueryBlock.Target[newChildTargets.size()]);
       child.setTargetList(targetArray);
-      child.setOutputSchema(PlannerUtil.targetToSchema(targetArray));
+      child.setOutSchema(PlannerUtil.targetToSchema(targetArray));
       // set the groupby chaining
       gp.setSubNode(child);
-      gp.setInputSchema(child.getOutputSchema());
+      gp.setInSchema(child.getOutSchema());
     } catch (CloneNotSupportedException e) {
       LOG.error(e);
     }
@@ -210,8 +210,8 @@ public class PlannerUtil {
     try {
       SortNode child = (SortNode) sort.clone();
       sort.setSubNode(child);
-      sort.setInputSchema(child.getOutputSchema());
-      sort.setOutputSchema(child.getOutputSchema());
+      sort.setInSchema(child.getOutSchema());
+      sort.setOutSchema(child.getOutSchema());
     } catch (CloneNotSupportedException e) {
       LOG.error(e);
     }

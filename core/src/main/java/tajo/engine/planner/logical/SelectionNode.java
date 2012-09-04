@@ -34,8 +34,8 @@ public class SelectionNode extends UnaryNode implements Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("\"Selection\": {\"qual\": \"").append(qual.toString()).append("\",");
-    sb.append("\n  \"out schema\": ").append(getOutputSchema()).append(",");
-    sb.append("\n  \"in schema\": ").append(getInputSchema()).append("}");
+    sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",");
+    sb.append("\n  \"in schema\": ").append(getInSchema()).append("}");
     
     return sb.toString()+"\n"
     + getSubNode().toString();

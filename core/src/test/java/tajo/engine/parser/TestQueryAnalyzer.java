@@ -4,6 +4,9 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tajo.Context;
+import tajo.QueryContext;
+import tajo.TajoTestingUtility;
 import tajo.benchmark.TPCH;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
@@ -11,9 +14,6 @@ import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.IndexMethod;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.datum.DatumFactory;
-import tajo.Context;
-import tajo.QueryContext;
-import tajo.TajoTestingUtility;
 import tajo.engine.exec.eval.ConstEval;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.exec.eval.EvalNode.Type;
@@ -149,8 +149,7 @@ public class TestQueryAnalyzer {
  
   @Test
   public final void testSelectStatement() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
+    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[0]).getParseTree();
     assertEquals(1, block.getFromTables().length);
     assertEquals("people", block.getFromTables()[0].getTableName());
   }
@@ -165,8 +164,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testGroupByStatement() {
-    Context ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx, GROUP_BY[0]);
+    ParseTree tree = analyzer.parse(GROUP_BY[0]).getParseTree();
     assertEquals(StatementType.SELECT, tree.getType());
     QueryBlock block = (QueryBlock) tree;
     assertTrue(block.hasGroupbyClause());
@@ -178,8 +176,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testCubeByStatement() {
-    Context ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx, GROUP_BY[1]);
+    ParseTree tree = analyzer.parse(GROUP_BY[1]).getParseTree();
     assertEquals(StatementType.SELECT, tree.getType());
     QueryBlock block = (QueryBlock) tree;
     assertTrue(block.hasGroupbyClause());
@@ -193,8 +190,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testRollUpStatement() {
-    Context ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx, GROUP_BY[2]);
+    ParseTree tree = analyzer.parse(GROUP_BY[2]).getParseTree();
     assertEquals(StatementType.SELECT, tree.getType());
     QueryBlock block = (QueryBlock) tree;
     assertTrue(block.hasGroupbyClause());
@@ -208,8 +204,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testMixedGroupByStatement() {
-    Context ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx, GROUP_BY[3]);
+    ParseTree tree = analyzer.parse(GROUP_BY[3]).getParseTree();
     assertEquals(StatementType.SELECT, tree.getType());
     QueryBlock block = (QueryBlock) tree;
     assertTrue(block.hasGroupbyClause());
@@ -228,8 +223,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testEmptyGroupSetStatement() {
-    Context ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx, GROUP_BY[4]);
+    ParseTree tree = analyzer.parse(GROUP_BY[4]).getParseTree();
     assertEquals(StatementType.SELECT, tree.getType());
     QueryBlock block = (QueryBlock) tree;
     assertTrue(block.hasGroupbyClause());
@@ -239,7 +233,7 @@ public class TestQueryAnalyzer {
   @Test
   public final void testSelectStatementWithAlias() {
     Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[4]);
+    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[4]).getParseTree();
     assertEquals(2, block.getFromTables().length);
     assertEquals("people", block.getFromTables()[0].getTableName());
     assertEquals("student", block.getFromTables()[1].getTableName());
@@ -248,7 +242,7 @@ public class TestQueryAnalyzer {
   @Test
   public final void testOrderByClause() {
     Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[5]);
+    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[5]).getParseTree();
     testOrderByCluse(block);
   }
   
@@ -264,21 +258,18 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testCreateTableAsSelect() {
-    Context ctx = factory.create();
-    CreateTableStmt stmt = (CreateTableStmt) analyzer.parse(ctx, QUERIES[7]);
+    CreateTableStmt stmt = (CreateTableStmt) analyzer.parse(QUERIES[7]).getParseTree();
     assertEquals("store1", stmt.getTableName());
     testOrderByCluse(stmt.getSelectStmt());
-    
-    ctx = factory.create();
-    stmt = (CreateTableStmt) analyzer.parse(ctx, QUERIES[8]);
+
+    stmt = (CreateTableStmt) analyzer.parse(QUERIES[8]).getParseTree();
     assertEquals("store2", stmt.getTableName());
     testOrderByCluse(stmt.getSelectStmt());
   }
   
   @Test
   public final void testCreateTableDef() {
-    Context ctx = factory.create();
-    CreateTableStmt stmt = (CreateTableStmt) analyzer.parse(ctx, QUERIES[10]);
+    CreateTableStmt stmt = (CreateTableStmt) analyzer.parse(QUERIES[10]).getParseTree();
     assertEquals("table1", stmt.getTableName());
     Schema def = stmt.getSchema();
     assertEquals("name", def.getColumn(0).getColumnName());
@@ -297,8 +288,7 @@ public class TestQueryAnalyzer {
   
   @Test 
   public final void testCreateIndex() {
-    Context ctx = factory.create();
-    CreateIndexStmt stmt = (CreateIndexStmt) analyzer.parse(ctx, QUERIES[9]);
+    CreateIndexStmt stmt = (CreateIndexStmt) analyzer.parse(QUERIES[9]).getParseTree();
     assertEquals("score_idx", stmt.getIndexName());
     assertTrue(stmt.isUnique());
     assertEquals("people", stmt.getTableName());
@@ -319,8 +309,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testOnlyExpr() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[6]);
+    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[6]).getParseTree();
     EvalNode node = block.getTargetList()[0].getEvalTree();
     assertEquals(Type.PLUS, node.getType());
   }
@@ -333,19 +322,17 @@ public class TestQueryAnalyzer {
   @Test(expected = InvalidQueryException.class)
   public final void testNoSuchTables()  {
     Context ctx = factory.create();
-    analyzer.parse(ctx, INVALID_QUERIES[0]);
+    analyzer.parse(INVALID_QUERIES[0]);
   }
   
   @Test(expected = InvalidQueryException.class)
   public final void testNoSuchFields()  {
-    Context ctx = factory.create();
-    analyzer.parse(ctx, INVALID_QUERIES[1]);
+    analyzer.parse(INVALID_QUERIES[1]);
   }
   
   @Test(expected = InvalidQueryException.class)
   public final void testInvalidGroupFields() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, INVALID_QUERIES[2]);
+    QueryBlock block = (QueryBlock) analyzer.parse(INVALID_QUERIES[2]).getParseTree();
     assertEquals("age", block.getGroupByClause().getGroupSet().get(0).getColumns()[0].getQualifiedName());
   }
   
@@ -370,8 +357,7 @@ public class TestQueryAnalyzer {
    * people  student
    */
   public final void testNaturalJoinClause() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[0]);
+    QueryBlock block = (QueryBlock) analyzer.parse(JOINS[0]).getParseTree();
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.INNER, join.getJoinType());
     assertTrue(join.isNatural());
@@ -388,8 +374,7 @@ public class TestQueryAnalyzer {
    * people student
    */
   public final void testInnerJoinClause() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[1]);
+    QueryBlock block = (QueryBlock) analyzer.parse(JOINS[1]).getParseTree();
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.INNER, join.getJoinType());
     assertEquals("people", join.getLeft().getTableName());
@@ -398,9 +383,8 @@ public class TestQueryAnalyzer {
     assertEquals("s", join.getRight().getAlias());
     assertTrue(join.hasJoinQual());
     assertEquals(EvalNode.Type.EQUAL, join.getJoinQual().getType());
-    
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, JOINS[2]);
+
+    block = (QueryBlock) analyzer.parse(JOINS[2]).getParseTree();
     join = block.getJoinClause();
     assertEquals(JoinType.INNER, join.getJoinType());
     assertEquals("people", join.getLeft().getTableName());
@@ -413,8 +397,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testJoinClause() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[6]);
+    QueryBlock block = (QueryBlock) analyzer.parse(JOINS[6]).getParseTree();
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.INNER, join.getJoinType());
     assertEquals("people", join.getLeft().getTableName());
@@ -427,8 +410,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testCrossJoinClause() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[3]);
+    QueryBlock block = (QueryBlock) analyzer.parse(JOINS[3]).getParseTree();
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.CROSS_JOIN, join.getJoinType());
     assertEquals("branch", join.getRight().getTableName());
@@ -439,8 +421,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testLeftOuterJoinClause() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[4]);
+    QueryBlock block = (QueryBlock) analyzer.parse(JOINS[4]).getParseTree();
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.LEFT_OUTER, join.getJoinType());
     assertEquals("people", join.getLeft().getTableName());
@@ -453,8 +434,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testLeftJoinClause() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[7]);
+    QueryBlock block = (QueryBlock) analyzer.parse(JOINS[7]).getParseTree();
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.LEFT_OUTER, join.getJoinType());
     assertEquals("people", join.getLeft().getTableName());
@@ -467,8 +447,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testRightOuterJoinClause() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[5]);
+    QueryBlock block = (QueryBlock) analyzer.parse(JOINS[5]).getParseTree();
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.RIGHT_OUTER, join.getJoinType());
     assertEquals("people", join.getLeft().getTableName());
@@ -481,8 +460,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testRightJoinClause() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, JOINS[8]);
+    QueryBlock block = (QueryBlock) analyzer.parse(JOINS[8]).getParseTree();
     JoinClause join = block.getJoinClause();
     assertEquals(JoinType.RIGHT_OUTER, join.getJoinType());
     assertEquals("people", join.getLeft().getTableName());
@@ -500,8 +478,7 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testUnionClause() {
-    Context ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx, setClauses[0]);
+    ParseTree tree = analyzer.parse(setClauses[0]).getParseTree();
     assertEquals(StatementType.UNION, tree.getType());
     SetStmt union = (SetStmt) tree;
     assertEquals(StatementType.SELECT, union.getLeftTree().getType());
@@ -512,8 +489,7 @@ public class TestQueryAnalyzer {
     assertEquals("branch", right.getFromTables()[0].getTableName());
     
     // multiple set statements
-    ctx = factory.create();
-    tree = analyzer.parse(ctx, setClauses[1]);
+    tree = analyzer.parse(setClauses[1]).getParseTree();
     assertEquals(StatementType.UNION, tree.getType());
     union = (SetStmt) tree;
     assertEquals(StatementType.SELECT, union.getLeftTree().getType());
@@ -535,20 +511,17 @@ public class TestQueryAnalyzer {
 
   @Test
   public final void testSetQulaifier() {
-    Context ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx, setQualifier[0]);
+    ParseTree tree = analyzer.parse(setQualifier[0]).getParseTree();
     assertEquals(StatementType.SELECT, tree.getType());
     QueryBlock block = (QueryBlock) tree;
     assertFalse(block.isDistinct());
 
-    ctx = factory.create();
-    tree = analyzer.parse(ctx, setQualifier[1]);
+    tree = analyzer.parse(setQualifier[1]).getParseTree();
     assertEquals(StatementType.SELECT, tree.getType());
     block = (QueryBlock) tree;
     assertTrue(block.isDistinct());
 
-    ctx = factory.create();
-    tree = analyzer.parse(ctx, setQualifier[2]);
+    tree = analyzer.parse(setQualifier[2]).getParseTree();
     assertEquals(StatementType.SELECT, tree.getType());
     block = (QueryBlock) tree;
     assertFalse(block.isDistinct());
@@ -556,49 +529,39 @@ public class TestQueryAnalyzer {
 
   @Test
   public final void testTypeInferring() {
-    Context ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where char_col = 'a'");
+    QueryBlock block = (QueryBlock) analyzer.parse("select 1 from alltype where char_col = 'a'").getParseTree();
     assertEquals(DataType.CHAR, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where short_col = 1");
+    block = (QueryBlock) analyzer.parse("select 1 from alltype where short_col = 1").getParseTree();
     assertEquals(DataType.SHORT, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where int_col = 1");
+    block = (QueryBlock) analyzer.parse("select 1 from alltype where int_col = 1").getParseTree();
     assertEquals(DataType.INT, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where long_col = 1");
+    block = (QueryBlock) analyzer.parse("select 1 from alltype where long_col = 1").getParseTree();
     assertEquals(DataType.LONG, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where float_col = 1");
+    block = (QueryBlock) analyzer.parse("select 1 from alltype where float_col = 1").getParseTree();
     assertEquals(DataType.INT, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where float_col = 1.0");
+    block = (QueryBlock) analyzer.parse("select 1 from alltype where float_col = 1.0").getParseTree();
     assertEquals(DataType.FLOAT, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where int_col = 1.0");
+    block = (QueryBlock) analyzer.parse("select 1 from alltype where int_col = 1.0").getParseTree();
     assertEquals(DataType.DOUBLE, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where double_col = 1.0");
+    block = (QueryBlock) analyzer.parse("select 1 from alltype where double_col = 1.0").getParseTree();
     assertEquals(DataType.DOUBLE, block.getWhereCondition().getRightExpr().getValueType()[0]);
 
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, "select 1 from alltype where string_col = 'a'");
+    block = (QueryBlock) analyzer.parse("select 1 from alltype where string_col = 'a'").getParseTree();
     assertEquals(DataType.STRING, block.getWhereCondition().getRightExpr().getValueType()[0]);
   }
 
   @Test
   public void testCaseWhen() {
-    Context ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx,
+    ParseTree tree = analyzer.parse(
         "select case when p_type like 'PROMO%' then l_extendedprice * (1 - l_discount) "+
-        "when p_type = 'MOCC' then l_extendedprice - 100 else 0 end as cond from lineitem, part");
+        "when p_type = 'MOCC' then l_extendedprice - 100 else 0 end as cond from lineitem, part").getParseTree();
     assertEquals(StatementType.SELECT, tree.getType());
     QueryBlock block = (QueryBlock) tree;
     assertTrue(block.getTargetList()[0].hasAlias());

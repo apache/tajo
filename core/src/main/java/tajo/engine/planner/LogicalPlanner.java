@@ -5,11 +5,12 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import tajo.Context;
+import tajo.catalog.CatalogService;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.SchemaUtil;
 import tajo.catalog.proto.CatalogProtos.DataType;
-import tajo.Context;
 import tajo.engine.exec.eval.*;
 import tajo.engine.parser.*;
 import tajo.engine.parser.QueryBlock.*;
@@ -19,7 +20,10 @@ import tajo.engine.planner.logical.join.JoinTree;
 import tajo.engine.query.exception.InvalidQueryException;
 import tajo.engine.query.exception.NotSupportQueryException;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 
 /**
  * This class creates a logical plan from a parse tree ({@link tajo.engine.parser.QueryBlock})
@@ -31,34 +35,37 @@ import java.util.*;
  */
 public class LogicalPlanner {
   private static Log LOG = LogFactory.getLog(LogicalPlanner.class);
+  private final CatalogService catalog;
 
-  private LogicalPlanner() {
+  public LogicalPlanner(CatalogService catalog) {
+    this.catalog = catalog;
   }
 
   /**
    * This generates a logical plan.
-   * 
-   * @param query a parse tree
+   *
+   * @param context
    * @return a initial logical plan
    */
-  public static LogicalNode createPlan(Context ctx, ParseTree query) {
+  public LogicalNode createPlan(PlanningContext context) {
     LogicalNode plan;
 
     try {
-      plan = createPlanInternal(ctx, query);
+      plan = createPlanInternal(context, context.getParseTree());
     } catch (CloneNotSupportedException e) {
       throw new InvalidQueryException(e);
     }
 
     LogicalRootNode root = new LogicalRootNode();
-    root.setInputSchema(plan.getOutputSchema());
-    root.setOutputSchema(plan.getOutputSchema());
+    root.setInSchema(plan.getOutSchema());
+    root.setOutSchema(plan.getOutSchema());
     root.setSubNode(plan);
-    
+
     return root;
   }
   
-  private static LogicalNode createPlanInternal(Context ctx, ParseTree query) throws CloneNotSupportedException {
+  private LogicalNode createPlanInternal(PlanningContext ctx,
+      ParseTree query) throws CloneNotSupportedException {
     LogicalNode plan;
     
     switch(query.getType()) {
@@ -78,7 +85,7 @@ public class LogicalPlanner {
     case CREATE_INDEX:
       LOG.info("Planning create index statement");
       CreateIndexStmt createIndex = (CreateIndexStmt) query;
-      plan = buildCreateIndexPlan(ctx, createIndex);
+      plan = buildCreateIndexPlan(createIndex);
       break;
 
     case CREATE_TABLE:
@@ -93,9 +100,9 @@ public class LogicalPlanner {
     
     return plan;
   }
-  
-  private static LogicalNode buildSetPlan(Context ctx,
-      SetStmt stmt) throws CloneNotSupportedException {
+
+  private LogicalNode buildSetPlan(PlanningContext ctx, SetStmt stmt)
+      throws CloneNotSupportedException {
     BinaryNode bin;
     switch (stmt.getType()) {
     case UNION:
@@ -113,27 +120,27 @@ public class LogicalPlanner {
     
     bin.setOuter(createPlanInternal(ctx, stmt.getLeftTree()));
     bin.setInner(createPlanInternal(ctx, stmt.getRightTree()));
-    bin.setInputSchema(bin.getOuterNode().getOutputSchema());
-    bin.setOutputSchema(bin.getOuterNode().getOutputSchema());
+    bin.setInSchema(bin.getOuterNode().getOutSchema());
+    bin.setOutSchema(bin.getOuterNode().getOutSchema());
     return bin;
   }
-  
-  private static LogicalNode buildCreateIndexPlan(Context ctx,
-      CreateIndexStmt stmt) {
-    FromTable table = new FromTable(ctx.getTable(stmt.getTableName()));
+
+  private LogicalNode buildCreateIndexPlan(CreateIndexStmt stmt) {
+    FromTable table = new FromTable(catalog.getTableDesc(stmt.getTableName()));
     ScanNode scan = new ScanNode(table);
-    scan.setInputSchema(table.getSchema());
-    scan.setOutputSchema(table.getSchema());
+    scan.setInSchema(table.getSchema());
+    scan.setOutSchema(table.getSchema());
     IndexWriteNode indexWrite = new IndexWriteNode(stmt);
     indexWrite.setSubNode(scan);
-    indexWrite.setInputSchema(scan.getOutputSchema());
-    indexWrite.setOutputSchema(scan.getOutputSchema());
+    indexWrite.setInSchema(scan.getOutSchema());
+    indexWrite.setOutSchema(scan.getOutSchema());
     
     return indexWrite;
   }
-  
-  private static LogicalNode buildCreateTablePlan(Context ctx, 
-      CreateTableStmt query) throws CloneNotSupportedException {
+
+  private static LogicalNode buildCreateTablePlan(final PlanningContext ctx,
+                                                  final CreateTableStmt query)
+      throws CloneNotSupportedException {
     LogicalNode node = null;
     if (query.hasDefinition())  {
       CreateTableNode createTable =
@@ -142,15 +149,15 @@ public class LogicalPlanner {
       if (query.hasOptions()) {
         createTable.setOptions(query.getOptions());
       }
-      createTable.setInputSchema(query.getSchema());
-      createTable.setOutputSchema(query.getSchema());
+      createTable.setInSchema(query.getSchema());
+      createTable.setOutSchema(query.getSchema());
       node = createTable;
     } else if (query.hasSelectStmt()) {
       LogicalNode subNode = buildSelectPlan(ctx, query.getSelectStmt());
       
       StoreTableNode storeNode = new StoreTableNode(query.getTableName());
-      storeNode.setInputSchema(subNode.getOutputSchema());
-      storeNode.setOutputSchema(subNode.getOutputSchema());
+      storeNode.setInSchema(subNode.getOutSchema());
+      storeNode.setOutSchema(subNode.getOutSchema());
       storeNode.setSubNode(subNode);
       node = storeNode;
     }
@@ -164,7 +171,9 @@ public class LogicalPlanner {
    * @param query
    * @return the planed logical plan
    */
-  private static LogicalNode buildSelectPlan(Context ctx, QueryBlock query) throws CloneNotSupportedException {
+  private static LogicalNode buildSelectPlan(PlanningContext ctx,
+                                             QueryBlock query)
+      throws CloneNotSupportedException {
     LogicalNode subroot;
     EvalNode whereCondition = null;
     EvalNode [] cnf = null;
@@ -176,13 +185,13 @@ public class LogicalPlanner {
 
     if(query.hasFromClause()) {
       if (query.hasExplicitJoinClause()) {
-        subroot = createExplicitJoinTree(ctx, query);
+        subroot = createExplicitJoinTree(query);
       } else {
-        subroot = createImplicitJoinTree(ctx, query.getFromTables(), cnf);
+        subroot = createImplicitJoinTree(query.getFromTables(), cnf);
       }
     } else {
       subroot = new EvalExprNode(query.getTargetList());
-      subroot.setOutputSchema(getProjectedSchema(ctx, query.getTargetList()));
+      subroot.setOutSchema(getProjectedSchema(ctx, query.getTargetList()));
       return subroot;
     }
     
@@ -190,8 +199,8 @@ public class LogicalPlanner {
       SelectionNode selNode = 
           new SelectionNode(query.getWhereCondition());
       selNode.setSubNode(subroot);
-      selNode.setInputSchema(subroot.getOutputSchema());
-      selNode.setOutputSchema(selNode.getInputSchema());
+      selNode.setInSchema(subroot.getOutSchema());
+      selNode.setOutSchema(selNode.getInSchema());
       subroot = selNode;
     }
     
@@ -204,16 +213,16 @@ public class LogicalPlanner {
       if (query.hasGroupbyClause()) {
         if (query.getGroupByClause().getGroupSet().get(0).getType() == GroupType.GROUPBY) {          
           groupbyNode = new GroupbyNode(query.getGroupByClause().getGroupSet().get(0).getColumns());
-          groupbyNode.setTargetList(ctx.getTargetList());
+          groupbyNode.setTargetList(query.getTargetList());
           groupbyNode.setSubNode(subroot);
-          groupbyNode.setInputSchema(subroot.getOutputSchema());      
-          Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
-          groupbyNode.setOutputSchema(outSchema);
+          groupbyNode.setInSchema(subroot.getOutSchema());
+          Schema outSchema = getProjectedSchema(ctx, query.getTargetList());
+          groupbyNode.setOutSchema(outSchema);
           subroot = groupbyNode;
         } else if (query.getGroupByClause().getGroupSet().get(0).getType() == GroupType.CUBE) {
           LogicalNode union = createGroupByUnionByCube(ctx, subroot, query.getGroupByClause());
-          Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
-          union.setOutputSchema(outSchema);
+          Schema outSchema = getProjectedSchema(ctx, query.getTargetList());
+          union.setOutSchema(outSchema);
           subroot = union;
         }
         if(query.hasHavingCond())
@@ -221,11 +230,11 @@ public class LogicalPlanner {
       } else {
         // when aggregation functions are used without grouping fields
         groupbyNode = new GroupbyNode(new Column[] {});
-        groupbyNode.setTargetList(ctx.getTargetList());
+        groupbyNode.setTargetList(query.getTargetList());
         groupbyNode.setSubNode(subroot);
-        groupbyNode.setInputSchema(subroot.getOutputSchema());      
-        Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
-        groupbyNode.setOutputSchema(outSchema);
+        groupbyNode.setInSchema(subroot.getOutSchema());
+        Schema outSchema = getProjectedSchema(ctx, query.getTargetList());
+        groupbyNode.setOutSchema(outSchema);
         subroot = groupbyNode;
       }
     }
@@ -233,8 +242,8 @@ public class LogicalPlanner {
     if(query.hasOrderByClause()) {
       SortNode sortNode = new SortNode(query.getSortKeys());
       sortNode.setSubNode(subroot);
-      sortNode.setInputSchema(subroot.getOutputSchema());
-      sortNode.setOutputSchema(sortNode.getInputSchema());
+      sortNode.setInSchema(subroot.getOutSchema());
+      sortNode.setOutSchema(sortNode.getInSchema());
       subroot = sortNode;
     }
 
@@ -244,20 +253,21 @@ public class LogicalPlanner {
       Target [] allTargets = PlannerUtil.schemaToTargets(merged);
       prjNode = new ProjectionNode(allTargets);
       prjNode.setSubNode(subroot);
-      prjNode.setInputSchema(merged);
-      prjNode.setOutputSchema(merged);
+      prjNode.setInSchema(merged);
+      prjNode.setOutSchema(merged);
       subroot = prjNode;
-      ctx.setTargets(allTargets);
+      query.setTargetList(allTargets);
     } else {
       prjNode = new ProjectionNode(query.getTargetList());
       if (subroot != null) { // false if 'no from' statement
         prjNode.setSubNode(subroot);
       }
-      prjNode.setInputSchema(subroot.getOutputSchema());
+      prjNode.setInSchema(subroot.getOutSchema());
 
       // All aggregate functions are evaluated before the projection.
       // So, the targets for aggregate functions should be updated.
-      LogicalOptimizer.TargetListManager tlm = new LogicalOptimizer.TargetListManager(ctx);
+      LogicalOptimizer.TargetListManager tlm = new LogicalOptimizer.
+          TargetListManager(ctx, query.getTargetList());
       for (int i = 0; i < tlm.getTargets().length; i++) {
         if (EvalTreeUtil.findDistinctAggFunction(tlm.getTarget(i).getEvalTree()).size() > 0) {
           tlm.setEvaluated(i);
@@ -265,79 +275,88 @@ public class LogicalPlanner {
       }
       prjNode.setTargetList(tlm.getUpdatedTarget());
       Schema projected = getProjectedSchema(ctx, tlm.getUpdatedTarget());
-      prjNode.setOutputSchema(projected);
+      prjNode.setOutSchema(projected);
       subroot = prjNode;
     }
 
     GroupbyNode dupRemoval;
     if (query.isDistinct()) {
-      dupRemoval = new GroupbyNode(subroot.getOutputSchema().toArray());
-      dupRemoval.setTargetList(ctx.getTargetList());
+      dupRemoval = new GroupbyNode(subroot.getOutSchema().toArray());
+      dupRemoval.setTargetList(query.getTargetList());
       dupRemoval.setSubNode(subroot);
-      dupRemoval.setInputSchema(subroot.getOutputSchema());
-      Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
-      dupRemoval.setOutputSchema(outSchema);
+      dupRemoval.setInSchema(subroot.getOutSchema());
+      Schema outSchema = getProjectedSchema(ctx, query.getTargetList());
+      dupRemoval.setOutSchema(outSchema);
       subroot = dupRemoval;
     }
     
     return subroot;
   }
-  
-  public static LogicalNode createGroupByUnionByCube(Context ctx, 
-      LogicalNode subNode, GroupByClause clause) {
-    GroupElement element = clause.getGroupSet().get(0);
-    List<Column []> cuboids  = generateCuboids(element.getColumns());  
 
-    return createGroupByUnion(ctx, subNode, cuboids, 0);
+  public static LogicalNode createGroupByUnionByCube(
+      final PlanningContext context,final LogicalNode subNode,
+      final GroupByClause clause) {
+
+    GroupElement element = clause.getGroupSet().get(0);
+
+    List<Column []> cuboids  = generateCuboids(element.getColumns());
+
+    return createGroupByUnion(context, subNode, cuboids, 0);
   }
-  
-  private static UnionNode createGroupByUnion(Context ctx, LogicalNode subNode, 
-      List<Column []> cuboids, int idx) {
+
+  private static Target [] cloneTargets(Target [] srcs)
+      throws CloneNotSupportedException {
+    Target [] clone = new Target[srcs.length];
+    for (int i = 0; i < srcs.length; i++) {
+      clone[i] = (Target) srcs[i].clone();
+    }
+
+    return clone;
+  }
+
+  private static UnionNode createGroupByUnion(final PlanningContext context,
+                                              final LogicalNode subNode,
+                                              final List<Column []> cuboids,
+                                              final int idx) {
+    QueryBlock queryBlock = (QueryBlock) context.getParseTree();
+
     UnionNode union;
     try {
-    if ((cuboids.size() - idx) > 2) {
-      GroupbyNode g1 = new GroupbyNode(cuboids.get(idx));
-      Target [] clone = new Target[ctx.getTargetList().length];
-      for (int i = 0; i < ctx.getTargetList().length; i++) {
-        clone[i] = (Target) ctx.getTargetList()[i].clone();
+      if ((cuboids.size() - idx) > 2) {
+        GroupbyNode g1 = new GroupbyNode(cuboids.get(idx));
+        Target [] clone = cloneTargets(queryBlock.getTargetList());
+
+        g1.setTargetList(clone);
+        g1.setSubNode((LogicalNode) subNode.clone());
+        g1.setInSchema(g1.getSubNode().getOutSchema());
+        Schema outSchema = getProjectedSchema(context, queryBlock.getTargetList());
+        g1.setOutSchema(outSchema);
+
+        union = new UnionNode(g1, createGroupByUnion(context, subNode, cuboids, idx+1));
+        union.setInSchema(g1.getOutSchema());
+        union.setOutSchema(g1.getOutSchema());
+        return union;
+      } else {
+        GroupbyNode g1 = new GroupbyNode(cuboids.get(idx));
+        Target [] clone = cloneTargets(queryBlock.getTargetList());
+        g1.setTargetList(clone);
+        g1.setSubNode((LogicalNode) subNode.clone());
+        g1.setInSchema(g1.getSubNode().getOutSchema());
+        Schema outSchema = getProjectedSchema(context, queryBlock.getTargetList());
+        g1.setOutSchema(outSchema);
+
+        GroupbyNode g2 = new GroupbyNode(cuboids.get(idx+1));
+        clone = cloneTargets(queryBlock.getTargetList());
+        g2.setTargetList(clone);
+        g2.setSubNode((LogicalNode) subNode.clone());
+        g2.setInSchema(g1.getSubNode().getOutSchema());
+        outSchema = getProjectedSchema(context, queryBlock.getTargetList());
+        g2.setOutSchema(outSchema);
+        union = new UnionNode(g1, g2);
+        union.setInSchema(g1.getOutSchema());
+        union.setOutSchema(g1.getOutSchema());
+        return union;
       }
-      g1.setTargetList(clone);
-      g1.setSubNode((LogicalNode) subNode.clone());
-      g1.setInputSchema(g1.getSubNode().getOutputSchema());
-      Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
-      g1.setOutputSchema(outSchema);
-      
-      union = new UnionNode(g1, createGroupByUnion(ctx, subNode, cuboids, idx+1));
-      union.setInputSchema(g1.getOutputSchema());
-      union.setOutputSchema(g1.getOutputSchema());
-      return union;
-    } else {
-      GroupbyNode g1 = new GroupbyNode(cuboids.get(idx));
-      Target [] clone = new Target[ctx.getTargetList().length];
-      for (int i = 0; i < ctx.getTargetList().length; i++) {
-        clone[i] = (Target) ctx.getTargetList()[i].clone();
-      }
-      g1.setTargetList(clone);
-      g1.setSubNode((LogicalNode) subNode.clone());
-      g1.setInputSchema(g1.getSubNode().getOutputSchema());      
-      Schema outSchema = getProjectedSchema(ctx, ctx.getTargetList());
-      g1.setOutputSchema(outSchema);
-      
-      GroupbyNode g2 = new GroupbyNode(cuboids.get(idx+1));
-      clone = new Target[ctx.getTargetList().length];
-      for (int i = 0; i < ctx.getTargetList().length; i++) {
-        clone[i] = (Target) ctx.getTargetList()[i].clone();
-      }
-      g2.setTargetList(clone);
-      g2.setSubNode((LogicalNode) subNode.clone());
-      g2.setInputSchema(g1.getSubNode().getOutputSchema());
-      outSchema = getProjectedSchema(ctx, ctx.getTargetList());
-      g2.setOutputSchema(outSchema);
-      union = new UnionNode(g1, g2);
-      union.setInputSchema(g1.getOutputSchema());
-      union.setOutputSchema(g1.getOutputSchema());
-      return union;
-    }
     } catch (CloneNotSupportedException cnse) {
       LOG.error(cnse);
       throw new InvalidQueryException(cnse);
@@ -368,17 +387,15 @@ public class LogicalPlanner {
     return cube;
   }
 
-  private static LogicalNode createExplicitJoinTree(Context ctx,
-                                                     QueryBlock block) {
-    return createExplicitJoinTree_(ctx, block.getJoinClause());
+  private static LogicalNode createExplicitJoinTree(QueryBlock block) {
+    return createExplicitJoinTree_(block.getJoinClause());
   }
   
-  private static LogicalNode createExplicitJoinTree_(Context ctx,
-                                                     JoinClause joinClause) {
+  private static LogicalNode createExplicitJoinTree_(JoinClause joinClause) {
 
     JoinNode join = null;
     if (joinClause.hasLeftJoin()) {
-      LogicalNode outer = createExplicitJoinTree_(ctx, joinClause.getLeftJoin());
+      LogicalNode outer = createExplicitJoinTree_(joinClause.getLeftJoin());
       join = new JoinNode(joinClause.getJoinType(), outer);
       join.setInner(new ScanNode(joinClause.getRight()));
     } else {
@@ -397,18 +414,18 @@ public class LogicalPlanner {
     if (joinClause.isNatural()) {
       merged = getNaturalJoin(join.getOuterNode(), join.getInnerNode());
     } else {
-      merged = SchemaUtil.merge(join.getOuterNode().getOutputSchema(),
-          join.getInnerNode().getOutputSchema());
+      merged = SchemaUtil.merge(join.getOuterNode().getOutSchema(),
+          join.getInnerNode().getOutSchema());
     }
     
-    join.setInputSchema(merged);
-    join.setOutputSchema(merged);
+    join.setInSchema(merged);
+    join.setOutSchema(merged);
     
     // Determine join quals
     // if natural join, should have the equi join conditions on common columns
     if (joinClause.isNatural()) {
-      Schema leftSchema = join.getOuterNode().getOutputSchema();
-      Schema rightSchema = join.getInnerNode().getOutputSchema();
+      Schema leftSchema = join.getOuterNode().getOutSchema();
+      Schema rightSchema = join.getInnerNode().getOutSchema();
       Schema commons = SchemaUtil.getCommons(
           leftSchema, rightSchema);
       EvalNode njCond = getNaturalJoinCondition(leftSchema, rightSchema, commons);
@@ -443,15 +460,17 @@ public class LogicalPlanner {
     return njQual;
   }
   
-  private static LogicalNode createImplicitJoinTree(Context ctx, FromTable [] tables, EvalNode [] cnf) {
+  private static LogicalNode createImplicitJoinTree(FromTable [] tables,
+                                                    EvalNode [] cnf) {
     if (cnf == null) {
-      return createCatasianProduct(ctx, tables);
+      return createCatasianProduct(tables);
     } else {
-      return createCrossJoinFromJoinCondition(ctx, tables, cnf);
+      return createCrossJoinFromJoinCondition(tables, cnf);
     }
   }
 
-  private static LogicalNode createCrossJoinFromJoinCondition(Context ctx, FromTable [] tables, EvalNode [] cnf) {
+  private static LogicalNode createCrossJoinFromJoinCondition(
+      FromTable [] tables, EvalNode [] cnf) {
     Map<String, FromTable> fromTableMap = Maps.newHashMap();
     for (FromTable f : tables) {
       // TODO - to consider alias and self-join
@@ -511,10 +530,10 @@ public class LogicalPlanner {
         subroot = join;
 
         joinSchema = SchemaUtil.merge(
-            join.getOuterNode().getOutputSchema(),
-            join.getInnerNode().getOutputSchema());
-        join.setInputSchema(joinSchema);
-        join.setOutputSchema(joinSchema);
+            join.getOuterNode().getOutSchema(),
+            join.getInnerNode().getOutSchema());
+        join.setInSchema(joinSchema);
+        join.setOutSchema(joinSchema);
       }
     }
 
@@ -538,10 +557,10 @@ public class LogicalPlanner {
       join = new JoinNode(JoinType.CROSS_JOIN,
           subroot, new ScanNode(fromTableMap.get(table)));
       joinSchema = SchemaUtil.merge(
-          join.getOuterNode().getOutputSchema(),
-          join.getInnerNode().getOutputSchema());
-      join.setInputSchema(joinSchema);
-      join.setOutputSchema(joinSchema);
+          join.getOuterNode().getOutSchema(),
+          join.getInnerNode().getOutSchema());
+      join.setInSchema(joinSchema);
+      join.setOutSchema(joinSchema);
       subroot = join;
     }
 
@@ -549,7 +568,7 @@ public class LogicalPlanner {
   }
 
   // TODO - this method is somewhat duplicated to createCrossJoinFromJoinCondition. Later, it should be removed.
-  private static LogicalNode createCatasianProduct(Context ctx, FromTable [] tables) {
+  private static LogicalNode createCatasianProduct(FromTable [] tables) {
     LogicalNode subroot = new ScanNode(tables[0]);
     Schema joinSchema;
     if(tables.length > 1) {
@@ -557,10 +576,10 @@ public class LogicalPlanner {
         JoinNode join = new JoinNode(JoinType.CROSS_JOIN,
             subroot, new ScanNode(tables[i]));
         joinSchema = SchemaUtil.merge(
-            join.getOuterNode().getOutputSchema(),
-            join.getInnerNode().getOutputSchema());
-        join.setInputSchema(joinSchema);
-        join.setOutputSchema(joinSchema);
+            join.getOuterNode().getOutSchema(),
+            join.getInnerNode().getOutSchema());
+        join.setInSchema(joinSchema);
+        join.setOutSchema(joinSchema);
         subroot = join;
       }
     }
@@ -568,7 +587,7 @@ public class LogicalPlanner {
     return subroot;
   }
 
-  public static Schema getProjectedSchema(Context ctx, Collection<Target> targets) {
+  public static Schema getProjectedSchema(PlanningContext context, Target [] targets) {
     Schema projected = new Schema();
     for(Target t : targets) {
       DataType type = t.getEvalTree().getValueType()[0];
@@ -576,7 +595,7 @@ public class LogicalPlanner {
       if (t.hasAlias()) {
         name = t.getAlias();
       } else if (t.getEvalTree().getName().equals("?")) {
-        name = ctx.getUnnamedColumn();
+        name = context.getGeneratedColumnName();
       } else {
         name = t.getEvalTree().getName();
       }
@@ -606,10 +625,10 @@ public class LogicalPlanner {
   
   private static Schema getNaturalJoin(LogicalNode outer, LogicalNode inner) {
     Schema joinSchema = new Schema();
-    Schema commons = SchemaUtil.getCommons(outer.getOutputSchema(),
-        inner.getOutputSchema());
+    Schema commons = SchemaUtil.getCommons(outer.getOutSchema(),
+        inner.getOutSchema());
     joinSchema.addColumns(commons);
-    for (Column c : outer.getOutputSchema().getColumns()) {
+    for (Column c : outer.getOutSchema().getColumns()) {
       for (Column common : commons.getColumns()) {
         if (!common.getColumnName().equals(c.getColumnName())) {
           joinSchema.addColumn(c);
@@ -617,7 +636,7 @@ public class LogicalPlanner {
       }
     }
 
-    for (Column c : inner.getOutputSchema().getColumns()) {
+    for (Column c : inner.getOutSchema().getColumns()) {
       for (Column common : commons.getColumns()) {
         if (!common.getColumnName().equals(c.getColumnName())) {
           joinSchema.addColumn(c);

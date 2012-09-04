@@ -31,11 +31,13 @@ import org.junit.Test;
 import tajo.conf.TajoConf;
 import tajo.datum.*;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Properties;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.fail;
 
 /**
  * TestRCFile.

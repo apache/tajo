@@ -5,7 +5,6 @@ package tajo.master;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import tajo.QueryContext;
 import tajo.QueryId;
 import tajo.QueryIdFactory;
 import tajo.SubQueryId;
@@ -23,10 +22,10 @@ import tajo.engine.exception.EmptyClusterException;
 import tajo.engine.exception.IllegalQueryStatusException;
 import tajo.engine.exception.NoSuchQueryIdException;
 import tajo.engine.exception.UnknownWorkerException;
-import tajo.engine.parser.ParseTree;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
+import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.global.GlobalOptimizer;
 import tajo.engine.planner.global.MasterPlan;
 import tajo.engine.planner.global.ScheduleUnit;
@@ -46,7 +45,7 @@ public class GlobalEngine implements EngineService {
   private final TajoConf conf;
   private final CatalogService catalog;
   private final QueryAnalyzer analyzer;
-  private final QueryContext.Factory factory;
+  private LogicalPlanner planner;
   private final StorageManager sm;
 
   private GlobalPlanner globalPlanner;
@@ -65,7 +64,7 @@ public class GlobalEngine implements EngineService {
     this.sm = sm;
     this.cm = cm;
     this.analyzer = new QueryAnalyzer(cat);
-    this.factory = new QueryContext.Factory(catalog);
+    this.planner = new LogicalPlanner(cat);
 
     this.globalPlanner = new GlobalPlanner(conf, this.sm, this.qm, this.catalog);
     this.globalOptimizer = new GlobalOptimizer();
@@ -81,10 +80,9 @@ public class GlobalEngine implements EngineService {
       UnknownWorkerException, EmptyClusterException {
     LOG.info("* issued query: " + querystr);
     // build the logical plan
-    QueryContext ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx, querystr);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(querystr);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
     plan = LogicalOptimizer.pushIndex(plan, sm);
     LOG.info("* logical plan:\n" + plan);
 
@@ -123,7 +121,7 @@ public class GlobalEngine implements EngineService {
         hasStoreNode = true;
       }
       // other queries are executed by workers
-      prepareQueryExecution(ctx);
+      prepareQueryExecution(context);
 
       QueryId qid = QueryIdFactory.newQueryId();
       Query query = new Query(qid, querystr);
@@ -233,9 +231,9 @@ public class GlobalEngine implements EngineService {
     return queryStatus;
   }
 
-  private void prepareQueryExecution(QueryContext ctx) throws IOException {
+  private void prepareQueryExecution(PlanningContext context) throws IOException {
     cm.updateOnlineWorker();
-    for (String table : ctx.getInputTables()) {
+    for (String table : context.getParseTree().getAllTableNames()) {
       cm.updateFragmentServingInfo2(table);
     }
   }

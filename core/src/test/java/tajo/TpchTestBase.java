@@ -1,7 +1,6 @@
 package tajo;
 
 import com.google.common.collect.Maps;
-import tajo.LocalTajoTestingUtility;
 import tajo.benchmark.TPCH;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;

@@ -21,9 +21,6 @@ package tajo;
 import org.junit.Test;
 import tajo.util.TajoIdUtils;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import static org.junit.Assert.*;
 
 /**

@@ -2,13 +2,13 @@ package tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import tajo.SubqueryContext;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.conf.TajoConf;
-import tajo.SubqueryContext;
 import tajo.engine.parser.QueryBlock;
 import tajo.index.bst.BSTIndex;
 import tajo.storage.*;

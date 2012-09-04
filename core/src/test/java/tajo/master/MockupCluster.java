@@ -7,7 +7,6 @@ import org.apache.hadoop.conf.Configuration;
 import tajo.TajoTestingUtility;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
-import tajo.master.TajoMaster;
 
 import java.util.List;
 

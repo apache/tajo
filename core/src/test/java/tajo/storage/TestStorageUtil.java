@@ -7,6 +7,7 @@ import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import tajo.WorkerTestingUtil;
 import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
@@ -14,7 +15,6 @@ import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
-import tajo.WorkerTestingUtil;
 
 import java.io.IOException;
 

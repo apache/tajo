@@ -376,7 +376,7 @@ public class GlobalPlanner {
     StoreTableNode prevStore = (StoreTableNode)child.getSubNode();
 
     // add scan
-    newScan = GlobalPlannerUtils.newScanPlan(prevStore.getOutputSchema(),
+    newScan = GlobalPlannerUtils.newScanPlan(prevStore.getOutSchema(),
         prevStore.getTableName(), sm.getTablePath(prevStore.getTableName()));
     newScan.setLocal(true);
     child.setSubNode(newScan);
@@ -437,7 +437,7 @@ public class GlobalPlanner {
       // store - groupby - store
       unaryChild = (UnaryNode) unaryChild.getSubNode(); // store
       prevStore = (StoreTableNode) unaryChild;
-      newScan = GlobalPlannerUtils.newScanPlan(prevStore.getOutputSchema(),
+      newScan = GlobalPlannerUtils.newScanPlan(prevStore.getOutSchema(),
           prevStore.getTableName(),
           sm.getTablePath(prevStore.getTableName()));
       newScan.setLocal(true);
@@ -493,7 +493,7 @@ public class GlobalPlanner {
     
     if (union.getOuterNode().getType() == ExprType.STORE) {
       outerStore = (StoreTableNode) union.getOuterNode();
-      TableMeta outerMeta = TCatUtil.newTableMeta(outerStore.getOutputSchema(),
+      TableMeta outerMeta = TCatUtil.newTableMeta(outerStore.getOutSchema(),
           StoreType.CSV);
       insertOuterScan(union, outerStore.getTableName(), outerMeta);
       prev = convertMap.get(outerStore);
@@ -509,7 +509,7 @@ public class GlobalPlanner {
     
     if (union.getInnerNode().getType() == ExprType.STORE) {
       innerStore = (StoreTableNode) union.getInnerNode();
-      TableMeta innerMeta = TCatUtil.newTableMeta(innerStore.getOutputSchema(), 
+      TableMeta innerMeta = TCatUtil.newTableMeta(innerStore.getOutSchema(),
           StoreType.CSV);
       insertInnerScan(union, innerStore.getTableName(), innerMeta);
       prev = convertMap.get(innerStore);
@@ -540,7 +540,7 @@ public class GlobalPlanner {
       // store - groupby - store
       unaryChild = (UnaryNode) unaryChild.getSubNode(); // store
       prevStore = (StoreTableNode) unaryChild;
-      newScan = GlobalPlannerUtils.newScanPlan(prevStore.getOutputSchema(),
+      newScan = GlobalPlannerUtils.newScanPlan(prevStore.getOutSchema(),
           prevStore.getTableName(), sm.getTablePath(prevStore.getTableName()));
       newScan.setLocal(true);
       ((UnaryNode) unary.getSubNode()).setSubNode(newScan);
@@ -581,8 +581,8 @@ public class GlobalPlanner {
     StoreTableNode outerStore, innerStore;
     ScheduleUnit prev;
     JoinNode join = (JoinNode) unary.getSubNode();
-    Schema outerSchema = join.getOuterNode().getOutputSchema();
-    Schema innerSchema = join.getInnerNode().getOutputSchema();
+    Schema outerSchema = join.getOuterNode().getOutSchema();
+    Schema innerSchema = join.getInnerNode().getOutSchema();
     unit.setOutputType(PARTITION_TYPE.LIST);
 
     List<Column> outerCollist = new ArrayList<Column>();
@@ -608,7 +608,7 @@ public class GlobalPlanner {
     // outer
     if (join.getOuterNode().getType() == ExprType.STORE) {
       outerStore = (StoreTableNode) join.getOuterNode();
-      TableMeta outerMeta = TCatUtil.newTableMeta(outerStore.getOutputSchema(), 
+      TableMeta outerMeta = TCatUtil.newTableMeta(outerStore.getOutSchema(),
           StoreType.CSV);
       insertOuterScan(join, outerStore.getTableName(), outerMeta);
       prev = convertMap.get(outerStore);
@@ -628,7 +628,7 @@ public class GlobalPlanner {
     // inner
     if (join.getInnerNode().getType() == ExprType.STORE) {
       innerStore = (StoreTableNode) join.getInnerNode();
-      TableMeta innerMeta = TCatUtil.newTableMeta(innerStore.getOutputSchema(), 
+      TableMeta innerMeta = TCatUtil.newTableMeta(innerStore.getOutSchema(),
           StoreType.CSV);
       insertInnerScan(join, innerStore.getTableName(), innerMeta);
       prev = convertMap.get(innerStore);
@@ -665,7 +665,7 @@ public class GlobalPlanner {
     
     if (union.getOuterNode().getType() == ExprType.STORE) {
       store = (StoreTableNode) union.getOuterNode();
-      meta = TCatUtil.newTableMeta(store.getOutputSchema(), StoreType.CSV);
+      meta = TCatUtil.newTableMeta(store.getOutSchema(), StoreType.CSV);
       insertOuterScan(union, store.getTableName(), meta);
       prev = convertMap.get(store);
       if (prev != null) {
@@ -684,7 +684,7 @@ public class GlobalPlanner {
     
     if (union.getInnerNode().getType() == ExprType.STORE) {
       store = (StoreTableNode) union.getInnerNode();
-      meta = TCatUtil.newTableMeta(store.getOutputSchema(), StoreType.CSV);
+      meta = TCatUtil.newTableMeta(store.getOutSchema(), StoreType.CSV);
       insertInnerScan(union, store.getTableName(), meta);
       prev = convertMap.get(store);
       if (prev != null) {
@@ -721,8 +721,8 @@ public class GlobalPlanner {
     if (tmp instanceof UnaryNode) {
       firstGroupby = (GroupbyNode) ((UnaryNode)tmp).getSubNode();
       GroupbyNode newFirstGroupby = GlobalPlannerUtils.newGroupbyPlan(
-          firstGroupby.getInputSchema(),
-          firstGroupby.getOutputSchema(),
+          firstGroupby.getInSchema(),
+          firstGroupby.getOutSchema(),
           keys,
           firstGroupby.getHavingCondition(),
           firstGroupby.getTargets()
@@ -733,7 +733,7 @@ public class GlobalPlanner {
 
     // create a new schedule unit containing the group by plan
     StoreTableNode newStore = GlobalPlannerUtils.newStorePlan(
-        secondScan.getInputSchema(),
+        secondScan.getInSchema(),
         newPhaseGroupby.getId().toString());
     newStore.setLocal(true);
     ScanNode newScan = GlobalPlannerUtils.newScanPlan(
@@ -742,8 +742,8 @@ public class GlobalPlanner {
         sm.getTablePath(firstPhaseGroupby.getOutputName()));
     newScan.setLocal(true);
     GroupbyNode newGroupby = GlobalPlannerUtils.newGroupbyPlan(
-        newScan.getOutputSchema(),
-        newStore.getInputSchema(),
+        newScan.getOutSchema(),
+        newStore.getInSchema(),
         keys,
         secondGroupby.getHavingCondition(),
         secondGroupby.getTargets());
@@ -754,7 +754,7 @@ public class GlobalPlanner {
     secondPhaseGroupby.removeChildQuery(secondScan);
 
     // update the scan node of last phase
-    secondScan = GlobalPlannerUtils.newScanPlan(secondScan.getInputSchema(),
+    secondScan = GlobalPlannerUtils.newScanPlan(secondScan.getInSchema(),
         newPhaseGroupby.getOutputName(),
         sm.getTablePath(newPhaseGroupby.getOutputName()));
     secondScan.setLocal(true);
@@ -777,8 +777,8 @@ public class GlobalPlanner {
     TableDesc desc = TCatUtil.newTableDesc(tableId, meta, sm.getTablePath(tableId));
     ScanNode scan = new ScanNode(new FromTable(desc));
     scan.setLocal(true);
-    scan.setInputSchema(meta.getSchema());
-    scan.setOutputSchema(meta.getSchema());
+    scan.setInSchema(meta.getSchema());
+    scan.setOutSchema(meta.getSchema());
     parent.setOuter(scan);
     return parent;
   }
@@ -788,8 +788,8 @@ public class GlobalPlanner {
     TableDesc desc = TCatUtil.newTableDesc(tableId, meta, sm.getTablePath(tableId));
     ScanNode scan = new ScanNode(new FromTable(desc));
     scan.setLocal(true);
-    scan.setInputSchema(meta.getSchema());
-    scan.setOutputSchema(meta.getSchema());
+    scan.setInSchema(meta.getSchema());
+    scan.setOutSchema(meta.getSchema());
     parent.setInner(scan);
     return parent;
   }
@@ -911,7 +911,7 @@ public class GlobalPlanner {
 
           // calculate the number of maximum query ranges
           TupleRange mergedRange =
-              TupleUtil.columnStatToRange(sort.getOutputSchema(),
+              TupleUtil.columnStatToRange(sort.getOutSchema(),
                   sortSchema, stat.getColumnStats());
           RangePartitionAlgorithm partitioner =
               new UniformRangePartition(sortSchema, mergedRange);
@@ -963,7 +963,7 @@ public class GlobalPlanner {
         fetchMap.put(scan, uriList);
         // one fragment is shared by query units
         Fragment frag = new Fragment(scan.getTableId(), tablepath,
-            TCatUtil.newTableMeta(scan.getInputSchema(),StoreType.CSV), 
+            TCatUtil.newTableMeta(scan.getInSchema(),StoreType.CSV),
             0, 0);
         fragList.add(frag);
         fragMap.put(scan, fragList);

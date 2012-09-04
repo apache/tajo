@@ -13,11 +13,11 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
 import tajo.engine.ipc.protocolrecords.Fragment;
-import tajo.engine.parser.ParseTree;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.physical.PhysicalExec;
 import tajo.engine.query.ResultSetImpl;
@@ -85,11 +85,13 @@ public class WorkerTestingUtil {
   private CatalogService catalog;
   private SubqueryContext.Factory factory;
   private QueryAnalyzer analyzer;
+  private LogicalPlanner planner;
   public WorkerTestingUtil(TajoConf conf) throws IOException {
     this.conf = conf;
     this.catalog = new LocalCatalog(conf);
     factory = new SubqueryContext.Factory();
     analyzer = new QueryAnalyzer(catalog);
+    planner = new LogicalPlanner(catalog);
   }
 
   public ResultSet run(String [] tableNames, File [] tables, Schema [] schemas, String query)
@@ -106,9 +108,9 @@ public class WorkerTestingUtil {
 
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         frags.toArray(new Fragment[frags.size()]), workDir);
-    ParseTree tree = analyzer.parse(ctx, query);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, tree);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse(query);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 

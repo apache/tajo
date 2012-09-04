@@ -5,6 +5,7 @@ package tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.Path;
+import tajo.SubqueryContext;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
@@ -12,7 +13,6 @@ import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.StatisticsUtil;
 import tajo.catalog.statistics.TableStat;
-import tajo.SubqueryContext;
 import tajo.engine.planner.logical.StoreTableNode;
 import tajo.storage.Appender;
 import tajo.storage.StorageManager;
@@ -60,8 +60,8 @@ public final class PartitionedStoreExec extends PhysicalExec {
     this.sm = sm;
     this.annotation = annotation;
     this.subOp = subOp;
-    this.inputSchema = this.annotation.getInputSchema();
-    this.outputSchema = this.annotation.getOutputSchema();    
+    this.inputSchema = this.annotation.getInSchema();
+    this.outputSchema = this.annotation.getOutSchema();
     this.meta = TCatUtil.newTableMeta(this.outputSchema, StoreType.CSV);
     
     // about the partitions

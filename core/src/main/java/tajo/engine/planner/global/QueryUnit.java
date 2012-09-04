@@ -6,16 +6,16 @@ package tajo.engine.planner.global;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import tajo.catalog.Schema;
-import tajo.catalog.statistics.TableStat;
-import tajo.master.AbstractQuery;
-import tajo.engine.MasterInterfaceProtos.Partition;
-import tajo.engine.MasterInterfaceProtos.QueryStatus;
 import tajo.QueryIdFactory;
 import tajo.QueryUnitAttemptId;
 import tajo.QueryUnitId;
+import tajo.catalog.Schema;
+import tajo.catalog.statistics.TableStat;
+import tajo.engine.MasterInterfaceProtos.Partition;
+import tajo.engine.MasterInterfaceProtos.QueryStatus;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.planner.logical.*;
+import tajo.master.AbstractQuery;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -149,7 +149,7 @@ public class QueryUnit extends AbstractQuery {
 	}
 	
 	public Schema getOutputSchema() {
-	  return this.store.getOutputSchema();
+	  return this.store.getOutSchema();
 	}
 	
 	public StoreTableNode getStoreTableNode() {

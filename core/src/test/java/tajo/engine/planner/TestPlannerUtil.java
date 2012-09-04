@@ -4,19 +4,18 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tajo.QueryContext;
+import tajo.TajoTestingUtility;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.datum.DatumFactory;
-import tajo.QueryContext;
-import tajo.TajoTestingUtility;
 import tajo.engine.exec.eval.BinaryEval;
 import tajo.engine.exec.eval.ConstEval;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.exec.eval.FieldEval;
 import tajo.engine.function.builtin.NewSumInt;
-import tajo.engine.parser.ParseTree;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.logical.*;
@@ -36,6 +35,7 @@ public class TestPlannerUtil {
   private static CatalogService catalog;
   private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
+  private static LogicalPlanner planner;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -78,7 +78,7 @@ public class TestPlannerUtil {
 
     catalog.registerFunction(funcDesc);
     analyzer = new QueryAnalyzer(catalog);
-    factory = new QueryContext.Factory(catalog);
+    planner = new LogicalPlanner(catalog);
   }
 
   @AfterClass
@@ -90,10 +90,8 @@ public class TestPlannerUtil {
   @Test
   public final void testTransformTwoPhase() {
     // without 'having clause'
-    QueryContext ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, 
-        TestLogicalPlanner.QUERIES[7]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    PlanningContext context = analyzer.parse(TestLogicalPlanner.QUERIES[7]);
+    LogicalNode plan = planner.createPlan(context);
 
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -106,9 +104,8 @@ public class TestPlannerUtil {
   
   @Test
   public final void testTrasformTwoPhaseWithStore() {
-    QueryContext ctx = factory.create();
-    ParseTree block = analyzer.parse(ctx, TestLogicalPlanner.QUERIES[9]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    PlanningContext context = analyzer.parse(TestLogicalPlanner.QUERIES[9]);
+    LogicalNode plan = planner.createPlan(context);
     
     assertEquals(ExprType.ROOT, plan.getType());
     UnaryNode unary = (UnaryNode) plan;
@@ -121,7 +118,7 @@ public class TestPlannerUtil {
     assertEquals(ExprType.STORE, unary.getSubNode().getType());
     unary = (UnaryNode) unary.getSubNode();
     
-    assertEquals(groupby.getInputSchema(), unary.getOutputSchema());
+    assertEquals(groupby.getInSchema(), unary.getOutSchema());
     
     assertEquals(ExprType.GROUP_BY, unary.getSubNode().getType());
   }
@@ -138,10 +135,8 @@ public class TestPlannerUtil {
   @Test
   public final void testFindTopNode() throws CloneNotSupportedException {
     // two relations
-    QueryContext ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, 
-        TestLogicalPlanner.QUERIES[1]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, block);
+    PlanningContext context = analyzer.parse(TestLogicalPlanner.QUERIES[1]);
+    LogicalNode plan = planner.createPlan(context);
 
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;

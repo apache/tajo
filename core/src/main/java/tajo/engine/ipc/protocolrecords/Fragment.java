@@ -4,11 +4,11 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.Path;
+import tajo.SchemaObject;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.SchemaProto;
 import tajo.catalog.proto.CatalogProtos.TabletProto;
 import tajo.catalog.proto.CatalogProtos.TabletProtoOrBuilder;
-import tajo.SchemaObject;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.utils.TUtil;
 

@@ -6,10 +6,10 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import tajo.catalog.TableDesc;
-import tajo.conf.TajoConf;
 import tajo.TajoTestingUtility;
 import tajo.WorkerTestingUtil;
+import tajo.catalog.TableDesc;
+import tajo.conf.TajoConf;
 import tajo.storage.StorageManager;
 
 import java.io.IOException;

@@ -3,8 +3,8 @@
  */
 package tajo.engine.planner.physical;
 
-import tajo.catalog.Schema;
 import tajo.SubqueryContext;
+import tajo.catalog.Schema;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.planner.Projector;
 import tajo.engine.planner.logical.ProjectionNode;
@@ -32,8 +32,8 @@ public class ProjectionExec extends PhysicalExec {
   public ProjectionExec(SubqueryContext ctx, ProjectionNode projNode,
       PhysicalExec child) {
     this.projNode = projNode;    
-    this.inSchema = projNode.getInputSchema();
-    this.outSchema = projNode.getOutputSchema();
+    this.inSchema = projNode.getInSchema();
+    this.outSchema = projNode.getOutSchema();
     this.child = child;
     this.outTuple = new VTuple(outSchema.getColumnNum());
     this.projector = new Projector(inSchema, outSchema, projNode.getTargets());
@@ -49,7 +49,7 @@ public class ProjectionExec extends PhysicalExec {
 
   @Override
   public Schema getSchema() {
-    return projNode.getOutputSchema();
+    return projNode.getOutSchema();
   }
 
   @Override

@@ -3,23 +3,20 @@ package tajo.engine.planner.physical;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import tajo.catalog.CatalogService;
-import tajo.catalog.Schema;
-import tajo.catalog.TCatUtil;
-import tajo.catalog.TableMeta;
+import tajo.SubqueryContext;
+import tajo.TajoTestingUtility;
+import tajo.WorkerTestingUtil;
+import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.SubqueryContext;
-import tajo.TajoTestingUtility;
-import tajo.WorkerTestingUtil;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
-import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.utils.TUtil;
 import tajo.storage.Appender;
@@ -42,8 +39,10 @@ public class TestExternalSortExec {
   private final String TEST_PATH = "target/test-data/TestExternalSortExec";
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
+  private LogicalPlanner planner;
   private SubqueryContext.Factory factory;
   private StorageManager sm;
+  private TajoTestingUtility util;
 
   private final int numTuple = 100000;
   private Random rnd = new Random(System.currentTimeMillis());
@@ -51,6 +50,9 @@ public class TestExternalSortExec {
   @Before
   public void setUp() throws Exception {
     this.conf = new TajoConf();
+    util = new TajoTestingUtility();
+    util.startMiniZKCluster();
+    catalog = util.startCatalogCluster().getCatalog();
     WorkerTestingUtil.buildTestDir(TEST_PATH);
     sm = StorageManager.get(conf, TEST_PATH);
 
@@ -72,7 +74,11 @@ public class TestExternalSortExec {
     appender.flush();
     appender.close();
 
+    TableDesc desc = new TableDescImpl("employee", employeeMeta,
+        sm.getTablePath("employee"));
+    catalog.addTable(desc);
     analyzer = new QueryAnalyzer(catalog);
+    planner = new LogicalPlanner(catalog);
   }
 
   @After
@@ -89,8 +95,8 @@ public class TestExternalSortExec {
     File workDir = TajoTestingUtility.getTestDir("TestExteranlSortExec");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    PlanningContext context = analyzer.parse(QUERIES[0]);
+    LogicalNode plan = planner.createPlan(context);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);

@@ -4,9 +4,9 @@
 package tajo.master;
 
 import org.junit.Test;
+import tajo.QueryIdFactory;
 import tajo.engine.MasterInterfaceProtos.InProgressStatusProto;
 import tajo.engine.MasterInterfaceProtos.QueryStatus;
-import tajo.QueryIdFactory;
 import tajo.engine.ipc.PingRequest;
 import tajo.engine.query.PingRequestImpl;
 import tajo.engine.utils.TUtil;

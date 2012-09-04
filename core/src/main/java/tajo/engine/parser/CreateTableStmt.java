@@ -7,6 +7,7 @@ import org.apache.hadoop.fs.Path;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.engine.planner.PlanningContext;
 
 /**
  * @author Hyunsik Choi
@@ -18,22 +19,26 @@ public class CreateTableStmt extends ParseTree {
   private Path path;
   private QueryBlock selectStmt;
   private Options options;
-  
-  private CreateTableStmt(final String tableName) {
-    super(StatementType.CREATE_TABLE);
+
+  private CreateTableStmt(final PlanningContext context,
+                          final String tableName) {
+    super(context, StatementType.CREATE_TABLE);
+    addTableRef(tableName, tableName);
     this.tableName = tableName;
   }
-  
-  public CreateTableStmt(final String tableName, final Schema schema, 
-      StoreType storeType, final Path path) {
-    this(tableName);
+
+  public CreateTableStmt(final PlanningContext context,
+                         final String tableName, final Schema schema,
+                         StoreType storeType, final Path path) {
+    this(context, tableName);
     this.schema = schema;
     this.storeType = storeType;
     this.path = path;
   }
-  
-  public CreateTableStmt(final String tableName, final QueryBlock selectStmt) {    
-    this(tableName);
+
+  public CreateTableStmt(final PlanningContext context,
+                         final String tableName, final QueryBlock selectStmt) {
+    this(context, tableName);
     this.selectStmt = selectStmt;
   }
   

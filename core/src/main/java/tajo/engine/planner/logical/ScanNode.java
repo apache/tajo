@@ -31,8 +31,8 @@ public class ScanNode extends LogicalNode {
 	public ScanNode(FromTable table) {
 		super(ExprType.SCAN);
 		this.table = table;
-		this.setInputSchema(table.getSchema());
-		this.setOutputSchema(table.getSchema());
+		this.setInSchema(table.getSchema());
+		this.setOutSchema(table.getSchema());
 		local = false;
 	}
 	
@@ -121,8 +121,8 @@ public class ScanNode extends LogicalNode {
 	  }
 	  
 	  sb.append(",");
-	  sb.append("\n  \"out schema\": ").append(getOutputSchema());
-	  sb.append("\n  \"in schema\": ").append(getInputSchema());    	  
+	  sb.append("\n  \"out schema\": ").append(getOutSchema());
+	  sb.append("\n  \"in schema\": ").append(getInSchema());
 	  return sb.toString();
 	}
 	

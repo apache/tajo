@@ -1,7 +1,5 @@
 package tajo.catalog;
 
-import tajo.catalog.FunctionDesc;
-import tajo.catalog.TableDesc;
 import tajo.catalog.proto.CatalogProtos.DataType;
 
 public interface CatalogReader {

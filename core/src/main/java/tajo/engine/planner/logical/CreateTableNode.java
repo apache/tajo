@@ -117,8 +117,8 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
     sb.append(",\"storeType\": \"" + this.storeType);
     sb.append(",\"path\" : \"" + this.path).append("\",");
     
-    sb.append("\n  \"out schema\": ").append(getOutputSchema()).append(",")
-    .append("\n  \"in schema\": ").append(getInputSchema())
+    sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",")
+    .append("\n  \"in schema\": ").append(getInSchema())
     .append("}");
     
     return sb.toString();

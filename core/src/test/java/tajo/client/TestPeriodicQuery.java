@@ -3,11 +3,11 @@ package tajo.client;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tajo.TajoTestingUtility;
+import tajo.WorkerTestingUtil;
 import tajo.client.PeriodicQueryDaemon.QueryInfo;
 import tajo.client.PeriodicQueryProtos.QueryStatusProto;
 import tajo.conf.TajoConf;
-import tajo.TajoTestingUtility;
-import tajo.WorkerTestingUtil;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;

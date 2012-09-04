@@ -26,8 +26,8 @@ public class EvalExprExec extends PhysicalExec {
    */
   public EvalExprExec(EvalExprNode annotation) {
     this.annotation = annotation;
-    this.inputSchema = annotation.getInputSchema();
-    this.outputSchema = annotation.getOutputSchema();
+    this.inputSchema = annotation.getInSchema();
+    this.outputSchema = annotation.getOutSchema();
     evalContexts = new EvalContext[this.annotation.getExprs().length];
     for (int i = 0; i < this.annotation.getExprs().length; i++) {
       evalContexts[i] = this.annotation.getExprs()[i].getEvalTree().newContext();

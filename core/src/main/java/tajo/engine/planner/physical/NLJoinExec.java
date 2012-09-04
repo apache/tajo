@@ -1,7 +1,7 @@
 package tajo.engine.planner.physical;
 
-import tajo.catalog.Schema;
 import tajo.SubqueryContext;
+import tajo.catalog.Schema;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.planner.Projector;
@@ -40,8 +40,8 @@ public class NLJoinExec extends PhysicalExec {
       PhysicalExec inner) {    
     this.outer = outer;
     this.inner = inner;
-    this.inSchema = joinNode.getInputSchema();
-    this.outSchema = joinNode.getOutputSchema();
+    this.inSchema = joinNode.getInSchema();
+    this.outSchema = joinNode.getOutSchema();
     if (joinNode.hasJoinQual()) {
       this.joinQual = joinNode.getJoinQual();
       this.qualCtx = this.joinQual.newContext();

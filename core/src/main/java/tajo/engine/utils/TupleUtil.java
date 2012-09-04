@@ -10,7 +10,10 @@ import tajo.catalog.Schema;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.catalog.statistics.ColumnStat;
 import tajo.datum.*;
-import tajo.storage.*;
+import tajo.storage.RowStoreUtil;
+import tajo.storage.Tuple;
+import tajo.storage.TupleRange;
+import tajo.storage.VTuple;
 import tajo.util.Bytes;
 import tajo.worker.dataserver.HttpUtil;
 

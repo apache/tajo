@@ -4,6 +4,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
+import tajo.WorkerTestingUtil;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
@@ -15,7 +16,6 @@ import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.WorkerTestingUtil;
 import tajo.engine.ipc.protocolrecords.Fragment;
 
 import java.io.IOException;

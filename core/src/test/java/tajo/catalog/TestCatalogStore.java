@@ -2,9 +2,9 @@ package tajo.catalog;
 
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
+import tajo.TajoTestingUtility;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.TajoTestingUtility;
 
 import static org.junit.Assert.assertEquals;
 

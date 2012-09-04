@@ -45,19 +45,19 @@ public abstract class LogicalNode implements Cloneable {
 		this.cost = cost;
 	}
 	
-	public void setInputSchema(Schema inSchema) {
+	public void setInSchema(Schema inSchema) {
 	  this.inputSchema = inSchema;
 	}
 	
-	public Schema getInputSchema() {
+	public Schema getInSchema() {
 	  return this.inputSchema;
 	}
 	
-	public void setOutputSchema(Schema outSchema) {
+	public void setOutSchema(Schema outSchema) {
 	  this.outputSchema = outSchema;
 	}
 	
-	public Schema getOutputSchema() {
+	public Schema getOutSchema() {
 	  return this.outputSchema;
 	}
 	

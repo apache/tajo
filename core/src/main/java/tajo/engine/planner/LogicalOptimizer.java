@@ -13,10 +13,11 @@ import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.SchemaUtil;
 import tajo.catalog.TableMeta;
-import tajo.Context;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.exec.eval.EvalTreeUtil;
 import tajo.engine.exec.eval.FieldEval;
+import tajo.engine.parser.CreateTableStmt;
+import tajo.engine.parser.ParseTree;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.parser.QueryBlock.Target;
 import tajo.engine.planner.logical.*;
@@ -38,57 +39,39 @@ public class LogicalOptimizer {
   
   private LogicalOptimizer() {
   }
-  
-  public static LogicalNode optimize(Context ctx, LogicalNode plan) {
+
+  public static LogicalNode optimize(PlanningContext context, LogicalNode plan) {
     LogicalNode toBeOptimized;
+
     try {
       toBeOptimized = (LogicalNode) plan.clone();
     } catch (CloneNotSupportedException e) {
       LOG.error(e);
       throw new InvalidQueryException("Cannot clone: " + plan);
     }
-    
-    switch (ctx.getStatementType()) {
-    case SELECT:
-    //case EXCEPT:
-    //case INTERSECT:
-    case CREATE_TABLE:
-      // if there are selection node
-      if(PlannerUtil.findTopNode(plan, ExprType.SELECTION) != null) {
-        pushSelection(ctx, toBeOptimized);
-      }
 
-      try {
-        pushProjection(ctx, toBeOptimized);
-      } catch (CloneNotSupportedException e) {
-        throw new InvalidQueryException(e);
-      }
-
-      break;
-    case UNION: // TODO - to be implemented
-      pushUnion ( ctx , toBeOptimized);
-      break;
-    default:
-    }
-    
-    return toBeOptimized;
-  }
-  
-  private static void pushUnion (Context ctx , LogicalNode plan) {
-    switch(plan.getType()) {
-      case ROOT:
-        pushUnion(ctx , ((LogicalRootNode)plan).getSubNode());
-        break;
-      case UNION:
-        pushUnion(ctx , ((UnionNode)plan).getOuterNode());
-        pushUnion(ctx , ((UnionNode)plan).getInnerNode());
-        break;
-      case PROJECTION:
+    switch (context.getParseTree().getType()) {
+      case SELECT:
+        //case UNION: // TODO - to be implemented
+        //case EXCEPT:
+        //case INTERSECT:
+      case CREATE_TABLE:
+        // if there are selection node
         if(PlannerUtil.findTopNode(plan, ExprType.SELECTION) != null) {
-          pushSelection(ctx, plan);
+          pushSelection(context, toBeOptimized);
         }
+
+        try {
+          pushProjection(context, toBeOptimized);
+        } catch (CloneNotSupportedException e) {
+          throw new InvalidQueryException(e);
+        }
+
         break;
+      default:
     }
+
+    return toBeOptimized;
   }
   
   public static LogicalNode pushIndex(LogicalNode plan , StorageManager sm) throws IOException {
@@ -171,26 +154,25 @@ public class LogicalOptimizer {
    * @param ctx
    * @param plan
    */
-  private static void pushSelection(Context ctx, LogicalNode plan) {
+  private static void pushSelection(PlanningContext ctx, LogicalNode plan) {
     SelectionNode selNode = (SelectionNode) PlannerUtil.findTopNode(plan,
         ExprType.SELECTION);
     Preconditions.checkNotNull(selNode);
     
     Stack<LogicalNode> stack = new Stack<LogicalNode>();
     EvalNode [] cnf = EvalTreeUtil.getConjNormalForm(selNode.getQual());
-    pushSelectionRecursive(ctx, plan, Lists.newArrayList(cnf), stack);
+    pushSelectionRecursive(plan, Lists.newArrayList(cnf), stack);
   }
-  
-  private static void pushSelectionRecursive(Context ctx, LogicalNode plan,
-      List<EvalNode> cnf, Stack<LogicalNode> stack) {
+
+  private static void pushSelectionRecursive(LogicalNode plan,
+                                             List<EvalNode> cnf, Stack<LogicalNode> stack) {
     
     switch(plan.getType()) {
     
     case SELECTION:
       SelectionNode selNode = (SelectionNode) plan;
       stack.push(selNode);
-      pushSelectionRecursive(ctx, selNode.getSubNode(),
-          cnf, stack);
+      pushSelectionRecursive(selNode.getSubNode(),cnf, stack);
       stack.pop();
       
       // remove the selection operator if there is no search condition 
@@ -211,8 +193,8 @@ public class LogicalOptimizer {
       LogicalNode outer = join.getOuterNode();
       LogicalNode inner = join.getInnerNode();
 
-      pushSelectionRecursive(ctx, outer, cnf, stack);
-      pushSelectionRecursive(ctx, inner, cnf, stack);
+      pushSelectionRecursive(outer, cnf, stack);
+      pushSelectionRecursive(inner, cnf, stack);
 
       List<EvalNode> matched = Lists.newArrayList();
       for (EvalNode eval : cnf) {
@@ -278,11 +260,11 @@ public class LogicalOptimizer {
       stack.push(plan);
       if (plan instanceof UnaryNode) {
         UnaryNode unary = (UnaryNode) plan;
-        pushSelectionRecursive(ctx, unary.getSubNode(), cnf, stack);
+        pushSelectionRecursive(unary.getSubNode(), cnf, stack);
       } else if (plan instanceof BinaryNode) {
         BinaryNode binary = (BinaryNode) plan;
-        pushSelectionRecursive(ctx, binary.getOuterNode(), cnf, stack);
-        pushSelectionRecursive(ctx, binary.getInnerNode(), cnf, stack);
+        pushSelectionRecursive(binary.getOuterNode(), cnf, stack);
+        pushSelectionRecursive(binary.getInnerNode(), cnf, stack);
       }
       stack.pop();
       break;
@@ -329,7 +311,7 @@ public class LogicalOptimizer {
       return false;
     } else {
       for (Column col : columnRefs) {
-        if (!node.getInputSchema().contains(col.getQualifiedName())) {
+        if (!node.getInSchema().contains(col.getQualifiedName())) {
           return false;
         }
       }
@@ -341,13 +323,37 @@ public class LogicalOptimizer {
   /**
    * This method pushes down the projection list into the appropriate and
    * below logical operators.
-   * @param ctx
+   * @param context
    * @param plan
    */
-  private static void pushProjection(Context ctx, LogicalNode plan) throws CloneNotSupportedException {
+  private static void pushProjection(PlanningContext context,
+                                     LogicalNode plan)
+      throws CloneNotSupportedException {
     Stack<LogicalNode> stack = new Stack<LogicalNode>();
-    OptimizationContext optCtx = new OptimizationContext(ctx);
-    pushProjectionRecursive(optCtx, plan, stack, new HashSet<Column>());
+
+    ParseTree tree = context.getParseTree();
+    QueryBlock block;
+
+    if (tree instanceof QueryBlock) {
+      block = (QueryBlock) context.getParseTree();
+
+    } else if (tree instanceof CreateTableStmt) {
+
+      CreateTableStmt createTableStmt = (CreateTableStmt) tree;
+
+      if (createTableStmt.hasSelectStmt()) {
+        block = createTableStmt.getSelectStmt();
+      } else {
+        return;
+      }
+    } else {
+
+      return;
+    }
+    OptimizationContext optCtx = new OptimizationContext(context,
+        block.getTargetList());
+
+    pushProjectionRecursive(context, optCtx, plan, stack, new HashSet<Column>());
   }
 
   /**
@@ -366,47 +372,55 @@ public class LogicalOptimizer {
    * //@param targetList
    * @return
    */
-  private static LogicalNode pushProjectionRecursive(OptimizationContext ctx, LogicalNode node, Stack<LogicalNode> stack,
-                                                     Set<Column> necessary) throws CloneNotSupportedException {
+  private static LogicalNode pushProjectionRecursive(
+      final PlanningContext ctx, final OptimizationContext optContext,
+      final LogicalNode node, final Stack<LogicalNode> stack,
+      final Set<Column> necessary) throws CloneNotSupportedException {
+
     LogicalNode outer;
     LogicalNode inner;
     switch (node.getType()) {
       case ROOT: // It does not support the projection
         LogicalRootNode root = (LogicalRootNode) node;
         stack.add(root);
-        outer = pushProjectionRecursive(ctx, root.getSubNode(), stack, necessary);
-        root.setInputSchema(outer.getOutputSchema());
-        root.setOutputSchema(outer.getOutputSchema());
+        outer = pushProjectionRecursive(ctx, optContext,
+            root.getSubNode(), stack, necessary);
+        root.setInSchema(outer.getOutSchema());
+        root.setOutSchema(outer.getOutSchema());
         break;
 
       case STORE:
         StoreTableNode store = (StoreTableNode) node;
         stack.add(store);
-        outer = pushProjectionRecursive(ctx, store.getSubNode(), stack, necessary);
-        store.setInputSchema(outer.getOutputSchema());
-        store.setOutputSchema(outer.getOutputSchema());
+        outer = pushProjectionRecursive(ctx, optContext,
+            store.getSubNode(), stack, necessary);
+        store.setInSchema(outer.getOutSchema());
+        store.setOutSchema(outer.getOutSchema());
         break;
 
       case PROJECTION:
         ProjectionNode projNode = (ProjectionNode) node;
 
         stack.add(projNode);
-        outer = pushProjectionRecursive(ctx, projNode.getSubNode(), stack, necessary);
+        outer = pushProjectionRecursive(ctx, optContext,
+            projNode.getSubNode(), stack, necessary);
         stack.pop();
 
         LogicalNode childNode = projNode.getSubNode();
-        if (ctx.getTargetListManager().isAllEvaluated() // if all exprs are evaluated
+        if (optContext.getTargetListManager().isAllEvaluated() // if all exprs are evaluated
             && (childNode.getType() == ExprType.JOIN ||
                childNode.getType() == ExprType.GROUP_BY ||
                childNode.getType() == ExprType.SCAN)) { // if the child node is projectable
-            projNode.getSubNode().setOutputSchema(ctx.getTargetListManager().getUpdatedSchema());
+            projNode.getSubNode().setOutSchema(
+                optContext.getTargetListManager().getUpdatedSchema());
             LogicalNode parent = stack.peek();
             ((UnaryNode)parent).setSubNode(projNode.getSubNode());
             return projNode.getSubNode();
         } else {
           // the output schema is not changed.
-          projNode.setInputSchema(outer.getOutputSchema());
-          projNode.setTargetList(ctx.getTargetListManager().getUpdatedTarget());
+          projNode.setInSchema(outer.getOutSchema());
+          projNode.setTargetList(
+              optContext.getTargetListManager().getUpdatedTarget());
         }
         return projNode;
 
@@ -418,10 +432,11 @@ public class LogicalOptimizer {
         }
 
         stack.add(selNode);
-        outer = pushProjectionRecursive(ctx, selNode.getSubNode(), stack, necessary);
+        outer = pushProjectionRecursive(ctx, optContext, selNode.getSubNode(),
+            stack, necessary);
         stack.pop();
-        selNode.setInputSchema(outer.getOutputSchema());
-        selNode.setOutputSchema(outer.getOutputSchema());
+        selNode.setInSchema(outer.getOutSchema());
+        selNode.setOutSchema(outer.getOutSchema());
         break;
 
       case GROUP_BY: {
@@ -432,13 +447,14 @@ public class LogicalOptimizer {
         }
 
         stack.add(groupByNode);
-        outer = pushProjectionRecursive(ctx, groupByNode.getSubNode(), stack, necessary);
+        outer = pushProjectionRecursive(ctx, optContext,
+            groupByNode.getSubNode(), stack, necessary);
         stack.pop();
-        groupByNode.setInputSchema(outer.getOutputSchema());
+        groupByNode.setInSchema(outer.getOutSchema());
         // set all targets
-        groupByNode.setTargetList(ctx.getTargetListManager().getUpdatedTarget());
+        groupByNode.setTargetList(optContext.getTargetListManager().getUpdatedTarget());
 
-        TargetListManager targets = ctx.getTargetListManager();
+        TargetListManager targets = optContext.getTargetListManager();
         List<Target> groupbyPushable = Lists.newArrayList();
         List<Integer> groupbyPushableId = Lists.newArrayList();
 
@@ -464,10 +480,11 @@ public class LogicalOptimizer {
         }
 
         stack.add(sortNode);
-        outer = pushProjectionRecursive(ctx, sortNode.getSubNode(), stack, necessary);
+        outer = pushProjectionRecursive(ctx, optContext,
+            sortNode.getSubNode(), stack, necessary);
         stack.pop();
-        sortNode.setInputSchema(outer.getOutputSchema());
-        sortNode.setOutputSchema(outer.getOutputSchema());
+        sortNode.setInSchema(outer.getOutSchema());
+        sortNode.setOutSchema(outer.getOutSchema());
         break;
 
 
@@ -480,14 +497,16 @@ public class LogicalOptimizer {
         }
 
         stack.add(joinNode);
-        outer = pushProjectionRecursive(ctx, joinNode.getOuterNode(), stack, necessary);
-        inner = pushProjectionRecursive(ctx, joinNode.getInnerNode(), stack, necessary);
+        outer = pushProjectionRecursive(ctx, optContext,
+            joinNode.getOuterNode(), stack, necessary);
+        inner = pushProjectionRecursive(ctx, optContext,
+            joinNode.getInnerNode(), stack, necessary);
         stack.pop();
         Schema merged = SchemaUtil
-            .merge(outer.getOutputSchema(), inner.getOutputSchema());
-        joinNode.setInputSchema(merged);
+            .merge(outer.getOutSchema(), inner.getOutSchema());
+        joinNode.setInSchema(merged);
 
-        TargetListManager targets = ctx.getTargetListManager();
+        TargetListManager targets = optContext.getTargetListManager();
         List<Target> joinPushable = Lists.newArrayList();
         List<Integer> joinPushableId = Lists.newArrayList();
         EvalNode expr;
@@ -505,35 +524,42 @@ public class LogicalOptimizer {
           joinNode.setTargetList(targets.targets);
         }
 
-        Schema outSchema = shrinkOutSchema(joinNode.getInputSchema(), targets.getUpdatedSchema().getColumns());
+        Schema outSchema = shrinkOutSchema(joinNode.getInSchema(), targets.getUpdatedSchema().getColumns());
         for (Integer t : joinPushableId) {
           outSchema.addColumn(targets.getEvaluatedColumn(t));
         }
         outSchema = SchemaUtil.mergeAllWithNoDup(outSchema.getColumns(),
-            SchemaUtil.getProjectedSchema(joinNode.getInputSchema(),parentNecessary).getColumns());
-        joinNode.setOutputSchema(outSchema);
+            SchemaUtil.getProjectedSchema(joinNode.getInSchema(),parentNecessary).getColumns());
+        joinNode.setOutSchema(outSchema);
         break;
       }
 
       case UNION:  // It does not support the projection
         UnionNode unionNode = (UnionNode) node;
         stack.add(unionNode);
-        OptimizationContext outerCtx = new OptimizationContext(ctx.ctx);
-        OptimizationContext innerCtx = new OptimizationContext(ctx.ctx);
-        pushProjectionRecursive(outerCtx, unionNode.getOuterNode(), stack, necessary);
-        pushProjectionRecursive(innerCtx, unionNode.getInnerNode(), stack, necessary);
+
+        QueryBlock block = (QueryBlock) ctx.getParseTree();
+
+        OptimizationContext outerCtx = new OptimizationContext(ctx,
+            block.getTargetList());
+        OptimizationContext innerCtx = new OptimizationContext(ctx,
+            block.getTargetList());
+        pushProjectionRecursive(ctx, outerCtx, unionNode.getOuterNode(),
+            stack, necessary);
+        pushProjectionRecursive(ctx, innerCtx, unionNode.getInnerNode(),
+            stack, necessary);
         stack.pop();
 
         // if this is the final union, we assume that all targets are evalauted
         // TODO - is it always correct?
         if (stack.peek().getType() != ExprType.UNION) {
-          ctx.getTargetListManager().setEvaluatedAll();
+          optContext.getTargetListManager().setEvaluatedAll();
         }
         break;
 
       case SCAN: {
         ScanNode scanNode = (ScanNode) node;
-        TargetListManager targets = ctx.getTargetListManager();
+        TargetListManager targets = optContext.getTargetListManager();
         List<Integer> scanPushableId = Lists.newArrayList();
         List<Target> scanPushable = Lists.newArrayList();
         EvalNode expr;
@@ -553,12 +579,12 @@ public class LogicalOptimizer {
         if (scanPushable.size() > 0) {
           scanNode.setTargets(scanPushable.toArray(new Target[scanPushable.size()]));
         }
-        Schema outSchema = shrinkOutSchema(scanNode.getInputSchema(), targets.getUpdatedSchema().getColumns());
+        Schema outSchema = shrinkOutSchema(scanNode.getInSchema(), targets.getUpdatedSchema().getColumns());
         for (Integer t : scanPushableId) {
           outSchema.addColumn(targets.getEvaluatedColumn(t));
         }
-        outSchema = SchemaUtil.mergeAllWithNoDup(outSchema.getColumns(), SchemaUtil.getProjectedSchema(scanNode.getInputSchema(),necessary).getColumns());
-        scanNode.setOutputSchema(outSchema);
+        outSchema = SchemaUtil.mergeAllWithNoDup(outSchema.getColumns(), SchemaUtil.getProjectedSchema(scanNode.getInSchema(),necessary).getColumns());
+        scanNode.setOutSchema(outSchema);
 
         break;
       }
@@ -580,12 +606,12 @@ public class LogicalOptimizer {
   }
 
   public static class OptimizationContext {
-    Context ctx;
+    PlanningContext context;
     TargetListManager targetListManager;
 
-    public OptimizationContext(Context ctx) {
-      this.ctx = ctx;
-      this.targetListManager = new TargetListManager(ctx);
+    public OptimizationContext(PlanningContext context, Target [] targets) {
+      this.context = context;
+      this.targetListManager = new TargetListManager(context, targets);
     }
 
     public TargetListManager getTargetListManager() {
@@ -594,18 +620,18 @@ public class LogicalOptimizer {
   }
 
   public static class TargetListManager {
-    private Context ctx;
+    private PlanningContext context;
     private boolean [] evaluated;
     private Target [] targets;
 
-    public TargetListManager(Context ctx) {
-      this.ctx = ctx;
-      if (ctx.getTargetList() == null) {
+    public TargetListManager(PlanningContext context, Target [] targets) {
+      this.context = context;
+      if (targets == null) {
         evaluated = new boolean[0];
       } else {
-        evaluated = new boolean[ctx.getTargetList().length];
+        evaluated = new boolean[targets.length];
       }
-      this.targets = ctx.getTargetList();
+      this.targets = targets;
     }
 
     public Target getTarget(int id) {
@@ -676,7 +702,7 @@ public class LogicalOptimizer {
       if (t.hasAlias()) {
         name = t.getAlias();
       } else if (t.getEvalTree().getName().equals("?")) {
-        name = ctx.getUnnamedColumn();
+        name = context.getGeneratedColumnName();
       } else {
         name = t.getEvalTree().getName();
       }

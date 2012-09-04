@@ -88,8 +88,8 @@ public class GroupbyNode extends UnaryNode implements Cloneable {
       }
       sb.append("],");
     }
-    sb.append("\n  \"out schema\": ").append(getOutputSchema()).append(",");
-    sb.append("\n  \"in schema\": ").append(getInputSchema());
+    sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",");
+    sb.append("\n  \"in schema\": ").append(getInSchema());
     sb.append("}");
     
     return sb.toString() + "\n"

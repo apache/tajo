@@ -17,6 +17,7 @@ import tajo.engine.parser.ParseTree;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
+import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
 import tajo.engine.planner.global.ScheduleUnit;
@@ -43,7 +44,7 @@ public class TestNtaTestingUtility {
   private TajoConf conf;
   private StorageManager sm;
   private QueryAnalyzer analyzer;
-  private QueryContext.Factory qcFactory;
+  private LogicalPlanner planner;
   private int tupleNum = 10000;
 
   @Before
@@ -56,7 +57,7 @@ public class TestNtaTestingUtility {
     sm = StorageManager.get(conf);
     QueryIdFactory.reset();
     analyzer = new QueryAnalyzer(catalog);
-    qcFactory = new QueryContext.Factory(catalog);
+    planner = new LogicalPlanner(catalog);
     
     Schema schema = new Schema();
     schema.addColumn("name", DataType.STRING);
@@ -120,11 +121,10 @@ public class TestNtaTestingUtility {
     List<QueryUnitRequest> queryUnitRequests = Lists.newArrayList();
     for (int i = 0; i < 4; i++) {
       qid = QueryIdFactory.newQueryUnitId(sid);
-      ctx = qcFactory.create();
-      queryTree = analyzer.parse(ctx,
+      PlanningContext context = analyzer.parse(
           "testNtaTestingUtil := select deptName, sleep(name) from employee group by deptName");
-      plan = LogicalPlanner.createPlan(ctx, queryTree);
-      plan = LogicalOptimizer.optimize(ctx, plan);
+      plan = planner.createPlan(context);
+      plan = LogicalOptimizer.optimize(context, plan);
       QueryUnit unit = new QueryUnit(qid);
       queryUnits.add(unit);
       QueryUnitAttempt attempt = unit.newAttempt();

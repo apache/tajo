@@ -20,11 +20,11 @@ import tajo.engine.MasterInterfaceProtos.*;
 import tajo.engine.cluster.QueryManager;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.ipc.protocolrecords.QueryUnitRequest;
-import tajo.engine.parser.ParseTree;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PlannerUtil;
+import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
 import tajo.engine.planner.global.ScheduleUnit;
@@ -57,7 +57,7 @@ public class TestLeafServer {
   private StorageManager sm;
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
-  private QueryContext.Factory qcFactory;
+  private LogicalPlanner planner;
   private static int tupleNum = 10000;
 
   @Before
@@ -70,7 +70,7 @@ public class TestLeafServer {
     sm = StorageManager.get(conf);
     QueryIdFactory.reset();
     analyzer = new QueryAnalyzer(catalog);
-    qcFactory = new QueryContext.Factory(catalog);
+    planner = new LogicalPlanner(catalog);
     
     Schema schema = new Schema();
     schema.addColumn("name", DataType.STRING);
@@ -138,12 +138,12 @@ public class TestLeafServer {
             QueryIdFactory.newQueryId()));
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(sid);
     QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(sid);
-    
-    QueryContext ctx = qcFactory.create();
-    ParseTree query = analyzer.parse(ctx, 
+
+    PlanningContext context = analyzer.parse(
         "testLeafServer := select name, empId, deptName from employee");
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
     
     sm.initTableBase(frags[0].getMeta(), "testLeafServer");
     QueryUnitRequest req1 = new QueryUnitRequestImpl(
@@ -203,11 +203,9 @@ public class TestLeafServer {
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(sid);
     QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(sid);
 
-    QueryContext ctx = qcFactory.create();
-    ParseTree query = analyzer.parse(ctx,
-        "testLeafServer := select name, empId, deptName from employee");
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
-    plan = LogicalOptimizer.optimize(ctx, plan);
+    PlanningContext context = analyzer.parse("testLeafServer := select name, empId, deptName from employee");
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
 
     TajoMaster master = util.getMiniTajoCluster().getMaster();
     QueryManager qm = master.getQueryManager();
@@ -292,17 +290,16 @@ public class TestLeafServer {
             QueryIdFactory.newQueryId()));
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(sid);
     QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(sid);
-    
-    QueryContext ctx = qcFactory.create();
-    ParseTree query = analyzer.parse(ctx, 
+
+    PlanningContext context = analyzer.parse(
         "select deptName, sum(empId) as merge from employee group by deptName");
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    LogicalNode plan = planner.createPlan(context);
     int numPartitions = 2;
     Column key1 = new Column("employee.deptName", DataType.STRING);
     StoreTableNode storeNode = new StoreTableNode("testInterQuery");
     storeNode.setPartitions(ScheduleUnit.PARTITION_TYPE.HASH, new Column[] { key1 }, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
-    plan = LogicalOptimizer.optimize(ctx, plan);   
+    plan = LogicalOptimizer.optimize(context, plan);
     
     sm.initTableBase(frags[0].getMeta(), "testInterQuery");
     QueryUnitRequest req1 = new QueryUnitRequestImpl(
@@ -330,7 +327,7 @@ public class TestLeafServer {
     
     assertSubmittedAndReported(master, submitted);
     
-    Schema secSchema = plan.getOutputSchema();
+    Schema secSchema = plan.getOutSchema();
     TableMeta secMeta = TCatUtil.newTableMeta(secSchema, StoreType.CSV);
     Path secData = sm.initLocalTableBase(new Path(TEST_PATH + "/sec"), secMeta);
     
@@ -364,14 +361,13 @@ public class TestLeafServer {
     TableMeta newMeta = TCatUtil.newTableMeta(newSchema, StoreType.CSV);
     catalog.addTable(TCatUtil.newTableDesc("interquery", newMeta, new Path("/")));
     QueryUnitId qid3 = QueryIdFactory.newQueryUnitId(sid);
-    ctx = qcFactory.create();
-    query = analyzer.parse(ctx, 
-        "select col1, col2 from interquery");
-    plan = LogicalPlanner.createPlan(ctx, query);    
+
+    context = analyzer.parse("select col1, col2 from interquery");
+    plan = planner.createPlan(context);
     storeNode = new StoreTableNode("final");
     PlannerUtil.insertNode(plan, storeNode);
-    plan = LogicalOptimizer.optimize(ctx, plan);
-    sm.initTableBase(TCatUtil.newTableMeta(plan.getOutputSchema(), StoreType.CSV), 
+    plan = LogicalOptimizer.optimize(context, plan);
+    sm.initTableBase(TCatUtil.newTableMeta(plan.getOutSchema(), StoreType.CSV),
         "final");
     Fragment emptyFrag = new Fragment("interquery", new Path("/"), newMeta, 0l, 0l);
     QueryUnitRequest req3 = new QueryUnitRequestImpl(

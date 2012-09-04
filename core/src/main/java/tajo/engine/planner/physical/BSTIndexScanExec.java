@@ -43,8 +43,8 @@ public class BSTIndexScanExec extends PhysicalExec{
     } else {
       this.qualCtx = this.qual.newContext();
     }
-    this.inputSchema = scanNode.getInputSchema();
-    this.outputSchema = scanNode.getOutputSchema();
+    this.inputSchema = scanNode.getInSchema();
+    this.outputSchema = scanNode.getOutSchema();
     this.datum = datum;
     
     Fragment[] frags = new Fragment[1];

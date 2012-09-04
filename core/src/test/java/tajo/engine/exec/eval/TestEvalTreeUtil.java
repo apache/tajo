@@ -5,19 +5,19 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tajo.TajoTestingUtility;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.datum.DatumFactory;
-import tajo.QueryContext;
-import tajo.TajoTestingUtility;
 import tajo.engine.exception.InternalException;
 import tajo.engine.exec.eval.EvalNode.Type;
 import tajo.engine.exec.eval.TestEvalTree.TestSum;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.parser.QueryBlock.Target;
+import tajo.engine.planner.LogicalPlanner;
 
 import java.util.Collection;
 import java.util.List;
@@ -36,7 +36,8 @@ public class TestEvalTreeUtil {
   static EvalNode expr2;
   static EvalNode expr3;
   static QueryAnalyzer analyzer;
-  static QueryContext.Factory factory = new QueryContext.Factory(catalog);
+  static LogicalPlanner planner;
+
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -54,24 +55,24 @@ public class TestEvalTreeUtil {
     TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
     catalog.addTable(desc);
 
-    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
+    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
+        FunctionType.GENERAL,
         new DataType [] {DataType.INT},
         new DataType [] {DataType.INT,DataType.INT});
     catalog.registerFunction(funcMeta);
 
-    factory = new QueryContext.Factory(catalog);
     analyzer = new QueryAnalyzer(catalog);
+    planner = new LogicalPlanner(catalog);
     
     QueryBlock block;
 
-    QueryContext ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, TestEvalTree.QUERIES[0]);
+    block = (QueryBlock) analyzer.parse(TestEvalTree.QUERIES[0]).getParseTree();
     expr1 = block.getWhereCondition();
 
-    block = (QueryBlock) analyzer.parse(ctx, TestEvalTree.QUERIES[1]);
+    block = (QueryBlock) analyzer.parse(TestEvalTree.QUERIES[1]).getParseTree();
     expr2 = block.getWhereCondition();
     
-    block = (QueryBlock) analyzer.parse(ctx, TestEvalTree.QUERIES[2]);
+    block = (QueryBlock) analyzer.parse(TestEvalTree.QUERIES[2]).getParseTree();
     expr3 = block.getWhereCondition();
   }
 
@@ -133,8 +134,7 @@ public class TestEvalTreeUtil {
   
   @Test
   public final void testGetSchemaFromTargets() throws InternalException {
-    QueryContext ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
+    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[0]).getParseTree();
     Schema schema = 
         EvalTreeUtil.getSchemaByTargets(null, block.getTargetList());
     Column col1 = schema.getColumn(0);
@@ -147,12 +147,12 @@ public class TestEvalTreeUtil {
   
   @Test
   public final void testGetContainExprs() throws CloneNotSupportedException {
-    QueryContext ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
+    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[1]).getParseTree();
     Target [] targets = block.getTargetList();
     
     Column col1 = new Column("people.score", DataType.INT);
-    Collection<EvalNode> exprs = EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
+    Collection<EvalNode> exprs =
+        EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
     EvalNode node = exprs.iterator().next();
     assertEquals(Type.LTH, node.getType());
     assertEquals(Type.PLUS, node.getLeftExpr().getType());
@@ -169,8 +169,7 @@ public class TestEvalTreeUtil {
   @Test
   public final void testGetCNF() {
     // "select score from people where score < 10 and 4 < score "
-    QueryContext ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[5]);
+    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[5]).getParseTree();
     EvalNode node = block.getWhereCondition();
     EvalNode [] cnf = EvalTreeUtil.getConjNormalForm(node);
     
@@ -198,8 +197,7 @@ public class TestEvalTreeUtil {
   @Test
   public final void testTransformCNF2Singleton() {
     // "select score from people where score < 10 and 4 < score "
-    QueryContext ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[6]);
+    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[6]).getParseTree();
     EvalNode node = block.getWhereCondition();
     EvalNode [] cnf1 = EvalTreeUtil.getConjNormalForm(node);
     assertEquals(3, cnf1.length);
@@ -214,8 +212,7 @@ public class TestEvalTreeUtil {
   
   @Test
   public final void testSimplify() {
-    QueryContext ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
+    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[0]).getParseTree();
     Target [] targets = block.getTargetList();
     EvalNode node = AlgebraicUtil.simplify(targets[0].getEvalTree());
     EvalContext nodeCtx = node.newContext();
@@ -227,38 +224,35 @@ public class TestEvalTreeUtil {
     nodeCtx = node.newContext();
     node.eval(nodeCtx, null, null);
     assertTrue(7.0d == node.terminate(nodeCtx).asDouble());
-    
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, QUERIES[1]);
+
+    block = (QueryBlock) analyzer.parse(QUERIES[1]).getParseTree();
     targets = block.getTargetList();
     Column col1 = new Column("people.score", DataType.INT);
-    Collection<EvalNode> exprs = EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
+    Collection<EvalNode> exprs =
+        EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
     node = exprs.iterator().next();
     System.out.println(AlgebraicUtil.simplify(node));
   }
   
   @Test
   public final void testConatainSingleVar() {
-    QueryContext ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
+    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[2]).getParseTree();
     EvalNode node = block.getWhereCondition();
     assertEquals(true, AlgebraicUtil.containSingleVar(node));
     
-    block = (QueryBlock) analyzer.parse(ctx, QUERIES[3]);
+    block = (QueryBlock) analyzer.parse(QUERIES[3]).getParseTree();
     node = block.getWhereCondition();
     assertEquals(true, AlgebraicUtil.containSingleVar(node));
   }
   
   @Test
   public final void testTranspose() {
-    QueryContext ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, QUERIES[2]);
+    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[2]).getParseTree();
     EvalNode node = block.getWhereCondition();
     assertEquals(true, AlgebraicUtil.containSingleVar(node));
     
     Column col1 = new Column("people.score", DataType.INT);
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, QUERIES[3]);
+    block = (QueryBlock) analyzer.parse(QUERIES[3]).getParseTree();
     node = block.getWhereCondition();    
     // we expect that score < 3
     EvalNode transposed = AlgebraicUtil.transpose(node, col1);
@@ -268,9 +262,8 @@ public class TestEvalTreeUtil {
     EvalContext evalCtx = transposed.getRightExpr().newContext();
     transposed.getRightExpr().eval(evalCtx, null, null);
     assertEquals(1, transposed.getRightExpr().terminate(evalCtx).asInt());
-            
-    ctx = factory.create();
-    block = (QueryBlock) analyzer.parse(ctx, QUERIES[4]);
+
+    block = (QueryBlock) analyzer.parse(QUERIES[4]).getParseTree();
     node = block.getWhereCondition();    
     // we expect that score < 3
     transposed = AlgebraicUtil.transpose(node, col1);
@@ -284,9 +277,11 @@ public class TestEvalTreeUtil {
 
   @Test
   public final void testFindDistinctAggFunctions() {
-    QueryContext ctx = factory.create();
-    QueryBlock block = (QueryBlock) analyzer.parse(ctx, "select sum(score) + max(age) from people");
-    List<AggFuncCallEval> list = EvalTreeUtil.findDistinctAggFunction(block.getTargetList()[0].getEvalTree());
+
+    QueryBlock block = (QueryBlock) analyzer.parse(
+        "select sum(score) + max(age) from people").getParseTree();
+    List<AggFuncCallEval> list = EvalTreeUtil.
+        findDistinctAggFunction(block.getTargetList()[0].getEvalTree());
     assertEquals(2, list.size());
     Set<String> result = Sets.newHashSet(new String [] {"max", "sum"});
     for (AggFuncCallEval eval : list) {

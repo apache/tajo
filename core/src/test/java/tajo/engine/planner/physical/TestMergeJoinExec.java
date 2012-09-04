@@ -3,19 +3,19 @@ package tajo.engine.planner.physical;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import tajo.SubqueryContext;
+import tajo.TajoTestingUtility;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.SubqueryContext;
-import tajo.TajoTestingUtility;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
-import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.utils.TUtil;
 import tajo.storage.Appender;
@@ -35,6 +35,7 @@ public class TestMergeJoinExec {
   private TajoTestingUtility util;
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
+  private LogicalPlanner planner;
   private SubqueryContext.Factory factory;
   private StorageManager sm;
 
@@ -109,6 +110,7 @@ public class TestMergeJoinExec {
         sm.getTablePath("people"));
     catalog.addTable(people);
     analyzer = new QueryAnalyzer(catalog);
+    planner = new LogicalPlanner(catalog);
   }
 
   @After
@@ -130,8 +132,8 @@ public class TestMergeJoinExec {
     File workDir = TajoTestingUtility.getTestDir("InnerJoin");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         merged, workDir);
-    QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERIES[0]);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    PlanningContext context = analyzer.parse(QUERIES[0]);
+    LogicalNode plan = planner.createPlan(context);
 
     PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -152,8 +154,8 @@ public class TestMergeJoinExec {
     outerSortKeys[1] = new QueryBlock.SortSpec(
         employeeSchema.getColumnByName("memId"));
     SortNode outerSort = new SortNode(outerSortKeys);
-    outerSort.setInputSchema(outerScan.getSchema());
-    outerSort.setOutputSchema(outerScan.getSchema());
+    outerSort.setInSchema(outerScan.getSchema());
+    outerSort.setOutSchema(outerScan.getSchema());
 
     Schema peopleSchema = catalog.getTableDesc("people").getMeta().getSchema();
     innerSortKeys[0] = new QueryBlock.SortSpec(
@@ -161,8 +163,8 @@ public class TestMergeJoinExec {
     innerSortKeys[1] = new QueryBlock.SortSpec(
         peopleSchema.getColumnByName("fk_memId"));
     SortNode innerSort = new SortNode(innerSortKeys);
-    innerSort.setInputSchema(innerScan.getSchema());
-    innerSort.setOutputSchema(innerScan.getSchema());
+    innerSort.setInSchema(innerScan.getSchema());
+    innerSort.setOutSchema(innerScan.getSchema());
 
     SortExec outerSortExec = new SortExec(outerSort, outerScan);
     SortExec innerSortExec = new SortExec(innerSort, innerScan);

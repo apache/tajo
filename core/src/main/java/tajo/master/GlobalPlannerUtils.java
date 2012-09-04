@@ -151,8 +151,8 @@ public class GlobalPlannerUtils {
   public static StoreTableNode newStorePlan(Schema outputSchema,
                                             String outputTableId) {
     StoreTableNode store = new StoreTableNode(outputTableId);
-    store.setInputSchema(outputSchema);
-    store.setOutputSchema(outputSchema);
+    store.setInSchema(outputSchema);
+    store.setOutSchema(outputSchema);
     return store;
   }
 
@@ -162,8 +162,8 @@ public class GlobalPlannerUtils {
     TableMeta meta = TCatUtil.newTableMeta(inputSchema, StoreType.CSV);
     TableDesc desc = TCatUtil.newTableDesc(inputTableId, meta, inputPath);
     ScanNode newScan = new ScanNode(new QueryBlock.FromTable(desc));
-    newScan.setInputSchema(desc.getMeta().getSchema());
-    newScan.setOutputSchema(desc.getMeta().getSchema());
+    newScan.setInSchema(desc.getMeta().getSchema());
+    newScan.setOutSchema(desc.getMeta().getSchema());
     return newScan;
   }
 
@@ -173,8 +173,8 @@ public class GlobalPlannerUtils {
                                            EvalNode havingCondition,
                                            QueryBlock.Target[] targets) {
     GroupbyNode groupby = new GroupbyNode(keys);
-    groupby.setInputSchema(inputSchema);
-    groupby.setOutputSchema(outputSchema);
+    groupby.setInSchema(inputSchema);
+    groupby.setOutSchema(outputSchema);
     groupby.setHavingCondition(havingCondition);
     groupby.setTargetList(targets);
 

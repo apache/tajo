@@ -1,7 +1,7 @@
 package tajo.master;
 
-import tajo.engine.MasterInterfaceProtos;
 import tajo.QueryUnitAttemptId;
+import tajo.engine.MasterInterfaceProtos;
 
 /**
  *

@@ -3,10 +3,10 @@
  */
 package tajo.engine.ipc.protocolrecords;
 
+import tajo.QueryUnitAttemptId;
 import tajo.common.ProtoObject;
 import tajo.engine.MasterInterfaceProtos.Fetch;
 import tajo.engine.MasterInterfaceProtos.QueryUnitRequestProto;
-import tajo.QueryUnitAttemptId;
 
 import java.net.URI;
 import java.util.List;

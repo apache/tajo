@@ -6,6 +6,8 @@ package tajo.engine.parser;
 import com.google.common.base.Preconditions;
 import tajo.catalog.Options;
 import tajo.catalog.proto.CatalogProtos.IndexMethod;
+import tajo.engine.parser.QueryBlock.SortSpec;
+import tajo.engine.planner.PlanningContext;
 
 /**
  * @author Hyunsik Choi
@@ -18,13 +20,14 @@ public class CreateIndexStmt extends ParseTree {
   private QueryBlock.SortSpec[] sortSpecs;
   private Options params = null;
 
-  public CreateIndexStmt() {
-    super(StatementType.CREATE_INDEX);
+  public CreateIndexStmt(final PlanningContext context) {
+    super(context, StatementType.CREATE_INDEX);
   }
-  
-  public CreateIndexStmt(String idxName, boolean unique, String tableName, 
-      QueryBlock.SortSpec[] sortSpecs) {
-    this();
+
+  public CreateIndexStmt(final PlanningContext context, String idxName,
+                         boolean unique, String tableName,
+                         SortSpec [] sortSpecs) {
+    this(context);
     this.idxName = idxName;
     this.unique = unique;
     this.tableName = tableName;
@@ -49,6 +52,7 @@ public class CreateIndexStmt extends ParseTree {
   
   public void setTableName(String tableName) {
     this.tableName = tableName;
+    addTableRef(tableName, tableName);
   }
   
   public String getTableName() {

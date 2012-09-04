@@ -17,8 +17,6 @@ import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.IndexMethod;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.datum.DatumFactory;
-import tajo.Context;
-import tajo.QueryContext;
 import tajo.engine.exception.InternalException;
 import tajo.engine.exec.eval.*;
 import tajo.engine.exec.eval.InvalidEvalException;
@@ -26,6 +24,8 @@ import tajo.engine.function.AggFunction;
 import tajo.engine.function.GeneralFunction;
 import tajo.engine.parser.QueryBlock.*;
 import tajo.engine.planner.JoinType;
+import tajo.engine.planner.PlanningContext;
+import tajo.engine.planner.PlanningContextImpl;
 import tajo.engine.query.exception.*;
 
 import java.util.ArrayList;
@@ -33,145 +33,147 @@ import java.util.List;
 
 /**
  * This class transforms a query statement into a QueryBlock. 
- * 
+ *
  * @author Hyunsik Choi
- * 
- * @see QueryBlock
+ *
+ * @see tajo.engine.parser.QueryBlock
  */
 public final class QueryAnalyzer {
   private static final Log LOG = LogFactory.getLog(QueryAnalyzer.class);
   private final CatalogService catalog;
-  
+
   public QueryAnalyzer(CatalogService catalog) {
     this.catalog = catalog;
   }
 
-  public ParseTree parse(final Context ctx, final String query) {
+  public PlanningContext parse(final String query) {
     CommonTree ast = parseTree(query);
     if (LOG.isDebugEnabled()) {
       LOG.debug("Analyzer: " + ast.toStringTree());
     }
-    return parseQueryTree(ctx, ast);
+
+    PlanningContextImpl context = new PlanningContextImpl(query);
+    ParseTree parseTree = parseQueryTree(context, ast);
+    context.setParseTree(parseTree);
+    return context;
   }
-  
-  private ParseTree parseQueryTree(final Context ctx, CommonTree ast) {
+
+  private ParseTree parseQueryTree(PlanningContext context,
+                                   final CommonTree ast) {
     ParseTree parseTree = null;
-    
+
     switch (getCmdType(ast)) {
-    case SELECT:
-      parseTree = parseSelectStatement(ctx, ast);
-      break;
-      
-    case UNION:
-    case EXCEPT:
-    case INTERSECT:
-      parseTree = parseSetStatement(ctx, ast);
-      break;
-      
-    case CREATE_INDEX:
-      parseTree = parseIndexStatement(ctx, ast);
-      break;
-    
-    case CREATE_TABLE:
-      parseTree = parseCreateStatement(ctx, ast);
-    default:
-      break;
+      case SELECT:
+        parseTree = parseSelectStatement(context, ast);
+        break;
+
+      case UNION:
+      case EXCEPT:
+      case INTERSECT:
+        parseTree = parseSetStatement(context, ast);
+        break;
+
+      case CREATE_INDEX:
+        parseTree = parseIndexStatement(context, ast);
+        break;
+
+      case CREATE_TABLE:
+        parseTree = parseCreateStatement(context, ast);
+      default:
+        break;
     }
 
-    ctx.makeHints(parseTree);
     return parseTree;
   }
-  
+
   /**
    * t=table ASSIGN select_stmt -> ^(CREATE_TABLE $t select_stmt)
    * | CREATE TABLE t=table AS select_stmt -> ^(CREATE_TABLE $t select_stmt)
-   * 
-   * @param ctx
+   *
    * @param ast
    * @return
    */
-  private CreateTableStmt parseCreateStatement(final Context ctx,
-      final CommonTree ast) {
+  private CreateTableStmt parseCreateStatement(final PlanningContext context,
+                                               final CommonTree ast) {
     CreateTableStmt stmt;
-    
+
     int idx = 0;
     CommonTree node;
     String tableName = ast.getChild(idx).getText();
     idx++;
     node = (CommonTree) ast.getChild(idx);
-    
+
     if (node.getType() == NQLParser.TABLE_DEF) {
-      Schema tableDef = parseCreateTableDef(ctx, node);
-      idx++;      
+      Schema tableDef = parseCreateTableDef(node);
+      idx++;
       StoreType storeType = ParseUtil.getStoreType(ast.getChild(idx).getText());
       idx++;
       Path path = new Path(ast.getChild(idx).getText());
-      stmt = new CreateTableStmt(tableName, tableDef, storeType, path);      
+      stmt = new CreateTableStmt(context, tableName, tableDef, storeType, path);
       if ((ast.getChildCount() - idx) > 1) {
         idx++;
         if (ast.getChild(idx).getType() == NQLParser.PARAMS) {
-          Options options = parseParams(ctx, (CommonTree) ast.getChild(idx));
+          Options options = parseParams((CommonTree) ast.getChild(idx));
           stmt.setOptions(options);
         }
-      }      
+      }
     } else if (node.getType() == NQLParser.SELECT) {
-      QueryBlock selectStmt = parseSelectStatement(ctx, node);    
-      stmt = new CreateTableStmt(tableName, selectStmt);      
-    } else {    
+      QueryBlock selectStmt = parseSelectStatement(context, node);
+      stmt = new CreateTableStmt(context, tableName, selectStmt);
+    } else {
       throw new NotSupportQueryException("ERROR: not yet supported query");
     }
-    
+
     return stmt;
   }
-  
-  private Schema parseCreateTableDef(final Context ctx, final CommonTree ast) {
+
+  private Schema parseCreateTableDef(final CommonTree ast) {
     Schema tableDef = new Schema();
     DataType type;
     for (int i = 0; i < ast.getChildCount(); i++) {
-      switch(ast.getChild(i).getChild(1).getType()) {      
-      case NQLParser.BOOL: type = DataType.BOOLEAN; break;
-      case NQLParser.BYTE: type = DataType.BYTE; break;
-      case NQLParser.INT: type = DataType.INT; break;                                 
-      case NQLParser.LONG: type = DataType.LONG; break;
-      case NQLParser.FLOAT: type = DataType.FLOAT; break;
-      case NQLParser.DOUBLE: type = DataType.DOUBLE; break;
-      case NQLParser.TEXT: type = DataType.STRING; break;
-      case NQLParser.BYTES: type = DataType.BYTES; break;
-      case NQLParser.IPv4: type = DataType.IPv4; break;
-      default: throw new InvalidQueryException(ast.toStringTree());
-      }                                       
-      
-      tableDef.addColumn(ast.getChild(i).getChild(0).getText(), type);                                   
+      switch(ast.getChild(i).getChild(1).getType()) {
+        case NQLParser.BOOL: type = DataType.BOOLEAN; break;
+        case NQLParser.BYTE: type = DataType.BYTE; break;
+        case NQLParser.INT: type = DataType.INT; break;
+        case NQLParser.LONG: type = DataType.LONG; break;
+        case NQLParser.FLOAT: type = DataType.FLOAT; break;
+        case NQLParser.DOUBLE: type = DataType.DOUBLE; break;
+        case NQLParser.TEXT: type = DataType.STRING; break;
+        case NQLParser.BYTES: type = DataType.BYTES; break;
+        case NQLParser.IPv4: type = DataType.IPv4; break;
+        default: throw new InvalidQueryException(ast.toStringTree());
+      }
+
+      tableDef.addColumn(ast.getChild(i).getChild(0).getText(), type);
     }
-    
+
     return tableDef;
-  }  
-  
-  private SetStmt parseSetStatement(final Context ctx,
-      final CommonTree ast) {
+  }
+
+  private SetStmt parseSetStatement(final PlanningContext context,
+                                    final CommonTree ast) {
     StatementType type;
     boolean distinct = true;
     ParseTree left;
     ParseTree right;
-    
+
     switch (ast.getType()) {
-    case NQLParser.UNION:
-      type = StatementType.UNION;
-      break;
-    case NQLParser.EXCEPT:
-      type = StatementType.EXCEPT;
-      break;
-    case NQLParser.INTERSECT:
-      type = StatementType.INTERSECT;
-      break;
-    default:
-       throw new InvalidQueryException("Illegal AST:\n" + ast.toStringTree());
+      case NQLParser.UNION:
+        type = StatementType.UNION;
+        break;
+      case NQLParser.EXCEPT:
+        type = StatementType.EXCEPT;
+        break;
+      case NQLParser.INTERSECT:
+        type = StatementType.INTERSECT;
+        break;
+      default:
+        throw new InvalidQueryException("Illegal AST:\n" + ast.toStringTree());
     }
-    
+
     int idx = 0;
-    QueryContext leftCtx = new QueryContext(catalog);
-    left = parseQueryTree(leftCtx, (CommonTree) ast.getChild(idx));
-    idx++;    
+    left = parseQueryTree(context, (CommonTree) ast.getChild(idx));
+    idx++;
     int nodeType = ast.getChild(idx).getType();
     if (nodeType == NQLParser.ALL) {
       distinct = true;
@@ -180,80 +182,77 @@ public final class QueryAnalyzer {
       distinct = false;
       idx++;
     }
-    QueryContext rightCtx = new QueryContext(catalog);
-    right = parseQueryTree(rightCtx, (CommonTree) ast.getChild(idx));
-    ctx.mergeContext(leftCtx);
-    ctx.mergeContext(rightCtx);
-    return new SetStmt(type, left, right, distinct);
+    right = parseQueryTree(context, (CommonTree) ast.getChild(idx));
+    return new SetStmt(context, type, left, right, distinct);
   }
 
-  private QueryBlock parseSelectStatement(final Context ctx,
-      final CommonTree ast) {
-    
-    QueryBlock block = new QueryBlock();
+  private QueryBlock parseSelectStatement(PlanningContext context,
+                                          final CommonTree ast) {
+
+    QueryBlock block = new QueryBlock(context);
 
     CommonTree node;
     for (int cur = 0; cur < ast.getChildCount(); cur++) {
       node = (CommonTree) ast.getChild(cur);
 
       switch (node.getType()) {
-      case NQLParser.FROM:
-        parseFromClause(ctx, block, node);
-        break;
-              
-      case NQLParser.SET_QUALIFIER:
-        parseSetQualifier(ctx, block, node);
-        break;
-        
-      case NQLParser.SEL_LIST:
-        parseSelectList(ctx, block, node);
-        break;
-        
-      case NQLParser.WHERE:
-        parseWhereClause(ctx, block, node);
-        break;
+        case NQLParser.FROM:
+          parseFromClause(context, block, node);
+          break;
 
-      case NQLParser.GROUP_BY:
-        parseGroupByClause(ctx, block, node);
-        break;
-        
-      case NQLParser.HAVING:
-        parseHavingClause(ctx, block, node);
-        break;
-        
-      case NQLParser.ORDER_BY:
-        SortSpec [] sortKeys = parseSortSpecifiers(ctx, 
-            (CommonTree) node.getChild(0));
-        block.setSortKeys(sortKeys);
-        break;        
-        
-      default:
-        
+        case NQLParser.SET_QUALIFIER:
+          parseSetQualifier(block, node);
+          break;
+
+        case NQLParser.SEL_LIST:
+          parseSelectList(context, block, node);
+          break;
+
+        case NQLParser.WHERE:
+          parseWhereClause(context, block, node);
+          break;
+
+        case NQLParser.GROUP_BY:
+          parseGroupByClause(context, block, node);
+          break;
+
+        case NQLParser.HAVING:
+          parseHavingClause(context, block, node);
+          break;
+
+        case NQLParser.ORDER_BY:
+          SortSpec[] sortKeys = parseSortSpecifiers(context, block,
+              (CommonTree) node.getChild(0));
+          block.setSortKeys(sortKeys);
+          break;
+
+        default:
+
       }
     }
 
     return block;
   }
 
-  private void parseSetQualifier(final Context ctx, final QueryBlock block, final CommonTree ast) {
+  private void parseSetQualifier(final QueryBlock block, final CommonTree ast) {
     int idx = 0;
 
     if (ast.getChild(idx).getType() == NQLParser.DISTINCT) {
       block.setDistinct();
     }
   }
-  
+
   /**
    * EBNF: CREATE (UNIQUE?) INDEX n=ID ON t=ID LEFT_PAREN s=sort_specifier_list 
    * RIGHT_PAREN p=param_clause? <br />
    * AST:  ^(CREATE_INDEX $n $t $s $p)
-   * 
-   * @param ctx
+   *
    * @param ast
    */
-  private CreateIndexStmt parseIndexStatement(final Context ctx,
-      final CommonTree ast) {
-    
+  private CreateIndexStmt parseIndexStatement(PlanningContext context,
+                                              final CommonTree ast) {
+    CreateIndexStmt indexStmt = new CreateIndexStmt(context);
+
     int idx = 0;
     boolean unique = false;
     // the below things are optional
@@ -261,45 +260,51 @@ public final class QueryAnalyzer {
       unique = true;
       idx++;
     }
-    
+
     IndexMethod method = null;
     if (ast.getChild(idx).getType() == NQLParser.USING) {
       method = getIndexMethod(ast.getChild(idx).getText());
       idx++;
     }
-    
+
     // It's optional, so it can be null if there is no params clause.
     Options params = null;
     if (ast.getChild(idx).getType() == NQLParser.PARAMS) {
-      params = parseParams(ctx, (CommonTree) ast.getChild(idx));
+      params = parseParams((CommonTree) ast.getChild(idx));
       idx++;
     }
-    
+
     // They are required, so they are always filled.
     String idxName = ast.getChild(idx++).getText();
     String tbName = ast.getChild(idx++).getText();
-    ctx.renameTable(tbName, tbName);
-    
-    SortSpec [] sortSpecs = parseSortSpecifiers(ctx, 
+    indexStmt.setIndexName(idxName);
+    indexStmt.setTableName(tbName);
+
+    SortSpec [] sortSpecs = parseSortSpecifiers(context, indexStmt,
         (CommonTree) ast.getChild(idx++));
-    CreateIndexStmt stmt = new CreateIndexStmt(idxName, unique, tbName, 
-        sortSpecs);
+
+    if (unique) {
+      indexStmt.setUnique();
+    }
+    indexStmt.setSortSpecs(sortSpecs);
+
     if (method != null) {
-      stmt.setMethod(method);
+      indexStmt.setMethod(method);
     }
-    
+
     if (params != null) {
-      stmt.setParams(params);
+      indexStmt.setParams(params);
     }
-    return stmt;
+
+    return indexStmt;
   }
-  
+
   /**
    * EBNF: table_list -> tableRef (COMMA tableRef)
    * @param block
    * @param ast
    */
-  private void parseFromClause(final Context ctx,
+  private void parseFromClause(PlanningContext context,
                                final QueryBlock block, final CommonTree ast) {
     // implicit join or the from clause on single relation
     boolean isPrevJoin = false;
@@ -314,12 +319,11 @@ public final class QueryAnalyzer {
         case NQLParser.TABLE:
           // table (AS ID)?
           // 0 - a table name, 1 - table alias
-          table = parseTable(ctx, node);
-          ctx.renameTable(table);
-          block.addFromTable(table);
+          table = parseTable(node);
+          block.addFromTable(table, true);
           break;
         case NQLParser.JOIN:
-          JoinClause newJoin = parseExplicitJoinClause(ctx, block, node);
+          QueryBlock.JoinClause newJoin = parseExplicitJoinClause(context, block, node);
           if (isPrevJoin) {
             newJoin.setLeft(joinClause);
             joinClause = newJoin;
@@ -339,55 +343,64 @@ public final class QueryAnalyzer {
     }
   }
 
-  
-  private JoinClause parseExplicitJoinClause(final Context ctx, final QueryBlock block, 
-      final CommonTree ast) {
-    
+
+  private JoinClause parseExplicitJoinClause(final PlanningContext context,
+                                             final QueryBlock block,
+                                             final CommonTree ast) {
+
     int idx = 0;
     int parsedJoinType = ast.getChild(idx).getType();
     JoinType joinType = null;
 
     JoinClause joinClause = null;
-    
+
     switch (parsedJoinType) {
       case NQLParser.CROSS:
       case NQLParser.UNION:
-        joinClause = parseCrossAndUnionJoin(ctx, ast);
+        joinClause = parseCrossAndUnionJoin(context, block, ast);
         break;
 
       case NQLParser.NATURAL:
-        joinClause = parseNaturalJoinClause(ctx, ast, block);
-      break;
+        joinClause = parseNaturalJoinClause(context, block, ast);
+        break;
 
       case NQLParser.INNER:
       case NQLParser.OUTER:
-        joinClause = parseQualifiedJoinClause(ctx, ast, block, 0);
+        joinClause = parseQualifiedJoinClause(context, block, ast, 0);
         break;
 
       default: // default join (without join type) is inner join
-        joinClause = parseQualifiedJoinClause(ctx, ast, block, 0);
+        joinClause = parseQualifiedJoinClause(context, block, ast, 0);
     }
-    
+
     return joinClause;
   }
 
-  private JoinClause parseNaturalJoinClause(Context ctx, Tree ast, QueryBlock block) {
-    JoinClause join = parseQualifiedJoinClause(ctx, ast, block, 1);
+  private JoinClause parseNaturalJoinClause(final PlanningContext context,
+                                            final QueryBlock block, Tree ast) {
+    JoinClause join = parseQualifiedJoinClause(context, block, ast, 1);
     join.setNatural();
     return join;
   }
 
-  private JoinClause parseQualifiedJoinClause(Context ctx, Tree ast, QueryBlock block, final int idx) {
+  private JoinClause parseQualifiedJoinClause(PlanningContext context,
+                                              QueryBlock block,
+                                              Tree ast, final int idx) {
     int childIdx = idx;
     JoinClause join = null;
+
     if (ast.getChild(childIdx).getType() == NQLParser.TABLE) { // default join
       join = new JoinClause(JoinType.INNER);
-      join.setRight(parseTable(ctx, (CommonTree) ast.getChild(childIdx)));
-      ctx.renameTable(join.getRight());
+      join.setRight(parseTable((CommonTree) ast.getChild(childIdx)));
+      block.addFromTable(join.getRight(), true);
+
     } else {
+
       if (ast.getChild(childIdx).getType() == NQLParser.INNER) {
         join = new JoinClause(JoinType.INNER);
+
       } else if (ast.getChild(childIdx).getType() == NQLParser.OUTER) {
+
         switch (ast.getChild(childIdx).getChild(0).getType()) {
           case NQLParser.LEFT:
             join = new JoinClause(JoinType.LEFT_OUTER);
@@ -402,18 +415,23 @@ public final class QueryAnalyzer {
             throw new NQLSyntaxException("wrong join type");
         }
       }
+
       childIdx++;
-      join.setRight(parseTable(ctx, (CommonTree) ast.getChild(childIdx)));
-      ctx.renameTable(join.getRight());
+      join.setRight(parseTable((CommonTree) ast.getChild(childIdx)));
+      block.addFromTable(join.getRight(), true);
     }
+
     childIdx++;
+
     if (ast.getChildCount() > childIdx) {
       CommonTree joinQual = (CommonTree) ast.getChild(childIdx);
+
       if (joinQual.getType() == NQLParser.ON) {
-        EvalNode joinCond = parseJoinCondition(ctx, block, joinQual);
+        EvalNode joinCond = parseJoinCondition(context, block, joinQual);
         join.setJoinQual(joinCond);
+
       } else if (joinQual.getType() == NQLParser.USING) {
-        Column [] joinColumns = parseJoinColumns(ctx, block, joinQual);
+        Column[] joinColumns = parseJoinColumns(context, block, joinQual);
         join.setJoinColumns(joinColumns);
       }
     }
@@ -421,8 +439,10 @@ public final class QueryAnalyzer {
     return join;
   }
 
-  private JoinClause parseCrossAndUnionJoin(Context ctx, Tree ast) {
+  private JoinClause parseCrossAndUnionJoin(final PlanningContext context,
+                                            final QueryBlock block, Tree ast) {
     JoinType joinType;
+
     if (ast.getChild(0).getType() == NQLParser.CROSS) {
       joinType = JoinType.CROSS_JOIN;
     } else if (ast.getChild(0).getType() == NQLParser.UNION) {
@@ -430,61 +450,67 @@ public final class QueryAnalyzer {
     } else {
       throw new IllegalStateException("Neither the AST has cross join or union join:\n" + ast.toStringTree());
     }
+
     JoinClause join = new JoinClause(joinType);
     Preconditions.checkState(ast.getChild(1).getType() == NQLParser.TABLE);
-    join.setRight(parseTable(ctx, (CommonTree) ast.getChild(1)));
-    ctx.renameTable(join.getRight());
+    join.setRight(parseTable((CommonTree) ast.getChild(1)));
+    block.addFromTable(join.getRight(), true);
+
     return join;
   }
-  
-  private Column [] parseJoinColumns(Context ctx, QueryBlock block, 
-      CommonTree ast) {
-    Column [] joinColumns = new Column[ast.getChildCount()]; 
+
+  private Column [] parseJoinColumns(final PlanningContext context,
+                                     final QueryBlock block,
+                                     final CommonTree ast) {
+    Column [] joinColumns = new Column[ast.getChildCount()];
+
     for (int i = 0; i < ast.getChildCount(); i++) {
-      joinColumns[i] = checkAndGetColumnByAST(ctx, (CommonTree) ast.getChild(i));
+      joinColumns[i] = checkAndGetColumnByAST(context,
+          block, (CommonTree) ast.getChild(i));
     }
     return joinColumns;
   }
-  
-  private EvalNode parseJoinCondition(Context ctx, QueryBlock block, 
-      CommonTree ast) {
-    return createEvalTree(ctx, ast.getChild(0), block);
+
+  private EvalNode parseJoinCondition(final PlanningContext context,
+                                      QueryBlock tree, CommonTree ast) {
+    return createEvalTree(context, tree, ast.getChild(0));
   }
-  
-  private static FromTable parseTable(final Context ctx, final CommonTree tableAST) {
+
+  private FromTable parseTable(final CommonTree tableAST) {
     String tableName = tableAST.getChild(0).getText();
-    TableDesc desc = checkAndGetTableByName(ctx, tableName);
+    TableDesc desc = checkAndGetTableByName(tableName);
     FromTable table;
+
     if (tableAST.getChildCount() > 1) {
-      table = new FromTable(desc, 
+      table = new FromTable(desc,
           tableAST.getChild(1).getText());
     } else {
       table = new FromTable(desc);
     }
-    
+
     return table;
   }
-  
+
   /**
    * This method parses the select list of a query statement.
    * <pre>
    * EBNF: 
-   * 
+   *
    * selectList
    * : MULTIPLY -> ^(SEL_LIST ALL)
    * | derivedColumn (COMMA derivedColumn)* -> ^(SEL_LIST derivedColumn+)
    * ;
-   * 
+   *
    * derivedColumn
    * : bool_expr asClause? -> ^(COLUMN bool_expr asClause?)
    * ;
-   * 
+   *
    * @param block
    * @param ast
    */
-  private void parseSelectList(final Context ctx, 
-      final QueryBlock block, final CommonTree ast) {    
-  
+  private void parseSelectList(final PlanningContext context,
+                               final QueryBlock block, final CommonTree ast) {
+
     if (ast.getChild(0).getType() == NQLParser.ALL) {
       block.setProjectAll();
     } else {
@@ -493,43 +519,42 @@ public final class QueryAnalyzer {
       Target [] targets = new Target[numTargets];
       EvalNode evalTree;
       String alias;
-      
+
       // the final one for each target is the alias
       // EBNF: bool_expr AS? fieldName
-      for (int i = 0; i < ast.getChildCount(); i++) {        
+      for (int i = 0; i < ast.getChildCount(); i++) {
         node = (CommonTree) ast.getChild(i);
-        evalTree = createEvalTree(ctx, node, block);
+        evalTree = createEvalTree(context, block, node);
         targets[i] = new Target(evalTree, i);
-        if (node.getChildCount() > 1) {          
+        if (node.getChildCount() > 1) {
           alias = node.getChild(node.getChildCount() - 1).getChild(0).getText();
           targets[i].setAlias(alias);
         }
       }
-      
+
       block.setTargetList(targets);
-      ctx.setTargets(targets);
-    }    
+    }
   }
-  
-  private void parseWhereClause(final Context ctx, 
-      final QueryBlock block, final CommonTree ast) {
-    EvalNode whereCond = createEvalTree(ctx, ast.getChild(0), block);        
-    block.setWhereCondition(whereCond);    
+
+  private void parseWhereClause(final PlanningContext context,
+                                final QueryBlock block, final CommonTree ast) {
+    EvalNode whereCond = createEvalTree(context, block, ast.getChild(0));
+    block.setWhereCondition(whereCond);
   }
-  
+
   /**
    * See 'groupby_clause' rule in NQL.g
-   * 
-   * @param ctx
+   *
    * @param block
    * @param ast
    */
-  private void parseGroupByClause(final Context ctx, 
-      final QueryBlock block, final CommonTree ast) {
+  private void parseGroupByClause(final PlanningContext context,
+                                  final QueryBlock block,
+                                  final CommonTree ast) {
     GroupByClause clause = new GroupByClause();
-    
+
     int idx = 0;
-    
+
     if (ast.getChild(idx).getType() == NQLParser.EMPTY_GROUPING_SET) {
       clause.setEmptyGroupSet();
     } else {
@@ -541,56 +566,54 @@ public final class QueryAnalyzer {
       for (; idx < ast.getChildCount(); idx++) {
         group = ast.getChild(idx);
         switch (group.getType()) {
-        case NQLParser.CUBE:
-          columns = parseColumnReferences(ctx, (CommonTree) group);
-          GroupElement cube = new GroupElement(GroupType.CUBE, columns);
-          clause.addGroupSet(cube);
-          break;
-          
-        case NQLParser.ROLLUP:
-          columns = parseColumnReferences(ctx, (CommonTree) group);
-          GroupElement rollup = new GroupElement(GroupType.ROLLUP, columns);
-          clause.addGroupSet(rollup);
-          break;
-          
-        case NQLParser.FIELD_NAME:
-          column = checkAndGetColumnByAST(ctx, (CommonTree) group);
-          columnRefs.add(column);
-          break;
+          case NQLParser.CUBE:
+            columns = parseColumnReferences(context, block, (CommonTree) group);
+            GroupElement cube = new GroupElement(GroupType.CUBE, columns);
+            clause.addGroupSet(cube);
+            break;
+
+          case NQLParser.ROLLUP:
+            columns = parseColumnReferences(context, block, (CommonTree) group);
+            GroupElement rollup = new GroupElement(GroupType.ROLLUP, columns);
+            clause.addGroupSet(rollup);
+            break;
+
+          case NQLParser.FIELD_NAME:
+            column = checkAndGetColumnByAST(context, block, (CommonTree) group);
+            columnRefs.add(column);
+            break;
         }
       }
-      
-      if (columnRefs.size() > 0) {        
+
+      if (columnRefs.size() > 0) {
         Column [] groupingFields = columnRefs.toArray(new Column[columnRefs.size()]);
         GroupElement g = new GroupElement(GroupType.GROUPBY, groupingFields);
         clause.addGroupSet(g);
       }
     }
-    
+
     block.setGroupByClause(clause);
   }
-  
-  private void parseHavingClause(final Context ctx,
-      final QueryBlock block, final CommonTree ast) {
-    EvalNode evalTree = 
-        createEvalTree(ctx, ast.getChild(0), block);
+
+  private void parseHavingClause(final PlanningContext context,
+                                 final QueryBlock block, final CommonTree ast) {
+    EvalNode evalTree =
+        createEvalTree(context, block, ast.getChild(0));
     block.setHavingCond(evalTree);
   }
-  
+
   /**
    * Should be given Params Node
-   * 
+   *
    * EBNF: WITH LEFT_PAREN param (COMMA param)* RIGHT_PAREN 
    * AST: ^(PARAMS param+)
-   * 
-   * @param ctx
+   *
    * @param ast
    * @return
    */
-  private static Options parseParams(final Context ctx,
-      final CommonTree ast) {
+  private static Options parseParams(final CommonTree ast) {
     Options params = new Options();
-    
+
     Tree child;
     for (int i = 0; i < ast.getChildCount(); i++) {
       child = ast.getChild(i);
@@ -598,89 +621,90 @@ public final class QueryAnalyzer {
     }
     return params;
   }
-  
+
 
   /**
    * Should be given SortSpecifiers Node
-   * 
+   *
    * EBNF: sort_specifier (COMMA sort_specifier)* -> sort_specifier+
-   * 
-   * @param ctx
+   *
+   * @param tree
    * @param ast
    */
-  private static SortSpec [] parseSortSpecifiers(final Context ctx, 
-      final CommonTree ast) {
+  private QueryBlock.SortSpec[] parseSortSpecifiers(final PlanningContext context,
+                                          final ParseTree tree,
+                                          final CommonTree ast) {
     int numSortKeys = ast.getChildCount();
     SortSpec[] sortKeys = new SortSpec[numSortKeys];
     CommonTree node;
     Column column;
-    
+
     // Each child has the following EBNF and AST:
     // EBNF: fn=fieldName a=order_specification? o=null_ordering? 
     // AST: ^(SORT_KEY $fn $a? $o?)
     for (int i = 0; i < numSortKeys; i++) {
       node = (CommonTree) ast.getChild(i);
-      column = checkAndGetColumnByAST(ctx, (CommonTree) node.getChild(0));
+      column = checkAndGetColumnByAST(context, tree, (CommonTree) node.getChild(0));
       sortKeys[i] = new SortSpec(column);
-            
+
       if (node.getChildCount() > 1) {
         Tree child;
         for (int j = 1; j < node.getChildCount(); j++) {
           child = node.getChild(j);
-          
+
           // AST: ^(ORDER ASC) | ^(ORDER DESC)
           if (child.getType() == NQLParser.ORDER) {
             if (child.getChild(0).getType() == NQLParser.DESC) {
               sortKeys[i].setDescOrder();
-            }            
+            }
           } else if (child.getType() == NQLParser.NULL_ORDER) {
             // AST: ^(NULL_ORDER FIRST) | ^(NULL_ORDER LAST)
             if (child.getChild(0).getType() == NQLParser.FIRST) {
               sortKeys[i].setNullFirst();
             }
-          }          
+          }
         }
       }
     }
-    
+
     return sortKeys;
-  }  
-  
-  private static Column checkAndGetColumnByAST(final Context ctx,
-      final CommonTree fieldNode) {
+  }
+
+  private Column checkAndGetColumnByAST(final PlanningContext context,
+                                        final ParseTree tree,
+                                        final CommonTree fieldNode) {
     Preconditions.checkArgument(NQLParser.FIELD_NAME == fieldNode.getType());
-    
+
     String columnName = fieldNode.getChild(0).getText();
     String tableName = null;
     if (fieldNode.getChildCount() > 1) {
       tableName = fieldNode.getChild(1).getText();
     }
-    
+
     Column column;
     if(tableName != null) {
       TableDesc desc;
-      desc = checkAndGetTableByMappedName(ctx, tableName);  
+      desc = checkAndGetTableByMappedName(context, tree, tableName);
       column = checkAndGetFieldByName(desc, columnName);
     } else {
-      column = expectTableByField(ctx, columnName);
+      column = expectTableByField(context, tree, columnName);
     }
-    
+
     return column;
   }
-  
-  private static TableDesc checkAndGetTableByMappedName(final Context ctx,
-      final String tableName) {
-      String realName = ctx.getActualTableName(tableName);
-      return checkAndGetTableByName(ctx, realName);
+
+  private TableDesc checkAndGetTableByMappedName(PlanningContext context,
+                                                 ParseTree tree,
+                                                 final String tableName) {
+    String realName = tree.getTableNameByAlias(tableName);
+    return checkAndGetTableByName(realName);
   }
-  
-  private static TableDesc checkAndGetTableByName(final Context ctx,
-      final String tableName) {
+
+  private TableDesc checkAndGetTableByName(final String tableName) {
     TableDesc desc;
 
     try {
-      desc =
-          ctx.getTable(tableName);
+      desc = catalog.getTableDesc(tableName);
     } catch (NoSuchTableException nst) {
       throw new InvalidQueryException("ERROR: table \"" + tableName
           + "\" does not exist");
@@ -688,67 +712,71 @@ public final class QueryAnalyzer {
 
     return desc;
   }
-  
+
   private static Column checkAndGetFieldByName(final TableDesc desc,
-      final String columnName) {
+                                               final String columnName) {
     Column column;
-    
+
     column = desc.getMeta().getSchema().getColumn(desc.getId()+"."+columnName);
     if(column == null) {
       throw new InvalidQueryException("ERROR: column \"" + columnName
           + "\" does not exist");
     }
-    
+
     return column;
   }
-  
+
   /**
    * determine a column by finding tables which are given by 'from clause'.
-   *  
-   * @param ctx
+   *
+   * @param tree
    * @param columnName field name to be find
    * @return a found column
    */
-  private static Column expectTableByField(Context ctx, String columnName) {
+  private Column expectTableByField(final PlanningContext context,
+                                    final ParseTree tree, String columnName) {
     TableDesc desc;
     Schema schema;
-    Column column = null;    
+    Column column = null;
     int count = 0;
-    for(String table : ctx.getInputTables()) {
+    for(String table : tree.getAllTableNames()) {
       desc =
-          ctx.getTable(table);
+          catalog.getTableDesc(table);
       schema = desc.getMeta().getSchema();
-      
+
       if(schema.contains(table+"."+columnName)) {
         column = schema.getColumn(table+"."+columnName);
         count++;
       }
-    }
 
-    if (ctx.getTargetList() != null) {
-      for (Target target : ctx.getTargetList()) {
-        if (target.hasAlias() && target.getAlias().equals(columnName)) {
-          try {
-            column = (Column) target.getColumnSchema().clone();
-            column.setName(target.getAlias());
-          } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+      if (tree instanceof QueryBlock) {
+        QueryBlock block = ((QueryBlock)tree);
+        if (block.getTargetList() != null) {
+          for (Target target : block.getTargetList()) {
+            if (target.hasAlias() && target.getAlias().equals(columnName)) {
+              try {
+                column = (Column) target.getColumnSchema().clone();
+                column.setName(target.getAlias());
+              } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+              }
+              count++;
+            }
           }
-          count++;
         }
       }
+
+      // if there are more than one column, we cannot expect
+      // that this column belongs to which table.
+      if(count > 1)
+        throw new AmbiguousFieldException(columnName);
     }
 
-    // if there are more than one column, we cannot expect
-    // that this column belongs to which table.
-    if(count > 1)
-      throw new AmbiguousFieldException(columnName);
-    
     if(column == null) { // if there are no matched column
       throw new InvalidQueryException("ERROR: column \"" + columnName
           + "\" does not exist");
     }
-    
+
     return column;
   }
 
@@ -774,35 +802,35 @@ public final class QueryAnalyzer {
 
   private static StatementType getCmdType(final CommonTree ast) {
     switch (ast.getType()) {
-    case NQLParser.STORE:
-      return StatementType.STORE;
-    case NQLParser.SELECT:
-      return StatementType.SELECT;
-    case NQLParser.UNION:
-      return StatementType.UNION;
-    case NQLParser.EXCEPT:
-      return StatementType.EXCEPT;
-    case NQLParser.INTERSECT:
-      return StatementType.INTERSECT;
-    case NQLParser.INSERT:
-      return StatementType.INSERT;
-    case NQLParser.CREATE_INDEX:
-      return StatementType.CREATE_INDEX;
-    case NQLParser.CREATE_TABLE:
-      return StatementType.CREATE_TABLE;
-    case NQLParser.DROP_TABLE:
-      return StatementType.DROP_TABLE;
-    case NQLParser.SHOW_TABLE:
-      return StatementType.SHOW_TABLES;
-    case NQLParser.DESC_TABLE:
-      return StatementType.DESC_TABLE;
-    case NQLParser.SHOW_FUNCTION:
-      return StatementType.SHOW_FUNCTION;
-    default:
-      return null;
+      case NQLParser.STORE:
+        return StatementType.STORE;
+      case NQLParser.SELECT:
+        return StatementType.SELECT;
+      case NQLParser.UNION:
+        return StatementType.UNION;
+      case NQLParser.EXCEPT:
+        return StatementType.EXCEPT;
+      case NQLParser.INTERSECT:
+        return StatementType.INTERSECT;
+      case NQLParser.INSERT:
+        return StatementType.INSERT;
+      case NQLParser.CREATE_INDEX:
+        return StatementType.CREATE_INDEX;
+      case NQLParser.CREATE_TABLE:
+        return StatementType.CREATE_TABLE;
+      case NQLParser.DROP_TABLE:
+        return StatementType.DROP_TABLE;
+      case NQLParser.SHOW_TABLE:
+        return StatementType.SHOW_TABLES;
+      case NQLParser.DESC_TABLE:
+        return StatementType.DESC_TABLE;
+      case NQLParser.SHOW_FUNCTION:
+        return StatementType.SHOW_FUNCTION;
+      default:
+        return null;
     }
   }
-  
+
   private static IndexMethod getIndexMethod(String method) {
     Preconditions.checkNotNull(method);
     if (method.equals("bst")) {
@@ -817,128 +845,138 @@ public final class QueryAnalyzer {
       throw new NQLSyntaxException("ERROR: unknown index: " + method);
     }
   }
-  
-  public EvalNode createEvalTree(final Context ctx, 
-      final Tree ast, QueryBlock query) {
+
+  public EvalNode createEvalTree(final PlanningContext context,
+                                 final QueryBlock tree, final Tree ast) {
     switch(ast.getType()) {
 
-    // constants
-    case NQLParser.DIGIT:
-      return new ConstEval(DatumFactory.createInt(
-          Integer.valueOf(ast.getText())));
+      // constants
+      case NQLParser.DIGIT:
+        return new ConstEval(DatumFactory.createInt(
+            Integer.valueOf(ast.getText())));
 
-    case NQLParser.REAL:
-      return new ConstEval(DatumFactory.createDouble(
-          Double.valueOf(ast.getText())));
+      case NQLParser.REAL:
+        return new ConstEval(DatumFactory.createDouble(
+            Double.valueOf(ast.getText())));
 
-    case NQLParser.STRING:
-      return new ConstEval(DatumFactory.createString(ast.getText()));
+      case NQLParser.STRING:
+        return new ConstEval(DatumFactory.createString(ast.getText()));
 
-    // unary expression
-    case NQLParser.NOT:
-      return new NotEval(createEvalTree(ctx, ast.getChild(0), query));
+      // unary expression
+      case NQLParser.NOT:
+        return new NotEval(createEvalTree(context, tree, ast.getChild(0)));
 
-    // binary expressions
-    case NQLParser.LIKE:
-        return parseLike(ctx, ast, query);
+      // binary expressions
+      case NQLParser.LIKE:
+        return parseLike(context, tree, ast);
 
-    case NQLParser.IS:
-      return parseIsNullPredicate(ctx, ast, query);
+      case NQLParser.IS:
+        return parseIsNullPredicate(context, tree, ast);
 
-    case NQLParser.AND:
-    case NQLParser.OR:
-    case NQLParser.EQUAL:
-    case NQLParser.NOT_EQUAL:
-    case NQLParser.LTH:
-    case NQLParser.LEQ:
-    case NQLParser.GTH:
-    case NQLParser.GEQ:
-    case NQLParser.PLUS:
-    case NQLParser.MINUS:
-    case NQLParser.MULTIPLY:
-    case NQLParser.DIVIDE:
-    case NQLParser.MODULAR:
-      return parseBinaryExpr(ctx, ast, query);
+      case NQLParser.AND:
+      case NQLParser.OR:
+      case NQLParser.EQUAL:
+      case NQLParser.NOT_EQUAL:
+      case NQLParser.LTH:
+      case NQLParser.LEQ:
+      case NQLParser.GTH:
+      case NQLParser.GEQ:
+      case NQLParser.PLUS:
+      case NQLParser.MINUS:
+      case NQLParser.MULTIPLY:
+      case NQLParser.DIVIDE:
+      case NQLParser.MODULAR:
+        return parseBinaryExpr(context, tree, ast);
 
-    // others
-    case NQLParser.COLUMN:
-      return createEvalTree(ctx, ast.getChild(0), query);
-      
-    case NQLParser.FIELD_NAME:              
-      Column column = checkAndGetColumnByAST(ctx, (CommonTree) ast);
-      return new FieldEval(column); 
-      
-    case NQLParser.FUNCTION:
-      String signature = ast.getText();
-            
-      EvalNode [] givenArgs = new EvalNode[ast.getChildCount()];
-      DataType [] paramTypes = new DataType[ast.getChildCount()];
+      // others
+      case NQLParser.COLUMN:
+        return createEvalTree(context, tree, ast.getChild(0));
 
-      for (int i = 0; i < ast.getChildCount(); i++) {
-        givenArgs[i] = createEvalTree(ctx, ast.getChild(i), query);
-        paramTypes[i] = givenArgs[i].getValueType()[0];
-      }
-      if (!catalog.containFunction(signature, paramTypes)) {
-        throw new UndefinedFunctionException(TCatUtil.
-            getCanonicalName(signature, paramTypes));
-      }
-      FunctionDesc funcDesc = catalog.getFunction(signature, paramTypes);
-      try {
-        if (funcDesc.getFuncType() == FunctionType.GENERAL)
-          return new FuncCallEval(funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
-        else {
-          query.setAggregation();
-          return new AggFuncCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
+      case NQLParser.FIELD_NAME:
+        Column column = checkAndGetColumnByAST(context, tree, (CommonTree) ast);
+        return new FieldEval(column);
+
+      case NQLParser.FUNCTION:
+        String signature = ast.getText();
+
+        EvalNode [] givenArgs = new EvalNode[ast.getChildCount()];
+        DataType [] paramTypes = new DataType[ast.getChildCount()];
+
+        for (int i = 0; i < ast.getChildCount(); i++) {
+          givenArgs[i] = createEvalTree(context, tree, ast.getChild(i));
+          paramTypes[i] = givenArgs[i].getValueType()[0];
         }
-      } catch (InternalException e) {
-        e.printStackTrace();
-      }
-      
-      break;
-    case NQLParser.COUNT_VAL:
-      // Getting the first argument
-      EvalNode colRef = createEvalTree(ctx, ast.getChild(0), query);
-      
-      FunctionDesc countVals = catalog.getFunction("count", 
-          new DataType [] {DataType.ANY});
-      query.setAggregation();
-      try {
-        return new AggFuncCallEval(countVals, (AggFunction) countVals.newInstance(),
-            new EvalNode [] {colRef});
-      } catch (InternalException e1) {
-        e1.printStackTrace();
-      }
-      break;
-      
-    case NQLParser.COUNT_ROWS:
-      FunctionDesc countRows = catalog.getFunction("count", new DataType [] {});
-      query.setAggregation();
-      try {
-        return new AggFuncCallEval(countRows, (AggFunction) countRows.newInstance(),
-            new EvalNode [] {});
-      } catch (InternalException e) {
-        e.printStackTrace();
-      }
-      break;
+        if (!catalog.containFunction(signature, paramTypes)) {
+          throw new UndefinedFunctionException(TCatUtil.
+              getCanonicalName(signature, paramTypes));
+        }
+        FunctionDesc funcDesc = catalog.getFunction(signature, paramTypes);
 
-    case NQLParser.CASE:
-      return parseCaseWhen(ctx, ast, query);
-      
-    default:
+        try {
+          if (funcDesc.getFuncType() == FunctionType.GENERAL)
+
+            return new FuncCallEval(funcDesc,
+                (GeneralFunction) funcDesc.newInstance(), givenArgs);
+          else {
+            tree.setAggregation();
+
+            return new AggFuncCallEval(funcDesc,
+                (AggFunction) funcDesc.newInstance(), givenArgs);
+          }
+        } catch (InternalException e) {
+          e.printStackTrace();
+        }
+
+        break;
+      case NQLParser.COUNT_VAL:
+        // Getting the first argument
+        EvalNode colRef = createEvalTree(context, tree, ast.getChild(0));
+
+        FunctionDesc countVals = catalog.getFunction("count",
+            new DataType [] {DataType.ANY});
+        tree.setAggregation();
+        try {
+          return new AggFuncCallEval(countVals, (AggFunction) countVals.newInstance(),
+              new EvalNode [] {colRef});
+        } catch (InternalException e1) {
+          e1.printStackTrace();
+        }
+        break;
+
+      case NQLParser.COUNT_ROWS:
+        FunctionDesc countRows = catalog.getFunction("count", new DataType [] {});
+        tree.setAggregation();
+        try {
+          return new AggFuncCallEval(countRows, (AggFunction) countRows.newInstance(),
+              new EvalNode [] {});
+        } catch (InternalException e) {
+          e.printStackTrace();
+        }
+        break;
+
+      case NQLParser.CASE:
+        return parseCaseWhen(context, tree, ast);
+
+      default:
     }
     return null;
   }
 
-  public IsNullEval parseIsNullPredicate(Context ctx, Tree tree, QueryBlock block) {
+  public IsNullEval parseIsNullPredicate(final PlanningContext context,
+                                         QueryBlock block, Tree tree) {
     boolean not;
 
     Preconditions.checkArgument(tree.getType() == NQLParser.IS, "The AST is not IS (NOT) NULL clause");
     int idx = 0;
 
-    FieldEval field = (FieldEval) createEvalTree(ctx, tree.getChild(idx++), block);
-    Preconditions.checkArgument(tree.getChild(idx++).getType() == NQLParser.NULL,
+    FieldEval field = (FieldEval) createEvalTree(context, block,
+        tree.getChild(idx++));
+    Preconditions.checkArgument(
+        tree.getChild(idx++).getType() == NQLParser.NULL,
         "We does not support another kind of IS clause yet");
-    not = tree.getChildCount() == (idx + 1) && tree.getChild(idx).getType() == NQLParser.NOT;
+    not = tree.getChildCount() == (idx + 1)
+        && tree.getChild(idx).getType() == NQLParser.NOT;
+
     return new IsNullEval(not, field);
   }
 
@@ -961,34 +999,41 @@ public final class QueryAnalyzer {
    * : ELSE r=result -> ^(ELSE $r)
    * ;
    * </pre>
-   * @param ctx
-   * @param tree
    * @param block
+   * @param tree
    * @return
    */
-  public CaseWhenEval parseCaseWhen(Context ctx, Tree tree, QueryBlock block) {
+  public CaseWhenEval parseCaseWhen(final PlanningContext context,
+                                    final QueryBlock block, final Tree tree) {
     int idx = 0;
 
     CaseWhenEval caseEval = new CaseWhenEval();
     EvalNode cond;
     EvalNode thenResult;
     Tree when;
-    for (; idx < tree.getChildCount() && tree.getChild(idx).getType() == NQLParser.WHEN; idx++) {
+
+    for (; idx < tree.getChildCount() &&
+        tree.getChild(idx).getType() == NQLParser.WHEN; idx++) {
+
       when = tree.getChild(idx);
-      cond = createEvalTree(ctx, when.getChild(0), block);
-      thenResult = createEvalTree(ctx, when.getChild(1), block);
+      cond = createEvalTree(context, block, when.getChild(0));
+      thenResult = createEvalTree(context, block, when.getChild(1));
       caseEval.addWhen(cond, thenResult);
     }
 
-    if (tree.getChild(idx) != null && tree.getChild(idx).getType() == NQLParser.ELSE) {
-      EvalNode elseResult = createEvalTree(ctx, tree.getChild(idx).getChild(0), block);
+    if (tree.getChild(idx) != null &&
+        tree.getChild(idx).getType() == NQLParser.ELSE) {
+      EvalNode elseResult = createEvalTree(context, block,
+          tree.getChild(idx).getChild(0));
       caseEval.setElseResult(elseResult);
     }
 
     return caseEval;
   }
 
-  public EvalNode parseDigitByTypeInfer(Context ctx, Tree tree, QueryBlock block, DataType type) {
+  public EvalNode parseDigitByTypeInfer(final PlanningContext context,
+                                        final QueryBlock block, final Tree tree,
+                                        DataType type) {
     switch (type) {
       case SHORT:
         return new ConstEval(DatumFactory.createShort(tree.getText()));
@@ -996,32 +1041,38 @@ public final class QueryAnalyzer {
         return new ConstEval(DatumFactory.createInt(tree.getText()));
       case LONG:
         return new ConstEval(DatumFactory.createLong(tree.getText()));
-      default: return createEvalTree(ctx, tree, block);
+      default: return createEvalTree(context, block, tree);
     }
   }
 
-  private EvalNode parseRealByTypeInfer(Context ctx, Tree tree, QueryBlock block, DataType type) {
+  private EvalNode parseRealByTypeInfer(final PlanningContext context,
+                                        final QueryBlock block, final Tree tree,
+                                        DataType type) {
     switch (type) {
       case FLOAT:
         return new ConstEval(DatumFactory.createFloat(tree.getText()));
       case DOUBLE:
         return new ConstEval(DatumFactory.createDouble(tree.getText()));
-      default: return createEvalTree(ctx, tree, block);
+      default: return createEvalTree(context, block, tree);
     }
   }
 
-  private EvalNode parseStringByTypeInfer(Context ctx, Tree tree, QueryBlock block, DataType type) {
+  private EvalNode parseStringByTypeInfer(final PlanningContext context,
+                                          final QueryBlock block,
+                                          final Tree tree,
+                                          DataType type) {
     switch (type) {
       case CHAR:
         return new ConstEval(DatumFactory.createChar(tree.getText().charAt(0)));
       case STRING:
         return new ConstEval(DatumFactory.createString(tree.getText()));
-      default: return createEvalTree(ctx, tree, block);
+      default: return createEvalTree(context, block, tree);
     }
   }
 
   @VisibleForTesting
-  EvalNode parseBinaryExpr(Context ctx, Tree tree, QueryBlock block) {
+  EvalNode parseBinaryExpr(final PlanningContext context,
+                           final QueryBlock block, final Tree tree) {
     int constId = -1;
     int fieldId = -1;
 
@@ -1035,59 +1086,73 @@ public final class QueryAnalyzer {
 
     if (constId != -1 && fieldId != -1) {
       EvalNode [] exprs = new EvalNode[2];
-      exprs[fieldId] = (FieldEval) createEvalTree(ctx, tree.getChild(fieldId), block);
+      exprs[fieldId] = (FieldEval) createEvalTree(context, block,
+          tree.getChild(fieldId));
 
       Tree constAst = tree.getChild(constId);
+
       switch (tree.getChild(constId).getType()) {
         case NQLParser.DIGIT:
-          exprs[constId] = parseDigitByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType()[0]);
+          exprs[constId] = parseDigitByTypeInfer(context, block, constAst,
+              exprs[fieldId].getValueType()[0]);
           break;
+
         case NQLParser.REAL:
-          exprs[constId] = parseRealByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType()[0]);
+          exprs[constId] = parseRealByTypeInfer(context, block, constAst,
+              exprs[fieldId].getValueType()[0]);
           break;
+
         case NQLParser.STRING:
-          exprs[constId] = parseStringByTypeInfer(ctx, constAst, block, exprs[fieldId].getValueType()[0]);
+          exprs[constId] = parseStringByTypeInfer(context, block, constAst,
+              exprs[fieldId].getValueType()[0]);
           break;
+
         default: throw new  InvalidEvalException();
       }
 
       if (constId == 0) {
-        return new BinaryEval(ParseUtil.getTypeByParseCode(tree.getType()), exprs[constId], exprs[fieldId]);
+        return new BinaryEval(ParseUtil.getTypeByParseCode(tree.getType()),
+            exprs[constId], exprs[fieldId]);
       } else {
-        return new BinaryEval(ParseUtil.getTypeByParseCode(tree.getType()), exprs[fieldId], exprs[constId]);
+        return new BinaryEval(ParseUtil.getTypeByParseCode(tree.getType()),
+            exprs[fieldId], exprs[constId]);
       }
+
     } else {
       return new BinaryEval(ParseUtil.getTypeByParseCode(tree.getType()),
-          createEvalTree(ctx, tree.getChild(0), block), createEvalTree(ctx, tree.getChild(1), block));
+          createEvalTree(context, block, tree.getChild(0)),
+          createEvalTree(context, block, tree.getChild(1)));
     }
   }
-  
+
   /**
    * <pre>
    * like_predicate : fieldName NOT? LIKE string_value_expr 
    * -> ^(LIKE NOT? fieldName string_value_expr)
    * </pre>
-   * @param ctx
-   * @param tree
    * @param block
+   * @param tree
    * @return
    */
-  private LikeEval parseLike(Context ctx, Tree tree, QueryBlock block) {
+  private LikeEval parseLike(final PlanningContext context,
+                             final QueryBlock block, final Tree tree) {
     int idx = 0;
-    
+
     boolean not = false;
     if (tree.getChild(idx).getType() == NQLParser.NOT) {
       not = true;
       idx++;
     }
-    
-    FieldEval field = (FieldEval) createEvalTree(ctx, tree.getChild(idx), block);
+
+    FieldEval field = (FieldEval) createEvalTree(context, block,
+        tree.getChild(idx));
     idx++;
-    ConstEval pattern = (ConstEval) createEvalTree(ctx, tree.getChild(idx), block);
+    ConstEval pattern = (ConstEval) createEvalTree(context, block,
+        tree.getChild(idx));
 
     return new LikeEval(not, field, pattern);
   }
-  
+
   /**
    * It parses the below EBNF.
    * <pre>
@@ -1095,17 +1160,20 @@ public final class QueryAnalyzer {
    * : fieldName (COMMA fieldName)* -> fieldName+
    * ;
    * </pre>
-   * @param ctx
+   * @param tree
    * @param parent
    * @return
    */
-  private Column [] parseColumnReferences(final Context ctx, 
-      final CommonTree parent) {
+  private Column [] parseColumnReferences(final PlanningContext context,
+                                          final ParseTree tree,
+                                          final CommonTree parent) {
     Column [] columns = new Column[parent.getChildCount()];
+
     for (int i = 0; i < columns.length; i++) {
-      columns[i] = checkAndGetColumnByAST(ctx, (CommonTree) parent.getChild(i));
+      columns[i] = checkAndGetColumnByAST(context, tree,
+          (CommonTree) parent.getChild(i));
     }
-    
+
     return columns;
   }
 }

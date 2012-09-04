@@ -10,9 +10,9 @@ import org.apache.zookeeper.ZooKeeper;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import tajo.conf.TajoConf;
 import tajo.Abortable;
 import tajo.TajoTestingUtility;
+import tajo.conf.TajoConf;
 import tajo.engine.utils.ThreadUtil;
 
 import java.io.IOException;

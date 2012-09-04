@@ -31,8 +31,8 @@ public final class SortNode extends UnaryNode implements Cloneable {
 
   public SortNode(QueryBlock.SortSpec[] sortKeys, Schema inSchema, Schema outSchema) {
     this(sortKeys);
-    this.setInputSchema(inSchema);
-    this.setOutputSchema(outSchema);
+    this.setInSchema(inSchema);
+    this.setOutSchema(outSchema);
   }
   
   public QueryBlock.SortSpec[] getSortKeys() {
@@ -70,8 +70,8 @@ public final class SortNode extends UnaryNode implements Cloneable {
     }
     sb.append("]");
 
-    sb.append("\n\"out schema: " + getOutputSchema()
-        + "\n\"in schema: " + getInputSchema());
+    sb.append("\n\"out schema: " + getOutSchema()
+        + "\n\"in schema: " + getInSchema());
     return sb.toString()+"\n"
         + getSubNode().toString();
   }

@@ -7,6 +7,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tajo.QueryIdFactory;
+import tajo.SubQueryId;
+import tajo.TajoTestingUtility;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
@@ -14,16 +17,12 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.QueryContext;
-import tajo.QueryIdFactory;
-import tajo.SubQueryId;
-import tajo.TajoTestingUtility;
 import tajo.engine.cluster.QueryManager;
 import tajo.engine.exec.eval.TestEvalTree.TestSum;
-import tajo.engine.parser.ParseTree;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
+import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.*;
 import tajo.master.GlobalPlanner;
 import tajo.storage.*;
@@ -43,8 +42,8 @@ public class TestGlobalQueryOptimizer {
   private static CatalogService catalog;
   private static GlobalPlanner planner;
   private static Schema schema;
-  private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
+  private static LogicalPlanner logicalPlanner;
   private static SubQueryId subQueryId;
   private static QueryManager qm;
   private static GlobalOptimizer optimizer;
@@ -78,7 +77,7 @@ public class TestGlobalQueryOptimizer {
     qm = new QueryManager();
     planner = new GlobalPlanner(conf, new StorageManager(conf), qm, catalog);
     analyzer = new QueryAnalyzer(catalog);
-    factory = new QueryContext.Factory(catalog);
+    logicalPlanner = new LogicalPlanner(catalog);
 
     int tbNum = 2;
     int tupleNum;
@@ -119,11 +118,10 @@ public class TestGlobalQueryOptimizer {
 
   @Test
   public void testReduceLogicalQueryUnitSteps() throws IOException {
-    QueryContext ctx = factory.create();
-    ParseTree tree = analyzer.parse(ctx,
+    PlanningContext context = analyzer.parse(
         "select table0.age,table0.salary,table1.salary from table0,table1 where table0.salary = table1.salary order by table0.age");
-    LogicalNode logicalPlan = LogicalPlanner.createPlan(ctx, tree);
-    logicalPlan = LogicalOptimizer.optimize(ctx, logicalPlan);
+    LogicalNode logicalPlan = logicalPlanner.createPlan(context);
+    logicalPlan = LogicalOptimizer.optimize(context, logicalPlan);
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
     globalPlan = optimizer.optimize(globalPlan.getRoot());

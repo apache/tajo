@@ -6,24 +6,21 @@ import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import tajo.catalog.CatalogService;
-import tajo.catalog.Schema;
-import tajo.catalog.TCatUtil;
-import tajo.catalog.TableMeta;
+import tajo.SubqueryContext;
+import tajo.TajoTestingUtility;
+import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.SubqueryContext;
-import tajo.TajoTestingUtility;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
-import tajo.engine.parser.QueryBlock;
 import tajo.engine.parser.QueryBlock.SortSpec;
 import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.ScanNode;
 import tajo.engine.utils.TUtil;
@@ -48,6 +45,7 @@ public class TestBSTIndexExec {
   private Path idxPath;
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
+  private LogicalPlanner planner;
   private SubqueryContext.Factory factory;
   private StorageManager sm;
   private Schema idxSchema;
@@ -62,7 +60,13 @@ public class TestBSTIndexExec {
   public void setup() throws Exception {
     this.randomValues = new HashMap<Integer , Integer> ();
     this.conf = new TajoConf();
-    File testDir = TajoTestingUtility.getTestDir("TestPhysicalPlanner");
+    TajoTestingUtility util = new TajoTestingUtility();
+    util.startMiniZKCluster();
+    util.startCatalogCluster();
+    catalog = util.getMiniCatalogCluster().getCatalog();
+
+    util.initTestDir();
+    File testDir = util.getTestDir("TestPhysicalPlanner");
     FileSystem fs = FileSystem.getLocal(conf);
     sm = StorageManager.get(conf, fs.makeQualified(new Path(testDir.toURI())));
 
@@ -113,8 +117,12 @@ public class TestBSTIndexExec {
     appender.close();
     writer.close();
 
-    analyzer = new QueryAnalyzer(catalog);
+    TableDesc desc = new TableDescImpl("employee", employeeMeta,
+        sm.getTablePath("employee"));
+    catalog.addTable(desc);
 
+    analyzer = new QueryAnalyzer(catalog);
+    planner = new LogicalPlanner(catalog);
   }
 
   @Test
@@ -128,10 +136,10 @@ public class TestBSTIndexExec {
     File workDir = TajoTestingUtility.getTestDir("TestBSTIndex");
     SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    QueryBlock query = (QueryBlock) analyzer.parse(ctx, QUERY);
-    LogicalNode plan = LogicalPlanner.createPlan(ctx, query);
+    PlanningContext context = analyzer.parse(QUERY);
+    LogicalNode plan = planner.createPlan(context);
 
-    plan =  LogicalOptimizer.optimize(ctx, plan);
+    plan =  LogicalOptimizer.optimize(context, plan);
 
     TmpPlanner phyPlanner = new TmpPlanner(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);

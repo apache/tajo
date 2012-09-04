@@ -12,9 +12,9 @@ import tajo.engine.exception.NoSuchQueryIdException;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
 import tajo.engine.planner.global.ScheduleUnit;
-import tajo.util.TQueryUtil;
 import tajo.master.Query;
 import tajo.master.SubQuery;
+import tajo.util.TQueryUtil;
 
 import java.util.*;
 

@@ -3,11 +3,11 @@
  */
 package tajo.master;
 
-import tajo.catalog.statistics.TableStat;
-import tajo.engine.MasterInterfaceProtos.QueryStatus;
 import tajo.QueryUnitId;
 import tajo.ScheduleUnitId;
 import tajo.SubQueryId;
+import tajo.catalog.statistics.TableStat;
+import tajo.engine.MasterInterfaceProtos.QueryStatus;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.ScheduleUnit;
 
