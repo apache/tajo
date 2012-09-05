@@ -1,7 +1,6 @@
 package tajo.engine.planner.physical;
 
 import tajo.SubqueryContext;
-import tajo.catalog.Schema;
 import tajo.catalog.SchemaUtil;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
@@ -16,19 +15,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class BNLJoinExec extends PhysicalExec {
-  private final SubqueryContext ctx;
+public class BNLJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  private Schema inSchema;
-  private Schema outSchema;
   private EvalNode joinQual;
   private EvalContext qualCtx;
-
-  // sub operations
-  private PhysicalExec outer;
-  private PhysicalExec inner;
-
-  private JoinNode ann;
 
   private final List<Tuple> outerTupleSlots;
   private final List<Tuple> innerTupleSlots;
@@ -49,16 +39,12 @@ public class BNLJoinExec extends PhysicalExec {
   // projection
   private final int[] targetIds;
 
-  public BNLJoinExec(SubqueryContext ctx, JoinNode ann, PhysicalExec outer,
-      PhysicalExec inner) {
-    this.ctx = ctx;
-    this.outer = outer;
-    this.inner = inner;
-    this.inSchema = SchemaUtil.merge(outer.getSchema(), inner.getSchema());
-    this.outSchema = ann.getOutSchema();
-    this.joinQual = ann.getJoinQual();
+  public BNLJoinExec(final SubqueryContext context, final JoinNode join,
+                     final PhysicalExec outer, PhysicalExec inner) {
+    super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
+        SchemaUtil.merge(outer.getSchema(), inner.getSchema()), outer, inner);
+    this.joinQual = join.getJoinQual();
     this.qualCtx = this.joinQual.newContext();
-    this.ann = ann;
     this.outerTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.innerTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.outerIterator = outerTupleSlots.iterator();
@@ -75,9 +61,10 @@ public class BNLJoinExec extends PhysicalExec {
   }
 
   public Tuple next() throws IOException {
+
     if (outerTupleSlots.isEmpty()) {
       for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
-        Tuple t = outer.next();
+        Tuple t = outerChild.next();
         if (t == null) {
           outerEnd = true;
           break;
@@ -87,9 +74,10 @@ public class BNLJoinExec extends PhysicalExec {
       outerIterator = outerTupleSlots.iterator();
       outerTuple = outerIterator.next();
     }
+
     if (innerTupleSlots.isEmpty()) {
       for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
-        Tuple t = inner.next();
+        Tuple t = innerChild.next();
         if (t == null) {
           innerEnd = true;
           break;
@@ -98,17 +86,19 @@ public class BNLJoinExec extends PhysicalExec {
       }
       innerIterator = innerTupleSlots.iterator();
     }
-    if((innext = inner.next()) == null){
+
+    if((innext = innerChild.next()) == null){
       innerEnd = true;
     }
-    while (!ctx.isStopped()) {
+
+    while (true) {
       if (!innerIterator.hasNext()) { // if inneriterator ended
         if (outerIterator.hasNext()) { // if outertupleslot remains
           outerTuple = outerIterator.next();
           innerIterator = innerTupleSlots.iterator();
         } else {
           if (innerEnd) {
-            inner.rescan();
+            innerChild.rescan();
             innerEnd = false;
             
             if (outerEnd) {
@@ -116,7 +106,7 @@ public class BNLJoinExec extends PhysicalExec {
             }
             outerTupleSlots.clear();
             for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
-              Tuple t = outer.next();
+              Tuple t = outerChild.next();
               if (t == null) {
                 outerEnd = true;
                 break;
@@ -138,7 +128,7 @@ public class BNLJoinExec extends PhysicalExec {
           if (innext != null) {
             innerTupleSlots.add(innext);
             for (int k = 1; k < TUPLE_SLOT_SIZE; k++) { // fill inner
-              Tuple t = inner.next();
+              Tuple t = innerChild.next();
               if (t == null) {
                 innerEnd = true;
                 break;
@@ -147,7 +137,7 @@ public class BNLJoinExec extends PhysicalExec {
             }
           } else {
             for (int k = 0; k < TUPLE_SLOT_SIZE; k++) { // fill inner
-              Tuple t = inner.next();
+              Tuple t = innerChild.next();
               if (t == null) {
                 innerEnd = true;
                 break;
@@ -156,7 +146,7 @@ public class BNLJoinExec extends PhysicalExec {
             }
           }
           
-          if ((innext = inner.next()) == null) {
+          if ((innext = innerChild.next()) == null) {
             innerEnd = true;
           }
           innerIterator = innerTupleSlots.iterator();
@@ -175,19 +165,11 @@ public class BNLJoinExec extends PhysicalExec {
         return outputTuple;
       }
     }
-
-    return null;
-  }
-
-  @Override
-  public Schema getSchema() {
-    return outSchema;
   }
 
   @Override
   public void rescan() throws IOException {
-    outer.rescan();
-    inner.rescan();
+    super.rescan();
     innerEnd = false;
     innerTupleSlots.clear();
     outerTupleSlots.clear();

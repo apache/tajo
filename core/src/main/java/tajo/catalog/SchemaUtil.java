@@ -10,10 +10,14 @@ public class SchemaUtil {
   public static Schema merge(Schema left, Schema right) {
     Schema merged = new Schema();
     for(Column col : left.getColumns()) {
-      merged.addColumn(col);
+      if (!merged.contains(col.getQualifiedName())) {
+        merged.addColumn(col);
+      }
     }
     for(Column col : right.getColumns()) {
-      merged.addColumn(col);
+      if (!merged.contains(col.getQualifiedName())) {
+        merged.addColumn(col);
+      }
     }
     
     return merged;

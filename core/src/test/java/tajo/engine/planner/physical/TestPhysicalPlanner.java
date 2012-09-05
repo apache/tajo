@@ -1,4 +1,4 @@
-package tajo.engine.planner;
+package tajo.engine.planner.physical;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -24,12 +24,12 @@ import tajo.datum.NullDatum;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.parser.QueryBlock;
+import tajo.engine.planner.*;
 import tajo.engine.planner.global.ScheduleUnit;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.LogicalRootNode;
 import tajo.engine.planner.logical.StoreTableNode;
 import tajo.engine.planner.logical.UnionNode;
-import tajo.engine.planner.physical.*;
 import tajo.engine.utils.TUtil;
 import tajo.index.bst.BSTIndex;
 import tajo.storage.*;
@@ -174,17 +174,19 @@ public class TestPhysicalPlanner {
 
     LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     Tuple tuple;
     int i = 0;
+    exec.init();
     while ((tuple = exec.next()) != null) {
       assertTrue(tuple.contains(0));
       assertTrue(tuple.contains(1));
       assertTrue(tuple.contains(2));
       i++;
     }
+    exec.close();
     assertEquals(100, i);
   }
 
@@ -198,17 +200,19 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     int i = 0;
     Tuple tuple;
+    exec.init();
     while ((tuple = exec.next()) != null) {
       assertEquals(6, tuple.get(2).asInt()); // sum
       assertEquals(3, tuple.get(3).asInt()); // max
       assertEquals(1, tuple.get(4).asInt()); // min
       i++;
     }
+    exec.close();
     assertEquals(10, i);
   }
 
@@ -224,11 +228,12 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     int i = 0;
     Tuple tuple;
+    exec.init();
     while ((tuple = exec.next()) != null) {
       assertEquals(DatumFactory.createNullDatum(), tuple.get(1));
       assertEquals(12, tuple.get(2).asInt()); // sum
@@ -236,6 +241,7 @@ public class TestPhysicalPlanner {
       assertEquals(1, tuple.get(4).asInt()); // min
       i++;
     }
+    exec.close();
     assertEquals(5, i);
   }
 
@@ -249,7 +255,7 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     /*HashAggregateExec hashAgg = (HashAggregateExec) exec;
@@ -269,12 +275,14 @@ public class TestPhysicalPlanner {
 
     int i = 0;
     Tuple tuple;
+    exec.init();
     while ((tuple = exec.next()) != null) {
       assertEquals(6, tuple.get(2).asInt()); // sum
       assertEquals(3, tuple.get(3).asInt()); // max
       assertEquals(1, tuple.get(4).asInt()); // min
       i++;
     }
+    exec.close();
     assertEquals(10, i);
 
     exec.rescan();
@@ -305,9 +313,11 @@ public class TestPhysicalPlanner {
         StoreType.CSV);
     sm.initTableBase(outputMeta, "grouped");
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    exec.init();
     exec.next();
+    exec.close();
 
     Scanner scanner = sm.getScanner("grouped", ctx.getQueryId().toString());
     Tuple tuple;
@@ -351,9 +361,11 @@ public class TestPhysicalPlanner {
         StoreType.CSV);
     sm.initTableBase(outputMeta, "partition");
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    exec.init();
     exec.next();
+    exec.close();
 
     Path path = StorageUtil.concatPath(
         workDir.getAbsolutePath(), "out");
@@ -408,9 +420,11 @@ public class TestPhysicalPlanner {
         StoreType.CSV);
     sm.initTableBase(outputMeta, "emptyset");
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    exec.init();
     exec.next();
+    exec.close();
 
     Path path = StorageUtil.concatPath(
         workDir.getAbsolutePath(), "out");
@@ -446,14 +460,16 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
+    exec.init();
     Tuple tuple = exec.next();
     assertEquals(30, tuple.get(0).asLong());
     assertEquals(3, tuple.get(1).asInt());
     assertEquals(1, tuple.get(2).asInt());
     assertNull(exec.next());
+    exec.close();
   }
 
   //@Test
@@ -467,7 +483,7 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     Tuple tuple = exec.next();
@@ -486,13 +502,15 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     int count = 0;
+    exec.init();
     while(exec.next() != null) {
       count++;
     }
+    exec.close();
     assertEquals(10, count);
   }
 
@@ -510,15 +528,17 @@ public class TestPhysicalPlanner {
     UnionNode union = new UnionNode(root.getSubNode(), root.getSubNode());
     root.setSubNode(union);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, root);
 
     @SuppressWarnings("unused")
     Tuple tuple = null;
     int count = 0;
+    exec.init();
     while(exec.next() != null) {
       count++;
     }
+    exec.close();
     assertEquals(200, count);
   }
 
@@ -532,10 +552,12 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     Tuple tuple;
+    exec.init();
     tuple = exec.next();
+    exec.close();
     assertEquals(true, tuple.get(0).asBool());
     assertTrue(7.0d == tuple.get(1).asDouble());
 
@@ -543,9 +565,11 @@ public class TestPhysicalPlanner {
     plan = planner.createPlan(context);
     LogicalOptimizer.optimize(context, plan);
 
-    phyPlanner = new PhysicalPlanner(conf, sm);
+    phyPlanner = new PhysicalPlannerImpl(conf, sm);
     exec = phyPlanner.createPlan(ctx, plan);
+    exec.init();
     tuple = exec.next();
+    exec.close();
     assertEquals(DatumFactory.createBool(true), tuple.get(0));
   }
 
@@ -564,10 +588,12 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    exec.init();
     while (exec.next() != null) {
     }
+    exec.close();
 
     Path path = sm.getTablePath("employee");
     FileStatus [] list = sm.getFileSystem().listStatus(new Path(path, "index"));
@@ -590,17 +616,19 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     Tuple tuple;
 
     int cnt = 0;
     Set<String> expected = Sets.newHashSet(
         new String[]{"name_1", "name_2", "name_3", "name_4", "name_5"});
+    exec.init();
     while ((tuple = exec.next()) != null) {
       assertTrue(expected.contains(tuple.getString(0).asChars()));
       cnt++;
     }
+    exec.close();
     assertEquals(5, cnt);
   }
 
@@ -620,18 +648,20 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
     ExternalSortExec sort = (ExternalSortExec) proj.getChild();
-    SeqScanExec scan = (SeqScanExec) sort.getSubOp();
+    SeqScanExec scan = (SeqScanExec) sort.getChild();
     QueryBlock.SortSpec [] sortSpecs = sort.getAnnotation().getSortKeys();
     IndexedStoreExec idxStoreExec = new IndexedStoreExec(ctx, sm, sort, sort.getSchema(), sort.getSchema(), sortSpecs);
 
     Tuple tuple;
     exec = idxStoreExec;
+    exec.init();
     exec.next();
+    exec.close();
 
     Schema keySchema = new Schema();
     keySchema.addColumn("?empId", DataType.INT);

@@ -3,7 +3,7 @@
  */
 package tajo.engine.planner.physical;
 
-import tajo.catalog.Schema;
+import tajo.SubqueryContext;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.parser.QueryBlock.Target;
 import tajo.engine.planner.logical.EvalExprNode;
@@ -16,30 +16,24 @@ import java.io.IOException;
  * @author Hyunsik Choi
  */
 public class EvalExprExec extends PhysicalExec {
-  private final EvalExprNode annotation;
-  private final Schema inputSchema;
-  private final Schema outputSchema;
+  private final EvalExprNode plan;
   private final EvalContext[] evalContexts;
   
   /**
    * 
    */
-  public EvalExprExec(EvalExprNode annotation) {
-    this.annotation = annotation;
-    this.inputSchema = annotation.getInSchema();
-    this.outputSchema = annotation.getOutSchema();
-    evalContexts = new EvalContext[this.annotation.getExprs().length];
-    for (int i = 0; i < this.annotation.getExprs().length; i++) {
-      evalContexts[i] = this.annotation.getExprs()[i].getEvalTree().newContext();
+  public EvalExprExec(final SubqueryContext context, final EvalExprNode plan) {
+    super(context, plan.getInSchema(), plan.getOutSchema());
+    this.plan = plan;
+
+    evalContexts = new EvalContext[plan.getExprs().length];
+    for (int i = 0; i < plan.getExprs().length; i++) {
+      evalContexts[i] = plan.getExprs()[i].getEvalTree().newContext();
     }
   }
 
-  /* (non-Javadoc)
-   * @see SchemaObject#getSchema()
-   */
   @Override
-  public Schema getSchema() {    
-    return outputSchema;
+  public void init() throws IOException {
   }
 
   /* (non-Javadoc)
@@ -47,10 +41,10 @@ public class EvalExprExec extends PhysicalExec {
   */
   @Override
   public Tuple next() throws IOException {    
-    Target [] targets = annotation.getExprs();
+    Target [] targets = plan.getExprs();
     Tuple t = new VTuple(targets.length);
     for (int i = 0; i < targets.length; i++) {
-      targets[i].getEvalTree().eval(evalContexts[i], inputSchema, null);
+      targets[i].getEvalTree().eval(evalContexts[i], inSchema, null);
       t.put(i, targets[i].getEvalTree().terminate(evalContexts[i]));
     }
     return t;
@@ -58,5 +52,9 @@ public class EvalExprExec extends PhysicalExec {
 
   @Override
   public void rescan() throws IOException {    
+  }
+
+  @Override
+  public void close() throws IOException {
   }
 }

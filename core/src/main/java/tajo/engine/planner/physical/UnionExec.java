@@ -3,6 +3,7 @@
  */
 package tajo.engine.planner.physical;
 
+import tajo.SubqueryContext;
 import tajo.catalog.Schema;
 import tajo.engine.query.exception.InvalidQueryException;
 import tajo.storage.Tuple;
@@ -13,32 +14,22 @@ import java.io.IOException;
  * @author Hyunsik Choi
  *
  */
-public class UnionExec extends PhysicalExec {
-  private final Schema schema;
+public class UnionExec extends BinaryPhysicalExec {
   private boolean nextOuter = true;
-  private final PhysicalExec outer;
-  private final PhysicalExec inner;
   private Tuple tuple;
 
-  public UnionExec(PhysicalExec outer, PhysicalExec inner) {    
+  public UnionExec(SubqueryContext context, PhysicalExec outer, PhysicalExec inner) {
+    super(context, outer.getSchema(), inner.getSchema(), outer, inner);
     if (!outer.getSchema().equals(inner.getSchema())) {
       throw new InvalidQueryException(
-          "The schemas of both operators are not matched");
-    }    
-    schema = outer.getSchema();
-    this.outer = outer;
-    this.inner = inner;
-  }
-
-  @Override
-  public Schema getSchema() {
-    return schema;
+          "The both schemas are not same");
+    }
   }
 
   @Override
   public Tuple next() throws IOException {
-    if (nextOuter == true) {
-      tuple = outer.next();
+    if (nextOuter) {
+      tuple = outerChild.next();
       if (tuple == null) {
        nextOuter = false; 
       } else {
@@ -46,13 +37,13 @@ public class UnionExec extends PhysicalExec {
       }
     }
     
-    return inner.next();    
+    return innerChild.next();
   }
 
   @Override
   public void rescan() throws IOException {
-    outer.rescan();
-    inner.rescan();
+    super.rescan();
+
     nextOuter = true;
   }
 }

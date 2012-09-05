@@ -2,7 +2,6 @@ package tajo.engine.planner.physical;
 
 import tajo.SubqueryContext;
 import tajo.catalog.Column;
-import tajo.catalog.Schema;
 import tajo.catalog.SchemaUtil;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
@@ -20,16 +19,10 @@ import java.util.*;
  * @author Byung Nam Lim
  * @author Hyunsik Choi
  */
-public class HashJoinExec extends PhysicalExec {
+public class HashJoinExec extends BinaryPhysicalExec {
   // from logical plan
   private JoinNode plan;
-  private Schema inSchema;
-  private Schema outSchema;
   private EvalNode joinQual;
-
-  // sub operations
-  private PhysicalExec outer;
-  private PhysicalExec inner;
 
   private List<Column[]> joinKeyPairs;
 
@@ -53,14 +46,12 @@ public class HashJoinExec extends PhysicalExec {
   private final Projector projector;
   private final EvalContext [] evalContexts;
 
-  public HashJoinExec(SubqueryContext ctx, JoinNode joinNode, PhysicalExec outer,
+  public HashJoinExec(SubqueryContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner) {
-    this.outer = outer;
-    this.inner = inner;
-    this.plan = joinNode;
-    this.inSchema = SchemaUtil.merge(outer.getSchema(), inner.getSchema());
-    this.outSchema = joinNode.getOutSchema();
-    this.joinQual = joinNode.getJoinQual();
+    super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
+        plan.getOutSchema(), outer, inner);
+    this.plan = plan;
+    this.joinQual = plan.getJoinQual();
     this.qualCtx = joinQual.newContext();
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
@@ -79,7 +70,7 @@ public class HashJoinExec extends PhysicalExec {
     }
 
     // for projection
-    this.projector = new Projector(inSchema, outSchema, joinNode.getTargets());
+    this.projector = new Projector(inSchema, outSchema, plan.getTargets());
     this.evalContexts = projector.renew();
 
     // for join
@@ -106,7 +97,7 @@ public class HashJoinExec extends PhysicalExec {
 
       if (nextOuter) {
         // getting new outer
-        outerTuple = outer.next();
+        outerTuple = outerChild.next();
         if (outerTuple == null) {
           finished = true;
           return null;
@@ -149,7 +140,7 @@ public class HashJoinExec extends PhysicalExec {
     Tuple tuple;
     Tuple keyTuple;
 
-    while ((tuple = inner.next()) != null) {
+    while ((tuple = innerChild.next()) != null) {
       keyTuple = new VTuple(joinKeyPairs.size());
       List<Tuple> newValue;
       for (int i = 0; i < innerKeyList.length; i++) {
@@ -170,14 +161,8 @@ public class HashJoinExec extends PhysicalExec {
   }
 
   @Override
-  public Schema getSchema() {
-    return outSchema;
-  }
-
-  @Override
   public void rescan() throws IOException {
-    outer.rescan();
-    inner.rescan();
+    super.rescan();
 
     tupleSlots.clear();
     first = true;
@@ -185,14 +170,6 @@ public class HashJoinExec extends PhysicalExec {
     finished = false;
     iterator = null;
     nextOuter = true;
-  }
-
-  public PhysicalExec getOuter() {
-    return this.outer;
-  }
-
-  public PhysicalExec getInner() {
-    return this.inner;
   }
 
   public JoinNode getPlan() {

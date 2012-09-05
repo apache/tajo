@@ -14,10 +14,7 @@ import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
-import tajo.engine.planner.LogicalOptimizer;
-import tajo.engine.planner.LogicalPlanner;
-import tajo.engine.planner.PhysicalPlanner;
-import tajo.engine.planner.PlanningContext;
+import tajo.engine.planner.*;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.utils.TUtil;
 import tajo.storage.Appender;
@@ -103,12 +100,13 @@ public class TestSortExec {
 
     LogicalOptimizer.optimize(context, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     Tuple tuple;
     Datum preVal = null;
     Datum curVal;
+    exec.init();
     while ((tuple = exec.next()) != null) {
       curVal = tuple.get(0);
       if (preVal != null) {
@@ -117,5 +115,6 @@ public class TestSortExec {
 
       preVal = curVal;
     }
+    exec.close();
   }
 }

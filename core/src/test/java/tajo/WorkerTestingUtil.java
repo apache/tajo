@@ -14,10 +14,7 @@ import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
-import tajo.engine.planner.LogicalOptimizer;
-import tajo.engine.planner.LogicalPlanner;
-import tajo.engine.planner.PhysicalPlanner;
-import tajo.engine.planner.PlanningContext;
+import tajo.engine.planner.*;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.physical.PhysicalExec;
 import tajo.engine.query.ResultSetImpl;
@@ -111,7 +108,7 @@ public class WorkerTestingUtil {
     PlanningContext context = analyzer.parse(query);
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ResultSet result = new ResultSetImpl(conf, new File(workDir, "out").getAbsolutePath());

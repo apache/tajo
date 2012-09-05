@@ -789,9 +789,11 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
           ProgressIndicator indicator = new ProgressIndicator();
           new Thread(indicator).start();
           this.executor = queryEngine.createPlan(ctx, plan);
+          this.executor.init();
           while(executor.next() != null && !killed) {
             ++progress;
           }
+          this.executor.close();
         }
       } catch (Exception e) {
         LOG.error(ExceptionUtils.getStackTrace(e));

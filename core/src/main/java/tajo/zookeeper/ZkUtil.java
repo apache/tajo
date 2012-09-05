@@ -20,7 +20,7 @@ public class ZkUtil {
    * Creates the specified node, if the node does not exist. Does not set a
    * watch and fails silently if the node already exists.
    * 
-   * The node created is persistent and open access.
+   * The node created is persistent and init access.
    * 
    * @param zk
    *          zk reference

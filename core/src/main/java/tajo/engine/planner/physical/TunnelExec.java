@@ -1,27 +1,22 @@
 package tajo.engine.planner.physical;
 
+import tajo.SubqueryContext;
 import tajo.catalog.Schema;
 import tajo.storage.Tuple;
-import tajo.storage.VTuple;
 
 import java.io.IOException;
 
-public class TunnelExec  extends PhysicalExec{
-  private Schema outputSchema;
-  private PhysicalExec supOp;
-  public TunnelExec ( Schema outputSchema , PhysicalExec supOp) {
-    this.outputSchema = outputSchema;
-    this.supOp = supOp;
+public class TunnelExec extends UnaryPhysicalExec{
+
+  public TunnelExec (final SubqueryContext context,
+                     final Schema outputSchema,
+                     final PhysicalExec child) {
+    super(context, outputSchema, outputSchema, child);
   }
 
   @Override
-  public Schema getSchema() {
-    return this.outputSchema;
-  }
-  @Override
   public Tuple next() throws IOException {
-    VTuple tuple = (VTuple)supOp.next();
-    return tuple;
+    return child.next();
   }
   @Override
   public void rescan() throws IOException {   

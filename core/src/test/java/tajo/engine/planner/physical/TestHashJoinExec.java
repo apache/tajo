@@ -15,6 +15,7 @@ import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.utils.TUtil;
@@ -122,16 +123,16 @@ public class TestHashJoinExec {
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
     if (proj.getChild() instanceof MergeJoinExec) {
       MergeJoinExec join = (MergeJoinExec) proj.getChild();
-      ExternalSortExec sortout = (ExternalSortExec) join.getOuter();
-      ExternalSortExec sortin = (ExternalSortExec) join.getInner();
-      SeqScanExec scanout = (SeqScanExec) sortout.getSubOp();
-      SeqScanExec scanin = (SeqScanExec) sortin.getSubOp();
+      ExternalSortExec sortout = (ExternalSortExec) join.getOuterChild();
+      ExternalSortExec sortin = (ExternalSortExec) join.getInnerChild();
+      SeqScanExec scanout = (SeqScanExec) sortout.getChild();
+      SeqScanExec scanin = (SeqScanExec) sortin.getChild();
 
       HashJoinExec hashjoin = new HashJoinExec(ctx, join.getJoinNode(), scanout, scanin);
       proj.setChild(hashjoin);
@@ -142,6 +143,7 @@ public class TestHashJoinExec {
     Tuple tuple;
     int count = 0;
     int i = 1;
+    exec.init();
     while ((tuple = exec.next()) != null) {
       count++;
       assertTrue(i == tuple.getInt(0).asInt());
@@ -151,6 +153,7 @@ public class TestHashJoinExec {
 
       i += 2;
     }
+    exec.close();
     assertEquals(10 / 2, count);
   }
 }

@@ -19,12 +19,8 @@ import java.io.IOException;
  * @author Hyunsik Choi
  *
  */
-public class IndexedStoreExec extends PhysicalExec {
-  private final SubqueryContext ctx;
+public class IndexedStoreExec extends UnaryPhysicalExec {
   private final StorageManager sm;
-  private final PhysicalExec subOp;
-  private final Schema inSchema;
-  private final Schema outSchema;
   private final QueryBlock.SortSpec [] sortSpecs;
   private int [] indexKeys = null;
   private Schema keySchema;
@@ -34,18 +30,17 @@ public class IndexedStoreExec extends PhysicalExec {
   private FileAppender appender;
   private TableMeta meta;
 
-  public IndexedStoreExec(SubqueryContext ctx, StorageManager sm, PhysicalExec subOp, Schema inSchema,
-                          Schema outSchema, QueryBlock.SortSpec [] sortSpecs) throws IOException {
-    this.ctx = ctx;
+  public IndexedStoreExec(final SubqueryContext context, final StorageManager sm,
+      final PhysicalExec child, final Schema inSchema, final Schema outSchema,
+      final QueryBlock.SortSpec [] sortSpecs) throws IOException {
+    super(context, inSchema, outSchema, child);
     this.sm = sm;
-    this.subOp = subOp;
-    this.inSchema = inSchema;
-    this.outSchema = outSchema;
     this.sortSpecs = sortSpecs;
-    open();
   }
 
-  public void open() throws IOException {
+  public void init() throws IOException {
+    super.init();
+
     indexKeys = new int[sortSpecs.length];
     keySchema = new Schema();
     Column col;
@@ -62,7 +57,7 @@ public class IndexedStoreExec extends PhysicalExec {
 
     BSTIndex bst = new BSTIndex(new TajoConf());
     this.comp = new TupleComparator(keySchema, indexSortSpec);
-    Path storeTablePath = new Path(ctx.getWorkDir().getAbsolutePath(), "out");
+    Path storeTablePath = new Path(context.getWorkDir().getAbsolutePath(), "out");
     this.meta = TCatUtil
         .newTableMeta(this.outSchema, CatalogProtos.StoreType.CSV);
     sm.initLocalTableBase(storeTablePath, meta);
@@ -84,23 +79,13 @@ public class IndexedStoreExec extends PhysicalExec {
     long offset;
 
 
-    while((tuple = subOp.next()) != null) {
+    while((tuple = child.next()) != null) {
       offset = appender.getOffset();
       appender.addTuple(tuple);
       keyTuple = new VTuple(keySchema.getColumnNum());
       RowStoreUtil.project(tuple, keyTuple, indexKeys);
       indexWriter.write(keyTuple, offset);
     }
-
-    appender.flush();
-    appender.close();
-    indexWriter.flush();
-    indexWriter.close();
-
-    // Collect statistics data
-    //    ctx.addStatSet(annotation.getType().toString(), appender.getStats());
-    ctx.setResultStats(appender.getStats());
-    ctx.addRepartition(0, ctx.getQueryId().toString());
 
     return null;
   }
@@ -109,8 +94,16 @@ public class IndexedStoreExec extends PhysicalExec {
   public void rescan() throws IOException {
   }
 
-  @Override
-  public Schema getSchema() {
-    return outSchema;
+  public void close() throws IOException {
+    super.close();
+
+    appender.flush();
+    appender.close();
+    indexWriter.flush();
+    indexWriter.close();
+
+    // Collect statistics data
+    context.setResultStats(appender.getStats());
+    context.addRepartition(0, context.getQueryId().toString());
   }
 }

@@ -16,6 +16,7 @@ import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.utils.TUtil;
@@ -128,13 +129,15 @@ public class TestNLJoinExec {
     System.out.println(plan);
     //LogicalOptimizer.optimize(ctx, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     int i = 0;
+    exec.init();
     while (exec.next() != null) {
       i++;
     }
+    exec.close();
     assertEquals(50*50/2, i); // expected 10 * 5
 //    System.out.println("TIME : " + (System.currentTimeMillis() - start));
   }
@@ -156,12 +159,13 @@ public class TestNLJoinExec {
     System.out.println(plan);
     //LogicalOptimizer.optimize(ctx, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf, sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
     Tuple tuple;
     int i = 1;
     int count = 0;
+    exec.init();
     while ((tuple = exec.next()) != null) {
       count++;
       assertTrue(i == tuple.getInt(0).asInt());
@@ -170,6 +174,7 @@ public class TestNLJoinExec {
       assertTrue(10 + i == tuple.getInt(3).asInt());
       i += 2;
     }
+    exec.close();
     assertEquals(50 / 2, count);
 //    System.out.println("TIME : " + (System.currentTimeMillis() - start));
   }

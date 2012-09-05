@@ -1,9 +1,24 @@
-/**
- * 
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package tajo.engine.planner.physical;
 
-import tajo.catalog.Schema;
+import tajo.SubqueryContext;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.ipc.protocolrecords.Fragment;
@@ -16,40 +31,40 @@ import tajo.storage.VTuple;
 
 import java.io.IOException;
 
-/**
- * @author Hyunsik Choi
- * 
- */
 public class SeqScanExec extends PhysicalExec {
-  private final ScanNode scanNode;
+  private final ScanNode plan;
+  private final StorageManager sm;
   private Scanner scanner = null;
 
   private EvalNode qual = null;
   private EvalContext qualCtx;
-  private Schema inSchema;
-  private Schema outSchema;
 
-  private final Projector projector;
+  private Fragment [] fragments;
+
+  private Projector projector;
   private EvalContext [] evalContexts;
 
-  /**
-   * @throws IOException 
-	 * 
-	 */
-  public SeqScanExec(StorageManager sm, ScanNode scanNode,
-      Fragment[] fragments) throws IOException {
-    this.scanNode = scanNode;
-    this.qual = scanNode.getQual();
+  public SeqScanExec(SubqueryContext context, StorageManager sm,
+                     ScanNode plan, Fragment[] fragments) throws IOException {
+    super(context, plan.getInSchema(), plan.getOutSchema());
+    this.sm = sm;
+
+    this.plan = plan;
+    this.qual = plan.getQual();
+    this.fragments = fragments;
+
     if (qual == null) {
       qualCtx = null;
     } else {
       qualCtx = this.qual.newContext();
     }
-    this.inSchema = scanNode.getInSchema();
-    this.outSchema = scanNode.getOutSchema();
-    this.scanner = sm.getScanner(fragments[0].getMeta(), fragments, scanNode.getInSchema());
-    this.projector = new Projector(inSchema, outSchema, scanNode.getTargets());
+  }
+
+  public void init() throws IOException {
+    this.projector = new Projector(inSchema, outSchema, plan.getTargets());
     this.evalContexts = projector.renew();
+    this.scanner = sm.getScanner(fragments[0].getMeta(), fragments,
+        plan.getInSchema());
   }
 
   @Override
@@ -57,7 +72,7 @@ public class SeqScanExec extends PhysicalExec {
     Tuple tuple;
     Tuple outTuple = new VTuple(outSchema.getColumnNum());
 
-    if (!scanNode.hasQual()) {
+    if (!plan.hasQual()) {
       if ((tuple = scanner.next()) != null) {
         projector.eval(evalContexts, tuple);
         projector.terminate(evalContexts, outTuple);
@@ -80,12 +95,12 @@ public class SeqScanExec extends PhysicalExec {
   }
 
   @Override
-  public Schema getSchema() {
-    return outSchema;
+  public void rescan() throws IOException {
+    scanner.reset();
   }
 
   @Override
-  public void rescan() throws IOException {
-    scanner.reset();    
+  public void close() throws IOException {
+    scanner.close();
   }
 }

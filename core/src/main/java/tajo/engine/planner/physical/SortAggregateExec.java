@@ -20,10 +20,11 @@ public class SortAggregateExec extends AggregationExec {
   private final Projector projector;
 
 
-  public SortAggregateExec(SubqueryContext ctx, GroupbyNode groupbyNode,
-                           PhysicalExec subOp) throws IOException {
-    super(ctx, groupbyNode, subOp);
-    this.projector = new Projector(inputSchema, outputSchema, groupbyNode.getTargets());
+  public SortAggregateExec(SubqueryContext context, GroupbyNode plan,
+                           PhysicalExec child) throws IOException {
+    super(context, plan, child);
+
+    this.projector = new Projector(inSchema, outSchema, plan.getTargets());
   }
 
   @Override
@@ -31,7 +32,7 @@ public class SortAggregateExec extends AggregationExec {
     Tuple curKey;
     Tuple tuple;
     Tuple finalTuple = null;
-    while(!ctx.isStopped() && (tuple = child.next()) != null) {
+    while(!context.isStopped() && (tuple = child.next()) != null) {
       // build a key tuple
       curKey = new VTuple(keylist.length);
       for(int i = 0; i < keylist.length; i++) {
@@ -40,27 +41,27 @@ public class SortAggregateExec extends AggregationExec {
 
       if (prevKey == null || prevKey.equals(curKey)) {
         if (prevKey == null) {
-          for(int i = 0; i < outputSchema.getColumnNum(); i++) {
+          for(int i = 0; i < outSchema.getColumnNum(); i++) {
             evalContexts[i] = evals[i].newContext();
-            evals[i].eval(evalContexts[i], inputSchema, tuple);
+            evals[i].eval(evalContexts[i], inSchema, tuple);
           }
           prevKey = curKey;
         } else {
           // aggregate
           for (int idx : measureList) {
-            evals[idx].eval(evalContexts[idx], inputSchema, tuple);
+            evals[idx].eval(evalContexts[idx], inSchema, tuple);
           }
         }
       } else {
         // finalize aggregate and return
-        finalTuple = new VTuple(outputSchema.getColumnNum());
-        for(int i = 0; i < outputSchema.getColumnNum(); i++) {
+        finalTuple = new VTuple(outSchema.getColumnNum());
+        for(int i = 0; i < outSchema.getColumnNum(); i++) {
           finalTuple.put(i, evals[i].terminate(evalContexts[i]));
         }
 
-        for(int i = 0; i < outputSchema.getColumnNum(); i++) {
+        for(int i = 0; i < outSchema.getColumnNum(); i++) {
           evalContexts[i] = evals[i].newContext();
-          evals[i].eval(evalContexts[i], inputSchema, tuple);
+          evals[i].eval(evalContexts[i], inSchema, tuple);
         }
         prevKey = curKey;
         return finalTuple;
@@ -68,8 +69,8 @@ public class SortAggregateExec extends AggregationExec {
     } // while loop
 
     if (!finished) {
-      finalTuple = new VTuple(outputSchema.getColumnNum());
-      for(int i = 0; i < outputSchema.getColumnNum(); i++) {
+      finalTuple = new VTuple(outSchema.getColumnNum());
+      for(int i = 0; i < outSchema.getColumnNum(); i++) {
         finalTuple.put(i, evals[i].terminate(evalContexts[i]));
       }
       finished = true;
@@ -78,14 +79,10 @@ public class SortAggregateExec extends AggregationExec {
   }
 
   @Override
-  public Schema getSchema() {
-    return outputSchema;
-  }
-
-  @Override
   public void rescan() throws IOException {
+    super.rescan();
+
     prevKey = null;
     finished = false;
-    child.rescan();
   }
 }

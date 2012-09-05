@@ -7,7 +7,6 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.Path;
 import tajo.SubqueryContext;
 import tajo.catalog.Column;
-import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
@@ -29,21 +28,17 @@ import java.util.Map;
 /**
  * @author Hyunsik Choi
  */
-public final class PartitionedStoreExec extends PhysicalExec {
+public final class PartitionedStoreExec extends UnaryPhysicalExec {
   private static final NumberFormat numFormat = NumberFormat.getInstance();
 
   static {
     numFormat.setGroupingUsed(false);
     numFormat.setMinimumIntegerDigits(6);
   }
-  
-  private final SubqueryContext ctx;
+
   private final StorageManager sm;
-  private final StoreTableNode annotation;
-  private final PhysicalExec subOp;
-  
-  private final Schema inputSchema;
-  private final Schema outputSchema;
+  private final StoreTableNode plan;
+
   private final int numPartitions;
   private final int [] partitionKeys;  
   
@@ -53,33 +48,25 @@ public final class PartitionedStoreExec extends PhysicalExec {
   private final Map<Integer, Appender> appenderMap
     = new HashMap<Integer, Appender>();
   
-  public PartitionedStoreExec(SubqueryContext ctx, final StorageManager sm,
-      final StoreTableNode annotation, final PhysicalExec subOp) throws IOException {
-    Preconditions.checkArgument(annotation.hasPartitionKey());
-    this.ctx = ctx;
+  public PartitionedStoreExec(SubqueryContext context, final StorageManager sm,
+      final StoreTableNode plan, final PhysicalExec child) throws IOException {
+    super(context, plan.getInSchema(), plan.getOutSchema(), child);
+    Preconditions.checkArgument(plan.hasPartitionKey());
     this.sm = sm;
-    this.annotation = annotation;
-    this.subOp = subOp;
-    this.inputSchema = this.annotation.getInSchema();
-    this.outputSchema = this.annotation.getOutSchema();
-    this.meta = TCatUtil.newTableMeta(this.outputSchema, StoreType.CSV);
+    this.plan = plan;
+    this.meta = TCatUtil.newTableMeta(this.outSchema, StoreType.CSV);
     
     // about the partitions
-    this.numPartitions = annotation.getNumPartitions();
+    this.numPartitions = this.plan.getNumPartitions();
     int i = 0;
-    this.partitionKeys = new int [annotation.getPartitionKeys().length];
-    for (Column key : annotation.getPartitionKeys()) {
-      partitionKeys[i] = inputSchema.getColumnId(key.getQualifiedName());      
+    this.partitionKeys = new int [this.plan.getPartitionKeys().length];
+    for (Column key : this.plan.getPartitionKeys()) {
+      partitionKeys[i] = inSchema.getColumnId(key.getQualifiedName());
       i++;
     }
     this.partitioner = new HashPartitioner(partitionKeys, numPartitions);    
-    storeTablePath = new Path(ctx.getWorkDir().getAbsolutePath(), "out");
+    storeTablePath = new Path(context.getWorkDir().getAbsolutePath(), "out");
     sm.initLocalTableBase(storeTablePath, meta);
-  }
-
-  @Override
-  public Schema getSchema() {
-    return this.outputSchema;
   }
   
   private Appender getAppender(int partition) throws IOException {
@@ -105,7 +92,7 @@ public final class PartitionedStoreExec extends PhysicalExec {
     Tuple tuple;
     Appender appender;
     int partition;
-    while ((tuple = subOp.next()) != null) {
+    while ((tuple = child.next()) != null) {
       partition = partitioner.getPartition(tuple);
       appender = getAppender(partition);
       appender.addTuple(tuple);
@@ -119,13 +106,13 @@ public final class PartitionedStoreExec extends PhysicalExec {
       app.close();
       statSet.add(app.getStats());
       if (app.getStats().getNumRows() > 0) {
-        ctx.addRepartition(partNum, getDataFile(partNum).getName());
+        context.addRepartition(partNum, getDataFile(partNum).getName());
       }
     }
     
     // Collect and aggregated statistics data
     TableStat aggregated = StatisticsUtil.aggregateTableStat(statSet);
-    ctx.setResultStats(aggregated);
+    context.setResultStats(aggregated);
     
     return null;
   }

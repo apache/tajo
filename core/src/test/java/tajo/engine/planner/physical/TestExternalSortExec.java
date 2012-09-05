@@ -16,6 +16,7 @@ import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.utils.TUtil;
@@ -98,7 +99,7 @@ public class TestExternalSortExec {
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
 /*    ProjectionExec proj = (ProjectionExec) exec;
@@ -112,6 +113,7 @@ public class TestExternalSortExec {
     Datum preVal = null;
     Datum curVal;
     int cnt = 0;
+    exec.init();
     while ((tuple = exec.next()) != null) {
       curVal = tuple.get(0);
       if (preVal != null) {
@@ -120,6 +122,7 @@ public class TestExternalSortExec {
       preVal = curVal;
       cnt++;
     }
+    exec.close();
     assertEquals(numTuple, cnt);
 
     // for rescan test

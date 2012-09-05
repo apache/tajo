@@ -19,7 +19,7 @@ import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.parser.QueryBlock.SortSpec;
 import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
-import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.ScanNode;
@@ -158,7 +158,7 @@ public class TestBSTIndexExec {
 
   }
 
-  private class TmpPlanner extends PhysicalPlanner {
+  private class TmpPlanner extends PhysicalPlannerImpl {
     public TmpPlanner(TajoConf conf, StorageManager sm) {
       super(conf, sm);
     }
@@ -173,7 +173,7 @@ public class TestBSTIndexExec {
       
       Datum[] datum = new Datum[]{DatumFactory.createInt(rndKey)};
 
-      return new BSTIndexScanExec(sm, scanNode, fragments[0], idxPath,
+      return new BSTIndexScanExec(ctx, sm, scanNode, fragments[0], idxPath,
           idxSchema, comp , datum);
 
     }

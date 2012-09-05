@@ -2,7 +2,6 @@ package tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
 import tajo.SubqueryContext;
-import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
@@ -20,11 +19,8 @@ import java.util.*;
 /**
  * @author Byungnam Lim
  */
-public class ExternalSortExec extends PhysicalExec {
+public class ExternalSortExec extends UnaryPhysicalExec {
   private SortNode annotation;
-  private PhysicalExec subOp;
-  private final Schema inputSchema;
-  private final Schema outputSchema;
 
   private final Comparator<Tuple> comparator;
   private final List<Tuple> tupleSlots;
@@ -40,39 +36,28 @@ public class ExternalSortExec extends PhysicalExec {
   private int run;
   private final static String SORT_PREFIX = "s_";
 
-  public ExternalSortExec(TajoConf conf, SubqueryContext ctx, StorageManager sm, SortNode annotation,
-      PhysicalExec subOp) {
-    this.annotation = annotation;
-    this.subOp = subOp;
+  public ExternalSortExec(final TajoConf conf, final SubqueryContext context,
+      final StorageManager sm, final SortNode plan, final PhysicalExec child) {
+    super(context, plan.getInSchema(), plan.getOutSchema(), child);
+    this.annotation = plan;
     this.sm = sm;
 
     this.SORT_BUFFER_SIZE = conf.getIntVar(ConfVars.EXTERNAL_SORT_BUFFER);
 
-    this.inputSchema = annotation.getInSchema();
-    this.outputSchema = annotation.getOutSchema();
-
-    this.comparator = new TupleComparator(inputSchema, annotation.getSortKeys());
+    this.comparator = new TupleComparator(inSchema, plan.getSortKeys());
     this.tupleSlots = new ArrayList<Tuple>(SORT_BUFFER_SIZE);
 
     this.run = 0;
-    this.workDir = ctx.getWorkDir().getAbsolutePath() + "/" + UUID.randomUUID();
-  }
-
-  public PhysicalExec getSubOp(){
-    return this.subOp;
+    this.workDir = context.getWorkDir().getAbsolutePath() + "/"
+        + UUID.randomUUID();
   }
 
   public SortNode getAnnotation() {
     return this.annotation;
   }
 
-  @Override
-  public Schema getSchema() {
-    return this.outputSchema;
-  }
-
   private void firstPhase(List<Tuple> tupleSlots) throws IOException {
-    TableMeta meta = TCatUtil.newTableMeta(this.inputSchema, StoreType.RAW);
+    TableMeta meta = TCatUtil.newTableMeta(inSchema, StoreType.RAW);
     Collections.sort(tupleSlots, this.comparator);
     Path localPath = new Path(workDir, SORT_PREFIX + "0_" + run);
     sm.initLocalTableBase(localPath, meta);
@@ -91,7 +76,7 @@ public class ExternalSortExec extends PhysicalExec {
     if (!sorted) {
       Tuple tuple;
       int runNum;
-      while ((tuple = subOp.next()) != null) { // partition sort start
+      while ((tuple = child.next()) != null) { // partition sort start
         tupleSlots.add(new VTuple(tuple));
         if (tupleSlots.size() == SORT_BUFFER_SIZE) {
           firstPhase(tupleSlots);
@@ -116,7 +101,7 @@ public class ExternalSortExec extends PhysicalExec {
       // external sort start
       while (runNum > 1) {
         while (run < runNum) {
-          meta = TCatUtil.newTableMeta(this.inputSchema, StoreType.RAW);
+          meta = TCatUtil.newTableMeta(inSchema, StoreType.RAW);
           Path localPath = new Path(workDir, SORT_PREFIX + (iterator + 1) + "_" + (run / 2));
           sm.initLocalTableBase(localPath, meta);
           appender = sm.getLocalAppender(meta, new Path(localPath, "data/" + SORT_PREFIX + (iterator + 1) + "_" + (run / 2)));

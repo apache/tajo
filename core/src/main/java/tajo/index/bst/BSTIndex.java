@@ -293,7 +293,7 @@ public class BSTIndex implements IndexMethod {
 
     public void open()
         throws IOException {
-      /* open the index file */
+      /* init the index file */
       fs = fileName.getFileSystem(conf);
       if (!fs.exists(fileName)) {
         throw new FileNotFoundException("ERROR: does not exist " + fileName.toString());

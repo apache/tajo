@@ -5,7 +5,6 @@ package tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
 import tajo.SubqueryContext;
-import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
@@ -23,47 +22,37 @@ import java.io.IOException;
  * @author Hyunsik Choi
  *
  */
-public class StoreTableExec extends PhysicalExec {
-  private final SubqueryContext ctx;
-  private final StoreTableNode annotation;
-  private final PhysicalExec subOp;
-  private final Appender appender;
-  
+public class StoreTableExec extends UnaryPhysicalExec {
+  private final StoreTableNode plan;
+  private final StorageManager sm;
+  private Appender appender;
   private Tuple tuple;
-  @SuppressWarnings("unused")
-  private final Schema inputSchema;
-  private final Schema outputSchema;
   
   /**
    * @throws IOException 
    * 
    */
-  public StoreTableExec(SubqueryContext ctx, StorageManager sm,
-      StoreTableNode annotation, PhysicalExec subOp) throws IOException {
-    this.ctx = ctx;
-    this.annotation = annotation;
-    this.subOp = subOp;
-    this.inputSchema = this.annotation.getInSchema();
-    this.outputSchema = this.annotation.getOutSchema();
-    
-    TableMeta meta = TCatUtil.newTableMeta(this.outputSchema, StoreType.CSV);
-    if (ctx.isInterQuery()) {
-      Path storeTablePath = new Path(ctx.getWorkDir().getAbsolutePath(), "out");
+  public StoreTableExec(SubqueryContext context, StorageManager sm,
+      StoreTableNode plan, PhysicalExec child) throws IOException {
+    super(context, plan.getInSchema(), plan.getOutSchema(), child);
+
+    this.plan = plan;
+    this.sm = sm;
+  }
+
+  public void init() throws IOException {
+    super.init();
+
+    TableMeta meta = TCatUtil.newTableMeta(outSchema, StoreType.CSV);
+    if (context.isInterQuery()) {
+      Path storeTablePath = new Path(context.getWorkDir().getAbsolutePath(), "out");
       sm.initLocalTableBase(storeTablePath, meta);
       this.appender = sm.getLocalAppender(meta,
           StorageUtil.concatPath(storeTablePath, "data", "0"));
     } else {
-      this.appender = sm.getAppender(meta,this.annotation.getTableName(),
-          ctx.getQueryId().toString());
+      this.appender = sm.getAppender(meta,plan.getTableName(),
+          context.getQueryId().toString());
     }
-  }
-
-  /* (non-Javadoc)
-   * @see SchemaObject#getSchema()
-   */
-  @Override
-  public Schema getSchema() {
-    return this.outputSchema;
   }
 
   /* (non-Javadoc)
@@ -71,16 +60,9 @@ public class StoreTableExec extends PhysicalExec {
    */
   @Override
   public Tuple next() throws IOException {
-    while((tuple = subOp.next()) != null) {
+    while((tuple = child.next()) != null) {
       appender.addTuple(tuple);
     }
-    appender.flush();
-    appender.close();
-    
-    // Collect statistics data
-//    ctx.addStatSet(annotation.getType().toString(), appender.getStats());
-    ctx.setResultStats(appender.getStats());
-    ctx.addRepartition(0, ctx.getQueryId().toString());
         
     return null;
   }
@@ -88,5 +70,17 @@ public class StoreTableExec extends PhysicalExec {
   @Override
   public void rescan() throws IOException {
     // nothing to do
+  }
+
+  public void close() throws IOException {
+    super.close();
+
+    appender.flush();
+    appender.close();
+
+    // Collect statistics data
+//    ctx.addStatSet(annotation.getType().toString(), appender.getStats());
+    context.setResultStats(appender.getStats());
+    context.addRepartition(0, context.getQueryId().toString());
   }
 }

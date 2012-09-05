@@ -1,7 +1,6 @@
 package tajo.engine.planner.physical;
 
 import tajo.SubqueryContext;
-import tajo.catalog.Schema;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.exec.eval.EvalNode;
 import tajo.engine.planner.Projector;
@@ -12,17 +11,11 @@ import tajo.storage.VTuple;
 
 import java.io.IOException;
 
-public class NLJoinExec extends PhysicalExec {
+public class NLJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  private Schema inSchema;
-  private Schema outSchema;
+  private JoinNode plan;
   private EvalNode joinQual;
-  
-  // sub operations
-  private PhysicalExec outer;
-  private PhysicalExec inner;
-    
-  private JoinNode ann;
+
 
   // temporal tuples and states for nested loop join
   private boolean needNewOuter;
@@ -36,20 +29,18 @@ public class NLJoinExec extends PhysicalExec {
   private final EvalContext [] evalContexts;
   private final Projector projector;
 
-  public NLJoinExec(SubqueryContext ctx, JoinNode joinNode, PhysicalExec outer,
-      PhysicalExec inner) {    
-    this.outer = outer;
-    this.inner = inner;
-    this.inSchema = joinNode.getInSchema();
-    this.outSchema = joinNode.getOutSchema();
-    if (joinNode.hasJoinQual()) {
-      this.joinQual = joinNode.getJoinQual();
+  public NLJoinExec(SubqueryContext context, JoinNode plan, PhysicalExec outer,
+      PhysicalExec inner) {
+    super(context, plan.getInSchema(), plan.getOutSchema(), outer, inner);
+    this.plan = plan;
+
+    if (plan.hasJoinQual()) {
+      this.joinQual = plan.getJoinQual();
       this.qualCtx = this.joinQual.newContext();
     }
-    this.ann = joinNode;
 
     // for projection
-    projector = new Projector(inSchema, outSchema, joinNode.getTargets());
+    projector = new Projector(inSchema, outSchema, plan.getTargets());
     evalContexts = projector.renew();
 
     // for join
@@ -58,32 +49,20 @@ public class NLJoinExec extends PhysicalExec {
     outTuple = new VTuple(outSchema.getColumnNum());
   }
 
-  public PhysicalExec getOuter(){
-    return this.outer;
-  }
-
-  public PhysicalExec getInner(){
-    return this.inner;
-  }
-
-  public JoinNode getJoinNode(){
-    return this.ann;
-  }
-
   public Tuple next() throws IOException {
     for (;;) {
       if (needNewOuter) {
-        outerTuple = outer.next();
+        outerTuple = outerChild.next();
         if (outerTuple == null) {
           return null;
         }
         needNewOuter = false;
       }
 
-      innerTuple = inner.next();
+      innerTuple = innerChild.next();
       if (innerTuple == null) {
         needNewOuter = true;
-        inner.rescan();
+        innerChild.rescan();
         continue;
       }
 
@@ -104,14 +83,8 @@ public class NLJoinExec extends PhysicalExec {
   }
 
   @Override
-  public Schema getSchema() {
-    return outSchema;
-  }
-
-  @Override
   public void rescan() throws IOException {
-    outer.rescan();
-    inner.rescan();
+    super.rescan();
     needNewOuter = true;
   }
 }

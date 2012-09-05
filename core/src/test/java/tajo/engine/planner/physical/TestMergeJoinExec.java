@@ -15,6 +15,7 @@ import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.utils.TUtil;
@@ -135,7 +136,7 @@ public class TestMergeJoinExec {
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     /*
@@ -178,6 +179,7 @@ public class TestMergeJoinExec {
     Tuple tuple;
     int count = 0;
     int i = 1;
+    exec.init();
     while ((tuple = exec.next()) != null) {
       count++;
       assertTrue(i == tuple.getInt(0).asInt());
@@ -187,6 +189,7 @@ public class TestMergeJoinExec {
 
       i += 2;
     }
+    exec.close();
     assertEquals(10, count); // expected 10 * 5
   }
 }

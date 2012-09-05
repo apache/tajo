@@ -1,11 +1,24 @@
-/**
- * 
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package tajo.engine.planner.physical;
 
-import com.google.common.annotations.VisibleForTesting;
 import tajo.SubqueryContext;
-import tajo.catalog.Schema;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.planner.logical.GroupbyNode;
 import tajo.storage.Tuple;
@@ -19,8 +32,6 @@ import java.util.Map.Entry;
 
 /**
  * This is the hash-based GroupBy Operator.
- * 
- * @author Hyunsik Choi
  */
 public class HashAggregateExec extends AggregationExec {
   private Tuple tuple = null;
@@ -36,28 +47,13 @@ public class HashAggregateExec extends AggregationExec {
                            PhysicalExec subOp) throws IOException {
     super(ctx, annotation, subOp);
     tupleSlots = new HashMap<Tuple, EvalContext[]>(10000);
-    this.tuple = new VTuple(outputSchema.getColumnNum());
-  }
-
-  @VisibleForTesting
-  public PhysicalExec getSubOp() {
-    return this.child;
-  }
-
-  @VisibleForTesting
-  public GroupbyNode getAnnotation() {
-    return this.annotation;
-  }
-
-  @VisibleForTesting
-  public void setSubOp(PhysicalExec subOp) {
-    this.child = subOp;
+    this.tuple = new VTuple(outSchema.getColumnNum());
   }
   
   private void compute() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
-    while((tuple = child.next()) != null && !ctx.isStopped()) {
+    while((tuple = child.next()) != null && !context.isStopped()) {
       keyTuple = new VTuple(keylist.length);
       // build one key tuple
       for(int i = 0; i < keylist.length; i++) {
@@ -67,13 +63,13 @@ public class HashAggregateExec extends AggregationExec {
       if(tupleSlots.containsKey(keyTuple)) {
         EvalContext [] tmpTuple = tupleSlots.get(keyTuple);
         for(int i = 0; i < measureList.length; i++) {
-          evals[measureList[i]].eval(tmpTuple[measureList[i]], inputSchema, tuple);
+          evals[measureList[i]].eval(tmpTuple[measureList[i]], inSchema, tuple);
         }
       } else { // if the key occurs firstly
-        EvalContext evalCtx [] = new EvalContext[outputSchema.getColumnNum()];
-        for(int i = 0; i < outputSchema.getColumnNum(); i++) {
+        EvalContext evalCtx [] = new EvalContext[outSchema.getColumnNum()];
+        for(int i = 0; i < outSchema.getColumnNum(); i++) {
           evalCtx[i] = evals[i].newContext();
-          evals[i].eval(evalCtx[i], inputSchema, tuple);
+          evals[i].eval(evalCtx[i], inSchema, tuple);
         }
         tupleSlots.put(keyTuple, evalCtx);
       }
@@ -100,13 +96,7 @@ public class HashAggregateExec extends AggregationExec {
   }
 
   @Override
-  public Schema getSchema() {
-    return outputSchema;
-  }
-
-  @Override
   public void rescan() throws IOException {    
     iterator = tupleSlots.entrySet().iterator();
-    computed = true;
   }
 }

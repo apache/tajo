@@ -1,6 +1,6 @@
 package tajo.engine.planner.physical;
 
-import tajo.catalog.Schema;
+import tajo.SubqueryContext;
 import tajo.engine.planner.logical.SortNode;
 import tajo.storage.Tuple;
 import tajo.storage.VTuple;
@@ -11,47 +11,31 @@ import java.util.*;
 /**
  * @author Hyunsik Choi
  */
-public class SortExec extends PhysicalExec {  
-  private PhysicalExec subOp;
-  private final Schema inputSchema;
-  private final Schema outputSchema;
-  
+public class SortExec extends UnaryPhysicalExec {
   private final Comparator<Tuple> comparator;
-  private final List<Tuple> tupleSlots;  
+  private List<Tuple> tupleSlots;
   private boolean sorted = false;
   private Iterator<Tuple> iterator;
-  private SortNode annotation;
   
-  public SortExec(SortNode annotation, PhysicalExec subOp) {
-    this.subOp = subOp;
-    this.annotation = annotation;
-    
-    this.inputSchema = annotation.getInSchema();
-    this.outputSchema = annotation.getOutSchema();
-    
+  public SortExec(final SubqueryContext context,
+                  SortNode plan, PhysicalExec child) {
+    super(context, plan.getOutSchema(), plan.getInSchema(), child);
+
     this.comparator =
-        new TupleComparator(inputSchema, annotation.getSortKeys());
+        new TupleComparator(inSchema, plan.getSortKeys());
+  }
+
+  public void init() throws IOException {
+    super.init();
     this.tupleSlots = new ArrayList<Tuple>(1000);
-  }
-
-  public PhysicalExec getSubOp(){
-    return this.subOp;
-  }
-
-  public SortNode getSortNode(){
-    return this.annotation;
-  }
-  
-  @Override
-  public Schema getSchema() {
-    return this.outputSchema;
   }
 
   @Override
   public Tuple next() throws IOException {
+
     if (!sorted) {
       Tuple tuple;
-      while ((tuple = subOp.next()) != null) {
+      while ((tuple = child.next()) != null) {
         tupleSlots.add(new VTuple(tuple));
       }
       
@@ -69,6 +53,7 @@ public class SortExec extends PhysicalExec {
 
   @Override
   public void rescan() throws IOException {
+    super.rescan();
     this.iterator = tupleSlots.iterator();
     sorted = true;
   }

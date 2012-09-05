@@ -584,7 +584,7 @@ public class TestRCFile {
 
 
   // adopted Hadoop-5476 (calling new SequenceFile.Reader(...) leaves an
-  // InputStream open, if the given sequence file is broken) to RCFile
+  // InputStream init, if the given sequence file is broken) to RCFile
   private static class TestFSDataInputStream extends FSDataInputStream {
     private boolean closed = false;
 

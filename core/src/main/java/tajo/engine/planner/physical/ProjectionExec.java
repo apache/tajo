@@ -4,7 +4,6 @@
 package tajo.engine.planner.physical;
 
 import tajo.SubqueryContext;
-import tajo.catalog.Schema;
 import tajo.engine.exec.eval.EvalContext;
 import tajo.engine.planner.Projector;
 import tajo.engine.planner.logical.ProjectionNode;
@@ -16,40 +15,26 @@ import java.io.IOException;
 /**
  * @author Hyunsik Choi
  */
-public class ProjectionExec extends PhysicalExec {
-  private final ProjectionNode projNode;
-  private PhysicalExec child;
-      
-  private final Schema inSchema;
-  private final Schema outSchema;
-  
-  private final Tuple outTuple;
+public class ProjectionExec extends UnaryPhysicalExec {
+  private final ProjectionNode plan;
 
   // for projection
-  private final EvalContext[] evalContexts;
-  private final Projector projector;
+  private Tuple outTuple;
+  private EvalContext[] evalContexts;
+  private Projector projector;
   
-  public ProjectionExec(SubqueryContext ctx, ProjectionNode projNode,
+  public ProjectionExec(SubqueryContext context, ProjectionNode plan,
       PhysicalExec child) {
-    this.projNode = projNode;    
-    this.inSchema = projNode.getInSchema();
-    this.outSchema = projNode.getOutSchema();
-    this.child = child;
+    super(context, plan.getInSchema(), plan.getOutSchema(), child);
+    this.plan = plan;
+  }
+
+  public void init() throws IOException {
+    super.init();
+
     this.outTuple = new VTuple(outSchema.getColumnNum());
-    this.projector = new Projector(inSchema, outSchema, projNode.getTargets());
+    this.projector = new Projector(inSchema, outSchema, this.plan.getTargets());
     this.evalContexts = projector.renew();
-  }
-
-  public PhysicalExec getChild(){
-    return this.child;
-  }
-  public void setChild(PhysicalExec s){
-    this.child = s;
-  }
-
-  @Override
-  public Schema getSchema() {
-    return projNode.getOutSchema();
   }
 
   @Override
@@ -62,10 +47,5 @@ public class ProjectionExec extends PhysicalExec {
     projector.eval(evalContexts, tuple);
     projector.terminate(evalContexts, outTuple);
     return outTuple;
-  }
-
-  @Override
-  public void rescan() throws IOException {
-    child.rescan();
   }
 }

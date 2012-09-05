@@ -10,6 +10,7 @@ import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.exception.InternalException;
 import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.physical.PhysicalExec;
 import tajo.storage.StorageManager;
@@ -45,7 +46,7 @@ public class TQueryEngine {
     LOG.info("Tajo data dir is set " + dataPath);
         
     this.storageManager = new StorageManager(conf);
-    this.phyPlanner = new PhysicalPlanner(conf, storageManager);
+    this.phyPlanner = new PhysicalPlannerImpl(conf, storageManager);
   }
   
   public PhysicalExec createPlan(SubqueryContext ctx, LogicalNode plan) 

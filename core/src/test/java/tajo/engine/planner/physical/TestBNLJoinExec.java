@@ -16,6 +16,7 @@ import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.JoinNode;
 import tajo.engine.planner.logical.LogicalNode;
@@ -126,7 +127,7 @@ public class TestBNLJoinExec {
     LogicalNode plan = planner.createPlan(context);
     //LogicalOptimizer.optimize(ctx, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     /*ProjectionExec proj = (ProjectionExec) exec;
@@ -139,9 +140,11 @@ public class TestBNLJoinExec {
     proj.setsubOp(bnl);*/
 
     int i = 0;
+    exec.init();
     while (exec.next() != null) {
       i++;
     }
+    exec.close();
     assertEquals(OUTER_TUPLE_NUM * INNER_TUPLE_NUM / 2, i); // expected 10 * 5
   }
 
@@ -161,7 +164,7 @@ public class TestBNLJoinExec {
     System.out.println(plan);
     // LogicalOptimizer.optimize(ctx, plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlanner(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     SeqScanExec scanOuter = null;
@@ -171,15 +174,15 @@ public class TestBNLJoinExec {
     JoinNode joinNode = null;
     if (proj.getChild() instanceof MergeJoinExec) {
       MergeJoinExec join = (MergeJoinExec) proj.getChild();
-      ExternalSortExec sortOut = (ExternalSortExec) join.getOuter();
-      ExternalSortExec sortIn = (ExternalSortExec) join.getInner();
-      scanOuter = (SeqScanExec) sortOut.getSubOp();
-      scanInner = (SeqScanExec) sortIn.getSubOp();
+      ExternalSortExec sortOut = (ExternalSortExec) join.getOuterChild();
+      ExternalSortExec sortIn = (ExternalSortExec) join.getInnerChild();
+      scanOuter = (SeqScanExec) sortOut.getChild();
+      scanInner = (SeqScanExec) sortIn.getChild();
       joinNode = join.getJoinNode();
     } else if (proj.getChild() instanceof HashJoinExec) {
       HashJoinExec join = (HashJoinExec) proj.getChild();
-      scanOuter = (SeqScanExec) join.getOuter();
-      scanInner = (SeqScanExec) join.getInner();
+      scanOuter = (SeqScanExec) join.getOuterChild();
+      scanInner = (SeqScanExec) join.getInnerChild();
       joinNode = join.getPlan();
     }
 
@@ -190,6 +193,7 @@ public class TestBNLJoinExec {
     Tuple tuple;
     int i = 1;
     int count = 0;
+    exec.init();
     while ((tuple = exec.next()) != null) {
       count++;
       assertTrue(i == tuple.getInt(0).asInt());
@@ -198,6 +202,7 @@ public class TestBNLJoinExec {
       assertTrue(10 + i == tuple.getInt(3).asInt());
       i += 2;
     }
+    exec.close();
     assertEquals(INNER_TUPLE_NUM / 2, count);
   }
 }
