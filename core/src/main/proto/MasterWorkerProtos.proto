@@ -1,10 +1,10 @@
 option java_package = "tajo.engine";
-option java_outer_classname = "MasterInterfaceProtos";
+option java_outer_classname = "MasterWorkerProtos";
 option java_generic_services = false;
 option java_generate_equals_and_hash = true;
 
 import "CatalogProtos.proto";
-import "TCommonProtos.proto";
+import "tajo_protos.proto";
 
 enum QueryStatus {
   QUERY_NEW = 0;

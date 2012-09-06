@@ -3,7 +3,7 @@ option java_outer_classname = "ClientServiceProtos";
 option java_generic_services = false;
 option java_generate_equals_and_hash = true;
 
-import "TCommonProtos.proto";
+import "tajo_protos.proto";
 import "CatalogProtos.proto";
 
 message ExecuteQueryRequest {

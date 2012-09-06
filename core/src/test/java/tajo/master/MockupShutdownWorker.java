@@ -1,3 +1,23 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo.master;
 
 import org.apache.commons.logging.Log;
@@ -5,13 +25,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.KeeperException;
 import tajo.QueryUnitAttemptId;
 import tajo.conf.TajoConf;
-import tajo.engine.MasterInterfaceProtos;
+import tajo.engine.MasterWorkerProtos.*;
 
 import java.io.IOException;
 
-/**
- * @author jihoon
- */
 public class MockupShutdownWorker extends MockupWorker {
   private final static Log LOG = LogFactory.getLog(MockupShutdownWorker.class);
   private int lifetime;
@@ -47,13 +64,13 @@ public class MockupShutdownWorker extends MockupWorker {
           }
           progressTask();
 
-          MasterInterfaceProtos.PingResponseProto response = sendHeartbeat(time);
+          PingResponseProto response = sendHeartbeat(time);
           before = time;
 
           QueryUnitAttemptId qid;
           MockupTask task;
-          MasterInterfaceProtos.QueryStatus status;
-          for (MasterInterfaceProtos.Command cmd : response.getCommandList()) {
+          QueryStatus status;
+          for (Command cmd : response.getCommandList()) {
             qid = new QueryUnitAttemptId(cmd.getId());
             if (!taskMap.containsKey(qid)) {
               LOG.error("ERROR: no such task " + qid);
@@ -64,19 +81,19 @@ public class MockupShutdownWorker extends MockupWorker {
 
             switch (cmd.getType()) {
               case FINALIZE:
-                if (status == MasterInterfaceProtos.QueryStatus.QUERY_FINISHED
-                    || status == MasterInterfaceProtos.QueryStatus.QUERY_DATASERVER
-                    || status == MasterInterfaceProtos.QueryStatus.QUERY_ABORTED
-                    || status == MasterInterfaceProtos.QueryStatus.QUERY_KILLED) {
-                  task.setStatus(MasterInterfaceProtos.QueryStatus.QUERY_FINISHED);
+                if (status == QueryStatus.QUERY_FINISHED
+                    || status == QueryStatus.QUERY_DATASERVER
+                    || status == QueryStatus.QUERY_ABORTED
+                    || status == QueryStatus.QUERY_KILLED) {
+                  task.setStatus(QueryStatus.QUERY_FINISHED);
                 } else {
-                  task.setStatus(MasterInterfaceProtos.QueryStatus.QUERY_ABORTED);
+                  task.setStatus(QueryStatus.QUERY_ABORTED);
                 }
 
                 break;
               case STOP:
-                if (status == MasterInterfaceProtos.QueryStatus.QUERY_INPROGRESS) {
-                  task.setStatus(MasterInterfaceProtos.QueryStatus.QUERY_ABORTED);
+                if (status == QueryStatus.QUERY_INPROGRESS) {
+                  task.setStatus(QueryStatus.QUERY_ABORTED);
                 } else {
                   LOG.error("ERROR: Illegal State of " + qid + "(" + status + ")");
                 }

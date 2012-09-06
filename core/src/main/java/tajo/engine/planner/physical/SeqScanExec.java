@@ -1,4 +1,6 @@
 /*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,8 +21,8 @@
 package tajo.engine.planner.physical;
 
 import tajo.SubqueryContext;
-import tajo.engine.exec.eval.EvalContext;
-import tajo.engine.exec.eval.EvalNode;
+import tajo.engine.eval.EvalContext;
+import tajo.engine.eval.EvalNode;
 import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.planner.Projector;
 import tajo.engine.planner.logical.ScanNode;
