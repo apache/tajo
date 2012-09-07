@@ -1,5 +1,6 @@
 package tajo.catalog;
 
+import org.apache.hadoop.fs.Path;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.catalog.proto.CatalogProtos.ColumnProto;
 import tajo.catalog.proto.CatalogProtos.DataType;

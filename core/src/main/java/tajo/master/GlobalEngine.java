@@ -55,12 +55,8 @@ public class GlobalEngine implements EngineService {
 
   private final TajoConf conf;
   private final CatalogService catalog;
-  private final QueryAnalyzer analyzer;
-  private LogicalPlanner planner;
   private final StorageManager sm;
 
-  private GlobalPlanner globalPlanner;
-  private GlobalOptimizer globalOptimizer;
   private WorkerCommunicator wc;
   private QueryManager qm;
   private ClusterManager cm;
@@ -74,76 +70,79 @@ public class GlobalEngine implements EngineService {
     this.qm = qm;
     this.sm = sm;
     this.cm = cm;
-    this.analyzer = new QueryAnalyzer(cat);
-    this.planner = new LogicalPlanner(cat);
-
-    this.globalPlanner = new GlobalPlanner(conf, this.sm, this.qm, this.catalog);
-    this.globalOptimizer = new GlobalOptimizer();
   }
 
-  public void createTable(TableDesc meta) throws IOException {
-    catalog.addTable(meta);
-  }
-  
-  public String executeQuery(String querystr)
-      throws InterruptedException, IOException,
-      NoSuchQueryIdException, IllegalQueryStatusException,
-      UnknownWorkerException, EmptyClusterException {
-    LOG.info("* issued query: " + querystr);
+  private LogicalNode buildLogicalPlan(PlanningContext context) throws IOException {
     // build the logical plan
-    PlanningContext context = analyzer.parse(querystr);
+    LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
     plan = LogicalOptimizer.pushIndex(plan, sm);
     LOG.info("* logical plan:\n" + plan);
 
-    LogicalRootNode root = (LogicalRootNode) plan;
+    return plan;
+  }
 
-    if (root.getSubNode().getType() == ExprType.CREATE_TABLE) {
-      // create table queries are executed by the master
-      CreateTableNode createTable = (CreateTableNode) root.getSubNode();
-      TableMeta meta;
-      if (createTable.hasOptions()) {
-        meta = TCatUtil.newTableMeta(createTable.getSchema(),
-            createTable.getStoreType(), createTable.getOptions());
-      } else {
-        meta = TCatUtil.newTableMeta(createTable.getSchema(),
-            createTable.getStoreType());
-      }
+  private String executeCreateTable(LogicalRootNode root) throws IOException {
+    // create table queries are executed by the master
+    CreateTableNode createTable = (CreateTableNode) root.getSubNode();
+    TableMeta meta;
+    if (createTable.hasOptions()) {
+      meta = TCatUtil.newTableMeta(createTable.getSchema(),
+          createTable.getStoreType(), createTable.getOptions());
+    } else {
+      meta = TCatUtil.newTableMeta(createTable.getSchema(),
+          createTable.getStoreType());
+    }
 
-      long totalSize = 0;
-      try {
-        totalSize = sm.calculateSize(createTable.getPath());
-      } catch (IOException e) {
-        LOG.error("Cannot calculate the size of the relation", e);
-      }
-      TableStat stat = new TableStat();
-      stat.setNumBytes(totalSize);
-      meta.setStat(stat);
+    long totalSize = 0;
+    try {
+      totalSize = sm.calculateSize(createTable.getPath());
+    } catch (IOException e) {
+      LOG.error("Cannot calculate the size of the relation", e);
+    }
+    TableStat stat = new TableStat();
+    stat.setNumBytes(totalSize);
+    meta.setStat(stat);
 
-      StorageUtil.writeTableMeta(conf, createTable.getPath(), meta);
-      TableDesc desc = TCatUtil.newTableDesc(createTable.getTableName(), meta,
-          createTable.getPath());
-      catalog.addTable(desc);
-      return desc.getId();
+    StorageUtil.writeTableMeta(conf, createTable.getPath(), meta);
+    TableDesc desc = TCatUtil.newTableDesc(createTable.getTableName(), meta,
+        createTable.getPath());
+    catalog.addTable(desc);
+    return desc.getId();
+  }
+  
+  public String executeQuery(String tql)
+      throws InterruptedException, IOException,
+      NoSuchQueryIdException, IllegalQueryStatusException,
+      UnknownWorkerException, EmptyClusterException {
+    LOG.info("* issued query: " + tql);
+    QueryAnalyzer analyzer = new QueryAnalyzer(catalog);
+    PlanningContext context = analyzer.parse(tql);
+    LogicalRootNode plan = (LogicalRootNode) buildLogicalPlan(context);
+
+    if (plan.getSubNode().getType() == ExprType.CREATE_TABLE) {
+      return executeCreateTable(plan);
     } else {
       boolean hasStoreNode = false;
-      if (root.getSubNode().getType() == ExprType.STORE) {
+      if (plan.getSubNode().getType() == ExprType.STORE) {
         hasStoreNode = true;
       }
       // other queries are executed by workers
-      prepareQueryExecution(context);
+      updateFragmentServingInfo(context);
 
-      QueryId qid = QueryIdFactory.newQueryId();
-      Query query = new Query(qid, querystr);
+      Query query = GlobalEngineUtil.newQuery(tql);
       qm.addQuery(query);
       query.setStatus(QueryStatus.QUERY_INITED);
 
       // build the master plan
-      query.setStatus(QueryStatus.QUERY_INPROGRESS);
-      MasterPlan globalPlan = globalPlanner.build(qid, plan);
+      GlobalPlanner globalPlanner =
+          new GlobalPlanner(conf, this.sm, this.qm, this.catalog);
+      GlobalOptimizer globalOptimizer = new GlobalOptimizer();
+      MasterPlan globalPlan = globalPlanner.build(query.getId(), plan);
       globalPlan = globalOptimizer.optimize(globalPlan.getRoot());
-      
+
+      query.setStatus(QueryStatus.QUERY_INPROGRESS);
       SubQueryExecutor executor = new SubQueryExecutor(conf,
           wc, globalPlanner, cm, qm, sm, globalPlan);
       executor.start();
@@ -153,7 +152,7 @@ public class GlobalEngine implements EngineService {
 
       if (hasStoreNode) {
         // create table queries are executed by the master
-        StoreTableNode stn = (StoreTableNode) root.getSubNode();
+        StoreTableNode stn = (StoreTableNode) plan.getSubNode();
         TableDesc desc = TCatUtil.newTableDesc(stn.getTableName(),
             sm.getTableMeta(globalPlan.getRoot().getOutputName()),
             sm.getTablePath(globalPlan.getRoot().getOutputName()));
@@ -200,7 +199,8 @@ public class GlobalEngine implements EngineService {
     return queryStatus;
   }
 
-  private void prepareQueryExecution(PlanningContext context) throws IOException {
+  private void updateFragmentServingInfo(PlanningContext context)
+      throws IOException {
     cm.updateOnlineWorker();
     for (String table : context.getParseTree().getAllTableNames()) {
       cm.updateFragmentServingInfo2(table);
@@ -209,7 +209,6 @@ public class GlobalEngine implements EngineService {
 
   @Override
   public void init() throws IOException {
-    // TODO Auto-generated method stub
 
   }
 
