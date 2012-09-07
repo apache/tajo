@@ -5,7 +5,8 @@ package tajo.engine.planner.global;
 
 import com.google.common.annotations.VisibleForTesting;
 import tajo.engine.planner.PlannerUtil;
-import tajo.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
+import tajo.master.SubQuery;
+import tajo.master.SubQuery.PARTITION_TYPE;
 import tajo.engine.planner.logical.ExprType;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.ScanNode;
@@ -24,34 +25,34 @@ public class GlobalOptimizer {
     
   }
   
-  public MasterPlan optimize(ScheduleUnit logicalUnit) {
-    ScheduleUnit reducedStep = reduceSchedules(logicalUnit);
-    ScheduleUnit joinChosen = chooseJoinAlgorithm(reducedStep);
+  public MasterPlan optimize(SubQuery logicalUnit) {
+    SubQuery reducedStep = reduceSchedules(logicalUnit);
+    SubQuery joinChosen = chooseJoinAlgorithm(reducedStep);
     return new MasterPlan(joinChosen);
   }
   
   @VisibleForTesting
-  private ScheduleUnit chooseJoinAlgorithm(ScheduleUnit logicalUnit) {
+  private SubQuery chooseJoinAlgorithm(SubQuery logicalUnit) {
     
     return logicalUnit;
   }
   
   @VisibleForTesting
-  private ScheduleUnit reduceSchedules(ScheduleUnit logicalUnit) {
+  private SubQuery reduceSchedules(SubQuery logicalUnit) {
     reduceLogicalQueryUnitStep_(logicalUnit);
     return logicalUnit;
   }
   
-  private void reduceLogicalQueryUnitStep_(ScheduleUnit cur) {
+  private void reduceLogicalQueryUnitStep_(SubQuery cur) {
     if (cur.hasChildQuery()) {
-      Iterator<ScheduleUnit> it = cur.getChildIterator();
-      ScheduleUnit prev;
+      Iterator<SubQuery> it = cur.getChildIterator();
+      SubQuery prev;
       while (it.hasNext()) {
         prev = it.next();
         reduceLogicalQueryUnitStep_(prev);
       }
       
-      Collection<ScheduleUnit> prevs = cur.getChildQueries();
+      Collection<SubQuery> prevs = cur.getChildQueries();
       it = prevs.iterator();
       while (it.hasNext()) {
         prev = it.next();
@@ -63,8 +64,8 @@ public class GlobalOptimizer {
     }
   }
   
-  private ScheduleUnit mergeLogicalUnits(ScheduleUnit parent, 
-      ScheduleUnit child) {
+  private SubQuery mergeLogicalUnits(SubQuery parent,
+      SubQuery child) {
     LogicalNode p = PlannerUtil.findTopParentNode(parent.getLogicalPlan(), 
         ExprType.SCAN);
 //    Preconditions.checkArgument(p instanceof UnaryNode);

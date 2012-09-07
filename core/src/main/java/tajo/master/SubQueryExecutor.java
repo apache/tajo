@@ -31,7 +31,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import tajo.SubQueryId;
+import tajo.QueryId;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
@@ -53,8 +53,7 @@ import tajo.engine.planner.PlannerUtil;
 import tajo.engine.planner.global.MasterPlan;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
-import tajo.engine.planner.global.ScheduleUnit;
-import tajo.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
+import tajo.master.SubQuery.PARTITION_TYPE;
 import tajo.engine.planner.logical.ExprType;
 import tajo.engine.planner.logical.GroupbyNode;
 import tajo.engine.planner.logical.IndexWriteNode;
@@ -74,15 +73,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * @author jihoon
  */
-public class ScheduleUnitExecutor extends Thread {
+public class SubQueryExecutor extends Thread {
   private enum Status {
     INPROGRESS, FINISHED, ABORTED,
   }
 
-  private final static Log LOG = LogFactory.getLog(ScheduleUnitExecutor.class);
+  private final static Log LOG = LogFactory.getLog(SubQueryExecutor.class);
   private final static int WAIT_PERIOD = 3000;
 
-  private BlockingQueue<ScheduleUnit> inprogressQueue;
+  private BlockingQueue<SubQuery> inprogressQueue;
   private BlockingQueue<QueryUnit> pendingQueue;
 
   private Status status;
@@ -93,7 +92,7 @@ public class ScheduleUnitExecutor extends Thread {
   private final StorageManager sm;
   private final GlobalPlanner planner;
   private final QueryManager qm;
-  private final SubQueryId id;
+  private final QueryId id;
   private MasterPlan plan;
 
   private QueryScheduler scheduler;
@@ -101,9 +100,9 @@ public class ScheduleUnitExecutor extends Thread {
 
   private Sleeper sleeper;
 
-  public ScheduleUnitExecutor(Configuration conf, WorkerCommunicator wc,
-      GlobalPlanner planner, ClusterManager cm, QueryManager qm,
-      StorageManager sm, MasterPlan masterPlan) {
+  public SubQueryExecutor(Configuration conf, WorkerCommunicator wc,
+                          GlobalPlanner planner, ClusterManager cm, QueryManager qm,
+                          StorageManager sm, MasterPlan masterPlan) {
     this.conf = conf;
     this.wc = wc;
     this.planner = planner;
@@ -111,11 +110,11 @@ public class ScheduleUnitExecutor extends Thread {
     this.cm = cm;
     this.qm = qm;
     this.sm = sm;
-    this.inprogressQueue = new LinkedBlockingQueue<ScheduleUnit>();
+    this.inprogressQueue = new LinkedBlockingQueue<SubQuery>();
     this.pendingQueue = new LinkedBlockingQueue<QueryUnit>();
     this.scheduler = new QueryScheduler();
     this.submitter = new QueryUnitSubmitter();
-    this.id = masterPlan.getRoot().getId().getSubQueryId();
+    this.id = masterPlan.getRoot().getId().getQueryId();
     this.sleeper = new Sleeper();
   }
 
@@ -186,18 +185,18 @@ public class ScheduleUnitExecutor extends Thread {
     }
   }
 
-  private void writeStat(ScheduleUnit scheduleUnit, TableStat stat)
+  private void writeStat(SubQuery subQuery, TableStat stat)
       throws IOException {
 
-    if (scheduleUnit.getLogicalPlan().getType() == ExprType.CREATE_INDEX) {
-      IndexWriteNode index = (IndexWriteNode) scheduleUnit.getLogicalPlan();
+    if (subQuery.getLogicalPlan().getType() == ExprType.CREATE_INDEX) {
+      IndexWriteNode index = (IndexWriteNode) subQuery.getLogicalPlan();
       Path indexPath = new Path(sm.getTablePath(index.getTableName()), "index");
       TableMeta meta;
       if (sm.getFileSystem().exists(new Path(indexPath, ".meta"))) {
         meta = sm.getTableMeta(indexPath);
       } else {
         meta = TCatUtil
-            .newTableMeta(scheduleUnit.getOutputSchema(), StoreType.CSV);
+            .newTableMeta(subQuery.getOutputSchema(), StoreType.CSV);
       }
       String indexName = IndexUtil.getIndexName(index.getTableName(),
           index.getSortSpecs());
@@ -207,10 +206,10 @@ public class ScheduleUnitExecutor extends Thread {
       sm.writeTableMeta(indexPath, meta);
 
     } else {
-      TableMeta meta = TCatUtil.newTableMeta(scheduleUnit.getOutputSchema(),
+      TableMeta meta = TCatUtil.newTableMeta(subQuery.getOutputSchema(),
           StoreType.CSV);
       meta.setStat(stat);
-      sm.writeTableMeta(sm.getTablePath(scheduleUnit.getOutputName()), meta);
+      sm.writeTableMeta(sm.getTablePath(subQuery.getOutputName()), meta);
     }
   }
 
@@ -245,7 +244,7 @@ public class ScheduleUnitExecutor extends Thread {
 
   class QueryScheduler extends Thread {
     private Status status;
-    private PriorityQueue<ScheduleUnit> scheduleQueue;
+    private PriorityQueue<SubQuery> scheduleQueue;
     private Sleeper sleeper;
 
     public class QueryUnitCluster implements Comparable<QueryUnitCluster> {
@@ -293,7 +292,7 @@ public class ScheduleUnitExecutor extends Thread {
     }
 
     public QueryScheduler() {
-      this.scheduleQueue = new PriorityQueue<ScheduleUnit>(1,
+      this.scheduleQueue = new PriorityQueue<SubQuery>(1,
           new PriorityComparator());
       this.sleeper = new Sleeper();
     }
@@ -316,26 +315,26 @@ public class ScheduleUnitExecutor extends Thread {
             this.shutdown();
           }
 
-          ScheduleUnit scheduleUnit;
-          while ((scheduleUnit = takeScheduleUnit()) != null) {
-            LOG.info("Schedule unit plan: \n" + scheduleUnit.getLogicalPlan());
-            if (scheduleUnit.hasUnionPlan()) {
-              finishUnionUnit(scheduleUnit);
+          SubQuery subQuery;
+          while ((subQuery = takeSubQuery()) != null) {
+            LOG.info("Schedule unit plan: \n" + subQuery.getLogicalPlan());
+            if (subQuery.hasUnionPlan()) {
+              finishUnionUnit(subQuery);
             } else {
-              qm.addScheduleUnit(scheduleUnit);
+              qm.addSubQuery(subQuery);
 
-              initOutputDir(scheduleUnit.getOutputName(),
-                  scheduleUnit.getOutputType());
-              int numTasks = getTaskNum(scheduleUnit);
-              QueryUnit[] units = planner.localize(scheduleUnit, numTasks);
-              inprogressQueue.put(scheduleUnit);
-              scheduleUnit.setStatus(QueryStatus.QUERY_INPROGRESS);
+              initOutputDir(subQuery.getOutputName(),
+                  subQuery.getOutputType());
+              int numTasks = getTaskNum(subQuery);
+              QueryUnit[] units = planner.localize(subQuery, numTasks);
+              inprogressQueue.put(subQuery);
+              subQuery.setStatus(QueryStatus.QUERY_INPROGRESS);
 
               if (units.length == 0) {
-                finishScheduleUnitForEmptyInput(scheduleUnit);
+                finishSubQueryForEmptyInput(subQuery);
               } else {
                 // insert query units to the pending queue
-                scheduleQueryUnits(units, scheduleUnit.hasChildQuery());
+                scheduleQueryUnits(units, subQuery.hasChildQuery());
               }
             }
           }
@@ -367,12 +366,12 @@ public class ScheduleUnitExecutor extends Thread {
 
     public void abort() {
       status = Status.ABORTED;
-      for (ScheduleUnit unit : scheduleQueue) {
+      for (SubQuery unit : scheduleQueue) {
         unit.setStatus(QueryStatus.QUERY_ABORTED);
       }
       scheduleQueue.clear();
 
-      for (ScheduleUnit unit : inprogressQueue) {
+      for (SubQuery unit : inprogressQueue) {
         unit.setStatus(QueryStatus.QUERY_ABORTED);
       }
       inprogressQueue.clear();
@@ -382,14 +381,14 @@ public class ScheduleUnitExecutor extends Thread {
       return this.status;
     }
 
-    private TableStat generateUnionStat(ScheduleUnit unit) {
+    private TableStat generateUnionStat(SubQuery unit) {
       TableStat stat = new TableStat();
       TableStat childStat;
       long avgRows = 0, numBytes = 0, numRows = 0;
       int numBlocks = 0, numPartitions = 0;
       List<ColumnStat> columnStats = Lists.newArrayList();
 
-      for (ScheduleUnit child : unit.getChildQueries()) {
+      for (SubQuery child : unit.getChildQueries()) {
         childStat = child.getStats();
         avgRows += childStat.getAvgRows();
         columnStats.addAll(childStat.getColumnStats());
@@ -407,13 +406,13 @@ public class ScheduleUnitExecutor extends Thread {
       return stat;
     }
 
-    private void initScheduleQueue(ScheduleUnit scheduleUnit) {
+    private void initScheduleQueue(SubQuery subQuery) {
       int priority;
-      if (scheduleUnit.hasChildQuery()) {
+      if (subQuery.hasChildQuery()) {
         int maxPriority = 0;
-        Iterator<ScheduleUnit> it = scheduleUnit.getChildIterator();
+        Iterator<SubQuery> it = subQuery.getChildIterator();
         while (it.hasNext()) {
-          ScheduleUnit su = it.next();
+          SubQuery su = it.next();
           initScheduleQueue(su);
           if (su.getPriority().get() > maxPriority) {
             maxPriority = su.getPriority().get();
@@ -423,17 +422,17 @@ public class ScheduleUnitExecutor extends Thread {
       } else {
         priority = 0;
       }
-      scheduleUnit.setPriority(priority);
-      scheduleQueue.add(scheduleUnit);
-      scheduleUnit.setStatus(QueryStatus.QUERY_PENDING);
+      subQuery.setPriority(priority);
+      scheduleQueue.add(subQuery);
+      subQuery.setStatus(QueryStatus.QUERY_PENDING);
     }
 
-    private ScheduleUnit takeScheduleUnit() {
-      ScheduleUnit unit = removeFromScheduleQueue();
+    private SubQuery takeSubQuery() {
+      SubQuery unit = removeFromScheduleQueue();
       if (unit == null) {
         return null;
       }
-      List<ScheduleUnit> pended = Lists.newArrayList();
+      List<SubQuery> pended = Lists.newArrayList();
       Priority priority = unit.getPriority();
       do {
         if (isReady(unit)) {
@@ -455,9 +454,9 @@ public class ScheduleUnitExecutor extends Thread {
       return unit;
     }
 
-    private boolean isReady(ScheduleUnit scheduleUnit) {
-      if (scheduleUnit.hasChildQuery()) {
-        for (ScheduleUnit child : scheduleUnit.getChildQueries()) {
+    private boolean isReady(SubQuery subQuery) {
+      if (subQuery.hasChildQuery()) {
+        for (SubQuery child : subQuery.getChildQueries()) {
           if (child.getStatus() !=
               QueryStatus.QUERY_FINISHED) {
             return false;
@@ -469,7 +468,7 @@ public class ScheduleUnitExecutor extends Thread {
       }
     }
 
-    private ScheduleUnit removeFromScheduleQueue() {
+    private SubQuery removeFromScheduleQueue() {
       if (scheduleQueue.isEmpty()) {
         return null;
       } else {
@@ -497,11 +496,11 @@ public class ScheduleUnitExecutor extends Thread {
       }
     }
 
-    private int getTaskNum(ScheduleUnit scheduleUnit) {
+    private int getTaskNum(SubQuery subQuery) {
       int numTasks;
       GroupbyNode grpNode = (GroupbyNode) PlannerUtil.findTopNode(
-          scheduleUnit.getLogicalPlan(), ExprType.GROUP_BY);
-      if (scheduleUnit.getParentQuery() == null && grpNode != null
+          subQuery.getLogicalPlan(), ExprType.GROUP_BY);
+      if (subQuery.getParentQuery() == null && grpNode != null
           && grpNode.getGroupingColumns().length == 0) {
         numTasks = 1;
       } else {
@@ -510,19 +509,19 @@ public class ScheduleUnitExecutor extends Thread {
       return numTasks;
     }
 
-    private void finishScheduleUnitForEmptyInput(ScheduleUnit scheduleUnit)
+    private void finishSubQueryForEmptyInput(SubQuery subQuery)
         throws IOException {
       TableStat stat = new TableStat();
-      for (int i = 0; i < scheduleUnit.getOutputSchema().getColumnNum(); i++) {
-        stat.addColumnStat(new ColumnStat(scheduleUnit.getOutputSchema()
+      for (int i = 0; i < subQuery.getOutputSchema().getColumnNum(); i++) {
+        stat.addColumnStat(new ColumnStat(subQuery.getOutputSchema()
             .getColumn(i)));
       }
-      scheduleUnit.setStats(stat);
-      writeStat(scheduleUnit, stat);
-      scheduleUnit.setStatus(QueryStatus.QUERY_FINISHED);
+      subQuery.setStats(stat);
+      writeStat(subQuery, stat);
+      subQuery.setStatus(QueryStatus.QUERY_FINISHED);
     }
 
-    private void finishUnionUnit(ScheduleUnit unit) throws IOException {
+    private void finishUnionUnit(SubQuery unit) throws IOException {
       // write meta and continue
       TableStat stat = generateUnionStat(unit);
       unit.setStats(stat);
@@ -733,8 +732,8 @@ public class ScheduleUnitExecutor extends Thread {
     }
 
     private void updateInprogressQueue() throws Exception {
-      List<ScheduleUnit> finished = Lists.newArrayList();
-      for (ScheduleUnit scheduleUnit : inprogressQueue) {
+      List<SubQuery> finished = Lists.newArrayList();
+      for (SubQuery subQuery : inprogressQueue) {
         int inited = 0;
         int pending = 0;
         int inprogress = 0;
@@ -742,7 +741,7 @@ public class ScheduleUnitExecutor extends Thread {
         int killed = 0;
         int finish = 0;
         int submitted = 0;
-        for (QueryUnit queryUnit : scheduleUnit.getQueryUnits()) {
+        for (QueryUnit queryUnit : subQuery.getQueryUnits()) {
           QueryStatus status = queryUnit.getStatus();
 
           switch (status) {
@@ -758,7 +757,7 @@ public class ScheduleUnitExecutor extends Thread {
                   QueryUnitSubmitter.RETRY_LIMIT) {
                 // wait
               } else {
-                LOG.info("The query " + scheduleUnit.getId() +
+                LOG.info("The query " + subQuery.getId() +
                     " will be aborted, because the query unit " +
                     queryUnit.getId() + " is stopped with " + status);
                 this.abort();
@@ -768,47 +767,47 @@ public class ScheduleUnitExecutor extends Thread {
               break;
           }
         }
-        LOG.info("\n--- Status of " + scheduleUnit.getId() + " ---\n" + ""
+        LOG.info("\n--- Status of " + subQuery.getId() + " ---\n" + ""
             + " In Progress (Submitted: " + submitted
             + ", Finished: " + finish + ", Inited: " + inited + ", Pending: "
             + pending + ", Running: " + inprogress + ", Aborted: " + aborted
             + ", Killed: " + killed);
 
-        if (finish == scheduleUnit.getQueryUnits().length) {
-          TableStat stat = generateStat(scheduleUnit);
-          writeStat(scheduleUnit, stat);
-          scheduleUnit.setStats(stat);
-          scheduleUnit.setStatus(QueryStatus.QUERY_FINISHED);
-          if (scheduleUnit.hasChildQuery()) {
-            finalizePrevScheduleUnit(scheduleUnit);
+        if (finish == subQuery.getQueryUnits().length) {
+          TableStat stat = generateStat(subQuery);
+          writeStat(subQuery, stat);
+          subQuery.setStats(stat);
+          subQuery.setStatus(QueryStatus.QUERY_FINISHED);
+          if (subQuery.hasChildQuery()) {
+            finalizePrevSubQuery(subQuery);
           }
-          if (scheduleUnit.equals(plan.getRoot())) {
-            for (QueryUnit unit : scheduleUnit.getQueryUnits()) {
+          if (subQuery.equals(plan.getRoot())) {
+            for (QueryUnit unit : subQuery.getQueryUnits()) {
               sendCommand(unit.getLastAttempt(), CommandType.FINALIZE);
             }
           }
-          finished.add(scheduleUnit);
+          finished.add(subQuery);
         }
       }
       inprogressQueue.removeAll(finished);
     }
 
-    private TableStat generateStat(ScheduleUnit scheduleUnit) {
+    private TableStat generateStat(SubQuery subQuery) {
       List<TableStat> stats = Lists.newArrayList();
-      for (QueryUnit unit : scheduleUnit.getQueryUnits()) {
+      for (QueryUnit unit : subQuery.getQueryUnits()) {
         stats.add(unit.getStats());
       }
       TableStat tableStat = StatisticsUtil.aggregateTableStat(stats);
       return tableStat;
     }
 
-    private void finalizePrevScheduleUnit(ScheduleUnit scheduleUnit)
+    private void finalizePrevSubQuery(SubQuery subQuery)
         throws Exception {
-      ScheduleUnit prevScheduleUnit;
-      for (ScanNode scan : scheduleUnit.getScanNodes()) {
-        prevScheduleUnit = scheduleUnit.getChildQuery(scan);
-        if (prevScheduleUnit.getStoreTableNode().getSubNode().getType() != ExprType.UNION) {
-          for (QueryUnit unit : prevScheduleUnit.getQueryUnits()) {
+      SubQuery prevSubQuery;
+      for (ScanNode scan : subQuery.getScanNodes()) {
+        prevSubQuery = subQuery.getChildQuery(scan);
+        if (prevSubQuery.getStoreTableNode().getSubNode().getType() != ExprType.UNION) {
+          for (QueryUnit unit : prevSubQuery.getQueryUnits()) {
             sendCommand(unit.getLastAttempt(), CommandType.FINALIZE);
           }
         }
@@ -1046,13 +1045,13 @@ public class ScheduleUnitExecutor extends Thread {
     }
   }
 
-  class PriorityComparator implements Comparator<ScheduleUnit> {
+  class PriorityComparator implements Comparator<SubQuery> {
     public PriorityComparator() {
 
     }
 
     @Override
-    public int compare(ScheduleUnit s1, ScheduleUnit s2) {
+    public int compare(SubQuery s1, SubQuery s2) {
       return s1.getPriority().get() - s2.getPriority().get();
     }
   }

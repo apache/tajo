@@ -30,7 +30,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
-import tajo.*;
+import tajo.QueryId;
+import tajo.QueryIdFactory;
+import tajo.QueryUnitAttemptId;
+import tajo.SubQueryId;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
@@ -47,12 +50,12 @@ import tajo.engine.planner.RangePartitionAlgorithm;
 import tajo.engine.planner.UniformRangePartition;
 import tajo.engine.planner.global.MasterPlan;
 import tajo.engine.planner.global.QueryUnit;
-import tajo.engine.planner.global.ScheduleUnit;
-import tajo.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
+import tajo.master.SubQuery.PARTITION_TYPE;
 import tajo.engine.planner.logical.*;
 import tajo.engine.utils.TupleUtil;
 import tajo.storage.StorageManager;
 import tajo.storage.TupleRange;
+import tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -69,7 +72,7 @@ public class GlobalPlanner {
   private StorageManager sm;
   private QueryManager qm;
   private CatalogService catalog;
-  private SubQueryId subId;
+  private QueryId subId;
 
   public GlobalPlanner(TajoConf conf,
                        StorageManager sm,
@@ -89,7 +92,7 @@ public class GlobalPlanner {
    * @return
    * @throws IOException
    */
-  public MasterPlan build(SubQueryId subQueryId, LogicalNode logicalPlan)
+  public MasterPlan build(QueryId subQueryId, LogicalNode logicalPlan)
       throws IOException {
     this.subId = subQueryId;
     // insert store at the subnode of the root
@@ -101,12 +104,12 @@ public class GlobalPlanner {
       root = (UnaryNode)root.getSubNode();
       
       StoreIndexNode store = new StoreIndexNode(
-          QueryIdFactory.newScheduleUnitId(subQueryId).toString());
+          QueryIdFactory.newSubQueryId(subId).toString());
       store.setLocal(false);
       PlannerUtil.insertNode(root, store);
       
     } else if (root.getSubNode().getType() != ExprType.STORE) {
-      insertStore(QueryIdFactory.newScheduleUnitId(subQueryId).toString(), 
+      insertStore(QueryIdFactory.newSubQueryId(subId).toString(),
           root).setLocal(false);
     }
     
@@ -114,7 +117,7 @@ public class GlobalPlanner {
     LogicalNode tp = convertTo2Phase(logicalPlan);
 
     // make query graph
-    MasterPlan globalPlan = convertToGlobalPlan(subQueryId, indexNode, tp);
+    MasterPlan globalPlan = convertToGlobalPlan(indexNode, tp);
 
     return globalPlan;
   }
@@ -145,10 +148,10 @@ public class GlobalPlanner {
         if (groupby.getSubNode().getType() != ExprType.UNION &&
             groupby.getSubNode().getType() != ExprType.STORE &&
             groupby.getSubNode().getType() != ExprType.SCAN) {
-          tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
+          tableId = QueryIdFactory.newSubQueryId(subId).toString();
           insertStore(tableId, groupby);
         }
-        tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
+        tableId = QueryIdFactory.newSubQueryId(subId).toString();
         // insert (a store for the first group by) and (a second group by)
         PlannerUtil.transformGroupbyTo2PWithStore((GroupbyNode)node, tableId);
       } else if (node.getType() == ExprType.SORT) {
@@ -158,10 +161,10 @@ public class GlobalPlanner {
         if (sort.getSubNode().getType() != ExprType.UNION &&
             sort.getSubNode().getType() != ExprType.STORE &&
             sort.getSubNode().getType() != ExprType.SCAN) {
-          tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
+          tableId = QueryIdFactory.newSubQueryId(subId).toString();
           insertStore(tableId, sort);
         }
-        tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
+        tableId = QueryIdFactory.newSubQueryId(subId).toString();
         // insert (a store for the first sort) and (a second sort)
         PlannerUtil.transformSortTo2PWithStore((SortNode)node, tableId);
       } else if (node.getType() == ExprType.JOIN) {
@@ -226,14 +229,14 @@ public class GlobalPlanner {
         // insert stores for the first phase
         if (join.getOuterNode().getType() != ExprType.UNION &&
             join.getOuterNode().getType() != ExprType.STORE) {
-          tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
+          tableId = QueryIdFactory.newSubQueryId(subId).toString();
           store = new StoreTableNode(tableId);
           store.setLocal(true);
           PlannerUtil.insertOuterNode(node, store);
         }
         if (join.getInnerNode().getType() != ExprType.UNION &&
             join.getInnerNode().getType() != ExprType.STORE) {
-          tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
+          tableId = QueryIdFactory.newSubQueryId(subId).toString();
           store = new StoreTableNode(tableId);
           store.setLocal(true);
           PlannerUtil.insertInnerNode(node, store);
@@ -244,7 +247,7 @@ public class GlobalPlanner {
         // insert stores
         if (union.getOuterNode().getType() != ExprType.UNION &&
             union.getOuterNode().getType() != ExprType.STORE) {
-          tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
+          tableId = QueryIdFactory.newSubQueryId(subId).toString();
           store = new StoreTableNode(tableId);
           if(union.getOuterNode().getType() == ExprType.GROUP_BY) {
             /*This case is for cube by operator
@@ -258,7 +261,7 @@ public class GlobalPlanner {
         }
         if (union.getInnerNode().getType() != ExprType.UNION &&
             union.getInnerNode().getType() != ExprType.STORE) {
-          tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
+          tableId = QueryIdFactory.newSubQueryId(subId).toString();
           store = new StoreTableNode(tableId);
           if(union.getInnerNode().getType() == ExprType.GROUP_BY) {
             /*This case is for cube by operator
@@ -274,7 +277,7 @@ public class GlobalPlanner {
         UnaryNode unary = (UnaryNode)node;
         if (unary.getType() != ExprType.STORE &&
             unary.getSubNode().getType() != ExprType.STORE) {
-          tableId = QueryIdFactory.newScheduleUnitId(subId).toString();
+          tableId = QueryIdFactory.newSubQueryId(subId).toString();
           insertStore(tableId, unary);
         }
       }
@@ -293,31 +296,31 @@ public class GlobalPlanner {
     return logicalPlan;
   }
   
-  private Map<StoreTableNode, ScheduleUnit> convertMap = 
-      new HashMap<StoreTableNode, ScheduleUnit>();
+  private Map<StoreTableNode, SubQuery> convertMap =
+      new HashMap<StoreTableNode, SubQuery>();
   
   /**
-   * Logical plan을 후위 탐색하면서 ScheduleUnit을 생성
+   * Logical plan을 후위 탐색하면서 SubQuery 생성
    * 
    * @param node 현재 방문 중인 노드
    * @throws IOException
    */
-  private void recursiveBuildScheduleUnit(LogicalNode node) 
+  private void recursiveBuildSubQuery(LogicalNode node)
       throws IOException {
-    ScheduleUnit unit = null;
+    SubQuery unit = null;
     StoreTableNode store;
     if (node instanceof UnaryNode) {
-      recursiveBuildScheduleUnit(((UnaryNode) node).getSubNode());
+      recursiveBuildSubQuery(((UnaryNode) node).getSubNode());
       
       if (node.getType() == ExprType.STORE) {
         store = (StoreTableNode) node;
-        ScheduleUnitId id = null;
+        SubQueryId id = null;
         if (store.getTableName().startsWith(QueryId.PREFIX)) {
-          id = new ScheduleUnitId(store.getTableName());
+          id = TajoIdUtils.newSubQueryId(store.getTableName());
         } else {
-          id = QueryIdFactory.newScheduleUnitId(subId);
+          id = QueryIdFactory.newSubQueryId(subId);
         }
-        unit = new ScheduleUnit(id);
+        unit = new SubQuery(id);
 
         switch (store.getSubNode().getType()) {
         case BST_INDEX_SCAN:
@@ -353,19 +356,19 @@ public class GlobalPlanner {
         convertMap.put(store, unit);
       }
     } else if (node instanceof BinaryNode) {
-      recursiveBuildScheduleUnit(((BinaryNode) node).getOuterNode());
-      recursiveBuildScheduleUnit(((BinaryNode) node).getInnerNode());
+      recursiveBuildSubQuery(((BinaryNode) node).getOuterNode());
+      recursiveBuildSubQuery(((BinaryNode) node).getInnerNode());
     } else {
       
     }
   }
   
-  private ScheduleUnit makeScanUnit(ScheduleUnit unit) {
+  private SubQuery makeScanUnit(SubQuery unit) {
     unit.setOutputType(PARTITION_TYPE.LIST);
     return unit;
   }
   
-  private ScheduleUnit makeBSTIndexUnit(LogicalNode plan, ScheduleUnit unit) {
+  private SubQuery makeBSTIndexUnit(LogicalNode plan, SubQuery unit) {
     switch(((IndexWriteNode)plan).getSubNode().getType()){
     case SCAN:
       unit = makeScanUnit(unit);
@@ -375,18 +378,18 @@ public class GlobalPlanner {
   }
   
   /**
-   * Unifiable node(selection, projection)을 자식 플랜과 같은 ScheduleUnit으로 생성
+   * Unifiable node(selection, projection)을 자식 플랜과 같은 SubQuery로 생성
    * 
-   * @param rootStore 생성할 ScheduleUnit의 store
+   * @param rootStore 생성할 SubQuery의 store
    * @param plan logical plan
-   * @param unit 생성할 ScheduleUnit
+   * @param unit 생성할 SubQuery
    * @return
    * @throws IOException
    */
-  private ScheduleUnit makeUnaryUnit(StoreTableNode rootStore,
-                                     LogicalNode plan, ScheduleUnit unit) throws IOException {
+  private SubQuery makeUnaryUnit(StoreTableNode rootStore,
+                                     LogicalNode plan, SubQuery unit) throws IOException {
     ScanNode newScan;
-    ScheduleUnit prev;
+    SubQuery prev;
     UnaryNode unary = (UnaryNode) plan;
     UnaryNode child = (UnaryNode) unary.getSubNode();
     StoreTableNode prevStore = (StoreTableNode)child.getSubNode();
@@ -406,47 +409,25 @@ public class GlobalPlanner {
 
     unit.setOutputType(PARTITION_TYPE.LIST);
 
-    /*switch (unary.getSubNode().getType()) {
-    case SCAN:
-      unit = makeScanUnit(unit);
-      break;
-    case SELECTION:
-    case PROJECTION:
-      unit = makeUnaryUnit(rootStore, unary.getSubNode(), unit);
-      break;
-    case SORT:
-      unit = makeSortUnit(rootStore, plan, unit);
-      break;
-
-    case GROUP_BY:
-      unit = makeGroupbyUnit(rootStore, plan, unit);
-      break;
-    case JOIN:
-      unit = makeJoinUnit(rootStore, plan, unit);
-      break;
-    case UNION:
-      unit = makeUnionUnit(rootStore, plan, unit);
-      break;
-    }*/
     return unit;
   }
   
   /**
-   * Two-phase ScheduleUnit을 생성. 
+   * Two-phase SubQuery 생성.
    * 
-   * @param rootStore 생성할 ScheduleUnit의 store
+   * @param rootStore 생성할 SubQuery의 store
    * @param plan logical plan
-   * @param unit 생성할 ScheduleUnit
+   * @param unit 생성할 SubQuery
    * @return
    * @throws IOException
    */
-  private ScheduleUnit makeGroupbyUnit(StoreTableNode rootStore,
-                                       LogicalNode plan, ScheduleUnit unit) throws IOException {
+  private SubQuery makeGroupbyUnit(StoreTableNode rootStore,
+                                       LogicalNode plan, SubQuery unit) throws IOException {
     UnaryNode unary = (UnaryNode) plan;
     UnaryNode unaryChild;
     StoreTableNode prevStore;
     ScanNode newScan;
-    ScheduleUnit prev;
+    SubQuery prev;
     unaryChild = (UnaryNode) unary.getSubNode();  // groupby
     ExprType curType = unaryChild.getType();
     if (unaryChild.getSubNode().getType() == ExprType.STORE) {
@@ -493,17 +474,17 @@ public class GlobalPlanner {
   /**
    * 
    * 
-   * @param rootStore 생성할 ScheduleUnit의 store
+   * @param rootStore 생성할 SubQuery의 store
    * @param plan logical plan
-   * @param unit 생성할 ScheduleUnit
+   * @param unit 생성할 SubQuery
    * @return
    * @throws IOException
    */
-  private ScheduleUnit makeUnionUnit(StoreTableNode rootStore, 
-      LogicalNode plan, ScheduleUnit unit) throws IOException {
+  private SubQuery makeUnionUnit(StoreTableNode rootStore,
+      LogicalNode plan, SubQuery unit) throws IOException {
     UnaryNode unary = (UnaryNode) plan;
     StoreTableNode outerStore, innerStore;
-    ScheduleUnit prev;
+    SubQuery prev;
     UnionNode union = (UnionNode) unary.getSubNode();
     unit.setOutputType(PARTITION_TYPE.LIST);
     
@@ -542,14 +523,14 @@ public class GlobalPlanner {
     return unit;
   }
 
-  private ScheduleUnit makeSortUnit(StoreTableNode rootStore,
-    LogicalNode plan, ScheduleUnit unit) throws IOException {
+  private SubQuery makeSortUnit(StoreTableNode rootStore,
+    LogicalNode plan, SubQuery unit) throws IOException {
 
     UnaryNode unary = (UnaryNode) plan;
     UnaryNode unaryChild;
     StoreTableNode prevStore;
     ScanNode newScan;
-    ScheduleUnit prev;
+    SubQuery prev;
     unaryChild = (UnaryNode) unary.getSubNode();  // groupby
     ExprType curType = unaryChild.getType();
     if (unaryChild.getSubNode().getType() == ExprType.STORE) {
@@ -591,11 +572,11 @@ public class GlobalPlanner {
     return unit;
   }
   
-  private ScheduleUnit makeJoinUnit(StoreTableNode rootStore, 
-      LogicalNode plan, ScheduleUnit unit) throws IOException {
+  private SubQuery makeJoinUnit(StoreTableNode rootStore,
+      LogicalNode plan, SubQuery unit) throws IOException {
     UnaryNode unary = (UnaryNode)plan;
     StoreTableNode outerStore, innerStore;
-    ScheduleUnit prev;
+    SubQuery prev;
     JoinNode join = (JoinNode) unary.getSubNode();
     Schema outerSchema = join.getOuterNode().getOutSchema();
     Schema innerSchema = join.getInnerNode().getOutSchema();
@@ -665,19 +646,19 @@ public class GlobalPlanner {
   /**
    * Recursive하게 union의 자식 plan들을 설정
    * 
-   * @param rootStore 생성할 ScheduleUnit의 store
+   * @param rootStore 생성할 SubQuery의 store
    * @param union union을 root로 하는 logical plan
-   * @param cur 생성할 ScheduleUnit
+   * @param cur 생성할 SubQuery
    * @param cols partition 정보를 설정하기 위한 column array
-   * @param prevOutputType 자식 ScheduleUnit의 partition type
+   * @param prevOutputType 자식 SubQuery의 partition type
    * @throws IOException
    */
   private void _handleUnionNode(StoreTableNode rootStore, UnionNode union, 
-      ScheduleUnit cur, Column[] cols, PARTITION_TYPE prevOutputType) 
+      SubQuery cur, Column[] cols, PARTITION_TYPE prevOutputType)
           throws IOException {
     StoreTableNode store;
     TableMeta meta;
-    ScheduleUnit prev;
+    SubQuery prev;
     
     if (union.getOuterNode().getType() == ExprType.STORE) {
       store = (StoreTableNode) union.getOuterNode();
@@ -719,18 +700,18 @@ public class GlobalPlanner {
   }
 
   @VisibleForTesting
-  public ScheduleUnit createMultilevelGroupby(
-      ScheduleUnit firstPhaseGroupby, Column[] keys)
+  public SubQuery createMultilevelGroupby(
+      SubQuery firstPhaseGroupby, Column[] keys)
       throws CloneNotSupportedException, IOException {
-    ScheduleUnit secondPhaseGroupby = firstPhaseGroupby.getParentQuery();
+    SubQuery secondPhaseGroupby = firstPhaseGroupby.getParentQuery();
     Preconditions.checkState(secondPhaseGroupby.getScanNodes().length == 1);
 
     ScanNode secondScan = secondPhaseGroupby.getScanNodes()[0];
     GroupbyNode secondGroupby = (GroupbyNode) secondPhaseGroupby.
         getStoreTableNode().getSubNode();
-    ScheduleUnit newPhaseGroupby = new ScheduleUnit(
-        QueryIdFactory.newScheduleUnitId(
-            firstPhaseGroupby.getId().getSubQueryId()));
+    SubQuery newPhaseGroupby = new SubQuery(
+        QueryIdFactory.newSubQueryId(
+            firstPhaseGroupby.getId().getQueryId()));
     LogicalNode tmp = PlannerUtil.findTopParentNode(
         firstPhaseGroupby.getLogicalPlan(), ExprType.GROUP_BY);
     GroupbyNode firstGroupby = null;
@@ -747,7 +728,7 @@ public class GlobalPlanner {
       ((UnaryNode) tmp).setSubNode(newFirstGroupby);
     }
 
-    // create a new schedule unit containing the group by plan
+    // create a new SubQuery containing the group by plan
     StoreTableNode newStore = GlobalPlannerUtils.newStorePlan(
         secondScan.getInSchema(),
         newPhaseGroupby.getId().toString());
@@ -777,7 +758,7 @@ public class GlobalPlanner {
     secondGroupby.setSubNode(secondScan);
     secondPhaseGroupby.setLogicalPlan(secondPhaseGroupby.getLogicalPlan());
 
-    // insert the new schedule unit
+    // insert the new SubQuery
     // between the first phase and the second phase
     secondPhaseGroupby.addChildQuery(secondScan, newPhaseGroupby);
     newPhaseGroupby.addChildQuery(newPhaseGroupby.getScanNodes()[0],
@@ -810,14 +791,14 @@ public class GlobalPlanner {
     return parent;
   }
   
-  private MasterPlan convertToGlobalPlan(SubQueryId subQueryId,
-      IndexWriteNode index, LogicalNode logicalPlan) throws IOException {
-    recursiveBuildScheduleUnit(logicalPlan);
-    ScheduleUnit root = null;
+  private MasterPlan convertToGlobalPlan(IndexWriteNode index,
+                                         LogicalNode logicalPlan) throws IOException {
+    recursiveBuildSubQuery(logicalPlan);
+    SubQuery root = null;
     
     if (index != null) {
-      ScheduleUnitId id = QueryIdFactory.newScheduleUnitId(subId);
-      ScheduleUnit unit = new ScheduleUnit(id);
+      SubQueryId id = QueryIdFactory.newSubQueryId(subId);
+      SubQuery unit = new SubQuery(id);
       root = makeScanUnit(unit);
       root.setLogicalPlan(index);
     } else {
@@ -827,12 +808,12 @@ public class GlobalPlanner {
     return new MasterPlan(root);
   }
   
-  private ScheduleUnit setPartitionNumberForTwoPhase(ScheduleUnit unit, final int n) {
+  private SubQuery setPartitionNumberForTwoPhase(SubQuery unit, final int n) {
     Column[] keys = null;
     // if the next query is join, 
     // set the partition number for the current logicalUnit
     // TODO: the union handling is required when a join has unions as its child
-    ScheduleUnit parentQueryUnit = unit.getParentQuery();
+    SubQuery parentQueryUnit = unit.getParentQuery();
     if (parentQueryUnit != null) {
       if (parentQueryUnit.getStoreTableNode().getSubNode().getType() == ExprType.JOIN) {
         unit.getStoreTableNode().setPartitions(unit.getOutputType(),
@@ -870,21 +851,21 @@ public class GlobalPlanner {
   }
 
   /**
-   * 입력 받은 ScheduleUnit을 QueryUnit들로 localize
+   * 입력 받은 SubQuery를 QueryUnit들로 localize
    * 
-   * @param unit localize할 ScheduleUnit
+   * @param unit localize할 SubQuery
    * @param maxTaskNum localize된 QueryUnit의 최대 개수
    * @return
    * @throws IOException
    * @throws URISyntaxException
    */
-  public QueryUnit[] localize(ScheduleUnit unit, int maxTaskNum)
+  public QueryUnit[] localize(SubQuery unit, int maxTaskNum)
       throws IOException, URISyntaxException {
     FileStatus[] files;
     Fragment[] frags;
     List<Fragment> fragList;
     List<URI> uriList;
-    // fragments and fetches are maintained for each scan of the ScheduleUnit
+    // fragments and fetches are maintained for each scan of the SubQuery
     Map<ScanNode, List<Fragment>> fragMap = new HashMap<ScanNode, List<Fragment>>();
     Map<ScanNode, List<URI>> fetchMap = new HashMap<ScanNode, List<URI>>();
     
@@ -904,7 +885,7 @@ public class GlobalPlanner {
         tablepath = catalog.getTableDesc(scan.getTableId()).getPath();
       }
       if (scan.isLocal()) {
-        ScheduleUnit prev = unit.getChildIterator().next();
+        SubQuery prev = unit.getChildIterator().next();
         TableStat stat = prev.getStats();
         if (stat.getNumRows() == 0) {
           return new QueryUnit[0];
@@ -953,7 +934,7 @@ public class GlobalPlanner {
             }
           }
         } else {
-          ScheduleUnit child = unit.getChildQuery(scan);
+          SubQuery child = unit.getChildQuery(scan);
           QueryUnit[] units = null;
           if (child.getStoreTableNode().getSubNode().getType() ==
               ExprType.UNION) {
@@ -1031,27 +1012,27 @@ public class GlobalPlanner {
   /**
    * 2개의 scan을 가진 QueryUnit들에 fragment와 fetch를 할당
    * 
-   * @param scheduleUnit
+   * @param subQuery
    * @param n
    * @param fragMap
    * @param fetchMap
    * @return
    */
-  private List<QueryUnit> makeBinaryQueryUnit(ScheduleUnit scheduleUnit, final int n,
+  private List<QueryUnit> makeBinaryQueryUnit(SubQuery subQuery, final int n,
       Map<ScanNode, List<Fragment>> fragMap, 
       Map<ScanNode, List<URI>> fetchMap) {
     List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
     final int maxQueryUnitNum = n;
-    ScanNode[] scans = scheduleUnit.getScanNodes();
+    ScanNode[] scans = subQuery.getScanNodes();
     
-    if (scheduleUnit.hasChildQuery()) {
-      ScheduleUnit prev = scheduleUnit.getChildQuery(scans[0]);
+    if (subQuery.hasChildQuery()) {
+      SubQuery prev = subQuery.getChildQuery(scans[0]);
       switch (prev.getOutputType()) {
       case BROADCAST:
         throw new NotImplementedException();
       case HASH:
         if (scans[0].isLocal()) {
-          queryUnits = assignFetchesToBinaryByHash(scheduleUnit, queryUnits,
+          queryUnits = assignFetchesToBinaryByHash(subQuery, queryUnits,
               fetchMap, maxQueryUnitNum);
           queryUnits = assignEqualFragment(queryUnits, fragMap);
         } else {
@@ -1064,7 +1045,7 @@ public class GlobalPlanner {
     } else {
 //      unitList = assignFragmentsByRoundRobin(unit, unitList, fragMap,
 //          maxQueryUnitNum);
-      queryUnits = makeQueryUnitsForBinaryPlan(scheduleUnit,
+      queryUnits = makeQueryUnitsForBinaryPlan(subQuery,
           queryUnits, fragMap);
     }
 
@@ -1072,14 +1053,14 @@ public class GlobalPlanner {
   }
 
   public List<QueryUnit> makeQueryUnitsForBinaryPlan(
-      ScheduleUnit scheduleUnit, List<QueryUnit> queryUnits,
+      SubQuery subQuery, List<QueryUnit> queryUnits,
       Map<ScanNode, List<Fragment>> fragmentMap) {
     QueryUnit queryUnit;
-    if (scheduleUnit.hasJoinPlan()) {
+    if (subQuery.hasJoinPlan()) {
       // make query units for every composition of fragments of each scan
       Preconditions.checkArgument(fragmentMap.size()==2);
 
-      ScanNode [] scanNodes = scheduleUnit.getScanNodes();
+      ScanNode [] scanNodes = subQuery.getScanNodes();
       String innerId = null, outerId = null;
 
       // If one relation is set to broadcast, it meaning that the relation
@@ -1104,7 +1085,7 @@ public class GlobalPlanner {
         }
 
         for (Fragment outer : baseFrag) {
-          queryUnit = newQueryUnit(scheduleUnit);
+          queryUnit = newQueryUnit(subQuery);
           queryUnit.setFragment(outerId, outer);
           for (Fragment inner : broadcastFrag) {
             queryUnit.setFragment(innerId, inner);
@@ -1123,7 +1104,7 @@ public class GlobalPlanner {
         outerFrags = e.getValue();
         for (Fragment outer : outerFrags) {
           for (Fragment inner : innerFrags) {
-            queryUnit = newQueryUnit(scheduleUnit);
+            queryUnit = newQueryUnit(subQuery);
             queryUnit.setFragment(innerId, inner);
             queryUnit.setFragment(outerId, outer);
             queryUnits.add(queryUnit);
@@ -1138,21 +1119,21 @@ public class GlobalPlanner {
   /**
    * 1개의 scan을 가진 QueryUnit들에 대해 fragment와 fetch를 할당
    * 
-   * @param scheduleUnit
+   * @param subQuery
    * @param n
    * @param fragMap
    * @param fetchMap
    * @return
    */
-  private List<QueryUnit> makeUnaryQueryUnit(ScheduleUnit scheduleUnit, int n,
+  private List<QueryUnit> makeUnaryQueryUnit(SubQuery subQuery, int n,
       Map<ScanNode, List<Fragment>> fragMap, 
       Map<ScanNode, List<URI>> fetchMap, Schema rangeSchema) throws UnsupportedEncodingException {
     List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
     int maxQueryUnitNum = 0;
-    ScanNode scan = scheduleUnit.getScanNodes()[0];
+    ScanNode scan = subQuery.getScanNodes()[0];
     maxQueryUnitNum = n;
-    if (scheduleUnit.hasChildQuery()) {
-      ScheduleUnit prev = scheduleUnit.getChildQuery(scan);
+    if (subQuery.hasChildQuery()) {
+      SubQuery prev = subQuery.getChildQuery(scan);
       if (prev.getStoreTableNode().getSubNode().getType() == 
           ExprType.GROUP_BY) {
         GroupbyNode groupby = (GroupbyNode) prev.getStoreTableNode().
@@ -1167,7 +1148,7 @@ public class GlobalPlanner {
 
         case HASH:
           if (scan.isLocal()) {
-            queryUnits = assignFetchesToUnaryByHash(scheduleUnit,
+            queryUnits = assignFetchesToUnaryByHash(subQuery,
                 queryUnits, scan, fetchMap.get(scan), maxQueryUnitNum);
             queryUnits = assignEqualFragment(queryUnits, scan,
                 fragMap.get(scan).get(0));
@@ -1177,7 +1158,7 @@ public class GlobalPlanner {
           break;
         case RANGE:
           if (scan.isLocal()) {
-            queryUnits = assignFetchesByRange(scheduleUnit,
+            queryUnits = assignFetchesByRange(subQuery,
                 queryUnits, scan, fetchMap.get(scan),
                 maxQueryUnitNum, rangeSchema);
             queryUnits = assignEqualFragment(queryUnits, scan,
@@ -1189,7 +1170,7 @@ public class GlobalPlanner {
 
         case LIST:
           if (scan.isLocal()) {
-            queryUnits = assignFetchesByRoundRobin(scheduleUnit,
+            queryUnits = assignFetchesByRoundRobin(subQuery,
                 queryUnits, scan, fetchMap.get(scan), maxQueryUnitNum);
             queryUnits = assignEqualFragment(queryUnits, scan,
                 fragMap.get(scan).get(0));
@@ -1199,30 +1180,30 @@ public class GlobalPlanner {
           break;
       }
     } else {
-//      queryUnits = assignFragmentsByRoundRobin(scheduleUnit, queryUnits, scan,
+//      queryUnits = assignFragmentsByRoundRobin(subQuery, queryUnits, scan,
 //          fragMap.get(scan), maxQueryUnitNum);
-      queryUnits = makeQueryUnitsForEachFragment(scheduleUnit,
+      queryUnits = makeQueryUnitsForEachFragment(subQuery,
           queryUnits, scan, fragMap.get(scan));
     }
     return queryUnits;
   }
 
   private List<QueryUnit> makeQueryUnitsForEachFragment(
-      ScheduleUnit scheduleUnit, List<QueryUnit> queryUnits,
+      SubQuery subQuery, List<QueryUnit> queryUnits,
       ScanNode scan, List<Fragment> fragments) {
     QueryUnit queryUnit;
     for (Fragment fragment : fragments) {
-      queryUnit = newQueryUnit(scheduleUnit);
+      queryUnit = newQueryUnit(subQuery);
       queryUnit.setFragment(scan.getTableId(), fragment);
       queryUnits.add(queryUnit);
     }
     return queryUnits;
   }
   
-  private QueryUnit newQueryUnit(ScheduleUnit scheduleUnit) {
+  private QueryUnit newQueryUnit(SubQuery subQuery) {
     QueryUnit unit = new QueryUnit(
-        QueryIdFactory.newQueryUnitId(scheduleUnit.getId()));
-    unit.setLogicalPlan(scheduleUnit.getLogicalPlan());
+        QueryIdFactory.newQueryUnitId(subQuery.getId()));
+    unit.setLogicalPlan(subQuery.getLogicalPlan());
     unit.setStatus(QueryStatus.QUERY_NEW);
     return unit;
   }
@@ -1230,13 +1211,13 @@ public class GlobalPlanner {
   /**
    * Binary QueryUnit들에 hash 파티션된 fetch를 할당
    * 
-   * @param scheduleUnit
+   * @param subQuery
    * @param unitList
    * @param fetchMap
    * @param n
    * @return
    */
-  private List<QueryUnit> assignFetchesToBinaryByHash(ScheduleUnit scheduleUnit,
+  private List<QueryUnit> assignFetchesToBinaryByHash(SubQuery subQuery,
       List<QueryUnit> unitList, Map<ScanNode, List<URI>> fetchMap, final int n) {
     QueryUnit unit = null;
     int i = 0;
@@ -1253,7 +1234,7 @@ public class GlobalPlanner {
             i = 0;
           }
         } else {
-          unit = newQueryUnit(scheduleUnit);
+          unit = newQueryUnit(subQuery);
           unitList.add(unit);
         }
         Map<ScanNode, List<URI>> m = e.getValue();
@@ -1271,16 +1252,16 @@ public class GlobalPlanner {
   /**
    * Unary QueryUnit들에 hash 파티션된 fetch를 할당
    * 
-   * @param scheduleUnit
+   * @param subQuery
    * @param unitList
    * @param scan
    * @param uriList
    * @param n
    * @return
    */
-  private List<QueryUnit> assignFetchesToUnaryByHash(ScheduleUnit scheduleUnit,
+  private List<QueryUnit> assignFetchesToUnaryByHash(SubQuery subQuery,
       List<QueryUnit> unitList, ScanNode scan, List<URI> uriList, int n) {
-    Map<String, List<URI>> hashed = hashFetches(scheduleUnit.getId(), uriList); // hash key, uri
+    Map<String, List<URI>> hashed = hashFetches(subQuery.getId(), uriList); // hash key, uri
     QueryUnit unit = null;
     int i = 0;
     // TODO: units에 hashed 할당
@@ -1294,7 +1275,7 @@ public class GlobalPlanner {
           i = 0;
         }
       } else {
-        unit = newQueryUnit(scheduleUnit);
+        unit = newQueryUnit(subQuery);
         unitList.add(unit);
       }
       unit.addFetches(scan.getTableId(), e.getValue());
@@ -1302,7 +1283,7 @@ public class GlobalPlanner {
     return unitList;
   }
 
-  private List<QueryUnit> assignFetchesByRange(ScheduleUnit scheduleUnit,
+  private List<QueryUnit> assignFetchesByRange(SubQuery subQuery,
                                               List<QueryUnit> unitList, ScanNode scan, List<URI> uriList, int n,
                                               Schema rangeSchema)
       throws UnsupportedEncodingException {
@@ -1319,7 +1300,7 @@ public class GlobalPlanner {
           i = 0;
         }
       } else {
-        unit = newQueryUnit(scheduleUnit);
+        unit = newQueryUnit(subQuery);
         unitList.add(unit);
       }
       unit.addFetches(scan.getTableId(), Lists.newArrayList(e.getValue()));
@@ -1330,20 +1311,20 @@ public class GlobalPlanner {
   /**
    * Unary QueryUnit들에 list 파티션된 fetch를 할당
    * 
-   * @param scheduleUnit
+   * @param subQuery
    * @param unitList
    * @param scan
    * @param uriList
    * @param n
    * @return
    */
-  private List<QueryUnit> assignFetchesByRoundRobin(ScheduleUnit scheduleUnit, 
+  private List<QueryUnit> assignFetchesByRoundRobin(SubQuery subQuery,
       List<QueryUnit> unitList, ScanNode scan, List<URI> uriList, int n) { 
     QueryUnit unit = null;
     int i = 0;
     for (URI uri : uriList) {
       if (unitList.size() < n) {
-        unit = newQueryUnit(scheduleUnit);
+        unit = newQueryUnit(subQuery);
         unitList.add(unit);
       } else {
         unit = unitList.get(i++);
@@ -1397,7 +1378,7 @@ public class GlobalPlanner {
       Map<String, List<String>> param = new QueryStringDecoder(urisByKey.getValue().get(0)).getParameters();
       QueryUnitAttemptId quid = new QueryUnitAttemptId(
           new QueryStringDecoder(urisByKey.getValue().get(0)).getParameters().get("qid").get(0));
-      ScheduleUnitId sid = quid.getScheduleUnitId();
+      SubQueryId sid = quid.getSubQueryId();
       String fn = param.get("fn").get(0);
       Map<String, List<String>> quidByHost = Maps.newHashMap();
       for(URI uri : urisByKey.getValue()) {
@@ -1418,7 +1399,7 @@ public class GlobalPlanner {
 
 
   @VisibleForTesting
-  public static Map<String, List<URI>> hashFetches(ScheduleUnitId sid, List<URI> uriList) {
+  public static Map<String, List<URI>> hashFetches(SubQueryId sid, List<URI> uriList) {
     SortedMap<String, List<URI>> hashed = new TreeMap<String, List<URI>>();
     String uriPath, key;
     for (URI uri : uriList) {
@@ -1442,7 +1423,7 @@ public class GlobalPlanner {
     for (Entry<String, List<URI>> urisByKey : hashed.entrySet()) {
       QueryUnitAttemptId quid = new QueryUnitAttemptId(
           new QueryStringDecoder(urisByKey.getValue().get(0)).getParameters().get("qid").get(0));
-      ScheduleUnitId sid = quid.getScheduleUnitId();
+      SubQueryId sid = quid.getSubQueryId();
       Map<String,List<String>> quidByHost = Maps.newHashMap();
       for(URI uri : urisByKey.getValue()) {
         final Map<String,List<String>> params =
@@ -1515,103 +1496,7 @@ public class GlobalPlanner {
       }
     }
   }
-  
-  /**
-   * Unary QueryUnit들에 hash 파티션된 fragment를 할당
-   * 
-   * @param scheduleUnit
-   * @param unitList
-   * @param scan
-   * @param fragList
-   * @param n
-   * @return
-   */
-  /*private List<QueryUnit> assignFragmentsByHash(ScheduleUnit scheduleUnit,
-      List<QueryUnit> unitList, ScanNode scan, List<Fragment> fragList, int n) {
-    Collection<List<Fragment>> hashed = hashFragments(fragList);
-    QueryUnit unit = null;
-    int i = 0;
-    for (List<Fragment> frags : hashed) {
-      if (unitList.size() < n) {
-        unit = newQueryUnit(scheduleUnit);
-        unitList.add(unit);
-      } else {
-        unit = unitList.get(i++);
-        if (i == unitList.size()) {
-          i = 0;
-        }
-      }
-      unit.addFragments(scan.getTableId(), frags);
-    }
-    return unitList;
-  }*/
-  
-  /**
-   * Binary QueryUnit들에 hash 파티션된 fragment를 할당
-   * 
-   * @param scheduleUnit
-   * @param unitList
-   * @param fragMap
-   * @param n
-   * @return
-   */
-  /*private List<QueryUnit> assignFragmentsByRoundRobin(ScheduleUnit scheduleUnit,
-      List<QueryUnit> unitList, Map<ScanNode, List<Fragment>> fragMap, int n) {
-    QueryUnit unit = null;
-    int i = 0;
-    ScanNode[] scans = scheduleUnit.getScanNodes();
-    Preconditions.checkArgument(fragMap.get(scans[0]).size() == 
-        fragMap.get(scans[1]).size());
-    int fragNum = fragMap.get(scans[0]).size();
-    
-    for (int k = 0; k < fragNum; k++) {
-      if (unitList.size() < n) {
-        unit = newQueryUnit(scheduleUnit);
-        unitList.add(unit);
-      } else {
-        unit = unitList.get(i);
-        if (i == unitList.size()) {
-          i = 0;
-        }
-      }
-      
-      for (ScanNode scan : scans) {
-        unit.addFragment(scan.getTableId(), fragMap.get(scan).get(k));
-      }
-    }
-    
-    return unitList;
-  }*/
 
-  /**
-   * Unary QueryUnit들에 list 파티션된 fragment를 할당
-   * 
-   * @param scheduleUnit
-   * @param unitList
-   * @param scan
-   * @param frags
-   * @param n
-   * @return
-   */
-  /*private List<QueryUnit> assignFragmentsByRoundRobin(ScheduleUnit scheduleUnit,
-      List<QueryUnit> unitList, ScanNode scan, List<Fragment> frags, int n) {
-    QueryUnit unit = null;
-    int i = 0;
-    for (Fragment f : frags) {
-      if (unitList.size() < n) {
-        unit = newQueryUnit(scheduleUnit);
-        unitList.add(unit);
-      } else {
-        unit = unitList.get(i++);
-        if (i == unitList.size()) {
-          i = 0;
-        }
-      }
-      unit.addFragment(scan.getTableId(), f);
-    }
-    return unitList;
-  }*/
-  
   /**
    * Unary QueryUnit들에 대하여 동일한 fragment를 할당
    * 
@@ -1623,7 +1508,6 @@ public class GlobalPlanner {
   private List<QueryUnit> assignEqualFragment(List<QueryUnit> unitList, 
       ScanNode scan, Fragment frag) {
     for (int i = 0; i < unitList.size(); i++) {
-//      unitList.get(i).addFragment(scan.getTableId(), frag);
       unitList.get(i).setFragment(scan.getTableId(), frag);
     }
     
@@ -1640,7 +1524,6 @@ public class GlobalPlanner {
       Map<ScanNode, List<Fragment>> fragMap) {
     for (int i = 0; i < unitList.size(); i++) {
       for (ScanNode scan : fragMap.keySet()) {
-//        unitList.get(i).addFragment(scan.getTableId(), fragMap.get(scan).get(0));
         unitList.get(i).setFragment(scan.getTableId(),
             fragMap.get(scan).get(0));
       }

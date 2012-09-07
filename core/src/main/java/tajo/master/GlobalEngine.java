@@ -24,7 +24,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import tajo.QueryId;
 import tajo.QueryIdFactory;
-import tajo.SubQueryId;
 import tajo.catalog.CatalogService;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableDesc;
@@ -45,7 +44,6 @@ import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.global.GlobalOptimizer;
 import tajo.engine.planner.global.MasterPlan;
-import tajo.engine.planner.global.ScheduleUnit;
 import tajo.engine.planner.logical.*;
 import tajo.storage.StorageManager;
 import tajo.storage.StorageUtil;
@@ -140,24 +138,13 @@ public class GlobalEngine implements EngineService {
       Query query = new Query(qid, querystr);
       qm.addQuery(query);
       query.setStatus(QueryStatus.QUERY_INITED);
-      SubQueryId subId = QueryIdFactory.newSubQueryId(qid);
-      SubQuery subQuery = new SubQuery(subId);
-      qm.addSubQuery(subQuery);
-      subQuery.setStatus(QueryStatus.QUERY_INITED);
 
       // build the master plan
       query.setStatus(QueryStatus.QUERY_INPROGRESS);
-      subQuery.setStatus(QueryStatus.QUERY_INPROGRESS);
-      MasterPlan globalPlan = globalPlanner.build(subId, plan);
+      MasterPlan globalPlan = globalPlanner.build(qid, plan);
       globalPlan = globalOptimizer.optimize(globalPlan.getRoot());
       
-      /*QueryUnitScheduler queryUnitScheduler = new QueryUnitScheduler(
-          conf, sm, cm, qm, wc, globalPlanner, globalPlan.getRoot());
-      qm.addQueryUnitScheduler(subQuery, queryUnitScheduler);
-      queryUnitScheduler.start();
-      queryUnitScheduler.join();*/
-
-      ScheduleUnitExecutor executor = new ScheduleUnitExecutor(conf,
+      SubQueryExecutor executor = new SubQueryExecutor(conf,
           wc, globalPlanner, cm, qm, sm, globalPlan);
       executor.start();
       executor.join();
@@ -179,7 +166,6 @@ public class GlobalEngine implements EngineService {
 
   public void finalizeQuery(Query query)
       throws IllegalQueryStatusException, UnknownWorkerException {
-//    sendFinalize(query);
     QueryStatus status = updateQueryStatus(query);
     switch (status) {
       case QUERY_FINISHED:
@@ -198,41 +184,11 @@ public class GlobalEngine implements EngineService {
     }
   }
 
-  /*public void sendFinalize(Query query) throws UnknownWorkerException {
-    Command.Builder cmd = Command.newBuilder();
-    for (SubQuery subQuery : query.getSubQueries()) {
-      for (ScheduleUnit scheduleUnit : subQuery.getScheduleUnits()) {
-        for (QueryUnit queryUnit : scheduleUnit.getQueryUnits()) {
-          cmd.setId(queryUnit.getId().getProto()).setType(CommandType.FINALIZE);
-          wc.requestCommand(queryUnit.getHost(),
-              CommandRequestProto.newBuilder().addCommand(cmd.build()).build());
-        }
-      }
-    }
-  }*/
-
-  private QueryStatus updateSubQueryStatus(SubQuery subQuery) {
-    int i = 0, size = subQuery.getScheduleUnits().size();
-    QueryStatus subQueryStatus = QueryStatus.QUERY_ABORTED;
-    for (ScheduleUnit su : subQuery.getScheduleUnits()) {
-      if (su.getStatus() != QueryStatus.QUERY_FINISHED) {
-        break;
-      }
-      ++i;
-    }
-    if (i > 0 && i == size) {
-      subQueryStatus = QueryStatus.QUERY_FINISHED;
-    }
-    subQuery.setStatus(subQueryStatus);
-    return subQueryStatus;
-  }
-
   private QueryStatus updateQueryStatus(Query query) {
     int i = 0, size = query.getSubQueries().size();
     QueryStatus queryStatus = QueryStatus.QUERY_ABORTED;
     for (SubQuery sq : query.getSubQueries()) {
-      if (updateSubQueryStatus(sq)
-        != QueryStatus.QUERY_FINISHED) {
+      if (sq.getStatus() != QueryStatus.QUERY_FINISHED) {
         break;
       }
       ++i;

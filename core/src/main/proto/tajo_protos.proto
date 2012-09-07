@@ -35,18 +35,13 @@ message SubQueryIdProto {
     required int32 id = 2;
 }
 
-message ScheduleUnitIdProto {
-    required SubQueryIdProto subQueryId = 1;
-    required int32 id = 2;
-}
-
 message QueryUnitAttemptIdProto {
     required QueryUnitIdProto queryUnitId = 1;
     required int32 id = 2;
 }
 
 message QueryUnitIdProto {
-    required ScheduleUnitIdProto scheduleUnitId = 1;
+    required SubQueryIdProto subQueryId = 1;
     required int32 id = 2;
 }
 

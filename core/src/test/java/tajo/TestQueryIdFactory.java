@@ -38,9 +38,8 @@ public class TestQueryIdFactory {
   public void testNewQueryUnitId() {
     QueryId qid = QueryIdFactory.newQueryId();
     SubQueryId subid = QueryIdFactory.newSubQueryId(qid);
-    ScheduleUnitId schid = QueryIdFactory.newScheduleUnitId(subid);
-    QueryUnitId quid1 = QueryIdFactory.newQueryUnitId(schid);
-    QueryUnitId quid2 = QueryIdFactory.newQueryUnitId(schid);
+    QueryUnitId quid1 = QueryIdFactory.newQueryUnitId(subid);
+    QueryUnitId quid2 = QueryIdFactory.newQueryUnitId(subid);
     assertTrue(quid1.compareTo(quid2) < 0);
   }
 }

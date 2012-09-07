@@ -30,8 +30,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.QueryContext;
+import tajo.QueryId;
 import tajo.QueryIdFactory;
-import tajo.SubQueryId;
 import tajo.TajoTestingUtility;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
@@ -48,8 +48,8 @@ import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.global.MasterPlan;
-import tajo.engine.planner.global.ScheduleUnit;
-import tajo.engine.planner.global.ScheduleUnit.PARTITION_TYPE;
+import tajo.master.SubQuery;
+import tajo.master.SubQuery.PARTITION_TYPE;
 import tajo.engine.planner.logical.*;
 import tajo.master.GlobalPlanner;
 import tajo.storage.*;
@@ -78,7 +78,7 @@ public class TestGlobalQueryPlanner {
   private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
   private static LogicalPlanner logicalPlanner;
-  private static SubQueryId subQueryId;
+  private static QueryId subQueryId;
   private static QueryManager qm;
   private static StorageManager sm;
 
@@ -141,7 +141,7 @@ public class TestGlobalQueryPlanner {
     }
 
     QueryIdFactory.reset();
-    subQueryId = QueryIdFactory.newSubQueryId(QueryIdFactory.newQueryId());
+    subQueryId = QueryIdFactory.newQueryId();
   }
 
   @AfterClass
@@ -159,7 +159,7 @@ public class TestGlobalQueryPlanner {
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
 
-    ScheduleUnit unit = globalPlan.getRoot();
+    SubQuery unit = globalPlan.getRoot();
     assertFalse(unit.hasChildQuery());
     assertEquals(PARTITION_TYPE.LIST, unit.getOutputType());
     LogicalNode plan = unit.getLogicalPlan();
@@ -178,7 +178,7 @@ public class TestGlobalQueryPlanner {
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
 
-    ScheduleUnit next, prev;
+    SubQuery next, prev;
     
     next = globalPlan.getRoot();
     assertTrue(next.hasChildQuery());
@@ -187,7 +187,7 @@ public class TestGlobalQueryPlanner {
       assertTrue(scan.isLocal());
     }
     assertFalse(next.getStoreTableNode().isLocal());
-    Iterator<ScheduleUnit> it= next.getChildIterator();
+    Iterator<SubQuery> it= next.getChildIterator();
     
     prev = it.next();
     assertFalse(prev.hasChildQuery());
@@ -217,14 +217,14 @@ public class TestGlobalQueryPlanner {
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
 
-    ScheduleUnit next, prev;
+    SubQuery next, prev;
     
     next = globalPlan.getRoot();
     assertEquals(ExprType.PROJECTION,
         next.getStoreTableNode().getSubNode().getType());
     assertTrue(next.hasChildQuery());
     assertEquals(PARTITION_TYPE.LIST, next.getOutputType());
-    Iterator<ScheduleUnit> it= next.getChildIterator();
+    Iterator<SubQuery> it= next.getChildIterator();
 
     prev = it.next();
     assertEquals(ExprType.SORT,
@@ -261,7 +261,7 @@ public class TestGlobalQueryPlanner {
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
 
-    ScheduleUnit next, prev;
+    SubQuery next, prev;
     
     // the second phase of the sort
     next = globalPlan.getRoot();
@@ -270,7 +270,7 @@ public class TestGlobalQueryPlanner {
     assertEquals(ExprType.PROJECTION, next.getStoreTableNode().getSubNode().getType());
     ScanNode []scans = next.getScanNodes();
     assertEquals(1, scans.length);
-    Iterator<ScheduleUnit> it= next.getChildIterator();
+    Iterator<SubQuery> it= next.getChildIterator();
 
     prev = it.next();
     assertEquals(ExprType.SORT, prev.getStoreTableNode().getSubNode().getType());
@@ -328,13 +328,13 @@ public class TestGlobalQueryPlanner {
     
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
 
-    ScheduleUnit unit = globalPlan.getRoot();
+    SubQuery unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
     assertEquals(ExprType.JOIN, store.getSubNode().getType());
     assertTrue(unit.hasChildQuery());
     ScanNode [] scans = unit.getScanNodes();
     assertEquals(2, scans.length);
-    ScheduleUnit prev;
+    SubQuery prev;
     for (ScanNode scan : scans) {
       prev = unit.getChildQuery(scan);
       store = prev.getStoreTableNode();
@@ -352,7 +352,7 @@ public class TestGlobalQueryPlanner {
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
 
-    ScheduleUnit unit = globalPlan.getRoot();
+    SubQuery unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
     assertEquals(ExprType.PROJECTION, store.getSubNode().getType());
     ProjectionNode projNode = (ProjectionNode) store.getSubNode();
@@ -375,7 +375,7 @@ public class TestGlobalQueryPlanner {
     
     String tableId = "";
     for (ScanNode scan : unit.getScanNodes()) {
-      ScheduleUnit prev = unit.getChildQuery(scan);
+      SubQuery prev = unit.getChildQuery(scan);
       store = prev.getStoreTableNode();
       assertEquals(ExprType.GROUP_BY, store.getSubNode().getType());
       GroupbyNode groupby = (GroupbyNode) store.getSubNode();
@@ -491,7 +491,7 @@ public class TestGlobalQueryPlanner {
 
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
 
-    ScheduleUnit second, first, mid;
+    SubQuery second, first, mid;
     ScanNode secondScan, firstScan, midScan;
 
     second = globalPlan.getRoot();

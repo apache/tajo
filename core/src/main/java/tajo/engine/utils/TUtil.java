@@ -56,8 +56,7 @@ public class TUtil {
   public  static QueryUnitAttemptId newQueryUnitAttemptId() {
     return QueryIdFactory.newQueryUnitAttemptId(
         QueryIdFactory.newQueryUnitId(
-            QueryIdFactory.newScheduleUnitId(
                 QueryIdFactory.newSubQueryId(
-                    QueryIdFactory.newQueryId()))), 0);
+                    QueryIdFactory.newQueryId())), 0);
   }
 }

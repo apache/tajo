@@ -20,11 +20,10 @@ import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
-import tajo.engine.planner.global.ScheduleUnit;
+import tajo.master.SubQuery;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.query.QueryUnitRequestImpl;
 import tajo.master.Query;
-import tajo.master.SubQuery;
 import tajo.storage.Appender;
 import tajo.storage.StorageManager;
 import tajo.storage.Tuple;
@@ -99,12 +98,9 @@ public class TestNtaTestingUtility {
     QueryIdFactory.reset();
     QueryId queryId = QueryIdFactory.newQueryId();
     SubQueryId subQueryId = QueryIdFactory.newSubQueryId(queryId);
-    ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(subQueryId);
     Query query = new Query(queryId,
         "testNtaTestingUtil := select deptName, sleep(name) from employee group by deptName");
     SubQuery subQuery = new SubQuery(subQueryId);
-    ScheduleUnit scheduleUnit = new ScheduleUnit(sid);
-    subQuery.addScheduleUnit(scheduleUnit);
     query.addSubQuery(subQuery);
     util.getMiniTajoCluster().getMaster().getQueryManager().addQuery(query);
 
@@ -120,7 +116,7 @@ public class TestNtaTestingUtility {
     List<QueryUnit> queryUnits = Lists.newArrayList();
     List<QueryUnitRequest> queryUnitRequests = Lists.newArrayList();
     for (int i = 0; i < 4; i++) {
-      qid = QueryIdFactory.newQueryUnitId(sid);
+      qid = QueryIdFactory.newQueryUnitId(subQueryId);
       PlanningContext context = analyzer.parse(
           "testNtaTestingUtil := select deptName, sleep(name) from employee group by deptName");
       plan = planner.createPlan(context);
@@ -134,7 +130,7 @@ public class TestNtaTestingUtility {
           "", false, plan.toJSON());
       queryUnitRequests.add(req);
     }
-    scheduleUnit.setQueryUnits(queryUnits.toArray(new QueryUnit[queryUnits.size()]));
+    subQuery.setQueryUnits(queryUnits.toArray(new QueryUnit[queryUnits.size()]));
 
     for (int i = 0; i < 4; i++) {
       util.getMiniTajoCluster().getLeafServerThreads().get(i)

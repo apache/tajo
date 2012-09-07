@@ -23,11 +23,9 @@ package tajo.master;
 import com.google.common.collect.Maps;
 import tajo.QueryId;
 import tajo.QueryUnitId;
-import tajo.ScheduleUnitId;
 import tajo.SubQueryId;
 import tajo.engine.MasterWorkerProtos.QueryStatus;
 import tajo.engine.planner.global.QueryUnit;
-import tajo.engine.planner.global.ScheduleUnit;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -70,12 +68,8 @@ public class Query extends AbstractQuery {
     return this.subqueries.values();
   }
   
-  public ScheduleUnit getScheduleUnit(ScheduleUnitId id) {
-    return this.getSubQuery(id.getSubQueryId()).getScheduleUnit(id);
-  }
-  
   public QueryUnit getQueryUnit(QueryUnitId id) {
-    return this.getScheduleUnit(id.getScheduleUnitId()).getQueryUnit(id);
+    return this.getSubQuery(id.getSubQueryId()).getQueryUnit(id);
   }
 
   public QueryStatus getStatus() {

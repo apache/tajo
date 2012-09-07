@@ -25,7 +25,7 @@ import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.*;
-import tajo.engine.planner.global.ScheduleUnit;
+import tajo.master.SubQuery;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.LogicalRootNode;
 import tajo.engine.planner.logical.StoreTableNode;
@@ -353,7 +353,7 @@ public class TestPhysicalPlanner {
     Column key1 = new Column("score.deptName", DataType.STRING);
     Column key2 = new Column("score.class", DataType.STRING);
     StoreTableNode storeNode = new StoreTableNode("partition");
-    storeNode.setPartitions(ScheduleUnit.PARTITION_TYPE.HASH, new Column[]{key1, key2}, numPartitions);
+    storeNode.setPartitions(SubQuery.PARTITION_TYPE.HASH, new Column[]{key1, key2}, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     plan = LogicalOptimizer.optimize(context, plan);
 
@@ -412,7 +412,7 @@ public class TestPhysicalPlanner {
 
     int numPartitions = 1;
     StoreTableNode storeNode = new StoreTableNode("emptyset");
-    storeNode.setPartitions(ScheduleUnit.PARTITION_TYPE.HASH, new Column[] {}, numPartitions);
+    storeNode.setPartitions(SubQuery.PARTITION_TYPE.HASH, new Column[] {}, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     plan = LogicalOptimizer.optimize(context, plan);
 

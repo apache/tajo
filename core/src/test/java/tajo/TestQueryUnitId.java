@@ -63,13 +63,8 @@ public class TestQueryUnitId {
     SubQueryId subId = TajoIdUtils.newSubQueryId(queryId, 2);
     assertEquals("query_" + timeId +"_0001_02", subId.toString());
     
-    ScheduleUnitId logicalQUeryUnitId =
-        new ScheduleUnitId(subId, 6);
-    assertEquals("query_" + timeId +"_0001_02_006",
-        logicalQUeryUnitId.toString());
-    
-    QueryUnitId qId = new QueryUnitId(logicalQUeryUnitId, 5);
-    assertEquals("query_" + timeId + "_0001_02_006_000005", qId.toString());
+    QueryUnitId qId = new QueryUnitId(subId, 5);
+    assertEquals("query_" + timeId + "_0001_02_000005", qId.toString());
   }
 
   @Test
@@ -88,16 +83,10 @@ public class TestQueryUnitId {
     SubQueryId sid3 = TajoIdUtils.newSubQueryId(queryId1, 1);
     assertEquals(sid1, sid3);
     
-    ScheduleUnitId lqid1 = new ScheduleUnitId(sid1, 9);
-    ScheduleUnitId lqid2 = new ScheduleUnitId(sid1, 10);
-    assertNotSame(lqid1, lqid2);
-    ScheduleUnitId lqid3 = new ScheduleUnitId(sid1, 9);
-    assertEquals(lqid1, lqid3);
-    
-    QueryUnitId qid1 = new QueryUnitId(lqid1, 9);
-    QueryUnitId qid2 = new QueryUnitId(lqid1, 10);
+    QueryUnitId qid1 = new QueryUnitId(sid1, 9);
+    QueryUnitId qid2 = new QueryUnitId(sid1, 10);
     assertNotSame(qid1, qid2);
-    QueryUnitId qid3 = new QueryUnitId(lqid1, 9);
+    QueryUnitId qid3 = new QueryUnitId(sid1, 9);
     assertEquals(qid1, qid3);
   }
 
@@ -119,16 +108,9 @@ public class TestQueryUnitId {
     assertEquals(1, sid2.compareTo(sid1));
     assertEquals(0, sid3.compareTo(sid1));
     
-    ScheduleUnitId lqid1 = new ScheduleUnitId(sid1, 9);
-    ScheduleUnitId lqid2 = new ScheduleUnitId(sid1, 10);
-    ScheduleUnitId lqid3 = new ScheduleUnitId(sid1, 9);
-    assertEquals(-1, lqid1.compareTo(lqid2));
-    assertEquals(1, lqid2.compareTo(lqid1));
-    assertEquals(0, lqid3.compareTo(lqid1));
-    
-    QueryUnitId qid1 = new QueryUnitId(lqid1, 9);
-    QueryUnitId qid2 = new QueryUnitId(lqid1, 10);
-    QueryUnitId qid3 = new QueryUnitId(lqid1, 9);
+    QueryUnitId qid1 = new QueryUnitId(sid1, 9);
+    QueryUnitId qid2 = new QueryUnitId(sid1, 10);
+    QueryUnitId qid3 = new QueryUnitId(sid1, 9);
     assertEquals(-1, qid1.compareTo(qid2));
     assertEquals(1, qid2.compareTo(qid1));
     assertEquals(0, qid3.compareTo(qid1));
@@ -145,11 +127,7 @@ public class TestQueryUnitId {
     SubQueryId sub2 = TajoIdUtils.newSubQueryId(sub1.toString());
     assertEquals(sub1, sub2);
     
-    ScheduleUnitId lqid1 = QueryIdFactory.newScheduleUnitId(sub1);
-    ScheduleUnitId lqid2 = new ScheduleUnitId(lqid1.toString());
-    assertEquals(lqid1, lqid2);
-    
-    QueryUnitId u1 = QueryIdFactory.newQueryUnitId(lqid1);
+    QueryUnitId u1 = QueryIdFactory.newQueryUnitId(sub1);
     QueryUnitId u2 = new QueryUnitId(u1.toString());
     assertEquals(u1, u2);
   }

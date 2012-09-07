@@ -27,8 +27,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tajo.QueryId;
 import tajo.QueryIdFactory;
-import tajo.SubQueryId;
 import tajo.TajoTestingUtility;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
@@ -45,6 +45,7 @@ import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.*;
 import tajo.master.GlobalPlanner;
+import tajo.master.SubQuery;
 import tajo.storage.*;
 
 import java.io.IOException;
@@ -64,7 +65,7 @@ public class TestGlobalQueryOptimizer {
   private static Schema schema;
   private static QueryAnalyzer analyzer;
   private static LogicalPlanner logicalPlanner;
-  private static SubQueryId subQueryId;
+  private static QueryId subQueryId;
   private static QueryManager qm;
   private static GlobalOptimizer optimizer;
 
@@ -126,7 +127,7 @@ public class TestGlobalQueryOptimizer {
     }
 
     QueryIdFactory.reset();
-    subQueryId = QueryIdFactory.newSubQueryId(QueryIdFactory.newQueryId());
+    subQueryId = QueryIdFactory.newQueryId();
     optimizer = new GlobalOptimizer();
   }
   
@@ -146,7 +147,7 @@ public class TestGlobalQueryOptimizer {
     MasterPlan globalPlan = planner.build(subQueryId, logicalPlan);
     globalPlan = optimizer.optimize(globalPlan.getRoot());
     
-    ScheduleUnit unit = globalPlan.getRoot();
+    SubQuery unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
     assertEquals(ExprType.PROJECTION, store.getSubNode().getType());
     ProjectionNode proj = (ProjectionNode) store.getSubNode();
@@ -164,7 +165,7 @@ public class TestGlobalQueryOptimizer {
     
     assertTrue(unit.hasChildQuery());
     for (ScanNode prevscan : unit.getScanNodes()) {
-      ScheduleUnit prev = unit.getChildQuery(prevscan);
+      SubQuery prev = unit.getChildQuery(prevscan);
       store = prev.getStoreTableNode();
       assertEquals(ExprType.SCAN, store.getSubNode().getType());
     }

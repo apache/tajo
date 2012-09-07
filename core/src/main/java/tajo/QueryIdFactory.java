@@ -40,12 +40,8 @@ public class QueryIdFactory {
     return TajoIdUtils.createSubQueryId(queryId, nextId.incrementAndGet());
   }
   
-  public synchronized static ScheduleUnitId newScheduleUnitId(SubQueryId subQueryId) {
-    return new ScheduleUnitId(subQueryId, nextId.incrementAndGet());
-  }
-
-  public synchronized static QueryUnitId newQueryUnitId(ScheduleUnitId scheduleUnitId) {
-    return new QueryUnitId(scheduleUnitId, nextId.incrementAndGet());
+  public synchronized static QueryUnitId newQueryUnitId(SubQueryId subQueryId) {
+    return new QueryUnitId(subQueryId, nextId.incrementAndGet());
   }
 
   public synchronized static QueryUnitAttemptId newQueryUnitAttemptId(

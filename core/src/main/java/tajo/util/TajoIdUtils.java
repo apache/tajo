@@ -23,6 +23,8 @@ import org.apache.hadoop.yarn.util.BuilderUtils;
 import org.apache.hadoop.yarn.util.Records;
 import tajo.QueryId;
 import tajo.SubQueryId;
+import tajo.engine.TCommonProtos.SubQueryIdProto;
+import tajo.impl.pb.SubQueryIdPBImpl;
 
 /**
  * @author Hyunsik Choi
@@ -65,5 +67,10 @@ public class TajoIdUtils {
     return createSubQueryId(
         createQueryId(Long.valueOf(split[1]), Integer.parseInt(split[2])),
         Integer.parseInt(split[3]));
+  }
+
+  public static SubQueryId newSubQueryId(SubQueryIdProto proto) {
+    SubQueryId subId = new SubQueryIdPBImpl(proto);
+    return subId;
   }
 }

@@ -33,7 +33,6 @@ import tajo.engine.MasterWorkerProtos.QueryStatus;
 import tajo.engine.cluster.QueryManager;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
-import tajo.engine.planner.global.ScheduleUnit;
 import tajo.storage.Appender;
 import tajo.storage.StorageManager;
 import tajo.storage.Tuple;
@@ -96,8 +95,7 @@ public class TestFaultTolerance {
     assertEquals(QueryStatus.QUERY_FINISHED,
         q.getStatus());
     SubQuery subQuery = q.getSubQueryIterator().next();
-    ScheduleUnit scheduleUnit = subQuery.getScheduleUnitIterator().next();
-    QueryUnit[] queryUnits = scheduleUnit.getQueryUnits();
+    QueryUnit[] queryUnits = subQuery.getQueryUnits();
     for (QueryUnit queryUnit : queryUnits) {
       QueryStatus queryUnitStatus =
           queryUnit.getStatus();

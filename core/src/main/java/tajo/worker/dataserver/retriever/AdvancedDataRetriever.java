@@ -12,7 +12,8 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import tajo.QueryUnitAttemptId;
 import tajo.QueryUnitId;
-import tajo.ScheduleUnitId;
+import tajo.SubQueryId;
+import tajo.util.TajoIdUtils;
 import tajo.worker.dataserver.FileAccessForbiddenException;
 
 import java.io.File;
@@ -68,7 +69,7 @@ public class AdvancedDataRetriever implements DataRetriever {
       List<String> qids = splitMaps(params.get("qid"));
       for (String qid : qids) {
         String[] ids = qid.split("_");
-        ScheduleUnitId suid = new ScheduleUnitId(params.get("sid").get(0));
+        SubQueryId suid = TajoIdUtils.newSubQueryId(params.get("sid").get(0));
         QueryUnitId quid = new QueryUnitId(suid, Integer.parseInt(ids[0]));
         QueryUnitAttemptId attemptId = new QueryUnitAttemptId(quid,
             Integer.parseInt(ids[1]));

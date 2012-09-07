@@ -53,7 +53,7 @@ import tajo.engine.ipc.protocolrecords.Fragment;
 import tajo.engine.ipc.protocolrecords.QueryUnitRequest;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.planner.PlannerUtil;
-import tajo.engine.planner.global.ScheduleUnit;
+import tajo.master.SubQuery;
 import tajo.engine.planner.logical.ExprType;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.SortNode;
@@ -397,7 +397,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
   public static Path getQueryUnitDir(QueryUnitAttemptId quid) {
     Path workDir = 
         StorageUtil.concatPath(
-            quid.getScheduleUnitId().toString(),
+            quid.getSubQueryId().toString(),
             String.valueOf(quid.getQueryUnitId().getId()),
             String.valueOf(quid.getId()));
     return workDir;
@@ -607,7 +607,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
     private int progress = 0;
 
     // TODO - to be refactored
-    private ScheduleUnit.PARTITION_TYPE partitionType = null;
+    private SubQuery.PARTITION_TYPE partitionType = null;
     private Schema finalSchema = null;
     private TupleComparator sortComp = null;
 
@@ -766,11 +766,11 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
             Entry<Integer,String> entry = it.next();
             part = Partition.newBuilder();
             part.setPartitionKey(entry.getKey());
-            if (partitionType == ScheduleUnit.PARTITION_TYPE.HASH) {
+            if (partitionType == SubQuery.PARTITION_TYPE.HASH) {
               part.setFileName(
                   dataServerURL + "/?qid=" + getId().toString() + "&fn=" +
                   entry.getValue());
-            } else if (partitionType == ScheduleUnit.PARTITION_TYPE.LIST) {
+            } else if (partitionType == SubQuery.PARTITION_TYPE.LIST) {
               part.setFileName(dataServerURL + "/?qid=" + getId().toString() +
                   "&fn=0");
             } else {
@@ -831,7 +831,7 @@ public class LeafServer extends Thread implements AsyncWorkerInterface {
         } else { // if successful
           ctx.setProgress(1.0f);
           if (interQuery) { // TODO - to be completed
-            if (partitionType == null || partitionType != ScheduleUnit.PARTITION_TYPE.RANGE) {
+            if (partitionType == null || partitionType != SubQuery.PARTITION_TYPE.RANGE) {
               //PartitionRetrieverHandler partitionHandler =
                   //new PartitionRetrieverHandler(ctx.getWorkDir().getAbsolutePath() + "/out/data");
               PartitionRetrieverHandler partitionHandler =

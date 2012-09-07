@@ -47,13 +47,12 @@ import tajo.engine.planner.PlannerUtil;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
-import tajo.engine.planner.global.ScheduleUnit;
+import tajo.master.SubQuery;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.StoreTableNode;
 import tajo.engine.query.QueryUnitRequestImpl;
 import tajo.engine.utils.TUtil;
 import tajo.master.Query;
-import tajo.master.SubQuery;
 import tajo.master.TajoMaster;
 import tajo.storage.*;
 
@@ -150,9 +149,8 @@ public class TestLeafServer {
     LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(0);
     LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(1);
     
-    ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(
-        QueryIdFactory.newSubQueryId(
-            QueryIdFactory.newQueryId()));
+    SubQueryId sid = QueryIdFactory.newSubQueryId(
+            QueryIdFactory.newQueryId());
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(sid);
     QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(sid);
 
@@ -214,9 +212,8 @@ public class TestLeafServer {
     LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(0);
     LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(1);
 
-    ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(
-        QueryIdFactory.newSubQueryId(
-            QueryIdFactory.newQueryId()));
+    SubQueryId sid = QueryIdFactory.newSubQueryId(
+        QueryIdFactory.newQueryId());
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(sid);
     QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(sid);
 
@@ -229,10 +226,8 @@ public class TestLeafServer {
     Query q = new Query(qid1.getQueryId(),
         "testLeafServer := select name, empId, deptName from employee");
     qm.addQuery(q);
-    SubQuery subQuery = new SubQuery(qid1.getSubQueryId());
-    qm.addSubQuery(subQuery);
-    ScheduleUnit su = new ScheduleUnit(qid1.getScheduleUnitId());
-    qm.addScheduleUnit(su);
+    SubQuery su = new SubQuery(qid1.getSubQueryId());
+    qm.addSubQuery(su);
     sm.initTableBase(frags[0].getMeta(), "testLeafServer");
     QueryUnit [] qu = new QueryUnit[2];
     qu[0] = new QueryUnit(qid1);
@@ -302,9 +297,8 @@ public class TestLeafServer {
 
     LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(0);
     LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(1);
-    ScheduleUnitId sid = QueryIdFactory.newScheduleUnitId(
-        QueryIdFactory.newSubQueryId(
-            QueryIdFactory.newQueryId()));
+    SubQueryId sid = QueryIdFactory.newSubQueryId(
+        QueryIdFactory.newQueryId());
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(sid);
     QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(sid);
 
@@ -314,7 +308,7 @@ public class TestLeafServer {
     int numPartitions = 2;
     Column key1 = new Column("employee.deptName", DataType.STRING);
     StoreTableNode storeNode = new StoreTableNode("testInterQuery");
-    storeNode.setPartitions(ScheduleUnit.PARTITION_TYPE.HASH, new Column[] { key1 }, numPartitions);
+    storeNode.setPartitions(SubQuery.PARTITION_TYPE.HASH, new Column[] { key1 }, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     plan = LogicalOptimizer.optimize(context, plan);
     

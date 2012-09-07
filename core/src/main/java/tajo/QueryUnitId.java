@@ -3,6 +3,8 @@ package tajo;
 import tajo.common.ProtoObject;
 import tajo.engine.TCommonProtos.QueryUnitIdProto;
 import tajo.engine.TCommonProtos.QueryUnitIdProtoOrBuilder;
+import tajo.impl.pb.SubQueryIdPBImpl;
+import tajo.util.TajoIdUtils;
 
 import java.text.NumberFormat;
 
@@ -17,7 +19,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
     format.setMinimumIntegerDigits(6);
   }
   
-  private ScheduleUnitId logicalId = null;
+  private SubQueryId logicalId = null;
   private int id = -1;
   private String finalId = null;
   
@@ -29,7 +31,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
     builder = QueryUnitIdProto.newBuilder();
   }
   
-  public QueryUnitId(final ScheduleUnitId logicalId,
+  public QueryUnitId(final SubQueryId logicalId,
       final int id) {
     this.logicalId = logicalId;
     this.id = id;
@@ -43,7 +45,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   public QueryUnitId(final String finalId) {
     this.finalId = finalId;
     int i = finalId.lastIndexOf(QueryId.SEPARATOR);
-    this.logicalId = new ScheduleUnitId(finalId.substring(0, i));
+    this.logicalId = TajoIdUtils.newSubQueryId(finalId.substring(0, i));
     this.id = Integer.valueOf(finalId.substring(i+1));
   }
   
@@ -59,20 +61,16 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
     return id;
   }
   
-  public ScheduleUnitId getScheduleUnitId() {
+  public SubQueryId getSubQueryId() {
     QueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
     if (this.logicalId != null) {
       return this.logicalId;
     }
-    if (!p.hasScheduleUnitId()) {
+    if (!p.hasSubQueryId()) {
       return null;
     }
-    this.logicalId = new ScheduleUnitId(p.getScheduleUnitId());
+    this.logicalId = TajoIdUtils.newSubQueryId(p.getSubQueryId());
     return this.logicalId;
-  }
-  
-  public SubQueryId getSubQueryId() {
-    return this.getScheduleUnitId().getSubQueryId();
   }
   
   public QueryId getQueryId() {
@@ -82,7 +80,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   @Override
   public final String toString() {
     if (finalId == null) {
-      finalId = this.getScheduleUnitId() + 
+      finalId = this.getSubQueryId() +
           QueryId.SEPARATOR + format.format(getId());
     }
     return this.finalId;
@@ -110,7 +108,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   private void mergeProtoToLocal() {
     QueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
     if (logicalId == null) {
-      logicalId = new ScheduleUnitId(p.getScheduleUnitId());
+      logicalId = TajoIdUtils.newSubQueryId(p.getSubQueryId());
     }
     if (id == -1) {
       id = p.getId();
@@ -127,7 +125,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
       builder = QueryUnitIdProto.newBuilder(proto);
     }
     if (this.logicalId != null) {
-      builder.setScheduleUnitId(logicalId.getProto());
+      builder.setSubQueryId(((SubQueryIdPBImpl)logicalId).getProto());
     }
     if (this.id != -1) {
       builder.setId(id);

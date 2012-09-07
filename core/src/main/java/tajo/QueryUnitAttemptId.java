@@ -72,12 +72,12 @@ public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId>,
     return queryUnitId;
   }
 
-  public ScheduleUnitId getScheduleUnitId() {
-    return this.getQueryUnitId().getScheduleUnitId();
-  }
-
   public QueryId getQueryId() {
     return this.getQueryUnitId().getQueryId();
+  }
+
+  public SubQueryId getSubQueryId() {
+    return this.getQueryUnitId().getSubQueryId();
   }
 
   @Override

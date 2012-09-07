@@ -5,7 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import tajo.QueryIdFactory;
 import tajo.QueryUnitId;
-import tajo.ScheduleUnitId;
+import tajo.SubQueryId;
 import tajo.WorkerTestingUtil;
 import tajo.worker.InterDataRetriever;
 import tajo.worker.dataserver.retriever.DataRetriever;
@@ -63,9 +63,8 @@ public class TestHttpDataServer {
   @Test
   public final void testInterDataRetriver() throws Exception {
     QueryIdFactory.reset();
-    ScheduleUnitId schid = QueryIdFactory.newScheduleUnitId(
-        QueryIdFactory.newSubQueryId(
-            QueryIdFactory.newQueryId()));
+    SubQueryId schid = QueryIdFactory.newSubQueryId(
+            QueryIdFactory.newQueryId());
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(schid);
     QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(schid);
     
@@ -106,9 +105,8 @@ public class TestHttpDataServer {
   @Test(expected = FileNotFoundException.class)
   public final void testNoSuchFile() throws Exception {
     QueryIdFactory.reset();
-    ScheduleUnitId schid = QueryIdFactory.newScheduleUnitId(
-        QueryIdFactory.newSubQueryId(
-            QueryIdFactory.newQueryId()));
+    SubQueryId schid = QueryIdFactory.newSubQueryId(
+            QueryIdFactory.newQueryId());
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(schid);
     QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(schid);
     

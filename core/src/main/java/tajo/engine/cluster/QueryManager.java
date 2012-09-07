@@ -31,9 +31,8 @@ import tajo.engine.MasterWorkerProtos.InProgressStatusProto;
 import tajo.engine.exception.NoSuchQueryIdException;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
-import tajo.engine.planner.global.ScheduleUnit;
-import tajo.master.Query;
 import tajo.master.SubQuery;
+import tajo.master.Query;
 import tajo.util.TQueryUtil;
 
 import java.util.*;
@@ -75,25 +74,6 @@ public class QueryManager {
     }
   }
   
-  public void addScheduleUnit(ScheduleUnit scheduleUnit)
-  throws NoSuchQueryIdException {
-    ScheduleUnitId scheduleId = scheduleUnit.getId();
-    Query query = queries.get(scheduleId.getQueryId());
-    if (query != null) {
-      SubQuery subQuery = query.getSubQuery(scheduleId.getSubQueryId());
-      if (subQuery != null) {
-        subQuery.addScheduleUnit(scheduleUnit);
-      }
-      else {
-        throw new NoSuchQueryIdException("SubQueryId: " + 
-            scheduleId.getSubQueryId());
-      }
-    } else {
-      throw new NoSuchQueryIdException("QueryId: " + 
-          scheduleId.getQueryId());
-    }
-  }
-
   public void updateQueryAssignInfo(String servername,
       QueryUnit unit) {
     serverByQueryUnit.put(unit, servername);
@@ -120,13 +100,8 @@ public class QueryManager {
     return query.getSubQuery(subQueryId);
   }
   
-  public ScheduleUnit getScheduleUnit(ScheduleUnitId scheduleUnitId) {
-    SubQueryId subId = scheduleUnitId.getSubQueryId();
-    return getSubQuery(subId).getScheduleUnit(scheduleUnitId);
-  }
-  
   public QueryUnit getQueryUnit(QueryUnitId queryUnitId) {
-    return getScheduleUnit(queryUnitId.getScheduleUnitId()).
+    return getSubQuery(queryUnitId.getSubQueryId()).
         getQueryUnit(queryUnitId);
   }
 
@@ -138,10 +113,8 @@ public class QueryManager {
     Collection<InProgressStatusProto> statuses = new ArrayList<InProgressStatusProto>();
     for (Query query : queries.values()) {
       for (SubQuery subQuery : query.getSubQueries()) {
-        for (ScheduleUnit scheduleUnit : subQuery.getScheduleUnits()) {
-          for (QueryUnit queryUnit : scheduleUnit.getQueryUnits()) {
-            statuses.add(TQueryUtil.getInProgressStatusProto(queryUnit));
-          }
+        for (QueryUnit queryUnit : subQuery.getQueryUnits()) {
+          statuses.add(TQueryUtil.getInProgressStatusProto(queryUnit));
         }
       }
     }
@@ -162,20 +135,11 @@ public class QueryManager {
     return servernames;
   }
   
-  public List<String> getAssignedWorkers(SubQuery subQuery) {
-    Iterator<ScheduleUnit> it = subQuery.getScheduleUnitIterator();
-    List<String> servernames = new ArrayList<String>();
-    while (it.hasNext()) {
-      servernames.addAll(getAssignedWorkers(it.next()));
-    }
-    return servernames;
-  }
-  
   public String getAssignedWorker(QueryUnit unit) {
     return serverByQueryUnit.get(unit);
   }
   
-  public List<String> getAssignedWorkers(ScheduleUnit unit) {
+  public List<String> getAssignedWorkers(SubQuery unit) {
     QueryUnit[] queryUnits = unit.getQueryUnits();
     if (queryUnits == null) {
       System.out.println(">>>>>> " + unit.getId());
