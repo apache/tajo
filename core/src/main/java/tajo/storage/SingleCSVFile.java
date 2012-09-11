@@ -237,6 +237,10 @@ public class SingleCSVFile extends SingleStorge {
         }
       }
       startPos = fis.getPos();
+      if (fragmentable() < 1) {
+        fis.close();
+        return;
+      }
       page();
     }
 
@@ -247,17 +251,13 @@ public class SingleCSVFile extends SingleStorge {
     private void page() throws IOException {
       // Index initialization
       currentIdx = 0;
+
       // Buffer size set
-      if (fragmentable() < 1) {
-        return;
-      }
-      if (fragmentable() < bufSize) {
+      if (fragmentable() < DEFAULT_BUFFER_SIZE) {
         bufSize = fragmentable();
-      } else {
-        bufSize = DEFAULT_BUFFER_SIZE;
       }
 
-      // Read
+
       if (this.tail == null || this.tail.length == 0) {
         this.pageStart = fis.getPos();
         this.prevTailLen = 0;
@@ -265,36 +265,33 @@ public class SingleCSVFile extends SingleStorge {
         this.pageStart = fis.getPos() - this.tail.length;
         this.prevTailLen = this.tail.length;
       }
+
+      // Read
+      int rbyte = 0;
       if (fis.getPos() == startPos) {
         buf = new byte[(int) bufSize];
-        fis.read(buf);
+        rbyte = fis.read(buf);
         tail = new byte[0];
-        tuples = new String(buf).split("\n");
+        tuples = new String(buf,0,rbyte).split("\n");
       } else {
         buf = new byte[(int) bufSize];
-        fis.read(buf);
-        tuples = (new String(tail) + new String(buf)).split("\n");
+        rbyte = fis.read(buf);
+        tuples = (new String(tail) + new String(buf,0,rbyte)).split("\n");
       }
 
       // Check tail
-      if ((char) buf[buf.length - 1] != LF) {
+      if ((char) buf[rbyte - 1] != LF) {
         if (fragmentable() < 1) {
-          long savedPos = fis.getPos();
           int cnt = 0;
-          while (fis.readByte() != LF) {
+          byte[] temp = new byte[(int)DEFAULT_BUFFER_SIZE];
+          // Read bytes
+          while ((temp[cnt] = fis.readByte()) != LF) {
             cnt++;
           }
-          fis.seek(savedPos);
-
-          byte[] temp = new byte[cnt];
-
-          // Read bytes
-          fis.read(temp);
-          fis.readByte(); // Read line feed
 
           // Replace tuple
           tuples[tuples.length - 1] = new String(tuples[tuples.length - 1]
-              + new String(temp));
+              + new String(temp,0,cnt));
           validIdx = tuples.length;
         } else {
           tail = tuples[tuples.length - 1].getBytes();
