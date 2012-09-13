@@ -20,7 +20,7 @@
 
 package tajo.engine.planner.physical;
 
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.catalog.Column;
 import tajo.catalog.SchemaUtil;
 import tajo.engine.eval.EvalContext;
@@ -35,10 +35,6 @@ import tajo.storage.VTuple;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * @author Byung Nam Lim
- * @author Hyunsik Choi
- */
 public class HashJoinExec extends BinaryPhysicalExec {
   // from logical plan
   private JoinNode plan;
@@ -66,7 +62,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
   private final Projector projector;
   private final EvalContext [] evalContexts;
 
-  public HashJoinExec(SubqueryContext context, JoinNode plan, PhysicalExec outer,
+  public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner) {
     super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
         plan.getOutSchema(), outer, inner);
@@ -192,7 +188,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
     nextOuter = true;
   }
 
-  public JoinNode getPlan() {
+  JoinNode getPlan() {
     return this.plan;
   }
 }

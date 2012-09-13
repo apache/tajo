@@ -21,12 +21,12 @@
 package tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.catalog.Schema;
 import tajo.datum.Datum;
 import tajo.engine.eval.EvalContext;
 import tajo.engine.eval.EvalNode;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.planner.Projector;
 import tajo.engine.planner.logical.ScanNode;
 import tajo.index.bst.BSTIndex;
@@ -52,7 +52,7 @@ public class BSTIndexScanExec extends PhysicalExec {
   
   private boolean initialize = true;
   
-  public BSTIndexScanExec(SubqueryContext context,
+  public BSTIndexScanExec(TaskAttemptContext context,
                           StorageManager sm , ScanNode scanNode ,
        Fragment fragment, Path fileName , Schema keySchema,
        TupleComparator comparator , Datum[] datum) throws IOException {

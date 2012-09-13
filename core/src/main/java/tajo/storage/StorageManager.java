@@ -13,7 +13,7 @@ import tajo.catalog.proto.CatalogProtos.TableProto;
 import tajo.common.exception.NotImplementedException;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.storage.exception.AlreadyExistsStorageException;
 import tajo.storage.rcfile.RCFileWrapper;
 import tajo.util.FileUtil;

@@ -1,3 +1,21 @@
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ *  or more contributor license agreements.  See the NOTICE file
+ *  distributed with this work for additional information
+ *  regarding copyright ownership.  The ASF licenses this file
+ *  to you under the Apache License, Version 2.0 (the
+ *  "License"); you may not use this file except in compliance
+ *  with the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package tajo;
 
 import com.google.common.collect.Lists;
@@ -11,32 +29,31 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.ipc.protocolrecords.Fragment;
-import tajo.engine.ipc.protocolrecords.QueryUnitRequest;
-import tajo.engine.parser.ParseTree;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
-import tajo.master.SubQuery;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.query.QueryUnitRequestImpl;
+import tajo.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.QueryUnitRequest;
 import tajo.master.Query;
+import tajo.master.SubQuery;
 import tajo.storage.Appender;
 import tajo.storage.StorageManager;
 import tajo.storage.Tuple;
 import tajo.storage.VTuple;
-import tajo.worker.LeafServer;
 import tajo.worker.SlowFunc;
+import tajo.worker.Worker;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertFalse;
 
-public class TestNtaTestingUtility {
+public class TestTajoTestingUtility {
   private TajoTestingUtility util;
   private int num = 4;
   private CatalogService catalog;
@@ -105,8 +122,6 @@ public class TestNtaTestingUtility {
     util.getMiniTajoCluster().getMaster().getQueryManager().addQuery(query);
 
     QueryUnitId qid;
-    QueryContext ctx;
-    ParseTree queryTree;
     LogicalNode plan;
     QueryUnitRequest req;
     Thread.sleep(2000);
@@ -133,25 +148,25 @@ public class TestNtaTestingUtility {
     subQuery.setQueryUnits(queryUnits.toArray(new QueryUnit[queryUnits.size()]));
 
     for (int i = 0; i < 4; i++) {
-      util.getMiniTajoCluster().getLeafServerThreads().get(i)
-          .getLeafServer().requestQueryUnit(queryUnitRequests.get(i).getProto());
+      util.getMiniTajoCluster().getWorkerThreads().get(i)
+          .getWorker().requestQueryUnit(queryUnitRequests.get(i).getProto());
     }
 
 
     Thread.sleep(3000);
-    LeafServer leaf0 = util.getMiniTajoCluster().getLeafServer(0);
+    Worker leaf0 = util.getMiniTajoCluster().getWorker(0);
     leaf0.shutdown("Aborted!");
 
     Thread.sleep(1000);
-    LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(1);
+    Worker leaf1 = util.getMiniTajoCluster().getWorker(1);
     leaf1.shutdown("Aborted!");
 
     Thread.sleep(1000);
-    LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(2);
+    Worker leaf2 = util.getMiniTajoCluster().getWorker(2);
     leaf2.shutdown("Aborted!");
 
     Thread.sleep(1000);
-    LeafServer leaf3 = util.getMiniTajoCluster().getLeafServer(3);
+    Worker leaf3 = util.getMiniTajoCluster().getWorker(3);
     leaf3.shutdown("Aborted!");
 
     assertFalse(leaf0.isAlive());

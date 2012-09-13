@@ -25,7 +25,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import tajo.Context;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.proto.CatalogProtos;
@@ -39,9 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/**
- * @author Hyunsik Choi
- */
 public class PlannerUtil {
   private static final Log LOG = LogFactory.getLog(PlannerUtil.class);
   
@@ -586,24 +582,6 @@ public class PlannerUtil {
     public List<Column []> getPairs() {
       return this.pairs;
     }
-  }
-
-  public static Schema targetToSchema(Context ctx, QueryBlock.Target[] targets) {
-    Schema schema = new Schema();
-    for(QueryBlock.Target t : targets) {
-      CatalogProtos.DataType type = t.getEvalTree().getValueType()[0];
-      String name;
-      if (t.hasAlias()) {
-        name = t.getAlias();
-      } else if (t.getEvalTree().getName().equals("?")) {
-        name = ctx.getUnnamedColumn();
-      } else {
-        name = t.getEvalTree().getName();
-      }
-      schema.addColumn(name, type);
-    }
-
-    return schema;
   }
 
   public static Schema targetToSchema(QueryBlock.Target[] targets) {

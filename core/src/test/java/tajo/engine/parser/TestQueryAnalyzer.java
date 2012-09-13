@@ -24,8 +24,6 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import tajo.Context;
-import tajo.QueryContext;
 import tajo.TajoTestingUtility;
 import tajo.benchmark.TPCH;
 import tajo.catalog.*;
@@ -54,8 +52,6 @@ import static org.junit.Assert.*;
  * This unit test examines the correctness of QueryAnalyzer that analyzes 
  * an abstract syntax tree built from Antlr and generates a QueryBlock instance.
  * 
- * @author Hyunsik Choi
- * 
  * @see QueryAnalyzer
  * @see tajo.engine.parser.QueryBlock
  */
@@ -64,7 +60,6 @@ public class TestQueryAnalyzer {
   private static CatalogService cat = null;
   private static Schema schema1 = null;
   private static QueryAnalyzer analyzer = null;
-  private static QueryContext.Factory factory = null;
   
   @BeforeClass
   public static void setUp() throws Exception {
@@ -139,7 +134,6 @@ public class TestQueryAnalyzer {
     cat.registerFunction(funcMeta);
     
     analyzer = new QueryAnalyzer(cat);
-    factory = new QueryContext.Factory(cat);
   }
 
   @AfterClass
@@ -252,7 +246,6 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testSelectStatementWithAlias() {
-    Context ctx = factory.create();
     QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[4]).getParseTree();
     assertEquals(2, block.getFromTables().length);
     assertEquals("people", block.getFromTables()[0].getTableName());
@@ -261,7 +254,6 @@ public class TestQueryAnalyzer {
   
   @Test
   public final void testOrderByClause() {
-    Context ctx = factory.create();
     QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[5]).getParseTree();
     testOrderByCluse(block);
   }
@@ -341,7 +333,6 @@ public class TestQueryAnalyzer {
   };
   @Test(expected = InvalidQueryException.class)
   public final void testNoSuchTables()  {
-    Context ctx = factory.create();
     analyzer.parse(INVALID_QUERIES[0]);
   }
   

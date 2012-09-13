@@ -1,6 +1,4 @@
 /*
- * Copyright 2012 Database Lab., Korea Univ.
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,14 +16,18 @@
  * limitations under the License.
  */
 
-package tajo.engine.ipc;
+package tajo.ipc;
 
 import tajo.Abortable;
 import tajo.Stoppable;
-import tajo.engine.MasterWorkerProtos.*;
+import tajo.engine.MasterWorkerProtos.CommandRequestProto;
+import tajo.engine.MasterWorkerProtos.CommandResponseProto;
+import tajo.engine.MasterWorkerProtos.QueryUnitRequestProto;
+import tajo.engine.MasterWorkerProtos.ServerStatusProto;
+import tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 
-public interface AsyncWorkerInterface extends Stoppable, Abortable {
+public interface AsyncWorkerProtocol extends Stoppable, Abortable {
 
 	/**
 	 * 질의 구문 및 질의 제어 정보를 LeafServer에게 전달 
@@ -33,7 +35,7 @@ public interface AsyncWorkerInterface extends Stoppable, Abortable {
 	 * @param request 질의 구문 및 질의 제어 정보
 	 * @return 서브 질의에 대한 응답
 	 */	
-	public SubQueryResponseProto requestQueryUnit(QueryUnitRequestProto request) throws Exception;
+	public BoolProto requestQueryUnit(QueryUnitRequestProto request) throws Exception;
 	
 	public CommandResponseProto requestCommand(CommandRequestProto request);
 

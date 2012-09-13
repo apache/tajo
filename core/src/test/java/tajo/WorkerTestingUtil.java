@@ -1,3 +1,23 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  *
  */
@@ -12,7 +32,7 @@ import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.*;
 import tajo.engine.planner.logical.LogicalNode;
@@ -27,10 +47,6 @@ import java.sql.ResultSet;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * @author Hyunsik Choi
- *
- */
 public class WorkerTestingUtil {
 
 	public static void buildTestDir(String dir) throws IOException {
@@ -80,13 +96,11 @@ public class WorkerTestingUtil {
 
   private TajoConf conf;
   private CatalogService catalog;
-  private SubqueryContext.Factory factory;
   private QueryAnalyzer analyzer;
   private LogicalPlanner planner;
   public WorkerTestingUtil(TajoConf conf) throws IOException {
     this.conf = conf;
     this.catalog = new LocalCatalog(conf);
-    factory = new SubqueryContext.Factory();
     analyzer = new QueryAnalyzer(catalog);
     planner = new LogicalPlanner(catalog);
   }
@@ -103,7 +117,7 @@ public class WorkerTestingUtil {
       }
     }
 
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         frags.toArray(new Fragment[frags.size()]), workDir);
     PlanningContext context = analyzer.parse(query);
     LogicalNode plan = planner.createPlan(context);

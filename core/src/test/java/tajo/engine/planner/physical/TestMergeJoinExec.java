@@ -1,9 +1,29 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo.engine.planner.physical;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.TajoTestingUtility;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
@@ -11,13 +31,15 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
+import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PhysicalPlanner;
 import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
+import tajo.engine.planner.logical.SortNode;
 import tajo.engine.utils.TUtil;
 import tajo.storage.Appender;
 import tajo.storage.StorageManager;
@@ -37,7 +59,6 @@ public class TestMergeJoinExec {
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
   private LogicalPlanner planner;
-  private SubqueryContext.Factory factory;
   private StorageManager sm;
 
   @Before
@@ -129,9 +150,9 @@ public class TestMergeJoinExec {
 
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
-    factory = new SubqueryContext.Factory();
-    File workDir = TajoTestingUtility.getTestDir("InnerJoin");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    File workDir =
+        TajoTestingUtility.getTestDir(TestMergeJoinExec.class.getName());
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         merged, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);
@@ -139,42 +160,52 @@ public class TestMergeJoinExec {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    /*
     ProjectionExec proj = (ProjectionExec) exec;
-    NLJoinExec nestedLoopJoin = (NLJoinExec) proj.getChild();
-    SeqScanExec outerScan = (SeqScanExec) nestedLoopJoin.getOuter();
-    SeqScanExec innerScan = (SeqScanExec) nestedLoopJoin.getInner();
 
-    QueryBlock.SortSpec[] outerSortKeys = new QueryBlock.SortSpec[2];
-    QueryBlock.SortSpec[] innerSortKeys = new QueryBlock.SortSpec[2];
+    // TODO - should be planed with user's optimization hint
+    if (!(proj.getChild() instanceof MergeJoinExec)) {
+      BinaryPhysicalExec nestedLoopJoin = (BinaryPhysicalExec) proj.getChild();
+      SeqScanExec outerScan = (SeqScanExec) nestedLoopJoin.getOuterChild();
+      SeqScanExec innerScan = (SeqScanExec) nestedLoopJoin.getInnerChild();
 
-    Schema employeeSchema = catalog.getTableDesc("employee").getMeta()
-        .getSchema();
-    outerSortKeys[0] = new QueryBlock.SortSpec(
-        employeeSchema.getColumnByName("empId"));
-    outerSortKeys[1] = new QueryBlock.SortSpec(
-        employeeSchema.getColumnByName("memId"));
-    SortNode outerSort = new SortNode(outerSortKeys);
-    outerSort.setInSchema(outerScan.getSchema());
-    outerSort.setOutSchema(outerScan.getSchema());
+      SeqScanExec tmp;
+      if (!outerScan.getTableName().equals("employee")) {
+        tmp = outerScan;
+        outerScan = innerScan;
+        innerScan = tmp;
+      }
 
-    Schema peopleSchema = catalog.getTableDesc("people").getMeta().getSchema();
-    innerSortKeys[0] = new QueryBlock.SortSpec(
-        peopleSchema.getColumnByName("empId"));
-    innerSortKeys[1] = new QueryBlock.SortSpec(
-        peopleSchema.getColumnByName("fk_memId"));
-    SortNode innerSort = new SortNode(innerSortKeys);
-    innerSort.setInSchema(innerScan.getSchema());
-    innerSort.setOutSchema(innerScan.getSchema());
+      QueryBlock.SortSpec[] outerSortKeys = new QueryBlock.SortSpec[2];
+      QueryBlock.SortSpec[] innerSortKeys = new QueryBlock.SortSpec[2];
 
-    SortExec outerSortExec = new SortExec(outerSort, outerScan);
-    SortExec innerSortExec = new SortExec(innerSort, innerScan);
+      Schema employeeSchema = catalog.getTableDesc("employee").getMeta()
+          .getSchema();
+      outerSortKeys[0] = new QueryBlock.SortSpec(
+          employeeSchema.getColumnByName("empId"));
+      outerSortKeys[1] = new QueryBlock.SortSpec(
+          employeeSchema.getColumnByName("memId"));
+      SortNode outerSort = new SortNode(outerSortKeys);
+      outerSort.setInSchema(outerScan.getSchema());
+      outerSort.setOutSchema(outerScan.getSchema());
 
-    MergeJoinExec mergeJoin = new MergeJoinExec(ctx,
-        nestedLoopJoin.getJoinNode(), outerSortExec, innerSortExec, outerSortKeys,
-        innerSortKeys);
-    proj.setChild(mergeJoin);
-    exec = proj;*/
+      Schema peopleSchema = catalog.getTableDesc("people").getMeta().getSchema();
+      innerSortKeys[0] = new QueryBlock.SortSpec(
+          peopleSchema.getColumnByName("empId"));
+      innerSortKeys[1] = new QueryBlock.SortSpec(
+          peopleSchema.getColumnByName("fk_memid"));
+      SortNode innerSort = new SortNode(innerSortKeys);
+      innerSort.setInSchema(innerScan.getSchema());
+      innerSort.setOutSchema(innerScan.getSchema());
+
+      SortExec outerSortExec = new SortExec(ctx, outerSort, outerScan);
+      SortExec innerSortExec = new SortExec(ctx, innerSort, innerScan);
+
+      MergeJoinExec mergeJoin = new MergeJoinExec(ctx,
+          ((HashJoinExec)nestedLoopJoin).getPlan(), outerSortExec, innerSortExec,
+          outerSortKeys, innerSortKeys);
+      proj.setChild(mergeJoin);
+      exec = proj;
+    }
 
     Tuple tuple;
     int count = 0;

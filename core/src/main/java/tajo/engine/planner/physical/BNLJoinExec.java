@@ -20,7 +20,7 @@
 
 package tajo.engine.planner.physical;
 
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.catalog.SchemaUtil;
 import tajo.engine.eval.EvalContext;
 import tajo.engine.eval.EvalNode;
@@ -59,7 +59,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
   // projection
   private final int[] targetIds;
 
-  public BNLJoinExec(final SubqueryContext context, final JoinNode join,
+  public BNLJoinExec(final TaskAttemptContext context, final JoinNode join,
                      final PhysicalExec outer, PhysicalExec inner) {
     super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
         SchemaUtil.merge(outer.getSchema(), inner.getSchema()), outer, inner);

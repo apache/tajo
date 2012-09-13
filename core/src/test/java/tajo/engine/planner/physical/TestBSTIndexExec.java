@@ -1,3 +1,23 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
@@ -6,7 +26,7 @@ import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.TajoTestingUtility;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
@@ -14,7 +34,7 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.parser.QueryBlock.SortSpec;
 import tajo.engine.planner.LogicalOptimizer;
@@ -41,12 +61,10 @@ import static org.junit.Assert.assertEquals;
 public class TestBSTIndexExec {
 
   private TajoConf conf;
-  private final String TEST_PATH = "target/test-data/TestPhysicalPlanner";
   private Path idxPath;
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
   private LogicalPlanner planner;
-  private SubqueryContext.Factory factory;
   private StorageManager sm;
   private Schema idxSchema;
   private TupleComparator comp;
@@ -132,9 +150,8 @@ public class TestBSTIndexExec {
     final String QUERY = "select * from employee where managerId = " + rndKey;
     
     Fragment[] frags = sm.split("employee");
-    factory = new SubqueryContext.Factory();
     File workDir = TajoTestingUtility.getTestDir("TestBSTIndex");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERY);
     LogicalNode plan = planner.createPlan(context);
@@ -164,7 +181,7 @@ public class TestBSTIndexExec {
     }
 
     @Override
-    public PhysicalExec createScanPlan(SubqueryContext ctx, ScanNode scanNode)
+    public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode)
         throws IOException {
       Preconditions.checkNotNull(ctx.getTable(scanNode.getTableId()),
           "Error: There is no table matched to %s", scanNode.getTableId());

@@ -1,6 +1,6 @@
 package tajo.engine.plan.global;
 
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.planner.logical.ExprType;
 import tajo.engine.planner.logical.LogicalNode;
 

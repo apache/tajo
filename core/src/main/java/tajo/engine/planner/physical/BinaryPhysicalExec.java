@@ -1,4 +1,6 @@
 /*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,19 +20,16 @@
 
 package tajo.engine.planner.physical;
 
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.catalog.Schema;
 
 import java.io.IOException;
 
-/**
- * @author Hyunsik Choi
- */
 public abstract class BinaryPhysicalExec extends PhysicalExec {
   protected final PhysicalExec outerChild;
   protected final PhysicalExec innerChild;
 
-  public BinaryPhysicalExec(final SubqueryContext context,
+  public BinaryPhysicalExec(final TaskAttemptContext context,
                             final Schema inSchema, final Schema outSchema,
                             final PhysicalExec outer, final PhysicalExec inner) {
     super(context, inSchema, outSchema);

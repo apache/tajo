@@ -23,7 +23,7 @@
  */
 package tajo.engine.planner.physical;
 
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.engine.eval.EvalContext;
 import tajo.engine.planner.Projector;
 import tajo.engine.planner.logical.ProjectionNode;
@@ -43,7 +43,7 @@ public class ProjectionExec extends UnaryPhysicalExec {
   private EvalContext[] evalContexts;
   private Projector projector;
   
-  public ProjectionExec(SubqueryContext context, ProjectionNode plan,
+  public ProjectionExec(TaskAttemptContext context, ProjectionNode plan,
       PhysicalExec child) {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.plan = plan;

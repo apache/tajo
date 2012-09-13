@@ -18,14 +18,15 @@
  * limitations under the License.
  */
 
-package tajo.engine.ipc;
+package tajo.ipc;
 
-import tajo.common.ProtoObject;
-import tajo.engine.MasterWorkerProtos.InProgressStatusProto;
-import tajo.engine.MasterWorkerProtos.PingRequestProto;
+import tajo.QueryUnitAttemptId;
+import tajo.engine.MasterWorkerProtos.StatusReportProto;
+import tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 
-import java.util.Collection;
+public interface MasterWorkerProtocol {
 
-public interface PingRequest extends ProtoObject<PingRequestProto> {
-  Collection<InProgressStatusProto> getProgressList();
+  BoolProto ping(QueryUnitAttemptId taskAttemptId);
+
+  BoolProto statusUpdate(StatusReportProto status);
 }

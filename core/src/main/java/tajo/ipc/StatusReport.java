@@ -1,6 +1,4 @@
 /*
- * Copyright 2012 Database Lab., Korea Univ.
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,15 +16,14 @@
  * limitations under the License.
  */
 
-package tajo.engine.ipc.protocolrecords;
+package tajo.ipc;
 
-import tajo.QueryUnitId;
 import tajo.common.ProtoObject;
-import tajo.engine.MasterWorkerProtos.QueryStatus;
-import tajo.engine.MasterWorkerProtos.QueryUnitResponseProto;
+import tajo.engine.MasterWorkerProtos.StatusReportProto;
+import tajo.engine.MasterWorkerProtos.TaskStatusProto;
 
-public interface QueryUnitResponse extends ProtoObject<QueryUnitResponseProto> {
+import java.util.Collection;
 
-	public QueryUnitId getId();
-	public QueryStatus getStatus();
+public interface StatusReport extends ProtoObject<StatusReportProto> {
+  Collection<TaskStatusProto> getProgressList();
 }

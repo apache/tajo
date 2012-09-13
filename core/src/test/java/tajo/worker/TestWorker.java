@@ -1,6 +1,4 @@
 /*
- * Copyright 2012 Database Lab., Korea Univ.
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -38,8 +36,6 @@ import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.engine.MasterWorkerProtos.*;
 import tajo.engine.cluster.QueryManager;
-import tajo.engine.ipc.protocolrecords.Fragment;
-import tajo.engine.ipc.protocolrecords.QueryUnitRequest;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
@@ -47,12 +43,14 @@ import tajo.engine.planner.PlannerUtil;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
-import tajo.master.SubQuery;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.StoreTableNode;
 import tajo.engine.query.QueryUnitRequestImpl;
 import tajo.engine.utils.TUtil;
+import tajo.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.QueryUnitRequest;
 import tajo.master.Query;
+import tajo.master.SubQuery;
 import tajo.master.TajoMaster;
 import tajo.storage.*;
 
@@ -65,11 +63,11 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
-public class TestLeafServer {
-  private final Log LOG = LogFactory.getLog(TestLeafServer.class);
+public class TestWorker {
+  private final Log LOG = LogFactory.getLog(TestWorker.class);
   private TajoConf conf;
   private TajoTestingUtility util;
-  private String TEST_PATH = "target/test-data/TestLeafServer";
+  private String TEST_PATH = "target/test-data/TestWorker";
   private StorageManager sm;
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
@@ -146,8 +144,8 @@ public class TestLeafServer {
     int splitIdx = (int) Math.ceil(frags.length / 2.f);
     QueryIdFactory.reset();
 
-    LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(0);
-    LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(1);
+    Worker worker1 = util.getMiniTajoCluster().getWorker(0);
+    Worker worker2 = util.getMiniTajoCluster().getWorker(1);
     
     SubQueryId sid = QueryIdFactory.newSubQueryId(
             QueryIdFactory.newQueryId());
@@ -171,9 +169,9 @@ public class TestLeafServer {
         Lists.newArrayList(Arrays.copyOfRange(frags, splitIdx,
             frags.length)), "", false, plan.toJSON());
 
-    assertNotNull(leaf1.requestQueryUnit(req1.getProto()));
+    assertNotNull(worker1.requestQueryUnit(req1.getProto()));
     Thread.sleep(1000);
-    assertNotNull(leaf2.requestQueryUnit(req2.getProto()));
+    assertNotNull(worker2.requestQueryUnit(req2.getProto()));
     Thread.sleep(1000);
     
     // for the report sending test
@@ -209,8 +207,8 @@ public class TestLeafServer {
     int splitIdx = (int) Math.ceil(frags.length / 2.f);
     QueryIdFactory.reset();
 
-    LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(0);
-    LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(1);
+    Worker worker1 = util.getMiniTajoCluster().getWorker(0);
+    Worker worker2 = util.getMiniTajoCluster().getWorker(1);
 
     SubQueryId sid = QueryIdFactory.newSubQueryId(
         QueryIdFactory.newQueryId());
@@ -247,9 +245,9 @@ public class TestLeafServer {
         Lists.newArrayList(Arrays.copyOfRange(frags, splitIdx,
         frags.length)), "", false, plan.toJSON());
 
-    assertNotNull(leaf1.requestQueryUnit(req1.getProto()));
+    assertNotNull(worker1.requestQueryUnit(req1.getProto()));
     Thread.sleep(1000);
-    assertNotNull(leaf2.requestQueryUnit(req2.getProto()));
+    assertNotNull(worker2.requestQueryUnit(req2.getProto()));
     Thread.sleep(1000);
 
     // for the report sending test
@@ -259,22 +257,22 @@ public class TestLeafServer {
 
     QueryStatus s1, s2;
     do {
-      s1 = leaf1.getTask(req1.getId()).getStatus();
-      s2 = leaf2.getTask(req2.getId()).getStatus();
+      s1 = worker1.getTask(req1.getId()).getStatus();
+      s2 = worker2.getTask(req2.getId()).getStatus();
     } while (s1 != QueryStatus.QUERY_FINISHED
         && s2 != QueryStatus.QUERY_FINISHED);
 
     Command.Builder cmd = Command.newBuilder();
     cmd.setId(req1.getId().getProto()).setType(CommandType.FINALIZE);
-    leaf1.requestCommand(CommandRequestProto.newBuilder().
+    worker1.requestCommand(CommandRequestProto.newBuilder().
         addCommand(cmd.build()).build());
     cmd = Command.newBuilder();
     cmd.setId(req2.getId().getProto()).setType(CommandType.FINALIZE);
-    leaf2.requestCommand(CommandRequestProto.newBuilder().
+    worker2.requestCommand(CommandRequestProto.newBuilder().
         addCommand(cmd.build()).build());
 
-    assertNull(leaf1.getTask(req1.getId()));
-    assertNull(leaf2.getTask(req2.getId()));
+    assertNull(worker1.getTask(req1.getId()));
+    assertNull(worker2.getTask(req2.getId()));
 
     Scanner scanner = sm.getTableScanner("testLeafServer");
     int j = 0;
@@ -285,7 +283,7 @@ public class TestLeafServer {
     assertEquals(tupleNum, j);
   }
   
-//  @Test
+  // @Test
   public final void testInterQuery() throws Exception {
     Fragment[] frags = sm.split("employee", 40000);
     for (Fragment frag : frags) {
@@ -295,8 +293,8 @@ public class TestLeafServer {
     int splitIdx = (int) Math.ceil(frags.length / 2.f);
     QueryIdFactory.reset();
 
-    LeafServer leaf1 = util.getMiniTajoCluster().getLeafServer(0);
-    LeafServer leaf2 = util.getMiniTajoCluster().getLeafServer(1);
+    Worker worker1 = util.getMiniTajoCluster().getWorker(0);
+    Worker worker2 = util.getMiniTajoCluster().getWorker(1);
     SubQueryId sid = QueryIdFactory.newSubQueryId(
         QueryIdFactory.newQueryId());
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(sid);
@@ -325,13 +323,13 @@ public class TestLeafServer {
             frags.length)), "", false, plan.toJSON());
     req2.setInterQuery();
 
-    assertNotNull(leaf1.requestQueryUnit(req1.getProto()));
+    assertNotNull(worker1.requestQueryUnit(req1.getProto()));
     Thread.sleep(1000);
-    assertNotNull(leaf2.requestQueryUnit(req2.getProto()));
+    assertNotNull(worker2.requestQueryUnit(req2.getProto()));
     Thread.sleep(1000);
     // for the report sending test
     TajoMaster master = util.getMiniTajoCluster().getMaster();
-    Collection<InProgressStatusProto> list = master.getProgressQueries();
+    Collection<TaskStatusProto> list = master.getProgressQueries();
     Set<QueryUnitAttemptId> submitted = Sets.newHashSet();
     submitted.add(req1.getId());
     submitted.add(req2.getId());
@@ -342,7 +340,7 @@ public class TestLeafServer {
     TableMeta secMeta = TCatUtil.newTableMeta(secSchema, StoreType.CSV);
     Path secData = sm.initLocalTableBase(new Path(TEST_PATH + "/sec"), secMeta);
     
-    for (InProgressStatusProto ips : list) {
+    for (TaskStatusProto ips : list) {
       if (ips.getStatus() == QueryStatus.QUERY_FINISHED) {
         long sum = 0;
         List<Partition> partitions = ips.getPartitionsList();
@@ -385,7 +383,7 @@ public class TestLeafServer {
         TUtil.newQueryUnitAttemptId(), Lists.newArrayList(emptyFrag),
         "", false, plan.toJSON());
     assertTrue("InProgress list must be positive.", list.size() != 0);
-    for (InProgressStatusProto ips : list) {
+    for (TaskStatusProto ips : list) {
       for (Partition part : ips.getPartitionsList()) {
         if (part.getPartitionKey() == 0)
           req3.addFetch("interquery", URI.create(part.getFileName()));
@@ -394,21 +392,21 @@ public class TestLeafServer {
     
     submitted.clear();
     submitted.add(req3.getId());
-    assertNotNull(leaf1.requestQueryUnit(req3.getProto()));
+    assertNotNull(worker1.requestQueryUnit(req3.getProto()));
     assertSubmittedAndReported(master, submitted);
   }
   
   public void assertSubmittedAndReported(TajoMaster master,
       Set<QueryUnitAttemptId> submitted) throws InterruptedException {
     Set<QueryUnitAttemptId> reported = Sets.newHashSet();
-    Collection<InProgressStatusProto> list = master.getProgressQueries();
+    Collection<TaskStatusProto> list = master.getProgressQueries();
     int i = 0;
     while (i < 10) { // waiting for the report messages 
       LOG.info("Waiting for receiving the report messages");
       Thread.sleep(1000);
       list = master.getProgressQueries();
       reported.clear();
-      for (InProgressStatusProto ips : list) {
+      for (TaskStatusProto ips : list) {
         // Because this query is to store, it should have the statistics info 
         // of the store data. The below 'assert' examines the existence of 
         // the statistics info.

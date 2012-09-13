@@ -37,7 +37,7 @@ import tajo.conf.TajoConf;
 import tajo.engine.MasterWorkerProtos.ServerStatusProto;
 import tajo.engine.MasterWorkerProtos.ServerStatusProto.Disk;
 import tajo.engine.exception.UnknownWorkerException;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.rpc.Callback;
 import tajo.rpc.RemoteException;
 

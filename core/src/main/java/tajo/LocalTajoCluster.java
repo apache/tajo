@@ -5,8 +5,9 @@ import org.apache.commons.logging.LogFactory;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.utils.JVMClusterUtil;
+import tajo.engine.utils.JVMClusterUtil.WorkerThread;
 import tajo.master.TajoMaster;
-import tajo.worker.LeafServer;
+import tajo.worker.Worker;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,8 +21,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class LocalTajoCluster {
 	static final Log LOG = LogFactory.getLog(LocalTajoCluster.class);
 	private JVMClusterUtil.MasterThread masterThread;
-	private final List<JVMClusterUtil.LeafServerThread> leafThreads
-	  = new CopyOnWriteArrayList<JVMClusterUtil.LeafServerThread>();
+	private final List<WorkerThread> leafThreads
+	  = new CopyOnWriteArrayList<WorkerThread>();
 	private final static int DEFAULT_NO = 2;
 	private final TajoConf conf;
 
@@ -62,20 +63,20 @@ public class LocalTajoCluster {
 		return mt;
 	}
 
-	public JVMClusterUtil.LeafServerThread addLeafServer(
+	public WorkerThread addLeafServer(
       TajoConf c, final int index)
 			throws IOException {
-		JVMClusterUtil.LeafServerThread rst =
+		WorkerThread rst =
 			JVMClusterUtil.createLeafServerThread(c, index);
 		this.leafThreads.add(rst);
 		return rst;
 	}
 
-	public LeafServer getLeafServer(int index) {
-		return leafThreads.get(index).getLeafServer();
+	public Worker getLeafServer(int index) {
+		return leafThreads.get(index).getWorker();
 	}
 
-	public List<JVMClusterUtil.LeafServerThread> getLeafServers() {
+	public List<WorkerThread> getWorkers() {
 		return Collections.unmodifiableList(this.leafThreads);
 	}
 	
@@ -83,11 +84,11 @@ public class LocalTajoCluster {
 	  return this.leafThreads.size();
 	}
 
-	public List<JVMClusterUtil.LeafServerThread> getLiveLeafServers() {
-		List<JVMClusterUtil.LeafServerThread> liveServers =
-			new ArrayList<JVMClusterUtil.LeafServerThread>();
-		List<JVMClusterUtil.LeafServerThread> list = getLeafServers();
-		for(JVMClusterUtil.LeafServerThread lst: list) {
+	public List<WorkerThread> getLiveLeafServers() {
+		List<WorkerThread> liveServers =
+			new ArrayList<WorkerThread>();
+		List<WorkerThread> list = getWorkers();
+		for(WorkerThread lst: list) {
 			if(lst.isAlive()) liveServers.add(lst);
 		}
 
@@ -99,26 +100,26 @@ public class LocalTajoCluster {
 	}
 	
 	public String waitOnLeafServer(int index) {
-		JVMClusterUtil.LeafServerThread leafServerThread =
+		WorkerThread workerThread =
 			this.leafThreads.remove(index);
-		while(leafServerThread.isAlive()) {
+		while(workerThread.isAlive()) {
 			try {
 				LOG.info("Waiting on " +
-					leafServerThread.getLeafServer().toString());
-				leafServerThread.join();			
+					workerThread.getWorker().toString());
+				workerThread.join();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 		
-		return leafServerThread.getName();
+		return workerThread.getName();
 	}
 	
-	public String waitOnLeafServer(JVMClusterUtil.LeafServerThread lst) {
+	public String waitOnLeafServer(WorkerThread lst) {
 		while(lst.isAlive()) {
 			try {
 				LOG.info("Waiting on " +
-					lst.getLeafServer().toString());
+					lst.getWorker().toString());
 				lst.join();			
 			} catch (InterruptedException e) {
 				e.printStackTrace();

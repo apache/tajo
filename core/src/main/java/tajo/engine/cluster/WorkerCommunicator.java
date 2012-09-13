@@ -28,11 +28,12 @@ import org.apache.zookeeper.KeeperException;
 import tajo.NConstants;
 import tajo.engine.MasterWorkerProtos.*;
 import tajo.engine.exception.UnknownWorkerException;
-import tajo.engine.ipc.AsyncWorkerClientInterface;
-import tajo.engine.ipc.AsyncWorkerInterface;
+import tajo.ipc.AsyncWorkerCBProtocol;
+import tajo.ipc.AsyncWorkerProtocol;
 import tajo.rpc.Callback;
 import tajo.rpc.NettyRpc;
 import tajo.rpc.RemoteException;
+import tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import tajo.zookeeper.ZkClient;
 import tajo.zookeeper.ZkListener;
@@ -47,7 +48,7 @@ public class WorkerCommunicator extends ZkListener {
   private ZkClient zkClient;
   private LeafServerTracker tracker;
 
-  private Map<String, AsyncWorkerClientInterface> hm =
+  private Map<String, AsyncWorkerCBProtocol> hm =
       new MapMaker().concurrencyLevel(4).makeMap();
 
   public WorkerCommunicator(ZkClient zkClient, LeafServerTracker tracker)
@@ -86,11 +87,11 @@ public class WorkerCommunicator extends ZkListener {
   private void addUpdate(final List<String> servers) {
     for (String servername : servers) {
       if (!hm.containsKey(servername)) {
-        AsyncWorkerClientInterface proxy = null;
+        AsyncWorkerCBProtocol proxy = null;
         try {
-        proxy = (AsyncWorkerClientInterface) NettyRpc
-            .getProtoParamAsyncRpcProxy(AsyncWorkerInterface.class,
-                AsyncWorkerClientInterface.class, new InetSocketAddress(
+        proxy = (AsyncWorkerCBProtocol) NettyRpc
+            .getProtoParamAsyncRpcProxy(AsyncWorkerProtocol.class,
+                AsyncWorkerCBProtocol.class, new InetSocketAddress(
                     extractHost(servername), extractPort(servername)));
         } catch (Exception e) {
           LOG.error("cannot connect to the worker (" + servername + ")");
@@ -117,10 +118,10 @@ public class WorkerCommunicator extends ZkListener {
     return Integer.parseInt(servername.substring(servername.indexOf(":") + 1));
   }
 
-  public Callback<SubQueryResponseProto> requestQueryUnit(String serverName,
+  public Callback<BoolProto> requestQueryUnit(String serverName,
       QueryUnitRequestProto requestProto) throws Exception {
-    Callback<SubQueryResponseProto> cb = new Callback<SubQueryResponseProto>();
-    AsyncWorkerClientInterface leaf = hm.get(serverName);
+    Callback<BoolProto> cb = new Callback<BoolProto>();
+    AsyncWorkerCBProtocol leaf = hm.get(serverName);
     if (leaf == null) {
       throw new UnknownWorkerException(serverName);
     }
@@ -128,7 +129,7 @@ public class WorkerCommunicator extends ZkListener {
     return cb;
   }
 
-  public Callback<SubQueryResponseProto> requestQueryUnit(String serverName,
+  public Callback<BoolProto> requestQueryUnit(String serverName,
       int port, QueryUnitRequestProto requestProto) throws Exception {
     return this.requestQueryUnit(serverName + ":" + port, requestProto);
   }
@@ -136,7 +137,7 @@ public class WorkerCommunicator extends ZkListener {
   public Callback<ServerStatusProto> getServerStatus(String serverName)
       throws RemoteException, InterruptedException, UnknownWorkerException {
     Callback<ServerStatusProto> cb = new Callback<ServerStatusProto>();
-    AsyncWorkerClientInterface leaf = hm.get(serverName);
+    AsyncWorkerCBProtocol leaf = hm.get(serverName);
     if (leaf == null) {
       throw new UnknownWorkerException(serverName);
     }
@@ -148,7 +149,7 @@ public class WorkerCommunicator extends ZkListener {
       CommandRequestProto request) throws UnknownWorkerException {
     Preconditions.checkArgument(serverName != null);
     Callback<CommandResponseProto> cb = new Callback<CommandResponseProto>();
-    AsyncWorkerClientInterface leaf = hm.get(serverName);
+    AsyncWorkerCBProtocol leaf = hm.get(serverName);
     if (leaf == null) {
       throw new UnknownWorkerException(serverName);
     }
@@ -175,7 +176,7 @@ public class WorkerCommunicator extends ZkListener {
 
   }
 
-  public Map<String, AsyncWorkerClientInterface> getProxyMap() {
+  public Map<String, AsyncWorkerCBProtocol> getProxyMap() {
     return hm;
   }
 

@@ -21,7 +21,7 @@
 package tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.engine.eval.EvalContext;
 import tajo.engine.eval.EvalNode;
 import tajo.engine.parser.QueryBlock;
@@ -66,7 +66,7 @@ public class MergeJoinExec extends BinaryPhysicalExec {
   private final Projector projector;
   private final EvalContext [] evalContexts;
 
-  public MergeJoinExec(SubqueryContext context, JoinNode plan, PhysicalExec outer,
+  public MergeJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner, QueryBlock.SortSpec[] outerSortKey, QueryBlock.SortSpec[] innerSortKey) {
     super(context, plan.getInSchema(), plan.getOutSchema(), outer, inner);
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +

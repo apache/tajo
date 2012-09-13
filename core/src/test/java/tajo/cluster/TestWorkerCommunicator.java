@@ -65,7 +65,7 @@ public class TestWorkerCommunicator {
 
   @Test
   public void test() throws Exception {
-    cluster.getMiniTajoCluster().startLeafServer();
+    cluster.getMiniTajoCluster().startWorkers();
     Thread.sleep(1000);
     assertEquals(wc.getProxyMap().size(), tracker.getMembers().size());
 

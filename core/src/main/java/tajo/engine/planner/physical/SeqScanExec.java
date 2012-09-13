@@ -20,10 +20,10 @@
 
 package tajo.engine.planner.physical;
 
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.engine.eval.EvalContext;
 import tajo.engine.eval.EvalNode;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.planner.Projector;
 import tajo.engine.planner.logical.ScanNode;
 import tajo.storage.Scanner;
@@ -46,7 +46,7 @@ public class SeqScanExec extends PhysicalExec {
   private Projector projector;
   private EvalContext [] evalContexts;
 
-  public SeqScanExec(SubqueryContext context, StorageManager sm,
+  public SeqScanExec(TaskAttemptContext context, StorageManager sm,
                      ScanNode plan, Fragment[] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
     this.sm = sm;
@@ -104,5 +104,9 @@ public class SeqScanExec extends PhysicalExec {
   @Override
   public void close() throws IOException {
     scanner.close();
+  }
+
+  String getTableName() {
+    return plan.getTableId();
   }
 }

@@ -1,4 +1,6 @@
 /*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -25,11 +27,11 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.catalog.Column;
 import tajo.conf.TajoConf;
 import tajo.engine.exception.InternalException;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.logical.*;
 import tajo.engine.planner.physical.*;
@@ -48,7 +50,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     this.sm = sm;
   }
 
-  public PhysicalExec createPlan(final SubqueryContext context,
+  public PhysicalExec createPlan(final TaskAttemptContext context,
       final LogicalNode logicalPlan) throws InternalException {
 
     PhysicalExec plan;
@@ -63,7 +65,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return plan;
   }
 
-  private PhysicalExec createPlanRecursive(SubqueryContext ctx, LogicalNode logicalNode) throws IOException {
+  private PhysicalExec createPlanRecursive(TaskAttemptContext ctx, LogicalNode logicalNode) throws IOException {
     PhysicalExec outer;
     PhysicalExec inner;
 
@@ -141,7 +143,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  private long estimateSizeRecursive(SubqueryContext ctx, String [] tableIds) {
+  private long estimateSizeRecursive(TaskAttemptContext ctx, String [] tableIds) {
     long size = 0;
     for (String tableId : tableIds) {
       Fragment[] fragments = ctx.getTables(tableId);
@@ -152,7 +154,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return size;
   }
 
-  public PhysicalExec createJoinPlan(SubqueryContext ctx, JoinNode joinNode,
+  public PhysicalExec createJoinPlan(TaskAttemptContext ctx, JoinNode joinNode,
                                      PhysicalExec outer, PhysicalExec inner) {
     switch (joinNode.getJoinType()) {
       case CROSS_JOIN:
@@ -205,7 +207,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  public PhysicalExec createStorePlan(SubqueryContext ctx,
+  public PhysicalExec createStorePlan(TaskAttemptContext ctx,
                                       StoreTableNode plan, PhysicalExec subOp) throws IOException {
     if (plan.hasPartitionKey()) {
       switch (plan.getPartitionType()) {
@@ -229,7 +231,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return new StoreTableExec(ctx, sm, plan, subOp);
   }
 
-  public PhysicalExec createScanPlan(SubqueryContext ctx, ScanNode scanNode)
+  public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode)
       throws IOException {
     Preconditions.checkNotNull(ctx.getTable(scanNode.getTableId()),
         "Error: There is no table matched to %s", scanNode.getTableId());
@@ -238,7 +240,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return new SeqScanExec(ctx, sm, scanNode, fragments);
   }
 
-  public PhysicalExec createGroupByPlan(SubqueryContext ctx,
+  public PhysicalExec createGroupByPlan(TaskAttemptContext ctx,
                                         GroupbyNode groupbyNode, PhysicalExec subOp) throws IOException {
     Column[] grpColumns = groupbyNode.getGroupingColumns();
     if (grpColumns.length == 0) {
@@ -271,20 +273,20 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  public PhysicalExec createSortPlan(SubqueryContext ctx, SortNode sortNode,
+  public PhysicalExec createSortPlan(TaskAttemptContext ctx, SortNode sortNode,
                                      PhysicalExec subOp) throws IOException {
     return new ExternalSortExec(conf, ctx, sm, sortNode, subOp);
   }
 
   public PhysicalExec createIndexWritePlan(StorageManager sm,
-                                           SubqueryContext ctx, IndexWriteNode indexWriteNode, PhysicalExec subOp)
+                                           TaskAttemptContext ctx, IndexWriteNode indexWriteNode, PhysicalExec subOp)
       throws IOException {
 
     return new IndexWriteExec(ctx, sm, indexWriteNode, ctx.getTable(indexWriteNode
         .getTableName()), subOp);
   }
 
-  public PhysicalExec createIndexScanExec(SubqueryContext ctx,
+  public PhysicalExec createIndexScanExec(TaskAttemptContext ctx,
                                           IndexScanNode annotation)
       throws IOException {
     //TODO-general Type Index

@@ -38,7 +38,7 @@ import tajo.client.ClientService;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.ClientServiceProtos.*;
-import tajo.engine.MasterWorkerProtos.InProgressStatusProto;
+import tajo.engine.MasterWorkerProtos.TaskStatusProto;
 import tajo.engine.cluster.*;
 import tajo.rpc.NettyRpc;
 import tajo.rpc.NettyRpcServer;
@@ -307,7 +307,7 @@ public class TajoMaster extends Thread implements ClientService {
   }
 	
 	// TODO - to be improved
-	public Collection<InProgressStatusProto> getProgressQueries() {
+	public Collection<TaskStatusProto> getProgressQueries() {
 	  return this.qm.getAllProgresses();
 	}
 

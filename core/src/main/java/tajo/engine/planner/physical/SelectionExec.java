@@ -20,7 +20,7 @@
 
 package tajo.engine.planner.physical;
 
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.engine.eval.EvalContext;
 import tajo.engine.eval.EvalNode;
 import tajo.engine.planner.logical.SelectionNode;
@@ -40,7 +40,7 @@ public class SelectionExec extends UnaryPhysicalExec  {
   // projection
   private int [] targetIds;
 
-  public SelectionExec(SubqueryContext context,
+  public SelectionExec(TaskAttemptContext context,
                        SelectionNode plan,
                        PhysicalExec child) {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);

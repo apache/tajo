@@ -26,13 +26,16 @@ package tajo.engine.cluster;
 import com.google.common.collect.MapMaker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import tajo.*;
-import tajo.engine.MasterWorkerProtos.InProgressStatusProto;
+import tajo.QueryId;
+import tajo.QueryUnitAttemptId;
+import tajo.QueryUnitId;
+import tajo.SubQueryId;
+import tajo.engine.MasterWorkerProtos.TaskStatusProto;
 import tajo.engine.exception.NoSuchQueryIdException;
 import tajo.engine.planner.global.QueryUnit;
 import tajo.engine.planner.global.QueryUnitAttempt;
-import tajo.master.SubQuery;
 import tajo.master.Query;
+import tajo.master.SubQuery;
 import tajo.util.TQueryUtil;
 
 import java.util.*;
@@ -109,8 +112,8 @@ public class QueryManager {
     return getQueryUnit(attemptId.getQueryUnitId()).getAttempt(attemptId);
   }
 
-  public Collection<InProgressStatusProto> getAllProgresses() {
-    Collection<InProgressStatusProto> statuses = new ArrayList<InProgressStatusProto>();
+  public Collection<TaskStatusProto> getAllProgresses() {
+    Collection<TaskStatusProto> statuses = new ArrayList<TaskStatusProto>();
     for (Query query : queries.values()) {
       for (SubQuery subQuery : query.getSubQueries()) {
         for (QueryUnit queryUnit : subQuery.getQueryUnits()) {

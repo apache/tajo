@@ -20,7 +20,7 @@
 
 package tajo.engine.planner.physical;
 
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.engine.planner.Projector;
 import tajo.engine.planner.logical.GroupbyNode;
 import tajo.storage.Tuple;
@@ -39,7 +39,7 @@ public class SortAggregateExec extends AggregationExec {
   private final Projector projector;
 
 
-  public SortAggregateExec(SubqueryContext context, GroupbyNode plan,
+  public SortAggregateExec(TaskAttemptContext context, GroupbyNode plan,
                            PhysicalExec child) throws IOException {
     super(context, plan, child);
 

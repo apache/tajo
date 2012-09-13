@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-package tajo.engine.ipc.protocolrecords;
+package tajo.ipc.protocolrecords;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;

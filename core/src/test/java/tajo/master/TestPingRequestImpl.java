@@ -22,11 +22,11 @@ package tajo.master;
 
 import org.junit.Test;
 import tajo.QueryIdFactory;
-import tajo.engine.MasterWorkerProtos.InProgressStatusProto;
 import tajo.engine.MasterWorkerProtos.QueryStatus;
-import tajo.engine.ipc.PingRequest;
-import tajo.engine.query.PingRequestImpl;
+import tajo.engine.MasterWorkerProtos.TaskStatusProto;
+import tajo.engine.query.StatusReportImpl;
 import tajo.engine.utils.TUtil;
+import tajo.ipc.StatusReport;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,24 +39,24 @@ public class TestPingRequestImpl {
   public void test() {
     QueryIdFactory.reset();
     
-    List<InProgressStatusProto> list
-      = new ArrayList<InProgressStatusProto>();
+    List<TaskStatusProto> list
+      = new ArrayList<TaskStatusProto>();
     
-    InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder()
+    TaskStatusProto.Builder builder = TaskStatusProto.newBuilder()
         .setId(TUtil.newQueryUnitAttemptId().getProto())
         .setProgress(0.5f)
         .setStatus(QueryStatus.QUERY_FINISHED);
     list.add(builder.build());
     
-    builder = InProgressStatusProto.newBuilder()
+    builder = TaskStatusProto.newBuilder()
         .setId(TUtil.newQueryUnitAttemptId().getProto())
         .setProgress(0.5f)
         .setStatus(QueryStatus.QUERY_FINISHED);
     list.add(builder.build());
     
-    PingRequest r1 = new PingRequestImpl(System.currentTimeMillis(),
+    StatusReport r1 = new StatusReportImpl(System.currentTimeMillis(),
         "testserver", list);
-    PingRequest r2 = new PingRequestImpl(r1.getProto());
+    StatusReport r2 = new StatusReportImpl(r1.getProto());
     
     assertEquals(r1.getProto().getStatusCount(), r2.getProto().getStatusCount());
     assertEquals(r1.getProto(), r2.getProto());

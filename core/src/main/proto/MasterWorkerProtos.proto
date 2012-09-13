@@ -19,7 +19,7 @@ enum QueryStatus {
   QUERY_ABORTED = 9;
 }
 
-message InProgressStatusProto {
+message TaskStatusProto {
     required QueryUnitAttemptIdProto id = 1;
     required float progress = 2;
     required QueryStatus status = 3;
@@ -48,17 +48,10 @@ message QueryUnitResponseProto {
     required QueryStatus status = 2;
 }
 
-message SubQueryResponseProto {
-}
-
-message PingRequestProto {
+message StatusReportProto {
     required int64 timestamp = 1;
     required string serverName = 2;
-    repeated InProgressStatusProto status = 3;
-}
-
-message PingResponseProto {
-    repeated Command command = 1;
+    repeated TaskStatusProto status = 3;
 }
 
 message CommandRequestProto {

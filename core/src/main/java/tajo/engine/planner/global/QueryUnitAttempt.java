@@ -22,8 +22,8 @@ package tajo.engine.planner.global;
 
 import tajo.QueryUnitAttemptId;
 import tajo.catalog.statistics.TableStat;
-import tajo.engine.MasterWorkerProtos.InProgressStatusProto;
 import tajo.engine.MasterWorkerProtos.QueryStatus;
+import tajo.engine.MasterWorkerProtos.TaskStatusProto;
 import tajo.master.AbstractQuery;
 
 public class QueryUnitAttempt extends AbstractQuery {
@@ -86,7 +86,7 @@ public class QueryUnitAttempt extends AbstractQuery {
     return this.expire;
   }
 
-  public void updateProgress(InProgressStatusProto progress) {
+  public void updateProgress(TaskStatusProto progress) {
     if (status != progress.getStatus()) {
       this.setProgress(progress.getProgress());
       this.setStatus(progress.getStatus());

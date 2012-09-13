@@ -2,7 +2,7 @@ package tajo.storage;
 
 import org.apache.hadoop.conf.Configuration;
 import tajo.catalog.Schema;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 
 public abstract class FileScanner implements SeekableScanner {
   
