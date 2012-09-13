@@ -26,4 +26,4 @@ bin=`cd "$bin"; pwd`
 # start mapred daemons
 # start jobtracker first to minimize connection errors at startup
 "$bin"/tajo-daemon.sh --config $TAJO_CONF_DIR start master
-"$bin"/tajo-daemons.sh --config $TAJO_CONF_DIR start leafserver
+"$bin"/tajo-daemons.sh --config $TAJO_CONF_DIR start worker

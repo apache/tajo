@@ -64,8 +64,8 @@ if [ $# = 0 ]; then
   echo "  master               run the Master Server"
   echo "  zkserver             run the Zookeeper Server"
   echo "  catalog              run the Catalog server"
-  echo "  catutil			   catalog utility"
-  echo "  leafserver           run the Leaf Server"
+  echo "  catutil              catalog utility"
+  echo "  worker               run the Leaf Server"
   echo "  cluster              cluster Utility"
   echo "  cli                  run the tajo cli"
   echo "  jar <jar>            run a jar file"
@@ -189,8 +189,8 @@ elif [ "$COMMAND" = "catutil" ] ; then
 elif [ "$COMMAND" = "zkserver" ] ; then
   CLASS='tajo.zookeeper.ZkServer'
   TAJO_OPTS="$TAJO_OPTS $TAJO_ZKSERVER_OPTS"
-elif [ "$COMMAND" = "leafserver" ] ; then
-  CLASS='tajo.worker.LeafServer'
+elif [ "$COMMAND" = "worker" ] ; then
+  CLASS='tajo.worker.Worker'
   TAJO_OPTS="$TAJO_OPTS $TAJO_ZKSERVER_OPTS"
 elif [ "$COMMAND" = "cluster" ] ; then
   CLASS='tajo.engine.cluster.ClusterUtil'
