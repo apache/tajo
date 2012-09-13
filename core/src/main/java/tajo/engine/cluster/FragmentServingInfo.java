@@ -1,7 +1,7 @@
 package tajo.engine.cluster;
 
 import com.google.common.collect.Lists;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 
 import java.util.List;
 

@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2012 Database Lab., Korea Univ.
  *
@@ -29,21 +28,21 @@ import tajo.QueryUnitAttemptId;
 import tajo.common.Sleeper;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
-import tajo.engine.MasterWorkerProtos.InProgressStatusProto;
-import tajo.engine.MasterWorkerProtos.PingRequestProto;
-import tajo.engine.MasterWorkerProtos.PingResponseProto;
-import tajo.engine.ipc.MasterInterface;
-import tajo.engine.ipc.PingRequest;
+import tajo.engine.MasterWorkerProtos.StatusReportProto;
+import tajo.engine.MasterWorkerProtos.TaskStatusProto;
 import tajo.engine.planner.global.QueryUnitAttempt;
-import tajo.engine.query.PingRequestImpl;
+import tajo.engine.query.StatusReportImpl;
+import tajo.ipc.MasterWorkerProtocol;
+import tajo.ipc.StatusReport;
 import tajo.master.TajoMaster;
 import tajo.rpc.NettyRpc;
 import tajo.rpc.NettyRpcServer;
+import tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class WorkerListener extends Thread implements MasterInterface {
+public class WorkerListener extends Thread implements MasterWorkerProtocol {
   
   private final static Log LOG = LogFactory.getLog(WorkerListener.class);
   private final NettyRpcServer rpcServer;
@@ -62,7 +61,7 @@ public class WorkerListener extends Thread implements MasterInterface {
       throw new IllegalArgumentException("Failed resolve of " + initIsa);
     }
     this.rpcServer = NettyRpc.getProtoParamRpcServer(this, 
-        MasterInterface.class, initIsa);
+        MasterWorkerProtocol.class, initIsa);
     this.qm = qm;
     this.stopped = false;
     this.rpcServer.start();
@@ -89,28 +88,32 @@ public class WorkerListener extends Thread implements MasterInterface {
     this.stopped = true;
   }
 
-  /* (non-Javadoc)
-   * @see nta.engine.ipc.AsyncMasterInterface#reportQueryUnit(nta.engine.QueryUnitProtos.QueryUnitReportProto)
-   */
+  static BoolProto TRUE_PROTO = BoolProto.newBuilder().setValue(true).build();
+
   @Override
-  public PingResponseProto reportQueryUnit(PingRequestProto proto) {
-//    LOG.info("master received reports from " + proto.getServerName() +
-//        ": " + proto.getStatusCount());
-    if (master.getClusterManager().getFailedWorkers().contains(proto.getServerName())) {
+  public BoolProto statusUpdate(StatusReportProto proto) {
+
+    if (master.getClusterManager().getFailedWorkers().contains(
+        proto.getServerName())) {
       LOG.info("**** Dead man alive!!!!!!");
     }
 
-    PingRequest report = new PingRequestImpl(proto);
-    for (InProgressStatusProto status : report.getProgressList()) {
+    StatusReport report = new StatusReportImpl(proto);
+    for (TaskStatusProto status : report.getProgressList()) {
       QueryUnitAttemptId uid = new QueryUnitAttemptId(status.getId());
       //qm.updateProgress(uid, status);
       QueryUnitAttempt attempt = qm.getQueryUnitAttempt(uid);
       attempt.updateProgress(status);
       processed.incrementAndGet();
     }
-    PingResponseProto.Builder response
-      = PingResponseProto.newBuilder();
-    return response.build();
+
+    return TRUE_PROTO;
+  }
+
+  @Override
+  public BoolProto ping(QueryUnitAttemptId taskId) {
+    LOG.info("Ping is Called!");
+    return TRUE_PROTO;
   }
 
   @Override

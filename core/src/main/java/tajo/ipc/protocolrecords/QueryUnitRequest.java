@@ -21,7 +21,7 @@
 /**
  * 
  */
-package tajo.engine.ipc.protocolrecords;
+package tajo.ipc.protocolrecords;
 
 import tajo.QueryUnitAttemptId;
 import tajo.common.ProtoObject;

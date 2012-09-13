@@ -24,7 +24,6 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import tajo.QueryContext;
 import tajo.TajoTestingUtility;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
@@ -43,15 +42,10 @@ import tajo.storage.VTuple;
 
 import static org.junit.Assert.*;
 
-/**
- * @author Hyunsik Choi
- */
 public class TestEvalTree {
   private static TajoTestingUtility util;
   private static CatalogService cat;
-  private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
-  private static LogicalPlanner planner;
   private static Tuple [] tuples = new Tuple[3];
   
   @BeforeClass
@@ -74,10 +68,8 @@ public class TestEvalTree {
         new DataType [] {DataType.INT},
         new DataType [] {DataType.INT, DataType.INT});
     cat.registerFunction(funcMeta);
-    
-    factory = new QueryContext.Factory(cat);
+
     analyzer = new QueryAnalyzer(cat);
-    planner = new LogicalPlanner(cat);
     
     tuples[0] = new VTuple(3);
     tuples[0].put(new Datum[] {
@@ -608,7 +600,6 @@ public class TestEvalTree {
     // Evaluation Test
     QueryBlock block;
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
-    QueryContext ctx = factory.create();
     block = (QueryBlock) analyzer.parse(NOT[0]).getParseTree();
     expr = block.getWhereCondition();
     evalCtx = expr.newContext();
@@ -631,9 +622,7 @@ public class TestEvalTree {
     QueryBlock block;
     EvalNode expr;
 
-    // suffix
     Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
-    QueryContext ctx = factory.create();
     block = (QueryBlock) analyzer.parse(LIKE[0]).getParseTree();
     expr = block.getWhereCondition();
     EvalContext evalCtx = expr.newContext();
@@ -677,9 +666,6 @@ public class TestEvalTree {
     QueryBlock block;
     EvalNode expr;
 
-    // suffix
-    Schema peopleSchema = cat.getTableDesc("people").getMeta().getSchema();
-    QueryContext ctx = factory.create();
     block = (QueryBlock) analyzer.parse(IS_NULL[0]).getParseTree();
     expr = block.getWhereCondition();
 

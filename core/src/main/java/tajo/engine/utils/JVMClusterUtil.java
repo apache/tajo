@@ -4,7 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import tajo.conf.TajoConf;
 import tajo.master.TajoMaster;
-import tajo.worker.LeafServer;
+import tajo.worker.Worker;
 
 import java.io.IOException;
 import java.util.List;
@@ -12,22 +12,22 @@ import java.util.List;
 public class JVMClusterUtil {
 	private static final Log LOG = LogFactory.getLog(JVMClusterUtil.class);
 
-	public static class LeafServerThread extends Thread {
-		private final LeafServer leafServer;
+	public static class WorkerThread extends Thread {
+		private final Worker worker;
 
-		public LeafServerThread(final LeafServer s, final int index) {
-			super(s, "LeafServer: "+index+";"+s.getServerName());
-			this.leafServer = s;
+		public WorkerThread(final Worker s, final int index) {
+			super(s, "Worker: "+index+";"+s.getServerName());
+			this.worker = s;
 		}
 
-		public LeafServer getLeafServer() {
-			return this.leafServer;
+		public Worker getWorker() {
+			return this.worker;
 		}
 
 		public void waitForServerOnline() {
 
-			while(!this.leafServer.isOnline() &&
-				!this.leafServer.isStopped()) {
+			while(!this.worker.isOnline() &&
+				!this.worker.isStopped()) {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
@@ -37,13 +37,13 @@ public class JVMClusterUtil {
 		}
 	}
 
-	public static JVMClusterUtil.LeafServerThread createLeafServerThread(
+	public static WorkerThread createLeafServerThread(
 		final TajoConf c, final int index) throws IOException {
-		LeafServer server;
+		Worker server;
 
-		server = new LeafServer(c);
+		server = new Worker(c);
 
-		return new JVMClusterUtil.LeafServerThread(server, index);
+		return new WorkerThread(server, index);
 	}
 
 	public static class MasterThread extends Thread {
@@ -79,7 +79,7 @@ public class JVMClusterUtil {
 	}
 
 	public static String startup(final JVMClusterUtil.MasterThread masters,
-		final List<JVMClusterUtil.LeafServerThread> leafservers) {
+		final List<WorkerThread> leafservers) {
     if (masters == null) {
 			return null;
 		}
@@ -87,7 +87,7 @@ public class JVMClusterUtil {
 		masters.start();	
 
 		if(leafservers != null) {
-			for(JVMClusterUtil.LeafServerThread t: leafservers) {
+			for(WorkerThread t: leafservers) {
 				t.start();
 			}
 		}
@@ -99,13 +99,13 @@ public class JVMClusterUtil {
 		}
 	}
 	
-	public static void shutdown(final MasterThread master, final List<LeafServerThread> leafServers) {
+	public static void shutdown(final MasterThread master, final List<WorkerThread> workers) {
 		LOG.debug("Shutting down NtaEngine Cluster");		
 		
-		for(LeafServerThread t: leafServers) {
+		for(WorkerThread t: workers) {
 			if(t.isAlive()) {
 				try {
-					t.getLeafServer().shutdown("Shutdown");
+					t.getWorker().shutdown("Shutdown");
 					t.join();
 				} catch (InterruptedException e) {
 					// continue
@@ -117,7 +117,7 @@ public class JVMClusterUtil {
 
 		LOG.info("Shutdown of "+
 			((master != null) ? "1" : "0") + " master and "+
-			((leafServers != null) ? leafServers.size() : "0") +
+			((workers != null) ? workers.size() : "0") +
 			" leafserver(s) complete");
 	}
 }

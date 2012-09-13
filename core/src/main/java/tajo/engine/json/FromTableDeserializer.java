@@ -6,7 +6,7 @@ package tajo.engine.json;
 import com.google.gson.*;
 import tajo.catalog.TableDesc;
 import tajo.catalog.TableDescImpl;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryBlock.FromTable;
 
 import java.lang.reflect.Type;

@@ -20,14 +20,11 @@
 
 package tajo;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
-import tajo.catalog.statistics.StatSet;
 import tajo.catalog.statistics.TableStat;
 import tajo.engine.MasterWorkerProtos.QueryStatus;
-import tajo.engine.ipc.protocolrecords.Fragment;
-import tajo.engine.ipc.protocolrecords.QueryUnitRequest;
+import tajo.ipc.protocolrecords.Fragment;
 
 import java.io.File;
 import java.util.*;
@@ -39,12 +36,11 @@ import java.util.concurrent.CountDownLatch;
  * 실행 중인 subquery에 대한 정보를 담는다.
  *
  */
-public class SubqueryContext extends Context {
+public class TaskAttemptContext {
   private final Map<String, List<Fragment>> fragmentMap
     = new HashMap<String, List<Fragment>>();
   
   private QueryStatus status;
-  private final Map<String, StatSet> stats;
   private TableStat resultStats;
   private QueryUnitAttemptId queryId;
   private final File workDir;
@@ -55,9 +51,10 @@ public class SubqueryContext extends Context {
   private File fetchIn;
   private boolean stopped = false;
   private boolean interQuery = false;
-  
-  @VisibleForTesting
-  SubqueryContext(final QueryUnitAttemptId queryId, final Fragment [] fragments, final File workDir) {
+
+  public TaskAttemptContext(final QueryUnitAttemptId queryId,
+                     final Fragment[] fragments,
+                     final File workDir) {
     this.queryId = queryId;
     
     for(Fragment t : fragments) {
@@ -69,8 +66,7 @@ public class SubqueryContext extends Context {
         fragmentMap.put(t.getId(), frags);
       }
     }
-    
-    stats = Maps.newHashMap();
+
     this.workDir = workDir;
     this.repartitions = Maps.newHashMap();
     
@@ -78,27 +74,11 @@ public class SubqueryContext extends Context {
   }
   
   public QueryStatus getStatus() {
-    synchronized (status) {
-      return this.status;
-    }
+    return this.status;
   }
   
   public void setStatus(QueryStatus status) {
-    synchronized (status) {
-      this.status = status;
-    }
-  }
-  
-  public void addStatSet(String name, StatSet stats) {
-    this.stats.put(name, stats);
-  }
-  
-  public StatSet getStatSet(String name) {
-    return stats.get(name);
-  }
-  
-  public Iterator<Entry<String, StatSet>> getAllStats() {
-    return stats.entrySet().iterator();
+    this.status = status;
   }
 
   public boolean hasResultStats() {
@@ -155,10 +135,6 @@ public class SubqueryContext extends Context {
     return repartitions.entrySet().iterator();
   }
   
-  public void clearFragment() {
-    this.fragmentMap.clear();
-  }
-  
   public void changeFragment(String tableId, Fragment [] fragments) {
     fragmentMap.remove(tableId);
     for(Fragment t : fragments) {
@@ -172,28 +148,11 @@ public class SubqueryContext extends Context {
     }
   }
   
-  public static class Factory {
-    public Factory() {
-    }
-    
-    @VisibleForTesting
-    public SubqueryContext create(QueryUnitAttemptId id, Fragment [] frags,
-        File workDir) {
-      return new SubqueryContext(id, frags, workDir);
-    }
-    
-    public SubqueryContext create(QueryUnitRequest request, File workDir) {
-      return new SubqueryContext(request.getId(), 
-          request.getFragments().toArray(
-              new Fragment [request.getFragments().size()]), workDir);
-    }
-  }
-  
   public File getWorkDir() {
     return this.workDir;
   }
   
-  public QueryUnitAttemptId getQueryId() {
+  public QueryUnitAttemptId getTaskId() {
     return this.queryId;
   }
   
@@ -205,7 +164,6 @@ public class SubqueryContext extends Context {
     this.progress = progress;
   }
 
-  @Override
   public Fragment getTable(String id) {
     return fragmentMap.get(id).get(0);
   }
@@ -213,8 +171,7 @@ public class SubqueryContext extends Context {
   public int getFragmentSize() {
     return fragmentMap.size();
   }
-  
-  @Override
+
   public Collection<String> getInputTables() {
     return fragmentMap.keySet();
   }
@@ -228,9 +185,9 @@ public class SubqueryContext extends Context {
   }
   
   public boolean equals(Object obj) {
-    if (obj instanceof SubqueryContext) {
-      SubqueryContext other = (SubqueryContext) obj;
-      return queryId.equals(other.getQueryId());
+    if (obj instanceof TaskAttemptContext) {
+      TaskAttemptContext other = (TaskAttemptContext) obj;
+      return queryId.equals(other.getTaskId());
     } else {
       return false;
     }

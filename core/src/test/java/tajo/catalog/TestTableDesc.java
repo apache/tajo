@@ -7,7 +7,7 @@ import org.junit.Test;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.proto.CatalogProtos.TabletProto;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.json.GsonCreator;
 
 import static org.junit.Assert.assertEquals;

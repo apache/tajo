@@ -21,7 +21,7 @@
 package tajo.engine.planner.physical;
 
 import com.google.common.collect.Sets;
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.catalog.Column;
 import tajo.datum.DatumFactory;
 import tajo.engine.eval.ConstEval;
@@ -45,7 +45,7 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
   protected final EvalNode evals [];
   protected EvalContext evalContexts [];
 
-  public AggregationExec(final SubqueryContext context, GroupbyNode plan,
+  public AggregationExec(final TaskAttemptContext context, GroupbyNode plan,
                          PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.havingQual = plan.getHavingCondition();

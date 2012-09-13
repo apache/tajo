@@ -20,20 +20,13 @@
 
 package tajo.master;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.KeeperException;
-import tajo.QueryUnitAttemptId;
 import tajo.conf.TajoConf;
-import tajo.engine.MasterWorkerProtos.Command;
-import tajo.engine.MasterWorkerProtos.PingResponseProto;
 import tajo.engine.MasterWorkerProtos.QueryStatus;
 
 import java.io.IOException;
 
 public class MockupAbortWorker extends MockupWorker {
-  private final static Log LOG = LogFactory.getLog(MockupAbortWorker.class);
-
   public MockupAbortWorker(TajoConf conf) {
     super(conf, Type.ABORT);
   }
@@ -52,7 +45,7 @@ public class MockupAbortWorker extends MockupWorker {
       participateCluster();
       if (!this.stopped) {
         long before = -1;
-        long sleeptime = 3000;
+        long sleeptime;
         long time;
         while (!this.stopped) {
           time = System.currentTimeMillis();
@@ -67,43 +60,8 @@ public class MockupAbortWorker extends MockupWorker {
           progressTask();
           abortTask();
 
-          PingResponseProto response = sendHeartbeat(time);
+          sendHeartbeat(time);
           before = time;
-
-          QueryUnitAttemptId qid;
-          MockupTask task;
-          QueryStatus status;
-          for (Command cmd : response.getCommandList()) {
-            qid = new QueryUnitAttemptId(cmd.getId());
-            if (!taskMap.containsKey(qid)) {
-              LOG.error("ERROR: no such task " + qid);
-              continue;
-            }
-            task = taskMap.get(qid);
-            status = task.getStatus();
-
-            switch (cmd.getType()) {
-              case FINALIZE:
-                if (status == QueryStatus.QUERY_FINISHED
-                    || status == QueryStatus.QUERY_DATASERVER
-                    || status == QueryStatus.QUERY_ABORTED
-                    || status == QueryStatus.QUERY_KILLED) {
-                  task.setStatus(QueryStatus.QUERY_FINISHED);
-                } else {
-                  task.setStatus(QueryStatus.QUERY_ABORTED);
-                }
-
-                break;
-              case STOP:
-                if (status == QueryStatus.QUERY_INPROGRESS) {
-                  task.setStatus(QueryStatus.QUERY_ABORTED);
-                } else {
-                  LOG.error("ERROR: Illegal State of " + qid + "(" + status + ")");
-                }
-
-                break;
-            }
-          }
         }
       }
     } catch (IOException e) {

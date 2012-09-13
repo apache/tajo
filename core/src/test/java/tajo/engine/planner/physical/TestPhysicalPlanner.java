@@ -1,3 +1,23 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo.engine.planner.physical;
 
 import com.google.common.collect.Lists;
@@ -12,7 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.QueryIdFactory;
 import tajo.QueryUnitAttemptId;
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.TajoTestingUtility;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
@@ -21,7 +41,7 @@ import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.datum.NullDatum;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.*;
@@ -44,16 +64,12 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
-/**
- * @author Hyunsik Choi
- */
 public class TestPhysicalPlanner {
   private static TajoTestingUtility util;
   private static TajoConf conf;
   private static CatalogService catalog;
   private static QueryAnalyzer analyzer;
   private static LogicalPlanner planner;
-  private static SubqueryContext.Factory factory;
   private static StorageManager sm;
 
   private static TableDesc employee = null;
@@ -131,7 +147,6 @@ public class TestPhysicalPlanner {
     appender.flush();
     appender.close();
     catalog.addTable(score);
-    factory = new SubqueryContext.Factory();
     analyzer = new QueryAnalyzer(catalog);
     planner = new LogicalPlanner(catalog);
   }
@@ -165,9 +180,8 @@ public class TestPhysicalPlanner {
   @Test
   public final void testCreateScanPlan() throws IOException {
     Fragment[] frags = sm.split("employee");
-    factory = new SubqueryContext.Factory();
     File workDir = TajoTestingUtility.getTestDir("testCreateScanPlan");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);
@@ -194,7 +208,7 @@ public class TestPhysicalPlanner {
   public final void testGroupByPlan() throws IOException {
     Fragment[] frags = sm.split("score");
     File workDir = TajoTestingUtility.getTestDir("testGroupByPlan");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[7]);
     LogicalNode plan = planner.createPlan(context);
@@ -222,7 +236,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = sm.split("score");
     File workDir = TajoTestingUtility
         .getTestDir("testHashGroupByPlanWithALLField");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[16]);
     LogicalNode plan = planner.createPlan(context);
@@ -249,7 +263,7 @@ public class TestPhysicalPlanner {
   public final void testSortGroupByPlan() throws IOException {
     Fragment[] frags = sm.split("score");
     File workDir = TajoTestingUtility.getTestDir("testSortGroupByPlan");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[]{frags[0]}, workDir);
     PlanningContext context = analyzer.parse(QUERIES[7]);
     LogicalNode plan = planner.createPlan(context);
@@ -299,10 +313,8 @@ public class TestPhysicalPlanner {
   @Test
   public final void testStorePlan() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory();
-
     File workDir = TajoTestingUtility.getTestDir("testStorePlan");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] },
         workDir);
     PlanningContext context = analyzer.parse(QUERIES[8]);
@@ -319,7 +331,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    Scanner scanner = sm.getScanner("grouped", ctx.getQueryId().toString());
+    Scanner scanner = sm.getScanner("grouped", ctx.getTaskId().toString());
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
@@ -338,13 +350,9 @@ public class TestPhysicalPlanner {
   @Test
   public final void testPartitionedStorePlan() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory();
-
     QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
-
-
     File workDir = TajoTestingUtility.getTestDir("testPartitionedStorePlan");
-    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] },
+    TaskAttemptContext ctx = new TaskAttemptContext(id, new Fragment[] { frags[0] },
         workDir);
     PlanningContext context = analyzer.parse(QUERIES[7]);
     LogicalNode plan = planner.createPlan(context);
@@ -399,13 +407,11 @@ public class TestPhysicalPlanner {
   public final void testPartitionedStorePlanWithEmptyGroupingSet()
       throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory();
-
     QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
 
     File workDir = TajoTestingUtility
         .getTestDir("testPartitionedStorePlanWithEmptyGroupingSet");
-    SubqueryContext ctx = factory.create(id, new Fragment[] { frags[0] },
+    TaskAttemptContext ctx = new TaskAttemptContext(id, new Fragment[] { frags[0] },
         workDir);
     PlanningContext context = analyzer.parse(QUERIES[15]);
     LogicalNode plan = planner.createPlan(context);
@@ -452,9 +458,8 @@ public class TestPhysicalPlanner {
   //@Test
   public final void testAggregationFunction() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory();
     File workDir = TajoTestingUtility.getTestDir("testAggregationFunction");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[9]);
     LogicalNode plan = planner.createPlan(context);
@@ -475,9 +480,8 @@ public class TestPhysicalPlanner {
   //@Test
   public final void testCountFunction() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory();
     File workDir = TajoTestingUtility.getTestDir("testCountFunction");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[10]);
     LogicalNode plan = planner.createPlan(context);
@@ -494,9 +498,8 @@ public class TestPhysicalPlanner {
   @Test
   public final void testGroupByWithNullValue() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory();
     File workDir = TajoTestingUtility.getTestDir("testGroupByWithNullValue");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[12]);
     LogicalNode plan = planner.createPlan(context);
@@ -517,9 +520,8 @@ public class TestPhysicalPlanner {
   @Test
   public final void testUnionPlan() throws IOException {
     Fragment[] frags = sm.split("employee");
-    factory = new SubqueryContext.Factory();
     File workDir = TajoTestingUtility.getTestDir("testUnionPlan");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);
@@ -544,9 +546,8 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testEvalExpr() throws IOException {
-    factory = new SubqueryContext.Factory();
     File workDir = TajoTestingUtility.getTestDir("testEvalExpr");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] { }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[13]);
     LogicalNode plan = planner.createPlan(context);
@@ -580,9 +581,8 @@ public class TestPhysicalPlanner {
   @Test
   public final void testCreateIndex() throws IOException {
     Fragment[] frags = sm.split("employee");
-    factory = new SubqueryContext.Factory();
     File workDir = TajoTestingUtility.getTestDir("testCreateIndex");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
     PlanningContext context = analyzer.parse(createIndexStmt[0]);
     LogicalNode plan = planner.createPlan(context);
@@ -607,10 +607,9 @@ public class TestPhysicalPlanner {
   @Test
   public final void testDuplicateEliminate() throws IOException {
     Fragment[] frags = sm.split("score");
-    factory = new SubqueryContext.Factory();
 
     File workDir = TajoTestingUtility.getTestDir("testDuplicateEliminate");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
     PlanningContext context = analyzer.parse(duplicateElimination[0]);
     LogicalNode plan = planner.createPlan(context);
@@ -639,10 +638,9 @@ public class TestPhysicalPlanner {
   @Test
   public final void testIndexedStoreExec() throws IOException {
     Fragment[] frags = sm.split("employee");
-    factory = new SubqueryContext.Factory();
 
     File workDir = TajoTestingUtility.getTestDir("testIndexedStoreExec");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
     PlanningContext context = analyzer.parse(SORT_QUERY[0]);
     LogicalNode plan = planner.createPlan(context);

@@ -9,7 +9,7 @@ import tajo.catalog.Options;
 import tajo.catalog.Schema;
 import tajo.catalog.TableMetaImpl;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 
 import java.lang.reflect.Type;
 

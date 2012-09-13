@@ -24,7 +24,7 @@ import tajo.QueryUnitId;
 import tajo.engine.MasterWorkerProtos.QueryStatus;
 import tajo.engine.MasterWorkerProtos.QueryUnitResponseProto;
 import tajo.engine.MasterWorkerProtos.QueryUnitResponseProtoOrBuilder;
-import tajo.engine.ipc.protocolrecords.QueryUnitResponse;
+import tajo.ipc.protocolrecords.QueryUnitResponse;
 
 public class QueryUnitResponseImpl implements QueryUnitResponse {
 	

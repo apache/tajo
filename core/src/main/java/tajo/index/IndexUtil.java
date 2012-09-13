@@ -29,7 +29,7 @@ import tajo.engine.eval.EvalNode;
 import tajo.engine.eval.EvalNode.Type;
 import tajo.engine.eval.EvalNodeVisitor;
 import tajo.engine.eval.FieldEval;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.parser.QueryBlock.SortSpec;
 import tajo.engine.planner.logical.IndexScanNode;

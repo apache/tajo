@@ -33,13 +33,14 @@ import tajo.catalog.statistics.TableStat;
 import tajo.conf.TajoConf;
 import tajo.engine.MasterWorkerProtos.*;
 import tajo.engine.cluster.MasterAddressTracker;
-import tajo.engine.ipc.AsyncWorkerInterface;
-import tajo.engine.ipc.MasterInterface;
-import tajo.engine.ipc.protocolrecords.QueryUnitRequest;
+import tajo.ipc.AsyncWorkerProtocol;
+import tajo.ipc.MasterWorkerProtocol;
+import tajo.ipc.protocolrecords.QueryUnitRequest;
 import tajo.engine.query.QueryUnitRequestImpl;
 import tajo.rpc.NettyRpc;
 import tajo.rpc.NettyRpcServer;
 import tajo.rpc.protocolrecords.PrimitiveProtos;
+import tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import tajo.zookeeper.ZkClient;
 import tajo.zookeeper.ZkUtil;
 
@@ -51,7 +52,7 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class MockupWorker
-    extends Thread implements AsyncWorkerInterface {
+    extends Thread implements AsyncWorkerProtocol {
   public static enum Type {
     NORMAL,
     ABORT,
@@ -67,7 +68,7 @@ public abstract class MockupWorker
 
   protected ZkClient zkClient;
   protected MasterAddressTracker masterAddrTracker;
-  protected MasterInterface master;
+  protected MasterWorkerProtocol master;
 
   protected final Type type;
 
@@ -94,7 +95,7 @@ public abstract class MockupWorker
     if (initialIsa.getAddress() == null) {
       throw new IllegalArgumentException("Failed resolve of " + this.isa);
     }
-    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, AsyncWorkerInterface.class, initialIsa);
+    this.rpcServer = NettyRpc.getProtoParamRpcServer(this, AsyncWorkerProtocol.class, initialIsa);
     this.rpcServer.start();
 
     this.isa = this.rpcServer.getBindAddress();
@@ -121,11 +122,11 @@ public abstract class MockupWorker
         + serverName);
 
     InetSocketAddress addr = NetUtils.createSocketAddr(new String(master));
-    this.master = (MasterInterface) NettyRpc.getProtoParamBlockingRpcProxy(
-        MasterInterface.class, addr);
+    this.master = (MasterWorkerProtocol) NettyRpc.getProtoParamBlockingRpcProxy(
+        MasterWorkerProtocol.class, addr);
   }
 
-  public MasterInterface getMaster() {
+  public MasterWorkerProtocol getMaster() {
     return this.master;
   }
 
@@ -137,9 +138,9 @@ public abstract class MockupWorker
     return this.type;
   }
 
-  public InProgressStatusProto getReport(QueryUnitAttemptId queryUnitId,
+  public TaskStatusProto getReport(QueryUnitAttemptId queryUnitId,
                                          QueryStatus status) {
-    InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder();
+    TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
     builder.setId(queryUnitId.getProto())
         .setProgress(0.0f)
         .setStatus(status);
@@ -152,7 +153,7 @@ public abstract class MockupWorker
   }
 
   @Override
-  public SubQueryResponseProto requestQueryUnit(QueryUnitRequestProto proto) throws Exception {
+  public BoolProto requestQueryUnit(QueryUnitRequestProto proto) throws Exception {
     QueryUnitRequest request = new QueryUnitRequestImpl(proto);
     MockupTask task = new MockupTask(request.getId(), 9000);
     if (taskMap.containsKey(task.getId())) {
@@ -267,15 +268,15 @@ public abstract class MockupWorker
     }
   }
 
-  protected PingResponseProto sendHeartbeat(long time) throws IOException {
-    PingRequestProto.Builder ping = PingRequestProto.newBuilder();
+  protected boolean sendHeartbeat(long time) throws IOException {
+    StatusReportProto.Builder ping = StatusReportProto.newBuilder();
     ping.setTimestamp(time);
     ping.setServerName(serverName);
 
     // to send
-    List<InProgressStatusProto> list
-        = new ArrayList<InProgressStatusProto>();
-    InProgressStatusProto status;
+    List<TaskStatusProto> list
+        = new ArrayList<TaskStatusProto>();
+    TaskStatusProto status;
     // to be removed
     List<QueryUnitAttemptId> tobeRemoved = Lists.newArrayList();
 
@@ -293,9 +294,8 @@ public abstract class MockupWorker
     }
 
     ping.addAllStatus(list);
-    PingRequestProto proto = ping.build();
-    PingResponseProto res = master.reportQueryUnit(proto);
-    return res;
+    StatusReportProto proto = ping.build();
+    return master.statusUpdate(proto).getValue();
   }
 
   protected void clear() {
@@ -305,9 +305,5 @@ public abstract class MockupWorker
     rpcServer.shutdown();
     masterAddrTracker.stop();
     zkClient.close();
-  }
-
-  public Map<QueryUnitAttemptId, MockupTask> getTasks() {
-    return this.taskMap;
   }
 }

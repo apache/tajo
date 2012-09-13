@@ -1,4 +1,4 @@
-package tajo.engine.ipc.protocolrecords;
+package tajo.ipc.protocolrecords;
 
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;

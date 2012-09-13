@@ -1,11 +1,30 @@
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ *  or more contributor license agreements.  See the NOTICE file
+ *  distributed with this work for additional information
+ *  regarding copyright ownership.  The ASF licenses this file
+ *  to you under the Apache License, Version 2.0 (the
+ *  "License"); you may not use this file except in compliance
+ *  with the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package tajo;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import tajo.conf.TajoConf;
 import tajo.engine.utils.JVMClusterUtil;
+import tajo.engine.utils.JVMClusterUtil.WorkerThread;
 import tajo.master.TajoMaster;
-import tajo.worker.LeafServer;
+import tajo.worker.Worker;
 
 import java.io.IOException;
 import java.util.List;
@@ -31,33 +50,33 @@ public class MiniTajoCluster {
 		}
 	}
 	
-	public JVMClusterUtil.LeafServerThread startLeafServer() throws IOException {
+	public WorkerThread startWorkers() throws IOException {
 		final TajoConf newConf = new TajoConf(conf);
 		
-		JVMClusterUtil.LeafServerThread t = null;
+		WorkerThread t = null;
 		
-		t = engineCluster.addLeafServer(newConf, engineCluster.getLeafServers().size());
+		t = engineCluster.addLeafServer(newConf, engineCluster.getWorkers().size());
 		t.start();
 		t.waitForServerOnline();
 		
 		return t;
 	}
 	
-	public String abortLeafServer(int index) {
-		LeafServer server = getLeafServer(index);
+	public String abortWorker(int index) {
+		Worker server = getWorker(index);
 		LOG.info("Aborting " + server.toString());
 		server.abort("Aborting for tests", new Exception("Trace info"));
 		return server.toString();
 	}
 	
-	public JVMClusterUtil.LeafServerThread stopLeafServer(int index) {
+	public WorkerThread stopLeafServer(int index) {
 		return stopLeafServer(index);
 	}
 	
-	public JVMClusterUtil.LeafServerThread stopLeafServer(int index, final boolean shutdownFS) {
-		JVMClusterUtil.LeafServerThread server = engineCluster.getLeafServers().get(index);
+	public WorkerThread stopLeafServer(int index, final boolean shutdownFS) {
+		WorkerThread server = engineCluster.getWorkers().get(index);
 		LOG.info("Stopping " +  server.toString());
-		server.getLeafServer().shutdown("Stopping ls " + index);
+		server.getWorker().shutdown("Stopping ls " + index);
 		return server;
 	}
 	
@@ -88,23 +107,23 @@ public class MiniTajoCluster {
 		}
 	}
 	
-	public List<JVMClusterUtil.LeafServerThread> getLeafServerThreads() {
-		return this.engineCluster.getLeafServers();
+	public List<WorkerThread> getWorkerThreads() {
+		return this.engineCluster.getWorkers();
 	}
 	
-	public List<JVMClusterUtil.LeafServerThread> getLiveLeafServerThreads() {
+	public List<WorkerThread> getLiveWorkerThreads() {
 		return this.engineCluster.getLiveLeafServers();
 	}
 	
-	public LeafServer getLeafServer(int index) {
+	public Worker getWorker(int index) {
 		return engineCluster.getLeafServer(index);
 	}
 	
-	public JVMClusterUtil.LeafServerThread addLeafServer() throws IOException {
+	public WorkerThread addWorker() throws IOException {
 	  return engineCluster.addLeafServer(conf, engineCluster.getClusterSize());
 	}
 	
-	public void shutdownLeafServer(int idx) {
+	public void shutdownWorker(int idx) {
 	  engineCluster.getLeafServer(idx).shutdown("Shutting down Normally");
 	}
 }

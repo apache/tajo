@@ -2,7 +2,6 @@
 .settings
 .classpath
 .metadata
+.iml
+.idea
 target
-*.flr
-vpproject
-*.DS_Store

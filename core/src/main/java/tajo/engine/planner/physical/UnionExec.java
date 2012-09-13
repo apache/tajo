@@ -23,7 +23,7 @@
  */
 package tajo.engine.planner.physical;
 
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.engine.query.exception.InvalidQueryException;
 import tajo.storage.Tuple;
 
@@ -37,7 +37,7 @@ public class UnionExec extends BinaryPhysicalExec {
   private boolean nextOuter = true;
   private Tuple tuple;
 
-  public UnionExec(SubqueryContext context, PhysicalExec outer, PhysicalExec inner) {
+  public UnionExec(TaskAttemptContext context, PhysicalExec outer, PhysicalExec inner) {
     super(context, outer.getSchema(), inner.getSchema(), outer, inner);
     if (!outer.getSchema().equals(inner.getSchema())) {
       throw new InvalidQueryException(

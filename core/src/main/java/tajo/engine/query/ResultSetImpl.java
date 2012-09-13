@@ -15,7 +15,7 @@ import tajo.catalog.proto.CatalogProtos.TableProto;
 import tajo.datum.Datum;
 import tajo.datum.DatumType;
 import tajo.engine.exception.UnsupportedException;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.storage.CSVFile2;
 import tajo.storage.RawFile2;
 import tajo.storage.Scanner;

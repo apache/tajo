@@ -24,7 +24,7 @@ import tajo.engine.ClientServiceProtos.ExecuteQueryRespose;
 import tajo.storage.*;
 import tajo.storage.Scanner;
 import tajo.util.FileUtil;
-import tajo.worker.LeafServer;
+import tajo.worker.Worker;
 
 import java.io.IOException;
 import java.util.*;
@@ -332,7 +332,7 @@ public class TestGlobalEngine {
       public void run() {
         try {
           Thread.sleep(1000);
-          LeafServer leaf = util.getMiniTajoCluster().getLeafServer(0);
+          Worker leaf = util.getMiniTajoCluster().getWorker(0);
           LOG.info(">>> " + leaf.getServerName() + " will be halted!!");
           leaf.shutdown(">>> Aborted! <<<");
         } catch (InterruptedException e) {

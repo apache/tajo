@@ -20,7 +20,7 @@
 
 package tajo.engine.planner.physical;
 
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.engine.eval.EvalContext;
 import tajo.engine.eval.EvalNode;
 import tajo.engine.planner.Projector;
@@ -49,7 +49,7 @@ public class NLJoinExec extends BinaryPhysicalExec {
   private final EvalContext [] evalContexts;
   private final Projector projector;
 
-  public NLJoinExec(SubqueryContext context, JoinNode plan, PhysicalExec outer,
+  public NLJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner) {
     super(context, plan.getInSchema(), plan.getOutSchema(), outer, inner);
     this.plan = plan;

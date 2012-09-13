@@ -1,10 +1,30 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * 
  */
 package tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
@@ -32,7 +52,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
    * @throws IOException 
    * 
    */
-  public StoreTableExec(SubqueryContext context, StorageManager sm,
+  public StoreTableExec(TaskAttemptContext context, StorageManager sm,
       StoreTableNode plan, PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
 
@@ -51,7 +71,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
           StorageUtil.concatPath(storeTablePath, "data", "0"));
     } else {
       this.appender = sm.getAppender(meta,plan.getTableName(),
-          context.getQueryId().toString());
+          context.getTaskId().toString());
     }
   }
 
@@ -81,6 +101,6 @@ public class StoreTableExec extends UnaryPhysicalExec {
     // Collect statistics data
 //    ctx.addStatSet(annotation.getType().toString(), appender.getStats());
     context.setResultStats(appender.getStats());
-    context.addRepartition(0, context.getQueryId().toString());
+    context.addRepartition(0, context.getTaskId().toString());
   }
 }

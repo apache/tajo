@@ -30,7 +30,7 @@ import tajo.catalog.Schema;
 import tajo.catalog.statistics.TableStat;
 import tajo.engine.MasterWorkerProtos.Partition;
 import tajo.engine.MasterWorkerProtos.QueryStatus;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.planner.logical.*;
 import tajo.master.AbstractQuery;
 

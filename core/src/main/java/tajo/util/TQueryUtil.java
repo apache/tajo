@@ -24,7 +24,7 @@ import tajo.catalog.statistics.Stat;
 import tajo.catalog.statistics.StatSet;
 import tajo.catalog.statistics.TableStat;
 import tajo.common.exception.NotImplementedException;
-import tajo.engine.MasterWorkerProtos.InProgressStatusProto;
+import tajo.engine.MasterWorkerProtos.TaskStatusProto;
 import tajo.engine.planner.global.QueryUnit;
 
 public class TQueryUtil {
@@ -78,8 +78,8 @@ public class TQueryUtil {
     return tableStat;
   }
   
-  public static InProgressStatusProto getInProgressStatusProto(QueryUnit unit) {
-    InProgressStatusProto.Builder builder = InProgressStatusProto.newBuilder();
+  public static TaskStatusProto getInProgressStatusProto(QueryUnit unit) {
+    TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
     builder.setId(unit.getLastAttempt().getId().getProto());
     builder.setStatus(unit.getStatus());
     builder.setProgress(unit.getProgress());

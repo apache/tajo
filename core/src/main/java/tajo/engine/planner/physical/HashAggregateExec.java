@@ -20,7 +20,7 @@
 
 package tajo.engine.planner.physical;
 
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.engine.eval.EvalContext;
 import tajo.engine.planner.logical.GroupbyNode;
 import tajo.storage.Tuple;
@@ -45,7 +45,7 @@ public class HashAggregateExec extends AggregationExec {
    * @throws IOException 
 	 * 
 	 */
-  public HashAggregateExec(SubqueryContext ctx, GroupbyNode annotation,
+  public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode annotation,
                            PhysicalExec subOp) throws IOException {
     super(ctx, annotation, subOp);
     tupleSlots = new HashMap<Tuple, EvalContext[]>(10000);

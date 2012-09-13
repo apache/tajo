@@ -23,7 +23,7 @@
  */
 package tajo.engine.planner.physical;
 
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.engine.eval.EvalContext;
 import tajo.engine.parser.QueryBlock.Target;
 import tajo.engine.planner.logical.EvalExprNode;
@@ -42,7 +42,7 @@ public class EvalExprExec extends PhysicalExec {
   /**
    * 
    */
-  public EvalExprExec(final SubqueryContext context, final EvalExprNode plan) {
+  public EvalExprExec(final TaskAttemptContext context, final EvalExprNode plan) {
     super(context, plan.getInSchema(), plan.getOutSchema());
     this.plan = plan;
 

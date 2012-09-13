@@ -43,7 +43,7 @@ import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.MasterWorkerProtos.Partition;
 import tajo.engine.MasterWorkerProtos.QueryStatus;
 import tajo.engine.cluster.QueryManager;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryBlock.FromTable;
 import tajo.engine.planner.PlannerUtil;
 import tajo.engine.planner.RangePartitionAlgorithm;

@@ -1,6 +1,4 @@
 /*
- * Copyright 2012 Database Lab., Korea Univ.
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,37 +18,37 @@
 
 package tajo.engine.query;
 
-import tajo.engine.MasterWorkerProtos.InProgressStatusProto;
-import tajo.engine.MasterWorkerProtos.PingRequestProto;
-import tajo.engine.MasterWorkerProtos.PingRequestProtoOrBuilder;
-import tajo.engine.ipc.PingRequest;
+import tajo.engine.MasterWorkerProtos.StatusReportProto;
+import tajo.engine.MasterWorkerProtos.StatusReportProtoOrBuilder;
+import tajo.engine.MasterWorkerProtos.TaskStatusProto;
+import tajo.ipc.StatusReport;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class PingRequestImpl implements PingRequest {
-  private PingRequestProto proto;
-  private PingRequestProto.Builder builder;
+public class StatusReportImpl implements StatusReport {
+  private StatusReportProto proto;
+  private StatusReportProto.Builder builder;
   private boolean viaProto;
   private Long timestamp;
   private String serverName;
-  private List<InProgressStatusProto> inProgressQueries;
+  private List<TaskStatusProto> inProgressQueries;
   
-  public PingRequestImpl() {
-    builder = PingRequestProto.newBuilder();
+  public StatusReportImpl() {
+    builder = StatusReportProto.newBuilder();
   }
   
-  public PingRequestImpl(long timestamp, String serverName, 
-      List<InProgressStatusProto> inProgress) {
+  public StatusReportImpl(long timestamp, String serverName,
+                          List<TaskStatusProto> inProgress) {
     this();
     this.timestamp = timestamp;
     this.serverName = serverName;
     this.inProgressQueries = 
-        new ArrayList<InProgressStatusProto>(inProgress);
+        new ArrayList<TaskStatusProto>(inProgress);
   }
   
-  public PingRequestImpl(PingRequestProto proto) {
+  public StatusReportImpl(StatusReportProto proto) {
     this.proto = proto;
     viaProto = true;
   }
@@ -59,12 +57,12 @@ public class PingRequestImpl implements PingRequest {
     if (this.inProgressQueries != null) {
       return;
     }
-    PingRequestProtoOrBuilder p = viaProto ? proto : builder;
+    StatusReportProtoOrBuilder p = viaProto ? proto : builder;
     this.inProgressQueries = p.getStatusList();
   }
   
   public Long timestamp() {
-    PingRequestProtoOrBuilder p = viaProto ? proto : builder;
+    StatusReportProtoOrBuilder p = viaProto ? proto : builder;
     if (timestamp != null) {
       return this.timestamp;
     }
@@ -77,7 +75,7 @@ public class PingRequestImpl implements PingRequest {
   }
   
   public String getServerName() {
-    PingRequestProtoOrBuilder p = viaProto ? proto : builder;
+    StatusReportProtoOrBuilder p = viaProto ? proto : builder;
     if (serverName != null) {
       return this.serverName;
     }
@@ -90,7 +88,7 @@ public class PingRequestImpl implements PingRequest {
   }
 
   @Override
-  public Collection<InProgressStatusProto> getProgressList() {
+  public Collection<TaskStatusProto> getProgressList() {
     initProgress();
     return inProgressQueries;
   }
@@ -100,7 +98,7 @@ public class PingRequestImpl implements PingRequest {
   }
 
   @Override
-  public PingRequestProto getProto() {
+  public StatusReportProto getProto() {
     mergeLocalToProto();
     
     proto = viaProto ? proto : builder.build();
@@ -110,7 +108,7 @@ public class PingRequestImpl implements PingRequest {
 
   private void maybeInitBuilder() {
     if (viaProto || builder == null) {
-      builder = PingRequestProto.newBuilder(proto);
+      builder = StatusReportProto.newBuilder(proto);
     }
     viaProto = false;
   }

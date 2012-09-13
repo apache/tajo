@@ -55,7 +55,7 @@ public class LeafServerTracker extends ZkListener {
 	public void nodeDeleted(String path) {
 		if (path.startsWith(LEAF_SERVERS)) {
 			String serverName = ZkUtil.getNodeName(path);
-			LOG.info("LeafServer ephemeral node deleted, processing expiration [" +
+			LOG.info("Worker ephemeral node deleted, processing expiration [" +
 					serverName + "]");
 			ServerName sn = ServerName.create(serverName);
 			// TODO - node updates		      

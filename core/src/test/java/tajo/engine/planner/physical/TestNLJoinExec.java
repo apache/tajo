@@ -1,9 +1,29 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo.engine.planner.physical;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import tajo.SubqueryContext;
+import tajo.TaskAttemptContext;
 import tajo.TajoTestingUtility;
 import tajo.WorkerTestingUtil;
 import tajo.catalog.*;
@@ -12,7 +32,7 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PhysicalPlanner;
@@ -38,7 +58,6 @@ public class TestNLJoinExec {
   private CatalogService catalog;
   private QueryAnalyzer analyzer;
   private LogicalPlanner planner;
-  private SubqueryContext.Factory factory;
   private StorageManager sm;
 
   @Before
@@ -114,15 +133,13 @@ public class TestNLJoinExec {
   
   @Test
   public final void testCrossJoin() throws IOException {
-//    long start = System.currentTimeMillis();
     Fragment[] empFrags = sm.split("employee");
     Fragment[] peopleFrags = sm.split("people");
     
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);
-    
-    factory = new SubqueryContext.Factory();
+
     File workDir = TajoTestingUtility.getTestDir("CrossJoin");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         merged, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);
@@ -139,24 +156,20 @@ public class TestNLJoinExec {
     }
     exec.close();
     assertEquals(50*50/2, i); // expected 10 * 5
-//    System.out.println("TIME : " + (System.currentTimeMillis() - start));
   }
 
   @Test
   public final void testInnerJoin() throws IOException {
-//    long start = System.currentTimeMillis();
     Fragment[] empFrags = sm.split("employee");
     Fragment[] peopleFrags = sm.split("people");
     
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);
-    
-    factory = new SubqueryContext.Factory();
+
     File workDir = TajoTestingUtility.getTestDir("InnerJoin");
-    SubqueryContext ctx = factory.create(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
         merged, workDir);
     PlanningContext context =  analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(context);
-    System.out.println(plan);
     //LogicalOptimizer.optimize(ctx, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
@@ -176,6 +189,5 @@ public class TestNLJoinExec {
     }
     exec.close();
     assertEquals(50 / 2, count);
-//    System.out.println("TIME : " + (System.currentTimeMillis() - start));
   }
 }

@@ -31,7 +31,7 @@ import tajo.catalog.statistics.TableStat;
 import tajo.catalog.statistics.TableStatistics;
 import tajo.datum.ArrayDatum;
 import tajo.datum.DatumFactory;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.storage.FileAppender;
 import tajo.storage.FileScanner;
 import tajo.storage.Tuple;

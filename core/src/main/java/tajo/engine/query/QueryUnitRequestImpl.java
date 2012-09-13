@@ -25,8 +25,8 @@ import tajo.QueryUnitAttemptId;
 import tajo.engine.MasterWorkerProtos.Fetch;
 import tajo.engine.MasterWorkerProtos.QueryUnitRequestProto;
 import tajo.engine.MasterWorkerProtos.QueryUnitRequestProtoOrBuilder;
-import tajo.engine.ipc.protocolrecords.Fragment;
-import tajo.engine.ipc.protocolrecords.QueryUnitRequest;
+import tajo.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.QueryUnitRequest;
 
 import java.net.URI;
 import java.util.ArrayList;

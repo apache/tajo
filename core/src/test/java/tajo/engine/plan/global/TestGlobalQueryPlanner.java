@@ -29,7 +29,6 @@ import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import tajo.QueryContext;
 import tajo.QueryId;
 import tajo.QueryIdFactory;
 import tajo.TajoTestingUtility;
@@ -48,10 +47,10 @@ import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.global.MasterPlan;
-import tajo.master.SubQuery;
-import tajo.master.SubQuery.PARTITION_TYPE;
 import tajo.engine.planner.logical.*;
 import tajo.master.GlobalPlanner;
+import tajo.master.SubQuery;
+import tajo.master.SubQuery.PARTITION_TYPE;
 import tajo.storage.*;
 
 import java.io.IOException;
@@ -62,12 +61,6 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-/**
- * 
- * @author jihoon
- * 
- */
-
 public class TestGlobalQueryPlanner {
 
   private static TajoTestingUtility util;
@@ -75,7 +68,6 @@ public class TestGlobalQueryPlanner {
   private static CatalogService catalog;
   private static GlobalPlanner planner;
   private static Schema schema;
-  private static QueryContext.Factory factory;
   private static QueryAnalyzer analyzer;
   private static LogicalPlanner logicalPlanner;
   private static QueryId subQueryId;
@@ -112,7 +104,6 @@ public class TestGlobalQueryPlanner {
     planner = new GlobalPlanner(conf, new StorageManager(conf), qm, catalog);
     analyzer = new QueryAnalyzer(catalog);
     logicalPlanner = new LogicalPlanner(catalog);
-    factory = new QueryContext.Factory(catalog);
 
     int tbNum = 2;
     int tupleNum;
@@ -170,7 +161,6 @@ public class TestGlobalQueryPlanner {
   @Test
   public void testGroupby() throws IOException, KeeperException,
       InterruptedException {
-    QueryContext ctx = factory.create();
     PlanningContext context = analyzer.parse(
         "store1 := select age, sumtest(salary) from table0 group by age");
     LogicalNode logicalPlan = logicalPlanner.createPlan(context);
@@ -209,7 +199,6 @@ public class TestGlobalQueryPlanner {
   
   @Test
   public void testSort() throws IOException {
-    QueryContext ctx = factory.create();
     PlanningContext context = analyzer.parse(
         "store1 := select age from table0 order by age");
     LogicalNode logicalPlan = logicalPlanner.createPlan(context);
@@ -252,7 +241,6 @@ public class TestGlobalQueryPlanner {
   
   @Test
   public void testJoin() throws IOException {
-    QueryContext ctx = factory.create();
     PlanningContext context = analyzer.parse(
         "select table0.age,table0.salary,table1.salary from table0,table1 " +
             "where table0.salary = table1.salary order by table0.age");
@@ -321,7 +309,6 @@ public class TestGlobalQueryPlanner {
   @Test
   public void testSelectAfterJoin() throws IOException {
     String query = "select table0.name, table1.salary from table0,table1 where table0.name = table1.name and table1.salary > 10";
-    QueryContext ctx = factory.create();
     PlanningContext context = analyzer.parse(query);
     LogicalNode logicalPlan = logicalPlanner.createPlan(context);
     logicalPlan = LogicalOptimizer.optimize(context, logicalPlan);
@@ -344,7 +331,6 @@ public class TestGlobalQueryPlanner {
   
   @Test
   public void testCubeby() throws IOException {
-    QueryContext ctx = factory.create();
     PlanningContext context = analyzer.parse(
         "select age, sum(salary) from table0 group by cube (age, id)");
     LogicalNode logicalPlan = logicalPlanner.createPlan(context);
@@ -483,7 +469,6 @@ public class TestGlobalQueryPlanner {
   @Test
   public void testCreateMultilevelGroupby()
       throws IOException, CloneNotSupportedException {
-    QueryContext ctx = factory.create();
     PlanningContext context = analyzer.parse(
         "store1 := select age, sumtest(salary) from table0 group by age");
     LogicalNode logicalPlan = logicalPlanner.createPlan(context);

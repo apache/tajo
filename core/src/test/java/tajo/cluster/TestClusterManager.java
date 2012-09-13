@@ -16,7 +16,7 @@ import tajo.engine.cluster.ClusterManager.DiskInfo;
 import tajo.engine.cluster.ClusterManager.WorkerInfo;
 import tajo.engine.cluster.FragmentServingInfo;
 import tajo.engine.cluster.WorkerCommunicator;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.master.TajoMaster;
 import tajo.storage.*;
 

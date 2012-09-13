@@ -18,17 +18,15 @@
  * limitations under the License.
  */
 
-package tajo.engine.ipc;
+package tajo.ipc.protocolrecords;
 
-import tajo.engine.MasterWorkerProtos.PingRequestProto;
-import tajo.engine.MasterWorkerProtos.PingResponseProto;
+import tajo.QueryUnitId;
+import tajo.common.ProtoObject;
+import tajo.engine.MasterWorkerProtos.QueryStatus;
+import tajo.engine.MasterWorkerProtos.QueryUnitResponseProto;
 
-public interface MasterInterface {
+public interface QueryUnitResponse extends ProtoObject<QueryUnitResponseProto> {
 
-  /**
-   * Worker들의 질의 수행 경과를 Master에게 전달
-   * 
-   * @param report 질의 및 질의 경과 정보
-   */
-  public PingResponseProto reportQueryUnit(PingRequestProto report);
+	public QueryUnitId getId();
+	public QueryStatus getStatus();
 }

@@ -19,7 +19,7 @@ import tajo.catalog.store.DBStore;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.function.builtin.*;
-import tajo.engine.ipc.protocolrecords.Fragment;
+import tajo.ipc.protocolrecords.Fragment;
 import tajo.rpc.NettyRpc;
 import tajo.rpc.NettyRpcServer;
 import tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
