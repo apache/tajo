@@ -32,11 +32,11 @@ import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-public class RawFile2 extends Storage {
+public class RowFile extends Storage {
 
-  public static final Log LOG = LogFactory.getLog(RawFile2.class);
+  public static final Log LOG = LogFactory.getLog(RowFile.class);
 
-  public RawFile2(Configuration conf) {
+  public RowFile(Configuration conf) {
     super(conf);
   }
 

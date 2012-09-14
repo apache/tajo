@@ -166,7 +166,7 @@ public class StorageManager {
 
     switch(meta.getStoreType()) {
       case RAW: {
-        scanner = new RawFile2(c).
+        scanner = new RowFile(c).
             openScanner(meta.getSchema(), new Fragment [] {tablet});
         break;
       }
@@ -184,14 +184,14 @@ public class StorageManager {
     
     switch(meta.getStoreType()) {
     case RAW: {
-      scanner = new RawFile2(conf).
+      scanner = new RowFile(conf).
           openScanner(meta.getSchema(), tablets);     
       break;
     }
 
     case CSV: {
       if (tablets.length == 1) {
-        scanner = new SingleCSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
+        scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
       } else {
         scanner = new CSVFile2(conf).openScanner(meta.getSchema(), tablets);
       }
@@ -207,13 +207,13 @@ public class StorageManager {
 
     switch(meta.getStoreType()) {
     case RAW: {
-      scanner = new RawFile2(conf).
+      scanner = new RowFile(conf).
       openScanner(inputSchema, tablets);
       break;
     }
     case CSV: {
       if (tablets.length == 1) {
-        scanner = new SingleCSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
+        scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
       } else {
         scanner = new CSVFile2(conf).openScanner(inputSchema, tablets);
       }
@@ -229,12 +229,12 @@ public class StorageManager {
     
     switch(meta.getStoreType()) {
     case RAW: {
-//      scanner = new RawFile2(conf).
+//      scanner = new RowFile(conf).
 //          openScanner(meta.getSchema(), fragment);   
       throw new NotImplementedException();
     }
     case CSV: {
-      scanner = new SingleCSVFile(conf).openSingleScanner(meta.getSchema(), fragment);
+      scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), fragment);
       break;
     }
     }
@@ -247,12 +247,12 @@ public class StorageManager {
 
     switch(meta.getStoreType()) {
       case RAW: {
-//        scanner = new RawFile2(conf).
+//        scanner = new RowFile(conf).
 //            openScanner(inputSchema, tablets);
         throw new NotImplementedException();
       }
       case CSV: {
-        scanner = new SingleCSVFile(conf).openSingleScanner(inputSchema, fragment);
+        scanner = new CSVFile(conf).openSingleScanner(inputSchema, fragment);
         break;
       }
     }
@@ -273,7 +273,7 @@ public class StorageManager {
 	  Appender appender = null;
     switch(meta.getStoreType()) {
     case RAW: {
-      appender = new RawFile2(conf).getAppender(meta,
+      appender = new RowFile(conf).getAppender(meta,
           filename);
       break;
     }
@@ -299,7 +299,7 @@ public class StorageManager {
     Appender appender = null;
     switch(meta.getStoreType()) {
     case RAW: {
-      appender = new RawFile2(c).getAppender(meta,
+      appender = new RowFile(c).getAppender(meta,
           filename);
       break;
     }

@@ -21,9 +21,9 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestRawFile2 {
+public class TestRowFile {
 	private TajoConf conf;
-	private static String TEST_PATH = "target/test-data/TestRawFile2";
+	private static String TEST_PATH = "target/test-data/TestRowFile";
 	private StorageManager sm;
 	
 	@Before

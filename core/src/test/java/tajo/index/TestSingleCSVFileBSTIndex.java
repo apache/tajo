@@ -96,7 +96,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SingleFileScanner fileScanner = new SingleCSVFile.CSVScanner(conf, schema, tablet);
+    SingleFileScanner fileScanner = new CSVFile.CSVScanner(conf, schema, tablet);
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -119,7 +119,7 @@ public class TestSingleCSVFileBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH,
         "FindValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner = new SingleCSVFile.CSVScanner(conf, schema, tablet);
+    fileScanner = new CSVFile.CSVScanner(conf, schema, tablet);
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
       tuple.put(0, DatumFactory.createLong(i));
       tuple.put(1, DatumFactory.createDouble(i));
@@ -180,7 +180,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
     
-    SingleFileScanner fileScanner  = new SingleCSVFile.CSVScanner(conf, schema, tablet);
+    SingleFileScanner fileScanner  = new CSVFile.CSVScanner(conf, schema, tablet);
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -200,7 +200,7 @@ public class TestSingleCSVFileBSTIndex {
     
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner  = new SingleCSVFile.CSVScanner(conf, schema, tablet);
+    fileScanner  = new CSVFile.CSVScanner(conf, schema, tablet);
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       keyTuple = new VTuple(2);
