@@ -262,7 +262,7 @@ public class Worker extends Thread implements AsyncWorkerProtocol {
     } finally {     
       for (Task t : tasks.values()) {
         if (t.getStatus() != QueryStatus.QUERY_FINISHED) {
-          t.kill();
+          t.abort();
         }
       }
 
