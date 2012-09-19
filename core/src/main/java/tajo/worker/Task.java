@@ -212,6 +212,12 @@ public class Task implements Runnable {
     context.setStatus(QueryStatus.QUERY_KILLED);
   }
 
+  public void abort() {
+    aborted = true;
+    context.stop();
+    context.setStatus(QueryStatus.QUERY_ABORTED);
+  }
+
   public void cleanUp() {
     // remove itself from worker
     // 끝난건지 확인
