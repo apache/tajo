@@ -446,6 +446,11 @@ public class CSVFile extends SingleStorge {
     }
 
     @Override
+    public long getPos() throws IOException {
+      return fis.getPos();
+    }
+
+    @Override
     public long getNextOffset() throws IOException {
       if (this.currentIdx == this.validIdx) {
         if (fragmentable() < 1) {
