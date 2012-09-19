@@ -21,6 +21,8 @@ public abstract class SingleFileScanner implements Scanner{
 
   public abstract void seek(long offset) throws IOException;
   public abstract long getNextOffset() throws IOException;
+  public abstract long getPos() throws IOException;
+
   @Override
   public Schema getSchema() {
     return schema;
