@@ -1,3 +1,17 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo.storage;
 
 import org.apache.hadoop.fs.FileStatus;
@@ -35,10 +49,11 @@ public class TestRowFile {
 	}
 		
 	@Test
-  public void testRawFile() throws IOException {
+  public void testRowFile() throws IOException {
     Schema schema = new Schema();
     schema.addColumn("id", DataType.INT);
     schema.addColumn("age", DataType.LONG);
+    schema.addColumn("description", DataType.STRING);
     
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
     
@@ -46,13 +61,17 @@ public class TestRowFile {
     Appender appender = sm.getAppender(meta, "testRawFile", "file1");
     int tupleNum = 10000;
     VTuple vTuple;
-    
+    Datum stringDatum = DatumFactory.createString("abcdefghijklmnopqrstuvwxyz");
+
+    long startAppend = System.currentTimeMillis();
     for(int i = 0; i < tupleNum; i++) {
-      vTuple = new VTuple(2);
+      vTuple = new VTuple(3);
       vTuple.put(0, DatumFactory.createInt(i+1));
       vTuple.put(1, DatumFactory.createLong(25l));
+      vTuple.put(2, stringDatum);
       appender.addTuple(vTuple);
     }
+    long endAppend = System.currentTimeMillis();
     appender.close();
     
     TableStat stat = appender.getStats();
@@ -68,12 +87,17 @@ public class TestRowFile {
 
     Scanner scanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;
+    long startScan = System.currentTimeMillis();
     while (scanner.next() != null) {
       tupleCnt++;
     }
+    long endScan = System.currentTimeMillis();
     scanner.close();    
     
     assertEquals(tupleNum, tupleCnt);
+
+    System.out.println("Append time: " + (endAppend - startAppend) + " msc");
+    System.out.println("Scan time: " + (endScan - startScan) + " msc");
 	}
 	
 	@Test

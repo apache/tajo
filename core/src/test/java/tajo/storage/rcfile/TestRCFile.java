@@ -268,7 +268,7 @@ public class TestRCFile {
     byte[][] record = {null, null, null, null, null, null, null, null};
 
     RCFileOutputFormat.setColumnNumber(conf, expectedFieldsData.length);
-    RCFile.Writer writer = new RCFile.Writer(fs, conf, file, null,
+    RCFile.Appender writer = new RCFile.Appender(fs, conf, file, null,
         new DefaultCodec());
     BytesRefArrayWritable bytes = new BytesRefArrayWritable(record.length);
     final int recCount = 100;
@@ -544,7 +544,7 @@ public class TestRCFile {
     cloneConf.setInt(RCFile.COLUMN_NUMBER_CONF_STR, bytesArray.length);
     cloneConf.setInt(RCFile.RECORD_INTERVAL_CONF_STR, intervalRecordCount);
 
-    RCFile.Writer writer = new RCFile.Writer(fs, cloneConf, testFile, null, codec);
+    RCFile.Appender writer = new RCFile.Appender(fs, cloneConf, testFile, null, codec);
 
     BytesRefArrayWritable bytes = new BytesRefArrayWritable(bytesArray.length);
     for (int i = 0; i < bytesArray.length; i++) {

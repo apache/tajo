@@ -41,15 +41,15 @@ public class RowFile extends Storage {
   }
 
   @Override
-  public Appender getAppender(TableMeta meta, Path path)
+  public tajo.storage.Appender getAppender(TableMeta meta, Path path)
   throws IOException {
-    return new RawFileAppender(conf, meta, path, true);
+    return new Appender(conf, meta, path, true);
   }
 
   @Override
-  public Scanner openScanner(Schema schema, Fragment[] tablets)
+  public tajo.storage.Scanner openScanner(Schema schema, Fragment[] tablets)
   throws IOException {
-    return new RawFileScanner(conf, schema, tablets);
+    return new Scanner(conf, schema, tablets);
   }
 
   private static final int SYNC_ESCAPE = -1;
@@ -57,7 +57,7 @@ public class RowFile extends Storage {
   private static final int SYNC_SIZE = 4 + SYNC_HASH_SIZE;
   public static int SYNC_INTERVAL;
 
-  public static class RawFileScanner extends FileScanner {
+  public static class Scanner extends FileScanner {
     private FSDataInputStream in;
     private SortedSet<Fragment> tabletSet;
     private Iterator<Fragment> tableIter;
@@ -80,14 +80,14 @@ public class RowFile extends Storage {
     private ByteArrayInputStream bin;
     private DataInputStream din;     
 
-    public RawFileScanner(Configuration conf, final Schema schema, 
-        final Fragment[] tablets) throws IOException {
+    public Scanner(Configuration conf, final Schema schema,
+                   final Fragment[] tablets) throws IOException {
       super(conf, schema, tablets);
       init();
     }
 
-    public RawFileScanner(Configuration conf, final Schema schema, 
-        final Fragment[] tablets, Options option) throws IOException {
+    public Scanner(Configuration conf, final Schema schema,
+                   final Fragment[] tablets, Options option) throws IOException {
       super(conf, schema, tablets);
       this.option = option;
       init();
@@ -420,7 +420,7 @@ public class RowFile extends Storage {
     }   
   }
 
-  public static class RawFileAppender extends FileAppender {
+  public static class Appender extends FileAppender {
     private FSDataOutputStream out;
     private long lastSyncPos;
     private FileSystem fs;
@@ -430,8 +430,8 @@ public class RowFile extends Storage {
     private final boolean statsEnabled;
     private TableStatistics stats;
 
-    public RawFileAppender(Configuration conf, final TableMeta meta,
-        final Path path, boolean statsEnabled) throws IOException {
+    public Appender(Configuration conf, final TableMeta meta,
+                    final Path path, boolean statsEnabled) throws IOException {
       super(conf, meta, path);      
 
       fs = path.getFileSystem(conf);
