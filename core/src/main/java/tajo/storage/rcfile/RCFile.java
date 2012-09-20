@@ -44,9 +44,9 @@ import java.util.Arrays;
  * partitions rows horizontally into row splits. and then it vertically
  * partitions each row split in a columnar way. RCFile first stores the meta
  * data of a row split, as the key part of a record, and all the data of a row
- * split as the value part. When writing, RCFile.Writer first holds records'
+ * split as the value part. When writing, RCFile.Appender first holds records'
  * value bytes in memory, and determines a row split if the raw bytes size of
- * buffered records overflow a given parameter<tt>Writer.columnsBufferSize</tt>,
+ * buffered records overflow a given parameter<tt>Appender.columnsBufferSize</tt>,
  * which can be set like: <code>conf.setInt(COLUMNS_BUFFER_SIZE_CONF_STR,
  4 * 1024 * 1024)</code> .
  * <p>
@@ -673,13 +673,13 @@ public class RCFile {
       return out.getPos();
     }
 
-    /** Constructs a RCFile Writer. */
+    /** Constructs a RCFile Appender. */
     public Writer(FileSystem fs, Configuration conf, Path name) throws IOException {
       this(fs, conf, name, null, new Metadata(), null);
     }
 
     /**
-     * Constructs a RCFile Writer.
+     * Constructs a RCFile Appender.
      *
      * @param fs
      *          the file system used
@@ -695,7 +695,7 @@ public class RCFile {
     }
 
     /**
-     * Constructs a RCFile Writer.
+     * Constructs a RCFile Appender.
      *
      * @param fs
      *          the file system used
@@ -716,7 +716,7 @@ public class RCFile {
 
     /**
      *
-     * Constructs a RCFile Writer.
+     * Constructs a RCFile Appender.
      *
      * @param fs
      *          the file system used
