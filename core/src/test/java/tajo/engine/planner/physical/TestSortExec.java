@@ -108,7 +108,7 @@ public class TestSortExec {
   public final void testNext() throws IOException {
     Fragment[] frags = sm.split("employee");
     File workDir = TajoTestingUtility.getTestDir("TestSortExec");
-    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);

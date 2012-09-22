@@ -23,6 +23,7 @@ package tajo;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import tajo.catalog.statistics.TableStat;
+import tajo.conf.TajoConf;
 import tajo.engine.MasterWorkerProtos.QueryStatus;
 import tajo.ipc.protocolrecords.Fragment;
 
@@ -37,6 +38,7 @@ import java.util.concurrent.CountDownLatch;
  *
  */
 public class TaskAttemptContext {
+  private final TajoConf conf;
   private final Map<String, List<Fragment>> fragmentMap
     = new HashMap<String, List<Fragment>>();
   
@@ -52,9 +54,10 @@ public class TaskAttemptContext {
   private boolean stopped = false;
   private boolean interQuery = false;
 
-  public TaskAttemptContext(final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(TajoConf conf, final QueryUnitAttemptId queryId,
                      final Fragment[] fragments,
                      final File workDir) {
+    this.conf = conf;
     this.queryId = queryId;
     
     for(Fragment t : fragments) {
@@ -71,6 +74,10 @@ public class TaskAttemptContext {
     this.repartitions = Maps.newHashMap();
     
     status = QueryStatus.QUERY_INITED;
+  }
+
+  public TajoConf getConf() {
+    return this.conf;
   }
   
   public QueryStatus getStatus() {

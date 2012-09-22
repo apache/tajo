@@ -151,8 +151,8 @@ public class TestBSTIndexExec {
     
     Fragment[] frags = sm.split("employee");
     File workDir = TajoTestingUtility.getTestDir("TestBSTIndex");
-    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
-        new Fragment[] { frags[0] }, workDir);
+    TaskAttemptContext ctx = new TaskAttemptContext(conf,
+        TUtil.newQueryUnitAttemptId(), new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERY);
     LogicalNode plan = planner.createPlan(context);
 

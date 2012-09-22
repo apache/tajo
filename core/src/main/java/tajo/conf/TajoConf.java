@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import tajo.storage.RawFile;
 
 import java.io.PrintStream;
 import java.util.Map;
@@ -87,8 +88,9 @@ public class TajoConf extends Configuration {
     //////////////////////////////////
     // Physical Execution Configuration
     //////////////////////////////////
-    EXTERNAL_SORT_BUFFER("tajo.extsort.buffer", 400000),
+    EXT_SORT_BUFFER("tajo.extsort.buffer", 400000),
     BROADCAST_JOIN_THRESHOLD("tajo.join.broadcast.threshold", (long)5 * 1048576),
+
 
     //////////////////////////////////
     // The Below is reserved

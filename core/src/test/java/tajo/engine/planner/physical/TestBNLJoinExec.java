@@ -140,8 +140,8 @@ public class TestBNLJoinExec {
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
     File workDir = TajoTestingUtility.getTestDir("CrossJoin");
-    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
-        merged, workDir);
+    TaskAttemptContext ctx = new TaskAttemptContext(conf,
+        TUtil.newQueryUnitAttemptId(), merged, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);
     //LogicalOptimizer.optimize(ctx, plan);
@@ -176,7 +176,8 @@ public class TestBNLJoinExec {
 
     File workDir = TajoTestingUtility.getTestDir("InnerJoin");
     TaskAttemptContext ctx =
-        new TaskAttemptContext(TUtil.newQueryUnitAttemptId(), merged, workDir);
+        new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+            merged, workDir);
     PlanningContext context = analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(context);
 
