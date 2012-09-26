@@ -3,6 +3,8 @@ package tajo.engine.parser;
 import tajo.engine.parser.QueryBlock.FromTable;
 import tajo.engine.planner.PlanningContext;
 
+import java.util.Map.Entry;
+
 public abstract class ParseTree {
   protected final PlanningContext context;
   protected final StatementType type;
@@ -31,5 +33,9 @@ public abstract class ParseTree {
 
   public Iterable<String> getAllTableNames() {
     return tableMap.getAllTableNames();
+  }
+
+  public Iterable<Entry<String, String>> getAliasToNames() {
+    return tableMap.getAliasToNames();
   }
 }

@@ -20,13 +20,9 @@
 
 package tajo.ipc;
 
-import tajo.QueryUnitAttemptId;
 import tajo.engine.MasterWorkerProtos.StatusReportProto;
 import tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 
 public interface MasterWorkerProtocol {
-
-  BoolProto ping(QueryUnitAttemptId taskAttemptId);
-
   BoolProto statusUpdate(StatusReportProto status);
 }

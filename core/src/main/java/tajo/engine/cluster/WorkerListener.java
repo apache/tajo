@@ -111,11 +111,6 @@ public class WorkerListener extends Thread implements MasterWorkerProtocol {
   }
 
   @Override
-  public BoolProto ping(QueryUnitAttemptId taskId) {
-    return TRUE_PROTO;
-  }
-
-  @Override
   public void run() {
     // rpc listen
     try {

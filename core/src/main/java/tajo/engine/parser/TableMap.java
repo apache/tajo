@@ -24,6 +24,7 @@ import com.google.common.collect.Sets;
 import tajo.catalog.exception.AlreadyExistsTableException;
 
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 public class TableMap {
@@ -59,5 +60,9 @@ public class TableMap {
 
   public Iterable<String> getAllTableNames() {
     return nameToAliasMap.keySet();
+  }
+
+  public Iterable<Entry<String, String>> getAliasToNames() {
+    return aliasToNameMap.entrySet();
   }
 }
