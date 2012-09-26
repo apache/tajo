@@ -37,10 +37,7 @@ import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.*;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.utils.TUtil;
-import tajo.storage.Appender;
-import tajo.storage.StorageManager;
-import tajo.storage.Tuple;
-import tajo.storage.VTuple;
+import tajo.storage.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -130,5 +127,33 @@ public class TestSortExec {
       preVal = curVal;
     }
     exec.close();
+  }
+
+  @Test
+  /**
+   * TODO - Now, in FSM branch, TestUniformRangePartition is ported to Java.
+   * So, this test is located in here.
+   * Later it should be moved TestUniformPartitions.
+   */
+  public void testTAJO_946() {
+    Schema schema = new Schema();
+    schema.addColumn("l_orderkey", DataType.LONG);
+    Tuple s = new VTuple(1);
+    s.put(0, DatumFactory.createLong(0));
+    Tuple e = new VTuple(1);
+    e.put(0, DatumFactory.createLong(6000000000l));
+    TupleRange expected = new TupleRange(schema, s, e);
+    RangePartitionAlgorithm partitioner
+        = new UniformRangePartition(schema, expected, true);
+    TupleRange [] ranges = partitioner.partition(967);
+
+    TupleRange prev = null;
+    for (TupleRange r : ranges) {
+      if (prev == null) {
+        prev = r;
+      } else {
+        assertTrue(prev.compareTo(r) < 0);
+      }
+    }
   }
 }
