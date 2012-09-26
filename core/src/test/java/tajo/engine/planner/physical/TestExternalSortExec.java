@@ -61,7 +61,7 @@ public class TestExternalSortExec {
   private StorageManager sm;
   private TajoTestingUtility util;
 
-  private final int numTuple = 100000;
+  private final int numTuple = 1000000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   @Before
@@ -85,11 +85,13 @@ public class TestExternalSortExec {
     for (int i = 0; i < numTuple; i++) {
       tuple.put(new Datum[] { DatumFactory.createInt(rnd.nextInt(50)),
           DatumFactory.createInt(rnd.nextInt(100)),
-          DatumFactory.createString("dept_" + rnd.nextInt(20)) });
+          DatumFactory.createString("dept_" + 123) });
       appender.addTuple(tuple);
     }
     appender.flush();
     appender.close();
+
+    System.out.println("Total Rows: " + appender.getStats().getNumRows());
 
     TableDesc desc = new TableDescImpl("employee", employeeMeta,
         sm.getTablePath("employee"));
@@ -111,8 +113,8 @@ public class TestExternalSortExec {
     Fragment[] frags = sm.split("employee");
     File workDir =
         TajoTestingUtility.getTestDir(TestExternalSortExec.class.getName());
-    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
-        new Fragment[] { frags[0] }, workDir);
+    TaskAttemptContext ctx = new TaskAttemptContext(conf,
+        TUtil.newQueryUnitAttemptId(), new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);
 
@@ -126,7 +128,7 @@ public class TestExternalSortExec {
       UnaryPhysicalExec sortExec = (UnaryPhysicalExec) proj.getChild();
       SeqScanExec scan = (SeqScanExec)sortExec.getChild();
 
-      ExternalSortExec extSort = new ExternalSortExec(conf, ctx, sm,
+      ExternalSortExec extSort = new ExternalSortExec(ctx, sm,
           ((SortExec)sortExec).getPlan(), scan);
       proj.setChild(extSort);
     }
@@ -136,6 +138,7 @@ public class TestExternalSortExec {
     Datum curVal;
     int cnt = 0;
     exec.init();
+    long start = System.currentTimeMillis();
     while ((tuple = exec.next()) != null) {
       curVal = tuple.get(0);
       if (preVal != null) {
@@ -144,6 +147,7 @@ public class TestExternalSortExec {
       preVal = curVal;
       cnt++;
     }
+    long end = System.currentTimeMillis();
     exec.close();
     assertEquals(numTuple, cnt);
 
@@ -160,5 +164,7 @@ public class TestExternalSortExec {
       cnt++;
     }
     assertEquals(numTuple, cnt);
+
+    System.out.println("Sort Time: " + (end - start) + " msc");
   }
 }

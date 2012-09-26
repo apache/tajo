@@ -11,7 +11,6 @@ import java.io.IOException;
  * @author hyunsik
  */
 public interface Scanner extends SchemaObject, Closeable {
-  
   /**
    * It returns one tuple at each call. 
    * 

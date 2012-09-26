@@ -99,7 +99,7 @@ public class Task implements Runnable {
     File taskAttemptDir = new File(taskAttemptPath.toUri());
     taskAttemptDir.mkdirs();
 
-    this.context = new TaskAttemptContext(request.getId(),
+    this.context = new TaskAttemptContext(conf, request.getId(),
         request.getFragments().toArray(new Fragment[request.getFragments().size()]),
         taskAttemptDir);
     plan = GsonCreator.getInstance().fromJson(request.getSerializedData(),

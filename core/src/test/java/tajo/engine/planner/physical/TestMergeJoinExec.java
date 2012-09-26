@@ -152,8 +152,8 @@ public class TestMergeJoinExec {
 
     File workDir =
         TajoTestingUtility.getTestDir(TestMergeJoinExec.class.getName());
-    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
-        merged, workDir);
+    TaskAttemptContext ctx = new TaskAttemptContext(conf,
+        TUtil.newQueryUnitAttemptId(), merged, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);
 

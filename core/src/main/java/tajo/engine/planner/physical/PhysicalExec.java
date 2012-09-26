@@ -20,6 +20,8 @@
 
 package tajo.engine.planner.physical;
 
+import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.conf.Configuration;
 import tajo.SchemaObject;
 import tajo.TaskAttemptContext;
 import tajo.catalog.Schema;

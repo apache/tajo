@@ -136,8 +136,8 @@ public class TestHashJoinExec {
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
     File workDir = TajoTestingUtility.getTestDir("InnerJoin");
-    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
-        merged, workDir);
+    TaskAttemptContext ctx = new TaskAttemptContext(conf,
+        TUtil.newQueryUnitAttemptId(), merged, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);
 

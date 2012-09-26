@@ -20,25 +20,19 @@
 
 package tajo.engine.planner.physical;
 
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import tajo.TaskAttemptContext;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.planner.logical.SortNode;
-import tajo.storage.Appender;
-import tajo.storage.StorageManager;
-import tajo.storage.Tuple;
-import tajo.storage.VTuple;
+import tajo.storage.*;
 
 import java.io.IOException;
 import java.util.*;
 
-/**
- * @author Byungnam Lim
- */
 public class ExternalSortExec extends UnaryPhysicalExec {
   private SortNode annotation;
 
@@ -46,143 +40,191 @@ public class ExternalSortExec extends UnaryPhysicalExec {
   private final List<Tuple> tupleSlots;
   private boolean sorted = false;
   private StorageManager sm;
-  private tajo.storage.Scanner s;
-  private Appender appender;
+  private RawFile.Scanner result;
+  private RawFile.Appender appender;
   private String tableName = null;
+  private FileSystem localFS;
 
-
-  private final String workDir;
+  private final TableMeta meta;
+  private final Path workDir;
   private int SORT_BUFFER_SIZE;
-  private int run;
-  private final static String SORT_PREFIX = "s_";
 
-  public ExternalSortExec(final TajoConf conf, final TaskAttemptContext context,
-      final StorageManager sm, final SortNode plan, final PhysicalExec child) {
+  public ExternalSortExec(final TaskAttemptContext context,
+      final StorageManager sm, final SortNode plan, final PhysicalExec child)
+      throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.annotation = plan;
     this.sm = sm;
 
-    this.SORT_BUFFER_SIZE = conf.getIntVar(ConfVars.EXTERNAL_SORT_BUFFER);
+    this.SORT_BUFFER_SIZE = context.getConf().getIntVar(ConfVars.EXT_SORT_BUFFER);
 
     this.comparator = new TupleComparator(inSchema, plan.getSortKeys());
-    this.tupleSlots = new ArrayList<Tuple>(SORT_BUFFER_SIZE);
+    this.tupleSlots = new ArrayList<>(SORT_BUFFER_SIZE);
 
-    this.run = 0;
-    this.workDir = context.getWorkDir().getAbsolutePath() + "/"
-        + UUID.randomUUID();
+    this.workDir = new Path(context.getWorkDir().toURI() + Path.SEPARATOR
+        + UUID.randomUUID());
+    this.localFS = FileSystem.getLocal(context.getConf());
+    meta = TCatUtil.newTableMeta(inSchema, StoreType.ROWFILE);
+  }
+
+  public void init() throws IOException {
+    super.init();
+    localFS.mkdirs(workDir);
   }
 
   public SortNode getAnnotation() {
     return this.annotation;
   }
 
-  private void firstPhase(List<Tuple> tupleSlots) throws IOException {
+  private void sortAndStoreChunk(int chunkId, List<Tuple> tupleSlots)
+      throws IOException {
     TableMeta meta = TCatUtil.newTableMeta(inSchema, StoreType.RAW);
     Collections.sort(tupleSlots, this.comparator);
-    Path localPath = new Path(workDir, SORT_PREFIX + "0_" + run);
-    sm.initLocalTableBase(localPath, meta);
-    appender = sm.getLocalAppender(meta, new Path(localPath, "data/" + SORT_PREFIX + "0_" + run));
+    Path localPath = new Path(workDir, "0_" + chunkId);
+
+    appender = new RawFile.Appender(context.getConf(), meta, localPath);
+    appender.init();
+
     for (Tuple t : tupleSlots) {
       appender.addTuple(t);
     }
-    appender.flush();
     appender.close();
     tupleSlots.clear();
-    run++;
+  }
+
+  /**
+   * It divides all tuples into a number of chunks, then sort for each chunk.
+   * @return the number of stored chunks
+   * @throws IOException
+   */
+  private int sortAndStoreAllChunks() throws IOException {
+    int chunkId = 0;
+
+    Tuple tuple;
+    while ((tuple = child.next()) != null) { // partition sort start
+      tupleSlots.add(new VTuple(tuple));
+      if (tupleSlots.size() == SORT_BUFFER_SIZE) {
+        sortAndStoreChunk(chunkId, tupleSlots);
+        chunkId++;
+      }
+    }
+
+    if (tupleSlots.size() > 0) {
+      sortAndStoreChunk(chunkId, tupleSlots);
+      chunkId++;
+    }
+
+    return chunkId;
+  }
+
+  private Path getChunkPath(int level, int chunkId) {
+    return StorageUtil.concatPath(workDir, "" + level + "_" + chunkId);
   }
 
   @Override
   public Tuple next() throws IOException {
     if (!sorted) {
-      Tuple tuple;
-      int runNum;
-      while ((tuple = child.next()) != null) { // partition sort start
-        tupleSlots.add(new VTuple(tuple));
-        if (tupleSlots.size() == SORT_BUFFER_SIZE) {
-          firstPhase(tupleSlots);
-        }
-      }
 
-      if (tupleSlots.size() != 0) {
-        firstPhase(tupleSlots);
-      }
+      // the total number of chunks for zero level
+      int totalChunkNumForLevel = sortAndStoreAllChunks();
 
-      if (run == 0) {
-        // if there are no data
+      // if there are no chunk
+      if (totalChunkNumForLevel == 0) {
         return null;
       }
 
-      runNum = run;
+      int level = 0;
+      int chunkId = 0;
 
-      int iterator = 0;
-      run = 0;
+      // continue until the chunk remains only one
+      while (totalChunkNumForLevel > 1) {
 
-      TableMeta meta;
-      // external sort start
-      while (runNum > 1) {
-        while (run < runNum) {
-          meta = TCatUtil.newTableMeta(inSchema, StoreType.RAW);
-          Path localPath = new Path(workDir, SORT_PREFIX + (iterator + 1) + "_" + (run / 2));
-          sm.initLocalTableBase(localPath, meta);
-          appender = sm.getLocalAppender(meta, new Path(localPath, "data/" + SORT_PREFIX + (iterator + 1) + "_" + (run / 2)));
+        while (chunkId < totalChunkNumForLevel) {
 
-          if (run + 1 >= runNum) { // if number of run is odd just copy it.
-            Path p2 = new Path(workDir, SORT_PREFIX + iterator + "_" + run);
-            tajo.storage.Scanner s1 = sm.getLocalScanner(p2, SORT_PREFIX + iterator + "_" + run);
-            while ((tuple = s1.next()) != null) {
-              appender.addTuple(tuple);
-            }
+          Path nextChunk = getChunkPath(level + 1, chunkId / 2);
+
+          // if number of chunkId is odd just copy it.
+          if (chunkId + 1 >= totalChunkNumForLevel) {
+
+            Path chunk = getChunkPath(level, chunkId);
+            localFS.moveFromLocalFile(chunk, nextChunk);
+
           } else {
-            Path p2 = new Path(workDir, SORT_PREFIX + iterator + "_" + run);
-            tajo.storage.Scanner s1 = sm.getLocalScanner(p2, SORT_PREFIX + iterator + "_" + run);
-            Path p3 = new Path(workDir, SORT_PREFIX + iterator + "_" + (run + 1));
-            tajo.storage.Scanner s2 = sm.getLocalScanner(p3, SORT_PREFIX + iterator + "_" + (run + 1));
 
-            Tuple left = s1.next();
-            Tuple right = s2.next();
+            Path leftChunk = getChunkPath(level, chunkId);
+            Path rightChunk = getChunkPath(level, chunkId + 1);
 
-            while (left != null && right != null) {
-              if (this.comparator.compare(left, right) < 0) {
-                appender.addTuple(left);
-                left = s1.next();
-              } else {
-                appender.addTuple(right);
-                right = s2.next();
-              }
-            }
+            appender = new RawFile.Appender(context.getConf(), meta, nextChunk);
+            appender.init();
 
-            if (left == null) {
-              appender.addTuple(right);
-              while ((right = s2.next()) != null) {
-                appender.addTuple(right);
-              }
-            } else {
-              appender.addTuple(left);
-              while ((left = s1.next()) != null) {
-                appender.addTuple(left);
-              }
-            }
+            merge(appender, leftChunk, rightChunk);
+
+            appender.flush();
+            appender.close();
           }
-          appender.flush();
-          appender.close();
-          run += 2;
+
+          chunkId += 2;
         }
-        iterator++;
-        run = 0;
-        runNum = runNum / 2 + runNum % 2;
+
+        level++;
+        // init chunkId for each level
+        chunkId = 0;
+        // calculate the total number of chunks for next level
+        totalChunkNumForLevel = totalChunkNumForLevel / 2
+            + totalChunkNumForLevel % 2;
       }
-      tableName = SORT_PREFIX + iterator + "_" + 0;
-      s = sm.getLocalScanner(new Path(workDir, tableName), tableName);
+
+      Path result = getChunkPath(level, 0);
+      this.result = new RawFile.Scanner(context.getConf(), meta, result);
+      this.result.init();
       sorted = true;
     }
 
-    return s.next();
+    return result.next();
+  }
+
+  private void merge(RawFile.Appender appender, Path left, Path right)
+      throws IOException {
+    RawFile.Scanner leftScan = new RawFile.Scanner(context.getConf(), meta, left);
+    leftScan.init();
+
+    RawFile.Scanner rightScan =
+        new RawFile.Scanner(context.getConf(), meta, right);
+    rightScan.init();
+
+    Tuple leftTuple = leftScan.next();
+    Tuple rightTuple = rightScan.next();
+
+    while (leftTuple != null && rightTuple != null) {
+      if (this.comparator.compare(leftTuple, rightTuple) < 0) {
+        appender.addTuple(leftTuple);
+        leftTuple = leftScan.next();
+      } else {
+        appender.addTuple(rightTuple);
+        rightTuple = rightScan.next();
+      }
+    }
+
+    if (leftTuple == null) {
+      appender.addTuple(rightTuple);
+      while ((rightTuple = rightScan.next()) != null) {
+        appender.addTuple(rightTuple);
+      }
+    } else {
+      appender.addTuple(leftTuple);
+      while ((leftTuple = leftScan.next()) != null) {
+        appender.addTuple(leftTuple);
+      }
+    }
+
+    leftScan.close();
+    rightScan.close();
   }
 
   @Override
   public void rescan() throws IOException {
-    if (s != null) {
-      s.reset();
+    if (result != null) {
+      result.reset();
     }
   }
 }

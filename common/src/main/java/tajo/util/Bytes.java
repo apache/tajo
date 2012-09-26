@@ -1041,7 +1041,7 @@ public class Bytes {
         return length1 - length2;
       }
     }
-    
+
     @VisibleForTesting
     enum UnsafeComparer implements Comparer<byte[]> {
       INSTANCE;

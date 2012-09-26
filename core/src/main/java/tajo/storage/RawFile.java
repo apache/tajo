@@ -40,10 +40,7 @@ public class RawFile {
     private DataType [] columnTypes;
     private Path path;
 
-    private ByteBuffer buffer1;
-    private ByteBuffer buffer2;
-    private ByteBuffer current;
-    private ByteBuffer post;
+    private ByteBuffer buffer;
     private Tuple tuple;
 
     private int headerSize = 0;
@@ -60,8 +57,7 @@ public class RawFile {
       Preconditions.checkArgument(FileUtil.isLocalPath(path));
       channel = Files.newByteChannel(Paths.get(path.toUri()));
 
-      buffer1 = ByteBuffer.allocateDirect(65535);
-      buffer2 = ByteBuffer.allocateDirect(65535);
+      buffer = ByteBuffer.allocateDirect(65535);
 
       columnTypes = new DataType[schema.getColumnNum()];
       for (int i = 0; i < schema.getColumnNum(); i++) {
@@ -71,15 +67,12 @@ public class RawFile {
       tuple = new VTuple(columnTypes.length);
 
       // initial read
-      channel.read(buffer1);
-      buffer1.flip();
-
-      current = buffer1;
-      post = buffer2;
+      channel.read(buffer);
+      buffer.flip();
 
       numBytesOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()) / 8);
       nullFlags = new BitSet(numBytesOfNullFlags);
-      headerSize = RECORD_SIZE + numBytesOfNullFlags;
+      headerSize = RECORD_SIZE + 2 + numBytesOfNullFlags;
     }
 
     @Override
@@ -93,47 +86,42 @@ public class RawFile {
     }
 
     private boolean fillBuffer() throws IOException {
-      if (current.hasRemaining()) {
-        post.put(current);
-      }
-
-      if (channel.read(post) == -1 && post.position() == 0) {
+      buffer.compact();
+      if (channel.read(buffer) == -1) {
         return false;
+      } else {
+        buffer.flip();
+        return true;
       }
-
-      // switch
-      ByteBuffer tmp = current;
-      this.current = post;
-      this.post = tmp;
-
-      this.current.flip();
-      this.post.flip();
-
-      return true;
     }
 
     @Override
     public Tuple next() throws IOException {
 
-      if (current.remaining() < headerSize) {
-        if (fillBuffer() == false) {
+      if (buffer.remaining() < headerSize) {
+        if (!fillBuffer()) {
           return null;
         }
       }
 
-      int recordSize = current.getInt();
-      int bufferLimit = current.limit();
-      current.limit(current.position() + numBytesOfNullFlags);
-      nullFlags = BitSet.valueOf(current);
-      current.position(current.limit());
-      current.limit(bufferLimit);
+      // backup the buffer state
+      int recordOffset = buffer.position();
+      int bufferLimit = buffer.limit();
 
-      if (current.remaining() < recordSize) {
-        if (fillBuffer() == false) {
+      int recordSize = buffer.getInt();
+      int nullFlagSize = buffer.getShort();
+      buffer.limit(buffer.position() + nullFlagSize);
+      nullFlags = BitSet.valueOf(buffer);
+
+      // restore the start of record contents
+      buffer.limit(bufferLimit);
+      buffer.position(recordOffset + headerSize);
+
+      if (buffer.remaining() < (recordSize - headerSize)) {
+        if (!fillBuffer()) {
           return null;
         }
       }
-
 
       for (int i = 0; i < columnTypes.length; i++) {
         // check if the i'th column is null
@@ -144,45 +132,55 @@ public class RawFile {
 
         switch (columnTypes[i]) {
           case BOOLEAN :
-            tuple.put(i, DatumFactory.createBool(current.get()));
+            tuple.put(i, DatumFactory.createBool(buffer.get()));
             break;
+
           case BYTE :
-            tuple.put(i, DatumFactory.createByte(current.get()));
+            tuple.put(i, DatumFactory.createByte(buffer.get()));
             break;
+
           case CHAR :
-            tuple.put(i, DatumFactory.createChar(current.getChar()));
+            tuple.put(i, DatumFactory.createChar(buffer.getChar()));
             break;
+
           case SHORT :
-            tuple.put(i, DatumFactory.createShort(current.getShort()));
+            tuple.put(i, DatumFactory.createShort(buffer.getShort()));
             break;
+
           case INT :
-            tuple.put(i, DatumFactory.createInt(current.getInt()));;
+            tuple.put(i, DatumFactory.createInt(buffer.getInt()));;
             break;
+
           case LONG :
-            tuple.put(i, DatumFactory.createLong(current.getLong()));
+            tuple.put(i, DatumFactory.createLong(buffer.getLong()));
             break;
+
           case FLOAT :
-            tuple.put(i, DatumFactory.createFloat(current.getFloat()));
+            tuple.put(i, DatumFactory.createFloat(buffer.getFloat()));
             break;
+
           case DOUBLE :
-            tuple.put(i, DatumFactory.createDouble(current.getDouble()));
+            tuple.put(i, DatumFactory.createDouble(buffer.getDouble()));
             break;
+
           case STRING :
             // TODO - shoud use CharsetEncoder / CharsetDecoder
-            int strSize = current.getInt();
+            int strSize = buffer.getInt();
             byte [] strBytes = new byte[strSize];
-            current.get(strBytes);
+            buffer.get(strBytes);
             tuple.put(i, DatumFactory.createString(new String(strBytes)));
             break;
+
           case BYTES :
-            int byteSize = current.getInt();
+            int byteSize = buffer.getInt();
             byte [] rawBytes = new byte[byteSize];
-            current.get(rawBytes);
+            buffer.get(rawBytes);
             tuple.put(i, DatumFactory.createBytes(rawBytes));
             break;
+
           case IPv4 :
             byte [] ipv4Bytes = new byte[4];
-            current.get(ipv4Bytes);
+            buffer.get(ipv4Bytes);
             tuple.put(i, DatumFactory.createIPv4(ipv4Bytes));
             break;
         }
@@ -193,9 +191,12 @@ public class RawFile {
 
     @Override
     public void reset() throws IOException {
-      buffer1.flip();
-      buffer2.flip();
+      // clear the buffer
+      buffer.clear();
+      // reload initial buffer
       channel.position(0);
+      channel.read(buffer);
+      buffer.flip();
     }
 
     @Override
@@ -209,11 +210,7 @@ public class RawFile {
     private RandomAccessFile randomAccessFile;
     private DataType[] columnTypes;
 
-    private ByteBuffer buffer1;
-    private ByteBuffer buffer2;
-    private ByteBuffer current;
-    private ByteBuffer next;
-
+    private ByteBuffer buffer;
     private BitSet nullFlags;
     private int headerSize = 0;
     private static final int RECORD_SIZE = 4;
@@ -237,15 +234,12 @@ public class RawFile {
         columnTypes[i] = schema.getColumn(i).getDataType();
       }
 
-      buffer1 = ByteBuffer.allocateDirect(65535);
-      buffer2 = ByteBuffer.allocateDirect(65535);
-      current = buffer1;
-      next = buffer2;
+      buffer = ByteBuffer.allocateDirect(65535);
 
       // comput the number of bytes, representing the null flags
       numBytesOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()) / 8);
       nullFlags = new BitSet(numBytesOfNullFlags);
-      headerSize = RECORD_SIZE + numBytesOfNullFlags;
+      headerSize = RECORD_SIZE + 2 + numBytesOfNullFlags;
 
       if (enabledStat) {
         this.stats = new TableStatistics(this.schema);
@@ -258,43 +252,43 @@ public class RawFile {
     }
 
     private void flushBuffer() throws IOException {
-      current.flip();
-      channel.write(current);
-      current.flip();
+      buffer.limit(buffer.position());
+      buffer.flip();
+      channel.write(buffer);
+      buffer.clear();
     }
 
-    private void flushBufferAndReplace(int recordOffset, int sizeToBeWritten)
+    private boolean flushBufferAndReplace(int recordOffset, int sizeToBeWritten)
         throws IOException {
 
-      // if current buffer reaches the limit,
-      // copy the remain bytes to the next buffer and switch both.
-      if (current.remaining() < sizeToBeWritten) {
+      // if the buffer reaches the limit,
+      // write the bytes from 0 to the previous record.
+      if (buffer.remaining() < sizeToBeWritten) {
 
-        int limit = current.position();
-        current.limit(recordOffset);
-        current.flip();
-        channel.write(current);
-        current.position(recordOffset);
-        current.limit(limit);
-        next.put(current);
+        int limit = buffer.position();
+        buffer.limit(recordOffset);
+        buffer.flip();
+        channel.write(buffer);
+        buffer.position(recordOffset);
+        buffer.limit(limit);
+        buffer.compact();
 
-        ByteBuffer tmp = current;
-        current = next;
-        next = tmp;
-        next.clear();
+        return true;
+      } else {
+        return false;
       }
     }
 
     @Override
     public void addTuple(Tuple t) throws IOException {
 
-      if (current.remaining() < headerSize) {
+      if (buffer.remaining() < headerSize) {
         flushBuffer();
       }
 
       // skip the row header
-      int recordOffset = current.position();
-      current.position(current.position() + headerSize);
+      int recordOffset = buffer.position();
+      buffer.position(buffer.position() + headerSize);
 
       // reset the null flags
       nullFlags.clear();
@@ -308,55 +302,63 @@ public class RawFile {
         }
 
         // 8 is the maximum bytes size of all types
-        flushBufferAndReplace(recordOffset, 8);
+        if (flushBufferAndReplace(recordOffset, 8)) {
+          recordOffset = 0;
+        }
 
         switch(columnTypes[i]) {
           case BOOLEAN :
           case BYTE :
-            current.put(t.get(i).asByte());
+            buffer.put(t.get(i).asByte());
             break;
           case CHAR :
-            current.putChar(t.get(i).asChar());
+            buffer.putChar(t.get(i).asChar());
             break;
           case SHORT :
-            current.putShort(t.get(i).asShort());
+            buffer.putShort(t.get(i).asShort());
             break;
           case INT :
-            current.putInt(t.get(i).asInt());
+            buffer.putInt(t.get(i).asInt());
             break;
           case LONG :
-            current.putLong(t.get(i).asLong());
+            buffer.putLong(t.get(i).asLong());
             break;
           case FLOAT :
-            current.putFloat(t.get(i).asFloat());
+            buffer.putFloat(t.get(i).asFloat());
             break;
           case DOUBLE:
-            current.putDouble(t.get(i).asDouble());
+            buffer.putDouble(t.get(i).asDouble());
             break;
           case STRING:
             byte [] strBytes = t.get(i).asByteArray();
-            flushBufferAndReplace(recordOffset, strBytes.length + 4);
-            current.putInt(strBytes.length);
-            current.put(strBytes);
+            if (flushBufferAndReplace(recordOffset, strBytes.length + 4)) {
+              recordOffset = 0;
+            }
+            buffer.putInt(strBytes.length);
+            buffer.put(strBytes);
             break;
           case BYTES:
             byte [] rawBytes = t.get(i).asByteArray();
-            flushBufferAndReplace(recordOffset, rawBytes.length + 4);
-            current.putInt(rawBytes.length);
-            current.put(rawBytes);
+            if (flushBufferAndReplace(recordOffset, rawBytes.length + 4)) {
+              recordOffset = 0;
+            }
+            buffer.putInt(rawBytes.length);
+            buffer.put(rawBytes);
             break;
           case IPv4:
-            current.put(t.get(i).asByteArray());
+            buffer.put(t.get(i).asByteArray());
             break;
         }
       }
 
       // write a record header
-      int pos = current.position();
-      current.putInt(recordOffset, pos);
-      current.position(recordOffset + RECORD_SIZE);
-      current.put(nullFlags.toByteArray());
-      current.position(pos);
+      int pos = buffer.position();
+      buffer.position(recordOffset);
+      buffer.putInt(pos - recordOffset);
+      byte [] flags = nullFlags.toByteArray();
+      buffer.putShort((short) flags.length);
+      buffer.put(flags);
+      buffer.position(pos);
 
       if (enabledStat) {
         stats.incrementRow();
@@ -365,8 +367,7 @@ public class RawFile {
 
     @Override
     public void flush() throws IOException {
-      current.flip();
-      channel.write(current);
+      flushBuffer();
       channel.force(true);
     }
 

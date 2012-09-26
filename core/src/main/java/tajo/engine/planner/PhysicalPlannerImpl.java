@@ -155,7 +155,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   }
 
   public PhysicalExec createJoinPlan(TaskAttemptContext ctx, JoinNode joinNode,
-                                     PhysicalExec outer, PhysicalExec inner) {
+                                     PhysicalExec outer, PhysicalExec inner)
+      throws IOException {
     switch (joinNode.getJoinType()) {
       case CROSS_JOIN:
         LOG.info("The planner chooses NLJoinExec");
@@ -194,10 +195,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       default:
         QueryBlock.SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(
             joinNode.getJoinQual(), outer.getSchema(), inner.getSchema());
-        ExternalSortExec outerSort = new ExternalSortExec(conf, ctx, sm,
+        ExternalSortExec outerSort = new ExternalSortExec(ctx, sm,
             new SortNode(sortSpecs[0], outer.getSchema(), outer.getSchema()),
             outer);
-        ExternalSortExec innerSort = new ExternalSortExec(conf, ctx, sm,
+        ExternalSortExec innerSort = new ExternalSortExec(ctx, sm,
             new SortNode(sortSpecs[1], inner.getSchema(), inner.getSchema()),
             inner);
 
@@ -265,7 +266,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         sortNode.setInSchema(subOp.getSchema());
         sortNode.setOutSchema(subOp.getSchema());
         // SortExec sortExec = new SortExec(sortNode, child);
-        ExternalSortExec sortExec = new ExternalSortExec(conf, ctx, sm, sortNode,
+        ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode,
             subOp);
         LOG.info("The planner chooses SortAggregationExec");
         return new SortAggregateExec(ctx, groupbyNode, sortExec);
@@ -275,7 +276,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public PhysicalExec createSortPlan(TaskAttemptContext ctx, SortNode sortNode,
                                      PhysicalExec subOp) throws IOException {
-    return new ExternalSortExec(conf, ctx, sm, sortNode, subOp);
+    return new ExternalSortExec(ctx, sm, sortNode, subOp);
   }
 
   public PhysicalExec createIndexWritePlan(StorageManager sm,

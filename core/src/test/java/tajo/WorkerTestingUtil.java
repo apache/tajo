@@ -117,7 +117,8 @@ public class WorkerTestingUtil {
       }
     }
 
-    TaskAttemptContext ctx = new TaskAttemptContext(TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf,
+        TUtil.newQueryUnitAttemptId(),
         frags.toArray(new Fragment[frags.size()]), workDir);
     PlanningContext context = analyzer.parse(query);
     LogicalNode plan = planner.createPlan(context);
