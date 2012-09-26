@@ -95,7 +95,7 @@ public class WorkerListener extends Thread implements MasterWorkerProtocol {
 
     if (master.getClusterManager().getFailedWorkers().contains(
         proto.getServerName())) {
-      LOG.info("**** Dead man alive!!!!!!");
+      // TODO: remove the sender from failed workers
     }
 
     StatusReport report = new StatusReportImpl(proto);
@@ -112,7 +112,6 @@ public class WorkerListener extends Thread implements MasterWorkerProtocol {
 
   @Override
   public BoolProto ping(QueryUnitAttemptId taskId) {
-    LOG.info("Ping is Called!");
     return TRUE_PROTO;
   }
 
@@ -123,7 +122,6 @@ public class WorkerListener extends Thread implements MasterWorkerProtocol {
       while (!this.stopped) {
         processed.set(0);
         sleeper.sleep(1000);
-        LOG.info("processed: " + processed);
       }
     } catch (InterruptedException e) {
       LOG.error(ExceptionUtils.getFullStackTrace(e));
