@@ -49,6 +49,7 @@ import tajo.storage.StorageUtil;
 import java.io.IOException;
 
 public class GlobalEngine implements EngineService {
+  /** Class Logger */
   private final static Log LOG = LogFactory.getLog(GlobalEngine.class);
 
   private final TajoConf conf;
@@ -219,5 +220,4 @@ public class GlobalEngine implements EngineService {
   public void shutdown() throws IOException {
     LOG.info(GlobalEngine.class.getName() + " is being stopped");
   }
-
 }

@@ -126,7 +126,7 @@ public class TestSelectQuery {
     assertEquals("ly final dependencies: slyly bold",res.getString(16));
   }
 
-  @Test
+  //@Test
   public final void testSelectDistinct() throws Exception {
     Set<String> result1 = Sets.newHashSet();
     result1.add("1,1");
