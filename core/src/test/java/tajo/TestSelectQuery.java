@@ -8,6 +8,7 @@ import org.junit.Test;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;
 import tajo.catalog.proto.CatalogProtos;
+import tajo.client.ResultSetUtil;
 import tajo.storage.CSVFile2;
 
 import java.io.IOException;
@@ -170,7 +171,7 @@ public class TestSelectQuery {
 
   @Test
   public final void testStringCompare() throws Exception {
-    Set<Integer> result = Sets.newHashSet(1,3);
+    Set<Integer> result = Sets.newHashSet(1, 3);
 
     ResultSet res = tpch.execute(
         "select l_orderkey from lineitem where l_shipdate <= '1996-03-22'");
@@ -323,5 +324,27 @@ public class TestSelectQuery {
     assertTrue(res.next());
     assertEquals(3, res.getInt(1));
     assertFalse(res.next());
+  }
+
+  @Test
+  public final void testUnion1() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_orderkey as num from lineitem union select c_custkey as num from customer");
+    int count = 0;
+    for (;res.next();) {
+      count++;
+    }
+    assertEquals(8, count);
+  }
+
+  @Test
+  public final void testUnion2() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_orderkey from lineitem as l1 union select l_orderkey from lineitem as l2");
+    int count = 0;
+    for (;res.next();) {
+      count++;
+    }
+    assertEquals(10, count);
   }
 }

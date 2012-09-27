@@ -740,8 +740,8 @@ public class TestLogicalPlanner {
   
   static final String setStatements [] = {
     "select deptName from employee where deptName like 'data%' union select deptName from score where deptName like 'data%'",
-    "select deptName from employee union select deptName from score intersect select deptName from score",
-    "select deptName from employee union select deptName from score except select deptName from score intersect select deptName from score"
+    "select deptName from employee union select deptName from score as s1 intersect select deptName from score as s2",
+    "select deptName from employee union select deptName from score as s1 except select deptName from score as s2 intersect select deptName from score as s3"
   };
   
   @Test
