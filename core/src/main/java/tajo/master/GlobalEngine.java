@@ -22,6 +22,10 @@ package tajo.master;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import tajo.catalog.CatalogService;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableDesc;
@@ -36,6 +40,8 @@ import tajo.engine.exception.EmptyClusterException;
 import tajo.engine.exception.IllegalQueryStatusException;
 import tajo.engine.exception.NoSuchQueryIdException;
 import tajo.engine.exception.UnknownWorkerException;
+import tajo.engine.parser.CreateTableStmt;
+import tajo.engine.parser.ParseTree;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
@@ -201,7 +207,11 @@ public class GlobalEngine implements EngineService {
   private void updateFragmentServingInfo(PlanningContext context)
       throws IOException {
     cm.updateOnlineWorker();
-    for (String table : context.getParseTree().getAllTableNames()) {
+    ParseTree parseTree = context.getParseTree();
+    if (context.getParseTree() instanceof CreateTableStmt) {
+      parseTree = ((CreateTableStmt) context.getParseTree()).getSelectStmt();
+    }
+    for (String table : parseTree.getAllTableNames()) {
       cm.updateFragmentServingInfo2(table);
     }
   }

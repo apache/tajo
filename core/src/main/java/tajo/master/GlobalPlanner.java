@@ -266,7 +266,7 @@ public class GlobalPlanner {
           if(union.getInnerNode().getType() == ExprType.GROUP_BY) {
             /*This case is for cube by operator
              * TODO : more complicated conidtion*/
-            store.setLocal(false);
+            store.setLocal(true);
           }else {
             /* This case is for union query*/
             store.setLocal(false);
