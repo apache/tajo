@@ -237,7 +237,8 @@ public class LogicalPlanner {
           groupbyNode.setOutSchema(outSchema);
           subroot = groupbyNode;
         } else if (query.getGroupByClause().getGroupSet().get(0).getType() == GroupType.CUBE) {
-          LogicalNode union = createGroupByUnionByCube(ctx, subroot, query.getGroupByClause());
+          LogicalNode union = createGroupByUnionByCube(ctx, query,
+              subroot, query.getGroupByClause());
           Schema outSchema = getProjectedSchema(ctx, query.getTargetList());
           union.setOutSchema(outSchema);
           subroot = union;
@@ -311,14 +312,16 @@ public class LogicalPlanner {
   }
 
   public static LogicalNode createGroupByUnionByCube(
-      final PlanningContext context,final LogicalNode subNode,
+      final PlanningContext context,
+      final QueryBlock queryBlock,
+      final LogicalNode subNode,
       final GroupByClause clause) {
 
     GroupElement element = clause.getGroupSet().get(0);
 
     List<Column []> cuboids  = generateCuboids(element.getColumns());
 
-    return createGroupByUnion(context, subNode, cuboids, 0);
+    return createGroupByUnion(context, queryBlock, subNode, cuboids, 0);
   }
 
   private static Target [] cloneTargets(Target [] srcs)
@@ -332,11 +335,10 @@ public class LogicalPlanner {
   }
 
   private static UnionNode createGroupByUnion(final PlanningContext context,
+                                              final QueryBlock queryBlock,
                                               final LogicalNode subNode,
                                               final List<Column []> cuboids,
                                               final int idx) {
-    QueryBlock queryBlock = (QueryBlock) context.getParseTree();
-
     UnionNode union;
     try {
       if ((cuboids.size() - idx) > 2) {
@@ -349,7 +351,8 @@ public class LogicalPlanner {
         Schema outSchema = getProjectedSchema(context, queryBlock.getTargetList());
         g1.setOutSchema(outSchema);
 
-        union = new UnionNode(g1, createGroupByUnion(context, subNode, cuboids, idx+1));
+        union = new UnionNode(g1, createGroupByUnion(context, queryBlock,
+            subNode, cuboids, idx+1));
         union.setInSchema(g1.getOutSchema());
         union.setOutSchema(g1.getOutSchema());
         return union;

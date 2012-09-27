@@ -43,10 +43,7 @@ import tajo.engine.exception.InternalException;
 import tajo.engine.exception.UnfinishedTaskException;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.planner.PlannerUtil;
-import tajo.engine.planner.logical.ExprType;
-import tajo.engine.planner.logical.LogicalNode;
-import tajo.engine.planner.logical.SortNode;
-import tajo.engine.planner.logical.StoreTableNode;
+import tajo.engine.planner.logical.*;
 import tajo.engine.planner.physical.PhysicalExec;
 import tajo.engine.planner.physical.TupleComparator;
 import tajo.ipc.protocolrecords.Fragment;
@@ -282,7 +279,7 @@ public class Task implements Runnable {
 
   private void waitForFetch() throws InterruptedException, IOException {
     context.getFetchLatch().await();
-    LOG.info(context.getTaskId() + "All fetches are done!");
+    LOG.info(context.getTaskId() + " All fetches are done!");
     Collection<String> inputs = Lists.newArrayList(context.getInputTables());
     for (String inputTable: inputs) {
       File tableDir = new File(context.getFetchIn(), inputTable);

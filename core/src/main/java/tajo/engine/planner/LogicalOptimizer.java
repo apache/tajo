@@ -558,7 +558,11 @@ public class LogicalOptimizer {
         UnionNode unionNode = (UnionNode) node;
         stack.add(unionNode);
 
-        QueryBlock block = (QueryBlock) ctx.getParseTree();
+        ParseTree tree =  ctx.getParseTree();
+        if (tree instanceof CreateTableStmt) {
+          tree = ((CreateTableStmt) tree).getSelectStmt();
+        }
+        QueryBlock block = (QueryBlock) tree;
 
         OptimizationContext outerCtx = new OptimizationContext(ctx,
             block.getTargetList());

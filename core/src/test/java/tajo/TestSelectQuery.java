@@ -347,4 +347,15 @@ public class TestSelectQuery {
     }
     assertEquals(10, count);
   }
+
+  @Test
+  public final void testCreateAfterSelect() throws Exception {
+    ResultSet res = tpch.execute(
+        "orderkeys := select l_orderkey from lineitem");
+    int count = 0;
+    for (;res.next();) {
+      count++;
+    }
+    assertEquals(5, count);
+  }
 }

@@ -24,6 +24,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.TpchTestBase;
+import tajo.client.ResultSetUtil;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -61,5 +62,16 @@ public class TestGroupByQuery {
     ResultSet res = tpch.execute("select count(*) + max(l_orderkey) as merged from lineitem");
     res.next();
     assertEquals(8, res.getLong("merged"));
+  }
+
+  @Test
+  public final void testCube() throws Exception {
+    ResultSet res = tpch.execute(
+        "cube_test := select l_orderkey, l_partkey, sum(l_quantity) from lineitem group by cube(l_orderkey, l_partkey)");
+    int count = 0;
+    for (;res.next();) {
+      count++;
+    }
+    assertEquals(11, count);
   }
 }
