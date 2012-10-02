@@ -101,4 +101,10 @@ public class HashAggregateExec extends AggregationExec {
   public void rescan() throws IOException {    
     iterator = tupleSlots.entrySet().iterator();
   }
+
+  @Override
+  public void close() throws IOException {
+    super.close();
+    tupleSlots.clear();
+  }
 }
