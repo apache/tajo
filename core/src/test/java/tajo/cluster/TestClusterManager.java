@@ -107,25 +107,6 @@ public class TestClusterManager {
   }
 
   @Test
-  public void testGetWorkerInfo() throws Exception {
-    workersCollection = cm.getOnlineWorkers().values();
-    for (List<String> worker : workersCollection) {
-      for (String w : worker) {
-        WorkerInfo wi = cm.getWorkerInfo(w);
-        assertNotNull(wi.availableProcessors);
-        assertNotNull(wi.freeMemory);
-        assertNotNull(wi.totalMemory);
-
-        List<DiskInfo> disks = wi.disks;
-        for (DiskInfo di : disks) {
-          assertNotNull(di.freeSpace);
-          assertNotNull(di.totalSpace);
-        }
-      }
-    }
-  }
-
-  @Test
   public void testUpdateFragmentServingInfo2() throws IOException {
     ClusterManager cm = master.getClusterManager();
     StorageManager sm = master.getStorageManager();

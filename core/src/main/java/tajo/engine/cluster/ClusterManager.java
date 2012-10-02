@@ -44,17 +44,17 @@ import tajo.rpc.RemoteException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 
 public class ClusterManager {
-  private final int FRAG_DIST_THRESHOLD = 3;
   private final Log LOG = LogFactory.getLog(ClusterManager.class);
 
   public class WorkerInfo {
     public int availableProcessors;
     public long freeMemory;
     public long totalMemory;
-    public int taskNum;
+    public int availableTaskSlotNum;
 
     public List<DiskInfo> disks = new ArrayList<DiskInfo>();
   }
@@ -155,20 +155,48 @@ public class ClusterManager {
     this.catalog = new CatalogClient(this.conf);
   }
 
-  public WorkerInfo getWorkerInfo(String workerName) throws RemoteException,
-      InterruptedException, ExecutionException, UnknownWorkerException {
-    Callback<ServerStatusProto> callback = wc.getServerStatus(workerName);
-    for (int i = 0; i < 3 && !callback.isDone(); i++) {
-      Thread.sleep(100);
+  private Map<String, Callback<ServerStatusProto>> requestWorkerInfo()
+      throws UnknownWorkerException, InterruptedException {
+    Map<String, Callback<ServerStatusProto>> callbackMap =
+        Maps.newHashMap();
+    for (List<String> hosts : DNSNameToHostsMap.values()) {
+      for (String host : hosts) {
+        Callback<ServerStatusProto> callback = wc.getServerStatus(host);
+        callbackMap.put(host, callback);
+      }
     }
-    if (callback.isDone()) {
+
+    return callbackMap;
+  }
+
+  public boolean waitForWorkerInfo(Map<String, Callback<ServerStatusProto>> callbackMap)
+      throws InterruptedException, ExecutionException {
+    Callback<ServerStatusProto> callback;
+    for (Entry<String, Callback<ServerStatusProto>> e : callbackMap.entrySet()) {
+      callback = e.getValue();
+      if (!callback.isDone()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public void updateWorkerInfo(Map<String, Callback<ServerStatusProto>> callbackMap)
+      throws RemoteException, InterruptedException, ExecutionException,
+      UnknownWorkerException {
+    String host;
+    Callback<ServerStatusProto> callback;
+    WorkerResource wr;
+    for (Entry<String, Callback<ServerStatusProto>> e : callbackMap.entrySet()) {
+      host = e.getKey();
+      callback = e.getValue();
       ServerStatusProto status = callback.get();
       ServerStatusProto.System system = status.getSystem();
       WorkerInfo info = new WorkerInfo();
       info.availableProcessors = system.getAvailableProcessors();
       info.freeMemory = system.getFreeMemory();
       info.totalMemory = system.getTotalMemory();
-      info.taskNum = status.getTaskNum();
+      info.availableTaskSlotNum = status.getAvailableTaskSlotNum();
 
       for (Disk diskStatus : status.getDiskList()) {
         DiskInfo diskInfo = new DiskInfo();
@@ -176,12 +204,11 @@ public class ClusterManager {
         diskInfo.totalSpace = diskStatus.getTotalSpace();
         info.disks.add(diskInfo);
       }
-      return info;
-    } else {
-      LOG.error("Failed to get the resource information!!");
-      return null;
-    }
 
+      wr = new WorkerResource(host, info.availableTaskSlotNum);
+      resourcePool.put(host, wr);
+      sortedResources.add(wr);
+    }
   }
 
   public List<QueryUnitId> getProcessingQuery(String workerName) {
@@ -216,9 +243,10 @@ public class ClusterManager {
 
   public void resetResourceInfo()
       throws UnknownWorkerException, InterruptedException,
-      ExecutionException {
-    WorkerInfo info;
+      ExecutionException, IOException {
+    /*WorkerInfo info;
     WorkerResource wr;
+
     for (List<String> hosts : DNSNameToHostsMap.values()) {
       for (String host : hosts) {
         info = getWorkerInfo(host);
@@ -231,6 +259,15 @@ public class ClusterManager {
           sortedResources.add(wr);
         }
       }
+    }*/
+    Map<String, Callback<ServerStatusProto>> callbackMap = requestWorkerInfo();
+    for (int i = 0; i < 3 && waitForWorkerInfo(callbackMap); i++) {
+      Thread.sleep(100);
+    }
+    if (waitForWorkerInfo(callbackMap)) {
+      throw new IOException("Unable to initialize resource information after waiting 300 ms");
+    } else {
+      updateWorkerInfo(callbackMap);
     }
   }
 
