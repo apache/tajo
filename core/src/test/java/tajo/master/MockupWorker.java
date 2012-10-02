@@ -197,7 +197,7 @@ public abstract class MockupWorker
     // serverStatus builder
     ServerStatusProto.Builder serverStatus = ServerStatusProto.newBuilder();
     // TODO: compute the available number of task slots
-    serverStatus.setTaskNum(taskQueue.size());
+    serverStatus.setAvailableTaskSlotNum(taskQueue.size());
 
     // system(CPU, memory) status builder
     ServerStatusProto.System.Builder systemStatus = ServerStatusProto.System

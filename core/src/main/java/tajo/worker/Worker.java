@@ -64,6 +64,7 @@ import java.util.concurrent.*;
 
 public class Worker extends Thread implements AsyncWorkerProtocol {
   private static final Log LOG = LogFactory.getLog(Worker.class);
+  private static final int MAX_TASK_NUM = 120;
 
   private final TajoConf conf;
 
@@ -253,8 +254,10 @@ public class Worker extends Thread implements AsyncWorkerProtocol {
           sleeper.sleep(3000);
           long time = System.currentTimeMillis();
 
+          long before = System.currentTimeMillis();
           boolean res = sendHeartbeat(time);
-          LOG.info("sent heart beat!! (" + res + ")");
+          long after = System.currentTimeMillis();
+          LOG.info("sent heart beat!! (" + res + ") : " + (after-before));
         }
       }
     } catch (Throwable t) {
@@ -293,22 +296,9 @@ public class Worker extends Thread implements AsyncWorkerProtocol {
     List<TaskStatusProto> list
       = new ArrayList<TaskStatusProto>();
     TaskStatusProto taskStatus;
-    // to be removed
-    List<QueryUnitAttemptId> tobeRemoved = Lists.newArrayList();
-    
+
     // builds one status for each in-progress query
-    QueryStatus qs;
-
     for (Task task : tasks.values()) {
-      qs = task.getStatus();
-      if (qs == QueryStatus.QUERY_ABORTED
-          || qs == QueryStatus.QUERY_KILLED
-          || qs == QueryStatus.QUERY_FINISHED) {
-        // TODO - in-progress queries should be kept until this leafserver 
-        // ensures that this report is delivered.
-        tobeRemoved.add(task.getId());
-      }
-
       taskStatus = task.getReport();
       list.add(taskStatus);
     }
@@ -398,7 +388,7 @@ public class Worker extends Thread implements AsyncWorkerProtocol {
     // serverStatus builder
     ServerStatusProto.Builder serverStatus = ServerStatusProto.newBuilder();
     // TODO: compute the available number of task slots
-    serverStatus.setTaskNum(tasks.size());
+    serverStatus.setAvailableTaskSlotNum(MAX_TASK_NUM - tasks.size());
 
     // system(CPU, memory) status builder
     ServerStatusProto.System.Builder systemStatus = ServerStatusProto.System

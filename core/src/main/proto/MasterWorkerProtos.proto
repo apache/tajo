@@ -93,5 +93,5 @@ message ServerStatusProto {
     }
     required System system = 1;
     repeated Disk disk = 2;
-    required int32 taskNum = 3;
+    required int32 availableTaskSlotNum = 3;
 }
