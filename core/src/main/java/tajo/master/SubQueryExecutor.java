@@ -234,6 +234,25 @@ public class SubQueryExecutor extends Thread {
     LOG.info(e.getUnknownName() + " is excluded from the query planning.");
   }
 
+  private void finalizeSubQuery(SubQuery subQuery) throws Exception {
+    for (QueryUnit queryUnit : subQuery.getQueryUnits()) {
+      sendCommand(queryUnit.getLastAttempt(), CommandType.FINALIZE);
+    }
+  }
+
+  private void finalizePrevSubQuery(SubQuery subQuery)
+      throws Exception {
+    SubQuery prevSubQuery;
+    for (ScanNode scan : subQuery.getScanNodes()) {
+      prevSubQuery = subQuery.getChildQuery(scan);
+      if (prevSubQuery.hasUnionPlan()) {
+        finalizePrevSubQuery(prevSubQuery);
+      } else {
+        finalizeSubQuery(prevSubQuery);
+      }
+    }
+  }
+
   private void sendCommand(QueryUnitAttempt unit, CommandType type)
       throws Exception {
     Command.Builder cmd = Command.newBuilder();
@@ -308,14 +327,14 @@ public class SubQueryExecutor extends Thread {
       LOG.info("Query scheduler is started!");
       init();
 
-      while (status == Status.INPROGRESS) {
-        try {
+      SubQuery subQuery = null;
+      try {
+        while (status == Status.INPROGRESS) {
           this.sleeper.sleep(WAIT_PERIOD);
           if (this.isFinished()) {
             this.shutdown();
           }
 
-          SubQuery subQuery;
           while ((subQuery = takeSubQuery()) != null) {
             LOG.info("Schedule unit plan: \n" + subQuery.getLogicalPlan());
             if (subQuery.hasUnionPlan()) {
@@ -340,18 +359,26 @@ public class SubQueryExecutor extends Thread {
           }
           LOG.info("*** Scheduled / in-progress queries: ("
               + scheduleQueue.size() + " / " + inprogressQueue.size() + ")");
-        } catch (InterruptedException e) {
-          LOG.error(ExceptionUtils.getStackTrace(e));
-          abort();
-        } catch (IOException e) {
-          LOG.error(ExceptionUtils.getStackTrace(e));
-          abort();
-        } catch (URISyntaxException e) {
-          LOG.error(ExceptionUtils.getStackTrace(e));
-          abort();
-        } catch (Exception e) {
-          LOG.error(ExceptionUtils.getStackTrace(e));
-          abort();
+        }
+      } catch (InterruptedException e) {
+        LOG.error(ExceptionUtils.getStackTrace(e));
+        abort();
+      } catch (IOException e) {
+        LOG.error(ExceptionUtils.getStackTrace(e));
+        abort();
+      } catch (URISyntaxException e) {
+        LOG.error(ExceptionUtils.getStackTrace(e));
+        abort();
+      } catch (Exception e) {
+        LOG.error(ExceptionUtils.getStackTrace(e));
+        abort();
+      } finally {
+        if (subQuery != null) {
+          try {
+            finalizeSubQuery(subQuery);
+          } catch (Exception e) {
+            LOG.error(e);
+          }
         }
       }
     }
@@ -510,7 +537,7 @@ public class SubQueryExecutor extends Thread {
     }
 
     private void finishSubQueryForEmptyInput(SubQuery subQuery)
-        throws IOException {
+        throws Exception {
       TableStat stat = new TableStat();
       for (int i = 0; i < subQuery.getOutputSchema().getColumnNum(); i++) {
         stat.addColumnStat(new ColumnStat(subQuery.getOutputSchema()
@@ -519,14 +546,18 @@ public class SubQueryExecutor extends Thread {
       subQuery.setStats(stat);
       writeStat(subQuery, stat);
       subQuery.setStatus(QueryStatus.QUERY_FINISHED);
+      finalizePrevSubQuery(subQuery);
     }
 
-    private void finishUnionUnit(SubQuery unit) throws IOException {
+    private void finishUnionUnit(SubQuery unit) throws Exception {
       // write meta and continue
       TableStat stat = generateUnionStat(unit);
       unit.setStats(stat);
       writeStat(unit, stat);
       unit.setStatus(QueryStatus.QUERY_FINISHED);
+      if (unit.getParentQuery() == null) {
+        finalizePrevSubQuery(unit);
+      }
     }
 
     /**
@@ -782,9 +813,7 @@ public class SubQueryExecutor extends Thread {
             finalizePrevSubQuery(subQuery);
           }
           if (subQuery.equals(plan.getRoot())) {
-            for (QueryUnit unit : subQuery.getQueryUnits()) {
-              sendCommand(unit.getLastAttempt(), CommandType.FINALIZE);
-            }
+            finalizeSubQuery(subQuery);
           }
           finished.add(subQuery);
         }
@@ -801,22 +830,8 @@ public class SubQueryExecutor extends Thread {
       return tableStat;
     }
 
-    private void finalizePrevSubQuery(SubQuery subQuery)
-        throws Exception {
-      SubQuery prevSubQuery;
-      for (ScanNode scan : subQuery.getScanNodes()) {
-        prevSubQuery = subQuery.getChildQuery(scan);
-        if (prevSubQuery.getStoreTableNode().getSubNode().getType() != ExprType.UNION) {
-          for (QueryUnit unit : prevSubQuery.getQueryUnits()) {
-            sendCommand(unit.getLastAttempt(), CommandType.FINALIZE);
-          }
-        }
-      }
-    }
-
     @VisibleForTesting
     public int updateSubmittedQueryUnitStatus() throws Exception {
-      // TODO
       ClusterManager.WorkerResource wr;
       boolean retryRequired;
       boolean wait;

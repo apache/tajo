@@ -55,7 +55,7 @@ public class TestPingRequestImpl {
     list.add(builder.build());
     
     StatusReport r1 = new StatusReportImpl(System.currentTimeMillis(),
-        "testserver", list);
+        "testserver", 0, list);
     StatusReport r2 = new StatusReportImpl(r1.getProto());
     
     assertEquals(r1.getProto().getStatusCount(), r2.getProto().getStatusCount());

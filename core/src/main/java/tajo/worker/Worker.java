@@ -296,13 +296,19 @@ public class Worker extends Thread implements AsyncWorkerProtocol {
     List<TaskStatusProto> list
       = new ArrayList<TaskStatusProto>();
     TaskStatusProto taskStatus;
+    int availableTaskSlotNum = 0;
 
     // builds one status for each in-progress query
     for (Task task : tasks.values()) {
       taskStatus = task.getReport();
       list.add(taskStatus);
+      if (task.getStatus() != QueryStatus.QUERY_ABORTED ||
+          task.getStatus() != QueryStatus.QUERY_FINISHED ||
+          task.getStatus() != QueryStatus.QUERY_KILLED) {
+        availableTaskSlotNum++;
+      }
     }
-
+    report.setAvailableTaskSlotNum(MAX_TASK_NUM - availableTaskSlotNum);
     report.addAllStatus(list);
 
     return master.statusUpdate(report.build()).getValue();

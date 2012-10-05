@@ -20,6 +20,7 @@
 
 package tajo.engine.cluster;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
@@ -133,9 +134,7 @@ public class ClusterManager {
   private int clusterSize;
   private Map<String, List<String>> DNSNameToHostsMap;
   private Map<Fragment, FragmentServingInfo> servingInfoMap;
-  private Random rand = new Random(System.currentTimeMillis());
   private Map<String, WorkerResource> resourcePool;
-  private PriorityQueue<WorkerResource> sortedResources;
   private Set<String> failedWorkers;
 
   public ClusterManager(WorkerCommunicator wc, final TajoConf conf,
@@ -146,7 +145,6 @@ public class ClusterManager {
     this.DNSNameToHostsMap = Maps.newConcurrentMap();
     this.servingInfoMap = Maps.newConcurrentMap();
     this.resourcePool = Maps.newConcurrentMap();
-    this.sortedResources = new PriorityQueue<WorkerResource>();
     this.failedWorkers = Sets.newHashSet();
     this.clusterSize = 0;
   }
@@ -169,7 +167,7 @@ public class ClusterManager {
     return callbackMap;
   }
 
-  public boolean waitForWorkerInfo(Map<String, Callback<ServerStatusProto>> callbackMap)
+  private boolean waitForWorkerInfo(Map<String, Callback<ServerStatusProto>> callbackMap)
       throws InterruptedException, ExecutionException {
     Callback<ServerStatusProto> callback;
     for (Entry<String, Callback<ServerStatusProto>> e : callbackMap.entrySet()) {
@@ -181,7 +179,7 @@ public class ClusterManager {
     return false;
   }
 
-  public void updateWorkerInfo(Map<String, Callback<ServerStatusProto>> callbackMap)
+  private void updateWorkerInfo(Map<String, Callback<ServerStatusProto>> callbackMap)
       throws RemoteException, InterruptedException, ExecutionException,
       UnknownWorkerException {
     String host;
@@ -207,7 +205,6 @@ public class ClusterManager {
 
       wr = new WorkerResource(host, info.availableTaskSlotNum);
       resourcePool.put(host, wr);
-      sortedResources.add(wr);
     }
   }
 
@@ -218,7 +215,6 @@ public class ClusterManager {
   public void updateOnlineWorker() {
     String DNSName;
     List<String> workers;
-    WorkerResource wr;
     DNSNameToHostsMap.clear();
     clusterSize = 0;
     for (String worker : tracker.getMembers()) {
@@ -236,30 +232,13 @@ public class ClusterManager {
       }
     }
     for (String failed : failedWorkers) {
-      wr = resourcePool.remove(failed);
-      sortedResources.remove(wr);
+      resourcePool.remove(failed);
     }
   }
 
   public void resetResourceInfo()
       throws UnknownWorkerException, InterruptedException,
       ExecutionException, IOException {
-    /*WorkerInfo info;
-    WorkerResource wr;
-
-    for (List<String> hosts : DNSNameToHostsMap.values()) {
-      for (String host : hosts) {
-        info = getWorkerInfo(host);
-        //Preconditions.checkState(info.availableProcessors-info.taskNum >= 0);
-        // TODO: correct free resource computation is required
-        if (info.availableProcessors-info.taskNum > 0) {
-          wr = new WorkerResource(host,
-              (info.availableProcessors-info.taskNum) * 30);
-          resourcePool.put(host, wr);
-          sortedResources.add(wr);
-        }
-      }
-    }*/
     Map<String, Callback<ServerStatusProto>> callbackMap = requestWorkerInfo();
     for (int i = 0; i < 3 && waitForWorkerInfo(callbackMap); i++) {
       Thread.sleep(100);
@@ -267,12 +246,16 @@ public class ClusterManager {
     if (waitForWorkerInfo(callbackMap)) {
       throw new IOException("Unable to initialize resource information after waiting 300 ms");
     } else {
+      resourcePool.clear();
       updateWorkerInfo(callbackMap);
     }
   }
 
   public boolean remainFreeResource() {
-    return sortedResources.iterator().next().hasFreeResource();
+    Collection<WorkerResource> collection = resourcePool.values();
+    WorkerResource[] resources = collection.toArray(new WorkerResource[collection.size()]);
+    Arrays.sort(resources);
+    return resources[0].hasFreeResource();
   }
 
   public WorkerResource getResource(String worker) {
@@ -280,15 +263,7 @@ public class ClusterManager {
   }
 
   public void updateResourcePool(WorkerResource updated) {
-    WorkerResource outdated = null;
-    for (WorkerResource wr : sortedResources) {
-      if (wr.getName().equals(updated.getName())) {
-        outdated = wr;
-        break;
-      }
-    }
-    sortedResources.remove(outdated);
-    sortedResources.add(updated);
+    resourcePool.put(updated.getName(), updated);
   }
 
   public Map<String, List<String>> getOnlineWorkers() {
@@ -314,61 +289,12 @@ public class ClusterManager {
   public FragmentServingInfo getServingInfo(Fragment fragment) {
     return this.servingInfoMap.get(fragment);
   }
-  
-  private String getRandomWorkerNameOfHost(String host) {
-    List<String> workers = DNSNameToHostsMap.get(host);
-    return workers.get(rand.nextInt(workers.size()));
-  }
-
-  private List<FragmentServInfo> getFragmentLocInfo(TableDescProto desc)
-      throws IOException {
-    int fileIdx, blockIdx;
-    FileSystem fs = FileSystem.get(conf);
-    Path path = new Path(desc.getPath());
-    
-    FileStatus[] files = fs.listStatus(new Path(path + "/data"));
-    if (files == null || files.length == 0) {
-      throw new FileNotFoundException(path.toString() + "/data");
-    }
-    BlockLocation[] blocks;
-    String[] hosts;
-    List<FragmentServInfo> fragmentInfoList = 
-        new ArrayList<FragmentServInfo>();
-    
-    for (fileIdx = 0; fileIdx < files.length; fileIdx++) {
-      blocks = fs.getFileBlockLocations(files[fileIdx], 0,
-          files[fileIdx].getLen());
-      for (blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
-        hosts = blocks[blockIdx].getHosts();
-        // TODO: select the proper serving node for block
-        Fragment fragment = new Fragment(desc.getId(),
-            files[fileIdx].getPath(), new TableMetaImpl(desc.getMeta()),
-            blocks[blockIdx].getOffset(), blocks[blockIdx].getLength());
-        fragmentInfoList.add(new FragmentServInfo(hosts[0], -1, fragment));
-      }
-    }
-    return fragmentInfoList;
-  }
-  
-  /**
-   * Select a random worker
-   * 
-   * @return
-   * @throws Exception
-   */
-  /*public String getRandomHost() {
-    int n = rand.nextInt(resourcePool.size());
-    Iterator<String> it = resourcePool.keySet().iterator();
-    for (int i = 0; i < n-1; i++) {
-      it.next();
-    }
-    String randomHost = it.next();
-    this.getResource(randomHost);
-    return randomHost;
-  }*/
 
   public String getNextFreeHost() {
-    return sortedResources.iterator().next().getName();
+    Collection<WorkerResource> collection = resourcePool.values();
+    WorkerResource[] resources = collection.toArray(new WorkerResource[collection.size()]);
+    Arrays.sort(resources);
+    return resources[0].getName();
   }
 
   public synchronized Set<String> getFailedWorkers() {
@@ -385,5 +311,13 @@ public class ClusterManager {
 
   public synchronized void removeFailedWorker(String worker) {
     this.failedWorkers.remove(worker);
+  }
+
+  public void dumpResourceInfos() {
+    LOG.info("--- Resource information ---");
+    for (WorkerResource wr : this.resourcePool.values()) {
+      LOG.info(wr);
+    }
+    LOG.info("next free host: " + getNextFreeHost());
   }
 }
