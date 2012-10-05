@@ -33,6 +33,7 @@ public class StatusReportImpl implements StatusReport {
   private boolean viaProto;
   private Long timestamp;
   private String serverName;
+  private Integer availableTaskSlotNum;
   private List<TaskStatusProto> inProgressQueries;
   
   public StatusReportImpl() {
@@ -40,10 +41,12 @@ public class StatusReportImpl implements StatusReport {
   }
   
   public StatusReportImpl(long timestamp, String serverName,
+                          int availableTaskSlotNum,
                           List<TaskStatusProto> inProgress) {
     this();
     this.timestamp = timestamp;
     this.serverName = serverName;
+    this.availableTaskSlotNum = availableTaskSlotNum;
     this.inProgressQueries = 
         new ArrayList<TaskStatusProto>(inProgress);
   }
@@ -87,6 +90,18 @@ public class StatusReportImpl implements StatusReport {
     return serverName;
   }
 
+  public Integer getAvailableTaskSlotNum() {
+    StatusReportProtoOrBuilder p = viaProto ? proto : builder;
+    if (availableTaskSlotNum != null) {
+      return this.availableTaskSlotNum;
+    }
+    if (!p.hasAvailableTaskSlotNum()) {
+      return null;
+    }
+    availableTaskSlotNum = p.getAvailableTaskSlotNum();
+    return availableTaskSlotNum;
+  }
+
   @Override
   public Collection<TaskStatusProto> getProgressList() {
     initProgress();
@@ -128,6 +143,9 @@ public class StatusReportImpl implements StatusReport {
     }
     if (this.serverName != null) {
       builder.setServerName(serverName);
+    }
+    if (this.availableTaskSlotNum != null) {
+      builder.setAvailableTaskSlotNum(availableTaskSlotNum);
     }
     if (this.inProgressQueries != null) {
       builder.clearStatus();

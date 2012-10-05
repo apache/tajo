@@ -25,5 +25,6 @@ import tajo.engine.MasterWorkerProtos.TaskStatusProto;
 import java.util.Collection;
 
 public interface StatusReport extends ProtoObject<StatusReportProto> {
+  Integer getAvailableTaskSlotNum();
   Collection<TaskStatusProto> getProgressList();
 }

@@ -52,6 +52,7 @@ message StatusReportProto {
     required int64 timestamp = 1;
     required string serverName = 2;
     repeated TaskStatusProto status = 3;
+    required int32 availableTaskSlotNum = 4;
 }
 
 message CommandRequestProto {
