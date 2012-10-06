@@ -534,10 +534,6 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
         new DataType[] {DataType.STRING},
         new DataType[] {DataType.STRING}));
 
-    for (FunctionDesc func : sqlFuncs) {
-      registerFunction(func.getProto());
-    }
-
     // Date
     sqlFuncs.add(new FunctionDesc("date", Date.class, FunctionType.GENERAL,
         new DataType[] {DataType.LONG},
@@ -547,6 +543,10 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     sqlFuncs.add(new FunctionDesc("today", Date.class, FunctionType.GENERAL,
         new DataType[] {DataType.LONG},
         new DataType[] {}));
+
+    for (FunctionDesc func : sqlFuncs) {
+      registerFunction(func.getProto());
+    }
 
     List<FunctionDesc> extendedFuncs = Lists.newArrayList();
     extendedFuncs.add(new FunctionDesc("random", RandomInt.class, FunctionType.GENERAL,
