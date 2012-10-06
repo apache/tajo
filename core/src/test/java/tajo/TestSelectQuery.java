@@ -8,7 +8,6 @@ import org.junit.Test;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;
 import tajo.catalog.proto.CatalogProtos;
-import tajo.client.ResultSetUtil;
 import tajo.storage.CSVFile2;
 
 import java.io.IOException;
@@ -262,7 +261,7 @@ public class TestSelectQuery {
     assertFalse(res.next());
   }
 
-  // TODO - to be changed
+  //@Test
   public final void testIsNotNull() throws Exception {
     String [] table = new String[] {"nulltable"};
     Schema schema = new Schema();

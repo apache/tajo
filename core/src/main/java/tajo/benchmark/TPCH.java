@@ -28,7 +28,7 @@ public class TPCH extends BenchmarkSet {
   @Override
   public void loadSchemas() {
     Schema lineitem = new Schema()
-        .addColumn("l_orderkey", DataType.INT) // 0
+        .addColumn("l_orderkey", DataType.LONG) // 0
         .addColumn("l_partkey", DataType.INT) // 1
         .addColumn("l_suppkey", DataType.INT) // 2
         .addColumn("l_linenumber", DataType.INT) // 3
