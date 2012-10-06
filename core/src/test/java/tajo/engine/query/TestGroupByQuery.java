@@ -24,7 +24,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.TpchTestBase;
-import tajo.client.ResultSetUtil;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -73,5 +72,15 @@ public class TestGroupByQuery {
       count++;
     }
     assertEquals(11, count);
+  }
+
+  @Test
+  public final void testGroupByLimit() throws Exception {
+    ResultSet res = tpch.execute("select l_orderkey from lineitem group by l_orderkey limit 2");
+    int count = 0;
+    for (;res.next();) {
+      count++;
+    }
+    assertEquals(2, count);
   }
 }

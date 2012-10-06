@@ -15,10 +15,8 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	private ColumnProto.Builder builder = null;
 	private boolean viaProto = false;
 	
-	@Expose
-  protected String name;
-	@Expose
-  protected DataType dataType;
+	@Expose protected String name;
+	@Expose protected DataType dataType;
 	
 	public Column() {
 		this.builder = ColumnProto.newBuilder();

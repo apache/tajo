@@ -3,9 +3,8 @@ package tajo.engine.planner.logical;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import tajo.catalog.Column;
-import tajo.engine.json.GsonCreator;
-import tajo.master.SubQuery;
 import tajo.engine.utils.TUtil;
+import tajo.master.SubQuery;
 
 /**
  * @author Hyunsik Choi
@@ -121,9 +120,5 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     
     return sb.toString() + "\n"
         + getSubNode().toString();
-  }
-  
-  public String toJSON() {
-    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

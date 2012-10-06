@@ -4,6 +4,7 @@
 package tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
+import tajo.engine.json.GsonCreator;
 
 
 /**
@@ -50,4 +51,9 @@ public abstract class UnaryNode extends LogicalNode implements Cloneable {
 	  subExpr.postOrder(visitor);	  
 	  visitor.visit(this);
 	}
+
+  public String toJSON() {
+    subExpr.toJSON();
+    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
+  }
 }

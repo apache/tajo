@@ -357,4 +357,14 @@ public class TestSelectQuery {
     }
     assertEquals(5, count);
   }
+
+  @Test
+  public final void testLimit() throws Exception {
+    ResultSet res = tpch.execute("select l_orderkey from lineitem limit 3");
+    int count = 0;
+    for (;res.next();) {
+      count++;
+    }
+    assertEquals(3, count);
+  }
 }
