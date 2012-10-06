@@ -158,7 +158,10 @@ public class TestQueryAnalyzer {
       // create index
       "create unique index score_idx on people using hash (score, age desc null first) with ('fillfactor' = 70)", // 9
       // create table def
-      "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data' with ('csv.delimiter'='|')" // 10     
+      "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data' with ('csv.delimiter'='|')", // 10
+      // limit test
+      "select id, name, score, age from people limit 3" // 11
+
   };
  
   @Test
@@ -585,5 +588,12 @@ public class TestQueryAnalyzer {
     QueryBlock.Target t1 = new QueryBlock.Target(new ConstEval(DatumFactory.createInt(5)), 0);
     QueryBlock.Target t2 = (QueryBlock.Target) t1.clone();
     assertEquals(t1,t2);
+  }
+
+  @Test
+  public void testLimit() {
+    QueryBlock queryBlock =
+        (QueryBlock) analyzer.parse(QUERIES[11]).getParseTree();
+    assertEquals(3, queryBlock.getLimitClause().getLimitRow());
   }
 }

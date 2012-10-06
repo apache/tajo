@@ -1,3 +1,23 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 grammar NQL;
 
 options {
@@ -166,8 +186,8 @@ options {k=1;}
   ;
 
 query_specification
-  : SELECT setQualifier? selectList from_clause? where_clause? groupby_clause? having_clause? orderby_clause?
-  -> ^(SELECT from_clause? setQualifier? selectList where_clause? groupby_clause? having_clause? orderby_clause?)
+  : SELECT setQualifier? selectList from_clause? where_clause? groupby_clause? having_clause? orderby_clause? limit_clause?
+  -> ^(SELECT from_clause? setQualifier? selectList where_clause? groupby_clause? having_clause? orderby_clause? limit_clause?)
   ;
   
 insertStmt
@@ -340,7 +360,11 @@ order_specification
   : ASC -> ^(ORDER ASC)
   | DESC -> ^(ORDER DESC)
   ;
-  
+
+limit_clause
+  : LIMIT e=expr -> ^(LIMIT $e)
+  ;
+
 null_ordering
   : NULL FIRST -> ^(NULL_ORDER FIRST)
   | NULL LAST -> ^(NULL_ORDER LAST)
@@ -535,6 +559,7 @@ JOIN : 'join';
 LAST : 'last';
 LEFT : 'left';
 LIKE : 'like';
+LIMIT : 'limit';
 LOCATION : 'location';
 NOT : 'not';
 ON : 'on';

@@ -245,6 +245,10 @@ public final class QueryAnalyzer {
           block.setSortKeys(sortKeys);
           break;
 
+        case NQLParser.LIMIT:
+          block.setLimit(parseLimitClause(context, block, node));
+          break;
+
         default:
 
       }
@@ -687,6 +691,22 @@ public final class QueryAnalyzer {
     }
 
     return sortKeys;
+  }
+
+  private LimitClause parseLimitClause(final PlanningContext context,
+                                       final ParseTree tree,
+                                       final CommonTree ast) {
+    EvalNode evalNode = createEvalTree(context, (QueryBlock) tree, ast.getChild(0));
+
+
+    if (evalNode instanceof ConstEval) {
+      ConstEval fetchFirst = (ConstEval) evalNode;
+      LimitClause limitClause = new LimitClause(fetchFirst.getValue().asLong());
+      return limitClause;
+    }
+
+    throw new NQLSyntaxException("LIMIT clause cannot have the parameter "
+        + evalNode);
   }
 
   private Column checkAndGetColumnByAST(final PlanningContext context,

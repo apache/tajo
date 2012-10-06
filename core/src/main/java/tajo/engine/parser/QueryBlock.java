@@ -65,6 +65,8 @@ public class QueryBlock extends ParseTree {
   private EvalNode havingCond = null;
   /* keys for ordering */
   private SortSpec [] sortKeys = null;
+  /* limit clause */
+  private LimitClause limitClause = null;
 
   public QueryBlock(PlanningContext context) {
     super(context, StatementType.SELECT);
@@ -148,6 +150,14 @@ public class QueryBlock extends ParseTree {
 
   public void setSortKeys(final SortSpec [] keys) {
     this.sortKeys = keys;
+  }
+
+  public void setLimit(final LimitClause limit) {
+    this.limitClause = limit;
+  }
+
+  public LimitClause getLimitClause() {
+    return this.limitClause;
   }
 
   // From Clause
@@ -600,6 +610,23 @@ public class QueryBlock extends ParseTree {
     public String toString() {
       return "Sortkey (key="+sortKey
           + " "+(ascending ? "asc" : "desc")+")";
+    }
+  }
+
+  public static class LimitClause {
+    private long fetchFirstNum;
+
+    public LimitClause(long fetchFirstNum) {
+      this.fetchFirstNum = fetchFirstNum;
+    }
+
+    public long getLimitRow() {
+      return this.fetchFirstNum;
+    }
+
+    @Override
+    public String toString() {
+      return "LIMIT " + fetchFirstNum;
     }
   }
 }
