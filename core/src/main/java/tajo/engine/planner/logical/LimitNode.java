@@ -16,48 +16,38 @@
 
 package tajo.engine.planner.logical;
 
-import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
-import tajo.catalog.Schema;
 import tajo.engine.json.GsonCreator;
-import tajo.engine.parser.QueryBlock;
+import tajo.engine.parser.QueryBlock.LimitClause;
 import tajo.engine.utils.TUtil;
 
 /**
  * @author Hyunsik Choi
  *
  */
-public final class SortNode extends UnaryNode implements Cloneable {
+public final class LimitNode extends UnaryNode implements Cloneable {
 	@Expose
-  private QueryBlock.SortSpec[] sortKeys;
-	
-	public SortNode() {
+  private LimitClause limitClause;
+
+	public LimitNode() {
 		super();
 	}
 
-  public SortNode(QueryBlock.SortSpec[] sortKeys) {
-    super(ExprType.SORT);
-    Preconditions.checkArgument(sortKeys.length > 0, 
-        "At least one sort key must be specified");
-    this.sortKeys = sortKeys;
-  }
-
-  public SortNode(QueryBlock.SortSpec[] sortKeys, Schema inSchema, Schema outSchema) {
-    this(sortKeys);
-    this.setInSchema(inSchema);
-    this.setOutSchema(outSchema);
+  public LimitNode(LimitClause limitClause) {
+    super(ExprType.LIMIT);
+    this.limitClause = limitClause;
   }
   
-  public QueryBlock.SortSpec[] getSortKeys() {
-    return this.sortKeys;
+  public long getFetchFirstNum() {
+    return this.limitClause.getLimitRow();
   }
   
   @Override 
   public boolean equals(Object obj) {
-    if (obj instanceof SortNode) {
-      SortNode other = (SortNode) obj;
+    if (obj instanceof LimitNode) {
+      LimitNode other = (LimitNode) obj;
       return super.equals(other)
-          && TUtil.checkEquals(sortKeys, other.sortKeys)
+          && TUtil.checkEquals(limitClause, other.limitClause)
           && subExpr.equals(other.subExpr);
     } else {
       return false;
@@ -66,21 +56,14 @@ public final class SortNode extends UnaryNode implements Cloneable {
   
   @Override
   public Object clone() throws CloneNotSupportedException {
-    SortNode sort = (SortNode) super.clone();
-    sort.sortKeys = sortKeys.clone();
-    
-    return sort;
+    LimitNode newLimitNode = (LimitNode) super.clone();
+    newLimitNode.limitClause = (LimitClause) limitClause.clone();
+    return newLimitNode;
   }
-  
+
   public String toString() {
-    StringBuilder sb = new StringBuilder("Sort [key= ");
-    for (int i = 0; i < sortKeys.length; i++) {    
-      sb.append(sortKeys[i].getSortKey().getQualifiedName()).append(" ")
-          .append(sortKeys[i].isAscending() ? "asc" : "desc");
-      if(i < sortKeys.length - 1) {
-        sb.append(",");
-      }
-    }
+    StringBuilder sb = new StringBuilder(limitClause.toString());
+
     sb.append("]");
 
     sb.append("\n\"out schema: " + getOutSchema()

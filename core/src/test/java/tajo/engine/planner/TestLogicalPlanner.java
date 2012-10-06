@@ -134,7 +134,8 @@ public class TestLogicalPlanner {
       "store1 := select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 8
       "select deptName, sumtest(score) from score group by deptName having sumtest(score) > 30", // 9
       "select 7 + 8, 8 * 9, 10 * 10 as mul", // 10
-      "create index idx_employee on employee using bitmap (name null first, empId desc) with ('fillfactor' = 70)" // 11
+      "create index idx_employee on employee using bitmap (name null first, empId desc) with ('fillfactor' = 70)", // 11
+      "select name, score from employee, score order by score limit 3" // 12
   };
 
   @Test
@@ -460,6 +461,24 @@ public class TestLogicalPlanner {
     ScanNode rightNode = (ScanNode) joinNode.getInnerNode();
     assertEquals("score", rightNode.getTableId());
     LogicalNode opt = LogicalOptimizer.optimize(context, plan);
+  }
+
+  @Test
+  public final void testLimit() throws CloneNotSupportedException {
+    PlanningContext context = analyzer.parse(QUERIES[12]);
+    LogicalNode plan = planner.createPlan(context);
+    TestLogicalNode.testCloneLogicalNode(plan);
+
+    assertEquals(ExprType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
+
+    assertEquals(ExprType.LIMIT, projNode.getSubNode().getType());
+    LimitNode limitNode = (LimitNode) projNode.getSubNode();
+
+    assertEquals(ExprType.SORT, limitNode.getSubNode().getType());
   }
 
   @Test

@@ -65,6 +65,8 @@ public class QueryBlock extends ParseTree {
   private EvalNode havingCond = null;
   /* keys for ordering */
   private SortSpec [] sortKeys = null;
+  /* limit clause */
+  private LimitClause limitClause = null;
 
   public QueryBlock(PlanningContext context) {
     super(context, StatementType.SELECT);
@@ -142,12 +144,24 @@ public class QueryBlock extends ParseTree {
     return this.sortKeys != null;
   }
 
+  public final boolean hasLimitClause() {
+    return this.limitClause != null;
+  }
+
   public final SortSpec [] getSortKeys() {
     return this.sortKeys;
   }
 
   public void setSortKeys(final SortSpec [] keys) {
     this.sortKeys = keys;
+  }
+
+  public void setLimit(final LimitClause limit) {
+    this.limitClause = limit;
+  }
+
+  public LimitClause getLimitClause() {
+    return this.limitClause;
   }
 
   // From Clause
@@ -600,6 +614,35 @@ public class QueryBlock extends ParseTree {
     public String toString() {
       return "Sortkey (key="+sortKey
           + " "+(ascending ? "asc" : "desc")+")";
+    }
+  }
+
+  public static class LimitClause implements Cloneable {
+    @Expose private long fetchFirstNum;
+
+    public LimitClause(long fetchFirstNum) {
+      this.fetchFirstNum = fetchFirstNum;
+    }
+
+    public long getLimitRow() {
+      return this.fetchFirstNum;
+    }
+
+    @Override
+    public String toString() {
+      return "LIMIT " + fetchFirstNum;
+    }
+
+    public boolean equals(Object obj) {
+      return obj instanceof LimitClause &&
+          fetchFirstNum == ((LimitClause)obj).fetchFirstNum;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      LimitClause newLimit = (LimitClause) super.clone();
+      newLimit.fetchFirstNum = fetchFirstNum;
+      return newLimit;
     }
   }
 }

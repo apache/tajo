@@ -17,6 +17,7 @@ public enum ExprType {
 	GROUP_BY,
 	INSERT_INTO,
 	INTERSECT,
+  LIMIT,
 	JOIN,
 	PROJECTION,
 	RECEIVE,
