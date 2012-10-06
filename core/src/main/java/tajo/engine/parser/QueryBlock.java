@@ -144,6 +144,10 @@ public class QueryBlock extends ParseTree {
     return this.sortKeys != null;
   }
 
+  public final boolean hasLimitClause() {
+    return this.limitClause != null;
+  }
+
   public final SortSpec [] getSortKeys() {
     return this.sortKeys;
   }
@@ -613,8 +617,8 @@ public class QueryBlock extends ParseTree {
     }
   }
 
-  public static class LimitClause {
-    private long fetchFirstNum;
+  public static class LimitClause implements Cloneable {
+    @Expose private long fetchFirstNum;
 
     public LimitClause(long fetchFirstNum) {
       this.fetchFirstNum = fetchFirstNum;
@@ -627,6 +631,18 @@ public class QueryBlock extends ParseTree {
     @Override
     public String toString() {
       return "LIMIT " + fetchFirstNum;
+    }
+
+    public boolean equals(Object obj) {
+      return obj instanceof LimitClause &&
+          fetchFirstNum == ((LimitClause)obj).fetchFirstNum;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      LimitClause newLimit = (LimitClause) super.clone();
+      newLimit.fetchFirstNum = fetchFirstNum;
+      return newLimit;
     }
   }
 }
