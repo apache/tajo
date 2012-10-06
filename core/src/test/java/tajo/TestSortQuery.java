@@ -7,8 +7,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.sql.ResultSet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author Hyunsik Choi
@@ -47,5 +46,18 @@ public class TestSortQuery {
     }
 
     assertEquals(5, cnt);
+  }
+
+  @Test
+  public final void testTopK() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_orderkey, l_linenumber from lineitem order by l_orderkey limit 3");
+    assertTrue(res.next());
+    assertEquals(1, res.getLong(1));
+    assertTrue(res.next());
+    assertEquals(1, res.getLong(1));
+    assertTrue(res.next());
+    assertEquals(2, res.getLong(1));
+    assertFalse(res.next());
   }
 }

@@ -4,6 +4,7 @@
 package tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
+import tajo.engine.json.GsonCreator;
 
 /**
  * @author Hyunsik Choi
@@ -61,5 +62,11 @@ public abstract class BinaryNode extends LogicalNode implements Cloneable {
     outer.postOrder(visitor);
     inner.postOrder(visitor);
     visitor.visit(this);
+  }
+
+  public String toJSON() {
+    outer.toJSON();
+    inner.toJSON();
+    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

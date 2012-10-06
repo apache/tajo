@@ -88,8 +88,12 @@ public final class SortNode extends UnaryNode implements Cloneable {
     return sb.toString()+"\n"
         + getSubNode().toString();
   }
-  
+
   public String toJSON() {
+    subExpr.toJSON();
+    for (int i = 0; i < sortKeys.length; i++) {
+      sortKeys[i].toJSON();
+    }
     return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

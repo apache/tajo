@@ -330,6 +330,7 @@ public class GlobalPlanner {
           break;
         case SELECTION:
         case PROJECTION:
+        case LIMIT:
           unit = makeUnaryUnit(store, node, unit);
           unit.setLogicalPlan(node);
           break;

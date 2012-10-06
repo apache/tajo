@@ -120,7 +120,7 @@ public class WorkerCommunicator extends ZkListener {
 
   public Callback<BoolProto> requestQueryUnit(String serverName,
       QueryUnitRequestProto requestProto) throws Exception {
-    Callback<BoolProto> cb = new Callback<BoolProto>();
+    Callback<BoolProto> cb = new Callback<>();
     AsyncWorkerCBProtocol leaf = hm.get(serverName);
     if (leaf == null) {
       throw new UnknownWorkerException(serverName);

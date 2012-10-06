@@ -611,6 +611,11 @@ public class QueryBlock extends ParseTree {
       return key;
     }
 
+    public String toJSON() {
+      sortKey.initFromProto();
+      return GsonCreator.getInstance().toJson(this);
+    }
+
     public String toString() {
       return "Sortkey (key="+sortKey
           + " "+(ascending ? "asc" : "desc")+")";

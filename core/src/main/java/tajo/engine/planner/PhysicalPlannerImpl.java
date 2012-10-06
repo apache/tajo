@@ -120,6 +120,12 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         inner = createPlanRecursive(ctx, unionNode.getInnerNode());
         return new UnionExec(ctx, outer, inner);
 
+      case LIMIT:
+        LimitNode limitNode = (LimitNode) logicalNode;
+        outer = createPlanRecursive(ctx, limitNode.getSubNode());
+        return new LimitExec(ctx, limitNode.getInSchema(),
+            limitNode.getOutSchema(), outer, limitNode);
+
       case CREATE_INDEX:
         IndexWriteNode createIndexNode = (IndexWriteNode) logicalNode;
         outer = createPlanRecursive(ctx, createIndexNode.getSubNode());

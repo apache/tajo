@@ -265,14 +265,6 @@ public class LogicalPlanner {
       subroot = sortNode;
     }
 
-    if (query.hasLimitClause()) {
-      LimitNode limitNode = new LimitNode(query.getLimitClause());
-      limitNode.setSubNode(subroot);
-      limitNode.setInSchema(subroot.getOutSchema());
-      limitNode.setOutSchema(limitNode.getInSchema());
-      subroot = limitNode;
-    }
-
     ProjectionNode prjNode;
     if (query.getProjectAll()) {
       Schema merged = SchemaUtil.merge(query.getFromTables());
@@ -314,6 +306,14 @@ public class LogicalPlanner {
       Schema outSchema = getProjectedSchema(ctx, query.getTargetList());
       dupRemoval.setOutSchema(outSchema);
       subroot = dupRemoval;
+    }
+
+    if (query.hasLimitClause()) {
+      LimitNode limitNode = new LimitNode(query.getLimitClause());
+      limitNode.setSubNode(subroot);
+      limitNode.setInSchema(subroot.getOutSchema());
+      limitNode.setOutSchema(limitNode.getInSchema());
+      subroot = limitNode;
     }
     
     return subroot;

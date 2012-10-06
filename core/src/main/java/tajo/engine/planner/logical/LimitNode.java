@@ -64,8 +64,6 @@ public final class LimitNode extends UnaryNode implements Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder(limitClause.toString());
 
-    sb.append("]");
-
     sb.append("\n\"out schema: " + getOutSchema()
         + "\n\"in schema: " + getInSchema());
     return sb.toString()+"\n"

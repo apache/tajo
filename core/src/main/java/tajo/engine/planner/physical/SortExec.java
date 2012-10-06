@@ -45,7 +45,7 @@ public class SortExec extends UnaryPhysicalExec {
 
   public void init() throws IOException {
     super.init();
-    this.tupleSlots = new ArrayList<Tuple>(1000);
+    this.tupleSlots = new ArrayList<>(1000);
   }
 
   @Override
