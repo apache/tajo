@@ -336,7 +336,8 @@ public class SubQueryExecutor extends Thread {
           }
 
           while ((subQuery = takeSubQuery()) != null) {
-            LOG.info("Schedule unit plan: \n" + subQuery.getLogicalPlan());
+            LOG.info("Schedule unit plan: " + subQuery.getId()
+                + "\n" + subQuery.getLogicalPlan());
             if (subQuery.hasUnionPlan()) {
               finishUnionUnit(subQuery);
             } else {
@@ -346,13 +347,13 @@ public class SubQueryExecutor extends Thread {
                   subQuery.getOutputType());
               int numTasks = getTaskNum(subQuery);
               QueryUnit[] units = planner.localize(subQuery, numTasks);
-              inprogressQueue.put(subQuery);
-              subQuery.setStatus(QueryStatus.QUERY_INPROGRESS);
 
               if (units.length == 0) {
                 finishSubQueryForEmptyInput(subQuery);
               } else {
                 // insert query units to the pending queue
+                inprogressQueue.put(subQuery);
+                subQuery.setStatus(QueryStatus.QUERY_INPROGRESS);
                 scheduleQueryUnits(units, subQuery.hasChildQuery());
               }
             }
