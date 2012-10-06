@@ -66,6 +66,21 @@ public class TestBuiltinFunctions {
   }
 
   @Test
+  public void testAvgLong() throws Exception {
+    ResultSet res = tpch.execute("select avg(l_orderkey) as avg from lineitem");
+    res.next();
+    assertEquals(2, res.getLong(1));
+  }
+
+  @Test
+  public void testAvgInt() throws Exception {
+    ResultSet res = tpch.execute("select avg(l_partkey) as avg from lineitem");
+    res.next();
+    System.out.println(res.getFloat(1));
+    assertTrue(1.8f == res.getFloat(1));
+  }
+
+  @Test
   public void testRandom() throws Exception {
     ResultSet res = tpch.execute("select l_orderkey, random(3) as rndnum from lineitem group by l_orderkey, rndnum");
 

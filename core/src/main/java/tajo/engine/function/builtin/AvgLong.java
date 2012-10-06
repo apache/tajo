@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo.engine.function.builtin;
 
 import tajo.catalog.Column;
@@ -36,8 +52,9 @@ public class AvgLong extends AggFunction<DoubleDatum> {
   @Override
   public void merge(FunctionContext ctx, Tuple part) {
     AvgContext avgCtx = (AvgContext) ctx;
-    avgCtx.sum += part.get(0).asLong();
-    avgCtx.count += part.get(1).asLong();
+    ArrayDatum array = (ArrayDatum) part.get(0);
+    avgCtx.sum += array.get(0).asLong();
+    avgCtx.count += array.get(1).asLong();
   }
 
   @Override
@@ -58,7 +75,7 @@ public class AvgLong extends AggFunction<DoubleDatum> {
   @Override
   public DoubleDatum terminate(FunctionContext ctx) {
     AvgContext avgCtx = (AvgContext) ctx;
-    return DatumFactory.createDouble(avgCtx.sum / avgCtx.count);
+    return DatumFactory.createDouble((double)avgCtx.sum / avgCtx.count);
   }
 
   private class AvgContext implements FunctionContext {
