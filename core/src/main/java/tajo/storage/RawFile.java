@@ -148,7 +148,7 @@ public class RawFile {
             break;
 
           case INT :
-            tuple.put(i, DatumFactory.createInt(buffer.getInt()));;
+            tuple.put(i, DatumFactory.createInt(buffer.getInt()));
             break;
 
           case LONG :
@@ -299,6 +299,7 @@ public class RawFile {
 
         if (t.isNull(i)) {
           nullFlags.set(i);
+          continue;
         }
 
         // 8 is the maximum bytes size of all types

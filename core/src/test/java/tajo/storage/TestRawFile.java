@@ -26,6 +26,7 @@ import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
+import tajo.datum.ArrayDatum;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 
@@ -36,21 +37,22 @@ import static org.junit.Assert.assertEquals;
 public class TestRawFile {
 	private TajoConf conf;
 	private static String TEST_PATH = "target/test-data/TestRawFile";
-	
+
 	@Before
 	public void setUp() throws Exception {
 		conf = new TajoConf();
 		WorkerTestingUtil.buildTestDir(TEST_PATH);
 	}
-		
+
 	@Test
   public void testRawFile() throws IOException {
     Schema schema = new Schema();
     schema.addColumn("id", DataType.INT);
     schema.addColumn("age", DataType.LONG);
     schema.addColumn("description", DataType.STRING);
-    schema.addColumn("null", DataType.NULL);
-    
+    schema.addColumn("null_one", DataType.LONG);
+    schema.addColumn("array", DataType.ARRAY);
+
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
 
     FileSystem fs = FileSystem.getLocal(conf);
@@ -61,14 +63,19 @@ public class TestRawFile {
     int tupleNum = 10000;
     VTuple vTuple;
     Datum stringDatum = DatumFactory.createString("abcdefghijklmnopqrstuvwxyz");
+    ArrayDatum array = new ArrayDatum( new Datum[] {
+        DatumFactory.createLong(1234),
+        DatumFactory.createLong(4567)
+    });
 
     long startAppend = System.currentTimeMillis();
     for(int i = 0; i < tupleNum; i++) {
-      vTuple = new VTuple(4);
+      vTuple = new VTuple(5);
       vTuple.put(0, DatumFactory.createInt(i+1));
       vTuple.put(1, DatumFactory.createLong(25l));
       vTuple.put(2, stringDatum);
       vTuple.put(3, DatumFactory.createNullDatum());
+      vTuple.put(4, array);
       appender.addTuple(vTuple);
     }
     long endAppend = System.currentTimeMillis();
