@@ -29,9 +29,8 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.*;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
+import java.sql.Date;
+import java.util.*;
 
 /**
  * @author jihoon
@@ -96,11 +95,20 @@ public class ResultSetImpl implements ResultSet {
     return new TableMetaImpl(tableProto);
   }
 
+  class FileNameComparator implements Comparator<FileStatus> {
+
+    @Override
+    public int compare(FileStatus f1, FileStatus f2) {
+      return f1.getPath().getName().compareTo(f2.getPath().getName());
+    }
+  }
+
   private Fragment[] getFragments(TableMeta meta, Path tablePath)
       throws IOException {
     List<Fragment> fraglist = Lists.newArrayList();
     FileStatus[] files = fs.listStatus(new Path(tablePath, "data"));
-    // Fragment [] frags = new Fragment[files.length];
+    Arrays.sort(files, new FileNameComparator());
+
     String tbname = tablePath.getName();
     for (int i = 0; i < files.length; i++) {
       if (files[i].getLen() == 0) {
