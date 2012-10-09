@@ -6,6 +6,8 @@ import tajo.catalog.Schema;
 import tajo.engine.planner.PlannerUtil;
 import tajo.engine.planner.physical.TupleComparator;
 
+import java.util.Comparator;
+
 /**
  * @author Hyunsik Choi
  */
@@ -63,6 +65,15 @@ public class TupleRange implements Comparable<TupleRange> {
       return cmpVal;
     } else {
       return comp.compare(this.end, o.end);
+    }
+  }
+
+  public static class DescendingTupleRangeComparator
+      implements Comparator<TupleRange> {
+
+    @Override
+    public int compare(TupleRange left, TupleRange right) {
+      return -(left.compareTo(right));
     }
   }
 }

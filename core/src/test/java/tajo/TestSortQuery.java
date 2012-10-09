@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo;
 
 import org.junit.AfterClass;
@@ -49,13 +65,32 @@ public class TestSortQuery {
   }
 
   @Test
+  public final void testSortDesc() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_linenumber, l_orderkey from lineitem order by l_orderkey desc");
+    int cnt = 0;
+    Long prev = null;
+    while(res.next()) {
+      if (prev == null) {
+        prev = res.getLong(2);
+      } else {
+        assertTrue(prev >= res.getLong(2));
+        prev = res.getLong(2);
+      }
+      cnt++;
+    }
+
+    assertEquals(5, cnt);
+  }
+
+  @Test
   public final void testTopK() throws Exception {
     ResultSet res = tpch.execute(
-        "select l_orderkey, l_linenumber from lineitem order by l_orderkey limit 3");
+        "select l_orderkey, l_linenumber from lineitem order by l_orderkey desc limit 3");
     assertTrue(res.next());
-    assertEquals(1, res.getLong(1));
+    assertEquals(3, res.getLong(1));
     assertTrue(res.next());
-    assertEquals(1, res.getLong(1));
+    assertEquals(3, res.getLong(1));
     assertTrue(res.next());
     assertEquals(2, res.getLong(1));
     assertFalse(res.next());

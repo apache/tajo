@@ -39,7 +39,7 @@ public abstract class UnaryPhysicalExec extends PhysicalExec {
     this.child = child;
   }
 
-  PhysicalExec getChild() {
+  public PhysicalExec getChild() {
     return this.child;
   }
 

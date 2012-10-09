@@ -122,12 +122,12 @@ public class TestTupleUtil {
     //partNum = TupleUtil.partition(schema, 10, expected).length;
     //assertEquals(10, partNum);
 
-    String query = TupleUtil.rangeToQuery(schema, expected, false);
+    String query = TupleUtil.rangeToQuery(schema, expected, true, false);
 
     TupleRange range = TupleUtil.queryToRange(schema, query);
     assertEquals(expected, range);
 
-    query = TupleUtil.rangeToQuery(schema, expected, true);
+    query = TupleUtil.rangeToQuery(schema, expected, true, true);
     Map<String,String> params = HttpUtil.getParamsFromQuery(query);
     assertTrue(params.containsKey("final"));
     range = TupleUtil.queryToRange(schema, query);
@@ -150,12 +150,12 @@ public class TestTupleUtil {
     int partNum = TupleUtil.getPartitions(schema, card, expected).length;
     assertEquals(1, partNum);
 
-    String query = TupleUtil.rangeToQuery(schema, expected, false);
+    String query = TupleUtil.rangeToQuery(schema, expected, true, false);
 
     TupleRange range = TupleUtil.queryToRange(schema, query);
     assertEquals(expected, range);
 
-    query = TupleUtil.rangeToQuery(schema, expected, true);
+    query = TupleUtil.rangeToQuery(schema, expected, true, true);
     Map<String,String> params = HttpUtil.getParamsFromQuery(query);
     assertTrue(params.containsKey("final"));
     range = TupleUtil.queryToRange(schema, query);
@@ -178,7 +178,7 @@ public class TestTupleUtil {
 
     String query;
     for (TupleRange range : ranges) {
-      query = TupleUtil.rangeToQuery(schema, range, false);
+      query = TupleUtil.rangeToQuery(schema, range, true, false);
       TupleRange result = TupleUtil.queryToRange(schema, query);
       assertEquals(range, result);
     }
@@ -205,7 +205,7 @@ public class TestTupleUtil {
 
     String query;
     for (TupleRange range : ranges) {
-      query = TupleUtil.rangeToQuery(schema, range, false);
+      query = TupleUtil.rangeToQuery(schema, range, true, false);
       TupleRange result = TupleUtil.queryToRange(schema, query);
       assertEquals(range, result);
     }

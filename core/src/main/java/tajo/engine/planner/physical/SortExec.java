@@ -1,13 +1,9 @@
 /*
  * Copyright 2012 Database Lab., Korea Univ.
  *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,62 +17,32 @@
 package tajo.engine.planner.physical;
 
 import tajo.TaskAttemptContext;
-import tajo.engine.planner.logical.SortNode;
+import tajo.catalog.Schema;
+import tajo.engine.parser.QueryBlock.SortSpec;
 import tajo.storage.Tuple;
-import tajo.storage.VTuple;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Comparator;
 
-public class SortExec extends UnaryPhysicalExec {
-  private final SortNode plan;
+public abstract class SortExec extends UnaryPhysicalExec {
   private final Comparator<Tuple> comparator;
-  private List<Tuple> tupleSlots;
-  private boolean sorted = false;
-  private Iterator<Tuple> iterator;
-  
-  public SortExec(final TaskAttemptContext context,
-                  SortNode plan, PhysicalExec child) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), child);
-    this.plan = plan;
-    this.comparator =
-        new TupleComparator(inSchema, plan.getSortKeys());
+  private final SortSpec [] sortSpecs;
+
+  public SortExec(TaskAttemptContext context, Schema inSchema,
+                  Schema outSchema, PhysicalExec child, SortSpec [] sortSpecs) {
+    super(context, inSchema, outSchema, child);
+    this.sortSpecs = sortSpecs;
+    this.comparator = new TupleComparator(inSchema, sortSpecs);
   }
 
-  public void init() throws IOException {
-    super.init();
-    this.tupleSlots = new ArrayList<>(1000);
+  public SortSpec [] getSortSpecs() {
+    return sortSpecs;
   }
 
-  @Override
-  public Tuple next() throws IOException {
-
-    if (!sorted) {
-      Tuple tuple;
-      while ((tuple = child.next()) != null) {
-        tupleSlots.add(new VTuple(tuple));
-      }
-      
-      Collections.sort(tupleSlots, this.comparator);
-      this.iterator = tupleSlots.iterator();
-      sorted = true;
-    }
-    
-    if (iterator.hasNext()) {
-      return this.iterator.next();
-    } else {
-      return null;
-    }
+  public Comparator<Tuple> getComparator() {
+    return comparator;
   }
 
   @Override
-  public void rescan() throws IOException {
-    super.rescan();
-    this.iterator = tupleSlots.iterator();
-    sorted = true;
-  }
-
-  SortNode getPlan() {
-    return this.plan;
-  }
+  abstract public Tuple next() throws IOException;
 }

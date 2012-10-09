@@ -33,10 +33,9 @@ import tajo.storage.*;
 import java.io.IOException;
 import java.util.*;
 
-public class ExternalSortExec extends UnaryPhysicalExec {
-  private SortNode annotation;
+public class ExternalSortExec extends SortExec {
+  private SortNode plan;
 
-  private final Comparator<Tuple> comparator;
   private final List<Tuple> tupleSlots;
   private boolean sorted = false;
   private StorageManager sm;
@@ -52,13 +51,12 @@ public class ExternalSortExec extends UnaryPhysicalExec {
   public ExternalSortExec(final TaskAttemptContext context,
       final StorageManager sm, final SortNode plan, final PhysicalExec child)
       throws IOException {
-    super(context, plan.getInSchema(), plan.getOutSchema(), child);
-    this.annotation = plan;
+    super(context, plan.getInSchema(), plan.getOutSchema(), child,
+        plan.getSortKeys());
+    this.plan = plan;
     this.sm = sm;
 
     this.SORT_BUFFER_SIZE = context.getConf().getIntVar(ConfVars.EXT_SORT_BUFFER);
-
-    this.comparator = new TupleComparator(inSchema, plan.getSortKeys());
     this.tupleSlots = new ArrayList<>(SORT_BUFFER_SIZE);
 
     this.workDir = new Path(context.getWorkDir().toURI() + Path.SEPARATOR
@@ -72,14 +70,14 @@ public class ExternalSortExec extends UnaryPhysicalExec {
     localFS.mkdirs(workDir);
   }
 
-  public SortNode getAnnotation() {
-    return this.annotation;
+  public SortNode getPlan() {
+    return this.plan;
   }
 
   private void sortAndStoreChunk(int chunkId, List<Tuple> tupleSlots)
       throws IOException {
     TableMeta meta = TCatUtil.newTableMeta(inSchema, StoreType.RAW);
-    Collections.sort(tupleSlots, this.comparator);
+    Collections.sort(tupleSlots, getComparator());
     Path localPath = new Path(workDir, "0_" + chunkId);
 
     appender = new RawFile.Appender(context.getConf(), meta, localPath);
@@ -195,8 +193,9 @@ public class ExternalSortExec extends UnaryPhysicalExec {
     Tuple leftTuple = leftScan.next();
     Tuple rightTuple = rightScan.next();
 
+    Comparator<Tuple> comparator = getComparator();
     while (leftTuple != null && rightTuple != null) {
-      if (this.comparator.compare(leftTuple, rightTuple) < 0) {
+      if (comparator.compare(leftTuple, rightTuple) < 0) {
         appender.addTuple(leftTuple);
         leftTuple = leftScan.next();
       } else {

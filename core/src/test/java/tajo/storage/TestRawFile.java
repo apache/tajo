@@ -50,7 +50,7 @@ public class TestRawFile {
     schema.addColumn("id", DataType.INT);
     schema.addColumn("age", DataType.LONG);
     schema.addColumn("description", DataType.STRING);
-    schema.addColumn("null_one", DataType.LONG);
+    schema.addColumn("null", DataType.NULL);
     schema.addColumn("array", DataType.ARRAY);
 
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
@@ -80,7 +80,7 @@ public class TestRawFile {
     }
     long endAppend = System.currentTimeMillis();
     appender.close();
-    
+
     //TableStat stat = appender.getStats();
     //assertEquals(tupleNum, stat.getNumRows().longValue());
 
@@ -88,8 +88,11 @@ public class TestRawFile {
     scanner.init();
     int tupleCnt = 0;
     long startScan = System.currentTimeMillis();
-    while (scanner.next() != null) {
+    Tuple tuple = null;
+    while ((tuple = scanner.next()) != null) {
       tupleCnt++;
+/*      System.out.println(((ArrayDatum)tuple.get(4)).get(0));
+      System.out.println(((ArrayDatum)tuple.get(4)).get(1));*/
     }
     long endScan = System.currentTimeMillis();
     scanner.close();

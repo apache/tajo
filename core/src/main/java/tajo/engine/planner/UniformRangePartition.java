@@ -65,7 +65,8 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
 
   @Override
   public TupleRange[] partition(int partNum) {
-    Preconditions.checkArgument(partNum > 0, "The number of partitions must be positive, but the given number: "
+    Preconditions.checkArgument(partNum > 0,
+        "The number of partitions must be positive, but the given number: "
         + partNum);
     Preconditions.checkArgument(totalCard.compareTo(new BigDecimal(partNum)) >= 0,
         "the number of partition cannot exceed total cardinality (" + totalCard + ")");
@@ -87,7 +88,8 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     }
 
     List<TupleRange> ranges = Lists.newArrayList();
-    BigDecimal term = reverseCardsForDigit[0].divide(new BigDecimal(partNum), RoundingMode.CEILING);
+    BigDecimal term = reverseCardsForDigit[0].divide(
+        new BigDecimal(partNum), RoundingMode.CEILING);
     BigDecimal reminder = reverseCardsForDigit[0];
     Tuple last = range.getStart();
     while(reminder.compareTo(new BigDecimal(0)) > 0) {

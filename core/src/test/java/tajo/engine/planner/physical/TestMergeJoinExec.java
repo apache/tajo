@@ -197,8 +197,8 @@ public class TestMergeJoinExec {
       innerSort.setInSchema(innerScan.getSchema());
       innerSort.setOutSchema(innerScan.getSchema());
 
-      SortExec outerSortExec = new SortExec(ctx, outerSort, outerScan);
-      SortExec innerSortExec = new SortExec(ctx, innerSort, innerScan);
+      MemSortExec outerSortExec = new MemSortExec(ctx, outerSort, outerScan);
+      MemSortExec innerSortExec = new MemSortExec(ctx, innerSort, innerScan);
 
       MergeJoinExec mergeJoin = new MergeJoinExec(ctx,
           ((HashJoinExec)nestedLoopJoin).getPlan(), outerSortExec, innerSortExec,

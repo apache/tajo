@@ -31,6 +31,7 @@ import tajo.TaskAttemptContext;
 import tajo.catalog.Column;
 import tajo.conf.TajoConf;
 import tajo.engine.exception.InternalException;
+import tajo.engine.parser.QueryBlock.SortSpec;
 import tajo.ipc.protocolrecords.Fragment;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.logical.*;
@@ -222,13 +223,19 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           return new PartitionedStoreExec(ctx, sm, plan, subOp);
 
         case RANGE:
-          Column[] columns = plan.getPartitionKeys();
-          QueryBlock.SortSpec specs[] = new QueryBlock.SortSpec[columns.length];
-          for (int i = 0; i < columns.length; i++) {
-            specs[i] = new QueryBlock.SortSpec(columns[i]);
+          SortSpec [] sortSpecs = null;
+          if (subOp instanceof SortExec) {
+            sortSpecs = ((SortExec)subOp).getSortSpecs();
+          } else {
+            Column[] columns = plan.getPartitionKeys();
+            QueryBlock.SortSpec specs[] = new QueryBlock.SortSpec[columns.length];
+            for (int i = 0; i < columns.length; i++) {
+              specs[i] = new QueryBlock.SortSpec(columns[i]);
+            }
           }
+
           return new IndexedStoreExec(ctx, sm, subOp,
-              plan.getInSchema(), plan.getInSchema(), specs);
+              plan.getInSchema(), plan.getInSchema(), sortSpecs);
       }
     }
     if (plan instanceof StoreIndexNode) {

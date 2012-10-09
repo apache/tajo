@@ -129,7 +129,7 @@ public class TestExternalSortExec {
       SeqScanExec scan = (SeqScanExec)sortExec.getChild();
 
       ExternalSortExec extSort = new ExternalSortExec(ctx, sm,
-          ((SortExec)sortExec).getPlan(), scan);
+          ((MemSortExec)sortExec).getPlan(), scan);
       proj.setChild(extSort);
     }
 

@@ -946,11 +946,11 @@ public class TestBSTIndex {
         keySchema, comp);
     reader.open();
 
-    Tuple min = reader.getMin();
+    Tuple min = reader.getFirstKey();
     assertEquals(5, min.get(0).asInt());
     assertEquals(5l, min.get(0).asLong());
 
-    Tuple max = reader.getMax();
+    Tuple max = reader.getLastKey();
     assertEquals(TUPLE_NUM - 1, max.get(0).asInt());
     assertEquals(TUPLE_NUM - 1, max.get(0).asLong());
   }
@@ -1057,6 +1057,170 @@ public class TestBSTIndex {
     for (int i = 0; i < threads.length; i++) {
       threads[i].join();
       assertFalse(accs[i].isFailed());
+    }
+  }
+
+  @Test
+  public void testFindValueInCSVDescOrder() throws IOException {
+    meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+
+    sm.initTableBase(meta, "table1");
+    Appender appender  = sm.getAppender(meta, "table1", "table1.csv");
+    Tuple tuple;
+    for(int i = (TUPLE_NUM - 1); i >= 0; i -- ) {
+      tuple = new VTuple(5);
+      tuple.put(0, DatumFactory.createInt(i));
+      tuple.put(1, DatumFactory.createLong(i));
+      tuple.put(2, DatumFactory.createDouble(i));
+      tuple.put(3, DatumFactory.createFloat(i));
+      tuple.put(4, DatumFactory.createString("field_"+i));
+      appender.addTuple(tuple);
+    }
+    appender.close();
+
+    appender.close();
+
+    FileStatus status = sm.listTableFiles("table1")[0];
+    long fileLen = status.getLen();
+    Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
+
+    SortSpec [] sortKeys = new SortSpec[2];
+    sortKeys[0] = new SortSpec(schema.getColumn("long"), false, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("double"), false, false);
+
+    Schema keySchema = new Schema();
+    keySchema.addColumn(new Column("long", DataType.LONG));
+    keySchema.addColumn(new Column("double", DataType.DOUBLE));
+
+    TupleComparator comp = new TupleComparator(keySchema, sortKeys);
+
+    BSTIndex bst = new BSTIndex(conf);
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindValueInCSV.idx"), BSTIndex.TWO_LEVEL_INDEX,
+        keySchema, comp);
+    creater.setLoadNum(LOAD_NUM);
+    creater.open();
+
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    Tuple keyTuple;
+    long offset;
+    while (true) {
+      keyTuple = new VTuple(2);
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
+      if (tuple == null) break;
+
+      keyTuple.put(0, tuple.get(1));
+      keyTuple.put(1, tuple.get(2));
+      creater.write(keyTuple, offset);
+    }
+
+    creater.flush();
+    creater.close();
+    scanner.close();
+
+    tuple = new VTuple(keySchema.getColumnNum());
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindValueInCSV.idx"), keySchema, comp);
+    reader.open();
+    scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    for(int i = (TUPLE_NUM - 1) ; i > 0  ; i --) {
+      tuple.put(0, DatumFactory.createLong(i));
+      tuple.put(1, DatumFactory.createDouble(i));
+      long offsets = reader.find(tuple);
+      scanner.seek(offsets);
+      tuple = scanner.next();
+      assertTrue("seek check [" + (i) + " ," +(tuple.get(1).asLong())+ "]" , (i) == (tuple.get(1).asLong()));
+      assertTrue("seek check [" + (i) + " ,"  +(tuple.get(2).asDouble())+"]" , (i) == (tuple.get(2).asDouble()));
+
+      offsets = reader.next();
+      if (offsets == -1) {
+        continue;
+      }
+      scanner.seek(offsets);
+      tuple = scanner.next();
+      assertTrue("[seek check " + (i - 1) + " ]" , (i - 1) == (tuple.get(0).asInt()));
+      assertTrue("[seek check " + (i - 1) + " ]" , (i - 1) == (tuple.get(1).asLong()));
+    }
+  }
+
+  @Test
+  public void testFindNextKeyValueInCSVDescOrder() throws IOException {
+    meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+
+    sm.initTableBase(meta, "table1");
+    Appender appender = sm.getAppender(meta, "table1", "table1.csv");
+    Tuple tuple;
+    for(int i = (TUPLE_NUM - 1); i >= 0; i --) {
+      tuple = new VTuple(5);
+      tuple.put(0, DatumFactory.createInt(i));
+      tuple.put(1, DatumFactory.createLong(i));
+      tuple.put(2, DatumFactory.createDouble(i));
+      tuple.put(3, DatumFactory.createFloat(i));
+      tuple.put(4, DatumFactory.createString("field_"+i));
+      appender.addTuple(tuple);
+    }
+    appender.close();
+
+    FileStatus status = sm.listTableFiles("table1")[0];
+    long fileLen = status.getLen();
+    Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
+
+    SortSpec [] sortKeys = new SortSpec[2];
+    sortKeys[0] = new SortSpec(schema.getColumn("int"), false, false);
+    sortKeys[1] = new SortSpec(schema.getColumn("long"), false, false);
+
+    Schema keySchema = new Schema();
+    keySchema.addColumn(new Column("int", DataType.INT));
+    keySchema.addColumn(new Column("long", DataType.LONG));
+
+    TupleComparator comp = new TupleComparator(keySchema, sortKeys);
+
+    BSTIndex bst = new BSTIndex(conf);
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindNextKeyValueInCSV.idx"),
+        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
+    creater.setLoadNum(LOAD_NUM);
+    creater.open();
+
+    SeekableScanner scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    Tuple keyTuple;
+    long offset;
+    while (true) {
+      keyTuple = new VTuple(2);
+      offset = scanner.getNextOffset();
+      tuple = scanner.next();
+      if (tuple == null) break;
+
+      keyTuple.put(0, tuple.get(0));
+      keyTuple.put(1, tuple.get(1));
+      creater.write(keyTuple, offset);
+    }
+
+    creater.flush();
+    creater.close();
+    scanner.close();
+
+    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyValueInCSV.idx"), keySchema, comp);
+    reader.open();
+    scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
+    Tuple result;
+    for(int i = (TUPLE_NUM - 1) ; i > 0 ; i --) {
+      keyTuple = new VTuple(2);
+      keyTuple.put(0, DatumFactory.createInt(i));
+      keyTuple.put(1, DatumFactory.createLong(i));
+      long offsets = reader.find(keyTuple, true);
+      scanner.seek(offsets);
+      result = scanner.next();
+      assertTrue("[seek check " + (i - 1) + " ]",
+          (i - 1) == (result.get(0).asInt()));
+      assertTrue("[seek check " + (i - 1) + " ]" , (i - 1) == (result.get(1).asLong()));
+
+      offsets = reader.next();
+      if (offsets == -1) {
+        continue;
+      }
+      scanner.seek(offsets);
+      result = scanner.next();
+      assertTrue("[seek check " + (i - 2) + " ]" , (i - 2) == (result.get(0).asLong()));
+      assertTrue("[seek check " + (i - 2) + " ]" , (i - 2) == (result.get(1).asDouble()));
     }
   }
 }

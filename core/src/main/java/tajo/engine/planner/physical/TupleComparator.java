@@ -59,6 +59,10 @@ public class TupleComparator implements Comparator<Tuple> {
     }
   }
 
+  public boolean isAscendingFirstKey() {
+    return this.asc[0];
+  }
+
   @Override
   public int compare(Tuple tuple1, Tuple tuple2) {
     for (int i = 0; i < sortKeyIds.length; i++) {
