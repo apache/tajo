@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo.index.bst;
 
 import org.apache.commons.logging.Log;
@@ -69,8 +85,8 @@ public class BSTIndex implements IndexMethod {
     private final KeyOffsetCollector collector;
     private KeyOffsetCollector rootCollector;
 
-    private Tuple min;
-    private Tuple max;
+    private Tuple firstKey;
+    private Tuple lastKey;
 
 
     // private Tuple lastestKey = null;
@@ -105,25 +121,17 @@ public class BSTIndex implements IndexMethod {
 
     @Override
     public void write(Tuple key, long offset) throws IOException {
-      if (min == null || compartor.compare(key, min) < 0) {
-        min = key;
+      if (firstKey == null || compartor.compare(key, firstKey) < 0) {
+        firstKey = key;
       }
-      if (max == null || compartor.compare(max, key) < 0) {
-        max = key;
+      if (lastKey == null || compartor.compare(lastKey, key) < 0) {
+        lastKey = key;
       }
 
       collector.put(key, offset);
     }
 
-    public Tuple getMin() {
-      return this.min;
-    }
-
-    public Tuple getMax() {
-      return this.max;
-    }
-
-    public TupleComparator getCompartor() {
+    public TupleComparator getComparator() {
       return this.compartor;
     }
 
@@ -147,10 +155,12 @@ public class BSTIndex implements IndexMethod {
       out.writeInt(this.level);
       out.writeInt(entryNum);
       if (entryNum > 0) {
-        byte [] minBytes = RowStoreUtil.RowStoreEncoder.toBytes(keySchema, min);
+        byte [] minBytes = RowStoreUtil.RowStoreEncoder.toBytes(keySchema,
+            firstKey);
         out.writeInt(minBytes.length);
         out.write(minBytes);
-        byte [] maxBytes = RowStoreUtil.RowStoreEncoder.toBytes(keySchema, max);
+        byte [] maxBytes = RowStoreUtil.RowStoreEncoder.toBytes(keySchema,
+            lastKey);
         out.writeInt(maxBytes.length);
         out.write(maxBytes);
       }
@@ -267,8 +277,8 @@ public class BSTIndex implements IndexMethod {
     private int level;
     private int entryNum;
     private int loadNum = -1;
-    private Tuple min;
-    private Tuple max;
+    private Tuple firstKey;
+    private Tuple lastKey;
 
     // the cursors of BST
     private int rootCursor;
@@ -302,13 +312,13 @@ public class BSTIndex implements IndexMethod {
       indexIn = fs.open(this.fileName);
       this.level = indexIn.readInt();
       this.entryNum = indexIn.readInt();
-      if (entryNum > 0) { // if there is no any entry, do not read min/max values
+      if (entryNum > 0) { // if there is no any entry, do not read firstKey/lastKey values
         byte [] minBytes = new byte[indexIn.readInt()];
         indexIn.read(minBytes);
-        this.min = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, minBytes);
+        this.firstKey = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, minBytes);
         byte [] maxBytes = new byte[indexIn.readInt()];
         indexIn.read(maxBytes);
-        this.max = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, maxBytes);
+        this.lastKey = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, maxBytes);
       }
 
       fillData();
@@ -455,12 +465,12 @@ public class BSTIndex implements IndexMethod {
       }
     }
 
-    public Tuple getMin() {
-      return this.min;
+    public Tuple getFirstKey() {
+      return this.firstKey;
     }
 
-    public Tuple getMax() {
-      return this.max;
+    public Tuple getLastKey() {
+      return this.lastKey;
     }
 
     private void fillRootIndex(int entryNum, FSDataInputStream in)

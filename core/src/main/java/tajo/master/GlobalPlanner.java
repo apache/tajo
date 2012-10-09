@@ -44,6 +44,7 @@ import tajo.engine.MasterWorkerProtos.Partition;
 import tajo.engine.MasterWorkerProtos.QueryStatus;
 import tajo.engine.cluster.QueryManager;
 import tajo.engine.parser.QueryBlock.FromTable;
+import tajo.engine.parser.QueryBlock.SortSpec;
 import tajo.engine.planner.PlannerUtil;
 import tajo.engine.planner.RangePartitionAlgorithm;
 import tajo.engine.planner.UniformRangePartition;
@@ -874,6 +875,7 @@ public class GlobalPlanner {
     // TODO: the following line might occur a bug. see the line 623
     unit = setPartitionNumberForTwoPhase(unit, maxTaskNum);
 
+    SortSpec [] sortSpecs = null;
     Schema sortSchema = null;
     
     // make fetches and fragments for each scan
@@ -898,6 +900,7 @@ public class GlobalPlanner {
         if (prev.getOutputType() == PARTITION_TYPE.RANGE) {
           StoreTableNode store = (StoreTableNode) prev.getLogicalPlan();
           SortNode sort = (SortNode) store.getSubNode();
+          sortSpecs = sort.getSortKeys();
           sortSchema = PlannerUtil.sortSpecsToSchema(sort.getSortKeys());
 
           // calculate the number of tasks based on the data size
@@ -926,7 +929,7 @@ public class GlobalPlanner {
           LOG.info("Try to divide " + mergedRange + " into " + maxTaskNum +
               " sub ranges (total units: " + maxTaskNum + ")");
           TupleRange [] ranges = partitioner.partition(maxTaskNum);
-          String [] queries = TupleUtil.rangesToQueries(sortSchema, ranges);
+          String [] queries = TupleUtil.rangesToQueries(sortSpecs, ranges);
           for (QueryUnit qu : unit.getChildQuery(scan).getQueryUnits()) {
             for (Partition p : qu.getPartitions()) {
               for (String query : queries) {
@@ -996,7 +999,8 @@ public class GlobalPlanner {
 
     List<QueryUnit> unitList = null;
     if (scans.length == 1) {
-      unitList = makeUnaryQueryUnit(unit, maxTaskNum, fragMap, fetchMap, sortSchema);
+      unitList = makeUnaryQueryUnit(unit, maxTaskNum, fragMap, fetchMap,
+          sortSpecs);
     } else if (scans.length == 2) {
       unitList = makeBinaryQueryUnit(unit, maxTaskNum, fragMap, fetchMap);
     }
@@ -1128,8 +1132,8 @@ public class GlobalPlanner {
    */
   private List<QueryUnit> makeUnaryQueryUnit(SubQuery subQuery, int n,
       Map<ScanNode, List<Fragment>> fragMap, 
-      Map<ScanNode, List<URI>> fetchMap, Schema rangeSchema) throws UnsupportedEncodingException {
-    List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
+      Map<ScanNode, List<URI>> fetchMap, SortSpec[] sortSpecs) throws UnsupportedEncodingException {
+    List<QueryUnit> queryUnits = new ArrayList<>();
     int maxQueryUnitNum = 0;
     ScanNode scan = subQuery.getScanNodes()[0];
     maxQueryUnitNum = n;
@@ -1159,9 +1163,10 @@ public class GlobalPlanner {
           break;
         case RANGE:
           if (scan.isLocal()) {
+            Schema rangeSchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
             queryUnits = assignFetchesByRange(subQuery,
                 queryUnits, scan, fetchMap.get(scan),
-                maxQueryUnitNum, rangeSchema);
+                maxQueryUnitNum, rangeSchema, sortSpecs[0].isAscending());
             queryUnits = assignEqualFragment(queryUnits, scan,
                 fragMap.get(scan).get(0));
           } else {
@@ -1285,10 +1290,16 @@ public class GlobalPlanner {
   }
 
   private List<QueryUnit> assignFetchesByRange(SubQuery subQuery,
-                                              List<QueryUnit> unitList, ScanNode scan, List<URI> uriList, int n,
-                                              Schema rangeSchema)
+                                              List<QueryUnit> unitList,
+                                              ScanNode scan,
+                                              List<URI> uriList,
+                                              int n,
+                                              Schema rangeSchema,
+                                              boolean ascendingFirstKey)
       throws UnsupportedEncodingException {
-    Map<TupleRange, Set<URI>> partitions = rangeFetches(rangeSchema, uriList); // grouping urls by range
+    Map<TupleRange, Set<URI>> partitions =
+        rangeFetches(rangeSchema, uriList, ascendingFirstKey);
+    // grouping urls by range
     QueryUnit unit = null;
     int i = 0;
     Iterator<Entry<TupleRange, Set<URI>>> it = partitions.entrySet().iterator();
@@ -1463,12 +1474,21 @@ public class GlobalPlanner {
     return uris;
   }
 
-  private Map<TupleRange, Set<URI>> rangeFetches(Schema schema, List<URI> uriList) throws UnsupportedEncodingException {
-    SortedMap<TupleRange, Set<URI>> map = Maps.newTreeMap();
+  private Map<TupleRange, Set<URI>> rangeFetches(final Schema schema,
+                                                 final List<URI> uriList,
+                                                 final boolean ascendingFirstKey)
+      throws UnsupportedEncodingException {
+    SortedMap<TupleRange, Set<URI>> map = null;
+    //if (ascendingFirstKey) {
+      map = new TreeMap<>();
+//    } else {
+//      map = new TreeMap<>(new TupleRange.DescendingTupleRangeComparator());
+//    }
     TupleRange range;
     Set<URI> uris;
     for (URI uri : uriList) {
-      range = TupleUtil.queryToRange(schema, uri.getQuery()); // URI.getQuery() returns a url-decoded query string.
+      // URI.getQuery() returns a url-decoded query string.
+      range = TupleUtil.queryToRange(schema, uri.getQuery());
       if (map.containsKey(range)) {
         uris = map.get(range);
         uris.add(uri);

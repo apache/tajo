@@ -50,6 +50,8 @@ public class RangeRetrieverHandler implements RetrieverHandler {
         index.getIndexReader(new Path(outDir.getAbsolutePath(), "index/data.idx"),
             this.schema, this.comp);
     this.idxReader.open();
+    LOG.info("BSTIndex is loaded from disk (" + idxReader.getFirstKey() + ", "
+        + idxReader.getLastKey());
   }
 
   @Override
@@ -65,16 +67,23 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     end = RowStoreUtil.RowStoreDecoder.toTuple(schema, endBytes);
     boolean last = kvs.containsKey("final");
 
+    if(!comp.isAscendingFirstKey()) {
+      Tuple tmpKey = start;
+      start = end;
+      end = tmpKey;
+    }
+
     LOG.info("GET Request for " + data.getAbsolutePath() + " (start="+start+", end="+ end +
         (last ? ", last=true" : "") + ")");
 
-    if (idxReader.getMin() == null && idxReader.getMax() == null) { // if # of rows is zero
+    if (idxReader.getFirstKey() == null && idxReader.getLastKey() == null) { // if # of rows is zero
       LOG.info("There is no contents");
       return null;
     }
-    if (comp.compare(end, idxReader.getMin()) < 0 ||
-        comp.compare(idxReader.getMax(), start) < 0) {
-      LOG.info("Out of score (indexed data [" + idxReader.getMin() + ", " + idxReader.getMax() +
+
+    if (comp.compare(end, idxReader.getFirstKey()) < 0 ||
+        comp.compare(idxReader.getLastKey(), start) < 0) {
+      LOG.info("Out of Scope (indexed data [" + idxReader.getFirstKey() + ", " + idxReader.getLastKey() +
           "], but request start:" + start + ", end: " + end);
       return null;
     }
@@ -85,8 +94,8 @@ public class RangeRetrieverHandler implements RetrieverHandler {
       startOffset = idxReader.find(start);
     } catch (IOException ioe) {
       LOG.error("State Dump (the requested range: "
-          + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getMin() + ", idx max: "
-          + idxReader.getMax());
+          + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getFirstKey() + ", idx max: "
+          + idxReader.getLastKey());
       throw new IOException(ioe);
     }
     try {
@@ -96,8 +105,8 @@ public class RangeRetrieverHandler implements RetrieverHandler {
       }
     } catch (IOException ioe) {
       LOG.error("State Dump (the requested range: "
-          + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getMin() + ", idx max: "
-          + idxReader.getMax());
+          + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getFirstKey() + ", idx max: "
+          + idxReader.getLastKey());
       throw new IOException(ioe);
     }
 
@@ -108,8 +117,8 @@ public class RangeRetrieverHandler implements RetrieverHandler {
         startOffset = idxReader.find(start, true);
       } catch (IOException ioe) {
         LOG.error("State Dump (the requested range: "
-            + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getMin() + ", idx max: "
-            + idxReader.getMax());
+            + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getFirstKey() + ", idx max: "
+            + idxReader.getLastKey());
         throw new IOException(ioe);
       }
     }
@@ -117,12 +126,12 @@ public class RangeRetrieverHandler implements RetrieverHandler {
     if (startOffset == -1) {
       throw new IllegalStateException("startOffset " + startOffset + " is negative \n" +
           "State Dump (the requested range: "
-          + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getMin() + ", idx max: "
-          + idxReader.getMax());
+          + new TupleRange(schema, start, end) + ", idx min: " + idxReader.getFirstKey() + ", idx max: "
+          + idxReader.getLastKey());
     }
 
     // if greater than indexed values
-    if (last || (endOffset == -1 && comp.compare(idxReader.getMax(), end) < 0)) {
+    if (last || (endOffset == -1 && comp.compare(idxReader.getLastKey(), end) < 0)) {
       endOffset = data.length();
     }
 

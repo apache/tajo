@@ -296,7 +296,6 @@ public class TestPhysicalPlanner {
       assertEquals(1, tuple.get(4).asInt()); // min
       i++;
     }
-    exec.close();
     assertEquals(10, i);
 
     exec.rescan();
@@ -307,6 +306,7 @@ public class TestPhysicalPlanner {
       assertEquals(1, tuple.getInt(4).asInt()); // min
       i++;
     }
+    exec.close();
     assertEquals(10, i);
   }
 
@@ -652,7 +652,7 @@ public class TestPhysicalPlanner {
     ProjectionExec proj = (ProjectionExec) exec;
     ExternalSortExec sort = (ExternalSortExec) proj.getChild();
     SeqScanExec scan = (SeqScanExec) sort.getChild();
-    QueryBlock.SortSpec [] sortSpecs = sort.getAnnotation().getSortKeys();
+    QueryBlock.SortSpec [] sortSpecs = sort.getPlan().getSortKeys();
     IndexedStoreExec idxStoreExec = new IndexedStoreExec(ctx, sm, sort, sort.getSchema(), sort.getSchema(), sortSpecs);
 
     Tuple tuple;

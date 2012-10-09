@@ -257,37 +257,45 @@ public class CSVFile2 extends Storage {
       if (this.fis != null) {
         this.fis.close();
       }
-      
-      // set tablet information.
-      if (tabletIter.hasNext()) {
-        curTablet = tabletIter.next();
-        this.fs = curTablet.getPath().getFileSystem(this.conf);
-        this.fis = this.fs.open(curTablet.getPath());
-        this.startOffset = curTablet.getStartOffset();
-        if (curTablet.getLength() == -1) { // unknown case
-          this.length = fs.getFileStatus(curTablet.getPath()).getLen();
-        } else {
-          this.length = curTablet.getLength();
-        }
-        long available = tabletable();//(this.startOffset + this.length) - fis.getPos();
 
-        // set correct start offset.
-        if (startOffset != 0) {
-          if (startOffset < available) {
-            fis.seek(startOffset - 1);
-            while ( (fis.readByte()) != LF) {
-            }
-            // fis.seek(fis.getPos());
-          } else {
-            fis.seek(available);
+      fis = null;
+      while(fis == null) {
+        // set tablet information.
+        if (tabletIter.hasNext()) {
+          curTablet = tabletIter.next();
+          this.fs = curTablet.getPath().getFileSystem(this.conf);
+          if (this.fs.getFileStatus(curTablet.getPath()).getLen() == 0) {
+            continue;
           }
-        }
-        startPos = fis.getPos();
+          this.fis = this.fs.open(curTablet.getPath());
+          this.startOffset = curTablet.getStartOffset();
+          if (curTablet.getLength() == -1) { // unknown case
+            this.length = fs.getFileStatus(curTablet.getPath()).getLen();
+          } else {
+            this.length = curTablet.getLength();
+          }
+          long available = tabletable();//(this.startOffset + this.length) - fis.getPos();
 
-        return pageBuffer();
-      } else {
-        return false;
+          // set correct start offset.
+          if (startOffset != 0) {
+            if (startOffset < available) {
+              fis.seek(startOffset - 1);
+              while ( (fis.readByte()) != LF) {
+              }
+              // fis.seek(fis.getPos());
+            } else {
+              fis.seek(available);
+            }
+          }
+          startPos = fis.getPos();
+
+          return pageBuffer();
+        } else {
+          break;
+        }
       }
+
+      return false;
     }
 
     private boolean pageBuffer() throws IOException {
@@ -498,7 +506,9 @@ public class CSVFile2 extends Storage {
 
     @Override
     public void close() throws IOException {
-      fis.close();
+      if (fis != null) {
+        fis.close();
+      }
     }
   }
 }

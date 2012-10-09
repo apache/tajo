@@ -1,7 +1,24 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo.engine.function;
 
 import org.junit.Test;
 import tajo.datum.ArrayDatum;
+import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.engine.function.builtin.AvgLong;
 import tajo.storage.Tuple;
@@ -40,10 +57,10 @@ public class TestAggFunction {
       tuples2[i-1].put(0, DatumFactory.createInt(i));
       avg.eval(ctx2, tuples2[i-1]);
     }
-    assertTrue(55 / 10 == avg.terminate(ctx2).asDouble());
+    assertTrue((double)55 / 10 == avg.terminate(ctx2).asDouble());
 
 
-    avg.merge(ctx, new VTuple(((ArrayDatum)avg.getPartialResult(ctx2)).toArray()));
-    assertTrue((15 + 55) / (5 + 10) == avg.terminate(ctx).asDouble());
+    avg.merge(ctx, new VTuple(new Datum[] {avg.getPartialResult(ctx2)}));
+    assertTrue((double)(15 + 55) / (5 + 10) == avg.terminate(ctx).asDouble());
   }
 }

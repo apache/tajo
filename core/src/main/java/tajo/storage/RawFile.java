@@ -21,7 +21,10 @@ import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.statistics.TableStat;
 import tajo.catalog.statistics.TableStatistics;
+import tajo.datum.ArrayDatum;
+import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
+import tajo.datum.json.GsonCreator;
 import tajo.util.FileUtil;
 
 import java.io.File;
@@ -183,6 +186,18 @@ public class RawFile {
             buffer.get(ipv4Bytes);
             tuple.put(i, DatumFactory.createIPv4(ipv4Bytes));
             break;
+
+          case ARRAY:
+            int arrayByteSize = buffer.getInt();
+            byte [] arrayBytes = new byte[arrayByteSize];
+            buffer.get(arrayBytes);
+            String json = new String(arrayBytes);
+            ArrayDatum array = (ArrayDatum) GsonCreator
+                .getInstance().fromJson(json, Datum.class);
+            tuple.put(i, array);
+            break;
+
+            default:
         }
       }
 
@@ -312,24 +327,31 @@ public class RawFile {
           case BYTE :
             buffer.put(t.get(i).asByte());
             break;
+
           case CHAR :
             buffer.putChar(t.get(i).asChar());
             break;
+
           case SHORT :
             buffer.putShort(t.get(i).asShort());
             break;
+
           case INT :
             buffer.putInt(t.get(i).asInt());
             break;
+
           case LONG :
             buffer.putLong(t.get(i).asLong());
             break;
+
           case FLOAT :
             buffer.putFloat(t.get(i).asFloat());
             break;
+
           case DOUBLE:
             buffer.putDouble(t.get(i).asDouble());
             break;
+
           case STRING:
             byte [] strBytes = t.get(i).asByteArray();
             if (flushBufferAndReplace(recordOffset, strBytes.length + 4)) {
@@ -338,6 +360,7 @@ public class RawFile {
             buffer.putInt(strBytes.length);
             buffer.put(strBytes);
             break;
+
           case BYTES:
             byte [] rawBytes = t.get(i).asByteArray();
             if (flushBufferAndReplace(recordOffset, rawBytes.length + 4)) {
@@ -346,9 +369,23 @@ public class RawFile {
             buffer.putInt(rawBytes.length);
             buffer.put(rawBytes);
             break;
+
           case IPv4:
             buffer.put(t.get(i).asByteArray());
             break;
+
+          case ARRAY:
+            ArrayDatum array = (ArrayDatum) t.get(i);
+            String json = array.toJSON();
+            byte [] jsonBytes = json.getBytes();
+            if (flushBufferAndReplace(recordOffset, jsonBytes.length + 4)) {
+              recordOffset = 0;
+            }
+            buffer.putInt(jsonBytes.length);
+            buffer.put(jsonBytes);
+            break;
+
+          default:
         }
       }
 

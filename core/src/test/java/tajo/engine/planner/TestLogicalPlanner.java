@@ -472,13 +472,13 @@ public class TestLogicalPlanner {
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
 
-    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
-    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
+    assertEquals(ExprType.LIMIT, root.getSubNode().getType());
+    LimitNode limitNode = (LimitNode) root.getSubNode();
 
-    assertEquals(ExprType.LIMIT, projNode.getSubNode().getType());
-    LimitNode limitNode = (LimitNode) projNode.getSubNode();
+    assertEquals(ExprType.PROJECTION, limitNode.getSubNode().getType());
+    ProjectionNode projNode = (ProjectionNode) limitNode.getSubNode();
 
-    assertEquals(ExprType.SORT, limitNode.getSubNode().getType());
+    assertEquals(ExprType.SORT, projNode.getSubNode().getType());
   }
 
   @Test

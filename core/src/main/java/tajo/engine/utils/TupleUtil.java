@@ -10,6 +10,8 @@ import tajo.catalog.Schema;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.catalog.statistics.ColumnStat;
 import tajo.datum.*;
+import tajo.engine.parser.QueryBlock.SortSpec;
+import tajo.engine.planner.PlannerUtil;
 import tajo.storage.RowStoreUtil;
 import tajo.storage.Tuple;
 import tajo.storage.TupleRange;
@@ -19,6 +21,7 @@ import tajo.worker.dataserver.HttpUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -294,20 +297,23 @@ public class TupleUtil {
     return partitioned;
   }
 
-  public static String rangeToQuery(Schema schema, TupleRange range, boolean last) throws UnsupportedEncodingException {
+  public static String rangeToQuery(Schema schema, TupleRange range,
+                                    boolean ascendingFirstKey, boolean last)
+      throws UnsupportedEncodingException {
     StringBuilder sb = new StringBuilder();
-    byte [] startBytes = RowStoreUtil.RowStoreEncoder
+    byte [] firstKeyBytes = RowStoreUtil.RowStoreEncoder
         .toBytes(schema, range.getStart());
-    byte [] endBytes = RowStoreUtil.RowStoreEncoder
+    byte [] endKeyBytes = RowStoreUtil.RowStoreEncoder
         .toBytes(schema, range.getEnd());
-    String startBase64 = new String(Base64.encodeBase64(startBytes));
-    String endBase64 = new String(Base64.encodeBase64(endBytes));
 
-      sb.append("start=")
-        .append(startBase64)
+    String firstKeyBase64 = new String(Base64.encodeBase64(firstKeyBytes));
+    String lastKeyBase64 = new String(Base64.encodeBase64(endKeyBytes));
+
+    sb.append("start=")
+        .append(firstKeyBase64)
         .append("&")
         .append("end=")
-        .append(endBase64);
+        .append(lastKeyBase64);
 
     if (last) {
       sb.append("&final=true");
@@ -316,11 +322,16 @@ public class TupleUtil {
     return sb.toString();
   }
 
-  public static String [] rangesToQueries(Schema schema, TupleRange[] ranges) throws UnsupportedEncodingException {
+  public static String [] rangesToQueries(final SortSpec [] sortSpec,
+                                          final TupleRange[] ranges)
+      throws UnsupportedEncodingException {
+    Schema schema = PlannerUtil.sortSpecsToSchema(sortSpec);
+    boolean ascendingFirstKey = sortSpec[0].isAscending();
     String [] params = new String[ranges.length];
     for (int i = 0; i < ranges.length; i++) {
       params[i] =
-        rangeToQuery(schema, ranges[i], i == (ranges.length - 1));
+        rangeToQuery(schema, ranges[i], ascendingFirstKey,
+            ascendingFirstKey ? i == (ranges.length - 1) : i == 0);
     }
     return params;
   }

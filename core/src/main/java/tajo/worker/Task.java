@@ -284,7 +284,7 @@ public class Task implements Runnable {
     Collection<String> inputs = Lists.newArrayList(context.getInputTables());
     for (String inputTable: inputs) {
       File tableDir = new File(context.getFetchIn(), inputTable);
-      Fragment [] frags = list(tableDir, inputTable,
+      Fragment [] frags = localizeFetchedData(tableDir, inputTable,
           context.getTable(inputTable).getMeta());
       context.changeFragment(inputTable, frags);
     }
@@ -372,7 +372,7 @@ public class Task implements Runnable {
     return false;
   }
 
-  private Fragment[] list(File file, String name, TableMeta meta)
+  private Fragment[] localizeFetchedData(File file, String name, TableMeta meta)
       throws IOException {
     Configuration c = new Configuration(conf);
     c.set("fs.default.name", "file:///");
@@ -384,6 +384,9 @@ public class Task implements Runnable {
 
     FileStatus[] fileLists = fs.listStatus(tablePath);
     for (FileStatus f : fileLists) {
+      if (f.getLen() == 0) {
+        continue;
+      }
       tablet = new Fragment(name, f.getPath(), meta, 0l, f.getLen());
       listTablets.add(tablet);
     }

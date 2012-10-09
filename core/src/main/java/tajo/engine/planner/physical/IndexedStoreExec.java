@@ -30,6 +30,7 @@ import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.conf.TajoConf;
 import tajo.engine.parser.QueryBlock;
+import tajo.engine.planner.PlannerUtil;
 import tajo.index.bst.BSTIndex;
 import tajo.storage.*;
 
@@ -62,21 +63,16 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
     super.init();
 
     indexKeys = new int[sortSpecs.length];
-    keySchema = new Schema();
+    keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
+
     Column col;
     for (int i = 0 ; i < sortSpecs.length; i++) {
       col = sortSpecs[i].getSortKey();
       indexKeys[i] = inSchema.getColumnId(col.getQualifiedName());
-      keySchema.addColumn(inSchema.getColumn(col.getQualifiedName()));
-    }
-
-    QueryBlock.SortSpec [] indexSortSpec = new QueryBlock.SortSpec[keySchema.getColumnNum()];
-    for (int i = 0; i < indexSortSpec.length; i++) {
-      indexSortSpec[i] = new QueryBlock.SortSpec(keySchema.getColumn(0));
     }
 
     BSTIndex bst = new BSTIndex(new TajoConf());
-    this.comp = new TupleComparator(keySchema, indexSortSpec);
+    this.comp = new TupleComparator(keySchema, sortSpecs);
     Path storeTablePath = new Path(context.getWorkDir().getAbsolutePath(), "out");
     this.meta = TCatUtil
         .newTableMeta(this.outSchema, CatalogProtos.StoreType.CSV);
