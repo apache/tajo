@@ -19,6 +19,7 @@ import tajo.catalog.store.DBStore;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.function.builtin.*;
+import tajo.engine.function.builtin.Date;
 import tajo.ipc.protocolrecords.Fragment;
 import tajo.rpc.NettyRpc;
 import tajo.rpc.NettyRpcServer;
@@ -526,6 +527,16 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     for (FunctionDesc func : sqlFuncs) {
       registerFunction(func.getProto());
     }
+
+    // Date
+    sqlFuncs.add(new FunctionDesc("date", Date.class, FunctionType.GENERAL,
+        new DataType[] {DataType.LONG},
+        new DataType[] {DataType.STRING}));
+
+    // Today
+    sqlFuncs.add(new FunctionDesc("today", Date.class, FunctionType.GENERAL,
+        new DataType[] {DataType.LONG},
+        new DataType[] {}));
 
     List<FunctionDesc> extendedFuncs = Lists.newArrayList();
     extendedFuncs.add(new FunctionDesc("random", RandomInt.class, FunctionType.GENERAL,
