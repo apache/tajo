@@ -69,7 +69,7 @@ public class CreateIndexStmt extends ParseTree {
   
   public void setSortSpecs(QueryBlock.SortSpec[] sortSpecs) {
     Preconditions.checkNotNull(sortSpecs);
-    Preconditions.checkArgument(sortSpecs.length > 1, 
+    Preconditions.checkArgument(sortSpecs.length > 0,
         "Sort specifiers must be at least one");
     this.sortSpecs = sortSpecs;
   }
