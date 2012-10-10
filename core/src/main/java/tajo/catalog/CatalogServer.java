@@ -18,6 +18,8 @@ import tajo.catalog.store.CatalogStore;
 import tajo.catalog.store.DBStore;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
+import tajo.engine.function.Country;
+import tajo.engine.function.InCountry;
 import tajo.engine.function.builtin.*;
 import tajo.ipc.protocolrecords.Fragment;
 import tajo.rpc.NettyRpc;
@@ -522,6 +524,14 @@ public class CatalogServer extends Thread implements CatalogServiceProtocol {
     sqlFuncs.add(new FunctionDesc("count", NewCountRows.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.LONG},
         new DataType[] {}));
+
+    // GeoIP
+    sqlFuncs.add(new FunctionDesc("in_country", InCountry.class, FunctionType.GENERAL,
+        new DataType[] {DataType.BOOLEAN},
+        new DataType[] {DataType.STRING, DataType.STRING}));
+    sqlFuncs.add(new FunctionDesc("country", Country.class, FunctionType.GENERAL,
+        new DataType[] {DataType.STRING},
+        new DataType[] {DataType.STRING}));
 
     for (FunctionDesc func : sqlFuncs) {
       registerFunction(func.getProto());

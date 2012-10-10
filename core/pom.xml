@@ -297,6 +297,12 @@
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.dspace.dependencies</groupId>
+      <artifactId>dspace-geoip</artifactId>
+      <version>1.2.3</version>
+    </dependency>
   </dependencies>
 
   <reporting>
