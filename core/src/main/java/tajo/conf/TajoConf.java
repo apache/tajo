@@ -125,6 +125,9 @@ public class TajoConf extends Configuration {
 
     // Query Execution Section
     SORT_BUFFER_SIZE("tajo.sort.mb", (int)1),
+
+    // GeoIP
+    GEOIP_DATA("tajo.geoip.data", "/usr/local/share/GeoIP/GeoIP.dat"),
     ;
 
     public final String varname;
