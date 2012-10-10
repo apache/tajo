@@ -54,7 +54,7 @@ public class TestFaultTolerance {
 
   @BeforeClass
   public static void setup() throws Exception {
-    cluster = new MockupCluster(6, 0, 4);
+    cluster = new MockupCluster(3, 0, 2);
     conf = cluster.getConf();
 
     cluster.start();

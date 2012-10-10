@@ -60,6 +60,7 @@ public abstract class MockupWorker
   }
 
   protected final static Log LOG = LogFactory.getLog(MockupWorker.class);
+  protected final static int MAX_TASK_NUM = 120;
 
   protected final TajoConf conf;
   protected NettyRpcServer rpcServer;
@@ -110,7 +111,7 @@ public abstract class MockupWorker
 
     byte[] master;
     do {
-      master = masterAddrTracker.blockUntilAvailable(1000);
+      master = masterAddrTracker.blockUntilAvailable(500);
       LOG.info("Waiting for the Tajo master.....");
     } while (master == null);
 
@@ -197,7 +198,7 @@ public abstract class MockupWorker
     // serverStatus builder
     ServerStatusProto.Builder serverStatus = ServerStatusProto.newBuilder();
     // TODO: compute the available number of task slots
-    serverStatus.setAvailableTaskSlotNum(taskQueue.size());
+    serverStatus.setAvailableTaskSlotNum(MAX_TASK_NUM - taskQueue.size());
 
     // system(CPU, memory) status builder
     ServerStatusProto.System.Builder systemStatus = ServerStatusProto.System
@@ -277,22 +278,21 @@ public abstract class MockupWorker
     List<TaskStatusProto> list
         = new ArrayList<TaskStatusProto>();
     TaskStatusProto status;
-    // to be removed
-    List<QueryUnitAttemptId> tobeRemoved = Lists.newArrayList();
+    int runningTasksNum = 0;
 
     // builds one status for each in-progress query
     for (MockupTask task : taskMap.values()) {
-      if (task.getStatus() == QueryStatus.QUERY_ABORTED
-          || task.getStatus() == QueryStatus.QUERY_KILLED
-          || task.getStatus() == QueryStatus.QUERY_FINISHED) {
-        // TODO - in-progress queries should be kept until this leafserver
-        tobeRemoved.add(task.getId());
+      if (task.getStatus() != QueryStatus.QUERY_ABORTED
+          || task.getStatus() != QueryStatus.QUERY_KILLED
+          || task.getStatus() != QueryStatus.QUERY_FINISHED) {
+        runningTasksNum++;
       }
 
       status = this.getReport(task.getId(), task.getStatus());
       list.add(status);
     }
 
+    ping.setAvailableTaskSlotNum(MAX_TASK_NUM - runningTasksNum);
     ping.addAllStatus(list);
     StatusReportProto proto = ping.build();
     return master.statusUpdate(proto).getValue();
