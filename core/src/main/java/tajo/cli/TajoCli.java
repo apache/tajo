@@ -193,6 +193,7 @@ public class TajoCli {
         }
       }
     } catch (Throwable t) {
+      t.printStackTrace();
       System.err.println(t.getMessage());
     }
   }
