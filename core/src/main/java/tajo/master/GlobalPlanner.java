@@ -1479,11 +1479,11 @@ public class GlobalPlanner {
                                                  final boolean ascendingFirstKey)
       throws UnsupportedEncodingException {
     SortedMap<TupleRange, Set<URI>> map = null;
-    //if (ascendingFirstKey) {
+    if (ascendingFirstKey) {
       map = new TreeMap<>();
-//    } else {
-//      map = new TreeMap<>(new TupleRange.DescendingTupleRangeComparator());
-//    }
+    } else {
+      map = new TreeMap<>(new TupleRange.DescendingTupleRangeComparator());
+    }
     TupleRange range;
     Set<URI> uris;
     for (URI uri : uriList) {
