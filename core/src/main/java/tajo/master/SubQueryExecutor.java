@@ -79,7 +79,7 @@ public class SubQueryExecutor extends Thread {
   }
 
   private final static Log LOG = LogFactory.getLog(SubQueryExecutor.class);
-  private final static int WAIT_PERIOD = 100;
+  private final static int WAIT_PERIOD = 3000;
 
   private BlockingQueue<SubQuery> inprogressQueue;
   private BlockingQueue<QueryUnit> pendingQueue;
