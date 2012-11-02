@@ -43,7 +43,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <hadoop.version>2.0.1-SNAPSHOT</hadoop.version>
+    <hadoop.version>2.0.2-alpha</hadoop.version>
     <tajo.version>0.2.0-SNAPSHOT</tajo.version>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
