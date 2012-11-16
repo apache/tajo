@@ -17,7 +17,7 @@ import tajo.datum.DatumType;
 import tajo.engine.exception.UnsupportedException;
 import tajo.ipc.protocolrecords.Fragment;
 import tajo.storage.CSVFile2;
-import tajo.storage.RowFile;
+import tajo.storage.RowFile2;
 import tajo.storage.Scanner;
 import tajo.storage.Tuple;
 import tajo.util.FileUtil;
@@ -71,7 +71,7 @@ public class ResultSetImpl implements ResultSet {
       scanner = new CSVFile2(this.conf).openScanner(meta.getSchema(), frags);
       break;
     case RAW:
-      scanner = new RowFile(this.conf).openScanner(meta.getSchema(), frags);
+      scanner = new RowFile2(this.conf).openScanner(meta.getSchema(), frags);
       break;
     }
     init();
