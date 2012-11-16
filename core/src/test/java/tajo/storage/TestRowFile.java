@@ -1,7 +1,13 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -14,229 +20,122 @@
 
 package tajo.storage;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import tajo.WorkerTestingUtil;
-import tajo.catalog.Options;
+import tajo.TajoTestingUtility;
 import tajo.catalog.Schema;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
+import tajo.catalog.TableMetaImpl;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.catalog.proto.CatalogProtos.TableProto;
 import tajo.catalog.statistics.TableStat;
-import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.ipc.protocolrecords.Fragment;
+import tajo.util.FileUtil;
 
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
+import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class TestRowFile {
-	private TajoConf conf;
-	private static String TEST_PATH = "target/test-data/TestRowFile";
-	private StorageManager sm;
-	
-	@Before
-	public void setUp() throws Exception {
-		conf = new TajoConf();
-		conf.setInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname, 100);
-		WorkerTestingUtil.buildTestDir(TEST_PATH);
-		sm = StorageManager.get(conf, TEST_PATH);
-	}
-		
-	@Test
-  public void testRowFile() throws IOException {
+  private TajoTestingUtility util;
+  private Configuration conf;
+  private RowFile rowFile;
+
+  @Before
+  public void setup() throws Exception {
+    util = new TajoTestingUtility();
+    conf = util.getConfiguration();
+    conf.setInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname, 100);
+    util.startMiniDFSCluster(3);
+    rowFile = new RowFile(conf);
+  }
+
+  @After
+  public void teardown() throws Exception {
+    util.shutdownMiniDFSCluster();
+  }
+
+  @Test
+  public void test() throws IOException {
     Schema schema = new Schema();
     schema.addColumn("id", DataType.INT);
     schema.addColumn("age", DataType.LONG);
     schema.addColumn("description", DataType.STRING);
-    
+
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
-    
-    sm.initTableBase(meta, "testRawFile");
-    Appender appender = sm.getAppender(meta, "testRawFile", "file1");
-    int tupleNum = 10000;
-    VTuple vTuple;
+
+    Path tablePath = new Path("hdfs:///test");
+    Path metaPath = new Path(tablePath, ".meta");
+    Path dataDir = new Path(tablePath, "data");
+    Path dataPath = new Path(dataDir, "test.tbl");
+    FileSystem fs = tablePath.getFileSystem(conf);
+    fs.mkdirs(tablePath);
+    fs.mkdirs(dataDir);
+
+    FileUtil.writeProto(conf, metaPath, meta.getProto());
+
+    Appender appender = rowFile.getAppender(meta, dataPath);
+
+    int tupleNum = 100000;
+    Tuple tuple = null, finalTuple;
     Datum stringDatum = DatumFactory.createString("abcdefghijklmnopqrstuvwxyz");
 
-    long startAppend = System.currentTimeMillis();
+    long start = System.currentTimeMillis();
     for(int i = 0; i < tupleNum; i++) {
-      vTuple = new VTuple(3);
-      vTuple.put(0, DatumFactory.createInt(i+1));
-      vTuple.put(1, DatumFactory.createLong(25l));
-      vTuple.put(2, stringDatum);
-      appender.addTuple(vTuple);
+      tuple = new VTuple(3);
+      tuple.put(0, DatumFactory.createInt(i + 1));
+      tuple.put(1, DatumFactory.createLong(25l));
+      tuple.put(2, stringDatum);
+      appender.addTuple(tuple);
+//      System.out.println(tuple.toString());
     }
-    long endAppend = System.currentTimeMillis();
+    finalTuple = tuple;
+    long end = System.currentTimeMillis();
     appender.close();
-    
+
     TableStat stat = appender.getStats();
     assertEquals(tupleNum, stat.getNumRows().longValue());
-    
-    FileStatus status = sm.listTableFiles("testRawFile")[0];
-    long fileLen = status.getLen();
-    long randomNum = (long) (Math.random() * fileLen) + 1;
-    
-    Fragment[] tablets = new Fragment[2];
-    tablets[0] = new Fragment("testRawFile", status.getPath(), meta, 0, randomNum);
-    tablets[1] = new Fragment("testRawFile", status.getPath(), meta, randomNum, (fileLen - randomNum));
 
-    Scanner scanner = sm.getScanner(meta, tablets);
+    System.out.println("append time: " + (end-start));
+
+    FileStatus file = fs.getFileStatus(dataPath);
+    TableProto proto = (TableProto) FileUtil.loadProto(conf, metaPath,
+        TableProto.getDefaultInstance());
+    meta = new TableMetaImpl(proto);
+    Fragment fragment = new Fragment("test.tbl", dataPath, meta, 0, file.getLen());
     int tupleCnt = 0;
-    long startScan = System.currentTimeMillis();
-    while (scanner.next() != null) {
+    Scanner scanner = rowFile.openSingleScanner(schema, fragment);
+    start = System.currentTimeMillis();
+    while ((tuple=scanner.next()) != null) {
       tupleCnt++;
+//      System.out.println(tuple.toString());
     }
-    long endScan = System.currentTimeMillis();
-    scanner.close();    
-    
+    end = System.currentTimeMillis();
+
     assertEquals(tupleNum, tupleCnt);
+    System.out.println("scan time: " + (end - start));
 
-    System.out.println("Append time: " + (endAppend - startAppend) + " msc");
-    System.out.println("Scan time: " + (endScan - startScan) + " msc");
-	}
-	
-	@Test
-  public void testForSingleFile() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("id", DataType.INT);
-    schema.addColumn("age", DataType.LONG);
-    
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
-    
-    sm.initTableBase(meta, "testForSingleFile");
-    Appender appender = sm.getAppender(meta, "testForSingleFile", "file1");
-    int tupleNum = 10000;
-    VTuple vTuple;
-    
-    for(int i = 0; i < tupleNum; i++) {
-      vTuple = new VTuple(2);
-      vTuple.put(0, DatumFactory.createInt(i+1));
-      vTuple.put(1, DatumFactory.createLong(25l));
-      appender.addTuple(vTuple);
-    }
-    appender.close();
-    
-    // Read a table composed of multiple files
-    FileStatus status = sm.listTableFiles("testForSingleFile")[0];
-    long fileLen = status.getLen();
-    long randomNum = (long) (Math.random() * fileLen) + 1;
-    
-    Fragment[] tablets = new Fragment[3];
-    tablets[0] = new Fragment("testForSingleFile", status.getPath(), meta, 0, randomNum/2);
-    tablets[1] = new Fragment("testForSingleFile", status.getPath(), meta, randomNum/2, (randomNum - randomNum/2));
-    tablets[2] = new Fragment("testForSingleFile", status.getPath(), meta, randomNum, (fileLen - randomNum));
-
-    Scanner scanner = sm.getScanner(meta, tablets);
-    int tupleCnt = 0;
-    while (scanner.next() != null) {
+    Random random = new Random(System.currentTimeMillis());
+    int fileStart = random.nextInt((int)file.getLen());
+    fragment = new Fragment("test.tbl", dataPath, meta, fileStart, file.getLen());
+    scanner = rowFile.openSingleScanner(schema, fragment);
+    Tuple scannedTuple = null;
+    while ((tuple=scanner.next()) != null) {
+      scannedTuple = tuple;
       tupleCnt++;
     }
-    scanner.close();   
-    
-    assertEquals(tupleNum, tupleCnt);
-  }
-  
-  @Test
-  public void testForMultiFile() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("id", DataType.INT);
-    schema.addColumn("age", DataType.LONG);
-    
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
-    
-    sm.initTableBase(meta, "testForMultiFile");
-    Appender appender = sm.getAppender(meta, "testForMultiFile", "file1");
-    int tupleNum = 10000;
-    VTuple vTuple;
-    
-    for(int i = 0; i < tupleNum; i++) {
-      vTuple = new VTuple(2);
-      vTuple.put(0, DatumFactory.createInt(i+1));
-      vTuple.put(1, DatumFactory.createLong(25l));
-      appender.addTuple(vTuple);
-    }
-    appender.close();
-    
-    appender = sm.getAppender(meta, "testForMultiFile", "file2");
-    for(int i = 0; i < tupleNum; i++) {
-      vTuple = new VTuple(2);
-      vTuple.put(0, DatumFactory.createInt(i+1000));
-      vTuple.put(1, DatumFactory.createLong(25l));
-      appender.addTuple(vTuple);
-    }
-    appender.close();
-
-    FileStatus[] status = sm.listTableFiles("testForMultiFile");
-    long fileLen = status[0].getLen();
-    long randomNum = (long) (Math.random() * fileLen) + 1;
-
-    Fragment[] tablets = new Fragment[4];
-    tablets[0] = new Fragment("testForMultiFile", status[0].getPath(), meta, 0, randomNum);
-    tablets[1] = new Fragment("testForMultiFile", status[0].getPath(), meta, randomNum, (fileLen - randomNum));
-    
-    fileLen = status[1].getLen();
-    randomNum = (long) (Math.random() * fileLen) + 1;
-    tablets[2] = new Fragment("testForMultiFile", status[1].getPath(), meta, 0, randomNum);
-    tablets[3] = new Fragment("testForMultiFile", status[1].getPath(), meta, randomNum, (fileLen - randomNum));
-    
-    Scanner scanner = sm.getScanner(meta, tablets);
-    int tupleCnt = 0;
-    while (scanner.next() != null) {
-      tupleCnt++;
-    }
-    scanner.close();   
-    
-    assertEquals(tupleNum*2, tupleCnt);
-  }
-
-  @Test
-  public void testVariousTypes() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", DataType.BOOLEAN);
-    schema.addColumn("col2", DataType.BYTE);
-    schema.addColumn("col3", DataType.CHAR);
-    schema.addColumn("col4", DataType.SHORT);
-    schema.addColumn("col5", DataType.INT);
-    schema.addColumn("col6", DataType.LONG);
-    schema.addColumn("col7", DataType.FLOAT);
-    schema.addColumn("col8", DataType.DOUBLE);
-    schema.addColumn("col9", DataType.STRING);
-    schema.addColumn("col10", DataType.BYTES);
-    schema.addColumn("col11", DataType.IPv4);
-
-    Options options = new Options();
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW, options);
-
-    sm.initTableBase(meta, "raw");
-    Appender appender = sm.getAppender(meta, "raw", "table.dat");
-
-    Tuple tuple = new VTuple(11);
-    tuple.put(new Datum[] {
-        DatumFactory.createBool(true),
-        DatumFactory.createByte((byte) 0x99),
-        DatumFactory.createChar('7'),
-        DatumFactory.createShort((short) 17),
-        DatumFactory.createInt(59),
-        DatumFactory.createLong(23l),
-        DatumFactory.createFloat(77.9f),
-        DatumFactory.createDouble(271.9f),
-        DatumFactory.createString("hyunsik"),
-        DatumFactory.createBytes("hyunsik".getBytes()),
-        DatumFactory.createIPv4("192.168.0.1")
-    });
-    appender.addTuple(tuple);
-    appender.flush();
-    appender.close();
-
-    Scanner scanner = sm.getScanner("raw", "table.dat");
-    Tuple retrieved = scanner.next();
-    for (int i = 0; i < tuple.size(); i++) {
-      assertEquals(tuple.get(i), retrieved.get(i));
-    }
+    assertEquals(finalTuple, scannedTuple);
   }
 }

@@ -166,7 +166,7 @@ public class StorageManager {
 
     switch(meta.getStoreType()) {
       case RAW: {
-        scanner = new RowFile(c).
+        scanner = new RowFile2(c).
             openScanner(meta.getSchema(), new Fragment [] {tablet});
         break;
       }
@@ -184,7 +184,7 @@ public class StorageManager {
     
     switch(meta.getStoreType()) {
     case RAW: {
-      scanner = new RowFile(conf).
+      scanner = new RowFile2(conf).
           openScanner(meta.getSchema(), tablets);     
       break;
     }
@@ -207,7 +207,7 @@ public class StorageManager {
 
     switch(meta.getStoreType()) {
     case RAW: {
-      scanner = new RowFile(conf).
+      scanner = new RowFile2(conf).
       openScanner(inputSchema, tablets);
       break;
     }
@@ -273,7 +273,7 @@ public class StorageManager {
 	  Appender appender = null;
     switch(meta.getStoreType()) {
     case RAW: {
-      appender = new RowFile(conf).getAppender(meta,
+      appender = new RowFile2(conf).getAppender(meta,
           filename);
       break;
     }
@@ -299,7 +299,7 @@ public class StorageManager {
     Appender appender = null;
     switch(meta.getStoreType()) {
     case RAW: {
-      appender = new RowFile(c).getAppender(meta,
+      appender = new RowFile2(c).getAppender(meta,
           filename);
       break;
     }
