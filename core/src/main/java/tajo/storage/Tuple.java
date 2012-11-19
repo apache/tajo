@@ -62,4 +62,6 @@ public interface Tuple {
 	public byte [] getIPv6Bytes(int fieldId);
 	
 	public StringDatum getString(int fieldId);
+
+  public StringDatum2 getString2(int fieldId);
 }

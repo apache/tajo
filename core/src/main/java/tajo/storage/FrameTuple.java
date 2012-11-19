@@ -176,7 +176,12 @@ public class FrameTuple implements Tuple {
   public StringDatum getString(int fieldId) {
     return (StringDatum) get(fieldId);
   }
-  
+
+  @Override
+  public StringDatum2 getString2(int fieldId) {
+    return (StringDatum2) get(fieldId);
+  }
+
   public String toString() {
     boolean first = true;
     StringBuilder str = new StringBuilder();

@@ -35,6 +35,7 @@ public enum DatumType {
 	FLOAT,
 	DOUBLE,
 	STRING,
+  STRING2,
 	ENUM,
 	IPv4,
 	IPv6,
