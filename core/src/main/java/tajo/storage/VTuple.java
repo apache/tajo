@@ -164,7 +164,12 @@ public class VTuple implements Tuple {
 		return (StringDatum) values[fieldId];
 	}
 
-	public String toString() {
+  @Override
+  public StringDatum2 getString2(int fieldId) {
+    return (StringDatum2) values[fieldId];
+  }
+
+  public String toString() {
 		boolean first = true;
 		StringBuilder str = new StringBuilder();
 		str.append("(");
