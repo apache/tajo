@@ -812,7 +812,7 @@ public class GlobalPlanner {
   
   private SubQuery setPartitionNumberForTwoPhase(SubQuery unit, final int n) {
     Column[] keys = null;
-    // if the next query is join, 
+    // if the next query is join,
     // set the partition number for the current logicalUnit
     // TODO: the union handling is required when a join has unions as its child
     SubQuery parentQueryUnit = unit.getParentQuery();

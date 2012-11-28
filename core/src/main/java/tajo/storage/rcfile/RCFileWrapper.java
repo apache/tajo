@@ -54,7 +54,7 @@ public class RCFileWrapper {
     private TableStatistics stats = null;
 
     public RCFileAppender(Configuration conf, TableMeta meta, Path path,
-                          boolean statsEnabled) throws IOException {
+                          boolean statsEnabled, boolean compress) throws IOException {
       super(conf, meta, path);
 
       fs = path.getFileSystem(conf);
@@ -70,7 +70,11 @@ public class RCFileWrapper {
       }
 
       conf.setInt(RCFile.COLUMN_NUMBER_CONF_STR, schema.getColumnNum());
-      writer = new RCFile.Writer(fs, conf, path, null, new DefaultCodec());
+      if (compress) {
+        writer = new RCFile.Writer(fs, conf, path, null, new DefaultCodec());
+      } else {
+        writer = new RCFile.Writer(fs, conf, path, null, null);
+      }
 
       this.statsEnabled = statsEnabled;
       if (statsEnabled) {
@@ -115,6 +119,7 @@ public class RCFileWrapper {
             case FLOAT:
             case DOUBLE:
             case STRING:
+            case STRING2:
             case IPv4:
             case IPv6:
               bytes = t.get(i).asByteArray();
@@ -294,6 +299,11 @@ public class RCFileWrapper {
                   DatumFactory.createString(
                       Bytes.toString(column.get(i).getBytesCopy())));
               break;
+
+            case STRING2:
+              tuple.put(i,
+                  DatumFactory.createString2(
+                      column.get(i).getBytesCopy()));
 
             case BYTES:
               tuple.put(i,

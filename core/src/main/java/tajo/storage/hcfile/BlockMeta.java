@@ -18,27 +18,35 @@
  * limitations under the License.
  */
 
-package tajo.storage;
+package tajo.storage.hcfile;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+import tajo.catalog.proto.CatalogProtos.DataType;
 
-import java.io.IOException;
+public interface BlockMeta {
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
-  }
+  /**
+   * Return the type of this column
+   *
+   * @return the type of this column
+   */
+  public DataType getType();
 
-  public abstract long getOffset() throws IOException;
+  /**
+   * Return the number of records in this file
+   *
+   * @return the number of records in this file
+   */
+  public int getRecordNum();
+
+  public BlockMeta setRecordNum(int recordNum);
+
+  public BlockMeta setStartRid(long rid);
+
+  public long getStartRid();
+
+  public boolean isSorted();
+
+  public boolean isContiguous();
+
+  public boolean isCompressed();
 }

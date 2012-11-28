@@ -26,7 +26,7 @@ public class TestMemTupleSlots {
 	@Test
 	public final void testNextTuple() throws Exception {
 		int cnt = 0;		
-		while(slots.next() != null) {			
+		while(slots.next() != null) {
 			cnt++;
 		}
 		assertEquals(cnt,5);

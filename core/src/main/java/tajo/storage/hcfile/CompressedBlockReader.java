@@ -18,27 +18,38 @@
  * limitations under the License.
  */
 
-package tajo.storage;
+package tajo.storage.hcfile;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+import tajo.catalog.proto.CatalogProtos.CompressType;
+import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.storage.hcfile.compress.Codec;
+import tajo.storage.hcfile.reader.Reader;
+import tajo.storage.exception.UnknownCodecException;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
+public class CompressedBlockReader implements Reader {
+  private Codec codec;
+  private DataType dataType;
+
+  public CompressedBlockReader(DataType dataType, CompressType compType)
+      throws UnknownCodecException, IOException {
+    codec = Codec.get(compType);
+    this.dataType = dataType;
   }
 
-  public abstract long getOffset() throws IOException;
+  @Override
+  public UpdatableBlock read(BlockMeta meta, ByteBuffer buffer) throws IOException {
+    CompressedBlock compressedBlock = null;
+
+    // TODO
+
+    return compressedBlock;
+  }
+
+  @Override
+  public void close() throws IOException {
+
+  }
 }

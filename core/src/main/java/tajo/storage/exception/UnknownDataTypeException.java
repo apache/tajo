@@ -18,27 +18,17 @@
  * limitations under the License.
  */
 
-package tajo.storage;
+package tajo.storage.exception;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+public class UnknownDataTypeException extends Exception {
 
-import java.io.IOException;
+  private static final long serialVersionUID = -2630390595968966164L;
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
+  public UnknownDataTypeException() {
+
   }
 
-  public abstract long getOffset() throws IOException;
+  public UnknownDataTypeException(String message) {
+    super(message);
+  }
 }

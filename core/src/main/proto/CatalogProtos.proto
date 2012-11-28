@@ -24,6 +24,7 @@ enum DataType {
     ANY = 16;
     ALL = 17;
     ARRAY = 18;
+    STRING2 = 19;
 }
 
 enum StoreType {
@@ -32,6 +33,35 @@ enum StoreType {
 	RAW = 2;
   RCFILE = 3;
   ROWFILE = 4;
+  HCFILE = 5;
+}
+
+enum OrderType {
+    ORDER_NONE = 0;
+    ASC = 1;
+    DSC = 2;
+}
+
+enum CompressType {
+    COMP_NONE = 0;
+    NULL_SUPPRESS = 1;
+    RUN_LENGTH = 2;
+    BIT_VECTOR = 3;
+    DICTIONARY = 4;
+    SNAPPY = 5;
+    LZ = 6;
+}
+
+message ColumnMetaProto {
+    required DataType dataType = 1;
+    required bool compressed = 2;
+    required bool sorted = 3;
+    required bool contiguous = 4;
+    required StoreType storeType = 5;
+    required CompressType compType = 6;
+    required int64 startRid = 7;
+    required int32 recordNum = 8;
+    required int32 offsetToIndex = 9;
 }
 
 message ColumnProto {

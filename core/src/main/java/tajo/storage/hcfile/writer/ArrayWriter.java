@@ -18,27 +18,26 @@
  * limitations under the License.
  */
 
-package tajo.storage;
+package tajo.storage.hcfile.writer;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import tajo.datum.ArrayDatum;
+import tajo.datum.Datum;
 
 import java.io.IOException;
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
+public class ArrayWriter extends TypeWriter {
+
+  public ArrayWriter(FSDataOutputStream out) {
+    super(out);
   }
 
-  public abstract long getOffset() throws IOException;
+  @Override
+  public void write(Datum data) throws IOException {
+    ArrayDatum array = (ArrayDatum) data;
+    String json = array.toJSON();
+    byte[] jsonBytes = json.getBytes();
+    out.writeInt(jsonBytes.length);
+    out.write(jsonBytes);
+  }
 }

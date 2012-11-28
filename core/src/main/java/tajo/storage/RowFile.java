@@ -108,7 +108,7 @@ public class RowFile extends SingleStorge {
       // set default page size.
       fs = fragment.getPath().getFileSystem(conf);
       in = fs.open(fragment.getPath());
-      buffer = ByteBuffer.allocateDirect(DEFAULT_BUFFER_SIZE);
+      buffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE * schema.getColumnNum());
       buffer.flip();
 
       readHeader();
@@ -267,7 +267,15 @@ public class RowFile extends SingleStorge {
               short len = buffer.getShort();
               byte[] buf = new byte[len];
               buffer.get(buf, 0, len);
-              datum = DatumFactory.createString(new String(buf));
+              datum = DatumFactory.createString(buf);
+              tuple.put(i, datum);
+              break;
+
+            case STRING2:
+              short bytelen = buffer.getShort();
+              byte[] strbytes = new byte[bytelen];
+              buffer.get(strbytes, 0, bytelen);
+              datum = DatumFactory.createString2(strbytes);
               tuple.put(i, datum);
               break;
 
@@ -428,6 +436,11 @@ public class RowFile extends SingleStorge {
 //              out.write(buf, 0, buf.length);
               buffer.putShort((short)buf.length);
               buffer.put(buf, 0, buf.length);
+              break;
+            case STRING2:
+              byte[] strbytes = t.getString2(i).asByteArray();
+              buffer.putShort((short)strbytes.length);
+              buffer.put(strbytes, 0, strbytes.length);
               break;
             case SHORT:
 //              out.writeShort(t.getShort(i).asShort());

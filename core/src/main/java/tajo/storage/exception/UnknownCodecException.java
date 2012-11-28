@@ -18,27 +18,17 @@
  * limitations under the License.
  */
 
-package tajo.storage;
+package tajo.storage.exception;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+public class UnknownCodecException extends Exception {
 
-import java.io.IOException;
+  private static final long serialVersionUID = 4287230843540404529L;
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
+  public UnknownCodecException() {
+
   }
 
-  public abstract long getOffset() throws IOException;
+  public UnknownCodecException(String message) {
+    super(message);
+  }
 }

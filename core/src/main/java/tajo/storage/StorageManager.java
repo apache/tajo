@@ -279,7 +279,7 @@ public class StorageManager {
     }
 
     case RCFILE:
-      appender = new RCFileWrapper.RCFileAppender(conf, meta, filename, true);
+      appender = new RCFileWrapper.RCFileAppender(conf, meta, filename, true, true);
       break;
 
     case CSV: {

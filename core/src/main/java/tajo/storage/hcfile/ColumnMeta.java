@@ -18,27 +18,33 @@
  * limitations under the License.
  */
 
-package tajo.storage;
+package tajo.storage.hcfile;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+import tajo.catalog.proto.CatalogProtos.CompressType;
+import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.catalog.proto.CatalogProtos.StoreType;
 
-import java.io.IOException;
+public interface ColumnMeta {
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
-  }
+  StoreType getStoreType();
 
-  public abstract long getOffset() throws IOException;
+  /**
+   * Return the type of this column
+   *
+   * @return the type of this column
+   */
+  DataType getDataType();
+
+  CompressType getCompressType();
+
+  /**
+   * Indicating this column is compressed or not
+   *
+   * @return return true if this column is compressed, otherwise return false
+   */
+  boolean isCompressed();
+
+  boolean isSorted();
+
+  boolean isContiguous();
 }

@@ -18,27 +18,47 @@
  * limitations under the License.
  */
 
-package tajo.storage;
+package tajo.storage.hcfile;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+public class IndexItem<T> implements Comparable<IndexItem> {
+  private long rid;
+  private T value;
 
-import java.io.IOException;
+  public IndexItem() {
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
   }
 
-  public abstract long getOffset() throws IOException;
+  public IndexItem(long rid, T value) {
+    this.set(rid, value);
+  }
+
+  public void set(long rid, T offset) {
+    this.rid = rid;
+    this.value = offset;
+  }
+
+  public T getValue() {
+    return value;
+  }
+
+  public long getRid() {
+    return rid;
+  }
+
+  @Override
+  public int compareTo(IndexItem indexItem) {
+    return (int)(this.rid - indexItem.rid);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof IndexItem) {
+      IndexItem item = (IndexItem) o;
+      if (this.rid == item.rid &&
+          this.value.equals(item.value)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

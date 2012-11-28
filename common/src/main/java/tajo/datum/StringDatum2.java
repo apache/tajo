@@ -114,6 +114,16 @@ public class StringDatum2 extends Datum {
   }
 
   @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof StringDatum2) {
+      StringDatum2 o = (StringDatum2) obj;
+      return Arrays.equals(this.bytes, o.bytes);
+    }
+
+    return false;
+  }
+
+  @Override
   public BoolDatum equalsTo(Datum datum) {
     switch (datum.type()) {
       case STRING2:

@@ -18,27 +18,15 @@
  * limitations under the License.
  */
 
-package tajo.storage;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+package tajo.storage.hcfile;
 
 import java.io.IOException;
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
-  }
+public interface Seekable {
 
-  public abstract long getOffset() throws IOException;
+  public void first() throws IOException;
+
+  public void last() throws IOException;
+
+  public void pos(long rid) throws IOException;
 }

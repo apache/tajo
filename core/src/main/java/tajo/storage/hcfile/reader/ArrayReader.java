@@ -18,27 +18,29 @@
  * limitations under the License.
  */
 
-package tajo.storage;
+package tajo.storage.hcfile.reader;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+import tajo.datum.ArrayDatum;
+import tajo.datum.Datum;
+import tajo.datum.json.GsonCreator;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
+public class ArrayReader extends TypeReader {
+
+  @Override
+  public Datum read(ByteBuffer buffer) throws IOException {
+    if (buffer.hasRemaining()) {
+      int arrayByteSize = buffer.getInt();
+      byte [] arrayBytes = new byte[arrayByteSize];
+      buffer.get(arrayBytes);
+      String json = new String(arrayBytes);
+      ArrayDatum array = (ArrayDatum) GsonCreator
+          .getInstance().fromJson(json, Datum.class);
+      return array;
+    } else {
+      return null;
+    }
   }
-
-  public abstract long getOffset() throws IOException;
 }
