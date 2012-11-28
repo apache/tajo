@@ -18,27 +18,29 @@
  * limitations under the License.
  */
 
-package tajo.storage;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+package tajo.storage.hcfile.compress;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
+public class NullSuppress extends Codec {
+  @Override
+  public byte[] decompress(byte[] compressed) throws IOException {
+    return new byte[0];  //To change body of implemented methods use File | Settings | File Templates.
   }
 
-  public abstract long getOffset() throws IOException;
+  @Override
+  public byte[] decompress(ByteBuffer compressed) throws IOException {
+    return new byte[0];  //To change body of implemented methods use File | Settings | File Templates.
+  }
+
+  @Override
+  public byte[] compress(byte[] decompressed) throws IOException {
+    return new byte[0];  //To change body of implemented methods use File | Settings | File Templates.
+  }
+
+  @Override
+  public byte[] compress(ByteBuffer decompressed) throws IOException {
+    return new byte[0];  //To change body of implemented methods use File | Settings | File Templates.
+  }
 }

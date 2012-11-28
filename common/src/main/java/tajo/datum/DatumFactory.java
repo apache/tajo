@@ -102,6 +102,10 @@ public class DatumFactory {
   public static StringDatum2 createString2(byte[] val) {
     return new StringDatum2(val);
   }
+
+  public static StringDatum createString(byte[] val) {
+    return new StringDatum(val);
+  }
 	
 	public static BytesDatum createBytes(byte [] val) {
     return new BytesDatum(val);

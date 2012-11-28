@@ -392,6 +392,9 @@ public class CSVFile extends SingleStorge {
               case STRING:
                 tuple.put(i, DatumFactory.createString(cell));
                 break;
+              case STRING2:
+                tuple.put(i, DatumFactory.createString2(cell));
+                break;
               case IPv4:
                 tuple.put(i, DatumFactory.createIPv4(cell));
                 break;

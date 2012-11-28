@@ -18,27 +18,17 @@
  * limitations under the License.
  */
 
-package tajo.storage;
+package tajo.storage.hcfile.reader;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+import tajo.storage.hcfile.BlockMeta;
+import tajo.storage.hcfile.UpdatableBlock;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
-  }
+public interface Reader extends Closeable {
 
-  public abstract long getOffset() throws IOException;
+  UpdatableBlock read(BlockMeta meta, ByteBuffer buffer) throws IOException;
+
 }

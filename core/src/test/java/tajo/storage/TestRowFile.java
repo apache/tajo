@@ -72,7 +72,7 @@ public class TestRowFile {
     Schema schema = new Schema();
     schema.addColumn("id", DataType.INT);
     schema.addColumn("age", DataType.LONG);
-    schema.addColumn("description", DataType.STRING);
+    schema.addColumn("description", DataType.STRING2);
 
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
 
@@ -90,11 +90,11 @@ public class TestRowFile {
 
     int tupleNum = 100000;
     Tuple tuple = null, finalTuple;
-    Datum stringDatum = DatumFactory.createString("abcdefghijklmnopqrstuvwxyz");
+    Datum stringDatum = DatumFactory.createString2("abcdefghijklmnopqrstuvwxyz");
 
+    tuple = new VTuple(3);
     long start = System.currentTimeMillis();
     for(int i = 0; i < tupleNum; i++) {
-      tuple = new VTuple(3);
       tuple.put(0, DatumFactory.createInt(i + 1));
       tuple.put(1, DatumFactory.createLong(25l));
       tuple.put(2, stringDatum);
@@ -116,12 +116,13 @@ public class TestRowFile {
     meta = new TableMetaImpl(proto);
     Fragment fragment = new Fragment("test.tbl", dataPath, meta, 0, file.getLen());
     int tupleCnt = 0;
-    Scanner scanner = rowFile.openSingleScanner(schema, fragment);
     start = System.currentTimeMillis();
+    Scanner scanner = rowFile.openSingleScanner(schema, fragment);
     while ((tuple=scanner.next()) != null) {
       tupleCnt++;
 //      System.out.println(tuple.toString());
     }
+    scanner.close();
     end = System.currentTimeMillis();
 
     assertEquals(tupleNum, tupleCnt);
@@ -136,6 +137,9 @@ public class TestRowFile {
       scannedTuple = tuple;
       tupleCnt++;
     }
+    scanner.close();
+    System.out.println(finalTuple);
+    System.out.println(scannedTuple);
     assertEquals(finalTuple, scannedTuple);
   }
 }

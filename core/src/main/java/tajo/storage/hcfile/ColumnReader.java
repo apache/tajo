@@ -18,27 +18,27 @@
  * limitations under the License.
  */
 
-package tajo.storage;
+package tajo.storage.hcfile;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+import tajo.datum.Datum;
 
+import java.io.Closeable;
 import java.io.IOException;
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
-  }
+public interface ColumnReader extends Closeable, Seekable {
 
-  public abstract long getOffset() throws IOException;
+  @Override
+  void first() throws IOException;
+
+  @Override
+  void last() throws IOException;
+
+  Datum get() throws IOException;
+
+  void pos(long rid) throws IOException;
+
+  long getPos() throws IOException;
+
+  @Override
+  void close() throws IOException;
 }

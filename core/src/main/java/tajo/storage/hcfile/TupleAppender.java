@@ -18,27 +18,16 @@
  * limitations under the License.
  */
 
-package tajo.storage;
+package tajo.storage.hcfile;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import tajo.catalog.Schema;
-import tajo.catalog.TableMeta;
+import tajo.storage.Tuple;
 
+import java.io.Closeable;
 import java.io.IOException;
 
-public abstract class FileAppender implements Appender {
-  protected final Configuration conf;
-  protected final TableMeta meta;
-  protected final Schema schema;
-  protected final Path path;
-  
-  public FileAppender(Configuration conf, TableMeta meta, Path path) {
-    this.conf = conf;
-    this.meta = meta;
-    this.schema = meta.getSchema();
-    this.path = path;
-  }
+public interface TupleAppender extends Closeable {
 
-  public abstract long getOffset() throws IOException;
+  public void addTuple(Tuple t) throws IOException;
+  public void flush() throws IOException;
+  public void close() throws IOException;
 }
