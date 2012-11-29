@@ -22,9 +22,12 @@ package tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
 import tajo.catalog.Schema;
+import tajo.common.ProtoObject;
 import tajo.datum.Datum;
 import tajo.datum.DatumType;
 import tajo.engine.parser.QueryBlock.SortSpec;
+import tajo.index.IndexProtos.SortSpecProto;
+import tajo.index.IndexProtos.TupleComparatorProto;
 import tajo.storage.Tuple;
 
 import java.util.Comparator;
@@ -34,7 +37,7 @@ import java.util.Comparator;
  * 
  * @see Tuple
  */
-public class TupleComparator implements Comparator<Tuple> {
+public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComparatorProto> {
   private final int[] sortKeyIds;
   private final boolean[] asc;
   @SuppressWarnings("unused")
@@ -56,6 +59,19 @@ public class TupleComparator implements Comparator<Tuple> {
           
       this.asc[i] = sortKeys[i].isAscending();
       this.nullFirsts[i]= sortKeys[i].isNullFirst();
+    }
+  }
+
+  public TupleComparator(TupleComparatorProto proto) {
+    this.sortKeyIds = new int[proto.getSortSpecsCount()];
+    this.asc = new boolean[proto.getSortSpecsCount()];
+    this.nullFirsts = new boolean[proto.getSortSpecsCount()];
+
+    for (int i = 0; i < proto.getSortSpecsCount(); i++) {
+      SortSpecProto sortSepcProto = proto.getSortSpecs(i);
+      sortKeyIds[i] = sortSepcProto.getSortColumnId();
+      asc[i] = sortSepcProto.getAscending();
+      nullFirsts[i] = sortSepcProto.getNullFirst();
     }
   }
 
@@ -97,5 +113,47 @@ public class TupleComparator implements Comparator<Tuple> {
       }
     }
     return 0;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof TupleComparator) {
+      TupleComparator other = (TupleComparator) obj;
+      if (sortKeyIds.length != other.sortKeyIds.length) {
+        return false;
+      }
+
+      for (int i = 0; i < sortKeyIds.length; i++) {
+        if (sortKeyIds[i] != other.sortKeyIds[i] ||
+            asc[i] != other.asc[i] ||
+            nullFirsts[i] != other.nullFirsts[i]) {
+          return false;
+        }
+      }
+
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public void initFromProto() {
+  }
+
+  @Override
+  public TupleComparatorProto getProto() {
+    TupleComparatorProto.Builder builder = TupleComparatorProto.newBuilder();
+    SortSpecProto.Builder sortSpecBuilder;
+
+    for (int i = 0; i < sortKeyIds.length; i++) {
+      sortSpecBuilder = SortSpecProto.newBuilder();
+      sortSpecBuilder.setSortColumnId(sortKeyIds[i]);
+      sortSpecBuilder.setAscending(asc[i]);
+      sortSpecBuilder.setNullFirst(nullFirsts[i]);
+      builder.addSortSpecs(sortSpecBuilder);
+    }
+
+    return builder.build();
   }
 }
