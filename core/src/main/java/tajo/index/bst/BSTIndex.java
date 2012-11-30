@@ -24,8 +24,10 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import tajo.catalog.Schema;
+import tajo.catalog.proto.CatalogProtos.SchemaProto;
 import tajo.engine.planner.physical.TupleComparator;
 import tajo.index.IndexMethod;
+import tajo.index.IndexProtos.TupleComparatorProto;
 import tajo.index.IndexWriter;
 import tajo.index.OrderIndexReader;
 import tajo.storage.RowStoreUtil;
@@ -139,20 +141,20 @@ public class BSTIndex implements IndexMethod {
       out.flush();
     }
 
-    public void close() throws IOException {
-      /* two level initialize */
-      if (this.level == TWO_LEVEL_INDEX) {
-        rootCollector = new KeyOffsetCollector(this.compartor);
-      }
+    public void writeHeader(int entryNum) throws IOException {
+      // schema
+      byte [] schemaBytes = keySchema.getProto().toByteArray();
+      out.writeInt(schemaBytes.length);
+      out.write(schemaBytes);
 
-      /* data writing phase */
-      TreeMap<Tuple, LinkedList<Long>> keyOffsetMap = collector.getMap();
-      Set<Tuple> keySet = keyOffsetMap.keySet();
+      // comparator
+      byte [] comparatorBytes = compartor.getProto().toByteArray();
+      out.writeInt(comparatorBytes.length);
+      out.write(comparatorBytes);
 
-      int entryNum = keySet.size();
-
-      // header write => type = > level => entryNum
+      // level
       out.writeInt(this.level);
+      // entry
       out.writeInt(entryNum);
       if (entryNum > 0) {
         byte [] minBytes = RowStoreUtil.RowStoreEncoder.toBytes(keySchema,
@@ -165,6 +167,20 @@ public class BSTIndex implements IndexMethod {
         out.write(maxBytes);
       }
       out.flush();
+    }
+
+    public void close() throws IOException {
+      /* two level initialize */
+      if (this.level == TWO_LEVEL_INDEX) {
+        rootCollector = new KeyOffsetCollector(this.compartor);
+      }
+
+      /* data writing phase */
+      TreeMap<Tuple, LinkedList<Long>> keyOffsetMap = collector.getMap();
+      Set<Tuple> keySet = keyOffsetMap.keySet();
+
+      int entryNum = keySet.size();
+      writeHeader(entryNum);
       
       int loadCount = this.loadNum - 1;
       for (Tuple key : keySet) {
@@ -267,8 +283,8 @@ public class BSTIndex implements IndexMethod {
    */
   public class BSTIndexReader implements OrderIndexReader , Closeable{
     private Path fileName;
-    private final Schema keySchema;
-    private final TupleComparator comparator;
+    private Schema keySchema;
+    private TupleComparator comparator;
 
     private FileSystem fs;
     private FSDataInputStream indexIn;
@@ -301,16 +317,35 @@ public class BSTIndex implements IndexMethod {
       this.comparator = comparator;
     }
 
-    public void open()
-        throws IOException {
-      /* init the index file */
-      fs = fileName.getFileSystem(conf);
-      if (!fs.exists(fileName)) {
-        throw new FileNotFoundException("ERROR: does not exist " + fileName.toString());
-      }
+    public Schema getKeySchema() {
+      return this.keySchema;
+    }
 
-      indexIn = fs.open(this.fileName);
+    public TupleComparator getComparator() {
+      return this.comparator;
+    }
+
+    private void readHeader() throws IOException {
+      // schema
+      int schemaByteSize = indexIn.readInt();
+      byte [] schemaBytes = new byte[schemaByteSize];
+      indexIn.read(schemaBytes);
+      SchemaProto.Builder builder = SchemaProto.newBuilder();
+      builder.mergeFrom(schemaBytes);
+      SchemaProto proto = builder.build();
+      this.keySchema = new Schema(proto);
+
+      // comparator
+      int compByteSize = indexIn.readInt();
+      byte [] compBytes = new byte[compByteSize];
+      indexIn.read(compBytes);
+      TupleComparatorProto.Builder compProto = TupleComparatorProto.newBuilder();
+      compProto.mergeFrom(compBytes);
+      this.comparator = new TupleComparator(compProto.build());
+
+      // level
       this.level = indexIn.readInt();
+      // entry
       this.entryNum = indexIn.readInt();
       if (entryNum > 0) { // if there is no any entry, do not read firstKey/lastKey values
         byte [] minBytes = new byte[indexIn.readInt()];
@@ -320,7 +355,18 @@ public class BSTIndex implements IndexMethod {
         indexIn.read(maxBytes);
         this.lastKey = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, maxBytes);
       }
+    }
 
+    public void open()
+        throws IOException {
+      /* init the index file */
+      fs = fileName.getFileSystem(conf);
+      if (!fs.exists(fileName)) {
+        throw new FileNotFoundException("ERROR: does not exist " + fileName.toString());
+      }
+
+      indexIn = fs.open(this.fileName);
+      readHeader();
       fillData();
     }
 

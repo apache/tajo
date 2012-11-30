@@ -1200,6 +1200,10 @@ public class TestBSTIndex {
 
     BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyValueInCSV.idx"), keySchema, comp);
     reader.open();
+
+    assertEquals(keySchema, reader.getKeySchema());
+    assertEquals(comp, reader.getComparator());
+
     scanner  = (SeekableScanner)(sm.getScanner(meta, new Fragment[]{tablet}));
     Tuple result;
     for(int i = (TUPLE_NUM - 1) ; i > 0 ; i --) {
