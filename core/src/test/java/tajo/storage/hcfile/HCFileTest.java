@@ -247,39 +247,39 @@ public class HCFileTest {
     System.out.println("scan time: " + scantime);
   }
 
-  @Test
-  public void testOrders()
-      throws IOException, UnknownCodecException, UnknownDataTypeException {
-    Path tablePath = new Path("file:///home/jihoon/work/develop/tpch/customer");
-    Path metaPath = new Path(tablePath, ".meta");
-    Path dataDir = new Path(tablePath, "data");
-    Path outPath = new Path("file:///home/jihoon/work/develop/ColumnLoader/target/test-data/customer");
-    FileSystem fs = metaPath.getFileSystem(conf);
-
-    FSDataInputStream in = fs.open(metaPath);
-    TableProto proto = (TableProto) FileUtil.loadProto(in, TableProto.getDefaultInstance());
-    TableMeta meta = new TableMetaImpl(proto);
-    in.close();
-
-    Tuple tuple;
-    Fragment fragment;
-    CSVFile.CSVScanner scanner;
-    HCTupleAppender appender = new HCTupleAppender(conf, meta, meta.getSchema().getColumn(0), outPath);
-
-    for (FileStatus file : fs.listStatus(dataDir)) {
-      if (file.getPath().getName().equals(".index")) {
-        continue;
-      }
-      fragment = new Fragment("0", file.getPath(), meta, 0, file.getLen());
-      scanner = new CSVScanner(conf, meta.getSchema(), fragment);
-      while ((tuple=scanner.next()) != null) {
-        appender.addTuple(tuple);
-      }
-      scanner.close();
-    }
-    appender.close();
-
-  }
+//  @Test
+//  public void testOrders()
+//      throws IOException, UnknownCodecException, UnknownDataTypeException {
+//    Path tablePath = new Path("file:///home/jihoon/work/develop/tpch/customer");
+//    Path metaPath = new Path(tablePath, ".meta");
+//    Path dataDir = new Path(tablePath, "data");
+//    Path outPath = new Path("file:///home/jihoon/work/develop/ColumnLoader/target/test-data/customer");
+//    FileSystem fs = metaPath.getFileSystem(conf);
+//
+//    FSDataInputStream in = fs.open(metaPath);
+//    TableProto proto = (TableProto) FileUtil.loadProto(in, TableProto.getDefaultInstance());
+//    TableMeta meta = new TableMetaImpl(proto);
+//    in.close();
+//
+//    Tuple tuple;
+//    Fragment fragment;
+//    CSVFile.CSVScanner scanner;
+//    HCTupleAppender appender = new HCTupleAppender(conf, meta, meta.getSchema().getColumn(0), outPath);
+//
+//    for (FileStatus file : fs.listStatus(dataDir)) {
+//      if (file.getPath().getName().equals(".index")) {
+//        continue;
+//      }
+//      fragment = new Fragment("0", file.getPath(), meta, 0, file.getLen());
+//      scanner = new CSVScanner(conf, meta.getSchema(), fragment);
+//      while ((tuple=scanner.next()) != null) {
+//        appender.addTuple(tuple);
+//      }
+//      scanner.close();
+//    }
+//    appender.close();
+//
+//  }
 
   private static String getRandomString(int length) {
     StringBuffer buffer = new StringBuffer();
