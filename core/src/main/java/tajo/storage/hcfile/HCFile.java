@@ -292,7 +292,7 @@ public class HCFile {
     public boolean isAppendable(Datum datum) throws IOException {
       // TODO: validation of (index.size()+1)
       int indexSize = (index.size()+1) * 2 * Long.SIZE/8;
-      if (!((BasicBlock)block).isAppendable(datum)) {
+      if (!block.isAppendable(datum)) {
         indexSize += 2 * Long.SIZE/8;
       }
 
@@ -318,11 +318,11 @@ public class HCFile {
     public void append(Datum datum) throws IOException {
       if (!block.isAppendable(datum)) {
         flush();
-        totalRecordNum += blockRecordNum;
         blockRecordNum = 0;
       }
       block.appendValue(datum);
       blockRecordNum++;
+      totalRecordNum++;
     }
 
     @Override
@@ -365,7 +365,6 @@ public class HCFile {
     public void close() throws IOException {
       if (blockRecordNum > 0) {
         flush();
-        totalRecordNum += blockRecordNum;
       }
       writeColumnHeader();
 
