@@ -51,6 +51,7 @@ public abstract class TypeReader {
       case DOUBLE:
         return new DoubleReader();
       case STRING2:
+        return new String2Reader();
       case STRING:
         return new StringReader();
       case IPv4:
