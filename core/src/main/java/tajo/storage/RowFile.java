@@ -42,7 +42,6 @@ import tajo.storage.exception.AlreadyExistsStorageException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -87,6 +86,7 @@ public class RowFile extends SingleStorge {
     private final int tupleHeaderSize;
     private BitSet nullFlags;
     private int numBytesOfNullFlags;
+    private long bufferStartPos;
 
     public Scanner(Configuration conf, final Schema schema,
                    final Fragment fragment) throws IOException {
@@ -115,9 +115,13 @@ public class RowFile extends SingleStorge {
 
       // find the correct position from the start
       if (this.start > in.getPos()) {
-        in.seek(this.start);
+        long realStart = start > SYNC_SIZE ? (start-SYNC_SIZE) : 0;
+        in.seek(realStart);
       }
+      bufferStartPos = in.getPos();
       fillBuffer();
+      fillBuffer(); // due to the bug of FSDataInputStream.read(ByteBuffer)
+
       if (start != 0) {
         // TODO: improve
         boolean syncFound = false;
@@ -129,6 +133,7 @@ public class RowFile extends SingleStorge {
             buffer.get(); // proceed one byte
           }
         }
+        bufferStartPos += buffer.position();
         buffer.compact();
         buffer.flip();
       }
@@ -156,6 +161,7 @@ public class RowFile extends SingleStorge {
     }
 
     private boolean fillBuffer() throws IOException {
+      bufferStartPos += buffer.position();
       buffer.compact();
       int read = in.read(buffer);
       if (read < 0) {
@@ -194,6 +200,10 @@ public class RowFile extends SingleStorge {
       buffer.mark();
       if (!checkSync()) {
         buffer.reset();
+      } else {
+        if (bufferStartPos + buffer.position() > end) {
+          return null;
+        }
       }
 
       while (buffer.remaining() < tupleHeaderSize) {
