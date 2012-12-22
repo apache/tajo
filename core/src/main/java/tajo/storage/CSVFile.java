@@ -129,6 +129,9 @@ public class CSVFile extends SingleStorge {
           case STRING:
             sb.append(tuple.getString(i));
             break;
+          case STRING2:
+            sb.append(tuple.getString2(i));
+            break;
           case SHORT:
             sb.append(tuple.getShort(i));
             break;
