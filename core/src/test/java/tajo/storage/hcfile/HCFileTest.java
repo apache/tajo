@@ -50,8 +50,10 @@ import tajo.storage.hcfile.HCFile.Scanner;
 import tajo.storage.exception.UnknownCodecException;
 import tajo.storage.exception.UnknownDataTypeException;
 import tajo.util.FileUtil;
+import tajo.util.NumericPathComparator;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -80,7 +82,7 @@ public class HCFileTest {
   @Test
   public void testInt()
       throws UnknownCodecException, IOException, UnknownDataTypeException {
-    int rowNum = 100000;
+    int rowNum = 1000;
     Path path = new Path("hdfs:///hcfile.int");
     List<Integer> data = Lists.newArrayList();
 
@@ -162,7 +164,7 @@ public class HCFileTest {
   @Test
   public void testHCTupleAppender()
       throws UnknownCodecException, IOException, UnknownDataTypeException {
-    int tupleNum = 100000;
+    int tupleNum = 1000;
     List<Long> costData = Lists.newArrayList();
 
     Path tablePath = new Path("hdfs:///table");
@@ -173,12 +175,11 @@ public class HCFileTest {
     schema.addColumn("char", DataType.CHAR);
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.HCFILE);
 
-    HCTupleAppender appender = new HCTupleAppender(conf, meta, schema.getColumn(3), tablePath);
+    HCTupleAppender appender = new HCTupleAppender(conf, meta, 2, tablePath);
     Datum stringDatum = DatumFactory.createString("abcdefghijklmnopqrstuvwxyz");
 
     int i;
     Tuple tuple = new VTuple(4);
-    long start = System.currentTimeMillis();
     for(i = 0; i < tupleNum; i++) {
       tuple.put(0, DatumFactory.createInt(i));
       tuple.put(1, DatumFactory.createLong(25l));
@@ -187,64 +188,45 @@ public class HCFileTest {
       appender.addTuple(tuple);
     }
     appender.close();
-    long end = System.currentTimeMillis();
-    System.out.println("append time: " + (end-start));
 
     FileSystem fs = tablePath.getFileSystem(conf);
-    FileStatus[] colDirs = fs.listStatus(tablePath);
-    assertEquals(4, colDirs.length);
+    FileStatus[] files = fs.listStatus(new Path(tablePath, "data"));
+    Path[] shardDirs = new Path[files.length];
+    for (i = 0; i < files.length; i++) {
+      shardDirs[i] = files[i].getPath();
+    }
+    Arrays.sort(shardDirs, new NumericPathComparator());
 
-    long scantime = 0;
     Scanner scanner = null;
     Datum datum;
     i = 0;
-    FileStatus[] colFiles = fs.listStatus(new Path(tablePath, "id"));
-    for (FileStatus file : colFiles) {
-      if (file.getPath().getName().equals(".index")) {
-        continue;
-      }
-      start = System.currentTimeMillis();
-      scanner = new Scanner(conf, file.getPath());
-      while ((datum=scanner.get()) != null) {
-//        assertEquals(i++, datum.asInt());
-      }
-      scanner.close();
-      end = System.currentTimeMillis();
-      scantime += end - start;
-    }
+    int cnt = 0;
 
-    i = 0;
-    colFiles = fs.listStatus(new Path(tablePath, "age"));
-    for (FileStatus file : colFiles) {
-      if (file.getPath().getName().equals(".index")) {
-        continue;
-      }
-      start = System.currentTimeMillis();
-      scanner = new Scanner(conf, file.getPath());
+    for (i = 0; i < shardDirs.length; i++) {
+      scanner = new Scanner(conf, new Path(shardDirs[i], "id_0"));
       while ((datum=scanner.get()) != null) {
-//        assertEquals(costData.get(i++).longValue(), datum.asLong());
+        assertEquals(cnt++, datum.asInt());
       }
       scanner.close();
-      end = System.currentTimeMillis();
-      scantime += end - start;
-    }
 
-    i = 0;
-    colFiles = fs.listStatus(new Path(tablePath, "description"));
-    for (FileStatus file : colFiles) {
-      if (file.getPath().getName().equals(".index")) {
-        continue;
-      }
-      start = System.currentTimeMillis();
-      scanner = new Scanner(conf, file.getPath());
+      scanner = new Scanner(conf, new Path(shardDirs[i], "age_0"));
       while ((datum=scanner.get()) != null) {
-//        assertEquals(costData.get(i++).longValue(), datum.asLong());
+        assertEquals(25l, datum.asLong());
       }
       scanner.close();
-      end = System.currentTimeMillis();
-      scantime += end - start;
+
+      scanner = new Scanner(conf, new Path(shardDirs[i], "description_0"));
+      while ((datum=scanner.get()) != null) {
+        assertEquals("abcdefghijklmnopqrstuvwxyz", datum.asChars());
+      }
+      scanner.close();
+
+      scanner = new Scanner(conf, new Path(shardDirs[i], "char_0"));
+      while ((datum=scanner.get()) != null) {
+        assertEquals('a', datum.asChar());
+      }
+      scanner.close();
     }
-    System.out.println("scan time: " + scantime);
   }
 
 //  @Test

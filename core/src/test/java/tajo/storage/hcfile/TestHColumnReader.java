@@ -36,10 +36,11 @@ import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.storage.Tuple;
 import tajo.storage.VTuple;
+import tajo.util.FileUtil;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class TestHColumnReader {
   private TajoTestingUtility util;
@@ -54,14 +55,19 @@ public class TestHColumnReader {
     util.startMiniDFSCluster(3);
     conf = util.getConfiguration();
 
-    Schema schema = new Schema(new Column[]{new Column("id", DataType.INT)});
+    Schema schema = new Schema(
+        new Column[]{
+            new Column("id", DataType.INT),
+            new Column("name", DataType.STRING2)});
     TableMeta tableMeta = TCatUtil.newTableMeta(schema, StoreType.HCFILE);
+    FileUtil.writeProto(conf, new Path(tablePath, ".meta"), tableMeta.getProto());
 
-    HCTupleAppender appender = new HCTupleAppender(conf, tableMeta, schema.getColumn(0), tablePath);
-    Tuple tuple = new VTuple(1);
+    HCTupleAppender appender = new HCTupleAppender(conf, tableMeta, 1, tablePath);
+    Tuple tuple = new VTuple(2);
 
     for (i = 0; i < tupleNum; i++) {
       tuple.put(0, DatumFactory.createInt(i));
+      tuple.put(1, DatumFactory.createString2("abcdefghijklmnopqrstuvwxyz"));
       appender.addTuple(tuple);
     }
 
@@ -77,9 +83,18 @@ public class TestHColumnReader {
   public void testSeqscan() throws IOException {
 
     Datum datum;
-    HColumnReader reader = new HColumnReader(conf, new Path(tablePath, "id"));
+    HColumnReader reader = new HColumnReader(conf, tablePath, "id");
     for (i = 0; (datum=reader.get()) != null; i++) {
       assertEquals(i, datum.asInt());
+    }
+
+    reader.close();
+
+    assertEquals(i, tupleNum);
+
+    reader = new HColumnReader(conf, tablePath, "name");
+    for (i = 0; (datum=reader.get()) != null; i++) {
+      assertEquals("abcdefghijklmnopqrstuvwxyz", datum.asChars());
     }
 
     reader.close();
@@ -90,26 +105,42 @@ public class TestHColumnReader {
   @Test
   public void testRandscan() throws IOException {
     Datum datum;
-    HColumnReader reader = new HColumnReader(conf, new Path(tablePath, "id"));
-    reader.pos(1000);
-    for (i = 1000; (datum=reader.get()) != null; i++) {
+    HColumnReader idReader = new HColumnReader(conf, tablePath, 0);
+    HColumnReader nameReader = new HColumnReader(conf, tablePath, "name");
+    idReader.pos(100000);
+    nameReader.pos(100000);
+    for (i = 100000; (datum=idReader.get()) != null; i++) {
       assertEquals(i, datum.asInt());
+      assertEquals("abcdefghijklmnopqrstuvwxyz", nameReader.get().asChars());
     }
     assertEquals(i, tupleNum);
 
-    reader.pos(3000);
+    idReader.pos(3000);
+    nameReader.pos(3000);
     for (i = 3000; i < 50000; i++) {
-      datum = reader.get();
+      datum = idReader.get();
       assertEquals(i, datum.asInt());
+      assertEquals("abcdefghijklmnopqrstuvwxyz", nameReader.get().asChars());
     }
     assertEquals(50000, i);
 
-    reader.pos(30000);
-    for (i = 30000; (datum=reader.get()) != null; i++) {
+    idReader.pos(30000);
+    nameReader.pos(30000);
+    for (i = 30000; (datum=idReader.get()) != null; i++) {
       assertEquals(i, datum.asInt());
+      assertEquals("abcdefghijklmnopqrstuvwxyz", nameReader.get().asChars());
     }
     assertEquals(i, tupleNum);
 
-    reader.close();
+    idReader.pos(0);
+    nameReader.pos(0);
+    for (i = 0; (datum=idReader.get()) != null; i++) {
+      assertEquals(i, datum.asInt());
+      assertEquals("abcdefghijklmnopqrstuvwxyz", nameReader.get().asChars());
+    }
+    assertEquals(i, tupleNum);
+
+    idReader.close();
   }
 }
+

@@ -39,53 +39,53 @@ import tajo.storage.hcfile.HCFile.Appender;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Map.Entry;
 
 public class HCTupleAppender implements TupleAppender {
-  public static final String META_FILE_NAME = ".index";
   private final Log LOG = LogFactory.getLog(HCTupleAppender.class);
   private Configuration conf;
   private Schema schema;
-  private final Path tablePath;
-  private long shardId;
+  private final Path dataDir;
+  private int shardId;
   private Map<Column, Appender> columnAppenderMap = Maps.newHashMap();
   private Map<Column, Integer> columnFileIdMap = Maps.newHashMap();
-//  private Set<String> unfinishedFiles = Sets.newHashSet();
   private Column baseColumn;
-  private Map<Column, Index<String>> columnIndexMap = Maps.newHashMap();
+  private int baseColumnIdx;
 
-  public HCTupleAppender(Configuration conf, TableMeta meta, Column baseColumn, Path tablePath)
+  public HCTupleAppender(Configuration conf, TableMeta meta, int baseColumnIdx, Path tablePath)
       throws IOException, UnknownCodecException, UnknownDataTypeException {
     this.conf = conf;
     this.schema = meta.getSchema();
-    this.baseColumn = baseColumn;
-    this.tablePath = tablePath;
+    this.baseColumnIdx = baseColumnIdx;
+    this.baseColumn = schema.getColumn(baseColumnIdx);
+    this.dataDir = new Path(tablePath, "data");
     this.shardId = -1;
-    init();
-  }
-
-  private void init() throws IOException, UnknownCodecException,
-      UnknownDataTypeException {
-    Column column;
-    newShardId();
-
-    for (int i = 0; i < schema.getColumnNum(); i++) {
-      column = schema.getColumn(i);
-      columnIndexMap.put(column, new Index<String>());
-      columnAppenderMap.put(column, newAppender(column));
-    }
+    newShard();
   }
 
   @Override
   public void addTuple(Tuple t) throws IOException {
-    Appender appender;
+    Appender appender = columnAppenderMap.get(baseColumn);
+
+    // try base column
+    if (!appender.isAppendable(t.get(baseColumnIdx))) {
+      try {
+        newShard();
+        appender = columnAppenderMap.get(baseColumn);
+      } catch (UnknownDataTypeException e) {
+        throw new IOException(e);
+      } catch (UnknownCodecException e) {
+        throw new IOException(e);
+      }
+    }
+    appender.append(t.get(baseColumnIdx));
+
     for (int i = 0; i < schema.getColumnNum(); i++) {
+      if (i == baseColumnIdx) continue;
+
       appender = columnAppenderMap.get(schema.getColumn(i));
       if (!appender.isAppendable(t.get(i))) {
         try {
-          Column col = schema.getColumn(i);
-          appender = newAppender(col);
-          columnAppenderMap.put(col, appender);
+          appender = newAppender(schema.getColumn(i));
         } catch (UnknownDataTypeException e) {
           LOG.info(e);
         } catch (UnknownCodecException e) {
@@ -101,11 +101,6 @@ public class HCTupleAppender implements TupleAppender {
     long nextStartId;
 
     if (columnAppenderMap.containsKey(column)) {
-//      unfinishedFiles.remove(colName);
-//      if (unfinishedFiles.isEmpty()) {
-      if (column.equals(baseColumn)) {
-        newShardId();
-      }
       Appender oldAppender = columnAppenderMap.get(column);
       nextStartId = oldAppender.getStartId() + oldAppender.getRecordNum();
       oldAppender.close();
@@ -114,13 +109,11 @@ public class HCTupleAppender implements TupleAppender {
     }
 
     ColumnMeta columnMeta = newColumnMeta(nextStartId, column.getDataType());
-    Path columnPath = new Path(tablePath, getColumnFileName(column));
+    Path columnPath = new Path(dataDir, getColumnFileName(column));
     LOG.info("new appender is initialized for " + column.getColumnName());
     LOG.info("column path:  " + columnPath.toString());
     Appender newAppender = new Appender(conf, columnMeta, columnPath);
-    Index<String> index = columnIndexMap.get(column);
-    index.add(new IndexItem(newAppender.getStartId(),
-        columnPath.getName()));
+    columnAppenderMap.put(column, newAppender);
     return newAppender;
   }
 
@@ -137,16 +130,30 @@ public class HCTupleAppender implements TupleAppender {
       fileId = 0;
     }
     columnFileIdMap.put(column, fileId);
-    return column.getColumnName() + "/" + shardId + "_" + fileId;
+    return shardId + "/" + column.getColumnName() + "_" + fileId;
   }
 
-  private void newShardId() {
+  private void newShard()
+      throws UnknownDataTypeException, IOException, UnknownCodecException {
     ++shardId;
     columnFileIdMap.clear();
-//    for (Column col : schema.getColumns()) {
-//      unfinishedFiles.add(col.getColumnName());
-//    }
     LOG.info("new shard id: " + shardId);
+    long oldStartRid = -1, newStartRid = -1;
+
+    if (!columnAppenderMap.isEmpty()) {
+      oldStartRid = columnAppenderMap.get(schema.getColumn(0)).getStartId();
+    }
+
+    for (Column column : schema.getColumns()) {
+      newAppender(column);
+    }
+
+    if (oldStartRid != -1) {
+      newStartRid = columnAppenderMap.get(schema.getColumn(0)).getStartId();
+      writeMeta(shardId-1, oldStartRid, newStartRid-oldStartRid);
+    }
+
+//    index.add(new IndexItem(columnAppenderMap.get(schema.getColumn(0)).getStartId(), shardId));
   }
 
   @Override
@@ -158,30 +165,32 @@ public class HCTupleAppender implements TupleAppender {
 
   @Override
   public void close() throws IOException {
+    Appender app = columnAppenderMap.get(schema.getColumn(0));
+    writeMeta(shardId, app.getStartId(), app.getRecordNum());
     for (Appender appender : columnAppenderMap.values()) {
       appender.close();
     }
-    writeIndex();
+//    writeIndex();
   }
 
-  private Path getColumnMetaPath(String colName) {
-    Path columnPath = new Path(tablePath, colName);
-    return new Path(columnPath, META_FILE_NAME);
+  private void writeMeta(int shardId, long startRid, long length) throws IOException {
+    FileSystem fs = dataDir.getFileSystem(conf);
+    Path shardPath = new Path(dataDir, shardId+"");
+    Path metaPath = new Path(shardPath, ".smeta");
+    FSDataOutputStream out = fs.create(metaPath);
+    out.writeLong(startRid);
+    out.writeLong(length);
+    out.close();
   }
 
-  private void writeIndex() throws IOException {
-    FileSystem fs = tablePath.getFileSystem(conf);
-    for (Entry<Column, Index<String>> e : columnIndexMap.entrySet()) {
-      Path metaPath = getColumnMetaPath(e.getKey().getColumnName());
-      Index<String> index = e.getValue();
-      FSDataOutputStream out = fs.create(metaPath);
-      for (IndexItem<String> item : index.get()) {
-        out.writeLong(item.getRid());
-        byte[] bytes = item.getValue().getBytes();
-        out.writeShort(bytes.length);
-        out.write(bytes);
-      }
-      out.close();
+/*  private void writeIndex() throws IOException {
+    FileSystem fs = dataDir.getFileSystem(conf);
+    Path indexPath = new Path(dataDir, ".index");
+    FSDataOutputStream out = fs.create(indexPath);
+    for (IndexItem<Integer> item : index.get()) {
+      out.writeLong(item.getRid());
+      out.writeInt(item.getValue());
     }
-  }
+    out.close();
+  }*/
 }
