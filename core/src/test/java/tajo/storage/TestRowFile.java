@@ -20,6 +20,7 @@
 
 package tajo.storage;
 
+import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -45,6 +46,7 @@ import tajo.util.FileUtil;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.util.Random;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -91,6 +93,7 @@ public class TestRowFile {
     int tupleNum = 100000;
     Tuple tuple = null, finalTuple;
     Datum stringDatum = DatumFactory.createString2("abcdefghijklmnopqrstuvwxyz");
+    Set<Integer> idSet = Sets.newHashSet();
 
     tuple = new VTuple(3);
     long start = System.currentTimeMillis();
@@ -99,6 +102,7 @@ public class TestRowFile {
       tuple.put(1, DatumFactory.createLong(25l));
       tuple.put(2, stringDatum);
       appender.addTuple(tuple);
+      idSet.add(i+1);
 //      System.out.println(tuple.toString());
     }
     finalTuple = tuple;
@@ -128,18 +132,32 @@ public class TestRowFile {
     assertEquals(tupleNum, tupleCnt);
     System.out.println("scan time: " + (end - start));
 
-    Random random = new Random(System.currentTimeMillis());
-    int fileStart = random.nextInt((int)file.getLen());
-    fragment = new Fragment("test.tbl", dataPath, meta, fileStart, file.getLen());
-    scanner = rowFile.openSingleScanner(schema, fragment);
-    Tuple scannedTuple = null;
-    while ((tuple=scanner.next()) != null) {
-      scannedTuple = tuple;
-      tupleCnt++;
+    tupleCnt = 0;
+    long fileStart = 0;
+    long fileLen = file.getLen()/13;
+    System.out.println("total length: " + file.getLen());
+
+    for (int i = 0; i < 13; i++) {
+      System.out.println("range: " + fileStart + ", " + fileLen);
+      fragment = new Fragment("test.tbl", dataPath, meta, fileStart, fileLen);
+      scanner = rowFile.openSingleScanner(schema, fragment);
+      while ((tuple=scanner.next()) != null) {
+        if (!idSet.remove(tuple.get(0).asInt())) {
+          System.out.println("duplicated! " + tuple.get(0).asInt());
+        }
+        tupleCnt++;
+      }
+      System.out.println("tuple count: " + tupleCnt);
+      scanner.close();
+      fileStart += fileLen;
+      if (i == 11) {
+        fileLen = file.getLen() - fileStart;
+      }
     }
-    scanner.close();
-    System.out.println(finalTuple);
-    System.out.println(scannedTuple);
-    assertEquals(finalTuple, scannedTuple);
+
+    for (Integer id : idSet) {
+      System.out.println("remaining id: " + id);
+    }
+    assertEquals(tupleNum, tupleCnt);
   }
 }
