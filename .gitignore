@@ -2,6 +2,6 @@
 .settings
 .classpath
 .metadata
-.iml
 .idea
 target
+*.iml

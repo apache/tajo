@@ -1,0 +1,25 @@
+option java_package = "tajo";
+option java_outer_classname = "TajoProtos";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+enum QueryState {
+  QUERY_NEW = 0;
+  QUERY_INIT = 1;
+  QUERY_RUNNING = 2;
+  QUERY_SUCCEEDED = 3;
+  QUERY_FAILED = 4;
+  QUERY_KILLED = 5;
+  QUERY_ERROR = 6;
+}
+
+enum TaskAttemptState {
+  TA_NEW = 0;
+  TA_UNASSIGNED = 1;
+  TA_ASSIGNED = 2;
+  TA_PENDING = 3;
+  TA_RUNNING = 4;
+  TA_SUCCEEDED = 5;
+  TA_FAILED = 6;
+  TA_KILLED = 7;
+}

@@ -1,0 +1,25 @@
+option java_package = "tajo";
+option java_outer_classname = "TajoIdProtos";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+import "yarn_protos.proto";
+
+message SubQueryIdProto {
+    required ApplicationAttemptIdProto queryId = 1;
+    required int32 id = 2;
+}
+
+message QueryUnitIdProto {
+    required SubQueryIdProto subQueryId = 1;
+    required int32 id = 2;
+}
+
+message QueryUnitAttemptIdProto {
+  required QueryUnitIdProto queryUnitId = 1;
+  required int32 id = 2;
+}
+
+message SessionIdProto {
+  required string sid = 1;
+}
