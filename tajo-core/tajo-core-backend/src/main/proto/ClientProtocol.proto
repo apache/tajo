@@ -1,0 +1,165 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+option java_package = "tajo.client";
+option java_outer_classname = "ClientProtocol";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
+
+import "yarn_protos.proto";
+import "tajo_protos.proto";
+import "TajoIdProtos.proto";
+import "CatalogProtos.proto";
+import "PrimitiveProtos.proto";
+
+enum ResultCode {
+  OK = 0;
+  ERROR = 1;
+}
+
+message UpdateSessionVariableRequest {
+  optional SessionIdProto sessionId = 1;
+  repeated KeyValueProto setVariables = 2;
+  repeated string unsetVariables = 3;
+}
+
+message QueryRequest {
+  optional SessionIdProto sessionId = 1;
+  required string query = 2;
+  repeated KeyValueProto setVariables = 3;
+}
+
+message UpdateQueryResponse {
+  required ResultCode resultCode = 1;
+  optional string errorMessage = 2;
+}
+
+message SubmitQueryRespose {
+  required ResultCode resultCode = 1;
+  optional ApplicationAttemptIdProto queryId = 2;
+  optional string errorMessage = 3;
+}
+
+message GetQueryResultRequest {
+  optional SessionIdProto sessionId = 1;
+  required ApplicationAttemptIdProto queryId = 2;
+}
+
+message GetQueryResultResponse {
+  optional TableDescProto tableDesc = 1;
+  optional string errorMessage = 2;
+}
+
+message GetQueryListRequest {
+  optional SessionIdProto sessionId = 1;
+}
+
+message BriefQueryStatus {
+  required ApplicationAttemptIdProto queryId = 1;
+  required QueryState state = 2;
+  required int32 executionTime = 3;
+}
+
+message GetQueryListResponse {
+  repeated BriefQueryStatus queryList = 1;
+}
+
+message GetQueryStatusRequest {
+  optional SessionIdProto sessionId = 1;
+  required ApplicationAttemptIdProto queryId = 2;
+}
+
+message GetQueryStatusResponse {
+  required ResultCode resultCode = 1;
+  required ApplicationAttemptIdProto queryId = 2;
+  optional QueryState state = 3;
+  optional float progress = 4;
+  optional int64 executionTime = 5;
+  optional string errorMessage = 6;
+}
+
+message GetClusterInfoRequest {
+  optional SessionIdProto sessionId = 1;
+}
+
+message GetClusterInfoResponse {
+  repeated string serverName = 1;
+}
+
+message GetTableListRequest {
+  optional SessionIdProto sessionId = 1;
+}
+
+message GetTableListResponse {
+  repeated string tables = 1;
+}
+
+message GetTableDescRequest {
+  optional SessionIdProto sessionId = 1;
+  required string tableName = 2;
+}
+
+message CreateTableRequest {
+  required string name = 1;
+  required string path = 2;
+  required TableProto meta = 3;
+}
+
+message AttachTableRequest {
+  required string name = 1;
+  required string path = 2;
+}
+
+message TableResponse {
+  optional TableDescProto tableDesc = 1;
+  optional string errorMessage = 2;
+}
+
+service ClientProtocolService {
+  rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
+  rpc submitQuery(QueryRequest) returns (SubmitQueryRespose);
+  rpc updateQuery(QueryRequest) returns (UpdateQueryResponse);
+  rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
+  rpc getQueryList(GetQueryListRequest) returns (GetQueryListResponse);
+  rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
+  rpc killQuery(ApplicationAttemptIdProto) returns (BoolProto);
+  rpc getClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
+  rpc existTable(StringProto) returns (BoolProto);
+  rpc getTableList(GetTableListRequest) returns (GetTableListResponse);
+  rpc getTableDesc(GetTableDescRequest) returns (TableResponse);
+  rpc createTable(CreateTableRequest) returns (TableResponse);
+  rpc dropTable(StringProto) returns (BoolProto);
+  rpc attachTable(AttachTableRequest) returns (TableResponse);
+  rpc detachTable(StringProto) returns (BoolProto);
+
+
+
+  // TODO - to be implemented
+  //
+  // authenticate
+  //
+  // getSessionVariableList
+  // dropTable
+  // detachTable
+  // createIndex
+  // dropIndex
+  // registerUDF
+  // dropUDF
+  // listUdfs
+  // getUDFDesc
+  // registerJars
+  // getListRegisteredJars
+}
