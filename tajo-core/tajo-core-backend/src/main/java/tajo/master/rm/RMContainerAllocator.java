@@ -24,8 +24,10 @@ import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
 import org.apache.hadoop.yarn.util.BuilderUtils;
+import org.apache.hadoop.yarn.util.Records;
 import tajo.SubQueryId;
 import tajo.master.QueryMaster.QueryContext;
+import tajo.master.SubQueryState;
 import tajo.master.event.*;
 
 import java.util.*;
@@ -55,10 +57,14 @@ public class RMContainerAllocator extends RMCommunicator
     if (allocatedContainers.size() > 0) {
       for (Container container : allocatedContainers) {
         SubQueryId subQueryId = subQueryMap.get(container.getPriority());
-        if (allocated.containsKey(subQueryId)) {
-          allocated.get(subQueryId).add(container);
+        if (query.getSubQuery(subQueryId).getState() == SubQueryState.SUCCEEDED) {
+          release.add(container.getId());
         } else {
-          allocated.put(subQueryId, Lists.newArrayList(container));
+          if (allocated.containsKey(subQueryId)) {
+            allocated.get(subQueryId).add(container);
+          } else {
+            allocated.put(subQueryId, Lists.newArrayList(container));
+          }
         }
       }
 
@@ -118,8 +124,7 @@ public class RMContainerAllocator extends RMCommunicator
       for (Entry<String, Integer> request :
           allocatorEvent.getRequestMap().entrySet()) {
 
-        ResourceRequest resReq = recordFactory.newRecordInstance(
-            ResourceRequest.class);
+        ResourceRequest resReq = Records.newRecord(ResourceRequest.class);
         // TODO - to consider the data locality
         resReq.setHostName("*");
         resReq.setCapability(allocatorEvent.getCapability());
@@ -132,8 +137,7 @@ public class RMContainerAllocator extends RMCommunicator
       LOG.info(requestList.size());
       LOG.info(ask.size());
     } else {
-      ResourceRequest resReq = recordFactory.newRecordInstance(
-          ResourceRequest.class);
+      ResourceRequest resReq = Records.newRecord(ResourceRequest.class);
       resReq.setHostName("*");
       resReq.setCapability(event.getCapability());
       resReq.setNumContainers(event.getRequiredNum());

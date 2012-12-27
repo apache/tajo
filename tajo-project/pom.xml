@@ -490,9 +490,9 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>io.netty</groupId>
+        <groupId>org.jboss.netty</groupId>
         <artifactId>netty</artifactId>
-        <version>3.5.8.Final</version>
+        <version>3.2.4.Final</version>
       </dependency>
       <dependency>
         <groupId>org.apache.zookeeper</groupId>

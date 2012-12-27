@@ -56,6 +56,8 @@ import java.util.Map.Entry;
 public class Repartitioner {
   private static final Log LOG = LogFactory.getLog(Repartitioner.class);
 
+  private static int HTTP_REQUEST_MAXIMUM_LENGTH = 1900;
+
   public static QueryUnit [] createJoinTasks(SubQuery subQuery, int maxNum)
       throws IOException {
 
@@ -87,7 +89,7 @@ public class Repartitioner {
     }
 
     // Assigning either fragments or fetch urls to query units
-    QueryUnit [] tasks = null;
+    QueryUnit [] tasks;
     if (scans[0].isBroadcast() || scans[1].isBroadcast()) {
       tasks = new QueryUnit[1];
       tasks[0] = new QueryUnit(QueryIdFactory.newQueryUnitId(subQuery.getId()),
@@ -153,11 +155,11 @@ public class Repartitioner {
       Set<URI> fetchURIs = TUtil.newHashSet();
       for (Entry<String, List<IntermediateEntry>> requestPerNode
           : mergedHashPartitionRequest.entrySet()) {
-        URI uri = createHashFetchURL(requestPerNode.getKey(),
+        Collection<URI> uris = createHashFetchURL(requestPerNode.getKey(),
             subQuery.getChildQuery(scanNode).getId(),
             partitionId, PARTITION_TYPE.HASH,
             requestPerNode.getValue());
-        fetchURIs.add(uri);
+        fetchURIs.addAll(uris);
       }
       fetchURIsForEachRel.put(scanNode.getTableId(), fetchURIs);
       task.setFragment2(fragments[i++]);
@@ -211,7 +213,7 @@ public class Repartitioner {
     }
 
     ScanNode scan = subQuery.getScanNodes()[0];
-    Path tablePath = null;
+    Path tablePath;
     tablePath = subQuery.sm.getTablePath(scan.getTableId());
 
     StoreTableNode store = (StoreTableNode) childSubQuery.getLogicalPlan();
@@ -261,7 +263,7 @@ public class Repartitioner {
     }
 
     boolean ascendingFirstKey = sortSpecs[0].isAscending();
-    SortedMap<TupleRange, Set<URI>> map = null;
+    SortedMap<TupleRange, Set<URI>> map;
     if (ascendingFirstKey) {
       map = new TreeMap<>();
     } else {
@@ -314,8 +316,8 @@ public class Repartitioner {
     String scheme = "http://";
     StringBuilder sb = new StringBuilder(scheme);
     sb.append(hostName).append(":").append(port)
-        .append("/?").append("sid=" + childSid.getId())
-        .append("&").append("ta=" + taskId + "_" + attemptId)
+        .append("/?").append("sid=").append(childSid.getId())
+        .append("&").append("ta=").append(taskId).append("_").append(attemptId)
         .append("&").append("p=0")
         .append("&").append("type=r");
 
@@ -332,7 +334,7 @@ public class Repartitioner {
     }
 
     ScanNode scan = subQuery.getScanNodes()[0];
-    Path tablePath = null;
+    Path tablePath;
     tablePath = subQuery.sm.getTablePath(scan.getTableId());
 
     List<IntermediateEntry> partitions = new ArrayList<>();
@@ -360,14 +362,14 @@ public class Repartitioner {
     for (Entry<Integer, List<IntermediateEntry>> interm : hashed.entrySet()) {
       hashedByHost = hashByHost(interm.getValue());
       for (Entry<String, List<IntermediateEntry>> e : hashedByHost.entrySet()) {
-        URI uri = createHashFetchURL(e.getKey(), childSubQuery.getId(),
+        Collection<URI> uris = createHashFetchURL(e.getKey(), childSubQuery.getId(),
             interm.getKey(),
             childSubQuery.getStoreTableNode().getPartitionType(), e.getValue());
 
         if (finalFetchURI.containsKey(interm.getKey())) {
-          finalFetchURI.get(interm.getKey()).add(uri);
+          finalFetchURI.get(interm.getKey()).addAll(uris);
         } else {
-          finalFetchURI.put(interm.getKey(), TUtil.newList(uri));
+          finalFetchURI.put(interm.getKey(), TUtil.newList(uris));
         }
       }
     }
@@ -388,30 +390,60 @@ public class Repartitioner {
     return tasks;
   }
 
-  public static URI createHashFetchURL(String hostAndPort, SubQueryId childSid,
+  public static Collection<URI> createHashFetchURL(String hostAndPort, SubQueryId childSid,
                                        int partitionId, PARTITION_TYPE type,
                                        List<IntermediateEntry> entries) {
     String scheme = "http://";
-    StringBuilder sb = new StringBuilder(scheme);
-    sb.append(hostAndPort)
-        .append("/?").append("sid=" + childSid.getId())
-        .append("&").append("p=" + partitionId)
+    StringBuilder urlPrefix = new StringBuilder(scheme);
+    urlPrefix.append(hostAndPort)
+        .append("/?").append("sid=").append(childSid.getId())
+        .append("&").append("p=").append(partitionId)
         .append("&").append("type=");
     if (type == PARTITION_TYPE.HASH) {
-      sb.append("h");
+      urlPrefix.append("h");
     } else if (type == PARTITION_TYPE.RANGE) {
-      sb.append("r");
+      urlPrefix.append("r");
     }
+    urlPrefix.append("&ta=");
 
+    // If the get request is longer than 2000 characters,
+    // the long request uri may cause HTTP Status Code - 414 Request-URI Too Long.
+    // Refer to http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.15
+    // The below code transforms a long request to multiple requests.
+    List<String> taskIdsParams = new ArrayList<>();
+    boolean first = true;
+    StringBuilder taskIdListBuilder = new StringBuilder();
     for (IntermediateEntry entry: entries) {
-      sb.append("&");
-      sb.append("ta=")
-          .append(entry.getTaskId())
-          .append("_")
-          .append(entry.getAttemptId());
+      StringBuilder taskAttemptId = new StringBuilder();
+
+      if (!first) { // when comma is added?
+        taskAttemptId.append(",");
+      } else {
+        first = false;
+      }
+
+      taskAttemptId.append(entry.getTaskId()).append("_").
+          append(entry.getAttemptId());
+      if (taskIdListBuilder.length() + taskAttemptId.length()
+          > HTTP_REQUEST_MAXIMUM_LENGTH) {
+        taskIdsParams.add(taskIdListBuilder.toString());
+        taskIdListBuilder = new StringBuilder(entry.getTaskId() + "_" + entry.getAttemptId());
+      } else {
+        taskIdListBuilder.append(taskAttemptId);
+      }
     }
 
-    return URI.create(sb.toString());
+    // if the url params remain
+    if (taskIdListBuilder.length() > 0) {
+      taskIdsParams.add(taskIdListBuilder.toString());
+    }
+
+    Collection<URI> fetchURLs = new ArrayList<>();
+    for (String param : taskIdsParams) {
+      fetchURLs.add(URI.create(urlPrefix + param));
+    }
+
+    return fetchURLs;
   }
 
   public static Map<Integer, List<IntermediateEntry>> hashByKey(

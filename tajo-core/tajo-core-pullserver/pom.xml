@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
+  Copyright 2012 Database Lab., Korea Univ.
+
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
   You may obtain a copy of the License at
@@ -73,7 +75,7 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>io.netty</groupId>
+      <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
       <scope>compile</scope>
     </dependency>

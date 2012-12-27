@@ -71,10 +71,9 @@ public class Fetcher {
     String query = uri.getPath()
         + (uri.getQuery() != null ? "?" + uri.getQuery() : "");
     // Prepare the HTTP request.
-    HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-        HttpMethod.GET, query);
+    HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, query);
     request.setHeader(HttpHeaders.Names.HOST, host);
-    LOG.info("Fetch: " + request.getUri());
+    LOG.info("Fetch: " + uri);
     request.setHeader(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
     request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
@@ -121,7 +120,7 @@ public class Fetcher {
           for (String name : response.getHeaderNames()) {
             for (String value : response.getHeaders(name)) {
               if (LOG.isDebugEnabled()) {
-                sb.append(name + " = " + value);
+                sb.append(name).append(" = ").append(value);
               }
               if (this.length == -1 && name.equals("Content-Length")) {
                 this.length = Long.valueOf(value);

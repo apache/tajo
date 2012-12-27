@@ -1,6 +1,4 @@
 /*
- * Copyright 2012 Database Lab., Korea Univ.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -128,9 +126,9 @@ public class PullServerAuxService extends AbstractService
 
   public static final int DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE = 60 * 1024;
 
-  @Metrics(about="Shuffle output metrics", context="mapred")
+  @Metrics(about="PullServer output metrics", context="mapred")
   static class ShuffleMetrics implements ChannelFutureListener {
-    @Metric("Shuffle output in bytes")
+    @Metric("PullServer output in bytes")
     MutableCounterLong shuffleOutputBytes;
     @Metric("# of failed shuffle outputs")
     MutableCounterInt shuffleOutputsFailed;
@@ -157,6 +155,7 @@ public class PullServerAuxService extends AbstractService
     metrics = ms.register(new ShuffleMetrics());
   }
 
+  @SuppressWarnings("UnusedDeclaration")
   public PullServerAuxService() {
     this(DefaultMetricsSystem.instance());
   }
@@ -176,14 +175,13 @@ public class PullServerAuxService extends AbstractService
   /**
    * A helper function to deserialize the metadata returned by PullServerAuxService.
    * @param meta the metadata returned by the PullServerAuxService
-   * @return the port the Shuffle Handler is listening on to serve shuffle data.
+   * @return the port the PullServer Handler is listening on to serve shuffle data.
    */
   public static int deserializeMetaData(ByteBuffer meta) throws IOException {
     //TODO this should be returning a class not just an int
     DataInputByteBuffer in = new DataInputByteBuffer();
     in.reset(meta);
-    int port = in.readInt();
-    return port;
+    return in.readInt();
   }
 
   @Override
@@ -243,7 +241,7 @@ public class PullServerAuxService extends AbstractService
     accepted.add(ch);
     port = ((InetSocketAddress)ch.getLocalAddress()).getPort();
     conf.set(PULLSERVER_PORT_CONFIG_KEY, Integer.toString(port));
-    pipelineFact.SHUFFLE.setPort(port);
+    pipelineFact.PullServer.setPort(port);
     LOG.info(getName() + " listening on port " + port);
     super.start();
 
@@ -280,11 +278,11 @@ public class PullServerAuxService extends AbstractService
 
   class HttpPipelineFactory implements ChannelPipelineFactory {
 
-    final Shuffle SHUFFLE;
+    final PullServer PullServer;
     private SSLFactory sslFactory;
 
     public HttpPipelineFactory(Configuration conf) throws Exception {
-      SHUFFLE = new Shuffle(conf);
+      PullServer = new PullServer(conf);
       if (conf.getBoolean(ConfVars.SHUFFLE_SSL_ENABLED_KEY.varname,
           ConfVars.SHUFFLE_SSL_ENABLED_KEY.defaultBoolVal)) {
         sslFactory = new SSLFactory(SSLFactory.Mode.SERVER, conf);
@@ -308,7 +306,7 @@ public class PullServerAuxService extends AbstractService
       pipeline.addLast("aggregator", new HttpChunkAggregator(1 << 16));
       pipeline.addLast("encoder", new HttpResponseEncoder());
       pipeline.addLast("chunking", new ChunkedWriteHandler());
-      pipeline.addLast("shuffle", SHUFFLE);
+      pipeline.addLast("shuffle", PullServer);
       return pipeline;
       // TODO factor security manager into pipeline
       // TODO factor out encode/decode to permit binary shuffle
@@ -316,7 +314,7 @@ public class PullServerAuxService extends AbstractService
     }
   }
 
-  class Shuffle extends SimpleChannelUpstreamHandler {
+  class PullServer extends SimpleChannelUpstreamHandler {
 
     private final Configuration conf;
 //    private final IndexCache indexCache;
@@ -324,7 +322,7 @@ public class PullServerAuxService extends AbstractService
       new LocalDirAllocator(ConfVars.TASK_LOCAL_DIR.varname);
     private int port;
 
-    public Shuffle(Configuration conf) {
+    public PullServer(Configuration conf) {
       this.conf = conf;
 //      indexCache = new IndexCache(new JobConf(conf));
       this.port = conf.getInt(PULLSERVER_PORT_CONFIG_KEY,
@@ -339,7 +337,7 @@ public class PullServerAuxService extends AbstractService
       if (null == mapq) {
         return null;
       }
-      final List<String> ret = new ArrayList<String>();
+      final List<String> ret = new ArrayList<>();
       for (String s : mapq) {
         Collections.addAll(ret, s.split(","));
       }
@@ -349,11 +347,38 @@ public class PullServerAuxService extends AbstractService
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
         throws Exception {
+
       HttpRequest request = (HttpRequest) e.getMessage();
       if (request.getMethod() != GET) {
         sendError(ctx, METHOD_NOT_ALLOWED);
         return;
       }
+
+      // Parsing the URL into key-values
+      final Map<String, List<String>> params =
+          new QueryStringDecoder(request.getUri()).getParameters();
+      final List<String> types = params.get("type");
+      final List<String> taskIdList = params.get("ta");
+      final List<String> subQueryIds = params.get("sid");
+      final List<String> partitionIds = params.get("p");
+
+      if (types == null || taskIdList == null || subQueryIds == null
+          || partitionIds == null) {
+        sendError(ctx, "Required type, taskIds, subquery Id, and partition id", BAD_REQUEST);
+        return;
+      }
+
+      if (types.size() != 1 || subQueryIds.size() != 1) {
+        sendError(ctx, "Required type, taskIds, subquery Id, and partition id", BAD_REQUEST);
+        return;
+      }
+
+      final List<FileChunk> chunks = Lists.newArrayList();
+
+      String repartitionType = types.get(0);
+      String sid = subQueryIds.get(0);
+      String partitionId = partitionIds.get(0);
+      List<String> taskIds = splitMaps(taskIdList);
 
       // the working dir of tajo worker for each query
       String base =
@@ -361,17 +386,8 @@ public class PullServerAuxService extends AbstractService
               + ContainerLocalizer.APPCACHE + "/"
               + appId + "/output" + "/";
 
-      // Parsing the URL into key-values
-      final Map<String, List<String>> params =
-          new QueryStringDecoder(request.getUri()).getParameters();
-      List<FileChunk> chunks = Lists.newArrayList();
-
       // if a subquery performs a range partitioning
-      if (params.get("type").size() > 0 && params.get("type").get(0).equals("r")) {
-
-        List<String> taskIds = splitMaps(params.get("ta"));
-        int sid = Integer.valueOf(params.get("sid").get(0));
-        int partitionId = Integer.valueOf(params.get("p").get(0));
+      if (repartitionType.equals("r")) {
         String ta = taskIds.get(0);
         Path path = localFS.makeQualified(
             lDirAlloc.getLocalPathForWrite(base + "/" + sid + "/"
@@ -379,59 +395,37 @@ public class PullServerAuxService extends AbstractService
 
         String startKey = params.get("start").get(0);
         String endKey = params.get("end").get(0);
-        boolean last = params.get("final").size() > 0 ? true : false;
+        boolean last = params.get("final") != null;
 
-        chunks.add(getFileCunks(path, startKey, endKey, last));
+        FileChunk chunk = getFileCunks(path, startKey, endKey, last);
+        if (chunk != null) {
+          chunks.add(chunk);
+        }
 
         // if a subquery performs a hash partitioning
-      } else if (params.get("type").get(0).equals("h")) {
-
-        List<String> taskIds = splitMaps(params.get("ta"));
-        int sid = Integer.valueOf(params.get("sid").get(0));
-        int partitionId = Integer.valueOf(params.get("p").get(0));
+      } else if (repartitionType.equals("h")) {
         for (String ta : taskIds) {
           Path path = localFS.makeQualified(
               lDirAlloc.getLocalPathForWrite(base + "/" + sid + "/" +
                   ta + "/output/" + partitionId, conf));
-          LOG.info(">>> access to " + path);
           File file = new File(path.toUri());
           FileChunk chunk = new FileChunk(file, 0, file.length());
           chunks.add(chunk);
         }
       } else {
-        LOG.error("Unknown repartition type: " + params.get(0));
+        LOG.error("Unknown repartition type: " + repartitionType);
       }
-
-      FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
-//    try {
-//      file = retriever.handle(ctx, request);
-//    } catch (FileNotFoundException fnf) {
-//      LOG.error(fnf);
-//      sendError(ctx, NOT_FOUND);
-//      return;
-//    } catch (IllegalArgumentException iae) {
-//      LOG.error(iae);
-//      sendError(ctx, BAD_REQUEST);
-//      return;
-//    } catch (FileAccessForbiddenException fafe) {
-//      LOG.error(fafe);
-//      sendError(ctx, FORBIDDEN);
-//      return;
-//    } catch (IOException ioe) {
-//      LOG.error(ioe);
-//      sendError(ctx, INTERNAL_SERVER_ERROR);
-//      return;
-//    }
 
       // Write the content.
       Channel ch = e.getChannel();
-      if (file == null) {
+      if (chunks.size() == 0) {
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, NO_CONTENT);
         ch.write(response);
         if (!isKeepAlive(request)) {
           ch.close();
         }
       }  else {
+        FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         long totalSize = 0;
         for (FileChunk chunk : file) {
@@ -523,9 +517,9 @@ public class PullServerAuxService extends AbstractService
         return;
       }
 
-      LOG.error("Shuffle error: ", cause);
+      LOG.error("PullServer error: ", cause);
       if (ch.isConnected()) {
-        LOG.error("Shuffle error " + e);
+        LOG.error("PullServer error " + e);
         sendError(ctx, INTERNAL_SERVER_ERROR);
       }
     }

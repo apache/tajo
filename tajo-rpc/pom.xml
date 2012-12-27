@@ -146,13 +146,10 @@
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-      <type>jar</type>
-      <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>io.netty</groupId>
+      <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
