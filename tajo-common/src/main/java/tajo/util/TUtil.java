@@ -86,6 +86,15 @@ public class TUtil {
     return list;
   }
 
+  public static <T> List<T> newList(Collection<T> items) {
+    List<T> list = new ArrayList<>();
+    for (T t : items) {
+      list.add(t);
+    }
+
+    return list;
+  }
+
   public  static QueryUnitAttemptId newQueryUnitAttemptId() {
     return QueryIdFactory.newQueryUnitAttemptId(
         QueryIdFactory.newQueryUnitId(

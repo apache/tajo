@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
+  Copyright 2012 Database Lab., Korea Univ.
+
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
   You may obtain a copy of the License at
@@ -29,7 +31,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.runtime.classpath refid="maven.runtime.classpath" />
   </properties>
 
   <repositories>
@@ -147,26 +148,6 @@
                 <mkdir dir="target/generated-sources/proto" />
               </target>
               <sourceRoot>target/generated-sources</sourceRoot>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>classpath_definition</id>
-            <phase>initialize</phase>
-            <configuration>
-              <target>
-                <property name="compile_classpath" refid="maven.compile.classpath"/>
-                <property name="runtime_classpath" refid="maven.runtime.classpath"/>
-                <property name="test_classpath" refid="maven.test.classpath"/>
-                <property name="plugin_classpath" refid="maven.plugin.classpath"/>
-
-                <echo message="compile classpath: ${compile_classpath}"/>
-                <echo message="runtime classpath: ${runtime_classpath}"/>
-                <echo message="test classpath:    ${test_classpath}"/>
-                <echo message="plugin classpath:  ${plugin_classpath}"/>
-              </target>
             </configuration>
             <goals>
               <goal>run</goal>
@@ -403,9 +384,8 @@
       <version>2.6</version>
     </dependency>
     <dependency>
-      <groupId>io.netty</groupId>
+      <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>jline</groupId>

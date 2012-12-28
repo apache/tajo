@@ -153,9 +153,9 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     LOG.info("Set the environment for the application master");
 
     Map<String, String> environment = new HashMap<>();
-    String initialClassPath = getInitialClasspath(conf);
-    environment.put(Environment.CLASSPATH.name(), initialClassPath);
+    //String initialClassPath = getInitialClasspath(conf);
     environment.put(Environment.SHELL.name(), "/bin/bash");
+    environment.put(Environment.JAVA_HOME.name(), System.getenv(Environment.JAVA_HOME.name()));
 
     // TODO - to be improved with tajo.sh shell script
     Properties prop = System.getProperties();
@@ -176,7 +176,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
         classPathEnv.append(c.trim());
       }
 
-      classPathEnv.append(":" + System.getenv("TAJO_CLASSPATH"));
+      classPathEnv.append(":" + System.getenv("TAJO_BASE_CLASSPATH"));
       classPathEnv.append(":./log4j.properties:./*");
       environment.put("HADOOP_HOME", System.getenv("HADOOP_HOME"));
       environment.put(
@@ -188,7 +188,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
       environment.put(
           Environment.HADOOP_YARN_HOME.name(),
           System.getenv("HADOOP_HOME"));
-      environment.put("TAJO_CLASSPATH", System.getenv("TAJO_CLASSPATH"));
+      environment.put("TAJO_BASE_CLASSPATH", System.getenv("TAJO_BASE_CLASSPATH"));
       environment.put(Environment.CLASSPATH.name(), classPathEnv.toString());
     }
 
