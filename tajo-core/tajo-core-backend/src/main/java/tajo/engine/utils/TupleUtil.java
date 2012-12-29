@@ -20,6 +20,7 @@ import tajo.util.Bytes;
 import tajo.worker.dataserver.HttpUtil;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 
@@ -308,10 +309,10 @@ public class TupleUtil {
     String lastKeyBase64 = new String(Base64.encodeBase64(endKeyBytes));
 
     sb.append("start=")
-        .append(firstKeyBase64)
+        .append(URLEncoder.encode(firstKeyBase64, "utf-8"))
         .append("&")
         .append("end=")
-        .append(lastKeyBase64);
+        .append(URLEncoder.encode(lastKeyBase64, "utf-8"));
 
     if (last) {
       sb.append("&final=true");

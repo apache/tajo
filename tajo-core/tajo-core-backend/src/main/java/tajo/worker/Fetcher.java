@@ -69,7 +69,7 @@ public class Fetcher {
     }
 
     String query = uri.getPath()
-        + (uri.getQuery() != null ? "?" + uri.getQuery() : "");
+        + (uri.getRawQuery() != null ? "?" + uri.getRawQuery() : "");
     // Prepare the HTTP request.
     HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, query);
     request.setHeader(HttpHeaders.Names.HOST, host);
