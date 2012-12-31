@@ -392,7 +392,7 @@ public class PullServerAuxService extends AbstractService
       if (repartitionType.equals("r")) {
         String ta = taskIds.get(0);
         Path path = localFS.makeQualified(
-            lDirAlloc.getLocalPathForWrite(base + "/" + sid + "/"
+            lDirAlloc.getLocalPathToRead(base + "/" + sid + "/"
                 + ta + "/output/", conf));
 
         String startKey = params.get("start").get(0);
@@ -415,7 +415,7 @@ public class PullServerAuxService extends AbstractService
       } else if (repartitionType.equals("h")) {
         for (String ta : taskIds) {
           Path path = localFS.makeQualified(
-              lDirAlloc.getLocalPathForWrite(base + "/" + sid + "/" +
+              lDirAlloc.getLocalPathToRead(base + "/" + sid + "/" +
                   ta + "/output/" + partitionId, conf));
           File file = new File(path.toUri());
           FileChunk chunk = new FileChunk(file, 0, file.length());
