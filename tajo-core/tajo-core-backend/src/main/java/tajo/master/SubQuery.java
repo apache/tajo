@@ -128,8 +128,12 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
           .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
               SubQueryEventType.SQ_START)
-          .addTransition(SubQueryState.FAILED, SubQueryState.SUCCEEDED,
-              SubQueryEventType.SQ_CONTAINER_ALLOCATED);
+          .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
+              SubQueryEventType.SQ_CONTAINER_ALLOCATED)
+          .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
+                 SubQueryEventType.SQ_FAILED)
+          .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
+              SubQueryEventType.SQ_INTERNAL_ERROR);
 
 
   private final Lock readLock;
@@ -621,11 +625,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     public void transition(SubQuery subQuery,
                                      SubQueryEvent event) {
       subQuery.completedTaskCount++;
-//      SubQueryTaskEvent taskEvent = (SubQueryTaskEvent) event;
-//      QueryUnit task = subQuery.getQueryUnit(taskEvent.getTaskId());
+      SubQueryTaskEvent taskEvent = (SubQueryTaskEvent) event;
+      QueryUnitAttempt task = subQuery.getQueryUnit(taskEvent.getTaskId()).getSuccessfulAttempt();
 
       LOG.info(getId() + " SubQuery Succeeded " + completedTaskCount + "/"
-          + subQuery.tasks.size());
+          + subQuery.tasks.size() + " on " + task.getHost());
       if (subQuery.completedTaskCount == subQuery.tasks.size()) {
         subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(),
             SubQueryEventType.SQ_SUBQUERY_COMPLETED));

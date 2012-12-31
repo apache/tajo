@@ -92,6 +92,8 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
 
       .addTransition(TaskAttemptState.TA_SUCCEEDED, TaskAttemptState.TA_SUCCEEDED,
           TaskAttemptEventType.TA_UPDATE)
+      .addTransition(TaskAttemptState.TA_SUCCEEDED, TaskAttemptState.TA_FAILED,
+          TaskAttemptEventType.TA_FATAL_ERROR, new FailedTransition())
 
       .installTopology();
 
@@ -286,6 +288,8 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       taskAttempt.eventHandler.handle(
           new TaskTAttemptEvent(taskAttempt.getId(),
               TaskEventType.T_ATTEMPT_FAILED));
+      LOG.error("FROM " + taskAttempt.getHost() + " >> "
+          + errorEvent.errorMessage());
       taskAttempt.addDiagnosticInfo(errorEvent.errorMessage());
     }
   }

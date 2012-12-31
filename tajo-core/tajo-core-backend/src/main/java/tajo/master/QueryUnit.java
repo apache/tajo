@@ -1,4 +1,6 @@
 /*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -62,12 +64,12 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   private final int maxAttempts = 3;
   private Integer lastAttemptId;
 
-  private QueryUnitAttemptId successfulTaskAttempt;
+  private QueryUnitAttemptId successfulAttempt;
   private String succeededHost;
   private int succeededPullServerPort;
 
   private int failedAttempts;
-  private int finishedAttempts;//finish are total of success, failed and killed
+  private int finishedAttempts; // finish are total of success, failed and killed
 
   private static final StateMachineFactory
       <QueryUnit, TaskState, TaskEventType, TaskEvent> stateMachineFactory =
@@ -313,6 +315,18 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     return this.attempts.get(this.lastAttemptId);
   }
 
+  protected QueryUnitAttempt getSuccessfulAttempt() {
+    readLock.lock();
+    try {
+      if (null == successfulAttempt) {
+        return null;
+      }
+      return attempts.get(successfulAttempt);
+    } finally {
+      readLock.unlock();
+    }
+  }
+
   public int getRetryCount () {
     return this.lastAttemptId;
   }
@@ -353,10 +367,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
     if (failedAttempts > 0) {
       eventHandler.handle(new TaskAttemptEvent(attempt.getId(),
-          TaskAttemptEventType.TA_SCHEDULE));
+          TaskAttemptEventType.TA_RESCHEDULE));
     } else {
       eventHandler.handle(new TaskAttemptEvent(attempt.getId(),
-          TaskAttemptEventType.TA_RESCHEDULE));
+          TaskAttemptEventType.TA_SCHEDULE));
     }
   }
 
@@ -369,7 +383,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
       QueryUnitAttempt attempt = task.attempts.get(
           attemptEvent.getTaskAttemptId());
-      task.successfulTaskAttempt = attemptEvent.getTaskAttemptId();
+      task.successfulAttempt = attemptEvent.getTaskAttemptId();
       task.succeededHost = attempt.getHost();
       task.succeededPullServerPort = attempt.getPullServerPort();
       task.eventHandler.handle(new SubQueryTaskEvent(event.getTaskId(),
@@ -384,13 +398,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     public TaskState transition(QueryUnit task, TaskEvent taskEvent) {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) taskEvent;
       task.failedAttempts++;
-
-      QueryUnitAttempt attempt = task.getAttempt(attemptEvent.getTaskAttemptId());
-
       task.finishedAttempts++;
 
       if (task.failedAttempts < task.maxAttempts) {
-        if (task.successfulTaskAttempt == null) {
+        if (task.successfulAttempt == null) {
           task.addAndScheduleAttempt();
         }
       } else {

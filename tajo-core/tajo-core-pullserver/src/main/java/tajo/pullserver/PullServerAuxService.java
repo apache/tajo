@@ -364,12 +364,14 @@ public class PullServerAuxService extends AbstractService
 
       if (types == null || taskIdList == null || subQueryIds == null
           || partitionIds == null) {
-        sendError(ctx, "Required type, taskIds, subquery Id, and partition id", BAD_REQUEST);
+        sendError(ctx, "Required type, taskIds, subquery Id, and partition id",
+            BAD_REQUEST);
         return;
       }
 
       if (types.size() != 1 || subQueryIds.size() != 1) {
-        sendError(ctx, "Required type, taskIds, subquery Id, and partition id", BAD_REQUEST);
+        sendError(ctx, "Required type, taskIds, subquery Id, and partition id",
+            BAD_REQUEST);
         return;
       }
 
@@ -386,7 +388,7 @@ public class PullServerAuxService extends AbstractService
               + ContainerLocalizer.APPCACHE + "/"
               + appId + "/output" + "/";
 
-      // if a subquery performs a range partitioning
+      // if a subquery requires a range partitioning
       if (repartitionType.equals("r")) {
         String ta = taskIds.get(0);
         Path path = localFS.makeQualified(
@@ -397,12 +399,19 @@ public class PullServerAuxService extends AbstractService
         String endKey = params.get("end").get(0);
         boolean last = params.get("final") != null;
 
-        FileChunk chunk = getFileCunks(path, startKey, endKey, last);
+        FileChunk chunk;
+        try {
+          chunk = getFileCunks(path, startKey, endKey, last);
+        } catch (Throwable t) {
+          LOG.error("ERROR Request: " + request.getUri(), t);
+          sendError(ctx, "Cannot get file chunks to be sent", BAD_REQUEST);
+          return;
+        }
         if (chunk != null) {
           chunks.add(chunk);
         }
 
-        // if a subquery performs a hash partitioning
+        // if a subquery requires a hash repartition
       } else if (repartitionType.equals("h")) {
         for (String ta : taskIds) {
           Path path = localFS.makeQualified(
@@ -414,6 +423,7 @@ public class PullServerAuxService extends AbstractService
         }
       } else {
         LOG.error("Unknown repartition type: " + repartitionType);
+        return;
       }
 
       // Write the content.
@@ -541,11 +551,24 @@ public class PullServerAuxService extends AbstractService
 
     File data = new File(URI.create(outDir.toUri() + "/output"));
     byte [] startBytes = Base64.decodeBase64(startKey);
-    Tuple start = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, startBytes);
-    byte [] endBytes;
+    byte [] endBytes = Base64.decodeBase64(endKey);
+
+    Tuple start;
     Tuple end;
-    endBytes = Base64.decodeBase64(endKey);
-    end = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, endBytes);
+    try {
+      start = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, startBytes);
+    } catch (Throwable t) {
+      throw new IllegalArgumentException("StartKey: " + startKey
+          + ", decoded byte size: " + startBytes.length, t);
+    }
+
+    try {
+      end = RowStoreUtil.RowStoreDecoder.toTuple(keySchema, endBytes);
+    } catch (Throwable t) {
+      throw new IllegalArgumentException("EndKey: " + endKey
+          + ", decoded byte size: " + endBytes.length, t);
+    }
+
 
     if(!comparator.isAscendingFirstKey()) {
       Tuple tmpKey = start;
