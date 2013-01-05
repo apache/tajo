@@ -20,6 +20,7 @@ import tajo.util.Bytes;
 import tajo.worker.dataserver.HttpUtil;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
@@ -337,8 +338,8 @@ public class TupleUtil {
 
   public static TupleRange queryToRange(Schema schema, String query) throws UnsupportedEncodingException {
     Map<String,String> params = HttpUtil.getParamsFromQuery(query);
-    String startUrlDecoded = params.get("start");
-    String endUrlDecoded = params.get("end");
+    String startUrlDecoded = URLDecoder.decode(params.get("start"), "utf-8");
+    String endUrlDecoded = URLDecoder.decode(params.get("end"), "utf-8");
     byte [] startBytes = Base64.decodeBase64(startUrlDecoded);
     byte [] endBytes = Base64.decodeBase64(endUrlDecoded);
     return new TupleRange(schema, RowStoreUtil.RowStoreDecoder
