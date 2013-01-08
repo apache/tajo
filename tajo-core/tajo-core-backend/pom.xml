@@ -247,37 +247,30 @@
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-common</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-catalog-common</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-catalog-client</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-catalog-server</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-core-storage</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-core-pullserver</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-rpc</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>

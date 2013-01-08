@@ -42,8 +42,8 @@ public class TestStorageUtil {
   @Before
   public void setUp() throws Exception {
     conf = new TajoConf();
-    CommonTestingUtil.buildTestDir(TEST_PATH);
-    sm = StorageManager.get(conf, TEST_PATH);
+    Path createdDir = CommonTestingUtil.buildTestDir(TEST_PATH);
+    sm = StorageManager.get(conf, createdDir);
 
     schema = new Schema();
     schema.addColumn("string", DataType.STRING);

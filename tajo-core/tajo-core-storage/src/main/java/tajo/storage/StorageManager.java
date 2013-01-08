@@ -394,13 +394,11 @@ public class StorageManager {
 	
 	public FileStatus [] listTableFiles(String tableName) throws IOException {
 	  Path dataPath = new Path(dataRoot,tableName);
-	  FileSystem fs = dataPath.getFileSystem(conf);
 	  return fs.listStatus(new Path(dataPath, "data"));
 	}
 	
 	public Fragment[] split(String tableName) throws IOException {
 	  Path tablePath = new Path(dataRoot, tableName);
-	  FileSystem fs = tablePath.getFileSystem(conf);
 	  return split(tableName, tablePath, fs.getDefaultBlockSize());
 	}
 	

@@ -15,6 +15,7 @@
 package tajo.storage;
 
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.catalog.Options;
@@ -43,8 +44,8 @@ public class TestRowFile2 {
 	public void setUp() throws Exception {
 		conf = new TajoConf();
 		conf.setInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname, 100);
-    CommonTestingUtil.buildTestDir(TEST_PATH);
-		sm = StorageManager.get(conf, TEST_PATH);
+    Path createdDir = CommonTestingUtil.buildTestDir(TEST_PATH);
+		sm = StorageManager.get(conf, createdDir);
 	}
 		
 	@Test

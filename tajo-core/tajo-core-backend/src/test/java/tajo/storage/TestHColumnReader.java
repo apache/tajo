@@ -60,7 +60,8 @@ public class TestHColumnReader {
             new Column("id", DataType.INT),
             new Column("name", DataType.STRING2)});
     TableMeta tableMeta = TCatUtil.newTableMeta(schema, StoreType.HCFILE);
-    FileUtil.writeProto(conf, new Path(tablePath, ".meta"), tableMeta.getProto());
+    FileUtil.writeProto(util.getDefaultFileSystem(),
+        new Path(tablePath, ".meta"), tableMeta.getProto());
 
     HCTupleAppender appender = new HCTupleAppender(conf, tableMeta, 1, tablePath);
     Tuple tuple = new VTuple(2);

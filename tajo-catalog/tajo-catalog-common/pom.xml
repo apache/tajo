@@ -161,12 +161,10 @@
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-common</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-rpc</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>

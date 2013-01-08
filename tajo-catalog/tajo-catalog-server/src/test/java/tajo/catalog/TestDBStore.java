@@ -28,6 +28,7 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
 import tajo.catalog.store.DBStore;
 import tajo.conf.TajoConf;
+import tajo.util.CommonTestingUtil;
 
 import java.io.File;
 
@@ -44,14 +45,9 @@ public class TestDBStore {
   @BeforeClass
   public static void setUp() throws Exception {
     conf = new TajoConf();
-    File file = new File("target/test-data/TestDBSTore");
-    if (file.exists()) {
-      file.delete();
-    } else {
-      file.mkdirs();
-      file.deleteOnExit();
-    }
-    conf.set(TConstants.JDBC_URI, "jdbc:derby:"+file.getAbsolutePath()+"/db");
+    Path testDir = CommonTestingUtil.buildTestDir("target/test-data/TestDBSTore");
+    File absolutePath = new File(testDir.toUri());
+    conf.set(TConstants.JDBC_URI, "jdbc:derby:"+absolutePath.getAbsolutePath()+"/db");
     LOG.info("derby repository is set to "+conf.get(TConstants.JDBC_URI));
     store = new DBStore(conf);
   }

@@ -20,6 +20,7 @@ package tajo.storage;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.catalog.Options;
@@ -49,8 +50,8 @@ public class TestCSVFile {
   public void setup() throws Exception {
     conf = new TajoConf();
     conf.setVar(ConfVars.ENGINE_DATA_DIR, TEST_PATH);
-    CommonTestingUtil.buildTestDir(TEST_PATH);
-    sm = StorageManager.get(conf, TEST_PATH);
+    Path createdDir = CommonTestingUtil.buildTestDir(TEST_PATH);
+    sm = StorageManager.get(conf, createdDir);
   }
   
   @Test

@@ -1,13 +1,9 @@
 /*
  * Copyright 2012 Database Lab., Korea Univ.
  *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -40,7 +36,6 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
 import tajo.common.exception.NotImplementedException;
 import tajo.conf.TajoConf;
-import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.MasterWorkerProtos.Partition;
 import tajo.engine.parser.QueryBlock.FromTable;
 import tajo.engine.planner.PlannerUtil;
@@ -145,7 +140,7 @@ public class GlobalPlanner {
       numTasks = 1;
     } else {
       // TODO - to be improved
-      numTasks = 1;
+      numTasks = 32;
     }
     return numTasks;
   }
@@ -193,15 +188,19 @@ public class GlobalPlanner {
         // the first phase of two-phase join can be any logical nodes
         JoinNode join = (JoinNode) node;
 
+        /*
         if (join.getOuterNode().getType() == ExprType.SCAN &&
             join.getInnerNode().getType() == ExprType.SCAN) {
           ScanNode outerScan = (ScanNode) join.getOuterNode();
           ScanNode innerScan = (ScanNode) join.getInnerNode();
+
+
           TableMeta outerMeta =
               catalog.getTableDesc(outerScan.getTableId()).getMeta();
           TableMeta innerMeta =
               catalog.getTableDesc(innerScan.getTableId()).getMeta();
           long threshold = conf.getLongVar(ConfVars.BROADCAST_JOIN_THRESHOLD);
+
 
           // if the broadcast join is available
           boolean outerSmall = false;
@@ -245,7 +244,7 @@ public class GlobalPlanner {
           if (outerScan.isBroadcast() || innerScan.isBroadcast()) {
             return;
           }
-        }
+        } */
 
         // insert stores for the first phase
         if (join.getOuterNode().getType() != ExprType.UNION &&
@@ -644,7 +643,7 @@ public class GlobalPlanner {
         prev.setParentQuery(unit);
         unit.addChildQuery((ScanNode)join.getOuterNode(), prev);
       }
-      outerStore.setPartitions(PARTITION_TYPE.HASH, outerCols, 1);
+      outerStore.setPartitions(PARTITION_TYPE.HASH, outerCols, 32);
     } else if (join.getOuterNode().getType() == ExprType.UNION) {
       _handleUnionNode(rootStore, (UnionNode)join.getOuterNode(), unit, 
           outerCols, PARTITION_TYPE.HASH);
@@ -664,7 +663,7 @@ public class GlobalPlanner {
         prev.setParentQuery(unit);
         unit.addChildQuery((ScanNode)join.getInnerNode(), prev);
       }
-      innerStore.setPartitions(PARTITION_TYPE.HASH, innerCols, 1);
+      innerStore.setPartitions(PARTITION_TYPE.HASH, innerCols, 32);
     } else if (join.getInnerNode().getType() == ExprType.UNION) {
       _handleUnionNode(rootStore, (UnionNode)join.getInnerNode(), unit,
           innerCols, PARTITION_TYPE.HASH);
@@ -702,7 +701,7 @@ public class GlobalPlanner {
         cur.addChildQuery((ScanNode)union.getOuterNode(), prev);
       }
       if (cols != null) {
-        store.setPartitions(PARTITION_TYPE.LIST, cols, 1);
+        store.setPartitions(PARTITION_TYPE.LIST, cols, 32);
       }
     } else if (union.getOuterNode().getType() == ExprType.UNION) {
       _handleUnionNode(rootStore, (UnionNode)union.getOuterNode(), cur, cols, 
@@ -721,7 +720,7 @@ public class GlobalPlanner {
         cur.addChildQuery((ScanNode)union.getInnerNode(), prev);
       }
       if (cols != null) {
-        store.setPartitions(PARTITION_TYPE.LIST, cols, 1);
+        store.setPartitions(PARTITION_TYPE.LIST, cols, 32);
       }
     } else if (union.getInnerNode().getType() == ExprType.UNION) {
       _handleUnionNode(rootStore, (UnionNode)union.getInnerNode(), cur, cols, 
@@ -1344,7 +1343,7 @@ public class GlobalPlanner {
         unit = newQueryUnit(subQuery);
         unitList.add(unit);
       }
-      unit.addFetches(scan.getTableId(), Lists.newArrayList(e.getValue()));
+      unit.addFetches(scan.getTableId(), e.getValue());
     }
     return unitList;
   }
@@ -1530,10 +1529,10 @@ public class GlobalPlanner {
 
     return map;
   }
-  
+
   /**
    * Unary QueryUnit들에 broadcast partition된 fetch를 할당
-   * 
+   *
    * @param units
    * @param scan
    * @param uriList

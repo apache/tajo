@@ -22,6 +22,7 @@ package tajo.util;
 
 import com.google.protobuf.Message;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
@@ -93,12 +94,14 @@ public class TestFileUtils {
 	@Test
 	public final void testWriteLoadProtoFromPath() throws IOException {	
 		Path path = new Path(TEST_PATH+"/file.bin");
-		Configuration conf = new Configuration();
-		FileUtil.writeProto(conf, path, proto);
+    Configuration conf = new Configuration();
+    FileSystem localFS = FileSystem.getLocal(conf);
+		FileUtil.writeProto(localFS, path, proto);
 		
 		Message defaultInstance = TestMessageProto.getDefaultInstance();
 		TestMessageProto message = (TestMessageProto) 
-			FileUtil.loadProto(conf, new Path(TEST_PATH+"/file.bin"), defaultInstance);
+			FileUtil.loadProto(localFS, new Path(TEST_PATH+"/file.bin"),
+          defaultInstance);
 		
 		assertEquals(proto, message);
 	}

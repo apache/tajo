@@ -343,11 +343,15 @@ public class QueryMaster extends CompositeService implements EventHandler {
     // If final output directory is not given by an user,
     // we use the query id as a output directory.
     if (givenOutputTableName.equals("")) {
-      Path queryBaseDir = new Path(conf.getVar(TajoConf.ConfVars.QUERY_TMP_DIR));
-      Path userQueryDir = new Path(queryBaseDir, currentUser);
+      FileSystem defaultFS = FileSystem.get(conf);
+      Path queryBaseDir = defaultFS.makeQualified(
+          new Path(conf.getVar(TajoConf.ConfVars.QUERY_TMP_DIR)));
+      Path userQueryDir = defaultFS.makeQualified(
+          new Path(queryBaseDir, currentUser));
 
       // If an user directory is not created yet
       FileSystem fs = userQueryDir.getFileSystem(conf);
+
       if (fs.exists(userQueryDir)) {
         FileStatus fsStatus = fs.getFileStatus(userQueryDir);
         String owner = fsStatus.getOwner();

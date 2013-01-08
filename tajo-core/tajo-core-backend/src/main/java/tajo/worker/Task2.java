@@ -43,7 +43,6 @@ import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.SortNode;
 import tajo.engine.planner.logical.StoreTableNode;
 import tajo.engine.planner2.physical.PhysicalExec;
-import tajo.exception.InternalException;
 import tajo.ipc.MasterWorkerProtocol.MasterWorkerProtocolService.Interface;
 import tajo.ipc.protocolrecords.QueryUnitRequest;
 import tajo.master.SubQuery.PARTITION_TYPE;
@@ -73,6 +72,7 @@ public class Task2 {
   private final LocalDirAllocator lDirAllocator;
   private final QueryUnitAttemptId taskId;
 
+  private final QueryUnitRequest request;
   private final TaskAttemptContext2 context;
   private List<Fetcher> fetcherRunners;
   private final LogicalNode plan;
@@ -83,6 +83,7 @@ public class Task2 {
   private boolean stopped = false;
   private float progress = 0;
   private final Reporter reporter;
+  private Path inputTableBaseDir;
 
   private static int completed = 0;
   private static int failed = 0;
@@ -115,7 +116,7 @@ public class Task2 {
   public Task2(QueryUnitAttemptId taskId,
       final WorkerContext worker, final Interface masterProxy,
                final QueryUnitRequest request, Path taskDir) throws IOException {
-
+    this.request = request;
     this.reporter = new Reporter(masterProxy);
     this.reporter.startCommunicationThread();
 
@@ -148,8 +149,6 @@ public class Task2 {
       LOG.info("Output File Path: " + outFilePath);
       context.setOutputPath(outFilePath);
     }
-    // for localizing the intermediate data
-    localize(request);
 
     context.setState(TaskAttemptState.TA_PENDING);
     LOG.info("==================================");
@@ -172,7 +171,24 @@ public class Task2 {
     LOG.info("==================================");
   }
 
-  public void init() throws InternalException {
+  public void init() throws IOException {
+    if (request.getFetches().size() > 0) {
+      inputTableBaseDir = localFS.makeQualified(
+          lDirAllocator.getLocalPathForWrite(
+              Worker.getQueryUnitDir(context.getTaskId()).toString() + "/in", conf));
+      localFS.mkdirs(inputTableBaseDir);
+      Path tableDir;
+      for (String inputTable : context.getInputTables()) {
+        tableDir = new Path(inputTableBaseDir, inputTable);
+        if (!localFS.exists(tableDir)) {
+          LOG.info("the directory is created  " + tableDir.toUri());
+          localFS.mkdirs(tableDir);
+        }
+      }
+    }
+
+    // for localizing the intermediate data
+    localize(request);
   }
 
   public QueryUnitAttemptId getTaskId() {
@@ -190,12 +206,6 @@ public class Task2 {
     return progressFlag.get();
   }
 
-  public File createLocalDir(Path path) throws IOException {
-    localFS.mkdirs(path);
-    Path qualified = localFS.makeQualified(path);
-    return new File(qualified.toUri());
-  }
-
   public void localize(QueryUnitRequest request) throws IOException {
     fetcherRunners = getFetchRunners(context, request.getFetches());
 
@@ -207,20 +217,11 @@ public class Task2 {
     }
 
     if (cached.size() > 0) {
-      Path inputDir = lDirAllocator.
-          getLocalPathForWrite(
-              Worker.getQueryUnitDir(context.getTaskId()).toString() + "/in", conf);
-
-      if (!localFS.exists(inputDir)) {
-        createLocalDir(inputDir);
-      }
-
-      Path qualified = localFS.makeQualified(inputDir);
       Path inFile;
 
       int i = fetcherRunners.size();
       for (Fragment cache : cached) {
-        inFile = new Path(qualified, "in_" + i);
+        inFile = new Path(inputTableBaseDir, "in_" + i);
         workerContext.getDefaultFS().copyToLocalFile(cache.getPath(), inFile);
         cache.setPath(inFile);
         i++;
@@ -361,11 +362,11 @@ public class Task2 {
         this.executor.init();
         while(executor.next() != null && !killed) {
           ++progress;
+          System.out.println("ROW PROCEED: " + progress);
         }
         this.executor.close();
       }
     } catch (Exception e) {
-
       // errorMessage will be sent to master.
       errorMessage = ExceptionUtils.getStackTrace(e);
       LOG.error(errorMessage);
@@ -441,7 +442,7 @@ public class Task2 {
     FileSystem fs = FileSystem.get(c);
     Path tablePath = new Path(file.getAbsolutePath());
 
-    List<Fragment> listTablets = new ArrayList<Fragment>();
+    List<Fragment> listTablets = new ArrayList<>();
     Fragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(tablePath);
@@ -509,9 +510,8 @@ public class Task2 {
 
     if (fetches.size() > 0) {
       Path inputDir = lDirAllocator.
-          getLocalPathForWrite(
+          getLocalPathToRead(
               Worker.getQueryUnitDir(ctx.getTaskId()).toString() + "/in", conf);
-      createLocalDir(inputDir);
       File storeDir;
 
       int i = 0;

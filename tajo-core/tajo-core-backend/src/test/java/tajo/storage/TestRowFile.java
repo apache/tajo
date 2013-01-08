@@ -83,7 +83,7 @@ public class TestRowFile {
     fs.mkdirs(tablePath);
     fs.mkdirs(dataDir);
 
-    FileUtil.writeProto(conf, metaPath, meta.getProto());
+    FileUtil.writeProto(util.getDefaultFileSystem(), metaPath, meta.getProto());
 
     Appender appender = rowFile.getAppender(meta, dataPath);
 
@@ -112,8 +112,8 @@ public class TestRowFile {
     System.out.println("append time: " + (end-start));
 
     FileStatus file = fs.getFileStatus(dataPath);
-    TableProto proto = (TableProto) FileUtil.loadProto(conf, metaPath,
-        TableProto.getDefaultInstance());
+    TableProto proto = (TableProto) FileUtil.loadProto(
+        util.getDefaultFileSystem(), metaPath, TableProto.getDefaultInstance());
     meta = new TableMetaImpl(proto);
     Fragment fragment = new Fragment("test.tbl", dataPath, meta, 0, file.getLen(), null);
 

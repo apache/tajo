@@ -474,8 +474,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
             tasks = subQuery.getPlanner().createLeafTasks(subQuery);
           } else if (subQuery.getScanNodes().length > 1) {
             int numTasks = subQuery.getPlanner().getTaskNum(subQuery);
-            subQuery.getPlanner().setPartitionNumberForTwoPhase(subQuery, numTasks);
-            tasks = Repartitioner.createJoinTasks(subQuery, numTasks);
+            subQuery.getPlanner().setPartitionNumberForTwoPhase(subQuery, 32);
+            tasks = Repartitioner.createJoinTasks(subQuery, 32);
           } else {
             int numTasks = subQuery.getPlanner().getTaskNum(subQuery);
             subQuery.getPlanner().setPartitionNumberForTwoPhase(subQuery, numTasks);

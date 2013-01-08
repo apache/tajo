@@ -19,6 +19,7 @@
 package tajo.storage.rcfile;
 
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.catalog.Options;
@@ -48,8 +49,8 @@ public class TestRCFileWrapper {
 	public void setUp() throws Exception {
 		conf = new TajoConf();
 		conf.setInt(RCFile.RECORD_INTERVAL_CONF_STR, 100);
-		CommonTestingUtil.buildTestDir(TEST_PATH);
-		sm = StorageManager.get(conf, TEST_PATH);
+		Path createdDir = CommonTestingUtil.buildTestDir(TEST_PATH);
+		sm = StorageManager.get(conf, createdDir);
 	}
 		
 	@Test

@@ -250,8 +250,8 @@ public class TaskRunner extends AbstractService {
                   QueryUnitAttemptId taskAttemptId =
                       new QueryUnitAttemptId(taskRequest.getId());
                   Path taskTempDir = localFS.makeQualified(
-                      lDirAllocator.getLocalPathForWrite(
-                      baseDir + "/" + taskAttemptId.getQueryUnitId().getId()
+                      lDirAllocator.getLocalPathForWrite(baseDir +
+                          "/" + taskAttemptId.getQueryUnitId().getId()
                           + "_" + taskAttemptId.getId(), conf));
 
                   Task2 task = new Task2(taskAttemptId, workerContext, master,
@@ -352,17 +352,12 @@ public class TaskRunner extends AbstractService {
    * 4th Arg: NodeId
    */
   public static void main(String[] args) throws Exception {
-    LOG.info("CLASSPATH: " + System.getenv("CLASSPATH"));
-
     // Restore QueryConf
     final QueryConf conf = new QueryConf();
+    LOG.info("MiniTajoYarn NM Local Dir: " + conf.get(ConfVars.TASK_LOCAL_DIR.varname));
 
-    LOG.info("MiniTajoYarn NM Local Dir: " + conf.get(
-        ConfVars.TASK_LOCAL_DIR.varname));
     conf.addResource(new Path(QueryConf.FILENAME));
-
     LOG.info("OUTPUT DIR: " + conf.getOutputPath());
-
     UserGroupInformation.setConfiguration(conf);
 
     // TaskRunnerListener's address

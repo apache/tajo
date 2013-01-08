@@ -199,7 +199,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     fetchMap.put(tableId, uris);
 	}
 	
-	public void addFetches(String tableId, List<URI> urilist) {
+	public void addFetches(String tableId, Collection<URI> urilist) {
 	  Set<URI> uris;
     if (fetchMap.containsKey(tableId)) {
       uris = fetchMap.get(tableId);
