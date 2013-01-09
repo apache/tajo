@@ -107,22 +107,18 @@
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-common</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-catalog-common</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-catalog-client</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>kr.ac.korea.dbserver</groupId>
       <artifactId>tajo-rpc</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>

@@ -49,14 +49,26 @@ public class StatisticsUtil {
     TableStat aggregated = new TableStat();
 
     ColumnStat [] css = null;
-    if (tableStats.size() > 0 && tableStats.get(0).getColumnStats().size() > 0) {
-      css = new ColumnStat[tableStats.get(0).getColumnStats().size()];
-      for (int i = 0; i < css.length; i++) {
-        css[i] = new ColumnStat(tableStats.get(0).getColumnStats().get(i).getColumn());
+    if (tableStats.size() > 0) {
+      for (TableStat ts : tableStats) {
+        // A TableStats cannot contain any ColumnStat if there is no output.
+        // So, we should consider such a condition.
+        if (ts.getColumnStats().size() > 0) {
+          css = new ColumnStat[ts.getColumnStats().size()];
+          for (int i = 0; i < css.length; i++) {
+            css[i] = new ColumnStat(ts.getColumnStats().get(i).getColumn());
+          }
+          break;
+        }
       }
     }
 
     for (TableStat ts : tableStats) {
+      // if there is empty stats
+      if (ts.getColumnStats().size() == 0) {
+        continue;
+      }
+
       // aggregate column stats for each table
       for (int i = 0; i < ts.getColumnStats().size(); i++) {
         ColumnStat cs = ts.getColumnStats().get(i);

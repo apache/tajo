@@ -30,7 +30,8 @@ public class TestSingleCSVFileBSTIndex {
 
   private static final int TUPLE_NUM = 10000;
   private static final int LOAD_NUM = 100;
-  private static final String TEST_PATH = "target/test-data/TestIndex/data";
+  private static final String TEST_PATH = "target/test-data/TestSingleCSVFileBSTIndex/data";
+  private Path testDir;
   
   public TestSingleCSVFileBSTIndex() {
     conf = new TajoConf();
@@ -45,8 +46,8 @@ public class TestSingleCSVFileBSTIndex {
 
   @Before
   public void setUp() throws Exception {
-    CommonTestingUtil.buildTestDir(TEST_PATH);
-    sm = StorageManager.get(conf, TEST_PATH);
+    testDir = CommonTestingUtil.buildTestDir(TEST_PATH);
+    sm = StorageManager.get(conf, testDir);
   }
 
   @Test
@@ -85,7 +86,7 @@ public class TestSingleCSVFileBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH,
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir,
         "FindValueInCSV.idx"), BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
@@ -110,7 +111,7 @@ public class TestSingleCSVFileBSTIndex {
     fileScanner.close();
 
     tuple = new VTuple(keySchema.getColumnNum());
-    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH,
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir,
         "FindValueInCSV.idx"), keySchema, comp);
     reader.open();
     fileScanner = new CSVFile.CSVScanner(conf, schema, tablet);
@@ -169,7 +170,7 @@ public class TestSingleCSVFileBSTIndex {
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
     
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(TEST_PATH, "FindNextKeyValueInCSV.idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "FindNextKeyValueInCSV.idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
@@ -192,7 +193,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.close();
     fileScanner.close();    
     
-    BSTIndexReader reader = bst.getIndexReader(new Path(TEST_PATH, "FindNextKeyValueInCSV.idx"), keySchema, comp);
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "FindNextKeyValueInCSV.idx"), keySchema, comp);
     reader.open();
     fileScanner  = new CSVFile.CSVScanner(conf, schema, tablet);
     Tuple result;

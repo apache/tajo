@@ -1,6 +1,7 @@
 package tajo.storage;
 
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,8 +26,8 @@ public class TestStorageManager {
 	@Before
 	public void setUp() throws Exception {
 		conf = new TajoConf();
-		CommonTestingUtil.buildTestDir(TEST_PATH);
-    sm = StorageManager.get(conf, TEST_PATH);
+		Path createdDir = CommonTestingUtil.buildTestDir(TEST_PATH);
+    sm = StorageManager.get(conf, createdDir);
 	}
 
 	@After

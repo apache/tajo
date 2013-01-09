@@ -228,8 +228,8 @@ public class TestGlobalEngine {
     FileSystem fs = FileSystem.get(conf);
     assertTrue(fs.exists(new Path("/tmp/data/.meta")));
     TableProto proto = TableProto.getDefaultInstance();
-    proto = (TableProto) FileUtil.loadProto(conf, new Path("/tmp/data/.meta"),
-        proto);
+    proto = (TableProto) FileUtil.loadProto(fs,
+        new Path("/tmp/data/.meta"), proto);
     TableMeta meta = new TableMetaImpl(proto);
     Schema schema = new Schema();
     schema.addColumn("id", DataType.INT);

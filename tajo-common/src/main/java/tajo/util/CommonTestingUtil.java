@@ -23,12 +23,14 @@ import org.apache.hadoop.fs.Path;
 import java.io.IOException;
 
 public class CommonTestingUtil {
-  public static void buildTestDir(String dir) throws IOException {
+  public static Path buildTestDir(String dir) throws IOException {
     Path path = new Path(dir);
     FileSystem fs = FileSystem.getLocal(new Configuration());
     if(fs.exists(path))
       fs.delete(path, true);
 
     fs.mkdirs(path);
+
+    return fs.makeQualified(path);
   }
 }

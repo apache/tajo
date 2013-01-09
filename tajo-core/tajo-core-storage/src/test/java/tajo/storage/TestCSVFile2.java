@@ -25,13 +25,14 @@ public class TestCSVFile2 {
   private TajoConf conf;
   StorageManager sm;
   private static String TEST_PATH = "target/test-data/TestCSVFile2";
+  private Path testDir;
   
   @Before
   public void setup() throws Exception {
     conf = new TajoConf();
     conf.setVar(ConfVars.ENGINE_DATA_DIR, TEST_PATH);
-    CommonTestingUtil.buildTestDir(TEST_PATH);
-    sm = StorageManager.get(conf, TEST_PATH);
+    testDir = CommonTestingUtil.buildTestDir(TEST_PATH);
+    sm = StorageManager.get(conf, testDir);
   }
   
   @Test
@@ -45,8 +46,6 @@ public class TestCSVFile2 {
     Options options = new Options();
     options.put(CSVFile2.DELIMITER, ",");
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV, options);
-    
-    Path path = new Path(TEST_PATH);
 
     sm.initTableBase(meta, "table1");
     Appender appender = sm.getAppender(meta, "table1", "file1");
@@ -75,8 +74,8 @@ public class TestCSVFile2 {
     System.out.println("fileLen: " + fileLen + ", randomNum: " + randomNum);
     
     Fragment[] tablets = new Fragment[2];
-    tablets[0] = new Fragment("tablet1_1", new Path(path, "table1/data/file1"), meta, 0, randomNum, null);
-    tablets[1] = new Fragment("tablet1_1", new Path(path, "table1/data/file1"), meta, randomNum, (fileLen - randomNum), null);
+    tablets[0] = new Fragment("tablet1_1", new Path(testDir, "table1/data/file1"), meta, 0, randomNum, null);
+    tablets[1] = new Fragment("tablet1_1", new Path(testDir, "table1/data/file1"), meta, randomNum, (fileLen - randomNum), null);
     
     Scanner scanner = sm.getScanner(meta, tablets);
     int tupleCnt = 0;

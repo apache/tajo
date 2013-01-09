@@ -108,7 +108,8 @@ public class HColumnReader implements ColumnReader {
 
   private Schema getSchema(Path tablePath) throws IOException {
     Path metaPath = new Path(tablePath, ".meta");
-    TableProto proto = (TableProto) FileUtil.loadProto(conf, metaPath, TableProto.getDefaultInstance());
+    TableProto proto = (TableProto) FileUtil.loadProto(fs, metaPath,
+        TableProto.getDefaultInstance());
     TableMeta meta = new TableMetaImpl(proto);
     return meta.getSchema();
   }

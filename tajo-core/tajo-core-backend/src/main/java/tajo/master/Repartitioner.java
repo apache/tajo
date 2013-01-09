@@ -106,36 +106,92 @@ public class Repartitioner {
       for (ScanNode scan : scans) {
         SubQuery childSubQuery = subQuery.getChildQuery(scan);
         for (QueryUnit task : childSubQuery.getQueryUnits()) {
-          for (IntermediateEntry intermEntry : task.getIntermediateData()) {
-            if (hashEntries.containsKey(intermEntry.getPartitionId())) {
-              Map<String, List<IntermediateEntry>> tbNameToInterm =
-                  hashEntries.get(intermEntry.getPartitionId());
+          if (task.getIntermediateData() != null) {
+            for (IntermediateEntry intermEntry : task.getIntermediateData()) {
+              if (hashEntries.containsKey(intermEntry.getPartitionId())) {
+                Map<String, List<IntermediateEntry>> tbNameToInterm =
+                    hashEntries.get(intermEntry.getPartitionId());
 
-              if (tbNameToInterm.containsKey(scan.getTableId())) {
-                tbNameToInterm.get(scan.getTableId()).add(intermEntry);
+                if (tbNameToInterm.containsKey(scan.getTableId())) {
+                  tbNameToInterm.get(scan.getTableId()).add(intermEntry);
+                } else {
+                  tbNameToInterm.put(scan.getTableId(), TUtil.newList(intermEntry));
+                }
               } else {
+                Map<String, List<IntermediateEntry>> tbNameToInterm =
+                    new HashMap<>();
                 tbNameToInterm.put(scan.getTableId(), TUtil.newList(intermEntry));
+                hashEntries.put(intermEntry.getPartitionId(), tbNameToInterm);
               }
-            } else {
-              Map<String, List<IntermediateEntry>> tbNameToInterm =
-                  new HashMap<>();
-              tbNameToInterm.put(scan.getTableId(), TUtil.newList(intermEntry));
-              hashEntries.put(intermEntry.getPartitionId(), tbNameToInterm);
             }
           }
         }
       }
 
-      // Assigning Intermediate for each partition to a task
-      tasks = new QueryUnit[hashEntries.size()];
+      // the number of join tasks cannot be larger than the number of
+      // distinct partition ids.
+      int joinTaskNum = Math.min(maxNum, hashEntries.size());
+      QueryUnit [] createdTasks = newEmptyJoinTask(subQuery, fragments, joinTaskNum);
+
+      // Assign partitions to tasks in a round robin manner.
       int i = 0;
       for (Entry<Integer, Map<String, List<IntermediateEntry>>> entry
           : hashEntries.entrySet()) {
-        tasks[i] = newJoinTask(subQuery, entry.getKey(), fragments, entry.getValue());
+        addJoinPartition(createdTasks[i++], subQuery, entry.getKey(), entry.getValue());
+        if (i >= joinTaskNum) {
+          i = 0;
+        }
+      }
+
+      List<QueryUnit> filteredTasks = new ArrayList<>();
+      for (QueryUnit task : createdTasks) {
+        // if there are at least two fetches, the join is possible.
+        if (task.getFetches().size() > 1) {
+          filteredTasks.add(task);
+        }
+      }
+
+      tasks = filteredTasks.toArray(new QueryUnit[filteredTasks.size()]);
+    }
+
+    return tasks;
+  }
+
+  private static QueryUnit [] newEmptyJoinTask(SubQuery subQuery, Fragment [] fragments, int taskNum) {
+    QueryUnit [] tasks = new QueryUnit[taskNum];
+    for (int i = 0; i < taskNum; i++) {
+      tasks[i] = new QueryUnit(
+          QueryIdFactory.newQueryUnitId(subQuery.getId()), subQuery.isLeafQuery(),
+          subQuery.eventHandler);
+      tasks[i].setLogicalPlan(subQuery.getLogicalPlan());
+      for (Fragment fragment : fragments) {
+        tasks[i].setFragment2(fragment);
       }
     }
 
     return tasks;
+  }
+
+  private static void addJoinPartition(QueryUnit task, SubQuery subQuery, int partitionId,
+                                       Map<String, List<IntermediateEntry>> grouppedPartitions) {
+
+    for (ScanNode scanNode : subQuery.getScanNodes()) {
+      Map<String, List<IntermediateEntry>> requests;
+      if (grouppedPartitions.containsKey(scanNode.getTableId())) {
+          requests = mergeHashPartitionRequest(grouppedPartitions.get(scanNode.getTableId()));
+      } else {
+        return;
+      }
+      Set<URI> fetchURIs = TUtil.newHashSet();
+      for (Entry<String, List<IntermediateEntry>> requestPerNode : requests.entrySet()) {
+        Collection<URI> uris = createHashFetchURL(requestPerNode.getKey(),
+            subQuery.getChildQuery(scanNode).getId(),
+            partitionId, PARTITION_TYPE.HASH,
+            requestPerNode.getValue());
+        fetchURIs.addAll(uris);
+      }
+      task.addFetches(scanNode.getTableId(), fetchURIs);
+    }
   }
 
   private static QueryUnit newJoinTask(SubQuery subQuery, int partitionId,
@@ -346,15 +402,6 @@ public class Repartitioner {
         TCatUtil.newTableMeta(scan.getInSchema(), StoreType.CSV),
         0, 0, null);
 
-    GroupbyNode groupby = (GroupbyNode) childSubQuery.getStoreTableNode().
-        getSubNode();
-    int desiredTaskNum = maxNum;
-    if (groupby.getGroupingColumns().length == 0) {
-      desiredTaskNum = 1;
-    }
-
-    QueryUnit [] tasks = createEmptyNonLeafTasks(subQuery, desiredTaskNum, frag);
-
     Map<Integer, List<IntermediateEntry>> hashed = hashByKey(partitions);
     Map<String, List<IntermediateEntry>> hashedByHost;
     Map<Integer, List<URI>> finalFetchURI = new HashMap<>();
@@ -373,6 +420,16 @@ public class Repartitioner {
         }
       }
     }
+
+    GroupbyNode groupby = (GroupbyNode) childSubQuery.getStoreTableNode().
+        getSubNode();
+    // the number of tasks cannot exceed the number of merged fetch uris.
+    int desiredTaskNum = Math.min(maxNum, finalFetchURI.size());
+    if (groupby.getGroupingColumns().length == 0) {
+      desiredTaskNum = 1;
+    }
+
+    QueryUnit [] tasks = createEmptyNonLeafTasks(subQuery, desiredTaskNum, frag);
 
     int tid = 0;
     for (Entry<Integer, List<URI>> entry : finalFetchURI.entrySet()) {
