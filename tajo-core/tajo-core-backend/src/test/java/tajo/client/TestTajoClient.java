@@ -13,7 +13,8 @@ import tajo.TajoTestingCluster;
 import tajo.WorkerTestingUtil;
 import tajo.catalog.TableDesc;
 import tajo.conf.TajoConf;
-import tajo.storage.StorageManager;
+import tajo.storage.StorageUtil;
+import tajo.util.CommonTestingUtil;
 
 import java.io.IOException;
 import java.util.Set;
@@ -21,10 +22,13 @@ import java.util.Set;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
-public class TestTajoCluster {
+public class TestTajoClient {
   private static TajoTestingCluster util;
   private static TajoConf conf;
   private static TajoClient tajo;
+  private static String TEST_PATH = "target/test-data/"
+      + TestTajoClient.class.getName();
+  private static Path testDir;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -33,6 +37,8 @@ public class TestTajoCluster {
     conf = util.getConfiguration();
     Thread.sleep(3000);
     tajo = new TajoClient(conf);
+
+    testDir = CommonTestingUtil.buildTestDir(TEST_PATH);
   }
 
   @AfterClass
@@ -41,12 +47,18 @@ public class TestTajoCluster {
     tajo.close();
   }
 
+  private static Path writeTmpTable(String tableName) throws IOException {
+    Path tablePath = StorageUtil.concatPath(testDir, tableName);
+    WorkerTestingUtil.writeTmpTable(conf, testDir, tableName, true);
+    return tablePath;
+  }
+
   @Test
   public final void testAttachTable() throws IOException, ServiceException {
     final String tableName = "attach";
-    WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName, true);
+    Path tablePath = writeTmpTable(tableName);
     assertFalse(tajo.existTable(tableName));
-    tajo.attachTable(tableName, "/tajo/data/attach");
+    tajo.attachTable(tableName, tablePath);
     assertTrue(tajo.existTable(tableName));
     tajo.detachTable(tableName);
     assertFalse(tajo.existTable(tableName));
@@ -54,17 +66,13 @@ public class TestTajoCluster {
 
   @Test
   public final void testUpdateQuery() throws IOException, ServiceException {
-    TajoConf conf = util.getConfiguration();
-    final String tableName = "updateQuery";
-    WorkerTestingUtil.writeTmpTable(conf, "/tmp", tableName, false);
-    StorageManager sm = StorageManager.get(conf, "/tmp");
-    FileSystem fs = sm.getFileSystem();
-    assertTrue(fs.exists(new Path("/tmp", tableName)));
+    final String tableName = "testUpdateQuery";
+    Path tablePath = writeTmpTable(tableName);
 
     assertFalse(tajo.existTable(tableName));
     String tql =
         "create table " + tableName + " (deptname string, score int) "
-            + "using csv location '/tmp/" + tableName + "'";
+            + "using csv location '" + tablePath + "'";
     tajo.updateQuery(tql);
     assertTrue(tajo.existTable(tableName));
   }
@@ -72,20 +80,33 @@ public class TestTajoCluster {
   @Test
   public final void testCreateAndDropTable()
       throws IOException, ServiceException {
-    final String tableName = "create";
-    WorkerTestingUtil.writeTmpTable(conf, "/tmp", tableName, false);
-    StorageManager sm = StorageManager.get(conf, "/tmp");
-    FileSystem fs = sm.getFileSystem();
-    assertTrue(fs.exists(new Path("/tmp", tableName)));
+    final String tableName = "testCreateAndDropTable";
+    Path tablePath = writeTmpTable(tableName);
+
     assertFalse(tajo.existTable(tableName));
-    tajo.createTable(tableName, new Path("/tmp", tableName),
-        WorkerTestingUtil.mockupMeta);
+    tajo.createTable(tableName, tablePath, WorkerTestingUtil.mockupMeta);
     assertTrue(tajo.existTable(tableName));
     tajo.dropTable(tableName);
     assertFalse(tajo.existTable(tableName));
-    assertFalse(fs.exists(new Path("/tmp", tableName)));
+    FileSystem fs = tablePath.getFileSystem(conf);
+    assertFalse(fs.exists(tablePath));
   }
 
+  @Test
+  public final void testDDLByExecuteQuery() throws IOException, ServiceException {
+    TajoConf conf = util.getConfiguration();
+    final String tableName = "testDDLByExecuteQuery";
+    WorkerTestingUtil.writeTmpTable(conf, "/tmp", tableName, false);
+
+    assertFalse(tajo.existTable(tableName));
+    String tql =
+        "create table " + tableName + " (deptname string, score int) "
+            + "using csv location '/tmp/" + tableName + "'";
+    tajo.executeQueryAndGetResult(tql);
+    assertTrue(tajo.existTable(tableName));
+  }
+
+  // disabled
   public final void testGetClusterInfo() throws IOException, InterruptedException {
     assertEquals(1,tajo.getClusterInfo().size());
   }
@@ -94,15 +115,16 @@ public class TestTajoCluster {
   public final void testGetTableList() throws IOException, ServiceException {
     final String tableName1 = "table1";
     final String tableName2 = "table2";
-    WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName1, true);
-    WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName2, true);
+    Path table1Path = writeTmpTable(tableName1);
+    Path table2Path = writeTmpTable(tableName2);
+
     assertFalse(tajo.existTable(tableName1));
     assertFalse(tajo.existTable(tableName2));
-    tajo.attachTable(tableName1, "/tajo/data/"+tableName1);
+    tajo.attachTable(tableName1, table1Path);
     assertTrue(tajo.existTable(tableName1));
     Set<String> tables = Sets.newHashSet(tajo.getTableList());
     assertTrue(tables.contains(tableName1));
-    tajo.attachTable(tableName2, "/tajo/data/"+tableName2);
+    tajo.attachTable(tableName2, table2Path);
     assertTrue(tajo.existTable(tableName2));
     tables = Sets.newHashSet(tajo.getTableList());
     assertTrue(tables.contains(tableName1));
@@ -111,10 +133,10 @@ public class TestTajoCluster {
 
   @Test
   public final void testGetTableDesc() throws IOException, ServiceException {
-    final String tableName1 = "tabledesc";
-    WorkerTestingUtil.writeTmpTable(conf, "/tajo/data", tableName1, true);
+    final String tableName1 = "table3";
+    Path tablePath = writeTmpTable(tableName1);
     assertFalse(tajo.existTable(tableName1));
-    tajo.attachTable(tableName1, "/tajo/data/"+tableName1);
+    tajo.attachTable(tableName1, tablePath);
     assertTrue(tajo.existTable(tableName1));
     TableDesc desc = tajo.getTableDesc(tableName1);
     assertNotNull(desc);

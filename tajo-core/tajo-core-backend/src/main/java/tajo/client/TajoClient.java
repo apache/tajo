@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Database Lab., Korea Univ.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo.client;
 
 import com.google.protobuf.ServiceException;
@@ -16,6 +32,7 @@ import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.query.ResultSetImpl;
 import tajo.rpc.ProtoBlockingRpcClient;
 import tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
+import tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -41,13 +58,11 @@ public class TajoClient {
 
   public TajoClient(InetSocketAddress addr) throws IOException {
     this.conf = new TajoConf();
-    this.conf.setBoolVar(ConfVars.CLUSTER_DISTRIBUTED, true);
     connect(addr);
   }
 
   public TajoClient(String hostname, int port) throws IOException {
     this.conf = new TajoConf();
-    this.conf.setBoolVar(ConfVars.CLUSTER_DISTRIBUTED, true);
     connect(NetUtils.createSocketAddr(hostname, port));
   }
 
@@ -59,7 +74,7 @@ public class TajoClient {
       throw new IOException(e);
     }
 
-    LOG.info("Connected to tajo cluster (" +
+    LOG.info("connected to tajo cluster (" +
         tajo.util.NetUtils.getIpPortString(addr) + ")");
   }
 
@@ -71,30 +86,38 @@ public class TajoClient {
     return client.isConnected();
   }
 
-  private String errorMessage;
-
-  public QueryId executeQuery(String tql) throws ServiceException {
+  /**
+   * It submits a query statement and get a response immediately.
+   * The response only contains a query id, and submission status.
+   * In order to get the result, you should use {@link #getQueryResult(tajo.QueryId)}
+   * or {@link #getQueryResultAndWait(tajo.QueryId)}.
+   */
+  public SubmitQueryRespose executeQuery(String tql) throws ServiceException {
     QueryRequest.Builder builder = QueryRequest.newBuilder();
     builder.setQuery(tql);
-    SubmitQueryRespose response = service.submitQuery(null, builder.build());
-    if (response.hasErrorMessage()) {
-      errorMessage = response.getErrorMessage();
-      return null;
-    }
-    return new QueryId(response.getQueryId());
+
+    return service.submitQuery(null, builder.build());
   }
 
-  public String getErrorMessage() {
-    return errorMessage;
-  }
-
-  public ResultSet executeQueryAndWait(String tql)
+  /**
+   * It submits a query statement and get a response.
+   * The main difference from {@link #executeQuery(String)}
+   * is a blocking method. So, this method is wait for
+   * the finish of the submitted query.
+   *
+   * @return If failed, return null.
+   */
+  public ResultSet executeQueryAndGetResult(String tql)
       throws ServiceException, IOException {
     QueryRequest.Builder builder = QueryRequest.newBuilder();
     builder.setQuery(tql);
     SubmitQueryRespose response = service.submitQuery(null, builder.build());
+    QueryId queryId = new QueryId(response.getQueryId());
+    if (queryId.equals(TajoIdUtils.NullQueryId)) {
+      return null;
+    }
 
-    return getQueryResultAndWait(new QueryId(response.getQueryId()));
+    return getQueryResultAndWait(queryId);
   }
 
   public QueryStatus getQueryStatus(QueryId queryId) throws ServiceException {
@@ -116,18 +139,24 @@ public class TajoClient {
 
   public ResultSet getQueryResult(QueryId queryId)
       throws ServiceException, IOException {
-    TableDesc tableDesc = getQueryResultDesc(queryId);
-    ResultSet resultSet = new ResultSetImpl(conf, tableDesc.getPath());
-    return resultSet;
+    if (queryId.equals(TajoIdUtils.NullQueryId)) {
+      return null;
+    }
+
+    TableDesc tableDesc = getResultDesc(queryId);
+    return new ResultSetImpl(conf, tableDesc.getPath());
   }
 
   public ResultSet getQueryResultAndWait(QueryId queryId)
       throws ServiceException, IOException {
+    if (queryId.equals(TajoIdUtils.NullQueryId)) {
+      return null;
+    }
     QueryStatus status = getQueryStatus(queryId);
 
     while(status != null && isQueryRunnning(status.getState())) {
       try {
-        Thread.sleep(1000);
+        Thread.sleep(500);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
@@ -144,26 +173,26 @@ public class TajoClient {
     }
   }
 
-  public TableDesc getQueryResultDesc(QueryId queryId) throws ServiceException {
+  public TableDesc getResultDesc(QueryId queryId) throws ServiceException {
+    if (queryId.equals(TajoIdUtils.NullQueryId)) {
+      return null;
+    }
+
     GetQueryResultRequest.Builder builder = GetQueryResultRequest.newBuilder();
     builder.setQueryId(queryId.getProto());
     GetQueryResultResponse response = service.getQueryResult(null,
         builder.build());
 
-    TableDesc tableDesc = TCatUtil.newTableDesc(response.getTableDesc());
-    return tableDesc;
+    return TCatUtil.newTableDesc(response.getTableDesc());
   }
 
   public boolean updateQuery(String tql) throws ServiceException {
     QueryRequest.Builder builder = QueryRequest.newBuilder();
     builder.setQuery(tql);
 
-    if (service.updateQuery(null, builder.build()).getResultCode()
-        == ResultCode.OK) {
-      return true;
-    } else {
-      return false;
-    }
+    ResultCode resultCode =
+        service.updateQuery(null, builder.build()).getResultCode();
+    return resultCode == ResultCode.OK;
   }
 
   public boolean existTable(String name) throws ServiceException {
@@ -177,9 +206,13 @@ public class TajoClient {
     AttachTableRequest.Builder builder = AttachTableRequest.newBuilder();
     builder.setName(name);
     builder.setPath(path);
-    TableResponse res = null;
-    res = service.attachTable(null, builder.build());
+    TableResponse res = service.attachTable(null, builder.build());
     return TCatUtil.newTableDesc(res.getTableDesc());
+  }
+
+  public TableDesc attachTable(String name, Path path)
+      throws ServiceException {
+    return attachTable(name, path.toString());
   }
 
   public boolean detachTable(String name) throws ServiceException {
@@ -208,6 +241,10 @@ public class TajoClient {
     return null;
   }
 
+  /**
+   * Get a list of table names. All table and column names are
+   * represented as lower-case letters.
+   */
   public List<String> getTableList() throws ServiceException {
     GetTableListRequest.Builder builder = GetTableListRequest.newBuilder();
     GetTableListResponse res = service.getTableList(null, builder.build());

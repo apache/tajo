@@ -241,7 +241,7 @@ public class TestGlobalEngine {
   @Test
   public void testScanQuery() throws Exception {
 
-    ResultSet res = client.executeQueryAndWait(query[1]);
+    ResultSet res = client.executeQueryAndGetResult(query[1]);
 
     String deptname;
     while (res.next()) {
@@ -252,7 +252,7 @@ public class TestGlobalEngine {
 
   @Test
   public void testGroupbyQuery() throws Exception {
-    ResultSet res = client.executeQueryAndWait(query[0]);
+    ResultSet res = client.executeQueryAndGetResult(query[0]);
 
     String deptname;
     int year;
@@ -267,7 +267,7 @@ public class TestGlobalEngine {
 
   @Test
   public void testJoin() throws Exception {
-    ResultSet res = client.executeQueryAndWait(query[2]);
+    ResultSet res = client.executeQueryAndGetResult(query[2]);
 
     String deptname;
     Set<Integer> results;
@@ -280,7 +280,7 @@ public class TestGlobalEngine {
 
   @Test
   public void testSelectAfterJoin() throws Exception {
-    ResultSet res = client.executeQueryAndWait(query[4]);
+    ResultSet res = client.executeQueryAndGetResult(query[4]);
 
     String deptname;
     Set<Integer> results;
@@ -293,7 +293,7 @@ public class TestGlobalEngine {
 
   //@Test
   public void testCubeby() throws Exception {
-    ResultSet res = client.executeQueryAndWait(query[5]);
+    ResultSet res = client.executeQueryAndGetResult(query[5]);
 
     String deptname;
     int year;
@@ -330,7 +330,7 @@ public class TestGlobalEngine {
       @Override
       public void run() {
         try {
-          queryId[0] = client.executeQuery(query[0]);
+          queryId[0] = new QueryId(client.executeQuery(query[0]).getQueryId());
         } catch (Exception e) {
           e.printStackTrace();
         }

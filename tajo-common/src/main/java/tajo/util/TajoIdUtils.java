@@ -27,6 +27,10 @@ import tajo.TajoIdProtos.SubQueryIdProto;
  * @author Hyunsik Choi
  */
 public class TajoIdUtils {
+  /** It is mainly for DDL statements which don's have any query id. */
+  public static final QueryId NullQueryId =
+      TajoIdUtils.createQueryId(BuilderUtils.newApplicationId(0, 0), 0);
+
   public static QueryId createQueryId(ApplicationId appId, int attemptId) {
     return newQueryId(appId, attemptId);
   }

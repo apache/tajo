@@ -9,12 +9,13 @@ import org.apache.commons.cli.*;
 import tajo.QueryId;
 import tajo.catalog.Column;
 import tajo.catalog.TableDesc;
+import tajo.client.ClientProtocol;
 import tajo.client.TajoClient;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.master.cluster.ServerName;
-import tajo.master.cluster.ServerNodeTracker;
 import tajo.util.FileUtil;
+import tajo.util.TajoIdUtils;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,12 +30,9 @@ import java.util.List;
 public class TajoCli {
   private final TajoConf conf;
   private static final Options options;
-  private ServerNodeTracker masterTracker;
   private TajoClient client;
 
-  private String zkAddr;
   private String entryAddr;
-  private static final int WAIT_TIME = 3000;
   private static final int PRINT_LIMIT = 24;
 
   private ConsoleReader reader;
@@ -131,11 +129,19 @@ public class TajoCli {
       } else if (cmd[0].equalsIgnoreCase("history")) {
 
       } else {
-        QueryId queryId = client.executeQuery(line);
-        if (queryId != null) {
-          getQueryResult(queryId);
+        ClientProtocol.SubmitQueryRespose response = client.executeQuery(line);
+
+        if (response.getResultCode() == ClientProtocol.ResultCode.OK) {
+          QueryId queryId = new QueryId(response.getQueryId());
+          if (queryId.equals(TajoIdUtils.NullQueryId)) {
+            sout.println("OK");
+          } else {
+            getQueryResult(queryId);
+          }
         } else {
-          sout.println(client.getErrorMessage());
+        if (response.hasErrorMessage()) {
+          sout.println(response.getErrorMessage());
+        }
         }
       }
     }
@@ -145,13 +151,9 @@ public class TajoCli {
     return 0;
   }
 
-  private void executeQuery(String tql) {
-
-  }
-
   private void getQueryResult(QueryId queryId) {
     // if query is empty string
-    if (queryId.equals("")) {
+    if (queryId.equals(TajoIdUtils.NullQueryId)) {
       return;
     }
 
@@ -177,7 +179,7 @@ public class TajoCli {
           sout.print(columnValue);
         }
         sout.println();
-        sout.flush();;
+        sout.flush();
         numOfPrintedRows++;
         if (numOfPrintedRows >= PRINT_LIMIT) {
           sout.print("continue... ('q' is quit)");
