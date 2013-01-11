@@ -25,6 +25,7 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.proto.YarnProtos.ApplicationAttemptIdProto;
 import org.apache.hadoop.yarn.service.AbstractService;
 import tajo.QueryId;
+import tajo.TajoProtos;
 import tajo.catalog.*;
 import tajo.catalog.exception.AlreadyExistsTableException;
 import tajo.catalog.exception.NoSuchTableException;
@@ -42,6 +43,7 @@ import tajo.rpc.RemoteException;
 import tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import tajo.storage.StorageUtil;
+import tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -160,6 +162,9 @@ public class ClientService extends AbstractService {
                                                  GetQueryResultRequest request)
         throws ServiceException {
       QueryId queryId = new QueryId(request.getQueryId());
+      if (queryId.equals(TajoIdUtils.NullQueryId)) {
+
+      }
       Query query = context.getQuery(queryId).getContext().getQuery();
 
       GetQueryResultResponse.Builder builder
@@ -190,21 +195,27 @@ public class ClientService extends AbstractService {
                                                  GetQueryStatusRequest request)
         throws ServiceException {
 
-      QueryId queryId = new QueryId(request.getQueryId());
-      Query query = context.getQuery(queryId).getContext().getQuery();
-
       GetQueryStatusResponse.Builder builder
           = GetQueryStatusResponse.newBuilder();
-
+      QueryId queryId = new QueryId(request.getQueryId());
       builder.setQueryId(request.getQueryId());
-      if (query != null) {
+
+      if (queryId.equals(TajoIdUtils.NullQueryId)) {
         builder.setResultCode(ResultCode.OK);
-        builder.setState(query.getState());
-        builder.setProgress(query.getProgress());
-        builder.setExecutionTime(System.currentTimeMillis() - query.getStartTime());
+        builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
+        builder.setProgress(1.0f);
+        builder.setExecutionTime(0);
       } else {
-        builder.setResultCode(ResultCode.ERROR);
-        builder.setErrorMessage("No such query: " + queryId.toString());
+        Query query = context.getQuery(queryId).getContext().getQuery();
+        if (query != null) {
+          builder.setResultCode(ResultCode.OK);
+          builder.setState(query.getState());
+          builder.setProgress(query.getProgress());
+          builder.setExecutionTime(System.currentTimeMillis() - query.getStartTime());
+        } else {
+          builder.setResultCode(ResultCode.ERROR);
+          builder.setErrorMessage("No such query: " + queryId.toString());
+        }
       }
 
       return builder.build();

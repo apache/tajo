@@ -154,7 +154,7 @@ public class GlobalEngine extends AbstractService {
     if (plan.getSubNode().getType() == ExprType.CREATE_TABLE) {
       createTable(plan);
 
-      return null;
+      return TajoIdUtils.NullQueryId;
     } else {
       ApplicationAttemptId appAttemptId = submitQuery();
       QueryId queryId = TajoIdUtils.createQueryId(appAttemptId);

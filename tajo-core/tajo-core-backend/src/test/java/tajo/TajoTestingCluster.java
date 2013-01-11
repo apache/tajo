@@ -431,7 +431,7 @@ public class TajoTestingCluster {
       client.createTable(tableNames[i], new Path(tableDir.getAbsolutePath()), meta);
     }
     Thread.sleep(1000);
-    ResultSet res = client.executeQueryAndWait(query);
+    ResultSet res = client.executeQueryAndGetResult(query);
     util.shutdownMiniCluster();
     return res;
   }
@@ -463,7 +463,7 @@ public class TajoTestingCluster {
       client.createTable(names[i], tablePath, meta);
     }
     Thread.sleep(1000);
-    ResultSet res = client.executeQueryAndWait(query);
+    ResultSet res = client.executeQueryAndGetResult(query);
     util.shutdownMiniCluster();
     return res;
   }
@@ -498,7 +498,7 @@ public class TajoTestingCluster {
       client.createTable(names[i], tablePath, meta);
     }
     Thread.sleep(1000);
-    ResultSet res = client.executeQueryAndWait(query);
+    ResultSet res = client.executeQueryAndGetResult(query);
     util.shutdownMiniCluster();
     return res;
   }

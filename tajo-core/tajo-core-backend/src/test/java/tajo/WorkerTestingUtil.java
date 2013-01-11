@@ -93,18 +93,19 @@ public class WorkerTestingUtil {
     mockupMeta = TCatUtil.newTableMeta(mockupSchema, StoreType.CSV);
 	}
 
-	public static void writeTmpTable(TajoConf conf, String parent,
-	    String tbName, boolean writeMeta) throws IOException {
-	  StorageManager sm = StorageManager.get(conf, parent);
+  public static void writeTmpTable(TajoConf conf, Path path,
+                                   String tableName, boolean writeMeta)
+      throws IOException {
+    StorageManager sm = StorageManager.get(conf, path);
 
     Appender appender;
     if (writeMeta) {
-      appender = sm.getTableAppender(mockupMeta, tbName);
+      appender = sm.getTableAppender(mockupMeta, tableName);
     } else {
       FileSystem fs = sm.getFileSystem();
-      fs.mkdirs(StorageUtil.concatPath(parent, tbName, "data"));
+      fs.mkdirs(StorageUtil.concatPath(path, tableName, "data"));
       appender = sm.getAppender(mockupMeta,
-          StorageUtil.concatPath(parent, tbName, "data", "tb000"));
+          StorageUtil.concatPath(path, tableName, "data", "tb000"));
     }
     int deptSize = 10000;
     int tupleNum = 100;
@@ -117,6 +118,11 @@ public class WorkerTestingUtil {
       appender.addTuple(tuple);
     }
     appender.close();
+  }
+
+	public static void writeTmpTable(TajoConf conf, String parent,
+	    String tableName, boolean writeMeta) throws IOException {
+    writeTmpTable(conf, new Path(parent), tableName, writeMeta);
 	}
 
   private TajoConf conf;
@@ -151,8 +157,7 @@ public class WorkerTestingUtil {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    ResultSet result = new ResultSetImpl(conf, new File(workDir, "out").getAbsolutePath());
-    return result;
+    return new ResultSetImpl(conf, new File(workDir, "out").getAbsolutePath());
   }
 
   public static File createTmpTestDir() {

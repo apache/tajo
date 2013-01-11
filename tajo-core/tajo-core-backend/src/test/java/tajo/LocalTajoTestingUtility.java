@@ -51,7 +51,7 @@ public class LocalTajoTestingUtility {
   }
 
   public ResultSet execute(String query) throws IOException, ServiceException {
-    return client.executeQueryAndWait(query);
+    return client.executeQueryAndGetResult(query);
   }
 
   public void shutdown() throws IOException {
