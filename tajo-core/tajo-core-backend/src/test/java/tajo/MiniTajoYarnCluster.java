@@ -97,7 +97,7 @@ public class MiniTajoYarnCluster extends MiniYARNCluster {
         Service.class);
 
     // Non-standard shuffle port
-    conf.setInt(PullServerAuxService.PULLSERVER_PORT_CONFIG_KEY, 0);
+    conf.setInt(TajoConf.ConfVars.PULLSERVER_PORT.name(), 0);
 
     conf.setClass(YarnConfiguration.NM_CONTAINER_EXECUTOR,
         DefaultContainerExecutor.class, ContainerExecutor.class);

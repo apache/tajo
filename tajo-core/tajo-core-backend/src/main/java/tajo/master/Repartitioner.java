@@ -1,6 +1,4 @@
 /*
- * Copyright 2012 Database Lab., Korea Univ.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,6 +25,7 @@ import tajo.catalog.SortSpec;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
+import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.planner.PlannerUtil;
 import tajo.engine.planner.RangePartitionAlgorithm;
 import tajo.engine.planner.UniformRangePartition;
@@ -58,7 +57,7 @@ public class Repartitioner {
 
   private static int HTTP_REQUEST_MAXIMUM_LENGTH = 1900;
 
-  public static QueryUnit [] createJoinTasks(SubQuery subQuery, int maxNum)
+  public static QueryUnit [] createJoinTasks(SubQuery subQuery)
       throws IOException {
 
     CatalogService catalog = subQuery.queryContext.getCatalog();
@@ -66,9 +65,9 @@ public class Repartitioner {
     ScanNode[] scans = subQuery.getScanNodes();
     Path tablePath;
     Fragment [] fragments = new Fragment[2];
+    TableStat [] stats = new TableStat[2];
 
-    // Creating Fragments
-    // If the data repartitioning, fragments will be dummy ones
+    // initialize variables from the child operators
     for (int i =0; i < 2; i++) {
       // TODO - temporarily tables should be stored in temporarily catalog for each query
       if (scans[i].getTableId().startsWith(SubQueryId.PREFIX)) {
@@ -86,6 +85,9 @@ public class Repartitioner {
             catalog.getTableDesc(scans[i].getTableId()).getMeta(),
             new Path(tablePath, "data")).get(0);
       }
+
+      // Getting a table stat for each scan
+      stats[i] = subQuery.getChildMaps().get(scans[i]).getStats();
     }
 
     // Assigning either fragments or fetch urls to query units
@@ -128,9 +130,24 @@ public class Repartitioner {
         }
       }
 
+      // Getting the desire number of join tasks according to the volumn
+      // of a larger table
+      int largerIdx = stats[0].getNumBytes() >= stats[1].getNumBytes() ? 0 : 1;
+      int desireJoinTaskVolumn
+          = subQuery.queryContext.getConf().
+          getIntVar(ConfVars.JOIN_TASK_VOLUME);
+
+      // calculate the number of tasks according to the data size
+      int mb = (int) Math.ceil((double)stats[largerIdx].getNumBytes() / 1048576);
+      LOG.info("Total size of intermediate data is approximately " + mb + " MB");
+      // determine the number of task per 64MB
+      int maxTaskNum = (int) Math.ceil((double)mb / desireJoinTaskVolumn);
+      LOG.info("The calculated number of tasks is " + maxTaskNum);
+      LOG.info("The number of total partition keys is " + hashEntries.size());
       // the number of join tasks cannot be larger than the number of
       // distinct partition ids.
-      int joinTaskNum = Math.min(maxNum, hashEntries.size());
+      int joinTaskNum = Math.min(maxTaskNum, hashEntries.size());
+      LOG.info("The determined number of join tasks is " + joinTaskNum);
       QueryUnit [] createdTasks = newEmptyJoinTask(subQuery, fragments, joinTaskNum);
 
       // Assign partitions to tasks in a round robin manner.
@@ -277,13 +294,6 @@ public class Repartitioner {
     SortSpec[] sortSpecs = sort.getSortKeys();
     Schema sortSchema = PlannerUtil.sortSpecsToSchema(sort.getSortKeys());
 
-    // calculate the number of tasks according to the data size
-    int mb = (int) Math.ceil((double)stat.getNumBytes() / 1048576);
-    LOG.info("Total size of intermediate data is approximately " + mb + " MB");
-    // determine the number of task per 64MB
-    int maxTaskNum = (int) Math.ceil((double)mb / 64);
-    LOG.info("The desired number of tasks is set to " + maxTaskNum);
-
     // calculate the number of maximum query ranges
     TupleRange mergedRange =
         TupleUtil.columnStatToRange(sort.getOutSchema(),
@@ -294,15 +304,18 @@ public class Repartitioner {
 
     // if the number of the range cardinality is less than the desired number of tasks,
     // we set the the number of tasks to the number of range cardinality.
-    if (card.compareTo(new BigDecimal(maxTaskNum)) < 0) {
+    int determinedTaskNum;
+    if (card.compareTo(new BigDecimal(maxNum)) < 0) {
       LOG.info("The range cardinality (" + card
-          + ") is less then the desired number of tasks (" + maxTaskNum + ")");
-      maxTaskNum = card.intValue();
+          + ") is less then the desired number of tasks (" + maxNum + ")");
+      determinedTaskNum = card.intValue();
+    } else {
+      determinedTaskNum = maxNum;
     }
 
-    LOG.info("Try to divide " + mergedRange + " into " + maxTaskNum +
-        " sub ranges (total units: " + maxTaskNum + ")");
-    TupleRange [] ranges = partitioner.partition(maxTaskNum);
+    LOG.info("Try to divide " + mergedRange + " into " + determinedTaskNum +
+        " sub ranges (total units: " + determinedTaskNum + ")");
+    TupleRange [] ranges = partitioner.partition(determinedTaskNum);
 
     Fragment dummyFragment = new Fragment(scan.getTableId(), tablePath,
         TCatUtil.newTableMeta(scan.getInSchema(), StoreType.CSV),
@@ -343,7 +356,7 @@ public class Repartitioner {
       LOG.error(e);
     }
 
-    QueryUnit [] tasks = createEmptyNonLeafTasks(subQuery, maxTaskNum, dummyFragment);
+    QueryUnit [] tasks = createEmptyNonLeafTasks(subQuery, determinedTaskNum, dummyFragment);
     assignPartitionByRoundRobin(map, scan.getTableId(), tasks);
     return tasks;
   }
@@ -424,12 +437,12 @@ public class Repartitioner {
     GroupbyNode groupby = (GroupbyNode) childSubQuery.getStoreTableNode().
         getSubNode();
     // the number of tasks cannot exceed the number of merged fetch uris.
-    int desiredTaskNum = Math.min(maxNum, finalFetchURI.size());
+    int determinedTaskNum = Math.min(maxNum, finalFetchURI.size());
     if (groupby.getGroupingColumns().length == 0) {
-      desiredTaskNum = 1;
+      determinedTaskNum = 1;
     }
 
-    QueryUnit [] tasks = createEmptyNonLeafTasks(subQuery, desiredTaskNum, frag);
+    QueryUnit [] tasks = createEmptyNonLeafTasks(subQuery, determinedTaskNum, frag);
 
     int tid = 0;
     for (Entry<Integer, List<URI>> entry : finalFetchURI.entrySet()) {

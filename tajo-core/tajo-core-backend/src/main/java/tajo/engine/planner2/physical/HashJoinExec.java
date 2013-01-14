@@ -164,7 +164,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
         newValue.add(tuple);
         tupleSlots.put(keyTuple, newValue);
       } else {
-        newValue = new ArrayList<Tuple>();
+        newValue = new ArrayList<>();
         newValue.add(tuple);
         tupleSlots.put(keyTuple, newValue);
       }
@@ -182,6 +182,10 @@ public class HashJoinExec extends BinaryPhysicalExec {
     finished = false;
     iterator = null;
     nextOuter = true;
+  }
+
+  public void close() throws IOException {
+    tupleSlots.clear();
   }
 
   JoinNode getPlan() {

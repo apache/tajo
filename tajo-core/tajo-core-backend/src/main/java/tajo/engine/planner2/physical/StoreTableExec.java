@@ -64,7 +64,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
       Path storeTablePath = new Path(context.getWorkDir(), "out");
       sm.initLocalTableBase(storeTablePath, meta);
       this.appender = sm.getLocalAppender(meta,
-          StorageUtil.concatPath(storeTablePath, "data", "0"));
+          StorageUtil.concatPath(storeTablePath, "0"));
     } else {
       this.appender = sm.getAppender(meta, context.getOutputPath());
     }

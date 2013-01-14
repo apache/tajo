@@ -57,8 +57,12 @@ public class RMContainerAllocator extends RMCommunicator
     if (allocatedContainers.size() > 0) {
       for (Container container : allocatedContainers) {
         SubQueryId subQueryId = subQueryMap.get(container.getPriority());
-        if (query.getSubQuery(subQueryId).getState() == SubQueryState.SUCCEEDED) {
+        if (!subQueryMap.containsKey(container.getPriority()) ||
+            query.getSubQuery(subQueryId).getState() == SubQueryState.SUCCEEDED) {
           release.add(container.getId());
+          synchronized (subQueryMap) {
+            subQueryMap.remove(container.getPriority());
+          }
         } else {
           if (allocated.containsKey(subQueryId)) {
             allocated.get(subQueryId).add(container);
@@ -172,6 +176,7 @@ public class RMContainerAllocator extends RMCommunicator
       LOG.info("> Node Id: " + container.getNodeId());
       LOG.info("> Resource (Mem): " + container.getResource().getMemory());
       LOG.info("> State : " + container.getState());
+      LOG.info("> Priority: " + container.getPriority());
     }
     LOG.info("Reboot: " + response.getReboot());
     LOG.info("Num of Updated Node: " + response.getUpdatedNodes());
