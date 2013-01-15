@@ -231,23 +231,107 @@ public class Query implements EventHandler<QueryEvent> {
 
     @Override
     public QueryState transition(Query query, QueryEvent queryEvent) {
-      scheduleSubQueries(query, query.getPlan().getRoot());
+      scheduleSubQueriesPostfix(query);
       LOG.info("Scheduled SubQueries: " + query.getScheduleQueueSize());
 
       return QueryState.QUERY_INIT;
     }
 
-    private void scheduleSubQueries(Query query, SubQuery subQuery) {
-      int priority;
+    private int priority = 0;
 
-      if (subQuery.hasChildQuery()) {
+    private void scheduleSubQueriesPostfix(Query query) {
+      SubQuery root = query.getPlan().getRoot();
+
+      scheduleSubQueriesPostfix_(query, root);
+
+      root.setPriority(priority);
+      query.addSubQuery(root);
+      query.schedule(root);
+    }
+    private void scheduleSubQueriesPostfix_(Query query, SubQuery current) {
+      if (current.hasChildQuery()) {
+        if (current.getChildQueries().size() == 1) {
+          SubQuery subQuery = current.getChildQueries().iterator().next();
+          scheduleSubQueriesPostfix_(query, subQuery);
+          identifySubQuery(subQuery);
+
+          query.addSubQuery(subQuery);
+          query.schedule(subQuery);
+
+          priority++;
+        } else {
+          Iterator<SubQuery> it = current.getChildQueries().iterator();
+          SubQuery outer = it.next();
+          SubQuery inner = it.next();
+
+          // Switch between outer and inner
+          // if an inner has a child and an outer doesn't.
+          // It is for left-deep-first search.
+          if (!outer.hasChildQuery() && inner.hasChildQuery()) {
+            SubQuery tmp = outer;
+            outer = inner;
+            inner = tmp;
+          }
+
+          scheduleSubQueriesPostfix_(query, outer);
+          scheduleSubQueriesPostfix_(query, inner);
+
+          identifySubQuery(outer);
+          identifySubQuery(inner);
+
+          query.addSubQuery(outer);
+          query.schedule(outer);
+          query.addSubQuery(inner);
+          query.schedule(inner);
+
+          priority++;
+        }
+      }
+    }
+
+    private void identifySubQuery(SubQuery subQuery) {
+      SubQuery parent = subQuery.getParentQuery();
+
+      if (!subQuery.hasChildQuery()) {
+
+        if (parent.getScanNodes().length == 2) {
+          Iterator<SubQuery> childIter = subQuery.getParentQuery().getChildIterator();
+
+          while (childIter.hasNext()) {
+            SubQuery another = childIter.next();
+            if (!subQuery.equals(another)) {
+              if (another.hasChildQuery()) {
+                subQuery.setPriority(++priority);
+              }
+            }
+          }
+
+          if (subQuery.getPriority() == null) {
+            subQuery.setPriority(0);
+          }
+        } else {
+          // if subQuery is leaf and not part of join.
+          if (!subQuery.hasChildQuery()) {
+            subQuery.setPriority(0);
+          }
+        }
+      } else {
+        subQuery.setPriority(priority);
+      }
+    }
+
+    private void scheduleSubQueries(Query query, SubQuery current) {
+      int priority = 0;
+
+      if (current.hasChildQuery()) {
 
         int maxPriority = 0;
-        Iterator<SubQuery> it = subQuery.getChildIterator();
+        Iterator<SubQuery> it = current.getChildIterator();
 
         while (it.hasNext()) {
           SubQuery su = it.next();
           scheduleSubQueries(query, su);
+
           if (su.getPriority().get() > maxPriority) {
             maxPriority = su.getPriority().get();
           }
@@ -256,13 +340,27 @@ public class Query implements EventHandler<QueryEvent> {
         priority = maxPriority + 1;
 
       } else {
+        SubQuery parent = current.getParentQuery();
         priority = 0;
+
+        if (parent.getScanNodes().length == 2) {
+          Iterator<SubQuery> childIter = current.getParentQuery().getChildIterator();
+
+          while (childIter.hasNext()) {
+            SubQuery another = childIter.next();
+            if (!current.equals(another)) {
+              if (another.hasChildQuery()) {
+                priority = another.getPriority().get() + 1;
+              }
+            }
+          }
+        }
       }
 
-      subQuery.setPriority(priority);
+      current.setPriority(priority);
       // TODO
-      query.addSubQuery(subQuery);
-      query.schedule(subQuery);
+      query.addSubQuery(current);
+      query.schedule(current);
     }
   }
 
@@ -313,7 +411,8 @@ public class Query implements EventHandler<QueryEvent> {
 
         nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(),
             SubQueryEventType.SQ_INIT));
-        LOG.info("Schedule unit plan: \n" + nextSubQuery.getLogicalPlan());
+        LOG.info("Scheduling SubQuery's Priority: \n" + nextSubQuery.getPriority());
+        LOG.info("Scheduling SubQuery's Plan: \n" + nextSubQuery.getLogicalPlan());
         QueryState state = query.checkQueryForCompleted();
         return state;
       } else if (castEvent.getFinalState() == SubQueryState.FAILED) {

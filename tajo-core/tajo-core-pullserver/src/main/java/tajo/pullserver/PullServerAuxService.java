@@ -118,9 +118,6 @@ public class PullServerAuxService extends AbstractService
     new ConcurrentHashMap<>();
   private static String userName;
 
-  public static final String PULLSERVER_PORT_CONFIG_KEY = "tajo.pullserver.port";
-  public static final int DEFAULT_PULLSERVER_PORT = 8080;
-
   public static final String SUFFLE_SSL_FILE_BUFFER_SIZE_KEY =
     "tajo.pullserver.ssl.file.buffer.size";
 
@@ -236,11 +233,12 @@ public class PullServerAuxService extends AbstractService
       throw new RuntimeException(ex);
     }
     bootstrap.setPipelineFactory(pipelineFact);
-    port = conf.getInt(PULLSERVER_PORT_CONFIG_KEY, DEFAULT_PULLSERVER_PORT);
+    port = conf.getInt(ConfVars.PULLSERVER_PORT.varname,
+        ConfVars.PULLSERVER_PORT.defaultIntVal);
     Channel ch = bootstrap.bind(new InetSocketAddress(port));
     accepted.add(ch);
     port = ((InetSocketAddress)ch.getLocalAddress()).getPort();
-    conf.set(PULLSERVER_PORT_CONFIG_KEY, Integer.toString(port));
+    conf.set(ConfVars.PULLSERVER_PORT.varname, Integer.toString(port));
     pipelineFact.PullServer.setPort(port);
     LOG.info(getName() + " listening on port " + port);
     super.start();
@@ -325,8 +323,8 @@ public class PullServerAuxService extends AbstractService
     public PullServer(Configuration conf) {
       this.conf = conf;
 //      indexCache = new IndexCache(new JobConf(conf));
-      this.port = conf.getInt(PULLSERVER_PORT_CONFIG_KEY,
-          DEFAULT_PULLSERVER_PORT);
+      this.port = conf.getInt(ConfVars.PULLSERVER_PORT.varname,
+          ConfVars.PULLSERVER_PORT.defaultIntVal);
     }
     
     public void setPort(int port) {

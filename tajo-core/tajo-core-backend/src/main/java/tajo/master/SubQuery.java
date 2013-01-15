@@ -38,7 +38,9 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.ColumnStat;
 import tajo.catalog.statistics.StatisticsUtil;
 import tajo.catalog.statistics.TableStat;
+import tajo.conf.TajoConf;
 import tajo.engine.json.GsonCreator;
+import tajo.engine.planner.PlannerUtil;
 import tajo.engine.planner.logical.*;
 import tajo.master.QueryMaster.QueryContext;
 import tajo.master.event.*;
@@ -52,6 +54,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static tajo.conf.TajoConf.ConfVars;
 
 
 public class SubQuery implements EventHandler<SubQueryEvent> {
@@ -434,11 +438,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
     } else {
       TableStat stat = generateStat();
+      setStats(stat);
       try {
         writeStat(this, stat);
       } catch (IOException e) {
       }
-      setStats(stat);
     }
   }
 
@@ -463,22 +467,36 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           subQuery.eventHandler.handle(new SubQuerySucceeEvent(subQuery.getId(),
               meta));
           return SubQueryState.SUCCEEDED;
-
-
         } else {
           QueryUnit [] tasks;
           // TODO - should be improved
           if (subQuery.isLeafQuery() && subQuery.getScanNodes().length == 1) {
-            int numTasks = subQuery.getPlanner().getTaskNum(subQuery);
-            subQuery.getPlanner().setPartitionNumberForTwoPhase(subQuery, numTasks);
+            SubQuery parent = subQuery.getParentQuery();
+            // if parent is join, this subquery is for partitioning data.
+            if (parent != null) {
+              int numTasks = calculatePartitionNum(subQuery);
+              subQuery.getPlanner().setPartitionNumberForTwoPhase(subQuery, numTasks);
+            }
+
             tasks = subQuery.getPlanner().createLeafTasks(subQuery);
           } else if (subQuery.getScanNodes().length > 1) {
-            int numTasks = subQuery.getPlanner().getTaskNum(subQuery);
-            subQuery.getPlanner().setPartitionNumberForTwoPhase(subQuery, 32);
-            tasks = Repartitioner.createJoinTasks(subQuery, 32);
+            SubQuery parent = subQuery.getParentQuery();
+            // if parent is join, this subquery is for partitioning data.
+            if (parent != null) {
+              int numTasks = calculatePartitionNum(subQuery);
+              subQuery.getPlanner().setPartitionNumberForTwoPhase(subQuery, numTasks);
+            }
+            tasks = Repartitioner.createJoinTasks(subQuery);
+
           } else {
-            int numTasks = subQuery.getPlanner().getTaskNum(subQuery);
-            subQuery.getPlanner().setPartitionNumberForTwoPhase(subQuery, numTasks);
+            SubQuery parent = subQuery.getParentQuery();
+            // if parent is join, this subquery is for partitioning data.
+            if (parent != null) {
+              int partitionNum = calculatePartitionNum(subQuery);
+              subQuery.getPlanner().setPartitionNumberForTwoPhase(subQuery, partitionNum);
+            }
+            int numTasks = getNonLeafTaskNum(subQuery);
+
             tasks = Repartitioner.createNonLeafTask(subQuery,
                 subQuery.getChildIterator().next(), numTasks);
           }
@@ -517,7 +535,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               org.apache.hadoop.yarn.api.records.Priority priority =
                   RecordFactoryProvider.getRecordFactory(null).newRecordInstance(
                       org.apache.hadoop.yarn.api.records.Priority.class);
-              priority.setPriority(5);
+              priority.setPriority(100 - subQuery.getPriority().get());
               GrouppedContainerAllocatorEvent event =
                   new GrouppedContainerAllocatorEvent(ContainerAllocatorEventType.CONTAINER_REQ,
                       subQuery.getId(), priority, resource, requestMap, subQuery.isLeafQuery(), 0.0f);
@@ -530,7 +548,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               org.apache.hadoop.yarn.api.records.Priority priority =
                   RecordFactoryProvider.getRecordFactory(null).newRecordInstance(
                       org.apache.hadoop.yarn.api.records.Priority.class);
-              priority.setPriority(3);
+              priority.setPriority(100 - subQuery.getPriority().get());
               ContainerAllocationEvent event =
                   new ContainerAllocationEvent(ContainerAllocatorEventType.CONTAINER_REQ,
                       subQuery.getId(), priority, resource, tasks.length, subQuery.isLeafQuery(), 0.0f);
@@ -548,6 +566,108 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         return SubQueryState.FAILED;
       }
     }
+  }
+
+  /**
+   * Getting the desire number of partitions according to the volume of input data.
+   * This method is only used to determine the partition key number of hash join or aggregation.
+   *
+   * @param subQuery
+   * @return
+   */
+  public static int calculatePartitionNum(SubQuery subQuery) {
+    TajoConf conf = subQuery.queryContext.getConf();
+    SubQuery parent = subQuery.getParentQuery();
+
+    GroupbyNode grpNode = null;
+    if (parent != null) {
+      grpNode = (GroupbyNode) PlannerUtil.findTopNode(
+          parent.getLogicalPlan(), ExprType.GROUP_BY);
+    }
+
+    // Is this subquery the first step of join?
+    if (parent != null && parent.getScanNodes().length == 2) {
+      Iterator<SubQuery> child = parent.getChildQueries().iterator();
+
+      // for inner
+      SubQuery outer = child.next();
+      long outerVolume = getInputVolume(outer);
+
+      // for inner
+      SubQuery inner = child.next();
+      long innerVolume = getInputVolume(inner);
+
+      long larger = Math.max(outerVolume, innerVolume);
+      int mb = (int) Math.ceil((double)larger / 1048576);
+      LOG.info("Larger Table's volume is approximately " + mb + " MB");
+      // determine the number of task
+      int taskNum = (int) Math.ceil((double)mb /
+          conf.getIntVar(ConfVars.JOIN_PARTITION_VOLUME));
+      LOG.info("The determined number of join partitions is " + taskNum);
+      return taskNum;
+
+      // Is this subquery the first step of group-by?
+    } else if (grpNode != null) {
+
+      if (grpNode.getGroupingColumns().length == 0) {
+        return 1;
+      } else {
+        long volume = getInputVolume(subQuery);
+
+        int mb = (int) Math.ceil((double)volume / 1048576);
+        LOG.info("Table's volume is approximately " + mb + " MB");
+        // determine the number of task
+        int taskNum = (int) Math.ceil((double)mb /
+            conf.getIntVar(ConfVars.AGGREGATION_PARTITION_VOLUME));
+        LOG.info("The determined number of aggregation partitions is " + taskNum);
+        return taskNum;
+      }
+    } else {
+      LOG.info("============>>>>> Unexpected Case! <<<<<================");
+      long volume = getInputVolume(subQuery);
+
+      int mb = (int) Math.ceil((double)volume / 1048576);
+      LOG.info("Table's volume is approximately " + mb + " MB");
+      // determine the number of task per 64MB
+      int taskNum = (int) Math.ceil((double)mb / 128);
+      LOG.info("The determined number of partitions is " + taskNum);
+      return taskNum;
+    }
+  }
+
+  public static long getInputVolume(SubQuery subQuery) {
+    CatalogService catalog = subQuery.queryContext.getCatalog();
+    if (subQuery.hasChildQuery()) {
+      Iterator<SubQuery> it = subQuery.getChildQueries().iterator();
+      long aggregatedVolume = 0;
+      while(it.hasNext()) {
+        aggregatedVolume += it.next().getStats().getNumBytes();
+      }
+
+      return aggregatedVolume;
+    } else {
+      ScanNode outerScan = subQuery.getScanNodes()[0];
+      TableStat stat = catalog.getTableDesc(outerScan.getTableId()).getMeta().getStat();
+      return stat.getNumBytes();
+    }
+  }
+
+  /**
+   * Getting the desire number of tasks according to the volume of input data
+   *
+   * @param subQuery
+   * @return
+   */
+  public static int getNonLeafTaskNum(SubQuery subQuery) {
+    // Getting intermediate data size
+    long volume = getInputVolume(subQuery);
+
+    int mb = (int) Math.ceil((double)volume / 1048576);
+    LOG.info("Table's volume is approximately " + mb + " MB");
+    // determine the number of task per 64MB
+    int maxTaskNum = (int) Math.ceil((double)mb / 128);
+    LOG.info("The determined number of non-leaf tasks is " + maxTaskNum);
+    return maxTaskNum;
   }
 
   private static class ContainerLaunchTransition
@@ -681,6 +801,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       stats.add(unit.getStats());
     }
     TableStat tableStat = StatisticsUtil.aggregateTableStat(stats);
+    setStats(tableStat);
     return tableStat;
   }
 

@@ -98,7 +98,6 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
     Appender appender = appenderMap.get(partition);
     if (appender == null) {
       Path dataFile = getDataFile(partition);
-      LOG.info(">>>>>> " + dataFile.toString());
       appender = sm.getLocalAppender(meta, dataFile);      
       appenderMap.put(partition, appender);
     } else {

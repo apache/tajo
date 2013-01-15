@@ -101,6 +101,7 @@ public class TajoConf extends YarnConfiguration {
     //////////////////////////////////
     // Pull Server
     //////////////////////////////////
+    PULLSERVER_PORT("tajo.pullserver.port", 0),
     SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false),
 
     //////////////////////////////////
@@ -148,6 +149,13 @@ public class TajoConf extends YarnConfiguration {
 
     // Query Execution Section
     SORT_BUFFER_SIZE("tajo.sort.mb", 1),
+    JOIN_TASK_VOLUME("tajo.join.task-volume.mb", 128),
+    SORT_TASK_VOLUME("tajo.sort.task-volume.mb", 128),
+    AGGREGATION_TASK_VOLUME("tajo.task-aggregation.volume.mb", 128),
+
+    JOIN_PARTITION_VOLUME("tajo.join.part-volume.mb", 512),
+    SORT_PARTITION_VOLUME("tajo.sort.part-volume.mb", 512),
+    AGGREGATION_PARTITION_VOLUME("tajo.aggregation.part-volume.mb", 512),
 
     // GeoIP
     GEOIP_DATA("tajo.geoip.data", "/usr/local/share/GeoIP/GeoIP.dat"),
