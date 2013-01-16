@@ -37,6 +37,7 @@ message QueryUnitRequestProto {
     required string serializedData = 5;
     optional bool interQuery = 6 [default = false];
     repeated Fetch fetches = 7;
+    optional bool shouldDie = 8;
 }
 
 message Fetch {

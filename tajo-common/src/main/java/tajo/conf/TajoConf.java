@@ -17,8 +17,6 @@
 package tajo.conf;
 
 import com.google.common.collect.Maps;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -27,8 +25,6 @@ import java.io.PrintStream;
 import java.util.Map;
 
 public class TajoConf extends YarnConfiguration {
-  private static final Log LOG = LogFactory.getLog(TajoConf.class);
-
   static{
     Configuration.addDefaultResource("catalog-default.xml");
     Configuration.addDefaultResource("catalog-site.xml");
@@ -153,9 +149,9 @@ public class TajoConf extends YarnConfiguration {
     SORT_TASK_VOLUME("tajo.sort.task-volume.mb", 128),
     AGGREGATION_TASK_VOLUME("tajo.task-aggregation.volume.mb", 128),
 
-    JOIN_PARTITION_VOLUME("tajo.join.part-volume.mb", 512),
-    SORT_PARTITION_VOLUME("tajo.sort.part-volume.mb", 512),
-    AGGREGATION_PARTITION_VOLUME("tajo.aggregation.part-volume.mb", 512),
+    JOIN_PARTITION_VOLUME("tajo.join.part-volume.mb", 256),
+    SORT_PARTITION_VOLUME("tajo.sort.part-volume.mb", 256),
+    AGGREGATION_PARTITION_VOLUME("tajo.aggregation.part-volume.mb", 256),
 
     // GeoIP
     GEOIP_DATA("tajo.geoip.data", "/usr/local/share/GeoIP/GeoIP.dat"),
