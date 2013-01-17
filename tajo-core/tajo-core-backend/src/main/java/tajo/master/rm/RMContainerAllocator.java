@@ -171,15 +171,17 @@ public class RMContainerAllocator extends RMCommunicator
     //LOG.info("Response Id: " + response.getResponseId());
     LOG.info("Available Resource: " + response.getAvailableResources());
     LOG.info("Num of Allocated Containers: " + response.getAllocatedContainers().size());
-    LOG.info("================================================================");
-    for (Container container : response.getAllocatedContainers()) {
-      LOG.info("> Container Id: " + container.getId());
-      LOG.info("> Node Id: " + container.getNodeId());
-      LOG.info("> Resource (Mem): " + container.getResource().getMemory());
-      LOG.info("> State : " + container.getState());
-      LOG.info("> Priority: " + container.getPriority());
+    if (response.getAllocatedContainers().size() > 0) {
+      LOG.info("================================================================");
+      for (Container container : response.getAllocatedContainers()) {
+        LOG.info("> Container Id: " + container.getId());
+        LOG.info("> Node Id: " + container.getNodeId());
+        LOG.info("> Resource (Mem): " + container.getResource().getMemory());
+        LOG.info("> State : " + container.getState());
+        LOG.info("> Priority: " + container.getPriority());
+      }
+      LOG.info("================================================================");
     }
-    LOG.info("================================================================");
     /*
     LOG.info("Reboot: " + response.getReboot());
     LOG.info("Num of Updated Node: " + response.getUpdatedNodes());

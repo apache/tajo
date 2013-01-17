@@ -410,7 +410,9 @@ public class Repartitioner {
 
     List<IntermediateEntry> partitions = new ArrayList<>();
     for (QueryUnit tasks : childSubQuery.getQueryUnits()) {
-      partitions.addAll(tasks.getIntermediateData());
+      if (tasks.getIntermediateData() != null) {
+        partitions.addAll(tasks.getIntermediateData());
+      }
     }
 
     Fragment frag = new Fragment(scan.getTableId(), tablePath,

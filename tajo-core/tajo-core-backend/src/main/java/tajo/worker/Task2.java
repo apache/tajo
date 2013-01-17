@@ -362,7 +362,6 @@ public class Task2 {
         this.executor.init();
         while(executor.next() != null && !killed) {
           ++progress;
-          System.out.println("ROW PROCEED: " + progress);
         }
         this.executor.close();
       }

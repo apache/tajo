@@ -38,12 +38,14 @@ import tajo.QueryUnitAttemptId;
 import tajo.SubQueryId;
 import tajo.TajoProtos.TaskAttemptState;
 import tajo.conf.TajoConf.ConfVars;
+import tajo.engine.MasterWorkerProtos;
 import tajo.engine.MasterWorkerProtos.QueryUnitRequestProto;
 import tajo.engine.query.QueryUnitRequestImpl;
 import tajo.ipc.MasterWorkerProtocol;
 import tajo.ipc.MasterWorkerProtocol.MasterWorkerProtocolService;
 import tajo.ipc.MasterWorkerProtocol.MasterWorkerProtocolService.Interface;
 import tajo.rpc.CallFuture2;
+import tajo.rpc.NullCallback;
 import tajo.rpc.ProtoAsyncRpcClient;
 import tajo.util.TajoIdUtils;
 
@@ -257,6 +259,14 @@ public class TaskRunner extends AbstractService {
                     LOG.info("Accumulated Received Task: " + (++receivedNum));
                     QueryUnitAttemptId taskAttemptId =
                         new QueryUnitAttemptId(taskRequest.getId());
+                    if (tasks.containsKey(taskAttemptId)) {
+                      MasterWorkerProtos.TaskFatalErrorReport.Builder builder =
+                      MasterWorkerProtos.TaskFatalErrorReport.newBuilder()
+                          .setErrorMessage("Duplicate Task Attempt: " +
+                          taskAttemptId);
+                      master.fatalError(null, builder.build(), NullCallback.get());
+                      continue;
+                    }
                     Path taskTempDir = localFS.makeQualified(
                         lDirAllocator.getLocalPathForWrite(baseDir +
                             "/" + taskAttemptId.getQueryUnitId().getId()
@@ -264,6 +274,7 @@ public class TaskRunner extends AbstractService {
 
                     Task2 task = new Task2(taskAttemptId, workerContext, master,
                         new QueryUnitRequestImpl(taskRequest), taskTempDir);
+                    tasks.put(taskAttemptId, task);
                     task.init();
                     if (task.hasFetchPhase()) {
                       task.fetch(); // The fetch is performed in an asynchronous way.

@@ -77,11 +77,10 @@ public class StorageManager {
 	public Path initLocalTableBase(Path tablePath, TableMeta meta) throws IOException {
 	  FileSystem fs = FileSystem.getLocal(conf);
     if (fs.exists(tablePath)) {
-      //throw new AlreadyExistsStorageException(tablePath);
-      fs.delete(tablePath, true);
+      throw new AlreadyExistsStorageException(tablePath);
+    } else {
+      fs.mkdirs(tablePath);
     }
-
-    fs.mkdirs(tablePath);
     Path dataDir = new Path(tablePath,"data");
 
     if (meta != null) {

@@ -313,7 +313,7 @@ public class TaskSchedulerImpl extends AbstractService
           if (leafTasks.contains(tId)) {
             leafTasks.remove(tId);
             attemptId = tId;
-            LOG.info(attemptId + " Assigned based on host match " + hostName);
+            //LOG.info(attemptId + " Assigned based on host match " + hostName);
             hostLocalAssigned++;
             break;
           }
@@ -330,7 +330,7 @@ public class TaskSchedulerImpl extends AbstractService
             if (leafTasks.contains(tId)) {
               leafTasks.remove(tId);
               attemptId = tId;
-              LOG.info(attemptId + "Assigned based on rack match " + rack);
+              //LOG.info(attemptId + "Assigned based on rack match " + rack);
               rackLocalAssigned++;
               break;
             }
@@ -340,7 +340,7 @@ public class TaskSchedulerImpl extends AbstractService
           if (attemptId == null && leafTaskNum() > 0) {
             attemptId = leafTasks.iterator().next();
             leafTasks.remove(attemptId);
-            LOG.info(attemptId + " Assigned based on * match");
+            //LOG.info(attemptId + " Assigned based on * match");
           }
         }
 

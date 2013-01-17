@@ -271,7 +271,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     Vector<CharSequence> vargs = new Vector<>(30);
 
     // Set java executable command
-    LOG.info("Setting up app master command");
+    //LOG.info("Setting up app master command");
     vargs.add("${JAVA_HOME}" + "/bin/java");
     // Set Xmx based on am memory size
     vargs.add("-Xmx2000m");
