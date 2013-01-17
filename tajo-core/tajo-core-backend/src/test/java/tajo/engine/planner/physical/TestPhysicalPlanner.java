@@ -44,10 +44,7 @@ import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PlannerUtil;
 import tajo.engine.planner.PlanningContext;
-import tajo.engine.planner.logical.LogicalNode;
-import tajo.engine.planner.logical.LogicalRootNode;
-import tajo.engine.planner.logical.StoreTableNode;
-import tajo.engine.planner.logical.UnionNode;
+import tajo.engine.planner.logical.*;
 import tajo.engine.planner2.PhysicalPlanner;
 import tajo.engine.planner2.PhysicalPlannerImpl;
 import tajo.engine.planner2.physical.ExternalSortExec;
@@ -660,6 +657,49 @@ public class TestPhysicalPlanner {
   public String [] SORT_QUERY = {
       "select name, empId from employee order by empId"
   };
+
+  /*
+  @Test
+  public final void testBug() throws IOException {
+    Schema s1 = new Schema();
+    s1.addColumn("o_orderdate", DataType.STRING);
+    s1.addColumn("o_shippriority", DataType.INT);
+    s1.addColumn("o_orderkey", DataType.LONG);
+
+    Options opt = new Options();
+    opt.put(CSVFile2.DELIMITER, "|");
+    TableMeta meta1 = new TableMetaImpl(s1, StoreType.CSV, opt);
+    TableDesc desc1 = new TableDescImpl("s1", meta1, new Path("file:/home/hyunsik/error/sample/sq_1358404721340_0001_000001_03"));
+
+    Schema s2 = new Schema();
+    s2.addColumn("l_orderkey", DataType.LONG);
+    s2.addColumn("l_extendedprice", DataType.DOUBLE);
+    s2.addColumn("l_discount", DataType.DOUBLE);
+    TableMeta meta2 = new TableMetaImpl(s2, StoreType.CSV, opt);
+    TableDesc desc2 = new TableDescImpl("s2", meta1, new Path("file:/home/hyunsik/error/sample/sq_1358404721340_0001_000001_04"));
+
+    Path workDir = WorkerTestingUtil.buildTestDir("target/test-data/testBug");
+
+
+    Fragment [] frag1 = sm.splitNG("sq_1358404721340_0001_000001_03", meta1, new Path("file:/home/hyunsik/error/sample/sq_1358404721340_0001_000001_03"), util.getDefaultFileSystem().getDefaultBlockSize());
+    Fragment [] frag2 = sm.splitNG("sq_1358404721340_0001_000001_04", meta2, new Path("file:/home/hyunsik/error/sample/sq_1358404721340_0001_000001_04"), util.getDefaultFileSystem().getDefaultBlockSize());
+
+    TaskAttemptContext2 ctx = new TaskAttemptContext2(conf, TUtil.newQueryUnitAttemptId(), null, workDir);
+    PlanningContext context = analyzer.parse("select l_orderkey,  sum(l_extendedprice*(1-l_discount)) as revenue, o_orderdate, o_shippriority from s1, s2 where l_orderkey (LONG) = o_orderkey group by l_orderkey, o_orderdate, o_shippriority order by o_orderdate");
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
+    JoinNode joinNode = (JoinNode) PlannerUtil.findTopNode(plan, ExprType.JOIN);
+
+    ScanNode [] scanNodes = (ScanNode[]) PlannerUtil.findAllNodes(plan, ExprType.SCAN);
+    System.out.println(scanNodes[0].getTableId());
+    System.out.println(scanNodes[1].getTableId());
+//    SeqScanExec seqScanExec = new SeqScanExec(ctx, sm, plan, frag1);
+//
+//    HashJoinExec join = new HashJoinExec(ctx, joinNode, scan1, scan2);
+//
+//    System.out.println(scan1.next());
+//    System.out.println(scan2.next());
+  }*/
 
   @Test
   public final void testIndexedStoreExec() throws IOException {

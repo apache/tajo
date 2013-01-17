@@ -179,8 +179,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
   private class SubQueryEventDispatcher implements EventHandler<SubQueryEvent> {
     public void handle(SubQueryEvent event) {
       SubQueryId id = event.getSubQueryId();
-      LOG.info("SubQueryId: " + id);
-      LOG.info("QueryId: " + query.getId());
       query.getSubQuery(id).handle(event);
     }
   }
