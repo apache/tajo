@@ -111,7 +111,7 @@ public class TajoConf extends YarnConfiguration {
     //////////////////////////////////
     // Physical Execution Configuration
     //////////////////////////////////
-    EXT_SORT_BUFFER("tajo.extsort.buffer", 400000),
+    EXT_SORT_BUFFER("tajo.extsort.buffer", 800000),
     BROADCAST_JOIN_THRESHOLD("tajo.join.broadcast.threshold", (long)5 * 1048576),
 
 
@@ -144,12 +144,12 @@ public class TajoConf extends YarnConfiguration {
     FINAL_SUBQUERY_ID("tajo.query.finalsubquery.id", ""),
 
     // Query Execution Section
-    SORT_BUFFER_SIZE("tajo.sort.mb", 1),
+    SORT_BUFFER_SIZE("tajo.sort.mb", 128),
     JOIN_TASK_VOLUME("tajo.join.task-volume.mb", 128),
-    SORT_TASK_VOLUME("tajo.sort.task-volume.mb", 128),
+    SORT_TASK_VOLUME("tajo.sort.task-volume.mb", 256),
     AGGREGATION_TASK_VOLUME("tajo.task-aggregation.volume.mb", 128),
 
-    JOIN_PARTITION_VOLUME("tajo.join.part-volume.mb", 256),
+    JOIN_PARTITION_VOLUME("tajo.join.part-volume.mb", 64),
     SORT_PARTITION_VOLUME("tajo.sort.part-volume.mb", 256),
     AGGREGATION_PARTITION_VOLUME("tajo.aggregation.part-volume.mb", 256),
 

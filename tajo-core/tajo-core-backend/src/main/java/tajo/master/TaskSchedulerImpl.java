@@ -85,6 +85,7 @@ public class TaskSchedulerImpl extends AbstractService
   }
 
   public void start() {
+    LOG.info("Start TaskScheduler");
     this.eventHandlingThread = new Thread() {
       public void run() {
 

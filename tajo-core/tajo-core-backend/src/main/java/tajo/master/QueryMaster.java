@@ -220,6 +220,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   public class QueryContext {
     private QueryConf conf;
+    int clusterNode;
     public Map<ContainerId, Container> containers = new ConcurrentHashMap<>();
 
     public QueryContext(QueryConf conf) {
@@ -280,6 +281,14 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     public Container getContainer(ContainerId cId) {
       return containers.get(cId);
+    }
+
+    public int getNumClusterNode() {
+      return clusterNode;
+    }
+
+    public void setNumClusterNode(int num) {
+      clusterNode = num;
     }
 
     public CatalogService getCatalog() {

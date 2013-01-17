@@ -92,6 +92,8 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
 
       .addTransition(TaskAttemptState.TA_SUCCEEDED, TaskAttemptState.TA_SUCCEEDED,
           TaskAttemptEventType.TA_UPDATE)
+      .addTransition(TaskAttemptState.TA_SUCCEEDED, TaskAttemptState.TA_SUCCEEDED,
+          TaskAttemptEventType.TA_DONE, new AlreadyDoneTransition())
       .addTransition(TaskAttemptState.TA_SUCCEEDED, TaskAttemptState.TA_FAILED,
           TaskAttemptEventType.TA_FATAL_ERROR, new FailedTransition())
 
@@ -263,6 +265,16 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     public void transition(QueryUnitAttempt queryUnitAttempt,
                            TaskAttemptEvent taskAttemptEvent) {
       LOG.info(">>>>>>>>> Already Assigned: " + queryUnitAttempt.getId());
+    }
+  }
+
+  private static class AlreadyDoneTransition
+      implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent>{
+
+    @Override
+    public void transition(QueryUnitAttempt queryUnitAttempt,
+                           TaskAttemptEvent taskAttemptEvent) {
+      LOG.info(">>>>>>>>> Already Done: " + queryUnitAttempt.getId());
     }
   }
 

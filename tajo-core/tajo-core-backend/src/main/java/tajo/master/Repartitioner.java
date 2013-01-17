@@ -130,16 +130,18 @@ public class Repartitioner {
         }
       }
 
+      LOG.info("Outer Intermediate Volume: " + stats[0].getNumBytes());
+      LOG.info("Inner Intermediate Volume: " + stats[1].getNumBytes());
+
       // Getting the desire number of join tasks according to the volumn
       // of a larger table
       int largerIdx = stats[0].getNumBytes() >= stats[1].getNumBytes() ? 0 : 1;
-      int desireJoinTaskVolumn
-          = subQuery.queryContext.getConf().
+      int desireJoinTaskVolumn = subQuery.queryContext.getConf().
           getIntVar(ConfVars.JOIN_TASK_VOLUME);
 
       // calculate the number of tasks according to the data size
       int mb = (int) Math.ceil((double)stats[largerIdx].getNumBytes() / 1048576);
-      LOG.info("Total size of intermediate data is approximately " + mb + " MB");
+      LOG.info("Larger intermediate data is approximately " + mb + " MB");
       // determine the number of task per 64MB
       int maxTaskNum = (int) Math.ceil((double)mb / desireJoinTaskVolumn);
       LOG.info("The calculated number of tasks is " + maxTaskNum);

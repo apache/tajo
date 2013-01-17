@@ -516,6 +516,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
           } else {
             // the second condition is for some workaround code for join
+            /*
             if (subQuery.isLeafQuery() && subQuery.getScanNodes().length == 1) {
               Map<String, Integer> requestMap = new HashMap<>();
               for (QueryUnit task : tasks) {
@@ -540,7 +541,9 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                   new GrouppedContainerAllocatorEvent(ContainerAllocatorEventType.CONTAINER_REQ,
                       subQuery.getId(), priority, resource, requestMap, subQuery.isLeafQuery(), 0.0f);
               subQuery.eventHandler.handle(event);
-            } else {
+            } else {*/
+            int numRequest = Math.min(tasks.length,
+                subQuery.queryContext.getNumClusterNode() * 4);
               final Resource resource =
                   RecordFactoryProvider.getRecordFactory(null).newRecordInstance(
                       Resource.class);
@@ -551,9 +554,9 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               priority.setPriority(100 - subQuery.getPriority().get());
               ContainerAllocationEvent event =
                   new ContainerAllocationEvent(ContainerAllocatorEventType.CONTAINER_REQ,
-                      subQuery.getId(), priority, resource, tasks.length, subQuery.isLeafQuery(), 0.0f);
+                      subQuery.getId(), priority, resource, numRequest, subQuery.isLeafQuery(), 0.0f);
               subQuery.eventHandler.handle(event);
-            }
+            //}
           }
         }
         return  SubQueryState.INIT;
@@ -596,10 +599,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       // for inner
       SubQuery inner = child.next();
       long innerVolume = getInputVolume(inner);
+      LOG.info("Outer volume: " + Math.ceil((double)outerVolume / 1048576));
+      LOG.info("Inner volume: " + Math.ceil((double)innerVolume / 1048576));
 
-      long larger = Math.max(outerVolume, innerVolume);
-      int mb = (int) Math.ceil((double)larger / 1048576);
-      LOG.info("Larger Table's volume is approximately " + mb + " MB");
+      long smaller = Math.min(outerVolume, innerVolume);
+
+      int mb = (int) Math.ceil((double)smaller / 1048576);
+      LOG.info("Smaller Table's volume is approximately " + mb + " MB");
       // determine the number of task
       int taskNum = (int) Math.ceil((double)mb /
           conf.getIntVar(ConfVars.JOIN_PARTITION_VOLUME));

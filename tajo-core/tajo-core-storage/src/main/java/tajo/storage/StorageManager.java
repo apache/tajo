@@ -77,15 +77,16 @@ public class StorageManager {
 	public Path initLocalTableBase(Path tablePath, TableMeta meta) throws IOException {
 	  FileSystem fs = FileSystem.getLocal(conf);
     if (fs.exists(tablePath)) {
-      throw new AlreadyExistsStorageException(tablePath);
+      //throw new AlreadyExistsStorageException(tablePath);
+      fs.delete(tablePath, true);
     }
 
     fs.mkdirs(tablePath);
-    LOG.info("Created Tmp Dir: " + tablePath);
     Path dataDir = new Path(tablePath,"data");
 
-    if (meta != null)
+    if (meta != null) {
       writeTableMetaLocal(tablePath, meta);
+    }
 
     if (LOG.isDebugEnabled()) {
       LOG.debug("Initialized table root (" + tablePath + ")");
