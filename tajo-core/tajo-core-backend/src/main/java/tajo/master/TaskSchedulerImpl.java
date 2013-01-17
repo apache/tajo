@@ -24,7 +24,10 @@ import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.hadoop.yarn.util.RackResolver;
+import tajo.QueryIdFactory;
 import tajo.QueryUnitAttemptId;
+import tajo.SubQueryId;
+import tajo.engine.MasterWorkerProtos;
 import tajo.engine.planner.logical.ScanNode;
 import tajo.engine.query.QueryUnitRequestImpl;
 import tajo.ipc.protocolrecords.QueryUnitRequest;
@@ -36,6 +39,7 @@ import tajo.master.event.TaskRequestEvent.TaskRequestEventType;
 import tajo.master.event.TaskScheduleEvent;
 import tajo.master.event.TaskSchedulerEvent;
 import tajo.master.event.TaskSchedulerEvent.EventType;
+import tajo.util.TajoIdUtils;
 
 import java.net.URI;
 import java.util.*;
@@ -117,10 +121,34 @@ public class TaskSchedulerImpl extends AbstractService
     super.start();
   }
 
+  private static final QueryUnitAttemptId NULL_ID;
+  private static final MasterWorkerProtos.QueryUnitRequestProto stopTaskRunnerReq;
+  static {
+    SubQueryId nullSubQuery =
+        QueryIdFactory.newSubQueryId(TajoIdUtils.NullQueryId);
+    NULL_ID = QueryIdFactory.newQueryUnitAttemptId(QueryIdFactory.newQueryUnitId(nullSubQuery), 0);
+
+    MasterWorkerProtos.QueryUnitRequestProto.Builder builder =
+                MasterWorkerProtos.QueryUnitRequestProto.newBuilder();
+    builder.setId(NULL_ID.getProto());
+    builder.setShouldDie(true);
+    builder.setOutputTable("");
+    builder.setSerializedData("");
+    builder.setClusteredOutput(false);
+    stopTaskRunnerReq = builder.build();
+  }
+
+
   public void stop() {
     stopEventHandling = true;
     eventHandlingThread.interrupt();
     schedulingThread.interrupt();
+
+    // Return all of request callbacks instantly.
+    for (TaskRequestEvent req : taskRequests.taskRequestQueue) {
+      req.getCallback().run(stopTaskRunnerReq);
+    }
+
     super.stop();
   }
 
@@ -351,9 +379,9 @@ public class TaskSchedulerImpl extends AbstractService
       while (it.hasNext()) {
         taskRequest = it.next();
 
-        QueryUnitAttemptId attemptId = null;
+        QueryUnitAttemptId attemptId;
         // random allocation
-        if (attemptId == null && nonLeafTasks.size() > 0) {
+        if (nonLeafTasks.size() > 0) {
           attemptId = nonLeafTasks.iterator().next();
           nonLeafTasks.remove(attemptId);
           LOG.debug("Assigned based on * match");

@@ -102,6 +102,8 @@ public class Query implements EventHandler<QueryEvent> {
           new SubQueryCompletedTransition())
       .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_ERROR,
           QueryEventType.INTERNAL_ERROR, new InternalErrorTransition())
+       .addTransition(QueryState.QUERY_ERROR, QueryState.QUERY_ERROR,
+          QueryEventType.INTERNAL_ERROR)
 
       .installTopology();
 

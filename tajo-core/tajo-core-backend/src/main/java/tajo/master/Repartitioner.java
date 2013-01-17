@@ -450,10 +450,10 @@ public class Repartitioner {
         tasks[tid].addFetch(scan.getTableId(), uri);
       }
 
-      if (tid >= tasks.length) {
-        tid = 0;
-      } else {
-        tid ++;
+      tid ++;
+
+      if (tid == tasks.length) {
+       tid = 0;
       }
     }
 

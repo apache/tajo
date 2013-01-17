@@ -43,4 +43,6 @@ public interface QueryUnitRequest extends ProtoObject<QueryUnitRequestProto> {
 	public void setInterQuery();
 	public void addFetch(String name, URI uri);
 	public List<Fetch> getFetches();
+  public boolean shouldDie();
+  public void setShouldDie();
 }

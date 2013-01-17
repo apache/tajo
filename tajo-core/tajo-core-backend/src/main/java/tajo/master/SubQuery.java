@@ -26,7 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.NodeId;
+import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
@@ -91,7 +91,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   QueryContext queryContext;
 
   volatile Map<QueryUnitId, QueryUnit> tasks = new ConcurrentHashMap<>();
-  volatile Map<NodeId, Container> containers = new ConcurrentHashMap<>();
+  volatile Map<ContainerId, Container> containers = new ConcurrentHashMap<>();
 
 
   private static ContainerLaunchTransition CONTAINER_LAUNCH_TRANSITION = new ContainerLaunchTransition();
@@ -203,7 +203,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
     
     LogicalNode node = plan;
-    ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
+    ArrayList<LogicalNode> s = new ArrayList<>();
     s.add(node);
     while (!s.isEmpty()) {
       node = s.remove(s.size()-1);
@@ -670,6 +670,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return maxTaskNum;
   }
 
+  int i = 0;
   private static class ContainerLaunchTransition
       implements SingleArcTransition<SubQuery, SubQueryEvent> {
 
@@ -678,10 +679,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       SubQueryContainerAllocationEvent allocationEvent =
           (SubQueryContainerAllocationEvent) event;
       for (Container container : allocationEvent.getAllocatedContainer()) {
-        NodeId nodeId = container.getNodeId();
-        String containerMgrAddr = nodeId.getHost() + ":" + nodeId.getPort();
-        subQuery.containers.put(nodeId, container);
-
+        ContainerId cId = container.getId();
+        if (subQuery.containers.containsKey(cId)) {
+          LOG.info(">>>>>>>>>>>> Duplicate Container! <<<<<<<<<<<");
+        }
+        subQuery.containers.put(cId, container);
+        // TODO - This is debugging message. Should be removed
+        subQuery.i++;
+        LOG.info("SubQuery (" + subQuery.getId() + ") has " + subQuery.i + " containers!");
         subQuery.eventHandler.handle(
             new TaskRunnerLaunchEvent(
                 subQuery.getId(),
@@ -766,7 +771,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       // TODO - records succeeded, failed, killed completed task
       // TODO - records metrics
 
-      for (Entry<NodeId, Container> entry : subQuery.containers.entrySet()) {
+      for (Entry<ContainerId, Container> entry : subQuery.containers.entrySet()) {
         subQuery.eventHandler.handle(new TaskRunnerStopEvent(subQuery.getId(),
             entry.getValue()));
       }

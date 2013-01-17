@@ -157,21 +157,23 @@ public class TaskRunner extends AbstractService {
 
   @Override
   public void stop() {
-    for (Task2 task : tasks.values()) {
-      if (task.getStatus() == TaskAttemptState.TA_PENDING ||
-          task.getStatus() == TaskAttemptState.TA_RUNNING) {
-        task.setState(TaskAttemptState.TA_FAILED);
+    if (!isStopped()) {
+      for (Task2 task : tasks.values()) {
+        if (task.getStatus() == TaskAttemptState.TA_PENDING ||
+            task.getStatus() == TaskAttemptState.TA_RUNNING) {
+          task.setState(TaskAttemptState.TA_FAILED);
+        }
       }
+
+      this.stopped = true;
+
+      LOG.info("STOPPED: " + nodeId);
+      synchronized (this) {
+        notifyAll();
+      }
+
+      client.close();
     }
-
-    this.stopped = true;
-
-    LOG.info("STOPPED: " + nodeId);
-    synchronized (this) {
-      notifyAll();
-    }
-
-    client.close();
   }
 
   class WorkerContext {
@@ -244,27 +246,34 @@ public class TaskRunner extends AbstractService {
                 try {
                   taskRequest = callFuture.get(3, TimeUnit.SECONDS);
                 } catch (TimeoutException te) {
+                  LOG.error(te);
                 }
+
                 if (taskRequest != null) {
-                  LOG.info("Accumulated Received Task: " + (++receivedNum));
-                  QueryUnitAttemptId taskAttemptId =
-                      new QueryUnitAttemptId(taskRequest.getId());
-                  Path taskTempDir = localFS.makeQualified(
-                      lDirAllocator.getLocalPathForWrite(baseDir +
-                          "/" + taskAttemptId.getQueryUnitId().getId()
-                          + "_" + taskAttemptId.getId(), conf));
+                  if (taskRequest.getShouldDie()) {
+                    LOG.info("received ShouldDie flag");
+                    stop();
+                  } else {
+                    LOG.info("Accumulated Received Task: " + (++receivedNum));
+                    QueryUnitAttemptId taskAttemptId =
+                        new QueryUnitAttemptId(taskRequest.getId());
+                    Path taskTempDir = localFS.makeQualified(
+                        lDirAllocator.getLocalPathForWrite(baseDir +
+                            "/" + taskAttemptId.getQueryUnitId().getId()
+                            + "_" + taskAttemptId.getId(), conf));
 
-                  Task2 task = new Task2(taskAttemptId, workerContext, master,
-                      new QueryUnitRequestImpl(taskRequest), taskTempDir);
-                  task.init();
-                  if (task.hasFetchPhase()) {
-                    task.fetch(); // The fetch is performed in an asynchronous way.
+                    Task2 task = new Task2(taskAttemptId, workerContext, master,
+                        new QueryUnitRequestImpl(taskRequest), taskTempDir);
+                    task.init();
+                    if (task.hasFetchPhase()) {
+                      task.fetch(); // The fetch is performed in an asynchronous way.
+                    }
+
+                    task.run();
+
+                    callFuture = null;
+                    taskRequest = null;
                   }
-
-                  task.run();
-
-                  callFuture = null;
-                  taskRequest = null;
                 }
               }
             } catch (Throwable t) {
@@ -294,6 +303,7 @@ public class TaskRunner extends AbstractService {
   private class ShutdownHook implements Runnable {
     @Override
     public void run() {
+      LOG.info("received SIGINT Signal");
       stop();
     }
   }

@@ -49,6 +49,8 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	private Boolean interQuery;
 	@Expose
 	private List<Fetch> fetches;
+  @Expose
+  private Boolean shouldDie;
 	
 	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
 	private QueryUnitRequestProto.Builder builder = null;
@@ -113,7 +115,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 			return fragments;
 		}
 		if (fragments == null) {
-			fragments = new ArrayList<Fragment>();
+			fragments = new ArrayList<>();
 		}
 		for (int i = 0; i < p.getFragmentsCount(); i++) {
 			fragments.add(new Fragment(p.getFragments(i)));
@@ -204,8 +206,27 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
       fetches.add(fetch);
     }
 	}
-	
-	private void maybeInitBuilder() {
+
+  @Override
+  public boolean shouldDie() {
+    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    if (shouldDie != null) {
+      return shouldDie;
+    }
+    if (!p.hasShouldDie()) {
+      return false;
+    }
+    this.shouldDie = p.getShouldDie();
+    return this.shouldDie;
+  }
+
+  @Override
+  public void setShouldDie() {
+    maybeInitBuilder();
+    shouldDie = true;
+  }
+
+  private void maybeInitBuilder() {
 		if (viaProto || builder == null) {
 			builder = QueryUnitRequestProto.newBuilder(proto);
 		}
@@ -236,6 +257,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		if (this.fetches != null) {
 		  builder.addAllFetches(this.fetches);
 		}
+    if (this.shouldDie != null) {
+      builder.setShouldDie(this.shouldDie);
+    }
 	}
 
 	private void mergeLocalToProto() {
@@ -273,6 +297,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     }
     if (fetches == null && p.getFetchesCount() > 0) {
       this.fetches = p.getFetchesList();
+    }
+    if (shouldDie == null && p.getShouldDie()) {
+      this.shouldDie = true;
     }
   }
   
