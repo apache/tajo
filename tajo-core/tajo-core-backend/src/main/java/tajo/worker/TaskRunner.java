@@ -78,7 +78,7 @@ public class TaskRunner extends AbstractService {
   private QueryLauncher queryLauncher;
   private final int coreNum = 4;
   private final ExecutorService fetchLauncher =
-      Executors.newFixedThreadPool(coreNum);
+      Executors.newFixedThreadPool(coreNum * 2);
   private final Map<QueryUnitAttemptId, Task2> tasks = new ConcurrentHashMap<>();
   private LocalDirAllocator lDirAllocator;
 

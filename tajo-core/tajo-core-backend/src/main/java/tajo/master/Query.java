@@ -413,7 +413,7 @@ public class Query implements EventHandler<QueryEvent> {
 
         nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(),
             SubQueryEventType.SQ_INIT));
-        LOG.info("Scheduling SubQuery's Priority: \n" + nextSubQuery.getPriority());
+        LOG.info("Scheduling SubQuery's Priority: " + (100 - nextSubQuery.getPriority().get()));
         LOG.info("Scheduling SubQuery's Plan: \n" + nextSubQuery.getLogicalPlan());
         QueryState state = query.checkQueryForCompleted();
         return state;

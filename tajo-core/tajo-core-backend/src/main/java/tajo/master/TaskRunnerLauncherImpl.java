@@ -296,7 +296,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
       command.append(str).append(" ");
     }
 
-    LOG.info("Completed setting up app master command " + command.toString());
+    //LOG.info("Completed setting up app master command " + command.toString());
     List<String> commands = new ArrayList<>();
     commands.add(command.toString());
 

@@ -120,7 +120,7 @@ public class RMContainerAllocator extends RMCommunicator
           QueryEventType.KILL));
     }
     LOG.info("mapResourceReqt:"+memRequred);
-
+    /*
     if (event.isLeafQuery() && event instanceof GrouppedContainerAllocatorEvent) {
       GrouppedContainerAllocatorEvent allocatorEvent =
           (GrouppedContainerAllocatorEvent) event;
@@ -140,14 +140,14 @@ public class RMContainerAllocator extends RMCommunicator
       ask.addAll(new ArrayList<>(requestList));
       LOG.info(requestList.size());
       LOG.info(ask.size());
-    } else {
+    } else {*/
       ResourceRequest resReq = Records.newRecord(ResourceRequest.class);
       resReq.setHostName("*");
       resReq.setCapability(event.getCapability());
       resReq.setNumContainers(event.getRequiredNum());
       resReq.setPriority(event.getPriority());
       ask.add(resReq);
-    }
+    //}
   }
 
   Set<ResourceRequest> ask = new HashSet<>();
@@ -155,7 +155,7 @@ public class RMContainerAllocator extends RMCommunicator
   Resource availableResources;
   int lastClusterNmCount = 0;
   int clusterNmCount = 0;
-  int lastResponseID = 0;
+  int lastResponseID = 1;
 
   protected AMResponse makeRemoteRequest() throws YarnException, YarnRemoteException {
     AllocateRequest allocateRequest = BuilderUtils.newAllocateRequest(
@@ -168,9 +168,10 @@ public class RMContainerAllocator extends RMCommunicator
     lastClusterNmCount = clusterNmCount;
     clusterNmCount = allocateResponse.getNumClusterNodes();
 
-    LOG.info("Response Id: " + response.getResponseId());
+    //LOG.info("Response Id: " + response.getResponseId());
     LOG.info("Available Resource: " + response.getAvailableResources());
     LOG.info("Num of Allocated Containers: " + response.getAllocatedContainers().size());
+    LOG.info("================================================================");
     for (Container container : response.getAllocatedContainers()) {
       LOG.info("> Container Id: " + container.getId());
       LOG.info("> Node Id: " + container.getNodeId());
@@ -178,6 +179,8 @@ public class RMContainerAllocator extends RMCommunicator
       LOG.info("> State : " + container.getState());
       LOG.info("> Priority: " + container.getPriority());
     }
+    LOG.info("================================================================");
+    /*
     LOG.info("Reboot: " + response.getReboot());
     LOG.info("Num of Updated Node: " + response.getUpdatedNodes());
     for (NodeReport nodeReport : response.getUpdatedNodes()) {
@@ -186,6 +189,7 @@ public class RMContainerAllocator extends RMCommunicator
       LOG.info("> Rack Name: " + nodeReport.getRackName());
       LOG.info("> Used: " + nodeReport.getUsed());
     }
+    */
 
 
     if (ask.size() > 0 || release.size() > 0) {

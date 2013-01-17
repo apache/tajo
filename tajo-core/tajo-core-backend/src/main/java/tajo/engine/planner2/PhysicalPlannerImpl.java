@@ -172,7 +172,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         long outerSize = estimateSizeRecursive(ctx, outerLineage);
         long innerSize = estimateSizeRecursive(ctx, innerLineage);
 
-        final long threshold = 1048576 * 64; // 64MB
+        final long threshold = 1048576 * 128; // 64MB
 
         boolean hashJoin = false;
         if (outerSize < threshold || innerSize < threshold) {
