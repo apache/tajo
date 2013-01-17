@@ -260,7 +260,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     } else {
       String [] outerLineage = PlannerUtil.getLineage(groupbyNode.getSubNode());
       long estimatedSize = estimateSizeRecursive(ctx, outerLineage);
-      final long threshold = 1048576 * 64;
+      final long threshold = 1048576 * 256;
 
       // if the relation size is less than the reshold,
       // the hash aggregation will be used.

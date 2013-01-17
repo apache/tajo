@@ -111,7 +111,7 @@ public class TajoConf extends YarnConfiguration {
     //////////////////////////////////
     // Physical Execution Configuration
     //////////////////////////////////
-    EXT_SORT_BUFFER("tajo.extsort.buffer", 800000),
+    EXT_SORT_BUFFER("tajo.extsort.buffer", 400000),
     BROADCAST_JOIN_THRESHOLD("tajo.join.broadcast.threshold", (long)5 * 1048576),
 
 

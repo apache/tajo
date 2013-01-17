@@ -470,7 +470,8 @@ public class StorageManager {
     return tablets;
   }
 
-  private Fragment[] splitNG(String tableName, TableMeta meta, Path tablePath, long size)
+  public Fragment[] splitNG(String tableName, TableMeta meta,
+                            Path tablePath, long size)
       throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
 

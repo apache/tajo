@@ -233,7 +233,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     // Add shuffle token
     Map<String, ByteBuffer> serviceData = new HashMap<>();
     try {
-      LOG.info("Putting shuffle token in serviceData");
+      //LOG.info("Putting shuffle token in serviceData");
       serviceData.put(PullServerAuxService.PULLSERVER_SERVICEID,
           PullServerAuxService.serializeMetaData(0));
     } catch (IOException ioe) {
@@ -296,7 +296,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
       command.append(str).append(" ");
     }
 
-    //LOG.info("Completed setting up app master command " + command.toString());
+    LOG.info("Completed setting up taskrunner command " + command.toString());
     List<String> commands = new ArrayList<>();
     commands.add(command.toString());
 
@@ -418,6 +418,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
         if(portInfo != null) {
           port = PullServerAuxService.deserializeMetaData(portInfo);
         }
+
         LOG.info("PullServer port returned by ContainerManager for "
             + containerID + " : " + port);
 

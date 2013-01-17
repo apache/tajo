@@ -42,6 +42,7 @@ import tajo.storage.VTuple;
 import java.io.IOException;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.Comparator;
 
 import static org.junit.Assert.*;
 
@@ -119,5 +120,13 @@ public class TestResultSetImpl {
     }
     assertEquals(10000, i);
     assertTrue(rs.isAfterLast());
+  }
+
+  class FileNameComparator implements Comparator<String> {
+
+    @Override
+    public int compare(String f1, String f2) {
+      return f1.compareTo(f2);
+    }
   }
 }

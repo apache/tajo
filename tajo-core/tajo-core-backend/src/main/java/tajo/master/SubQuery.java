@@ -544,18 +544,24 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
             } else {*/
             int numRequest = Math.min(tasks.length,
                 subQuery.queryContext.getNumClusterNode() * 4);
-              final Resource resource =
-                  RecordFactoryProvider.getRecordFactory(null).newRecordInstance(
-                      Resource.class);
+
+            final Resource resource =
+                RecordFactoryProvider.getRecordFactory(null).newRecordInstance(
+                    Resource.class);
+            if (tasks.length <= subQuery.queryContext.getNumClusterNode()) {
+              resource.setMemory(6000);
+            } else {
               resource.setMemory(2000);
-              org.apache.hadoop.yarn.api.records.Priority priority =
-                  RecordFactoryProvider.getRecordFactory(null).newRecordInstance(
-                      org.apache.hadoop.yarn.api.records.Priority.class);
-              priority.setPriority(100 - subQuery.getPriority().get());
-              ContainerAllocationEvent event =
-                  new ContainerAllocationEvent(ContainerAllocatorEventType.CONTAINER_REQ,
-                      subQuery.getId(), priority, resource, numRequest, subQuery.isLeafQuery(), 0.0f);
-              subQuery.eventHandler.handle(event);
+            }
+
+            org.apache.hadoop.yarn.api.records.Priority priority =
+                RecordFactoryProvider.getRecordFactory(null).newRecordInstance(
+                    org.apache.hadoop.yarn.api.records.Priority.class);
+            priority.setPriority(100 - subQuery.getPriority().get());
+            ContainerAllocationEvent event =
+                new ContainerAllocationEvent(ContainerAllocatorEventType.CONTAINER_REQ,
+                    subQuery.getId(), priority, resource, numRequest, subQuery.isLeafQuery(), 0.0f);
+            subQuery.eventHandler.handle(event);
             //}
           }
         }
@@ -634,7 +640,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
       int mb = (int) Math.ceil((double)volume / 1048576);
       LOG.info("Table's volume is approximately " + mb + " MB");
-      // determine the number of task per 64MB
+      // determine the number of task per 128MB
       int taskNum = (int) Math.ceil((double)mb / 128);
       LOG.info("The determined number of partitions is " + taskNum);
       return taskNum;
@@ -671,7 +677,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     int mb = (int) Math.ceil((double)volume / 1048576);
     LOG.info("Table's volume is approximately " + mb + " MB");
     // determine the number of task per 64MB
-    int maxTaskNum = (int) Math.ceil((double)mb / 128);
+    int maxTaskNum = (int) Math.ceil((double)mb / 64);
     LOG.info("The determined number of non-leaf tasks is " + maxTaskNum);
     return maxTaskNum;
   }
