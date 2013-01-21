@@ -11,6 +11,7 @@ public enum StatementType {
 	// Store
   STORE,
   CREATE_TABLE_AS,
+  COPY,
 
   // Select
 	SELECT,

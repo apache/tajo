@@ -40,6 +40,8 @@ public class ParseUtil {
       return StoreType.CSV;
     } else if (typeStr.equalsIgnoreCase("raw")) {
       return StoreType.RAW;
+    } else if (typeStr.equalsIgnoreCase("rcfile")) {
+      return StoreType.RCFILE;
     } else {
       LOG.error("Cannot find a matched type aginst from '"
           + typeStr + "'");

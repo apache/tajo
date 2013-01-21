@@ -21,22 +21,14 @@ public class CreateTableStmt extends ParseTree {
   private QueryBlock selectStmt;
   private Options options;
 
-  private CreateTableStmt(final PlanningContext context,
-                          final String tableName) {
-    super(context, StatementType.CREATE_TABLE);
-    addTableRef(tableName, tableName);
-    this.tableName = tableName;
-  }
-
   public CreateTableStmt(final PlanningContext context,
                          final String tableName, final Schema schema,
-                         StoreType storeType, final Path path) {
+                         StoreType storeType) {
     super(context, StatementType.CREATE_TABLE);
     addTableRef(tableName, tableName);
     this.tableName = tableName;
     this.schema = schema;
     this.storeType = storeType;
-    this.path = path;
   }
 
   public CreateTableStmt(final PlanningContextImpl context,
@@ -71,6 +63,14 @@ public class CreateTableStmt extends ParseTree {
   
   public final StoreType getStoreType() {
     return this.storeType;
+  }
+
+  public boolean hasPath() {
+    return this.path != null;
+  }
+
+  public void setPath(Path path) {
+    this.path = path;
   }
   
   public final Path getPath() {

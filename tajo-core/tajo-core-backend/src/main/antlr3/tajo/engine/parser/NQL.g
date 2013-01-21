@@ -116,6 +116,7 @@ controlStatement
 dataStatement
   : query_expression
   | set_stmt
+  | copyStatement
   ;
   
 dataChangeStatement
@@ -134,7 +135,11 @@ indexStatement
 createTableStatement
   : CREATE TABLE t=table AS query_expression -> ^(CREATE_TABLE $t query_expression)
   | t=table ASSIGN query_expression -> ^(CREATE_TABLE $t query_expression)
-  | CREATE TABLE t=table tableElements USING s=ID LOCATION path=STRING p=param_clause? -> ^(CREATE_TABLE $t ^(TABLE_DEF tableElements) $s $path $p?)
+  | CREATE TABLE t=table tableElements USING s=ID (LOCATION path=STRING)? p=param_clause? -> ^(CREATE_TABLE $t ^(TABLE_DEF tableElements) $s ^(LOCATION $path)? $p?)
+  ;
+
+copyStatement
+  : COPY t=table FROM path=string_value_expr FORMAT s=ID (p=param_clause)? -> ^(COPY $t $path $s $p?)
   ;
   
 tableElements
@@ -542,6 +547,7 @@ ASC : 'asc';
 BY : 'by';
 CASE : 'case';
 COUNT : 'count';
+COPY : 'copy';
 CREATE : 'create';
 CROSS : 'cross';
 CUBE : 'cube';
@@ -553,6 +559,7 @@ ELSE : 'else';
 EXCEPT : 'except';
 FALSE : 'false';
 FIRST : 'first';
+FORMAT : 'format';
 FULL : 'full';
 FROM : 'from';
 GROUP : 'group';
