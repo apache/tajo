@@ -87,8 +87,10 @@ message GetQueryStatusResponse {
   required ApplicationAttemptIdProto queryId = 2;
   optional QueryState state = 3;
   optional float progress = 4;
-  optional int64 executionTime = 5;
-  optional string errorMessage = 6;
+  optional int64 submitTime = 5;
+  optional int64 initTime = 6;
+  optional int64 finishTime = 7;
+  optional string errorMessage = 8;
 }
 
 message GetClusterInfoRequest {

@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.yarn.Clock;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.Resource;
@@ -89,6 +90,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private boolean isLeafQuery = false;
   TaskSchedulerImpl taskScheduler;
   QueryContext queryContext;
+  private Clock clock;
+
+  private long startTime;
+  private long finishTime;
 
   volatile Map<QueryUnitId, QueryUnit> tasks = new ConcurrentHashMap<>();
   volatile Map<ContainerId, Container> containers = new ConcurrentHashMap<>();
@@ -164,6 +169,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
   public void setQueryContext(QueryContext context) {
     this.queryContext = context;
+  }
+
+  public void setClock(Clock clock) {
+    this.clock = clock;
   }
 
   public void setEventHandler(EventHandler eventHandler) {
@@ -444,6 +453,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       } catch (IOException e) {
       }
     }
+
+    finishTime = clock.getTime();
   }
 
 
@@ -451,6 +462,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
     @Override
     public SubQueryState transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
+      subQuery.startTime = subQuery.clock.getTime();
       subQuery.taskScheduler = new TaskSchedulerImpl(subQuery.queryContext);
       subQuery.taskScheduler.init(subQuery.queryContext.getConf());
       subQuery.taskScheduler.start();
@@ -794,11 +806,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
       subQuery.eventHandler.handle(new SubQuerySucceeEvent(subQuery.getId(),
           meta));
+      subQuery.finishTime = subQuery.clock.getTime();
     }
   }
 
   SubQueryState finished(SubQueryState state) {
-    // TODO - record the state to metric
     return state;
   }
 

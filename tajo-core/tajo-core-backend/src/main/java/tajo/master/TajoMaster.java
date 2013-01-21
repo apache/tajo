@@ -29,6 +29,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.hadoop.yarn.Clock;
+import org.apache.hadoop.yarn.SystemClock;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
@@ -71,6 +73,7 @@ public class TajoMaster extends CompositeService {
   private MasterContext context;
   private TajoConf conf;
   private FileSystem defaultFS;
+  private Clock clock;
 
   private Path basePath;
   private Path dataPath;
@@ -98,6 +101,8 @@ public class TajoMaster extends CompositeService {
     this.conf = (TajoConf) _conf;
 
     context = new MasterContext(conf);
+    clock = new SystemClock();
+
 
     try {
       webServer = StaticHttpServer.getInstance(this ,"admin", null, 8080 ,
@@ -382,6 +387,10 @@ public class TajoMaster extends CompositeService {
 
     public TajoConf getConf() {
       return conf;
+    }
+
+    public Clock getClock() {
+      return clock;
     }
 
     public QueryMaster getQuery(QueryId queryId) {

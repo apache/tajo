@@ -203,15 +203,19 @@ public class ClientService extends AbstractService {
       if (queryId.equals(TajoIdUtils.NullQueryId)) {
         builder.setResultCode(ResultCode.OK);
         builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
-        builder.setProgress(1.0f);
-        builder.setExecutionTime(0);
       } else {
         Query query = context.getQuery(queryId).getContext().getQuery();
         if (query != null) {
           builder.setResultCode(ResultCode.OK);
           builder.setState(query.getState());
           builder.setProgress(query.getProgress());
-          builder.setExecutionTime(System.currentTimeMillis() - query.getStartTime());
+          builder.setSubmitTime(query.getAppSubmitTime());
+          builder.setInitTime(query.getInitializationTime());
+          if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+            builder.setFinishTime(query.getFinishTime());
+          } else {
+            builder.setFinishTime(System.currentTimeMillis());
+          }
         } else {
           builder.setResultCode(ResultCode.ERROR);
           builder.setErrorMessage("No such query: " + queryId.toString());
