@@ -434,7 +434,8 @@ public class TestNQLParser {
   static String[] schemaStmts = { 
     "drop table abc",
     "create table name as select * from test",
-    "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data'"
+    "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data'",
+    "create table table1 (name string, age int, earn long, score float) using rcfile"
   };
 
   @Test
@@ -446,13 +447,23 @@ public class TestNQLParser {
   }
   
   @Test
-  public void testCreateTableDef() throws RecognitionException, TQLSyntaxError {
+  public void testCreateTableDef1() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[2]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
     assertEquals(ast.getChild(0).getType(), NQLParser.ID);
     assertEquals(ast.getChild(1).getType(), NQLParser.TABLE_DEF);
     assertEquals(ast.getChild(2).getType(), NQLParser.ID);
-    assertEquals(ast.getChild(3).getType(), NQLParser.STRING);
+    assertEquals(ast.getChild(3).getType(), NQLParser.LOCATION);
+    assertEquals(ast.getChild(3).getChild(0).getText(), "/tmp/data");
+  }
+
+  @Test
+  public void testCreateTableDef2() throws RecognitionException, TQLSyntaxError {
+    Tree ast = parseQuery(schemaStmts[3]);
+    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
+    assertEquals(ast.getChild(0).getType(), NQLParser.ID);
+    assertEquals(ast.getChild(1).getType(), NQLParser.TABLE_DEF);
+    assertEquals(ast.getChild(2).getType(), NQLParser.ID);
   }
 
   @Test
@@ -461,6 +472,26 @@ public class TestNQLParser {
     assertEquals(ast.getType(), NQLParser.DROP_TABLE);
     assertEquals(ast.getChild(0).getText(), "abc");
   }
+
+  static String[] copyStmts = {
+      "copy employee from '/tmp/table1' format csv with ('csv.delimiter' = '|')"
+  };
+
+  @Test
+  public void testCopyTable() throws RecognitionException, TQLSyntaxError {
+    Tree ast = parseQuery(copyStmts[0]);
+    assertEquals(ast.getType(), NQLParser.COPY);
+    int idx = 0;
+    assertEquals("employee", ast.getChild(idx++).getText());
+    assertEquals("/tmp/table1", ast.getChild(idx++).getText());
+    assertEquals("csv", ast.getChild(idx++).getText());
+    assertEquals(NQLParser.PARAMS, ast.getChild(idx).getType());
+    Tree params = ast.getChild(idx);
+    assertEquals(NQLParser.PARAM, params.getChild(0).getType());
+    assertEquals("csv.delimiter", params.getChild(0).getChild(0).getText());
+    assertEquals("|", params.getChild(0).getChild(1).getText());
+  }
+
 
   static String[] controlStmts = { "\\t", "\\t abc" };
 
@@ -514,8 +545,7 @@ public class TestNQLParser {
     ANTLRStringStream input = new ANTLRStringStream(expr);
     NQLLexer lexer = new NQLLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
-    NQLParser parser = new NQLParser(tokens);
-    return parser;
+    return new NQLParser(tokens);
   }
 
   @Test

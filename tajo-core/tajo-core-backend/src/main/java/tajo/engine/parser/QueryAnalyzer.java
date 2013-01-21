@@ -106,11 +106,38 @@ public final class QueryAnalyzer {
 
       case CREATE_TABLE:
         parseTree = parseCreateStatement(context, ast);
+        break;
+
+      case COPY:
+        parseTree = parseCopyStatement(context, ast);
+        break;
+
       default:
         break;
     }
 
     return parseTree;
+  }
+
+  private CopyStmt parseCopyStatement(final PlanningContextImpl context,
+                                      final CommonTree ast) {
+    CopyStmt stmt = new CopyStmt(context);
+    int idx = 0;
+    stmt.setTableName(ast.getChild(idx++).getText());
+    Path path = new Path(ast.getChild(idx++).getText());
+    stmt.setPath(path);
+    StoreType storeType = ParseUtil.getStoreType(ast.getChild(idx).getText());
+    stmt.setStoreType(storeType);
+
+    if ((ast.getChildCount() - idx) > 1) {
+      idx++;
+      if (ast.getChild(idx).getType() == NQLParser.PARAMS) {
+        Options options = parseParams((CommonTree) ast.getChild(idx));
+        stmt.setParams(options);
+      }
+    }
+
+    return stmt;
   }
 
   /**
@@ -134,12 +161,19 @@ public final class QueryAnalyzer {
       Schema tableDef = parseCreateTableDef(node);
       idx++;
       StoreType storeType = ParseUtil.getStoreType(ast.getChild(idx).getText());
-      idx++;
-      Path path = new Path(ast.getChild(idx).getText());
-      stmt = new CreateTableStmt(context, tableName, tableDef, storeType, path);
+      stmt = new CreateTableStmt(context, tableName, tableDef, storeType);
+
       if ((ast.getChildCount() - idx) > 1) {
-        idx++;
-        if (ast.getChild(idx).getType() == NQLParser.PARAMS) {
+        if (ast.getChild(idx+1).getType() == NQLParser.LOCATION) {
+          idx++;
+          Path path = new Path(ast.getChild(idx).getChild(0).getText());
+          stmt.setPath(path);
+        }
+      }
+
+      if ((ast.getChildCount() - idx) > 1) {
+        if (ast.getChild(idx+1).getType() == NQLParser.PARAMS) {
+          idx++;
           Options options = parseParams((CommonTree) ast.getChild(idx));
           stmt.setOptions(options);
         }
@@ -381,9 +415,8 @@ public final class QueryAnalyzer {
 
     int idx = 0;
     int parsedJoinType = ast.getChild(idx).getType();
-    JoinType joinType = null;
 
-    JoinClause joinClause = null;
+    JoinClause joinClause;
 
     switch (parsedJoinType) {
       case NQLParser.CROSS:
@@ -591,7 +624,7 @@ public final class QueryAnalyzer {
     } else {
       // the remain ones are grouping fields.
       Tree group;
-      List<Column> columnRefs = new ArrayList<Column>();
+      List<Column> columnRefs = new ArrayList<>();
       Column [] columns;
       Column column;
       for (; idx < ast.getChildCount(); idx++) {
@@ -857,6 +890,8 @@ public final class QueryAnalyzer {
         return StatementType.INTERSECT;
       case NQLParser.INSERT:
         return StatementType.INSERT;
+      case NQLParser.COPY:
+        return StatementType.COPY;
       case NQLParser.CREATE_INDEX:
         return StatementType.CREATE_INDEX;
       case NQLParser.CREATE_TABLE:
