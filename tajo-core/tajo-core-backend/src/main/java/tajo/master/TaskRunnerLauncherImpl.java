@@ -45,6 +45,8 @@ import tajo.QueryConf;
 import tajo.conf.TajoConf;
 import tajo.master.QueryMaster.QueryContext;
 import tajo.master.TaskRunnerEvent.EventType;
+import tajo.master.event.QueryEvent;
+import tajo.master.event.QueryEventType;
 import tajo.master.event.TaskRunnerLaunchEvent;
 import tajo.pullserver.PullServerAuxService;
 
@@ -431,6 +433,10 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
         // after launching, send launched event to task attempt to move
         // it from ASSIGNED to RUNNING state
 //      context.getEventHandler().handle(new AMContainerEventLaunched(containerID, port));
+
+        // this is workaround code
+        context.getEventHandler().handle(new QueryEvent(context.getQueryId(), QueryEventType.INIT_COMPLETED));
+
         this.state = ContainerState.RUNNING;
         this.hostName = event.getContainerMgrAddress().split(":")[0];
         context.addContainer(containerID, this);

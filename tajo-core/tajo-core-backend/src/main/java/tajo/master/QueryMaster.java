@@ -120,8 +120,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
       addIfService(rmAllocator);
       dispatcher.register(ContainerAllocatorEventType.class, rmAllocator);
 
-      query = new Query(queryContext, queryId, "",
-          dispatcher.getEventHandler(), null, masterPlan,
+      query = new Query(queryContext, queryId, clock, appSubmitTime,
+          "", dispatcher.getEventHandler(), null, masterPlan,
           masterContext.getStorageManager());
       initStagingDir();
 

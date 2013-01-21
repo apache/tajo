@@ -24,7 +24,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.yarn.SystemClock;
 import org.apache.hadoop.yarn.api.ClientRMProtocol;
 import org.apache.hadoop.yarn.api.protocolrecords.*;
 import org.apache.hadoop.yarn.api.records.*;
@@ -145,7 +144,7 @@ public class GlobalEngine extends AbstractService {
       throws InterruptedException, IOException,
       NoSuchQueryIdException, IllegalQueryStatusException,
       UnknownWorkerException, EmptyClusterException {
-
+    long querySubmittionTime = context.getClock().getTime();
     LOG.info("TQL: " + tql);
     // parse the query
     PlanningContext planningContext = analyzer.parse(tql);
@@ -177,7 +176,7 @@ public class GlobalEngine extends AbstractService {
       } */
 
       QueryMaster query = new QueryMaster(context, appAttemptId,
-          new SystemClock(), System.currentTimeMillis(), masterPlan);
+          context.getClock(), querySubmittionTime, masterPlan);
       startQuery(queryId, queryConf, query);
 
       return queryId;

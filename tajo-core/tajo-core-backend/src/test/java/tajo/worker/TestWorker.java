@@ -25,6 +25,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.yarn.SystemClock;
 import org.junit.After;
 import org.junit.Before;
 import tajo.*;
@@ -218,7 +219,7 @@ public class TestWorker {
     // TODO to be fixed
     QueryManager qm = null;
     //QueryManager qm = master.getQueryManager();
-    Query q = new Query(null, qid1.getQueryId(),
+    Query q = new Query(null, qid1.getQueryId(), new SystemClock(), System.currentTimeMillis(),
         "testLeafServer := select name, empId, deptName from employee",
         master.getEventHandler(), null, null, sm);
     qm.addQuery(q);
