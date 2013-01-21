@@ -220,6 +220,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
     private QueryConf conf;
     int clusterNode;
     public Map<ContainerId, Container> containers = new ConcurrentHashMap<>();
+    int minCapability;
+    int maxCapability;
 
     public QueryContext(QueryConf conf) {
       this.conf = conf;
@@ -295,6 +297,22 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     public Path getOutputPath() {
       return outputPath;
+    }
+
+    public void setMaxContainerCapability(int capability) {
+      this.maxCapability = capability;
+    }
+
+    public int getMaxContainerCapability() {
+      return this.maxCapability;
+    }
+
+    public void setMinContainerCapability(int capability) {
+      this.minCapability = capability;
+    }
+
+    public int getMinContainerCapability() {
+      return this.minCapability;
     }
   }
 

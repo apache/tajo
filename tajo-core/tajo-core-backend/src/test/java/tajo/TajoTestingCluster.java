@@ -338,6 +338,7 @@ public class TajoTestingCluster {
 
     LOG.info("Starting up YARN cluster");
     conf.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB, 384);
+    conf.setInt(YarnConfiguration.RM_SCHEDULER_MAXIMUM_ALLOCATION_MB, 3000);
     if (yarnCluster == null) {
       yarnCluster = new MiniTajoYarnCluster(TajoTestingCluster.class.getName(), 3);
       yarnCluster.init(conf);
