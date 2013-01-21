@@ -151,6 +151,8 @@ public abstract class RMCommunicator extends AbstractService {
           scheduler.registerApplicationMaster(request);
       minContainerCapability = response.getMinimumResourceCapability();
       maxContainerCapability = response.getMaximumResourceCapability();
+      context.setMaxContainerCapability(maxContainerCapability.getMemory());
+      context.setMinContainerCapability(minContainerCapability.getMemory());
       this.applicationACLs = response.getApplicationACLs();
       LOG.info("minContainerCapability: " + minContainerCapability.getMemory());
       LOG.info("maxContainerCapability: " + maxContainerCapability.getMemory());

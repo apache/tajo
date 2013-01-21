@@ -176,8 +176,9 @@ public class TajoCli {
       ResultSetMetaData rsmd = res.getMetaData();
       TableDesc desc = client.getResultDesc(queryId);
       sout.println("final state: " + status.getState()
-          + " init time: " + (((double)(status.getInitTime() - status.getSubmitTime()) / 1000.0) + " sec")
-          + " execution time: " + (((double)status.getFinishTime() - status.getInitTime()) / 1000.0) + " sec");
+          + ", init time: " + (((double)(status.getInitTime() - status.getSubmitTime()) / 1000.0) + " sec")
+          + ", execution time: " + (((double)status.getFinishTime() - status.getInitTime()) / 1000.0) + " sec"
+          + ", total response time: " + (((double)(status.getFinishTime() - status.getSubmitTime()) / 1000.0) + " sec"));
       sout.println("result: " + desc.getPath() + "\n");
 
       int numOfColumns = rsmd.getColumnCount();
