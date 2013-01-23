@@ -117,10 +117,10 @@ public class GlobalEngine extends AbstractService {
     TableMeta meta;
     if (createTable.hasOptions()) {
       meta = TCatUtil.newTableMeta(createTable.getSchema(),
-          createTable.getStoreType(), createTable.getOptions());
+          createTable.getStorageType(), createTable.getOptions());
     } else {
       meta = TCatUtil.newTableMeta(createTable.getSchema(),
-          createTable.getStoreType());
+          createTable.getStorageType());
     }
 
     long totalSize = 0;

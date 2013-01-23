@@ -243,7 +243,7 @@ public class CSVFile2 extends Storage {
         this.delimiter = "\\|";
       }
 
-      this.offsetCurIndexMap = new HashMap<Long, Integer>();
+      this.offsetCurIndexMap = new HashMap<>();
       // set tablets iterator.
       this.tabletList = Lists.newArrayList(tablets);
       Collections.sort(this.tabletList);

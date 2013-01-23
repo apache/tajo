@@ -43,7 +43,7 @@ public class InternalException extends IOException {
 	  super(message, t);
 	}
 	
-	public InternalException(Exception t) {
+	public InternalException(Throwable t) {
 	  super(t);
 	}
 }

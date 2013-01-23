@@ -42,7 +42,6 @@ public class RCFileWrapper {
 
   public static class RCFileAppender extends FileAppender {
     private FileSystem fs;
-    private Path path;
     private RCFile.Writer writer;
 
     private final boolean statsEnabled;
@@ -55,12 +54,10 @@ public class RCFileWrapper {
       fs = path.getFileSystem(conf);
 
       if (!fs.exists(path.getParent())) {
-//        throw new FileNotFoundException(this.path.toString());
         throw new FileNotFoundException(path.toString());
       }
 
       if (fs.exists(path)) {
-//        throw new AlreadyExistsStorageException(this.path);
         throw new AlreadyExistsStorageException(path);
       }
 

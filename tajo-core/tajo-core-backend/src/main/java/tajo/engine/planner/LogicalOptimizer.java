@@ -362,7 +362,7 @@ public class LogicalOptimizer {
 
       CreateTableStmt createTableStmt = (CreateTableStmt) tree;
 
-      if (createTableStmt.hasSelectStmt()) {
+      if (createTableStmt.hasQueryBlock()) {
         block = createTableStmt.getSelectStmt();
       } else {
         return;

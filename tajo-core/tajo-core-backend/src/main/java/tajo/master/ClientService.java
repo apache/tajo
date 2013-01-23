@@ -211,6 +211,7 @@ public class ClientService extends AbstractService {
           builder.setProgress(query.getProgress());
           builder.setSubmitTime(query.getAppSubmitTime());
           builder.setInitTime(query.getInitializationTime());
+          builder.setHasResult(!query.isCreateTableStmt());
           if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
             builder.setFinishTime(query.getFinishTime());
           } else {

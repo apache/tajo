@@ -10,7 +10,6 @@ import tajo.catalog.Schema;
 import tajo.catalog.TableMeta;
 import tajo.catalog.TableMetaImpl;
 import tajo.catalog.proto.CatalogProtos.TableProto;
-import tajo.common.exception.NotImplementedException;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.storage.exception.AlreadyExistsStorageException;
@@ -21,6 +20,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static tajo.storage.rcfile.RCFileWrapper.RCFileScanner;
 
 /**
  * 테이블 Scanner와 Appender를 열고 관리한다.
@@ -172,8 +173,7 @@ public class StorageManager {
 
     switch(meta.getStoreType()) {
       case RAW: {
-        scanner = new RowFile2(c).
-            openScanner(meta.getSchema(), new Fragment [] {tablet});
+        scanner = new RawFile.Scanner(conf, meta, tablet.getPath());
         break;
       }
       case CSV: {
@@ -190,11 +190,44 @@ public class StorageManager {
     
     switch(meta.getStoreType()) {
     case RAW: {
-      scanner = new RowFile2(conf).
-          openScanner(meta.getSchema(), tablets);     
+      scanner = new RawFile.Scanner(conf, meta, tablets[0].getPath());
       break;
     }
 
+    case ROWFILE:
+      scanner = new RowFile.Scanner(conf, meta.getSchema(), tablets[0]);
+      break;
+
+    case RCFILE:
+      scanner = new RCFileScanner(conf, meta.getSchema(), tablets[0], meta.getSchema());
+      break;
+
+    case CSV:
+      if (tablets.length == 1) {
+        scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
+      } else {
+        scanner = new CSVFile2(conf).openScanner(meta.getSchema(), tablets);
+      }
+      break;
+
+    }
+
+    
+    return scanner;
+  }
+
+  public Scanner getScanner(TableMeta meta, Fragment [] tablets, Schema target) throws IOException {
+    Scanner scanner = null;
+
+    switch(meta.getStoreType()) {
+    case ROWFILE: {
+      scanner = new RowFile.Scanner(conf, meta.getSchema(), tablets[0]);
+      break;
+    }
+    case RCFILE: {
+        scanner = new RCFileScanner(conf, meta.getSchema(), tablets[0], target);
+        break;
+      }
     case CSV: {
       if (tablets.length == 1) {
         scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
@@ -203,64 +236,6 @@ public class StorageManager {
       }
       break;
     }
-    }
-    
-    return scanner;
-  }
-
-  public Scanner getScanner(TableMeta meta, Fragment [] tablets, Schema inputSchema) throws IOException {
-    Scanner scanner = null;
-
-    switch(meta.getStoreType()) {
-    case RAW: {
-      scanner = new RowFile2(conf).
-      openScanner(inputSchema, tablets);
-      break;
-    }
-    case CSV: {
-      if (tablets.length == 1) {
-        scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
-      } else {
-        scanner = new CSVFile2(conf).openScanner(inputSchema, tablets);
-      }
-      break;
-    }
-    }
-
-    return scanner;
-  }
-  
-  public Scanner getScanner(TableMeta meta, Fragment fragment) throws IOException {
-    Scanner scanner = null;
-    
-    switch(meta.getStoreType()) {
-    case RAW: {
-//      scanner = new RowFile(conf).
-//          openScanner(meta.getSchema(), fragment);   
-      throw new NotImplementedException();
-    }
-    case CSV: {
-      scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), fragment);
-      break;
-    }
-    }
-    
-    return scanner;
-  }
-
-  public Scanner getScanner(TableMeta meta, Fragment fragment, Schema inputSchema) throws IOException {
-    Scanner scanner = null;
-
-    switch(meta.getStoreType()) {
-      case RAW: {
-//        scanner = new RowFile(conf).
-//            openScanner(inputSchema, tablets);
-        throw new NotImplementedException();
-      }
-      case CSV: {
-        scanner = new CSVFile(conf).openSingleScanner(inputSchema, fragment);
-        break;
-      }
     }
 
     return scanner;
@@ -278,20 +253,22 @@ public class StorageManager {
 	    throws IOException {
 	  Appender appender = null;
     switch(meta.getStoreType()) {
-    case RAW: {
-      appender = new RowFile2(conf).getAppender(meta,
-          filename);
-      break;
-    }
+      case RAW:
+        appender = new RawFile.Appender(conf, meta, filename);
+        break;
 
-    case RCFILE:
-      appender = new RCFileWrapper.RCFileAppender(conf, meta, filename, true, true);
-      break;
+      case ROWFILE:
+        appender = new RowFile(conf).getAppender(meta,
+            filename);
+        break;
 
-    case CSV: {
-      appender = new CSVFile2(conf).getAppender(meta, filename);
-      break;
-    }
+      case RCFILE:
+        appender = new RCFileWrapper.RCFileAppender(conf, meta, filename, true, true);
+        break;
+
+      case CSV:
+        appender = new CSVFile(conf).getAppender(meta, filename);
+        break;
     }
     
     return appender; 
@@ -534,9 +511,16 @@ public class StorageManager {
   public long calculateSize(Path tablePath) throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
     long totalSize = 0;
-    Path dataPath = new Path(tablePath, "data");
+    Path oldPath = new Path(tablePath, "data");
+    Path dataPath;
+    if (fs.exists(oldPath)) {
+      dataPath = oldPath;
+    } else {
+      dataPath = tablePath;
+    }
+
     if (fs.exists(dataPath)) {
-      for (FileStatus status : fs.listStatus(new Path(tablePath, "data"))) {
+      for (FileStatus status : fs.listStatus(dataPath)) {
         totalSize += status.getLen();
       }
     }
@@ -592,11 +576,11 @@ public class StorageManager {
       throw new IOException("No input paths specified in job");
     }
 
-    List<IOException> errors = new ArrayList<IOException>();
+    List<IOException> errors = new ArrayList<>();
 
     // creates a MultiPathFilter with the hiddenFileFilter and the
     // user provided one (if any).
-    List<PathFilter> filters = new ArrayList<PathFilter>();
+    List<PathFilter> filters = new ArrayList<>();
     filters.add(hiddenFileFilter);
 
     PathFilter inputFilter = new MultiPathFilter(filters);

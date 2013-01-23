@@ -701,6 +701,8 @@ public class DBStore implements CatalogStore {
       return StoreType.CSV;
     } else if (typeStr.equals(StoreType.RAW.toString())) {
       return StoreType.RAW;
+    } else if (typeStr.equals(StoreType.RCFILE.name())) {
+      return StoreType.RCFILE;
     } else if (typeStr.equals(StoreType.CSV.toString())) {
       return StoreType.CSV;
     } else {

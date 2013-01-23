@@ -16,9 +16,9 @@ import tajo.storage.index.bst.BSTIndex.BSTIndexWriter;
 import tajo.util.CommonTestingUtil;
 
 import java.io.IOException;
-import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestBSTIndex {
   private TajoConf conf;
@@ -425,7 +425,8 @@ public class TestBSTIndex {
       assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(1).asLong()));
     }
   }
-  
+
+  /*
   @Test
   public void testFindValueInRaw() throws IOException {
     meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
@@ -1222,4 +1223,5 @@ public class TestBSTIndex {
       assertTrue("[seek check " + (i - 2) + " ]" , (i - 2) == (result.get(1).asDouble()));
     }
   }
+  */
 }
