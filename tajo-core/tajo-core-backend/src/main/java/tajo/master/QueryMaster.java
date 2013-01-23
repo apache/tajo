@@ -16,6 +16,7 @@
 
 package tajo.master;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -57,7 +58,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   // AppMaster Common
   private final Clock clock;
-  private final long startTime;
   private final long appSubmitTime;
   private String appName;
   private final ApplicationAttemptId appAttemptID;
@@ -77,6 +77,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
   // Services of Tajo
   private CatalogService catalog;
 
+  private boolean isCreateTableStmt;
   private Path outputPath;
 
   public QueryMaster(final MasterContext masterContext,
@@ -88,7 +89,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     this.appAttemptID = appAttemptID;
     this.clock = clock;
-    this.startTime = clock.getTime();
     this.appSubmitTime = appSubmitTime;
 
     this.queryId = TajoIdUtils.createQueryId(appAttemptID);
@@ -139,7 +139,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
 
     } catch (Throwable t) {
-      LOG.error(t);
+      LOG.error(ExceptionUtils.getStackTrace(t));
+      throw new RuntimeException(t);
     }
 
     super.init(conf);
@@ -314,6 +315,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
     public int getMinContainerCapability() {
       return this.minCapability;
     }
+
+    public boolean isCreateTableQuery() {
+      return isCreateTableStmt;
+    }
   }
 
   private class QueryFinishEventHandler implements EventHandler<QueryFinishEvent> {
@@ -368,6 +373,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     // If final output directory is not given by an user,
     // we use the query id as a output directory.
     if (givenOutputTableName.equals("")) {
+      this.isCreateTableStmt = false;
       FileSystem defaultFS = FileSystem.get(conf);
       Path queryBaseDir = defaultFS.makeQualified(
           new Path(conf.getVar(TajoConf.ConfVars.QUERY_TMP_DIR)));
@@ -412,13 +418,14 @@ public class QueryMaster extends CompositeService implements EventHandler {
       conf.setOutputTable(queryId.toString());
 
     } else {
+      this.isCreateTableStmt = true;
       Path warehouseDir = new Path(conf.getVar(TajoConf.ConfVars.WAREHOUSE_PATH));
       stagingDir = new Path(warehouseDir, conf.getOutputTable());
 
       FileSystem fs = warehouseDir.getFileSystem(conf);
       if (fs.exists(stagingDir)) {
         throw new IOException("The staging directory " + stagingDir
-            + "already exists. The directory must be unique to each query");
+            + " already exists. The directory must be unique to each query");
       } else {
         // TODO - should have appropriate permission
         fs.mkdirs(stagingDir, new FsPermission(USER_DIR_PERMISSION));

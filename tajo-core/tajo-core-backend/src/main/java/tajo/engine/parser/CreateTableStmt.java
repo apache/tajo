@@ -50,7 +50,7 @@ public class CreateTableStmt extends ParseTree {
     return this.tableName;
   }
   
-  public final boolean hasSelectStmt() {
+  public final boolean hasQueryBlock() {
     return this.selectStmt != null;
   }
   
@@ -96,18 +96,6 @@ public class CreateTableStmt extends ParseTree {
   
   public Options getOptions() {
     return this.options;
-  }
-
-  public boolean hasQueryBlock() {
-    return selectStmt != null;
-  }
-
-  public void setQueryBlock(QueryBlock block) {
-    this.selectStmt = block;
-  }
-
-  public QueryBlock getQueryBlock() {
-    return this.selectStmt;
   }
 
 

@@ -119,6 +119,7 @@
         <version>2.2</version>
         <executions>
           <execution>
+            <phase>package</phase>
             <goals>
               <goal>test-jar</goal>
             </goals>

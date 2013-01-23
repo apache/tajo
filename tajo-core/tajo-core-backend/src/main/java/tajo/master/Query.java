@@ -140,6 +140,10 @@ public class Query implements EventHandler<QueryEvent> {
     stateMachine = stateMachineFactory.make(this);
   }
 
+  public boolean isCreateTableStmt() {
+    return context.isCreateTableQuery();
+  }
+
   protected FileSystem getFileSystem(Configuration conf) throws IOException {
     return FileSystem.get(conf);
   }
@@ -442,6 +446,10 @@ public class Query implements EventHandler<QueryEvent> {
               e.printStackTrace();
             }
             query.eventHandler.handle(new QueryFinishEvent(query.getId()));
+
+            if (query.context.isCreateTableQuery()) {
+              query.context.getCatalog().addTable(desc);
+            }
             return query.finished(QueryState.QUERY_SUCCEEDED);
           }
         }

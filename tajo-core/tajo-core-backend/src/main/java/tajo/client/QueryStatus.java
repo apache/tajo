@@ -27,6 +27,7 @@ public class QueryStatus {
   private long submitTime;
   private long initTime;
   private long finishTime;
+  private boolean hasResult;
   private String errorText;
 
   public QueryStatus(GetQueryStatusResponse proto) {
@@ -36,6 +37,7 @@ public class QueryStatus {
     submitTime = proto.getSubmitTime();
     initTime = proto.getInitTime();
     finishTime = proto.getFinishTime();
+    hasResult = proto.getHasResult();
     if (proto.hasErrorMessage()) {
       errorText = proto.getErrorMessage();
     }
@@ -63,6 +65,10 @@ public class QueryStatus {
 
   public long getFinishTime() {
     return this.finishTime;
+  }
+
+  public boolean hasResult() {
+    return this.hasResult;
   }
 
   public String getErrorMessage() {

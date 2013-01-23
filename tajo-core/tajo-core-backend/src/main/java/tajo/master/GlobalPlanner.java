@@ -24,6 +24,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
@@ -1628,14 +1629,20 @@ public class GlobalPlanner {
     ScanNode[] scans = subQuery.getScanNodes();
     Preconditions.checkArgument(scans.length == 1, "Must be Scan Query");
     TableMeta meta;
-    Path path;
+    Path inputPath;
 
     ScanNode scan = scans[0];
-    path = catalog.getTableDesc(scan.getTableId()).getPath();
-    meta = sm.getTableMeta(path);
+    TableDesc desc = catalog.getTableDesc(scan.getTableId());
+    inputPath = desc.getPath();
+    meta = desc.getMeta();
+
     // TODO - should be change the inner directory
-    List<Fragment> fragments = sm.getSplits(scan.getTableId(), meta,
-        new Path(path, "data"));
+    Path oldPath = new Path(inputPath, "data");
+    FileSystem fs = inputPath.getFileSystem(conf);
+    if (fs.exists(oldPath)) {
+      inputPath = oldPath;
+    }
+    List<Fragment> fragments = sm.getSplits(scan.getTableId(), meta, inputPath);
 
     QueryUnit queryUnit;
     List<QueryUnit> queryUnits = new ArrayList<>();

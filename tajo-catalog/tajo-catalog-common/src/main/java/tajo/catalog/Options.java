@@ -44,8 +44,7 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 	@Expose(serialize=false,deserialize=false)
 	private boolean viaProto = false;
 	
-	@Expose
-	private Map<String,String> keyVals;
+	@Expose private Map<String,String> keyVals;
 	
 	public Options() {
 		builder = KeyValueSetProto.newBuilder();
@@ -129,7 +128,7 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
     options.proto = null;
     options.viaProto = false;
     options.builder = KeyValueSetProto.newBuilder();
-    options.keyVals = keyVals != null ? new HashMap<String, String>(keyVals) :
+    options.keyVals = keyVals != null ? new HashMap<>(keyVals) :
       null;    
     return options;
 	}

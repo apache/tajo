@@ -173,16 +173,15 @@ public class TestPhysicalPlanner {
       "select name from employee where empId = 100", // 5
       "select deptName, class, score from score", // 6
       "select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 7
-      "create table grouped as select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 8
-      "select count(*), max(score), min(score) from score", // 9
-      "select count(deptName) from score", // 10
-      "select managerId, empId, deptName from employee order by managerId, empId desc", // 11
-      "select deptName, nullable from score group by deptName, nullable", // 12
-      "select 3 < 4 as ineq, 3.5 * 2 as real", // 13
-//      "select (3 > 2) = (1 > 0) and 3 > 1", // 14
-      "select (1 > 0) and 3 > 1", // 14
-      "select deptName, class, sum(score), max(score), min(score) from score", // 15
-      "select deptname, class, sum(score), max(score), min(score) from score group by deptname" // 16
+      "select count(*), max(score), min(score) from score", // 8
+      "select count(deptName) from score", // 9
+      "select managerId, empId, deptName from employee order by managerId, empId desc", // 10
+      "select deptName, nullable from score group by deptName, nullable", // 11
+      "select 3 < 4 as ineq, 3.5 * 2 as real", // 12
+//      "select (3 > 2) = (1 > 0) and 3 > 1", // 12
+      "select (1 > 0) and 3 > 1", // 13
+      "select deptName, class, sum(score), max(score), min(score) from score", // 14
+      "select deptname, class, sum(score), max(score), min(score) from score group by deptname" // 15
   };
 
   @Test
@@ -247,7 +246,7 @@ public class TestPhysicalPlanner {
         "target/test-data/testHashGroupByPlanWithALLField");
     TaskAttemptContext2 ctx = new TaskAttemptContext2(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[16]);
+    PlanningContext context = analyzer.parse(QUERIES[15]);
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
@@ -319,6 +318,11 @@ public class TestPhysicalPlanner {
     assertEquals(10, i);
   }
 
+  private String[] CreateTableAsStmts = {
+      "create table grouped1 as select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 8
+      "create table grouped2 using rcfile as select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 8
+  };
+
   @Test
   public final void testStorePlan() throws IOException {
     Fragment[] frags = sm.split("score");
@@ -326,15 +330,15 @@ public class TestPhysicalPlanner {
     TaskAttemptContext2 ctx = new TaskAttemptContext2(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] },
         workDir);
-    ctx.setOutputPath(new Path(workDir, "grouped"));
+    ctx.setOutputPath(new Path(workDir, "grouped1"));
 
-    PlanningContext context = analyzer.parse(QUERIES[8]);
+    PlanningContext context = analyzer.parse(CreateTableAsStmts[0]);
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
     TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
         StoreType.CSV);
-    sm.initTableBase(outputMeta, "grouped");
+    sm.initTableBase(outputMeta, "grouped1");
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -342,7 +346,46 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    Scanner scanner = sm.getScannerNG("grouped", outputMeta, ctx.getOutputPath());
+    Scanner scanner = sm.getScannerNG("grouped1", outputMeta, ctx.getOutputPath());
+    Tuple tuple;
+    int i = 0;
+    while ((tuple = scanner.next()) != null) {
+      assertEquals(6, tuple.get(2).asInt()); // sum
+      assertEquals(3, tuple.get(3).asInt()); // max
+      assertEquals(1, tuple.get(4).asInt()); // min
+      i++;
+    }
+    assertEquals(10, i);
+    scanner.close();
+
+    // Examine the statistics information
+    assertEquals(10, ctx.getResultStats().getNumRows().longValue());
+  }
+
+  @Test
+  public final void testStorePlanWithRCFile() throws IOException {
+    Fragment[] frags = sm.split("score");
+    Path workDir = WorkerTestingUtil.buildTestDir("target/test-data/testStorePlanWithRCFile");
+    TaskAttemptContext2 ctx = new TaskAttemptContext2(conf, TUtil.newQueryUnitAttemptId(),
+        new Fragment[] { frags[0] },
+        workDir);
+    ctx.setOutputPath(new Path(workDir, "grouped2"));
+
+    PlanningContext context = analyzer.parse(CreateTableAsStmts[1]);
+    LogicalNode plan = planner.createPlan(context);
+    plan = LogicalOptimizer.optimize(context, plan);
+
+    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
+        StoreType.RCFILE);
+    sm.initTableBase(outputMeta, "grouped2");
+
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    exec.init();
+    exec.next();
+    exec.close();
+
+    Scanner scanner = sm.getScannerNG("grouped2", outputMeta, ctx.getOutputPath());
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
@@ -438,7 +481,7 @@ public class TestPhysicalPlanner {
         "target/test-data/testPartitionedStorePlanWithEmptyGroupingSet");
     TaskAttemptContext2 ctx = new TaskAttemptContext2(conf, id, new Fragment[] { frags[0] },
         workDir);
-    PlanningContext context = analyzer.parse(QUERIES[15]);
+    PlanningContext context = analyzer.parse(QUERIES[14]);
     LogicalNode plan = planner.createPlan(context);
 
     int numPartitions = 1;
@@ -490,7 +533,7 @@ public class TestPhysicalPlanner {
     Path workDir = WorkerTestingUtil.buildTestDir("target/test-data/testAggregationFunction");
     TaskAttemptContext2 ctx = new TaskAttemptContext2(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[9]);
+    PlanningContext context = analyzer.parse(QUERIES[8]);
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
@@ -530,7 +573,7 @@ public class TestPhysicalPlanner {
     Path workDir = WorkerTestingUtil.buildTestDir("target/test-data/testGroupByWithNullValue");
     TaskAttemptContext2 ctx = new TaskAttemptContext2(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[12]);
+    PlanningContext context = analyzer.parse(QUERIES[11]);
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
@@ -576,7 +619,7 @@ public class TestPhysicalPlanner {
     Path workDir = WorkerTestingUtil.buildTestDir("target/test-data/testEvalExpr");
     TaskAttemptContext2 ctx = new TaskAttemptContext2(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[13]);
+    PlanningContext context = analyzer.parse(QUERIES[12]);
     LogicalNode plan = planner.createPlan(context);
     LogicalOptimizer.optimize(context, plan);
 
@@ -589,7 +632,7 @@ public class TestPhysicalPlanner {
     assertEquals(true, tuple.get(0).asBool());
     assertTrue(7.0d == tuple.get(1).asDouble());
 
-    context = analyzer.parse(QUERIES[14]);
+    context = analyzer.parse(QUERIES[13]);
     plan = planner.createPlan(context);
     LogicalOptimizer.optimize(context, plan);
 

@@ -61,8 +61,7 @@ public class SeqScanExec extends PhysicalExec {
   public void init() throws IOException {
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
     this.evalContexts = projector.renew();
-    this.scanner = sm.getScanner(fragments[0].getMeta(), fragments,
-        plan.getInSchema());
+    this.scanner = sm.getScanner(fragments[0].getMeta(), fragments, outSchema);
   }
 
   @Override

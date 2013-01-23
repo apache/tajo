@@ -520,8 +520,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           // if there is no tasks
           if (subQuery.tasks.size() == 0) {
             subQuery.cleanUp();
-            TableMeta meta = new TableMetaImpl(subQuery.getOutputSchema(),
-                StoreType.CSV, new Options(), subQuery.getStats());
+            TableMeta meta = toTableMeta(subQuery.getStoreTableNode());
+            meta.setStat(subQuery.getStats());
             subQuery.eventHandler.handle(new SubQuerySucceeEvent(subQuery.getId(),
                 meta));
             return SubQueryState.SUCCEEDED;
@@ -801,8 +801,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
       subQuery.cleanUp();
       subQuery.taskScheduler.stop();
-      TableMeta meta = new TableMetaImpl(subQuery.getOutputSchema(),
-          StoreType.CSV, new Options(), subQuery.getStats());
+
+      StoreTableNode storeTableNode = subQuery.getStoreTableNode();
+      TableMeta meta = toTableMeta(storeTableNode);
+      meta.setStat(subQuery.getStats());
 
       subQuery.eventHandler.handle(new SubQuerySucceeEvent(subQuery.getId(),
           meta));
@@ -844,8 +846,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       if (sm.getFileSystem().exists(new Path(indexPath, ".meta"))) {
         meta = sm.getTableMeta(indexPath);
       } else {
-        meta = TCatUtil
-            .newTableMeta(subQuery.getOutputSchema(), StoreType.CSV);
+        StoreTableNode storeTableNode = subQuery.getStoreTableNode();
+        meta = toTableMeta(storeTableNode);
       }
       String indexName = IndexUtil.getIndexName(index.getTableName(),
           index.getSortSpecs());
@@ -855,10 +857,20 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       sm.writeTableMeta(indexPath, meta);
 
     } else {
-      TableMeta meta = TCatUtil.newTableMeta(subQuery.getOutputSchema(),
-          StoreType.CSV);
+      StoreTableNode storeTableNode = subQuery.getStoreTableNode();
+      TableMeta meta = toTableMeta(storeTableNode);
       meta.setStat(stat);
       sm.writeTableMeta(sm.getTablePath(subQuery.getOutputName()), meta);
+    }
+  }
+
+  private static TableMeta toTableMeta(StoreTableNode store) {
+    if (store.hasOptions()) {
+      return TCatUtil.newTableMeta(store.getOutSchema(),
+          store.getStorageType(), store.getOptions());
+    } else {
+      return TCatUtil.newTableMeta(store.getOutSchema(),
+          store.getStorageType());
     }
   }
 

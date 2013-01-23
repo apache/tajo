@@ -73,7 +73,7 @@ public class TestRowFile {
     schema.addColumn("age", DataType.LONG);
     schema.addColumn("description", DataType.STRING2);
 
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RAW);
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.ROWFILE);
 
     Path tablePath = new Path("hdfs:///test");
     Path metaPath = new Path(tablePath, ".meta");

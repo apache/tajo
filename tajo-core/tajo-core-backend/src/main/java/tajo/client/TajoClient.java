@@ -165,7 +165,12 @@ public class TajoClient {
     }
 
     if (status.getState() == QueryState.QUERY_SUCCEEDED) {
-      return getQueryResult(queryId);
+      if (status.hasResult()) {
+        return getQueryResult(queryId);
+      } else {
+        return null;
+      }
+
     } else {
       LOG.error(status.getErrorMessage());
 

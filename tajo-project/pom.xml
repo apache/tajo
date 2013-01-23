@@ -358,6 +358,13 @@
       </dependency>
       <dependency>
         <groupId>kr.ac.korea.dbserver</groupId>
+        <artifactId>tajo-core-backend</artifactId>
+        <version>${tajo.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>kr.ac.korea.dbserver</groupId>
         <artifactId>tajo-core-pullserver</artifactId>
         <version>${tajo.version}</version>
       </dependency>

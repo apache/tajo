@@ -172,6 +172,10 @@ public class TajoCli {
     // query execute
     try {
       ResultSet res = client.getQueryResultAndWait(queryId);
+      if (res == null) {
+        sout.println("OK");
+        return;
+      }
       QueryStatus status = client.getQueryStatus(queryId);
       ResultSetMetaData rsmd = res.getMetaData();
       TableDesc desc = client.getResultDesc(queryId);
@@ -233,7 +237,11 @@ public class TajoCli {
   private void descTable(String [] cmd) throws ServiceException {
     if (cmd.length > 1) {
       TableDesc desc = client.getTableDesc(cmd[1]);
-      sout.println(toFormattedString(desc));
+      if (desc == null) {
+        sout.println("No such a table name: " + cmd[1]);
+      } else {
+        sout.println(toFormattedString(desc));
+      }
     } else {
       sout.println("Table name is required");
     }

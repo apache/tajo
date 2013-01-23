@@ -76,7 +76,7 @@ public class TestBNLJoinExec {
     schema.addColumn("memId", DataType.INT);
     schema.addColumn("deptName", DataType.STRING);
 
-    TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.RAW);
+    TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
     sm.initTableBase(employeeMeta, "employee");
     Appender appender = sm.getAppender(employeeMeta, "employee", "employee");
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
@@ -97,7 +97,7 @@ public class TestBNLJoinExec {
     peopleSchema.addColumn("fk_memId", DataType.INT);
     peopleSchema.addColumn("name", DataType.STRING);
     peopleSchema.addColumn("age", DataType.INT);
-    TableMeta peopleMeta = TCatUtil.newTableMeta(peopleSchema, StoreType.RAW);
+    TableMeta peopleMeta = TCatUtil.newTableMeta(peopleSchema, StoreType.CSV);
     sm.initTableBase(peopleMeta, "people");
     appender = sm.getAppender(peopleMeta, "people", "people");
     tuple = new VTuple(peopleMeta.getSchema().getColumnNum());

@@ -94,13 +94,13 @@ public class TestCSVFile {
     TableStat stat = appender.getStats();
     assertEquals(tupleNum, stat.getNumRows().longValue());
     
-    long fragSize = (long) (Math.random() * stat.getNumBytes().longValue()) + 65536;
+    long fragSize = (long) (Math.random() * stat.getNumBytes()) + 65536;
     Fragment[] fragments = sm.split("TestCSVTable", fragSize);
     
     int tupleCnt = 0;
-    for (int i = 0; i < fragments.length; i++) {
-      LOG.info("Fragement Info: " + fragments[i].getStartOffset() + "(start), " + fragments[i].getLength() + "(len)");
-      Scanner scanner = sm.getScanner(meta, fragments[i]);
+    for (Fragment frag : fragments) {
+      LOG.info("Fragement Info: " + frag.getStartOffset() + "(start), " + frag.getLength() + "(len)");
+      Scanner scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), frag);
       while (scanner.next() != null) {
         tupleCnt++;
       }

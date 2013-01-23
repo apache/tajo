@@ -28,6 +28,7 @@ import org.apache.commons.logging.LogFactory;
 import tajo.catalog.CatalogService;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
+import tajo.catalog.proto.CatalogProtos;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.engine.eval.*;
 import tajo.engine.parser.*;
@@ -159,25 +160,54 @@ public class LogicalPlanner {
   private static LogicalNode buildCreateTablePlan(final PlanningContext ctx,
                                                   final CreateTableStmt query)
       throws CloneNotSupportedException {
-    LogicalNode node = null;
-    if (query.hasDefinition())  {
+    LogicalNode node;
+
+    if (query.hasQueryBlock()) {
+      LogicalNode selectPlan = buildSelectPlan(ctx, query.getSelectStmt());
+      StoreTableNode storeNode = new StoreTableNode(query.getTableName());
+
+      storeNode.setSubNode(selectPlan);
+
+      if (query.hasDefinition()) {
+        storeNode.setOutSchema(query.getTableDef());
+      } else {
+        // TODO - strip qualified name
+        storeNode.setOutSchema(selectPlan.getOutSchema());
+      }
+      storeNode.setInSchema(selectPlan.getOutSchema());
+
+      if (query.hasStoreType()) {
+        storeNode.setStorageType(query.getStoreType());
+      } else {
+        // default type
+        // TODO - it should be configurable.
+        storeNode.setStorageType(CatalogProtos.StoreType.CSV);
+      }
+      if (query.hasOptions()) {
+        storeNode.setOptions(query.getOptions());
+      }
+
+      node = storeNode;
+    } else {
       CreateTableNode createTable =
-          new CreateTableNode(query.getTableName(), query.getTableDef(),
-              query.getStoreType(), query.getPath());
+          new CreateTableNode(query.getTableName(), query.getTableDef());
+
+      if (query.hasStoreType()) {
+        createTable.setStorageType(query.getStoreType());
+      } else {
+        // default type
+        // TODO - it should be configurable.
+        createTable.setStorageType(CatalogProtos.StoreType.CSV);
+      }
       if (query.hasOptions()) {
         createTable.setOptions(query.getOptions());
       }
-      createTable.setInSchema(query.getTableDef());
-      createTable.setOutSchema(query.getTableDef());
+
+      if (query.hasPath()) {
+        createTable.setPath(query.getPath());
+      }
+
       node = createTable;
-    } else if (query.hasSelectStmt()) {
-      LogicalNode subNode = buildSelectPlan(ctx, query.getSelectStmt());
-      
-      StoreTableNode storeNode = new StoreTableNode(query.getTableName());
-      storeNode.setInSchema(subNode.getOutSchema());
-      storeNode.setOutSchema(subNode.getOutSchema());
-      storeNode.setSubNode(subNode);
-      node = storeNode;
     }
     
     return node;

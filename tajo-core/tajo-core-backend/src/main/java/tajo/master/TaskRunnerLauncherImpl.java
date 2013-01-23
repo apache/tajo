@@ -289,8 +289,8 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     vargs.add(event.getContainerMgrAddress()); // nodeId
     vargs.add(event.getContainerId().toString()); // containerId
 
-    vargs.add("1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/taskRunner.stdout");
-    vargs.add("2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/taskRunner.stderr");
+    vargs.add("1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout");
+    vargs.add("2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr");
 
     // Get final commmand
     StringBuilder command = new StringBuilder();
