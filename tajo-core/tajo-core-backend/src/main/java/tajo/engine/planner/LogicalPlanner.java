@@ -162,13 +162,13 @@ public class LogicalPlanner {
     LogicalNode node = null;
     if (query.hasDefinition())  {
       CreateTableNode createTable =
-          new CreateTableNode(query.getTableName(), query.getSchema(), 
+          new CreateTableNode(query.getTableName(), query.getTableDef(),
               query.getStoreType(), query.getPath());
       if (query.hasOptions()) {
         createTable.setOptions(query.getOptions());
       }
-      createTable.setInSchema(query.getSchema());
-      createTable.setOutSchema(query.getSchema());
+      createTable.setInSchema(query.getTableDef());
+      createTable.setOutSchema(query.getTableDef());
       node = createTable;
     } else if (query.hasSelectStmt()) {
       LogicalNode subNode = buildSelectPlan(ctx, query.getSelectStmt());

@@ -433,37 +433,97 @@ public class TestNQLParser {
 
   static String[] schemaStmts = { 
     "drop table abc",
-    "create table name as select * from test",
-    "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data'",
-    "create table table1 (name string, age int, earn long, score float) using rcfile"
+    "create table name (name string, age int)",
+    "create table name (name string, age int) using rcfile",
+    "create table name (name string, age int) using rcfile with ('rcfile.buffer'=4096)",
+    "create table name as select * from test", // 4
+    "create table name (name string, age int) as select * from test", // 5
+    "create table name (name string, age int) using rcfile as select * from test", // 6
+    "create table name (name string, age int) using rcfile with ('rcfile.buffer'= 4096) as select * from test", // 7
+    "create external table table1 (name string, age int, earn long, score float) using csv location '/tmp/data'", // 8
   };
 
   @Test
-  public void testCreateTableAsSelect() throws RecognitionException, TQLSyntaxError {
+  public void testCreateTableAsSelect1() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[1]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(ast.getChild(0).getType(), NQLParser.ID);
-    assertEquals(ast.getChild(1).getType(), NQLParser.SELECT);
-  }
-  
-  @Test
-  public void testCreateTableDef1() throws RecognitionException, TQLSyntaxError {
-    Tree ast = parseQuery(schemaStmts[2]);
-    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(ast.getChild(0).getType(), NQLParser.ID);
-    assertEquals(ast.getChild(1).getType(), NQLParser.TABLE_DEF);
-    assertEquals(ast.getChild(2).getType(), NQLParser.ID);
-    assertEquals(ast.getChild(3).getType(), NQLParser.LOCATION);
-    assertEquals(ast.getChild(3).getChild(0).getText(), "/tmp/data");
+    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
   }
 
   @Test
-  public void testCreateTableDef2() throws RecognitionException, TQLSyntaxError {
+  public void testCreateTableAsSelect2() throws RecognitionException, TQLSyntaxError {
+    Tree ast = parseQuery(schemaStmts[2]);
+    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
+    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(NQLParser.USING, ast.getChild(2).getType());
+    assertEquals("rcfile", ast.getChild(2).getChild(0).getText());
+  }
+
+  @Test
+  public void testCreateTableAsSelect3() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[3]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(ast.getChild(0).getType(), NQLParser.ID);
-    assertEquals(ast.getChild(1).getType(), NQLParser.TABLE_DEF);
-    assertEquals(ast.getChild(2).getType(), NQLParser.ID);
+    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(NQLParser.USING, ast.getChild(2).getType());
+    assertEquals("rcfile", ast.getChild(2).getChild(0).getText());
+    assertEquals(NQLParser.PARAMS, ast.getChild(3).getType());
+  }
+
+  @Test
+  public void testCreateTableAsSelect4() throws RecognitionException, TQLSyntaxError {
+    Tree ast = parseQuery(schemaStmts[4]);
+    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
+    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.AS, ast.getChild(1).getType());
+    assertEquals(NQLParser.SELECT, ast.getChild(1).getChild(0).getType());
+  }
+
+  @Test
+  public void testCreateTableAsSelect5() throws RecognitionException, TQLSyntaxError {
+    Tree ast = parseQuery(schemaStmts[5]);
+    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
+    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(NQLParser.AS, ast.getChild(2).getType());
+    assertEquals(NQLParser.SELECT, ast.getChild(2).getChild(0).getType());
+  }
+
+  @Test
+  public void testCreateTableAsSelect6() throws RecognitionException, TQLSyntaxError {
+    Tree ast = parseQuery(schemaStmts[6]);
+    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
+    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(NQLParser.USING, ast.getChild(2).getType());
+    assertEquals(NQLParser.AS, ast.getChild(3).getType());
+    assertEquals(NQLParser.SELECT, ast.getChild(3).getChild(0).getType());
+  }
+
+  @Test
+  public void testCreateTableAsSelect7() throws RecognitionException, TQLSyntaxError {
+    Tree ast = parseQuery(schemaStmts[7]);
+    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
+    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(NQLParser.USING, ast.getChild(2).getType());
+    assertEquals(NQLParser.PARAMS, ast.getChild(3).getType());
+    assertEquals(NQLParser.AS, ast.getChild(4).getType());
+    assertEquals(NQLParser.SELECT, ast.getChild(4).getChild(0).getType());
+  }
+  
+  @Test
+  public void testCreateTableLocation1() throws RecognitionException, TQLSyntaxError {
+    Tree ast = parseQuery(schemaStmts[8]);
+    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
+    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.EXTERNAL, ast.getChild(1).getType());
+    assertEquals(NQLParser.TABLE_DEF, ast.getChild(2).getType());
+    assertEquals(NQLParser.USING, ast.getChild(3).getType());
+    assertEquals(NQLParser.LOCATION, ast.getChild(4).getType());
+    assertEquals("/tmp/data", ast.getChild(4).getChild(0).getText());
   }
 
   @Test
@@ -759,7 +819,6 @@ public class TestNQLParser {
   public void testIsNotNull() throws RecognitionException {
     NQLParser p = parseExpr(exprs[28]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
-    System.out.println(node.toStringTree());
     assertEquals(NQLParser.IS, node.getType());
     assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
     assertEquals(NQLParser.NULL, node.getChild(1).getType());

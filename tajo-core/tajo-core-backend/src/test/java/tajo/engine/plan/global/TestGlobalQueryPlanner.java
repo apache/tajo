@@ -173,7 +173,7 @@ public class TestGlobalQueryPlanner {
   public void testGroupby() throws IOException, KeeperException,
       InterruptedException {
     PlanningContext context = analyzer.parse(
-        "store1 := select age, sumtest(salary) from table0 group by age");
+        "create table store1 as select age, sumtest(salary) from table0 group by age");
     LogicalNode plan = logicalPlanner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
@@ -211,7 +211,7 @@ public class TestGlobalQueryPlanner {
   @Test
   public void testSort() throws IOException {
     PlanningContext context = analyzer.parse(
-        "store1 := select age from table0 order by age");
+        "create table store1 as select age from table0 order by age");
     LogicalNode plan = logicalPlanner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
@@ -481,7 +481,7 @@ public class TestGlobalQueryPlanner {
   public void testCreateMultilevelGroupby()
       throws IOException, CloneNotSupportedException {
     PlanningContext context = analyzer.parse(
-        "store1 := select age, sumtest(salary) from table0 group by age");
+        "create table store1 as select age, sumtest(salary) from table0 group by age");
     LogicalNode plan = logicalPlanner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 

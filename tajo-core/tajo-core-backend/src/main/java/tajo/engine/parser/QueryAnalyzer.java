@@ -72,7 +72,7 @@ public final class QueryAnalyzer {
     try {
       ast = parseTree(query);
       context = new PlanningContextImpl(query);
-      ParseTree parseTree = parseQueryTree(context, ast);
+      ParseTree parseTree = parseQueryTree(context,ast);
       context.setParseTree(parseTree);
     } catch (TQLParseError e) {
       throw new TQLSyntaxError(query, e.getMessage());
@@ -155,34 +155,78 @@ public final class QueryAnalyzer {
     CommonTree node;
     String tableName = ast.getChild(idx).getText();
     idx++;
-    node = (CommonTree) ast.getChild(idx);
 
-    if (node.getType() == NQLParser.TABLE_DEF) {
-      Schema tableDef = parseCreateTableDef(node);
+    boolean external = false;
+    Schema tableDef = null;
+    StoreType storeType = null;
+    Options options = null;
+    QueryBlock selectStmt = null;
+    Path location = null;
+    while(idx < ast.getChildCount()) {
+      node = (CommonTree) ast.getChild(idx);
+      switch (node.getType()) {
+        case NQLParser.EXTERNAL:
+          external = true;
+          break;
+
+        case NQLParser.TABLE_DEF:
+          tableDef = parseCreateTableDef(node);
+          break;
+
+        case NQLParser.FORMAT:
+        case NQLParser.USING:
+          storeType = ParseUtil.getStoreType(node.getChild(0).getText());
+          break;
+
+        case NQLParser.PARAMS:
+          options = parseParams(node);
+          break;
+
+        case NQLParser.AS:
+          selectStmt = parseSelectStatement(context, (CommonTree) node.getChild(0));
+          break;
+
+        case NQLParser.LOCATION:
+          location = new Path(node.getChild(0).getText());
+          break;
+
+        default:
+          throw new NotSupportQueryException("ERROR: not yet supported query");
+      }
       idx++;
-      StoreType storeType = ParseUtil.getStoreType(ast.getChild(idx).getText());
-      stmt = new CreateTableStmt(context, tableName, tableDef, storeType);
+    }
 
-      if ((ast.getChildCount() - idx) > 1) {
-        if (ast.getChild(idx+1).getType() == NQLParser.LOCATION) {
-          idx++;
-          Path path = new Path(ast.getChild(idx).getChild(0).getText());
-          stmt.setPath(path);
-        }
-      }
-
-      if ((ast.getChildCount() - idx) > 1) {
-        if (ast.getChild(idx+1).getType() == NQLParser.PARAMS) {
-          idx++;
-          Options options = parseParams((CommonTree) ast.getChild(idx));
-          stmt.setOptions(options);
-        }
-      }
-    } else if (node.getType() == NQLParser.SELECT) {
-      QueryBlock selectStmt = parseSelectStatement(context, node);
+    if (selectStmt != null) {
       stmt = new CreateTableStmt(context, tableName, selectStmt);
     } else {
-      throw new NotSupportQueryException("ERROR: not yet supported query");
+      stmt = new CreateTableStmt(context, tableName);
+      if (external) {
+        if (location != null) {
+          stmt.setPath(location);
+        }
+      }
+    }
+
+    if (tableDef != null) {
+      stmt.setTableDef(tableDef);
+    }
+
+    if (storeType != null) {
+      stmt.setStoreType(storeType);
+      if (options != null) {
+        stmt.setOptions(options);
+      }
+    }
+
+    // constraints
+    if (external && location == null) {
+      throw new TQLSyntaxError(context.getRawQuery(), "CREATE EXTERNAL TABLE statement requires LOCATION clause.");
+    }
+    if (!external && location != null) {
+      throw new TQLSyntaxError(context.getRawQuery(), "LOCATION clause can be only used in CREATE EXTERNAL TABLE statement.");
+    }
+    if (tableDef == null && location != null) {
+      throw new TQLSyntaxError(context.getRawQuery(), "LOCATION clause requires a schema definition.");
     }
 
     return stmt;

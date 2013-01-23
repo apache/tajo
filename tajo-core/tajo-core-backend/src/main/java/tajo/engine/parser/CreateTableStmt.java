@@ -22,6 +22,12 @@ public class CreateTableStmt extends ParseTree {
   private Options options;
 
   public CreateTableStmt(final PlanningContext context,
+                         final String tableName) {
+    super(context, StatementType.CREATE_TABLE);
+    this.tableName = tableName;
+  }
+
+  public CreateTableStmt(final PlanningContext context,
                          final String tableName, final Schema schema,
                          StoreType storeType) {
     super(context, StatementType.CREATE_TABLE);
@@ -53,28 +59,31 @@ public class CreateTableStmt extends ParseTree {
   }
   
   public final boolean hasDefinition() {
-    return this.schema != null && this.storeType != null
-        && this.path != null;
+    return this.schema != null;
+  }
+
+  public boolean hasTableDef() {
+    return this.schema != null;
+  }
+
+  public void setTableDef(Schema schema) {
+    this.schema = schema;
   }
   
-  public final Schema getSchema() {
+  public final Schema getTableDef() {
     return this.schema;
+  }
+
+  public boolean hasStoreType() {
+    return this.storeType != null;
+  }
+
+  public void setStoreType(StoreType type) {
+    this.storeType = type;
   }
   
   public final StoreType getStoreType() {
     return this.storeType;
-  }
-
-  public boolean hasPath() {
-    return this.path != null;
-  }
-
-  public void setPath(Path path) {
-    this.path = path;
-  }
-  
-  public final Path getPath() {
-    return this.path;
   }
   
   public boolean hasOptions() {
@@ -87,5 +96,30 @@ public class CreateTableStmt extends ParseTree {
   
   public Options getOptions() {
     return this.options;
+  }
+
+  public boolean hasQueryBlock() {
+    return selectStmt != null;
+  }
+
+  public void setQueryBlock(QueryBlock block) {
+    this.selectStmt = block;
+  }
+
+  public QueryBlock getQueryBlock() {
+    return this.selectStmt;
+  }
+
+
+  public boolean hasPath() {
+    return this.path != null;
+  }
+
+  public void setPath(Path path) {
+    this.path = path;
+  }
+
+  public final Path getPath() {
+    return this.path;
   }
 }
