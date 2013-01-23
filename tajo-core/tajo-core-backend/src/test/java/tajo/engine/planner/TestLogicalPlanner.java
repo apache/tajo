@@ -133,7 +133,7 @@ public class TestLogicalPlanner {
       "select name from employee where empId = 100", // 5
       "select name, score from employee, score", // 6
       "select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 7
-      "store1 := select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 8
+      "create table store1 as select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 8
       "select deptName, sumtest(score) from score group by deptName having sumtest(score) > 30", // 9
       "select 7 + 8, 8 * 9, 10 * 10 as mul", // 10
       "create index idx_employee on employee using bitmap (name null first, empId desc) with ('fillfactor' = 70)", // 11
@@ -633,7 +633,7 @@ public class TestLogicalPlanner {
   }
   
   static final String CREATE_TABLE [] = {
-    "create table table1 (name string, age int, earn long, score float) using csv location '/tmp/data' with ('csv.delimiter'='|')"
+    "create external table table1 (name string, age int, earn long, score float) using csv with ('csv.delimiter'='|') location '/tmp/data'"
   };
   
   @Test

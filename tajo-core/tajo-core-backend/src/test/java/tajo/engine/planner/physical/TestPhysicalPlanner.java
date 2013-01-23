@@ -44,7 +44,10 @@ import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PlannerUtil;
 import tajo.engine.planner.PlanningContext;
-import tajo.engine.planner.logical.*;
+import tajo.engine.planner.logical.LogicalNode;
+import tajo.engine.planner.logical.LogicalRootNode;
+import tajo.engine.planner.logical.StoreTableNode;
+import tajo.engine.planner.logical.UnionNode;
 import tajo.engine.planner2.PhysicalPlanner;
 import tajo.engine.planner2.PhysicalPlannerImpl;
 import tajo.engine.planner2.physical.ExternalSortExec;
@@ -170,13 +173,14 @@ public class TestPhysicalPlanner {
       "select name from employee where empId = 100", // 5
       "select deptName, class, score from score", // 6
       "select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 7
-      "grouped := select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 8
+      "create table grouped as select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 8
       "select count(*), max(score), min(score) from score", // 9
       "select count(deptName) from score", // 10
       "select managerId, empId, deptName from employee order by managerId, empId desc", // 11
       "select deptName, nullable from score group by deptName, nullable", // 12
       "select 3 < 4 as ineq, 3.5 * 2 as real", // 13
-      "select 3 > 2 = 1 > 0 and 3 > 1", // 14
+//      "select (3 > 2) = (1 > 0) and 3 > 1", // 14
+      "select (1 > 0) and 3 > 1", // 14
       "select deptName, class, sum(score), max(score), min(score) from score", // 15
       "select deptname, class, sum(score), max(score), min(score) from score group by deptname" // 16
   };

@@ -297,7 +297,7 @@ public class TestSelectQuery {
   @Test
   public final void testCreateAfterSelect() throws Exception {
     ResultSet res = tpch.execute(
-        "orderkeys := select l_orderkey from lineitem");
+        "create table orderkeys as select l_orderkey from lineitem");
     int count = 0;
     for (;res.next();) {
       count++;
