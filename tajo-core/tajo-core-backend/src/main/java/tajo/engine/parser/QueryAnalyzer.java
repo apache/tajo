@@ -126,7 +126,7 @@ public final class QueryAnalyzer {
     stmt.setTableName(ast.getChild(idx++).getText());
     Path path = new Path(ast.getChild(idx++).getText());
     stmt.setPath(path);
-    StoreType storeType = ParseUtil.getStoreType(ast.getChild(idx).getText());
+    StoreType storeType = CatalogUtil.getStoreType(ast.getChild(idx).getText());
     stmt.setStoreType(storeType);
 
     if ((ast.getChildCount() - idx) > 1) {
@@ -175,7 +175,7 @@ public final class QueryAnalyzer {
 
         case NQLParser.FORMAT:
         case NQLParser.USING:
-          storeType = ParseUtil.getStoreType(node.getChild(0).getText());
+          storeType = CatalogUtil.getStoreType(node.getChild(0).getText());
           break;
 
         case NQLParser.PARAMS:

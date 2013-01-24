@@ -605,7 +605,7 @@ public class DBStore implements CatalogStore {
         }
         tableName = res.getString(C_TABLE_ID).trim();
         path = new Path(res.getString("path").trim());
-        storeType = getStoreType(res.getString("store_type").trim());
+        storeType = CatalogUtil.getStoreType(res.getString("store_type").trim());
       } catch (SQLException se) { 
         throw new IOException(se);
       } finally {
@@ -693,21 +693,6 @@ public class DBStore implements CatalogStore {
       throw new IOException(se);
     } finally {
       rlock.unlock();
-    }
-  }
-  
-  private StoreType getStoreType(final String typeStr) {
-    if (typeStr.equals(StoreType.CSV.toString())) {
-      return StoreType.CSV;
-    } else if (typeStr.equals(StoreType.RAW.toString())) {
-      return StoreType.RAW;
-    } else if (typeStr.equals(StoreType.CSV.toString())) {
-      return StoreType.CSV;
-    } else {
-      LOG.error("Cannot find a matched type aginst from '"
-          + typeStr + "'");
-      // TODO - needs exception handling
-      return null;
     }
   }
   

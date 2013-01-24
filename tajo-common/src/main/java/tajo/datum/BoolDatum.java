@@ -41,6 +41,11 @@ public class BoolDatum extends Datum {
     this.val = byteVal == 1;
   }
 
+  public BoolDatum(int byteVal) {
+    this();
+    this.val = byteVal == 1;
+  }
+
 
   public BoolDatum(byte [] bytes) {
     this(bytes[0]);

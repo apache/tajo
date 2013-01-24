@@ -1,11 +1,7 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -16,7 +12,7 @@
  * limitations under the License.
  */
 
-package tajo.storage.rcfile;
+package tajo.storage.trevni;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -33,16 +29,16 @@ import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.storage.*;
-import tajo.storage.rcfile.RCFileWrapper.RCFileScanner;
+import tajo.storage.rcfile.RCFile;
 import tajo.util.CommonTestingUtil;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestRCFileWrapper {
+public class TestTrievni {
 	private TajoConf conf;
-	private static String TEST_PATH = "target/test-data/TestRCFileWrapper";
+	private static String TEST_PATH = "target/test-data/TestTrievni";
 	private StorageManager sm;
 	
 	@Before
@@ -59,7 +55,7 @@ public class TestRCFileWrapper {
     schema.addColumn("id", DataType.INT);
     schema.addColumn("age", DataType.LONG);
     
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RCFILE);
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.TREVNI);
     
     sm.initTableBase(meta, "testReadAndWrite");
     Appender appender = sm.getAppender(meta, "testReadAndWrite", "file1");
@@ -78,24 +74,12 @@ public class TestRCFileWrapper {
     
     FileStatus status = sm.listTableFiles("testReadAndWrite")[0];
     long fileLen = status.getLen();
-    long randomNum = (long) (Math.random() * fileLen) + 1;
     
-    Fragment[] tablets = new Fragment[2];
-    tablets[0] = new Fragment("testReadAndWrite", status.getPath(), meta,
-        0, randomNum, null);
-    tablets[1] = new Fragment("testReadAndWrite", status.getPath(), meta,
-        randomNum, (fileLen - randomNum), null);
+    Fragment fragment = new Fragment("testReadAndWrite", status.getPath(), meta, 0, fileLen, null);
 
-    Scanner scanner = new RCFileScanner(conf, meta.getSchema(),
-        tablets[0], schema);
+
+    Scanner scanner = new TrevniScanner(conf, meta.getSchema(), fragment, meta.getSchema());
     int tupleCnt = 0;
-    while (scanner.next() != null) {
-      tupleCnt++;
-    }
-    scanner.close();
-
-    scanner = new RCFileScanner(conf, meta.getSchema(),
-        tablets[1], schema);
     while (scanner.next() != null) {
       tupleCnt++;
     }
@@ -120,10 +104,10 @@ public class TestRCFileWrapper {
     schema.addColumn("col11", DataType.IPv4);
 
     Options options = new Options();
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RCFILE, options);
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.TREVNI, options);
 
-    sm.initTableBase(meta, "rcfile");
-    Appender appender = sm.getAppender(meta, "rcfile", "table.dat");
+    sm.initTableBase(meta, "trevni");
+    Appender appender = sm.getAppender(meta, "trevni", "table.trv");
 
     Tuple tuple = new VTuple(11);
     tuple.put(new Datum[] {
@@ -143,10 +127,10 @@ public class TestRCFileWrapper {
     appender.flush();
     appender.close();
 
-    FileStatus status = sm.listTableFiles("rcfile")[0];
-    Fragment fragment = new Fragment("rcfile", status.getPath(), meta,
+    FileStatus status = sm.listTableFiles("trevni")[0];
+    Fragment fragment = new Fragment("trevni", status.getPath(), meta,
         0, status.getLen(), null);
-    Scanner scanner =  new RCFileScanner(conf, meta.getSchema(),
+    Scanner scanner =  new TrevniScanner(conf, meta.getSchema(),
         fragment, schema);
     Tuple retrieved = scanner.next();
     for (int i = 0; i < tuple.size(); i++) {

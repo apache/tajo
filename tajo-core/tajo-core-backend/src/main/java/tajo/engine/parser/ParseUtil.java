@@ -25,7 +25,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.IndexMethod;
-import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.engine.eval.EvalNode;
 import tajo.engine.eval.InvalidEvalException;
 
@@ -34,21 +33,6 @@ import tajo.engine.eval.InvalidEvalException;
  */
 public class ParseUtil {
   private static final Log LOG = LogFactory.getLog(ParseUtil.class);
-  
-  public static StoreType getStoreType(final String typeStr) {
-    if (typeStr.equalsIgnoreCase("csv")) {
-      return StoreType.CSV;
-    } else if (typeStr.equalsIgnoreCase("raw")) {
-      return StoreType.RAW;
-    } else if (typeStr.equalsIgnoreCase("rcfile")) {
-      return StoreType.RCFILE;
-    } else {
-      LOG.error("Cannot find a matched type aginst from '"
-          + typeStr + "'");
-      // TODO - needs exception handling
-      return null;
-    }
-  }
   
   public static DataType getDataTypeFromEnum(final String typeStr) {
     if (typeStr.equals(DataType.BOOLEAN.toString())) {
