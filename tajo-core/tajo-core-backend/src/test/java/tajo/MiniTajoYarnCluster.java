@@ -42,7 +42,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Configures and starts the MR-specific components in the YARN cluster.
+ * Configures and starts the Tajo-specific components in the YARN cluster.
  *
  */
 public class MiniTajoYarnCluster extends MiniYARNCluster {

@@ -27,13 +27,14 @@ import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.hadoop.yarn.util.ConverterUtils;
+import tajo.QueryConf;
 import tajo.QueryUnitAttemptId;
 import tajo.TajoProtos.TaskAttemptState;
 import tajo.TaskAttemptContext;
 import tajo.catalog.Schema;
 import tajo.catalog.TableMeta;
 import tajo.catalog.statistics.TableStat;
-import tajo.conf.TajoConf;
 import tajo.engine.MasterWorkerProtos.*;
 import tajo.engine.exception.UnfinishedTaskException;
 import tajo.engine.json.GsonCreator;
@@ -42,20 +43,19 @@ import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.SortNode;
 import tajo.engine.planner.logical.StoreTableNode;
 import tajo.engine.planner.physical.PhysicalExec;
-import tajo.exception.InternalException;
-import tajo.ipc.MasterWorkerProtocol.MasterWorkerProtocolService;
 import tajo.ipc.MasterWorkerProtocol.MasterWorkerProtocolService.Interface;
 import tajo.ipc.protocolrecords.QueryUnitRequest;
-import tajo.master.SubQuery;
 import tajo.master.SubQuery.PARTITION_TYPE;
 import tajo.rpc.NullCallback;
 import tajo.storage.Fragment;
+import tajo.storage.StorageUtil;
 import tajo.storage.TupleComparator;
-import tajo.worker.Worker.WorkerContext;
+import tajo.worker.TaskRunner.WorkerContext;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -63,16 +63,17 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Task implements Runnable {
+public class Task {
   private static final Log LOG = LogFactory.getLog(Task.class);
 
-  private final TajoConf conf;
+  private final QueryConf conf;
   private final FileSystem localFS;
   private final WorkerContext workerContext;
-  private final MasterWorkerProtocolService.Interface masterProxy;
+  private final Interface masterProxy;
   private final LocalDirAllocator lDirAllocator;
   private final QueryUnitAttemptId taskId;
 
+  private final QueryUnitRequest request;
   private final TaskAttemptContext context;
   private List<Fetcher> fetcherRunners;
   private final LogicalNode plan;
@@ -83,6 +84,7 @@ public class Task implements Runnable {
   private boolean stopped = false;
   private float progress = 0;
   private final Reporter reporter;
+  private Path inputTableBaseDir;
 
   private static int completed = 0;
   private static int failed = 0;
@@ -96,13 +98,26 @@ public class Task implements Runnable {
   private AtomicBoolean progressFlag = new AtomicBoolean(false);
 
   // TODO - to be refactored
-  private SubQuery.PARTITION_TYPE partitionType = null;
+  private PARTITION_TYPE partitionType = null;
   private Schema finalSchema = null;
   private TupleComparator sortComp = null;
 
-  public Task(final WorkerContext worker, final Interface masterProxy,
-              final QueryUnitRequest request) throws IOException {
+  static final String OUTPUT_FILE_PREFIX="part-";
+  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT =
+      new ThreadLocal<NumberFormat>() {
+        @Override
+        public NumberFormat initialValue() {
+          NumberFormat fmt = NumberFormat.getInstance();
+          fmt.setGroupingUsed(false);
+          fmt.setMinimumIntegerDigits(6);
+          return fmt;
+        }
+      };
 
+  public Task(QueryUnitAttemptId taskId,
+              final WorkerContext worker, final Interface masterProxy,
+              final QueryUnitRequest request, Path taskDir) throws IOException {
+    this.request = request;
     this.reporter = new Reporter(masterProxy);
     this.reporter.startCommunicationThread();
 
@@ -113,14 +128,9 @@ public class Task implements Runnable {
     this.localFS = worker.getLocalFS();
     this.lDirAllocator = worker.getLocalDirAllocator();
 
-    Path taskAttemptPath = localFS.makeQualified(lDirAllocator.
-        getLocalPathForWrite(request.getId().toString(), conf));
-    File taskAttemptDir = new File(taskAttemptPath.toUri());
-    taskAttemptDir.mkdirs();
-
-    this.context = new TaskAttemptContext(conf, request.getId(),
+    this.context = new TaskAttemptContext(conf, taskId,
         request.getFragments().toArray(new Fragment[request.getFragments().size()]),
-        taskAttemptDir);
+        taskDir);
     plan = GsonCreator.getInstance().fromJson(request.getSerializedData(),
         LogicalNode.class);
     interQuery = request.getProto().getInterQuery();
@@ -133,9 +143,13 @@ public class Task implements Runnable {
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
         this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
       }
+    } else {
+      Path outFilePath = new Path(conf.getOutputPath(),
+          OUTPUT_FILE_PREFIX +
+          OUTPUT_FILE_FORMAT.get().format(taskId.getQueryUnitId().getId()));
+      LOG.info("Output File Path: " + outFilePath);
+      context.setOutputPath(outFilePath);
     }
-    // for localizing the intermediate data
-    localize(request);
 
     context.setState(TaskAttemptState.TA_PENDING);
     LOG.info("==================================");
@@ -152,13 +166,30 @@ public class Task implements Runnable {
     for (Fetch f : request.getFetches()) {
       LOG.info("==> Table Id: " + f.getName() + ", url: " + f.getUrls());
     }
-    LOG.info("* Local task dir: " + taskAttemptDir.getAbsolutePath());
+    LOG.info("* Local task dir: " + taskDir);
     LOG.info("* plan:\n");
     LOG.info(plan.toString());
     LOG.info("==================================");
   }
 
-  public void init() throws InternalException {
+  public void init() throws IOException {
+    if (request.getFetches().size() > 0) {
+      inputTableBaseDir = localFS.makeQualified(
+          lDirAllocator.getLocalPathForWrite(
+              getTaskAttemptDir(context.getTaskId()).toString() + "/in", conf));
+      localFS.mkdirs(inputTableBaseDir);
+      Path tableDir;
+      for (String inputTable : context.getInputTables()) {
+        tableDir = new Path(inputTableBaseDir, inputTable);
+        if (!localFS.exists(tableDir)) {
+          LOG.info("the directory is created  " + tableDir.toUri());
+          localFS.mkdirs(tableDir);
+        }
+      }
+    }
+
+    // for localizing the intermediate data
+    localize(request);
   }
 
   public QueryUnitAttemptId getTaskId() {
@@ -176,12 +207,6 @@ public class Task implements Runnable {
     return progressFlag.get();
   }
 
-  public File createLocalDir(Path path) throws IOException {
-    localFS.mkdirs(path);
-    Path qualified = localFS.makeQualified(path);
-    return new File(qualified.toUri());
-  }
-
   public void localize(QueryUnitRequest request) throws IOException {
     fetcherRunners = getFetchRunners(context, request.getFetches());
 
@@ -193,20 +218,11 @@ public class Task implements Runnable {
     }
 
     if (cached.size() > 0) {
-      Path inputDir = lDirAllocator.
-          getLocalPathForWrite(
-              Worker.getQueryUnitDir(context.getTaskId()).toString() + "/in", conf);
-
-      if (!localFS.exists(inputDir)) {
-        createLocalDir(inputDir);
-      }
-
-      Path qualified = localFS.makeQualified(inputDir);
       Path inFile;
 
       int i = fetcherRunners.size();
       for (Fragment cache : cached) {
-        inFile = new Path(qualified, "in_" + i);
+        inFile = new Path(inputTableBaseDir, "in_" + i);
         workerContext.getDefaultFS().copyToLocalFile(cache.getPath(), inFile);
         cache.setPath(inFile);
         i++;
@@ -260,7 +276,7 @@ public class Task implements Runnable {
     if (context.getState() == TaskAttemptState.TA_SUCCEEDED) {
       try {
         // context.getWorkDir() 지우기
-        localFS.delete(new Path(context.getWorkDir().getAbsolutePath()), true);
+        localFS.delete(context.getWorkDir(), true);
         // tasks에서 자기 지우기
         synchronized (workerContext.getTasks()) {
           workerContext.getTasks().remove(this.getId());
@@ -276,7 +292,7 @@ public class Task implements Runnable {
 
   public TaskStatusProto getReport() {
     TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
-    builder.setWorkerName(workerContext.getWorkerName());
+    builder.setWorkerName(workerContext.getNodeId());
     builder.setId(context.getTaskId().getProto())
         .setProgress(context.getProgress()).setState(context.getState());
 
@@ -293,23 +309,21 @@ public class Task implements Runnable {
       builder.setResultStats(new TableStat().getProto());
     }
 
-    String dataServerURL = workerContext.getDataServerURL();
-
     Iterator<Entry<Integer,String>> it = context.getRepartitions();
     if (it.hasNext()) {
       do {
         Entry<Integer,String> entry = it.next();
         Partition.Builder part = Partition.newBuilder();
         part.setPartitionKey(entry.getKey());
-        if (partitionType == SubQuery.PARTITION_TYPE.HASH) {
-          part.setFileName(
-              dataServerURL + "/?qid=" + getId().toString() + "&fn=" +
-                  entry.getValue());
-        } else if (partitionType == SubQuery.PARTITION_TYPE.LIST) {
-          part.setFileName(dataServerURL + "/?qid=" + getId().toString() +
-              "&fn=0");
+        if (partitionType == PARTITION_TYPE.HASH) {
+//          part.setFileName(
+//              dataServerURL + "/?qid=" + getId().toString() + "&fn=" +
+//                  entry.getValue());
+        } else if (partitionType == PARTITION_TYPE.LIST) {
+//          part.setFileName(dataServerURL + "/?qid=" + getId().toString() +
+//              "&fn=0");
         } else {
-          part.setFileName(dataServerURL + "/?qid=" + getId().toString());
+//          part.setFileName(dataServerURL + "/?qid=" + getId().toString());
         }
         builder.addPartitions(part.build());
       } while (it.hasNext());
@@ -330,7 +344,6 @@ public class Task implements Runnable {
     }
   }
 
-  @Override
   public void run() {
 
     String errorMessage = null;
@@ -354,7 +367,6 @@ public class Task implements Runnable {
         this.executor.close();
       }
     } catch (Exception e) {
-
       // errorMessage will be sent to master.
       errorMessage = ExceptionUtils.getStackTrace(e);
       LOG.error(errorMessage);
@@ -388,42 +400,6 @@ public class Task implements Runnable {
       } else {
         // if successful
         context.setProgress(1.0f);
-
-        if (interQuery) { // TODO - to be completed
-
-          // if the partition type is list or hash
-          if (partitionType == null
-              || partitionType != SubQuery.PARTITION_TYPE.RANGE) {
-
-            PartitionRetrieverHandler partitionHandler =
-                new PartitionRetrieverHandler(
-                    context.getWorkDir().getAbsolutePath() + "/out/data");
-            workerContext.getRetriever().register(this.getId(), partitionHandler);
-
-          } else {
-            // if partition type is range
-            RangeRetrieverHandler rangeHandler = null;
-            try {
-              rangeHandler = new RangeRetrieverHandler(
-                  new File(context.getWorkDir() + "/out"), finalSchema, sortComp);
-            } catch (IOException e) {
-              errorMessage =
-                  "ERROR: cannot initialize RangeRetrieverHandler\n" +
-                  ExceptionUtils.getStackTrace(e);
-              LOG.error(errorMessage);
-              TaskFatalErrorReport.Builder errorBuilder =
-                  TaskFatalErrorReport.newBuilder()
-                  .setId(getId().getProto())
-                  .setErrorMessage(errorMessage);
-
-              masterProxy.fatalError(null, errorBuilder.build(),
-                  NullCallback.get());
-              return;
-            }
-            workerContext.getRetriever().register(this.getId(), rangeHandler);
-          }
-          LOG.info("Worker starts to serve as HTTP data server for " + getId());
-        }
 
         // stopping the status report
         try {
@@ -466,7 +442,7 @@ public class Task implements Runnable {
     FileSystem fs = FileSystem.get(c);
     Path tablePath = new Path(file.getAbsolutePath());
 
-    List<Fragment> listTablets = new ArrayList<Fragment>();
+    List<Fragment> listTablets = new ArrayList<>();
     Fragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(tablePath);
@@ -534,9 +510,8 @@ public class Task implements Runnable {
 
     if (fetches.size() > 0) {
       Path inputDir = lDirAllocator.
-          getLocalPathForWrite(
-              Worker.getQueryUnitDir(ctx.getTaskId()).toString() + "/in", conf);
-      createLocalDir(inputDir);
+          getLocalPathToRead(
+              getTaskAttemptDir(ctx.getTaskId()).toString() + "/in", conf);
       File storeDir;
 
       int i = 0;
@@ -560,7 +535,7 @@ public class Task implements Runnable {
   }
 
   protected class Reporter implements Runnable {
-    private MasterWorkerProtocolService.Interface masterStub;
+    private Interface masterStub;
     private Thread pingThread;
     private Object lock = new Object();
     private static final int PROGRESS_INTERVAL = 3000;
@@ -586,14 +561,6 @@ public class Task implements Runnable {
             break;
           }
           resetProgressFlag();
-
-          // to send
-          TaskStatusProto taskStatus;
-          // to be removed
-          List<QueryUnitAttemptId> tobeRemoved = Lists.newArrayList();
-
-          // builds one status for each in-progress query
-          TaskAttemptState taskState;
 
           if (getProgressFlag()) {
             resetProgressFlag();
@@ -637,5 +604,26 @@ public class Task implements Runnable {
         pingThread.join();
       }
     }
+  }
+
+  public static final String FILECACHE = "filecache";
+  public static final String APPCACHE = "appcache";
+  public static final String USERCACHE = "usercache";
+
+  String fileCache;
+  public String getFileCacheDir() {
+    fileCache = USERCACHE + "/" + "hyunsik" + "/" + APPCACHE + "/" +
+        ConverterUtils.toString(taskId.getQueryId().getApplicationId()) +
+        "/" + "output";
+    return fileCache;
+  }
+
+  public static Path getTaskAttemptDir(QueryUnitAttemptId quid) {
+    Path workDir =
+        StorageUtil.concatPath(
+            quid.getSubQueryId().toString(),
+            String.valueOf(quid.getQueryUnitId().getId()),
+            String.valueOf(quid.getId()));
+    return workDir;
   }
 }

@@ -25,9 +25,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.TajoTestingCluster;
-import tajo.TajoTestingUtility;
 import tajo.TaskAttemptContext;
-import tajo.WorkerTestingUtil;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
@@ -41,9 +39,9 @@ import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.storage.*;
+import tajo.util.CommonTestingUtil;
 import tajo.util.TUtil;
 
-import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
@@ -62,7 +60,7 @@ public class TestNLJoinExec {
   public void setUp() throws Exception {
     util = new TajoTestingCluster();
     catalog = util.startCatalogCluster().getCatalog();
-    Path workDir = WorkerTestingUtil.buildTestDir(TEST_PATH);
+    Path workDir = CommonTestingUtil.buildTestDir(TEST_PATH);
     conf = util.getConfiguration();
     sm = StorageManager.get(conf, workDir);
 
@@ -134,7 +132,7 @@ public class TestNLJoinExec {
     
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);
 
-    File workDir = TajoTestingUtility.getTestDir("CrossJoin");
+    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testCrossJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), merged, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
@@ -161,7 +159,7 @@ public class TestNLJoinExec {
     
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);
 
-    File workDir = TajoTestingUtility.getTestDir("InnerJoin");
+    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testInnerJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), merged, workDir);
     PlanningContext context =  analyzer.parse(QUERIES[1]);

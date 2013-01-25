@@ -25,8 +25,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.TajoTestingCluster;
-import tajo.TaskAttemptContext2;
-import tajo.WorkerTestingUtil;
+import tajo.TaskAttemptContext;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
@@ -35,17 +34,12 @@ import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.LogicalPlanner;
+import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
-import tajo.engine.planner2.PhysicalPlanner;
-import tajo.engine.planner2.PhysicalPlannerImpl;
-import tajo.engine.planner2.physical.ExternalSortExec;
-import tajo.engine.planner2.physical.MemSortExec;
-import tajo.engine.planner2.physical.PhysicalExec;
-import tajo.engine.planner2.physical.ProjectionExec;
-import tajo.engine.planner2.physical.SeqScanExec;
-import tajo.engine.planner2.physical.UnaryPhysicalExec;
 import tajo.storage.*;
+import tajo.util.CommonTestingUtil;
 import tajo.util.TUtil;
 
 import java.io.IOException;
@@ -71,7 +65,7 @@ public class TestExternalSortExec {
     this.conf = new TajoConf();
     util = new TajoTestingCluster();
     catalog = util.startCatalogCluster().getCatalog();
-    baseDir = WorkerTestingUtil.buildTestDir(TEST_PATH);
+    baseDir = CommonTestingUtil.buildTestDir(TEST_PATH);
 
     sm = StorageManager.get(conf, baseDir);
 
@@ -113,7 +107,7 @@ public class TestExternalSortExec {
   public final void testNext() throws IOException {
     Fragment[] frags = sm.split("employee");
     Path workDir = new Path(baseDir, TestExternalSortExec.class.getName());
-    TaskAttemptContext2 ctx = new TaskAttemptContext2(conf,
+    TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context);

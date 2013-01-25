@@ -1,13 +1,7 @@
 /*
- * Copyright 2012 Database Lab., Korea Univ.
- *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -26,9 +20,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.TajoTestingCluster;
-import tajo.TajoTestingUtility;
 import tajo.TaskAttemptContext;
-import tajo.WorkerTestingUtil;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
@@ -44,9 +36,9 @@ import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.ScanNode;
 import tajo.storage.*;
 import tajo.storage.index.bst.BSTIndex;
+import tajo.util.CommonTestingUtil;
 import tajo.util.TUtil;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Random;
@@ -73,13 +65,13 @@ public class TestBSTIndexExec {
 
   @Before
   public void setup() throws Exception {
-    this.randomValues = new HashMap<Integer , Integer> ();
+    this.randomValues = new HashMap<> ();
     this.conf = new TajoConf();
     util = new TajoTestingCluster();
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();
 
-    Path workDir = WorkerTestingUtil.buildTestDir("target/test-data/TestPhysicalPlanner");
+    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/TestPhysicalPlanner");
     sm = StorageManager.get(conf, workDir);
 
     idxPath = new Path(workDir, "test.idx");
@@ -149,7 +141,7 @@ public class TestBSTIndexExec {
     final String QUERY = "select * from employee where managerId = " + rndKey;
     
     Fragment[] frags = sm.split("employee");
-    File workDir = TajoTestingUtility.getTestDir("TestBSTIndex");
+    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testEqual");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERY);

@@ -189,44 +189,44 @@ public class TajoMaster extends CompositeService {
     sqlFuncs.add(new FunctionDesc("sum", NewSumInt.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.INT},
         new DataType[] {DataType.INT}));
-    sqlFuncs.add(new FunctionDesc("sum", NewSumLong.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("sum", SumLong.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.LONG},
         new DataType[] {DataType.LONG}));
-    sqlFuncs.add(new FunctionDesc("sum", NewSumFloat.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("sum", SumFloat.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.FLOAT},
         new DataType[] {DataType.FLOAT}));
-    sqlFuncs.add(new FunctionDesc("sum", NewSumDouble.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("sum", SumDouble.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.DOUBLE},
         new DataType[] {DataType.DOUBLE}));
 
     // Max
-    sqlFuncs.add(new FunctionDesc("max", NewMaxInt.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("max", MaxInt.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.INT},
         new DataType[] {DataType.INT}));
-    sqlFuncs.add(new FunctionDesc("max", NewMaxLong.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("max", MaxLong.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.LONG},
         new DataType[] {DataType.LONG}));
-    sqlFuncs.add(new FunctionDesc("max", NewMaxFloat.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("max", MaxFloat.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.FLOAT},
         new DataType[] {DataType.FLOAT}));
-    sqlFuncs.add(new FunctionDesc("max", NewMaxDouble.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("max", MaxDouble.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.DOUBLE},
         new DataType[] {DataType.DOUBLE}));
 
     // Min
-    sqlFuncs.add(new FunctionDesc("min", NewMinInt.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("min", MinInt.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.INT},
         new DataType[] {DataType.INT}));
-    sqlFuncs.add(new FunctionDesc("min", NewMinLong.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("min", MinLong.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.LONG},
         new DataType[] {DataType.LONG}));
-    sqlFuncs.add(new FunctionDesc("min", NewMinFloat.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("min", MinFloat.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.FLOAT},
         new DataType[] {DataType.FLOAT }));
-    sqlFuncs.add(new FunctionDesc("min", NewMinDouble.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("min", MinDouble.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.DOUBLE},
         new DataType[] {DataType.DOUBLE}));
-    sqlFuncs.add(new FunctionDesc("min", NewMinString.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("min", MinString.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.STRING},
         new DataType[] {DataType.STRING}));
 
@@ -245,10 +245,10 @@ public class TajoMaster extends CompositeService {
         new DataType[] {DataType.DOUBLE}));
 
     // Count
-    sqlFuncs.add(new FunctionDesc("count", NewCountValue.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("count", CountValue.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.LONG},
         new DataType[] {DataType.ANY}));
-    sqlFuncs.add(new FunctionDesc("count", NewCountRows.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("count", CountRows.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.LONG},
         new DataType[] {}));
 

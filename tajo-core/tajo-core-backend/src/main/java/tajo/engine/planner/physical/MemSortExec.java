@@ -73,7 +73,7 @@ public class MemSortExec extends SortExec {
     sorted = true;
   }
 
-  SortNode getPlan() {
+  public SortNode getPlan() {
     return this.plan;
   }
 }

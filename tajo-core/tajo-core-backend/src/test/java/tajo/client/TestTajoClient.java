@@ -8,9 +8,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import tajo.BackendTestingUtil;
 import tajo.IntegrationTest;
 import tajo.TajoTestingCluster;
-import tajo.WorkerTestingUtil;
 import tajo.catalog.TableDesc;
 import tajo.conf.TajoConf;
 import tajo.storage.StorageUtil;
@@ -49,7 +49,7 @@ public class TestTajoClient {
 
   private static Path writeTmpTable(String tableName) throws IOException {
     Path tablePath = StorageUtil.concatPath(testDir, tableName);
-    WorkerTestingUtil.writeTmpTable(conf, testDir, tableName, true);
+    BackendTestingUtil.writeTmpTable(conf, testDir, tableName, true);
     return tablePath;
   }
 
@@ -84,7 +84,7 @@ public class TestTajoClient {
     Path tablePath = writeTmpTable(tableName);
 
     assertFalse(tajo.existTable(tableName));
-    tajo.createTable(tableName, tablePath, WorkerTestingUtil.mockupMeta);
+    tajo.createTable(tableName, tablePath, BackendTestingUtil.mockupMeta);
     assertTrue(tajo.existTable(tableName));
     tajo.dropTable(tableName);
     assertFalse(tajo.existTable(tableName));
@@ -96,7 +96,7 @@ public class TestTajoClient {
   public final void testDDLByExecuteQuery() throws IOException, ServiceException {
     TajoConf conf = util.getConfiguration();
     final String tableName = "testDDLByExecuteQuery";
-    WorkerTestingUtil.writeTmpTable(conf, "/tmp", tableName, false);
+    BackendTestingUtil.writeTmpTable(conf, "/tmp", tableName, false);
 
     assertFalse(tajo.existTable(tableName));
     String tql =

@@ -1,13 +1,9 @@
 /*
  * Copyright 2012 Database Lab., Korea Univ.
  *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -42,13 +38,13 @@ public class HashAggregateExec extends AggregationExec {
   private Iterator<Entry<Tuple, EvalContext []>> iterator = null;
 
   /**
-   * @throws IOException 
+   * @throws java.io.IOException
 	 * 
 	 */
   public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode annotation,
                            PhysicalExec subOp) throws IOException {
     super(ctx, annotation, subOp);
-    tupleSlots = new HashMap<Tuple, EvalContext[]>(10000);
+    tupleSlots = new HashMap<>(10000);
     this.tuple = new VTuple(outSchema.getColumnNum());
   }
   

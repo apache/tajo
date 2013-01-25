@@ -49,7 +49,6 @@ public class TajoTestingCluster {
   protected MiniTajoYarnCluster yarnCluster;
   private FileSystem defaultFS;
   private MiniDFSCluster dfsCluster;
-	private MiniTajoCluster tajoCluster;
 	private MiniCatalogServer catalogServer;
 
 
@@ -225,7 +224,7 @@ public class TajoTestingCluster {
   ////////////////////////////////////////////////////////
   // Tajo Cluster Section
   ////////////////////////////////////////////////////////
-  private MiniTajoCluster startMiniTajoCluster(File testBuildDir,
+  private void startMiniTajoCluster(File testBuildDir,
                                                final int numSlaves,
                                                boolean local) throws Exception {
     TajoConf c = getConfiguration();
@@ -253,7 +252,6 @@ public class TajoTestingCluster {
     this.conf.setVar(ConfVars.CATALOG_ADDRESS, c.getVar(ConfVars.CATALOG_ADDRESS));
 
     LOG.info("Mini Tajo cluster is up");
-    return this.tajoCluster;
   }
 
   public void restartTajoCluster(int numSlaves) throws Exception {
@@ -267,16 +265,11 @@ public class TajoTestingCluster {
     return this.tajoMaster;
   }
 
-  public MiniTajoCluster getMiniTajoCluster() {
-    return this.tajoCluster;
-  }
-
   public void shutdownMiniTajoCluster() {
-    if(this.tajoCluster != null) {
-      this.tajoCluster.shutdown();
-      this.tajoCluster.join();
+    if(this.tajoMaster != null) {
+      this.tajoMaster.stop();
     }
-    this.tajoCluster = null;
+    this.tajoMaster= null;
   }
 
   ////////////////////////////////////////////////////////
@@ -299,13 +292,13 @@ public class TajoTestingCluster {
    * @return a mini tajo cluster
    * @throws Exception
    */
-  public MiniTajoCluster startMiniCluster(final int numSlaves)
+  public void startMiniCluster(final int numSlaves)
       throws Exception {
     String localHostName = InetAddress.getLocalHost().getHostName();
-    return startMiniCluster(numSlaves, new String[] {localHostName});
+    startMiniCluster(numSlaves, new String[] {localHostName});
   }
 
-  public MiniTajoCluster startMiniCluster(final int numSlaves,
+  public void startMiniCluster(final int numSlaves,
                                           final String [] dataNodeHosts) throws Exception {
     // the conf is set to the distributed mode.
     this.conf.setBoolVar(ConfVars.CLUSTER_DISTRIBUTED, true);
@@ -361,10 +354,10 @@ public class TajoTestingCluster {
       os.close();
     }
 
-    return startMiniTajoCluster(this.clusterTestBuildDir, numSlaves, false);
+    startMiniTajoCluster(this.clusterTestBuildDir, numSlaves, false);
   }
 
-  public MiniTajoCluster startMiniClusterInLocal(final int numSlaves) throws Exception {
+  public void startMiniClusterInLocal(final int numSlaves) throws Exception {
     // the conf is set to the distributed mode.
     this.conf.setBoolVar(ConfVars.CLUSTER_DISTRIBUTED, true);
 
@@ -383,7 +376,7 @@ public class TajoTestingCluster {
     System.setProperty(TEST_DIRECTORY_KEY,
         this.clusterTestBuildDir.getAbsolutePath());
 
-    return startMiniTajoCluster(this.clusterTestBuildDir, numSlaves, true);
+    startMiniTajoCluster(this.clusterTestBuildDir, numSlaves, true);
   }
 
 

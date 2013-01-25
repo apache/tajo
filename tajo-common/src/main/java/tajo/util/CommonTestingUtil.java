@@ -1,6 +1,4 @@
 /*
- * Copyright 2012 Database Lab., Korea Univ.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,6 +21,12 @@ import org.apache.hadoop.fs.Path;
 import java.io.IOException;
 
 public class CommonTestingUtil {
+  /**
+   *
+   * @param dir a local directory to be created
+   * @return  the created path
+   * @throws IOException
+   */
   public static Path buildTestDir(String dir) throws IOException {
     Path path = new Path(dir);
     FileSystem fs = FileSystem.getLocal(new Configuration());

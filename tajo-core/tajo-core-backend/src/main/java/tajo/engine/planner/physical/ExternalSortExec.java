@@ -1,13 +1,9 @@
 /*
  * Copyright 2012 Database Lab., Korea Univ.
  *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -38,14 +34,12 @@ public class ExternalSortExec extends SortExec {
 
   private final List<Tuple> tupleSlots;
   private boolean sorted = false;
-  private StorageManager sm;
   private RawFile.Scanner result;
   private RawFile.Appender appender;
-  private String tableName = null;
   private FileSystem localFS;
 
   private final TableMeta meta;
-  private final Path workDir;
+  private final Path sortTmpDir;
   private int SORT_BUFFER_SIZE;
 
   public ExternalSortExec(final TaskAttemptContext context,
@@ -54,19 +48,18 @@ public class ExternalSortExec extends SortExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), child,
         plan.getSortKeys());
     this.plan = plan;
-    this.sm = sm;
 
     this.SORT_BUFFER_SIZE = context.getConf().getIntVar(ConfVars.EXT_SORT_BUFFER);
     this.tupleSlots = new ArrayList<>(SORT_BUFFER_SIZE);
 
-    this.workDir = new Path(context.getWorkDir() + "/" + UUID.randomUUID().toString());
+    this.sortTmpDir = new Path(context.getWorkDir(), UUID.randomUUID().toString());
     this.localFS = FileSystem.getLocal(context.getConf());
     meta = TCatUtil.newTableMeta(inSchema, StoreType.ROWFILE);
   }
 
   public void init() throws IOException {
     super.init();
-    localFS.mkdirs(workDir);
+    localFS.mkdirs(sortTmpDir);
   }
 
   public SortNode getPlan() {
@@ -77,7 +70,9 @@ public class ExternalSortExec extends SortExec {
       throws IOException {
     TableMeta meta = TCatUtil.newTableMeta(inSchema, StoreType.RAW);
     Collections.sort(tupleSlots, getComparator());
-    Path localPath = new Path(workDir, "0_" + chunkId);
+    // TODO - RawFile requires the local file path.
+    // So, I add the scheme 'file:/' to path. But, it should be improved.
+    Path localPath = new Path(sortTmpDir + "/0_" + chunkId);
 
     appender = new RawFile.Appender(context.getConf(), meta, localPath);
     appender.init();
@@ -92,7 +87,7 @@ public class ExternalSortExec extends SortExec {
   /**
    * It divides all tuples into a number of chunks, then sort for each chunk.
    * @return the number of stored chunks
-   * @throws IOException
+   * @throws java.io.IOException
    */
   private int sortAndStoreAllChunks() throws IOException {
     int chunkId = 0;
@@ -115,7 +110,7 @@ public class ExternalSortExec extends SortExec {
   }
 
   private Path getChunkPath(int level, int chunkId) {
-    return StorageUtil.concatPath(workDir, "" + level + "_" + chunkId);
+    return StorageUtil.concatPath(sortTmpDir, "" + level + "_" + chunkId);
   }
 
   @Override

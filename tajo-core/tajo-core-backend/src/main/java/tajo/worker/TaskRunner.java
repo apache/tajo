@@ -81,7 +81,7 @@ public class TaskRunner extends AbstractService {
   private final int coreNum = 4;
   private final ExecutorService fetchLauncher =
       Executors.newFixedThreadPool(coreNum * 4);
-  private final Map<QueryUnitAttemptId, Task2> tasks = new ConcurrentHashMap<>();
+  private final Map<QueryUnitAttemptId, Task> tasks = new ConcurrentHashMap<>();
   private LocalDirAllocator lDirAllocator;
 
   private Thread taskLauncher;
@@ -160,7 +160,7 @@ public class TaskRunner extends AbstractService {
   @Override
   public void stop() {
     if (!isStopped()) {
-      for (Task2 task : tasks.values()) {
+      for (Task task : tasks.values()) {
         if (task.getStatus() == TaskAttemptState.TA_PENDING ||
             task.getStatus() == TaskAttemptState.TA_RUNNING) {
           task.setState(TaskAttemptState.TA_FAILED);
@@ -207,11 +207,11 @@ public class TaskRunner extends AbstractService {
       return queryEngine;
     }
 
-    public Map<QueryUnitAttemptId, Task2> getTasks() {
+    public Map<QueryUnitAttemptId, Task> getTasks() {
       return tasks;
     }
 
-    public Task2 getTask(QueryUnitAttemptId taskId) {
+    public Task getTask(QueryUnitAttemptId taskId) {
       return tasks.get(taskId);
     }
 
@@ -272,7 +272,7 @@ public class TaskRunner extends AbstractService {
                             "/" + taskAttemptId.getQueryUnitId().getId()
                             + "_" + taskAttemptId.getId(), conf));
 
-                    Task2 task = new Task2(taskAttemptId, workerContext, master,
+                    Task task = new Task(taskAttemptId, workerContext, master,
                         new QueryUnitRequestImpl(taskRequest), taskTempDir);
                     tasks.put(taskAttemptId, task);
                     task.init();
@@ -299,7 +299,7 @@ public class TaskRunner extends AbstractService {
     } catch (Throwable t) {
       LOG.fatal("Unhandled exception. Starting shutdown.", t);
     } finally {
-      for (Task2 t : tasks.values()) {
+      for (Task t : tasks.values()) {
         if (t.getStatus() != TaskAttemptState.TA_SUCCEEDED) {
           t.abort();
         }
@@ -339,7 +339,7 @@ public class TaskRunner extends AbstractService {
   }
 
   @VisibleForTesting
-  Task2 getTask(QueryUnitAttemptId id) {
+  Task getTask(QueryUnitAttemptId id) {
     return this.tasks.get(id);
   }
 
@@ -349,7 +349,7 @@ public class TaskRunner extends AbstractService {
         new LinkedBlockingQueue<Runnable>(coreNum * 4));
     private boolean stopped = false;
 
-    public void schedule(Task2 task) throws InterruptedException {
+    public void schedule(Task task) throws InterruptedException {
 
     }
 

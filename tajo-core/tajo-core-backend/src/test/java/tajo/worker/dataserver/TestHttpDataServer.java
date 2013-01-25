@@ -6,7 +6,7 @@ import org.junit.Test;
 import tajo.QueryIdFactory;
 import tajo.QueryUnitId;
 import tajo.SubQueryId;
-import tajo.WorkerTestingUtil;
+import tajo.util.CommonTestingUtil;
 import tajo.worker.InterDataRetriever;
 import tajo.worker.dataserver.retriever.DataRetriever;
 import tajo.worker.dataserver.retriever.DirectoryRetriever;
@@ -26,7 +26,7 @@ public class TestHttpDataServer {
   
   @Before
   public void setUp() throws Exception {
-    WorkerTestingUtil.buildTestDir(TEST_DATA);
+    CommonTestingUtil.buildTestDir(TEST_DATA);
   }
 
   @Test

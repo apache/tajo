@@ -1,13 +1,9 @@
 /*
  * Copyright 2012 Database Lab., Korea Univ.
  *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,7 +17,6 @@
 package tajo.engine.planner.physical;
 
 import tajo.TaskAttemptContext;
-import tajo.engine.planner.Projector;
 import tajo.engine.planner.logical.GroupbyNode;
 import tajo.storage.Tuple;
 import tajo.storage.VTuple;
@@ -36,14 +31,11 @@ import java.io.IOException;
 public class SortAggregateExec extends AggregationExec {
   private Tuple prevKey = null;
   private boolean finished = false;
-  private final Projector projector;
 
 
   public SortAggregateExec(TaskAttemptContext context, GroupbyNode plan,
                            PhysicalExec child) throws IOException {
     super(context, plan, child);
-
-    this.projector = new Projector(inSchema, outSchema, plan.getTargets());
   }
 
   @Override

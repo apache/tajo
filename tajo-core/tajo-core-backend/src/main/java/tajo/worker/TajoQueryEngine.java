@@ -20,13 +20,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import tajo.TaskAttemptContext2;
+import tajo.TaskAttemptContext;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
+import tajo.engine.planner.PhysicalPlanner;
+import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.logical.LogicalNode;
-import tajo.engine.planner2.PhysicalPlanner;
-import tajo.engine.planner2.PhysicalPlannerImpl;
-import tajo.engine.planner2.physical.PhysicalExec;
+import tajo.engine.planner.physical.PhysicalExec;
 import tajo.exception.InternalException;
 import tajo.storage.StorageManager;
 
@@ -62,7 +62,7 @@ public class TajoQueryEngine {
     this.phyPlanner = new PhysicalPlannerImpl(conf, storageManager);
   }
   
-  public PhysicalExec createPlan(TaskAttemptContext2 ctx, LogicalNode plan)
+  public PhysicalExec createPlan(TaskAttemptContext ctx, LogicalNode plan)
       throws InternalException {
     return phyPlanner.createPlan(ctx, plan);
   }
