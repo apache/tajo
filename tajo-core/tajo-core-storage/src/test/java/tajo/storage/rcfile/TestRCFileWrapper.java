@@ -118,6 +118,7 @@ public class TestRCFileWrapper {
     schema.addColumn("col9", DataType.STRING);
     schema.addColumn("col10", DataType.BYTES);
     schema.addColumn("col11", DataType.IPv4);
+    schema.addColumn("col12", DataType.STRING2);
 
     Options options = new Options();
     TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RCFILE, options);
@@ -125,7 +126,7 @@ public class TestRCFileWrapper {
     sm.initTableBase(meta, "rcfile");
     Appender appender = sm.getAppender(meta, "rcfile", "table.dat");
 
-    Tuple tuple = new VTuple(11);
+    Tuple tuple = new VTuple(12);
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createByte((byte) 0x99),
@@ -137,7 +138,8 @@ public class TestRCFileWrapper {
         DatumFactory.createDouble(271.9f),
         DatumFactory.createString("hyunsik"),
         DatumFactory.createBytes("hyunsik".getBytes()),
-        DatumFactory.createIPv4("192.168.0.1")
+        DatumFactory.createIPv4("192.168.0.1"),
+        DatumFactory.createString2("hyunsik")
     });
     appender.addTuple(tuple);
     appender.flush();

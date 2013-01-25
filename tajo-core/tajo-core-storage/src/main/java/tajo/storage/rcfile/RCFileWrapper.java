@@ -297,6 +297,7 @@ public class RCFileWrapper {
               tuple.put(pid,
                   DatumFactory.createString2(
                       column.get(pid).getBytesCopy()));
+              break;
 
             case BYTES:
               tuple.put(pid,
