@@ -38,10 +38,19 @@ public class DatumFactory {
   public static BoolDatum createBool(boolean val) {
     return new BoolDatum(val);
   }
+  /*
+  public static BoolDatum createBool(int val) {
+    return new BoolDatum(val);
+  }
+  */
   
 	public static ByteDatum createByte(byte val) {
 		return new ByteDatum(val);
 	}
+  /*
+  public static ByteDatum createByte(int val) {
+    return new ByteDatum(val);
+  }*/
 
   public static CharDatum createChar(char val) {
     return new CharDatum(val);
@@ -50,6 +59,12 @@ public class DatumFactory {
   public static CharDatum createChar(byte val) {
     return new CharDatum(val);
   }
+
+  /*
+  public static CharDatum createChar(Integer val) {
+    return new CharDatum(val);
+  }
+  */
 	
 	public static ShortDatum createShort(short val) {
 		return new ShortDatum(val);

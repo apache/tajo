@@ -26,6 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
+import static tajo.catalog.proto.CatalogProtos.StoreType;
+
 public class CatalogUtil {
   public static String getCanonicalName(String signature,
       Collection<DataType> paramTypes) {
@@ -129,5 +131,23 @@ public class CatalogUtil {
 
     File file = new File(args[1]);
     printTableMeta(file);
+  }
+
+  public static StoreType getStoreType(final String typeStr) {
+    if (typeStr.equalsIgnoreCase(StoreType.CSV.name())) {
+      return StoreType.CSV;
+    } else if (typeStr.equalsIgnoreCase(StoreType.RAW.name())) {
+      return StoreType.RAW;
+    } else if (typeStr.equalsIgnoreCase(StoreType.CSV.name())) {
+      return StoreType.CSV;
+    } else if (typeStr.equalsIgnoreCase(StoreType.ROWFILE.name())) {
+      return StoreType.ROWFILE;
+    }else if (typeStr.equalsIgnoreCase(StoreType.RCFILE.name())) {
+      return StoreType.RCFILE;
+    } else if (typeStr.equalsIgnoreCase(StoreType.TREVNI.name())) {
+      return StoreType.TREVNI;
+    } else {
+      return null;
+    }
   }
 }

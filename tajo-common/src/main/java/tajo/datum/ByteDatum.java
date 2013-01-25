@@ -41,11 +41,6 @@ public class ByteDatum extends Datum {
   public ByteDatum(byte [] bytes) {
     this(bytes[0]);
   }
-	
-	public ByteDatum(char val) {
-	  this();
-	  this.val = (byte) val;
-	}
 
   @Override
   public char asChar() {

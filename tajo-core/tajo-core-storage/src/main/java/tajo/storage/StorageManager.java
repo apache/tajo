@@ -14,6 +14,8 @@ import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.storage.exception.AlreadyExistsStorageException;
 import tajo.storage.rcfile.RCFileWrapper;
+import tajo.storage.trevni.TrevniAppender;
+import tajo.storage.trevni.TrevniScanner;
 import tajo.util.FileUtil;
 
 import java.io.FileNotFoundException;
@@ -184,59 +186,63 @@ public class StorageManager {
 
     return scanner;
   }
-	
-	public Scanner getScanner(TableMeta meta, Fragment [] tablets) throws IOException {
+
+  public Scanner getScanner(TableMeta meta, Fragment [] tablets) throws IOException {
     Scanner scanner = null;
-    
+
     switch(meta.getStoreType()) {
-    case RAW: {
-      scanner = new RawFile.Scanner(conf, meta, tablets[0].getPath());
-      break;
+      case CSV:
+        if (tablets.length == 1) {
+          scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
+        } else {
+          scanner = new CSVFile2(conf).openScanner(meta.getSchema(), tablets);
+        }
+        break;
+      case RAW:
+        scanner = new RawFile.Scanner(conf, meta, tablets[0].getPath());
+        break;
+      case RCFILE:
+        scanner = new RCFileScanner(conf, meta.getSchema(), tablets[0], meta.getSchema());
+        break;
+      case ROWFILE:
+        scanner = new RowFile.Scanner(conf, meta.getSchema(), tablets[0]);
+        break;
+      case TREVNI:
+        scanner = new TrevniScanner(conf, meta.getSchema(), tablets[0], meta.getSchema());
+        break;
     }
 
-    case ROWFILE:
-      scanner = new RowFile.Scanner(conf, meta.getSchema(), tablets[0]);
-      break;
 
-    case RCFILE:
-      scanner = new RCFileScanner(conf, meta.getSchema(), tablets[0], meta.getSchema());
-      break;
-
-    case CSV:
-      if (tablets.length == 1) {
-        scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
-      } else {
-        scanner = new CSVFile2(conf).openScanner(meta.getSchema(), tablets);
-      }
-      break;
-
-    }
-
-    
     return scanner;
   }
 
   public Scanner getScanner(TableMeta meta, Fragment [] tablets, Schema target) throws IOException {
-    Scanner scanner = null;
+    Scanner scanner;
 
     switch(meta.getStoreType()) {
-    case ROWFILE: {
-      scanner = new RowFile.Scanner(conf, meta.getSchema(), tablets[0]);
-      break;
-    }
-    case RCFILE: {
+      case CSV:
+        if (tablets.length == 1) {
+          scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
+        } else {
+          scanner = new CSVFile2(conf).openScanner(meta.getSchema(), tablets);
+        }
+        break;
+      case RAW:
+        scanner = new RawFile.Scanner(conf, meta, tablets[0].getPath());
+        break;
+      case RCFILE:
         scanner = new RCFileScanner(conf, meta.getSchema(), tablets[0], target);
         break;
-      }
-    case CSV: {
-      if (tablets.length == 1) {
-        scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), tablets[0]);
-      } else {
-        scanner = new CSVFile2(conf).openScanner(meta.getSchema(), tablets);
-      }
-      break;
+      case ROWFILE:
+        scanner = new RowFile.Scanner(conf, meta.getSchema(), tablets[0]);
+        break;
+      case TREVNI:
+        scanner = new TrevniScanner(conf, meta.getSchema(), tablets[0], target);
+        break;
+      default:
+        throw new IOException("Unknown Storage Type: " + meta.getStoreType());
     }
-    }
+
 
     return scanner;
   }
@@ -251,24 +257,26 @@ public class StorageManager {
 	 */
 	public Appender getAppender(TableMeta meta, Path filename) 
 	    throws IOException {
-	  Appender appender = null;
+    Appender appender = null;
     switch(meta.getStoreType()) {
+      case CSV:
+        appender = new CSVFile(conf).getAppender(meta, filename);
+        break;
       case RAW:
         appender = new RawFile.Appender(conf, meta, filename);
         break;
-
+      case RCFILE:
+        appender = new RCFileWrapper.RCFileAppender(conf, meta, filename, true, true);
+        break;
       case ROWFILE:
         appender = new RowFile(conf).getAppender(meta,
             filename);
         break;
-
-      case RCFILE:
-        appender = new RCFileWrapper.RCFileAppender(conf, meta, filename, true, true);
+      case TREVNI:
+        appender = new TrevniAppender(conf, meta, filename, true);
         break;
-
-      case CSV:
-        appender = new CSVFile(conf).getAppender(meta, filename);
-        break;
+      default:
+        throw new IOException("Unknown Storage Type");
     }
     
     return appender; 
