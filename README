@@ -1,0 +1,19 @@
+Tajo is an distributed query execution engine. It is designed for fast
+scalable ETL, aggregation, join and sort operations. Tajo is 
+fault-tolerant, and it provides SQL. Tajo makes use of HDFS as a primary
+storage layer and has its own query execution engine. It incorporates 
+the advantages of both MapReduce and Parallel DBMS. Tajo is still in under
+heavy development (alpha stage), but now you can execute usual SQL queries
+except for nested queries.
+
+= License =
+* Apache License 2.0 (http://www.apache.org/licenses/LICENSE-2.0.html)
+
+= Documents =
+* Getting Started (https://github.com/hyunsik/tajo/wiki/Getting-Started)
+* Query Language (https://github.com/hyunsik/tajo/wiki/Query-Language)
+
+= Presentations and Papers =
+Hyunsik Choi, Jihoon Son, Haemi Yang, Hyoseok Ryu, Byungnam Lim and 
+Yon Dohn Chung, "Tajo: A Distributed Data Warehouse System on Large
+Clusters," IEEE ICDE 2013 (demonstation paper).
