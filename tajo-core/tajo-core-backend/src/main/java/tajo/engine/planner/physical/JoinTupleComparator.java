@@ -15,7 +15,7 @@ import java.util.Comparator;
  * @author ByungNam Lim
  * @author Hyunsik Choi
  * 
- * @see Tuple
+ * @see tajo.storage.Tuple
  */
 public class JoinTupleComparator implements Comparator<Tuple> {
   private int numSortKey;

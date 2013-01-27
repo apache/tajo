@@ -46,7 +46,6 @@ import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.*;
 import tajo.master.GlobalPlanner;
 import tajo.master.SubQuery;
-import tajo.master.cluster.QueryManager;
 import tajo.storage.*;
 
 import java.io.IOException;
@@ -67,7 +66,6 @@ public class TestGlobalQueryOptimizer {
   private static QueryAnalyzer analyzer;
   private static LogicalPlanner logicalPlanner;
   private static QueryId queryId;
-  private static QueryManager qm;
   private static GlobalOptimizer optimizer;
 
   @BeforeClass
@@ -95,7 +93,6 @@ public class TestGlobalQueryOptimizer {
 
     AsyncDispatcher dispatcher = new AsyncDispatcher();
 
-    qm = new QueryManager();
     planner = new GlobalPlanner(conf, catalog, new StorageManager(conf),
         dispatcher.getEventHandler());
     analyzer = new QueryAnalyzer(catalog);

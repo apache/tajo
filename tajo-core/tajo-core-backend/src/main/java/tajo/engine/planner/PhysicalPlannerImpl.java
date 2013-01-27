@@ -1,13 +1,7 @@
 /*
- * Copyright 2012 Database Lab., Korea Univ.
- *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -175,7 +169,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         long outerSize = estimateSizeRecursive(ctx, outerLineage);
         long innerSize = estimateSizeRecursive(ctx, innerLineage);
 
-        final long threshold = 1048576 * 64; // 64MB
+        final long threshold = 1048576 * 128; // 64MB
 
         boolean hashJoin = false;
         if (outerSize < threshold || innerSize < threshold) {
@@ -263,7 +257,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     } else {
       String [] outerLineage = PlannerUtil.getLineage(groupbyNode.getSubNode());
       long estimatedSize = estimateSizeRecursive(ctx, outerLineage);
-      final long threshold = 1048576 * 64;
+      final long threshold = 1048576 * 256;
 
       // if the relation size is less than the reshold,
       // the hash aggregation will be used.

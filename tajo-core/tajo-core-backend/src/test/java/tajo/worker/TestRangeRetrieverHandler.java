@@ -25,8 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 import tajo.QueryIdFactory;
 import tajo.TajoTestingCluster;
-import tajo.TaskAttemptContext2;
-import tajo.WorkerTestingUtil;
+import tajo.TaskAttemptContext;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
@@ -36,14 +35,13 @@ import tajo.datum.DatumFactory;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.*;
 import tajo.engine.planner.logical.LogicalNode;
-import tajo.engine.planner2.PhysicalPlanner;
-import tajo.engine.planner2.PhysicalPlannerImpl;
-import tajo.engine.planner2.physical.ExternalSortExec;
-import tajo.engine.planner2.physical.IndexedStoreExec;
-import tajo.engine.planner2.physical.PhysicalExec;
-import tajo.engine.planner2.physical.ProjectionExec;
+import tajo.engine.planner.physical.ExternalSortExec;
+import tajo.engine.planner.physical.IndexedStoreExec;
+import tajo.engine.planner.physical.PhysicalExec;
+import tajo.engine.planner.physical.ProjectionExec;
 import tajo.storage.*;
 import tajo.storage.index.bst.BSTIndex;
+import tajo.util.CommonTestingUtil;
 import tajo.util.TUtil;
 import tajo.worker.dataserver.retriever.FileChunk;
 
@@ -70,7 +68,7 @@ public class TestRangeRetrieverHandler {
   public void setUp() throws Exception {
     QueryIdFactory.reset();
     util = new TajoTestingCluster();
-    Path workDir = WorkerTestingUtil.buildTestDir("target/test-data/TestRangeRetrieverHandler");
+    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/TestRangeRetrieverHandler");
     util.startCatalogCluster();
     conf = util.getConfiguration();
     sm = StorageManager.get(conf, workDir);
@@ -126,9 +124,9 @@ public class TestRangeRetrieverHandler {
 
     Fragment[] frags = sm.split("employee");
 
-    Path workDir = WorkerTestingUtil.buildTestDir("target/test-data/testGet");
-    TaskAttemptContext2
-        ctx = new TaskAttemptContext2(conf, TUtil.newQueryUnitAttemptId(),
+    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testGet");
+    TaskAttemptContext
+        ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
     PlanningContext context = analyzer.parse(SORT_QUERY[0]);
     LogicalNode plan = planner.createPlan(context);
@@ -236,9 +234,9 @@ public class TestRangeRetrieverHandler {
 
     Fragment[] frags = sm.split("employee");
 
-    Path workDir = WorkerTestingUtil.buildTestDir("target/test-data/testGetFromDescendingOrder");
-    TaskAttemptContext2
-        ctx = new TaskAttemptContext2(conf, TUtil.newQueryUnitAttemptId(),
+    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testGetFromDescendingOrder");
+    TaskAttemptContext
+        ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
     PlanningContext context = analyzer.parse(SORT_QUERY[1]);
     LogicalNode plan = planner.createPlan(context);

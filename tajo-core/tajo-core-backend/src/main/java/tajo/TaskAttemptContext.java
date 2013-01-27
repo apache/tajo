@@ -1,13 +1,9 @@
 /*
  * Copyright 2012 Database Lab., Korea Univ.
  *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -24,6 +20,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 import tajo.TajoProtos.TaskAttemptState;
 import tajo.catalog.statistics.TableStat;
 import tajo.conf.TajoConf;
@@ -43,11 +40,11 @@ public class TaskAttemptContext {
   private static final Log LOG = LogFactory.getLog(TaskAttemptContext.class);
   private final TajoConf conf;
   private final Map<String, List<Fragment>> fragmentMap = new HashMap<>();
-  
+
   private TaskAttemptState state;
   private TableStat resultStats;
   private QueryUnitAttemptId queryId;
-  private final File workDir;
+  private final Path workDir;
   private boolean needFetch = false;
   private CountDownLatch doneFetchPhaseSignal;
   private float progress = 0;
@@ -55,10 +52,11 @@ public class TaskAttemptContext {
   private File fetchIn;
   private boolean stopped = false;
   private boolean interQuery = false;
+  private Path outputPath;
 
   public TaskAttemptContext(TajoConf conf, final QueryUnitAttemptId queryId,
-                     final Fragment[] fragments,
-                     final File workDir) {
+                            final Fragment[] fragments,
+                            final Path workDir) {
     this.conf = conf;
     this.queryId = queryId;
     
@@ -66,7 +64,7 @@ public class TaskAttemptContext {
       if (fragmentMap.containsKey(t.getId())) {
         fragmentMap.get(t.getId()).add(t);
       } else {
-        List<Fragment> frags = new ArrayList<Fragment>();
+        List<Fragment> frags = new ArrayList<>();
         frags.add(t);
         fragmentMap.put(t.getId(), frags);
       }
@@ -109,6 +107,14 @@ public class TaskAttemptContext {
 
   public void setInterQuery() {
     this.interQuery = true;
+  }
+
+  public void setOutputPath(Path outputPath) {
+    this.outputPath = outputPath;
+  }
+
+  public Path getOutputPath() {
+    return this.outputPath;
   }
 
   public boolean isInterQuery() {
@@ -158,7 +164,7 @@ public class TaskAttemptContext {
     }
   }
   
-  public File getWorkDir() {
+  public Path getWorkDir() {
     return this.workDir;
   }
   

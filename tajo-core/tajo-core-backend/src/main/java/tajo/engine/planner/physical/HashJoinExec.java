@@ -1,13 +1,9 @@
 /*
  * Copyright 2012 Database Lab., Korea Univ.
  *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -69,7 +65,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
     this.plan = plan;
     this.joinQual = plan.getJoinQual();
     this.qualCtx = joinQual.newContext();
-    this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
+    this.tupleSlots = new HashMap<>(10000);
 
     this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual,
         outer.getSchema(), inner.getSchema());
@@ -168,7 +164,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
         newValue.add(tuple);
         tupleSlots.put(keyTuple, newValue);
       } else {
-        newValue = new ArrayList<Tuple>();
+        newValue = new ArrayList<>();
         newValue.add(tuple);
         tupleSlots.put(keyTuple, newValue);
       }
@@ -188,7 +184,11 @@ public class HashJoinExec extends BinaryPhysicalExec {
     nextOuter = true;
   }
 
-  JoinNode getPlan() {
+  public void close() throws IOException {
+    tupleSlots.clear();
+  }
+
+  public JoinNode getPlan() {
     return this.plan;
   }
 }

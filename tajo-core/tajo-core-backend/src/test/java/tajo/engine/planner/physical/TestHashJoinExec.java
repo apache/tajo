@@ -20,11 +20,11 @@
 
 package tajo.engine.planner.physical;
 
+import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.TajoTestingCluster;
-import tajo.TajoTestingUtility;
 import tajo.TaskAttemptContext;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
@@ -39,6 +39,7 @@ import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.storage.*;
+import tajo.util.CommonTestingUtil;
 import tajo.util.TUtil;
 
 import java.io.File;
@@ -61,7 +62,7 @@ public class TestHashJoinExec {
     util = new TajoTestingCluster();
     util.initTestDir();
     catalog = util.startCatalogCluster().getCatalog();
-    File testDir = TajoTestingUtility.getTestDir(TEST_PATH);
+    File testDir = TajoTestingCluster.getTestDir(TEST_PATH);
     conf = util.getConfiguration();
     sm = StorageManager.get(conf, testDir.toURI().toString());
 
@@ -130,7 +131,7 @@ public class TestHashJoinExec {
 
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
-    File workDir = TajoTestingUtility.getTestDir("InnerJoin");
+    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testInnerJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), merged, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);

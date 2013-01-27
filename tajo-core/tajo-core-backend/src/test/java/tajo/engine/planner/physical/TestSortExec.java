@@ -25,8 +25,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.TajoTestingCluster;
-import tajo.TaskAttemptContext2;
-import tajo.WorkerTestingUtil;
+import tajo.TaskAttemptContext;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
@@ -36,10 +35,8 @@ import tajo.datum.DatumFactory;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.*;
 import tajo.engine.planner.logical.LogicalNode;
-import tajo.engine.planner2.PhysicalPlanner;
-import tajo.engine.planner2.PhysicalPlannerImpl;
-import tajo.engine.planner2.physical.PhysicalExec;
 import tajo.storage.*;
+import tajo.util.CommonTestingUtil;
 import tajo.util.TUtil;
 
 import java.io.IOException;
@@ -64,7 +61,7 @@ public class TestSortExec {
     conf = new TajoConf();
     util = new TajoTestingCluster();
     catalog = util.startCatalogCluster().getCatalog();
-    workDir = WorkerTestingUtil.buildTestDir(TEST_PATH);
+    workDir = CommonTestingUtil.buildTestDir(TEST_PATH);
     sm = StorageManager.get(conf, workDir);
 
     Schema schema = new Schema();
@@ -105,8 +102,8 @@ public class TestSortExec {
   @Test
   public final void testNext() throws IOException {
     Fragment[] frags = sm.split("employee");
-    Path workDir = WorkerTestingUtil.buildTestDir("target/test-data/TestSortExec");
-    TaskAttemptContext2 ctx = new TaskAttemptContext2(conf, TUtil
+    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/TestSortExec");
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil
         .newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);

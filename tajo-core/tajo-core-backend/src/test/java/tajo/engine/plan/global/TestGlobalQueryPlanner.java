@@ -52,7 +52,6 @@ import tajo.master.GlobalPlanner;
 import tajo.master.SubQuery;
 import tajo.master.SubQuery.PARTITION_TYPE;
 import tajo.master.TajoMaster;
-import tajo.master.cluster.QueryManager;
 import tajo.storage.*;
 
 import java.io.IOException;
@@ -73,7 +72,6 @@ public class TestGlobalQueryPlanner {
   private static QueryAnalyzer analyzer;
   private static LogicalPlanner logicalPlanner;
   private static QueryId queryId;
-  private static QueryManager qm;
   private static StorageManager sm;
 
   @BeforeClass
@@ -108,7 +106,6 @@ public class TestGlobalQueryPlanner {
     dispatcher.init(conf);
     dispatcher.start();
 
-    qm = new QueryManager();
     planner = new GlobalPlanner(conf, catalog, new StorageManager(conf),
         dispatcher.getEventHandler());
     analyzer = new QueryAnalyzer(catalog);

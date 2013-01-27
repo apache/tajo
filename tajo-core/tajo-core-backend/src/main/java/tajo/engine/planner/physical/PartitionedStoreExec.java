@@ -1,13 +1,9 @@
 /*
  * Copyright 2012 Database Lab., Korea Univ.
  *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -18,9 +14,6 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
 package tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
@@ -45,9 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author Hyunsik Choi
- */
 public final class PartitionedStoreExec extends UnaryPhysicalExec {
   private static final NumberFormat numFormat = NumberFormat.getInstance();
 
@@ -65,8 +55,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
   private final TableMeta meta;
   private final Partitioner partitioner;
   private final Path storeTablePath;
-  private final Map<Integer, Appender> appenderMap
-    = new HashMap<Integer, Appender>();
+  private final Map<Integer, Appender> appenderMap = new HashMap<>();
   
   public PartitionedStoreExec(TaskAttemptContext context, final StorageManager sm,
       final StoreTableNode plan, final PhysicalExec child) throws IOException {
@@ -84,8 +73,13 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
       partitionKeys[i] = inSchema.getColumnId(key.getQualifiedName());
       i++;
     }
-    this.partitioner = new HashPartitioner(partitionKeys, numPartitions);    
-    storeTablePath = new Path(context.getWorkDir().getAbsolutePath(), "out");
+    this.partitioner = new HashPartitioner(partitionKeys, numPartitions);
+    storeTablePath = new Path(context.getWorkDir(), "output");
+  }
+
+  @Override
+  public void init() throws IOException {
+    super.init();
     sm.initLocalTableBase(storeTablePath, meta);
   }
   
@@ -93,7 +87,6 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
     Appender appender = appenderMap.get(partition);
     if (appender == null) {
       Path dataFile = getDataFile(partition);
-//      Log.info(">>>>>> " + dataFile.toString());
       appender = sm.getLocalAppender(meta, dataFile);      
       appenderMap.put(partition, appender);
     } else {
@@ -104,7 +97,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
   }
 
   private Path getDataFile(int partition) {
-    return StorageUtil.concatPath(storeTablePath, "data", "" + partition);
+    return StorageUtil.concatPath(storeTablePath, ""+partition);
   }
 
   @Override
