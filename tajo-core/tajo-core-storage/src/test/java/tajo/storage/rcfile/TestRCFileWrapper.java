@@ -86,8 +86,7 @@ public class TestRCFileWrapper {
     tablets[1] = new Fragment("testReadAndWrite", status.getPath(), meta,
         randomNum, (fileLen - randomNum), null);
 
-    Scanner scanner = new RCFileScanner(conf, meta.getSchema(),
-        tablets[0], schema);
+    Scanner scanner = new RCFileScanner(conf, meta.getSchema(), tablets[0], schema);
     int tupleCnt = 0;
     while (scanner.next() != null) {
       tupleCnt++;
@@ -103,6 +102,50 @@ public class TestRCFileWrapper {
 
     assertEquals(tupleNum, tupleCnt);
 	}
+
+  @Test
+  public void testProjection() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("id", DataType.INT);
+    schema.addColumn("age", DataType.LONG);
+    schema.addColumn("score", DataType.FLOAT);
+
+    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.RCFILE);
+
+    sm.initTableBase(meta, "testReadAndWrite");
+    Appender appender = sm.getAppender(meta, "testReadAndWrite", "file1");
+    int tupleNum = 10000;
+    VTuple vTuple;
+
+    for(int i = 0; i < tupleNum; i++) {
+      vTuple = new VTuple(3);
+      vTuple.put(0, DatumFactory.createInt(i+1));
+      vTuple.put(1, DatumFactory.createLong(i+2));
+      vTuple.put(2, DatumFactory.createFloat(i + 3));
+      appender.addTuple(vTuple);
+    }
+    appender.close();
+    TableStat stat = appender.getStats();
+    assertEquals(tupleNum, stat.getNumRows().longValue());
+
+    FileStatus status = sm.listTableFiles("testReadAndWrite")[0];
+    Fragment fragment = new Fragment("testReadAndWrite", status.getPath(), meta, 0, status.getLen(), null);
+
+    Schema target = new Schema();
+    target.addColumn("age", DataType.LONG);
+    target.addColumn("score", DataType.FLOAT);
+    Scanner scanner = new RCFileScanner(conf, meta.getSchema(), fragment, target);
+    int tupleCnt = 0;
+    Tuple tuple;
+    while ((tuple = scanner.next()) != null) {
+      assertEquals(DatumFactory.createLong(tupleCnt + 2), tuple.getLong(1));
+      assertEquals(DatumFactory.createFloat(tupleCnt + 3), tuple.getFloat(2));
+      tupleCnt++;
+    }
+    scanner.close();
+
+    assertEquals(tupleNum, tupleCnt);
+  }
 
   @Test
   public void testVariousTypes() throws IOException {

@@ -1,6 +1,4 @@
 /*
- * Copyright 2012 Database Lab., Korea Univ.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,9 +28,6 @@ import tajo.common.ProtoObject;
 
 import java.util.*;
 
-/**
- * @author Hyunsik Choi
- */
 public class Schema implements ProtoObject<SchemaProto>, Cloneable {
   private static final Log LOG = LogFactory.getLog(Schema.class);
   
@@ -56,8 +51,8 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 
 	public Schema(Schema schema) {
 	  this();
-		this.fields = new ArrayList<Column>(schema.fields);
-		this.fieldsByName = new HashMap<String, Integer>(schema.fieldsByName);
+		this.fields = new ArrayList<>(schema.fields);
+		this.fieldsByName = new HashMap<>(schema.fieldsByName);
 	}
 	
 	public Schema(Column [] columns) {
@@ -135,8 +130,8 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 			return;
 		}
 		SchemaProtoOrBuilder p = viaProto ? proto : builder;
-		this.fields = new ArrayList<Column>();
-		this.fieldsByName = new HashMap<String, Integer>();
+		this.fields = new ArrayList<>();
+		this.fieldsByName = new HashMap<>();
 		for(ColumnProto colProto : p.getFieldsList()) {
 			fields.add(new Column(colProto));
 			fieldsByName.put(colProto.getColumnName(), fields.size() - 1);
@@ -184,8 +179,8 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
     initFromProto();
     schema.viaProto = false;
     schema.builder = SchemaProto.newBuilder();
-    schema.fields = fields != null ? new ArrayList<Column>(fields) : null;
-    schema.fieldsByName = fieldsByName != null ? new HashMap<String, Integer>(
+    schema.fields = fields != null ? new ArrayList<>(fields) : null;
+    schema.fieldsByName = fieldsByName != null ? new HashMap<>(
         fieldsByName) : null;
 
     return schema;
