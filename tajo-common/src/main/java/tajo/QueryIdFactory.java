@@ -44,6 +44,10 @@ public class QueryIdFactory {
     return new QueryUnitId(subQueryId, nextId.incrementAndGet());
   }
 
+  public synchronized static QueryUnitId newQueryUnitId(SubQueryId subQueryId, int taskId) {
+    return new QueryUnitId(subQueryId, taskId);
+  }
+
   public synchronized static QueryUnitAttemptId newQueryUnitAttemptId(
       final QueryUnitId queryUnitId, final int attemptId) {
     return new QueryUnitAttemptId(queryUnitId, attemptId);

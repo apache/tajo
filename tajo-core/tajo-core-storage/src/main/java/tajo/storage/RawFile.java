@@ -49,12 +49,13 @@ public class RawFile {
     private static final int RECORD_SIZE = 4;
     private int numBytesOfNullFlags;
 
-    public Scanner(Configuration conf, TableMeta meta, Path path) {
+    public Scanner(Configuration conf, TableMeta meta, Path path) throws IOException {
       super(conf, meta.getSchema(), null);
       this.path = path;
+      init();
     }
 
-    public void init() throws IOException {
+    private void init() throws IOException {
       //Preconditions.checkArgument(FileUtil.isLocalPath(path));
       // TODO - to make it unified one.
       URI uri = path.toUri();
@@ -174,6 +175,14 @@ public class RawFile {
             tuple.put(i, DatumFactory.createString(new String(strBytes)));
             break;
 
+          case STRING2 :
+            // TODO - shoud use CharsetEncoder / CharsetDecoder
+            int strSize2 = buffer.getInt();
+            byte [] strBytes2 = new byte[strSize2];
+            buffer.get(strBytes2);
+            tuple.put(i, DatumFactory.createString2(new String(strBytes2)));
+            break;
+
           case BYTES :
             int byteSize = buffer.getInt();
             byte [] rawBytes = new byte[byteSize];
@@ -234,11 +243,12 @@ public class RawFile {
     private boolean enabledStat = false;
     private TableStatistics stats;
 
-    public Appender(Configuration conf, TableMeta meta, Path path) {
+    public Appender(Configuration conf, TableMeta meta, Path path) throws IOException {
       super(conf, meta, path);
+      init();
     }
 
-    public void init() throws IOException {
+    private void init() throws IOException {
       // TODO - RawFile only works on Local File System.
       //Preconditions.checkArgument(FileUtil.isLocalPath(path));
       File file = new File(path.toUri());
@@ -360,6 +370,15 @@ public class RawFile {
             }
             buffer.putInt(strBytes.length);
             buffer.put(strBytes);
+            break;
+
+          case STRING2:
+            byte [] strBytes2 = t.get(i).asByteArray();
+            if (flushBufferAndReplace(recordOffset, strBytes2.length + 4)) {
+              recordOffset = 0;
+            }
+            buffer.putInt(strBytes2.length);
+            buffer.put(strBytes2);
             break;
 
           case BYTES:

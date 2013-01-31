@@ -271,7 +271,7 @@ public class TaskRunner extends AbstractService {
                         lDirAllocator.getLocalPathForWrite(baseDir +
                             "/" + taskAttemptId.getQueryUnitId().getId()
                             + "_" + taskAttemptId.getId(), conf));
-
+                    LOG.info("Initializing: " + taskAttemptId);
                     Task task = new Task(taskAttemptId, workerContext, master,
                         new QueryUnitRequestImpl(taskRequest), taskTempDir);
                     tasks.put(taskAttemptId, task);
@@ -373,6 +373,7 @@ public class TaskRunner extends AbstractService {
    * 4th Arg: NodeId
    */
   public static void main(String[] args) throws Exception {
+    LOG.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
     // Restore QueryConf
     final QueryConf conf = new QueryConf();
     LOG.info("MiniTajoYarn NM Local Dir: " + conf.get(ConfVars.TASK_LOCAL_DIR.varname));

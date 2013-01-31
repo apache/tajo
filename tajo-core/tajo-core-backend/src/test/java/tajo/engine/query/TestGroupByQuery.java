@@ -41,13 +41,11 @@ public class TestGroupByQuery {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    tpch = new TpchTestBase();
-    tpch.setUp();
+    tpch = TpchTestBase.getInstance();
   }
 
   @AfterClass
   public static void tearDown() throws Exception {
-    tpch.tearDown();
   }
 
   @Test

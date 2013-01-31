@@ -53,6 +53,8 @@ public class TestSortExec {
   private static StorageManager sm;
   private static TajoTestingCluster util;
   private static Path workDir;
+  private static Path tablePath;
+  private static TableMeta employeeMeta;
 
   private static Random rnd = new Random(System.currentTimeMillis());
 
@@ -61,7 +63,7 @@ public class TestSortExec {
     conf = new TajoConf();
     util = new TajoTestingCluster();
     catalog = util.startCatalogCluster().getCatalog();
-    workDir = CommonTestingUtil.buildTestDir(TEST_PATH);
+    workDir = CommonTestingUtil.getTestDir(TEST_PATH);
     sm = StorageManager.get(conf, workDir);
 
     Schema schema = new Schema();
@@ -69,9 +71,12 @@ public class TestSortExec {
     schema.addColumn("empId", DataType.INT);
     schema.addColumn("deptName", DataType.STRING);
 
-    TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
-    sm.initTableBase(employeeMeta, "employee");
-    Appender appender = sm.getAppender(employeeMeta, "employee", "employee");
+    employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+
+    tablePath = StorageUtil.concatPath(workDir, "employee", "table1");
+    sm.getFileSystem().mkdirs(tablePath.getParent());
+
+    Appender appender = StorageManager.getAppender(conf, employeeMeta, tablePath);
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
       tuple.put(new Datum[] {
@@ -83,8 +88,7 @@ public class TestSortExec {
     appender.flush();
     appender.close();
 
-    TableDesc desc = new TableDescImpl("employee", employeeMeta,
-        sm.getTablePath("employee"));
+    TableDesc desc = new TableDescImpl("employee", employeeMeta, tablePath);
     catalog.addTable(desc);
 
     analyzer = new QueryAnalyzer(catalog);
@@ -101,8 +105,8 @@ public class TestSortExec {
 
   @Test
   public final void testNext() throws IOException {
-    Fragment[] frags = sm.split("employee");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/TestSortExec");
+    Fragment [] frags = sm.splitNG(conf, "employee", employeeMeta, tablePath, Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestSortExec");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil
         .newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);

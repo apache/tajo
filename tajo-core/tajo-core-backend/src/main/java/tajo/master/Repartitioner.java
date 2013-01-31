@@ -94,7 +94,7 @@ public class Repartitioner {
     QueryUnit [] tasks;
     if (scans[0].isBroadcast() || scans[1].isBroadcast()) {
       tasks = new QueryUnit[1];
-      tasks[0] = new QueryUnit(QueryIdFactory.newQueryUnitId(subQuery.getId()),
+      tasks[0] = new QueryUnit(QueryIdFactory.newQueryUnitId(subQuery.getId(), 0),
           false, subQuery.eventHandler);
       tasks[0].setLogicalPlan(subQuery.getLogicalPlan());
       tasks[0].setFragment(scans[0].getTableId(), fragments[0]);
@@ -180,7 +180,7 @@ public class Repartitioner {
     QueryUnit [] tasks = new QueryUnit[taskNum];
     for (int i = 0; i < taskNum; i++) {
       tasks[i] = new QueryUnit(
-          QueryIdFactory.newQueryUnitId(subQuery.getId()), subQuery.isLeafQuery(),
+          QueryIdFactory.newQueryUnitId(subQuery.getId(), i), subQuery.isLeafQuery(),
           subQuery.eventHandler);
       tasks[i].setLogicalPlan(subQuery.getLogicalPlan());
       for (Fragment fragment : fragments) {
@@ -538,7 +538,7 @@ public class Repartitioner {
                                                      Fragment frag) {
     QueryUnit [] tasks = new QueryUnit[num];
     for (int i = 0; i < num; i++) {
-      tasks[i] = new QueryUnit(QueryIdFactory.newQueryUnitId(subQuery.getId()),
+      tasks[i] = new QueryUnit(QueryIdFactory.newQueryUnitId(subQuery.getId(), i),
           false, subQuery.eventHandler);
       tasks[i].setFragment2(frag);
       tasks[i].setLogicalPlan(subQuery.getLogicalPlan());

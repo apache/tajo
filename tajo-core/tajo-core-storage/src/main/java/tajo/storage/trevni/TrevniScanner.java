@@ -72,59 +72,65 @@ public class TrevniScanner extends FileScanner {
     if (!columns[0].hasNext()) {
       return null;
     }
+    int tid; // column id of the original input schema
     for (int i = 0; i < projIds.length; i++) {
+      tid = projIds[i];
       columns[i].startRow();
-      switch (schema.getColumn(i).getDataType()) {
+      switch (schema.getColumn(tid).getDataType()) {
         case BOOLEAN:
-          tuple.put(projIds[i],
+          tuple.put(tid,
               DatumFactory.createBool(((Integer)columns[i].nextValue()).byteValue()));
           break;
         case BYTE:
-          tuple.put(projIds[i],
+          tuple.put(tid,
               DatumFactory.createByte(((Integer)columns[i].nextValue()).byteValue()));
           break;
         case CHAR:
-          tuple.put(projIds[i],
+          tuple.put(tid,
               DatumFactory.createChar(((Integer)columns[i].nextValue()).byteValue()));
           break;
 
         case SHORT:
-          tuple.put(projIds[i],
+          tuple.put(tid,
               DatumFactory.createShort(((Integer)columns[i].nextValue()).shortValue()));
           break;
         case INT:
-          tuple.put(projIds[i],
+          tuple.put(tid,
               DatumFactory.createInt((Integer)columns[i].nextValue()));
           break;
 
         case LONG:
-          tuple.put(projIds[i],
+          tuple.put(tid,
               DatumFactory.createLong((Long)columns[i].nextValue()));
           break;
 
         case FLOAT:
-          tuple.put(projIds[i],
+          tuple.put(tid,
               DatumFactory.createFloat((Float)columns[i].nextValue()));
           break;
 
         case DOUBLE:
-          tuple.put(projIds[i],
+          tuple.put(tid,
               DatumFactory.createDouble((Double)columns[i].nextValue()));
           break;
 
         case IPv4:
-          tuple.put(projIds[i],
+          tuple.put(tid,
               DatumFactory.createIPv4(((ByteBuffer) columns[i].nextValue()).array()));
           break;
 
         case STRING:
-        case STRING2:
-          tuple.put(projIds[i],
+          tuple.put(tid,
               DatumFactory.createString((String) columns[i].nextValue()));
           break;
 
+        case STRING2:
+          tuple.put(tid,
+              DatumFactory.createString2((String) columns[i].nextValue()));
+          break;
+
         case BYTES:
-          tuple.put(projIds[i],
+          tuple.put(tid,
               new BytesDatum(((ByteBuffer) columns[i].nextValue())));
           break;
 
@@ -138,7 +144,9 @@ public class TrevniScanner extends FileScanner {
 
   @Override
   public void reset() throws IOException {
-
+    for (int i = 0; i < projIds.length; i++) {
+      columns[i] = reader.getValues(projIds[i]);
+    }
   }
 
   @Override

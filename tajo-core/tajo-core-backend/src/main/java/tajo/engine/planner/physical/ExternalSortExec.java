@@ -75,7 +75,6 @@ public class ExternalSortExec extends SortExec {
     Path localPath = new Path(sortTmpDir + "/0_" + chunkId);
 
     appender = new RawFile.Appender(context.getConf(), meta, localPath);
-    appender.init();
 
     for (Tuple t : tupleSlots) {
       appender.addTuple(t);
@@ -147,8 +146,6 @@ public class ExternalSortExec extends SortExec {
             Path rightChunk = getChunkPath(level, chunkId + 1);
 
             appender = new RawFile.Appender(context.getConf(), meta, nextChunk);
-            appender.init();
-
             merge(appender, leftChunk, rightChunk);
 
             appender.flush();
@@ -168,7 +165,6 @@ public class ExternalSortExec extends SortExec {
 
       Path result = getChunkPath(level, 0);
       this.result = new RawFile.Scanner(context.getConf(), meta, result);
-      this.result.init();
       sorted = true;
     }
 
@@ -178,11 +174,9 @@ public class ExternalSortExec extends SortExec {
   private void merge(RawFile.Appender appender, Path left, Path right)
       throws IOException {
     RawFile.Scanner leftScan = new RawFile.Scanner(context.getConf(), meta, left);
-    leftScan.init();
 
     RawFile.Scanner rightScan =
         new RawFile.Scanner(context.getConf(), meta, right);
-    rightScan.init();
 
     Tuple leftTuple = leftScan.next();
     Tuple rightTuple = rightScan.next();

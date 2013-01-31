@@ -42,7 +42,6 @@ import tajo.storage.*;
 import tajo.util.CommonTestingUtil;
 import tajo.util.TUtil;
 
-import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
@@ -56,15 +55,19 @@ public class TestHashJoinExec {
   private QueryAnalyzer analyzer;
   private LogicalPlanner planner;
   private StorageManager sm;
+  private Path testDir;
+
+  private TableDesc employee;
+  private TableDesc people;
 
   @Before
   public void setUp() throws Exception {
     util = new TajoTestingCluster();
     util.initTestDir();
     catalog = util.startCatalogCluster().getCatalog();
-    File testDir = TajoTestingCluster.getTestDir(TEST_PATH);
+    testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     conf = util.getConfiguration();
-    sm = StorageManager.get(conf, testDir.toURI().toString());
+    sm = StorageManager.get(conf, testDir);
 
     Schema employeeSchema = new Schema();
     employeeSchema.addColumn("managerId", DataType.INT);
@@ -74,8 +77,8 @@ public class TestHashJoinExec {
 
     TableMeta employeeMeta = TCatUtil.newTableMeta(employeeSchema,
         StoreType.CSV);
-    sm.initTableBase(employeeMeta, "employee");
-    Appender appender = sm.getAppender(employeeMeta, "employee", "employee");
+    Path employeePath = new Path(testDir, "employee.csv");
+    Appender appender = StorageManager.getAppender(conf, employeeMeta, employeePath);
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 10; i++) {
       tuple.put(new Datum[] { DatumFactory.createInt(i),
@@ -86,8 +89,7 @@ public class TestHashJoinExec {
 
     appender.flush();
     appender.close();
-    TableDesc employee = TCatUtil.newTableDesc("employee", employeeMeta,
-        sm.getTablePath("people"));
+    employee = TCatUtil.newTableDesc("employee", employeeMeta, employeePath);
     catalog.addTable(employee);
 
     Schema peopleSchema = new Schema();
@@ -96,8 +98,8 @@ public class TestHashJoinExec {
     peopleSchema.addColumn("name", DataType.STRING);
     peopleSchema.addColumn("age", DataType.INT);
     TableMeta peopleMeta = TCatUtil.newTableMeta(peopleSchema, StoreType.CSV);
-    sm.initTableBase(peopleMeta, "people");
-    appender = sm.getAppender(peopleMeta, "people", "people");
+    Path peoplePath = new Path(testDir, "people.csv");
+    appender = StorageManager.getAppender(conf, peopleMeta, peoplePath);
     tuple = new VTuple(peopleMeta.getSchema().getColumnNum());
     for (int i = 1; i < 10; i += 2) {
       tuple.put(new Datum[] { DatumFactory.createInt(i),
@@ -110,8 +112,7 @@ public class TestHashJoinExec {
     appender.flush();
     appender.close();
 
-    TableDesc people = TCatUtil.newTableDesc("people", peopleMeta,
-        sm.getTablePath("people"));
+    people = TCatUtil.newTableDesc("people", peopleMeta, peoplePath);
     catalog.addTable(people);
     analyzer = new QueryAnalyzer(catalog);
     planner = new LogicalPlanner(catalog);
@@ -122,16 +123,21 @@ public class TestHashJoinExec {
     util.shutdownCatalogCluster();
   }
 
-  String[] QUERIES = { "select managerId, e.empId, deptName, e.memId from employee as e inner join people as p on e.empId = p.empId and e.memId = p.fk_memId" };
+  String[] QUERIES = {
+      "select managerId, e.empId, deptName, e.memId from employee as e inner join " +
+          "people as p on e.empId = p.empId and e.memId = p.fk_memId"
+  };
 
   @Test
   public final void testInnerJoin() throws IOException {
-    Fragment[] empFrags = sm.split("employee");
-    Fragment[] peopleFrags = sm.split("people");
+    Fragment[] empFrags = sm.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
+        Integer.MAX_VALUE);
+    Fragment[] peopleFrags = sm.splitNG(conf, "people", people.getMeta(), people.getPath(),
+        Integer.MAX_VALUE);
 
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testInnerJoin");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testInnerJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), merged, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);

@@ -19,7 +19,9 @@
  */
 package tajo.engine.planner.physical;
 
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RawLocalFileSystem;
 import tajo.TaskAttemptContext;
 import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
@@ -39,7 +41,6 @@ import java.io.IOException;
  */
 public class StoreTableExec extends UnaryPhysicalExec {
   private final StoreTableNode plan;
-  private final StorageManager sm;
   private Appender appender;
   private Tuple tuple;
   
@@ -52,7 +53,6 @@ public class StoreTableExec extends UnaryPhysicalExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
 
     this.plan = plan;
-    this.sm = sm;
   }
 
   public void init() throws IOException {
@@ -67,11 +67,12 @@ public class StoreTableExec extends UnaryPhysicalExec {
 
     if (context.isInterQuery()) {
       Path storeTablePath = new Path(context.getWorkDir(), "out");
-      sm.initLocalTableBase(storeTablePath, meta);
-      this.appender = sm.getLocalAppender(meta,
+      FileSystem fs = new RawLocalFileSystem();
+      fs.mkdirs(storeTablePath);
+      this.appender = StorageManager.getAppender(context.getConf(), meta,
           StorageUtil.concatPath(storeTablePath, "0"));
     } else {
-      this.appender = sm.getAppender(meta, context.getOutputPath());
+      this.appender = StorageManager.getAppender(context.getConf(), meta, context.getOutputPath());
     }
   }
 

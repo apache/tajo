@@ -358,12 +358,27 @@ public class ClientService extends AbstractService {
         throw new RemoteException(e);
       }
 
+      FileSystem fs;
+
+      // for legacy table structure
+      Path tablePath = new Path(path, "data");
+      try {
+        fs = path.getFileSystem(conf);
+        if (!fs.exists(tablePath)) {
+          tablePath = path;
+        }
+      } catch (IOException e) {
+        LOG.error(e);
+        return null;
+      }
+
       if (meta.getStat() == null) {
         long totalSize = 0;
         try {
-          totalSize = calculateSize(new Path(path, "data"));
+          totalSize = calculateSize(tablePath);
         } catch (IOException e) {
           LOG.error("Cannot calculate the size of the relation", e);
+          return null;
         }
 
         meta = new TableMetaImpl(meta.getProto());

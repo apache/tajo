@@ -31,9 +31,9 @@ public class TestFetcher {
 
   @Before
   public void setUp() throws Exception {
-    CommonTestingUtil.buildTestDir(TEST_DATA);
-    CommonTestingUtil.buildTestDir(INPUT_DIR);
-    CommonTestingUtil.buildTestDir(OUTPUT_DIR);
+    CommonTestingUtil.getTestDir(TEST_DATA);
+    CommonTestingUtil.getTestDir(INPUT_DIR);
+    CommonTestingUtil.getTestDir(OUTPUT_DIR);
   }
 
   @Test

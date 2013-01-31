@@ -45,7 +45,7 @@ public class TestDBStore {
   @BeforeClass
   public static void setUp() throws Exception {
     conf = new TajoConf();
-    Path testDir = CommonTestingUtil.buildTestDir("target/test-data/TestDBSTore");
+    Path testDir = CommonTestingUtil.getTestDir("target/test-data/TestDBSTore");
     File absolutePath = new File(testDir.toUri());
     conf.set(TConstants.JDBC_URI, "jdbc:derby:"+absolutePath.getAbsolutePath()+"/db");
     LOG.info("derby repository is set to "+conf.get(TConstants.JDBC_URI));

@@ -17,7 +17,12 @@
 package tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RawLocalFileSystem;
 import tajo.TaskAttemptContext;
 import tajo.catalog.Column;
 import tajo.catalog.TCatUtil;
@@ -39,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 public final class PartitionedStoreExec extends UnaryPhysicalExec {
+  private static Log LOG = LogFactory.getLog(PartitionedStoreExec.class);
   private static final NumberFormat numFormat = NumberFormat.getInstance();
 
   static {
@@ -46,12 +52,11 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
     numFormat.setMinimumIntegerDigits(6);
   }
 
-  private final StorageManager sm;
   private final StoreTableNode plan;
 
   private final int numPartitions;
   private final int [] partitionKeys;  
-  
+
   private final TableMeta meta;
   private final Partitioner partitioner;
   private final Path storeTablePath;
@@ -61,7 +66,6 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
       final StoreTableNode plan, final PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     Preconditions.checkArgument(plan.hasPartitionKey());
-    this.sm = sm;
     this.plan = plan;
     this.meta = TCatUtil.newTableMeta(this.outSchema, StoreType.CSV);
     
@@ -80,19 +84,32 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
   @Override
   public void init() throws IOException {
     super.init();
-    sm.initLocalTableBase(storeTablePath, meta);
+    FileSystem fs = new RawLocalFileSystem();
+    fs.mkdirs(storeTablePath);
   }
+  int called = 0;
   
   private Appender getAppender(int partition) throws IOException {
+    LOG.info("======================================================");
+    LOG.info("getAppender called " + called++);
     Appender appender = appenderMap.get(partition);
+    LOG.info("appender: " + appender + " " + "from partition ("+partition+")");
+
     if (appender == null) {
       Path dataFile = getDataFile(partition);
-      appender = sm.getLocalAppender(meta, dataFile);      
+      FileSystem fs = dataFile.getFileSystem(context.getConf());
+      if (fs.exists(dataFile)) {
+        LOG.info("File " + dataFile + " already exists!");
+        FileStatus status = fs.getFileStatus(dataFile);
+        LOG.info("File size: " + status.getLen());
+      }
+      appender = StorageManager.getAppender(context.getConf(), meta, dataFile);
       appenderMap.put(partition, appender);
     } else {
       appender = appenderMap.get(partition);
     }
-    
+
+    LOG.info("======================================================");
     return appender;
   }
 
@@ -111,7 +128,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
       appender.addTuple(tuple);
     }
     
-    List<TableStat> statSet = new ArrayList<TableStat>();
+    List<TableStat> statSet = new ArrayList<>();
     for (Map.Entry<Integer, Appender> entry : appenderMap.entrySet()) {
       int partNum = entry.getKey();
       Appender app = entry.getValue();

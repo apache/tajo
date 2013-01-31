@@ -26,7 +26,7 @@ public class TestHttpDataServer {
   
   @Before
   public void setUp() throws Exception {
-    CommonTestingUtil.buildTestDir(TEST_DATA);
+    CommonTestingUtil.getTestDir(TEST_DATA);
   }
 
   @Test

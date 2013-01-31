@@ -24,7 +24,6 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment;
 import org.apache.hadoop.yarn.api.ContainerManager;
 import org.apache.hadoop.yarn.api.protocolrecords.StartContainerRequest;
@@ -279,7 +278,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     vargs.add("-Xmx2000m");
     // Set Remote Debugging
     //if (!context.getQuery().getSubQuery(event.getSubQueryId()).isLeafQuery()) {
-    //vargs.add("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
+      //vargs.add("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
     //}
     // Set class name
     vargs.add("tajo.worker.TaskRunner");
@@ -289,8 +288,10 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     vargs.add(event.getContainerMgrAddress()); // nodeId
     vargs.add(event.getContainerId().toString()); // containerId
 
-    vargs.add("1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout");
-    vargs.add("2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr");
+    vargs.add("1>" + "/home/hyunsik/" + "/stdout");
+    vargs.add("2>" + "/home/hyunsik/" + "/stderr");
+//    vargs.add("1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout");
+//    vargs.add("2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr");
 
     // Get final commmand
     StringBuilder command = new StringBuilder();

@@ -72,9 +72,10 @@ public class TestPhysicalPlanner {
   private static QueryAnalyzer analyzer;
   private static LogicalPlanner planner;
   private static StorageManager sm;
+  private static Path testDir;
+  private static FileSystem fs;
 
   private static TableDesc employee = null;
-  private static TableDesc student = null;
   private static TableDesc score = null;
 
   @BeforeClass
@@ -84,12 +85,13 @@ public class TestPhysicalPlanner {
 
     util.startCatalogCluster();
     conf = util.getConfiguration();
-    sm = StorageManager.get(conf, new Path(util.setupClusterTestBuildDir().toURI()));
+    testDir = CommonTestingUtil.getTestDir("target/test-data/TestPhysicalPlanner");
+    fs = testDir.getFileSystem(conf);
+    sm = StorageManager.get(conf, testDir);
     catalog = util.getMiniCatalogCluster().getCatalog();
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
       catalog.registerFunction(funcDesc);
     }
-
 
     Schema schema = new Schema();
     schema.addColumn("name", DataType.STRING);
@@ -108,8 +110,9 @@ public class TestPhysicalPlanner {
 
     TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 
-    sm.initTableBase(employeeMeta, "employee");
-    Appender appender = sm.getAppender(employeeMeta, "employee", "employee");
+
+    Path employeePath = new Path(testDir, "employee.csv");
+    Appender appender = StorageManager.getAppender(conf, employeeMeta, employeePath);
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
       tuple.put(new Datum[] {DatumFactory.createString("name_" + i),
@@ -119,18 +122,13 @@ public class TestPhysicalPlanner {
     appender.flush();
     appender.close();
 
-    employee = new TableDescImpl("employee", employeeMeta, 
-        sm.getTablePath("employee"));
+    employee = new TableDescImpl("employee", employeeMeta, employeePath);
     catalog.addTable(employee);
 
-    student = new TableDescImpl("dept", schema2, StoreType.CSV, new Options(),
-        new Path("file:///"));
-    catalog.addTable(student);
-
-    score = new TableDescImpl("score", scoreSchema, StoreType.CSV, 
-        new Options(), sm.getTablePath("score"));
-    sm.initTableBase(score.getMeta(), "score");
-    appender = sm.getAppender(score.getMeta(), "score", "score");
+    Path scorePath = new Path(testDir, "score");
+    TableMeta scoreMeta = TCatUtil.newTableMeta(scoreSchema, StoreType.CSV, new Options());
+    appender = StorageManager.getAppender(conf, scoreMeta, scorePath);
+    score = new TableDescImpl("score", scoreMeta, scorePath);
     tuple = new VTuple(score.getMeta().getSchema().getColumnNum());
     int m = 0;
     for (int i = 1; i <= 5; i++) {
@@ -181,8 +179,9 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testCreateScanPlan() throws IOException {
-    Fragment[] frags = sm.split("employee");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testCreateScanPlan");
+    Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(),
+        employee.getPath(), Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateScanPlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil
         .newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
@@ -209,8 +208,9 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testGroupByPlan() throws IOException {
-    Fragment[] frags = sm.split("score");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testGroupByPlan");
+    Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testGroupByPlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[7]);
@@ -236,8 +236,9 @@ public class TestPhysicalPlanner {
   @Test
   public final void testHashGroupByPlanWithALLField() throws IOException {
     // TODO - currently, this query does not use hash-based group operator.
-    Fragment[] frags = sm.split("score");
-    Path workDir = CommonTestingUtil.buildTestDir(
+    Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir(
         "target/test-data/testHashGroupByPlanWithALLField");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
@@ -264,8 +265,9 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testSortGroupByPlan() throws IOException {
-    Fragment[] frags = sm.split("score");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testSortGroupByPlan");
+    Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testSortGroupByPlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[]{frags[0]}, workDir);
     PlanningContext context = analyzer.parse(QUERIES[7]);
@@ -320,8 +322,9 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testStorePlan() throws IOException {
-    Fragment[] frags = sm.split("score");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testStorePlan");
+    Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] },
         workDir);
@@ -333,7 +336,6 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
         StoreType.CSV);
-    sm.initTableBase(outputMeta, "grouped1");
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -341,7 +343,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    Scanner scanner = sm.getScannerNG("grouped1", outputMeta, ctx.getOutputPath());
+    Scanner scanner = StorageManager.getScanner(conf, outputMeta, ctx.getOutputPath());
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
@@ -359,8 +361,9 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testStorePlanWithRCFile() throws IOException {
-    Fragment[] frags = sm.split("score");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testStorePlanWithRCFile");
+    Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlanWithRCFile");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] },
         workDir);
@@ -372,7 +375,6 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
         StoreType.RCFILE);
-    sm.initTableBase(outputMeta, "grouped2");
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -380,7 +382,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    Scanner scanner = sm.getScannerNG("grouped2", outputMeta, ctx.getOutputPath());
+    Scanner scanner = StorageManager.getScanner(conf, outputMeta, ctx.getOutputPath());
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
@@ -401,19 +403,16 @@ public class TestPhysicalPlanner {
     @Override
     public boolean accept(Path path) {
       String name = path.getName();
-      if (name.startsWith(".")) {
-        return false;
-      } else {
-        return true;
-      }
+      return name.startsWith(".");
     }
   }
 
   @Test
   public final void testPartitionedStorePlan() throws IOException {
-    Fragment[] frags = sm.split("score");
+    Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
     QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testPartitionedStorePlan");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testPartitionedStorePlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, id, new Fragment[] { frags[0] },
         workDir);
     PlanningContext context = analyzer.parse(QUERIES[7]);
@@ -469,10 +468,11 @@ public class TestPhysicalPlanner {
   @Test
   public final void testPartitionedStorePlanWithEmptyGroupingSet()
       throws IOException {
-    Fragment[] frags = sm.split("score");
+    Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
     QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
 
-    Path workDir = CommonTestingUtil.buildTestDir(
+    Path workDir = CommonTestingUtil.getTestDir(
         "target/test-data/testPartitionedStorePlanWithEmptyGroupingSet");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, id, new Fragment[] { frags[0] },
         workDir);
@@ -487,7 +487,6 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
         StoreType.CSV);
-    sm.initTableBase(outputMeta, "emptyset");
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -524,8 +523,9 @@ public class TestPhysicalPlanner {
 
   //@Test
   public final void testAggregationFunction() throws IOException {
-    Fragment[] frags = sm.split("score");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testAggregationFunction");
+    Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testAggregationFunction");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[8]);
@@ -546,8 +546,9 @@ public class TestPhysicalPlanner {
 
   //@Test
   public final void testCountFunction() throws IOException {
-    Fragment[] frags = sm.split("score");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testCountFunction");
+    Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCountFunction");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[10]);
@@ -564,8 +565,9 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testGroupByWithNullValue() throws IOException {
-    Fragment[] frags = sm.split("score");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testGroupByWithNullValue");
+    Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testGroupByWithNullValue");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[11]);
@@ -586,8 +588,9 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testUnionPlan() throws IOException {
-    Fragment[] frags = sm.split("employee");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testUnionPlan");
+    Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testUnionPlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[0]);
@@ -611,7 +614,7 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testEvalExpr() throws IOException {
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testEvalExpr");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testEvalExpr");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { }, workDir);
     PlanningContext context = analyzer.parse(QUERIES[12]);
@@ -643,10 +646,11 @@ public class TestPhysicalPlanner {
       "create index idx_employee on employee using bst (name null first, empId desc)"
   };
 
-  @Test
+  //@Test
   public final void testCreateIndex() throws IOException {
-    Fragment[] frags = sm.split("employee");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testCreateIndex");
+    Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateIndex");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
     PlanningContext context = analyzer.parse(createIndexStmt[0]);
@@ -660,8 +664,7 @@ public class TestPhysicalPlanner {
     }
     exec.close();
 
-    Path path = sm.getTablePath("employee");
-    FileStatus [] list = sm.getFileSystem().listStatus(new Path(path, "index"));
+    FileStatus [] list = sm.getFileSystem().listStatus(StorageUtil.concatPath(workDir, "index"));
     assertEquals(2, list.length);
   }
 
@@ -671,9 +674,10 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testDuplicateEliminate() throws IOException {
-    Fragment[] frags = sm.split("score");
+    Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
+        Integer.MAX_VALUE);
 
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testDuplicateEliminate");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testDuplicateEliminate");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
     PlanningContext context = analyzer.parse(duplicateElimination[0]);
@@ -720,7 +724,7 @@ public class TestPhysicalPlanner {
     TableMeta meta2 = new TableMetaImpl(s2, StoreType.CSV, opt);
     TableDesc desc2 = new TableDescImpl("s2", meta1, new Path("file:/home/hyunsik/error/sample/sq_1358404721340_0001_000001_04"));
 
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testBug");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBug");
 
 
     Fragment [] frag1 = sm.splitNG("sq_1358404721340_0001_000001_03", meta1, new Path("file:/home/hyunsik/error/sample/sq_1358404721340_0001_000001_03"), util.getDefaultFileSystem().getDefaultBlockSize());
@@ -745,9 +749,10 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testIndexedStoreExec() throws IOException {
-    Fragment[] frags = sm.split("employee");
+    Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(),
+        employee.getPath(), Integer.MAX_VALUE);
 
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testIndexedStoreExec");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testIndexedStoreExec");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
     PlanningContext context = analyzer.parse(SORT_QUERY[0]);
@@ -778,8 +783,10 @@ public class TestPhysicalPlanner {
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(new Path(workDir, "output/index"),
         keySchema, comp);
     reader.open();
-    FileScanner scanner = (FileScanner) sm.getLocalScanner(
-        new Path(workDir, "output"), "output");
+    Path outputPath = StorageUtil.concatPath(workDir, "output", "output");
+    TableMeta meta = TCatUtil.newTableMeta(plan.getOutSchema(), StoreType.CSV, new Options());
+    SingleFileScanner scanner = (SingleFileScanner)
+        StorageManager.getScanner(conf, meta, outputPath);
 
     int cnt = 0;
     while(scanner.next() != null) {
