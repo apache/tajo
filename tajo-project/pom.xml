@@ -28,6 +28,14 @@
   <name>Tajo Project POM</name>
   <packaging>pom</packaging>
 
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <tajo.version>0.2.0-SNAPSHOT</tajo.version>
+    <hadoop.version>2.0.2-alpha</hadoop.version>
+    <github.global.server>github</github.global.server>
+  </properties>
+
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -40,9 +48,69 @@
     <url>http://dbserver.korea.ac.kr</url>
   </organization>
 
+  <developers>
+    <developer>
+      <id>hyunsik</id>
+      <name>Hyunsik Choi</name>
+      <email>hyunsik.choi@gmail.com</email>
+      <url>http://diveintodata.org</url>
+      <organization>Database Lab., Korea University</organization>
+      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
+      <roles>
+        <role>project lead</role>
+        <role>architect</role>
+        <role>developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>jihoonson</id>
+      <name>Jihoon Son</name>
+      <email>ghoonson@gmail.com</email>
+      <url></url>
+      <organization>Database Lab., Korea University</organization>
+      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
+      <roles>
+        <role>architect</role>
+        <role>developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>ryuhyoseok</id>
+      <name>Hyoseok Ryu</name>
+      <email>hyoseok@korea.ac.kr</email>
+      <url></url>
+      <organization>Database Lab., Korea University</organization>
+      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
+      <roles>
+        <role>developer</role>
+      </roles>
+    </developer>
+  </developers>
+
+  <contributors>
+    <contributor>
+      <name>Byungnam Lim</name>
+      <email>byungnam@korea.ac.kr</email>
+      <organization>Database Lab., Korea University</organization>
+      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
+    </contributor>
+    <contributor>
+      <name>Haemi Yang</name>
+      <email>haemiyang@korea.ac.kr</email>
+      <organization>Database Lab., Korea University</organization>
+      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
+    </contributor>
+    <contributor>
+      <name>Soohyung Kim</name>
+      <email>firek@korea.ac.kr</email>
+      <organization>Database Lab., Korea University</organization>
+      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
+    </contributor>
+  </contributors>
+
   <issueManagement>
     <system>Jira</system>
-    <url>https://dbserver.korea.ac.kr/jira</url>
+    <url>https://dbserver.korea.ac.kr/jira/browse/TAJO</url>
   </issueManagement>
 
   <ciManagement>
@@ -51,7 +119,9 @@
   </ciManagement>
 
   <scm>
-    <url>git@github.com:hyunsik/tajo.git</url>
+    <url>https://github.com/hyunsik/tajo</url>
+    <connection>scm:git:git://github.com/hyunsik/tajo.git</connection>
+    <developerConnection>scm:git:git@github.com:hyunsik/tajo.git</developerConnection>
   </scm>
 
   <repositories>
@@ -77,13 +147,6 @@
       </snapshots>
     </repository>
   </repositories>
-
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <tajo.version>0.2.0-SNAPSHOT</tajo.version>
-    <hadoop.version>2.0.2-alpha</hadoop.version>
-  </properties>
 
   <build>
     <pluginManagement>
@@ -139,6 +202,41 @@
               <version>1.0</version>
             </dependency>
           </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.8.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>2.6</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>2.1.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro-maven-plugin</artifactId>
+          <version>1.5.3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>2.4</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>2.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.antlr</groupId>
+          <artifactId>antlr3-maven-plugin</artifactId>
+          <version>3.4</version>
         </plugin>
         <!--This plugin's configuration is used to store Eclipse m2e settings only. 
           It has no influence on the Maven build itself. -->
@@ -247,11 +345,6 @@
             </lifecycleMappingMetadata>
           </configuration>
         </plugin>
-        <plugin>
-          <groupId>org.antlr</groupId>
-          <artifactId>antlr3-maven-plugin</artifactId>
-          <version>3.4</version>
-        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -294,7 +387,50 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>com.github.github</groupId>
+        <artifactId>downloads-maven-plugin</artifactId>
+        <version>0.6</version>
+        <configuration>
+          <description>Official ${project.name} build of the
+            ${project.version} release</description>
+          <override>true</override>
+          <includeAttached>true</includeAttached>
+          <server>github</server>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>upload</goal>
+            </goals>
+            <phase>deploy</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.github.github</groupId>
+        <artifactId>site-maven-plugin</artifactId>
+        <version>0.7</version>
+        <configuration>
+          <message>Creating site for ${project.artifactId}, ${project.version}</message>
+          <server>github</server>
+          <!--<merge>true</merge> -->
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>site</goal>
+            </goals>
+            <phase>site-deploy</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-site-plugin</artifactId>
+        <version>3.0</version>
+        <configuration>
+          <skipDeploy>true</skipDeploy>
+        </configuration>
         <executions>
           <execution>
             <id>attach-descriptor</id>
@@ -577,4 +713,92 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+  <profiles>
+    <profile>
+      <id>docs</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+              <execution>
+                <!-- build javadoc jars per jar for publishing to maven -->
+                <id>module-javadocs</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <destDir>${project.build.directory}</destDir>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>src</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <executions>
+              <execution>
+                <!-- builds source jars and attaches them to the project for publishing -->
+                <id>hadoop-java-sources</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>dist</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>dist-enforce</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <version>2.3.2</version>
+        <configuration>
+          <xmlOutput>true</xmlOutput>
+          <xmlOutputDirectory>target/findbugs</xmlOutputDirectory>
+          <!--<excludeFilterFile>src/main/findbugs/findbugs-exclude.xml</excludeFilterFile>-->
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
 </project>

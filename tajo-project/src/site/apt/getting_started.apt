@@ -1,0 +1,95 @@
+            ------
+            Tajo - Getting Started
+            ------
+            Hyunsik Choi
+            ------
+             2013-02-01
+
+Build Tajo from Source Code
+
+  Download the source code and build Tajo as follows:
+
+---------------------------------------------
+$ git clone git://github.com/hyunsik/tajo.git
+$ cd tajo
+$ mvn package -DskipTests -Ddisk -Ptar
+$ ls tajo-dist/target/tajo-x.y.z.tar.gz
+---------------------------------------------
+
+  If you want to know the build instruction in more detail, refer to
+  {{{./build.html}Build Instruction}}.
+
+
+Unpack tarball
+
+  You should unpack the tarball (refer to build instruction).
+
+----------------------------------------
+$ tar xzvf tajo-0.2.0-SNAPSHOT.tar.gz
+----------------------------------------
+
+  This will result in the creation of subdirectory named tajo-x.y.z-SNAPSHOT.
+  You MUST copy this directory into the same directory on all yarn cluster nodes.
+
+
+Configuration
+
+  First of all, you need to set the environment variables for your Hadoop cluster and Tajo.
+
+--------------------------------------------
+export JAVA_HOME=/usr/lib/jvm/openjdk-1.7.x
+export HADOOP_HOME=/usr/local/hadoop-2.0.x
+export YARN_HOME=/usr/local/hadoop-2.0.x
+export TAJO_HOME=<tajo-install-dir>
+--------------------------------------------
+
+  Tajo requires an auxiliary service called PullServer for data repartitioning.
+  So, we must configure for PullServer in ${HADOOP_HOME}/etc/hadoop/yarn-site.xml.
+
+-------------------------------------------------------------------
+<property>
+  <name>yarn.nodemanager.aux-services</name>
+  <value>tajo.pullserver</value>
+</property>
+
+<property>
+  <name>yarn.nodemanager.aux-services.tajo.pullserver.class</name>
+  <value>tajo.pullserver.PullServerAuxService</value>
+</property>
+
+<property>
+  <name>tajo.task.localdir</name>
+  <value>/tmp/tajo-localdir</value>
+</property>
+-------------------------------------------------------------------
+
+  Likewise, you should copy some jar files to the hadoop library dir.
+
+------------------------------------------------------------------------
+cp $TAJO_HOME/tajo-common-x.y.z.jar $HADOOP_HOME/share/yarn/lib
+cp $TAJO_HOME/tajo-catalog-common-x.y.z.jar $HADOOP_HOME/share/yarn/lib
+cp $TAJO_HOME/tajo-core-pullserver-x.y.z.jar $HADOOP_HOME/share/yarn/lib
+cp $TAJO_HOME/tajo-core-storage-x.y.z.jar $HADOOP_HOME/share/yarn/lib
+------------------------------------------------------------------------
+
+
+Running Tajo
+
+  Before launching the tajo, you should create the tajo root dir and set the permission as follows:
+
+------------------------------------------------------------------------
+$HADOOP_HOME/bin/hadoop fs -mkdir       /tajo
+$HADOOP_HOME/bin/hadoop fs -chmod g+w   /tajo
+------------------------------------------------------------------------
+
+  To launch the tajo master, execute start-tajo.sh.
+
+-----------------------------
+$TAJO_HOME/bin/start-tajo.sh
+-----------------------------
+
+  After then, you can use tajo-cli to access the command line interface of Tajo.
+
+-----------------------------
+$TAJO_HOME/bin/tajo cli
+-----------------------------

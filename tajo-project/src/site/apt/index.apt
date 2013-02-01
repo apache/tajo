@@ -1,0 +1,37 @@
+            ------
+            Tajo - Introduction
+            ------
+            Hyunsik Choi
+            ------
+             2013-02-01
+
+What is Tajo?
+
+	<<Tajo>> is an alternative data warehouse system for Hadoop. The main objective of Tajo is to
+	provide fast, scalable, and fault-tolerant ad-hoc queries and ETL on large datasets.
+	Tajo uses Hadoop Distributed File System (HDFS) as a primary storage layer, and it has its
+	own distributed query execution engine instead of Hadoop MapReduce.
+	Tajo is specialized for relational data processing throughout its architecture.
+	Tajo has a variety of query execution strategies. As a result, it has more optimization
+	opportunities.
+
+
+Documentation
+
+  * {{{./getting_started.html}Getting Started}}
+
+  * {{{./build.html}Build Instruction}}
+
+  * {{{./query_language.html}Query Language}}
+
+  * {{{./configuration.html}Configuration Guide}}
+
+
+News
+
+	* <<[2012-10-15]>> A demonstration paper of Tajo was accepted to IEEE ICDE 2013.
+
+Contact
+
+	If you have any question or suggestion for the project, please send an email to
+	hyunsik.choi at gmail dot com.
