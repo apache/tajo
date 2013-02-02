@@ -1,0 +1,49 @@
+            ------------------------
+            Tajo - Query Language
+            ------------------------
+            Hyunsik Choi
+            ------------------------
+             2013-02-01
+
+  Tajo supports SQL2003 and some extensions.
+  (WORKING)
+
+DDL
+
+* CREATE TABLE
+
+  Synopsis
+
+---------------------------------------------------------------------------------------------------
+CREATE TABLE <table_name> [(<column_name> <data_type>, ... )]
+  [using <storage_type> [with (<key> = <value>, ...)]] [AS <select_statement>]
+---------------------------------------------------------------------------------------------------
+
+
+* CREATE EXTERNAL TABLE
+
+---------------------------------------------------------------------------------------------------
+CREATE EXTERNAL TABLE <table_name> (<column_name> <data_type>, ... )
+  using <storage_type> [with (<key> = <value>, ...)] LOCATION '<path>'
+---------------------------------------------------------------------------------------------------
+
+DML
+
+* SELECT
+
+---------------------------------------------------------------------------------------------------
+SELECT [distinct [all]] * | <expression> [[AS] <alias>] [, ...]
+  [FROM <table name> [[AS] <table alias name>] [, ...]]
+  [WHERE <condition>]
+  [GROUP BY <expression> [, ...]]
+  [HAVING <condition>]
+  [ORDER BY <expression> [ASC|DESC] [NULL FIRST|NULL LAST] [, ...]]
+---------------------------------------------------------------------------------------------------
+
+** WHERE
+
+** GROUP BY and HAVING
+
+** ORDER BY
+
+* JOIN

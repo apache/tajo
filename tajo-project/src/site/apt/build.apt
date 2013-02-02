@@ -1,0 +1,87 @@
+            ------
+            Tajo - Build Instruction
+            ------
+            Hyunsik Choi
+            ------
+             2013-02-01
+
+Build Requirements
+
+  * Unix System
+
+  * Java 1.7 or higher
+
+  * Protocol Buffers 2.4.1 or higher
+
+  * Maven 3.0 or higher
+
+  * Internet connection for first build (to fetch all Maven and Tajo dependencies)
+
+
+Maven main modules
+
+------------------------------------------------------------------------------------------
+  tajo                            (Main Tajo project)
+    |----- tajo-project           (Parent POM for all Tajo Maven modules. )
+    |                              (All plugins & dependencies versions are defined here.)
+    |------ tajo-common
+    |------ tajo-catalog
+    |------ tajo-core
+    |------ tajo-rpc
+    |------ tajo-dist              (Tajo distribution assembler)
+------------------------------------------------------------------------------------------
+
+Building Tajo from Source
+
+  Download the source code from the git repository (https://github.com/hyunsik/tajo) as follows:
+
+------------------------------------------------
+$ git clone git@github.com:hyunsik/tajo.git
+------------------------------------------------
+
+  Then, you can execute maven with the following goals:
+
+  * Clean                     : <mvn clean>
+
+  * Compile                   : <mvn compile>
+
+  * Run tests                 : <mvn test>
+
+  * Run integrating tests     : <mvn verify>
+
+  * Create JAR                : <mvn package>
+
+  * Run findbugs              : <mvn compile findbugs:findbugs>
+
+  * Install JAR in M2 cache   : <mvn install>
+
+  * Build distribution        : <mvn package [-Pdist][-Dtar]>
+
+  []
+
+  <<Build options:>>
+
+  * Use -Dtar to create a TAR with the distribution (using -Pdist)
+
+  []
+
+  <<Tests options:>>
+
+  * Use -DskipTests to skip tests when running the following Maven goals: \
+    'package',  'install', 'deploy' or 'verify'
+
+  * -Dtest=<TESTCLASSNAME>,<TESTCLASSNAME#METHODNAME>,....
+
+  * -Dtest.exclude=<TESTCLASSNAME>
+
+  * -Dtest.exclude.pattern=**/<TESTCLASSNAME1>.java,**/<TESTCLASSNAME2>.java
+
+  []
+
+  If you want a tarball distribution, execute the following commands
+
+------------------------------------------------
+$ cd tajo-x.y.z
+$ mvn clean package -DskipTests -Pdist -Dtar
+$ ls tajo-dist/target/tajo-x.y.z-SNAPSHOT.tar.gz
+------------------------------------------------
