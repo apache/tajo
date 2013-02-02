@@ -121,19 +121,22 @@ public class TestGlobalQueryPlanner {
 
     for (i = 0; i < tbNum; i++) {
       meta = TCatUtil.newTableMeta((Schema)schema.clone(), StoreType.CSV);
-      meta.putOption(CSVFile2.DELIMITER, ",");
+      meta.putOption(CSVFile.DELIMITER, ",");
 
-      if (fs.exists(sm.getTablePath("table"+i))) {
-        fs.delete(sm.getTablePath("table"+i), true);
+      Path dataRoot = sm.getDataRoot();
+      Path tablePath = StorageUtil.concatPath(dataRoot, "table"+i, "file.csv");
+      if (fs.exists(tablePath.getParent())) {
+        fs.delete(tablePath.getParent(), true);
       }
-      appender = sm.getTableAppender(meta, "table" + i);
-      tupleNum = 10000000;
+      fs.mkdirs(tablePath.getParent());
+      appender = StorageManager.getAppender(conf, meta, tablePath);
+      tupleNum = 100;
       for (j = 0; j < tupleNum; j++) {
         appender.addTuple(t);
       }
       appender.close();
 
-      TableDesc desc = TCatUtil.newTableDesc("table" + i, (TableMeta)meta.clone(), sm.getTablePath("table"+i));
+      TableDesc desc = TCatUtil.newTableDesc("table" + i, (TableMeta)meta.clone(), tablePath);
       catalog.addTable(desc);
     }
 

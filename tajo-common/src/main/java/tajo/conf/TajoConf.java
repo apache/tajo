@@ -65,16 +65,6 @@ public class TajoConf extends YarnConfiguration {
     CLIENT_SERVICE_ADDRESS("tajo.clientservice.addr", "localhost:9004"),
     CLIENT_SERVICE_PORT("tajo.clientservice.port", 9004),
 
-    // System Configuration - Zookeeper Section
-    ZOOKEEPER_ADDRESS("zookeeper.server.addr", "localhost:2181"),
-    ZOOKEEPER_TICK_TIME("zookeeper.server.ticktime", 5000),
-    ZOOKEEPER_SESSION_TIMEOUT("zookeeper.session.timeout", 180*1000),
-    // the two constants are only used for local zookeepers
-    ZOOKEEPER_DATA_DIR("zookeeper.server.datadir", ""),
-    ZOOKEEPER_LOG_DIR("zookeeper.server.logdir", ""),
-    ZOOKEEPER_RETRY_COUNT("zookeeper.retry.count", 3),
-    ZOOKEEPER_RETRY_INTERVALMILLS("zookeeper.retry.intervalmills", 1000),
-
     // directory
     ENGINE_BASE_DIR("engine.rootdir", ""),
     ENGINE_DATA_DIR("engine.data.dir", ""),

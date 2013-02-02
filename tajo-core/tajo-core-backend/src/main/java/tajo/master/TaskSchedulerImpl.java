@@ -127,7 +127,7 @@ public class TaskSchedulerImpl extends AbstractService
   static {
     SubQueryId nullSubQuery =
         QueryIdFactory.newSubQueryId(TajoIdUtils.NullQueryId);
-    NULL_ID = QueryIdFactory.newQueryUnitAttemptId(QueryIdFactory.newQueryUnitId(nullSubQuery), 0);
+    NULL_ID = QueryIdFactory.newQueryUnitAttemptId(QueryIdFactory.newQueryUnitId(nullSubQuery, 0), 0);
 
     MasterWorkerProtos.QueryUnitRequestProto.Builder builder =
                 MasterWorkerProtos.QueryUnitRequestProto.newBuilder();

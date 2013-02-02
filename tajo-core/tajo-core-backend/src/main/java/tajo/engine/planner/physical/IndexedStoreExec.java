@@ -18,7 +18,9 @@ package tajo.engine.planner.physical;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RawLocalFileSystem;
 import tajo.TaskAttemptContext;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos;
@@ -35,7 +37,6 @@ import java.io.IOException;
  */
 public class IndexedStoreExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(IndexedStoreExec.class);
-  private final StorageManager sm;
   private final SortSpec[] sortSpecs;
   private int [] indexKeys = null;
   private Schema keySchema;
@@ -49,7 +50,6 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
       final PhysicalExec child, final Schema inSchema, final Schema outSchema,
       final SortSpec[] sortSpecs) throws IOException {
     super(context, inSchema, outSchema, child);
-    this.sm = sm;
     this.sortSpecs = sortSpecs;
   }
 
@@ -71,8 +71,10 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
     LOG.info("Output data directory: " + storeTablePath);
     this.meta = TCatUtil
         .newTableMeta(this.outSchema, CatalogProtos.StoreType.CSV);
-    sm.initLocalTableBase(storeTablePath, meta);
-    this.appender = (FileAppender) sm.getLocalAppender(meta, new Path(storeTablePath, "output"));
+    FileSystem fs = new RawLocalFileSystem();
+    fs.mkdirs(storeTablePath);
+    this.appender = (FileAppender) StorageManager.getAppender(context.getConf(), meta,
+        new Path(storeTablePath, "output"));
     this.indexWriter = bst.getIndexWriter(new Path(storeTablePath, "index"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     this.indexWriter.setLoadNum(100);

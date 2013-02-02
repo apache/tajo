@@ -19,6 +19,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
+import java.util.UUID;
 
 public class CommonTestingUtil {
   /**
@@ -27,8 +28,20 @@ public class CommonTestingUtil {
    * @return  the created path
    * @throws IOException
    */
-  public static Path buildTestDir(String dir) throws IOException {
+  public static Path getTestDir(String dir) throws IOException {
     Path path = new Path(dir);
+    FileSystem fs = FileSystem.getLocal(new Configuration());
+    if(fs.exists(path))
+      fs.delete(path, true);
+
+    fs.mkdirs(path);
+
+    return fs.makeQualified(path);
+  }
+
+  public static Path getTestDir() throws IOException {
+    String randomStr = UUID.randomUUID().toString();
+    Path path = new Path("target/test-data", randomStr);
     FileSystem fs = FileSystem.getLocal(new Configuration());
     if(fs.exists(path))
       fs.delete(path, true);

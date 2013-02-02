@@ -38,7 +38,7 @@ public class TestTajoClient {
     Thread.sleep(3000);
     tajo = new TajoClient(conf);
 
-    testDir = CommonTestingUtil.buildTestDir(TEST_PATH);
+    testDir = CommonTestingUtil.getTestDir(TEST_PATH);
   }
 
   @AfterClass
@@ -96,12 +96,12 @@ public class TestTajoClient {
   public final void testDDLByExecuteQuery() throws IOException, ServiceException {
     TajoConf conf = util.getConfiguration();
     final String tableName = "testDDLByExecuteQuery";
-    BackendTestingUtil.writeTmpTable(conf, "/tmp", tableName, false);
+    BackendTestingUtil.writeTmpTable(conf, "file:///tmp", tableName, false);
 
     assertFalse(tajo.existTable(tableName));
     String tql =
         "create external table " + tableName + " (deptname string, score int) "
-            + "using csv location '/tmp/" + tableName + "'";
+            + "using csv location 'file:///tmp/" + tableName + "'";
     tajo.executeQueryAndGetResult(tql);
     assertTrue(tajo.existTable(tableName));
   }

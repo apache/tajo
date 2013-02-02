@@ -24,6 +24,7 @@
 package tajo.engine.planner.global;
 
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -53,10 +54,6 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author jihoon
- * 
- */
 public class TestGlobalQueryOptimizer {
   private static TajoTestingCluster util;
   private static TajoConf conf;
@@ -108,13 +105,16 @@ public class TestGlobalQueryOptimizer {
 
     for (i = 0; i < tbNum; i++) {
       meta = TCatUtil.newTableMeta((Schema)schema.clone(), StoreType.CSV);
-      meta.putOption(CSVFile2.DELIMITER, ",");
+      meta.putOption(CSVFile.DELIMITER, ",");
 
-      if (fs.exists(sm.getTablePath("table"+i))) {
-        fs.delete(sm.getTablePath("table"+i), true);
+      Path dataRoot = sm.getDataRoot();
+      Path tablePath = StorageUtil.concatPath(dataRoot, "table"+i, "file.csv");
+      if (fs.exists(tablePath.getParent())) {
+        fs.delete(tablePath.getParent(), true);
       }
-      appender = sm.getTableAppender(meta, "table" + i);
-      tupleNum = 10000000;
+      fs.mkdirs(tablePath.getParent());
+      appender = StorageManager.getAppender(conf, meta, tablePath);
+      tupleNum = 100;
       for (j = 0; j < tupleNum; j++) {
         appender.addTuple(t);
       }

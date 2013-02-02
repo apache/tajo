@@ -397,6 +397,9 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     @Override
     public TaskState transition(QueryUnit task, TaskEvent taskEvent) {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) taskEvent;
+      LOG.info("=============================================================");
+      LOG.info(">>> Task Failed: " + attemptEvent.getTaskAttemptId() + " <<<");
+      LOG.info("=============================================================");
       task.failedAttempts++;
       task.finishedAttempts++;
 

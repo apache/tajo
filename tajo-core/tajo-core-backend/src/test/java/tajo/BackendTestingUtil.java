@@ -33,15 +33,12 @@ import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
 import tajo.engine.parser.QueryAnalyzer;
-import tajo.engine.planner.LogicalOptimizer;
-import tajo.engine.planner.LogicalPlanner;
-import tajo.engine.planner.PlanningContext;
+import tajo.engine.planner.*;
 import tajo.engine.planner.logical.LogicalNode;
-import tajo.engine.planner.PhysicalPlanner;
-import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.physical.PhysicalExec;
 import tajo.engine.query.ResultSetImpl;
 import tajo.storage.*;
+import tajo.util.FileUtil;
 import tajo.util.TUtil;
 
 import java.io.File;
@@ -65,16 +62,20 @@ public class BackendTestingUtil {
                                    String tableName, boolean writeMeta)
       throws IOException {
     StorageManager sm = StorageManager.get(conf, path);
-
+    FileSystem fs = sm.getFileSystem();
     Appender appender;
-    if (writeMeta) {
-      appender = sm.getTableAppender(mockupMeta, tableName);
-    } else {
-      FileSystem fs = sm.getFileSystem();
-      fs.mkdirs(StorageUtil.concatPath(path, tableName, "data"));
-      appender = sm.getAppender(mockupMeta,
-          StorageUtil.concatPath(path, tableName, "data", "tb000"));
+
+    Path tablePath = StorageUtil.concatPath(path, tableName, "table.csv");
+    if (fs.exists(tablePath.getParent())) {
+      fs.delete(tablePath.getParent(), true);
     }
+    fs.mkdirs(tablePath.getParent());
+
+    if (writeMeta) {
+      FileUtil.writeProto(fs, new Path(tablePath.getParent(), ".meta"), mockupMeta.getProto());
+    }
+    appender = StorageManager.getAppender(conf, mockupMeta, tablePath);
+
     int deptSize = 10000;
     int tupleNum = 100;
     Tuple tuple;

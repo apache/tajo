@@ -1,6 +1,7 @@
 package tajo.storage.index;
 
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,13 +21,14 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static tajo.storage.CSVFile.CSVScanner;
 
 public class TestSingleCSVFileBSTIndex {
   
   private TajoConf conf;
-  private StorageManager sm;
   private Schema schema;
   private TableMeta meta;
+  private FileSystem fs;
 
   private static final int TUPLE_NUM = 10000;
   private static final int LOAD_NUM = 100;
@@ -46,16 +48,18 @@ public class TestSingleCSVFileBSTIndex {
 
   @Before
   public void setUp() throws Exception {
-    testDir = CommonTestingUtil.buildTestDir(TEST_PATH);
-    sm = StorageManager.get(conf, testDir);
+    testDir = CommonTestingUtil.getTestDir(TEST_PATH);
+    fs = testDir.getFileSystem(conf);
   }
 
   @Test
   public void testFindValueInSingleCSV() throws IOException {
     meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 
-    sm.initTableBase(meta, "table1");
-    Appender appender = sm.getAppender(meta, "table1", "table1.csv");
+    Path tablePath = StorageUtil.concatPath(testDir, "testFindValueInSingleCSV", "table.csv");
+    fs.mkdirs(tablePath.getParent());
+
+    Appender appender = StorageManager.getAppender(conf, meta, tablePath);
     Tuple tuple;
     for (int i = 0; i < TUPLE_NUM; i++) {
       tuple = new VTuple(5);
@@ -70,7 +74,7 @@ public class TestSingleCSVFileBSTIndex {
 
     appender.close();
 
-    FileStatus status = sm.listTableFiles("table1")[0];
+    FileStatus status = fs.getFileStatus(tablePath);
     long fileLen = status.getLen();
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0,
         fileLen, null);
@@ -91,7 +95,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SingleFileScanner fileScanner = new CSVFile.CSVScanner(conf, schema, tablet);
+    SingleFileScanner fileScanner = new CSVScanner(conf, schema, tablet);
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -114,7 +118,7 @@ public class TestSingleCSVFileBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir,
         "FindValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner = new CSVFile.CSVScanner(conf, schema, tablet);
+    fileScanner = new CSVScanner(conf, schema, tablet);
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
       tuple.put(0, DatumFactory.createLong(i));
       tuple.put(1, DatumFactory.createDouble(i));
@@ -141,8 +145,10 @@ public class TestSingleCSVFileBSTIndex {
   public void testFindNextKeyValueInSingleCSV() throws IOException {
     meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
 
-    sm.initTableBase(meta, "table1");
-    Appender appender = sm.getAppender(meta, "table1", "table1.csv");
+    Path tablePath = StorageUtil.concatPath(testDir, "testFindNextKeyValueInSingleCSV",
+        "table1.csv");
+    fs.mkdirs(tablePath.getParent());
+    Appender appender = StorageManager.getAppender(conf, meta, tablePath);
     Tuple tuple;
     for(int i = 0 ; i < TUPLE_NUM; i ++ ) {
       tuple = new VTuple(5);
@@ -155,7 +161,7 @@ public class TestSingleCSVFileBSTIndex {
     }
     appender.close();
 
-    FileStatus status = sm.listTableFiles("table1")[0];
+    FileStatus status = fs.getFileStatus(tablePath);
     long fileLen = status.getLen();
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
     
@@ -175,7 +181,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
     
-    SingleFileScanner fileScanner  = new CSVFile.CSVScanner(conf, schema, tablet);
+    SingleFileScanner fileScanner  = new CSVScanner(conf, schema, tablet);
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -195,7 +201,7 @@ public class TestSingleCSVFileBSTIndex {
     
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "FindNextKeyValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner  = new CSVFile.CSVScanner(conf, schema, tablet);
+    fileScanner  = new CSVScanner(conf, schema, tablet);
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       keyTuple = new VTuple(2);

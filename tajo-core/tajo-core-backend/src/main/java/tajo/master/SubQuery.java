@@ -730,9 +730,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     public SubQueryState transition(SubQuery subQuery,
                            SubQueryEvent subQueryEvent) {
       try {
-        initOutputDir(subQuery.getStorageManager(), subQuery.getOutputName(),
-            subQuery.getOutputType());
-
         for (QueryUnitId taskId : subQuery.tasks.keySet()) {
           subQuery.eventHandler.handle(new TaskEvent(taskId, TaskEventType.T_SCHEDULE));
         }
@@ -741,27 +738,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       } catch (Exception e) {
         LOG.warn("SubQuery (" + subQuery.getId() + ") failed", e);
         return SubQueryState.FAILED;
-      }
-    }
-
-    private void initOutputDir(StorageManager sm, String outputName,
-                               PARTITION_TYPE type)
-        throws IOException {
-      switch (type) {
-        case HASH:
-          Path tablePath = sm.getTablePath(outputName);
-          sm.getFileSystem().mkdirs(tablePath);
-          LOG.info("Table path " + sm.getTablePath(outputName).toString()
-              + " is initialized for " + outputName);
-          break;
-        case RANGE: // TODO - to be improved
-
-        default:
-          if (!sm.getFileSystem().exists(sm.getTablePath(outputName))) {
-            sm.initTableBase(null, outputName);
-            LOG.info("Table path " + sm.getTablePath(outputName).toString()
-                + " is initialized for " + outputName);
-          }
       }
     }
   }

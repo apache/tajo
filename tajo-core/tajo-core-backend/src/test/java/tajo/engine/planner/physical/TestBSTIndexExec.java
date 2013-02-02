@@ -15,6 +15,7 @@
 package tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
@@ -58,6 +59,9 @@ public class TestBSTIndexExec {
   private BSTIndex.BSTIndexWriter writer;
   private HashMap<Integer , Integer> randomValues ;
   private int rndKey = -1;
+  private FileSystem fs;
+  private TableMeta meta;
+  private Path tablePath;
 
   private Random rnd = new Random(System.currentTimeMillis());
 
@@ -71,7 +75,7 @@ public class TestBSTIndexExec {
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();
 
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/TestPhysicalPlanner");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestPhysicalPlanner");
     sm = StorageManager.get(conf, workDir);
 
     idxPath = new Path(workDir, "test.idx");
@@ -93,11 +97,13 @@ public class TestBSTIndexExec {
     writer.open();
     long offset;
 
-    TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
-    sm.initTableBase(employeeMeta, "employee");
-    FileAppender appender = (FileAppender) sm.getAppender(employeeMeta,
-        "employee", "employee");
-    Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
+    meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    tablePath = StorageUtil.concatPath(workDir, "employee", "table.csv");
+    fs = tablePath.getFileSystem(conf);
+    fs.mkdirs(tablePath.getParent());
+
+    FileAppender appender = (FileAppender)StorageManager.getAppender(conf, meta, tablePath);
+    Tuple tuple = new VTuple(meta.getSchema().getColumnNum());
     for (int i = 0; i < 10000; i++) {
       
       Tuple key = new VTuple(this.idxSchema.getColumnNum());
@@ -121,7 +127,7 @@ public class TestBSTIndexExec {
     appender.close();
     writer.close();
 
-    TableDesc desc = new TableDescImpl("employee", employeeMeta,
+    TableDesc desc = new TableDescImpl("employee", meta,
         sm.getTablePath("employee"));
     catalog.addTable(desc);
 
@@ -140,8 +146,8 @@ public class TestBSTIndexExec {
     this.rndKey = rnd.nextInt(250);
     final String QUERY = "select * from employee where managerId = " + rndKey;
     
-    Fragment[] frags = sm.split("employee");
-    Path workDir = CommonTestingUtil.buildTestDir("target/test-data/testEqual");
+    Fragment[] frags = sm.splitNG(conf, "employee", meta, tablePath, Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testEqual");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), new Fragment[] { frags[0] }, workDir);
     PlanningContext context = analyzer.parse(QUERY);

@@ -15,6 +15,8 @@
 package tajo;
 
 import com.google.common.collect.Maps;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import tajo.benchmark.TPCH;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;
@@ -27,6 +29,8 @@ import java.sql.ResultSet;
 import java.util.Map;
 
 public class TpchTestBase {
+  private static final Log LOG = LogFactory.getLog(TpchTestBase.class);
+
   String [] names;
   String [] paths;
   String [][] tables;
@@ -35,7 +39,19 @@ public class TpchTestBase {
   protected TPCH tpch;
   protected LocalTajoTestingUtility util;
 
-  public TpchTestBase() throws IOException {
+  private static TpchTestBase testBase;
+
+  static {
+    try {
+      testBase = new TpchTestBase();
+      testBase.setUp();
+      Runtime.getRuntime().addShutdownHook(new ShutdownHook());
+    } catch (Exception e) {
+      LOG.error(e);
+    }
+  }
+
+  private TpchTestBase() throws IOException {
     names = new String[] {"customer", "lineitem", "nation", "orders", "part", "partsupp", "region", "supplier"};
     paths = new String[names.length];
     for (int i = 0; i < names.length; i++) {
@@ -65,18 +81,34 @@ public class TpchTestBase {
     }
   }
 
-  public void setUp() throws Exception {
+  private void setUp() throws Exception {
     util = new LocalTajoTestingUtility();
     Options opt = new Options();
     opt.put(CSVFile2.DELIMITER, "|");
     util.setup(names, paths, schemas, opt);
   }
 
+  public static TpchTestBase getInstance() {
+    return testBase;
+  }
+
   public ResultSet execute(String query) throws Exception {
     return util.execute(query);
   }
 
-  public void tearDown() throws IOException {
+  public static class ShutdownHook extends Thread {
+
+    @Override
+    public void run() {
+      try {
+        testBase.tearDown();
+      } catch (IOException e) {
+        LOG.error(e);
+      }
+    }
+  }
+
+  private void tearDown() throws IOException {
     util.shutdown();
   }
 }

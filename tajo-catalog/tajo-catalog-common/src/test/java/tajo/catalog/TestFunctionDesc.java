@@ -72,7 +72,7 @@ public class TestFunctionDesc {
     assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
         desc.getParamTypes());
 
-    CommonTestingUtil.buildTestDir(TEST_PATH);
+    CommonTestingUtil.getTestDir(TEST_PATH);
     File save = new File(TEST_PATH + "/save.dat");
     FileUtil.writeProto(save, desc.getProto());
 

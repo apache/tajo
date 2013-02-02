@@ -612,8 +612,8 @@ public class GlobalPlanner {
     Schema innerSchema = join.getInnerNode().getOutSchema();
     unit.setOutputType(PARTITION_TYPE.LIST);
 
-    List<Column> outerCollist = new ArrayList<Column>();
-    List<Column> innerCollist = new ArrayList<Column>();   
+    List<Column> outerCollist = new ArrayList<>();
+    List<Column> innerCollist = new ArrayList<>();
     
     // TODO: set partition for store nodes
     if (join.hasJoinQual()) {
@@ -838,28 +838,28 @@ public class GlobalPlanner {
     return new MasterPlan(root);
   }
   
-  public SubQuery setPartitionNumberForTwoPhase(SubQuery unit, final int n) {
+  public SubQuery setPartitionNumberForTwoPhase(SubQuery subQuery, final int n) {
     Column[] keys = null;
     // if the next query is join,
     // set the partition number for the current logicalUnit
     // TODO: the union handling is required when a join has unions as its child
-    SubQuery parentQueryUnit = unit.getParentQuery();
+    SubQuery parentQueryUnit = subQuery.getParentQuery();
     if (parentQueryUnit != null) {
       if (parentQueryUnit.getStoreTableNode().getSubNode().getType() == ExprType.JOIN) {
-        unit.getStoreTableNode().setPartitions(unit.getOutputType(),
-            unit.getStoreTableNode().getPartitionKeys(), n);
-        keys = unit.getStoreTableNode().getPartitionKeys();
+        subQuery.getStoreTableNode().setPartitions(subQuery.getOutputType(),
+            subQuery.getStoreTableNode().getPartitionKeys(), n);
+        keys = subQuery.getStoreTableNode().getPartitionKeys();
       }
     }
 
-    StoreTableNode store = unit.getStoreTableNode();
+    StoreTableNode store = subQuery.getStoreTableNode();
     // set the partition number for group by and sort
-    if (unit.getOutputType() == PARTITION_TYPE.HASH) {
+    if (subQuery.getOutputType() == PARTITION_TYPE.HASH) {
       if (store.getSubNode().getType() == ExprType.GROUP_BY) {
         GroupbyNode groupby = (GroupbyNode)store.getSubNode();
         keys = groupby.getGroupingColumns();
       }
-    } else if (unit.getOutputType() == PARTITION_TYPE.RANGE) {
+    } else if (subQuery.getOutputType() == PARTITION_TYPE.RANGE) {
       if (store.getSubNode().getType() == ExprType.SORT) {
         SortNode sort = (SortNode)store.getSubNode();
         keys = new Column[sort.getSortKeys().length];
@@ -870,14 +870,14 @@ public class GlobalPlanner {
     }
     if (keys != null) {
       if (keys.length == 0) {
-        store.setPartitions(unit.getOutputType(), new Column[]{}, 1);
+        store.setPartitions(subQuery.getOutputType(), new Column[]{}, 1);
       } else {
-        store.setPartitions(unit.getOutputType(), keys, n);
+        store.setPartitions(subQuery.getOutputType(), keys, n);
       }
     } else {
       store.setListPartition();
     }
-    return unit;
+    return subQuery;
   }
 
   /**
@@ -998,7 +998,7 @@ public class GlobalPlanner {
         fragList.add(frag);
         fragMap.put(scan, fragList);
       } else {
-        fragList = new ArrayList<Fragment>();
+        fragList = new ArrayList<>();
         // set fragments for each scan
         if (subQuery.hasChildQuery() &&
             (subQuery.getChildQuery(scan).getOutputType() == PARTITION_TYPE.HASH ||
@@ -1242,6 +1242,14 @@ public class GlobalPlanner {
     unit.setLogicalPlan(subQuery.getLogicalPlan());
     return unit;
   }
+
+  private QueryUnit newQueryUnit(SubQuery subQuery, int taskId) {
+    QueryUnit unit = new QueryUnit(
+        QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), subQuery.isLeafQuery(),
+        subQuery.eventHandler);
+    unit.setLogicalPlan(subQuery.getLogicalPlan());
+    return unit;
+  }
   
   /**
    * Binary QueryUnit들에 hash 파티션된 fetch를 할당
@@ -1380,8 +1388,7 @@ public class GlobalPlanner {
 
   @VisibleForTesting
   public static Map<String, Map<ScanNode, List<URI>>> hashFetches(Map<ScanNode, List<URI>> uriMap) {
-    SortedMap<String, Map<ScanNode, List<URI>>> hashed =
-        new TreeMap<String, Map<ScanNode,List<URI>>>();
+    SortedMap<String, Map<ScanNode, List<URI>>> hashed = new TreeMap<>();
     String uriPath, key;
     Map<ScanNode, List<URI>> m;
     List<URI> uriList;
@@ -1392,12 +1399,12 @@ public class GlobalPlanner {
         if (hashed.containsKey(key)) {
           m = hashed.get(key);
         } else {
-          m = new HashMap<ScanNode, List<URI>>();
+          m = new HashMap<>();
         }
         if (m.containsKey(e.getKey())) {
           uriList = m.get(e.getKey());
         } else {
-          uriList = new ArrayList<URI>();
+          uriList = new ArrayList<>();
         }
         uriList.add(uri);
         m.put(e.getKey(), uriList);
@@ -1441,7 +1448,7 @@ public class GlobalPlanner {
 
   @VisibleForTesting
   public static Map<String, List<URI>> hashFetches(SubQueryId sid, List<URI> uriList) {
-    SortedMap<String, List<URI>> hashed = new TreeMap<String, List<URI>>();
+    SortedMap<String, List<URI>> hashed = new TreeMap<>();
     String uriPath, key;
     for (URI uri : uriList) {
       // TODO
@@ -1450,7 +1457,7 @@ public class GlobalPlanner {
       if (hashed.containsKey(key)) {
         hashed.get(key).add(uri);
       } else {
-        List<URI> list = new ArrayList<URI>();
+        List<URI> list = new ArrayList<>();
         list.add(uri);
         hashed.put(key, list);
       }
@@ -1611,12 +1618,12 @@ public class GlobalPlanner {
   }
   
   private Collection<List<Fragment>> hashFragments(List<Fragment> frags) {
-    SortedMap<String, List<Fragment>> hashed = new TreeMap<String, List<Fragment>>();
+    SortedMap<String, List<Fragment>> hashed = new TreeMap<>();
     for (Fragment f : frags) {
       if (hashed.containsKey(f.getPath().getName())) {
         hashed.get(f.getPath().getName()).add(f);
       } else {
-        List<Fragment> list = new ArrayList<Fragment>();
+        List<Fragment> list = new ArrayList<>();
         list.add(f);
         hashed.put(f.getPath().getName(), list);
       }
@@ -1646,8 +1653,10 @@ public class GlobalPlanner {
 
     QueryUnit queryUnit;
     List<QueryUnit> queryUnits = new ArrayList<>();
+
+    int i = 0;
     for (Fragment fragment : fragments) {
-      queryUnit = newQueryUnit(subQuery);
+      queryUnit = newQueryUnit(subQuery, i++);
       queryUnit.setFragment(scan.getTableId(), fragment);
       queryUnits.add(queryUnit);
     }
