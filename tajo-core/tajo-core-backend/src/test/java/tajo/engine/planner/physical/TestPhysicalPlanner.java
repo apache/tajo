@@ -430,8 +430,6 @@ public class TestPhysicalPlanner {
         StoreType.CSV);
 
     FileSystem fs = sm.getFileSystem();
-    fs.mkdirs(new Path(workDir, "partition"));
-    //sm.initTableBase(outputMeta, "partition");
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
@@ -440,7 +438,7 @@ public class TestPhysicalPlanner {
     exec.close();
 
     Path path = new Path(workDir, "output");
-    FileStatus [] list = fs.listStatus(path, new PathFilterWithoutMeta());
+    FileStatus [] list = fs.listStatus(path);
     assertEquals(numPartitions, list.length);
 
     Fragment [] fragments = new Fragment[list.length];
@@ -497,7 +495,7 @@ public class TestPhysicalPlanner {
     Path path = new Path(workDir, "output");
     FileSystem fs = sm.getFileSystem();
 
-    FileStatus [] list = fs.listStatus(path, new PathFilterWithoutMeta());
+    FileStatus [] list = fs.listStatus(path);
     assertEquals(numPartitions, list.length);
 
     Fragment [] fragments = new Fragment[list.length];
