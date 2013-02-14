@@ -47,9 +47,7 @@ public class TestCatalog {
 	
 	static CatalogServer server;
 	static CatalogService catalog;
-	
-	static String TEST_PATH = "target/test-data/TestCatalog";
-	
+
 	@BeforeClass
 	public static void setUp() throws Exception {
 	  server = new CatalogServer();
@@ -146,7 +144,6 @@ public class TestCatalog {
 	}
 	
 	public static class TestFunc1 extends GeneralFunction {
-    private Datum param;
 		public TestFunc1() {
 			super(					
 					new Column [] {
@@ -160,23 +157,23 @@ public class TestCatalog {
       return params.get(0);
     }
 	}
-	
-	 public static class TestFunc2 extends GeneralFunction {
-     private Datum param;
-	    public TestFunc2() {
-	      super(          
-	          new Column [] {
-	              new Column("name", DataType.INT),
-	              new Column("bytes", DataType.BYTES)
-	          }
-	      );
-	    }
 
-     @Override
-     public Datum eval(Tuple params) {
-       return params.get(1);
-     }
-	  } 
+  public static class TestFunc2 extends GeneralFunction {
+    private Datum param;
+    public TestFunc2() {
+      super(
+          new Column [] {
+              new Column("name", DataType.INT),
+              new Column("bytes", DataType.BYTES)
+          }
+      );
+    }
+
+    @Override
+    public Datum eval(Tuple params) {
+      return params.get(1);
+    }
+  }
 
 	@Test
 	public final void testRegisterFunc() throws Exception { 

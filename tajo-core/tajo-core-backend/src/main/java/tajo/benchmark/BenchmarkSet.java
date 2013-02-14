@@ -2,8 +2,8 @@ package tajo.benchmark;
 
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.net.NetUtils;
+import tajo.catalog.CatalogConstants;
 import tajo.catalog.Schema;
-import tajo.catalog.TConstants;
 import tajo.catalog.store.MemStore;
 import tajo.client.TajoClient;
 import tajo.conf.TajoConf;
@@ -24,11 +24,11 @@ public abstract class BenchmarkSet {
 
   public void init(TajoConf conf, String dataDir) throws IOException {
     this.dataDir = dataDir;
-    if (System.getProperty(ConfVars.MASTER_ADDRESS.varname) != null) {
+    if (System.getProperty(ConfVars.TASKRUNNER_LISTENER_ADDRESS.varname) != null) {
       tajo = new TajoClient(NetUtils.createSocketAddr(
-          System.getProperty(ConfVars.MASTER_ADDRESS.varname)));
+          System.getProperty(ConfVars.TASKRUNNER_LISTENER_ADDRESS.varname)));
     } else {
-      conf.set(TConstants.STORE_CLASS, MemStore.class.getCanonicalName());
+      conf.set(CatalogConstants.STORE_CLASS, MemStore.class.getCanonicalName());
       tajo = new TajoClient(conf);
     }
   }

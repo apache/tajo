@@ -98,7 +98,7 @@ public class CatalogServer extends AbstractService {
     Constructor<?> cons;
     try {
       Class<?> storeClass =
-          this.conf.getClass(TConstants.STORE_CLASS, DBStore.class);
+          this.conf.getClass(CatalogConstants.STORE_CLASS, DBStore.class);
       LOG.info("Catalog Store Class: " + storeClass.getCanonicalName());
 
       cons = storeClass.
@@ -415,7 +415,7 @@ public class CatalogServer extends AbstractService {
                                         UnregisterFunctionRequest request)
         throws ServiceException {
       String signature = request.getSignature();
-      List<DataType> paramTypes = new ArrayList<DataType>();
+      List<DataType> paramTypes = new ArrayList<>();
       int size = request.getParameterTypesCount();
       for (int i = 0; i < size; i++) {
         paramTypes.add(request.getParameterTypes(i));
@@ -435,7 +435,7 @@ public class CatalogServer extends AbstractService {
     public FunctionDescProto getFunctionMeta(RpcController controller,
                                              GetFunctionMetaRequest request)
         throws ServiceException {
-      List<DataType> paramTypes = new ArrayList<DataType>();
+      List<DataType> paramTypes = new ArrayList<>();
       int size = request.getParameterTypesCount();
       for (int i = 0; i < size; i++) {
         paramTypes.add(request.getParameterTypes(i));
@@ -448,7 +448,7 @@ public class CatalogServer extends AbstractService {
     public BoolProto containFunction(RpcController controller,
                                      ContainFunctionRequest request)
         throws ServiceException {
-      List<DataType> paramTypes = new ArrayList<DataType>();
+      List<DataType> paramTypes = new ArrayList<>();
       int size = request.getParameterTypesCount();
       for (int i = 0; i < size; i++) {
         paramTypes.add(request.getParameterTypes(i));

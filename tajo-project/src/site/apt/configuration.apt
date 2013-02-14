@@ -3,8 +3,26 @@
             ------
             Hyunsik Choi
             ------
-             2013-02-01
+             2013-02-15
 
-Configuration
+Setting up catalog-site.xml
 
-  (TODO)
+  Add the following configs to your catalog-site.xml.
+
+---------------------------------------------
+  <property>
+    <name>catalog.master.addr</name>
+    <value>localhost:9002</value>
+  </property>
+
+  <property>
+    <name>catalog.store.class</name>
+    <value>tajo.catalog.store.DBStore</value>
+  </property>
+
+  <property>
+    <name>catalog.jdbc.uri</name>
+    <value>jdbc:derby:/tmp/tcat-${user.name}/db</value>
+  </property>
+---------------------------------------------
+

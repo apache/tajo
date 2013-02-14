@@ -107,7 +107,7 @@ public class TestGlobalQueryOptimizer {
       meta = TCatUtil.newTableMeta((Schema)schema.clone(), StoreType.CSV);
       meta.putOption(CSVFile.DELIMITER, ",");
 
-      Path dataRoot = sm.getDataRoot();
+      Path dataRoot = sm.getBaseDir();
       Path tablePath = StorageUtil.concatPath(dataRoot, "table"+i, "file.csv");
       if (fs.exists(tablePath.getParent())) {
         fs.delete(tablePath.getParent(), true);

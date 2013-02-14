@@ -45,16 +45,12 @@ public class StorageManager {
 
 	private final TajoConf conf;
 	private final FileSystem fs;
-	private final Path dataRoot;
+	private final Path baseDir;
 
 	public StorageManager(TajoConf conf) throws IOException {
 		this.conf = conf;
-    this.dataRoot = new Path(conf.getVar(ConfVars.ENGINE_DATA_DIR));
-    this.fs = dataRoot.getFileSystem(conf);
-		if(!fs.exists(dataRoot)) {
-		  fs.mkdirs(dataRoot);
-		}
-		LOG.info("Storage Manager initialized");
+    this.baseDir = new Path(conf.getVar(ConfVars.ROOT_DIR));
+    this.fs = baseDir.getFileSystem(conf);
 	}
 	
 	public static StorageManager get(TajoConf conf) throws IOException {
@@ -63,13 +59,13 @@ public class StorageManager {
 	
 	public static StorageManager get(TajoConf conf, String dataRoot)
 	    throws IOException {
-	  conf.setVar(ConfVars.ENGINE_DATA_DIR, dataRoot);
+	  conf.setVar(ConfVars.ROOT_DIR, dataRoot);
     return new StorageManager(conf);
 	}
 	
 	public static StorageManager get(TajoConf conf, Path dataRoot)
       throws IOException {
-    conf.setVar(ConfVars.ENGINE_DATA_DIR, dataRoot.toString());
+    conf.setVar(ConfVars.ROOT_DIR, dataRoot.toString());
     return new StorageManager(conf);
   }
 	
@@ -77,8 +73,8 @@ public class StorageManager {
 	  return this.fs;
 	}
 	
-	public Path getDataRoot() {
-	  return this.dataRoot;
+	public Path getBaseDir() {
+	  return this.baseDir;
 	}
 	
   public void delete(Path tablePath) throws IOException {
@@ -87,7 +83,7 @@ public class StorageManager {
   }
   
   public Path getTablePath(String tableName) {
-    return new Path(dataRoot, tableName);
+    return new Path(baseDir, tableName);
   }
 
   public static Scanner getScanner(Configuration conf, TableMeta meta, Path path)
@@ -176,12 +172,12 @@ public class StorageManager {
   }
 
   public Fragment[] split(String tableName) throws IOException {
-    Path tablePath = new Path(dataRoot, tableName);
+    Path tablePath = new Path(baseDir, tableName);
     return split(tableName, tablePath, fs.getDefaultBlockSize());
   }
 
   public Fragment[] split(String tableName, long fragmentSize) throws IOException {
-    Path tablePath = new Path(dataRoot, tableName);
+    Path tablePath = new Path(baseDir, tableName);
     return split(tableName, tablePath, fragmentSize);
   }
 

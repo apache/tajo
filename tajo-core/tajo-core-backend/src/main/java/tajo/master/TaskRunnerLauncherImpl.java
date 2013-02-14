@@ -131,7 +131,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
       if (initialClasspathFlag.get()) {
         return initialClasspath;
       }
-      Map<String, String> env = new HashMap<String, String>();
+      Map<String, String> env = new HashMap<>();
 
       initialClasspath = env.get(Environment.CLASSPATH.name());
       initialClasspathFlag.set(true);
@@ -171,7 +171,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
       // It should be provided out of the box.
       // For now setting all required classpaths including
       // the classpath to "." for the application jar
-      StringBuilder classPathEnv = new StringBuilder();
+      StringBuilder classPathEnv = new StringBuilder("./");
       //for (String c : conf.getStrings(YarnConfiguration.YARN_APPLICATION_CLASSPATH)) {
       for (String c : YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH) {
         classPathEnv.append(':');
@@ -279,7 +279,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     vargs.add("-Xmx2000m");
     // Set Remote Debugging
     //if (!context.getQuery().getSubQuery(event.getSubQueryId()).isLeafQuery()) {
-      //vargs.add("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
+    // vargs.add("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
     //}
     // Set class name
     vargs.add("tajo.worker.TaskRunner");

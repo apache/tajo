@@ -34,9 +34,7 @@
 #                    Default is 1000.
 #
 #   TAJO_OPTS      Extra Java runtime options.
-#   
-#   TAJO_NAMENODE_OPTS       These options are added to TAJO_OPTS 
-#   TAJO_CLIENT_OPTS         when the respective command is run.
+
 #   TAJO_{COMMAND}_OPTS etc  TAJO_JT_OPTS applies to JobTracker 
 #                              for e.g.  TAJO_CLIENT_OPTS applies to 
 #                              more than one command (fs, dfs, fsck, 
@@ -44,7 +42,7 @@
 #
 #   TAJO_CONF_DIR  Alternate conf dir. Default is ${TAJO_HOME}/conf.
 #
-#   TAJO_ROOT_LOGGER The root appender. Default is INFO,console
+#   TAJO_ROOT_LOGGER The root appender. Default is INFO,consoles
 #
 
 bin=`dirname "$0"`

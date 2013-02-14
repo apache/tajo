@@ -2,110 +2,19 @@
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 
 <configuration>
-<property>
-  <name>tajo.cluster.distributed</name>
-  <value>false</value>
-</property>
+  <property>
+    <name>tajo.cluster.distributed</name>
+    <value>false</value>
+  </property>
 
-<property>
-  <name>engine.rootdir</name>
-  <value>file:///tmp/tajo-${user.name}</value>
-  <description>A base for other temporary directories.</description>
-</property>
-
-<property>
-  <name>engine.data.dir</name>
-  <value>${engine.rootdir}/data</value>
-  <description>data dir</description>
-</property>
-
-<property>
-  <name>tajo.worker.basedir</name>
-  <value>file:///tmp/tajo-${user.name}/</value>
-  <description>data dir</description>
-</property>
-
-<property>
-  <name>tajo.worker.tmpdir</name>
-  <value>${tajo.worker.basedir}/tmp</value>
-  <description>temporal dir</description>
-</property>
-
-<property>
-  <name>tajo.extsort.buffer</name>
-  <value>400000</value>
-  <description>how many tuples are sorted via in-memory</description>
-</property>
-
-<property>
-  <name>engine.master.addr</name>
-  <value>localhost:9001</value>
-</property>
-
-<property>
-  <name>tajo.clientservice.addr</name>
-  <value>localhost:9004</value>
-</property>
-
-<property>
-  <name>catalog.master.addr</name>
-  <value>127.0.0.1:9002</value>
-</property>
-
-<property>
-  <name>catalog.store.class</name>
-  <value>tajo.catalog.store.MemStore</value>
-</property>
-
-<property>
-  <name>catalog.jdbc.uri</name>
-  <value>jdbc:derby:target/test-data/tcat/db</value>
-</property>
-
-<property>
-  <name>engine.leafserver.port</name>
-  <value>9003</value>
-</property>
-
-<property>
-  <name>zookeeper.server.addr</name>
-  <value>localhost:21818</value>
-</property>
-
-<property>
-  <name>zookeeper.server.ticktime</name>
-  <value>5000</value>
-</property>
-
-<property>
-  <name>zookeeper.session.timeout</name>
-  <value>180000</value>
-</property>
-
-<property>
-  <name>zookeeper.server.datadir</name>
-  <value>target/zk-${user.name}/dir</value>
-</property>
-
-<property>
-  <name>zookeeper.server.logdir</name>
-  <value>target/zk-${user.name}/log</value>
-</property>
-
-<property>
-  <name>zookeeper.retry.maxretries</name>
-  <value>3</value>
-</property>
-
-<property>
-  <name>zookeeper.retry.intervalmills</name>
-  <value>1000</value>
-</property>
+  <property>
+    <name>tajo.rootdir</name>
+    <value>file:///tmp/tajo-${user.name}</value>
+    <description>A base for other temporary directories.</description>
+  </property>
 
   <property>
     <name>tajo.task.localdir</name>
     <value>/tmp/tajo-localdir</value>
   </property>
-
-
 </configuration>

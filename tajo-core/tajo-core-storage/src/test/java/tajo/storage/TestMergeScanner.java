@@ -70,7 +70,7 @@ public class TestMergeScanner {
   @Before
   public void setup() throws Exception {
     conf = new TajoConf();
-    conf.setVar(ConfVars.ENGINE_DATA_DIR, TEST_PATH);
+    conf.setVar(ConfVars.ROOT_DIR, TEST_PATH);
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
     sm = StorageManager.get(conf, testDir);

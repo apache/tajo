@@ -20,16 +20,16 @@
 <configuration>
   <property>
     <name>catalog.master.addr</name>
-    <value>localhost:9002</value>
+    <value>127.0.0.1:9002</value>
   </property>
 
   <property>
     <name>catalog.store.class</name>
-    <value>tajo.catalog.store.DBStore</value>
+    <value>tajo.catalog.store.MemStore</value>
   </property>
 
   <property>
     <name>catalog.jdbc.uri</name>
-    <value>jdbc:derby:/tmp/tcat-${user.name}/db</value>
+    <value>jdbc:derby:target/test-data/tcat/db</value>
   </property>
 </configuration>

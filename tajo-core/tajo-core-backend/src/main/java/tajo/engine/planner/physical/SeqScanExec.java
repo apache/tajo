@@ -57,7 +57,7 @@ public class SeqScanExec extends PhysicalExec {
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
     this.evalContexts = projector.renew();
 
-    if (fragments.length > 0) {
+    if (fragments.length > 1) {
       this.scanner = new MergeScanner(context.getConf(), fragments[0].getMeta(),
           TUtil.newList(fragments));
     } else {
