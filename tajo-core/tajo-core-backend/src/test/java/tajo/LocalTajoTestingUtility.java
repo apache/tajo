@@ -34,7 +34,7 @@ public class LocalTajoTestingUtility {
 
     FileSystem fs = util.getDefaultFileSystem();
     Path rootDir = util.getMaster().
-        getStorageManager().getDataRoot();
+        getStorageManager().getBaseDir();
     fs.mkdirs(rootDir);
     for (int i = 0; i < tablepaths.length; i++) {
       Path localPath = new Path(tablepaths[i]);

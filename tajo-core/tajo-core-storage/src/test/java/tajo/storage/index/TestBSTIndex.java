@@ -34,7 +34,7 @@ public class TestBSTIndex {
   
   public TestBSTIndex() {
     conf = new TajoConf();
-    conf.setVar(TajoConf.ConfVars.ENGINE_DATA_DIR, TEST_PATH);
+    conf.setVar(TajoConf.ConfVars.ROOT_DIR, TEST_PATH);
     schema = new Schema();
     schema.addColumn(new Column("int", DataType.INT));
     schema.addColumn(new Column("long", DataType.LONG));

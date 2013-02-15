@@ -53,16 +53,3 @@ fi
  
 # Allow alternate conf dir location.
 TAJO_CONF_DIR="${TAJO_CONF_DIR:-$TAJO_HOME/conf}"
-
-#check to see it is specified whether to use the slaves or the
-# masters file
-if [ $# -gt 1 ]
-then
-    if [ "--hosts" = "$1" ]
-    then
-        shift
-        slavesfile=$1
-        shift
-        export TAJO_SLAVES="${TAJO_CONF_DIR}/$slavesfile"
-    fi
-fi

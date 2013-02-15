@@ -23,7 +23,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
@@ -89,12 +88,6 @@ public class TaskRunner extends AbstractService {
   private WorkerContext workerContext;
   private UserGroupInformation taskOwner;
 
-  // query submission directory is private!
-  final public static FsPermission USER_DIR_PERMISSION =
-      FsPermission.createImmutable((short) 0700); // rwx--------
-  final public static FsPermission TASK_DIR_PERMISSION =
-      FsPermission.createImmutable((short) 0644); // rw-r--r--
-
   private String baseDir;
 
   public TaskRunner(
@@ -142,8 +135,7 @@ public class TaskRunner extends AbstractService {
   public void start() {
     try {
       // Setup DFS and LocalFileSystems
-      defaultFS = FileSystem.get(URI.create(
-          conf.getVar(ConfVars.ENGINE_BASE_DIR)),conf);
+      defaultFS = FileSystem.get(URI.create(conf.get("tajo.rootdir")),conf);
       localFS = FileSystem.getLocal(conf);
 
       // Setup QueryEngine according to the query plan
@@ -374,12 +366,15 @@ public class TaskRunner extends AbstractService {
    */
   public static void main(String[] args) throws Exception {
     LOG.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+    System.out.println(System.getenv("CLASSPATH"));
     // Restore QueryConf
     final QueryConf conf = new QueryConf();
-    LOG.info("MiniTajoYarn NM Local Dir: " + conf.get(ConfVars.TASK_LOCAL_DIR.varname));
-
     conf.addResource(new Path(QueryConf.FILENAME));
+
+    LOG.info("MiniTajoYarn NM Local Dir: " + conf.get(ConfVars.TASK_LOCAL_DIR.varname));
     LOG.info("OUTPUT DIR: " + conf.getOutputPath());
+    LOG.info("Tajo Root Dir: " + conf.get("tajo.rootdir"));
+
     UserGroupInformation.setConfiguration(conf);
 
     // TaskRunnerListener's address

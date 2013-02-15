@@ -60,7 +60,7 @@ public class WorkerListener extends AbstractService
     super(WorkerListener.class.getName());
     this.context = context;
 
-    String confMasterAddr = context.getConf().getVar(ConfVars.MASTER_ADDRESS);
+    String confMasterAddr = context.getConf().getVar(ConfVars.TASKRUNNER_LISTENER_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterAddr);
     if (initIsa.getAddress() == null) {
       throw new IllegalArgumentException("Failed resolve of " + initIsa);
@@ -78,7 +78,7 @@ public class WorkerListener extends AbstractService
     // Setup RPC server
     // Get the master address
     LOG.info(WorkerListener.class.getSimpleName() + " is bind to " + addr);
-    context.getConf().setVar(TajoConf.ConfVars.MASTER_ADDRESS, addr);
+    context.getConf().setVar(TajoConf.ConfVars.TASKRUNNER_LISTENER_ADDRESS, addr);
   }
 
   @Override

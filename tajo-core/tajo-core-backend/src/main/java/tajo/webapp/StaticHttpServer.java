@@ -28,7 +28,7 @@ public class StaticHttpServer extends HttpServer {
     String addr = bindAddress;
     if(instance == null) {
       if(bindAddress == null || bindAddress.compareTo("") == 0) {
-        addr = conf.getVar(ConfVars.MASTER_ADDRESS).split(":")[0];
+        addr = conf.getVar(ConfVars.TASKRUNNER_LISTENER_ADDRESS).split(":")[0];
       }
       
       instance = new StaticHttpServer(master, name, addr, port,

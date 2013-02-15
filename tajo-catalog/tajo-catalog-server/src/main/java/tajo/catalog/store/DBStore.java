@@ -68,9 +68,9 @@ public class DBStore implements CatalogStore {
     this.conf = conf;
     
     this.driver =
-        this.conf.get(TConstants.JDBC_DRIVER, TConstants.DEFAULT_JDBC_DRIVER);
+        this.conf.get(CatalogConstants.JDBC_DRIVER, CatalogConstants.DEFAULT_JDBC_DRIVER);
     this.jdbcUri =
-        this.conf.get(TConstants.JDBC_URI);
+        this.conf.get(CatalogConstants.JDBC_URI);
 
     try {
       Class.forName(driver).newInstance();

@@ -19,17 +19,17 @@
 
 <configuration>
 <property>
-  <name>catalog.master.addr</name>
-  <value>localhost:9002</value>
+  <name>tajo.catalog.master.addr</name>
+  <value>127.0.0.1:9002</value>
 </property>
 
 <property>
-  <name>catalog.store.class</name>
+  <name>tajo.catalog.store.class</name>
   <value>tajo.catalog.store.DBStore</value>
 </property>
 
 <property>
-  <name>catalog.jdbc.uri</name>
+  <name>tajo.catalog.jdbc.uri</name>
   <value>jdbc:derby:/tmp/tcat-${user.name}/db</value>
 </property>
 </configuration>

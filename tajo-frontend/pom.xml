@@ -93,9 +93,6 @@
       <id>dist</id>
       <activation>
         <activeByDefault>false</activeByDefault>
-        <property>
-          <name>tar|rpm|deb</name>
-        </property>
       </activation>
       <build>
         <plugins>
@@ -128,14 +125,12 @@
                       echo
                       echo "Current directory `pwd`"
                       echo
-                      run rm -rf tajo-catalog-${project.version}
-                      run mkdir tajo-catalog-${project.version}
-                      run cd tajo-catalog-${project.version}
-                      run cp -r ${basedir}/tajo-catalog-common/target/tajo-catalog-common-${project.version}*.jar .
-                      run cp -r ${basedir}/tajo-catalog-client/target/tajo-catalog-client-${project.version}*.jar .
-                      run cp -r ${basedir}/tajo-catalog-server/target/tajo-catalog-server-${project.version}*.jar .
+                      run rm -rf ${project.artifactId}-${project.version}
+                      run mkdir ${project.artifactId}-${project.version}
+                      run cd ${project.artifactId}-${project.version}
+                      run cp -r ${basedir}/tajo-frontend-sql/target/tajo-frontend-sql-${project.version}*.jar .
                       echo
-                      echo "Tajo Catalog dist layout available at: ${project.build.directory}/tajo-catalog-${project.version}"
+                      echo "Tajo Frontend dist layout available at: ${project.build.directory}/${project.artifactId}-${project.version}"
                       echo
                     </echo>
                     <exec executable="sh" dir="${project.build.directory}" failonerror="true">

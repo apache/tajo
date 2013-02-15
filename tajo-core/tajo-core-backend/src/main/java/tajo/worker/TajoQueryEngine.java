@@ -18,11 +18,8 @@ package tajo.worker;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import tajo.TaskAttemptContext;
 import tajo.conf.TajoConf;
-import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.planner.PhysicalPlanner;
 import tajo.engine.planner.PhysicalPlannerImpl;
 import tajo.engine.planner.logical.LogicalNode;
@@ -37,27 +34,10 @@ import java.io.IOException;
  */
 public class TajoQueryEngine {
   private final static Log LOG = LogFactory.getLog(TajoQueryEngine.class);
-
-  private final FileSystem defaultFS;
   private final StorageManager storageManager;
-
-  private final Path basePath;
-  private final Path dataPath;
-
   private final PhysicalPlanner phyPlanner;
 
   public TajoQueryEngine(TajoConf conf) throws IOException {
-    // Get the tajo base dir
-    this.basePath = new Path(conf.getVar(ConfVars.ENGINE_BASE_DIR));
-    LOG.info("Base dir is set " + basePath);
-    
-    // Get default DFS uri from the base dir
-    this.defaultFS = basePath.getFileSystem(conf);
-    LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
-
-    this.dataPath = new Path(conf.getVar(ConfVars.ENGINE_DATA_DIR));
-    LOG.info("Tajo data dir is set " + dataPath);
-        
     this.storageManager = new StorageManager(conf);
     this.phyPlanner = new PhysicalPlannerImpl(conf, storageManager);
   }
@@ -68,6 +48,5 @@ public class TajoQueryEngine {
   }
   
   public void stop() throws IOException {
-    this.defaultFS.close();
   }
 }

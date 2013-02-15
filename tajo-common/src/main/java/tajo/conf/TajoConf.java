@@ -52,26 +52,22 @@ public class TajoConf extends YarnConfiguration {
     // System Configuration
     //////////////////////////////////
 
-    // System Directories
-    BASE_DIR("tajo.basedir", "/tajo"),
-    WAREHOUSE_PATH("tajo.warehouse.dir", "/tajo/warehouse"),
-    QUERY_TMP_DIR("tajo.query.basedir", "/tajo/queries"),
-
-    // Network Configurations
+    // Cluster Mode
     CLUSTER_DISTRIBUTED("tajo.cluster.distributed", false),
-    MASTER_ADDRESS("engine.master.addr", "localhost:0"),
-    CATALOG_ADDRESS("catalog.master.addr", "0.0.0.0:9002"),
-    LEAFSERVER_PORT("engine.leafserver.port", 9003),
-    CLIENT_SERVICE_ADDRESS("tajo.clientservice.addr", "localhost:9004"),
-    CLIENT_SERVICE_PORT("tajo.clientservice.port", 9004),
 
-    // directory
-    ENGINE_BASE_DIR("engine.rootdir", ""),
-    ENGINE_DATA_DIR("engine.data.dir", ""),
-    WORKER_BASE_DIR("tajo.worker.basedir", ""),
-    WORKER_TMP_DIR("tajo.worker.tmpdir", ""),
+    // System Directories
+    ROOT_DIR("tajo.rootdir", "/tajo"),
     TASK_LOCAL_DIR("tajo.task.localdir", ""),
 
+    // Service Addresses
+    TASKRUNNER_LISTENER_ADDRESS("tajo.master.taskrunnerlistener.addr", "0.0.0.0:0"), // used internally
+    CLIENT_SERVICE_ADDRESS("tajo.master.clientservice.addr", "0.0.0.0:9004"),
+    CLIENT_SERVICE_PORT("tajo.master.clientservice.port", 9004),
+
+    //////////////////////////////////
+    // Catalog Configuration
+    //////////////////////////////////
+    CATALOG_ADDRESS("tajo.catalog.master.addr", "127.0.0.1:9002"),
 
     //////////////////////////////////
     // AM and RM
@@ -94,16 +90,27 @@ public class TajoConf extends YarnConfiguration {
     // Storage Configuration
     //////////////////////////////////
     RAWFILE_SYNC_INTERVAL("rawfile.sync.interval", null),
-
     // for RCFile
     HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true),
 
+
     //////////////////////////////////
-    // Physical Execution Configuration
+    // Physical Executors
     //////////////////////////////////
     EXT_SORT_BUFFER("tajo.extsort.buffer", 400000),
     BROADCAST_JOIN_THRESHOLD("tajo.join.broadcast.threshold", (long)5 * 1048576),
 
+    //////////////////////////////////////////
+    // Distributed Query Execution Parameters
+    //////////////////////////////////////////
+    SORT_BUFFER_SIZE("tajo.sort.mb", 128),
+    JOIN_TASK_VOLUME("tajo.join.task-volume.mb", 128),
+    SORT_TASK_VOLUME("tajo.sort.task-volume.mb", 256),
+    AGGREGATION_TASK_VOLUME("tajo.task-aggregation.volume.mb", 128),
+
+    JOIN_PARTITION_VOLUME("tajo.join.part-volume.mb", 64),
+    SORT_PARTITION_VOLUME("tajo.sort.part-volume.mb", 256),
+    AGGREGATION_PARTITION_VOLUME("tajo.aggregation.part-volume.mb", 256),
 
     //////////////////////////////////
     // The Below is reserved
@@ -114,13 +121,11 @@ public class TajoConf extends YarnConfiguration {
     QUERY_AM_VMEM_MB("tajo.query.am.vmem", 4096),
     QUERY_AM_JAVA_OPT("tajo.query.am.javaopt", "-Xmx1024m"),
 
-    // Query
+    // QueryC
     QUERY_NAME("tajo.query.name", "tajo query"),
     QUEUE_NAME("tajo.query.queue.name", "default"),
     QUERY_USERNAME("tajo.query.user.name", "anonymous"),
-    PLAN("tajo.exec.plan", ""),
-    QUERY_OUTPUT_DIR_SUCCESSFUL_MARKER("tajo.query.output.successfulmaker",
-        true),
+    QUERY_OUTPUT_DIR_SUCCESSFUL_MARKER("tajo.query.output.successfulmaker", true),
     QUERY_OUTPUT_DIR("tajo.query.output.dir", ""),
     QUERY_OUTPUT_TABLE("tajo.query.output.table", ""),
 
@@ -132,16 +137,6 @@ public class TajoConf extends YarnConfiguration {
     TASK_ATTEMPT_ID("tajo.task.attempt.id", ""),
     ATTEMPT_ID("tajo.query.attempt.id", ""),
     FINAL_SUBQUERY_ID("tajo.query.finalsubquery.id", ""),
-
-    // Query Execution Section
-    SORT_BUFFER_SIZE("tajo.sort.mb", 128),
-    JOIN_TASK_VOLUME("tajo.join.task-volume.mb", 128),
-    SORT_TASK_VOLUME("tajo.sort.task-volume.mb", 256),
-    AGGREGATION_TASK_VOLUME("tajo.task-aggregation.volume.mb", 128),
-
-    JOIN_PARTITION_VOLUME("tajo.join.part-volume.mb", 64),
-    SORT_PARTITION_VOLUME("tajo.sort.part-volume.mb", 256),
-    AGGREGATION_PARTITION_VOLUME("tajo.aggregation.part-volume.mb", 256),
 
     // GeoIP
     GEOIP_DATA("tajo.geoip.data", "/usr/local/share/GeoIP/GeoIP.dat"),

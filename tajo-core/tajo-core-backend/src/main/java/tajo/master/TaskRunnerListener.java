@@ -98,7 +98,7 @@ public class TaskRunnerListener extends AbstractService
 
     // Get the master address
     LOG.info(tajo.master.cluster.WorkerListener.class.getSimpleName() + " is bind to " + addr);
-    context.getConf().setVar(TajoConf.ConfVars.MASTER_ADDRESS, addr);
+    context.getConf().setVar(TajoConf.ConfVars.TASKRUNNER_LISTENER_ADDRESS, addr);
 
     super.init(conf);
   }

@@ -40,6 +40,7 @@ import org.apache.hadoop.yarn.service.Service;
 import org.apache.hadoop.yarn.util.RackResolver;
 import tajo.QueryId;
 import tajo.QueryIdFactory;
+import tajo.TajoConstants;
 import tajo.catalog.CatalogServer;
 import tajo.catalog.CatalogService;
 import tajo.catalog.FunctionDesc;
@@ -76,10 +77,7 @@ public class TajoMaster extends CompositeService {
   private Clock clock;
 
   private Path basePath;
-  private Path dataPath;
-  private Path queryStagingPath;
   private Path wareHousePath;
-
 
   private CatalogServer catalogServer;
   private CatalogService catalog;
@@ -112,10 +110,11 @@ public class TajoMaster extends CompositeService {
       QueryIdFactory.reset();
 
       // Get the tajo base dir
-      this.basePath = new Path(conf.getVar(ConfVars.ENGINE_BASE_DIR));
-      LOG.info("Base dir is set " + basePath);
+      this.basePath = new Path(conf.getVar(ConfVars.ROOT_DIR));
+      LOG.info("Tajo Root dir is set " + basePath);
       // Get default DFS uri from the base dir
       this.defaultFS = basePath.getFileSystem(conf);
+      conf.set("fs.defaultFS", defaultFS.getUri().toString());
       LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
 
       if (!defaultFS.exists(basePath)) {
@@ -123,35 +122,20 @@ public class TajoMaster extends CompositeService {
         LOG.info("Tajo Base dir (" + basePath + ") is created.");
       }
 
+      this.storeManager = new StorageManager(conf);
+
       // Get the tajo data warehouse dir
-      this.wareHousePath = new Path(conf.getVar(ConfVars.WAREHOUSE_PATH));
-      LOG.info("Tajo warehouse dir is set to " + wareHousePath);
+      this.wareHousePath = new Path(basePath, TajoConstants.WAREHOUSE_DIR);
+      LOG.info("Tajo Warehouse dir is set to " + wareHousePath);
       if (!defaultFS.exists(wareHousePath)) {
         defaultFS.mkdirs(wareHousePath);
         LOG.info("Warehouse dir (" + wareHousePath + ") is created");
-      }
-
-      // Get the tajo query tmp dir
-      this.queryStagingPath = new Path(conf.getVar(ConfVars.QUERY_TMP_DIR));
-      LOG.info("Tajo query staging dir is set to " + queryStagingPath);
-      if (!defaultFS.exists(queryStagingPath)) {
-        defaultFS.mkdirs(queryStagingPath);
-        LOG.info("Query Staging dir (" + queryStagingPath + ") is created");
-      }
-
-      this.dataPath = new Path(conf.getVar(ConfVars.ENGINE_DATA_DIR));
-      LOG.info("Tajo data dir is set " + dataPath);
-      if (!defaultFS.exists(dataPath)) {
-        defaultFS.mkdirs(dataPath);
-        LOG.info("Data dir (" + dataPath + ") is created");
       }
 
       yarnRPC = YarnRPC.create(conf);
 
       this.dispatcher = new AsyncDispatcher();
       addIfService(dispatcher);
-
-      this.storeManager = new StorageManager(conf);
 
       // The below is some mode-dependent codes
       // If tajo is local mode
@@ -182,6 +166,7 @@ public class TajoMaster extends CompositeService {
     super.init(conf);
   }
 
+  @SuppressWarnings("unchecked")
   public static List<FunctionDesc> initBuiltinFunctions() throws ServiceException {
     List<FunctionDesc> sqlFuncs = new ArrayList<FunctionDesc>();
 

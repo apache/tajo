@@ -22,7 +22,6 @@ package tajo.engine.query;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -46,10 +45,6 @@ public class TestSelectQuery {
   @BeforeClass
   public static void setUp() throws Exception {
     tpch = TpchTestBase.getInstance();
-  }
-
-  @AfterClass
-  public static void tearDown() throws Exception {
   }
   
   @Test

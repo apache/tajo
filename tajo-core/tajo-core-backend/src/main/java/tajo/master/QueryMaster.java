@@ -43,6 +43,7 @@ import tajo.master.TajoMaster.MasterContext;
 import tajo.master.TaskRunnerLauncherImpl.Container;
 import tajo.master.event.*;
 import tajo.master.rm.RMContainerAllocator;
+import tajo.storage.StorageUtil;
 import tajo.util.TajoIdUtils;
 
 import java.io.IOException;
@@ -78,6 +79,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
   private CatalogService catalog;
 
   private boolean isCreateTableStmt;
+  private FileSystem defaultFS;
   private Path outputPath;
 
   public QueryMaster(final MasterContext masterContext,
@@ -100,7 +102,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
     QueryConf conf = new QueryConf(_conf);
 
     try {
-
       queryContext = new QueryContext(conf);
 
       dispatcher = masterContext.getDispatcher();
@@ -230,7 +231,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     public QueryConf getConf() {
       return conf;
-    };
+    }
 
     public AsyncDispatcher getDispatcher() {
       return dispatcher;
@@ -347,15 +348,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
   // query submission directory is private!
   final public static FsPermission USER_DIR_PERMISSION =
       FsPermission.createImmutable((short) 0700); // rwx--------
-  final public static FsPermission QUERYCONF_FILE_PERMISSION =
-      FsPermission.createImmutable((short) 0644); // rw-r--r--
 
   /**
    * It initializes the final output and staging directory and sets
    * them to variables.
-   *
-   * @return
-   * @throws java.io.IOException
    */
   private void initStagingDir() throws IOException {
     QueryConf conf = getContext().getConf();
@@ -375,16 +371,16 @@ public class QueryMaster extends CompositeService implements EventHandler {
     if (givenOutputTableName.equals("")) {
       this.isCreateTableStmt = false;
       FileSystem defaultFS = FileSystem.get(conf);
-      Path queryBaseDir = defaultFS.makeQualified(
-          new Path(conf.getVar(TajoConf.ConfVars.QUERY_TMP_DIR)));
-      Path userQueryDir = defaultFS.makeQualified(
-          new Path(queryBaseDir, currentUser));
 
-      // If an user directory is not created yet
-      FileSystem fs = userQueryDir.getFileSystem(conf);
+      Path homeDirectory = defaultFS.getHomeDirectory();
+      if (!defaultFS.exists(homeDirectory)) {
+        defaultFS.mkdirs(homeDirectory, new FsPermission(USER_DIR_PERMISSION));
+      }
 
-      if (fs.exists(userQueryDir)) {
-        FileStatus fsStatus = fs.getFileStatus(userQueryDir);
+      Path userQueryDir = new Path(homeDirectory, TajoConstants.USER_QUERYDIR_PREFIX);
+
+      if (defaultFS.exists(userQueryDir)) {
+        FileStatus fsStatus = defaultFS.getFileStatus(userQueryDir);
         String owner = fsStatus.getOwner();
 
         if (!(owner.equals(currentUser) || owner.equals(realUser))) {
@@ -399,19 +395,20 @@ public class QueryMaster extends CompositeService implements EventHandler {
           LOG.info("Permissions on staging directory " + userQueryDir + " are " +
               "incorrect: " + fsStatus.getPermission() + ". Fixing permissions " +
               "to correct value " + USER_DIR_PERMISSION);
-          fs.setPermission(userQueryDir, USER_DIR_PERMISSION);
+          defaultFS.setPermission(userQueryDir, new FsPermission(USER_DIR_PERMISSION));
         }
       } else {
-        fs.mkdirs(userQueryDir,
+        defaultFS.mkdirs(userQueryDir,
             new FsPermission(USER_DIR_PERMISSION));
       }
 
-      stagingDir = new Path(userQueryDir, queryId.toString());
-      if (fs.exists(stagingDir)) {
+      stagingDir = StorageUtil.concatPath(userQueryDir, queryId.toString());
+
+      if (defaultFS.exists(stagingDir)) {
         throw new IOException("The staging directory " + stagingDir
             + "already exists. The directory must be unique to each query");
       } else {
-        fs.mkdirs(stagingDir, new FsPermission(USER_DIR_PERMISSION));
+        defaultFS.mkdirs(stagingDir, new FsPermission(USER_DIR_PERMISSION));
       }
 
       // Set the query id to the output table name
@@ -419,7 +416,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     } else {
       this.isCreateTableStmt = true;
-      Path warehouseDir = new Path(conf.getVar(TajoConf.ConfVars.WAREHOUSE_PATH));
+      Path warehouseDir = new Path(conf.getVar(TajoConf.ConfVars.ROOT_DIR),
+          TajoConstants.WAREHOUSE_DIR);
       stagingDir = new Path(warehouseDir, conf.getOutputTable());
 
       FileSystem fs = warehouseDir.getFileSystem(conf);

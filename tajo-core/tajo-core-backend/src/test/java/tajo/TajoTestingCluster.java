@@ -197,12 +197,10 @@ public class TajoTestingCluster {
     if(clusterTestBuildDir == null) {
       clusterTestBuildDir = setupClusterTestBuildDir();
     }
-    String testDir = clusterTestBuildDir.getAbsolutePath();
 
-    //conf.set(TConstants.JDBC_URI, "jdbc:derby:"+testDir+"/db");
-    conf.set(TConstants.STORE_CLASS, "tajo.catalog.store.MemStore");
-    conf.set(TConstants.JDBC_URI, "jdbc:derby:target/test-data/tcat/db");
-    LOG.info("Apache Derby repository is set to "+conf.get(TConstants.JDBC_URI));
+    conf.set(CatalogConstants.STORE_CLASS, "tajo.catalog.store.MemStore");
+    conf.set(CatalogConstants.JDBC_URI, "jdbc:derby:target/test-data/tcat/db");
+    LOG.info("Apache Derby repository is set to "+conf.get(CatalogConstants.JDBC_URI));
     conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
 
     catalogServer = new MiniCatalogServer(conf);
@@ -228,18 +226,18 @@ public class TajoTestingCluster {
                                                final int numSlaves,
                                                boolean local) throws Exception {
     TajoConf c = getConfiguration();
-    c.setVar(ConfVars.MASTER_ADDRESS, "localhost:0");
+    c.setVar(ConfVars.TASKRUNNER_LISTENER_ADDRESS, "localhost:0");
     c.setVar(ConfVars.CLIENT_SERVICE_ADDRESS, "localhost:0");
     c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
-    c.set(TConstants.STORE_CLASS, "tajo.catalog.store.MemStore");
-    c.set(TConstants.JDBC_URI, "jdbc:derby:target/test-data/tcat/db");
-    LOG.info("derby repository is set to "+conf.get(TConstants.JDBC_URI));
+    c.set(CatalogConstants.STORE_CLASS, "tajo.catalog.store.MemStore");
+    c.set(CatalogConstants.JDBC_URI, "jdbc:derby:target/test-data/tcat/db");
+    LOG.info("derby repository is set to "+conf.get(CatalogConstants.JDBC_URI));
 
     if (!local) {
-      c.setVar(ConfVars.ENGINE_BASE_DIR,
+      c.setVar(ConfVars.ROOT_DIR,
           getMiniDFSCluster().getFileSystem().getUri() + "/tajo");
     } else {
-      c.setVar(ConfVars.ENGINE_BASE_DIR,
+      c.setVar(ConfVars.ROOT_DIR,
           clusterTestBuildDir.getAbsolutePath() + "/tajo");
     }
 
@@ -247,7 +245,7 @@ public class TajoTestingCluster {
     tajoMaster.init(c);
     tajoMaster.start();
 
-    this.conf.setVar(ConfVars.MASTER_ADDRESS, c.getVar(ConfVars.MASTER_ADDRESS));
+    this.conf.setVar(ConfVars.TASKRUNNER_LISTENER_ADDRESS, c.getVar(ConfVars.TASKRUNNER_LISTENER_ADDRESS));
     this.conf.setVar(ConfVars.CLIENT_SERVICE_ADDRESS, c.getVar(ConfVars.CLIENT_SERVICE_ADDRESS));
     this.conf.setVar(ConfVars.CATALOG_ADDRESS, c.getVar(ConfVars.CATALOG_ADDRESS));
 
@@ -289,7 +287,6 @@ public class TajoTestingCluster {
    * distributed mode.
    *
    * @param numSlaves the number of tajo cluster to start up
-   * @return a mini tajo cluster
    * @throws Exception
    */
   public void startMiniCluster(final int numSlaves)
@@ -379,11 +376,13 @@ public class TajoTestingCluster {
     startMiniTajoCluster(this.clusterTestBuildDir, numSlaves, true);
   }
 
-
-
   public void shutdownMiniCluster() throws IOException {
     LOG.info("Shutting down minicluster");
     shutdownMiniTajoCluster();
+
+    if(this.catalogServer != null) {
+      shutdownCatalogCluster();
+    }
 
     if(this.dfsCluster != null) {
       this.dfsCluster.shutdown();
@@ -394,9 +393,6 @@ public class TajoTestingCluster {
       localFS.delete(
           new Path(clusterTestBuildDir.toString()), true);
       this.clusterTestBuildDir = null;
-    }
-    if(this.catalogServer != null) {
-      shutdownCatalogCluster();
     }
 
     LOG.info("Minicluster is down");
@@ -442,7 +438,7 @@ public class TajoTestingCluster {
 
     FileSystem fs = util.getDefaultFileSystem();
     Path rootDir = util.getMaster().
-        getStorageManager().getDataRoot();
+        getStorageManager().getBaseDir();
     fs.mkdirs(rootDir);
     for (int i = 0; i < tablepaths.length; i++) {
       Path localPath = new Path(tablepaths[i]);
@@ -474,7 +470,7 @@ public class TajoTestingCluster {
 
     FileSystem fs = util.getDefaultFileSystem();
     Path rootDir = util.getMaster().
-        getStorageManager().getDataRoot();
+        getStorageManager().getBaseDir();
     fs.mkdirs(rootDir);
     for (int i = 0; i < names.length; i++) {
       Path tablePath = new Path(rootDir, names[i]);
