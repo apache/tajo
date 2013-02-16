@@ -36,7 +36,7 @@ import java.nio.file.Paths;
 import java.util.BitSet;
 
 public class RawFile {
-  public static class Scanner extends FileScanner {
+  public static class RawFileScanner extends FileScanner implements SeekableScanner {
     private SeekableByteChannel channel;
     private DataType [] columnTypes;
     private Path path;
@@ -49,13 +49,18 @@ public class RawFile {
     private static final int RECORD_SIZE = 4;
     private int numBytesOfNullFlags;
 
-    public Scanner(Configuration conf, TableMeta meta, Path path) throws IOException {
-      super(conf, meta.getSchema(), null);
+    public RawFileScanner(Configuration conf, TableMeta meta, Path path) throws IOException {
+      super(conf, meta, null);
       this.path = path;
       init();
     }
 
-    private void init() throws IOException {
+    @SuppressWarnings("unused")
+    public RawFileScanner(Configuration conf, TableMeta meta, Fragment fragment) throws IOException {
+      this(conf, meta, fragment.getPath());
+    }
+
+    public void init() throws IOException {
       //Preconditions.checkArgument(FileUtil.isLocalPath(path));
       // TODO - to make it unified one.
       URI uri = path.toUri();
@@ -77,6 +82,8 @@ public class RawFile {
       numBytesOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()) / 8);
       nullFlags = new BitSet(numBytesOfNullFlags);
       headerSize = RECORD_SIZE + 2 + numBytesOfNullFlags;
+
+      super.init();
     }
 
     @Override
@@ -227,9 +234,19 @@ public class RawFile {
     public void close() throws IOException {
       channel.close();
     }
+
+    @Override
+    public boolean isProjectable() {
+      return false;
+    }
+
+    @Override
+    public boolean isSelectable() {
+      return false;
+    }
   }
 
-  public static class Appender extends FileAppender {
+  public static class RawFileAppender extends FileAppender {
     private FileChannel channel;
     private RandomAccessFile randomAccessFile;
     private DataType[] columnTypes;
@@ -240,15 +257,13 @@ public class RawFile {
     private static final int RECORD_SIZE = 4;
     private int numBytesOfNullFlags;
 
-    private boolean enabledStat = false;
     private TableStatistics stats;
 
-    public Appender(Configuration conf, TableMeta meta, Path path) throws IOException {
+    public RawFileAppender(Configuration conf, TableMeta meta, Path path) throws IOException {
       super(conf, meta, path);
-      init();
     }
 
-    private void init() throws IOException {
+    public void init() throws IOException {
       // TODO - RawFile only works on Local File System.
       //Preconditions.checkArgument(FileUtil.isLocalPath(path));
       File file = new File(path.toUri());
@@ -267,9 +282,11 @@ public class RawFile {
       nullFlags = new BitSet(numBytesOfNullFlags);
       headerSize = RECORD_SIZE + 2 + numBytesOfNullFlags;
 
-      if (enabledStat) {
+      if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
       }
+
+      super.init();
     }
 
     @Override
@@ -319,7 +336,7 @@ public class RawFile {
       // reset the null flags
       nullFlags.clear();
       for (int i = 0; i < schema.getColumnNum(); i++) {
-        if (enabledStat) {
+        if (enabledStats) {
           stats.analyzeField(i, t.get(i));
         }
 
@@ -418,7 +435,7 @@ public class RawFile {
       buffer.put(flags);
       buffer.position(pos);
 
-      if (enabledStat) {
+      if (enabledStats) {
         stats.incrementRow();
       }
     }
@@ -437,7 +454,7 @@ public class RawFile {
 
     @Override
     public TableStat getStats() {
-      if (enabledStat) {
+      if (enabledStats) {
         return stats.getTableStat();
       } else {
         return null;

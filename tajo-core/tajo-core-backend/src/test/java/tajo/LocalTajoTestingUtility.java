@@ -50,6 +50,10 @@ public class LocalTajoTestingUtility {
     }
   }
 
+  public TajoTestingCluster getTestingCluster() {
+    return util;
+  }
+
   public ResultSet execute(String query) throws IOException, ServiceException {
     return client.executeQueryAndGetResult(query);
   }

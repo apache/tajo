@@ -75,6 +75,8 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
     fs.mkdirs(storeTablePath);
     this.appender = (FileAppender) StorageManager.getAppender(context.getConf(), meta,
         new Path(storeTablePath, "output"));
+    this.appender.enableStats();
+    this.appender.init();
     this.indexWriter = bst.getIndexWriter(new Path(storeTablePath, "index"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     this.indexWriter.setLoadNum(100);

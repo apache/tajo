@@ -106,6 +106,7 @@ public class TestRangeRetrieverHandler {
     Path tableDir = StorageUtil.concatPath(testDir, "testGet", "table.csv");
     fs.mkdirs(tableDir.getParent());
     Appender appender = sm.getAppender(conf, employeeMeta, tableDir);
+    appender.init();
 
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < TEST_TUPLE; i++) {
@@ -157,7 +158,7 @@ public class TestRangeRetrieverHandler {
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(
         new Path(testDir, "output/index"), keySchema, comp);
     reader.open();
-    SingleFileScanner scanner = (SingleFileScanner)
+    SeekableScanner scanner = (SeekableScanner)
         sm.getScanner(conf, employeeMeta, StorageUtil.concatPath(testDir, "output", "output"));
 
     int cnt = 0;
@@ -217,6 +218,7 @@ public class TestRangeRetrieverHandler {
     Path tablePath = StorageUtil.concatPath(testDir, "testGetFromDescendingOrder", "table.csv");
     fs.mkdirs(tablePath.getParent());
     Appender appender = sm.getAppender(conf, meta, tablePath);
+    appender.init();
     Tuple tuple = new VTuple(meta.getSchema().getColumnNum());
     for (int i = (TEST_TUPLE - 1); i >= 0 ; i--) {
       tuple.put(
@@ -266,7 +268,7 @@ public class TestRangeRetrieverHandler {
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(
         new Path(testDir, "output/index"), keySchema, comp);
     reader.open();
-    SingleFileScanner scanner = (SingleFileScanner) StorageManager.getScanner(
+    SeekableScanner scanner = (SeekableScanner) StorageManager.getScanner(
         conf, meta, StorageUtil.concatPath(testDir, "output", "output"));
 
     int cnt = 0;

@@ -23,7 +23,7 @@ import tajo.TajoTestingCluster;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;
 import tajo.catalog.proto.CatalogProtos;
-import tajo.storage.CSVFile2;
+import tajo.storage.CSVFile;
 
 import java.sql.ResultSet;
 
@@ -38,7 +38,7 @@ public class TestNullValues {
 
   @Test
   public final void testIsNull() throws Exception {
-    String [] table = new String[] {"nulltable"};
+    String [] table = new String[] {"nulltable1"};
     Schema schema = new Schema();
     schema.addColumn("col1", CatalogProtos.DataType.INT);
     schema.addColumn("col2", CatalogProtos.DataType.STRING);
@@ -48,9 +48,11 @@ public class TestNullValues {
         "2||",
         "3|filled|"
     };
+    Options opts = new Options();
+    opts.put(CSVFile.DELIMITER, "|");
     ResultSet res = TajoTestingCluster
-        .run(table, schemas, new Options(), new String[][]{data},
-            "select * from nulltable where col2 is null");
+        .run(table, schemas, opts, new String[][]{data},
+            "select * from nulltable1 where col2 is null");
     assertTrue(res.next());
     assertEquals(2, res.getInt(1));
     assertFalse(res.next());
@@ -58,7 +60,7 @@ public class TestNullValues {
 
   @Test
   public final void testIsNotNull() throws Exception {
-    String [] table = new String[] {"nulltable"};
+    String [] table = new String[] {"nulltable2"};
     Schema schema = new Schema();
     schema.addColumn("col1", CatalogProtos.DataType.INT);
     schema.addColumn("col2", CatalogProtos.DataType.STRING);
@@ -68,9 +70,11 @@ public class TestNullValues {
         "2||",
         "3|filled|"
     };
+    Options opts = new Options();
+    opts.put(CSVFile.DELIMITER, "|");
     ResultSet res = TajoTestingCluster
-        .run(table, schemas, new Options(), new String[][]{data},
-            "select * from nulltable where col2 is not null");
+        .run(table, schemas, opts, new String[][]{data},
+            "select * from nulltable2 where col2 is not null");
     assertTrue(res.next());
     assertEquals(1, res.getInt(1));
     assertTrue(res.next());
@@ -80,7 +84,7 @@ public class TestNullValues {
 
   @Test
   public final void testIsNotNull2() throws Exception {
-    String [] table = new String[] {"nulltable"};
+    String [] table = new String[] {"nulltable3"};
     Schema schema = new Schema();
     schema.addColumn("col1", CatalogProtos.DataType.LONG);
     schema.addColumn("col2", CatalogProtos.DataType.LONG);
@@ -98,10 +102,10 @@ public class TestNullValues {
         ",,,43578,19,13,6,3581,2557,1024"
     };
     Options opts = new Options();
-    opts.put(CSVFile2.DELIMITER, ",");
+    opts.put(CSVFile.DELIMITER, ",");
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
-            "select * from nulltable where col1 is null and col2 is null and col3 is null and col4 = 43578");
+            "select * from nulltable3 where col1 is null and col2 is null and col3 is null and col4 = 43578");
     assertTrue(res.next());
     assertEquals(43578, res.getLong(4));
     assertFalse(res.next());

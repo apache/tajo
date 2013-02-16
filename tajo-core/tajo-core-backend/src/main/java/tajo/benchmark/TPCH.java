@@ -9,7 +9,7 @@ import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.storage.CSVFile2;
+import tajo.storage.CSVFile;
 
 import java.io.IOException;
 
@@ -147,7 +147,7 @@ public class TPCH extends BenchmarkSet {
 
   private void loadTable(String tableName) throws ServiceException {
     TableMeta meta = TCatUtil.newTableMeta(getSchema(tableName), StoreType.CSV);
-    meta.putOption(CSVFile2.DELIMITER, "|");
+    meta.putOption(CSVFile.DELIMITER, "|");
     tajo.createTable(tableName, new Path(dataDir, tableName), meta);
   }
 }

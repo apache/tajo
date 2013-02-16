@@ -24,17 +24,15 @@ import tajo.catalog.TableMetaImpl;
 import tajo.catalog.proto.CatalogProtos.TableProto;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
-import tajo.storage.rcfile.RCFileWrapper;
-import tajo.storage.trevni.TrevniAppender;
-import tajo.storage.trevni.TrevniScanner;
 import tajo.util.FileUtil;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
-
-import static tajo.storage.rcfile.RCFileWrapper.RCFileScanner;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * StorageManager
@@ -46,6 +44,25 @@ public class StorageManager {
 	private final TajoConf conf;
 	private final FileSystem fs;
 	private final Path baseDir;
+
+  /**
+   * Cache of scanner handlers for each storage type.
+   */
+  private static final Map<String, Class<? extends FileScanner>> SCANNER_HANDLER_CACHE
+      = new ConcurrentHashMap<>();
+
+  /**
+   * Cache of appender handlers for each storage type.
+   */
+  private static final Map<String, Class<? extends FileAppender>> APPENDER_HANDLER_CACHE
+      = new ConcurrentHashMap<>();
+
+  /**
+   * Cache of constructors for each class. Pins the classes so they
+   * can't be garbage collected until ReflectionUtils can be collected.
+   */
+  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = new ConcurrentHashMap<>();
+
 
 	public StorageManager(TajoConf conf) throws IOException {
 		this.conf = conf;
@@ -104,50 +121,51 @@ public class StorageManager {
       throws IOException {
     Scanner scanner;
 
-    switch(meta.getStoreType()) {
-      case CSV:
-        scanner = new CSVFile(conf).openSingleScanner(meta.getSchema(), fragment);
-        break;
-      case RAW:
-        scanner = new RawFile.Scanner(conf, meta, fragment.getPath());
-        break;
-      case RCFILE:
-        scanner = new RCFileScanner(conf, meta.getSchema(), fragment, target);
-        break;
-      case ROWFILE:
-        scanner = new RowFile.Scanner(conf, meta.getSchema(), fragment);
-        break;
-      case TREVNI:
-        scanner = new TrevniScanner(conf, meta.getSchema(), fragment, target);
-        break;
-      default:
-        throw new IOException("Unknown Storage Type: " + meta.getStoreType());
+    Class<? extends FileScanner> scannerClass;
+
+    String handlerName = meta.getStoreType().name().toLowerCase();
+    scannerClass = SCANNER_HANDLER_CACHE.get(handlerName);
+    if (scannerClass == null) {
+        scannerClass = conf.getClass(
+        String.format("tajo.storage.scanner-handler.%s.class",
+            meta.getStoreType().name().toLowerCase()), null,
+        FileScanner.class);
+      SCANNER_HANDLER_CACHE.put(handlerName, scannerClass);
+    }
+
+    if (scannerClass == null) {
+      throw new IOException("Unknown Storage Type: " + meta.getStoreType());
+    }
+
+    scanner = newScannerInstance(scannerClass, conf, meta, fragment);
+    if (scanner.isProjectable()) {
+      scanner.setTarget(target.toArray());
     }
 
     return scanner;
   }
 
-  public static Appender getAppender(Configuration conf, TableMeta meta, Path path) throws IOException {
+  public static Appender getAppender(Configuration conf, TableMeta meta, Path path)
+      throws IOException {
     Appender appender;
-    switch(meta.getStoreType()) {
-      case CSV:
-        appender = new CSVFile(conf).getAppender(meta, path);
-        break;
-      case RAW:
-        appender = new RawFile.Appender(conf, meta, path);
-        break;
-      case RCFILE:
-        appender = new RCFileWrapper.RCFileAppender(conf, meta, path, true, true);
-        break;
-      case ROWFILE:
-        appender = new RowFile(conf).getAppender(meta, path);
-        break;
-      case TREVNI:
-        appender = new TrevniAppender(conf, meta, path, true);
-        break;
-      default:
-        throw new IOException("Unknown Storage Type");
+
+    Class<? extends FileAppender> appenderClass;
+
+    String handlerName = meta.getStoreType().name().toLowerCase();
+    appenderClass = APPENDER_HANDLER_CACHE.get(handlerName);
+    if (appenderClass == null) {
+      appenderClass = conf.getClass(
+          String.format("tajo.storage.appender-handler.%s.class",
+              meta.getStoreType().name().toLowerCase()), null,
+          FileAppender.class);
+      APPENDER_HANDLER_CACHE.put(handlerName, appenderClass);
     }
+
+    if (appenderClass == null) {
+      throw new IOException("Unknown Storage Type: " + meta.getStoreType());
+    }
+
+    appender = newAppenderInstance(appenderClass, conf, meta, path);
 
     return appender;
   }
@@ -520,5 +538,59 @@ public class StorageManager {
     public InvalidInputException(
         List<IOException> errors) {
     }
+  }
+
+  private static final Class<?> [] DEFAULT_SCANNER_PARAMS = {
+      Configuration.class,
+      TableMeta.class,
+      Fragment.class
+  };
+
+  private static final Class<?> [] DEFAULT_APPENDER_PARAMS = {
+      Configuration.class,
+      TableMeta.class,
+      Path.class
+  };
+
+  /**
+   * create a scanner instance.
+   */
+  public static <T> T newScannerInstance(Class<T> theClass, Configuration conf, TableMeta meta,
+                                         Fragment fragment) {
+    T result;
+    try {
+      Constructor<T> meth = (Constructor<T>) CONSTRUCTOR_CACHE.get(theClass);
+      if (meth == null) {
+        meth = theClass.getDeclaredConstructor(DEFAULT_SCANNER_PARAMS);
+        meth.setAccessible(true);
+        CONSTRUCTOR_CACHE.put(theClass, meth);
+      }
+      result = meth.newInstance(new Object[] {conf, meta, fragment});
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    return result;
+  }
+
+  /**
+   * create a scanner instance.
+   */
+  public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, TableMeta meta,
+                                         Path path) {
+    T result;
+    try {
+      Constructor<T> meth = (Constructor<T>) CONSTRUCTOR_CACHE.get(theClass);
+      if (meth == null) {
+        meth = theClass.getDeclaredConstructor(DEFAULT_APPENDER_PARAMS);
+        meth.setAccessible(true);
+        CONSTRUCTOR_CACHE.put(theClass, meth);
+      }
+      result = meth.newInstance(new Object[] {conf, meta, path});
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    return result;
   }
 }

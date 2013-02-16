@@ -20,7 +20,7 @@ import org.apache.commons.logging.LogFactory;
 import tajo.benchmark.TPCH;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;
-import tajo.storage.CSVFile2;
+import tajo.storage.CSVFile;
 import tajo.util.FileUtil;
 
 import java.io.File;
@@ -84,7 +84,7 @@ public class TpchTestBase {
   private void setUp() throws Exception {
     util = new LocalTajoTestingUtility();
     Options opt = new Options();
-    opt.put(CSVFile2.DELIMITER, "|");
+    opt.put(CSVFile.DELIMITER, "|");
     util.setup(names, paths, schemas, opt);
   }
 
@@ -94,6 +94,10 @@ public class TpchTestBase {
 
   public ResultSet execute(String query) throws Exception {
     return util.execute(query);
+  }
+
+  public TajoTestingCluster getTestingCluster() {
+    return util.getTestingCluster();
   }
 
   public static class ShutdownHook extends Thread {

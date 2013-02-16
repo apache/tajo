@@ -41,25 +41,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 
-public class CSVFile extends SingleStorge {
+public class CSVFile {
   public static final String DELIMITER = "csvfile.delimiter";
   public static final String DELIMITER_DEFAULT = "|";
   private static final Log LOG = LogFactory.getLog(CSVFile.class);
-
-  public CSVFile(Configuration conf) {
-    super(conf);
-  }
-
-  @Override
-  public Appender getAppender(TableMeta meta, Path path) throws IOException {
-    return new CSVAppender(conf, meta, path, true);
-  }
-
-  @Override
-  public Scanner openSingleScanner(Schema schema, Fragment fragment)
-      throws IOException {
-    return new CSVScanner(conf, schema, fragment);
-  }
 
   public static class CSVAppender extends FileAppender {
     private final TableMeta meta;
@@ -68,16 +53,20 @@ public class CSVFile extends SingleStorge {
     private FSDataOutputStream fos;
     private String delimiter;
 
-    private final boolean statsEnabled;
     private TableStatistics stats = null;
 
     public CSVAppender(Configuration conf, final TableMeta meta,
-        final Path path, boolean statsEnabled) throws IOException {
+        final Path path) throws IOException {
       super(conf, meta, path);
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = meta.getSchema();
 
+      this.delimiter = this.meta.getOption(DELIMITER, DELIMITER_DEFAULT);
+    }
+
+    @Override
+    public void init() throws IOException {
       if (!fs.exists(path.getParent())) {
         throw new FileNotFoundException(path.toString());
       }
@@ -88,12 +77,11 @@ public class CSVFile extends SingleStorge {
 
       fos = fs.create(path);
 
-      this.delimiter = this.meta.getOption(DELIMITER, DELIMITER_DEFAULT);
-
-      this.statsEnabled = statsEnabled;
-      if (statsEnabled) {
+      if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
       }
+
+      super.init();
     }
 
     @Override
@@ -103,7 +91,7 @@ public class CSVFile extends SingleStorge {
       Datum datum;
       for (int i = 0; i < schema.getColumnNum(); i++) {
         datum = tuple.get(i);
-        if (statsEnabled) {
+        if (enabledStats) {
           stats.analyzeField(i, datum);
         }
         if (datum.type() == DatumType.NULL) {
@@ -174,7 +162,7 @@ public class CSVFile extends SingleStorge {
       fos.writeBytes(sb.toString());
 
       // Statistical section
-      if (statsEnabled) {
+      if (enabledStats) {
         stats.incrementRow();
       }
     }
@@ -192,7 +180,7 @@ public class CSVFile extends SingleStorge {
     @Override
     public void close() throws IOException {
       // Statistical section
-      if (statsEnabled) {
+      if (enabledStats) {
         stats.setNumBytes(fos.getPos());
       }
       fos.close();
@@ -200,15 +188,19 @@ public class CSVFile extends SingleStorge {
 
     @Override
     public TableStat getStats() {
-      return this.stats.getTableStat();
+      if (enabledStats) {
+        return stats.getTableStat();
+      } else {
+        return null;
+      }
     }
   }
 
-  public static class CSVScanner extends SingleFileScanner implements SeekableScanner {
-    public CSVScanner(Configuration conf, final Schema schema,
+  public static class CSVScanner extends FileScanner implements SeekableScanner {
+    public CSVScanner(Configuration conf, final TableMeta meta,
         final Fragment fragment) throws IOException {
-      super(conf, schema, fragment);
-      init(conf, schema, fragment);
+      super(conf, meta, fragment);
+      init(fragment);
     }
 
     private static final byte LF = '\n';
@@ -227,8 +219,7 @@ public class CSVFile extends SingleStorge {
     private long prevTailLen = -1;
     private HashMap<Long, Integer> curTupleOffsetMap = null;
 
-    public void init(Configuration conf, final Schema schema,
-        final Fragment fragment) throws IOException {
+    private void init(final Fragment fragment) throws IOException {
 
       // Buffer size, Delimiter
       this.bufSize = DEFAULT_BUFFER_SIZE;
@@ -324,7 +315,7 @@ public class CSVFile extends SingleStorge {
       this.tupleOffsets = new long[this.validIdx];
       
       this.curTupleOffsetMap = null;
-      this.curTupleOffsetMap = new HashMap<Long, Integer>();
+      this.curTupleOffsetMap = new HashMap<>();
       
       for (int i = 0; i < this.validIdx; i++) {
         this.tupleOffsets[i] = curTupleOffset + this.pageStart;
@@ -332,6 +323,11 @@ public class CSVFile extends SingleStorge {
         curTupleOffset += (this.tuples[i]  + "\n").getBytes().length;
       }
       
+    }
+
+    @Override
+    public void init() throws IOException {
+      super.init();
     }
 
     @Override
@@ -418,12 +414,30 @@ public class CSVFile extends SingleStorge {
 
     @Override
     public void reset() throws IOException {
-      init(conf, schema, fragment);
+      init(fragment);
     }
 
     @Override
     public void close() throws IOException {
       fis.close();
+    }
+
+    @Override
+    public boolean isProjectable() {
+      return false;
+    }
+
+    @Override
+    public void setTarget(Column[] targets) {
+    }
+
+    @Override
+    public boolean isSelectable() {
+      return false;
+    }
+
+    @Override
+    public void setSearchCondition(Object expr) {
     }
 
     @Override
@@ -447,11 +461,6 @@ public class CSVFile extends SingleStorge {
            "  input offset : " + offset + " >");
       }
 
-    }
-
-    @Override
-    public long getPos() throws IOException {
-      return fis.getPos();
     }
 
     @Override

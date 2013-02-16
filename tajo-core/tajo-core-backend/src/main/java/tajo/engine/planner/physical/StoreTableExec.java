@@ -69,11 +69,13 @@ public class StoreTableExec extends UnaryPhysicalExec {
       Path storeTablePath = new Path(context.getWorkDir(), "out");
       FileSystem fs = new RawLocalFileSystem();
       fs.mkdirs(storeTablePath);
-      this.appender = StorageManager.getAppender(context.getConf(), meta,
+      appender = StorageManager.getAppender(context.getConf(), meta,
           StorageUtil.concatPath(storeTablePath, "0"));
     } else {
-      this.appender = StorageManager.getAppender(context.getConf(), meta, context.getOutputPath());
+      appender = StorageManager.getAppender(context.getConf(), meta, context.getOutputPath());
     }
+    appender.enableStats();
+    appender.init();
   }
 
   /* (non-Javadoc)

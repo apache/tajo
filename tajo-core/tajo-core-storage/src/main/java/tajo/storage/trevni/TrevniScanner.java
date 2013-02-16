@@ -18,7 +18,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.trevni.ColumnFileReader;
 import org.apache.trevni.ColumnValues;
 import org.apache.trevni.avro.HadoopInput;
-import tajo.catalog.Schema;
+import tajo.catalog.Column;
+import tajo.catalog.TableMeta;
 import tajo.datum.BytesDatum;
 import tajo.datum.DatumFactory;
 import tajo.storage.FileScanner;
@@ -30,51 +31,53 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class TrevniScanner extends FileScanner {
+  private boolean inited = false;
   private ColumnFileReader reader;
-  private int [] projIds;
-  private boolean first = true;
+  private int [] projectionMap;
   private ColumnValues [] columns;
 
-  public TrevniScanner(Configuration conf, Schema schema,
-                       Fragment fragment, Schema target) throws IOException {
-    super(conf, schema, new Fragment[] {fragment});
+  public TrevniScanner(Configuration conf, TableMeta meta, Fragment fragment) throws IOException {
+    super(conf, meta, fragment);
     reader = new ColumnFileReader(new HadoopInput(fragment.getPath(), conf));
-
-    projIds = new int[target.getColumnNum()];
-    int tid;
-    for (int i = 0; i < target.getColumnNum(); i++) {
-      tid = schema.getColumnIdByName(target.getColumn(i).getColumnName());
-      projIds[i] = tid;
-    }
   }
 
   @Override
-  public long getNextOffset() throws IOException {
-    return 0;
+  public void init() throws IOException {
+    if (targets == null) {
+      targets = schema.toArray();
+    }
+
+    prepareProjection(targets);
+
+    columns = new ColumnValues[projectionMap.length];
+
+    for (int i = 0; i < projectionMap.length; i++) {
+      columns[i] = reader.getValues(projectionMap[i]);
+    }
+
+    super.init();
   }
 
-  public void seek(long offset) throws IOException {
+  private void prepareProjection(Column [] targets) {
+    projectionMap = new int[targets.length];
+    int tid;
+    for (int i = 0; i < targets.length; i++) {
+      tid = schema.getColumnIdByName(targets[i].getColumnName());
+      projectionMap[i] = tid;
+    }
   }
 
   @Override
   public Tuple next() throws IOException {
     Tuple tuple = new VTuple(schema.getColumnNum());
 
-    if (first) {
-      columns = new ColumnValues[projIds.length];
-
-      for (int i = 0; i < projIds.length; i++) {
-        columns[i] = reader.getValues(projIds[i]);
-      }
-
-      first = false;
-    }
     if (!columns[0].hasNext()) {
       return null;
     }
+
     int tid; // column id of the original input schema
-    for (int i = 0; i < projIds.length; i++) {
-      tid = projIds[i];
+    for (int i = 0; i < projectionMap.length; i++) {
+      tid = projectionMap[i];
       columns[i].startRow();
       switch (schema.getColumn(tid).getDataType()) {
         case BOOLEAN:
@@ -144,13 +147,24 @@ public class TrevniScanner extends FileScanner {
 
   @Override
   public void reset() throws IOException {
-    for (int i = 0; i < projIds.length; i++) {
-      columns[i] = reader.getValues(projIds[i]);
+    for (int i = 0; i < projectionMap.length; i++) {
+      columns[i] = reader.getValues(projectionMap[i]);
     }
   }
 
   @Override
   public void close() throws IOException {
     reader.close();
+  }
+
+  @Override
+  public boolean isProjectable() {
+    return true;
+  }
+
+
+  @Override
+  public boolean isSelectable() {
+    return false;
   }
 }

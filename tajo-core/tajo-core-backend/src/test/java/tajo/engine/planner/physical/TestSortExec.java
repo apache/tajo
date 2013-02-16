@@ -77,6 +77,7 @@ public class TestSortExec {
     sm.getFileSystem().mkdirs(tablePath.getParent());
 
     Appender appender = StorageManager.getAppender(conf, employeeMeta, tablePath);
+    appender.init();
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
       tuple.put(new Datum[] {

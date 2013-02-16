@@ -114,6 +114,7 @@ public class TestGlobalQueryOptimizer {
       }
       fs.mkdirs(tablePath.getParent());
       appender = StorageManager.getAppender(conf, meta, tablePath);
+      appender.init();
       tupleNum = 100;
       for (j = 0; j < tupleNum; j++) {
         appender.addTuple(t);

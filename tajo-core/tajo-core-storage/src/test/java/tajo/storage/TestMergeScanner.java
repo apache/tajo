@@ -89,6 +89,8 @@ public class TestMergeScanner {
 
     Path table1Path = new Path(testDir, storeType + "_1.data");
     Appender appender1 = StorageManager.getAppender(conf, meta, table1Path);
+    appender1.enableStats();
+    appender1.init();
     int tupleNum = 10000;
     VTuple vTuple;
 
@@ -109,6 +111,8 @@ public class TestMergeScanner {
 
     Path table2Path = new Path(testDir, storeType + "_2.data");
     Appender appender2 = StorageManager.getAppender(conf, meta, table2Path);
+    appender2.enableStats();
+    appender2.init();
 
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(4);
@@ -135,6 +139,7 @@ public class TestMergeScanner {
         status2.getLen(), null);
     
     Scanner scanner = new MergeScanner(conf, meta, TUtil.newList(tablets));
+    scanner.init();
     int totalCounts = 0;
     while (scanner.next() != null) {
       totalCounts++;

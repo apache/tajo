@@ -28,16 +28,35 @@ import tajo.catalog.TableMeta;
 import java.io.IOException;
 
 public abstract class FileAppender implements Appender {
+  protected boolean inited = false;
+
   protected final Configuration conf;
   protected final TableMeta meta;
   protected final Schema schema;
   protected final Path path;
+
+  protected boolean enabledStats;
   
   public FileAppender(Configuration conf, TableMeta meta, Path path) {
     this.conf = conf;
     this.meta = meta;
     this.schema = meta.getSchema();
     this.path = path;
+  }
+
+  public void init() throws IOException {
+    if (inited) {
+     throw new IllegalStateException("FileAppender is already initialized.");
+    }
+    inited = true;
+  }
+
+  public void enableStats() {
+    if (inited) {
+      throw new IllegalStateException("Should enable this option before init()");
+    }
+
+    this.enabledStats = true;
   }
 
   public abstract long getOffset() throws IOException;

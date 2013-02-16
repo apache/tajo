@@ -28,7 +28,6 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import tajo.catalog.Column;
-import tajo.catalog.Schema;
 import tajo.catalog.TableMeta;
 import tajo.catalog.statistics.TableStat;
 import tajo.conf.TajoConf.ConfVars;
@@ -46,24 +45,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.BitSet;
 
-public class RowFile extends SingleStorge {
+public class RowFile {
   public static final Log LOG = LogFactory.getLog(RowFile.class);
-
-  public RowFile(Configuration conf) {
-    super(conf);
-  }
-
-  @Override
-  public Appender getAppender(TableMeta meta, Path path)
-      throws IOException {
-    return new Appender(conf, meta, path, true);
-  }
-
-  @Override
-  public tajo.storage.Scanner openSingleScanner(Schema schema, Fragment fragment)
-      throws IOException {
-    return new Scanner(conf, schema, fragment);
-  }
 
   private static final int SYNC_ESCAPE = -1;
   private static final int SYNC_HASH_SIZE = 16;
@@ -71,7 +54,7 @@ public class RowFile extends SingleStorge {
   private final static int DEFAULT_BUFFER_SIZE = 65535;
   public static int SYNC_INTERVAL;
 
-  public static class Scanner extends SingleFileScanner {
+  public static class RowFileScanner extends FileScanner {
     private FileSystem fs;
     private FSDataInputStream in;
     private Tuple tuple;
@@ -86,9 +69,9 @@ public class RowFile extends SingleStorge {
     private int numBytesOfNullFlags;
     private long bufferStartPos;
 
-    public Scanner(Configuration conf, final Schema schema,
-                   final Fragment fragment) throws IOException {
-      super(conf, schema, fragment);
+    public RowFileScanner(Configuration conf, final TableMeta meta,
+                          final Fragment fragment) throws IOException {
+      super(conf, meta, fragment);
 
       SYNC_INTERVAL =
           conf.getInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname,
@@ -102,7 +85,7 @@ public class RowFile extends SingleStorge {
       init();
     }
 
-    private void init() throws IOException {
+    public void init() throws IOException {
       // set default page size.
       fs = fragment.getPath().getFileSystem(conf);
       in = fs.open(fragment.getPath());
@@ -135,6 +118,8 @@ public class RowFile extends SingleStorge {
         buffer.compact();
         buffer.flip();
       }
+
+      super.init();
     }
 
     private void readHeader() throws IOException {
@@ -168,23 +153,6 @@ public class RowFile extends SingleStorge {
         buffer.flip();
         return true;
       }
-    }
-
-    @Override
-    public void seek(long offset) throws IOException {
-      // TODO
-    }
-
-    @Override
-    public long getNextOffset() {
-      // TODO
-      return 0;
-    }
-
-    @Override
-    public long getPos() throws IOException {
-      // TODO
-      return in.getPos();
     }
 
     @Override
@@ -327,19 +295,24 @@ public class RowFile extends SingleStorge {
     }
 
     @Override
-    public Schema getSchema() {
-      return this.schema;
-    }
-
-    @Override
     public void close() throws IOException {
       if (in != null) {
         in.close();
       }
     }
+
+    @Override
+    public boolean isProjectable() {
+      return false;
+    }
+
+    @Override
+    public boolean isSelectable() {
+      return false;
+    }
   }
 
-  public static class Appender extends FileAppender {
+  public static class RowFileAppender extends FileAppender {
     private FSDataOutputStream out;
     private long lastSyncPos;
     private FileSystem fs;
@@ -350,13 +323,14 @@ public class RowFile extends SingleStorge {
     private int numBytesOfNullFlags;
 
     // statistics
-    private final boolean statsEnabled;
     private TableStatistics stats;
 
-    public Appender(Configuration conf, final TableMeta meta,
-                    final Path path, boolean statsEnabled) throws IOException {
+    public RowFileAppender(Configuration conf, final TableMeta meta, final Path path)
+        throws IOException {
       super(conf, meta, path);
+    }
 
+    public void init() throws IOException {
       SYNC_INTERVAL = conf.getInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname, 100);
 
       fs = path.getFileSystem(conf);
@@ -390,8 +364,7 @@ public class RowFile extends SingleStorge {
       numBytesOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()) / 8);
       nullFlags = new BitSet(numBytesOfNullFlags);
 
-      this.statsEnabled = statsEnabled;
-      if (statsEnabled) {
+      if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
       }
     }
@@ -412,7 +385,7 @@ public class RowFile extends SingleStorge {
       nullFlags.clear();
 
       for (int i = 0; i < schema.getColumnNum(); i++) {
-        if (statsEnabled) {
+        if (enabledStats) {
           stats.analyzeField(i, t.get(i));
         }
 
@@ -510,7 +483,7 @@ public class RowFile extends SingleStorge {
       out.write(bytes, 0, dataLen);
 
       // Statistical section
-      if (statsEnabled) {
+      if (enabledStats) {
         stats.incrementRow();
       }
     }
@@ -528,7 +501,7 @@ public class RowFile extends SingleStorge {
     @Override
     public void close() throws IOException {
       if (out != null) {
-        if (statsEnabled) {
+        if (enabledStats) {
           stats.setNumBytes(out.getPos());
         }
         sync();
@@ -553,7 +526,11 @@ public class RowFile extends SingleStorge {
 
     @Override
     public TableStat getStats() {
-      return stats.getTableStat();
+      if (enabledStats) {
+        return stats.getTableStat();
+      } else {
+        return null;
+      }
     }
   }
 }
