@@ -60,6 +60,7 @@ public class TestSingleCSVFileBSTIndex {
     fs.mkdirs(tablePath.getParent());
 
     Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    appender.init();
     Tuple tuple;
     for (int i = 0; i < TUPLE_NUM; i++) {
       tuple = new VTuple(5);
@@ -70,8 +71,6 @@ public class TestSingleCSVFileBSTIndex {
       tuple.put(4, DatumFactory.createString("field_" + i));
       appender.addTuple(tuple);
     }
-    appender.close();
-
     appender.close();
 
     FileStatus status = fs.getFileStatus(tablePath);
@@ -95,7 +94,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SingleFileScanner fileScanner = new CSVScanner(conf, schema, tablet);
+    SeekableScanner fileScanner = new CSVScanner(conf, meta, tablet);
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -118,7 +117,7 @@ public class TestSingleCSVFileBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir,
         "FindValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner = new CSVScanner(conf, schema, tablet);
+    fileScanner = new CSVScanner(conf, meta, tablet);
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
       tuple.put(0, DatumFactory.createLong(i));
       tuple.put(1, DatumFactory.createDouble(i));
@@ -149,6 +148,7 @@ public class TestSingleCSVFileBSTIndex {
         "table1.csv");
     fs.mkdirs(tablePath.getParent());
     Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    appender.init();
     Tuple tuple;
     for(int i = 0 ; i < TUPLE_NUM; i ++ ) {
       tuple = new VTuple(5);
@@ -181,7 +181,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
     
-    SingleFileScanner fileScanner  = new CSVScanner(conf, schema, tablet);
+    SeekableScanner fileScanner  = new CSVScanner(conf, meta, tablet);
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -201,7 +201,7 @@ public class TestSingleCSVFileBSTIndex {
     
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "FindNextKeyValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner  = new CSVScanner(conf, schema, tablet);
+    fileScanner  = new CSVScanner(conf, meta, tablet);
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       keyTuple = new VTuple(2);

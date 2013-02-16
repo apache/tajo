@@ -103,6 +103,7 @@ public class TestBSTIndexExec {
     fs.mkdirs(tablePath.getParent());
 
     FileAppender appender = (FileAppender)StorageManager.getAppender(conf, meta, tablePath);
+    appender.init();
     Tuple tuple = new VTuple(meta.getSchema().getColumnNum());
     for (int i = 0; i < 10000; i++) {
       

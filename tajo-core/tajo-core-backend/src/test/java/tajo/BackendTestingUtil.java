@@ -75,6 +75,7 @@ public class BackendTestingUtil {
       FileUtil.writeProto(fs, new Path(tablePath.getParent(), ".meta"), mockupMeta.getProto());
     }
     appender = StorageManager.getAppender(conf, mockupMeta, tablePath);
+    appender.init();
 
     int deptSize = 10000;
     int tupleNum = 100;

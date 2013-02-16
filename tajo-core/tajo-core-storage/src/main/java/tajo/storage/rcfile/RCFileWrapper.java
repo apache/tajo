@@ -18,14 +18,12 @@
 
 package tajo.storage.rcfile;
 
-import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.compress.DefaultCodec;
 import tajo.catalog.Column;
-import tajo.catalog.Schema;
 import tajo.catalog.TableMeta;
 import tajo.catalog.statistics.TableStat;
 import tajo.datum.ArrayDatum;
@@ -33,6 +31,7 @@ import tajo.datum.DatumFactory;
 import tajo.storage.*;
 import tajo.storage.exception.AlreadyExistsStorageException;
 import tajo.util.Bytes;
+import tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,13 +42,13 @@ public class RCFileWrapper {
     private FileSystem fs;
     private RCFile.Writer writer;
 
-    private final boolean statsEnabled;
     private TableStatistics stats = null;
 
-    public RCFileAppender(Configuration conf, TableMeta meta, Path path,
-                          boolean statsEnabled, boolean compress) throws IOException {
+    public RCFileAppender(Configuration conf, TableMeta meta, Path path) throws IOException {
       super(conf, meta, path);
+    }
 
+    public void init() throws IOException {
       fs = path.getFileSystem(conf);
 
       if (fs.exists(path)) {
@@ -57,16 +56,19 @@ public class RCFileWrapper {
       }
 
       conf.setInt(RCFile.COLUMN_NUMBER_CONF_STR, schema.getColumnNum());
+      boolean compress = meta.getOption("rcfile.compress") != null &&
+          meta.getOption("rcfile.compress").equalsIgnoreCase("true");
       if (compress) {
         writer = new RCFile.Writer(fs, conf, path, null, new DefaultCodec());
       } else {
         writer = new RCFile.Writer(fs, conf, path, null, null);
       }
 
-      this.statsEnabled = statsEnabled;
-      if (statsEnabled) {
+      if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
       }
+
+      super.init();
     }
 
     @Override
@@ -83,7 +85,7 @@ public class RCFileWrapper {
       Column col;
       byte [] bytes;
       for (int i = 0; i < schema.getColumnNum(); i++) {
-        if (statsEnabled) {
+        if (enabledStats) {
           stats.analyzeField(i, t.get(i));
         }
 
@@ -131,14 +133,13 @@ public class RCFileWrapper {
       writer.append(byteRef);
 
       // Statistical section
-      if (statsEnabled) {
+      if (enabledStats) {
         stats.incrementRow();
       }
     }
 
     @Override
     public void flush() throws IOException {
-
     }
 
     @Override
@@ -148,7 +149,11 @@ public class RCFileWrapper {
 
     @Override
     public TableStat getStats() {
-      return stats.getTableStat();
+      if (enabledStats) {
+        return stats.getTableStat();
+      } else {
+        return null;
+      }
     }
   }
 
@@ -156,28 +161,16 @@ public class RCFileWrapper {
     private FileSystem fs;
     private RCFile.Reader reader;
     private LongWritable rowId;
-    private final Column [] projectionSchema;
     private Integer [] projectionMap;
 
     BytesRefArrayWritable column;
     private boolean more;
     long end;
 
-    public RCFileScanner(Configuration conf, final Schema schema,
-                          final Fragment fragment,
-                          Schema target) throws IOException {
-      super(conf, schema, new Fragment[] {fragment});
+    public RCFileScanner(Configuration conf, final TableMeta meta,
+                          final Fragment fragment) throws IOException {
+      super(conf, meta, fragment);
       fs = fragment.getPath().getFileSystem(conf);
-      this.projectionSchema = target.toArray();
-
-      ArrayList<Integer> projIds = Lists.newArrayList();
-      int tid;
-      for (int i = 0; i < target.getColumnNum(); i++) {
-          tid = schema.getColumnId(target.getColumn(i).getQualifiedName());
-          projIds.add(tid);
-      }
-      projectionMap = projIds.toArray(new Integer[projIds.size()]);
-      ColumnProjectionUtils.setReadColumnIDs(conf, projIds);
 
       reader = new RCFile.Reader(fs, fragment.getPath(), conf);
       if (fragment.getStartOffset() > reader.getPosition()) {
@@ -191,13 +184,25 @@ public class RCFileWrapper {
     }
 
     @Override
-    public long getNextOffset() throws IOException {
-      return reader.getPosition();
+    public void init() throws IOException {
+      if (targets == null) {
+        targets = schema.toArray();
+      }
+
+      prepareProjection(targets);
+
+      super.init();
     }
 
-    @Override
-    public void seek(long offset) throws IOException {
-      reader.seek(offset);
+    private void prepareProjection(Column [] targets) {
+      projectionMap = new Integer[targets.length];
+      int tid;
+      for (int i = 0; i < targets.length; i++) {
+        tid = schema.getColumnIdByName(targets[i].getColumnName());
+        projectionMap[i] = tid;
+      }
+      ArrayList<Integer> projectionIdList = new ArrayList<>(TUtil.newList(projectionMap));
+      ColumnProjectionUtils.setReadColumnIDs(conf, projectionIdList);
     }
 
     protected boolean next(LongWritable key) throws IOException {
@@ -235,7 +240,7 @@ public class RCFileWrapper {
         if (column.get(tid).getLength() == 0) {
           tuple.put(tid, DatumFactory.createNullDatum());
         } else {
-          switch (projectionSchema[i].getDataType()) {
+          switch (targets[i].getDataType()) {
             case BOOLEAN:
               tuple.put(tid,
                   DatumFactory.createBool(column.get(tid).getBytesCopy()[0]));
@@ -317,6 +322,16 @@ public class RCFileWrapper {
     @Override
     public void close() throws IOException {
       reader.close();
+    }
+
+    @Override
+    public boolean isProjectable() {
+      return true;
+    }
+
+    @Override
+    public boolean isSelectable() {
+      return false;
     }
   }
 }

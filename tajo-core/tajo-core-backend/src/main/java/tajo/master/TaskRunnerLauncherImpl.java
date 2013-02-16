@@ -279,7 +279,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     vargs.add("-Xmx2000m");
     // Set Remote Debugging
     //if (!context.getQuery().getSubQuery(event.getSubQueryId()).isLeafQuery()) {
-    // vargs.add("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
+    //vargs.add("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
     //}
     // Set class name
     vargs.add("tajo.worker.TaskRunner");

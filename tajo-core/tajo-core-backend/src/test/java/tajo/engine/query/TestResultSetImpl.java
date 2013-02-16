@@ -68,6 +68,7 @@ public class TestResultSetImpl {
     Path p = sm.getTablePath("score");
     sm.getFileSystem().mkdirs(p);
     Appender appender = StorageManager.getAppender(conf, scoreMeta, new Path(p, "score"));
+    appender.init();
     int deptSize = 100;
     int tupleNum = 10000;
     Tuple tuple;

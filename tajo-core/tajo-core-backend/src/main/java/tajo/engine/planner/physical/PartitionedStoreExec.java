@@ -100,6 +100,8 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
         LOG.info("File size: " + status.getLen());
       }
       appender = StorageManager.getAppender(context.getConf(), meta, dataFile);
+      appender.enableStats();
+      appender.init();
       appenderMap.put(partition, appender);
     } else {
       appender = appenderMap.get(partition);

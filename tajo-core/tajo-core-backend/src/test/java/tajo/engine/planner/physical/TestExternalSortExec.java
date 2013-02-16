@@ -81,6 +81,8 @@ public class TestExternalSortExec {
     TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = StorageManager.getAppender(conf, employeeMeta, employeePath);
+    appender.enableStats();
+    appender.init();
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < numTuple; i++) {
       tuple.put(new Datum[] { DatumFactory.createInt(rnd.nextInt(50)),

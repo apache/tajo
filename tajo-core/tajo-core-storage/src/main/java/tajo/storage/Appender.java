@@ -6,12 +6,16 @@ import java.io.Closeable;
 import java.io.IOException;
 
 public interface Appender extends Closeable {
+
+  void init() throws IOException;
+
+  void addTuple(Tuple t) throws IOException;
   
-  public abstract void addTuple(Tuple t) throws IOException;
+  void flush() throws IOException;
   
-  public abstract void flush() throws IOException;
+  void close() throws IOException;
+
+  void enableStats();
   
-  public abstract void close() throws IOException;
-  
-  public abstract TableStat getStats();
+  TableStat getStats();
 }

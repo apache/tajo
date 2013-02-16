@@ -61,6 +61,7 @@ public class TestStorages {
       conf.setInt(RCFile.RECORD_INTERVAL_CONF_STR, 100);
     }
 
+
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
   }
@@ -85,6 +86,8 @@ public class TestStorages {
       TableMeta meta = TCatUtil.newTableMeta(schema, storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
       Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+      appender.enableStats();
+      appender.init();
       int tupleNum = 10000;
       VTuple vTuple;
 
@@ -109,6 +112,7 @@ public class TestStorages {
           randomNum, (fileLen - randomNum), null);
 
       Scanner scanner = StorageManager.getScanner(conf, meta, tablets[0], schema);
+      scanner.init();
       int tupleCnt = 0;
       while (scanner.next() != null) {
         tupleCnt++;
@@ -116,6 +120,7 @@ public class TestStorages {
       scanner.close();
 
       scanner = StorageManager.getScanner(conf, meta, tablets[1], schema);
+      scanner.init();
       while (scanner.next() != null) {
         tupleCnt++;
       }
@@ -136,6 +141,7 @@ public class TestStorages {
 
     Path tablePath = new Path(testDir, "testProjection.data");
     Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    appender.init();
     int tupleNum = 10000;
     VTuple vTuple;
 
@@ -155,6 +161,7 @@ public class TestStorages {
     target.addColumn("age", DataType.LONG);
     target.addColumn("score", DataType.FLOAT);
     Scanner scanner = StorageManager.getScanner(conf, meta, fragment, target);
+    scanner.init();
     int tupleCnt = 0;
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
@@ -188,6 +195,7 @@ public class TestStorages {
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    appender.init();
 
     Tuple tuple = new VTuple(12);
     tuple.put(new Datum[] {
@@ -211,6 +219,7 @@ public class TestStorages {
     FileStatus status = fs.getFileStatus(tablePath);
     Fragment fragment = new Fragment("table", tablePath, meta, 0, status.getLen(), null);
     Scanner scanner =  StorageManager.getScanner(conf, meta, fragment);
+    scanner.init();
     Tuple retrieved = scanner.next();
     for (int i = 0; i < tuple.size(); i++) {
       assertEquals(tuple.get(i), retrieved.get(i));

@@ -34,8 +34,8 @@ public class ExternalSortExec extends SortExec {
 
   private final List<Tuple> tupleSlots;
   private boolean sorted = false;
-  private RawFile.Scanner result;
-  private RawFile.Appender appender;
+  private RawFile.RawFileScanner result;
+  private RawFile.RawFileAppender appender;
   private FileSystem localFS;
 
   private final TableMeta meta;
@@ -74,7 +74,8 @@ public class ExternalSortExec extends SortExec {
     // So, I add the scheme 'file:/' to path. But, it should be improved.
     Path localPath = new Path(sortTmpDir + "/0_" + chunkId);
 
-    appender = new RawFile.Appender(context.getConf(), meta, localPath);
+    appender = new RawFile.RawFileAppender(context.getConf(), meta, localPath);
+    appender.init();
 
     for (Tuple t : tupleSlots) {
       appender.addTuple(t);
@@ -145,7 +146,8 @@ public class ExternalSortExec extends SortExec {
             Path leftChunk = getChunkPath(level, chunkId);
             Path rightChunk = getChunkPath(level, chunkId + 1);
 
-            appender = new RawFile.Appender(context.getConf(), meta, nextChunk);
+            appender = new RawFile.RawFileAppender(context.getConf(), meta, nextChunk);
+            appender.init();
             merge(appender, leftChunk, rightChunk);
 
             appender.flush();
@@ -164,19 +166,19 @@ public class ExternalSortExec extends SortExec {
       }
 
       Path result = getChunkPath(level, 0);
-      this.result = new RawFile.Scanner(context.getConf(), meta, result);
+      this.result = new RawFile.RawFileScanner(context.getConf(), meta, result);
       sorted = true;
     }
 
     return result.next();
   }
 
-  private void merge(RawFile.Appender appender, Path left, Path right)
+  private void merge(RawFile.RawFileAppender appender, Path left, Path right)
       throws IOException {
-    RawFile.Scanner leftScan = new RawFile.Scanner(context.getConf(), meta, left);
+    RawFile.RawFileScanner leftScan = new RawFile.RawFileScanner(context.getConf(), meta, left);
 
-    RawFile.Scanner rightScan =
-        new RawFile.Scanner(context.getConf(), meta, right);
+    RawFile.RawFileScanner rightScan =
+        new RawFile.RawFileScanner(context.getConf(), meta, right);
 
     Tuple leftTuple = leftScan.next();
     Tuple rightTuple = rightScan.next();

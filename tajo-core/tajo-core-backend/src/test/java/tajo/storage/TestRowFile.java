@@ -50,7 +50,6 @@ import static org.junit.Assert.assertEquals;
 public class TestRowFile {
   private TajoTestingCluster util;
   private Configuration conf;
-  private RowFile rowFile;
 
   @Before
   public void setup() throws Exception {
@@ -58,7 +57,6 @@ public class TestRowFile {
     conf = util.getConfiguration();
     conf.setInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname, 100);
     util.startMiniDFSCluster(1);
-    rowFile = new RowFile(conf);
   }
 
   @After
@@ -85,7 +83,9 @@ public class TestRowFile {
 
     FileUtil.writeProto(util.getDefaultFileSystem(), metaPath, meta.getProto());
 
-    Appender appender = rowFile.getAppender(meta, dataPath);
+    Appender appender = new RowFile.RowFileAppender(conf, meta, dataPath);
+    appender.enableStats();
+    appender.init();
 
     int tupleNum = 100000;
     Tuple tuple;
@@ -119,7 +119,7 @@ public class TestRowFile {
 
     int tupleCnt = 0;
     start = System.currentTimeMillis();
-    Scanner scanner = rowFile.openSingleScanner(schema, fragment);
+    Scanner scanner = new RowFile.RowFileScanner(conf, meta, fragment);
     while ((tuple=scanner.next()) != null) {
       tupleCnt++;
 //      System.out.println(tuple.toString());
@@ -138,7 +138,7 @@ public class TestRowFile {
     for (int i = 0; i < 13; i++) {
       System.out.println("range: " + fileStart + ", " + fileLen);
       fragment = new Fragment("test.tbl", dataPath, meta, fileStart, fileLen, null);
-      scanner = rowFile.openSingleScanner(schema, fragment);
+      scanner = new RowFile.RowFileScanner(conf, meta, fragment);
       while ((tuple=scanner.next()) != null) {
         if (!idSet.remove(tuple.get(0).asInt())) {
           System.out.println("duplicated! " + tuple.get(0).asInt());

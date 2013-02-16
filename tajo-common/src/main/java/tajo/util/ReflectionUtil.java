@@ -20,7 +20,20 @@
 
 package tajo.util;
 
+import java.lang.reflect.Constructor;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class ReflectionUtil {
+  private static final Class<?>[] EMPTY_ARRAY = new Class[]{};
+
+  /**
+   * Cache of constructors for each class. Pins the classes so they
+   * can't be garbage collected until ReflectionUtils can be collected.
+   */
+  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
+      new ConcurrentHashMap<Class<?>, Constructor<?>>();
+
 	public static Object newInstance(Class<?> clazz) 
 			throws InstantiationException, IllegalAccessException {         
 		return clazz.newInstance();

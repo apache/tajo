@@ -113,6 +113,7 @@ public class TestPhysicalPlanner {
 
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = StorageManager.getAppender(conf, employeeMeta, employeePath);
+    appender.init();
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
       tuple.put(new Datum[] {DatumFactory.createString("name_" + i),
@@ -128,6 +129,7 @@ public class TestPhysicalPlanner {
     Path scorePath = new Path(testDir, "score");
     TableMeta scoreMeta = TCatUtil.newTableMeta(scoreSchema, StoreType.CSV, new Options());
     appender = StorageManager.getAppender(conf, scoreMeta, scorePath);
+    appender.init();
     score = new TableDescImpl("score", scoreMeta, scorePath);
     tuple = new VTuple(score.getMeta().getSchema().getColumnNum());
     int m = 0;
@@ -344,6 +346,7 @@ public class TestPhysicalPlanner {
     exec.close();
 
     Scanner scanner = StorageManager.getScanner(conf, outputMeta, ctx.getOutputPath());
+    scanner.init();
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
@@ -383,6 +386,7 @@ public class TestPhysicalPlanner {
     exec.close();
 
     Scanner scanner = StorageManager.getScanner(conf, outputMeta, ctx.getOutputPath());
+    scanner.init();
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
@@ -446,7 +450,8 @@ public class TestPhysicalPlanner {
     for (FileStatus status : list) {
       fragments[i++] = new Fragment("partition", status.getPath(), outputMeta, 0, status.getLen(), null);
     }
-    Scanner scanner = new CSVFile2.CSVScanner(conf, outputMeta.getSchema(),fragments);
+    Scanner scanner = new MergeScanner(conf, outputMeta,TUtil.newList(fragments));
+    scanner.init();
 
     Tuple tuple;
     i = 0;
@@ -503,7 +508,8 @@ public class TestPhysicalPlanner {
     for (FileStatus status : list) {
       fragments[i++] = new Fragment("partition", status.getPath(), outputMeta, 0, status.getLen(), null);
     }
-    Scanner scanner = new CSVFile2.CSVScanner(conf, outputMeta.getSchema(),fragments);
+    Scanner scanner = new MergeScanner(conf, outputMeta,TUtil.newList(fragments));
+    scanner.init();
     Tuple tuple;
     i = 0;
     while ((tuple = scanner.next()) != null) {
@@ -711,7 +717,7 @@ public class TestPhysicalPlanner {
     s1.addColumn("o_orderkey", DataType.LONG);
 
     Options opt = new Options();
-    opt.put(CSVFile2.DELIMITER, "|");
+    opt.put(CSVFile.DELIMITER, "|");
     TableMeta meta1 = new TableMetaImpl(s1, StoreType.CSV, opt);
     TableDesc desc1 = new TableDescImpl("s1", meta1, new Path("file:/home/hyunsik/error/sample/sq_1358404721340_0001_000001_03"));
 
@@ -783,8 +789,9 @@ public class TestPhysicalPlanner {
     reader.open();
     Path outputPath = StorageUtil.concatPath(workDir, "output", "output");
     TableMeta meta = TCatUtil.newTableMeta(plan.getOutSchema(), StoreType.CSV, new Options());
-    SingleFileScanner scanner = (SingleFileScanner)
+    SeekableScanner scanner = (SeekableScanner)
         StorageManager.getScanner(conf, meta, outputPath);
+    scanner.init();
 
     int cnt = 0;
     while(scanner.next() != null) {

@@ -40,14 +40,14 @@ public class TrevniAppender extends FileAppender {
   private ColumnFileWriter writer;
   private FSDataOutputStream fos;
 
-  private final boolean statsEnabled;
   private TableStatistics stats = null;
   private boolean flushed = false;
 
-  public TrevniAppender(Configuration conf, TableMeta meta, Path path,
-                        boolean statsEnabled) throws IOException {
+  public TrevniAppender(Configuration conf, TableMeta meta, Path path) throws IOException {
     super(conf, meta, path);
+  }
 
+  public void init() throws IOException {
     fs = path.getFileSystem(conf);
 
     if (!fs.exists(path.getParent())) {
@@ -66,10 +66,11 @@ public class TrevniAppender extends FileAppender {
 
     writer = new ColumnFileWriter(createFileMeta(), trevniMetas);
 
-    this.statsEnabled = statsEnabled;
-    if (statsEnabled) {
+    if (enabledStats) {
       this.stats = new TableStatistics(this.schema);
     }
+
+    super.init();
   }
 
   private ColumnFileMetaData createFileMeta() {
@@ -122,7 +123,7 @@ public class TrevniAppender extends FileAppender {
     Column col;
     writer.startRow();
     for (int i = 0; i < schema.getColumnNum(); i++) {
-      if (statsEnabled) {
+      if (enabledStats) {
         stats.analyzeField(i, t.get(i));
       }
 
@@ -166,7 +167,7 @@ public class TrevniAppender extends FileAppender {
     writer.endRow();
 
     // Statistical section
-    if (statsEnabled) {
+    if (enabledStats) {
       stats.incrementRow();
     }
   }
@@ -188,6 +189,10 @@ public class TrevniAppender extends FileAppender {
 
   @Override
   public TableStat getStats() {
-    return stats.getTableStat();
+    if (enabledStats) {
+      return stats.getTableStat();
+    } else {
+      return null;
+    }
   }
 }

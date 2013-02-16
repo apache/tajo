@@ -15,6 +15,7 @@
 package tajo.storage;
 
 import org.apache.hadoop.conf.Configuration;
+import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.TableMeta;
 
@@ -41,6 +42,10 @@ public class MergeScanner implements Scanner {
   }
 
   @Override
+  public void init() throws IOException {
+  }
+
+  @Override
   public Tuple next() throws IOException {
     if (currentScanner != null)
       tuple = currentScanner.next();
@@ -53,6 +58,7 @@ public class MergeScanner implements Scanner {
       }
       currentFragment = iterator.next();
       currentScanner = StorageManager.getScanner(conf, meta, currentFragment);
+      currentScanner.init();
       return currentScanner.next();
     } else {
       return null;
@@ -73,6 +79,24 @@ public class MergeScanner implements Scanner {
     currentScanner.close();
     iterator = null;
     fragments.clear();
+  }
+
+  @Override
+  public boolean isProjectable() {
+    return false;
+  }
+
+  @Override
+  public void setTarget(Column[] targets) {
+  }
+
+  @Override
+  public boolean isSelectable() {
+    return false;
+  }
+
+  @Override
+  public void setSearchCondition(Object expr) {
   }
 
   @Override

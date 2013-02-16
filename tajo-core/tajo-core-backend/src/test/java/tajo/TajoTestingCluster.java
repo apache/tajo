@@ -463,8 +463,8 @@ public class TajoTestingCluster {
                               Options option,
                               String[][] tables,
                               String query) throws Exception {
-    TajoTestingCluster util = new TajoTestingCluster();
-    util.startMiniCluster(1);
+    TpchTestBase instance = TpchTestBase.getInstance();
+    TajoTestingCluster util = instance.getTestingCluster();
     TajoConf conf = util.getConfiguration();
     TajoClient client = new TajoClient(conf);
 
@@ -489,7 +489,6 @@ public class TajoTestingCluster {
     }
     Thread.sleep(1000);
     ResultSet res = client.executeQueryAndGetResult(query);
-    util.shutdownMiniCluster();
     return res;
   }
 

@@ -28,6 +28,8 @@ public class TajoConf extends YarnConfiguration {
   static{
     Configuration.addDefaultResource("catalog-default.xml");
     Configuration.addDefaultResource("catalog-site.xml");
+    Configuration.addDefaultResource("storage-default.xml");
+    Configuration.addDefaultResource("storage-site.xml");
     Configuration.addDefaultResource("tajo-default.xml");
     Configuration.addDefaultResource("tajo-site.xml");
   }

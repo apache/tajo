@@ -64,6 +64,8 @@ public class SeqScanExec extends PhysicalExec {
       this.scanner = StorageManager.getScanner(context.getConf(), fragments[0].getMeta(),
           fragments[0], plan.getOutSchema());
     }
+
+    scanner.init();
   }
 
   @Override

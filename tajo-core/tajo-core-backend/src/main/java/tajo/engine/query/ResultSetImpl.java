@@ -12,8 +12,10 @@ import tajo.catalog.proto.CatalogProtos.TableProto;
 import tajo.datum.Datum;
 import tajo.datum.DatumType;
 import tajo.exception.UnsupportedException;
-import tajo.storage.*;
+import tajo.storage.Fragment;
+import tajo.storage.MergeScanner;
 import tajo.storage.Scanner;
+import tajo.storage.Tuple;
 import tajo.util.FileUtil;
 
 import java.io.FileNotFoundException;
@@ -54,16 +56,8 @@ public class ResultSetImpl implements ResultSet {
       return;
     }
     this.totalRow = meta.getStat().getNumRows();
-    Fragment[] frags = getFragmentsNG(meta, path);
-
-    switch (meta.getStoreType()) {
-    case CSV:
-      scanner = new CSVFile2(this.conf).openScanner(meta.getSchema(), frags);
-      break;
-    case RAW:
-      scanner = new RowFile2(this.conf).openScanner(meta.getSchema(), frags);
-      break;
-    }
+    Collection<Fragment> frags = getFragmentsNG(meta, path);
+    scanner = new MergeScanner(conf, meta, frags);
     init();
   }
 
@@ -93,7 +87,7 @@ public class ResultSetImpl implements ResultSet {
     }
   }
 
-  private Fragment[] getFragmentsNG(TableMeta meta, Path tablePath)
+  private Collection<Fragment> getFragmentsNG(TableMeta meta, Path tablePath)
       throws IOException {
     List<Fragment> fraglist = Lists.newArrayList();
     FileStatus[] files = fs.listStatus(tablePath, new PathFilter() {
@@ -112,7 +106,7 @@ public class ResultSetImpl implements ResultSet {
       fraglist.add(new Fragment(tbname + "_" + i, files[i].getPath(), meta, 0l,
           files[i].getLen(), null));
     }
-    return fraglist.toArray(new Fragment[fraglist.size()]);
+    return fraglist;
   }
 
   private Fragment[] getFragments(TableMeta meta, Path tablePath)

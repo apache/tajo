@@ -58,6 +58,7 @@ public class TestStorageManager {
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
     fs.mkdirs(path.getParent());
 		Appender appender = StorageManager.getAppender(conf, meta, path);
+    appender.init();
 		for(Tuple t : tuples) {
 		  appender.addTuple(t);
 		}

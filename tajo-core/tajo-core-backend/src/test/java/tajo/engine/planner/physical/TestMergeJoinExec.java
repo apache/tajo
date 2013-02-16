@@ -81,6 +81,7 @@ public class TestMergeJoinExec {
         StoreType.CSV);
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = StorageManager.getAppender(conf, employeeMeta, employeePath);
+    appender.init();
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 10; i++) {
       tuple.put(new Datum[] { DatumFactory.createInt(i),
@@ -109,6 +110,7 @@ public class TestMergeJoinExec {
     TableMeta peopleMeta = TCatUtil.newTableMeta(peopleSchema, StoreType.CSV);
     Path peoplePath = new Path(testDir, "people.csv");
     appender = StorageManager.getAppender(conf, peopleMeta, peoplePath);
+    appender.init();
     tuple = new VTuple(peopleMeta.getSchema().getColumnNum());
     for (int i = 1; i < 10; i += 2) {
       tuple.put(new Datum[] { DatumFactory.createInt(i),

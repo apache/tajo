@@ -56,6 +56,7 @@ public class TestBSTIndex {
     
     Path tablePath = new Path(testDir, "FindValueInCSV.csv");
     Appender appender  = StorageManager.getAppender(conf, meta, tablePath);
+    appender.init();
     Tuple tuple;
     for(int i = 0 ; i < TUPLE_NUM; i ++ ) {
         tuple = new VTuple(5);
@@ -66,8 +67,6 @@ public class TestBSTIndex {
         tuple.put(4, DatumFactory.createString("field_"+i));
         appender.addTuple(tuple);
       }
-    appender.close();
-    
     appender.close();
 
     FileStatus status = fs.getFileStatus(tablePath);
@@ -139,6 +138,7 @@ public class TestBSTIndex {
 
     Path tablePath = new Path(testDir, "BuildIndexWithAppender.csv");
     FileAppender appender  = (FileAppender) StorageManager.getAppender(conf, meta, tablePath);
+    appender.init();
 
     SortSpec [] sortKeys = new SortSpec[2];
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
@@ -212,6 +212,7 @@ public class TestBSTIndex {
     
     Path tablePath = StorageUtil.concatPath(testDir, "FindOmittedValueInCSV.csv");
     Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    appender.init();
     Tuple tuple;
     for(int i = 0 ; i < TUPLE_NUM; i += 2 ) {
         tuple = new VTuple(5);
@@ -222,8 +223,6 @@ public class TestBSTIndex {
         tuple.put(4, DatumFactory.createString("field_"+i));
         appender.addTuple(tuple);
       }
-    appender.close();
-    
     appender.close();
 
     FileStatus status = fs.getFileStatus(tablePath);
@@ -279,6 +278,7 @@ public class TestBSTIndex {
 
     Path tablePath = new Path(testDir, "FindNextKeyValueInCSV.csv");
     Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    appender.init();
     Tuple tuple;
     for(int i = 0 ; i < TUPLE_NUM; i ++ ) {
       tuple = new VTuple(5);
@@ -362,6 +362,7 @@ public class TestBSTIndex {
 
     Path tablePath = new Path(testDir, "FindNextKeyOmittedValueInCSV.csv");
     Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    appender.init();
     Tuple tuple;
     for(int i = 0 ; i < TUPLE_NUM; i+=2) {
       tuple = new VTuple(5);
