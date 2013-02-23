@@ -37,7 +37,7 @@ public class MergeScanner implements Scanner {
   public MergeScanner(Configuration conf, TableMeta meta, Collection<Fragment> fragments) {
     this.conf = conf;
     this.meta = meta;
-    this.fragments = new ArrayList<>(fragments);
+    this.fragments = new ArrayList<Fragment>(fragments);
     iterator = this.fragments.iterator();
   }
 

@@ -44,7 +44,7 @@ public class HashAggregateExec extends AggregationExec {
   public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode annotation,
                            PhysicalExec subOp) throws IOException {
     super(ctx, annotation, subOp);
-    tupleSlots = new HashMap<>(10000);
+    tupleSlots = new HashMap<Tuple, EvalContext[]>(10000);
     this.tuple = new VTuple(outSchema.getColumnNum());
   }
   

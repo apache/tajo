@@ -43,7 +43,7 @@ public class ProtoAsyncRpcClient extends NettyClientBase {
 
   private final AtomicInteger sequence = new AtomicInteger(0);
   private final Map<Integer, ResponseCallback> requests =
-      new ConcurrentHashMap<>();
+      new ConcurrentHashMap<Integer, ResponseCallback>();
 
   private final Class<?> protocol;
   private final Method stubMethod;

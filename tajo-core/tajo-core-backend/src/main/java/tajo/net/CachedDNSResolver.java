@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class CachedDNSResolver {
   private static Map<String, String> hostNameToIPAddrMap
-      = new ConcurrentHashMap<>();
+      = new ConcurrentHashMap<String, String>();
 
   private static CachedDNSResolver instance;
 

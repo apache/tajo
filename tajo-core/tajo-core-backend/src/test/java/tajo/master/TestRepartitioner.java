@@ -64,7 +64,7 @@ public class TestRepartitioner {
     if (null == mapq) {
       return null;
     }
-    final List<String> ret = new ArrayList<>();
+    final List<String> ret = new ArrayList<String>();
     for (String s : mapq) {
       Collections.addAll(ret, s.split(","));
     }

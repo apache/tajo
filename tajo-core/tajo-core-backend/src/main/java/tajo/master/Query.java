@@ -79,7 +79,7 @@ public class Query implements EventHandler<QueryEvent> {
   private float progress;
   private TableDesc resultDesc;
   private int completedSubQueryCount = 0;
-  private final List<String> diagnostics = new ArrayList<>();
+  private final List<String> diagnostics = new ArrayList<String>();
 
   // Internal Variables
   private final Lock readLock;
@@ -135,7 +135,7 @@ public class Query implements EventHandler<QueryEvent> {
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
 
-    this.scheduleQueue = new PriorityQueue<>(1,new PriorityComparator());
+    this.scheduleQueue = new PriorityQueue<SubQuery>(1,new PriorityComparator());
 
     stateMachine = stateMachineFactory.make(this);
   }
@@ -544,7 +544,7 @@ public class Query implements EventHandler<QueryEvent> {
     if (unit == null) {
       return null;
     }
-    List<SubQuery> pended = new ArrayList<>();
+    List<SubQuery> pended = new ArrayList<SubQuery>();
     Priority priority = unit.getPriority();
 
     do {

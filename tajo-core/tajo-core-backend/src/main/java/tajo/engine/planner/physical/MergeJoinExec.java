@@ -72,8 +72,8 @@ public class MergeJoinExec extends BinaryPhysicalExec {
     this.joinQual = plan.getJoinQual();
     this.qualCtx = this.joinQual.newContext();
 
-    this.outerTupleSlots = new ArrayList<>(INITIAL_TUPLE_SLOT);
-    this.innerTupleSlots = new ArrayList<>(INITIAL_TUPLE_SLOT);
+    this.outerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
+    this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     SortSpec[][] sortSpecs = new SortSpec[2][];
     sortSpecs[0] = outerSortKey;
     sortSpecs[1] = innerSortKey;

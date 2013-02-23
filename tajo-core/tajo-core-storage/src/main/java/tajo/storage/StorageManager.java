@@ -49,19 +49,20 @@ public class StorageManager {
    * Cache of scanner handlers for each storage type.
    */
   private static final Map<String, Class<? extends FileScanner>> SCANNER_HANDLER_CACHE
-      = new ConcurrentHashMap<>();
+      = new ConcurrentHashMap<String, Class<? extends FileScanner>>();
 
   /**
    * Cache of appender handlers for each storage type.
    */
   private static final Map<String, Class<? extends FileAppender>> APPENDER_HANDLER_CACHE
-      = new ConcurrentHashMap<>();
+      = new ConcurrentHashMap<String, Class<? extends FileAppender>>();
 
   /**
    * Cache of constructors for each class. Pins the classes so they
    * can't be garbage collected until ReflectionUtils can be collected.
    */
-  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = new ConcurrentHashMap<>();
+  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
+      new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
 
 	public StorageManager(TajoConf conf) throws IOException {
@@ -233,7 +234,7 @@ public class StorageManager {
 
     TableMeta meta = getTableMeta(tablePath);
     long defaultBlockSize = size;
-    List<Fragment> listTablets = new ArrayList<>();
+    List<Fragment> listTablets = new ArrayList<Fragment>();
     Fragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(new Path(tablePath, "data"));
@@ -268,7 +269,7 @@ public class StorageManager {
     FileSystem fs = tablePath.getFileSystem(conf);
 
     long defaultBlockSize = size;
-    List<Fragment> listTablets = new ArrayList<>();
+    List<Fragment> listTablets = new ArrayList<Fragment>();
     Fragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(tablePath);
@@ -368,17 +369,17 @@ public class StorageManager {
    * @throws IOException if zero items.
    */
   protected List<FileStatus> listStatus(Path path) throws IOException {
-    List<FileStatus> result = new ArrayList<>();
+    List<FileStatus> result = new ArrayList<FileStatus>();
     Path[] dirs = new Path[] {path};
     if (dirs.length == 0) {
       throw new IOException("No input paths specified in job");
     }
 
-    List<IOException> errors = new ArrayList<>();
+    List<IOException> errors = new ArrayList<IOException>();
 
     // creates a MultiPathFilter with the hiddenFileFilter and the
     // user provided one (if any).
-    List<PathFilter> filters = new ArrayList<>();
+    List<PathFilter> filters = new ArrayList<PathFilter>();
     filters.add(hiddenFileFilter);
 
     PathFilter inputFilter = new MultiPathFilter(filters);
@@ -495,7 +496,7 @@ public class StorageManager {
     long maxSize = getMaxSplitSize();
 
     // generate splits
-    List<Fragment> splits = new ArrayList<>();
+    List<Fragment> splits = new ArrayList<Fragment>();
     List<FileStatus> files = listStatus(inputPath);
     for (FileStatus file: files) {
       Path path = file.getPath();

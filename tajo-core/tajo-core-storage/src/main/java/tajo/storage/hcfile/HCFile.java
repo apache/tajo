@@ -55,7 +55,7 @@ public class HCFile {
       in = fs.open(path);
       buffer = ByteBuffer.allocateDirect(HDFS_CHUNK_SIZE);
       buffer.flip();
-      index = new Index<>();
+      index = new Index<Long>();
       FileStatus file = fs.getFileStatus(path);
 
       readColumnHeader(file.getLen());
@@ -278,7 +278,7 @@ public class HCFile {
             this.meta.isSorted(), this.meta.isContiguous(), this.meta.isCompressed());
         block = new BasicBlock();
       }
-      index = new Index<>();
+      index = new Index<Long>();
       blockStartId = ((HColumnMetaWritable)this.meta).getStartRid();
       startId = blockStartId;
       blockRecordNum = 0;

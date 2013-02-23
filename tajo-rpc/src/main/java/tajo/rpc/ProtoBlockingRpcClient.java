@@ -46,7 +46,7 @@ public class ProtoBlockingRpcClient extends NettyClientBase {
 
   private final AtomicInteger sequence = new AtomicInteger(0);
   private final Map<Integer, ProtoCallFuture> requests =
-      new ConcurrentHashMap<>();
+      new ConcurrentHashMap<Integer, ProtoCallFuture>();
 
   private final Class<?> protocol;
   private final Method stubMethod;

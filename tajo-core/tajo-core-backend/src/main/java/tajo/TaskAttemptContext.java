@@ -39,7 +39,7 @@ import java.util.concurrent.CountDownLatch;
 public class TaskAttemptContext {
   private static final Log LOG = LogFactory.getLog(TaskAttemptContext.class);
   private final TajoConf conf;
-  private final Map<String, List<Fragment>> fragmentMap = new HashMap<>();
+  private final Map<String, List<Fragment>> fragmentMap = new HashMap<String, List<Fragment>>();
 
   private TaskAttemptState state;
   private TableStat resultStats;
@@ -64,7 +64,7 @@ public class TaskAttemptContext {
       if (fragmentMap.containsKey(t.getId())) {
         fragmentMap.get(t.getId()).add(t);
       } else {
-        List<Fragment> frags = new ArrayList<>();
+        List<Fragment> frags = new ArrayList<Fragment>();
         frags.add(t);
         fragmentMap.put(t.getId(), frags);
       }

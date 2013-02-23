@@ -50,7 +50,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
   private final Lock readLock;
   private final Lock writeLock;
 
-  private final List<String> diagnostics = new ArrayList<>();
+  private final List<String> diagnostics = new ArrayList<String>();
 
   private static final StateMachineFactory
       <QueryUnitAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
@@ -174,7 +174,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     if (report.getPartitionsCount() > 0) {
       this.getQueryUnit().setPartitions(report.getPartitionsList());
 
-      List<IntermediateEntry> partitions = new ArrayList<>();
+      List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
       for (Partition p : report.getPartitionsList()) {
         IntermediateEntry entry = new IntermediateEntry(getId().getQueryUnitId().getId(),
             getId().getId(), p.getPartitionKey(), getHost(), getPullServerPort());
@@ -196,7 +196,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
 
       if (taskAttempt.isLeafTask()
           && taskAttempt.getQueryUnit().getScanNodes().length == 1) {
-        Set<String> racks = new HashSet<>();
+        Set<String> racks = new HashSet<String>();
         for (String host : taskAttempt.getQueryUnit().getDataLocations()) {
           racks.add(RackResolver.resolve(host).getNetworkLocation());
         }

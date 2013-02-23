@@ -60,7 +60,7 @@ public class CatalogServer extends AbstractService {
 
   private CatalogStore store;
 
-  private Map<String, FunctionDescProto> functions = new HashMap<>();
+  private Map<String, FunctionDescProto> functions = new HashMap<String, FunctionDescProto>();
 
   // RPC variables
   private ProtoBlockingRpcServer rpcServer;
@@ -83,7 +83,7 @@ public class CatalogServer extends AbstractService {
   public CatalogServer() throws IOException {
     super(CatalogServer.class.getName());
     this.handler = new CatalogProtocolHandler();
-    this.builtingFuncs = new ArrayList<>();
+    this.builtingFuncs = new ArrayList<FunctionDesc>();
   }
 
   public CatalogServer(List<FunctionDesc> sqlFuncs) throws IOException {
@@ -415,7 +415,7 @@ public class CatalogServer extends AbstractService {
                                         UnregisterFunctionRequest request)
         throws ServiceException {
       String signature = request.getSignature();
-      List<DataType> paramTypes = new ArrayList<>();
+      List<DataType> paramTypes = new ArrayList<DataType>();
       int size = request.getParameterTypesCount();
       for (int i = 0; i < size; i++) {
         paramTypes.add(request.getParameterTypes(i));
@@ -435,7 +435,7 @@ public class CatalogServer extends AbstractService {
     public FunctionDescProto getFunctionMeta(RpcController controller,
                                              GetFunctionMetaRequest request)
         throws ServiceException {
-      List<DataType> paramTypes = new ArrayList<>();
+      List<DataType> paramTypes = new ArrayList<DataType>();
       int size = request.getParameterTypesCount();
       for (int i = 0; i < size; i++) {
         paramTypes.add(request.getParameterTypes(i));
@@ -448,7 +448,7 @@ public class CatalogServer extends AbstractService {
     public BoolProto containFunction(RpcController controller,
                                      ContainFunctionRequest request)
         throws ServiceException {
-      List<DataType> paramTypes = new ArrayList<>();
+      List<DataType> paramTypes = new ArrayList<DataType>();
       int size = request.getParameterTypesCount();
       for (int i = 0; i < size; i++) {
         paramTypes.add(request.getParameterTypes(i));

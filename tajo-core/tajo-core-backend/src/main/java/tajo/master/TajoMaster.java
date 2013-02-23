@@ -272,7 +272,7 @@ public class TajoMaster extends CompositeService {
     List<EventHandler<WorkerEvent>> listofHandlers;
 
     public WorkerEventDispatcher() {
-      listofHandlers = new ArrayList<>();
+      listofHandlers = new ArrayList<EventHandler<WorkerEvent>>();
     }
 
     @Override

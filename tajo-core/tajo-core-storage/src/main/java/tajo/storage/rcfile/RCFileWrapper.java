@@ -201,7 +201,7 @@ public class RCFileWrapper {
         tid = schema.getColumnIdByName(targets[i].getColumnName());
         projectionMap[i] = tid;
       }
-      ArrayList<Integer> projectionIdList = new ArrayList<>(TUtil.newList(projectionMap));
+      ArrayList<Integer> projectionIdList = new ArrayList<Integer>(TUtil.newList(projectionMap));
       ColumnProjectionUtils.setReadColumnIDs(conf, projectionIdList);
     }
 

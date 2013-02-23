@@ -29,7 +29,7 @@ public class IndexTest {
 
   @Test
   public void test() {
-    Index<Integer> index = new Index<>();
+    Index<Integer> index = new Index<Integer>();
     index.add(new IndexItem(3, 400));
     index.add(new IndexItem(0, 100));
     index.add(new IndexItem(6, 700));

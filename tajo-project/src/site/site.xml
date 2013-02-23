@@ -12,7 +12,7 @@
 
   <bannerLeft>
     <name>Tajo: A Distributed Data Warehouse System for Hadoop</name>
-    <href>http://hyunsik.github.com/tajo</href>
+    <href>http://tajo-project.github.com/tajo</href>
   </bannerLeft>
 
   <body>
@@ -32,7 +32,7 @@
       </script>
     </head>
     <links>
-      <item name="GitHub Project Page" href="https://github.com/hyunsik/tajo"/>
+      <item name="GitHub Project Page" href="https://github.com/tajo-project/tajo"/>
     </links>
 
     <menu name="Tajo">

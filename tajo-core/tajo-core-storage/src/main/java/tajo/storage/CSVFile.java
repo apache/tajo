@@ -315,7 +315,7 @@ public class CSVFile {
       this.tupleOffsets = new long[this.validIdx];
       
       this.curTupleOffsetMap = null;
-      this.curTupleOffsetMap = new HashMap<>();
+      this.curTupleOffsetMap = new HashMap<Long, Integer>();
       
       for (int i = 0; i < this.validIdx; i++) {
         this.tupleOffsets[i] = curTupleOffset + this.pageStart;

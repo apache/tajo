@@ -668,7 +668,7 @@ public final class QueryAnalyzer {
     } else {
       // the remain ones are grouping fields.
       Tree group;
-      List<Column> columnRefs = new ArrayList<>();
+      List<Column> columnRefs = new ArrayList<Column>();
       Column [] columns;
       Column column;
       for (; idx < ast.getChildCount(); idx++) {

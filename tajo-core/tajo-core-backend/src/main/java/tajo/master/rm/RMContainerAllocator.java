@@ -48,12 +48,12 @@ public class RMContainerAllocator extends RMCommunicator
   }
 
   private Map<Priority, SubQueryId> subQueryMap
-      = new HashMap<>();
+      = new HashMap<Priority, SubQueryId>();
 
   @Override
   public void heartbeat() throws Exception {
     List<Container> allocatedContainers = getResources();
-    Map<SubQueryId, List<Container>> allocated = new HashMap<>();
+    Map<SubQueryId, List<Container>> allocated = new HashMap<SubQueryId, List<Container>>();
     if (allocatedContainers.size() > 0) {
       for (Container container : allocatedContainers) {
         SubQueryId subQueryId = subQueryMap.get(container.getPriority());
@@ -150,8 +150,8 @@ public class RMContainerAllocator extends RMCommunicator
     //}
   }
 
-  Set<ResourceRequest> ask = new HashSet<>();
-  Set<ContainerId> release = new HashSet<>();
+  Set<ResourceRequest> ask = new HashSet<ResourceRequest>();
+  Set<ContainerId> release = new HashSet<ContainerId>();
   Resource availableResources;
   int lastClusterNmCount = 0;
   int clusterNmCount = 0;
@@ -160,7 +160,7 @@ public class RMContainerAllocator extends RMCommunicator
   protected AMResponse makeRemoteRequest() throws YarnException, YarnRemoteException {
     AllocateRequest allocateRequest = BuilderUtils.newAllocateRequest(
         applicationAttemptId, lastResponseID, 0.0f,
-        new ArrayList<>(ask), new ArrayList<>(release));
+        new ArrayList<ResourceRequest>(ask), new ArrayList<ContainerId>(release));
     AllocateResponse allocateResponse = scheduler.allocate(allocateRequest);
     AMResponse response = allocateResponse.getAMResponse();
     lastResponseID = response.getResponseId();

@@ -221,7 +221,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
   public class QueryContext {
     private QueryConf conf;
     int clusterNode;
-    public Map<ContainerId, Container> containers = new ConcurrentHashMap<>();
+    public Map<ContainerId, Container> containers = new ConcurrentHashMap<ContainerId, Container>();
     int minCapability;
     int maxCapability;
 
