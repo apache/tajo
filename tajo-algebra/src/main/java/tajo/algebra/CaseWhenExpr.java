@@ -19,7 +19,7 @@ import java.util.Collection;
 import java.util.List;
 
 public class CaseWhenExpr extends Expr {
-  private List<WhenExpr> whens = new ArrayList<>();
+  private List<WhenExpr> whens = new ArrayList<WhenExpr>();
   private Expr else_result;
 
   public CaseWhenExpr() {

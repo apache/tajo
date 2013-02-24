@@ -141,7 +141,7 @@ public class TestProtoAsyncRpc {
   public void testCallFuture() throws Exception {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture2<EchoMessage> future = new CallFuture2<>();
+    CallFuture2<EchoMessage> future = new CallFuture2<EchoMessage>();
     stub.deley(null, echoMessage, future);
 
     assertFalse(future.isDone());
@@ -153,7 +153,7 @@ public class TestProtoAsyncRpc {
   public void testCallFutureTimeout() throws Exception {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture2<EchoMessage> future = new CallFuture2<>();
+    CallFuture2<EchoMessage> future = new CallFuture2<EchoMessage>();
     stub.deley(null, echoMessage, future);
 
     assertFalse(future.isDone());

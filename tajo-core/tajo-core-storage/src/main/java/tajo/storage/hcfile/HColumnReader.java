@@ -91,7 +91,7 @@ public class HColumnReader implements ColumnReader {
     }
     Arrays.sort(shardPaths);
 //    next = 0;
-    index = new Index<>();
+    index = new Index<Integer>();
     this.target = target;
     initDataPaths(shardPaths);
   }

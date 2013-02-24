@@ -80,7 +80,8 @@ public class TaskRunner extends AbstractService {
   private final int coreNum = 4;
   private final ExecutorService fetchLauncher =
       Executors.newFixedThreadPool(coreNum * 4);
-  private final Map<QueryUnitAttemptId, Task> tasks = new ConcurrentHashMap<>();
+  private final Map<QueryUnitAttemptId, Task> tasks =
+      new ConcurrentHashMap<QueryUnitAttemptId, Task>();
   private LocalDirAllocator lDirAllocator;
 
   private Thread taskLauncher;
@@ -233,7 +234,7 @@ public class TaskRunner extends AbstractService {
 
               if (!stopped) {
                 if (callFuture == null) {
-                  callFuture = new CallFuture2<>();
+                  callFuture = new CallFuture2<QueryUnitRequestProto>();
                   master.getTask(null, ((ContainerIdPBImpl) containerId).getProto(),
                       callFuture);
                 }

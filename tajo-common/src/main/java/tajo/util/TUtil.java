@@ -70,15 +70,15 @@ public class TUtil {
   }
 
   public static <T> Set<T> newHashSet() {
-    return new HashSet<>();
+    return new HashSet<T>();
   }
 
   public static <T> List<T> newList() {
-    return new ArrayList<>();
+    return new ArrayList<T>();
   }
 
   public static <T> List<T> newList(T...items) {
-    List<T> list = new ArrayList<>();
+    List<T> list = new ArrayList<T>();
     for (T t : items) {
       list.add(t);
     }
@@ -87,7 +87,7 @@ public class TUtil {
   }
 
   public static <T> List<T> newList(Collection<T> items) {
-    List<T> list = new ArrayList<>();
+    List<T> list = new ArrayList<T>();
     for (T t : items) {
       list.add(t);
     }

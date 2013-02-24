@@ -60,7 +60,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
   private final TableMeta meta;
   private final Partitioner partitioner;
   private final Path storeTablePath;
-  private final Map<Integer, Appender> appenderMap = new HashMap<>();
+  private final Map<Integer, Appender> appenderMap = new HashMap<Integer, Appender>();
   
   public PartitionedStoreExec(TaskAttemptContext context, final StorageManager sm,
       final StoreTableNode plan, final PhysicalExec child) throws IOException {
@@ -125,7 +125,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
       appender.addTuple(tuple);
     }
     
-    List<TableStat> statSet = new ArrayList<>();
+    List<TableStat> statSet = new ArrayList<TableStat>();
     for (Map.Entry<Integer, Appender> entry : appenderMap.entrySet()) {
       int partNum = entry.getKey();
       Appender app = entry.getValue();

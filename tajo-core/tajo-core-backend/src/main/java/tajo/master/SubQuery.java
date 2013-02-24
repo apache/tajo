@@ -95,8 +95,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private long startTime;
   private long finishTime;
 
-  volatile Map<QueryUnitId, QueryUnit> tasks = new ConcurrentHashMap<>();
-  volatile Map<ContainerId, Container> containers = new ConcurrentHashMap<>();
+  volatile Map<QueryUnitId, QueryUnit> tasks = new ConcurrentHashMap<QueryUnitId, QueryUnit>();
+  volatile Map<ContainerId, Container> containers = new ConcurrentHashMap<ContainerId, Container>();
 
 
   private static ContainerLaunchTransition CONTAINER_LAUNCH_TRANSITION = new ContainerLaunchTransition();
@@ -152,8 +152,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   
   public SubQuery(SubQueryId id, StorageManager sm, GlobalPlanner planner) {
     this.id = id;
-    childSubQueries = new HashMap<>();
-    scanlist = new ArrayList<>();
+    childSubQueries = new HashMap<ScanNode, SubQuery>();
+    scanlist = new ArrayList<ScanNode>();
     hasJoinPlan = false;
     hasUnionPlan = false;
     this.sm = sm;
@@ -212,7 +212,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
     
     LogicalNode node = plan;
-    ArrayList<LogicalNode> s = new ArrayList<>();
+    ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
     s.add(node);
     while (!s.isEmpty()) {
       node = s.remove(s.size()-1);

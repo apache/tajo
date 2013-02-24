@@ -188,7 +188,7 @@ public class TestRangeRetrieverHandler {
     RangeRetrieverHandler handler = new RangeRetrieverHandler(
         new File((new Path(testDir, "output")).toUri()), keySchema, comp);
 
-    List<Long []> offsets = new ArrayList<>();
+    List<Long []> offsets = new ArrayList<Long []>();
 
     for (int i = 0; i < partitions.length; i++) {
       FileChunk chunk = getFileChunk(handler, keySchema, partitions[i], i == (partitions.length - 1));
@@ -299,7 +299,7 @@ public class TestRangeRetrieverHandler {
     RangeRetrieverHandler handler = new RangeRetrieverHandler(
         dataFile, keySchema, comp);
 
-    List<Long []> offsets = new ArrayList<>();
+    List<Long []> offsets = new ArrayList<Long []>();
 
     for (int i = 0; i < partitions.length; i++) {
       FileChunk chunk = getFileChunk(handler, keySchema, partitions[i], i == 0);

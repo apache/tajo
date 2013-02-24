@@ -65,7 +65,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
     this.plan = plan;
     this.joinQual = plan.getJoinQual();
     this.qualCtx = joinQual.newContext();
-    this.tupleSlots = new HashMap<>(10000);
+    this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
     this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual,
         outer.getSchema(), inner.getSchema());
@@ -164,7 +164,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
         newValue.add(tuple);
         tupleSlots.put(keyTuple, newValue);
       } else {
-        newValue = new ArrayList<>();
+        newValue = new ArrayList<Tuple>();
         newValue.add(tuple);
         tupleSlots.put(keyTuple, newValue);
       }

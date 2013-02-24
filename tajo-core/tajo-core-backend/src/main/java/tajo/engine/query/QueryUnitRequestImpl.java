@@ -115,7 +115,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 			return fragments;
 		}
 		if (fragments == null) {
-			fragments = new ArrayList<>();
+			fragments = new ArrayList<Fragment>();
 		}
 		for (int i = 0; i < p.getFragmentsCount(); i++) {
 			fragments.add(new Fragment(p.getFragments(i)));

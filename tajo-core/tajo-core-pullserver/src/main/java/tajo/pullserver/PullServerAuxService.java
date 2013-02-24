@@ -115,7 +115,7 @@ public class PullServerAuxService extends AbstractService
   public static final String PULLSERVER_SERVICEID = "tajo.pullserver";
 
   private static final Map<String,String> userRsrc =
-    new ConcurrentHashMap<>();
+    new ConcurrentHashMap<String,String>();
   private static String userName;
 
   public static final String SUFFLE_SSL_FILE_BUFFER_SIZE_KEY =
@@ -335,7 +335,7 @@ public class PullServerAuxService extends AbstractService
       if (null == mapq) {
         return null;
       }
-      final List<String> ret = new ArrayList<>();
+      final List<String> ret = new ArrayList<String>();
       for (String s : mapq) {
         Collections.addAll(ret, s.split(","));
       }

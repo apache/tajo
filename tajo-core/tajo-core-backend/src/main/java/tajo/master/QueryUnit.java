@@ -105,10 +105,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 		this.taskId = id;
     this.eventHandler = eventHandler;
     this.isLeafTask = isLeafTask;
-		scan = new ArrayList<>();
+		scan = new ArrayList<ScanNode>();
     fetchMap = Maps.newHashMap();
     fragMap = Maps.newHashMap();
-    partitions = new ArrayList<>();
+    partitions = new ArrayList<Partition>();
     attempts = Collections.emptyMap();
     lastAttemptId = -1;
     failedAttempts = 0;
@@ -354,7 +354,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
       case 1:
         Map<QueryUnitAttemptId, QueryUnitAttempt> newAttempts
-            = new LinkedHashMap<>(3);
+            = new LinkedHashMap<QueryUnitAttemptId, QueryUnitAttempt>(3);
         newAttempts.putAll(attempts);
         attempts = newAttempts;
         attempts.put(attempt.getId(), attempt);
@@ -450,7 +450,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   }
 
   public void setIntermediateData(Collection<IntermediateEntry> partitions) {
-    this.intermediateData = new ArrayList<>(partitions);
+    this.intermediateData = new ArrayList<IntermediateEntry>(partitions);
   }
 
   public List<IntermediateEntry> getIntermediateData() {

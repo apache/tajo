@@ -102,7 +102,8 @@ public class Repartitioner {
     } else {
       // The hash map is modeling as follows:
       // <Partition Id, <Table Name, Intermediate Data>>
-      Map<Integer, Map<String, List<IntermediateEntry>>> hashEntries = new HashMap<>();
+      Map<Integer, Map<String, List<IntermediateEntry>>> hashEntries =
+          new HashMap<Integer, Map<String, List<IntermediateEntry>>>();
 
       // Grouping IntermediateData by a partition key and a table name
       for (ScanNode scan : scans) {
@@ -121,7 +122,7 @@ public class Repartitioner {
                 }
               } else {
                 Map<String, List<IntermediateEntry>> tbNameToInterm =
-                    new HashMap<>();
+                    new HashMap<String, List<IntermediateEntry>>();
                 tbNameToInterm.put(scan.getTableId(), TUtil.newList(intermEntry));
                 hashEntries.put(intermEntry.getPartitionId(), tbNameToInterm);
               }
@@ -162,7 +163,7 @@ public class Repartitioner {
         }
       }
 
-      List<QueryUnit> filteredTasks = new ArrayList<>();
+      List<QueryUnit> filteredTasks = new ArrayList<QueryUnit>();
       for (QueryUnit task : createdTasks) {
         // if there are at least two fetches, the join is possible.
         if (task.getFetches().size() > 1) {
@@ -222,7 +223,7 @@ public class Repartitioner {
         subQuery.eventHandler);
     task.setLogicalPlan(subQuery.getLogicalPlan());
 
-    Map<String, Set<URI>> fetchURIsForEachRel = new HashMap<>();
+    Map<String, Set<URI>> fetchURIsForEachRel = new HashMap<String, Set<URI>>();
     int i = 0;
     for (ScanNode scanNode : subQuery.getScanNodes()) {
       Map<String, List<IntermediateEntry>> mergedHashPartitionRequest =
@@ -252,7 +253,8 @@ public class Repartitioner {
    */
   private static Map<String, List<IntermediateEntry>> mergeHashPartitionRequest(
       List<IntermediateEntry> partitions) {
-    Map<String, List<IntermediateEntry>> mergedPartitions = new HashMap<>();
+    Map<String, List<IntermediateEntry>> mergedPartitions =
+        new HashMap<String, List<IntermediateEntry>>();
     for (IntermediateEntry partition : partitions) {
       if (mergedPartitions.containsKey(partition.getPullAddress())) {
         mergedPartitions.get(partition.getPullAddress()).add(partition);
@@ -323,7 +325,7 @@ public class Repartitioner {
         TCatUtil.newTableMeta(scan.getInSchema(), StoreType.CSV),
         0, 0, null);
 
-    List<String> basicFetchURIs = new ArrayList<>();
+    List<String> basicFetchURIs = new ArrayList<String>();
 
     for (QueryUnit qu : subQuery.getChildQuery(scan).getQueryUnits()) {
       for (IntermediateEntry p : qu.getIntermediateData()) {
@@ -336,15 +338,15 @@ public class Repartitioner {
     boolean ascendingFirstKey = sortSpecs[0].isAscending();
     SortedMap<TupleRange, Set<URI>> map;
     if (ascendingFirstKey) {
-      map = new TreeMap<>();
+      map = new TreeMap<TupleRange, Set<URI>>();
     } else {
-      map = new TreeMap<>(new TupleRange.DescendingTupleRangeComparator());
+      map = new TreeMap<TupleRange, Set<URI>>(new TupleRange.DescendingTupleRangeComparator());
     }
 
     Set<URI> uris;
     try {
       for (int i = 0; i < ranges.length; i++) {
-        uris = new HashSet<>();
+        uris = new HashSet<URI>();
         for (String uri: basicFetchURIs) {
           String rangeParam = TupleUtil.rangeToQuery(sortSchema, ranges[i],
               ascendingFirstKey, ascendingFirstKey ? i == (ranges.length - 1) : i == 0);
@@ -408,7 +410,7 @@ public class Repartitioner {
     Path tablePath;
     tablePath = subQuery.sm.getTablePath(scan.getTableId());
 
-    List<IntermediateEntry> partitions = new ArrayList<>();
+    List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
     for (QueryUnit tasks : childSubQuery.getQueryUnits()) {
       if (tasks.getIntermediateData() != null) {
         partitions.addAll(tasks.getIntermediateData());
@@ -421,7 +423,7 @@ public class Repartitioner {
 
     Map<Integer, List<IntermediateEntry>> hashed = hashByKey(partitions);
     Map<String, List<IntermediateEntry>> hashedByHost;
-    Map<Integer, List<URI>> finalFetchURI = new HashMap<>();
+    Map<Integer, List<URI>> finalFetchURI = new HashMap<Integer, List<URI>>();
 
     for (Entry<Integer, List<IntermediateEntry>> interm : hashed.entrySet()) {
       hashedByHost = hashByHost(interm.getValue());
@@ -484,7 +486,7 @@ public class Repartitioner {
     // the long request uri may cause HTTP Status Code - 414 Request-URI Too Long.
     // Refer to http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.15
     // The below code transforms a long request to multiple requests.
-    List<String> taskIdsParams = new ArrayList<>();
+    List<String> taskIdsParams = new ArrayList<String>();
     boolean first = true;
     StringBuilder taskIdListBuilder = new StringBuilder();
     for (IntermediateEntry entry: entries) {
@@ -512,7 +514,7 @@ public class Repartitioner {
       taskIdsParams.add(taskIdListBuilder.toString());
     }
 
-    Collection<URI> fetchURLs = new ArrayList<>();
+    Collection<URI> fetchURLs = new ArrayList<URI>();
     for (String param : taskIdsParams) {
       fetchURLs.add(URI.create(urlPrefix + param));
     }
@@ -522,7 +524,7 @@ public class Repartitioner {
 
   public static Map<Integer, List<IntermediateEntry>> hashByKey(
       List<IntermediateEntry> entries) {
-    Map<Integer, List<IntermediateEntry>> hashed = new HashMap<>();
+    Map<Integer, List<IntermediateEntry>> hashed = new HashMap<Integer, List<IntermediateEntry>>();
     for (IntermediateEntry entry : entries) {
       if (hashed.containsKey(entry.getPartitionId())) {
         hashed.get(entry.getPartitionId()).add(entry);
@@ -548,7 +550,7 @@ public class Repartitioner {
 
   public static Map<String, List<IntermediateEntry>> hashByHost(
       List<IntermediateEntry> entries) {
-    Map<String, List<IntermediateEntry>> hashed = new HashMap<>();
+    Map<String, List<IntermediateEntry>> hashed = new HashMap<String, List<IntermediateEntry>>();
 
     String hostName;
     for (IntermediateEntry entry : entries) {

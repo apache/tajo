@@ -51,8 +51,8 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 
 	public Schema(Schema schema) {
 	  this();
-		this.fields = new ArrayList<>(schema.fields);
-		this.fieldsByName = new HashMap<>(schema.fieldsByName);
+		this.fields = new ArrayList<Column>(schema.fields);
+		this.fieldsByName = new HashMap<String, Integer>(schema.fieldsByName);
 	}
 	
 	public Schema(Column [] columns) {
@@ -130,8 +130,8 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 			return;
 		}
 		SchemaProtoOrBuilder p = viaProto ? proto : builder;
-		this.fields = new ArrayList<>();
-		this.fieldsByName = new HashMap<>();
+		this.fields = new ArrayList<Column>();
+		this.fieldsByName = new HashMap<String, Integer>();
 		for(ColumnProto colProto : p.getFieldsList()) {
 			fields.add(new Column(colProto));
 			fieldsByName.put(colProto.getColumnName(), fields.size() - 1);
@@ -179,9 +179,8 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
     initFromProto();
     schema.viaProto = false;
     schema.builder = SchemaProto.newBuilder();
-    schema.fields = fields != null ? new ArrayList<>(fields) : null;
-    schema.fieldsByName = fieldsByName != null ? new HashMap<>(
-        fieldsByName) : null;
+    schema.fields = fields != null ? new ArrayList<Column>(fields) : null;
+    schema.fieldsByName = fieldsByName != null ? new HashMap<String, Integer>(fieldsByName) : null;
 
     return schema;
   }

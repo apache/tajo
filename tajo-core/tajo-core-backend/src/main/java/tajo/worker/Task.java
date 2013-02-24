@@ -451,7 +451,7 @@ public class Task {
     FileSystem fs = FileSystem.get(c);
     Path tablePath = new Path(file.getAbsolutePath());
 
-    List<Fragment> listTablets = new ArrayList<>();
+    List<Fragment> listTablets = new ArrayList<Fragment>();
     Fragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(tablePath);

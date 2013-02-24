@@ -128,7 +128,7 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
     options.proto = null;
     options.viaProto = false;
     options.builder = KeyValueSetProto.newBuilder();
-    options.keyVals = keyVals != null ? new HashMap<>(keyVals) :
+    options.keyVals = keyVals != null ? new HashMap<String, String>(keyVals) :
       null;    
     return options;
 	}

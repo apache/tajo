@@ -50,7 +50,7 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
   private final static Log LOG = LogFactory.getLog(HttpDataServerHandler.class);
 
-  Map<SubQueryId, DataRetriever> retrievers = new ConcurrentHashMap<>();
+  Map<SubQueryId, DataRetriever> retrievers = new ConcurrentHashMap<SubQueryId, DataRetriever>();
   private String userName;
   private String appId;
 

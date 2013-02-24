@@ -131,7 +131,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
       if (initialClasspathFlag.get()) {
         return initialClasspath;
       }
-      Map<String, String> env = new HashMap<>();
+      Map<String, String> env = new HashMap<String, String>();
 
       initialClasspath = env.get(Environment.CLASSPATH.name());
       initialClasspathFlag.set(true);
@@ -154,7 +154,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     ////////////////////////////////////////////////////////////////////////////
     LOG.info("Set the environment for the application master");
 
-    Map<String, String> environment = new HashMap<>();
+    Map<String, String> environment = new HashMap<String, String>();
     //String initialClassPath = getInitialClasspath(conf);
     environment.put(Environment.SHELL.name(), "/bin/bash");
     environment.put(Environment.JAVA_HOME.name(), System.getenv(Environment.JAVA_HOME.name()));
@@ -199,7 +199,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     ////////////////////////////////////////////////////////////////////////////
     // Set the local resources
     ////////////////////////////////////////////////////////////////////////////
-    Map<String, LocalResource> localResources = new HashMap<>();
+    Map<String, LocalResource> localResources = new HashMap<String, LocalResource>();
     FileSystem fs = null;
 
 
@@ -233,7 +233,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     }
 
     // Add shuffle token
-    Map<String, ByteBuffer> serviceData = new HashMap<>();
+    Map<String, ByteBuffer> serviceData = new HashMap<String, ByteBuffer>();
     try {
       //LOG.info("Putting shuffle token in serviceData");
       serviceData.put(PullServerAuxService.PULLSERVER_SERVICEID,
@@ -256,11 +256,11 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
 
     // Setup environment by cloning from common env.
     Map<String, String> env = commonContainerSpec.getEnvironment();
-    Map<String, String> myEnv = new HashMap<>(env.size());
+    Map<String, String> myEnv = new HashMap<String, String>(env.size());
     myEnv.putAll(env);
 
     // Duplicate the ByteBuffers for access by multiple containers.
-    Map<String, ByteBuffer> myServiceData = new HashMap<>();
+    Map<String, ByteBuffer> myServiceData = new HashMap<String, ByteBuffer>();
     for (Map.Entry<String, ByteBuffer> entry : commonContainerSpec
         .getServiceData().entrySet()) {
       myServiceData.put(entry.getKey(), entry.getValue().duplicate());
@@ -270,7 +270,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     // Set the local resources
     ////////////////////////////////////////////////////////////////////////////
     // Set the necessary command to execute the application master
-    Vector<CharSequence> vargs = new Vector<>(30);
+    Vector<CharSequence> vargs = new Vector<CharSequence>(30);
 
     // Set java executable command
     //LOG.info("Setting up app master command");
@@ -299,7 +299,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     }
 
     LOG.info("Completed setting up taskrunner command " + command.toString());
-    List<String> commands = new ArrayList<>();
+    List<String> commands = new ArrayList<String>();
     commands.add(command.toString());
 
     return BuilderUtils.newContainerLaunchContext(event.getContainerId(), commonContainerSpec.getUser(),

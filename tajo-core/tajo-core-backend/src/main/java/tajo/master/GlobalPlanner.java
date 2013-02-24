@@ -612,8 +612,8 @@ public class GlobalPlanner {
     Schema innerSchema = join.getInnerNode().getOutSchema();
     unit.setOutputType(PARTITION_TYPE.LIST);
 
-    List<Column> outerCollist = new ArrayList<>();
-    List<Column> innerCollist = new ArrayList<>();
+    List<Column> outerCollist = new ArrayList<Column>();
+    List<Column> innerCollist = new ArrayList<Column>();
     
     // TODO: set partition for store nodes
     if (join.hasJoinQual()) {
@@ -896,8 +896,8 @@ public class GlobalPlanner {
     List<Fragment> fragList;
     List<URI> uriList;
     // fragments and fetches are maintained for each scan of the SubQuery
-    Map<ScanNode, List<Fragment>> fragMap = new HashMap<>();
-    Map<ScanNode, List<URI>> fetchMap = new HashMap<>();
+    Map<ScanNode, List<Fragment>> fragMap = new HashMap<ScanNode, List<Fragment>>();
+    Map<ScanNode, List<URI>> fetchMap = new HashMap<ScanNode, List<URI>>();
     
     // set partition numbers for two phase algorithms
     // TODO: the following line might occur a bug. see the line 623
@@ -922,8 +922,8 @@ public class GlobalPlanner {
           return new QueryUnit[0];
         }
         // make fetches from the previous query units
-        uriList = new ArrayList<>();
-        fragList = new ArrayList<>();
+        uriList = new ArrayList<URI>();
+        fragList = new ArrayList<Fragment>();
 
         if (prev.getOutputType() == PARTITION_TYPE.RANGE) {
           StoreTableNode store = (StoreTableNode) prev.getLogicalPlan();
@@ -998,7 +998,7 @@ public class GlobalPlanner {
         fragList.add(frag);
         fragMap.put(scan, fragList);
       } else {
-        fragList = new ArrayList<>();
+        fragList = new ArrayList<Fragment>();
         // set fragments for each scan
         if (subQuery.hasChildQuery() &&
             (subQuery.getChildQuery(scan).getOutputType() == PARTITION_TYPE.HASH ||
@@ -1055,7 +1055,7 @@ public class GlobalPlanner {
   private List<QueryUnit> makeBinaryQueryUnit(SubQuery subQuery, final int n,
       Map<ScanNode, List<Fragment>> fragMap, 
       Map<ScanNode, List<URI>> fetchMap) {
-    List<QueryUnit> queryUnits = new ArrayList<>();
+    List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
     final int maxQueryUnitNum = n;
     ScanNode[] scans = subQuery.getScanNodes();
     
@@ -1162,7 +1162,7 @@ public class GlobalPlanner {
   private List<QueryUnit> makeUnaryQueryUnit(SubQuery subQuery, int n,
       Map<ScanNode, List<Fragment>> fragMap, 
       Map<ScanNode, List<URI>> fetchMap, SortSpec[] sortSpecs) throws UnsupportedEncodingException {
-    List<QueryUnit> queryUnits = new ArrayList<>();
+    List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
     int maxQueryUnitNum;
     ScanNode scan = subQuery.getScanNodes()[0];
     maxQueryUnitNum = n;
@@ -1388,7 +1388,8 @@ public class GlobalPlanner {
 
   @VisibleForTesting
   public static Map<String, Map<ScanNode, List<URI>>> hashFetches(Map<ScanNode, List<URI>> uriMap) {
-    SortedMap<String, Map<ScanNode, List<URI>>> hashed = new TreeMap<>();
+    SortedMap<String, Map<ScanNode, List<URI>>> hashed =
+        new TreeMap<String, Map<ScanNode, List<URI>>>();
     String uriPath, key;
     Map<ScanNode, List<URI>> m;
     List<URI> uriList;
@@ -1399,12 +1400,12 @@ public class GlobalPlanner {
         if (hashed.containsKey(key)) {
           m = hashed.get(key);
         } else {
-          m = new HashMap<>();
+          m = new HashMap<ScanNode, List<URI>>();
         }
         if (m.containsKey(e.getKey())) {
           uriList = m.get(e.getKey());
         } else {
-          uriList = new ArrayList<>();
+          uriList = new ArrayList<URI>();
         }
         uriList.add(uri);
         m.put(e.getKey(), uriList);
@@ -1448,7 +1449,7 @@ public class GlobalPlanner {
 
   @VisibleForTesting
   public static Map<String, List<URI>> hashFetches(SubQueryId sid, List<URI> uriList) {
-    SortedMap<String, List<URI>> hashed = new TreeMap<>();
+    SortedMap<String, List<URI>> hashed = new TreeMap<String, List<URI>>();
     String uriPath, key;
     for (URI uri : uriList) {
       // TODO
@@ -1457,7 +1458,7 @@ public class GlobalPlanner {
       if (hashed.containsKey(key)) {
         hashed.get(key).add(uri);
       } else {
-        List<URI> list = new ArrayList<>();
+        List<URI> list = new ArrayList<URI>();
         list.add(uri);
         hashed.put(key, list);
       }
@@ -1516,9 +1517,9 @@ public class GlobalPlanner {
       throws UnsupportedEncodingException {
     SortedMap<TupleRange, Set<URI>> map;
     if (ascendingFirstKey) {
-      map = new TreeMap<>();
+      map = new TreeMap<TupleRange, Set<URI>>();
     } else {
-      map = new TreeMap<>(new TupleRange.DescendingTupleRangeComparator());
+      map = new TreeMap<TupleRange, Set<URI>>(new TupleRange.DescendingTupleRangeComparator());
     }
     TupleRange range;
     Set<URI> uris;
@@ -1601,12 +1602,12 @@ public class GlobalPlanner {
         if (hashed.containsKey(key)) {
           m = hashed.get(key);
         } else {
-          m = new HashMap<>();
+          m = new HashMap<ScanNode, List<Fragment>>();
         }
         if (m.containsKey(e.getKey())) {
           fragList = m.get(e.getKey());
         } else {
-          fragList = new ArrayList<>();
+          fragList = new ArrayList<Fragment>();
         }
         fragList.add(f);
         m.put(e.getKey(), fragList);
@@ -1618,12 +1619,12 @@ public class GlobalPlanner {
   }
   
   private Collection<List<Fragment>> hashFragments(List<Fragment> frags) {
-    SortedMap<String, List<Fragment>> hashed = new TreeMap<>();
+    SortedMap<String, List<Fragment>> hashed = new TreeMap<String, List<Fragment>>();
     for (Fragment f : frags) {
       if (hashed.containsKey(f.getPath().getName())) {
         hashed.get(f.getPath().getName()).add(f);
       } else {
-        List<Fragment> list = new ArrayList<>();
+        List<Fragment> list = new ArrayList<Fragment>();
         list.add(f);
         hashed.put(f.getPath().getName(), list);
       }
@@ -1652,7 +1653,7 @@ public class GlobalPlanner {
     List<Fragment> fragments = sm.getSplits(scan.getTableId(), meta, inputPath);
 
     QueryUnit queryUnit;
-    List<QueryUnit> queryUnits = new ArrayList<>();
+    List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
 
     int i = 0;
     for (Fragment fragment : fragments) {

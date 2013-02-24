@@ -61,8 +61,8 @@ public class BNLJoinExec extends BinaryPhysicalExec {
         SchemaUtil.merge(outer.getSchema(), inner.getSchema()), outer, inner);
     this.joinQual = join.getJoinQual();
     this.qualCtx = this.joinQual.newContext();
-    this.outerTupleSlots = new ArrayList<>(TUPLE_SLOT_SIZE);
-    this.innerTupleSlots = new ArrayList<>(TUPLE_SLOT_SIZE);
+    this.outerTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
+    this.innerTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.outerIterator = outerTupleSlots.iterator();
     this.innerIterator = innerTupleSlots.iterator();
     this.innerEnd = false;

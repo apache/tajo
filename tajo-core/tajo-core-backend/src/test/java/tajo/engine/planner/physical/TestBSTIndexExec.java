@@ -69,7 +69,7 @@ public class TestBSTIndexExec {
 
   @Before
   public void setup() throws Exception {
-    this.randomValues = new HashMap<> ();
+    this.randomValues = new HashMap<Integer, Integer>();
     this.conf = new TajoConf();
     util = new TajoTestingCluster();
     util.startCatalogCluster();

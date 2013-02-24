@@ -39,14 +39,13 @@ import tajo.master.event.TaskRequestEvent.TaskRequestEventType;
 import tajo.master.event.TaskScheduleEvent;
 import tajo.master.event.TaskSchedulerEvent;
 import tajo.master.event.TaskSchedulerEvent.EventType;
+import tajo.storage.Fragment;
 import tajo.util.TajoIdUtils;
 
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.TransferQueue;
 
 public class TaskSchedulerImpl extends AbstractService
     implements TaskScheduler {
@@ -60,7 +59,7 @@ public class TaskSchedulerImpl extends AbstractService
   private volatile boolean stopEventHandling;
 
   BlockingQueue<TaskSchedulerEvent> eventQueue
-      = new LinkedBlockingQueue<>();
+      = new LinkedBlockingQueue<TaskSchedulerEvent>();
 
   private ScheduledRequests scheduledRequests;
   private TaskRequests taskRequests;
@@ -164,7 +163,7 @@ public class TaskSchedulerImpl extends AbstractService
     }
   }
 
-  List<TaskRequestEvent> taskRequestEvents = new ArrayList<>();
+  List<TaskRequestEvent> taskRequestEvents = new ArrayList<TaskRequestEvent>();
   public void schedule() {
 
     if (taskRequests.size() > 0) {
@@ -215,8 +214,8 @@ public class TaskSchedulerImpl extends AbstractService
   }
 
   private class TaskRequests implements EventHandler<TaskRequestEvent> {
-    private final TransferQueue<TaskRequestEvent> taskRequestQueue =
-        new LinkedTransferQueue<>();
+    private final LinkedBlockingQueue<TaskRequestEvent> taskRequestQueue =
+        new LinkedBlockingQueue<TaskRequestEvent>();
 
     @Override
     public void handle(TaskRequestEvent event) {
@@ -244,18 +243,18 @@ public class TaskSchedulerImpl extends AbstractService
   }
 
   private class ScheduledRequests {
-    private final HashSet<QueryUnitAttemptId> leafTasks = new HashSet<>();
-    private final HashSet<QueryUnitAttemptId> nonLeafTasks = new HashSet<>();
+    private final HashSet<QueryUnitAttemptId> leafTasks = new HashSet<QueryUnitAttemptId>();
+    private final HashSet<QueryUnitAttemptId> nonLeafTasks = new HashSet<QueryUnitAttemptId>();
     private final Map<String, LinkedList<QueryUnitAttemptId>> leafTasksHostMapping =
-        new HashMap<>();
+        new HashMap<String, LinkedList<QueryUnitAttemptId>>();
     private final Map<String, LinkedList<QueryUnitAttemptId>> leafTasksRackMapping =
-        new HashMap<>();
+        new HashMap<String, LinkedList<QueryUnitAttemptId>>();
 
     public void addLeafTask(TaskScheduleEvent event) {
       for (String host : event.getHosts()) {
         LinkedList<QueryUnitAttemptId> list = leafTasksHostMapping.get(host);
         if (list == null) {
-          list = new LinkedList<>();
+          list = new LinkedList<QueryUnitAttemptId>();
           leafTasksHostMapping.put(host, list);
         }
         list.add(event.getAttemptId());
@@ -266,7 +265,7 @@ public class TaskSchedulerImpl extends AbstractService
       for (String rack: event.getRacks()) {
         LinkedList<QueryUnitAttemptId> list = leafTasksRackMapping.get(rack);
         if (list == null) {
-          list = new LinkedList<>();
+          list = new LinkedList<QueryUnitAttemptId>();
           leafTasksRackMapping.put(rack, list);
         }
         list.add(event.getAttemptId());
@@ -290,7 +289,7 @@ public class TaskSchedulerImpl extends AbstractService
       return nonLeafTasks.size();
     }
 
-    public Set<QueryUnitAttemptId> AssignedRequest = new HashSet<>();
+    public Set<QueryUnitAttemptId> AssignedRequest = new HashSet<QueryUnitAttemptId>();
 
     public void assignToLeafTasks(List<TaskRequestEvent> taskRequests) {
       Iterator<TaskRequestEvent> it = taskRequests.iterator();
@@ -349,7 +348,7 @@ public class TaskSchedulerImpl extends AbstractService
               .getSubQuery(attemptId.getSubQueryId()).getQueryUnit(attemptId.getQueryUnitId());
           QueryUnitRequest taskAssign = new QueryUnitRequestImpl(
               attemptId,
-              new ArrayList<>(task.getAllFragments()),
+              new ArrayList<Fragment>(task.getAllFragments()),
               task.getOutputName(),
               false,
               task.getLogicalPlan().toJSON());

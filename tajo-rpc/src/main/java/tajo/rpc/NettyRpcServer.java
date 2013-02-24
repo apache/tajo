@@ -46,8 +46,8 @@ public class NettyRpcServer extends NettyServerBase {
     super(bindAddress);
     this.instance = proxy;
     this.clazz = instance.getClass();
-    this.methods = new HashMap<>();
-    this.builderMethods = new HashMap<>();
+    this.methods = new HashMap<String, Method>();
+    this.builderMethods = new HashMap<String, Method>();
     this.pipeline =
         new ProtoPipelineFactory(new ServerHandler(),
             Invocation.getDefaultInstance());
