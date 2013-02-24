@@ -766,11 +766,8 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public Object getObject(int fieldId) throws SQLException {
     Datum d = cur.get(fieldId - 1);
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
+    wasNull = (d == null);
+
     // TODO - to be changed to return Object type
     return d;
   }
@@ -783,11 +780,7 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public Object getObject(String arg0) throws SQLException {
     Datum d = cur.get(findColumn(arg0));
-    if (d == null) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
+    wasNull = (d == null);
     return d;
   }
 
@@ -1910,17 +1903,6 @@ public class ResultSetImpl implements ResultSet {
     throw new UnsupportedException();
   }
 
-  @Override
-  public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
-    throw new UnsupportedException();
-  }
-
-  @Override
-  public <T> T getObject(String columnLabel, Class<T> type)
-      throws SQLException {
-    throw new UnsupportedException();
-  }
-
   /*
    * (non-Javadoc)
    * 
@@ -2195,10 +2177,6 @@ public class ResultSetImpl implements ResultSet {
   }
 
   private void handleNull(Datum d) {
-    if (d.type() == DatumType.NULL) {
-      wasNull = true;
-    } else {
-      wasNull = false;
-    }
+    wasNull = (d.type() == DatumType.NULL);
   }
 }

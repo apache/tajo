@@ -20,7 +20,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configuration.IntegerRanges;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.net.NetUtils;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
@@ -156,11 +155,11 @@ public class NettyServerBase {
       return false;
     } finally {
       if (ss != null) {
-        IOUtils.closeStream(ss);
+        ss.close();
       }
 
       if (ds != null) {
-        IOUtils.closeStream(ds);
+        ds.close();
       }
     }
   }

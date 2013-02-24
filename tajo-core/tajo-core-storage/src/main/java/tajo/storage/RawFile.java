@@ -23,6 +23,7 @@ import tajo.datum.ArrayDatum;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.datum.json.GsonCreator;
+import tajo.util.BitArray;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,14 +31,10 @@ import java.io.RandomAccessFile;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.BitSet;
 
 public class RawFile {
   public static class RawFileScanner extends FileScanner implements SeekableScanner {
-    private SeekableByteChannel channel;
+    private FileChannel channel;
     private DataType [] columnTypes;
     private Path path;
 
@@ -45,9 +42,9 @@ public class RawFile {
     private Tuple tuple;
 
     private int headerSize = 0;
-    private BitSet nullFlags;
+    private BitArray nullFlags;
     private static final int RECORD_SIZE = 4;
-    private int numBytesOfNullFlags;
+    private int numBitsOfNullFlags;
 
     public RawFileScanner(Configuration conf, TableMeta meta, Path path) throws IOException {
       super(conf, meta, null);
@@ -64,7 +61,8 @@ public class RawFile {
       //Preconditions.checkArgument(FileUtil.isLocalPath(path));
       // TODO - to make it unified one.
       URI uri = path.toUri();
-      channel = Files.newByteChannel(Paths.get(uri));
+      RandomAccessFile raf = new RandomAccessFile(new File(uri), "r");
+      channel = raf.getChannel();
 
       buffer = ByteBuffer.allocateDirect(65535);
 
@@ -79,9 +77,9 @@ public class RawFile {
       channel.read(buffer);
       buffer.flip();
 
-      numBytesOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()) / 8);
-      nullFlags = new BitSet(numBytesOfNullFlags);
-      headerSize = RECORD_SIZE + 2 + numBytesOfNullFlags;
+      numBitsOfNullFlags = (int) Math.ceil((double)schema.getColumnNum());
+      nullFlags = new BitArray(numBitsOfNullFlags);
+      headerSize = RECORD_SIZE + 2 + nullFlags.size();
 
       super.init();
     }
@@ -122,7 +120,7 @@ public class RawFile {
       int recordSize = buffer.getInt();
       int nullFlagSize = buffer.getShort();
       buffer.limit(buffer.position() + nullFlagSize);
-      nullFlags = BitSet.valueOf(buffer);
+      nullFlags.fromByteBuffer(buffer);
 
       // restore the start of record contents
       buffer.limit(bufferLimit);
@@ -252,10 +250,10 @@ public class RawFile {
     private DataType[] columnTypes;
 
     private ByteBuffer buffer;
-    private BitSet nullFlags;
+    private BitArray nullFlags;
     private int headerSize = 0;
     private static final int RECORD_SIZE = 4;
-    private int numBytesOfNullFlags;
+    private int numBitsOfNullFlags;
 
     private TableStatistics stats;
 
@@ -278,9 +276,9 @@ public class RawFile {
       buffer = ByteBuffer.allocateDirect(65535);
 
       // comput the number of bytes, representing the null flags
-      numBytesOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()) / 8);
-      nullFlags = new BitSet(numBytesOfNullFlags);
-      headerSize = RECORD_SIZE + 2 + numBytesOfNullFlags;
+      numBitsOfNullFlags = (int) Math.ceil((double)schema.getColumnNum());
+      nullFlags = new BitArray(numBitsOfNullFlags);
+      headerSize = RECORD_SIZE + 2 + nullFlags.size();
 
       if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
@@ -430,7 +428,7 @@ public class RawFile {
       int pos = buffer.position();
       buffer.position(recordOffset);
       buffer.putInt(pos - recordOffset);
-      byte [] flags = nullFlags.toByteArray();
+      byte [] flags = nullFlags.toArray();
       buffer.putShort((short) flags.length);
       buffer.put(flags);
       buffer.position(pos);

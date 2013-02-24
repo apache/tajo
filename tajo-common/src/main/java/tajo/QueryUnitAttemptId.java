@@ -16,12 +16,12 @@
 
 package tajo;
 
+import com.google.common.base.Objects;
 import tajo.TajoIdProtos.QueryUnitAttemptIdProto;
 import tajo.TajoIdProtos.QueryUnitAttemptIdProtoOrBuilder;
 import tajo.common.ProtoObject;
 
 import java.text.NumberFormat;
-import java.util.Objects;
 
 public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId>,
     ProtoObject<QueryUnitAttemptIdProto> {
@@ -123,7 +123,7 @@ public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId>,
 
   @Override
   public int hashCode() {
-    return Objects.hash(getQueryUnitId(), getId());
+    return Objects.hashCode(getQueryUnitId(), getId());
   }
 
   @Override

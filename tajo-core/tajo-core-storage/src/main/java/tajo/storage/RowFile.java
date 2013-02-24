@@ -36,6 +36,7 @@ import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.datum.json.GsonCreator;
 import tajo.storage.exception.AlreadyExistsStorageException;
+import tajo.util.BitArray;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -43,7 +44,6 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.BitSet;
 
 public class RowFile {
   public static final Log LOG = LogFactory.getLog(RowFile.class);
@@ -65,8 +65,8 @@ public class RowFile {
 
     private ByteBuffer buffer;
     private final int tupleHeaderSize;
-    private BitSet nullFlags;
-    private int numBytesOfNullFlags;
+    private BitArray nullFlags;
+    private int numBitsOfNullFlags;
     private long bufferStartPos;
 
     public RowFileScanner(Configuration conf, final TableMeta meta,
@@ -76,9 +76,9 @@ public class RowFile {
       SYNC_INTERVAL =
           conf.getInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname,
               SYNC_SIZE * 100);
-      numBytesOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()) / 8);
-      nullFlags = new BitSet(numBytesOfNullFlags);
-      tupleHeaderSize = numBytesOfNullFlags + (2 * Short.SIZE/8);
+      numBitsOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()));
+      nullFlags = new BitArray(numBitsOfNullFlags);
+      tupleHeaderSize = nullFlags.size() + (2 * Short.SIZE/8);
       this.start = fragment.getStartOffset();
       this.end = this.start + fragment.getLength();
 
@@ -136,11 +136,7 @@ public class RowFile {
     private boolean checkSync() throws IOException {
       buffer.getInt();                           // escape
       buffer.get(checkSync, 0, SYNC_HASH_SIZE);  // sync
-      if (!Arrays.equals(checkSync, sync)) {
-        return false;
-      } else {
-        return true;
-      }
+      return Arrays.equals(checkSync, sync);
     }
 
     private boolean fillBuffer() throws IOException {
@@ -184,7 +180,7 @@ public class RowFile {
       int nullFlagSize = buffer.getShort();
       byte[] nullFlagBytes = new byte[nullFlagSize];
       buffer.get(nullFlagBytes, 0, nullFlagSize);
-      nullFlags = BitSet.valueOf(nullFlagBytes);
+      nullFlags = new BitArray(nullFlagBytes);
       int tupleSize = buffer.getShort();
 
       while (buffer.remaining() < (tupleSize)) {
@@ -319,8 +315,8 @@ public class RowFile {
     private byte[] sync;
     private ByteBuffer buffer;
 
-    private BitSet nullFlags;
-    private int numBytesOfNullFlags;
+    private BitArray nullFlags;
+    private int numBitsOfNullFlags;
 
     // statistics
     private TableStatistics stats;
@@ -361,8 +357,8 @@ public class RowFile {
 
       buffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
 
-      numBytesOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()) / 8);
-      nullFlags = new BitSet(numBytesOfNullFlags);
+      numBitsOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()));
+      nullFlags = new BitArray(numBitsOfNullFlags);
 
       if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
@@ -473,7 +469,7 @@ public class RowFile {
         }
       }
 
-      byte[] bytes = nullFlags.toByteArray();
+      byte[] bytes = nullFlags.toArray();
       out.writeShort(bytes.length);
       out.write(bytes);
 

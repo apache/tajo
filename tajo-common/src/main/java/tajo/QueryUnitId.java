@@ -16,13 +16,13 @@
 
 package tajo;
 
+import com.google.common.base.Objects;
 import tajo.TajoIdProtos.QueryUnitIdProto;
 import tajo.TajoIdProtos.QueryUnitIdProtoOrBuilder;
 import tajo.common.ProtoObject;
 import tajo.util.TajoIdUtils;
 
 import java.text.NumberFormat;
-import java.util.Objects;
 
 /**
  * @author Hyunsik Choi
@@ -131,7 +131,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   
   @Override
   public int hashCode() {
-    return Objects.hash(getSubQueryId(), getId());
+    return Objects.hashCode(getSubQueryId(), getId());
   }
 
   @Override
