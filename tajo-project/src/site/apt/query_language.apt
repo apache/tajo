@@ -6,7 +6,6 @@
              2013-02-01
 
   Tajo supports SQL2003 and some extensions.
-  (WORKING)
 
 DDL
 
@@ -47,3 +46,5 @@ SELECT [distinct [all]] * | <expression> [[AS] <alias>] [, ...]
 ** ORDER BY
 
 * JOIN
+
+  <(still working)>

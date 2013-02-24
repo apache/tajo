@@ -3,13 +3,13 @@
             ------
             Hyunsik Choi
             ------
-             2013-02-01
+             2013-02-24
 
 Build Requirements
 
   * Unix System
 
-  * Java 1.7 or higher
+  * Java 1.6 or higher
 
   * Protocol Buffers 2.4.1 or higher
 
@@ -28,15 +28,17 @@ Maven main modules
     |------ tajo-catalog
     |------ tajo-core
     |------ tajo-rpc
+    |------ tajo-algebra
+    |------ tajo-frontend
     |------ tajo-dist              (Tajo distribution assembler)
 ------------------------------------------------------------------------------------------
 
 Building Tajo from Source
 
-  Download the source code from the git repository (https://github.com/hyunsik/tajo) as follows:
+  Download the source code from the git repository (https://github.com/tajo-project/tajo) as follows:
 
 ------------------------------------------------
-$ git clone git@github.com:hyunsik/tajo.git
+$ git clone https://github.com/tajo-project/tajo
 ------------------------------------------------
 
   Then, you can execute maven with the following goals:

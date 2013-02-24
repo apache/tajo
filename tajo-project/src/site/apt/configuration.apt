@@ -3,26 +3,99 @@
             ------
             Hyunsik Choi
             ------
-             2013-02-15
+             2013-02-24
+
+Preliminary
+
+  Tajo's configuration is based on Hadoop's configuration system. Tajo provides two config files:
+
+  * catalog-site.xml - configuration for the catalog server.
+
+  * tajo-site.xml - configuration for other tajo modules.
+
+ []
+
+  Each config consists of a pair of name and value. If you set the config name <a.b.c> with
+  value <123>. Add the following config to an appropriate file.
+
+---------------------------------------------------------------------
+  <property>
+    <name>a.b.c</name>
+    <value>123</value>
+  </property>
+---------------------------------------------------------------------
+
+  Tajo has a variety of internal configs. If you don't set some config explicitly, the default
+  parameters will be used for for that config. <Tajo is designed to use only a few of configs
+  in most cases. You may not be concerned with the configuration.>
 
 Setting up catalog-site.xml
 
-  Add the following configs to your catalog-site.xml.
+  If you want to customize the catalog service, copy ${TAJO_HOME}/conf/catalog-site.xml.templete
+  to catalog-site.xml. Then, add the following configs to catalog-site.xml.
+  Note that the default configs are enough to launch Tajo cluster in most cases.
 
----------------------------------------------
+  * <<catalog.master.addr>>
+
+    If you want to launch a catalog server separately, specify this address.
+    This config has a form <hostname:port>. Its default value is <localhost:9002>.
+
+  * <<tajo.catalog.store.class>>
+
+     If you want to change the persistent storage of the catalog server, specify the class name.
+     Its default value is <tajo.catalog.store.DBStore>. In the current version, Tajo provides
+     two persistent storage classes as follows:
+
+     * tajo.catalog.store.DBStore - this storage class uses Apache Derby.
+
+     * tajo.catalog.store.MemStore - this is the in-memory storage. It is only used in unit tests
+     to shorten the duration of unit tests.
+
+Setting up tajo-site.xml
+
+  Copy ${TAJO_HOME}/conf/tajo-site.xml.templete to tajo-site.xml.
+  Then, add the following configs to your ${TAJO_HOMAE}/conf/tajo-site.xml.
+  The following two configs must be set to launch a tajo cluster.
+
+---------------------------------------------------------------------
   <property>
-    <name>catalog.master.addr</name>
-    <value>localhost:9002</value>
+    <name>tajo.rootdir</name>
+    <value>hdfs://hostname:port/tajo</value>
   </property>
 
   <property>
-    <name>catalog.store.class</name>
-    <value>tajo.catalog.store.DBStore</value>
+    <name>tajo.cluster.distributed</name>
+    <value>true</value>
   </property>
+---------------------------------------------------------------------
 
-  <property>
-    <name>catalog.jdbc.uri</name>
-    <value>jdbc:derby:/tmp/tcat-${user.name}/db</value>
-  </property>
----------------------------------------------
+  * <<tajo.rootdir>>
 
+   Specify the root directory of tajo. This parameter should be a url form
+   (e.g., <hdfs://namenode_hostname:port/path>). You can also use <file://> scheme.
+
+  * <<tajo.cluster.distributed>>
+
+   It is a flag used internally. Now, it must be true.
+
+  []
+
+  The following are other parameters. DO NOT modify the following configs unless you are an expert.
+
+  * <<tajo.task.localdir>>
+
+  * <<tajo.join.task-volume.mb>>
+
+  * <<tajo.sort.task-volume.mb>>
+
+  * <<tajo.task-aggregation.volume.mb>>
+
+  * <<tajo.join.part-volume.mb>>
+
+  * <<tajo.sort.part-volume.mb>>
+
+  * <<tajo.aggregation.part-volume.mb>>
+
+  []
+
+  <(still working)>

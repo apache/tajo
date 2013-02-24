@@ -10,7 +10,7 @@ Build Tajo from Source Code
   Download the source code and build Tajo as follows:
 
 ---------------------------------------------
-$ git clone git://github.com/hyunsik/tajo.git
+$ git clone git://github.com/tajo-project/tajo.git
 $ cd tajo
 $ mvn package -DskipTests -Ddisk -Ptar
 $ ls tajo-dist/target/tajo-x.y.z.tar.gz

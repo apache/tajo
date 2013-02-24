@@ -1,10 +1,11 @@
-Tajo is an distributed query execution engine. It is designed for fast
-scalable ETL, aggregation, join and sort operations. Tajo is 
-fault-tolerant, and it provides SQL. Tajo makes use of HDFS as a primary
-storage layer and has its own query execution engine. It incorporates 
-the advantages of both MapReduce and Parallel DBMS. Tajo is still in under
-heavy development (alpha stage), but now you can execute usual SQL queries
-except for nested queries.
+Tajo is a relational and distributed data warehouse system for Hadoop.
+Tajo is designed for low-latency and scalable ad-hoc queries, online aggregation
+and ETL on large-data sets by leveraging advanced database techniques.
+It supports SQL standards. It has its own query engine which allows direct
+control of distributed execution and data flow. As a result, Tajo has
+a variety of query evaluation strategies and more optimization opportunities.
+In addition, Tajo will have a native columnar execution and and its optimizer.
+Tajo will be an alternative choice to Hive/Pig on the top of MapReduce.
 
 Project
 =======
@@ -18,10 +19,10 @@ License
 
 Documents
 =========
-* Getting Started (http://hyunsik.github.com/tajo/getting_started.html)
-* Build Instruction (http://hyunsik.github.com/tajo/build.html)
-* Query Language (http://hyunsik.github.com/tajo/query_language.html)
-* Configuration Guide (http://hyunsik.github.com/tajo/configuration.html)
+* Getting Started (http://tajo-project.github.com/tajo/getting_started.html)
+* Build Instruction (http://tajo-project.github.com/tajo/build.html)
+* Query Language (http://tajo-project.github.com/tajo/query_language.html)
+* Configuration Guide (http://tajo-project.github.com/tajo/configuration.html)
 
 Presentations and Papers
 ========================
