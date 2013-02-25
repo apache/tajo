@@ -10,10 +10,10 @@ What is Tajo?
 	Tajo is a relational and distributed data warehouse system for Hadoop.
 	Tajo is designed for low-latency and scalable ad-hoc queries, online aggregation
 	and ETL on large-data sets by leveraging advanced database techniques.
-	It supports SQL standards. It has its own query engine which allows direct
-	control of distributed execution and data flow. As a result, Tajo has
-	a variety of query evaluation strategies and more optimization opportunities.
-	In addition, Tajo will have a native columnar execution and and its optimizer.
+	It supports SQL standards. Tajo uses HDFS as a primary storage layer and
+	has its own query engine which allows direct control of distributed execution and data flow.
+	As a result, Tajo has a variety of query evaluation strategies and more optimization
+	opportunities. In addition, Tajo will have a native columnar execution and and its optimizer.
 	Tajo will be an alternative choice to Hive/Pig on the top of MapReduce.
 
 Current Status
@@ -21,11 +21,11 @@ Current Status
   Tajo is in the alpha stage. Users can execute usual SQL queries (e.g., selection, projection,
   group-by, join, union and sort) except for nested queries. Tajo provides
   various storage formats, such as CSV, RCFile, RowFile (a row-store file we have implemented),
-  and Trevni, and it also a rudimentary ETL feature to transform one data format to another data
+  and Trevni, and it also has a rudimentary ETL feature to transform one data format to another data
   format. In addition, Tajo provides hash and range repartitions. By using both repartition
   methods, Tajo processes aggregation, join, and sort queries over a number of cluster nodes.
   If you want to know the current status in more detail, checkout this
-  {{{http://dbserver.korea.ac.kr/~hyunsik/files/tajo_intro.pdf}Slide}}.
+  {{{http://www.slideshare.net/hyunsikchoi/tajo-intro}Slide}}.
 
 Why Tajo?
 
@@ -37,12 +37,12 @@ Why Tajo?
 
   * <<Low latency>>
 
-  We have two goals for low-latency queries.
-  The first goal is to allow users to get estimates of an aggregate query in an online fashion
-  as soon as the query is submitted. This is feasible if a user wants a quick picture
-  rather exact results.The second goal is efficient query processing.
-  We achieve it with various query evaluation strategies, query optimization,
-  high throughput engine, and and efficient I/O.
+  We have two goals for low-latency queries. The first goal is to allow users to get estimates
+  of an aggregate query in an online fashion as soon as the query is submitted.
+  This is feasible if a user wants a quick picture
+  rather than exact results. The second goal is efficient query processing. We achieve it with
+  various query evaluation strategies, query optimization, high throughput engine, and and
+  efficient I/O.
 
   * <<In-situ processing>>
 
@@ -54,7 +54,7 @@ Why Tajo?
   * <<Fault tolerance>>
 
   Long-running queries are also required to process big data.
-  Tajo supports the faults tolerance to avoid a complete query restart
+  Tajo supports the fault tolerance to avoid a complete query restart
   in the case that the query fails.
 
 Documentation
@@ -69,7 +69,7 @@ Documentation
 
 Presentations
 
-  * <<[2013-02-24]>> {{{http://dbserver.korea.ac.kr/~hyunsik/files/tajo_intro.pdf}Introduction to Tajo}}
+  * <<[2013-02-24]>> {{{http://www.slideshare.net/hyunsikchoi/tajo-intro}Introduction to Tajo}}
 
 News
 

@@ -15,8 +15,8 @@ Preliminary
 
  []
 
-  Each config consists of a pair of name and value. If you set the config name <a.b.c> with
-  value <123>. Add the following config to an appropriate file.
+  Each config consists of a pair of a name and a value. If you want to set the config name <a.b.c>
+  with the value <123>, add the following element to an appropriate file.
 
 ---------------------------------------------------------------------
   <property>
@@ -26,8 +26,8 @@ Preliminary
 ---------------------------------------------------------------------
 
   Tajo has a variety of internal configs. If you don't set some config explicitly, the default
-  parameters will be used for for that config. <Tajo is designed to use only a few of configs
-  in most cases. You may not be concerned with the configuration.>
+  config will be used for for that config. Tajo is designed to use only a few of configs
+  in usual cases. You may not be concerned with the configuration.
 
 Setting up catalog-site.xml
 
@@ -38,7 +38,7 @@ Setting up catalog-site.xml
   * <<catalog.master.addr>>
 
     If you want to launch a catalog server separately, specify this address.
-    This config has a form <hostname:port>. Its default value is <localhost:9002>.
+    This config has a form of <hostname:port>. Its default value is <localhost:9002>.
 
   * <<tajo.catalog.store.class>>
 
@@ -54,8 +54,8 @@ Setting up catalog-site.xml
 Setting up tajo-site.xml
 
   Copy ${TAJO_HOME}/conf/tajo-site.xml.templete to tajo-site.xml.
-  Then, add the following configs to your ${TAJO_HOMAE}/conf/tajo-site.xml.
-  The following two configs must be set to launch a tajo cluster.
+  Then, add the following configs to your tajo-site.xml.
+  <<The following two configs must be set to launch a tajo cluster.>>
 
 ---------------------------------------------------------------------
   <property>
@@ -76,11 +76,12 @@ Setting up tajo-site.xml
 
   * <<tajo.cluster.distributed>>
 
-   It is a flag used internally. Now, it must be true.
+   It is a flag used internally. It must be true.
 
   []
 
-  The following are other parameters. DO NOT modify the following configs unless you are an expert.
+  The followings are other parameters. DO NOT modify the following configs unless you are an expert
+  of Tajo.
 
   * <<tajo.task.localdir>>
 

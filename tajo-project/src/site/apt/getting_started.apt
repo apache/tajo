@@ -5,6 +5,12 @@
             ------
              2013-02-01
 
+Prerequisites
+
+  * Hadoop 2.0.2-alpha or higher
+
+  * Java 1.6 or higher
+
 Build Tajo from Source Code
 
   Download the source code and build Tajo as follows:
@@ -72,6 +78,24 @@ cp $TAJO_HOME/tajo-core-pullserver-x.y.z.jar $HADOOP_HOME/share/yarn/lib
 cp $TAJO_HOME/tajo-core-storage-x.y.z.jar $HADOOP_HOME/share/yarn/lib
 ------------------------------------------------------------------------
 
+  Copy ${TAJO_HOME}/conf/tajo-site.xml.templete to tajo-site.xml.
+  Then, add the following configs to your tajo-site.xml.
+  Change <hostname> and <port> to your namenode address.
+
+---------------------------------------------------------------------
+  <property>
+    <name>tajo.rootdir</name>
+    <value>hdfs://hostname:port/tajo</value>
+  </property>
+
+  <property>
+    <name>tajo.cluster.distributed</name>
+    <value>true</value>
+  </property>
+---------------------------------------------------------------------
+
+  If you want know configuration in more detail, refer to
+  {{{./configuration.html}Configuration Guide}}.
 
 Running Tajo
 
@@ -93,3 +117,7 @@ $TAJO_HOME/bin/start-tajo.sh
 -----------------------------
 $TAJO_HOME/bin/tajo cli
 -----------------------------
+
+[]
+
+  (still working)
