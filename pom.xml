@@ -64,20 +64,12 @@
         <enabled>false</enabled>
       </snapshots>
     </repository>
-    <repository>
-      <id>cloudera.repo</id>
-      <url>https://repository.cloudera.com/content/repositories/releases/</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
   </repositories>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <tajo.version>0.2.0-SNAPSHOT</tajo.version>
-    <hadoop.version>2.0.2-alpha</hadoop.version>
   </properties>
 
   <modules>

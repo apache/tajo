@@ -327,8 +327,15 @@ public class TajoTestingCluster {
     this.dfsCluster.waitClusterUp();
 
     LOG.info("Starting up YARN cluster");
+    // Scheduler properties required for YARN to work
+    conf.set("yarn.scheduler.capacity.root.queues", "default");
+    conf.set("yarn.scheduler.capacity.root.default.capacity", "100");
+
     conf.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB, 384);
     conf.setInt(YarnConfiguration.RM_SCHEDULER_MAXIMUM_ALLOCATION_MB, 3000);
+    conf.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_VCORES, 1);
+    conf.setInt(YarnConfiguration.RM_SCHEDULER_MAXIMUM_ALLOCATION_CORES, 2);
+
     if (yarnCluster == null) {
       yarnCluster = new MiniTajoYarnCluster(TajoTestingCluster.class.getName(), 3);
       yarnCluster.init(conf);

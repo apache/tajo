@@ -169,7 +169,6 @@
               <arguments>
                 <argument>-Isrc/main/proto/</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
-                <argument>src/main/proto/yarn_protos.proto</argument>
                 <argument>src/main/proto/tajo_protos.proto</argument>
                 <argument>src/main/proto/MasterWorkerProtos.proto</argument>
                 <argument>src/main/proto/MasterWorkerProtocol.proto</argument>
@@ -332,11 +331,6 @@
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.zookeeper</groupId>
-      <artifactId>zookeeper</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

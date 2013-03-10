@@ -161,7 +161,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
 
     // TODO - to be improved with tajo.sh shell script
     Properties prop = System.getProperties();
-    if (prop.getProperty("tajo.test", "FALSE").equals("TRUE")) {
+    if (prop.getProperty("tajo.test", "FALSE").equalsIgnoreCase("TRUE")) {
       environment.put(Environment.CLASSPATH.name(), prop.getProperty(
           "java.class.path", null));
     } else {

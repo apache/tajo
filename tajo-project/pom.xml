@@ -32,7 +32,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <tajo.version>0.2.0-SNAPSHOT</tajo.version>
-    <hadoop.version>2.0.2-alpha</hadoop.version>
+    <hadoop.version>2.0.3-alpha</hadoop.version>
     <github.global.server>github</github.global.server>
   </properties>
 
@@ -135,13 +135,6 @@
     <repository>
       <id>eclipse-jetty</id>
       <url>http://repo2.maven.org/maven2/org/eclipse/jetty/jetty-distribution/</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>cloudera.repo</id>
-      <url>https://repository.cloudera.com/content/repositories/releases/</url>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
@@ -711,26 +704,6 @@
         <groupId>org.jboss.netty</groupId>
         <artifactId>netty</artifactId>
         <version>3.2.4.Final</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.zookeeper</groupId>
-        <artifactId>zookeeper</artifactId>
-        <version>3.3.3-cdh3u1</version>
-        <exclusions>
-          <exclusion>
-            <!-- otherwise seems to drag in junit 3.8.1 via jline -->
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.sun.jdmk</groupId>
-            <artifactId>jmxtools</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.sun.jmx</groupId>
-            <artifactId>jmxri</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
     </dependencies>
   </dependencyManagement>

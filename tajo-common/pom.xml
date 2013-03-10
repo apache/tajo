@@ -90,7 +90,6 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                 <argument>--java_out=target/generated-sources/proto</argument>
                 <argument>src/main/proto/TestProtos.proto</argument>
                 <argument>src/main/proto/TajoIdProtos.proto</argument>
-                <argument>src/main/proto/yarn_protos.proto</argument>
               </arguments>
             </configuration>
             <goals>
