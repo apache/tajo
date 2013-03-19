@@ -6,7 +6,7 @@ Requirements:
 * Unix System
 * JDK 1.7
 * Maven 3.0
-* ProtocolBuffer 2.4.1+
+* Protocol Buffers 2.4.1
 * Internet connection for first build (to fetch all Maven and Tajo dependencies)
 
 ----------------------------------------------------------------------------------
@@ -51,3 +51,4 @@ Create binary distribution
   $ mvn package -Pdist -DskipTests -Dtar
 
 ----------------------------------------------------------------------------------
+

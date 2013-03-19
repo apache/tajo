@@ -11,7 +11,7 @@ Build Requirements
 
   * Java 1.6 or higher
 
-  * Protocol Buffers 2.4.1 or higher
+  * Protocol Buffers 2.4.1 
 
   * Maven 3.0 or higher
 
@@ -87,3 +87,4 @@ $ cd tajo-x.y.z
 $ mvn clean package -DskipTests -Pdist -Dtar
 $ ls tajo-dist/target/tajo-x.y.z-SNAPSHOT.tar.gz
 ------------------------------------------------
+
