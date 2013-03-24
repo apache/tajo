@@ -172,10 +172,6 @@ public class RCFileWrapper {
       super(conf, meta, fragment);
       fs = fragment.getPath().getFileSystem(conf);
 
-      reader = new RCFile.Reader(fs, fragment.getPath(), conf);
-      if (fragment.getStartOffset() > reader.getPosition()) {
-        reader.sync(fragment.getStartOffset()); // sync to start
-      }
       end = fragment.getStartOffset() + fragment.getLength();
       more = fragment.getStartOffset() < end;
 
@@ -190,6 +186,11 @@ public class RCFileWrapper {
       }
 
       prepareProjection(targets);
+
+      reader = new RCFile.Reader(fs, fragment.getPath(), conf);
+      if (fragment.getStartOffset() > reader.getPosition()) {
+        reader.sync(fragment.getStartOffset()); // sync to start
+      }
 
       super.init();
     }

@@ -1,0 +1,13 @@
+Tajo Change Log
+
+Release 0.2.0 - unreleased
+
+  NEW FEATURES
+
+  IMPROVEMENTS
+
+  BUG FIXES
+
+    TAJO-1: RCFileWrapper always reads whole columns regardless of the target 
+    schema. (jihoonson via hyunsik)
+

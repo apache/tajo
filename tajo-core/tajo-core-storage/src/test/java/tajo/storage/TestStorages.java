@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @RunWith(Parameterized.class)
 public class TestStorages {
@@ -165,6 +166,9 @@ public class TestStorages {
     int tupleCnt = 0;
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
+      if (storeType == StoreType.RCFILE || storeType == StoreType.TREVNI) {
+        assertNull(tuple.get(0));
+      }
       assertEquals(DatumFactory.createLong(tupleCnt + 2), tuple.getLong(1));
       assertEquals(DatumFactory.createFloat(tupleCnt + 3), tuple.getFloat(2));
       tupleCnt++;
