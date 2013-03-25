@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -28,9 +26,6 @@ import tajo.catalog.proto.CatalogProtos.IndexMethod;
 import tajo.engine.eval.EvalNode;
 import tajo.engine.eval.InvalidEvalException;
 
-/**
- * @author Hyunsik Choi
- */
 public class ParseUtil {
   private static final Log LOG = LogFactory.getLog(ParseUtil.class);
   

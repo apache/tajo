@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -31,10 +29,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-/**
- * @author Hyunsik Choi
- *
- */
 public class BytesDatum extends Datum {
 	@Expose private byte[] val;
 	private ByteBuffer bb = null;

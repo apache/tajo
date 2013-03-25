@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -25,9 +25,6 @@ import tajo.util.TajoIdUtils;
 
 import static org.junit.Assert.*;
 
-/**
- * @author Hyunsik Choi
- */
 public class TestQueryUnitId {
   @Test
   public void testQueryId() {

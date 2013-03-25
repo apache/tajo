@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,9 +16,6 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
 package tajo.engine.eval;
 
 import com.google.common.base.Preconditions;
@@ -32,9 +27,6 @@ import tajo.datum.DatumFactory;
 import tajo.engine.utils.SchemaUtil;
 import tajo.storage.Tuple;
 
-/**
- * @author Hyunsik Choi
- */
 public class NotEval extends EvalNode implements Cloneable {
   @Expose private EvalNode subExpr;
   private static final DataType [] RES_TYPE = SchemaUtil

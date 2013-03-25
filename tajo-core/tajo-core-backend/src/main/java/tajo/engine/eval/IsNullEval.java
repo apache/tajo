@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -30,9 +28,6 @@ import tajo.datum.DatumFactory;
 import tajo.engine.utils.SchemaUtil;
 import tajo.storage.Tuple;
 
-/**
- * @author Hyunsik Choi
- */
 public class IsNullEval extends BinaryEval {
   private final static ConstEval NULL_EVAL = new ConstEval(DatumFactory.createNullDatum());
   private static final CatalogProtos.DataType[] RES_TYPE = SchemaUtil.newNoNameSchema(CatalogProtos.DataType.BOOLEAN);

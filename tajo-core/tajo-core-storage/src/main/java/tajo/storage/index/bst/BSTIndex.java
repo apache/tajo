@@ -1,9 +1,11 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -41,15 +43,11 @@ import java.util.Set;
 import java.util.TreeMap;
 
 /**
- * @author Ryu Hyo Seok
- * @author Hyunsik Choi
- * 
  * This is two-level binary search tree index. This is one of the value-list 
  * index structure. Thus, it is inefficient in the case where 
  * the many of the values are same. Also, the BST shows the fast performance 
  * when the selectivity of rows to be retrieved is less than 5%.
  * BSTIndexWriter is not thread-safe, whereas BSTIndexReader is thread-safe.
- *
  */
 public class BSTIndex implements IndexMethod {
   private static final Log LOG = LogFactory.getLog(BSTIndex.class);

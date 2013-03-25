@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -27,9 +25,6 @@ import tajo.engine.eval.EvalNode;
 import tajo.engine.parser.QueryBlock.Target;
 import tajo.storage.Tuple;
 
-/**
- * @author Hyunsik Choi
- */
 public class Projector {
   private final Schema inSchema;
   private final Schema outSchema;

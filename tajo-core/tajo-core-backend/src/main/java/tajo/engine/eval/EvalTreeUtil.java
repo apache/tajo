@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -33,9 +31,6 @@ import tajo.exception.InternalException;
 
 import java.util.*;
 
-/**
- * @author Hyunsik Choi
- */
 public class EvalTreeUtil {
   public static void changeColumnRef(EvalNode node, Column oldName, 
       Column newName) {

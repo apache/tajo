@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -29,10 +27,6 @@ import tajo.engine.json.GsonCreator;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.JoinType;
 
-/**
- * @author Hyunsik Choi
- * 
- */
 public class JoinNode extends BinaryNode implements Cloneable {
   @Expose private JoinType joinType;
   @Expose private EvalNode joinQual;

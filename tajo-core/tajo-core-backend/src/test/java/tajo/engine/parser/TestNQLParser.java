@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package tajo.engine.parser;
 
 import org.antlr.runtime.ANTLRStringStream;
@@ -11,13 +29,6 @@ import tajo.engine.query.exception.TQLSyntaxError;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-/**
- * 이 클래스는 작성된 Antlr룰에 따라 생성되는 파서의 
- * abstract syntext tree가 예상되로 구성되는지 테스트 한다.
- * 
- * @author Hyunsik Choi
- * 
- */
 public class TestNQLParser {
   static final String[] selQueries = {
       "select id, name, age, gender from people", // 0

@@ -5,6 +5,7 @@ Release 0.2.0 - unreleased
   NEW FEATURES
 
   IMPROVEMENTS
+    TAJO-2: remove all @author tags and update license header (hyunsik)
 
   BUG FIXES
 

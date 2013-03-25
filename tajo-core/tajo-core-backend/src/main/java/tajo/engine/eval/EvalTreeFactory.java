@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,17 +16,10 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
 package tajo.engine.eval;
 
 import tajo.datum.Datum;
 
-/**
- * @author Hyunsik Choi
- *
- */
 public class EvalTreeFactory {
 	public static ConstEval newConst(Datum datum) {
 		return new ConstEval(datum);

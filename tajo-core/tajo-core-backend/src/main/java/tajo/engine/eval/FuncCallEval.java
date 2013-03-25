@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -32,9 +30,6 @@ import tajo.storage.Tuple;
 import tajo.storage.VTuple;
 import tajo.util.TUtil;
 
-/**
- * @author Hyunsik Choi
- */
 public class FuncCallEval extends FuncEval {
 	@Expose protected GeneralFunction instance;
   private Tuple tuple;

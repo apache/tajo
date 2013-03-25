@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,9 +21,6 @@ package tajo.engine.planner;
 import org.antlr.runtime.tree.Tree;
 import tajo.engine.parser.ParseTree;
 
-/**
- * @author Hyunsik Choi
- */
 public class PlanningContextImpl implements PlanningContext  {
   private String rawQuery;
   // private TableMap tableMap = new TableMap();

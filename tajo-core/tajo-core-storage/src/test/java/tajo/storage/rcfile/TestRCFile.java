@@ -608,7 +608,7 @@ public class TestRCFile {
     Configuration conf = new Configuration();
     LocalFileSystem fs = FileSystem.getLocal(conf);
     // create an empty file (which is not a valid rcfile)
-    Path path = new Path(System.getProperty("test.build.data", ".")
+    Path path = new Path(System.getProperty("test.build.data", "target")
         + "/broken.rcfile");
     fs.create(path).close();
     // try to create RCFile.Reader

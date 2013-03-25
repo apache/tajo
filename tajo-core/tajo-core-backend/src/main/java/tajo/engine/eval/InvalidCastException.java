@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -23,10 +21,6 @@
  */
 package tajo.engine.eval;
 
-/**
- * @author Hyunsik Choi
- *
- */
 public class InvalidCastException extends RuntimeException {
 	private static final long serialVersionUID = -5090530469575858320L;
 

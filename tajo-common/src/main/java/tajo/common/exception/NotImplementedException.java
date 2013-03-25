@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -22,14 +20,8 @@ package tajo.common.exception;
 
 public class NotImplementedException extends RuntimeException {
 
-  /**
-   * 
-   */
   private static final long serialVersionUID = 8515328809349325243L;
 
-  /**
-   * 
-   */
   public NotImplementedException() {
   }
 

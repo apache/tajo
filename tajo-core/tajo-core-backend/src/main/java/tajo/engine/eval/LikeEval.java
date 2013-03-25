@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,9 +16,6 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
 package tajo.engine.eval;
 
 import com.google.gson.annotations.Expose;
@@ -36,9 +31,6 @@ import tajo.storage.Tuple;
 
 import java.util.regex.Pattern;
 
-/**
- * @author Hyunsik Choi
- */
 public class LikeEval extends BinaryEval {
   @Expose private boolean not;
   @Expose private Column column;

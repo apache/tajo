@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -32,9 +30,6 @@ import tajo.storage.Tuple;
 
 import java.util.List;
 
-/**
- * @author Hyunsik Choi
- */
 public class CaseWhenEval extends EvalNode {
   @Expose private List<WhenEval> whens = Lists.newArrayList();
   @Expose private EvalNode elseResult;

@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -30,9 +28,6 @@ import tajo.engine.json.GsonCreator;
 import tajo.engine.utils.SchemaUtil;
 import tajo.storage.Tuple;
 
-/**
- * @author Hyunsik Choi 
- */
 public class FieldEval extends EvalNode implements Cloneable {
 	@Expose private Column column;
 	@Expose	private int fieldId = -1;

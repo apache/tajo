@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,11 +22,6 @@ import com.google.gson.annotations.Expose;
 import tajo.engine.eval.EvalNode;
 import tajo.engine.json.GsonCreator;
 
-/**
- * 
- * @author Hyunsik Choi
- *
- */
 public class SelectionNode extends UnaryNode implements Cloneable {
 
 	@Expose

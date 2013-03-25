@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -51,9 +49,6 @@ import java.util.*;
 
 /**
  * This class optimizes a logical plan corresponding to one query block.
- * 
- * @author Hyunsik Choi
- *
  */
 public class LogicalOptimizer {
   private static Log LOG = LogFactory.getLog(LogicalOptimizer.class);

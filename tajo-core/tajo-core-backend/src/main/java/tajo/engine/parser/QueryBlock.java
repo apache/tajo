@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -40,10 +38,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * This class contains a set of meta data about a query statement.
- *
- * @author Hyunsik Choi
- *
+ * This class contains a set of meta data about a query statement
  */
 public class QueryBlock extends ParseTree {
   private String storeTable = null;

@@ -1,6 +1,4 @@
-/*
- * Copyright 2012 Database Lab., Korea Univ.
- *
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,9 +22,6 @@ import tajo.catalog.Column;
 
 import java.util.Map;
 
-/**
- * @author Hyunsik Choi
- */
 public class AlgebraicUtil {
   
   /**
