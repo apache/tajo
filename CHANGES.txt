@@ -10,4 +10,4 @@ Release 0.2.0 - unreleased
 
     TAJO-1: RCFileWrapper always reads whole columns regardless of the target 
     schema. (jihoonson via hyunsik)
-
+    TAJO-6: Rename tajo.engine.function.builtin.NewSumInt to SumInt. (rsumbaly)

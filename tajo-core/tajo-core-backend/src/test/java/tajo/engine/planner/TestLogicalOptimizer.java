@@ -9,7 +9,7 @@ import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.engine.function.builtin.NewSumInt;
+import tajo.engine.function.builtin.SumInt;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.logical.*;
 import tajo.master.TajoMaster;
@@ -61,7 +61,7 @@ public class TestLogicalOptimizer {
         new Path("file:///"));
     catalog.addTable(score);
 
-    FunctionDesc funcDesc = new FunctionDesc("sumtest", NewSumInt.class, FunctionType.GENERAL,
+    FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.GENERAL,
         new DataType[] {DataType.INT},
         new DataType[] {DataType.INT});
 

@@ -34,7 +34,7 @@ import tajo.engine.eval.BinaryEval;
 import tajo.engine.eval.ConstEval;
 import tajo.engine.eval.EvalNode;
 import tajo.engine.eval.FieldEval;
-import tajo.engine.function.builtin.NewSumInt;
+import tajo.engine.function.builtin.SumInt;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.logical.*;
 import tajo.storage.Tuple;
@@ -85,7 +85,7 @@ public class TestPlannerUtil {
         new Path("file:///"));
     catalog.addTable(score);
 
-    FunctionDesc funcDesc = new FunctionDesc("sumtest", NewSumInt.class, FunctionType.AGGREGATION,
+    FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,
         new DataType [] {DataType.INT},
         new DataType [] {DataType.INT});
 

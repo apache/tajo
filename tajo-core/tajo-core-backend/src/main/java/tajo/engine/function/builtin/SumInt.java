@@ -12,9 +12,9 @@ import tajo.storage.Tuple;
 /**
  * @author Hyunsik Choi
  */
-public class NewSumInt extends AggFunction<Datum> {
+public class SumInt extends AggFunction<Datum> {
 
-  public NewSumInt() {
+  public SumInt() {
     super(new Column[] {
         new Column("val", CatalogProtos.DataType.INT)
     });

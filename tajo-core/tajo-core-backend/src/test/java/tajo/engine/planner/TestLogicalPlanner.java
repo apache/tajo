@@ -35,7 +35,7 @@ import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.IndexMethod;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.engine.eval.EvalNode;
-import tajo.engine.function.builtin.NewSumInt;
+import tajo.engine.function.builtin.SumInt;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.logical.*;
@@ -96,7 +96,7 @@ public class TestLogicalPlanner {
         new Path("file:///"));
     catalog.addTable(score);
 
-    FunctionDesc funcDesc = new FunctionDesc("sumtest", NewSumInt.class, FunctionType.AGGREGATION,
+    FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,
         new DataType [] {DataType.INT},
         new DataType [] {DataType.INT});
 

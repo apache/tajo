@@ -171,7 +171,7 @@ public class TajoMaster extends CompositeService {
     List<FunctionDesc> sqlFuncs = new ArrayList<FunctionDesc>();
 
     // Sum
-    sqlFuncs.add(new FunctionDesc("sum", NewSumInt.class, FunctionType.AGGREGATION,
+    sqlFuncs.add(new FunctionDesc("sum", SumInt.class, FunctionType.AGGREGATION,
         new DataType[] {DataType.INT},
         new DataType[] {DataType.INT}));
     sqlFuncs.add(new FunctionDesc("sum", SumLong.class, FunctionType.AGGREGATION,
