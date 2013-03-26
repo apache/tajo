@@ -5,6 +5,8 @@ Release 0.2.0 - unreleased
   NEW FEATURES
 
   IMPROVEMENTS
+    
+    TAJO-10: Modify git ignore to include Apache derby log file  
 
     TAJO-11: Update file README to reflect Apache incubation. (hyunsik)
 
