@@ -6,9 +6,11 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
-    TAJO-4: Update the project site (hyunsik)
+    TAJO-11: Update file README to reflect Apache incubation. (hyunsik)
 
-    TAJO-2: remove all @author tags and update license header (hyunsik)
+    TAJO-4: Update the project site. (hyunsik)
+
+    TAJO-2: remove all @author tags and update license header. (hyunsik)
 
   BUG FIXES
 

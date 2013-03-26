@@ -1,17 +1,19 @@
+Apache Tajo (incubation)
+========================
 Tajo is a relational and distributed data warehouse system for Hadoop.
-Tajo is designed for low-latency and scalable ad-hoc queries, online aggregation
-and ETL on large-data sets by leveraging advanced database techniques.
-It supports SQL standards. It has its own query engine which allows direct
-control of distributed execution and data flow. As a result, Tajo has
-a variety of query evaluation strategies and more optimization opportunities.
-In addition, Tajo will have a native columnar execution and and its optimizer.
-Tajo will be an alternative choice to Hive/Pig on the top of MapReduce.
+Tajo is designed for low-latency and scalable ad-hoc queries, online
+aggregation and ETL on large-data sets by leveraging advanced database
+techniques. It supports SQL standards. It has its own query engine which
+allows direct control of distributed execution and data flow. As a result,
+Tajo has a variety of query evaluation strategies and more optimization
+opportunities. In addition, Tajo will have a native columnar execution and
+and its optimizer.
 
 Project
 =======
-* Project Home (http://tajo-project.github.com/tajo)
-* Source Repository (http://github.com/tajo-project/tajo)
-* Issue Tracking (https://dbserver.korea.ac.kr/jira/browse/TAJO)
+* Project Home (http://tajo.incubator.apache.org/)
+* Source Repository (https://git-wip-us.apache.org/repos/asf/incubator-tajo.git)
+* Issue Tracking (https://issues.apache.org/jira/browse/TAJO)
 
 License
 =======
@@ -19,13 +21,33 @@ License
 
 Documents
 =========
-* Getting Started (http://tajo-project.github.com/tajo/getting_started.html)
-* Build Instruction (http://tajo-project.github.com/tajo/build.html)
-* Query Language (http://tajo-project.github.com/tajo/query_language.html)
-* Configuration Guide (http://tajo-project.github.com/tajo/configuration.html)
+* Tajo Wiki (http://wiki.apache.org/tajo)
+* Getting Started (http://tajo.incubator.apache.org/getting_started.html)
+* Build Instruction (http://tajo.incubator.apache.org/build.html)
+* Query Language (http://tajo.incubator.apache.org/query_language.html)
+* Configuration Guide (http://tajo.incubator.apache.org/configuration.html)
 
-Presentations and Papers
-========================
-Hyunsik Choi, Jihoon Son, Haemi Yang, Hyoseok Ryu, Byungnam Lim and 
-Yon Dohn Chung, "Tajo: A Distributed Data Warehouse System on Large
-Clusters," IEEE ICDE 2013 (demonstation paper).
+Requirements
+============
+* Java 1.6
+* Hadoop 2.0.3-alpha
+
+Mailing lists
+=============
+* dev@tajo.incubator.apache.org - To discuss and ask development and usage
+  issues. Send an empty email to dev-subscribe@tajo.incubator.apache.org in
+  order to subscribe to this mailing list.
+
+* commits@tajo.incubator.apache.org - In order to monitor commits to the source
+  repository. Send an empty email to commits-subscribe@tajo.incubator.apache.org
+  in order to subscribe to this mailing list.
+
+Disclaimer
+==========
+Apache Tajo is an effort undergoing incubation at The Apache Software
+Foundation (ASF) sponsored by the Apache Incubator PMC. Incubation is required
+of all newly accepted projects until a further review indicates that the
+infrastructure, communications, and decision making process have stabilized in
+a manner consistent with other successful ASF projects. While incubation status
+is not necessarily a reflection of the completeness or stability of the code,
+it does indicate that the project has yet to be fully endorsed by the ASF.
