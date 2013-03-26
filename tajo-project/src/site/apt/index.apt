@@ -14,64 +14,34 @@
 ~~ See the License for the specific language governing permissions and
 ~~ limitations under the License.
 
-            ------
-            Tajo - Introduction
-            ------
-            Hyunsik Choi
-            ------
-             2013-02-25
-
-What is Tajo?
+Introduction
 
 	Tajo is a relational and distributed data warehouse system for Hadoop.
 	Tajo is designed for low-latency and scalable ad-hoc queries, online aggregation
-	and ETL on large-data sets by leveraging advanced database techniques.
-	It supports SQL standards. Tajo uses HDFS as a primary storage layer and
-	has its own query engine which allows direct control of distributed execution and data flow.
-	As a result, Tajo has a variety of query evaluation strategies and more optimization
-	opportunities. In addition, Tajo will have a native columnar execution and and its optimizer.
-	Tajo will be an alternative choice to Hive/Pig on the top of MapReduce.
+	and ETL on large-data sets by leveraging advanced database techniques. It supports SQL standards.
+	Tajo uses HDFS as a primary storage layer and has its own query engine which allows direct
+	control of distributed execution and data flow. As a result, Tajo has a variety of query
+	evaluation strategies and more optimization opportunities. In addition, Tajo will have a native
+	columnar execution and and its optimizer.
 
-Current Status
+Features
 
-  Tajo is in the alpha stage. Users can execute usual SQL queries (e.g., selection, projection,
-  group-by, join, union and sort) except for nested queries. Tajo provides
-  various storage formats, such as CSV, RCFile, RowFile (a row-store file we have implemented),
-  and Trevni, and it also has a rudimentary ETL feature to transform one data format to another data
-  format. In addition, Tajo provides hash and range repartitions. By using both repartition
-  methods, Tajo processes aggregation, join, and sort queries over a number of cluster nodes.
-  If you want to know the current status in more detail, checkout this
-  {{{http://www.slideshare.net/hyunsikchoi/tajo-intro}Slide}}.
+  * Fast and low-latency query processing on SQL queries including projection, filter, group-by,
+  sort, and join.
 
-Why Tajo?
+  * Rudiment ETL that transforms one data format to another data format.
 
-  * <<Scalability>>
+  * Support various file formats, such as CSV, RCFile, RowFile (a row store file), and Trevni.
 
-  Tajo uses Hadoop Distributed File System (HDFS) as a primary storage layer.
-  Tajo incorporates the advantages of MapReduce and shared-nothing parallel databases
-  to yield the scalability.
+  * Command line interface to allow users to submit SQL queries
 
-  * <<Low latency>>
+  * Java API to enable clients to submit SQL queries to Tajo
 
-  We have two goals for low-latency queries. The first goal is to allow users to get estimates
-  of an aggregate query in an online fashion as soon as the query is submitted.
-  This is feasible if a user wants a quick picture
-  rather than exact results. The second goal is efficient query processing. We achieve it with
-  various query evaluation strategies, query optimization, high throughput engine, and and
-  efficient I/O.
+News
 
-  * <<In-situ processing>>
+  * <<[2013-03-07]>> Tajo Project enters incubation.
 
-  Hadoop Distributed File System (HDFS) has played a role of the centralized data storage for
-  data intensive computing. Collected log data and data streams are
-  usually stored into HDFS. Tajo provides a scalable and low-latency means to processes
-  them on location without ETL and additional data loading.
-
-  * <<Fault tolerance>>
-
-  Long-running queries are also required to process big data.
-  Tajo supports the fault tolerance to avoid a complete query restart
-  in the case that the query fails.
+  * <<[2012-10-15]>> A demonstration paper of Tajo was accepted to IEEE ICDE 2013.
 
 Documentation
 
@@ -87,11 +57,11 @@ Presentations
 
   * <<[2013-02-24]>> {{{http://www.slideshare.net/hyunsikchoi/tajo-intro}Introduction to Tajo}}
 
-News
+Disclaimer
 
-	* <<[2012-10-15]>> A demonstration paper of Tajo was accepted to IEEE ICDE 2013.
-
-Contact
-
-	If you have any question or suggestion for the project, please send an email to
-	hyunsik.choi at gmail dot com.
+  Apache Tajo is an effort undergoing incubation at The Apache Software Foundation (ASF)
+  sponsored by the Apache Incubator PMC. Incubation is required of all newly accepted projects
+  until a further review indicates that the infrastructure, communications, and decision making
+  process have stabilized in a manner consistent with other successful ASF projects.
+  While incubation status is not necessarily a reflection of the completeness or stability of the
+  code, it does indicate that the project has yet to be fully endorsed by the ASF.

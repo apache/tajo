@@ -14,31 +14,27 @@
 ~~ See the License for the specific language governing permissions and
 ~~ limitations under the License.
 
-            ------
-            Tajo - Getting Started
-            ------
-            Hyunsik Choi
-            ------
-             2013-02-01
+            ---------------
+            Getting Started
 
 Prerequisites
 
-  * Hadoop 2.0.2-alpha or higher
+  * Hadoop 2.0.3-alpha
 
-  * Java 1.6 or higher
+  * Java 1.6
 
 Build Tajo from Source Code
 
   Download the source code and build Tajo as follows:
 
 ---------------------------------------------
-$ git clone git://github.com/tajo-project/tajo.git
+$ git clone http://git-wip-us.apache.org/repos/asf/incubator-tajo.git
 $ cd tajo
 $ mvn package -DskipTests -Ddisk -Ptar
 $ ls tajo-dist/target/tajo-x.y.z.tar.gz
 ---------------------------------------------
 
-  If you want to know the build instruction in more detail, refer to
+  If you want to know the build instruction in more detail, please refer to
   {{{./build.html}Build Instruction}}.
 
 
@@ -88,10 +84,10 @@ export TAJO_HOME=<tajo-install-dir>
   Likewise, you should copy some jar files to the hadoop library dir.
 
 ------------------------------------------------------------------------
-cp $TAJO_HOME/tajo-common-x.y.z.jar $HADOOP_HOME/share/yarn/lib
-cp $TAJO_HOME/tajo-catalog-common-x.y.z.jar $HADOOP_HOME/share/yarn/lib
-cp $TAJO_HOME/tajo-core-pullserver-x.y.z.jar $HADOOP_HOME/share/yarn/lib
-cp $TAJO_HOME/tajo-core-storage-x.y.z.jar $HADOOP_HOME/share/yarn/lib
+$ cp $TAJO_HOME/tajo-common-x.y.z.jar $HADOOP_HOME/share/yarn/lib
+$ cp $TAJO_HOME/tajo-catalog-common-x.y.z.jar $HADOOP_HOME/share/yarn/lib
+$ cp $TAJO_HOME/tajo-core-pullserver-x.y.z.jar $HADOOP_HOME/share/yarn/lib
+$ cp $TAJO_HOME/tajo-core-storage-x.y.z.jar $HADOOP_HOME/share/yarn/lib
 ------------------------------------------------------------------------
 
   Copy ${TAJO_HOME}/conf/tajo-site.xml.templete to tajo-site.xml.
@@ -118,22 +114,94 @@ Running Tajo
   Before launching the tajo, you should create the tajo root dir and set the permission as follows:
 
 ------------------------------------------------------------------------
-$HADOOP_HOME/bin/hadoop fs -mkdir       /tajo
-$HADOOP_HOME/bin/hadoop fs -chmod g+w   /tajo
+$ $HADOOP_HOME/bin/hadoop fs -mkdir       /tajo
+$ $HADOOP_HOME/bin/hadoop fs -chmod g+w   /tajo
 ------------------------------------------------------------------------
 
   To launch the tajo master, execute start-tajo.sh.
 
 -----------------------------
-$TAJO_HOME/bin/start-tajo.sh
+$ $TAJO_HOME/bin/start-tajo.sh
 -----------------------------
 
   After then, you can use tajo-cli to access the command line interface of Tajo.
 
 -----------------------------
-$TAJO_HOME/bin/tajo cli
+$ $TAJO_HOME/bin/tajo cli
 -----------------------------
 
-[]
+Query Execution
 
-  (still working)
+  First of all, we need to prepare some data for query execution.
+
+-----------------------------
+$ mkdir /home/x/table1
+$ cd /home/x/table1
+$ cat >> table1
+1|abc|1.1|a
+2|def|2.3|b
+3|ghi|3.4|c
+4|jkl|4.5|d
+5|mno|5.6|e
+<EOF>
+-----------------------------
+
+  This schema of this table is (int, string, float, string).
+
+-----------------------------
+$ $TAJO_HOME/bin/tajo cli
+
+tajo> create external table table1 (id int, name string, score float, type string) using csv with ('csvfile.delimiter'='|') location 'file:/home/x/table1'
+-----------------------------
+
+  In order to load an external table, we need to use 'create external table' statement.
+  In the location clause, you should use the absolute path with an appropriate scheme.
+  If the table resides in HDFS, we should use 'hdfs' instead of 'file'.
+
+  If you want to know DDL statements in more detail, please see
+  {{{./query_language.html}Query Language}}.
+
+-----------------------------
+tajo> /t
+table1
+-----------------------------
+
+  '/t' command shows the list of tables.
+
+-----------------------------
+tajo> /d table1
+
+table name: table1
+table path: file:/home/x/table1
+store type: CSV
+number of rows: 0
+volume (bytes): 78 B
+schema:
+id      INT
+name    STRING
+score   FLOAT
+type    STRING
+
+-----------------------------
+
+  '/d [table name]' command shows the description of a given table.
+
+  Now, you can execute SQL queries as follows:
+
+-----------------------------
+tajo> select * from table1 where id > 2
+final state: QUERY_SUCCEEDED, init time: 4.118 sec, execution time: 4.334 sec, total response time: 8.452 sec
+result: hdfs://x.x.x.x:8020/user/x/tajo/q_1363768615503_0001_000001
+
+id,  name,  score,  type
+- - - - - - - - - -  - - -
+3,  ghi,  3.4,  c
+4,  jkl,  4.5,  d
+5,  mno,  5.6,  e
+tajo>
+-------------------------------
+
+  (In the current implementation, for each query, Tajo has some initial overhead to launch containers
+  on node managers. However, we will reduce this overhead soon.)
+
+  Enjoy Apache Tajo!

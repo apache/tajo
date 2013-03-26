@@ -5,10 +5,14 @@ Release 0.2.0 - unreleased
   NEW FEATURES
 
   IMPROVEMENTS
+
+    TAJO-4: Update the project site (hyunsik)
+
     TAJO-2: remove all @author tags and update license header (hyunsik)
 
   BUG FIXES
 
     TAJO-1: RCFileWrapper always reads whole columns regardless of the target 
     schema. (jihoonson via hyunsik)
+
     TAJO-6: Rename tajo.engine.function.builtin.NewSumInt to SumInt. (rsumbaly)

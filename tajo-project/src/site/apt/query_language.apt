@@ -14,14 +14,28 @@
 ~~ See the License for the specific language governing permissions and
 ~~ limitations under the License.
 
-            ------------------------
-            Tajo - Query Language
-            ------------------------
-            Hyunsik Choi
-            ------------------------
-             2013-02-01
+            ---------------
+            Query Language
 
-  Tajo supports SQL2003 and some extensions.
+Primitive types
+
+  * byte - 1 byte value
+
+  * bool - boolean value (1 byte)
+
+  * short - 2 byte integer
+
+  * int - 4 byte integer
+
+  * long - 8 byte integer
+
+  * float - single precision (4 byte)
+
+  * double - double precision (8 byte)
+
+  * bytes
+
+  * string - sequence of characters in UTF-8
 
 DDL
 

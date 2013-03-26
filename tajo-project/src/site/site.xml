@@ -29,9 +29,18 @@
 
 
   <bannerLeft>
-    <name>Tajo: A Distributed Data Warehouse System for Hadoop</name>
-    <href>http://tajo-project.github.com/tajo</href>
+    <name>Apache Tajo</name>
+    <href>http://incubator.apache.org/tajo/</href>
   </bannerLeft>
+
+  <bannerRight>
+    <name>Apache Incubator</name>
+    <src>http://incubator.apache.org/images/egg-logo.png</src>
+    <href>http://incubator.apache.org/</href>
+  </bannerRight>
+
+  <publishDate position="right" />
+  <version position="right" />
 
   <body>
     <head>
@@ -48,49 +57,59 @@
         })();
 
       </script>
+      <style>
+        a.externalLink[href^=http] {
+          background-image: none;
+          padding-right: 0;
+        }
+      </style>
     </head>
+
+    <!--
     <links>
-      <item name="GitHub Project Page" href="https://github.com/tajo-project/tajo"/>
+      <item name="GIT" href="https://git-wip-us.apache.org/repos/asf/incubator-tajo.git" />
     </links>
+    -->
+
+    <breadcrumbs>
+      <item name="Apache" href="http://www.apache.org" />
+      <item name="Incubator" href="../" />
+      <item name="Tajo" href="/" />
+    </breadcrumbs>
 
     <menu name="Tajo">
-      <item name="Introduction" href="index.html" />
-      <item name="FAQ" href="faq.html" />
+      <item name="Overview" href="index.html" />
+      <item name="Team" href="team-list.html" />
+      <item name="Mailing Lists" href="mail-lists.html" />
+      <item name="License" href="http://www.apache.org/licenses/" />
+      <item name="Issue Tracking" href="https://issues.apache.org/jira/browse/TAJO" />
+      <item name="Source Repository" href="source-repository.html" />
+      <!-- <item name="FAQ" href="faq.html" /> -->
     </menu>
 
     <menu name="Documents">
+      <item name="Wiki" href="http://wiki.apache.org/tajo" />
       <item name="Getting Started" href="getting_started.html" />
       <item name="Build Instruction" href="build.html" />
       <item name="Query Language" href="query_language.html" />
-      <item name="Configuration Guide" href="configuration.html" />
+      <item name="Configuration" href="configuration.html" />
     </menu>
 
-    <menu name="Project" inherit="top">
-      <item name="Team" href="team-list.html" />
-      <item name="Mailing Lists" href="mail-lists.html" />
-      <item name="License" href="license.html" />
-      <item name="Issue Tracking" href="issue-tracking.html" />
-      <item name="Source Repository" href="source-repository.html" />
-    </menu>
+    <footer>
+      <div class="row span12">
+        Apache Tajo, Apache Hadoop, Apache, the Apache feather logo, and the Apache incubator logo are
+        trademarks of The Apache Software Foundation. All other marks mentioned may be trademarks
+        or registered trademarks of their respective owners.
+      </div>
+    </footer>
   </body>
 
   <custom>
     <fluidoSkin>
+      <topBarEnabled>true</topBarEnabled>
       <sideBarEnabled>true</sideBarEnabled>
-      <sourceLineNumbersEnabled>true</sourceLineNumbersEnabled>
+      <sourceLineNumbersEnabled>false</sourceLineNumbersEnabled>
       <profile>production</profile>
-      <!--
-      <gitHub>
-        <projectId>hyunsik/tajo</projectId>
-        <ribbonOrientation>right</ribbonOrientation>
-        <ribbonColor>black</ribbonColor>
-      </gitHub>
-      -->
-      <twitter>
-        <user>hyunsik_choi</user>
-        <showUser>true</showUser>
-        <showFollowers>true</showFollowers>
-      </twitter>
       <googleSearch />
     </fluidoSkin>
   </custom>

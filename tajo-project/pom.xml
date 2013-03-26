@@ -37,7 +37,6 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <tajo.version>0.2.0-SNAPSHOT</tajo.version>
     <hadoop.version>2.0.3-alpha</hadoop.version>
-    <github.global.server>github</github.global.server>
   </properties>
 
   <licenses>
@@ -48,85 +47,174 @@
   </licenses>
 
   <organization>
-    <name>Database Laboratory, Korea University</name>
-    <url>http://dbserver.korea.ac.kr</url>
+    <name>Apache Software Foundation</name>
+    <url>http://www.apache.org</url>
   </organization>
 
   <developers>
     <developer>
+      <id>akarasulu</id>
+      <name>Alex Karasulu</name>
+      <email>akarasulu@apache.org</email>
+      <organization></organization>
+      <roles>
+        <role></role>
+      </roles>
+      <timezone></timezone>
+    </developer>
+    <developer>
+      <id>mattmann</id>
+      <name>Chris Mattmann</name>
+      <email>chris.a.mattmann@jpl.nasa.gov</email>
+      <organization>NASA JPL</organization>
+      <roles>
+        <role></role>
+      </roles>
+      <timezone>-8</timezone>
+    </developer>
+    <developer>
+      <id>ereisman</id>
+      <name>Eli Reisman</name>
+      <email>ereisman@apache.org</email>
+      <organization>Hortonworks</organization>
+      <roles>
+        <role></role>
+      </roles>
+      <timezone>-8</timezone>
+    </developer>
+    <developer>
+      <id>hsaputra</id>
+      <name>Henry Saputra</name>
+      <email>hsaputra@apache.org</email>
+      <organization>Platfora</organization>
+      <roles>
+        <role></role>
+      </roles>
+      <timezone>-8</timezone>
+    </developer>
+    <developer>
       <id>hyunsik</id>
       <name>Hyunsik Choi</name>
-      <email>hyunsik.choi@gmail.com</email>
-      <url>http://diveintodata.org</url>
-      <organization>Database Lab., Korea University</organization>
-      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
+      <email>hyunsik@apache.org</email>
+      <organization>Korea University</organization>
       <roles>
-        <role>project lead</role>
-        <role>architect</role>
-        <role>developer</role>
+        <role></role>
       </roles>
+      <timezone>+9</timezone>
+    </developer>
+    <developer>
+      <id>blrunner</id>
+      <name>JaeHwa Jung</name>
+      <email>blrunner@apache.org</email>
+      <organization>Gruter</organization>
+      <roles>
+        <role></role>
+      </roles>
+      <timezone>+9</timezone>
+    </developer>
+    <developer>
+      <id>jghoman</id>
+      <name>Jakob Homan</name>
+      <email>jghoman@apache.org</email>
+      <organization>LinkedIn</organization>
+      <roles>
+        <role></role>
+      </roles>
+      <timezone>-8</timezone>
+    </developer>
+    <developer>
+      <id>jhkim</id>
+      <name>Jinho Kim</name>
+      <email>jhkim@apache.org</email>
+      <organization>Gruter</organization>
+      <roles>
+        <role></role>
+      </roles>
+      <timezone>+9</timezone>
     </developer>
     <developer>
       <id>jihoonson</id>
       <name>Jihoon Son</name>
-      <email>ghoonson@gmail.com</email>
-      <url></url>
-      <organization>Database Lab., Korea University</organization>
-      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
+      <email>jihoonson@apache.org</email>
+      <organization>Korea University</organization>
       <roles>
-        <role>architect</role>
-        <role>developer</role>
+        <role></role>
       </roles>
+      <timezone>+9</timezone>
     </developer>
     <developer>
-      <id>ryuhyoseok</id>
-      <name>Hyoseok Ryu</name>
-      <email>hyoseok@korea.ac.kr</email>
-      <url></url>
-      <organization>Database Lab., Korea University</organization>
-      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
+      <id>omalley</id>
+      <name>Owen O'Malley</name>
+      <email>owen@hortonworks.com</email>
+      <organization>Hortonworks</organization>
       <roles>
-        <role>developer</role>
+        <role></role>
       </roles>
+      <timezone>-8</timezone>
+    </developer>
+    <developer>
+      <id>rsumbaly</id>
+      <name>Roshan Sumbaly</name>
+      <email>rsumbaly@apache.org</email>
+      <organization>LinkedIn</organization>
+      <roles>
+        <role></role>
+      </roles>
+      <timezone>-8</timezone>
+    </developer>
+    <developer>
+      <id>swkim</id>
+      <name>Sangwook Kim</name>
+      <email>swkim@apache.org</email>
+      <organization>Inervit</organization>
+      <roles>
+        <role></role>
+      </roles>
+      <timezone>+9</timezone>
+    </developer>
+    <developer>
+      <id>yliu</id>
+      <name>Yi Liu</name>
+      <email>yliu@apache.org</email>
+      <organization>Intel</organization>
+      <roles>
+        <role></role>
+      </roles>
+      <timezone>+8</timezone>
     </developer>
   </developers>
 
-  <contributors>
-    <contributor>
-      <name>Byungnam Lim</name>
-      <email>byungnam@korea.ac.kr</email>
-      <organization>Database Lab., Korea University</organization>
-      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
-    </contributor>
-    <contributor>
-      <name>Haemi Yang</name>
-      <email>haemiyang@korea.ac.kr</email>
-      <organization>Database Lab., Korea University</organization>
-      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
-    </contributor>
-    <contributor>
-      <name>Soohyung Kim</name>
-      <email>firek@korea.ac.kr</email>
-      <organization>Database Lab., Korea University</organization>
-      <organizationUrl>http://dbserver.korea.ac.kr</organizationUrl>
-    </contributor>
-  </contributors>
-
   <issueManagement>
     <system>Jira</system>
-    <url>https://dbserver.korea.ac.kr/jira/browse/TAJO</url>
+    <url>https://issues.apache.org/jira/browse/TAJO</url>
   </issueManagement>
 
-  <ciManagement>
-    <system>Jenkins</system>
-    <url>https://dbserver.korea.ac.kr/jenkins</url>
-  </ciManagement>
-
   <scm>
-    <url>https://github.com/tajo-project/tajo</url>
-    <connection>scm:git:git://github.com/tajo-project/tajo.git</connection>
-    <developerConnection>scm:git:git@github.com:tajo-project/tajo.git</developerConnection>
+    <url>https://git-wip-us.apache.org/repos/asf/incubator-tajo.git</url>
+    <connection>scm:git:http://git-wip-us.apache.org/repos/asf/incubator-tajo.git</connection>
+    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-tajo.git</developerConnection>
   </scm>
+
+  <mailingLists>
+    <mailingList>
+      <name>Development list</name>
+      <subscribe>mailto:dev-subscribe@tajo.incubator.apache.org
+      </subscribe>
+      <unsubscribe>mailto:dev-unsubscribe@tajo.incubator.apache.org
+      </unsubscribe>
+      <post>mailto:dev@tajo.incubator.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/tajo-dev/</archive>
+    </mailingList>
+    <mailingList>
+      <name>Commit list</name>
+      <subscribe>mailto:commits-subscribe@tajo.incubator.apache.org
+      </subscribe>
+      <unsubscribe>mailto:commits-unsubscribe@tajo.incubator.apache.org
+      </unsubscribe>
+      <post>mailto:commits@tajo.incubator.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/tajo-commits/</archive>
+    </mailingList>
+  </mailingLists>
 
   <repositories>
     <repository>
@@ -385,44 +473,6 @@
               <goal>enforce</goal>
             </goals>
             <phase>pre-site</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.github.github</groupId>
-        <artifactId>downloads-maven-plugin</artifactId>
-        <version>0.6</version>
-        <configuration>
-          <description>Official ${project.name} build of the
-            ${project.version} release</description>
-          <override>true</override>
-          <includeAttached>true</includeAttached>
-          <server>github</server>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>upload</goal>
-            </goals>
-            <phase>deploy</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.github.github</groupId>
-        <artifactId>site-maven-plugin</artifactId>
-        <version>0.7</version>
-        <configuration>
-          <message>Creating site for ${project.artifactId}, ${project.version}</message>
-          <server>github</server>
-          <!--<merge>true</merge> -->
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>site</goal>
-            </goals>
-            <phase>site-deploy</phase>
           </execution>
         </executions>
       </plugin>
