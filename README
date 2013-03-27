@@ -42,6 +42,11 @@ Mailing lists
   repository. Send an empty email to commits-subscribe@tajo.incubator.apache.org
   in order to subscribe to this mailing list.
 
+To subscribe to the mailing lists, please send an email to:
+${listname}-subscribe@tajo.incubator.apache.org. For example, to subscribe to 
+dev, send an email from your desired subscription address to:
+dev-subscribe@tajo.incubator.apache.org and follow the instructions from there.
+
 Disclaimer
 ==========
 Apache Tajo is an effort undergoing incubation at The Apache Software

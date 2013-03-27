@@ -6,6 +6,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-12: Add information in README on how to subscribe to mailing 
+    lists (mattmann, hyunsik)
+
     TAJO-11: Update file README to reflect Apache incubation. (hyunsik)
 
     TAJO-4: Update the project site. (hyunsik)
