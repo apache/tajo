@@ -22,7 +22,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <artifactId>tajo-project</artifactId>
-    <groupId>kr.ac.korea.dbserver</groupId>
+    <groupId>org.apache.tajo</groupId>
     <version>0.2.0-SNAPSHOT</version>
     <relativePath>../../tajo-project</relativePath>
   </parent>
@@ -234,31 +234,31 @@
 
   <dependencies>
     <dependency>
-      <groupId>kr.ac.korea.dbserver</groupId>
+      <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-common</artifactId>
     </dependency>
     <dependency>
-      <groupId>kr.ac.korea.dbserver</groupId>
+      <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-catalog-common</artifactId>
     </dependency>
     <dependency>
-      <groupId>kr.ac.korea.dbserver</groupId>
+      <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-catalog-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>kr.ac.korea.dbserver</groupId>
+      <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-catalog-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>kr.ac.korea.dbserver</groupId>
+      <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-core-storage</artifactId>
     </dependency>
     <dependency>
-      <groupId>kr.ac.korea.dbserver</groupId>
+      <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-core-pullserver</artifactId>
     </dependency>
     <dependency>
-      <groupId>kr.ac.korea.dbserver</groupId>
+      <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-rpc</artifactId>
     </dependency>
 

@@ -20,7 +20,7 @@
   <parent>
     <artifactId>tajo-project</artifactId>
     <version>0.2.0-SNAPSHOT</version>
-    <groupId>kr.ac.korea.dbserver</groupId>
+    <groupId>org.apache.tajo</groupId>
     <relativePath>../tajo-project</relativePath>
   </parent>
   <packaging>jar</packaging>

@@ -22,6 +22,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-13: Update the groupId property in the pom.xml to use ASF org instead of kr.ac.korea.dbserver
+
     TAJO-1: RCFileWrapper always reads whole columns regardless of the target 
     schema. (jihoonson via hyunsik)
 
