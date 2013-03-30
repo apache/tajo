@@ -6,6 +6,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
     
+    TAJO-17: Improve the examples for jvm version and auxiliary service in 
+    getting_started.apt. (hyunsik)
+
     TAJO-10: Modify git ignore to include Apache derby log file  
 
     TAJO-12: Add information in README on how to subscribe to mailing 

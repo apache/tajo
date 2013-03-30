@@ -28,15 +28,14 @@ Build Tajo from Source Code
   Download the source code and build Tajo as follows:
 
 ---------------------------------------------
-$ git clone http://git-wip-us.apache.org/repos/asf/incubator-tajo.git
+$ git clone http://git-wip-us.apache.org/repos/asf/incubator-tajo.git tajo
 $ cd tajo
-$ mvn package -DskipTests -Ddisk -Ptar
+$ mvn package -DskipTests -Pdist -Dtar
 $ ls tajo-dist/target/tajo-x.y.z.tar.gz
 ---------------------------------------------
 
-  If you want to know the build instruction in more detail, please refer to
+  If you meet some errors or you want to know the build instruction in more detail, please read
   {{{./build.html}Build Instruction}}.
-
 
 Unpack tarball
 
@@ -55,19 +54,25 @@ Configuration
   First of all, you need to set the environment variables for your Hadoop cluster and Tajo.
 
 --------------------------------------------
-export JAVA_HOME=/usr/lib/jvm/openjdk-1.7.x
+export JAVA_HOME=/usr/lib/jvm/openjdk-1.6.x
 export HADOOP_HOME=/usr/local/hadoop-2.0.x
 export YARN_HOME=/usr/local/hadoop-2.0.x
 export TAJO_HOME=<tajo-install-dir>
 --------------------------------------------
 
   Tajo requires an auxiliary service called PullServer for data repartitioning.
-  So, we must configure for PullServer in ${HADOOP_HOME}/etc/hadoop/yarn-site.xml.
+  For this, you must add or modify the following configuration parameters in
+  ${HADOOP_HOME}/etc/hadoop/yarn-site.xml.
 
 -------------------------------------------------------------------
 <property>
   <name>yarn.nodemanager.aux-services</name>
-  <value>tajo.pullserver</value>
+  <value>mapreduce.shuffle,tajo.pullserver</value>
+</property>
+
+<property>
+  <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+  <value>org.apache.hadoop.mapred.ShuffleHandler</value>
 </property>
 
 <property>
@@ -81,7 +86,7 @@ export TAJO_HOME=<tajo-install-dir>
 </property>
 -------------------------------------------------------------------
 
-  Likewise, you should copy some jar files to the hadoop library dir.
+  For the auxiliary, you should copy some jar files to the Hadoop Yarn library dir.
 
 ------------------------------------------------------------------------
 $ cp $TAJO_HOME/tajo-common-x.y.z.jar $HADOOP_HOME/share/yarn/lib
@@ -90,9 +95,9 @@ $ cp $TAJO_HOME/tajo-core-pullserver-x.y.z.jar $HADOOP_HOME/share/yarn/lib
 $ cp $TAJO_HOME/tajo-core-storage-x.y.z.jar $HADOOP_HOME/share/yarn/lib
 ------------------------------------------------------------------------
 
-  Copy ${TAJO_HOME}/conf/tajo-site.xml.templete to tajo-site.xml.
-  Then, add the following configs to your tajo-site.xml.
-  Change <hostname> and <port> to your namenode address.
+  Please copy ${TAJO_HOME}/conf/tajo-site.xml.template to tajo-site.xml.
+  You must add the following configs to your tajo-site.xml and then change <hostname> and <port> to
+  your namenode address.
 
 ---------------------------------------------------------------------
   <property>
@@ -106,7 +111,7 @@ $ cp $TAJO_HOME/tajo-core-storage-x.y.z.jar $HADOOP_HOME/share/yarn/lib
   </property>
 ---------------------------------------------------------------------
 
-  If you want know configuration in more detail, refer to
+  If you want know configuration in more detail, read
   {{{./configuration.html}Configuration Guide}}.
 
 Running Tajo
@@ -137,13 +142,13 @@ Query Execution
 -----------------------------
 $ mkdir /home/x/table1
 $ cd /home/x/table1
-$ cat >> table1
+$ cat > table1
 1|abc|1.1|a
 2|def|2.3|b
 3|ghi|3.4|c
 4|jkl|4.5|d
 5|mno|5.6|e
-<EOF>
+<CTRL + D>
 -----------------------------
 
   This schema of this table is (int, string, float, string).
