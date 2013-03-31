@@ -73,7 +73,7 @@ public class ResultSetImpl implements ResultSet {
       init();
       return;
     }
-    this.totalRow = meta.getStat().getNumRows();
+    this.totalRow = meta.getStat() != null ? meta.getStat().getNumRows() : 0;
     Collection<Fragment> frags = getFragmentsNG(meta, path);
     scanner = new MergeScanner(conf, meta, frags);
     init();

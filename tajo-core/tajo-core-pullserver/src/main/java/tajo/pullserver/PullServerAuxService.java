@@ -127,15 +127,15 @@ public class PullServerAuxService extends AbstractService
 
   public static final int DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE = 60 * 1024;
 
-  @Metrics(about="PullServer output metrics", context="mapred")
+  @Metrics(name="PullServerShuffleMetrics", about="PullServer output metrics", context="tajo")
   static class ShuffleMetrics implements ChannelFutureListener {
-    @Metric("PullServer output in bytes")
+    @Metric({"OutputBytes","PullServer output in bytes"})
     MutableCounterLong shuffleOutputBytes;
-    @Metric("# of failed shuffle outputs")
+    @Metric({"Failed","# of failed shuffle outputs"})
     MutableCounterInt shuffleOutputsFailed;
-    @Metric("# of succeeeded shuffle outputs")
+    @Metric({"Succeeded","# of succeeded shuffle outputs"})
     MutableCounterInt shuffleOutputsOK;
-    @Metric("# of current shuffle connections")
+    @Metric({"Connections","# of current shuffle connections"})
     MutableGaugeInt shuffleConnections;
 
     @Override
