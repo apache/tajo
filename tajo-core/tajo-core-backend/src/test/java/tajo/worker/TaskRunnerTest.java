@@ -58,8 +58,7 @@ public class TaskRunnerTest {
     nodeId.setPort(9001);
     UserGroupInformation mockTaskOwner = mock(UserGroupInformation.class);
     when(mockTaskOwner.getShortUserName()).thenReturn("hyunsik");
-    TaskRunner runner = new TaskRunner(sq1, nodeId, mockTaskOwner, mockClient,
-        mockMaster, cId);
+    TaskRunner runner = new TaskRunner(sq1, nodeId, mockTaskOwner, mockMaster, cId);
     QueryConf conf = new QueryConf();
     conf.setOutputPath(new Path("/tmp/" + q1));
     runner.init(conf);

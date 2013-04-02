@@ -18,7 +18,6 @@
 
 package tajo.worker;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -39,7 +38,6 @@ import tajo.QueryUnitAttemptId;
 import tajo.SubQueryId;
 import tajo.TajoProtos.TaskAttemptState;
 import tajo.conf.TajoConf.ConfVars;
-import tajo.engine.MasterWorkerProtos;
 import tajo.engine.MasterWorkerProtos.QueryUnitRequestProto;
 import tajo.engine.query.QueryUnitRequestImpl;
 import tajo.ipc.MasterWorkerProtocol;
@@ -50,19 +48,19 @@ import tajo.rpc.NullCallback;
 import tajo.rpc.ProtoAsyncRpcClient;
 import tajo.util.TajoIdUtils;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.security.PrivilegedExceptionAction;
 import java.util.Map;
 import java.util.concurrent.*;
 
+import static tajo.engine.MasterWorkerProtos.TaskFatalErrorReport;
+
 public class TaskRunner extends AbstractService {
   private static final Log LOG = LogFactory.getLog(TaskRunner.class);
   private QueryConf conf;
 
   private volatile boolean stopped = false;
-  private volatile boolean isOnline = false;
 
   private final SubQueryId subQueryId;
   private ApplicationId appId;
@@ -70,7 +68,6 @@ public class TaskRunner extends AbstractService {
   private final ContainerId containerId;
 
   // Cluster Management
-  private ProtoAsyncRpcClient client;
   private MasterWorkerProtocolService.Interface master;
 
   // Query Processing
@@ -78,7 +75,6 @@ public class TaskRunner extends AbstractService {
   private FileSystem defaultFS;
 
   private TajoQueryEngine queryEngine;
-  private QueryLauncher queryLauncher;
   private final int coreNum = 4;
   private final ExecutorService fetchLauncher =
       Executors.newFixedThreadPool(coreNum * 4);
@@ -97,14 +93,12 @@ public class TaskRunner extends AbstractService {
       final SubQueryId subQueryId,
       final NodeId nodeId,
       UserGroupInformation taskOwner,
-      ProtoAsyncRpcClient client,
       Interface master, ContainerId containerId) {
     super(TaskRunner.class.getName());
     this.subQueryId = subQueryId;
     this.appId = subQueryId.getQueryId().getApplicationId();
     this.nodeId = nodeId;
     this.taskOwner = taskOwner;
-    this.client = client;
     this.master = master;
     this.containerId = containerId;
   }
@@ -143,7 +137,6 @@ public class TaskRunner extends AbstractService {
 
       // Setup QueryEngine according to the query plan
       // Here, we can setup row-based query engine or columnar query engine.
-      this.queryLauncher = new QueryLauncher();
       this.queryEngine = new TajoQueryEngine(conf);
     } catch (Throwable t) {
       LOG.error(t);
@@ -168,8 +161,6 @@ public class TaskRunner extends AbstractService {
       synchronized (this) {
         notifyAll();
       }
-
-      client.close();
     }
   }
 
@@ -215,6 +206,14 @@ public class TaskRunner extends AbstractService {
     }
   }
 
+  static void fatalError(MasterWorkerProtocolService.Interface proxy,
+                                 QueryUnitAttemptId taskAttemptId, String message) {
+    TaskFatalErrorReport.Builder builder = TaskFatalErrorReport.newBuilder()
+        .setId(taskAttemptId.getProto())
+        .setErrorMessage(message);
+    proxy.fatalError(null, builder.build(), NullCallback.get());
+  }
+
   public void run() {
     LOG.info("Tajo Worker startup");
 
@@ -229,12 +228,6 @@ public class TaskRunner extends AbstractService {
 
           while(!stopped) {
             try {
-
-              while(!stopped && !queryLauncher.hasAvailableSlot()) {
-                Thread.sleep(1000);
-              }
-
-              if (!stopped) {
                 if (callFuture == null) {
                   callFuture = new CallFuture2<QueryUnitRequestProto>();
                   master.getTask(null, ((ContainerIdPBImpl) containerId).getProto(),
@@ -250,38 +243,38 @@ public class TaskRunner extends AbstractService {
                   if (taskRequest.getShouldDie()) {
                     LOG.info("received ShouldDie flag");
                     stop();
+
                   } else {
+
                     LOG.info("Accumulated Received Task: " + (++receivedNum));
-                    QueryUnitAttemptId taskAttemptId =
-                        new QueryUnitAttemptId(taskRequest.getId());
+
+                    QueryUnitAttemptId taskAttemptId = new QueryUnitAttemptId(taskRequest.getId());
                     if (tasks.containsKey(taskAttemptId)) {
-                      MasterWorkerProtos.TaskFatalErrorReport.Builder builder =
-                      MasterWorkerProtos.TaskFatalErrorReport.newBuilder()
-                          .setErrorMessage("Duplicate Task Attempt: " +
-                          taskAttemptId);
-                      master.fatalError(null, builder.build(), NullCallback.get());
+                      fatalError(master, taskAttemptId, "Duplicate Task Attempt: " + taskAttemptId);
                       continue;
                     }
+
                     Path taskTempDir = localFS.makeQualified(
                         lDirAllocator.getLocalPathForWrite(baseDir +
                             "/" + taskAttemptId.getQueryUnitId().getId()
                             + "_" + taskAttemptId.getId(), conf));
+
                     LOG.info("Initializing: " + taskAttemptId);
                     Task task = new Task(taskAttemptId, workerContext, master,
                         new QueryUnitRequestImpl(taskRequest), taskTempDir);
                     tasks.put(taskAttemptId, task);
+
                     task.init();
                     if (task.hasFetchPhase()) {
                       task.fetch(); // The fetch is performed in an asynchronous way.
                     }
-
+                    // task.run() is a blocking call.
                     task.run();
 
                     callFuture = null;
                     taskRequest = null;
                   }
                 }
-              }
             } catch (Throwable t) {
               LOG.error(t);
             }
@@ -299,11 +292,7 @@ public class TaskRunner extends AbstractService {
           t.abort();
         }
       }
-
-      client.close();
     }
-
-    LOG.info("TaskRunner (" + nodeId + ") main thread exiting");
   }
 
   private class ShutdownHook implements Runnable {
@@ -314,52 +303,12 @@ public class TaskRunner extends AbstractService {
     }
   }
 
-  public String getServerName() {
-    return nodeId.toString();
-  }
-
   /**
    * @return true if a stop has been requested.
    */
   public boolean isStopped() {
     return this.stopped;
   }
-
-  public boolean isOnline() {
-    return this.isOnline;
-  }
-
-  public void shutdown(final String msg) {
-
-  }
-
-  @VisibleForTesting
-  Task getTask(QueryUnitAttemptId id) {
-    return this.tasks.get(id);
-  }
-
-  private class QueryLauncher {
-    private final ThreadPoolExecutor executor
-        = new ThreadPoolExecutor(coreNum, coreNum * 4, 0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(coreNum * 4));
-    private boolean stopped = false;
-
-    public void schedule(Task task) throws InterruptedException {
-
-    }
-
-    public boolean hasAvailableSlot() {
-      return executor.getQueue().size() < coreNum;
-    }
-  }
-
-  public Path getTaskTempDir(QueryUnitAttemptId taskAttemptId)
-      throws IOException {
-    return lDirAllocator.
-        getLocalPathToRead(baseDir + "/" + taskAttemptId.getId(),
-            conf);
-  }
-
 
   /**
    * 1st Arg: TaskRunnerListener hostname
@@ -368,8 +317,6 @@ public class TaskRunner extends AbstractService {
    * 4th Arg: NodeId
    */
   public static void main(String[] args) throws Exception {
-    LOG.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-    System.out.println(System.getenv("CLASSPATH"));
     // Restore QueryConf
     final QueryConf conf = new QueryConf();
     conf.addResource(new Path(QueryConf.FILENAME));
@@ -402,7 +349,7 @@ public class TaskRunner extends AbstractService {
     ProtoAsyncRpcClient client;
     MasterWorkerProtocolService.Interface master;
 
-    // Create TaskUmbilicalProtocol as actual task owner.
+    // Create MasterWorkerProtocol as actual task owner.
     client =
         taskOwner.doAs(new PrivilegedExceptionAction<ProtoAsyncRpcClient>() {
           @Override
@@ -413,8 +360,11 @@ public class TaskRunner extends AbstractService {
     master = client.getStub();
 
 
-    TaskRunner taskRunner = new TaskRunner(subQueryId, nodeId, taskOwner, client, master, containerId);
+    TaskRunner taskRunner = new TaskRunner(subQueryId, nodeId, taskOwner, master, containerId);
     taskRunner.init(conf);
     taskRunner.start();
+    client.close();
+    LOG.info("TaskRunner (" + nodeId + ") main thread exiting");
+    System.exit(0);
   }
 }

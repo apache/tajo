@@ -9,7 +9,7 @@ Release 0.2.0 - unreleased
     TAJO-17: Improve the examples for jvm version and auxiliary service in 
     getting_started.apt. (hyunsik)
 
-    TAJO-10: Modify git ignore to include Apache derby log file  
+    TAJO-10: Modify git ignore to include Apache derby log file. (hsaputra)
 
     TAJO-12: Add information in README on how to subscribe to mailing 
     lists (mattmann, hyunsik)
@@ -22,9 +22,13 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
-    TAJO-8: MapReduce's ShuffleHandler and Tajo's PullServerAuxService conflict each other
+    TAJO-15: The Integration test is getting hanged on Mac OS X. (hyunsik)
 
-    TAJO-13: Update the groupId property in the pom.xml to use ASF org instead of kr.ac.korea.dbserver
+    TAJO-8: MapReduce's ShuffleHandler and Tajo's PullServerAuxService conflict
+    each other. (jhkim)
+
+    TAJO-13: Update the groupId property in the pom.xml to use ASF org instead
+    of kr.ac.korea.dbserver (hsaputra)
 
     TAJO-1: RCFileWrapper always reads whole columns regardless of the target 
     schema. (jihoonson via hyunsik)
