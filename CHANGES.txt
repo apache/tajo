@@ -5,6 +5,8 @@ Release 0.2.0 - unreleased
   NEW FEATURES
 
   IMPROVEMENTS
+
+    TAJO-27: Modify the document links to point the wiki's ones. (hyunsik)
     
     TAJO-17: Improve the examples for jvm version and auxiliary service in 
     getting_started.apt. (hyunsik)

@@ -89,10 +89,10 @@
 
     <menu name="Documents">
       <item name="Wiki" href="http://wiki.apache.org/tajo" />
-      <item name="Getting Started" href="getting_started.html" />
-      <item name="Build Instruction" href="build.html" />
-      <item name="Query Language" href="query_language.html" />
-      <item name="Configuration" href="configuration.html" />
+      <item name="Getting Started" href="http://wiki.apache.org/tajo/GettingStarted" />
+      <item name="Build Instruction" href="http://wiki.apache.org/tajo/BuildInstruction" />
+      <item name="Query Language" href="http://wiki.apache.org/tajo/QueryLanguage" />
+      <item name="Configuration" href="http://wiki.apache.org/tajo/Configuration" />
     </menu>
 
     <footer>
