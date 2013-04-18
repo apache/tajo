@@ -36,3 +36,5 @@ Release 0.2.0 - unreleased
     schema. (jihoonson via hyunsik)
 
     TAJO-6: Rename tajo.engine.function.builtin.NewSumInt to SumInt. (rsumbaly)
+
+    TAJO-21: CREATE EXTERNAL TABLE should support a file path (JaeHwa Jung)
