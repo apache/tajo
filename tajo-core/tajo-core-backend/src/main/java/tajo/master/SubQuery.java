@@ -147,7 +147,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private final Lock writeLock;
 
   private int completedTaskCount = 0;
-  
+
   public SubQuery(SubQueryId id, StorageManager sm, GlobalPlanner planner) {
     this.id = id;
     childSubQueries = new HashMap<ScanNode, SubQuery>();
@@ -163,6 +163,31 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
 
     stateMachine = stateMachineFactory.make(this);
+  }
+
+  public long getStartTime() {
+    return this.startTime;
+  }
+
+  public long getFinishTime() {
+    return this.finishTime;
+  }
+
+  public float getProgress() {
+    readLock.lock();
+    try {
+      if (getStateMachine().getCurrentState() == SubQueryState.NEW) {
+        return 0;
+      } else {
+        if (completedTaskCount == 0) {
+          return 0.0f;
+        } else {
+          return (float)completedTaskCount / (float)tasks.size();
+        }
+      }
+    } finally {
+      readLock.unlock();
+    }
   }
 
   public void setQueryContext(QueryContext context) {
@@ -525,33 +550,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
             return SubQueryState.SUCCEEDED;
 
           } else {
-            // the second condition is for some workaround code for join
-            /*
-            if (subQuery.isLeafQuery() && subQuery.getScanNodes().length == 1) {
-              Map<String, Integer> requestMap = new HashMap<>();
-              for (QueryUnit task : tasks) {
-                for (String host : task.getDataLocations()) {
-                  if (requestMap.containsKey(host)) {
-                    requestMap.put(host, requestMap.get(host) + 1);
-                  } else {
-                    requestMap.put(host, 1);
-                  }
-                }
-              }
-
-              final Resource resource =
-                  RecordFactoryProvider.getRecordFactory(null).newRecordInstance(
-                      Resource.class);
-              resource.setMemory(2000);
-              org.apache.hadoop.yarn.api.records.Priority priority =
-                  RecordFactoryProvider.getRecordFactory(null).newRecordInstance(
-                      org.apache.hadoop.yarn.api.records.Priority.class);
-              priority.setPriority(100 - subQuery.getPriority().get());
-              GrouppedContainerAllocatorEvent event =
-                  new GrouppedContainerAllocatorEvent(ContainerAllocatorEventType.CONTAINER_REQ,
-                      subQuery.getId(), priority, resource, requestMap, subQuery.isLeafQuery(), 0.0f);
-              subQuery.eventHandler.handle(event);
-            } else {*/
             int numRequest = Math.min(tasks.length,
                 subQuery.queryContext.getNumClusterNode() * 4);
 
@@ -572,7 +570,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                 new ContainerAllocationEvent(ContainerAllocatorEventType.CONTAINER_REQ,
                     subQuery.getId(), priority, resource, numRequest, subQuery.isLeafQuery(), 0.0f);
             subQuery.eventHandler.handle(event);
-            //}
           }
         }
         return  SubQueryState.INIT;

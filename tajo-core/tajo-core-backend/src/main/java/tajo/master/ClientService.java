@@ -132,7 +132,11 @@ public class ClientService extends AbstractService {
       } catch (Exception e) {
         SubmitQueryRespose.Builder build = SubmitQueryRespose.newBuilder();
         build.setResultCode(ResultCode.ERROR);
-        build.setErrorMessage(e.getMessage());
+        if (e.getMessage() != null) {
+          build.setErrorMessage(e.getMessage());
+        } else {
+          build.setErrorMessage("Internal Error");
+        }
         return build.build();
       }
 

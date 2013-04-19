@@ -163,7 +163,7 @@ public class RMContainerAllocator extends RMCommunicator
 
   protected AMResponse makeRemoteRequest() throws YarnException, YarnRemoteException {
     AllocateRequest allocateRequest = BuilderUtils.newAllocateRequest(
-        applicationAttemptId, lastResponseID, 0.0f,
+        applicationAttemptId, lastResponseID, query.getProgress(),
         new ArrayList<ResourceRequest>(ask), new ArrayList<ContainerId>(release));
     AllocateResponse allocateResponse = scheduler.allocate(allocateRequest);
     AMResponse response = allocateResponse.getAMResponse();

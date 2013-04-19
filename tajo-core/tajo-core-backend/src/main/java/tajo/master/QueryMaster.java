@@ -322,6 +322,18 @@ public class QueryMaster extends CompositeService implements EventHandler {
     public boolean isCreateTableQuery() {
       return isCreateTableStmt;
     }
+
+    public float getProgress() {
+      return query.getProgress();
+    }
+
+    public long getStartTime() {
+      return query.getStartTime();
+    }
+
+    public long getFinishTime() {
+      return query.getFinishTime();
+    }
   }
 
   private class QueryFinishEventHandler implements EventHandler<QueryFinishEvent> {

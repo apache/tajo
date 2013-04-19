@@ -22,6 +22,7 @@ import com.google.protobuf.ServiceException;
 import jline.console.ConsoleReader;
 import org.apache.commons.cli.*;
 import tajo.QueryId;
+import tajo.TajoProtos.QueryState;
 import tajo.catalog.Column;
 import tajo.catalog.TableDesc;
 import tajo.client.ClientProtocol;
@@ -164,6 +165,10 @@ public class TajoCli {
     return 0;
   }
 
+  private boolean isFailed(QueryState state) {
+    return state == QueryState.QUERY_ERROR || state == QueryState.QUERY_FAILED;
+  }
+
   private void getQueryResult(QueryId queryId) {
     // if query is empty string
     if (queryId.equals(TajoIdUtils.NullQueryId)) {
@@ -172,47 +177,76 @@ public class TajoCli {
 
     // query execute
     try {
-      ResultSet res = client.getQueryResultAndWait(queryId);
-      if (res == null) {
-        sout.println("OK");
-        return;
-      }
-      QueryStatus status = client.getQueryStatus(queryId);
-      ResultSetMetaData rsmd = res.getMetaData();
-      TableDesc desc = client.getResultDesc(queryId);
-      sout.println("final state: " + status.getState()
-          + ", init time: " + (((double)(status.getInitTime() - status.getSubmitTime()) / 1000.0) + " sec")
-          + ", execution time: " + (((double)status.getFinishTime() - status.getInitTime()) / 1000.0) + " sec"
-          + ", total response time: " + (((double)(status.getFinishTime() - status.getSubmitTime()) / 1000.0) + " sec"));
-      sout.println("result: " + desc.getPath() + "\n");
 
-      int numOfColumns = rsmd.getColumnCount();
-      for (int i = 1; i <= numOfColumns; i++) {
-        if (i > 1) sout.print(",  ");
-        String columnName = rsmd.getColumnName(i);
-        sout.print(columnName);
-      }
-      sout.println("\n-------------------------------");
-
-      int numOfPrintedRows = 0;
-      while (res.next()) {
-        // TODO - to be improved to print more formatted text
-        for (int i = 1; i <= numOfColumns; i++) {
-          if (i > 1) sout.print(",  ");
-          String columnValue = res.getObject(i).toString();
-          sout.print(columnValue);
-        }
-        sout.println();
-        sout.flush();
-        numOfPrintedRows++;
-        if (numOfPrintedRows >= PRINT_LIMIT) {
-          sout.print("continue... ('q' is quit)");
+      QueryStatus status;
+      while (true) {
+        Thread.sleep(1000);
+        status = client.getQueryStatus(queryId);
+        if (status.getState() == QueryState.QUERY_RUNNING ||
+            status.getState() == QueryState.QUERY_SUCCEEDED) {
+          sout.println("Progress: " + (int)(status.getProgress() * 100.0f)
+              + "%, response time: " + ((float)(status.getFinishTime() - status.getSubmitTime())
+              / 1000.0) + " sec");
           sout.flush();
-          if (sin.read() == 'q') {
-            break;
+        }
+
+        if (status.getState() != QueryState.QUERY_RUNNING) {
+          break;
+        }
+      }
+
+      if (isFailed(status.getState())) {
+        sout.println(status.getErrorMessage());
+      } else if (status.getState() == QueryState.QUERY_KILLED) {
+        sout.println(queryId + " is killed.");
+      } else {
+        if (status.getState() == QueryState.QUERY_SUCCEEDED) {
+          ResultSet res = client.getQueryResult(queryId);
+          if (res == null) {
+            sout.println("OK");
+            return;
           }
-          numOfPrintedRows = 0;
-          sout.println();
+
+          ResultSetMetaData rsmd = res.getMetaData();
+          TableDesc desc = client.getResultDesc(queryId);
+          sout.println("final state: " + status.getState()
+              + ", init time: " + (((float)(status.getInitTime() - status.getSubmitTime())
+              / 1000.0) + " sec")
+              + ", execution time: " + (((float)status.getFinishTime() - status.getInitTime())
+              / 1000.0) + " sec"
+              + ", total response time: " + (((float)(status.getFinishTime() -
+              status.getSubmitTime()) / 1000.0) + " sec"));
+          sout.println("result: " + desc.getPath() + "\n");
+
+          int numOfColumns = rsmd.getColumnCount();
+          for (int i = 1; i <= numOfColumns; i++) {
+            if (i > 1) sout.print(",  ");
+            String columnName = rsmd.getColumnName(i);
+            sout.print(columnName);
+          }
+          sout.println("\n-------------------------------");
+
+          int numOfPrintedRows = 0;
+          while (res.next()) {
+            // TODO - to be improved to print more formatted text
+            for (int i = 1; i <= numOfColumns; i++) {
+              if (i > 1) sout.print(",  ");
+              String columnValue = res.getObject(i).toString();
+              sout.print(columnValue);
+            }
+            sout.println();
+            sout.flush();
+            numOfPrintedRows++;
+            if (numOfPrintedRows >= PRINT_LIMIT) {
+              sout.print("continue... ('q' is quit)");
+              sout.flush();
+              if (sin.read() == 'q') {
+                break;
+              }
+              numOfPrintedRows = 0;
+              sout.println();
+            }
+          }
         }
       }
     } catch (Throwable t) {

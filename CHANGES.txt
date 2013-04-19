@@ -3,6 +3,8 @@ Tajo Change Log
 Release 0.2.0 - unreleased
 
   NEW FEATURES
+   
+    TAJO-33: Implement a basic query progress indicator. (hyunsik)
 
   IMPROVEMENTS
 

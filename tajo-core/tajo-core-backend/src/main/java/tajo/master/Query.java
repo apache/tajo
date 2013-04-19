@@ -74,7 +74,6 @@ public class Query implements EventHandler<QueryEvent> {
   private long startTime;
   private long initializationTime;
   private long finishTime;
-  private float progress;
   private TableDesc resultDesc;
   private int completedSubQueryCount = 0;
   private final List<String> diagnostics = new ArrayList<String>();
@@ -151,7 +150,38 @@ public class Query implements EventHandler<QueryEvent> {
   }
 
   public float getProgress() {
-    return progress;
+    QueryState state = getStateMachine().getCurrentState();
+    if (state == QueryState.QUERY_SUCCEEDED) {
+      return 1.0f;
+    } else {
+      int idx = 0;
+      float [] subProgresses = new float[subqueries.size()];
+      boolean finished = true;
+      for (SubQuery subquery: subqueries.values()) {
+        if (subquery.getStateMachine().getCurrentState() != SubQueryState.NEW) {
+          subProgresses[idx] = subquery.getProgress();
+          if (finished == true && subquery.getState() != SubQueryState.SUCCEEDED) {
+            finished = false;
+          }
+        } else {
+          subProgresses[idx] = 0.0f;
+        }
+        idx++;
+      }
+
+      if (finished == true) {
+        return 1.0f;
+      }
+
+      float totalProgress = 0;
+      float proportion = 1.0f / (float)subqueries.size();
+
+      for (int i = 0; i < subProgresses.length; i++) {
+        totalProgress += subProgresses[i] * proportion;
+      }
+
+      return totalProgress;
+    }
   }
 
   public long getAppSubmitTime() {
@@ -419,7 +449,7 @@ public class Query implements EventHandler<QueryEvent> {
   }
 
   public static class SubQueryCompletedTransition implements
-                                                  MultipleArcTransition<Query, QueryEvent, QueryState> {
+      MultipleArcTransition<Query, QueryEvent, QueryState> {
 
     @Override
     public QueryState transition(Query query, QueryEvent event) {
@@ -511,8 +541,8 @@ public class Query implements EventHandler<QueryEvent> {
   public void handle(QueryEvent event) {
     LOG.info("Processing " + event.getQueryId() + " of type " + event.getType());
     try {
-    writeLock.lock();
-    QueryState oldState = getState();
+      writeLock.lock();
+      QueryState oldState = getState();
       try {
         getStateMachine().doTransition(event.getType(), event);
       } catch (InvalidStateTransitonException e) {
