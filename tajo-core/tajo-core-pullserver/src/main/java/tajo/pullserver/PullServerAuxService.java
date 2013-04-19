@@ -385,16 +385,13 @@ public class PullServerAuxService extends AbstractService
       List<String> taskIds = splitMaps(taskIdList);
 
       // the working dir of tajo worker for each query
-      String base =
-          ContainerLocalizer.USERCACHE + "/" + userName + "/"
-              + ContainerLocalizer.APPCACHE + "/"
-              + appId + "/output" + "/";
+      String queryBaseDir = appId + "/output" + "/";
 
       // if a subquery requires a range partitioning
       if (repartitionType.equals("r")) {
         String ta = taskIds.get(0);
         Path path = localFS.makeQualified(
-            lDirAlloc.getLocalPathToRead(base + "/" + sid + "/"
+            lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/"
                 + ta + "/output/", conf));
 
         String startKey = params.get("start").get(0);
@@ -417,7 +414,7 @@ public class PullServerAuxService extends AbstractService
       } else if (repartitionType.equals("h")) {
         for (String ta : taskIds) {
           Path path = localFS.makeQualified(
-              lDirAlloc.getLocalPathToRead(base + "/" + sid + "/" +
+              lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" +
                   ta + "/output/" + partitionId, conf));
           File file = new File(path.toUri());
           FileChunk chunk = new FileChunk(file, 0, file.length());

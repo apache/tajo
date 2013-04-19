@@ -30,7 +30,6 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.impl.pb.ContainerIdPBImpl;
-import org.apache.hadoop.yarn.server.nodemanager.containermanager.localizer.ContainerLocalizer;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import tajo.QueryConf;
@@ -56,8 +55,13 @@ import java.util.concurrent.*;
 
 import static tajo.engine.MasterWorkerProtos.TaskFatalErrorReport;
 
+/**
+ * The driver class for Tajo QueryUnit processing.
+ */
 public class TaskRunner extends AbstractService {
+  /** class logger */
   private static final Log LOG = LogFactory.getLog(TaskRunner.class);
+
   private QueryConf conf;
 
   private volatile boolean stopped = false;
@@ -70,24 +74,35 @@ public class TaskRunner extends AbstractService {
   // Cluster Management
   private MasterWorkerProtocolService.Interface master;
 
-  // Query Processing
+  // for temporal or intermediate files
   private FileSystem localFS;
+  // for input files
   private FileSystem defaultFS;
 
   private TajoQueryEngine queryEngine;
+
+  // TODO - this should be configurable
   private final int coreNum = 4;
+
+  // for Fetcher
   private final ExecutorService fetchLauncher =
       Executors.newFixedThreadPool(coreNum * 4);
+  // It keeps all of the query unit attempts while a TaskRunner is running.
   private final Map<QueryUnitAttemptId, Task> tasks =
       new ConcurrentHashMap<QueryUnitAttemptId, Task>();
   private LocalDirAllocator lDirAllocator;
 
+  // A thread to receive each assigned query unit and execute the query unit
   private Thread taskLauncher;
 
+  // Contains the object references related for TaskRunner
   private WorkerContext workerContext;
+  // for the doAs block
   private UserGroupInformation taskOwner;
 
+  // for the local temporal dir
   private String baseDir;
+  private Path baseDirPath;
 
   public TaskRunner(
       final SubQueryId subQueryId,
@@ -110,15 +125,23 @@ public class TaskRunner extends AbstractService {
     try {
       this.workerContext = new WorkerContext();
 
-      baseDir =
-          ContainerLocalizer.USERCACHE + "/" + taskOwner.getShortUserName() + "/"
-              + ContainerLocalizer.APPCACHE + "/"
-              + ConverterUtils.toString(appId)
-              + "/output" + "/" + subQueryId.getId();
+      // initialize DFS and LocalFileSystems
+      defaultFS = FileSystem.get(URI.create(conf.get("tajo.rootdir")),conf);
+      localFS = FileSystem.getLocal(conf);
 
-      // Setup LocalDirAllocator
+      // the base dir for an output dir
+      baseDir = ConverterUtils.toString(appId)
+          + "/output" + "/" + subQueryId.getId();
+
+      // initialize LocalDirAllocator
       lDirAllocator = new LocalDirAllocator(ConfVars.TASK_LOCAL_DIR.varname);
-      LOG.info("Task LocalCache: " + baseDir);
+
+      baseDirPath = localFS.makeQualified(lDirAllocator.getLocalPathForWrite(baseDir, conf));
+      LOG.info("TaskRunner basedir is created (" + baseDir +")");
+
+      // Setup QueryEngine according to the query plan
+      // Here, we can setup row-based query engine or columnar query engine.
+      this.queryEngine = new TajoQueryEngine(conf);
 
       Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
     } catch (Throwable t) {
@@ -130,24 +153,13 @@ public class TaskRunner extends AbstractService {
 
   @Override
   public void start() {
-    try {
-      // Setup DFS and LocalFileSystems
-      defaultFS = FileSystem.get(URI.create(conf.get("tajo.rootdir")),conf);
-      localFS = FileSystem.getLocal(conf);
-
-      // Setup QueryEngine according to the query plan
-      // Here, we can setup row-based query engine or columnar query engine.
-      this.queryEngine = new TajoQueryEngine(conf);
-    } catch (Throwable t) {
-      LOG.error(t);
-    }
-
     run();
   }
 
   @Override
   public void stop() {
     if (!isStopped()) {
+      // If TaskRunner is stopped, all running or pending tasks will be marked as failed.
       for (Task task : tasks.values()) {
         if (task.getStatus() == TaskAttemptState.TA_PENDING ||
             task.getStatus() == TaskAttemptState.TA_RUNNING) {
@@ -155,6 +167,7 @@ public class TaskRunner extends AbstractService {
         }
       }
 
+      // If this flag become true, taskLauncher will be terminated.
       this.stopped = true;
 
       LOG.info("STOPPED: " + nodeId);
@@ -204,10 +217,14 @@ public class TaskRunner extends AbstractService {
     public ExecutorService getFetchLauncher() {
       return fetchLauncher;
     }
+
+    public Path getBaseDir() {
+      return baseDirPath;
+    }
   }
 
   static void fatalError(MasterWorkerProtocolService.Interface proxy,
-                                 QueryUnitAttemptId taskAttemptId, String message) {
+                         QueryUnitAttemptId taskAttemptId, String message) {
     TaskFatalErrorReport.Builder builder = TaskFatalErrorReport.newBuilder()
         .setId(taskAttemptId.getProto())
         .setErrorMessage(message);
@@ -215,7 +232,7 @@ public class TaskRunner extends AbstractService {
   }
 
   public void run() {
-    LOG.info("Tajo Worker startup");
+    LOG.info("TaskRunner startup");
 
     try {
 
@@ -228,53 +245,55 @@ public class TaskRunner extends AbstractService {
 
           while(!stopped) {
             try {
-                if (callFuture == null) {
-                  callFuture = new CallFuture2<QueryUnitRequestProto>();
-                  master.getTask(null, ((ContainerIdPBImpl) containerId).getProto(),
-                      callFuture);
-                }
-                try {
-                  taskRequest = callFuture.get(3, TimeUnit.SECONDS);
-                } catch (TimeoutException te) {
-                  LOG.error(te);
-                }
+              if (callFuture == null) {
+                callFuture = new CallFuture2<QueryUnitRequestProto>();
+                master.getTask(null, ((ContainerIdPBImpl) containerId).getProto(),
+                    callFuture);
+              }
+              try {
+                // wait for an assigning task for 3 seconds
+                taskRequest = callFuture.get(3, TimeUnit.SECONDS);
+              } catch (TimeoutException te) {
+                // if there has been no assigning task for a given period,
+                // TaskRunner will retry to request an assigning task.
+                LOG.error(te);
+                continue;
+              }
 
-                if (taskRequest != null) {
-                  if (taskRequest.getShouldDie()) {
-                    LOG.info("received ShouldDie flag");
-                    stop();
+              if (taskRequest != null) {
+                // QueryMaster can send the terminal signal to TaskRunner.
+                // If TaskRunner receives the terminal signal, TaskRunner will be terminated
+                // immediately.
+                if (taskRequest.getShouldDie()) {
+                  LOG.info("received ShouldDie flag");
+                  stop();
 
-                  } else {
+                } else {
 
-                    LOG.info("Accumulated Received Task: " + (++receivedNum));
+                  LOG.info("Accumulated Received Task: " + (++receivedNum));
 
-                    QueryUnitAttemptId taskAttemptId = new QueryUnitAttemptId(taskRequest.getId());
-                    if (tasks.containsKey(taskAttemptId)) {
-                      fatalError(master, taskAttemptId, "Duplicate Task Attempt: " + taskAttemptId);
-                      continue;
-                    }
-
-                    Path taskTempDir = localFS.makeQualified(
-                        lDirAllocator.getLocalPathForWrite(baseDir +
-                            "/" + taskAttemptId.getQueryUnitId().getId()
-                            + "_" + taskAttemptId.getId(), conf));
-
-                    LOG.info("Initializing: " + taskAttemptId);
-                    Task task = new Task(taskAttemptId, workerContext, master,
-                        new QueryUnitRequestImpl(taskRequest), taskTempDir);
-                    tasks.put(taskAttemptId, task);
-
-                    task.init();
-                    if (task.hasFetchPhase()) {
-                      task.fetch(); // The fetch is performed in an asynchronous way.
-                    }
-                    // task.run() is a blocking call.
-                    task.run();
-
-                    callFuture = null;
-                    taskRequest = null;
+                  QueryUnitAttemptId taskAttemptId = new QueryUnitAttemptId(taskRequest.getId());
+                  if (tasks.containsKey(taskAttemptId)) {
+                    fatalError(master, taskAttemptId, "Duplicate Task Attempt: " + taskAttemptId);
+                    continue;
                   }
+
+                  LOG.info("Initializing: " + taskAttemptId);
+                  Task task = new Task(taskAttemptId, workerContext, master,
+                      new QueryUnitRequestImpl(taskRequest));
+                  tasks.put(taskAttemptId, task);
+
+                  task.init();
+                  if (task.hasFetchPhase()) {
+                    task.fetch(); // The fetch is performed in an asynchronous way.
+                  }
+                  // task.run() is a blocking call.
+                  task.run();
+
+                  callFuture = null;
+                  taskRequest = null;
                 }
+              }
             } catch (Throwable t) {
               LOG.error(t);
             }
@@ -311,10 +330,14 @@ public class TaskRunner extends AbstractService {
   }
 
   /**
-   * 1st Arg: TaskRunnerListener hostname
-   * 2nd Arg: TaskRunnerListener port
-   * 3nd Arg: SubQueryId
-   * 4th Arg: NodeId
+   * TaskRunner takes 5 arguments as follows:
+   * <ol>
+   * <li>1st: TaskRunnerListener hostname</li>
+   * <li>2nd: TaskRunnerListener port</li>
+   * <li>3nd: SubQueryId</li>
+   * <li>4th: NodeId</li>
+   * <li>5th: ContainerId</li>
+   * </ol>
    */
   public static void main(String[] args) throws Exception {
     // Restore QueryConf
@@ -333,13 +356,13 @@ public class TaskRunner extends AbstractService {
     final InetSocketAddress masterAddr =
         NetUtils.createSocketAddrForHost(host, port);
 
-    // SubQueryId
+    // SubQueryId from String
     final SubQueryId subQueryId = TajoIdUtils.newSubQueryId(args[2]);
-    // NodeId for itself
+    // NodeId has a form of hostname:port.
     NodeId nodeId = ConverterUtils.toNodeId(args[3]);
     ContainerId containerId = ConverterUtils.toContainerId(args[4]);
 
-    // TODO - load credential
+    // TODO - 'load credential' should be implemented
     // Getting taskOwner
     UserGroupInformation taskOwner =
         UserGroupInformation.createRemoteUser(conf.getVar(ConfVars.QUERY_USERNAME));
@@ -349,7 +372,7 @@ public class TaskRunner extends AbstractService {
     ProtoAsyncRpcClient client;
     MasterWorkerProtocolService.Interface master;
 
-    // Create MasterWorkerProtocol as actual task owner.
+    // initialize MasterWorkerProtocol as an actual task owner.
     client =
         taskOwner.doAs(new PrivilegedExceptionAction<ProtoAsyncRpcClient>() {
           @Override

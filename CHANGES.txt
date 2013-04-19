@@ -6,6 +6,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-32: Cleanup TaskRunner. (hyunsik)
+
     TAJO-27: Modify the document links to point the wiki's ones. (hyunsik)
     
     TAJO-17: Improve the examples for jvm version and auxiliary service in 
@@ -37,4 +39,4 @@ Release 0.2.0 - unreleased
 
     TAJO-6: Rename tajo.engine.function.builtin.NewSumInt to SumInt. (rsumbaly)
 
-    TAJO-21: CREATE EXTERNAL TABLE should support a file path (JaeHwa Jung)
+    TAJO-21: CREATE EXTERNAL TABLE should support a file path. (JaeHwa Jung)

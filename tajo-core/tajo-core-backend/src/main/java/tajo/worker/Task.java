@@ -75,6 +75,7 @@ public class Task {
   private final LocalDirAllocator lDirAllocator;
   private final QueryUnitAttemptId taskId;
 
+  private final Path taskDir;
   private final QueryUnitRequest request;
   private final TaskAttemptContext context;
   private List<Fetcher> fetcherRunners;
@@ -128,7 +129,7 @@ public class Task {
 
   public Task(QueryUnitAttemptId taskId,
               final WorkerContext worker, final Interface masterProxy,
-              final QueryUnitRequest request, Path taskDir) throws IOException {
+              final QueryUnitRequest request) throws IOException {
     this.request = request;
     this.reporter = new Reporter(masterProxy);
     this.reporter.startCommunicationThread();
@@ -139,6 +140,8 @@ public class Task {
     this.masterProxy = masterProxy;
     this.localFS = worker.getLocalFS();
     this.lDirAllocator = worker.getLocalDirAllocator();
+    this.taskDir = StorageUtil.concatPath(workerContext.getBaseDir(),
+        taskId.getQueryUnitId().getId() + "_" + taskId.getId());
 
     this.context = new TaskAttemptContext(conf, taskId,
         request.getFragments().toArray(new Fragment[request.getFragments().size()]),
@@ -156,9 +159,11 @@ public class Task {
         this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
       }
     } else {
+      // The final result of a task will be written in a file named part-ss-nnnnnnn,
+      // where ss is the subquery id associated with this task, and nnnnnn is the task id.
       Path outFilePath = new Path(conf.getOutputPath(),
-          OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskId.getSubQueryId().getId()) +
           OUTPUT_FILE_PREFIX +
+          OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskId.getSubQueryId().getId()) + "-" +
           OUTPUT_FILE_FORMAT_TASK.get().format(taskId.getQueryUnitId().getId()));
       LOG.info("Output File Path: " + outFilePath);
       context.setOutputPath(outFilePath);
@@ -186,6 +191,9 @@ public class Task {
   }
 
   public void init() throws IOException {
+    // initialize a task temporal dir
+    localFS.mkdirs(taskDir);
+
     if (request.getFetches().size() > 0) {
       inputTableBaseDir = localFS.makeQualified(
           lDirAllocator.getLocalPathForWrite(
@@ -328,16 +336,6 @@ public class Task {
         Entry<Integer,String> entry = it.next();
         Partition.Builder part = Partition.newBuilder();
         part.setPartitionKey(entry.getKey());
-        if (partitionType == PARTITION_TYPE.HASH) {
-//          part.setFileName(
-//              dataServerURL + "/?qid=" + getId().toString() + "&fn=" +
-//                  entry.getValue());
-        } else if (partitionType == PARTITION_TYPE.LIST) {
-//          part.setFileName(dataServerURL + "/?qid=" + getId().toString() +
-//              "&fn=0");
-        } else {
-//          part.setFileName(dataServerURL + "/?qid=" + getId().toString());
-        }
         builder.addPartitions(part.build());
       } while (it.hasNext());
     }
