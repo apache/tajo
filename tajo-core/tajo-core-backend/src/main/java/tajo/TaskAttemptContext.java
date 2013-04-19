@@ -35,8 +35,7 @@ import java.util.concurrent.CountDownLatch;
 
 
 /**
- * 실행 중인 subquery에 대한 정보를 담는다.
- *
+ * Contains the information about executing subquery.
  */
 public class TaskAttemptContext {
   private static final Log LOG = LogFactory.getLog(TaskAttemptContext.class);
