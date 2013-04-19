@@ -28,6 +28,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-38: Update class comment in TaskAttemptContext from Korean to English (hsaputra)
+
     TAJO-15: The Integration test is getting hanged on Mac OS X. (hyunsik)
 
     TAJO-8: MapReduce's ShuffleHandler and Tajo's PullServerAuxService conflict
