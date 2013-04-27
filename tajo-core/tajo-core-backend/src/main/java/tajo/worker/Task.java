@@ -47,7 +47,7 @@ import tajo.engine.planner.logical.StoreTableNode;
 import tajo.engine.planner.physical.PhysicalExec;
 import tajo.ipc.MasterWorkerProtocol.MasterWorkerProtocolService.Interface;
 import tajo.ipc.protocolrecords.QueryUnitRequest;
-import tajo.master.SubQuery.PARTITION_TYPE;
+import tajo.master.ExecutionBlock.PartitionType;
 import tajo.rpc.NullCallback;
 import tajo.storage.Fragment;
 import tajo.storage.StorageUtil;
@@ -101,7 +101,7 @@ public class Task {
   private AtomicBoolean progressFlag = new AtomicBoolean(false);
 
   // TODO - to be refactored
-  private PARTITION_TYPE partitionType = null;
+  private PartitionType partitionType = null;
   private Schema finalSchema = null;
   private TupleComparator sortComp = null;
 
@@ -153,7 +153,7 @@ public class Task {
       context.setInterQuery();
       StoreTableNode store = (StoreTableNode) plan;
       this.partitionType = store.getPartitionType();
-      if (partitionType == PARTITION_TYPE.RANGE) {
+      if (partitionType == PartitionType.RANGE) {
         SortNode sortNode = (SortNode) store.getSubNode();
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
         this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());

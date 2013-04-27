@@ -24,11 +24,8 @@ import tajo.engine.planner.logical.ExprType;
 import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.ScanNode;
 import tajo.engine.planner.logical.UnaryNode;
-import tajo.master.SubQuery;
-import tajo.master.SubQuery.PARTITION_TYPE;
-
-import java.util.Collection;
-import java.util.Iterator;
+import tajo.master.ExecutionBlock;
+import tajo.master.ExecutionBlock.PartitionType;
 
 public class GlobalOptimizer {
 
@@ -37,62 +34,46 @@ public class GlobalOptimizer {
   }
   
   public MasterPlan optimize(MasterPlan plan) {
-    SubQuery reducedStep = reduceSchedules(plan.getRoot());
-    SubQuery joinChosen = chooseJoinAlgorithm(reducedStep);
+    ExecutionBlock reducedStep = reduceSchedules(plan.getRoot());
 
-    MasterPlan optimized = new MasterPlan(joinChosen);
+    MasterPlan optimized = new MasterPlan(reducedStep);
     optimized.setOutputTableName(plan.getOutputTable());
 
     return optimized;
   }
   
   @VisibleForTesting
-  private SubQuery chooseJoinAlgorithm(SubQuery logicalUnit) {
-    
-    return logicalUnit;
-  }
-  
-  @VisibleForTesting
-  private SubQuery reduceSchedules(SubQuery logicalUnit) {
+  private ExecutionBlock reduceSchedules(ExecutionBlock logicalUnit) {
     reduceLogicalQueryUnitStep_(logicalUnit);
     return logicalUnit;
   }
-  
-  private void reduceLogicalQueryUnitStep_(SubQuery cur) {
-    if (cur.hasChildQuery()) {
-      Iterator<SubQuery> it = cur.getChildIterator();
-      SubQuery prev;
-      while (it.hasNext()) {
-        prev = it.next();
-        reduceLogicalQueryUnitStep_(prev);
-      }
-      
-      Collection<SubQuery> prevs = cur.getChildQueries();
-      it = prevs.iterator();
-      while (it.hasNext()) {
-        prev = it.next();
-        if (prev.getStoreTableNode().getSubNode().getType() != ExprType.UNION &&
-            prev.getOutputType() == PARTITION_TYPE.LIST) {
-          mergeLogicalUnits(cur, prev);
-        }
+
+  private void reduceLogicalQueryUnitStep_(ExecutionBlock cur) {
+    if (cur.hasChildBlock()) {
+      for (ExecutionBlock childBlock: cur.getChildBlocks())
+        reduceLogicalQueryUnitStep_(childBlock);
+    }
+
+    for (ExecutionBlock childBlock: cur.getChildBlocks()) {
+      if (childBlock.getStoreTableNode().getSubNode().getType() != ExprType.UNION &&
+          childBlock.getPartitionType() == PartitionType.LIST) {
+        mergeLogicalUnits(cur, childBlock);
       }
     }
   }
   
-  private SubQuery mergeLogicalUnits(SubQuery parent,
-      SubQuery child) {
-    LogicalNode p = PlannerUtil.findTopParentNode(parent.getLogicalPlan(), 
-        ExprType.SCAN);
-//    Preconditions.checkArgument(p instanceof UnaryNode);
+  private ExecutionBlock mergeLogicalUnits(ExecutionBlock parent, ExecutionBlock child) {
+    LogicalNode p = PlannerUtil.findTopParentNode(parent.getPlan(), ExprType.SCAN);
+
     if (p instanceof UnaryNode) {
       UnaryNode u = (UnaryNode) p;
       ScanNode scan = (ScanNode) u.getSubNode();
       LogicalNode c = child.getStoreTableNode().getSubNode();
 
-      parent.removeChildQuery(scan);
+      parent.removeChildBlock(scan);
       u.setSubNode(c);
-      parent.setLogicalPlan(parent.getLogicalPlan());
-      parent.addChildQueries(child.getChildMaps());
+      parent.setPlan(parent.getPlan());
+      parent.addChildBlocks(child.getChildBlockMap());
     }
     return parent;
   }

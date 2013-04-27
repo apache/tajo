@@ -29,7 +29,6 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import tajo.QueryConf;
 import tajo.QueryId;
-import tajo.QueryUnitId;
 import tajo.SubQueryId;
 import tajo.TajoProtos.QueryState;
 import tajo.catalog.TCatUtil;
@@ -65,8 +64,8 @@ public class Query implements EventHandler<QueryEvent> {
   private final EventHandler eventHandler;
   private final MasterPlan plan;
   private final StorageManager sm;
-  private PriorityQueue<SubQuery> scheduleQueue;
   private QueryContext context;
+  private ExecutionBlockCursor cursor;
 
   // Query Status
   private final QueryId id;
@@ -81,6 +80,7 @@ public class Query implements EventHandler<QueryEvent> {
   // Internal Variables
   private final Lock readLock;
   private final Lock writeLock;
+  private int priority = 100;
 
   // State Machine
   private final StateMachine<QueryState, QueryEventType, QueryEvent> stateMachine;
@@ -115,7 +115,6 @@ public class Query implements EventHandler<QueryEvent> {
                final long appSubmitTime,
                final String queryStr,
                final EventHandler eventHandler,
-               final GlobalPlanner planner,
                final MasterPlan plan, final StorageManager sm) {
     this.context = context;
     this.conf = context.getConf();
@@ -127,12 +126,11 @@ public class Query implements EventHandler<QueryEvent> {
     this.eventHandler = eventHandler;
     this.plan = plan;
     this.sm = sm;
+    cursor = new ExecutionBlockCursor(plan);
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
-
-    this.scheduleQueue = new PriorityQueue<SubQuery>(1,new PriorityComparator());
 
     stateMachine = stateMachineFactory.make(this);
   }
@@ -143,10 +141,6 @@ public class Query implements EventHandler<QueryEvent> {
 
   protected FileSystem getFileSystem(Configuration conf) throws IOException {
     return FileSystem.get(conf);
-  }
-
-  protected StorageManager getStorageManager() {
-    return this.sm;
   }
 
   public float getProgress() {
@@ -234,17 +228,6 @@ public class Query implements EventHandler<QueryEvent> {
     resultDesc = desc;
   }
 
-  class PriorityComparator implements Comparator<SubQuery> {
-    public PriorityComparator() {
-
-    }
-
-    @Override
-    public int compare(SubQuery s1, SubQuery s2) {
-      return s1.getPriority().get() - s2.getPriority().get();
-    }
-  }
-
   public MasterPlan getPlan() {
     return plan;
   }
@@ -253,35 +236,16 @@ public class Query implements EventHandler<QueryEvent> {
     return stateMachine;
   }
   
-  public void addSubQuery(SubQuery q) {
-    q.setQueryContext(context);
-    q.setEventHandler(eventHandler);
-    q.setClock(clock);
-    subqueries.put(q.getId(), q);
+  public void addSubQuery(SubQuery subquery) {
+    subqueries.put(subquery.getId(), subquery);
   }
   
   public QueryId getId() {
     return this.id;
   }
-
-  public String getQueryStr() {
-    return this.queryStr;
-  }
-
-  public Iterator<SubQuery> getSubQueryIterator() {
-    return this.subqueries.values().iterator();
-  }
   
   public SubQuery getSubQuery(SubQueryId id) {
     return this.subqueries.get(id);
-  }
-  
-  public Collection<SubQuery> getSubQueries() {
-    return this.subqueries.values();
-  }
-  
-  public QueryUnit getQueryUnit(QueryUnitId id) {
-    return this.getSubQuery(id.getSubQueryId()).getQueryUnit(id);
   }
 
   public QueryState getState() {
@@ -293,8 +257,8 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
-  public int getScheduleQueueSize() {
-    return scheduleQueue.size();
+  public ExecutionBlockCursor getExecutionBlockCursor() {
+    return cursor;
   }
 
   static class InitTransition
@@ -303,136 +267,16 @@ public class Query implements EventHandler<QueryEvent> {
     @Override
     public QueryState transition(Query query, QueryEvent queryEvent) {
       query.setStartTime();
-      scheduleSubQueriesPostfix(query);
-      LOG.info("Scheduled SubQueries: " + query.getScheduleQueueSize());
 
+      ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
+      while(cursor.hasNext()) {
+        ExecutionBlock block = cursor.nextBlock();
+        System.out.println(block.getId());
+        System.out.println(block.getPlan());
+        System.out.println("--------------------------------");
+      }
+      query.getExecutionBlockCursor().reset();
       return QueryState.QUERY_INIT;
-    }
-
-    private int priority = 0;
-
-    private void scheduleSubQueriesPostfix(Query query) {
-      SubQuery root = query.getPlan().getRoot();
-
-      scheduleSubQueriesPostfix_(query, root);
-
-      root.setPriority(priority);
-      query.addSubQuery(root);
-      query.schedule(root);
-    }
-    private void scheduleSubQueriesPostfix_(Query query, SubQuery current) {
-      if (current.hasChildQuery()) {
-        if (current.getChildQueries().size() == 1) {
-          SubQuery subQuery = current.getChildQueries().iterator().next();
-          scheduleSubQueriesPostfix_(query, subQuery);
-          identifySubQuery(subQuery);
-
-          query.addSubQuery(subQuery);
-          query.schedule(subQuery);
-
-          priority++;
-        } else {
-          Iterator<SubQuery> it = current.getChildQueries().iterator();
-          SubQuery outer = it.next();
-          SubQuery inner = it.next();
-
-          // Switch between outer and inner
-          // if an inner has a child and an outer doesn't.
-          // It is for left-deep-first search.
-          if (!outer.hasChildQuery() && inner.hasChildQuery()) {
-            SubQuery tmp = outer;
-            outer = inner;
-            inner = tmp;
-          }
-
-          scheduleSubQueriesPostfix_(query, outer);
-          scheduleSubQueriesPostfix_(query, inner);
-
-          identifySubQuery(outer);
-          identifySubQuery(inner);
-
-          query.addSubQuery(outer);
-          query.schedule(outer);
-          query.addSubQuery(inner);
-          query.schedule(inner);
-
-          priority++;
-        }
-      }
-    }
-
-    private void identifySubQuery(SubQuery subQuery) {
-      SubQuery parent = subQuery.getParentQuery();
-
-      if (!subQuery.hasChildQuery()) {
-
-        if (parent.getScanNodes().length == 2) {
-          Iterator<SubQuery> childIter = subQuery.getParentQuery().getChildIterator();
-
-          while (childIter.hasNext()) {
-            SubQuery another = childIter.next();
-            if (!subQuery.equals(another)) {
-              if (another.hasChildQuery()) {
-                subQuery.setPriority(++priority);
-              }
-            }
-          }
-
-          if (subQuery.getPriority() == null) {
-            subQuery.setPriority(0);
-          }
-        } else {
-          // if subQuery is leaf and not part of join.
-          if (!subQuery.hasChildQuery()) {
-            subQuery.setPriority(0);
-          }
-        }
-      } else {
-        subQuery.setPriority(priority);
-      }
-    }
-
-    private void scheduleSubQueries(Query query, SubQuery current) {
-      int priority = 0;
-
-      if (current.hasChildQuery()) {
-
-        int maxPriority = 0;
-        Iterator<SubQuery> it = current.getChildIterator();
-
-        while (it.hasNext()) {
-          SubQuery su = it.next();
-          scheduleSubQueries(query, su);
-
-          if (su.getPriority().get() > maxPriority) {
-            maxPriority = su.getPriority().get();
-          }
-        }
-
-        priority = maxPriority + 1;
-
-      } else {
-        SubQuery parent = current.getParentQuery();
-        priority = 0;
-
-        if (parent.getScanNodes().length == 2) {
-          Iterator<SubQuery> childIter = current.getParentQuery().getChildIterator();
-
-          while (childIter.hasNext()) {
-            SubQuery another = childIter.next();
-            if (!current.equals(another)) {
-              if (another.hasChildQuery()) {
-                priority = another.getPriority().get() + 1;
-              }
-            }
-          }
-        }
-      }
-
-      current.setPriority(priority);
-      // TODO
-      query.addSubQuery(current);
-      query.schedule(current);
     }
   }
 
@@ -441,8 +285,11 @@ public class Query implements EventHandler<QueryEvent> {
 
     @Override
     public void transition(Query query, QueryEvent queryEvent) {
-      SubQuery subQuery = query.takeSubQuery();
-      LOG.info("Schedule unit plan: \n" + subQuery.getLogicalPlan());
+      SubQuery subQuery = new SubQuery(query.context, query.getExecutionBlockCursor().nextBlock(),
+          query.sm);
+      subQuery.setPriority(query.priority--);
+      query.addSubQuery(subQuery);
+      LOG.info("Schedule unit plan: \n" + subQuery.getBlock().getPlan());
       subQuery.handle(new SubQueryEvent(subQuery.getId(),
           SubQueryEventType.SQ_INIT));
     }
@@ -453,17 +300,27 @@ public class Query implements EventHandler<QueryEvent> {
 
     @Override
     public QueryState transition(Query query, QueryEvent event) {
-
+      // increase the count for completed subqueries
       query.completedSubQueryCount++;
       SubQueryCompletedEvent castEvent = (SubQueryCompletedEvent) event;
+      ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
 
+      // if the subquery is succeeded
       if (castEvent.getFinalState() == SubQueryState.SUCCEEDED) {
-        SubQuerySucceeEvent succeeEvent = (SubQuerySucceeEvent) castEvent;
+        if (cursor.hasNext()) {
+          SubQuery nextSubQuery = new SubQuery(query.context, cursor.nextBlock(), query.sm);
+          nextSubQuery.setPriority(query.priority--);
+          query.addSubQuery(nextSubQuery);
+          nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(),
+              SubQueryEventType.SQ_INIT));
+          LOG.info("Scheduling SubQuery's Priority: " + nextSubQuery.getPriority().get());
+          LOG.info("Scheduling SubQuery's Plan: \n" + nextSubQuery.getBlock().getPlan());
+          QueryState state = query.checkQueryForCompleted();
+          return state;
 
-        SubQuery nextSubQuery = query.takeSubQuery();
-
-        if (nextSubQuery == null) {
+        } else {
           if (query.checkQueryForCompleted() == QueryState.QUERY_SUCCEEDED) {
+            SubQuerySucceeEvent succeeEvent = (SubQuerySucceeEvent) castEvent;
             SubQuery subQuery = query.getSubQuery(castEvent.getSubQueryId());
             TableDesc desc = new TableDescImpl(query.conf.getOutputTable(),
                 succeeEvent.getTableMeta(), query.context.getOutputPath());
@@ -478,20 +335,13 @@ public class Query implements EventHandler<QueryEvent> {
             if (query.context.isCreateTableQuery()) {
               query.context.getCatalog().addTable(desc);
             }
-            return query.finished(QueryState.QUERY_SUCCEEDED);
           }
-        }
 
-        nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(),
-            SubQueryEventType.SQ_INIT));
-        LOG.info("Scheduling SubQuery's Priority: " + (100 - nextSubQuery.getPriority().get()));
-        LOG.info("Scheduling SubQuery's Plan: \n" + nextSubQuery.getLogicalPlan());
-        QueryState state = query.checkQueryForCompleted();
-        return state;
-      } else if (castEvent.getFinalState() == SubQueryState.FAILED) {
-        return QueryState.QUERY_FAILED;
+          return query.finished(QueryState.QUERY_SUCCEEDED);
+        }
       } else {
-        return query.checkQueryForCompleted();
+        // if at least one subquery is failed, the query is also failed.
+        return QueryState.QUERY_FAILED;
       }
     }
   }
@@ -529,6 +379,10 @@ public class Query implements EventHandler<QueryEvent> {
     return finalState;
   }
 
+  /**
+   * Check if all subqueries of the query are completed
+   * @return QueryState.QUERY_SUCCEEDED if all subqueries are completed.
+   */
   QueryState checkQueryForCompleted() {
     if (completedSubQueryCount == subqueries.size()) {
       return QueryState.QUERY_SUCCEEDED;
@@ -563,75 +417,18 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
-  public void schedule(SubQuery subQuery) {
-    scheduleQueue.add(subQuery);
-  }
-
-  private SubQuery takeSubQuery() {
-    SubQuery unit = removeFromScheduleQueue();
-    if (unit == null) {
-      return null;
-    }
-    List<SubQuery> pended = new ArrayList<SubQuery>();
-    Priority priority = unit.getPriority();
-
-    do {
-      if (isReady(unit)) {
-        break;
-      } else {
-        pended.add(unit);
-      }
-      unit = removeFromScheduleQueue();
-      if (unit == null) {
-        scheduleQueue.addAll(pended);
-        return null;
-      }
-    } while (priority.equals(unit.getPriority()));
-
-    if (!priority.equals(unit.getPriority())) {
-      pended.add(unit);
-      unit = null;
-    }
-    scheduleQueue.addAll(pended);
-    return unit;
-  }
-
-  private boolean isReady(SubQuery subQuery) {
-    if (subQuery.hasChildQuery()) {
-      for (SubQuery child : subQuery.getChildQueries()) {
-        if (child.getState() !=
-            SubQueryState.SUCCEEDED) {
-          return false;
-        }
-      }
-      return true;
-    } else {
-      return true;
-    }
-  }
-
-  private SubQuery removeFromScheduleQueue() {
-    if (scheduleQueue.isEmpty()) {
-      return null;
-    } else {
-      return scheduleQueue.remove();
-    }
-  }
-
-
-
   private void writeStat(Path outputPath, SubQuery subQuery, TableStat stat)
       throws IOException {
-
-    if (subQuery.getLogicalPlan().getType() == ExprType.CREATE_INDEX) {
-      IndexWriteNode index = (IndexWriteNode) subQuery.getLogicalPlan();
+    ExecutionBlock execBlock = subQuery.getBlock();
+    if (execBlock.getPlan().getType() == ExprType.CREATE_INDEX) {
+      IndexWriteNode index = (IndexWriteNode) execBlock.getPlan();
       Path indexPath = new Path(sm.getTablePath(index.getTableName()), "index");
       TableMeta meta;
       if (sm.getFileSystem().exists(new Path(indexPath, ".meta"))) {
         meta = sm.getTableMeta(indexPath);
       } else {
         meta = TCatUtil
-            .newTableMeta(subQuery.getOutputSchema(), StoreType.CSV);
+            .newTableMeta(execBlock.getOutputSchema(), StoreType.CSV);
       }
       String indexName = IndexUtil.getIndexName(index.getTableName(),
           index.getSortSpecs());
@@ -641,7 +438,7 @@ public class Query implements EventHandler<QueryEvent> {
       sm.writeTableMeta(indexPath, meta);
 
     } else {
-      TableMeta meta = TCatUtil.newTableMeta(subQuery.getOutputSchema(),
+      TableMeta meta = TCatUtil.newTableMeta(execBlock.getOutputSchema(),
           StoreType.CSV);
       meta.setStat(stat);
       sm.writeTableMeta(outputPath, meta);

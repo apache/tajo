@@ -8,6 +8,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-42: Divide SubQuery into FSM and execution block parts. (hyunsik)
+
     TAJO-32: Cleanup TaskRunner. (hyunsik)
 
     TAJO-27: Modify the document links to point the wiki's ones. (hyunsik)

@@ -46,7 +46,7 @@ import tajo.engine.planner.logical.LogicalNode;
 import tajo.engine.planner.logical.LogicalRootNode;
 import tajo.engine.planner.logical.StoreTableNode;
 import tajo.engine.planner.logical.UnionNode;
-import tajo.master.SubQuery;
+import tajo.master.ExecutionBlock.PartitionType;
 import tajo.master.TajoMaster;
 import tajo.storage.*;
 import tajo.storage.index.bst.BSTIndex;
@@ -424,7 +424,7 @@ public class TestPhysicalPlanner {
     Column key1 = new Column("score.deptName", DataType.STRING);
     Column key2 = new Column("score.class", DataType.STRING);
     StoreTableNode storeNode = new StoreTableNode("partition");
-    storeNode.setPartitions(SubQuery.PARTITION_TYPE.HASH, new Column[]{key1, key2}, numPartitions);
+    storeNode.setPartitions(PartitionType.HASH, new Column[]{key1, key2}, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     plan = LogicalOptimizer.optimize(context, plan);
 
@@ -482,7 +482,7 @@ public class TestPhysicalPlanner {
 
     int numPartitions = 1;
     StoreTableNode storeNode = new StoreTableNode("emptyset");
-    storeNode.setPartitions(SubQuery.PARTITION_TYPE.HASH, new Column[] {}, numPartitions);
+    storeNode.setPartitions(PartitionType.HASH, new Column[] {}, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     plan = LogicalOptimizer.optimize(context, plan);
 

@@ -124,7 +124,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       dispatcher.register(ContainerAllocatorEventType.class, rmAllocator);
 
       query = new Query(queryContext, queryId, clock, appSubmitTime,
-          "", dispatcher.getEventHandler(), null, masterPlan,
+          "", dispatcher.getEventHandler(), masterPlan,
           masterContext.getStorageManager());
       initStagingDir();
 
@@ -239,8 +239,16 @@ public class QueryMaster extends CompositeService implements EventHandler {
       return dispatcher;
     }
 
-    public Query getQuery(){
+    public Clock getClock() {
+      return clock;
+    }
+
+    public Query getQuery() {
       return query;
+    }
+
+    public SubQuery getSubQuery(SubQueryId subQueryId) {
+      return query.getSubQuery(subQueryId);
     }
 
     public QueryId getQueryId() {

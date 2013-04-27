@@ -22,7 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import tajo.catalog.Column;
 import tajo.catalog.Options;
-import tajo.master.SubQuery;
+import tajo.master.ExecutionBlock.PartitionType;
 import tajo.util.TUtil;
 
 import static tajo.catalog.proto.CatalogProtos.StoreType;
@@ -30,7 +30,7 @@ import static tajo.catalog.proto.CatalogProtos.StoreType;
 public class StoreTableNode extends UnaryNode implements Cloneable {
   @Expose private String tableName;
   @Expose private StoreType storageType = StoreType.CSV;
-  @Expose private SubQuery.PARTITION_TYPE partitionType;
+  @Expose private PartitionType partitionType;
   @Expose private int numPartitions;
   @Expose private Column [] partitionKeys;
   @Expose private boolean local;
@@ -79,12 +79,12 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   }
 
   public final void setListPartition() {
-    this.partitionType = SubQuery.PARTITION_TYPE.LIST;
+    this.partitionType = PartitionType.LIST;
     this.partitionKeys = null;
     this.numPartitions = 0;
   }
   
-  public final void setPartitions(SubQuery.PARTITION_TYPE type, Column [] keys, int numPartitions) {
+  public final void setPartitions(PartitionType type, Column [] keys, int numPartitions) {
     Preconditions.checkArgument(keys.length >= 0, 
         "At least one partition key must be specified.");
     Preconditions.checkArgument(numPartitions > 0,
@@ -95,7 +95,7 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     this.numPartitions = numPartitions;
   }
 
-  public SubQuery.PARTITION_TYPE getPartitionType() {
+  public PartitionType getPartitionType() {
     return this.partitionType;
   }
 

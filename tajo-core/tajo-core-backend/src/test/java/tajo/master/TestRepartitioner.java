@@ -23,6 +23,7 @@ import org.junit.Test;
 import tajo.QueryId;
 import tajo.SubQueryId;
 import tajo.TestQueryUnitId;
+import tajo.master.ExecutionBlock.PartitionType;
 import tajo.util.TUtil;
 import tajo.util.TajoIdUtils;
 
@@ -47,7 +48,7 @@ public class TestRepartitioner {
 
     Collection<URI> uris = Repartitioner.
         createHashFetchURL(hostName + ":" + port, sid, partitionId,
-            SubQuery.PARTITION_TYPE.HASH, intermediateEntries);
+            PartitionType.HASH, intermediateEntries);
 
     List<String> taList = TUtil.newList();
     for (URI uri : uris) {

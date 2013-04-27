@@ -126,7 +126,7 @@ public class WorkerListener extends AbstractService
                    QueryUnitAttemptIdProto attemptIdProto,
                    RpcCallback<BoolProto> done) {
     QueryUnitAttemptId attemptId = new QueryUnitAttemptId(attemptIdProto);
-    context.getQuery(attemptId.getQueryId()).getContext().getQuery().getSubQuery(attemptId.getSubQueryId()).
+    context.getQuery(attemptId.getQueryId()).getContext().getSubQuery(attemptId.getSubQueryId()).
         getQueryUnit(attemptId.getQueryUnitId()).getAttempt(attemptId).
         resetExpireTime();
     done.run(TRUE_PROTO);

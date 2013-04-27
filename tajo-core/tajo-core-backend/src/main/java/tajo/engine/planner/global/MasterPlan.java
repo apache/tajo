@@ -21,25 +21,21 @@
  */
 package tajo.engine.planner.global;
 
-import tajo.master.SubQuery;
+import tajo.master.ExecutionBlock;
 
 public class MasterPlan {
-  private SubQuery root;
+  private ExecutionBlock root;
   private String outputTableName;
-  
-  public MasterPlan() {
-    root = null;
-  }
-  
-  public MasterPlan(SubQuery root) {
+
+  public MasterPlan(ExecutionBlock root) {
     setRoot(root);
   }
   
-  public void setRoot(SubQuery root) {
+  public void setRoot(ExecutionBlock root) {
     this.root = root;
   }
   
-  public SubQuery getRoot() {
+  public ExecutionBlock getRoot() {
     return this.root;
   }
 

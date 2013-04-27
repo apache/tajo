@@ -43,8 +43,8 @@ import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PlanningContext;
 import tajo.engine.planner.logical.*;
+import tajo.master.ExecutionBlock;
 import tajo.master.GlobalPlanner;
-import tajo.master.SubQuery;
 import tajo.storage.*;
 
 import java.io.IOException;
@@ -144,7 +144,7 @@ public class TestGlobalQueryOptimizer {
         (LogicalRootNode) plan);
     globalPlan = optimizer.optimize(globalPlan);
     
-    SubQuery unit = globalPlan.getRoot();
+    ExecutionBlock unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
     assertEquals(ExprType.PROJECTION, store.getSubNode().getType());
     ProjectionNode proj = (ProjectionNode) store.getSubNode();
@@ -153,16 +153,16 @@ public class TestGlobalQueryOptimizer {
     assertEquals(ExprType.SCAN, sort.getSubNode().getType());
     ScanNode scan = (ScanNode) sort.getSubNode();
     
-    assertTrue(unit.hasChildQuery());
-    unit = unit.getChildQuery(scan);
+    assertTrue(unit.hasChildBlock());
+    unit = unit.getChildBlock(scan);
     store = unit.getStoreTableNode();
     assertEquals(ExprType.SORT, store.getSubNode().getType());
     sort = (SortNode) store.getSubNode();
     assertEquals(ExprType.JOIN, sort.getSubNode().getType());
     
-    assertTrue(unit.hasChildQuery());
+    assertTrue(unit.hasChildBlock());
     for (ScanNode prevscan : unit.getScanNodes()) {
-      SubQuery prev = unit.getChildQuery(prevscan);
+      ExecutionBlock prev = unit.getChildBlock(prevscan);
       store = prev.getStoreTableNode();
       assertEquals(ExprType.SCAN, store.getSubNode().getType());
     }
