@@ -222,7 +222,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   public class QueryContext {
     private QueryConf conf;
-    int clusterNode;
     public Map<ContainerId, Container> containers = new ConcurrentHashMap<ContainerId, Container>();
     int minCapability;
     int maxCapability;
@@ -296,11 +295,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
 
     public int getNumClusterNode() {
-      return clusterNode;
-    }
-
-    public void setNumClusterNode(int num) {
-      clusterNode = num;
+      return rmAllocator.getClusterNodeCount();
     }
 
     public CatalogService getCatalog() {
