@@ -56,7 +56,7 @@ Configuration
 --------------------------------------------
 export JAVA_HOME=/usr/lib/jvm/openjdk-1.6.x
 export HADOOP_HOME=/usr/local/hadoop-2.0.x
-export YARN_HOME=/usr/local/hadoop-2.0.x
+export HADOOP_YARN_HOME=/usr/local/hadoop-2.0.x
 export TAJO_HOME=<tajo-install-dir>
 --------------------------------------------
 
