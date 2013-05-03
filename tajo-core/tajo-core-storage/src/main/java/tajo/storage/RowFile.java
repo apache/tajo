@@ -79,8 +79,6 @@ public class RowFile {
       tupleHeaderSize = nullFlags.size() + (2 * Short.SIZE/8);
       this.start = fragment.getStartOffset();
       this.end = this.start + fragment.getLength();
-
-      init();
     }
 
     public void init() throws IOException {
@@ -99,7 +97,6 @@ public class RowFile {
       }
       bufferStartPos = in.getPos();
       fillBuffer();
-      fillBuffer(); // due to the bug of FSDataInputStream.read(ByteBuffer)
 
       if (start != 0) {
         // TODO: improve
@@ -137,22 +134,29 @@ public class RowFile {
       return Arrays.equals(checkSync, sync);
     }
 
-    private boolean fillBuffer() throws IOException {
+    private int fillBuffer() throws IOException {
       bufferStartPos += buffer.position();
       buffer.compact();
+      int remain = buffer.remaining();
       int read = in.read(buffer);
-      if (read < 0) {
-        return false;
-      } else {
+      if (read == -1) {
         buffer.flip();
-        return true;
+        return read;
+      } else {
+        int totalRead = read;
+        if (remain > totalRead) {
+          read = in.read(buffer);
+          totalRead += read > 0 ? read : 0;
+        }
+        buffer.flip();
+        return totalRead;
       }
     }
 
     @Override
     public Tuple next() throws IOException {
       while (buffer.remaining() < SYNC_SIZE) {
-        if (!fillBuffer()) {
+        if (fillBuffer() < 0) {
           return null;
         }
       }
@@ -167,7 +171,7 @@ public class RowFile {
       }
 
       while (buffer.remaining() < tupleHeaderSize) {
-        if (!fillBuffer()) {
+        if (fillBuffer() < 0) {
           return null;
         }
       }
@@ -182,7 +186,7 @@ public class RowFile {
       int tupleSize = buffer.getShort();
 
       while (buffer.remaining() < (tupleSize)) {
-        if (!fillBuffer()) {
+        if (fillBuffer() < 0) {
           return null;
         }
       }

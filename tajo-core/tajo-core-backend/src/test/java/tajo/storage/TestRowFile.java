@@ -118,6 +118,7 @@ public class TestRowFile {
     int tupleCnt = 0;
     start = System.currentTimeMillis();
     Scanner scanner = new RowFile.RowFileScanner(conf, meta, fragment);
+    scanner.init();
     while ((tuple=scanner.next()) != null) {
       tupleCnt++;
 //      System.out.println(tuple.toString());
@@ -137,6 +138,7 @@ public class TestRowFile {
       System.out.println("range: " + fileStart + ", " + fileLen);
       fragment = new Fragment("test.tbl", dataPath, meta, fileStart, fileLen, null);
       scanner = new RowFile.RowFileScanner(conf, meta, fragment);
+      scanner.init();
       while ((tuple=scanner.next()) != null) {
         if (!idSet.remove(tuple.get(0).asInt())) {
           System.out.println("duplicated! " + tuple.get(0).asInt());
