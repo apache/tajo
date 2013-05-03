@@ -922,7 +922,7 @@ public class GlobalPlanner {
     ExecutionBlock execBlock = subQuery.getBlock();
     QueryUnit unit = new QueryUnit(
         QueryIdFactory.newQueryUnitId(subQuery.getId()), execBlock.isLeafBlock(),
-        subQuery.eventHandler);
+        subQuery.getEventHandler());
     unit.setLogicalPlan(execBlock.getPlan());
     return unit;
   }

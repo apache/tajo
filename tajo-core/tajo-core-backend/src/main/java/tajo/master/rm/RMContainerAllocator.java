@@ -24,10 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.YarnException;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
-import org.apache.hadoop.yarn.api.records.AMResponse;
-import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
-import org.apache.hadoop.yarn.api.records.Priority;
+import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.AMRMClientImpl;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
@@ -159,8 +156,8 @@ public class RMContainerAllocator extends AMRMClientImpl
     if (allocatedContainers.size() > 0) {
       for (Container container : allocatedContainers) {
         SubQueryId subQueryId = subQueryMap.get(container.getPriority());
-        if (!subQueryMap.containsKey(container.getPriority()) ||
-            context.getSubQuery(subQueryId).getState() == SubQueryState.SUCCEEDED) {
+        SubQueryState state = context.getSubQuery(subQueryId).getState();
+        if (!(isRunningState(state) && subQueryMap.containsKey(container.getPriority()))) {
           releaseAssignedContainer(container.getId());
           synchronized (subQueryMap) {
             subQueryMap.remove(container.getPriority());
@@ -178,6 +175,11 @@ public class RMContainerAllocator extends AMRMClientImpl
         eventHandler.handle(new SubQueryContainerAllocationEvent(entry.getKey(), entry.getValue()));
       }
     }
+  }
+
+  private static boolean isRunningState(SubQueryState state) {
+    return state == SubQueryState.INIT || state == SubQueryState.NEW ||
+        state == SubQueryState.CONTAINER_ALLOCATED || state == SubQueryState.RUNNING;
   }
 
   @Override

@@ -8,6 +8,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-50: Cleanup SubQuery. (hyunsik)
+
     TAJO-44: Adopt AMRMClient to RMContainerAllocator, RMCommunicator. (hyunsik)
     
     TAJO-42: Divide SubQuery into FSM and execution block parts. (hyunsik)

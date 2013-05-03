@@ -45,6 +45,7 @@ import tajo.master.TajoMaster.MasterContext;
 import tajo.master.TaskRunnerLauncherImpl.Container;
 import tajo.master.event.*;
 import tajo.master.rm.RMContainerAllocator;
+import tajo.storage.StorageManager;
 import tajo.storage.StorageUtil;
 import tajo.util.TajoIdUtils;
 
@@ -81,6 +82,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
   private CatalogService catalog;
 
   private boolean isCreateTableStmt;
+  private StorageManager storageManager;
   private FileSystem defaultFS;
   private Path outputPath;
 
@@ -115,6 +117,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       rpc = masterContext.getYarnRPC();
 
       catalog = masterContext.getCatalog();
+      storageManager = masterContext.getStorageManager();
 
       taskRunnerListener = new TaskRunnerListener(queryContext);
       addIfService(taskRunnerListener);
@@ -124,8 +127,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       dispatcher.register(ContainerAllocatorEventType.class, rmAllocator);
 
       query = new Query(queryContext, queryId, clock, appSubmitTime,
-          "", dispatcher.getEventHandler(), masterPlan,
-          masterContext.getStorageManager());
+          "", dispatcher.getEventHandler(), masterPlan, storageManager);
       initStagingDir();
 
       // QueryEventDispatcher is already registered in TajoMaster
@@ -212,7 +214,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       implements EventHandler<TaskSchedulerEvent> {
     public void handle(TaskSchedulerEvent event) {
       SubQuery subQuery = query.getSubQuery(event.getSubQueryId());
-      subQuery.taskScheduler.handle(event);
+      subQuery.getTaskScheduler().handle(event);
     }
   }
 
@@ -336,6 +338,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     public long getFinishTime() {
       return query.getFinishTime();
+    }
+
+    public StorageManager getStorageManager() {
+      return storageManager;
     }
   }
 

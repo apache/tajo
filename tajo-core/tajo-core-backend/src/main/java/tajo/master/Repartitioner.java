@@ -58,7 +58,7 @@ public class Repartitioner {
   public static QueryUnit [] createJoinTasks(SubQuery subQuery)
       throws IOException {
     ExecutionBlock execBlock = subQuery.getBlock();
-    CatalogService catalog = subQuery.queryContext.getCatalog();
+    CatalogService catalog = subQuery.getContext().getCatalog();
 
     ScanNode[] scans = execBlock.getScanNodes();
     Path tablePath;
@@ -85,7 +85,7 @@ public class Repartitioner {
       }
 
       // Getting a table stat for each scan
-      stats[i] = subQuery.getChildQuery(scans[i]).getStats();
+      stats[i] = subQuery.getChildQuery(scans[i]).getTableStat();
     }
 
     // Assigning either fragments or fetch urls to query units
@@ -93,7 +93,7 @@ public class Repartitioner {
     if (scans[0].isBroadcast() || scans[1].isBroadcast()) {
       tasks = new QueryUnit[1];
       tasks[0] = new QueryUnit(QueryIdFactory.newQueryUnitId(subQuery.getId(), 0),
-          false, subQuery.eventHandler);
+          false, subQuery.getEventHandler());
       tasks[0].setLogicalPlan(execBlock.getPlan());
       tasks[0].setFragment(scans[0].getTableId(), fragments[0]);
       tasks[0].setFragment(scans[1].getTableId(), fragments[1]);
@@ -135,7 +135,7 @@ public class Repartitioner {
       // Getting the desire number of join tasks according to the volumn
       // of a larger table
       int largerIdx = stats[0].getNumBytes() >= stats[1].getNumBytes() ? 0 : 1;
-      int desireJoinTaskVolumn = subQuery.queryContext.getConf().
+      int desireJoinTaskVolumn = subQuery.getContext().getConf().
           getIntVar(ConfVars.JOIN_TASK_VOLUME);
 
       // calculate the number of tasks according to the data size
@@ -181,7 +181,7 @@ public class Repartitioner {
     for (int i = 0; i < taskNum; i++) {
       tasks[i] = new QueryUnit(
           QueryIdFactory.newQueryUnitId(subQuery.getId(), i), execBlock.isLeafBlock(),
-          subQuery.eventHandler);
+          subQuery.getEventHandler());
       tasks[i].setLogicalPlan(execBlock.getPlan());
       for (Fragment fragment : fragments) {
         tasks[i].setFragment2(fragment);
@@ -253,14 +253,14 @@ public class Repartitioner {
                                                          int maxNum)
       throws InternalException {
     ExecutionBlock execBlock = subQuery.getBlock();
-    TableStat stat = childSubQuery.getStats();
+    TableStat stat = childSubQuery.getTableStat();
     if (stat.getNumRows() == 0) {
       return new QueryUnit[0];
     }
 
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
-    tablePath = subQuery.sm.getTablePath(scan.getTableId());
+    tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableId());
 
     StoreTableNode store = (StoreTableNode) childSubQuery.getBlock().getPlan();
     SortNode sort = (SortNode) store.getSubNode();
@@ -296,7 +296,7 @@ public class Repartitioner {
 
     List<String> basicFetchURIs = new ArrayList<String>();
 
-    SubQuery child = childSubQuery.queryContext.getSubQuery(
+    SubQuery child = childSubQuery.getContext().getSubQuery(
         subQuery.getBlock().getChildBlock(scan).getId());
     for (QueryUnit qu : child.getQueryUnits()) {
       for (IntermediateEntry p : qu.getIntermediateData()) {
@@ -372,14 +372,14 @@ public class Repartitioner {
                                                  SubQuery childSubQuery,
                                                  int maxNum) {
     ExecutionBlock execBlock = subQuery.getBlock();
-    TableStat stat = childSubQuery.getStats();
+    TableStat stat = childSubQuery.getTableStat();
     if (stat.getNumRows() == 0) {
       return new QueryUnit[0];
     }
 
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
-    tablePath = subQuery.sm.getTablePath(scan.getTableId());
+    tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableId());
 
     List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
     for (QueryUnit tasks : childSubQuery.getQueryUnits()) {
@@ -513,7 +513,7 @@ public class Repartitioner {
     QueryUnit [] tasks = new QueryUnit[num];
     for (int i = 0; i < num; i++) {
       tasks[i] = new QueryUnit(QueryIdFactory.newQueryUnitId(subQuery.getId(), i),
-          false, subQuery.eventHandler);
+          false, subQuery.getEventHandler());
       tasks[i].setFragment2(frag);
       tasks[i].setLogicalPlan(plan);
     }

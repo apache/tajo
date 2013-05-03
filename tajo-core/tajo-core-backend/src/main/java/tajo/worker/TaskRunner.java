@@ -257,6 +257,7 @@ public class TaskRunner extends AbstractService {
                 // if there has been no assigning task for a given period,
                 // TaskRunner will retry to request an assigning task.
                 LOG.error(te);
+
                 continue;
               }
 

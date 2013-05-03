@@ -36,7 +36,6 @@ import tajo.catalog.TableDesc;
 import tajo.catalog.TableDescImpl;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
-import tajo.catalog.statistics.TableStat;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.planner.global.MasterPlan;
 import tajo.engine.planner.logical.ExprType;
@@ -47,7 +46,10 @@ import tajo.storage.StorageManager;
 import tajo.util.IndexUtil;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -152,9 +154,9 @@ public class Query implements EventHandler<QueryEvent> {
       float [] subProgresses = new float[subqueries.size()];
       boolean finished = true;
       for (SubQuery subquery: subqueries.values()) {
-        if (subquery.getStateMachine().getCurrentState() != SubQueryState.NEW) {
+        if (subquery.getState() != SubQueryState.NEW) {
           subProgresses[idx] = subquery.getProgress();
-          if (finished == true && subquery.getState() != SubQueryState.SUCCEEDED) {
+          if (finished && subquery.getState() != SubQueryState.SUCCEEDED) {
             finished = false;
           }
         } else {
@@ -163,7 +165,7 @@ public class Query implements EventHandler<QueryEvent> {
         idx++;
       }
 
-      if (finished == true) {
+      if (finished) {
         return 1.0f;
       }
 
@@ -267,15 +269,6 @@ public class Query implements EventHandler<QueryEvent> {
     @Override
     public QueryState transition(Query query, QueryEvent queryEvent) {
       query.setStartTime();
-
-      ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
-      while(cursor.hasNext()) {
-        ExecutionBlock block = cursor.nextBlock();
-        System.out.println(block.getId());
-        System.out.println(block.getPlan());
-        System.out.println("--------------------------------");
-      }
-      query.getExecutionBlockCursor().reset();
       return QueryState.QUERY_INIT;
     }
   }
@@ -313,20 +306,18 @@ public class Query implements EventHandler<QueryEvent> {
           query.addSubQuery(nextSubQuery);
           nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(),
               SubQueryEventType.SQ_INIT));
-          LOG.info("Scheduling SubQuery's Priority: " + nextSubQuery.getPriority().get());
+          LOG.info("Scheduling SubQuery's Priority: " + nextSubQuery.getPriority());
           LOG.info("Scheduling SubQuery's Plan: \n" + nextSubQuery.getBlock().getPlan());
-          QueryState state = query.checkQueryForCompleted();
-          return state;
+          return query.checkQueryForCompleted();
 
-        } else {
+        } else { // Finish a query
           if (query.checkQueryForCompleted() == QueryState.QUERY_SUCCEEDED) {
-            SubQuerySucceeEvent succeeEvent = (SubQuerySucceeEvent) castEvent;
             SubQuery subQuery = query.getSubQuery(castEvent.getSubQueryId());
             TableDesc desc = new TableDescImpl(query.conf.getOutputTable(),
-                succeeEvent.getTableMeta(), query.context.getOutputPath());
+                subQuery.getTableMeta(), query.context.getOutputPath());
             query.setResultDesc(desc);
             try {
-              query.writeStat(query.context.getOutputPath(), subQuery, succeeEvent.getTableMeta().getStat());
+              query.writeStat(query.context.getOutputPath(), subQuery);
             } catch (IOException e) {
               e.printStackTrace();
             }
@@ -417,7 +408,7 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
-  private void writeStat(Path outputPath, SubQuery subQuery, TableStat stat)
+  private void writeStat(Path outputPath, SubQuery subQuery)
       throws IOException {
     ExecutionBlock execBlock = subQuery.getBlock();
     if (execBlock.getPlan().getType() == ExprType.CREATE_INDEX) {
@@ -438,10 +429,7 @@ public class Query implements EventHandler<QueryEvent> {
       sm.writeTableMeta(indexPath, meta);
 
     } else {
-      TableMeta meta = TCatUtil.newTableMeta(execBlock.getOutputSchema(),
-          StoreType.CSV);
-      meta.setStat(stat);
-      sm.writeTableMeta(outputPath, meta);
+      sm.writeTableMeta(outputPath, subQuery.getTableMeta());
     }
   }
 }
