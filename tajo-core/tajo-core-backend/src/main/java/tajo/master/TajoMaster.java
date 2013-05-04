@@ -51,7 +51,6 @@ import tajo.engine.MasterWorkerProtos.TaskStatusProto;
 import tajo.engine.function.Country;
 import tajo.engine.function.InCountry;
 import tajo.engine.function.builtin.*;
-import tajo.master.cluster.event.WorkerEvent;
 import tajo.master.event.QueryEvent;
 import tajo.master.event.QueryEventType;
 import tajo.storage.StorageManager;
@@ -263,26 +262,6 @@ public class TajoMaster extends CompositeService {
 
   public MasterContext getContext() {
     return this.context;
-  }
-
-
-  static class WorkerEventDispatcher implements EventHandler<WorkerEvent> {
-    List<EventHandler<WorkerEvent>> listofHandlers;
-
-    public WorkerEventDispatcher() {
-      listofHandlers = new ArrayList<EventHandler<WorkerEvent>>();
-    }
-
-    @Override
-    public void handle(WorkerEvent event) {
-      for (EventHandler<WorkerEvent> handler: listofHandlers) {
-        handler.handle(event);
-      }
-    }
-
-    public void addHandler(EventHandler<WorkerEvent> handler) {
-      listofHandlers.add(handler);
-    }
   }
 
   protected void addIfService(Object object) {

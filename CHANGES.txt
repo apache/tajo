@@ -8,6 +8,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-37: Remove obsolete classes WorkerEventDispatcher, WorkerEvent and 
+	WorkerEventType. (sunny.1324 via hyunsik)
+
     TAJO-50: Cleanup SubQuery. (hyunsik)
 
     TAJO-44: Adopt AMRMClient to RMContainerAllocator, RMCommunicator. (hyunsik)
