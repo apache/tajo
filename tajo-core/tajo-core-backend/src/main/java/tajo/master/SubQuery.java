@@ -29,7 +29,6 @@ import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.EventHandler;
-import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.hadoop.yarn.util.Records;
 import tajo.QueryIdFactory;
@@ -614,13 +613,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       ExecutionBlock execBlock = subQuery.getBlock();
       QueryUnit [] tasks = subQuery.getQueryUnits();
 
-      int numRequest = Math.min(tasks.length,
-          subQuery.context.getNumClusterNode() * 4);
+      int numClusterNodes = subQuery.getContext().getNumClusterNode();
+      int numRequest = Math.min(tasks.length, numClusterNodes * 4);
 
-      final Resource resource =
-          RecordFactoryProvider.getRecordFactory(null).newRecordInstance(
-              Resource.class);
-      if (tasks.length <= subQuery.context.getNumClusterNode()) {
+      final Resource resource = Records.newRecord(Resource.class);
+      if (tasks.length <= numClusterNodes) {
         resource.setMemory(subQuery.context.getMaxContainerCapability());
       } else {
         resource.setMemory(2000);

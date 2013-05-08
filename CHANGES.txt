@@ -9,7 +9,7 @@ Release 0.2.0 - unreleased
   IMPROVEMENTS
 
     TAJO-37: Remove obsolete classes WorkerEventDispatcher, WorkerEvent and 
-	WorkerEventType. (sunny.1324 via hyunsik)
+    WorkerEventType. (sunny.1324 via hyunsik)
 
     TAJO-50: Cleanup SubQuery. (hyunsik)
 
@@ -36,6 +36,8 @@ Release 0.2.0 - unreleased
     TAJO-2: remove all @author tags and update license header. (hyunsik)
 
   BUG FIXES
+
+    TAJO-54: SubQuery::allocateContainers() may ask 0 containers. (hyunsik)
 
     TAJO-47: RowFile has the duplicated initialization problem and unflipped 
     ByteBuffer problem. (jihoon)

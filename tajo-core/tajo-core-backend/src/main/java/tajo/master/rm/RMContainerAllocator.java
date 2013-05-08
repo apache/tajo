@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.YarnException;
+import org.apache.hadoop.yarn.api.protocolrecords.AllocateResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.AMRMClientImpl;
@@ -62,6 +63,7 @@ public class RMContainerAllocator extends AMRMClientImpl
     super.init(conf);
   }
 
+  private static final int WAIT_INTERVAL_AVAILABLE_NODES = 500; // 0.5 second
   public void start() {
     super.start();
 
@@ -70,6 +72,19 @@ public class RMContainerAllocator extends AMRMClientImpl
       response = registerApplicationMaster("locahost", 10080, "http://localhost:1234");
       context.setMaxContainerCapability(response.getMaximumResourceCapability().getMemory());
       context.setMinContainerCapability(response.getMinimumResourceCapability().getMemory());
+
+      // If the number of cluster nodes is ZERO, it waits for available nodes.
+      AllocateResponse allocateResponse = allocate(0.0f);
+      while(allocateResponse.getNumClusterNodes() < 1) {
+        try {
+          Thread.sleep(WAIT_INTERVAL_AVAILABLE_NODES);
+          LOG.info("Waiting for Available Cluster Nodes");
+          allocateResponse = allocate(0);
+        } catch (InterruptedException e) {
+          LOG.error(e);
+        }
+      }
+      context.setNumClusterNodes(allocateResponse.getNumClusterNodes());
     } catch (YarnRemoteException e) {
       LOG.error(e);
     }
@@ -135,9 +150,11 @@ public class RMContainerAllocator extends AMRMClientImpl
       new HashMap<Priority, SubQueryId>();
 
   public void heartbeat() throws Exception {
-    AMResponse response = allocate(context.getProgress()).getAMResponse();
+    AllocateResponse allocateResponse = allocate(context.getProgress());
+    AMResponse response = allocateResponse.getAMResponse();
     List<Container> allocatedContainers = response.getAllocatedContainers();
 
+    LOG.info("Available Cluster Nodes: " + allocateResponse.getNumClusterNodes());
     LOG.info("Available Resource: " + response.getAvailableResources());
     LOG.info("Num of Allocated Containers: " + response.getAllocatedContainers().size());
     if (response.getAllocatedContainers().size() > 0) {
