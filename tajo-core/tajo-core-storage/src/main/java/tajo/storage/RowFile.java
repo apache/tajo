@@ -102,6 +102,9 @@ public class RowFile {
         // TODO: improve
         boolean syncFound = false;
         while (!syncFound) {
+          if (buffer.remaining() < SYNC_SIZE) {
+            fillBuffer();
+          }
           buffer.mark();
           syncFound = checkSync();
           if (!syncFound) {

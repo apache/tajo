@@ -39,6 +39,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-48: BufferUnderflowException occurs during the initialization of RowFile. (jihoon)
+
     TAJO-58: Remove obsolete methods in GlobalPlanner. (hyunsik)
 
     TAJO-54: SubQuery::allocateContainers() may ask 0 containers. (hyunsik)
