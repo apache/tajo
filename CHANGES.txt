@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
    
+    TAJO-57: Recognize Parser and Catalog Standard SQL data types. (hyunsik)
+
     TAJO-33: Implement a basic query progress indicator. (hyunsik)
 
   IMPROVEMENTS
@@ -36,6 +38,8 @@ Release 0.2.0 - unreleased
     TAJO-2: remove all @author tags and update license header. (hyunsik)
 
   BUG FIXES
+
+    TAJO-58: Remove obsolete methods in GlobalPlanner. (hyunsik)
 
     TAJO-54: SubQuery::allocateContainers() may ask 0 containers. (hyunsik)
 

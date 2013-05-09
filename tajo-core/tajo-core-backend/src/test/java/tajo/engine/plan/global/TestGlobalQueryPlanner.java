@@ -18,13 +18,10 @@
 
 package tajo.engine.plan.global;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.zookeeper.KeeperException;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,7 +37,6 @@ import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.engine.eval.TestEvalTree.TestSum;
 import tajo.engine.parser.QueryAnalyzer;
-import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.LogicalOptimizer;
 import tajo.engine.planner.LogicalPlanner;
 import tajo.engine.planner.PlanningContext;
@@ -53,10 +49,7 @@ import tajo.master.TajoMaster;
 import tajo.storage.*;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -388,141 +381,5 @@ public class TestGlobalQueryPlanner {
       groupby = (GroupbyNode) store.getSubNode();
       assertEquals(ExprType.SCAN, groupby.getSubNode().getType());
     }
-  }
-
-  @Test
-  public void testHashFetches() {
-    URI[] uris = {
-        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_000835_00&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001064_00&fn=0"),
-        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_001059_00&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104_00&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104_00&fn=1"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001059_00&fn=1")
-    };
-
-    Map<String, List<URI>> hashed = GlobalPlanner.hashFetches(null, Lists.newArrayList(uris));
-    assertEquals(2, hashed.size());
-    List<URI> res = hashed.get("0");
-    assertEquals(2, res.size());
-    res = hashed.get("1");
-    assertEquals(1, res.size());
-    QueryStringDecoder decoder = new QueryStringDecoder(res.get(0));
-    Map<String, List<String>> params = decoder.getParameters();
-    String [] qids = params.get("qid").get(0).split(",");
-    assertEquals(2, qids.length);
-    assertEquals("104_0", qids[0]);
-    assertEquals("1059_0", qids[1]);
-  }
-
-  @Test
-  public void testHashFetchesForBinary() {
-    URI[] urisOuter = {
-        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_000835_00&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001064_00&fn=0"),
-        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_003_001059_00&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104_00&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_000104_00&fn=1"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_003_001059_00&fn=1")
-    };
-
-    URI[] urisInner = {
-        URI.create("http://192.168.0.21:35385/?qid=query_20120726371_000_001_004_000111_00&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000123_00&fn=0"),
-        URI.create("http://192.168.0.17:35385/?qid=query_20120726371_000_001_004_00134_00&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000155_00&fn=0"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_000255_00&fn=1"),
-        URI.create("http://192.168.0.8:55205/?qid=query_20120726371_000_001_004_001356_00&fn=1")
-    };
-
-    Schema schema1 = new Schema();
-    schema1.addColumn("col1", Type.INT4);
-    TableMeta meta1 = new TableMetaImpl(schema1, StoreType.CSV, Options.create());
-    TableDesc desc1 = new TableDescImpl("table1", meta1, new Path("/"));
-    TableDesc desc2 = new TableDescImpl("table2", meta1, new Path("/"));
-
-    QueryBlock.FromTable table1 = new QueryBlock.FromTable(desc1);
-    QueryBlock.FromTable table2 = new QueryBlock.FromTable(desc2);
-    ScanNode scan1 = new ScanNode(table1);
-    ScanNode scan2 = new ScanNode(table2);
-
-    Map<ScanNode, List<URI>> uris = Maps.newHashMap();
-    uris.put(scan1, Lists.newArrayList(urisOuter));
-    uris.put(scan2, Lists.newArrayList(urisInner));
-
-    Map<String, Map<ScanNode, List<URI>>> hashed = GlobalPlanner.hashFetches(uris);
-    assertEquals(2, hashed.size());
-    assertTrue(hashed.keySet().contains("0"));
-    assertTrue(hashed.keySet().contains("1"));
-
-    assertTrue(hashed.get("0").containsKey(scan1));
-    assertTrue(hashed.get("0").containsKey(scan2));
-
-    assertEquals(2, hashed.get("0").get(scan1).size());
-    assertEquals(3, hashed.get("0").get(scan2).size());
-
-    QueryStringDecoder decoder = new QueryStringDecoder(hashed.get("0").get(scan1).get(0));
-    Map<String, List<String>> params = decoder.getParameters();
-    String [] qids = params.get("qid").get(0).split(",");
-    assertEquals(2, qids.length);
-    assertEquals("1064_0", qids[0]);
-    assertEquals("104_0", qids[1]);
-
-    decoder = new QueryStringDecoder(hashed.get("0").get(scan1).get(1));
-    params = decoder.getParameters();
-    qids = params.get("qid").get(0).split(",");
-    assertEquals(2, qids.length);
-    assertEquals("835_0", qids[0]);
-    assertEquals("1059_0", qids[1]);
-  }
-
-  @Test
-  public void testCreateMultilevelGroupby()
-      throws IOException, CloneNotSupportedException {
-    PlanningContext context = analyzer.parse(
-        "create table store1 as select age, sumtest(salary) from table0 group by age");
-    LogicalNode plan = logicalPlanner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
-
-    MasterPlan globalPlan = planner.build(queryId, (LogicalRootNode) plan);
-
-    ExecutionBlock second, first, mid;
-    ScanNode secondScan, firstScan, midScan;
-
-    second = globalPlan.getRoot();
-    assertTrue(second.getScanNodes().length == 1);
-
-    first = second.getChildBlock(second.getScanNodes()[0]);
-
-    GroupbyNode firstGroupby, secondGroupby, midGroupby;
-    secondGroupby = (GroupbyNode) second.getStoreTableNode().getSubNode();
-
-    Column[] originKeys = secondGroupby.getGroupingColumns();
-    Column[] newKeys = new Column[2];
-    newKeys[0] = new Column("age", Type.INT4);
-    newKeys[1] = new Column("name", Type.TEXT);
-
-    mid = planner.createMultilevelGroupby(first, newKeys);
-    midGroupby = (GroupbyNode) mid.getStoreTableNode().getSubNode();
-    firstGroupby = (GroupbyNode) first.getStoreTableNode().getSubNode();
-
-    secondScan = second.getScanNodes()[0];
-    midScan = mid.getScanNodes()[0];
-    firstScan = first.getScanNodes()[0];
-
-    assertTrue(first.getParentBlock().equals(mid));
-    assertTrue(mid.getParentBlock().equals(second));
-    assertTrue(second.getChildBlock(secondScan).equals(mid));
-    assertTrue(mid.getChildBlock(midScan).equals(first));
-    assertEquals(first.getOutputName(), midScan.getTableId());
-    assertEquals(first.getOutputSchema(), midScan.getInSchema());
-    assertEquals(mid.getOutputName(), secondScan.getTableId());
-    assertEquals(mid.getOutputSchema(), secondScan.getOutSchema());
-    assertArrayEquals(newKeys, firstGroupby.getGroupingColumns());
-    assertArrayEquals(newKeys, midGroupby.getGroupingColumns());
-    assertArrayEquals(originKeys, secondGroupby.getGroupingColumns());
-    assertFalse(firstScan.isLocal());
-    assertTrue(midScan.isLocal());
-    assertTrue(secondScan.isLocal());
   }
 }
