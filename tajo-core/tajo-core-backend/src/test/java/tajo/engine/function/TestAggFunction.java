@@ -36,7 +36,7 @@ public class TestAggFunction {
 
     for (int i = 1; i <= 5; i++) {
       tuples[i-1] = new VTuple(1);
-      tuples[i-1].put(0, DatumFactory.createInt(i));
+      tuples[i-1].put(0, DatumFactory.createInt4(i));
     }
 
     AvgLong avg = new AvgLong();
@@ -45,7 +45,7 @@ public class TestAggFunction {
       avg.eval(ctx, tuples[i-1]);
     }
 
-    assertTrue(15 / 5 == avg.terminate(ctx).asDouble());
+    assertTrue(15 / 5 == avg.terminate(ctx).asFloat8());
 
 
     Tuple [] tuples2 = new Tuple[10];
@@ -53,13 +53,13 @@ public class TestAggFunction {
     FunctionContext ctx2 = avg.newContext();
     for (int i = 1; i <= 10; i++) {
       tuples2[i-1] = new VTuple(1);
-      tuples2[i-1].put(0, DatumFactory.createInt(i));
+      tuples2[i-1].put(0, DatumFactory.createInt4(i));
       avg.eval(ctx2, tuples2[i-1]);
     }
-    assertTrue((double)55 / 10 == avg.terminate(ctx2).asDouble());
+    assertTrue((double)55 / 10 == avg.terminate(ctx2).asFloat8());
 
 
     avg.merge(ctx, new VTuple(new Datum[] {avg.getPartialResult(ctx2)}));
-    assertTrue((double)(15 + 55) / (5 + 10) == avg.terminate(ctx).asDouble());
+    assertTrue((double)(15 + 55) / (5 + 10) == avg.terminate(ctx).asFloat8());
   }
 }

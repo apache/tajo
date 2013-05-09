@@ -30,14 +30,13 @@ import org.apache.trevni.ValueType;
 import tajo.catalog.Column;
 import tajo.catalog.TableMeta;
 import tajo.catalog.statistics.TableStat;
+import tajo.common.TajoDataTypes.Type;
 import tajo.storage.FileAppender;
 import tajo.storage.TableStatistics;
 import tajo.storage.Tuple;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-
-import static tajo.catalog.proto.CatalogProtos.DataType;
 
 public class TrevniAppender extends FileAppender {
   private FileSystem fs;
@@ -65,7 +64,7 @@ public class TrevniAppender extends FileAppender {
     int i = 0;
     for (Column column : meta.getSchema().getColumns()) {
       trevniMetas[i++] = new ColumnMetaData(column.getColumnName(),
-          getType(column.getDataType()));
+          getType(column.getDataType().getType()));
     }
 
     writer = new ColumnFileWriter(createFileMeta(), trevniMetas);
@@ -83,35 +82,34 @@ public class TrevniAppender extends FileAppender {
         .setChecksum("null");
   }
 
-  private static ValueType getType(DataType type) {
+  private static ValueType getType(Type type) {
     switch (type) {
       case BOOLEAN:
         return ValueType.INT;
-      case BYTE:
+      case BIT:
         return ValueType.INT;
       case CHAR:
         return ValueType.INT;
-      case SHORT:
+      case INT2:
         return ValueType.INT;
-      case INT:
+      case INT4:
         return ValueType.INT;
-      case LONG:
+      case INT8:
         return ValueType.LONG;
-      case FLOAT:
+      case FLOAT4:
         return ValueType.FLOAT;
-      case DOUBLE:
+      case FLOAT8:
         return ValueType.DOUBLE;
-      case STRING:
-      case STRING2:
+      case TEXT:
         return ValueType.STRING;
-      case BYTES:
+      case BLOB:
         return ValueType.BYTES;
-      case IPv4:
+      case INET4:
         return ValueType.BYTES;
-      case IPv6:
+      case INET6:
         return ValueType.BYTES;
       case ARRAY:
-        return ValueType.STRING;
+        return ValueType.BYTES;
       default:
         return null;
     }
@@ -133,35 +131,34 @@ public class TrevniAppender extends FileAppender {
 
       if (!t.isNull(i)) {
         col = schema.getColumn(i);
-        switch (col.getDataType()) {
+        switch (col.getDataType().getType()) {
           case BOOLEAN:
-          case BYTE:
+          case BIT:
           case CHAR:
-          case SHORT:
-          case INT:
-            writer.writeValue(t.get(i).asInt(), i);
+          case INT2:
+          case INT4:
+            writer.writeValue(t.get(i).asInt4(), i);
             break;
-          case LONG:
-            writer.writeValue(t.get(i).asLong(), i);
+          case INT8:
+            writer.writeValue(t.get(i).asInt8(), i);
             break;
-          case FLOAT:
-            writer.writeValue(t.get(i).asFloat(), i);
+          case FLOAT4:
+            writer.writeValue(t.get(i).asFloat4(), i);
             break;
-          case DOUBLE:
-            writer.writeValue(t.get(i).asDouble(), i);
+          case FLOAT8:
+            writer.writeValue(t.get(i).asFloat8(), i);
             break;
-          case STRING:
-          case STRING2:
+          case TEXT:
             writer.writeValue(t.get(i).asChars(), i);
             break;
-          case IPv4:
-          case IPv6:
+          case INET4:
+          case INET6:
             writer.writeValue(t.get(i).asByteArray(), i);
             break;
           case ARRAY:
             writer.writeValue(t.get(i).asChars(), i);
             break;
-          case BYTES:
+          case BLOB:
             writer.writeValue(t.get(i).asByteArray(), i);
           default:
             break;

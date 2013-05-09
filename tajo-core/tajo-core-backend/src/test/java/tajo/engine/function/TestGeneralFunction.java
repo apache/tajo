@@ -20,8 +20,8 @@ package tajo.engine.function;
 
 import org.junit.Test;
 import tajo.datum.Datum;
-import tajo.datum.LongDatum;
-import tajo.datum.StringDatum;
+import tajo.datum.Int8Datum;
+import tajo.datum.TextDatum;
 import tajo.engine.function.builtin.Date;
 import tajo.storage.Tuple;
 import tajo.storage.VTuple;
@@ -35,10 +35,10 @@ public class TestGeneralFunction {
   @Test
   public void testDate() {
     Date date = new Date();
-    Tuple tuple = new VTuple(new Datum[] {new StringDatum("25/12/2012 00:00:00")});
-    LongDatum unixtime = (LongDatum) date.eval(tuple);
+    Tuple tuple = new VTuple(new Datum[] {new TextDatum("25/12/2012 00:00:00")});
+    Int8Datum unixtime = (Int8Datum) date.eval(tuple);
     Calendar c = Calendar.getInstance();
-    c.setTimeInMillis(unixtime.asLong());
+    c.setTimeInMillis(unixtime.asInt8());
     assertEquals(2012, c.get(Calendar.YEAR));
     assertEquals(11, c.get(Calendar.MONTH));
     assertEquals(25, c.get(Calendar.DAY_OF_MONTH));

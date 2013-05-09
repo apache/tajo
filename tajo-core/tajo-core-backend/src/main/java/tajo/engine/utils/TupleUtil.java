@@ -26,15 +26,14 @@ import org.apache.commons.logging.LogFactory;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.SortSpec;
-import tajo.catalog.proto.CatalogProtos;
 import tajo.catalog.statistics.ColumnStat;
-import tajo.datum.*;
+import tajo.datum.Datum;
+import tajo.datum.DatumFactory;
 import tajo.engine.planner.PlannerUtil;
 import tajo.storage.RowStoreUtil;
 import tajo.storage.Tuple;
 import tajo.storage.TupleRange;
 import tajo.storage.VTuple;
-import tajo.util.Bytes;
 import tajo.worker.dataserver.HttpUtil;
 
 import java.io.UnsupportedEncodingException;
@@ -63,29 +62,29 @@ public class TupleUtil {
     long columnCard;
     for (int i = 0; i < schema.getColumnNum(); i++) {
       col = schema.getColumn(i);
-      switch (col.getDataType()) {
+      switch (col.getDataType().getType()) {
         case CHAR:
           columnCard = end.get(i).asChar() - start.get(i).asChar();
           break;
-        case BYTE:
+        case BIT:
           columnCard = end.get(i).asByte() - start.get(i).asByte();
           break;
-        case SHORT:
-          columnCard = end.get(i).asShort() - start.get(i).asShort();
+        case INT2:
+          columnCard = end.get(i).asInt2() - start.get(i).asInt2();
           break;
-        case INT:
-          columnCard = end.get(i).asInt() - start.get(i).asInt();
+        case INT4:
+          columnCard = end.get(i).asInt4() - start.get(i).asInt4();
           break;
-        case LONG:
-          columnCard = end.get(i).asLong() - start.get(i).asLong();
+        case INT8:
+          columnCard = end.get(i).asInt8() - start.get(i).asInt8();
           break;
-        case FLOAT:
-          columnCard = end.get(i).asInt() - start.get(i).asInt();
+        case FLOAT4:
+          columnCard = end.get(i).asInt4() - start.get(i).asInt4();
           break;
-        case DOUBLE:
-          columnCard = end.get(i).asLong() - start.get(i).asLong();
+        case FLOAT8:
+          columnCard = end.get(i).asInt8() - start.get(i).asInt8();
           break;
-        case STRING:
+        case TEXT:
           columnCard = end.get(i).asChars().charAt(0) - start.get(i).asChars().charAt(0);
           break;
         default:
@@ -113,7 +112,7 @@ public class TupleUtil {
     for (int i = 0; i < schema.getColumnNum(); i++) {
       col = schema.getColumn(i);
       prevValues[i] = start.get(i);
-      switch (col.getDataType()) {
+      switch (col.getDataType().getType()) {
         case CHAR:
           int sChar = start.get(i).asChar();
           int eChar = end.get(i).asChar();
@@ -123,8 +122,8 @@ public class TupleUtil {
           } else {
             rangeChar = 1;
           }
-          term[i] = DatumFactory.createInt(rangeChar);
-        case BYTE:
+          term[i] = DatumFactory.createInt4(rangeChar);
+        case BIT:
           byte sByte = start.get(i).asByte();
           byte eByte = end.get(i).asByte();
           int rangeByte;
@@ -133,68 +132,68 @@ public class TupleUtil {
           } else {
             rangeByte = 1;
           }
-          term[i] = DatumFactory.createByte((byte)rangeByte);
+          term[i] = DatumFactory.createBit((byte) rangeByte);
           break;
 
-        case SHORT:
-          short sShort = start.get(i).asShort();
-          short eShort = end.get(i).asShort();
+        case INT2:
+          short sShort = start.get(i).asInt2();
+          short eShort = end.get(i).asInt2();
           int rangeShort;
           if ((eShort - sShort) > partNum) {
             rangeShort = (eShort - sShort) / partNum;
           } else {
             rangeShort = 1;
           }
-          term[i] = DatumFactory.createShort((short) rangeShort);
+          term[i] = DatumFactory.createInt2((short) rangeShort);
           break;
 
-        case INT:
-          int sInt = start.get(i).asInt();
-          int eInt = end.get(i).asInt();
+        case INT4:
+          int sInt = start.get(i).asInt4();
+          int eInt = end.get(i).asInt4();
           int rangeInt;
           if ((eInt - sInt) > partNum) {
             rangeInt = (eInt - sInt) / partNum;
           } else {
             rangeInt = 1;
           }
-          term[i] = DatumFactory.createInt(rangeInt);
+          term[i] = DatumFactory.createInt4(rangeInt);
           break;
 
-        case LONG:
-          long sLong = start.get(i).asLong();
-          long eLong = end.get(i).asLong();
+        case INT8:
+          long sLong = start.get(i).asInt8();
+          long eLong = end.get(i).asInt8();
           long rangeLong;
           if ((eLong - sLong) > partNum) {
             rangeLong = ((eLong - sLong) / partNum);
           } else {
             rangeLong = 1;
           }
-          term[i] = DatumFactory.createLong(rangeLong);
+          term[i] = DatumFactory.createInt8(rangeLong);
           break;
 
-        case FLOAT:
-          float sFloat = start.get(i).asFloat();
-          float eFloat = end.get(i).asFloat();
+        case FLOAT4:
+          float sFloat = start.get(i).asFloat4();
+          float eFloat = end.get(i).asFloat4();
           float rangeFloat;
           if ((eFloat - sFloat) > partNum) {
             rangeFloat = ((eFloat - sFloat) / partNum);
           } else {
             rangeFloat = 1;
           }
-          term[i] = DatumFactory.createFloat(rangeFloat);
+          term[i] = DatumFactory.createFloat4(rangeFloat);
           break;
-        case DOUBLE:
-          double sDouble = start.get(i).asDouble();
-          double eDouble = end.get(i).asDouble();
+        case FLOAT8:
+          double sDouble = start.get(i).asFloat8();
+          double eDouble = end.get(i).asFloat8();
           double rangeDouble;
           if ((eDouble - sDouble) > partNum) {
             rangeDouble = ((eDouble - sDouble) / partNum);
           } else {
             rangeDouble = 1;
           }
-          term[i] = DatumFactory.createDouble(rangeDouble);
+          term[i] = DatumFactory.createFloat8(rangeDouble);
           break;
-        case STRING:
+        case TEXT:
           char sChars = start.get(i).asChars().charAt(0);
           char eChars = end.get(i).asChars().charAt(0);
           int rangeString;
@@ -203,11 +202,11 @@ public class TupleUtil {
           } else {
             rangeString = 1;
           }
-          term[i] = DatumFactory.createString(((char)rangeString) + "");
+          term[i] = DatumFactory.createText(((char) rangeString) + "");
           break;
-        case IPv4:
+        case INET4:
           throw new UnsupportedOperationException();
-        case BYTES:
+        case BLOB:
           throw new UnsupportedOperationException();
         default:
           throw new UnsupportedOperationException();
@@ -220,7 +219,7 @@ public class TupleUtil {
       for (int i = 0; i < schema.getColumnNum(); i++) {
         col = schema.getColumn(i);
         sTuple.put(i, prevValues[i]);
-        switch (col.getDataType()) {
+        switch (col.getDataType().getType()) {
           case CHAR:
             char endChar = (char) (prevValues[i].asChar() + term[i].asChar());
             if (endChar > end.get(i).asByte()) {
@@ -230,80 +229,80 @@ public class TupleUtil {
             }
             prevValues[i] = DatumFactory.createChar(endChar);
             break;
-          case BYTE:
+          case BIT:
             byte endByte = (byte) (prevValues[i].asByte() + term[i].asByte());
             if (endByte > end.get(i).asByte()) {
               eTuple.put(i, end.get(i));
             } else {
-              eTuple.put(i, DatumFactory.createByte(endByte));
+              eTuple.put(i, DatumFactory.createBit(endByte));
             }
-            prevValues[i] = DatumFactory.createByte(endByte);
+            prevValues[i] = DatumFactory.createBit(endByte);
             break;
-          case SHORT:
-            int endShort = (short) (prevValues[i].asShort() + term[i].asShort());
-            if (endShort > end.get(i).asShort()) {
+          case INT2:
+            int endShort = (short) (prevValues[i].asInt2() + term[i].asInt2());
+            if (endShort > end.get(i).asInt2()) {
               eTuple.put(i, end.get(i));
             } else {
               // TODO - to consider overflow
-              eTuple.put(i, DatumFactory.createShort((short) endShort));
+              eTuple.put(i, DatumFactory.createInt2((short) endShort));
             }
-            prevValues[i] = DatumFactory.createShort((short) endShort);
+            prevValues[i] = DatumFactory.createInt2((short) endShort);
             break;
-          case INT:
-            int endInt = (prevValues[i].asInt() + term[i].asInt());
-            if (endInt > end.get(i).asInt()) {
+          case INT4:
+            int endInt = (prevValues[i].asInt4() + term[i].asInt4());
+            if (endInt > end.get(i).asInt4()) {
               eTuple.put(i, end.get(i));
             } else {
               // TODO - to consider overflow
-              eTuple.put(i, DatumFactory.createInt(endInt));
+              eTuple.put(i, DatumFactory.createInt4(endInt));
             }
-            prevValues[i] = DatumFactory.createInt(endInt);
+            prevValues[i] = DatumFactory.createInt4(endInt);
             break;
 
-          case LONG:
-            long endLong = (prevValues[i].asLong() + term[i].asLong());
-            if (endLong > end.get(i).asLong()) {
+          case INT8:
+            long endLong = (prevValues[i].asInt8() + term[i].asInt8());
+            if (endLong > end.get(i).asInt8()) {
               eTuple.put(i, end.get(i));
             } else {
               // TODO - to consider overflow
-              eTuple.put(i, DatumFactory.createLong(endLong));
+              eTuple.put(i, DatumFactory.createInt8(endLong));
             }
-            prevValues[i] = DatumFactory.createLong(endLong);
+            prevValues[i] = DatumFactory.createInt8(endLong);
             break;
 
-          case FLOAT:
-            float endFloat = (prevValues[i].asFloat() + term[i].asFloat());
-            if (endFloat > end.get(i).asFloat()) {
+          case FLOAT4:
+            float endFloat = (prevValues[i].asFloat4() + term[i].asFloat4());
+            if (endFloat > end.get(i).asFloat4()) {
               eTuple.put(i, end.get(i));
             } else {
               // TODO - to consider overflow
-              eTuple.put(i, DatumFactory.createFloat(endFloat));
+              eTuple.put(i, DatumFactory.createFloat4(endFloat));
             }
-            prevValues[i] = DatumFactory.createFloat(endFloat);
+            prevValues[i] = DatumFactory.createFloat4(endFloat);
             break;
-          case DOUBLE:
-            double endDouble = (prevValues[i].asDouble() + term[i].asDouble());
-            if (endDouble > end.get(i).asDouble()) {
+          case FLOAT8:
+            double endDouble = (prevValues[i].asFloat8() + term[i].asFloat8());
+            if (endDouble > end.get(i).asFloat8()) {
               eTuple.put(i, end.get(i));
             } else {
               // TODO - to consider overflow
-              eTuple.put(i, DatumFactory.createDouble(endDouble));
+              eTuple.put(i, DatumFactory.createFloat8(endDouble));
             }
-            prevValues[i] = DatumFactory.createDouble(endDouble);
+            prevValues[i] = DatumFactory.createFloat8(endDouble);
             break;
-          case STRING:
+          case TEXT:
             String endString = ((char)(prevValues[i].asChars().charAt(0) + term[i].asChars().charAt(0))) + "";
             if (endString.charAt(0) > end.get(i).asChars().charAt(0)) {
               eTuple.put(i, end.get(i));
             } else {
               // TODO - to consider overflow
-              eTuple.put(i, DatumFactory.createString(endString));
+              eTuple.put(i, DatumFactory.createText(endString));
             }
-            prevValues[i] = DatumFactory.createString(endString);
+            prevValues[i] = DatumFactory.createText(endString);
             break;
-          case IPv4:
+          case INET4:
             throw new UnsupportedOperationException();
-          case BYTES:
+          case BLOB:
             throw new UnsupportedOperationException();
           default:
             throw new UnsupportedOperationException();
@@ -385,65 +384,5 @@ public class TupleUtil {
       i++;
     }
     return new TupleRange(target, startTuple, endTuple);
-  }
-
-  public static Datum createFromBytes(CatalogProtos.DataType type, byte [] bytes) {
-    switch (type) {
-      case BOOLEAN:
-        return new BoolDatum(bytes);
-      case BYTE:
-        return new ByteDatum(bytes);
-      case CHAR:
-        return new CharDatum(bytes);
-      case SHORT:
-        return new ShortDatum(bytes);
-      case INT:
-        return new IntDatum(bytes);
-      case LONG:
-        return new LongDatum(bytes);
-      case FLOAT:
-        return new FloatDatum(bytes);
-      case DOUBLE:
-        return new DoubleDatum(bytes);
-      case STRING:
-        return new StringDatum(bytes);
-      case IPv4:
-        return new IPv4Datum(bytes);
-      default: throw new UnsupportedOperationException(type + " is not supported yet");
-    }
-  }
-
-  private final static byte [] TRUE_BYTES = new byte[] {(byte)1};
-  private final static byte [] FALSE_BYTES = new byte[] {(byte)0};
-
-  public static byte [] toBytes(CatalogProtos.DataType type, Datum datum) {
-    switch (type) {
-      case BOOLEAN:
-        if (datum.asBool()) {
-          return TRUE_BYTES;
-        } else {
-          return FALSE_BYTES;
-        }
-      case BYTE:
-      case CHAR:
-        return new byte[] {datum.asByte()};
-
-      case SHORT:
-        return Bytes.toBytes(datum.asShort());
-      case INT:
-        return Bytes.toBytes(datum.asInt());
-      case LONG:
-        return Bytes.toBytes(datum.asLong());
-      case FLOAT:
-        return Bytes.toBytes(datum.asFloat());
-      case DOUBLE:
-        return Bytes.toBytes(datum.asDouble());
-      case STRING:
-        return Bytes.toBytes(datum.asChars());
-      case IPv4:
-        return datum.asByteArray();
-
-      default: throw new UnsupportedOperationException(type + " is not supported yet");
-    }
   }
 }

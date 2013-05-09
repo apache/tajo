@@ -25,10 +25,11 @@ import org.apache.commons.logging.LogFactory;
 import tajo.catalog.exception.AlreadyExistsFieldException;
 import tajo.catalog.json.GsonCreator;
 import tajo.catalog.proto.CatalogProtos.ColumnProto;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.SchemaProto;
 import tajo.catalog.proto.CatalogProtos.SchemaProtoOrBuilder;
 import tajo.common.ProtoObject;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 
 import java.util.*;
 
@@ -142,7 +143,11 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 		}
 	}
 
-	public synchronized Schema addColumn(String name, DataType dataType) {
+  public synchronized Schema addColumn(String name, Type type) {
+    return addColumn(name, CatalogUtil.newDataTypeWithoutLen(type));
+  }
+
+  public synchronized Schema addColumn(String name, DataType dataType) {
 		initColumns();
 		setModified();
 		String lowcased = name.toLowerCase();

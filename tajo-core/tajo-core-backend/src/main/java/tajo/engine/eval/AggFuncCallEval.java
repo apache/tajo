@@ -23,7 +23,7 @@ import tajo.catalog.FunctionDesc;
 import tajo.catalog.Schema;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.Datum;
 import tajo.engine.json.GsonCreator;
 import tajo.storage.Tuple;
@@ -79,7 +79,7 @@ public class AggFuncCallEval extends FuncEval implements Cloneable {
   }
 
   @Override
-  public DataType [] getValueType() {
+  public DataType[] getValueType() {
     if (firstPhase) {
       return instance.getPartialResultType();
     } else {

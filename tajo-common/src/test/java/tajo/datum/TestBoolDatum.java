@@ -19,6 +19,7 @@
 package tajo.datum;
 
 import org.junit.Test;
+import tajo.common.TajoDataTypes.Type;
 
 import static org.junit.Assert.assertEquals;
 
@@ -27,7 +28,7 @@ public class TestBoolDatum {
 	@Test
 	public final void testType() {
 		Datum d = DatumFactory.createBool(true);
-		assertEquals(DatumType.BOOLEAN, d.type());
+		assertEquals(Type.BOOLEAN, d.type());
 	}
 	
 	@Test
@@ -39,19 +40,19 @@ public class TestBoolDatum {
 	@Test
 	public final void testAsShort() {
 		Datum d = DatumFactory.createBool(true);
-		assertEquals(1, d.asShort());
+		assertEquals(1, d.asInt2());
 	}
 	
 	@Test
 	public final void testAsInt() {
 		Datum d = DatumFactory.createBool(true);
-		assertEquals(1, d.asInt());
+		assertEquals(1, d.asInt4());
 	}
 	
 	@Test
 	public final void testAsLong() {
 		Datum d = DatumFactory.createBool(false);
-		assertEquals(0, d.asLong());
+		assertEquals(0, d.asInt8());
 	}
 	
 	@Test

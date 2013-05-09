@@ -31,10 +31,7 @@ import tajo.QueryConf;
 import tajo.QueryId;
 import tajo.SubQueryId;
 import tajo.TajoProtos.QueryState;
-import tajo.catalog.TCatUtil;
-import tajo.catalog.TableDesc;
-import tajo.catalog.TableDescImpl;
-import tajo.catalog.TableMeta;
+import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.planner.global.MasterPlan;
@@ -418,7 +415,7 @@ public class Query implements EventHandler<QueryEvent> {
       if (sm.getFileSystem().exists(new Path(indexPath, ".meta"))) {
         meta = sm.getTableMeta(indexPath);
       } else {
-        meta = TCatUtil
+        meta = CatalogUtil
             .newTableMeta(execBlock.getOutputSchema(), StoreType.CSV);
       }
       String indexName = IndexUtil.getIndexName(index.getTableName(),

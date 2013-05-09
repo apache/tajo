@@ -36,9 +36,9 @@ tokens {
   DROP_TABLE;
   DESC_TABLE;
   EMPTY_GROUPING_SET;
-  FIELD_NAME;  
+  FIELD_NAME;
   FIELD_DEF;
-  FUNCTION;    
+  FUNCTION;
   FUNC_ARGS;
   GROUP_BY;
   NULL_ORDER;
@@ -56,7 +56,7 @@ tokens {
   STORE;
   STORE_TYPE;
   TABLE_DEF;
-  TARGET_FIELDS;  
+  TARGET_FIELDS;
   VALUES;
 }
 
@@ -112,32 +112,32 @@ statement
 sessionStatement
   : 'session' 'clear' -> ^(SESSION_CLEAR)
   ;
-  
+
 controlStatement
   : '\\' 't' (table)? -> ^(SHOW_TABLE table?)
   | '\\' 'd' table -> ^(DESC_TABLE table)
   | '\\' 'f' -> ^(SHOW_FUNCTION)
   ;
-  
+
 dataStatement
   : query_expression
   | set_stmt
   | copyStatement
   ;
-  
+
 dataChangeStatement
   : insertStmt
   ;
-  
+
 schemaStatement
   : createTableStatement
   | DROP TABLE table -> ^(DROP_TABLE table)
   ;
-  
+
 indexStatement
   : CREATE (u=UNIQUE)? INDEX n=ID ON t=table (m=method_specifier)? LEFT_PAREN s=sort_specifier_list RIGHT_PAREN p=param_clause?-> ^(CREATE_INDEX $u? $m? $p? $n $t $s)
   ;
-  
+
 createTableStatement
   : CREATE EXTERNAL TABLE t=table def=tableElements USING f=ID p=param_clause? (LOCATION path=STRING)
       -> ^(CREATE_TABLE $t EXTERNAL ^(TABLE_DEF $def) ^(USING $f) $p? ^(LOCATION $path))
@@ -148,61 +148,165 @@ createTableStatement
 copyStatement
   : COPY t=table FROM path=string_value_expr FORMAT s=ID (p=param_clause)? -> ^(COPY $t $path $s $p?)
   ;
-  
+
 tableElements
   : LEFT_PAREN fieldElement (COMMA fieldElement)* RIGHT_PAREN -> fieldElement+
   ;
-  
+
 fieldElement
   : ID fieldType -> ^(FIELD_DEF ID fieldType)
   ;
-  
+
 fieldType
-  : BOOL
-  | BYTE
-  | CHAR
-  | INT
-  | LONG
-  | FLOAT
-  | DOUBLE
-  | TEXT
+  : dataType
+  ;
+
+precision_param
+  : LEFT_PAREN! DIGIT RIGHT_PAREN!
+  | LEFT_PAREN! DIGIT COMMA! DIGIT RIGHT_PAREN!
+  ;
+type_length
+  : LEFT_PAREN! DIGIT RIGHT_PAREN!
+  ;
+
+boolean_type
+  : BOOLEAN
+  | BOOL -> BOOLEAN
+  ;
+bit_type
+  : BIT type_length? -> BIT
+  ;
+varbit_type
+  : VARBIT type_length? -> VARBIT
+  | BIT VARYING type_length? -> VARBIT
+  ;
+int1_type
+  : INT1
+  | TINYINT -> INT1
+  ;
+int2_type
+  : INT2
+  | SMALLINT -> INT2
+  ;
+int4_type
+  : INT4
+  | INT -> INT4
+  | INTEGER -> INT4
+  ;
+int8_type
+  : INT8
+  | BIGINT -> INT8
+  ;
+float4_type
+  : FLOAT4
+  | REAL -> FLOAT4
+  ;
+float_type : FLOAT type_length? -> ^(FLOAT type_length?);
+float8_type
+  : FLOAT8
+  | DOUBLE -> FLOAT8
+  | DOUBLE PRECISION -> FLOAT8
+  ;
+number_type
+  : NUMERIC (precision_param)? -> NUMERIC
+  | DECIMAL (precision_param)? -> NUMERIC
+  ;
+char_type
+  : CHAR type_length? -> CHAR
+  | CHARACTER type_length? -> CHAR
+  ;
+varchar_type
+  : VARCHAR type_length? -> VARCHAR
+  | CHARACTER VARYING type_length? -> VARCHAR
+  ;
+nchar_type
+  : NCHAR type_length? -> NCHAR
+  | NATIONAL CHARACTER type_length? -> NCHAR
+  ;
+nvarchar_type
+  : NVARCHAR type_length? -> NVARCHAR
+  | NATIONAL CHARACTER VARYING type_length? -> NVARCHAR
+  ;
+timetz_type
+  : TIMETZ
+  | TIME WITH TIME ZONE -> TIMETZ
+  ;
+timestamptz_type
+  : TIMESTAMPTZ
+  | TIMESTAMP WITH TIME ZONE -> TIMESTAMPTZ
+  ;
+binary_type
+  : BINARY type_length?
+  ;
+varbinary_type
+  : VARBINARY type_length?
+  | BINARY VARYING type_length?
+  ;
+blob_type
+  : BLOB
+  | BYTEA -> BLOB
+  ;
+
+dataType
+  : boolean_type
+  | bit_type
+  | varbit_type
+  | int1_type
+  | int2_type
+  | int4_type
+  | int8_type
+  | float4_type
+  | float_type
+  | float8_type
+  | number_type
+  | char_type
+  | varchar_type
+  | nchar_type
+  | nvarchar_type
   | DATE
-  | BYTES
-  | IPv4
+  | TIME
+  | timetz_type
+  | TIMESTAMP
+  | timestamptz_type
+  | TEXT
+  | binary_type
+  | varbinary_type
+  | blob_type
+  | INET4
   ;
 
 query_expression
   : query_expression_body
   ;
-  
+
 query_expression_body
   : non_join_query_expression
   | joined_table
   ;
-  
+
 non_join_query_expression
-  : (non_join_query_term | joined_table (UNION | EXCEPT)^ (ALL|DISTINCT)? query_term) ((UNION | EXCEPT)^ (ALL|DISTINCT)? query_term)*  
+  : (non_join_query_term | joined_table (UNION | EXCEPT)^ (ALL|DISTINCT)? query_term) ((UNION | EXCEPT)^ (ALL|DISTINCT)? query_term)*
   ;
-  
+
 query_term
   : non_join_query_term
   | joined_table
   ;
-  
+
 non_join_query_term
   : ( non_join_query_primary | joined_table INTERSECT^ (ALL|DISTINCT)? query_primary) (INTERSECT^ (ALL|DISTINCT)? query_primary)*
   ;
-  
+
 query_primary
   : non_join_query_primary
   | joined_table
   ;
-  
+
 non_join_query_primary
   : simple_table
   | LEFT_PAREN non_join_query_expression RIGHT_PAREN
   ;
-  
+
 simple_table
 options {k=1;}
   : query_specification
@@ -212,39 +316,39 @@ query_specification
   : SELECT setQualifier? selectList from_clause? where_clause? groupby_clause? having_clause? orderby_clause? limit_clause?
   -> ^(SELECT from_clause? setQualifier? selectList where_clause? groupby_clause? having_clause? orderby_clause? limit_clause?)
   ;
-  
+
 insertStmt
   : INSERT 'into' table (LEFT_PAREN column_reference RIGHT_PAREN)? 'values' array
   -> ^(INSERT ^(TABLE table) ^(VALUES array) ^(TARGET_FIELDS column_reference)?)
   ;
-	
+
 selectList
   : MULTIPLY -> ^(SEL_LIST ALL)
   | derivedColumn (COMMA derivedColumn)* -> ^(SEL_LIST derivedColumn+)
   ;
-  
+
 setQualifier
-  : DISTINCT -> ^(SET_QUALIFIER DISTINCT) 
+  : DISTINCT -> ^(SET_QUALIFIER DISTINCT)
   | ALL -> ^(SET_QUALIFIER ALL)
   ;
-  
+
 derivedColumn
   : bool_expr asClause? -> ^(COLUMN bool_expr asClause?)
   ;
-	
+
 fieldName
 	:	(t=ID DOT)? b=ID -> ^(FIELD_NAME $b $t?)
 	;
-	
+
 asClause
   : (AS)? fieldName
   ;
-	
-column_reference  
+
+column_reference
 	:	fieldName (COMMA fieldName)* -> fieldName+
 	;
-  
-table  
+
+table
   : ID
   ;
 
@@ -254,19 +358,19 @@ funcCall
 	| COUNT LEFT_PAREN funcArgs RIGHT_PAREN -> ^(COUNT_VAL funcArgs)
 	| COUNT LEFT_PAREN MULTIPLY RIGHT_PAREN -> ^(COUNT_ROWS)
 	;
-	
+
 funcArgs
-  : bool_expr (COMMA bool_expr)* -> bool_expr+ 
+  : bool_expr (COMMA bool_expr)* -> bool_expr+
   ;
-	
+
 from_clause
   : FROM^ table_reference_list
   ;
-  
+
 table_reference_list
   :table_reference (COMMA table_reference)* -> table_reference+
   ;
-  
+
 table_reference
   : table_primary
   | joined_table
@@ -303,26 +407,26 @@ join_type
   : INNER
   | t=outer_join_type ('outer')? -> ^(OUTER $t)
   ;
-  
+
 outer_join_type
   : LEFT
   | RIGHT
   | FULL
   ;
-  
+
 join_specification
   : join_condition
   | named_columns_join
   ;
-  
+
 join_condition
   : ON^ search_condition
   ;
-  
+
 named_columns_join
   : USING LEFT_PAREN f=column_reference RIGHT_PAREN -> ^(USING $f)
   ;
-  
+
 table_primary
   : table ((AS)? a=ID)? -> ^(TABLE table ($a)?)
   ;
@@ -330,22 +434,22 @@ table_primary
 where_clause
   : WHERE^ search_condition
   ;
-  
+
 groupby_clause
   : GROUP BY g=grouping_element_list -> ^(GROUP_BY $g)
   ;
-  
+
 grouping_element_list
   : grouping_element (COMMA grouping_element)* -> grouping_element+
   ;
-  
+
 grouping_element
   : ordinary_grouping_set
   | rollup_list
   | cube_list
   | empty_grouping_set
   ;
-  
+
 ordinary_grouping_set
   : column_reference
   | LEFT_PAREN! column_reference RIGHT_PAREN!
@@ -354,7 +458,7 @@ ordinary_grouping_set
 rollup_list
   : ROLLUP LEFT_PAREN c=ordinary_grouping_set RIGHT_PAREN -> ^(ROLLUP $c)
   ;
-  
+
 cube_list
   : CUBE LEFT_PAREN c=ordinary_grouping_set RIGHT_PAREN -> ^(CUBE $c)
   ;
@@ -362,23 +466,23 @@ cube_list
 empty_grouping_set
   : LEFT_PAREN RIGHT_PAREN -> ^(EMPTY_GROUPING_SET)
   ;
-  
+
 having_clause
   : HAVING^ bool_expr
   ;
-  
+
 orderby_clause
   : ORDER BY sort_specifier_list -> ^(ORDER_BY sort_specifier_list)
   ;
-  
+
 sort_specifier_list
   : sort_specifier (COMMA sort_specifier)* -> ^(SORT_SPECIFIERS sort_specifier+)
   ;
-  
+
 sort_specifier
   : fn=fieldName a=order_specification? o=null_ordering? -> ^(SORT_KEY $fn $a? $o?)
   ;
-  
+
 order_specification
   : ASC -> ^(ORDER ASC)
   | DESC -> ^(ORDER DESC)
@@ -392,23 +496,23 @@ null_ordering
   : NULL FIRST -> ^(NULL_ORDER FIRST)
   | NULL LAST -> ^(NULL_ORDER LAST)
   ;
-	
+
 set_stmt
 	:	'set' ('union'|'intersect'|'diff') table
 	;
-	
+
 search_condition
 	:	bool_expr
-	; 
-	
+	;
+
 param_clause
   : WITH LEFT_PAREN param (COMMA param)* RIGHT_PAREN -> ^(PARAMS param+)
   ;
-  
+
 param
   : k=STRING EQUAL v=bool_expr -> ^(PARAM $k $v)
   ;
-  
+
 method_specifier
   : USING m=ID -> ^(USING[$m.text])
   ;
@@ -420,21 +524,21 @@ bool_expr
 and_predicate
   :	boolean_factor (AND^ boolean_factor)*
 	;
-	
+
 boolean_factor
   : boolean_test
   | NOT boolean_test -> ^(NOT boolean_test)
   ;
-  
+
 boolean_test
   : boolean_primary is_clause?
   ;
-  
+
 is_clause
   : IS NOT? t=truth_value -> ^(IS NOT? $t)
   ;
 
-  
+
 truth_value
   : TRUE | FALSE | UNKNOWN
   ;
@@ -446,7 +550,7 @@ boolean_primary
   | case_expression
   ;
 
-predicate 
+predicate
   : comparison_predicate
   | in_predicate
   | like_predicate
@@ -456,7 +560,7 @@ predicate
 in_predicate
 	:	expr NOT? IN array -> ^(IN expr array NOT?)
 	;
-	
+
 like_predicate
   : f=fieldName NOT? LIKE s=string_value_expr -> ^(LIKE NOT? $f $s)
   ;
@@ -464,7 +568,7 @@ like_predicate
 null_predicate
   : f=expr IS (n=NOT)? NULL -> ^(IS $f NULL $n?)
   ;
-	
+
 comparison_predicate
 	:	expr EQUAL^ expr
 	|	expr NOT_EQUAL^ expr
@@ -477,7 +581,7 @@ comparison_predicate
 expr
 	:	multExpr ((PLUS|MINUS)^ multExpr)*
 	;
-	
+
 multExpr
   :	atom ((MULTIPLY|DIVIDE|MODULAR)^ atom)*
 	;
@@ -485,33 +589,33 @@ multExpr
 array
   : LEFT_PAREN literal (COMMA literal )* RIGHT_PAREN -> literal+
   ;
-	
+
 atom
   :	literal
 	| fieldName
 	|	LEFT_PAREN! expr RIGHT_PAREN!
 	| funcCall
 	;
-	
+
 literal
   : string_value_expr
   | signed_numerical_literal
   | NULL
   ;
-	
+
 string_value_expr
   : STRING
   ;
-  
+
 signed_numerical_literal
   : sign? unsigned_numerical_literal
   ;
-  
+
 unsigned_numerical_literal
-  : DIGIT 
-  | REAL
+  : DIGIT
+  | REAL_NUMBER
   ;
-  
+
 sign
   : PLUS | MINUS
   ;
@@ -542,9 +646,9 @@ else_clause
 result
   : bool_expr
   ;
-	
-////////////////////////////////	
-// Lexer Section  
+
+////////////////////////////////
+// Lexer Section
 ////////////////////////////////
 // Keywords
 AS : 'as';
@@ -553,6 +657,7 @@ AND : 'and';
 ASC : 'asc';
 BY : 'by';
 CASE : 'case';
+CHARACTER : 'character';
 COUNT : 'count';
 COPY : 'copy';
 CREATE : 'create';
@@ -571,8 +676,6 @@ FORMAT : 'format';
 FULL : 'full';
 FROM : 'from';
 GROUP : 'group';
-NATURAL : 'natural';
-NULL : 'null';
 HAVING : 'having';
 IN : 'in';
 INDEX : 'index';
@@ -587,11 +690,15 @@ LEFT : 'left';
 LIKE : 'like';
 LIMIT : 'limit';
 LOCATION : 'location';
+NATIONAL : 'national';
+NATURAL : 'natural';
 NOT : 'not';
+NULL : 'null';
 ON : 'on';
 OUTER : 'outer';
 OR : 'or';
 ORDER : 'order';
+PRECISION : 'precision';
 RIGHT : 'right';
 ROLLUP : 'rollup';
 SELECT : 'select';
@@ -603,22 +710,61 @@ UNIQUE : 'unique';
 UNKNOWN: 'unknown';
 USING : 'using';
 VALUES : 'values';
+VARYING : 'varying';
 WHEN : 'when';
 WHERE : 'where';
 WITH : 'with';
+ZONE : 'zone';
 
-// column types
+///////////////////////////////////////////////////
+// Data Types
+///////////////////////////////////////////////////
+BOOLEAN : 'boolean';
 BOOL : 'bool';
-BYTE : 'byte';
+BIT : 'bit';
+VARBIT : 'varbit';
+
+// Numeric Types
+INT1 : 'int1';
+INT2 : 'int2';
+INT4 : 'int4';
+INT8 : 'int8';
+
+TINYINT : 'tinyint'; // alias for INT1
+SMALLINT : 'smallint'; // alias for INT2
+INT : 'int'; // alias for INT4
+INTEGER : 'integer'; // alias - INT4
+BIGINT : 'bigint'; // alias for INT8
+
+FLOAT4 : 'float4';
+FLOAT8 : 'float8';
+
+REAL : 'real'; // alias for FLOAT4
+FLOAT : 'float'; // alias for FLOAT8
+DOUBLE : 'double'; // alias for FLOAT8
+
+NUMERIC : 'numeric';
+DECIMAL : 'decimal'; // alias for number
+
 CHAR : 'char';
-INT : 'int';
-LONG : 'long';
-FLOAT : 'float';
-DOUBLE : 'double';
-TEXT : 'string';
+VARCHAR : 'varchar';
+NCHAR : 'nchar';
+NVARCHAR : 'nvarchar';
+
 DATE : 'date';
-BYTES : 'bytes';
-IPv4 : 'ipv4';
+TIME : 'time';
+TIMETZ : 'timetz';
+TIMESTAMP : 'timestamp';
+TIMESTAMPTZ : 'timestamptz';
+
+TEXT : 'text';
+
+BINARY : 'binary';
+VARBINARY : 'varbinary';
+BLOB : 'blob';
+BYTEA : 'bytea'; // alias for BLOB
+
+INET4 : 'inet4';
 
 // Operators
 ASSIGN  : ':=';
@@ -646,7 +792,7 @@ ID  : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|':')*
 DIGIT : '0'..'9'+
     ;
 
-REAL
+REAL_NUMBER
     :   ('0'..'9')+ '.' ('0'..'9')* EXPONENT?
     |   '.' ('0'..'9')+ EXPONENT?
     |   ('0'..'9')+ EXPONENT

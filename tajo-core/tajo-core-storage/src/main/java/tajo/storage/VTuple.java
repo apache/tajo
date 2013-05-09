@@ -55,7 +55,7 @@ public class VTuple implements Tuple {
 
   @Override
   public boolean isNull(int fieldid) {
-    return values[fieldid].type() == DatumType.NULL;
+    return values[fieldid] instanceof NullDatum;
   }
 
   @Override
@@ -106,44 +106,44 @@ public class VTuple implements Tuple {
 	}
 	
 	@Override
-	public BoolDatum getBoolean(int fieldId) {
-		return (BoolDatum) values[fieldId];
+	public BooleanDatum getBoolean(int fieldId) {
+		return (BooleanDatum) values[fieldId];
 	}
 
-	public ByteDatum getByte(int fieldId) {
-		return (ByteDatum) values[fieldId];
+	public BitDatum getByte(int fieldId) {
+		return (BitDatum) values[fieldId];
 	}
 
   public CharDatum getChar(int fieldId) {
     return (CharDatum) values[fieldId];
   }
 
-	public BytesDatum getBytes(int fieldId) {
-		return (BytesDatum) values[fieldId];
+	public BlobDatum getBytes(int fieldId) {
+		return (BlobDatum) values[fieldId];
 	}
 
-	public ShortDatum getShort(int fieldId) {
-		return (ShortDatum) values[fieldId];
+	public Int2Datum getShort(int fieldId) {
+		return (Int2Datum) values[fieldId];
 	}
 
-	public IntDatum getInt(int fieldId) {
-		return (IntDatum) values[fieldId];			
+	public Int4Datum getInt(int fieldId) {
+		return (Int4Datum) values[fieldId];
 	}
 
-	public LongDatum getLong(int fieldId) {
-		return (LongDatum) values[fieldId];
+	public Int8Datum getLong(int fieldId) {
+		return (Int8Datum) values[fieldId];
 	}
 
-	public FloatDatum getFloat(int fieldId) {
-		return (FloatDatum) values[fieldId];
+	public Float4Datum getFloat(int fieldId) {
+		return (Float4Datum) values[fieldId];
 	}
 
-	public DoubleDatum getDouble(int fieldId) {
-		return (DoubleDatum) values[fieldId];
+	public Float8Datum getDouble(int fieldId) {
+		return (Float8Datum) values[fieldId];
 	}
 
-	public IPv4Datum getIPv4(int fieldId) {
-		return (IPv4Datum) values[fieldId];
+	public Inet4Datum getIPv4(int fieldId) {
+		return (Inet4Datum) values[fieldId];
 	}
 
 	public byte[] getIPv4Bytes(int fieldId) {
@@ -158,13 +158,13 @@ public class VTuple implements Tuple {
 	  throw new InvalidCastException("IPv6 is unsupported yet");
 	}
 
-	public StringDatum getString(int fieldId) {
-		return (StringDatum) values[fieldId];
+	public TextDatum getString(int fieldId) {
+		return (TextDatum) values[fieldId];
 	}
 
   @Override
-  public StringDatum2 getString2(int fieldId) {
-    return (StringDatum2) values[fieldId];
+  public TextDatum getText(int fieldId) {
+    return (TextDatum) values[fieldId];
   }
 
   public String toString() {

@@ -482,7 +482,7 @@ public class GlobalPlanner {
     
     if (union.getOuterNode().getType() == ExprType.STORE) {
       outerStore = (StoreTableNode) union.getOuterNode();
-      TableMeta outerMeta = TCatUtil.newTableMeta(outerStore.getOutSchema(),
+      TableMeta outerMeta = CatalogUtil.newTableMeta(outerStore.getOutSchema(),
           StoreType.CSV);
       insertOuterScan(union, outerStore.getTableName(), outerMeta);
       prev = convertMap.get(outerStore);
@@ -498,7 +498,7 @@ public class GlobalPlanner {
     
     if (union.getInnerNode().getType() == ExprType.STORE) {
       innerStore = (StoreTableNode) union.getInnerNode();
-      TableMeta innerMeta = TCatUtil.newTableMeta(innerStore.getOutSchema(),
+      TableMeta innerMeta = CatalogUtil.newTableMeta(innerStore.getOutSchema(),
           StoreType.CSV);
       insertInnerScan(union, innerStore.getTableName(), innerMeta);
       prev = convertMap.get(innerStore);
@@ -597,7 +597,7 @@ public class GlobalPlanner {
     // outer
     if (join.getOuterNode().getType() == ExprType.STORE) {
       outerStore = (StoreTableNode) join.getOuterNode();
-      TableMeta outerMeta = TCatUtil.newTableMeta(outerStore.getOutSchema(),
+      TableMeta outerMeta = CatalogUtil.newTableMeta(outerStore.getOutSchema(),
           StoreType.CSV);
       insertOuterScan(join, outerStore.getTableName(), outerMeta);
       prev = convertMap.get(outerStore);
@@ -617,7 +617,7 @@ public class GlobalPlanner {
     // inner
     if (join.getInnerNode().getType() == ExprType.STORE) {
       innerStore = (StoreTableNode) join.getInnerNode();
-      TableMeta innerMeta = TCatUtil.newTableMeta(innerStore.getOutSchema(),
+      TableMeta innerMeta = CatalogUtil.newTableMeta(innerStore.getOutSchema(),
           StoreType.CSV);
       insertInnerScan(join, innerStore.getTableName(), innerMeta);
       prev = convertMap.get(innerStore);
@@ -654,7 +654,7 @@ public class GlobalPlanner {
     
     if (union.getOuterNode().getType() == ExprType.STORE) {
       store = (StoreTableNode) union.getOuterNode();
-      meta = TCatUtil.newTableMeta(store.getOutSchema(), StoreType.CSV);
+      meta = CatalogUtil.newTableMeta(store.getOutSchema(), StoreType.CSV);
       insertOuterScan(union, store.getTableName(), meta);
       prev = convertMap.get(store);
       if (prev != null) {
@@ -673,7 +673,7 @@ public class GlobalPlanner {
     
     if (union.getInnerNode().getType() == ExprType.STORE) {
       store = (StoreTableNode) union.getInnerNode();
-      meta = TCatUtil.newTableMeta(store.getOutSchema(), StoreType.CSV);
+      meta = CatalogUtil.newTableMeta(store.getOutSchema(), StoreType.CSV);
       insertInnerScan(union, store.getTableName(), meta);
       prev = convertMap.get(store);
       if (prev != null) {
@@ -762,7 +762,7 @@ public class GlobalPlanner {
   
   private LogicalNode insertOuterScan(BinaryNode parent, String tableId,
       TableMeta meta) throws IOException {
-    TableDesc desc = TCatUtil.newTableDesc(tableId, meta, sm.getTablePath(tableId));
+    TableDesc desc = CatalogUtil.newTableDesc(tableId, meta, sm.getTablePath(tableId));
     ScanNode scan = new ScanNode(new FromTable(desc));
     scan.setLocal(true);
     scan.setInSchema(meta.getSchema());
@@ -773,7 +773,7 @@ public class GlobalPlanner {
   
   private LogicalNode insertInnerScan(BinaryNode parent, String tableId, 
       TableMeta meta) throws IOException {
-    TableDesc desc = TCatUtil.newTableDesc(tableId, meta, sm.getTablePath(tableId));
+    TableDesc desc = CatalogUtil.newTableDesc(tableId, meta, sm.getTablePath(tableId));
     ScanNode scan = new ScanNode(new FromTable(desc));
     scan.setLocal(true);
     scan.setInSchema(meta.getSchema());

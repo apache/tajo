@@ -27,8 +27,8 @@ import org.junit.Test;
 import tajo.TajoTestingCluster;
 import tajo.TaskAttemptContext;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -85,12 +85,12 @@ public class TestBSTIndexExec {
     idxPath = new Path(workDir, "test.idx");
 
     Schema schema = new Schema();
-    schema.addColumn("managerId", DataType.INT);
-    schema.addColumn("empId", DataType.INT);
-    schema.addColumn("deptName", DataType.STRING);
+    schema.addColumn("managerId", Type.INT4);
+    schema.addColumn("empId", Type.INT4);
+    schema.addColumn("deptName", Type.TEXT);
 
     this.idxSchema = new Schema();
-    idxSchema.addColumn("managerId", DataType.INT);
+    idxSchema.addColumn("managerId", Type.INT4);
     SortSpec[] sortKeys = new SortSpec[1];
     sortKeys[0] = new SortSpec(idxSchema.getColumn("managerId"), true, false);
     this.comp = new TupleComparator(idxSchema, sortKeys);
@@ -101,7 +101,7 @@ public class TestBSTIndexExec {
     writer.open();
     long offset;
 
-    meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     tablePath = StorageUtil.concatPath(workDir, "employee", "table.csv");
     fs = tablePath.getFileSystem(conf);
     fs.mkdirs(tablePath.getParent());
@@ -120,10 +120,10 @@ public class TestBSTIndexExec {
         this.randomValues.put(rndKey, 1);
       }
       
-      key.put(new Datum[] { DatumFactory.createInt(rndKey) });
-      tuple.put(new Datum[] { DatumFactory.createInt(rndKey),
-          DatumFactory.createInt(rnd.nextInt(10)),
-          DatumFactory.createString("dept_" + rnd.nextInt(10)) });
+      key.put(new Datum[] { DatumFactory.createInt4(rndKey) });
+      tuple.put(new Datum[] { DatumFactory.createInt4(rndKey),
+          DatumFactory.createInt4(rnd.nextInt(10)),
+          DatumFactory.createText("dept_" + rnd.nextInt(10)) });
       offset = appender.getOffset();
       appender.addTuple(tuple);
       writer.write(key, offset);
@@ -151,7 +151,7 @@ public class TestBSTIndexExec {
     this.rndKey = rnd.nextInt(250);
     final String QUERY = "select * from employee where managerId = " + rndKey;
     
-    Fragment[] frags = sm.splitNG(conf, "employee", meta, tablePath, Integer.MAX_VALUE);
+    Fragment[] frags = StorageManager.splitNG(conf, "employee", meta, tablePath, Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testEqual");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), new Fragment[] { frags[0] }, workDir);
@@ -190,7 +190,7 @@ public class TestBSTIndexExec {
 
       Fragment[] fragments = ctx.getTables(scanNode.getTableId());
       
-      Datum[] datum = new Datum[]{DatumFactory.createInt(rndKey)};
+      Datum[] datum = new Datum[]{DatumFactory.createInt4(rndKey)};
 
       return new BSTIndexScanExec(ctx, sm, scanNode, fragments[0], idxPath,
           idxSchema, comp , datum);

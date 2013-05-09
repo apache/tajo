@@ -35,7 +35,7 @@ import tajo.QueryIdFactory;
 import tajo.QueryUnitId;
 import tajo.SubQueryId;
 import tajo.catalog.CatalogService;
-import tajo.catalog.TCatUtil;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.TableDesc;
 import tajo.catalog.TableMeta;
 import tajo.catalog.statistics.ColumnStat;
@@ -358,10 +358,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
   private static TableMeta toTableMeta(StoreTableNode store) {
     if (store.hasOptions()) {
-      return TCatUtil.newTableMeta(store.getOutSchema(),
+      return CatalogUtil.newTableMeta(store.getOutSchema(),
           store.getStorageType(), store.getOptions());
     } else {
-      return TCatUtil.newTableMeta(store.getOutSchema(),
+      return CatalogUtil.newTableMeta(store.getOutSchema(),
           store.getStorageType());
     }
   }

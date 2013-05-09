@@ -23,10 +23,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.catalog.function.GeneralFunction;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.IndexMethod;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.storage.Tuple;
@@ -61,11 +62,11 @@ public class TestCatalog {
 	@Test
 	public void testGetTable() throws Exception {
 		schema1 = new Schema();
-		schema1.addColumn(FieldName1, DataType.BYTE);
-		schema1.addColumn(FieldName2, DataType.INT);
-		schema1.addColumn(FieldName3, DataType.LONG);
+		schema1.addColumn(FieldName1, Type.BLOB);
+		schema1.addColumn(FieldName2, Type.INT4);
+		schema1.addColumn(FieldName3, Type.INT8);
 		
-		TableDesc meta = TCatUtil.newTableDesc(
+		TableDesc meta = CatalogUtil.newTableDesc(
         "getTable",
         schema1,
         StoreType.CSV,
@@ -86,11 +87,11 @@ public class TestCatalog {
 	@Test(expected = Throwable.class)
 	public void testAddTableNoName() throws Exception {
 	  schema1 = new Schema();
-    schema1.addColumn(FieldName1, DataType.BYTE);
-    schema1.addColumn(FieldName2, DataType.INT);
-    schema1.addColumn(FieldName3, DataType.LONG);
+    schema1.addColumn(FieldName1, Type.BLOB);
+    schema1.addColumn(FieldName2, Type.INT4);
+    schema1.addColumn(FieldName3, Type.INT8);
     
-	  TableMeta info = TCatUtil.newTableMeta(schema1, StoreType.CSV);
+	  TableMeta info = CatalogUtil.newTableMeta(schema1, StoreType.CSV);
 	  TableDesc desc = new TableDescImpl();
 	  desc.setMeta(info);
 	  
@@ -103,15 +104,15 @@ public class TestCatalog {
 
   static {
     desc1 = new IndexDesc(
-        "idx_test", "indexed", new Column("id", DataType.INT),
+        "idx_test", "indexed", new Column("id", Type.INT4),
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
 
     desc2 = new IndexDesc(
-        "idx_test2", "indexed", new Column("score", DataType.DOUBLE),
+        "idx_test2", "indexed", new Column("score", Type.FLOAT8),
         IndexMethod.TWO_LEVEL_BIN_TREE, false, false, false);
 
     desc3 = new IndexDesc(
-        "idx_test", "indexed", new Column("id", DataType.INT),
+        "idx_test", "indexed", new Column("id", Type.INT4),
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
   }
 	
@@ -144,7 +145,7 @@ public class TestCatalog {
 		public TestFunc1() {
 			super(					
 					new Column [] {
-							new Column("name", DataType.INT)
+							new Column("name", TajoDataTypes.Type.INT4)
 					}
 			);
 		}
@@ -160,8 +161,8 @@ public class TestCatalog {
     public TestFunc2() {
       super(
           new Column [] {
-              new Column("name", DataType.INT),
-              new Column("bytes", DataType.BYTES)
+              new Column("name", TajoDataTypes.Type.INT4),
+              new Column("bytes", TajoDataTypes.Type.BLOB)
           }
       );
     }
@@ -176,12 +177,12 @@ public class TestCatalog {
 	public final void testRegisterFunc() throws Exception { 
 		assertFalse(catalog.containFunction("test2"));
 		FunctionDesc meta = new FunctionDesc("test2", TestFunc1.class, FunctionType.GENERAL,
-        new DataType [] {DataType.INT},
-		    new DataType [] {DataType.INT});
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4));
 
     catalog.registerFunction(meta);
-		assertTrue(catalog.containFunction("test2", DataType.INT));
-		FunctionDesc retrived = catalog.getFunction("test2", DataType.INT);
+		assertTrue(catalog.containFunction("test2", CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
+		FunctionDesc retrived = catalog.getFunction("test2", CatalogUtil.newDataTypesWithoutLen(Type.INT4));
 
 		assertEquals(retrived.getSignature(),"test2");
 		assertEquals(retrived.getFuncClass(),TestFunc1.class);
@@ -191,20 +192,23 @@ public class TestCatalog {
   @Test
   public final void testUnregisterFunc() throws Exception {    
     assertFalse(catalog
-        .containFunction("test3", DataType.INT));
+        .containFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
     FunctionDesc meta = new FunctionDesc("test3", TestFunc1.class, FunctionType.GENERAL,
-        new DataType [] {DataType.INT}, new DataType[] { DataType.INT });
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4 ));
     catalog.registerFunction(meta);
-    assertTrue(catalog.containFunction("test3", DataType.INT));
-    catalog.unregisterFunction("test3", DataType.INT);
+    assertTrue(catalog.containFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
+    catalog.unregisterFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4));
     assertFalse(catalog
-        .containFunction("test3", DataType.INT));
+        .containFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
 
-    assertFalse(catalog.containFunction("test3", DataType.INT, DataType.BYTES));
+    assertFalse(catalog.containFunction("test3",
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.BLOB)));
     FunctionDesc overload = new FunctionDesc("test3", TestFunc2.class, FunctionType.GENERAL,
-        new DataType [] {DataType.INT},
-        new DataType [] {DataType.INT,DataType.BYTES});
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.BLOB));
     catalog.registerFunction(overload);
-    assertTrue(catalog.containFunction("test3", DataType.INT, DataType.BYTES));
+    assertTrue(catalog.containFunction("test3",
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.BLOB)));
   }
 }

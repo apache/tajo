@@ -24,13 +24,13 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;
-import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -85,10 +85,10 @@ public class TestStorages {
   public void testSplitable() throws IOException {
     if (splitable) {
       Schema schema = new Schema();
-      schema.addColumn("id", DataType.INT);
-      schema.addColumn("age", DataType.LONG);
+      schema.addColumn("id", Type.INT4);
+      schema.addColumn("age", Type.INT8);
 
-      TableMeta meta = TCatUtil.newTableMeta(schema, storeType);
+      TableMeta meta = CatalogUtil.newTableMeta(schema, storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
       Appender appender = StorageManager.getAppender(conf, meta, tablePath);
       appender.enableStats();
@@ -98,8 +98,8 @@ public class TestStorages {
 
       for(int i = 0; i < tupleNum; i++) {
         vTuple = new VTuple(2);
-        vTuple.put(0, DatumFactory.createInt(i+1));
-        vTuple.put(1, DatumFactory.createLong(25l));
+        vTuple.put(0, DatumFactory.createInt4(i + 1));
+        vTuple.put(1, DatumFactory.createInt8(25l));
         appender.addTuple(vTuple);
       }
       appender.close();
@@ -138,11 +138,11 @@ public class TestStorages {
   @Test
   public void testProjection() throws IOException {
     Schema schema = new Schema();
-    schema.addColumn("id", DataType.INT);
-    schema.addColumn("age", DataType.LONG);
-    schema.addColumn("score", DataType.FLOAT);
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("age", Type.INT8);
+    schema.addColumn("score", Type.FLOAT4);
 
-    TableMeta meta = TCatUtil.newTableMeta(schema, storeType);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, storeType);
 
     Path tablePath = new Path(testDir, "testProjection.data");
     Appender appender = StorageManager.getAppender(conf, meta, tablePath);
@@ -152,9 +152,9 @@ public class TestStorages {
 
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(3);
-      vTuple.put(0, DatumFactory.createInt(i+1));
-      vTuple.put(1, DatumFactory.createLong(i+2));
-      vTuple.put(2, DatumFactory.createFloat(i + 3));
+      vTuple.put(0, DatumFactory.createInt4(i + 1));
+      vTuple.put(1, DatumFactory.createInt8(i + 2));
+      vTuple.put(2, DatumFactory.createFloat4(i + 3));
       appender.addTuple(vTuple);
     }
     appender.close();
@@ -163,8 +163,8 @@ public class TestStorages {
     Fragment fragment = new Fragment("testReadAndWrite", tablePath, meta, 0, status.getLen(), null);
 
     Schema target = new Schema();
-    target.addColumn("age", DataType.LONG);
-    target.addColumn("score", DataType.FLOAT);
+    target.addColumn("age", Type.INT8);
+    target.addColumn("score", Type.FLOAT4);
     Scanner scanner = StorageManager.getScanner(conf, meta, fragment, target);
     scanner.init();
     int tupleCnt = 0;
@@ -173,8 +173,8 @@ public class TestStorages {
       if (storeType == StoreType.RCFILE || storeType == StoreType.TREVNI) {
         assertNull(tuple.get(0));
       }
-      assertEquals(DatumFactory.createLong(tupleCnt + 2), tuple.getLong(1));
-      assertEquals(DatumFactory.createFloat(tupleCnt + 3), tuple.getFloat(2));
+      assertEquals(DatumFactory.createInt8(tupleCnt + 2), tuple.getLong(1));
+      assertEquals(DatumFactory.createFloat4(tupleCnt + 3), tuple.getFloat(2));
       tupleCnt++;
     }
     scanner.close();
@@ -185,40 +185,39 @@ public class TestStorages {
   @Test
   public void testVariousTypes() throws IOException {
     Schema schema = new Schema();
-    schema.addColumn("col1", DataType.BOOLEAN);
-    schema.addColumn("col2", DataType.BYTE);
-    schema.addColumn("col3", DataType.CHAR);
-    schema.addColumn("col4", DataType.SHORT);
-    schema.addColumn("col5", DataType.INT);
-    schema.addColumn("col6", DataType.LONG);
-    schema.addColumn("col7", DataType.FLOAT);
-    schema.addColumn("col8", DataType.DOUBLE);
-    schema.addColumn("col9", DataType.STRING);
-    schema.addColumn("col10", DataType.BYTES);
-    schema.addColumn("col11", DataType.IPv4);
-    schema.addColumn("col12", DataType.STRING2);
+    schema.addColumn("col1", Type.BOOLEAN);
+    schema.addColumn("col2", Type.BIT);
+    schema.addColumn("col3", Type.CHAR);
+    schema.addColumn("col4", Type.INT2);
+    schema.addColumn("col5", Type.INT4);
+    schema.addColumn("col6", Type.INT8);
+    schema.addColumn("col7", Type.FLOAT4);
+    schema.addColumn("col8", Type.FLOAT8);
+    schema.addColumn("col9", Type.TEXT);
+    schema.addColumn("col10", Type.BLOB);
+    schema.addColumn("col11", Type.INET4);
 
     Options options = new Options();
-    TableMeta meta = TCatUtil.newTableMeta(schema, storeType, options);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, storeType, options);
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManager.getAppender(conf, meta, tablePath);
     appender.init();
 
-    Tuple tuple = new VTuple(12);
+    Tuple tuple = new VTuple(11);
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createByte((byte) 0x99),
+        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar('7'),
-        DatumFactory.createShort((short) 17),
-        DatumFactory.createInt(59),
-        DatumFactory.createLong(23l),
-        DatumFactory.createFloat(77.9f),
-        DatumFactory.createDouble(271.9f),
-        DatumFactory.createString("hyunsik"),
-        DatumFactory.createBytes("hyunsik".getBytes()),
-        DatumFactory.createIPv4("192.168.0.1"),
-        DatumFactory.createString2("hyunsik")
+        DatumFactory.createInt2((short) 17),
+        DatumFactory.createInt4(59),
+        DatumFactory.createInt8(23l),
+        DatumFactory.createFloat4(77.9f),
+        DatumFactory.createFloat8(271.9f),
+        DatumFactory.createText("hyunsik"),
+        DatumFactory.createBlob("hyunsik".getBytes()),
+        DatumFactory.createInet4("192.168.0.1"),
+        DatumFactory.createText("hyunsik")
     });
     appender.addTuple(tuple);
     appender.flush();

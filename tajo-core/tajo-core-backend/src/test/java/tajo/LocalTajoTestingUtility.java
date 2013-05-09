@@ -21,10 +21,7 @@ package tajo;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import tajo.catalog.Options;
-import tajo.catalog.Schema;
-import tajo.catalog.TCatUtil;
-import tajo.catalog.TableMeta;
+import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.client.TajoClient;
 import tajo.conf.TajoConf;
@@ -59,7 +56,7 @@ public class LocalTajoTestingUtility {
       fs.mkdirs(dataPath);
       Path dfsPath = new Path(dataPath, localPath.getName());
       fs.copyFromLocalFile(localPath, dfsPath);
-      TableMeta meta = TCatUtil.newTableMeta(schemas[i],
+      TableMeta meta = CatalogUtil.newTableMeta(schemas[i],
           CatalogProtos.StoreType.CSV, option);
       client.createTable(names[i], tablePath, meta);
     }

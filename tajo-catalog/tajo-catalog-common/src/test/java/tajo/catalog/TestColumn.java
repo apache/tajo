@@ -22,7 +22,8 @@ import com.google.gson.Gson;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.catalog.json.GsonCreator;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -32,12 +33,9 @@ public class TestColumn {
 	static final String FieldName2="f2";
 	static final String FieldName3="f3";	
 	
-	static final DataType Type1 = DataType.BYTE;
-	static final DataType Type2 = DataType.INT;
-	static final DataType Type3 = DataType.LONG;
-	
-	static final int Len2 = 10;
-	static final int Len3 = 12;
+	static final DataType Type1 = CatalogUtil.newDataTypeWithoutLen(Type.BLOB);
+	static final DataType Type2 = CatalogUtil.newDataTypeWithoutLen(Type.INT4);
+	static final DataType Type3 = CatalogUtil.newDataTypeWithoutLen(Type.INT8);
 	
 	Column field1;
 	Column field2;
@@ -45,9 +43,9 @@ public class TestColumn {
 	
 	@Before
 	public void setUp() {
-		field1 = new Column(FieldName1, DataType.BYTE);
-		field2 = new Column(FieldName2, DataType.INT );
-		field3 = new Column(FieldName3, DataType.LONG);
+		field1 = new Column(FieldName1, Type.BLOB);
+		field2 = new Column(FieldName2, Type.INT4);
+		field3 = new Column(FieldName3, Type.INT8);
 	}
 	
 	@Test
@@ -77,7 +75,7 @@ public class TestColumn {
 	
 	@Test
 	public final void testQualifiedName() {
-	  Column col = new Column("table_1.id", DataType.INT);
+	  Column col = new Column("table_1.id", Type.INT4);
 	  
 	  assertTrue(col.isQualified());
 	  assertEquals("id", col.getColumnName());
@@ -86,7 +84,7 @@ public class TestColumn {
 	}
 
 	@Test
-	public final void testToSon() {
+	public final void testToJson() {
 		Column col = new Column(field1.getProto());
 		String json = col.toJSON();
 		System.out.println(json);

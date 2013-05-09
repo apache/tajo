@@ -21,8 +21,8 @@ package tajo.storage;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import tajo.catalog.TableMeta;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.statistics.TableStat;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.ArrayDatum;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -39,7 +39,7 @@ import java.nio.channels.FileChannel;
 public class RawFile {
   public static class RawFileScanner extends FileScanner implements SeekableScanner {
     private FileChannel channel;
-    private DataType [] columnTypes;
+    private DataType[] columnTypes;
     private Path path;
 
     private ByteBuffer buffer;
@@ -143,69 +143,69 @@ public class RawFile {
           continue;
         }
 
-        switch (columnTypes[i]) {
+        switch (columnTypes[i].getType()) {
           case BOOLEAN :
             tuple.put(i, DatumFactory.createBool(buffer.get()));
             break;
 
-          case BYTE :
-            tuple.put(i, DatumFactory.createByte(buffer.get()));
+          case BIT :
+            tuple.put(i, DatumFactory.createBit(buffer.get()));
             break;
 
           case CHAR :
             tuple.put(i, DatumFactory.createChar(buffer.getChar()));
             break;
 
-          case SHORT :
-            tuple.put(i, DatumFactory.createShort(buffer.getShort()));
+          case INT2 :
+            tuple.put(i, DatumFactory.createInt2(buffer.getShort()));
             break;
 
-          case INT :
-            tuple.put(i, DatumFactory.createInt(buffer.getInt()));
+          case INT4 :
+            tuple.put(i, DatumFactory.createInt4(buffer.getInt()));
             break;
 
-          case LONG :
-            tuple.put(i, DatumFactory.createLong(buffer.getLong()));
+          case INT8 :
+            tuple.put(i, DatumFactory.createInt8(buffer.getLong()));
             break;
 
-          case FLOAT :
-            tuple.put(i, DatumFactory.createFloat(buffer.getFloat()));
+          case FLOAT4 :
+            tuple.put(i, DatumFactory.createFloat4(buffer.getFloat()));
             break;
 
-          case DOUBLE :
-            tuple.put(i, DatumFactory.createDouble(buffer.getDouble()));
+          case FLOAT8 :
+            tuple.put(i, DatumFactory.createFloat8(buffer.getDouble()));
             break;
 
-          case STRING :
-            // TODO - shoud use CharsetEncoder / CharsetDecoder
-            int strSize = buffer.getInt();
-            byte [] strBytes = new byte[strSize];
-            buffer.get(strBytes);
-            tuple.put(i, DatumFactory.createString(new String(strBytes)));
-            break;
+//          case TEXT :
+//            // TODO - shoud use CharsetEncoder / CharsetDecoder
+//            int strSize = buffer.getInt();
+//            byte [] strBytes = new byte[strSize];
+//            buffer.get(strBytes);
+//            tuple.put(i, DatumFactory.createText(new String(strBytes)));
+//            break;
 
-          case STRING2 :
+          case TEXT :
             // TODO - shoud use CharsetEncoder / CharsetDecoder
             int strSize2 = buffer.getInt();
             byte [] strBytes2 = new byte[strSize2];
             buffer.get(strBytes2);
-            tuple.put(i, DatumFactory.createString2(new String(strBytes2)));
+            tuple.put(i, DatumFactory.createText(new String(strBytes2)));
             break;
 
-          case BYTES :
+          case BLOB :
             int byteSize = buffer.getInt();
             byte [] rawBytes = new byte[byteSize];
             buffer.get(rawBytes);
-            tuple.put(i, DatumFactory.createBytes(rawBytes));
+            tuple.put(i, DatumFactory.createBlob(rawBytes));
             break;
 
-          case IPv4 :
+          case INET4 :
             byte [] ipv4Bytes = new byte[4];
             buffer.get(ipv4Bytes);
-            tuple.put(i, DatumFactory.createIPv4(ipv4Bytes));
+            tuple.put(i, DatumFactory.createInet4(ipv4Bytes));
             break;
 
-          case ARRAY:
+          case ARRAY :
             int arrayByteSize = buffer.getInt();
             byte [] arrayBytes = new byte[arrayByteSize];
             buffer.get(arrayBytes);
@@ -352,9 +352,9 @@ public class RawFile {
           recordOffset = 0;
         }
 
-        switch(columnTypes[i]) {
-          case BOOLEAN :
-          case BYTE :
+        switch(columnTypes[i].getType()) {
+          case BOOLEAN:
+          case BIT:
             buffer.put(t.get(i).asByte());
             break;
 
@@ -362,36 +362,36 @@ public class RawFile {
             buffer.putChar(t.get(i).asChar());
             break;
 
-          case SHORT :
-            buffer.putShort(t.get(i).asShort());
+          case INT2 :
+            buffer.putShort(t.get(i).asInt2());
             break;
 
-          case INT :
-            buffer.putInt(t.get(i).asInt());
+          case INT4 :
+            buffer.putInt(t.get(i).asInt4());
             break;
 
-          case LONG :
-            buffer.putLong(t.get(i).asLong());
+          case INT8 :
+            buffer.putLong(t.get(i).asInt8());
             break;
 
-          case FLOAT :
-            buffer.putFloat(t.get(i).asFloat());
+          case FLOAT4 :
+            buffer.putFloat(t.get(i).asFloat4());
             break;
 
-          case DOUBLE:
-            buffer.putDouble(t.get(i).asDouble());
+          case FLOAT8 :
+            buffer.putDouble(t.get(i).asFloat8());
             break;
 
-          case STRING:
-            byte [] strBytes = t.get(i).asByteArray();
-            if (flushBufferAndReplace(recordOffset, strBytes.length + 4)) {
-              recordOffset = 0;
-            }
-            buffer.putInt(strBytes.length);
-            buffer.put(strBytes);
-            break;
+//          case TEXT :
+//            byte [] strBytes = t.get(i).asByteArray();
+//            if (flushBufferAndReplace(recordOffset, strBytes.length + 4)) {
+//              recordOffset = 0;
+//            }
+//            buffer.putInt(strBytes.length);
+//            buffer.put(strBytes);
+//            break;
 
-          case STRING2:
+          case TEXT:
             byte [] strBytes2 = t.get(i).asByteArray();
             if (flushBufferAndReplace(recordOffset, strBytes2.length + 4)) {
               recordOffset = 0;
@@ -400,7 +400,7 @@ public class RawFile {
             buffer.put(strBytes2);
             break;
 
-          case BYTES:
+          case BLOB :
             byte [] rawBytes = t.get(i).asByteArray();
             if (flushBufferAndReplace(recordOffset, rawBytes.length + 4)) {
               recordOffset = 0;
@@ -409,11 +409,11 @@ public class RawFile {
             buffer.put(rawBytes);
             break;
 
-          case IPv4:
+          case INET4 :
             buffer.put(t.get(i).asByteArray());
             break;
 
-          case ARRAY:
+          case ARRAY :
             ArrayDatum array = (ArrayDatum) t.get(i);
             String json = array.toJSON();
             byte [] jsonBytes = json.getBytes();

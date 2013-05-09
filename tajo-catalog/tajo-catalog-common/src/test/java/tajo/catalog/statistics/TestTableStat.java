@@ -20,7 +20,7 @@ package tajo.catalog.statistics;
 
 import org.junit.Test;
 import tajo.catalog.Column;
-import tajo.catalog.proto.CatalogProtos;
+import tajo.common.TajoDataTypes.Type;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -38,7 +38,7 @@ public class TestTableStat {
     int numCols = 3;
     ColumnStat[] cols = new ColumnStat[numCols];
     for (int i = 0; i < numCols; i++) {
-      cols[i] = new ColumnStat(new Column("col_" + i, CatalogProtos.DataType.LONG));
+      cols[i] = new ColumnStat(new Column("col_" + i, Type.INT8));
       cols[i].setNumDistVals(1024 * i);
       cols[i].setNumNulls(100 * i);
       stat.addColumnStat(cols[i]);

@@ -72,7 +72,7 @@ public class FrameTuple implements Tuple {
 
   @Override
   public boolean isNull(int fieldid) {
-    return get(fieldid).type() == DatumType.NULL;
+    return get(fieldid) instanceof NullDatum;
   }
 
   @Override
@@ -123,13 +123,13 @@ public class FrameTuple implements Tuple {
   }
 
   @Override
-  public BoolDatum getBoolean(int fieldId) {
-    return (BoolDatum) get(fieldId);
+  public BooleanDatum getBoolean(int fieldId) {
+    return (BooleanDatum) get(fieldId);
   }
 
   @Override
-  public ByteDatum getByte(int fieldId) {
-    return (ByteDatum) get(fieldId);
+  public BitDatum getByte(int fieldId) {
+    return (BitDatum) get(fieldId);
   }
 
   @Override
@@ -138,38 +138,38 @@ public class FrameTuple implements Tuple {
   }
 
   @Override
-  public BytesDatum getBytes(int fieldId) {
-    return (BytesDatum) get(fieldId);
+  public BlobDatum getBytes(int fieldId) {
+    return (BlobDatum) get(fieldId);
   }
 
   @Override
-  public ShortDatum getShort(int fieldId) {
-    return (ShortDatum) get(fieldId);
+  public Int2Datum getShort(int fieldId) {
+    return (Int2Datum) get(fieldId);
   }
 
   @Override
-  public IntDatum getInt(int fieldId) {
-    return (IntDatum) get(fieldId);
+  public Int4Datum getInt(int fieldId) {
+    return (Int4Datum) get(fieldId);
   }
 
   @Override
-  public LongDatum getLong(int fieldId) {
-    return (LongDatum) get(fieldId);
+  public Int8Datum getLong(int fieldId) {
+    return (Int8Datum) get(fieldId);
   }
 
   @Override
-  public FloatDatum getFloat(int fieldId) {
-    return (FloatDatum) get(fieldId);
+  public Float4Datum getFloat(int fieldId) {
+    return (Float4Datum) get(fieldId);
   }
 
   @Override
-  public DoubleDatum getDouble(int fieldId) {
-    return (DoubleDatum) get(fieldId);
+  public Float8Datum getDouble(int fieldId) {
+    return (Float8Datum) get(fieldId);
   }
 
   @Override
-  public IPv4Datum getIPv4(int fieldId) {
-    return (IPv4Datum) get(fieldId);
+  public Inet4Datum getIPv4(int fieldId) {
+    return (Inet4Datum) get(fieldId);
   }
 
   @Override
@@ -188,13 +188,13 @@ public class FrameTuple implements Tuple {
   }
 
   @Override
-  public StringDatum getString(int fieldId) {
-    return (StringDatum) get(fieldId);
+  public TextDatum getString(int fieldId) {
+    return (TextDatum) get(fieldId);
   }
 
   @Override
-  public StringDatum2 getString2(int fieldId) {
-    return (StringDatum2) get(fieldId);
+  public TextDatum getText(int fieldId) {
+    return (TextDatum) get(fieldId);
   }
 
   public String toString() {

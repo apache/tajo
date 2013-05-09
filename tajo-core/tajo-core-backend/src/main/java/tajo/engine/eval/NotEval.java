@@ -20,17 +20,18 @@ package tajo.engine.eval;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.utils.SchemaUtil;
 import tajo.storage.Tuple;
 
 public class NotEval extends EvalNode implements Cloneable {
   @Expose private EvalNode subExpr;
-  private static final DataType [] RES_TYPE = SchemaUtil
-      .newNoNameSchema(DataType.BOOLEAN);
+  private static final DataType[] RES_TYPE =
+      CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
 
   public NotEval(EvalNode subExpr) {
     super(Type.NOT);

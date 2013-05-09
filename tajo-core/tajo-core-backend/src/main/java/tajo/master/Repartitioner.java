@@ -76,7 +76,7 @@ public class Repartitioner {
 
       if (scans[i].isLocal()) { // it only requires a dummy fragment.
         fragments[i] = new Fragment(scans[i].getTableId(), tablePath,
-            TCatUtil.newTableMeta(scans[i].getInSchema(), StoreType.CSV),
+            CatalogUtil.newTableMeta(scans[i].getInSchema(), StoreType.CSV),
             0, 0, null);
       } else {
         fragments[i] = subQuery.getStorageManager().getSplits(scans[i].getTableId(),
@@ -291,7 +291,7 @@ public class Repartitioner {
     TupleRange [] ranges = partitioner.partition(determinedTaskNum);
 
     Fragment dummyFragment = new Fragment(scan.getTableId(), tablePath,
-        TCatUtil.newTableMeta(scan.getInSchema(), StoreType.CSV),
+        CatalogUtil.newTableMeta(scan.getInSchema(), StoreType.CSV),
         0, 0, null);
 
     List<String> basicFetchURIs = new ArrayList<String>();
@@ -389,7 +389,7 @@ public class Repartitioner {
     }
 
     Fragment frag = new Fragment(scan.getTableId(), tablePath,
-        TCatUtil.newTableMeta(scan.getInSchema(), StoreType.CSV),
+        CatalogUtil.newTableMeta(scan.getInSchema(), StoreType.CSV),
         0, 0, null);
 
     Map<Integer, List<IntermediateEntry>> hashed = hashByKey(partitions);

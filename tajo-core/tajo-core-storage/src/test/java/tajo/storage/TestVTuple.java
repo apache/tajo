@@ -38,11 +38,11 @@ public class TestVTuple {
 	@Test
 	public void testContain() {
 		VTuple t1 = new VTuple(260);
-		t1.put(0, DatumFactory.createInt(1));
-		t1.put(1, DatumFactory.createInt(1));
-		t1.put(27, DatumFactory.createInt(1));
-		t1.put(96, DatumFactory.createInt(1));
-		t1.put(257, DatumFactory.createInt(1));
+		t1.put(0, DatumFactory.createInt4(1));
+		t1.put(1, DatumFactory.createInt4(1));
+		t1.put(27, DatumFactory.createInt4(1));
+		t1.put(96, DatumFactory.createInt4(1));
+		t1.put(257, DatumFactory.createInt4(1));
 		
 		assertTrue(t1.contains(0));
 		assertTrue(t1.contains(1));
@@ -60,36 +60,37 @@ public class TestVTuple {
 	@Test
 	public void testPut() {
 		VTuple t1 = new VTuple(260);
-		t1.put(0, DatumFactory.createString("str"));
-		t1.put(1, DatumFactory.createInt(2));
-		t1.put(257, DatumFactory.createFloat(0.76f));
+		t1.put(0, DatumFactory.createText("str"));
+		t1.put(1, DatumFactory.createInt4(2));
+		t1.put(257, DatumFactory.createFloat4(0.76f));
 		
 		assertTrue(t1.contains(0));
 		assertTrue(t1.contains(1));
 		
 		assertEquals(t1.getString(0).toString(),"str");
-		assertEquals(t1.getInt(1).asInt(),2);
-		assertTrue(t1.getFloat(257).asFloat() == 0.76f);		
+		assertEquals(t1.getInt(1).asInt4(),2);
+		assertTrue(t1.getFloat(257).asFloat4() == 0.76f);
 	}
-	
+
+  @Test
 	public void testEquals() {
 	  Tuple t1 = new VTuple(5);
 	  Tuple t2 = new VTuple(5);
 	  
-	  t1.put(0, DatumFactory.createInt(1));
-	  t1.put(1, DatumFactory.createInt(2));
-	  t1.put(3, DatumFactory.createInt(2));
+	  t1.put(0, DatumFactory.createInt4(1));
+	  t1.put(1, DatumFactory.createInt4(2));
+	  t1.put(3, DatumFactory.createInt4(2));
 	  
-	  t2.put(0, DatumFactory.createInt(1));
-    t2.put(1, DatumFactory.createInt(2));
-    t2.put(3, DatumFactory.createInt(2));
+	  t2.put(0, DatumFactory.createInt4(1));
+    t2.put(1, DatumFactory.createInt4(2));
+    t2.put(3, DatumFactory.createInt4(2));
     
     assertEquals(t1,t2);
     
     Tuple t3 = new VTuple(5);
-    t2.put(0, DatumFactory.createInt(1));
-    t2.put(1, DatumFactory.createInt(2));
-    t2.put(4, DatumFactory.createInt(2));
+    t2.put(0, DatumFactory.createInt4(1));
+    t2.put(1, DatumFactory.createInt4(2));
+    t2.put(4, DatumFactory.createInt4(2));
     
     assertNotSame(t1,t3);
 	}
@@ -99,22 +100,22 @@ public class TestVTuple {
 	  Tuple t1 = new VTuple(5);
     Tuple t2 = new VTuple(5);
     
-    t1.put(0, DatumFactory.createInt(1));
-    t1.put(1, DatumFactory.createInt(2));
-    t1.put(3, DatumFactory.createInt(2));
-    t1.put(4, DatumFactory.createString("hyunsik"));
+    t1.put(0, DatumFactory.createInt4(1));
+    t1.put(1, DatumFactory.createInt4(2));
+    t1.put(3, DatumFactory.createInt4(2));
+    t1.put(4, DatumFactory.createText("hyunsik"));
     
-    t2.put(0, DatumFactory.createInt(1));
-    t2.put(1, DatumFactory.createInt(2));
-    t2.put(3, DatumFactory.createInt(2));
-    t2.put(4, DatumFactory.createString("hyunsik"));
+    t2.put(0, DatumFactory.createInt4(1));
+    t2.put(1, DatumFactory.createInt4(2));
+    t2.put(3, DatumFactory.createInt4(2));
+    t2.put(4, DatumFactory.createText("hyunsik"));
     
     assertEquals(t1.hashCode(),t2.hashCode());
     
     Tuple t3 = new VTuple(5);
-    t3.put(0, DatumFactory.createInt(1));
-    t3.put(1, DatumFactory.createInt(2));
-    t3.put(4, DatumFactory.createInt(2));
+    t3.put(0, DatumFactory.createInt4(1));
+    t3.put(1, DatumFactory.createInt4(2));
+    t3.put(4, DatumFactory.createInt4(2));
     
     assertNotSame(t1.hashCode(),t3.hashCode());
 	}
@@ -123,18 +124,18 @@ public class TestVTuple {
   public void testPutTuple() {
     Tuple t1 = new VTuple(5);
 
-    t1.put(0, DatumFactory.createInt(1));
-    t1.put(1, DatumFactory.createInt(2));
-    t1.put(2, DatumFactory.createInt(3));
+    t1.put(0, DatumFactory.createInt4(1));
+    t1.put(1, DatumFactory.createInt4(2));
+    t1.put(2, DatumFactory.createInt4(3));
 
     Tuple t2 = new VTuple(2);
-    t2.put(0, DatumFactory.createInt(4));
-    t2.put(1, DatumFactory.createInt(5));
+    t2.put(0, DatumFactory.createInt4(4));
+    t2.put(1, DatumFactory.createInt4(5));
 
     t1.put(3, t2);
 
     for (int i = 0; i < 5; i++) {
-      assertEquals(i+1, t1.get(i).asInt());
+      assertEquals(i+1, t1.get(i).asInt4());
     }
   }
 }

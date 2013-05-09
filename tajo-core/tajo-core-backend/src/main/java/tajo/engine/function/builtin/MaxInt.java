@@ -18,11 +18,12 @@
 
 package tajo.engine.function.builtin;
 
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.storage.Tuple;
@@ -31,7 +32,7 @@ public class MaxInt extends AggFunction<Datum> {
 
   public MaxInt() {
     super(new Column[] {
-        new Column("val", CatalogProtos.DataType.LONG)
+        new Column("val", Type.INT8)
     });
   }
 
@@ -43,22 +44,22 @@ public class MaxInt extends AggFunction<Datum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     MaxContext maxCtx = (MaxContext) ctx;
-    maxCtx.max = Math.max(maxCtx.max, params.get(0).asInt());
+    maxCtx.max = Math.max(maxCtx.max, params.get(0).asInt4());
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createInt(((MaxContext)ctx).max);
+    return DatumFactory.createInt4(((MaxContext) ctx).max);
   }
 
   @Override
-  public DataType[] getPartialResultType() {
-    return new DataType[] {DataType.INT};
+  public DataType [] getPartialResultType() {
+    return CatalogUtil.newDataTypesWithoutLen(Type.INT4);
   }
 
   @Override
   public Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createInt(((MaxContext)ctx).max);
+    return DatumFactory.createInt4(((MaxContext) ctx).max);
   }
 
   private class MaxContext implements FunctionContext {

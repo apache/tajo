@@ -21,7 +21,7 @@ package tajo.engine.eval;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.Datum;
 import tajo.engine.json.GsonCreator;
 import tajo.storage.Tuple;

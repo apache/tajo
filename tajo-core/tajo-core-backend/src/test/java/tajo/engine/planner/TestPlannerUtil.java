@@ -24,9 +24,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.TajoTestingCluster;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.DatumFactory;
 import tajo.engine.eval.BinaryEval;
 import tajo.engine.eval.ConstEval;
@@ -56,19 +56,19 @@ public class TestPlannerUtil {
     catalog = util.getMiniCatalogCluster().getCatalog();
 
     Schema schema = new Schema();
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("empId", DataType.INT);
-    schema.addColumn("deptName", DataType.STRING);
+    schema.addColumn("name", Type.TEXT);
+    schema.addColumn("empId", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    schema.addColumn("deptName", Type.TEXT);
 
     Schema schema2 = new Schema();
-    schema2.addColumn("deptName", DataType.STRING);
-    schema2.addColumn("manager", DataType.STRING);
+    schema2.addColumn("deptName", Type.TEXT);
+    schema2.addColumn("manager", Type.TEXT);
 
     Schema schema3 = new Schema();
-    schema3.addColumn("deptName", DataType.STRING);
-    schema3.addColumn("score", DataType.INT);
+    schema3.addColumn("deptName", Type.TEXT);
+    schema3.addColumn("score", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
 
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     TableDesc people = new TableDescImpl("employee", meta,
         new Path("file:///"));
     catalog.addTable(people);
@@ -84,8 +84,8 @@ public class TestPlannerUtil {
     catalog.addTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,
-        new DataType [] {DataType.INT},
-        new DataType [] {DataType.INT});
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4));
 
     catalog.registerFunction(funcDesc);
     analyzer = new QueryAnalyzer(catalog);
@@ -180,8 +180,9 @@ public class TestPlannerUtil {
 
   @Test
   public final void testIsJoinQual() {
-    FieldEval f1 = new FieldEval("part.p_partkey", DataType.INT);
-    FieldEval f2 = new FieldEval("partsupp.ps_partkey", DataType.INT);
+    FieldEval f1 = new FieldEval("part.p_partkey", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f2 = new FieldEval("partsupp.ps_partkey",
+        CatalogUtil.newDataTypeWithoutLen(Type.INT4));
 
 
     BinaryEval [] joinQuals = new BinaryEval[5];
@@ -201,7 +202,7 @@ public class TestPlannerUtil {
     wrongJoinQuals[idx++] = new BinaryEval(EvalNode.Type.PLUS, f1, f2);
     wrongJoinQuals[idx++] = new BinaryEval(EvalNode.Type.LIKE, f1, f2);
 
-    ConstEval f3 = new ConstEval(DatumFactory.createInt(1));
+    ConstEval f3 = new ConstEval(DatumFactory.createInt4(1));
     wrongJoinQuals[idx] = new BinaryEval(EvalNode.Type.EQUAL, f1, f3);
 
     for (int i = 0; i < idx; i++) {
@@ -212,16 +213,16 @@ public class TestPlannerUtil {
   @Test
   public final void testGetJoinKeyPairs() {
     Schema outerSchema = new Schema();
-    outerSchema.addColumn("employee.id1", DataType.INT);
-    outerSchema.addColumn("employee.id2", DataType.INT);
+    outerSchema.addColumn("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    outerSchema.addColumn("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
     Schema innerSchema = new Schema();
-    innerSchema.addColumn("people.fid1", DataType.INT);
-    innerSchema.addColumn("people.fid2", DataType.INT);
+    innerSchema.addColumn("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    innerSchema.addColumn("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
 
-    FieldEval f1 = new FieldEval("employee.id1", DataType.INT);
-    FieldEval f2 = new FieldEval("people.fid1", DataType.INT);
-    FieldEval f3 = new FieldEval("employee.id2", DataType.INT);
-    FieldEval f4 = new FieldEval("people.fid2", DataType.INT);
+    FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
 
     EvalNode joinQual = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
 
@@ -258,16 +259,16 @@ public class TestPlannerUtil {
   @Test
   public final void testGetSortKeysFromJoinQual() {
     Schema outerSchema = new Schema();
-    outerSchema.addColumn("employee.id1", DataType.INT);
-    outerSchema.addColumn("employee.id2", DataType.INT);
+    outerSchema.addColumn("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    outerSchema.addColumn("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
     Schema innerSchema = new Schema();
-    innerSchema.addColumn("people.fid1", DataType.INT);
-    innerSchema.addColumn("people.fid2", DataType.INT);
+    innerSchema.addColumn("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    innerSchema.addColumn("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
 
-    FieldEval f1 = new FieldEval("employee.id1", DataType.INT);
-    FieldEval f2 = new FieldEval("people.fid1", DataType.INT);
-    FieldEval f3 = new FieldEval("employee.id2", DataType.INT);
-    FieldEval f4 = new FieldEval("people.fid2", DataType.INT);
+    FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
 
     EvalNode joinQual = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
     SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(joinQual, outerSchema, innerSchema);
@@ -294,27 +295,27 @@ public class TestPlannerUtil {
   @Test
   public final void testComparatorsFromJoinQual() {
     Schema outerSchema = new Schema();
-    outerSchema.addColumn("employee.id1", DataType.INT);
-    outerSchema.addColumn("employee.id2", DataType.INT);
+    outerSchema.addColumn("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    outerSchema.addColumn("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
     Schema innerSchema = new Schema();
-    innerSchema.addColumn("people.fid1", DataType.INT);
-    innerSchema.addColumn("people.fid2", DataType.INT);
+    innerSchema.addColumn("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    innerSchema.addColumn("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
 
-    FieldEval f1 = new FieldEval("employee.id1", DataType.INT);
-    FieldEval f2 = new FieldEval("people.fid1", DataType.INT);
-    FieldEval f3 = new FieldEval("employee.id2", DataType.INT);
-    FieldEval f4 = new FieldEval("people.fid2", DataType.INT);
+    FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
 
     EvalNode joinQual = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
     TupleComparator [] comparators = PlannerUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);
 
     Tuple t1 = new VTuple(2);
-    t1.put(0, DatumFactory.createInt(1));
-    t1.put(1, DatumFactory.createInt(2));
+    t1.put(0, DatumFactory.createInt4(1));
+    t1.put(1, DatumFactory.createInt4(2));
 
     Tuple t2 = new VTuple(2);
-    t2.put(0, DatumFactory.createInt(2));
-    t2.put(1, DatumFactory.createInt(3));
+    t2.put(0, DatumFactory.createInt4(2));
+    t2.put(1, DatumFactory.createInt4(3));
 
     TupleComparator outerComparator = comparators[0];
     assertTrue(outerComparator.compare(t1, t2) < 0);

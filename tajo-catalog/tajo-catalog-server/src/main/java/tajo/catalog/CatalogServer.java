@@ -30,6 +30,7 @@ import tajo.catalog.exception.*;
 import tajo.catalog.proto.CatalogProtos.*;
 import tajo.catalog.store.CatalogStore;
 import tajo.catalog.store.DBStore;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.rpc.ProtoBlockingRpcServer;
@@ -226,7 +227,7 @@ public class CatalogServer extends AbstractService {
 
         // rewrite schema
         SchemaProto revisedSchema =
-            TCatUtil.getQualfiedSchema(tableDesc.getId(), tableDesc.getMeta()
+            CatalogUtil.getQualfiedSchema(tableDesc.getId(), tableDesc.getMeta()
                 .getSchema());
 
         TableProto.Builder metaBuilder = TableProto.newBuilder(tableDesc.getMeta());
@@ -396,7 +397,7 @@ public class CatalogServer extends AbstractService {
                                       FunctionDescProto funcDesc)
         throws ServiceException {
       String canonicalName =
-          TCatUtil.getCanonicalName(funcDesc.getSignature(),
+          CatalogUtil.getCanonicalName(funcDesc.getSignature(),
               funcDesc.getParameterTypesList());
       if (functions.containsKey(canonicalName)) {
         throw new AlreadyExistsFunctionException(canonicalName);
@@ -420,7 +421,7 @@ public class CatalogServer extends AbstractService {
       for (int i = 0; i < size; i++) {
         paramTypes.add(request.getParameterTypes(i));
       }
-      String canonicalName = TCatUtil.getCanonicalName(signature, paramTypes);
+      String canonicalName = CatalogUtil.getCanonicalName(signature, paramTypes);
       if (!functions.containsKey(canonicalName)) {
         throw new NoSuchFunctionException(canonicalName);
       }
@@ -440,7 +441,7 @@ public class CatalogServer extends AbstractService {
       for (int i = 0; i < size; i++) {
         paramTypes.add(request.getParameterTypes(i));
       }
-      return functions.get(TCatUtil.getCanonicalName(
+      return functions.get(CatalogUtil.getCanonicalName(
           request.getSignature().toLowerCase(), paramTypes));
     }
 
@@ -454,7 +455,7 @@ public class CatalogServer extends AbstractService {
         paramTypes.add(request.getParameterTypes(i));
       }
       boolean returnValue =
-          functions.containsKey(TCatUtil.getCanonicalName(
+          functions.containsKey(CatalogUtil.getCanonicalName(
               request.getSignature().toLowerCase(), paramTypes));
       return BoolProto.newBuilder().setValue(returnValue).build();
     }

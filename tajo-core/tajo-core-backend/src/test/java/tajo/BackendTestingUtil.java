@@ -26,8 +26,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
 import tajo.engine.parser.QueryAnalyzer;
@@ -51,9 +51,9 @@ public class BackendTestingUtil {
 
 	static {
     mockupSchema = new Schema();
-    mockupSchema.addColumn("deptname", DataType.STRING);
-    mockupSchema.addColumn("score", DataType.INT);
-    mockupMeta = TCatUtil.newTableMeta(mockupSchema, StoreType.CSV);
+    mockupSchema.addColumn("deptname", Type.TEXT);
+    mockupSchema.addColumn("score", Type.INT4);
+    mockupMeta = CatalogUtil.newTableMeta(mockupSchema, StoreType.CSV);
 	}
 
   public static void writeTmpTable(TajoConf conf, Path path,
@@ -81,8 +81,8 @@ public class BackendTestingUtil {
     for (int i = 0; i < tupleNum; i++) {
       tuple = new VTuple(2);
       String key = "test" + (i % deptSize);
-      tuple.put(0, DatumFactory.createString(key));
-      tuple.put(1, DatumFactory.createInt(i + 1));
+      tuple.put(0, DatumFactory.createText(key));
+      tuple.put(1, DatumFactory.createInt4(i + 1));
       appender.addTuple(tuple);
     }
     appender.close();

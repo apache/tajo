@@ -20,7 +20,7 @@ package tajo.engine.planner;
 
 import org.junit.Test;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.DatumFactory;
 import tajo.engine.utils.TupleUtil;
 import tajo.storage.Tuple;
@@ -37,14 +37,14 @@ public class TestUniformRangePartition {
   @Test
   public void testIncrement1() {
     Schema schema = new Schema()
-    .addColumn("l_returnflag", DataType.STRING)
-    .addColumn("l_linestatus", DataType.STRING);
+    .addColumn("l_returnflag", Type.TEXT)
+    .addColumn("l_linestatus", Type.TEXT);
     Tuple s = new VTuple(2);
-    s.put(0, DatumFactory.createString("A"));
-    s.put(1, DatumFactory.createString("A"));
+    s.put(0, DatumFactory.createText("A"));
+    s.put(1, DatumFactory.createText("A"));
     Tuple e = new VTuple(2);
-    e.put(0, DatumFactory.createString("D"));
-    e.put(1, DatumFactory.createString("C"));
+    e.put(0, DatumFactory.createText("D"));
+    e.put(1, DatumFactory.createText("C"));
 
     TupleRange expected = new TupleRange(schema, s, e);
 
@@ -82,14 +82,14 @@ public class TestUniformRangePartition {
   @Test
   public void testIncrement2() {
     Schema schema = new Schema()
-    .addColumn("l_returnflag", DataType.STRING)
-    .addColumn("l_linestatus", DataType.STRING);
+    .addColumn("l_returnflag", Type.TEXT)
+    .addColumn("l_linestatus", Type.TEXT);
     Tuple s = new VTuple(2);
-    s.put(0, DatumFactory.createString("A"));
-    s.put(1, DatumFactory.createString("A"));
+    s.put(0, DatumFactory.createText("A"));
+    s.put(1, DatumFactory.createText("A"));
     Tuple e = new VTuple(2);
-    e.put(0, DatumFactory.createString("D"));
-    e.put(1, DatumFactory.createString("C"));
+    e.put(0, DatumFactory.createText("D"));
+    e.put(1, DatumFactory.createText("C"));
 
     TupleRange expected = new TupleRange(schema, s, e);
 
@@ -125,18 +125,18 @@ public class TestUniformRangePartition {
   @Test
   public void testIncrement3() {
     Schema schema = new Schema()
-    .addColumn("l_returnflag", DataType.STRING)
-    .addColumn("l_linestatus", DataType.STRING)
-    .addColumn("final", DataType.STRING);
+    .addColumn("l_returnflag", Type.TEXT)
+    .addColumn("l_linestatus", Type.TEXT)
+    .addColumn("final", Type.TEXT);
 
     Tuple s = new VTuple(3);
-    s.put(0, DatumFactory.createString("A"));
-    s.put(1, DatumFactory.createString("A"));
-    s.put(2, DatumFactory.createString("A"));
+    s.put(0, DatumFactory.createText("A"));
+    s.put(1, DatumFactory.createText("A"));
+    s.put(2, DatumFactory.createText("A"));
     Tuple e = new VTuple(3);
-    e.put(0, DatumFactory.createString("D")); //  4
-    e.put(1, DatumFactory.createString("B")); //  2
-    e.put(2, DatumFactory.createString("C")); // x3 = 24
+    e.put(0, DatumFactory.createText("D")); //  4
+    e.put(1, DatumFactory.createText("B")); //  2
+    e.put(2, DatumFactory.createText("C")); // x3 = 24
 
     TupleRange expected = new TupleRange(schema, s, e);
 
@@ -157,14 +157,14 @@ public class TestUniformRangePartition {
   @Test
   public void testIncrement4() {
     Schema schema = new Schema()
-    .addColumn("l_orderkey", DataType.LONG)
-    .addColumn("l_linenumber", DataType.LONG);
+    .addColumn("l_orderkey", Type.INT8)
+    .addColumn("l_linenumber", Type.INT8);
     Tuple s = new VTuple(2);
-    s.put(0, DatumFactory.createLong(10));
-    s.put(1, DatumFactory.createLong(20));
+    s.put(0, DatumFactory.createInt8(10));
+    s.put(1, DatumFactory.createInt8(20));
     Tuple e = new VTuple(2);
-    e.put(0, DatumFactory.createLong(19));
-    e.put(1, DatumFactory.createLong(39));
+    e.put(0, DatumFactory.createInt8(19));
+    e.put(1, DatumFactory.createInt8(39));
 
     TupleRange expected = new TupleRange(schema, s, e);
 
@@ -173,26 +173,26 @@ public class TestUniformRangePartition {
     assertEquals(200, partitioner.getTotalCardinality().longValue());
 
     Tuple range2 = partitioner.increment(s, 100, 1);
-    assertEquals(15, range2.get(0).asInt());
-    assertEquals(20, range2.get(1).asInt());
+    assertEquals(15, range2.get(0).asInt4());
+    assertEquals(20, range2.get(1).asInt4());
     Tuple range3 = partitioner.increment(range2, 99, 1);
-    assertEquals(19, range3.get(0).asInt());
-    assertEquals(39, range3.get(1).asInt());
+    assertEquals(19, range3.get(0).asInt4());
+    assertEquals(39, range3.get(1).asInt4());
   }
 
   @Test public void testIncrement5() {
     Schema schema = new Schema()
-    .addColumn("l_orderkey", DataType.LONG)
-    .addColumn("l_linenumber", DataType.LONG)
-    .addColumn("final", DataType.LONG);
+    .addColumn("l_orderkey", Type.INT8)
+    .addColumn("l_linenumber", Type.INT8)
+    .addColumn("final", Type.INT8);
     Tuple s = new VTuple(3);
-    s.put(0, DatumFactory.createLong(1));
-    s.put(1, DatumFactory.createLong(1));
-    s.put(2, DatumFactory.createLong(1));
+    s.put(0, DatumFactory.createInt8(1));
+    s.put(1, DatumFactory.createInt8(1));
+    s.put(2, DatumFactory.createInt8(1));
     Tuple e = new VTuple(3);
-    e.put(0, DatumFactory.createLong(4)); // 4
-    e.put(1, DatumFactory.createLong(2)); // 2
-    e.put(2, DatumFactory.createLong(3)); //x3 = 24
+    e.put(0, DatumFactory.createInt8(4)); // 4
+    e.put(1, DatumFactory.createInt8(2)); // 2
+    e.put(2, DatumFactory.createInt8(3)); //x3 = 24
 
     TupleRange expected = new TupleRange(schema, s, e);
 
@@ -201,29 +201,29 @@ public class TestUniformRangePartition {
     assertEquals(24, partitioner.getTotalCardinality().longValue());
 
     Tuple beforeOverflow = partitioner.increment(s, 5, 2);
-    assertEquals(1, beforeOverflow.get(0).asLong());
-    assertEquals(2, beforeOverflow.get(1).asLong());
-    assertEquals(3, beforeOverflow.get(2).asLong());
+    assertEquals(1, beforeOverflow.get(0).asInt8());
+    assertEquals(2, beforeOverflow.get(1).asInt8());
+    assertEquals(3, beforeOverflow.get(2).asInt8());
     Tuple overflow = partitioner.increment(beforeOverflow, 1, 2);
-    assertEquals(2, overflow.get(0).asLong());
-    assertEquals(1, overflow.get(1).asLong());
-    assertEquals(1, overflow.get(2).asLong());
+    assertEquals(2, overflow.get(0).asInt8());
+    assertEquals(1, overflow.get(1).asInt8());
+    assertEquals(1, overflow.get(2).asInt8());
   }
 
   @Test
   public void testIncrement6() {
     Schema schema = new Schema()
-      .addColumn("l_orderkey", DataType.DOUBLE)
-      .addColumn("l_linenumber", DataType.DOUBLE)
-      .addColumn("final", DataType.DOUBLE);
+      .addColumn("l_orderkey", Type.FLOAT8)
+      .addColumn("l_linenumber", Type.FLOAT8)
+      .addColumn("final", Type.FLOAT8);
     Tuple s = new VTuple(3);
-    s.put(0, DatumFactory.createDouble(1.1d));
-    s.put(1, DatumFactory.createDouble(1.1d));
-    s.put(2, DatumFactory.createDouble(1.1d));
+    s.put(0, DatumFactory.createFloat8(1.1d));
+    s.put(1, DatumFactory.createFloat8(1.1d));
+    s.put(2, DatumFactory.createFloat8(1.1d));
     Tuple e = new VTuple(3);
-    e.put(0, DatumFactory.createDouble(4.1d)); // 4
-    e.put(1, DatumFactory.createDouble(2.1d)); // 2
-    e.put(2, DatumFactory.createDouble(3.1d)); //x3 = 24
+    e.put(0, DatumFactory.createFloat8(4.1d)); // 4
+    e.put(1, DatumFactory.createFloat8(2.1d)); // 2
+    e.put(2, DatumFactory.createFloat8(3.1d)); //x3 = 24
 
     TupleRange expected = new TupleRange(schema, s, e);
 
@@ -232,26 +232,26 @@ public class TestUniformRangePartition {
     assertEquals(24, partitioner.getTotalCardinality().longValue());
 
     Tuple beforeOverflow = partitioner.increment(s, 5, 2);
-    assertTrue(1.1d == beforeOverflow.get(0).asDouble());
-    assertTrue(2.1d == beforeOverflow.get(1).asDouble());
-    assertTrue(3.1d == beforeOverflow.get(2).asDouble());
+    assertTrue(1.1d == beforeOverflow.get(0).asFloat8());
+    assertTrue(2.1d == beforeOverflow.get(1).asFloat8());
+    assertTrue(3.1d == beforeOverflow.get(2).asFloat8());
     Tuple overflow = partitioner.increment(beforeOverflow, 1, 2);
-    assertTrue(2.1d == overflow.get(0).asDouble());
-    assertTrue(1.1d == overflow.get(1).asDouble());
-    assertTrue(1.1d == overflow.get(2).asDouble());
+    assertTrue(2.1d == overflow.get(0).asFloat8());
+    assertTrue(1.1d == overflow.get(1).asFloat8());
+    assertTrue(1.1d == overflow.get(2).asFloat8());
   }
 
   @Test
   public void testPartition() {
     Schema schema = new Schema();
-    schema.addColumn("l_returnflag", DataType.STRING);
-    schema.addColumn("l_linestatus", DataType.STRING);
+    schema.addColumn("l_returnflag", Type.TEXT);
+    schema.addColumn("l_linestatus", Type.TEXT);
     Tuple s = new VTuple(2);
-    s.put(0, DatumFactory.createString("A"));
-    s.put(1, DatumFactory.createString("F"));
+    s.put(0, DatumFactory.createText("A"));
+    s.put(1, DatumFactory.createText("F"));
     Tuple e = new VTuple(2);
-    e.put(0, DatumFactory.createString("R"));
-    e.put(1, DatumFactory.createString("O"));
+    e.put(0, DatumFactory.createText("R"));
+    e.put(1, DatumFactory.createText("O"));
     TupleRange expected = new TupleRange(schema, s, e);
     RangePartitionAlgorithm partitioner
         = new UniformRangePartition(schema, expected, true);
@@ -271,14 +271,14 @@ public class TestUniformRangePartition {
   @Test
   public void testPartitionForOnePartNum() {
     Schema schema = new Schema()
-      .addColumn("l_returnflag", DataType.STRING)
-      .addColumn("l_linestatus", DataType.STRING);
+      .addColumn("l_returnflag", Type.TEXT)
+      .addColumn("l_linestatus", Type.TEXT);
     Tuple s = new VTuple(2);
-    s.put(0, DatumFactory.createString("A"));
-    s.put(1, DatumFactory.createString("F"));
+    s.put(0, DatumFactory.createText("A"));
+    s.put(1, DatumFactory.createText("F"));
     Tuple e = new VTuple(2);
-    e.put(0, DatumFactory.createString("R"));
-    e.put(1, DatumFactory.createString("O"));
+    e.put(0, DatumFactory.createText("R"));
+    e.put(1, DatumFactory.createText("O"));
     TupleRange expected = new TupleRange(schema, s, e);
     RangePartitionAlgorithm partitioner =
         new UniformRangePartition(schema, expected, true);

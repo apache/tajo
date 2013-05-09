@@ -42,33 +42,33 @@ public class TestHashPartitioner {
   public final void testGetPartition() {   
     Tuple tuple1 = new VTuple(3);    
     tuple1.put(new Datum[] {
-        DatumFactory.createInt(1),
-        DatumFactory.createInt(2),
-        DatumFactory.createInt(3)
+        DatumFactory.createInt4(1),
+        DatumFactory.createInt4(2),
+        DatumFactory.createInt4(3)
     });
     Tuple tuple2 = new VTuple(3);    
     tuple2.put(new Datum[] {
-        DatumFactory.createInt(1),
-        DatumFactory.createInt(2),
-        DatumFactory.createInt(4)
+        DatumFactory.createInt4(1),
+        DatumFactory.createInt4(2),
+        DatumFactory.createInt4(4)
     });
     Tuple tuple3 = new VTuple(3);    
     tuple3.put(new Datum[] {
-        DatumFactory.createInt(1),
-        DatumFactory.createInt(2),
-        DatumFactory.createInt(5)
+        DatumFactory.createInt4(1),
+        DatumFactory.createInt4(2),
+        DatumFactory.createInt4(5)
     });
     Tuple tuple4 = new VTuple(3);    
     tuple4.put(new Datum[] {
-        DatumFactory.createInt(2),
-        DatumFactory.createInt(2),
-        DatumFactory.createInt(3)
+        DatumFactory.createInt4(2),
+        DatumFactory.createInt4(2),
+        DatumFactory.createInt4(3)
     });
     Tuple tuple5 = new VTuple(3);    
     tuple5.put(new Datum[] {
-        DatumFactory.createInt(2),
-        DatumFactory.createInt(2),
-        DatumFactory.createInt(4)
+        DatumFactory.createInt4(2),
+        DatumFactory.createInt4(2),
+        DatumFactory.createInt4(4)
     });
     
     int [] partKeys = {0,1};

@@ -25,7 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
 import tajo.QueryId;
 import tajo.TajoProtos.QueryState;
-import tajo.catalog.TCatUtil;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.TableDesc;
 import tajo.catalog.TableMeta;
 import tajo.client.ClientProtocol.*;
@@ -187,7 +187,7 @@ public class TajoClient {
     GetQueryResultResponse response = service.getQueryResult(null,
         builder.build());
 
-    return TCatUtil.newTableDesc(response.getTableDesc());
+    return CatalogUtil.newTableDesc(response.getTableDesc());
   }
 
   public boolean updateQuery(String tql) throws ServiceException {
@@ -211,7 +211,7 @@ public class TajoClient {
     builder.setName(name);
     builder.setPath(path);
     TableResponse res = service.attachTable(null, builder.build());
-    return TCatUtil.newTableDesc(res.getTableDesc());
+    return CatalogUtil.newTableDesc(res.getTableDesc());
   }
 
   public TableDesc attachTable(String name, Path path)
@@ -232,7 +232,7 @@ public class TajoClient {
     builder.setPath(path.toString());
     builder.setMeta(meta.getProto());
     TableResponse res = service.createTable(null, builder.build());
-    return TCatUtil.newTableDesc(res.getTableDesc());
+    return CatalogUtil.newTableDesc(res.getTableDesc());
   }
 
   public boolean dropTable(String name) throws ServiceException {
@@ -262,7 +262,7 @@ public class TajoClient {
     if (res == null) {
       return null;
     } else {
-      return TCatUtil.newTableDesc(res.getTableDesc());
+      return CatalogUtil.newTableDesc(res.getTableDesc());
     }
   }
 

@@ -25,10 +25,10 @@ import org.junit.Test;
 import tajo.TajoTestingCluster;
 import tajo.benchmark.TPCH;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.IndexMethod;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes;
 import tajo.datum.DatumFactory;
 import tajo.engine.eval.ConstEval;
 import tajo.engine.eval.EvalNode;
@@ -65,47 +65,47 @@ public class TestQueryAnalyzer {
     cat = util.getMiniCatalogCluster().getCatalog();
     
     schema1 = new Schema();
-    schema1.addColumn("id", DataType.INT);
-    schema1.addColumn("name", DataType.STRING);
-    schema1.addColumn("score", DataType.INT);
-    schema1.addColumn("age", DataType.INT);
+    schema1.addColumn("id", TajoDataTypes.Type.INT4);
+    schema1.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema1.addColumn("score", TajoDataTypes.Type.INT4);
+    schema1.addColumn("age", TajoDataTypes.Type.INT4);
     
     Schema schema2 = new Schema();
-    schema2.addColumn("id", DataType.INT);
-    schema2.addColumn("people_id", DataType.INT);
-    schema2.addColumn("dept", DataType.STRING);
-    schema2.addColumn("year", DataType.INT);
+    schema2.addColumn("id", TajoDataTypes.Type.INT4);
+    schema2.addColumn("people_id", TajoDataTypes.Type.INT4);
+    schema2.addColumn("dept", TajoDataTypes.Type.TEXT);
+    schema2.addColumn("year", TajoDataTypes.Type.INT4);
     
     Schema schema3 = new Schema();
-    schema3.addColumn("id", DataType.INT);
-    schema3.addColumn("people_id", DataType.INT);
-    schema3.addColumn("class", DataType.STRING);
-    schema3.addColumn("branch_name", DataType.STRING);
+    schema3.addColumn("id", TajoDataTypes.Type.INT4);
+    schema3.addColumn("people_id", TajoDataTypes.Type.INT4);
+    schema3.addColumn("class", TajoDataTypes.Type.TEXT);
+    schema3.addColumn("branch_name", TajoDataTypes.Type.TEXT);
 
     Schema schema4 = new Schema();
-    schema4.addColumn("char_col", DataType.CHAR);
-    schema4.addColumn("short_col", DataType.SHORT);
-    schema4.addColumn("int_col", DataType.INT);
-    schema4.addColumn("long_col", DataType.LONG);
-    schema4.addColumn("float_col", DataType.FLOAT);
-    schema4.addColumn("double_col", DataType.DOUBLE);
-    schema4.addColumn("string_col", DataType.STRING);
+    schema4.addColumn("char_col", TajoDataTypes.Type.CHAR);
+    schema4.addColumn("short_col", TajoDataTypes.Type.INT2);
+    schema4.addColumn("int_col", TajoDataTypes.Type.INT4);
+    schema4.addColumn("long_col", TajoDataTypes.Type.INT8);
+    schema4.addColumn("float_col", TajoDataTypes.Type.FLOAT4);
+    schema4.addColumn("double_col", TajoDataTypes.Type.FLOAT8);
+    schema4.addColumn("string_col", TajoDataTypes.Type.TEXT);
 
-    TableMeta meta = TCatUtil.newTableMeta(schema1, StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(schema1, StoreType.CSV);
     TableDesc people = new TableDescImpl("people", meta, new Path("file:///"));
     cat.addTable(people);
     
-    TableDesc student = TCatUtil.newTableDesc("student", schema2, StoreType.CSV,
+    TableDesc student = CatalogUtil.newTableDesc("student", schema2, StoreType.CSV,
         new Options(),
         new Path("file:///"));
     cat.addTable(student);
     
-    TableDesc branch = TCatUtil.newTableDesc("branch", schema3, StoreType.CSV,
+    TableDesc branch = CatalogUtil.newTableDesc("branch", schema3, StoreType.CSV,
         new Options(),
         new Path("file:///"));
     cat.addTable(branch);
 
-    TableDesc allType = TCatUtil.newTableDesc("alltype", schema4, StoreType.CSV,
+    TableDesc allType = CatalogUtil.newTableDesc("alltype", schema4, StoreType.CSV,
         new Options(),
         new Path("file:///"));
     cat.addTable(allType);
@@ -114,18 +114,18 @@ public class TestQueryAnalyzer {
     tpch.loadSchemas();
     Schema lineitemSchema = tpch.getSchema("lineitem");
     Schema partSchema = tpch.getSchema("part");
-    TableDesc lineitem = TCatUtil.newTableDesc("lineitem", lineitemSchema, StoreType.CSV,
+    TableDesc lineitem = CatalogUtil.newTableDesc("lineitem", lineitemSchema, StoreType.CSV,
         new Options(),
         new Path("file:///"));
-    TableDesc part = TCatUtil.newTableDesc("part", partSchema, StoreType.CSV,
+    TableDesc part = CatalogUtil.newTableDesc("part", partSchema, StoreType.CSV,
         new Options(),
         new Path("file:///"));
     cat.addTable(lineitem);
     cat.addTable(part);
     
     FunctionDesc funcMeta = new FunctionDesc("sumtest", TestSum.class, FunctionType.GENERAL,
-        new DataType [] {DataType.INT},
-        new DataType [] {DataType.INT});
+        CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT4));
 
     cat.registerFunction(funcMeta);
     
@@ -273,19 +273,19 @@ public class TestQueryAnalyzer {
   }
 
   static final String [] createTableStmts = {
-    "create table table1 (name string, age int)",
-    "create table table1 (name string, age int) using rcfile",
-    "create table table1 (name string, age int) using rcfile with ('rcfile.buffer'=4096)",
+    "create table table1 (name text, age int)", // 0
+    "create table table1 (name text, age int) using rcfile", // 1
+    "create table table1 (name text, age int) using rcfile with ('rcfile.buffer'=4096)", // 2
     // create table test
-    "create table store1 as select name, score from people order by score asc, age desc null first",// 0
+    "create table store1 as select name, score from people order by score asc, age desc null first",// 3
     // create table test
-    "create table store1 (c1 string, c2 long) as select name, score from people order by score asc, age desc null first",// 1
+    "create table store1 (c1 text, c2 bigint) as select name, score from people order by score asc, age desc null first",// 4
     // create table test
-    "create table store2 using rcfile with ('rcfile.buffer' = 4096) as select name, score from people order by score asc, age desc null first", // 2
+    "create table store2 using rcfile with ('rcfile.buffer' = 4096) as select name, score from people order by score asc, age desc null first", // 5
     // create table def
-    "create table table1 (name string, age int, earn long, score float) using rcfile with ('rcfile.buffer' = 4096)", // 4
+    "create table table1 (name text, age int, earn float(10), score float(30)) using rcfile with ('rcfile.buffer' = 4096)", // 6
     // create table def with location
-    "create external table table1 (name string, age int, earn long, score float) using csv with ('csv.delimiter'='|') location '/tmp/data'" // 5
+    "create external table table1 (name text, age int, earn bigint, score float) using csv with ('csv.delimiter'='|') location '/tmp/data'" // 7
   };
 
   @Test
@@ -333,13 +333,13 @@ public class TestQueryAnalyzer {
     assertEquals("table1", stmt.getTableName());
     Schema def = stmt.getTableDef();
     assertEquals("name", def.getColumn(0).getColumnName());
-    assertEquals(DataType.STRING, def.getColumn(0).getDataType());
+    assertEquals(TajoDataTypes.Type.TEXT, def.getColumn(0).getDataType().getType());
     assertEquals("age", def.getColumn(1).getColumnName());
-    assertEquals(DataType.INT, def.getColumn(1).getDataType());
+    assertEquals(TajoDataTypes.Type.INT4, def.getColumn(1).getDataType().getType());
     assertEquals("earn", def.getColumn(2).getColumnName());
-    assertEquals(DataType.LONG, def.getColumn(2).getDataType());
+    assertEquals(TajoDataTypes.Type.FLOAT4, def.getColumn(2).getDataType().getType()); // float(10)
     assertEquals("score", def.getColumn(3).getColumnName());
-    assertEquals(DataType.FLOAT, def.getColumn(3).getDataType());
+    assertEquals(TajoDataTypes.Type.FLOAT8, def.getColumn(3).getDataType().getType()); // float(30)
     assertEquals(StoreType.RCFILE, stmt.getStoreType());
     assertFalse(stmt.hasPath());
     assertTrue(stmt.hasOptions());
@@ -352,13 +352,13 @@ public class TestQueryAnalyzer {
     assertEquals("table1", stmt.getTableName());
     Schema def = stmt.getTableDef();
     assertEquals("name", def.getColumn(0).getColumnName());
-    assertEquals(DataType.STRING, def.getColumn(0).getDataType());
+    assertEquals(TajoDataTypes.Type.TEXT, def.getColumn(0).getDataType().getType());
     assertEquals("age", def.getColumn(1).getColumnName());
-    assertEquals(DataType.INT, def.getColumn(1).getDataType());
+    assertEquals(TajoDataTypes.Type.INT4, def.getColumn(1).getDataType().getType());
     assertEquals("earn", def.getColumn(2).getColumnName());
-    assertEquals(DataType.LONG, def.getColumn(2).getDataType());
+    assertEquals(TajoDataTypes.Type.INT8, def.getColumn(2).getDataType().getType());
     assertEquals("score", def.getColumn(3).getColumnName());
-    assertEquals(DataType.FLOAT, def.getColumn(3).getDataType());    
+    assertEquals(TajoDataTypes.Type.FLOAT8, def.getColumn(3).getDataType().getType()); // float
     assertEquals(StoreType.CSV, stmt.getStoreType());    
     assertEquals("/tmp/data", stmt.getPath().toString());
     assertTrue(stmt.hasOptions());
@@ -380,9 +380,9 @@ public class TestQueryAnalyzer {
     SortSpec [] sortKeys = stmt.getSortSpecs();
     assertEquals(2, sortKeys.length);
     assertEquals("score", sortKeys[0].getSortKey().getColumnName());
-    assertEquals(DataType.INT, sortKeys[0].getSortKey().getDataType());
+    assertEquals(TajoDataTypes.Type.INT4, sortKeys[0].getSortKey().getDataType().getType());
     assertEquals("age", sortKeys[1].getSortKey().getColumnName());
-    assertEquals(DataType.INT, sortKeys[1].getSortKey().getDataType());
+    assertEquals(TajoDataTypes.Type.INT4, sortKeys[1].getSortKey().getDataType().getType());
     assertEquals(false, sortKeys[1].isAscending());
     assertEquals(true, sortKeys[1].isNullFirst());
     
@@ -605,31 +605,31 @@ public class TestQueryAnalyzer {
   @Test
   public final void testTypeInferring() {
     QueryBlock block = (QueryBlock) analyzer.parse("select 1 from alltype where char_col = 'a'").getParseTree();
-    assertEquals(DataType.CHAR, block.getWhereCondition().getRightExpr().getValueType()[0]);
+    assertEquals(TajoDataTypes.Type.CHAR, block.getWhereCondition().getRightExpr().getValueType()[0].getType());
 
     block = (QueryBlock) analyzer.parse("select 1 from alltype where short_col = 1").getParseTree();
-    assertEquals(DataType.SHORT, block.getWhereCondition().getRightExpr().getValueType()[0]);
+    assertEquals(TajoDataTypes.Type.INT2, block.getWhereCondition().getRightExpr().getValueType()[0].getType());
 
     block = (QueryBlock) analyzer.parse("select 1 from alltype where int_col = 1").getParseTree();
-    assertEquals(DataType.INT, block.getWhereCondition().getRightExpr().getValueType()[0]);
+    assertEquals(TajoDataTypes.Type.INT4, block.getWhereCondition().getRightExpr().getValueType()[0].getType());
 
     block = (QueryBlock) analyzer.parse("select 1 from alltype where long_col = 1").getParseTree();
-    assertEquals(DataType.LONG, block.getWhereCondition().getRightExpr().getValueType()[0]);
+    assertEquals(TajoDataTypes.Type.INT8, block.getWhereCondition().getRightExpr().getValueType()[0].getType());
 
     block = (QueryBlock) analyzer.parse("select 1 from alltype where float_col = 1").getParseTree();
-    assertEquals(DataType.INT, block.getWhereCondition().getRightExpr().getValueType()[0]);
+    assertEquals(TajoDataTypes.Type.INT4, block.getWhereCondition().getRightExpr().getValueType()[0].getType());
 
     block = (QueryBlock) analyzer.parse("select 1 from alltype where float_col = 1.0").getParseTree();
-    assertEquals(DataType.FLOAT, block.getWhereCondition().getRightExpr().getValueType()[0]);
+    assertEquals(TajoDataTypes.Type.FLOAT4, block.getWhereCondition().getRightExpr().getValueType()[0].getType());
 
     block = (QueryBlock) analyzer.parse("select 1 from alltype where int_col = 1.0").getParseTree();
-    assertEquals(DataType.DOUBLE, block.getWhereCondition().getRightExpr().getValueType()[0]);
+    assertEquals(TajoDataTypes.Type.FLOAT4, block.getWhereCondition().getRightExpr().getValueType()[0].getType());
 
     block = (QueryBlock) analyzer.parse("select 1 from alltype where double_col = 1.0").getParseTree();
-    assertEquals(DataType.DOUBLE, block.getWhereCondition().getRightExpr().getValueType()[0]);
+    assertEquals(TajoDataTypes.Type.FLOAT4, block.getWhereCondition().getRightExpr().getValueType()[0].getType());
 
     block = (QueryBlock) analyzer.parse("select 1 from alltype where string_col = 'a'").getParseTree();
-    assertEquals(DataType.STRING, block.getWhereCondition().getRightExpr().getValueType()[0]);
+    assertEquals(TajoDataTypes.Type.TEXT, block.getWhereCondition().getRightExpr().getValueType()[0].getType());
   }
 
   @Test
@@ -641,12 +641,12 @@ public class TestQueryAnalyzer {
     QueryBlock block = (QueryBlock) tree;
     assertTrue(block.getTargetList()[0].hasAlias());
     assertEquals("cond", block.getTargetList()[0].getAlias());
-    assertEquals(DataType.DOUBLE, block.getTargetList()[0].getEvalTree().getValueType()[0]);
+    assertEquals(TajoDataTypes.Type.FLOAT8, block.getTargetList()[0].getEvalTree().getValueType()[0].getType());
   }
 
   @Test
   public void testTarget() throws CloneNotSupportedException {
-    QueryBlock.Target t1 = new QueryBlock.Target(new ConstEval(DatumFactory.createInt(5)), 0);
+    QueryBlock.Target t1 = new QueryBlock.Target(new ConstEval(DatumFactory.createInt4(5)), 0);
     QueryBlock.Target t2 = (QueryBlock.Target) t1.clone();
     assertEquals(t1,t2);
   }

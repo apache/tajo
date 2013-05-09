@@ -18,7 +18,7 @@
 
 package tajo.datum.exception;
 
-import tajo.datum.DatumType;
+import static tajo.common.TajoDataTypes.Type;
 
 public class InvalidOperationException extends RuntimeException {
 	private static final long serialVersionUID = -7689027447969916148L;
@@ -36,7 +36,7 @@ public class InvalidOperationException extends RuntimeException {
 		super(message);
 	}
 	
-	public InvalidOperationException(DatumType type) {
+	public InvalidOperationException(Type type) {
 	  super("Cannot compare to " + type + " type datum");
 	}
 }

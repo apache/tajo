@@ -59,7 +59,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
       long length, String [] dataLocations) {
     this();
     TableMeta newMeta = new TableMetaImpl(meta.getProto());
-    SchemaProto newSchemaProto = TCatUtil.getQualfiedSchema(fragmentId, meta
+    SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(fragmentId, meta
         .getSchema().getProto());
     newMeta.setSchema(new Schema(newSchemaProto));
     this.set(fragmentId, path, newMeta, start, length);

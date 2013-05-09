@@ -89,7 +89,7 @@ public class TestTajoClient {
 
     assertFalse(tajo.existTable(tableName));
     String tql =
-        "create external table " + tableName + " (deptname string, score int) "
+        "create external table " + tableName + " (deptname text, score integer) "
             + "using csv location '" + tablePath + "'";
     tajo.updateQuery(tql);
     assertTrue(tajo.existTable(tableName));
@@ -118,7 +118,7 @@ public class TestTajoClient {
 
     assertFalse(tajo.existTable(tableName));
     String tql =
-        "create external table " + tableName + " (deptname string, score int) "
+        "create external table " + tableName + " (deptname text, score int4) "
             + "using csv location 'file:///tmp/" + tableName + "'";
     tajo.executeQueryAndGetResult(tql);
     assertTrue(tajo.existTable(tableName));

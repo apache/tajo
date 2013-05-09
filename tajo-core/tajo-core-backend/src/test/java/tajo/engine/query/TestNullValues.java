@@ -24,7 +24,7 @@ import tajo.IntegrationTest;
 import tajo.TajoTestingCluster;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos;
+import tajo.common.TajoDataTypes.Type;
 import tajo.storage.CSVFile;
 
 import java.sql.ResultSet;
@@ -42,8 +42,8 @@ public class TestNullValues {
   public final void testIsNull() throws Exception {
     String [] table = new String[] {"nulltable1"};
     Schema schema = new Schema();
-    schema.addColumn("col1", CatalogProtos.DataType.INT);
-    schema.addColumn("col2", CatalogProtos.DataType.STRING);
+    schema.addColumn("col1", Type.INT4);
+    schema.addColumn("col2", Type.TEXT);
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
         "1|filled|",
@@ -64,8 +64,8 @@ public class TestNullValues {
   public final void testIsNotNull() throws Exception {
     String [] table = new String[] {"nulltable2"};
     Schema schema = new Schema();
-    schema.addColumn("col1", CatalogProtos.DataType.INT);
-    schema.addColumn("col2", CatalogProtos.DataType.STRING);
+    schema.addColumn("col1", Type.INT4);
+    schema.addColumn("col2", Type.TEXT);
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
         "1|filled|",
@@ -88,16 +88,16 @@ public class TestNullValues {
   public final void testIsNotNull2() throws Exception {
     String [] table = new String[] {"nulltable3"};
     Schema schema = new Schema();
-    schema.addColumn("col1", CatalogProtos.DataType.LONG);
-    schema.addColumn("col2", CatalogProtos.DataType.LONG);
-    schema.addColumn("col3", CatalogProtos.DataType.LONG);
-    schema.addColumn("col4", CatalogProtos.DataType.LONG);
-    schema.addColumn("col5", CatalogProtos.DataType.LONG);
-    schema.addColumn("col6", CatalogProtos.DataType.LONG);
-    schema.addColumn("col7", CatalogProtos.DataType.LONG);
-    schema.addColumn("col8", CatalogProtos.DataType.LONG);
-    schema.addColumn("col9", CatalogProtos.DataType.LONG);
-    schema.addColumn("col10", CatalogProtos.DataType.LONG);
+    schema.addColumn("col1", Type.INT8);
+    schema.addColumn("col2", Type.INT8);
+    schema.addColumn("col3", Type.INT8);
+    schema.addColumn("col4", Type.INT8);
+    schema.addColumn("col5", Type.INT8);
+    schema.addColumn("col6", Type.INT8);
+    schema.addColumn("col7", Type.INT8);
+    schema.addColumn("col8", Type.INT8);
+    schema.addColumn("col9", Type.INT8);
+    schema.addColumn("col10", Type.INT8);
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
         ",,,,672287821,1301460,1,313895860387,126288907,1024",

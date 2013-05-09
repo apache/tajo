@@ -27,6 +27,7 @@ import tajo.catalog.Schema;
 import tajo.catalog.SortSpec;
 import tajo.catalog.TableDesc;
 import tajo.catalog.proto.CatalogProtos;
+import tajo.common.TajoDataTypes.Type;
 import tajo.engine.eval.EvalNode;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.planner.JoinType;
@@ -399,7 +400,7 @@ public class QueryBlock extends ParseTree {
       this.eval = eval;
       if (eval.getType() == EvalNode.Type.AGG_FUNCTION &&
           eval.getValueType().length > 1) { // hack for partial result
-        this.column = new Column(eval.getName(), CatalogProtos.DataType.ARRAY);
+        this.column = new Column(eval.getName(), Type.ARRAY);
       } else {
         this.column = new Column(eval.getName(), eval.getValueType()[0]);
       }

@@ -22,24 +22,26 @@ import com.google.gson.annotations.Expose;
 import tajo.datum.exception.InvalidCastException;
 import tajo.datum.exception.InvalidOperationException;
 
+import static tajo.common.TajoDataTypes.Type;
+
 public abstract class Datum implements Comparable<Datum> {
 	@Expose
-	private DatumType type;
+	private Type type;
 	
 	@SuppressWarnings("unused")
   private Datum() {
 	}
 	
-	public Datum(DatumType type) {
+	public Datum(Type type) {
 		this.type = type;
 	}
 	
-	public DatumType type() {
+	public Type type() {
 		return this.type;
 	}
 
   public boolean isNull() {
-    return type == DatumType.NULL;
+    return false;
   }
 	
 	public boolean asBool() {
@@ -54,14 +56,14 @@ public abstract class Datum implements Comparable<Datum> {
     throw new InvalidCastException(type + " cannot be casted to CHAR type");
   }
 
-	public short asShort() {
+	public short asInt2() {
     throw new InvalidCastException(type + " cannot be casted to SHORT type");
   }
-	public int asInt() {
+	public int asInt4() {
     throw new InvalidCastException(type + " cannot be casted to INT type");
   }
 
-  public long asLong() {
+  public long asInt8() {
     throw new InvalidCastException(type + " cannot be casted to LONG type");
   }
 
@@ -69,11 +71,11 @@ public abstract class Datum implements Comparable<Datum> {
     throw new InvalidCastException(type + " cannot be casted to BYTES type");
   }
 
-	public float asFloat() {
+	public float asFloat4() {
     throw new InvalidCastException(type + " cannot be casted to FLOAT type");
   }
 
-	public double asDouble() {
+	public double asFloat8() {
     throw new InvalidCastException(type + " cannot be casted to DOUBLE type");
   }
 
@@ -87,15 +89,15 @@ public abstract class Datum implements Comparable<Datum> {
 	
 	public boolean isNumber() {
 	  return 
-	      this.type == DatumType.SHORT ||
-	      this.type == DatumType.INT ||
-	      this.type == DatumType.LONG;
+	      this.type == Type.INT2 ||
+	      this.type == Type.INT4 ||
+	      this.type == Type.INT8;
 	}
 	
 	public boolean isReal() {
     return 
-        this.type == DatumType.FLOAT ||
-        this.type == DatumType.DOUBLE;
+        this.type == Type.FLOAT4||
+        this.type == Type.FLOAT8;
   }
 	
 	public abstract int size();
@@ -120,8 +122,8 @@ public abstract class Datum implements Comparable<Datum> {
     throw new InvalidOperationException(datum.type);
   }
 	
-	public BoolDatum equalsTo(Datum datum) {
-    if (this.isNull() || datum.isNull()) {
+	public BooleanDatum equalsTo(Datum datum) {
+    if (this instanceof NullDatum || datum instanceof NullDatum) {
     // TODO - comparing any value against null will be always unknown
       return DatumFactory.createBool(false);
     } else {
@@ -129,19 +131,19 @@ public abstract class Datum implements Comparable<Datum> {
     }
 	}
 
-	public BoolDatum lessThan(Datum datum) {
+	public BooleanDatum lessThan(Datum datum) {
     return DatumFactory.createBool(compareTo(datum) < 0);
 	}
 	
-	public BoolDatum lessThanEqual(Datum datum) {
+	public BooleanDatum lessThanEqual(Datum datum) {
     return DatumFactory.createBool(compareTo(datum) <= 0);
 	}	
 	
-	public BoolDatum greaterThan(Datum datum) {
+	public BooleanDatum greaterThan(Datum datum) {
     return DatumFactory.createBool(compareTo(datum) > 0);
 	}
 	
-	public BoolDatum greaterThanEqual(Datum datum) {
+	public BooleanDatum greaterThanEqual(Datum datum) {
     return DatumFactory.createBool(compareTo(datum) >= 0);
 	}
 	

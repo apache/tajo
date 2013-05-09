@@ -20,6 +20,8 @@ package tajo.datum;
 
 import tajo.util.Bytes;
 
+import static tajo.common.TajoDataTypes.Type;
+
 public class NullDatum extends Datum {
   private static final NullDatum instance;
   
@@ -28,7 +30,7 @@ public class NullDatum extends Datum {
   }
   
   private NullDatum() {
-    super(DatumType.NULL);
+    super(Type.ANY);
   }
   
   public static NullDatum get() {
@@ -46,17 +48,17 @@ public class NullDatum extends Datum {
   }
 
   @Override
-  public short asShort() {
+  public short asInt2() {
     return Short.MIN_VALUE;
   }
 
   @Override
-  public int asInt() {
+  public int asInt4() {
     return Integer.MIN_VALUE;
   }
 
   @Override
-  public long asLong() {
+  public long asInt8() {
     return Long.MIN_VALUE;
   }
 
@@ -66,12 +68,12 @@ public class NullDatum extends Datum {
   }
 
   @Override
-  public float asFloat() {
+  public float asFloat4() {
     return Float.NaN;
   }
 
   @Override
-  public double asDouble() {
+  public double asFloat8() {
     return Double.NaN;
   }
 
@@ -87,11 +89,7 @@ public class NullDatum extends Datum {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof NullDatum) {
-      return true;
-    } else {
-      return false;
-    }
+    return obj instanceof NullDatum;
   }
 
   @Override

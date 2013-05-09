@@ -23,11 +23,11 @@ import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Schema;
-import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -58,19 +58,19 @@ public class TestStorageManager {
   @Test
 	public final void testGetScannerAndAppender() throws IOException {
 		Schema schema = new Schema();
-		schema.addColumn("id",DataType.INT);
-		schema.addColumn("age",DataType.INT);
-		schema.addColumn("name",DataType.STRING);
+		schema.addColumn("id", Type.INT4);
+		schema.addColumn("age",Type.INT4);
+		schema.addColumn("name",Type.TEXT);
 
-		TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+		TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
 		
 		Tuple[] tuples = new Tuple[4];
 		for(int i=0; i < tuples.length; i++) {
 		  tuples[i] = new VTuple(3);
 		  tuples[i].put(new Datum[] {
-          DatumFactory.createInt(i),
-		      DatumFactory.createInt(i+32),
-		      DatumFactory.createString("name"+i)});
+          DatumFactory.createInt4(i),
+		      DatumFactory.createInt4(i + 32),
+		      DatumFactory.createText("name" + i)});
 		}
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");

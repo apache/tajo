@@ -23,8 +23,8 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.catalog.json.GsonCreator;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,9 +35,9 @@ public class TestTableDesc {
 	@Before
 	public void setup() {
 	  Schema schema = new Schema();
-    schema.addColumn("name", DataType.BYTE);
-    schema.addColumn("addr", DataType.STRING);
-    info = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    schema.addColumn("name", Type.BLOB);
+    schema.addColumn("addr", Type.TEXT);
+    info = CatalogUtil.newTableMeta(schema, StoreType.CSV);
 
     desc = new TableDescImpl("table1", info, new Path("/nta/data"));
 	}
@@ -45,9 +45,9 @@ public class TestTableDesc {
   @Test
   public void test() throws CloneNotSupportedException {
     Schema schema = new Schema();
-    schema.addColumn("name", DataType.BYTE);
-    schema.addColumn("addr", DataType.STRING);
-    TableMeta info = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    schema.addColumn("name", Type.BLOB);
+    schema.addColumn("addr", Type.TEXT);
+    TableMeta info = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     testClone(info);
 
     TableDesc desc = new TableDescImpl("table1", info, new Path("/nta/data"));

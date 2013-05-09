@@ -18,21 +18,22 @@
 
 package tajo.engine.function.builtin;
 
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.datum.StringDatum;
+import tajo.datum.TextDatum;
 import tajo.storage.Tuple;
 
 public class MinString extends AggFunction<Datum> {
 
   public MinString() {
     super(new Column[] {
-        new Column("val", CatalogProtos.DataType.STRING)
+        new Column("val", Type.TEXT)
     });
   }
 
@@ -53,17 +54,17 @@ public class MinString extends AggFunction<Datum> {
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createString(((MinContext)ctx).min);
+    return DatumFactory.createText(((MinContext) ctx).min);
   }
 
   @Override
-  public DataType[] getPartialResultType() {
-    return new DataType[] {DataType.STRING};
+  public DataType [] getPartialResultType() {
+    return CatalogUtil.newDataTypesWithoutLen(Type.TEXT);
   }
 
   @Override
-  public StringDatum terminate(FunctionContext ctx) {
-    return DatumFactory.createString(((MinContext)ctx).min);
+  public TextDatum terminate(FunctionContext ctx) {
+    return DatumFactory.createText(((MinContext) ctx).min);
   }
 
   private class MinContext implements FunctionContext {

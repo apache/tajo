@@ -94,24 +94,23 @@ public class RCFileWrapper {
           byteRef.set(i, cu);
         } else {
           col = schema.getColumn(i);
-          switch (col.getDataType()) {
+          switch (col.getDataType().getType()) {
             case BOOLEAN:
-            case BYTE:
-            case CHAR:
+            case BIT:
               cu = new BytesRefWritable(t.get(i).asByteArray(), 0, 1);
               byteRef.set(i, cu);
               break;
 
-            case SHORT:
-            case INT:
-            case LONG:
-            case FLOAT:
-            case DOUBLE:
-            case STRING:
-            case STRING2:
-            case BYTES:
-            case IPv4:
-            case IPv6:
+            case CHAR:
+            case INT2:
+            case INT4:
+            case INT8:
+            case FLOAT4:
+            case FLOAT8:
+            case TEXT:
+            case BLOB:
+            case INET4:
+            case INET6:
               bytes = t.get(i).asByteArray();
               cu = new BytesRefWritable(bytes, 0, bytes.length);
               byteRef.set(i, cu);
@@ -241,69 +240,69 @@ public class RCFileWrapper {
         if (column.get(tid).getLength() == 0) {
           tuple.put(tid, DatumFactory.createNullDatum());
         } else {
-          switch (targets[i].getDataType()) {
+          switch (targets[i].getDataType().getType()) {
             case BOOLEAN:
               tuple.put(tid,
                   DatumFactory.createBool(column.get(tid).getBytesCopy()[0]));
               break;
-            case BYTE:
+            case BIT:
               tuple.put(tid,
-                  DatumFactory.createByte(column.get(tid).getBytesCopy()[0]));
+                  DatumFactory.createBit(column.get(tid).getBytesCopy()[0]));
               break;
             case CHAR:
               tuple.put(tid,
                   DatumFactory.createChar(column.get(tid).getBytesCopy()[0]));
               break;
 
-            case SHORT:
+            case INT2:
               tuple.put(tid,
-                  DatumFactory.createShort(Bytes.toShort(
+                  DatumFactory.createInt2(Bytes.toShort(
                       column.get(tid).getBytesCopy())));
               break;
-            case INT:
+            case INT4:
               tuple.put(tid,
-                  DatumFactory.createInt(Bytes.toInt(
-                      column.get(tid).getBytesCopy())));
-              break;
-
-            case LONG:
-              tuple.put(tid,
-                  DatumFactory.createLong(Bytes.toLong(
+                  DatumFactory.createInt4(Bytes.toInt(
                       column.get(tid).getBytesCopy())));
               break;
 
-            case FLOAT:
+            case INT8:
               tuple.put(tid,
-                  DatumFactory.createFloat(Bytes.toFloat(
+                  DatumFactory.createInt8(Bytes.toLong(
                       column.get(tid).getBytesCopy())));
               break;
 
-            case DOUBLE:
+            case FLOAT4:
               tuple.put(tid,
-                  DatumFactory.createDouble(Bytes.toDouble(
+                  DatumFactory.createFloat4(Bytes.toFloat(
                       column.get(tid).getBytesCopy())));
               break;
 
-            case IPv4:
+            case FLOAT8:
               tuple.put(tid,
-                  DatumFactory.createIPv4(column.get(tid).getBytesCopy()));
+                  DatumFactory.createFloat8(Bytes.toDouble(
+                      column.get(tid).getBytesCopy())));
               break;
 
-            case STRING:
+            case INET4:
               tuple.put(tid,
-                  DatumFactory.createString(
-                      Bytes.toString(column.get(tid).getBytesCopy())));
+                  DatumFactory.createInet4(column.get(tid).getBytesCopy()));
               break;
 
-            case STRING2:
+//            case STRING:
+//              tuple.put(tid,
+//                  DatumFactory.createText(
+//                      Bytes.toString(column.get(tid).getBytesCopy())));
+//              break;
+
+            case TEXT:
               tuple.put(tid,
-                  DatumFactory.createString2(
+                  DatumFactory.createText(
                       column.get(tid).getBytesCopy()));
               break;
 
-            case BYTES:
+            case BLOB:
               tuple.put(tid,
-                  DatumFactory.createBytes(column.get(tid).getBytesCopy()));
+                  DatumFactory.createBlob(column.get(tid).getBytesCopy()));
               break;
 
             default:

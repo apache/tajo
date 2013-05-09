@@ -23,18 +23,18 @@ public class DatumFactory {
     return NullDatum.get();
   }
   
-  public static BoolDatum createBool(String val) {
+  public static BooleanDatum createBool(String val) {
     boolean boolVal = val.equalsIgnoreCase("true");
-    return new BoolDatum(boolVal);
+    return new BooleanDatum(boolVal);
   }
   
-  public static BoolDatum createBool(byte val) {
+  public static BooleanDatum createBool(byte val) {
     boolean boolVal = val == 0x01;
-    return new BoolDatum(boolVal);
+    return new BooleanDatum(boolVal);
   }
   
-  public static BoolDatum createBool(boolean val) {
-    return new BoolDatum(val);
+  public static BooleanDatum createBool(boolean val) {
+    return new BooleanDatum(val);
   }
   /*
   public static BoolDatum createBool(int val) {
@@ -42,11 +42,11 @@ public class DatumFactory {
   }
   */
   
-	public static ByteDatum createByte(byte val) {
-		return new ByteDatum(val);
+	public static BitDatum createBit(byte val) {
+		return new BitDatum(val);
 	}
   /*
-  public static ByteDatum createByte(int val) {
+  public static ByteDatum createBit(int val) {
     return new ByteDatum(val);
   }*/
 
@@ -64,75 +64,67 @@ public class DatumFactory {
   }
   */
 	
-	public static ShortDatum createShort(short val) {
-		return new ShortDatum(val);
+	public static Int2Datum createInt2(short val) {
+		return new Int2Datum(val);
 	}
 	
-	public static ShortDatum createShort(String val) {
-	  return new ShortDatum(Short.valueOf(val));
+	public static Int2Datum createInt2(String val) {
+	  return new Int2Datum(Short.valueOf(val));
 	}
 	
-	public static IntDatum createInt(int val) {
-		return new IntDatum(val);
+	public static Int4Datum createInt4(int val) {
+		return new Int4Datum(val);
 	}
 	
-	public static IntDatum createInt(String val) {
-	  return new IntDatum(Integer.valueOf(val));
+	public static Int4Datum createInt4(String val) {
+	  return new Int4Datum(Integer.valueOf(val));
 	}
 	
-	public static LongDatum createLong(long val) {
-		return new LongDatum(val);
+	public static Int8Datum createInt8(long val) {
+		return new Int8Datum(val);
 	}
 	
-	public static LongDatum createLong(String val) {
-	  return new LongDatum(Long.valueOf(val));
+	public static Int8Datum createInt8(String val) {
+	  return new Int8Datum(Long.valueOf(val));
 	}
 	
-	public static FloatDatum createFloat(float val) {
-		return new FloatDatum(val);
+	public static Float4Datum createFloat4(float val) {
+		return new Float4Datum(val);
 	}
 	
-	public static FloatDatum createFloat(String val) {
-	  return new FloatDatum(Float.valueOf(val));
+	public static Float4Datum createFloat4(String val) {
+	  return new Float4Datum(Float.valueOf(val));
 	}
 	
-	public static DoubleDatum createDouble(double val) {
-		return new DoubleDatum(val);
+	public static Float8Datum createFloat8(double val) {
+		return new Float8Datum(val);
 	}
 	
-	public static DoubleDatum createDouble(String val) {
-	  return new DoubleDatum(Double.valueOf(val));
+	public static Float8Datum createFloat8(String val) {
+	  return new Float8Datum(Double.valueOf(val));
 	}
 	
-  public static StringDatum createString(String val) {
-    return new StringDatum(val);
+  public static TextDatum createText(String val) {
+    return new TextDatum(val);
   }
 
-  public static StringDatum2 createString2(String val) {
-    return new StringDatum2(val);
-  }
-
-  public static StringDatum2 createString2(byte[] val) {
-    return new StringDatum2(val);
-  }
-
-  public static StringDatum createString(byte[] val) {
-    return new StringDatum(val);
+  public static TextDatum createText(byte[] val) {
+    return new TextDatum(val);
   }
 	
-	public static BytesDatum createBytes(byte [] val) {
-    return new BytesDatum(val);
+	public static BlobDatum createBlob(byte[] val) {
+    return new BlobDatum(val);
   }
 	
-	public static BytesDatum createBytes(String val) {
-	  return new BytesDatum(val.getBytes());
+	public static BlobDatum createBlob(String val) {
+	  return new BlobDatum(val.getBytes());
 	}
 	
-	public static IPv4Datum createIPv4(byte [] val) {
-	  return new IPv4Datum(val);
+	public static Inet4Datum createInet4(byte[] val) {
+	  return new Inet4Datum(val);
 	}
 	
-	public static IPv4Datum createIPv4(String val) {
-	  return new IPv4Datum(val);
+	public static Inet4Datum createInet4(String val) {
+	  return new Inet4Datum(val);
 	}
 }

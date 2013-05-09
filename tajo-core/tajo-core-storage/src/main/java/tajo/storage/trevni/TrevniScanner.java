@@ -24,7 +24,7 @@ import org.apache.trevni.ColumnValues;
 import org.apache.trevni.avro.HadoopInput;
 import tajo.catalog.Column;
 import tajo.catalog.TableMeta;
-import tajo.datum.BytesDatum;
+import tajo.datum.BlobDatum;
 import tajo.datum.DatumFactory;
 import tajo.storage.FileScanner;
 import tajo.storage.Fragment;
@@ -83,62 +83,62 @@ public class TrevniScanner extends FileScanner {
     for (int i = 0; i < projectionMap.length; i++) {
       tid = projectionMap[i];
       columns[i].startRow();
-      switch (schema.getColumn(tid).getDataType()) {
+      switch (schema.getColumn(tid).getDataType().getType()) {
         case BOOLEAN:
           tuple.put(tid,
               DatumFactory.createBool(((Integer)columns[i].nextValue()).byteValue()));
           break;
-        case BYTE:
+        case BIT:
           tuple.put(tid,
-              DatumFactory.createByte(((Integer)columns[i].nextValue()).byteValue()));
+              DatumFactory.createBit(((Integer) columns[i].nextValue()).byteValue()));
           break;
         case CHAR:
           tuple.put(tid,
               DatumFactory.createChar(((Integer)columns[i].nextValue()).byteValue()));
           break;
 
-        case SHORT:
+        case INT2:
           tuple.put(tid,
-              DatumFactory.createShort(((Integer)columns[i].nextValue()).shortValue()));
+              DatumFactory.createInt2(((Integer) columns[i].nextValue()).shortValue()));
           break;
-        case INT:
+        case INT4:
           tuple.put(tid,
-              DatumFactory.createInt((Integer)columns[i].nextValue()));
-          break;
-
-        case LONG:
-          tuple.put(tid,
-              DatumFactory.createLong((Long)columns[i].nextValue()));
+              DatumFactory.createInt4((Integer) columns[i].nextValue()));
           break;
 
-        case FLOAT:
+        case INT8:
           tuple.put(tid,
-              DatumFactory.createFloat((Float)columns[i].nextValue()));
+              DatumFactory.createInt8((Long) columns[i].nextValue()));
           break;
 
-        case DOUBLE:
+        case FLOAT4:
           tuple.put(tid,
-              DatumFactory.createDouble((Double)columns[i].nextValue()));
+              DatumFactory.createFloat4((Float) columns[i].nextValue()));
           break;
 
-        case IPv4:
+        case FLOAT8:
           tuple.put(tid,
-              DatumFactory.createIPv4(((ByteBuffer) columns[i].nextValue()).array()));
+              DatumFactory.createFloat8((Double) columns[i].nextValue()));
           break;
 
-        case STRING:
+        case INET4:
           tuple.put(tid,
-              DatumFactory.createString((String) columns[i].nextValue()));
+              DatumFactory.createInet4(((ByteBuffer) columns[i].nextValue()).array()));
           break;
 
-        case STRING2:
+//        case TEXT:
+//          tuple.put(tid,
+//              DatumFactory.createText((String) columns[i].nextValue()));
+//          break;
+
+        case TEXT:
           tuple.put(tid,
-              DatumFactory.createString2((String) columns[i].nextValue()));
+              DatumFactory.createText((String) columns[i].nextValue()));
           break;
 
-        case BYTES:
+        case BLOB:
           tuple.put(tid,
-              new BytesDatum(((ByteBuffer) columns[i].nextValue())));
+              new BlobDatum(((ByteBuffer) columns[i].nextValue())));
           break;
 
         default:

@@ -20,25 +20,26 @@ package tajo.engine.function.builtin;
 
 import tajo.catalog.Column;
 import tajo.catalog.function.GeneralFunction;
-import tajo.catalog.proto.CatalogProtos;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.storage.Tuple;
 
 import java.util.Random;
 
+import static tajo.common.TajoDataTypes.Type.INT4;
+
 public class RandomInt extends GeneralFunction<Datum> {
   private Random random;
 
   public RandomInt() {
     super(new Column[] {
-        new Column("val", CatalogProtos.DataType.INT)
+        new Column("val", INT4)
     });
     random = new Random(System.nanoTime());
   }
 
   @Override
   public Datum eval(Tuple params) {
-    return DatumFactory.createInt(random.nextInt(params.get(0).asInt()));
+    return DatumFactory.createInt4(random.nextInt(params.get(0).asInt4()));
   }
 }

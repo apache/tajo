@@ -19,56 +19,57 @@
 package tajo.datum;
 
 import org.junit.Test;
+import tajo.common.TajoDataTypes.Type;
 
 import static org.junit.Assert.assertEquals;
 
 public class TestDatumFactory {
 	
 	@Test
-	public final void testCreateByte() {
-		Datum d = DatumFactory.createByte((byte) 5);
-		assertEquals(DatumType.BYTE, d.type());
+	public final void testCreateBit() {
+		Datum d = DatumFactory.createBit((byte) 5);
+		assertEquals(Type.BIT, d.type());
 	}
 
 	@Test
-	public final void testCreateShort() {
-		Datum d = DatumFactory.createShort((short)5);
-		assertEquals(DatumType.SHORT, d.type());
+	public final void testCreateInt2() {
+		Datum d = DatumFactory.createInt2((short) 5);
+		assertEquals(Type.INT2, d.type());
 	}
 	
 	@Test
-	public final void testCreateInt() {
-		Datum d = DatumFactory.createInt(5);
-		assertEquals(DatumType.INT, d.type());
+	public final void testCreateInt4() {
+		Datum d = DatumFactory.createInt4(5);
+		assertEquals(Type.INT4, d.type());
 	}
 	
 	@Test
-	public final void testCreateLong() {
-		Datum d = DatumFactory.createLong((long)5);
-		assertEquals(DatumType.LONG, d.type());
+	public final void testCreateInt8() {
+		Datum d = DatumFactory.createInt8((long) 5);
+		assertEquals(Type.INT8, d.type());
 	}
 
 	@Test
-	public final void testCreateFloat() {
-		Datum d = DatumFactory.createFloat(5.0f);
-		assertEquals(DatumType.FLOAT, d.type());
+	public final void testCreateFloat4() {
+		Datum d = DatumFactory.createFloat4(5.0f);
+		assertEquals(Type.FLOAT4, d.type());
 	}
 
 	@Test
-	public final void testCreateDouble() {
-		Datum d = DatumFactory.createDouble(5.0d);
-		assertEquals(DatumType.DOUBLE, d.type());
+	public final void testCreateFloat8() {
+		Datum d = DatumFactory.createFloat8(5.0d);
+		assertEquals(Type.FLOAT8, d.type());
 	}
 
 	@Test
 	public final void testCreateBoolean() {
 		Datum d = DatumFactory.createBool(true);
-		assertEquals(DatumType.BOOLEAN, d.type());
+		assertEquals(Type.BOOLEAN, d.type());
 	}
 
 	@Test
 	public final void testCreateString() {
-		Datum d = DatumFactory.createString("12345a");
-		assertEquals(DatumType.STRING, d.type());
+		Datum d = DatumFactory.createText("12345a");
+		assertEquals(Type.TEXT, d.type());
 	}
 }

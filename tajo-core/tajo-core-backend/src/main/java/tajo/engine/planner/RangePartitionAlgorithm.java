@@ -20,7 +20,7 @@ package tajo.engine.planner;
 
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.Datum;
 import tajo.storage.Tuple;
 import tajo.storage.TupleRange;
@@ -55,33 +55,33 @@ public abstract class RangePartitionAlgorithm {
    * @param end
    * @return
    */
-  public static BigDecimal computeCardinality(CatalogProtos.DataType dataType, Datum start, Datum end,
+  public static BigDecimal computeCardinality(DataType dataType, Datum start, Datum end,
                                               boolean inclusive) {
     BigDecimal columnCard;
 
-    switch (dataType) {
+    switch (dataType.getType()) {
       case CHAR:
         columnCard = new BigDecimal(end.asChar() - start.asChar());
         break;
-      case BYTE:
+      case BIT:
         columnCard = new BigDecimal(end.asByte() - start.asByte());
         break;
-      case SHORT:
-        columnCard = new BigDecimal(end.asShort() - start.asShort());
+      case INT2:
+        columnCard = new BigDecimal(end.asInt2() - start.asInt2());
         break;
-      case INT:
-        columnCard = new BigDecimal(end.asInt() - start.asInt());
+      case INT4:
+        columnCard = new BigDecimal(end.asInt4() - start.asInt4());
         break;
-      case LONG:
-        columnCard = new BigDecimal(end.asLong() - start.asLong());
+      case INT8:
+        columnCard = new BigDecimal(end.asInt8() - start.asInt8());
         break;
-      case FLOAT:
-        columnCard = new BigDecimal(end.asInt() - start.asInt());
+      case FLOAT4:
+        columnCard = new BigDecimal(end.asInt4() - start.asInt4());
         break;
-      case DOUBLE:
-        columnCard = new BigDecimal(end.asLong() - start.asLong());
+      case FLOAT8:
+        columnCard = new BigDecimal(end.asInt8() - start.asInt8());
         break;
-      case STRING:
+      case TEXT:
         columnCard = new BigDecimal(end.asChars().charAt(0) - start.asChars().charAt(0));
         break;
       default:

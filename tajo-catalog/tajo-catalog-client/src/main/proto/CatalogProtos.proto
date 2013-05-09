@@ -22,28 +22,7 @@ option optimize_for = SPEED;
 option java_generic_services = false;
 option java_generate_equals_and_hash = true;
 
-enum DataType {
-    BOOLEAN = 0;
-    BYTE = 1;
-    CHAR = 2;
-    BYTES = 3;
-    SHORT = 4;
-    INT = 5;
-    BIGINT = 6;
-    LONG = 7;
-    FLOAT = 8;
-    DOUBLE = 9;
-    BIGDECIMAL = 10;
-    STRING = 11;
-    DATE = 12;
-    IPv4 = 13;
-    IPv6 = 14;
-    NULL = 15;
-    ANY = 16;
-    ALL = 17;
-    ARRAY = 18;
-    STRING2 = 19;
-}
+import "DataTypes.proto";
 
 enum StoreType {
 	MEM = 0;

@@ -34,8 +34,8 @@ import tajo.QueryUnitAttemptId;
 import tajo.TajoTestingCluster;
 import tajo.TaskAttemptContext;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -92,21 +92,21 @@ public class TestPhysicalPlanner {
     }
 
     Schema schema = new Schema();
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("empId", DataType.INT);
-    schema.addColumn("deptName", DataType.STRING);
+    schema.addColumn("name", Type.TEXT);
+    schema.addColumn("empId", Type.INT4);
+    schema.addColumn("deptName", Type.TEXT);
 
     Schema schema2 = new Schema();
-    schema2.addColumn("deptName", DataType.STRING);
-    schema2.addColumn("manager", DataType.STRING);
+    schema2.addColumn("deptName", Type.TEXT);
+    schema2.addColumn("manager", Type.TEXT);
 
     Schema scoreSchema = new Schema();
-    scoreSchema.addColumn("deptName", DataType.STRING);
-    scoreSchema.addColumn("class", DataType.STRING);
-    scoreSchema.addColumn("score", DataType.INT);
-    scoreSchema.addColumn("nullable", DataType.STRING);
+    scoreSchema.addColumn("deptName", Type.TEXT);
+    scoreSchema.addColumn("class", Type.TEXT);
+    scoreSchema.addColumn("score", Type.INT4);
+    scoreSchema.addColumn("nullable", Type.TEXT);
 
-    TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
 
 
     Path employeePath = new Path(testDir, "employee.csv");
@@ -114,8 +114,8 @@ public class TestPhysicalPlanner {
     appender.init();
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
-      tuple.put(new Datum[] {DatumFactory.createString("name_" + i),
-          DatumFactory.createInt(i), DatumFactory.createString("dept_" + i)});
+      tuple.put(new Datum[] {DatumFactory.createText("name_" + i),
+          DatumFactory.createInt4(i), DatumFactory.createText("dept_" + i)});
       appender.addTuple(tuple);
     }
     appender.flush();
@@ -125,7 +125,7 @@ public class TestPhysicalPlanner {
     catalog.addTable(employee);
 
     Path scorePath = new Path(testDir, "score");
-    TableMeta scoreMeta = TCatUtil.newTableMeta(scoreSchema, StoreType.CSV, new Options());
+    TableMeta scoreMeta = CatalogUtil.newTableMeta(scoreSchema, StoreType.CSV, new Options());
     appender = StorageManager.getAppender(conf, scoreMeta, scorePath);
     appender.init();
     score = new TableDescImpl("score", scoreMeta, scorePath);
@@ -136,10 +136,10 @@ public class TestPhysicalPlanner {
         for (int j = 1; j <= 3; j++) {
           tuple.put(
               new Datum[] {
-                  DatumFactory.createString("name_" + i), // name_1 ~ 5 (cad: // 5)
-                  DatumFactory.createString(k + "rd"), // 3 or 4rd (cad: 2)
-                  DatumFactory.createInt(j), // 1 ~ 3
-              m % 3 == 1 ? DatumFactory.createString("one") : NullDatum.get()});
+                  DatumFactory.createText("name_" + i), // name_1 ~ 5 (cad: // 5)
+                  DatumFactory.createText(k + "rd"), // 3 or 4rd (cad: 2)
+                  DatumFactory.createInt4(j), // 1 ~ 3
+              m % 3 == 1 ? DatumFactory.createText("one") : NullDatum.get()});
           appender.addTuple(tuple);
           m++;
         }
@@ -170,7 +170,7 @@ public class TestPhysicalPlanner {
       "select count(deptName) from score", // 9
       "select managerId, empId, deptName from employee order by managerId, empId desc", // 10
       "select deptName, nullable from score group by deptName, nullable", // 11
-      "select 3 < 4 as ineq, 3.5 * 2 as real", // 12
+      "select 3 < 4 as ineq, 3.5 * 2 as score", // 12
 //      "select (3 > 2) = (1 > 0) and 3 > 1", // 12
       "select (1 > 0) and 3 > 1", // 13
       "select deptName, class, sum(score), max(score), min(score) from score", // 14
@@ -224,9 +224,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     exec.init();
     while ((tuple = exec.next()) != null) {
-      assertEquals(6, tuple.get(2).asInt()); // sum
-      assertEquals(3, tuple.get(3).asInt()); // max
-      assertEquals(1, tuple.get(4).asInt()); // min
+      assertEquals(6, tuple.get(2).asInt4()); // sum
+      assertEquals(3, tuple.get(3).asInt4()); // max
+      assertEquals(1, tuple.get(4).asInt4()); // min
       i++;
     }
     exec.close();
@@ -254,9 +254,9 @@ public class TestPhysicalPlanner {
     exec.init();
     while ((tuple = exec.next()) != null) {
       assertEquals(DatumFactory.createNullDatum(), tuple.get(1));
-      assertEquals(12, tuple.get(2).asInt()); // sum
-      assertEquals(3, tuple.get(3).asInt()); // max
-      assertEquals(1, tuple.get(4).asInt()); // min
+      assertEquals(12, tuple.get(2).asInt4()); // sum
+      assertEquals(3, tuple.get(3).asInt4()); // max
+      assertEquals(1, tuple.get(4).asInt4()); // min
       i++;
     }
     exec.close();
@@ -296,9 +296,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     exec.init();
     while ((tuple = exec.next()) != null) {
-      assertEquals(6, tuple.get(2).asInt()); // sum
-      assertEquals(3, tuple.get(3).asInt()); // max
-      assertEquals(1, tuple.get(4).asInt()); // min
+      assertEquals(6, tuple.get(2).asInt4()); // sum
+      assertEquals(3, tuple.get(3).asInt4()); // max
+      assertEquals(1, tuple.get(4).asInt4()); // min
       i++;
     }
     assertEquals(10, i);
@@ -306,9 +306,9 @@ public class TestPhysicalPlanner {
     exec.rescan();
     i = 0;
     while ((tuple = exec.next()) != null) {
-      assertEquals(6, tuple.getInt(2).asInt()); // sum
-      assertEquals(3, tuple.getInt(3).asInt()); // max
-      assertEquals(1, tuple.getInt(4).asInt()); // min
+      assertEquals(6, tuple.getInt(2).asInt4()); // sum
+      assertEquals(3, tuple.getInt(3).asInt4()); // max
+      assertEquals(1, tuple.getInt(4).asInt4()); // min
       i++;
     }
     exec.close();
@@ -334,7 +334,7 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
-    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
+    TableMeta outputMeta = CatalogUtil.newTableMeta(plan.getOutSchema(),
         StoreType.CSV);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
@@ -348,9 +348,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
-      assertEquals(6, tuple.get(2).asInt()); // sum
-      assertEquals(3, tuple.get(3).asInt()); // max
-      assertEquals(1, tuple.get(4).asInt()); // min
+      assertEquals(6, tuple.get(2).asInt4()); // sum
+      assertEquals(3, tuple.get(3).asInt4()); // max
+      assertEquals(1, tuple.get(4).asInt4()); // min
       i++;
     }
     assertEquals(10, i);
@@ -374,7 +374,7 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
     plan = LogicalOptimizer.optimize(context, plan);
 
-    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
+    TableMeta outputMeta = CatalogUtil.newTableMeta(plan.getOutSchema(),
         StoreType.RCFILE);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
@@ -388,9 +388,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
-      assertEquals(6, tuple.get(2).asInt()); // sum
-      assertEquals(3, tuple.get(3).asInt()); // max
-      assertEquals(1, tuple.get(4).asInt()); // min
+      assertEquals(6, tuple.get(2).asInt4()); // sum
+      assertEquals(3, tuple.get(3).asInt4()); // max
+      assertEquals(1, tuple.get(4).asInt4()); // min
       i++;
     }
     assertEquals(10, i);
@@ -421,14 +421,14 @@ public class TestPhysicalPlanner {
     LogicalNode plan = planner.createPlan(context);
 
     int numPartitions = 3;
-    Column key1 = new Column("score.deptName", DataType.STRING);
-    Column key2 = new Column("score.class", DataType.STRING);
+    Column key1 = new Column("score.deptName", Type.TEXT);
+    Column key2 = new Column("score.class", Type.TEXT);
     StoreTableNode storeNode = new StoreTableNode("partition");
     storeNode.setPartitions(PartitionType.HASH, new Column[]{key1, key2}, numPartitions);
     PlannerUtil.insertNode(plan, storeNode);
     plan = LogicalOptimizer.optimize(context, plan);
 
-    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
+    TableMeta outputMeta = CatalogUtil.newTableMeta(plan.getOutSchema(),
         StoreType.CSV);
 
     FileSystem fs = sm.getFileSystem();
@@ -454,9 +454,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     i = 0;
     while ((tuple = scanner.next()) != null) {
-      assertEquals(6, tuple.get(2).asInt()); // sum
-      assertEquals(3, tuple.get(3).asInt()); // max
-      assertEquals(1, tuple.get(4).asInt()); // min
+      assertEquals(6, tuple.get(2).asInt4()); // sum
+      assertEquals(3, tuple.get(3).asInt4()); // max
+      assertEquals(1, tuple.get(4).asInt4()); // min
       i++;
     }
     assertEquals(10, i);
@@ -486,7 +486,7 @@ public class TestPhysicalPlanner {
     PlannerUtil.insertNode(plan, storeNode);
     plan = LogicalOptimizer.optimize(context, plan);
 
-    TableMeta outputMeta = TCatUtil.newTableMeta(plan.getOutSchema(),
+    TableMeta outputMeta = CatalogUtil.newTableMeta(plan.getOutSchema(),
         StoreType.CSV);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
@@ -511,9 +511,9 @@ public class TestPhysicalPlanner {
     Tuple tuple;
     i = 0;
     while ((tuple = scanner.next()) != null) {
-      assertEquals(60, tuple.get(2).asInt()); // sum
-      assertEquals(3, tuple.get(3).asInt()); // max
-      assertEquals(1, tuple.get(4).asInt()); // min
+      assertEquals(60, tuple.get(2).asInt4()); // sum
+      assertEquals(3, tuple.get(3).asInt4()); // max
+      assertEquals(1, tuple.get(4).asInt4()); // min
       i++;
     }
     assertEquals(1, i);
@@ -539,9 +539,9 @@ public class TestPhysicalPlanner {
 
     exec.init();
     Tuple tuple = exec.next();
-    assertEquals(30, tuple.get(0).asLong());
-    assertEquals(3, tuple.get(1).asInt());
-    assertEquals(1, tuple.get(2).asInt());
+    assertEquals(30, tuple.get(0).asInt8());
+    assertEquals(3, tuple.get(1).asInt4());
+    assertEquals(1, tuple.get(2).asInt4());
     assertNull(exec.next());
     exec.close();
   }
@@ -561,7 +561,7 @@ public class TestPhysicalPlanner {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     Tuple tuple = exec.next();
-    assertEquals(30, tuple.get(0).asLong());
+    assertEquals(30, tuple.get(0).asInt8());
     assertNull(exec.next());
   }
 
@@ -630,7 +630,7 @@ public class TestPhysicalPlanner {
     tuple = exec.next();
     exec.close();
     assertEquals(true, tuple.get(0).asBool());
-    assertTrue(7.0d == tuple.get(1).asDouble());
+    assertTrue(7.0d == tuple.get(1).asFloat8());
 
     context = analyzer.parse(QUERIES[13]);
     plan = planner.createPlan(context);
@@ -710,8 +710,8 @@ public class TestPhysicalPlanner {
   @Test
   public final void testBug() throws IOException {
     Schema s1 = new Schema();
-    s1.addColumn("o_orderdate", DataType.STRING);
-    s1.addColumn("o_shippriority", DataType.INT);
+    s1.addColumn("o_orderdate", Type.TEXT);
+    s1.addColumn("o_shippriority", Type.INT4);
     s1.addColumn("o_orderkey", DataType.LONG);
 
     Options opt = new Options();
@@ -777,7 +777,7 @@ public class TestPhysicalPlanner {
     exec.close();
 
     Schema keySchema = new Schema();
-    keySchema.addColumn("?empId", DataType.INT);
+    keySchema.addColumn("?empId", Type.INT4);
     SortSpec[] sortSpec = new SortSpec[1];
     sortSpec[0] = new SortSpec(keySchema.getColumn(0), true, false);
     TupleComparator comp = new TupleComparator(keySchema, sortSpec);
@@ -786,7 +786,7 @@ public class TestPhysicalPlanner {
         keySchema, comp);
     reader.open();
     Path outputPath = StorageUtil.concatPath(workDir, "output", "output");
-    TableMeta meta = TCatUtil.newTableMeta(plan.getOutSchema(), StoreType.CSV, new Options());
+    TableMeta meta = CatalogUtil.newTableMeta(plan.getOutSchema(), StoreType.CSV, new Options());
     SeekableScanner scanner = (SeekableScanner)
         StorageManager.getScanner(conf, meta, outputPath);
     scanner.init();
@@ -801,12 +801,12 @@ public class TestPhysicalPlanner {
 
     Tuple keytuple = new VTuple(1);
     for(int i = 1 ; i < 100 ; i ++) {
-      keytuple.put(0, DatumFactory.createInt(i));
+      keytuple.put(0, DatumFactory.createInt4(i));
       long offsets = reader.find(keytuple);
       scanner.seek(offsets);
       tuple = scanner.next();
       assertTrue("[seek check " + (i) + " ]" , ("name_" + i).equals(tuple.get(0).asChars()));
-      assertTrue("[seek check " + (i) + " ]" , i == tuple.get(1).asInt());
+      assertTrue("[seek check " + (i) + " ]" , i == tuple.get(1).asInt4());
     }
 
 
@@ -815,12 +815,12 @@ public class TestPhysicalPlanner {
         new File(new Path(workDir, "output").toUri()), keySchema, comp);
     Map<String,List<String>> kvs = Maps.newHashMap();
     Tuple startTuple = new VTuple(1);
-    startTuple.put(0, DatumFactory.createInt(50));
+    startTuple.put(0, DatumFactory.createInt4(50));
     kvs.put("start", Lists.newArrayList(
         new String(Base64.encodeBase64(
             RowStoreUtil.RowStoreEncoder.toBytes(keySchema, startTuple), false))));
     Tuple endTuple = new VTuple(1);
-    endTuple.put(0, DatumFactory.createInt(80));
+    endTuple.put(0, DatumFactory.createInt4(80));
     kvs.put("end", Lists.newArrayList(
         new String(Base64.encodeBase64(
             RowStoreUtil.RowStoreEncoder.toBytes(keySchema, endTuple), false))));
@@ -828,11 +828,11 @@ public class TestPhysicalPlanner {
 
     scanner.seek(chunk.startOffset());
     keytuple = scanner.next();
-    assertEquals(50, keytuple.get(1).asInt());
+    assertEquals(50, keytuple.get(1).asInt4());
 
     long endOffset = chunk.startOffset() + chunk.length();
     while((keytuple = scanner.next()) != null && scanner.getNextOffset() <= endOffset) {
-      assertTrue(keytuple.get(1).asInt() <= 80);
+      assertTrue(keytuple.get(1).asInt4() <= 80);
     }
 
     scanner.close();

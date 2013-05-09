@@ -18,37 +18,32 @@
 
 package tajo.catalog.statistics;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import tajo.catalog.proto.CatalogProtos;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.*;
 
 public class TupleUtil {
-  /** class logger **/
-  private static final Log LOG = LogFactory.getLog(TupleUtil.class);
-
-  public static Datum createFromBytes(CatalogProtos.DataType type, byte [] bytes) {
-    switch (type) {
+  public static Datum createFromBytes(DataType type, byte [] bytes) {
+    switch (type.getType()) {
       case BOOLEAN:
-        return new BoolDatum(bytes);
-      case BYTE:
-        return new ByteDatum(bytes);
+        return new BooleanDatum(bytes);
+      case BLOB:
+        return new BlobDatum(bytes);
       case CHAR:
         return new CharDatum(bytes);
-      case SHORT:
-        return new ShortDatum(bytes);
-      case INT:
-        return new IntDatum(bytes);
-      case LONG:
-        return new LongDatum(bytes);
-      case FLOAT:
-        return new FloatDatum(bytes);
-      case DOUBLE:
-        return new DoubleDatum(bytes);
-      case STRING:
-        return new StringDatum(bytes);
-      case IPv4:
-        return new IPv4Datum(bytes);
+      case INT2:
+        return new Int2Datum(bytes);
+      case INT4:
+        return new Int4Datum(bytes);
+      case INT8:
+        return new Int8Datum(bytes);
+      case FLOAT4:
+        return new Float4Datum(bytes);
+      case FLOAT8:
+        return new Float8Datum(bytes);
+      case TEXT:
+        return new TextDatum(bytes);
+      case INET4:
+        return new Inet4Datum(bytes);
       default: throw new UnsupportedOperationException(type + " is not supported yet");
     }
   }

@@ -25,9 +25,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.TajoTestingCluster;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes;
 import tajo.datum.DatumFactory;
 import tajo.engine.eval.EvalNode.Type;
 import tajo.engine.eval.TestEvalTree.TestSum;
@@ -65,18 +65,18 @@ public class TestEvalTreeUtil {
     }
 
     Schema schema = new Schema();
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("score", DataType.INT);
-    schema.addColumn("age", DataType.INT);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("score", TajoDataTypes.Type.INT4);
+    schema.addColumn("age", TajoDataTypes.Type.INT4);
 
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
     catalog.addTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
         FunctionType.GENERAL,
-        new DataType [] {DataType.INT},
-        new DataType [] {DataType.INT,DataType.INT});
+        CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT4, TajoDataTypes.Type.INT4));
     catalog.registerFunction(funcMeta);
 
     analyzer = new QueryAnalyzer(catalog);
@@ -105,38 +105,38 @@ public class TestEvalTreeUtil {
     EvalTreeUtil.changeColumnRef(copy, "people.score", "newscore");
     Set<Column> set = EvalTreeUtil.findDistinctRefColumns(copy);
     assertEquals(1, set.size());
-    assertTrue(set.contains(new Column("newscore", DataType.INT)));
+    assertTrue(set.contains(new Column("newscore", TajoDataTypes.Type.INT4)));
     
     copy = (EvalNode)expr2.clone();
     EvalTreeUtil.changeColumnRef(copy, "people.age", "sum_age");
     set = EvalTreeUtil.findDistinctRefColumns(copy);
     assertEquals(2, set.size());
-    assertTrue(set.contains(new Column("people.score", DataType.INT)));
-    assertTrue(set.contains(new Column("sum_age", DataType.INT)));
+    assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
+    assertTrue(set.contains(new Column("sum_age", TajoDataTypes.Type.INT4)));
     
     copy = (EvalNode)expr3.clone();
     EvalTreeUtil.changeColumnRef(copy, "people.age", "sum_age");
     set = EvalTreeUtil.findDistinctRefColumns(copy);
     assertEquals(2, set.size());
-    assertTrue(set.contains(new Column("people.score", DataType.INT)));
-    assertTrue(set.contains(new Column("sum_age", DataType.INT)));
+    assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
+    assertTrue(set.contains(new Column("sum_age", TajoDataTypes.Type.INT4)));
   }
 
   @Test
   public final void testFindAllRefColumns() {    
     Set<Column> set = EvalTreeUtil.findDistinctRefColumns(expr1);
     assertEquals(1, set.size());
-    assertTrue(set.contains(new Column("people.score", DataType.INT)));
+    assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
     
     set = EvalTreeUtil.findDistinctRefColumns(expr2);
     assertEquals(2, set.size());
-    assertTrue(set.contains(new Column("people.score", DataType.INT)));
-    assertTrue(set.contains(new Column("people.age", DataType.INT)));
+    assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
+    assertTrue(set.contains(new Column("people.age", TajoDataTypes.Type.INT4)));
     
     set = EvalTreeUtil.findDistinctRefColumns(expr3);
     assertEquals(2, set.size());
-    assertTrue(set.contains(new Column("people.score", DataType.INT)));
-    assertTrue(set.contains(new Column("people.age", DataType.INT)));
+    assertTrue(set.contains(new Column("people.score", TajoDataTypes.Type.INT4)));
+    assertTrue(set.contains(new Column("people.age", TajoDataTypes.Type.INT4)));
   }
   
   public static final String [] QUERIES = {
@@ -157,9 +157,9 @@ public class TestEvalTreeUtil {
     Column col1 = schema.getColumn(0);
     Column col2 = schema.getColumn(1);
     assertEquals("plus", col1.getColumnName());
-    assertEquals(DataType.INT, col1.getDataType());
+    assertEquals(TajoDataTypes.Type.INT4, col1.getDataType().getType());
     assertEquals("mul", col2.getColumnName());
-    assertEquals(DataType.DOUBLE, col2.getDataType());
+    assertEquals(TajoDataTypes.Type.FLOAT8, col2.getDataType().getType());
   }
   
   @Test
@@ -167,20 +167,20 @@ public class TestEvalTreeUtil {
     QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[1]).getParseTree();
     Target [] targets = block.getTargetList();
     
-    Column col1 = new Column("people.score", DataType.INT);
+    Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
         EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
     EvalNode node = exprs.iterator().next();
     assertEquals(Type.LTH, node.getType());
     assertEquals(Type.PLUS, node.getLeftExpr().getType());
-    assertEquals(new ConstEval(DatumFactory.createInt(4)), node.getRightExpr());
+    assertEquals(new ConstEval(DatumFactory.createInt4(4)), node.getRightExpr());
     
-    Column col2 = new Column("people.age", DataType.INT);
+    Column col2 = new Column("people.age", TajoDataTypes.Type.INT4);
     exprs = EvalTreeUtil.getContainExpr(targets[1].getEvalTree(), col2);
     node = exprs.iterator().next();
     assertEquals(Type.GTH, node.getType());
     assertEquals("people.age", node.getLeftExpr().getName());
-    assertEquals(new ConstEval(DatumFactory.createInt(5)), node.getRightExpr());
+    assertEquals(new ConstEval(DatumFactory.createInt4(5)), node.getRightExpr());
   }
   
   @Test
@@ -190,7 +190,7 @@ public class TestEvalTreeUtil {
     EvalNode node = block.getWhereCondition();
     EvalNode [] cnf = EvalTreeUtil.getConjNormalForm(node);
     
-    Column col1 = new Column("people.score", DataType.INT);
+    Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
     
     assertEquals(2, cnf.length);
     EvalNode first = cnf[0];
@@ -201,14 +201,14 @@ public class TestEvalTreeUtil {
     assertEquals(Type.LTH, first.getType());
     EvalContext firstRCtx = first.getRightExpr().newContext();
     first.getRightExpr().eval(firstRCtx, null,  null);
-    assertEquals(10, first.getRightExpr().terminate(firstRCtx).asInt());
+    assertEquals(10, first.getRightExpr().terminate(firstRCtx).asInt4());
     
     field = (FieldEval) second.getRightExpr();
     assertEquals(col1, field.getColumnRef());
     assertEquals(Type.LTH, second.getType());
     EvalContext secondLCtx = second.getLeftExpr().newContext();
     second.getLeftExpr().eval(secondLCtx, null,  null);
-    assertEquals(4, second.getLeftExpr().terminate(secondLCtx).asInt());
+    assertEquals(4, second.getLeftExpr().terminate(secondLCtx).asInt4());
   }
   
   @Test
@@ -235,16 +235,16 @@ public class TestEvalTreeUtil {
     EvalContext nodeCtx = node.newContext();
     assertEquals(Type.CONST, node.getType());
     node.eval(nodeCtx, null, null);
-    assertEquals(7, node.terminate(nodeCtx).asInt());
+    assertEquals(7, node.terminate(nodeCtx).asInt4());
     node = AlgebraicUtil.simplify(targets[1].getEvalTree());
     assertEquals(Type.CONST, node.getType());
     nodeCtx = node.newContext();
     node.eval(nodeCtx, null, null);
-    assertTrue(7.0d == node.terminate(nodeCtx).asDouble());
+    assertTrue(7.0d == node.terminate(nodeCtx).asFloat8());
 
     block = (QueryBlock) analyzer.parse(QUERIES[1]).getParseTree();
     targets = block.getTargetList();
-    Column col1 = new Column("people.score", DataType.INT);
+    Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
         EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
     node = exprs.iterator().next();
@@ -268,7 +268,7 @@ public class TestEvalTreeUtil {
     EvalNode node = block.getWhereCondition();
     assertEquals(true, AlgebraicUtil.containSingleVar(node));
     
-    Column col1 = new Column("people.score", DataType.INT);
+    Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
     block = (QueryBlock) analyzer.parse(QUERIES[3]).getParseTree();
     node = block.getWhereCondition();    
     // we expect that score < 3
@@ -278,7 +278,7 @@ public class TestEvalTreeUtil {
     assertEquals(col1, field.getColumnRef());
     EvalContext evalCtx = transposed.getRightExpr().newContext();
     transposed.getRightExpr().eval(evalCtx, null, null);
-    assertEquals(1, transposed.getRightExpr().terminate(evalCtx).asInt());
+    assertEquals(1, transposed.getRightExpr().terminate(evalCtx).asInt4());
 
     block = (QueryBlock) analyzer.parse(QUERIES[4]).getParseTree();
     node = block.getWhereCondition();    
@@ -289,7 +289,7 @@ public class TestEvalTreeUtil {
     assertEquals(col1, field.getColumnRef());
     evalCtx = transposed.getRightExpr().newContext();
     transposed.getRightExpr().eval(evalCtx, null, null);
-    assertEquals(2, transposed.getRightExpr().terminate(evalCtx).asInt());
+    assertEquals(2, transposed.getRightExpr().terminate(evalCtx).asInt4());
   }
 
   @Test

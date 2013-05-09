@@ -23,8 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 import tajo.catalog.exception.AlreadyExistsFieldException;
 import tajo.catalog.json.GsonCreator;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.SchemaProto;
+import tajo.common.TajoDataTypes.Type;
 
 import static org.junit.Assert.*;
 
@@ -38,11 +38,11 @@ public class TestSchema {
 	@Before
 	public void setUp() throws Exception {
 		schema = new Schema();
-		col1 = new Column("name", DataType.STRING);
+		col1 = new Column("name", Type.TEXT);
 		schema.addColumn(col1);
-		col2 = new Column("age", DataType.INT);
+		col2 = new Column("age", Type.INT4);
 		schema.addColumn(col2);
-		col3 = new Column("addr", DataType.STRING);
+		col3 = new Column("addr", Type.TEXT);
 		schema.addColumn(col3);
 	}
 
@@ -71,16 +71,16 @@ public class TestSchema {
 	public final void testAddField() {
 		Schema schema = new Schema();
 		assertFalse(schema.contains("studentId"));
-		schema.addColumn("studentId", DataType.INT);
+		schema.addColumn("studentId", Type.INT4);
 		assertTrue(schema.contains("studentId"));
 	}
 
 	@Test
 	public final void testEqualsObject() {
 		Schema schema2 = new Schema();
-		schema2.addColumn("name", DataType.STRING);
-		schema2.addColumn("age", DataType.INT);
-		schema2.addColumn("addr", DataType.STRING);
+		schema2.addColumn("name", Type.TEXT);
+		schema2.addColumn("age", Type.INT4);
+		schema2.addColumn("addr", Type.TEXT);
 		
 		assertEquals(schema, schema2);
 	}
@@ -97,8 +97,8 @@ public class TestSchema {
 	@Test
 	public final void testClone() throws CloneNotSupportedException {
 	  Schema schema = new Schema();
-	  schema.addColumn("abc", DataType.DOUBLE);
-	  schema.addColumn("bbc", DataType.DOUBLE);
+	  schema.addColumn("abc", Type.FLOAT8);
+	  schema.addColumn("bbc", Type.FLOAT8);
 	  
 	  Schema schema2 = new Schema(schema.getProto());
 	  assertEquals(schema.getProto(), schema2.getProto());
@@ -114,9 +114,9 @@ public class TestSchema {
 	@Test(expected = AlreadyExistsFieldException.class)
 	public final void testAddExistColumn() {
     Schema schema = new Schema();
-    schema.addColumn("abc", DataType.DOUBLE);
-    schema.addColumn("bbc", DataType.DOUBLE);
-    schema.addColumn("abc", DataType.INT);
+    schema.addColumn("abc", Type.FLOAT8);
+    schema.addColumn("bbc", Type.FLOAT8);
+    schema.addColumn("abc", Type.INT4);
 	}
 
 	@Test

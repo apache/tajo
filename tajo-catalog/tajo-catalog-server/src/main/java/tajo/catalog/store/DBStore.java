@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.Path;
 import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.*;
 import tajo.catalog.statistics.TableStat;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.exception.InternalException;
 
@@ -444,7 +445,7 @@ public class DBStore implements CatalogStore {
         + "'" + desc.getId() + "',"
         + columnId + ", "
         + "'" + col.getColumnName() + "',"
-        + "'" + col.getDataType().toString() + "'"
+        + "'" + col.getDataType().getType().name() + "'"
         + ")";
     
     return sql;
@@ -627,7 +628,7 @@ public class DBStore implements CatalogStore {
         while (res.next()) {
           String columnName = tableName + "." 
               + res.getString("column_name").trim();
-          DataType dataType = getDataType(res.getString("data_type")
+          Type dataType = getDataType(res.getString("data_type")
               .trim());
           schema.addColumn(columnName, dataType);
         }
@@ -695,37 +696,11 @@ public class DBStore implements CatalogStore {
     }
   }
   
-  private DataType getDataType(final String typeStr) {
-    if (typeStr.equals(DataType.BOOLEAN.toString())) {
-      return DataType.BOOLEAN;
-    } else if (typeStr.equals(DataType.BYTE.toString())) {
-      return DataType.BYTE;
-    } else if (typeStr.equals(DataType.CHAR.toString())) {
-      return DataType.CHAR;
-    } else if (typeStr.equals(DataType.SHORT.toString())) {
-      return DataType.SHORT;
-    } else if (typeStr.equals(DataType.INT.toString())) {
-      return DataType.INT;
-    } else if (typeStr.equals(DataType.LONG.toString())) {
-      return DataType.LONG;
-    } else if (typeStr.equals(DataType.FLOAT.toString())) {
-      return DataType.FLOAT;
-    } else if (typeStr.equals(DataType.DOUBLE.toString())) {
-      return DataType.DOUBLE;
-    } else if (typeStr.equals(DataType.STRING.toString())) {
-      return DataType.STRING;
-    } else if (typeStr.equals(DataType.IPv4.toString())) {
-      return DataType.IPv4;
-    } else if (typeStr.equals(DataType.IPv6.toString())) {
-      return DataType.IPv6;
-    } else if (typeStr.equals(DataType.BYTES.toString())) {
-      return DataType.BYTES;
-    } else if (typeStr.equals(DataType.DATE.toString())) {
-      return DataType.DATE;
-    } else {
-      LOG.error("Cannot find a matched type aginst from '"
-          + typeStr + "'");
-      // TODO - needs exception handling
+  private Type getDataType(final String typeStr) {
+    try {
+    return Enum.valueOf(Type.class, typeStr);
+    } catch (IllegalArgumentException iae) {
+      LOG.error("Cannot find a matched type aginst from '" + typeStr + "'");
       return null;
     }
   }
@@ -776,7 +751,7 @@ public class DBStore implements CatalogStore {
       stmt.setString(1, proto.getName());
       stmt.setString(2, proto.getTableId());
       stmt.setString(3, proto.getColumn().getColumnName());
-      stmt.setString(4, proto.getColumn().getDataType().toString());
+      stmt.setString(4, proto.getColumn().getDataType().getType().name());
       stmt.setString(5, proto.getIndexMethod().toString());
       stmt.setBoolean(6, proto.hasIsUnique() && proto.getIsUnique());
       stmt.setBoolean(7, proto.hasIsClustered() && proto.getIsClustered());
@@ -1001,7 +976,8 @@ public class DBStore implements CatalogStore {
   private ColumnProto resultToColumnProto(final ResultSet res) throws SQLException {
     ColumnProto.Builder builder = ColumnProto.newBuilder();
     builder.setColumnName(res.getString("column_name"));
-    builder.setDataType(getDataType(res.getString("data_type").trim()));
+    builder.setDataType(CatalogUtil.newDataTypeWithoutLen(
+        getDataType(res.getString("data_type").trim())));
     return builder.build();
   }
   

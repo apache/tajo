@@ -36,31 +36,31 @@ public class TestFrameTuple {
     tuple1 = new VTuple(11);
     tuple1.put(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createByte((byte) 0x99),
+        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar('9'),
-        DatumFactory.createShort((short) 17),
-        DatumFactory.createInt(59),
-        DatumFactory.createLong(23l),
-        DatumFactory.createFloat(77.9f),
-        DatumFactory.createDouble(271.9f),        
-        DatumFactory.createString("hyunsik"),
-        DatumFactory.createBytes("hyunsik".getBytes()),
-        DatumFactory.createIPv4("192.168.0.1")
+        DatumFactory.createInt2((short) 17),
+        DatumFactory.createInt4(59),
+        DatumFactory.createInt8(23l),
+        DatumFactory.createFloat4(77.9f),
+        DatumFactory.createFloat8(271.9f),
+        DatumFactory.createText("hyunsik"),
+        DatumFactory.createBlob("hyunsik".getBytes()),
+        DatumFactory.createInet4("192.168.0.1")
     });
     
     tuple2 = new VTuple(11);
     tuple2.put(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createByte((byte) 0x99),
+        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar('9'),
-        DatumFactory.createShort((short) 17),
-        DatumFactory.createInt(59),
-        DatumFactory.createLong(23l),
-        DatumFactory.createFloat(77.9f),
-        DatumFactory.createDouble(271.9f),        
-        DatumFactory.createString("hyunsik"),
-        DatumFactory.createBytes("hyunsik".getBytes()),
-        DatumFactory.createIPv4("192.168.0.1")
+        DatumFactory.createInt2((short) 17),
+        DatumFactory.createInt4(59),
+        DatumFactory.createInt8(23l),
+        DatumFactory.createFloat4(77.9f),
+        DatumFactory.createFloat8(271.9f),
+        DatumFactory.createText("hyunsik"),
+        DatumFactory.createBlob("hyunsik".getBytes()),
+        DatumFactory.createInet4("192.168.0.1")
     });
   }
 
@@ -76,9 +76,9 @@ public class TestFrameTuple {
       assertTrue(frame.contains(i));
     }
     
-    assertEquals(DatumFactory.createLong(23l), frame.get(5));
-    assertEquals(DatumFactory.createLong(23l), frame.get(16));
-    assertEquals(DatumFactory.createIPv4("192.168.0.1"), frame.get(10));
-    assertEquals(DatumFactory.createIPv4("192.168.0.1"), frame.get(21));
+    assertEquals(DatumFactory.createInt8(23l), frame.get(5));
+    assertEquals(DatumFactory.createInt8(23l), frame.get(16));
+    assertEquals(DatumFactory.createInet4("192.168.0.1"), frame.get(10));
+    assertEquals(DatumFactory.createInet4("192.168.0.1"), frame.get(21));
   }
 }

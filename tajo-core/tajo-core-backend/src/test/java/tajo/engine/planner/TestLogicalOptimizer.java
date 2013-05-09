@@ -24,9 +24,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tajo.TajoTestingCluster;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.engine.function.builtin.SumInt;
 import tajo.engine.parser.QueryAnalyzer;
 import tajo.engine.planner.logical.*;
@@ -51,20 +51,20 @@ public class TestLogicalOptimizer {
     }
     
     Schema schema = new Schema();
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("empId", DataType.INT);
-    schema.addColumn("deptName", DataType.STRING);
+    schema.addColumn("name", Type.TEXT);
+    schema.addColumn("empId", Type.INT4);
+    schema.addColumn("deptName", Type.TEXT);
 
     Schema schema2 = new Schema();
-    schema2.addColumn("deptName", DataType.STRING);
-    schema2.addColumn("manager", DataType.STRING);
+    schema2.addColumn("deptName", Type.TEXT);
+    schema2.addColumn("manager", Type.TEXT);
 
     Schema schema3 = new Schema();
-    schema3.addColumn("deptName", DataType.STRING);
-    schema3.addColumn("score", DataType.INT);
-    schema3.addColumn("phone", DataType.INT);
+    schema3.addColumn("deptName", Type.TEXT);
+    schema3.addColumn("score", Type.INT4);
+    schema3.addColumn("phone", Type.INT4);
 
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     TableDesc people = new TableDescImpl("employee", meta,
         new Path("file:///"));
     catalog.addTable(people);
@@ -80,8 +80,8 @@ public class TestLogicalOptimizer {
     catalog.addTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.GENERAL,
-        new DataType[] {DataType.INT},
-        new DataType[] {DataType.INT});
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4));
 
     catalog.registerFunction(funcDesc);
     analyzer = new QueryAnalyzer(catalog);

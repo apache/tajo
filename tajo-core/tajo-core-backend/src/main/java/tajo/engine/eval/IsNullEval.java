@@ -19,18 +19,21 @@
 package tajo.engine.eval;
 
 import com.google.gson.annotations.Expose;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos;
-import tajo.datum.BoolDatum;
+import tajo.common.TajoDataTypes;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.datum.BooleanDatum;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.utils.SchemaUtil;
+import tajo.datum.NullDatum;
 import tajo.storage.Tuple;
 
 public class IsNullEval extends BinaryEval {
   private final static ConstEval NULL_EVAL = new ConstEval(DatumFactory.createNullDatum());
-  private static final CatalogProtos.DataType[] RES_TYPE = SchemaUtil.newNoNameSchema(CatalogProtos.DataType.BOOLEAN);
+  private static final DataType [] RES_TYPE =
+      CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
 
   // persistent variables
   @Expose private boolean isNot;
@@ -49,7 +52,7 @@ public class IsNullEval extends BinaryEval {
   }
 
   @Override
-  public CatalogProtos.DataType[] getValueType() {
+  public DataType[] getValueType() {
     return RES_TYPE;
   }
 
@@ -65,9 +68,9 @@ public class IsNullEval extends BinaryEval {
       fieldId = schema.getColumnId(columnRef.getQualifiedName());
     }
     if (isNot) {
-      isNullCtx.result.setValue(!tuple.get(fieldId).isNull());
+      isNullCtx.result.setValue(!(tuple.get(fieldId) instanceof NullDatum));
     } else {
-      isNullCtx.result.setValue(tuple.get(fieldId).isNull());
+      isNullCtx.result.setValue(tuple.get(fieldId) instanceof NullDatum);
     }
   }
 
@@ -101,7 +104,7 @@ public class IsNullEval extends BinaryEval {
   }
 
   private class IsNullEvalCtx implements EvalContext {
-    BoolDatum result;
+    BooleanDatum result;
 
     IsNullEvalCtx() {
       this.result = DatumFactory.createBool(false);

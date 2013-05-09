@@ -27,7 +27,7 @@ import tajo.catalog.CatalogService;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.proto.CatalogProtos;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.engine.eval.*;
 import tajo.engine.parser.*;
 import tajo.engine.parser.QueryBlock.*;

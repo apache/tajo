@@ -18,21 +18,22 @@
 
 package tajo.engine.function.builtin;
 
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.datum.LongDatum;
+import tajo.datum.Int8Datum;
 import tajo.storage.Tuple;
 
 public class MinLong extends AggFunction<Datum> {
 
   public MinLong() {
     super(new Column[] {
-        new Column("val", CatalogProtos.DataType.LONG)
+        new Column("val", Type.INT8)
     });
   }
 
@@ -44,22 +45,22 @@ public class MinLong extends AggFunction<Datum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     MinContext minCtx = (MinContext)ctx;
-    minCtx.min = Math.min(minCtx.min, params.get(0).asLong());
+    minCtx.min = Math.min(minCtx.min, params.get(0).asInt8());
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createLong(((MinContext)ctx).min);
+    return DatumFactory.createInt8(((MinContext) ctx).min);
   }
 
   @Override
   public DataType[] getPartialResultType() {
-    return new DataType[] {DataType.LONG};
+    return CatalogUtil.newDataTypesWithoutLen(Type.INT8);
   }
 
   @Override
-  public LongDatum terminate(FunctionContext ctx) {
-    return DatumFactory.createLong(((MinContext)ctx).min);
+  public Int8Datum terminate(FunctionContext ctx) {
+    return DatumFactory.createInt8(((MinContext) ctx).min);
   }
 
   private class MinContext implements FunctionContext {

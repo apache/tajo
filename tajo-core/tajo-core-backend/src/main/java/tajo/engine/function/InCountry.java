@@ -20,17 +20,17 @@ package tajo.engine.function;
 
 import tajo.catalog.Column;
 import tajo.catalog.function.GeneralFunction;
-import tajo.catalog.proto.CatalogProtos.DataType;
-import tajo.datum.BoolDatum;
+import tajo.common.TajoDataTypes;
+import tajo.datum.BooleanDatum;
 import tajo.datum.Datum;
 import tajo.storage.Tuple;
 import tajo.util.GeoUtil;
 
-public class InCountry extends GeneralFunction<BoolDatum> {
+public class InCountry extends GeneralFunction<BooleanDatum> {
 
   public InCountry() {
-    super(new Column[] {new Column("addr", DataType.STRING),
-        new Column("code", DataType.STRING)});
+    super(new Column[] {new Column("addr", TajoDataTypes.Type.TEXT),
+        new Column("code", TajoDataTypes.Type.TEXT)});
   }
 
   @Override
@@ -39,6 +39,6 @@ public class InCountry extends GeneralFunction<BoolDatum> {
     String otherCode = params.get(1).asChars();
     String thisCode = GeoUtil.getCountryCode(addr);
 
-    return new BoolDatum(thisCode.equals(otherCode));
+    return new BooleanDatum(thisCode.equals(otherCode));
   }
 }

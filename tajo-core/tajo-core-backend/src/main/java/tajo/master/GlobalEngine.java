@@ -34,7 +34,7 @@ import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.hadoop.yarn.util.Records;
 import tajo.QueryConf;
 import tajo.QueryId;
-import tajo.catalog.TCatUtil;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.TableDesc;
 import tajo.catalog.TableMeta;
 import tajo.catalog.statistics.TableStat;
@@ -115,10 +115,10 @@ public class GlobalEngine extends AbstractService {
     CreateTableNode createTable = (CreateTableNode) root.getSubNode();
     TableMeta meta;
     if (createTable.hasOptions()) {
-      meta = TCatUtil.newTableMeta(createTable.getSchema(),
+      meta = CatalogUtil.newTableMeta(createTable.getSchema(),
           createTable.getStorageType(), createTable.getOptions());
     } else {
-      meta = TCatUtil.newTableMeta(createTable.getSchema(),
+      meta = CatalogUtil.newTableMeta(createTable.getSchema(),
           createTable.getStorageType());
     }
 
@@ -138,7 +138,7 @@ public class GlobalEngine extends AbstractService {
     meta.setStat(stat);
 
     StorageUtil.writeTableMeta(context.getConf(), createTable.getPath(), meta);
-    TableDesc desc = TCatUtil.newTableDesc(createTable.getTableName(), meta,
+    TableDesc desc = CatalogUtil.newTableDesc(createTable.getTableName(), meta,
         createTable.getPath());
     context.getCatalog().addTable(desc);
     return desc.getId();

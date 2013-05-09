@@ -20,7 +20,7 @@ package tajo.engine.util;
 
 import org.junit.Test;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.engine.planner.PlannerUtil;
@@ -40,32 +40,32 @@ public class TestTupleUtil {
   @Test
   public final void testToBytesAndToTuple() {
     Schema schema = new Schema();
-    schema.addColumn("col1", DataType.BOOLEAN);
-    schema.addColumn("col2", DataType.BYTE);
-    schema.addColumn("col3", DataType.CHAR);
-    schema.addColumn("col4", DataType.SHORT);
-    schema.addColumn("col5", DataType.INT);
-    schema.addColumn("col6", DataType.LONG);
-    schema.addColumn("col7", DataType.FLOAT);
-    schema.addColumn("col8", DataType.DOUBLE);
-    schema.addColumn("col9", DataType.STRING);
-    schema.addColumn("col10", DataType.BYTES);
-    schema.addColumn("col11", DataType.IPv4);
+    schema.addColumn("col1", Type.BOOLEAN);
+    schema.addColumn("col2", Type.BIT);
+    schema.addColumn("col3", Type.CHAR);
+    schema.addColumn("col4", Type.INT2);
+    schema.addColumn("col5", Type.INT4);
+    schema.addColumn("col6", Type.INT8);
+    schema.addColumn("col7", Type.FLOAT4);
+    schema.addColumn("col8", Type.FLOAT8);
+    schema.addColumn("col9", Type.TEXT);
+    schema.addColumn("col10", Type.BLOB);
+    schema.addColumn("col11", Type.INET4);
     //schema.addColumn("col11", DataType.IPv6);
     
     Tuple tuple = new VTuple(11);
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createByte((byte) 0x99),
+        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar('7'),
-        DatumFactory.createShort((short) 17),
-        DatumFactory.createInt(59),
-        DatumFactory.createLong(23l),
-        DatumFactory.createFloat(77.9f),
-        DatumFactory.createDouble(271.9f),        
-        DatumFactory.createString("hyunsik"),
-        DatumFactory.createBytes("hyunsik".getBytes()),
-        DatumFactory.createIPv4("192.168.0.1")
+        DatumFactory.createInt2((short) 17),
+        DatumFactory.createInt4(59),
+        DatumFactory.createInt8(23l),
+        DatumFactory.createFloat4(77.9f),
+        DatumFactory.createFloat8(271.9f),
+        DatumFactory.createText("hyunsik"),
+        DatumFactory.createBlob("hyunsik".getBytes()),
+        DatumFactory.createInet4("192.168.0.1")
     });
     
     byte [] bytes = RowStoreUtil.RowStoreEncoder.toBytes(schema, tuple);
@@ -80,29 +80,29 @@ public class TestTupleUtil {
     Tuple eTuple = new VTuple(7);
 
     Schema schema = new Schema();
-    schema.addColumn("numByte", DataType.BYTE);
-    schema.addColumn("numChar", DataType.CHAR);
-    schema.addColumn("numShort", DataType.SHORT);
-    schema.addColumn("numInt", DataType.INT);
-    schema.addColumn("numLong", DataType.LONG);
-    schema.addColumn("numFloat", DataType.FLOAT);
-    schema.addColumn("numDouble", DataType.FLOAT);
+    schema.addColumn("numByte", Type.BIT);
+    schema.addColumn("numChar", Type.CHAR);
+    schema.addColumn("numShort", Type.INT2);
+    schema.addColumn("numInt", Type.INT4);
+    schema.addColumn("numLong", Type.INT8);
+    schema.addColumn("numFloat", Type.FLOAT4);
+    schema.addColumn("numDouble", Type.FLOAT4);
 
-    sTuple.put(0, DatumFactory.createByte((byte) 44));
+    sTuple.put(0, DatumFactory.createBit((byte) 44));
     sTuple.put(1, DatumFactory.createChar('a'));
-    sTuple.put(2, DatumFactory.createShort((short) 10));
-    sTuple.put(3, DatumFactory.createInt(5));
-    sTuple.put(4, DatumFactory.createLong(100));
-    sTuple.put(5, DatumFactory.createFloat(100));
-    sTuple.put(6, DatumFactory.createDouble(100));
+    sTuple.put(2, DatumFactory.createInt2((short) 10));
+    sTuple.put(3, DatumFactory.createInt4(5));
+    sTuple.put(4, DatumFactory.createInt8(100));
+    sTuple.put(5, DatumFactory.createFloat4(100));
+    sTuple.put(6, DatumFactory.createFloat8(100));
 
-    eTuple.put(0, DatumFactory.createByte((byte) 99));
+    eTuple.put(0, DatumFactory.createBit((byte) 99));
     eTuple.put(1, DatumFactory.createChar('p'));
-    eTuple.put(2, DatumFactory.createShort((short) 70));
-    eTuple.put(3, DatumFactory.createInt(70));
-    eTuple.put(4, DatumFactory.createLong(10000));
-    eTuple.put(5, DatumFactory.createFloat(150));
-    eTuple.put(6, DatumFactory.createDouble(170));
+    eTuple.put(2, DatumFactory.createInt2((short) 70));
+    eTuple.put(3, DatumFactory.createInt4(70));
+    eTuple.put(4, DatumFactory.createInt8(10000));
+    eTuple.put(5, DatumFactory.createFloat4(150));
+    eTuple.put(6, DatumFactory.createFloat8(170));
 
     RangePartitionAlgorithm partitioner = new UniformRangePartition(schema, new TupleRange(schema, sTuple, eTuple));
     TupleRange [] ranges = partitioner.partition(5);
@@ -119,16 +119,16 @@ public class TestTupleUtil {
   @Test
   public void testQueryToRange() throws UnsupportedEncodingException {
     Schema schema = new Schema();
-    schema.addColumn("intval", DataType.INT);
-    schema.addColumn("floatval", DataType.FLOAT);
+    schema.addColumn("intval", Type.INT4);
+    schema.addColumn("floatval", Type.FLOAT4);
 
     Tuple s = new VTuple(2);
-    s.put(0, DatumFactory.createInt(5));
-    s.put(1, DatumFactory.createFloat(10));
+    s.put(0, DatumFactory.createInt4(5));
+    s.put(1, DatumFactory.createFloat4(10));
 
     Tuple e = new VTuple(2);
-    e.put(0, DatumFactory.createInt(10));
-    e.put(1, DatumFactory.createFloat(20));
+    e.put(0, DatumFactory.createInt4(10));
+    e.put(1, DatumFactory.createFloat4(20));
 
     TupleRange expected = new TupleRange(schema, s, e);
     int card = (int) TupleUtil.computeCardinality(schema, expected);
@@ -155,12 +155,12 @@ public class TestTupleUtil {
   @Test
   public void testQueryToRangeWithOneRange() throws UnsupportedEncodingException {
     Schema schema = new Schema();
-    schema.addColumn("partkey", DataType.FLOAT);
+    schema.addColumn("partkey", Type.FLOAT4);
 
     Tuple s = new VTuple(1);
-    s.put(0, DatumFactory.createFloat(28082));
+    s.put(0, DatumFactory.createFloat4(28082));
     Tuple e = new VTuple(1);
-    e.put(0, DatumFactory.createFloat(28082));
+    e.put(0, DatumFactory.createFloat4(28082));
 
     TupleRange expected = new TupleRange(schema, s, e);
     int card = (int) TupleUtil.computeCardinality(schema, expected);
@@ -186,11 +186,11 @@ public class TestTupleUtil {
    */
   public void testRangeToQueryHeavyTest() throws UnsupportedEncodingException {
     Schema schema = new Schema();
-    schema.addColumn("c_custkey", DataType.INT);
+    schema.addColumn("c_custkey", Type.INT4);
     Tuple s = new VTuple(1);
-    s.put(0, DatumFactory.createInt(4));
+    s.put(0, DatumFactory.createInt4(4));
     Tuple e = new VTuple(1);
-    e.put(0, DatumFactory.createInt(149995));
+    e.put(0, DatumFactory.createInt4(149995));
     TupleRange expected = new TupleRange(schema, s, e);
     TupleRange [] ranges = TupleUtil.getPartitions(schema, 31, expected);
 
@@ -208,14 +208,14 @@ public class TestTupleUtil {
    */
   public void testRangeToQueryTest() throws UnsupportedEncodingException {
     Schema schema = new Schema();
-    schema.addColumn("l_returnflag", DataType.STRING);
-    schema.addColumn("l_linestatus", DataType.STRING);
+    schema.addColumn("l_returnflag", Type.TEXT);
+    schema.addColumn("l_linestatus", Type.TEXT);
     Tuple s = new VTuple(2);
-    s.put(0, DatumFactory.createString("A"));
-    s.put(1, DatumFactory.createString("F"));
+    s.put(0, DatumFactory.createText("A"));
+    s.put(1, DatumFactory.createText("F"));
     Tuple e = new VTuple(2);
-    e.put(0, DatumFactory.createString("R"));
-    e.put(1, DatumFactory.createString("O"));
+    e.put(0, DatumFactory.createText("R"));
+    e.put(1, DatumFactory.createText("O"));
     TupleRange expected = new TupleRange(schema, s, e);
 
     RangePartitionAlgorithm partitioner = new UniformRangePartition(schema, expected, true);

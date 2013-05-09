@@ -22,7 +22,7 @@
 package tajo.engine.query;
 
 import tajo.catalog.TableMeta;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.exception.UnsupportedException;
 
 import java.nio.channels.UnsupportedAddressTypeException;
@@ -109,35 +109,35 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
   public int getColumnType(int column) throws SQLException {
     // TODO
     DataType type = meta.getSchema().getColumn(column - 1).getDataType();
-    switch (type) {
-    case BOOLEAN:
-      return Types.BOOLEAN;
-    case BIGDECIMAL:
-      return Types.DECIMAL;
-    case BIGINT:
-      return Types.BIGINT;
-    case BYTE:
-      return Types.TINYINT;
-    case BYTES:
-      return Types.VARBINARY;
-    case CHAR:
-      return Types.CHAR;
-    case DATE:
-      return Types.DATE;
-    case DOUBLE:
-      return Types.DOUBLE;
-    case FLOAT:
-      return Types.FLOAT;
-    case INT:
-      return Types.INTEGER;
-    case LONG:
-      return Types.BIGINT;
-    case SHORT:
-      return Types.SMALLINT;
-    case STRING:
-      return Types.VARCHAR;
-    default:
-      throw new UnsupportedException();
+    switch (type.getType()) {
+      case BOOLEAN:
+        return Types.BOOLEAN;
+      case INT1:
+        return Types.TINYINT;
+      case INT2:
+        return Types.SMALLINT;
+      case INT4:
+        return Types.INTEGER;
+      case INT8:
+        return Types.BIGINT;
+      case FLOAT4:
+        return Types.FLOAT;
+      case FLOAT8:
+        return Types.DOUBLE;
+      case DECIMAL:
+        return Types.DECIMAL;
+      case VARBINARY:
+        return Types.VARBINARY;
+      case CHAR:
+        return Types.CHAR;
+      case DATE:
+        return Types.DATE;
+      case VARCHAR:
+        return Types.VARCHAR;
+      case TEXT:
+        return Types.VARCHAR;
+      default:
+        throw new UnsupportedException();
     }
   }
 

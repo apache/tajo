@@ -22,8 +22,9 @@ import com.google.gson.annotations.Expose;
 import tajo.catalog.json.GsonCreator;
 import tajo.catalog.proto.CatalogProtos.ColumnProto;
 import tajo.catalog.proto.CatalogProtos.ColumnProtoOrBuilder;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.common.ProtoObject;
+import tajo.common.TajoDataTypes;
+import tajo.common.TajoDataTypes.DataType;
 
 public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	private ColumnProto proto = ColumnProto.getDefaultInstance();
@@ -42,6 +43,10 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 		this.name = columnName.toLowerCase();
 		this.dataType = dataType;
 	}
+
+  public Column(String columnName, TajoDataTypes.Type type) {
+    this(columnName, CatalogUtil.newDataTypeWithoutLen(type));
+  }
 	
 	public Column(ColumnProto proto) {
 		this.proto = proto;
@@ -108,11 +113,8 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	public boolean equals(Object o) {
 		if (o instanceof Column) {
 			Column cd = (Column)o;
-			if (this.getQualifiedName().equals(cd.getQualifiedName()) &&
-					this.getDataType() == cd.getDataType()
-					) {
-				return true;
-			}
+			return this.getQualifiedName().equals(cd.getQualifiedName()) &&
+					this.getDataType().equals(cd.getDataType());
 		}
 		return false;
 	}
@@ -164,7 +166,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 	}
 	
 	public String toString() {
-	  return getQualifiedName() +" (" + getDataType()+")";
+	  return getQualifiedName() +" (" + getDataType().getType() +")";
 	}
 	
 	public String toJSON() {

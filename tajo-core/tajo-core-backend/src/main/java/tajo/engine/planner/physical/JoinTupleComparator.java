@@ -22,7 +22,7 @@ import com.google.common.base.Preconditions;
 import tajo.catalog.Schema;
 import tajo.catalog.SortSpec;
 import tajo.datum.Datum;
-import tajo.datum.DatumType;
+import tajo.datum.NullDatum;
 import tajo.storage.Tuple;
 
 import java.util.Comparator;
@@ -64,11 +64,11 @@ public class JoinTupleComparator implements Comparator<Tuple> {
       outer = outerTuple.get(outerSortKeyIds[i]);
       inner = innerTuple.get(innerSortKeyIds[i]);
 
-      if (outer.type() == DatumType.NULL || inner.type() == DatumType.NULL) {
+      if (outer instanceof NullDatum || inner instanceof NullDatum) {
         if (!outer.equals(inner)) {
-          if (outer.type() == DatumType.NULL) {
+          if (outer instanceof NullDatum) {
             compVal = 1;
-          } else if (inner.type() == DatumType.NULL) {
+          } else if (inner instanceof NullDatum) {
             compVal = -1;
           }
         } else {

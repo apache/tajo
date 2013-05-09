@@ -18,21 +18,23 @@
 
 package tajo.engine.function.builtin;
 
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.ArrayDatum;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.datum.FloatDatum;
+import tajo.datum.Float4Datum;
 import tajo.storage.Tuple;
 
-public class AvgFloat extends AggFunction<FloatDatum> {
+public class AvgFloat extends AggFunction<Float4Datum> {
 
   public AvgFloat() {
     super(new Column[] {
-        new Column("val", DataType.DOUBLE)
+        new Column("val", Type.FLOAT8)
     });
   }
 
@@ -43,7 +45,7 @@ public class AvgFloat extends AggFunction<FloatDatum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     AvgContext avgCtx = (AvgContext) ctx;
-    avgCtx.sum += params.get(0).asFloat();
+    avgCtx.sum += params.get(0).asFloat4();
     avgCtx.count++;
   }
 
@@ -51,29 +53,29 @@ public class AvgFloat extends AggFunction<FloatDatum> {
   public void merge(FunctionContext ctx, Tuple part) {
     AvgContext avgCtx = (AvgContext) ctx;
     ArrayDatum array = (ArrayDatum) part.get(0);
-    avgCtx.sum += array.get(0).asDouble();
-    avgCtx.count += array.get(1).asLong();
+    avgCtx.sum += array.get(0).asFloat8();
+    avgCtx.count += array.get(1).asInt8();
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
     AvgContext avgCtx = (AvgContext) ctx;
     ArrayDatum part = new ArrayDatum(2);
-    part.put(0, DatumFactory.createDouble(avgCtx.sum));
-    part.put(1, DatumFactory.createLong(avgCtx.count));
+    part.put(0, DatumFactory.createFloat8(avgCtx.sum));
+    part.put(1, DatumFactory.createInt8(avgCtx.count));
 
     return part;
   }
 
   @Override
   public DataType[] getPartialResultType() {
-    return new DataType[] {DataType.DOUBLE, DataType.LONG};
+    return CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8, Type.INT8);
   }
 
   @Override
-  public FloatDatum terminate(FunctionContext ctx) {
+  public Float4Datum terminate(FunctionContext ctx) {
     AvgContext avgCtx = (AvgContext) ctx;
-    return DatumFactory.createFloat((float) (avgCtx.sum / avgCtx.count));
+    return DatumFactory.createFloat4((float) (avgCtx.sum / avgCtx.count));
   }
 
   private class AvgContext implements FunctionContext {

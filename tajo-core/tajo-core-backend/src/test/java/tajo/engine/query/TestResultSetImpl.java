@@ -28,12 +28,12 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import tajo.IntegrationTest;
 import tajo.TajoTestingCluster;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Schema;
-import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.DatumFactory;
 import tajo.storage.Appender;
@@ -62,9 +62,9 @@ public class TestResultSetImpl {
     sm = new StorageManager(conf);
 
     Schema scoreSchema = new Schema();
-    scoreSchema.addColumn("deptname", DataType.STRING);
-    scoreSchema.addColumn("score", DataType.INT);
-    scoreMeta = TCatUtil.newTableMeta(scoreSchema, StoreType.CSV);
+    scoreSchema.addColumn("deptname", Type.TEXT);
+    scoreSchema.addColumn("score", Type.INT4);
+    scoreMeta = CatalogUtil.newTableMeta(scoreSchema, StoreType.CSV);
     TableStat stat = new TableStat();
 
     Path p = sm.getTablePath("score");
@@ -78,8 +78,8 @@ public class TestResultSetImpl {
     for (int i = 0; i < tupleNum; i++) {
       tuple = new VTuple(2);
       String key = "test" + (i % deptSize);
-      tuple.put(0, DatumFactory.createString(key));
-      tuple.put(1, DatumFactory.createInt(i + 1));
+      tuple.put(0, DatumFactory.createText(key));
+      tuple.put(1, DatumFactory.createInt4(i + 1));
       written += key.length() + Integer.SIZE;
       appender.addTuple(tuple);
     }

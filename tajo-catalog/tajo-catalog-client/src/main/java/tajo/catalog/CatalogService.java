@@ -18,7 +18,7 @@
 
 package tajo.catalog;
 
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
 
 import java.util.Collection;
 

@@ -30,8 +30,8 @@ import tajo.QueryIdFactory;
 import tajo.TajoTestingCluster;
 import tajo.TaskAttemptContext;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -84,8 +84,8 @@ public class TestRangeRetrieverHandler {
     planner = new LogicalPlanner(catalog);
 
     schema = new Schema();
-    schema.addColumn("empId", DataType.INT);
-    schema.addColumn("age", DataType.INT);
+    schema.addColumn("empId", Type.INT4);
+    schema.addColumn("age", Type.INT4);
   }
 
   @After
@@ -103,7 +103,7 @@ public class TestRangeRetrieverHandler {
     Tuple firstTuple = null;
     Tuple lastTuple;
 
-    TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
 
     Path tableDir = StorageUtil.concatPath(testDir, "testGet", "table.csv");
     fs.mkdirs(tableDir.getParent());
@@ -114,8 +114,8 @@ public class TestRangeRetrieverHandler {
     for (int i = 0; i < TEST_TUPLE; i++) {
       tuple.put(
           new Datum[] {
-              DatumFactory.createInt(i),
-              DatumFactory.createInt(i+5)
+              DatumFactory.createInt4(i),
+              DatumFactory.createInt4(i + 5)
           });
       appender.addTuple(tuple);
 
@@ -173,12 +173,12 @@ public class TestRangeRetrieverHandler {
 
     Tuple keytuple = new VTuple(2);
     for(int i = 1 ; i < TEST_TUPLE ; i ++) {
-      keytuple.put(0, DatumFactory.createInt(i));
-      keytuple.put(1, DatumFactory.createInt(i + 5));
+      keytuple.put(0, DatumFactory.createInt4(i));
+      keytuple.put(1, DatumFactory.createInt4(i + 5));
       long offsets = reader.find(keytuple);
       scanner.seek(offsets);
       tuple = scanner.next();
-      assertTrue("[seek check " + (i) + " ]" , i == tuple.get(0).asInt());
+      assertTrue("[seek check " + (i) + " ]" , i == tuple.get(0).asInt4());
       //assertTrue("[seek check " + (i) + " ]" , ("name_" + i).equals(tuple.get(1).asChars()));
     }
 
@@ -216,7 +216,7 @@ public class TestRangeRetrieverHandler {
     Tuple firstTuple = null;
     Tuple lastTuple;
 
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     Path tablePath = StorageUtil.concatPath(testDir, "testGetFromDescendingOrder", "table.csv");
     fs.mkdirs(tablePath.getParent());
     Appender appender = sm.getAppender(conf, meta, tablePath);
@@ -225,8 +225,8 @@ public class TestRangeRetrieverHandler {
     for (int i = (TEST_TUPLE - 1); i >= 0 ; i--) {
       tuple.put(
           new Datum[] {
-              DatumFactory.createInt(i),
-              DatumFactory.createInt(i+5)
+              DatumFactory.createInt4(i),
+              DatumFactory.createInt4(i + 5)
           });
       appender.addTuple(tuple);
 
@@ -283,12 +283,12 @@ public class TestRangeRetrieverHandler {
 
     Tuple keytuple = new VTuple(2);
     for(int i = (TEST_TUPLE - 1) ; i >= 0; i --) {
-      keytuple.put(0, DatumFactory.createInt(i));
-      keytuple.put(1, DatumFactory.createInt(i + 5));
+      keytuple.put(0, DatumFactory.createInt4(i));
+      keytuple.put(1, DatumFactory.createInt4(i + 5));
       long offsets = reader.find(keytuple);
       scanner.seek(offsets);
       tuple = scanner.next();
-      assertTrue("[seek check " + (i) + " ]" , i == tuple.get(0).asInt());
+      assertTrue("[seek check " + (i) + " ]" , i == tuple.get(0).asInt4());
     }
 
     TupleRange totalRange = new TupleRange(keySchema, lastTuple, firstTuple);

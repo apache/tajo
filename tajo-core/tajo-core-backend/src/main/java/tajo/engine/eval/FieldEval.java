@@ -22,7 +22,7 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.Datum;
 import tajo.engine.json.GsonCreator;
 import tajo.engine.utils.SchemaUtil;
@@ -79,7 +79,7 @@ public class FieldEval extends EvalNode implements Cloneable {
   }
 
   @Override
-	public DataType [] getValueType() {
+	public DataType[] getValueType() {
 		return SchemaUtil.newNoNameSchema(column.getDataType());
 	}
 	

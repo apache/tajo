@@ -20,9 +20,9 @@ package tajo.catalog;
 
 import org.junit.Before;
 import org.junit.Test;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.proto.CatalogProtos.TableProto;
+import tajo.common.TajoDataTypes.Type;
 
 import static org.junit.Assert.*;
 
@@ -33,17 +33,17 @@ public class TestTableInfo {
   @Before
   public void setUp() {
     schema = new Schema();
-    schema.addColumn("name", DataType.BYTE);
-    schema.addColumn("addr", DataType.STRING);
-    meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    schema.addColumn("name", Type.BLOB);
+    schema.addColumn("addr", Type.TEXT);
+    meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
   }
   
   @Test
   public void testTableMetaTableProto() {    
     Schema schema1 = new Schema();
-    schema1.addColumn("name", DataType.BYTE);
-    schema1.addColumn("addr", DataType.STRING);    
-    TableMeta meta1 = TCatUtil.newTableMeta(schema1, StoreType.CSV);
+    schema1.addColumn("name", Type.BLOB);
+    schema1.addColumn("addr", Type.TEXT);
+    TableMeta meta1 = CatalogUtil.newTableMeta(schema1, StoreType.CSV);
     
     TableMeta meta2 = new TableMetaImpl(meta1.getProto());
     assertEquals(meta1, meta2);
@@ -52,9 +52,9 @@ public class TestTableInfo {
   @Test
   public final void testClone() throws CloneNotSupportedException {    
     Schema schema1 = new Schema();
-    schema1.addColumn("name", DataType.BYTE);
-    schema1.addColumn("addr", DataType.STRING);
-    TableMeta meta1 = TCatUtil.newTableMeta(schema1, StoreType.CSV);
+    schema1.addColumn("name", Type.BLOB);
+    schema1.addColumn("addr", Type.TEXT);
+    TableMeta meta1 = CatalogUtil.newTableMeta(schema1, StoreType.CSV);
     
     TableMetaImpl info = (TableMetaImpl) meta1;
     
@@ -67,9 +67,9 @@ public class TestTableInfo {
   @Test
   public void testSchema() throws CloneNotSupportedException {    
     Schema schema1 = new Schema();
-    schema1.addColumn("name", DataType.BYTE);
-    schema1.addColumn("addr", DataType.STRING);
-    TableMeta meta1 = TCatUtil.newTableMeta(schema1,  StoreType.CSV);
+    schema1.addColumn("name", Type.BLOB);
+    schema1.addColumn("addr", Type.TEXT);
+    TableMeta meta1 = CatalogUtil.newTableMeta(schema1, StoreType.CSV);
     
     TableMeta meta2 = (TableMeta) meta1.clone();
     
@@ -84,8 +84,8 @@ public class TestTableInfo {
   @Test
   public void testGetSchema() {
     Schema schema2 = new Schema();
-    schema2.addColumn("name", DataType.BYTE);
-    schema2.addColumn("addr", DataType.STRING);
+    schema2.addColumn("name", Type.BLOB);
+    schema2.addColumn("addr", Type.TEXT);
     
     assertEquals(schema, schema2);
   }
@@ -93,9 +93,9 @@ public class TestTableInfo {
   @Test
   public void testSetSchema() {
     Schema schema2 = new Schema();
-    schema2.addColumn("name", DataType.BYTE);
-    schema2.addColumn("addr", DataType.STRING);
-    schema2.addColumn("age", DataType.INT);
+    schema2.addColumn("name", Type.BLOB);
+    schema2.addColumn("addr", Type.TEXT);
+    schema2.addColumn("age", Type.INT4);
     
     assertNotSame(meta.getSchema(), schema2);
     meta.setSchema(schema2);
@@ -105,9 +105,9 @@ public class TestTableInfo {
   @Test
   public void testEqualsObject() {    
     Schema schema2 = new Schema();
-    schema2.addColumn("name", DataType.BYTE);
-    schema2.addColumn("addr", DataType.STRING);
-    TableMeta meta2 = TCatUtil.newTableMeta(schema2, StoreType.CSV);
+    schema2.addColumn("name", Type.BLOB);
+    schema2.addColumn("addr", Type.TEXT);
+    TableMeta meta2 = CatalogUtil.newTableMeta(schema2, StoreType.CSV);
     
     assertTrue(meta.equals(meta2));
     
@@ -117,9 +117,9 @@ public class TestTableInfo {
   @Test
   public void testGetProto() {
     Schema schema1 = new Schema();
-    schema1.addColumn("name", DataType.BYTE);
-    schema1.addColumn("addr", DataType.STRING);
-    TableMeta meta1 = TCatUtil.newTableMeta(schema1, StoreType.CSV);
+    schema1.addColumn("name", Type.BLOB);
+    schema1.addColumn("addr", Type.TEXT);
+    TableMeta meta1 = CatalogUtil.newTableMeta(schema1, StoreType.CSV);
     
     TableProto proto = meta1.getProto();
     TableMeta newMeta = new TableMetaImpl(proto);

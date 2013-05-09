@@ -21,7 +21,9 @@ package tajo.engine.eval;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.catalog.CatalogUtil;
+import tajo.common.TajoDataTypes;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.Datum;
 import tajo.engine.json.GsonCreator;
 
@@ -60,18 +62,19 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
   @Override
 	public DataType [] getValueType() {
 		switch(this.datum.type()) {
-      case CHAR: return new DataType[] {DataType.CHAR};
-      case BOOLEAN: return new DataType[] {DataType.BOOLEAN};
-      case BYTE: return new DataType[] {DataType.BYTE};
-      case BYTES : return new DataType[] {DataType.BYTES};
-      case DOUBLE : return new DataType[] {DataType.DOUBLE};
-      case FLOAT: return new DataType[] {DataType.FLOAT};
-      case INT: return new DataType[] {DataType.INT};
-      case IPv4: return new DataType[] {DataType.IPv4};
-      case LONG: return new DataType[] {DataType.LONG};
-      case SHORT: return new DataType[] {DataType.SHORT};
-      case STRING: return new DataType[] {DataType.STRING};
-      default: return new DataType[] {DataType.ANY};
+      case BOOLEAN: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
+      case BIT: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BIT);
+      case CHAR: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.CHAR);
+      case INT1: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT1);
+      case INT2: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT2);
+      case INT4: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT4);
+      case INT8: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT8);
+      case FLOAT4: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.FLOAT4);
+      case FLOAT8 : return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.FLOAT8);
+      case BLOB : return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BLOB);
+      case TEXT: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.TEXT);
+      case INET4: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INET4);
+      default: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.ANY);
 		}
 	}
 

@@ -20,20 +20,20 @@ package tajo.engine.function.builtin;
 
 import tajo.catalog.Column;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos;
-import tajo.datum.DatumType;
+import tajo.common.TajoDataTypes.Type;
+import tajo.datum.NullDatum;
 import tajo.storage.Tuple;
 
 public final class CountValue extends CountRows {
 
   public CountValue() {
     super(new Column[] {
-        new Column("col", CatalogProtos.DataType.ANY)
+        new Column("col", Type.ANY)
     });
   }
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
-    if (params.get(0).type() != DatumType.NULL) {
+    if (params.get(0) instanceof NullDatum) {
       ((CountRowContext) ctx).count++;
     }
   }

@@ -93,13 +93,13 @@ public class TestNQLParser {
     int cubeIdx = 0;
     Tree cube = groupby.getChild(grpIdx);
     assertEquals(NQLParser.FIELD_NAME, cube.getChild(cubeIdx++).getType());
-    assertEquals(NQLParser.FIELD_NAME, cube.getChild(cubeIdx++).getType());
+    assertEquals(NQLParser.FIELD_NAME, cube.getChild(cubeIdx).getType());
     grpIdx++;
     assertEquals(NQLParser.ROLLUP, groupby.getChild(grpIdx).getType());
     
     int rollupIdx = 0;
     Tree rollup = groupby.getChild(grpIdx);
-    assertEquals(NQLParser.FIELD_NAME, rollup.getChild(rollupIdx++).getType());
+    assertEquals(NQLParser.FIELD_NAME, rollup.getChild(rollupIdx).getType());
     
     idx++;
     assertEquals(NQLParser.HAVING, ast.getChild(idx).getType());
@@ -443,15 +443,64 @@ public class TestNQLParser {
   }
 
   static String[] schemaStmts = { 
-    "drop table abc",
-    "create table name (name string, age int)",
-    "create table name (name string, age int) using rcfile",
-    "create table name (name string, age int) using rcfile with ('rcfile.buffer'=4096)",
+    "drop table abc", // 0
+    "create table name (name text, age int)", // 1
+    "create table name (name text, age int) using rcfile", // 2
+    "create table name (name text, age int) using rcfile with ('rcfile.buffer'=4096)", // 3
     "create table name as select * from test", // 4
-    "create table name (name string, age int) as select * from test", // 5
-    "create table name (name string, age int) using rcfile as select * from test", // 6
-    "create table name (name string, age int) using rcfile with ('rcfile.buffer'= 4096) as select * from test", // 7
-    "create external table table1 (name string, age int, earn long, score float) using csv location '/tmp/data'", // 8
+    "create table name (name text, age int) as select * from test", // 5
+    "create table name (name text, age int) using rcfile as select * from test", // 6
+    "create table name (name text, age int) using rcfile with ('rcfile.buffer'= 4096) as select * from test", // 7
+    "create table widetable (" +
+        "col0 bit," +
+        "col0 bit(10)," +
+        "col0 bit varying," +
+        "col0 bit varying(10)," +
+        "col1 tinyint, " +
+        "col2 smallint, " +
+        "col3 integer, " +
+        "col4 bigint, " +
+        "col5 real, " +
+        "col5 float, " +
+        "col5 float(53), " +
+        "col6 double, " +
+        "col6 double precision, " +
+        "col7 numeric, " +
+        "col7 numeric(10), " +
+        "col7 numeric(10,2), " +
+        "col8 decimal," +
+        "col8 decimal(10)," +
+        "col8 decimal(10,2)," +
+        "col9 char," +
+        "col9 character," +
+        "col10 char(10)," +
+        "col10 character(10)," +
+        "col11 varchar," +
+        "col11 character varying," +
+        "col12 varchar(255)," +
+        "col11 character varying (255)," +
+        "col11 nchar," +
+        "col11 nchar(255)," +
+        "col11 national character," +
+        "col11 national character(255)," +
+        "col11 nvarchar," +
+        "col11 nvarchar(255)," +
+        "col11 national character varying," +
+        "col11 national character varying (255)," +
+        "col11 date," +
+        "col11 time," +
+        "col11 timetz," +
+        "col11 time with time zone," +
+        "col11 timestamptz," +
+        "col11 timestamp with time zone," +
+        "col11 binary," +
+        "col11 binary(10)," +
+        "col11 varbinary(10)," +
+        "col11 binary varying(10)," +
+        "col11 blob" +
+        ") as select * from test", // 8
+    "create table widetable (col1 float(10), col2 float) as select * from test", // 9
+    "create external table table1 (name text, age int, earn bigint, score float) using csv location '/tmp/data'", // 10
   };
 
   @Test
@@ -524,10 +573,31 @@ public class TestNQLParser {
     assertEquals(NQLParser.AS, ast.getChild(4).getType());
     assertEquals(NQLParser.SELECT, ast.getChild(4).getChild(0).getType());
   }
+
+  @Test
+  public void testCreateTableWithVariousDataType1() throws RecognitionException, TQLSyntaxError {
+    Tree ast = parseQuery(schemaStmts[8]);
+    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
+    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(NQLParser.AS, ast.getChild(2).getType());
+    assertEquals(NQLParser.SELECT, ast.getChild(2).getChild(0).getType());
+  }
+
+  @Test
+  public void testCreateTableWithVariousDataType2() throws RecognitionException, TQLSyntaxError {
+    Tree ast = parseQuery(schemaStmts[9]);
+    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
+    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals("10", ast.getChild(1).getChild(0).getChild(1).getChild(0).getText());
+    assertEquals(NQLParser.AS, ast.getChild(2).getType());
+    assertEquals(NQLParser.SELECT, ast.getChild(2).getChild(0).getType());
+  }
   
   @Test
   public void testCreateTableLocation1() throws RecognitionException, TQLSyntaxError {
-    Tree ast = parseQuery(schemaStmts[8]);
+    Tree ast = parseQuery(schemaStmts[10]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
     assertEquals(NQLParser.ID, ast.getChild(0).getType());
     assertEquals(NQLParser.EXTERNAL, ast.getChild(1).getType());

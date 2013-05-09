@@ -46,25 +46,25 @@ public interface Tuple {
 	
 	public long getOffset();
 
-	public BoolDatum getBoolean(int fieldId);
+	public BooleanDatum getBoolean(int fieldId);
 	
-	public ByteDatum getByte(int fieldId);
+	public BitDatum getByte(int fieldId);
 
   public CharDatum getChar(int fieldId);
 	
-	public BytesDatum getBytes(int fieldId);
+	public BlobDatum getBytes(int fieldId);
 	
-	public ShortDatum getShort(int fieldId);
+	public Int2Datum getShort(int fieldId);
 	
-	public IntDatum getInt(int fieldId);
+	public Int4Datum getInt(int fieldId);
 	
-	public LongDatum getLong(int fieldId);
+	public Int8Datum getLong(int fieldId);
 	
-	public FloatDatum getFloat(int fieldId);
+	public Float4Datum getFloat(int fieldId);
 	
-	public DoubleDatum getDouble(int fieldId);
+	public Float8Datum getDouble(int fieldId);
 	
-	public IPv4Datum getIPv4(int fieldId);
+	public Inet4Datum getIPv4(int fieldId);
 	
 	public byte [] getIPv4Bytes(int fieldId);
 	
@@ -72,7 +72,7 @@ public interface Tuple {
 	
 	public byte [] getIPv6Bytes(int fieldId);
 	
-	public StringDatum getString(int fieldId);
+	public TextDatum getString(int fieldId);
 
-  public StringDatum2 getString2(int fieldId);
+  public TextDatum getText(int fieldId);
 }

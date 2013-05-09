@@ -22,9 +22,10 @@ import com.google.gson.Gson;
 import org.junit.Test;
 import tajo.catalog.function.GeneralFunction;
 import tajo.catalog.json.GsonCreator;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
+import tajo.common.TajoDataTypes;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.exception.InternalException;
@@ -45,15 +46,15 @@ public class TestFunctionDesc {
     private Integer y;
 
     public TestSum() {
-      super(new Column[] { new Column("arg1", DataType.INT),
-          new Column("arg2", DataType.INT) });
+      super(new Column[] { new Column("arg1", TajoDataTypes.Type.INT4),
+          new Column("arg2", TajoDataTypes.Type.INT4) });
     }
 
     @Override
     public Datum eval(Tuple params) {
-      x =  params.get(0).asInt();
-      y =  params.get(1).asInt();
-      return DatumFactory.createInt(x + y);
+      x =  params.get(0).asInt4();
+      y =  params.get(1).asInt4();
+      return DatumFactory.createInt4(x + y);
     }
 
     public String toJSON() {
@@ -65,13 +66,13 @@ public class TestFunctionDesc {
   @Test
   public void testGetSignature() throws IOException {
     FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
-        new DataType [] {DataType.INT},
-        new DataType [] {DataType.INT,DataType.LONG});
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8));
     assertEquals("sum", desc.getSignature());
     assertEquals(TestSum.class, desc.getFuncClass());
     assertEquals(FunctionType.GENERAL, desc.getFuncType());
-    assertEquals(DataType.INT, desc.getReturnType()[0]);
-    assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
+    assertEquals(Type.INT4, desc.getReturnType()[0].getType());
+    assertArrayEquals(CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8),
         desc.getParamTypes());
 
     CommonTestingUtil.getTestDir(TEST_PATH);
@@ -85,8 +86,8 @@ public class TestFunctionDesc {
     assertEquals("sum", newDesc.getSignature());
     assertEquals(TestSum.class, newDesc.getFuncClass());
     assertEquals(FunctionType.GENERAL, newDesc.getFuncType());
-    assertEquals(DataType.INT, newDesc.getReturnType()[0]);
-    assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
+    assertEquals(Type.INT4, newDesc.getReturnType()[0].getType());
+    assertArrayEquals(CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8),
         newDesc.getParamTypes());
 
     assertEquals(desc.getProto(), newDesc.getProto());
@@ -95,8 +96,8 @@ public class TestFunctionDesc {
   @Test
   public void testJson() throws InternalException {
 	  FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
-        new DataType [] {DataType.INT},
-        new DataType [] {DataType.INT,DataType.LONG});
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8));
 	  String json = desc.toJSON();
 	  System.out.println(json);
 	  Gson gson = GsonCreator.getInstance();
@@ -105,8 +106,8 @@ public class TestFunctionDesc {
 	  assertEquals("sum", fromJson.getSignature());
 	    assertEquals(TestSum.class, fromJson.getFuncClass());
 	    assertEquals(FunctionType.GENERAL, fromJson.getFuncType());
-	    assertEquals(DataType.INT, fromJson.getReturnType()[0]);
-	    assertArrayEquals(new DataType[] { DataType.INT, DataType.LONG },
+	    assertEquals(Type.INT4, fromJson.getReturnType()[0].getType());
+	    assertArrayEquals(CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8),
 	    		fromJson.getParamTypes());
 
 	    assertEquals(desc.getProto(), fromJson.getProto());
@@ -115,8 +116,8 @@ public class TestFunctionDesc {
   @Test
   public void testClone() throws CloneNotSupportedException {
     FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
-        new DataType [] {DataType.INT},
-        new DataType [] {DataType.INT,DataType.LONG});
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8));
     FunctionDesc cloned = (FunctionDesc)desc.clone();
     assertTrue("reference chk" , !(desc == cloned));
     assertTrue("getClass() chk", desc.getClass() == cloned.getClass());

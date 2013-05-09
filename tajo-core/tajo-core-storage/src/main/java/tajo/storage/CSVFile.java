@@ -30,10 +30,7 @@ import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.TableMeta;
 import tajo.catalog.statistics.TableStat;
-import tajo.datum.ArrayDatum;
-import tajo.datum.Datum;
-import tajo.datum.DatumFactory;
-import tajo.datum.DatumType;
+import tajo.datum.*;
 import tajo.storage.exception.AlreadyExistsStorageException;
 import tajo.storage.json.GsonCreator;
 
@@ -94,49 +91,50 @@ public class CSVFile {
         if (enabledStats) {
           stats.analyzeField(i, datum);
         }
-        if (datum.type() == DatumType.NULL) {
+        if (datum instanceof NullDatum) {
         } else {
           col = schema.getColumn(i);
-          switch (col.getDataType()) {
+          switch (col.getDataType().getType()) {
           case BOOLEAN:
             sb.append(tuple.getBoolean(i));
             break;
-          case BYTE:
+          case BIT:
             sb.append(new String(Base64.encodeBase64(tuple.getByte(i)
                 .asByteArray(), false)));
             break;
-          case BYTES:
+          case BLOB:
             sb.append(new String(Base64.encodeBase64(tuple.getBytes(i)
                 .asByteArray(), false)));
             break;
           case CHAR:
             sb.append(tuple.getChar(i));
             break;
-          case STRING:
-            sb.append(tuple.getString(i));
+//          case STRING:
+//            sb.append(tuple.getString(i));
+//            break;
+          case TEXT:
+            TextDatum td = tuple.getText(i);
+            sb.append(td.toString());
             break;
-          case STRING2:
-            sb.append(tuple.getString2(i));
-            break;
-          case SHORT:
+          case INT2:
             sb.append(tuple.getShort(i));
             break;
-          case INT:
+          case INT4:
             sb.append(tuple.getInt(i));
             break;
-          case LONG:
+          case INT8:
             sb.append(tuple.getLong(i));
             break;
-          case FLOAT:
+          case FLOAT4:
             sb.append(tuple.getFloat(i));
             break;
-          case DOUBLE:
+          case FLOAT8:
             sb.append(tuple.getDouble(i));
             break;
-          case IPv4:
+          case INET4:
             sb.append(tuple.getIPv4(i));
             break;
-          case IPv6:
+          case INET6:
             sb.append(tuple.getIPv6(i));
           case ARRAY:
             /*
@@ -356,44 +354,44 @@ public class CSVFile {
             if (cell.equals("")) {
               tuple.put(i, DatumFactory.createNullDatum());
             } else {
-              switch (field.getDataType()) {
+              switch (field.getDataType().getType()) {
               case BOOLEAN:
                 tuple.put(i, DatumFactory.createBool(cell));
                 break;
-              case BYTE:
+              case BIT:
                 tuple.put(i,
-                    DatumFactory.createByte(Base64.decodeBase64(cell)[0]));
+                    DatumFactory.createBit(Base64.decodeBase64(cell)[0]));
                 break;
               case CHAR:
                 tuple.put(i, DatumFactory.createChar(cell.charAt(0)));
                 break;
-              case BYTES:
+              case BLOB:
                 tuple.put(i,
-                    DatumFactory.createBytes(Base64.decodeBase64(cell)));
+                    DatumFactory.createBlob(Base64.decodeBase64(cell)));
                 break;
-              case SHORT:
-                tuple.put(i, DatumFactory.createShort(cell));
+              case INT2:
+                tuple.put(i, DatumFactory.createInt2(cell));
                 break;
-              case INT:
-                tuple.put(i, DatumFactory.createInt(cell));
+              case INT4:
+                tuple.put(i, DatumFactory.createInt4(cell));
                 break;
-              case LONG:
-                tuple.put(i, DatumFactory.createLong(cell));
+              case INT8:
+                tuple.put(i, DatumFactory.createInt8(cell));
                 break;
-              case FLOAT:
-                tuple.put(i, DatumFactory.createFloat(cell));
+              case FLOAT4:
+                tuple.put(i, DatumFactory.createFloat4(cell));
                 break;
-              case DOUBLE:
-                tuple.put(i, DatumFactory.createDouble(cell));
+              case FLOAT8:
+                tuple.put(i, DatumFactory.createFloat8(cell));
                 break;
-              case STRING:
-                tuple.put(i, DatumFactory.createString(cell));
+//              case STRING:
+//                tuple.put(i, DatumFactory.createText(cell));
+//                break;
+              case TEXT:
+                tuple.put(i, DatumFactory.createText(cell));
                 break;
-              case STRING2:
-                tuple.put(i, DatumFactory.createString2(cell));
-                break;
-              case IPv4:
-                tuple.put(i, DatumFactory.createIPv4(cell));
+              case INET4:
+                tuple.put(i, DatumFactory.createInet4(cell));
                 break;
               case ARRAY:
                 Datum data = GsonCreator.getInstance().fromJson(cell,

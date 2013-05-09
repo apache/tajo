@@ -18,11 +18,12 @@
 
 package tajo.engine.function.builtin;
 
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.storage.Tuple;
@@ -30,7 +31,7 @@ import tajo.storage.Tuple;
 public class SumFloat extends AggFunction<Datum> {
   public SumFloat() {
     super(new Column[] {
-        new Column("val", CatalogProtos.DataType.FLOAT)
+        new Column("val", Type.FLOAT4)
     });
   }
 
@@ -41,22 +42,22 @@ public class SumFloat extends AggFunction<Datum> {
 
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
-    ((SumContext)ctx).sum += params.get(0).asFloat();
+    ((SumContext)ctx).sum += params.get(0).asFloat4();
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createFloat(((SumContext)ctx).sum);
+    return DatumFactory.createFloat4(((SumContext) ctx).sum);
   }
 
   @Override
-  public CatalogProtos.DataType[] getPartialResultType() {
-    return new CatalogProtos.DataType[] {DataType.FLOAT};
+  public DataType [] getPartialResultType() {
+    return CatalogUtil.newDataTypesWithoutLen(Type.FLOAT4);
   }
 
   @Override
   public Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createFloat(((SumContext)ctx).sum);
+    return DatumFactory.createFloat4(((SumContext) ctx).sum);
   }
 
   private class SumContext implements FunctionContext {

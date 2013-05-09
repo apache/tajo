@@ -18,11 +18,12 @@
 
 package tajo.engine.function.builtin;
 
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.storage.Tuple;
@@ -31,7 +32,7 @@ public class MinDouble extends AggFunction<Datum> {
 
   public MinDouble() {
     super(new Column[] {
-        new Column("val", CatalogProtos.DataType.DOUBLE)
+        new Column("val", Type.FLOAT8)
     });
   }
 
@@ -43,22 +44,22 @@ public class MinDouble extends AggFunction<Datum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     MinContext minCtx = (MinContext) ctx;
-    minCtx.min = Math.min(minCtx.min, params.get(0).asDouble());
+    minCtx.min = Math.min(minCtx.min, params.get(0).asFloat8());
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createDouble(((MinContext)ctx).min);
+    return DatumFactory.createFloat8(((MinContext) ctx).min);
   }
 
   @Override
-  public DataType[] getPartialResultType() {
-    return new DataType[] {DataType.DOUBLE};
+  public DataType [] getPartialResultType() {
+    return CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8);
   }
 
   @Override
   public Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createDouble(((MinContext)ctx).min);
+    return DatumFactory.createFloat8(((MinContext) ctx).min);
   }
 
   private class MinContext implements FunctionContext {

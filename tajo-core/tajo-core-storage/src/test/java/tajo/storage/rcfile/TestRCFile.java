@@ -127,11 +127,11 @@ public class TestRCFile {
 
     Datum [] r1 = new Datum[7];
     int idx = 0;
-    r1[idx++] = DatumFactory.createInt(123);
-    r1[idx++] = DatumFactory.createLong(456);
-    r1[idx++] = DatumFactory.createFloat(7.89f);
-    r1[idx++] = DatumFactory.createDouble(10.11d);
-    r1[idx] = DatumFactory.createString("tajo and hadoop");
+    r1[idx++] = DatumFactory.createInt4(123);
+    r1[idx++] = DatumFactory.createInt8(456);
+    r1[idx++] = DatumFactory.createFloat4(7.89f);
+    r1[idx++] = DatumFactory.createFloat8(10.11d);
+    r1[idx] = DatumFactory.createText("tajo and hadoop");
 
 //    byte[][] record_1 = {
 //        "123".getBytes("UTF-8"), "456".getBytes("UTF-8"),
@@ -151,11 +151,11 @@ public class TestRCFile {
 
     Datum [] r2 = new Datum[7];
     idx = 0;
-    r2[idx++] = DatumFactory.createInt(100);
-    r2[idx++] = DatumFactory.createLong(200);
-    r2[idx++] = DatumFactory.createFloat(5.3f);
-    r2[idx++] = DatumFactory.createDouble(11.12d);
-    r2[idx] = DatumFactory.createString("the second str");
+    r2[idx++] = DatumFactory.createInt4(100);
+    r2[idx++] = DatumFactory.createInt8(200);
+    r2[idx++] = DatumFactory.createFloat4(5.3f);
+    r2[idx++] = DatumFactory.createFloat8(11.12d);
+    r2[idx] = DatumFactory.createText("the second str");
 
     byte [][] record_2 = {
         r2[0].asByteArray(),
@@ -221,22 +221,22 @@ public class TestRCFile {
     BytesRefArrayWritable cols = new BytesRefArrayWritable();
     reader.getCurrentRow(cols);
     cols.resetValid(7);
-    assertEquals(r1[0], new IntDatum(cols.get(0).getBytesCopy()));
-    assertEquals(r1[1], new LongDatum(cols.get(1).getBytesCopy()));
-    assertEquals(r1[2], new FloatDatum(cols.get(2).getBytesCopy()));
-    assertEquals(r1[3], new DoubleDatum(cols.get(3).getBytesCopy()));
-    assertEquals(r1[4], new StringDatum(cols.get(4).getBytesCopy()));
+    assertEquals(r1[0], new Int4Datum(cols.get(0).getBytesCopy()));
+    assertEquals(r1[1], new Int8Datum(cols.get(1).getBytesCopy()));
+    assertEquals(r1[2], new Float4Datum(cols.get(2).getBytesCopy()));
+    assertEquals(r1[3], new Float8Datum(cols.get(3).getBytesCopy()));
+    assertEquals(r1[4], new TextDatum(cols.get(4).getBytesCopy()));
 
 
     reader.next(rowID);
     cols = new BytesRefArrayWritable();
     reader.getCurrentRow(cols);
     cols.resetValid(7);
-    assertEquals(r2[0], new IntDatum(cols.get(0).getBytesCopy()));
-    assertEquals(r2[1], new LongDatum(cols.get(1).getBytesCopy()));
-    assertEquals(r2[2], new FloatDatum(cols.get(2).getBytesCopy()));
-    assertEquals(r2[3], new DoubleDatum(cols.get(3).getBytesCopy()));
-    assertEquals(r2[4], new StringDatum(cols.get(4).getBytesCopy()));
+    assertEquals(r2[0], new Int4Datum(cols.get(0).getBytesCopy()));
+    assertEquals(r2[1], new Int8Datum(cols.get(1).getBytesCopy()));
+    assertEquals(r2[2], new Float4Datum(cols.get(2).getBytesCopy()));
+    assertEquals(r2[3], new Float8Datum(cols.get(3).getBytesCopy()));
+    assertEquals(r2[4], new TextDatum(cols.get(4).getBytesCopy()));
     /*
       cols.resetValid(8);
       Object row = serDe.deserialize(cols);

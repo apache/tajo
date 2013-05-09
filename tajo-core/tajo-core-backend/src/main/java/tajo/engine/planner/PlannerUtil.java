@@ -23,10 +23,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
 import tajo.catalog.SortSpec;
-import tajo.catalog.proto.CatalogProtos;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.engine.eval.*;
 import tajo.engine.parser.QueryBlock;
 import tajo.engine.planner.logical.*;
@@ -196,7 +198,7 @@ public class PlannerUtil {
             }
             if (func.getValueType().length > 1) { // hack for partial result
               secondFunc.setArgs(new EvalNode[] {new FieldEval(
-                  new Column("column_"+firstTargetId, CatalogProtos.DataType.ARRAY))});
+                  new Column("column_"+firstTargetId, Type.ARRAY))});
             } else {
               secondFunc.setArgs(new EvalNode [] {new FieldEval(
                   new Column("column_"+firstTargetId, newTarget.getEvalTree().getValueType()[0]))});
@@ -586,9 +588,9 @@ public class PlannerUtil {
   public static Schema targetToSchema(QueryBlock.Target[] targets) {
     Schema schema = new Schema();
     for(QueryBlock.Target t : targets) {
-      CatalogProtos.DataType type;
+      DataType type;
       if (t.getEvalTree().getValueType().length > 1) {
-        type = CatalogProtos.DataType.ARRAY;
+        type = CatalogUtil.newDataTypeWithoutLen(Type.ARRAY);
       } else {
         type = t.getEvalTree().getValueType()[0];
       }

@@ -21,10 +21,7 @@ import org.junit.Test;
 import tajo.QueryIdFactory;
 import tajo.TajoTestingCluster;
 import tajo.benchmark.TPCH;
-import tajo.catalog.CatalogService;
-import tajo.catalog.TCatUtil;
-import tajo.catalog.TableDesc;
-import tajo.catalog.TableMeta;
+import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos;
 import tajo.conf.TajoConf;
 import tajo.engine.parser.QueryAnalyzer;
@@ -56,8 +53,8 @@ public class TestExecutionBlockCursor {
     tpch.loadSchemas();
     tpch.loadOutSchema();
     for (String table : tpch.getTableNames()) {
-      TableMeta m = TCatUtil.newTableMeta(tpch.getSchema(table), CatalogProtos.StoreType.CSV);
-      TableDesc d = TCatUtil.newTableDesc(table, m, new Path("file:///"));
+      TableMeta m = CatalogUtil.newTableMeta(tpch.getSchema(table), CatalogProtos.StoreType.CSV);
+      TableDesc d = CatalogUtil.newTableDesc(table, m, new Path("file:///"));
       catalog.addTable(d);
     }
 

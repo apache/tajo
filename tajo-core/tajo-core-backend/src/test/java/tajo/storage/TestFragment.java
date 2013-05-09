@@ -23,11 +23,11 @@ import com.google.gson.Gson;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Schema;
-import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.engine.json.GsonCreator;
 
 import java.util.Arrays;
@@ -43,9 +43,9 @@ public class TestFragment {
   @Before
   public final void setUp() throws Exception {
     schema1 = new Schema();
-    schema1.addColumn("id", DataType.INT);
-    schema1.addColumn("name", DataType.STRING);
-    meta1 = TCatUtil.newTableMeta(schema1, StoreType.CSV);
+    schema1.addColumn("id", Type.INT4);
+    schema1.addColumn("name", Type.TEXT);
+    meta1 = CatalogUtil.newTableMeta(schema1, StoreType.CSV);
   }
 
   @Test

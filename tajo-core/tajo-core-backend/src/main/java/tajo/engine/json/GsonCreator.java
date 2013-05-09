@@ -32,6 +32,7 @@ import tajo.catalog.function.GeneralFunction;
 import tajo.catalog.json.FunctionAdapter;
 import tajo.catalog.json.TableDescAdapter;
 import tajo.catalog.json.TableMetaAdapter;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.Datum;
 import tajo.datum.json.DatumAdapter;
 import tajo.engine.eval.EvalNode;
@@ -58,6 +59,7 @@ public class GsonCreator {
       builder.registerTypeAdapter(GeneralFunction.class, new FunctionAdapter());
       builder.registerTypeAdapter(AggFunction.class, new FunctionAdapter());
 			builder.registerTypeAdapter(Datum.class, new DatumAdapter());
+      builder.registerTypeAdapter(DataType.class, new DataTypeAdapter());
 		}
 	}
 

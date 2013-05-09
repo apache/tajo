@@ -18,11 +18,12 @@
 
 package tajo.engine.function.builtin;
 
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.storage.Tuple;
@@ -31,7 +32,7 @@ public class SumInt extends AggFunction<Datum> {
 
   public SumInt() {
     super(new Column[] {
-        new Column("val", CatalogProtos.DataType.INT)
+        new Column("val", Type.INT4)
     });
   }
 
@@ -43,22 +44,22 @@ public class SumInt extends AggFunction<Datum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     SumIntContext sumCtx = (SumIntContext) ctx;
-    sumCtx.sum += params.get(0).asLong();
+    sumCtx.sum += params.get(0).asInt8();
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createInt(((SumIntContext)ctx).sum);
+    return DatumFactory.createInt4(((SumIntContext) ctx).sum);
   }
 
   @Override
-  public DataType[] getPartialResultType() {
-    return new DataType[] {DataType.INT};
+  public DataType [] getPartialResultType() {
+    return CatalogUtil.newDataTypesWithoutLen(Type.INT4);
   }
 
   @Override
   public Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createInt(((SumIntContext)ctx).sum);
+    return DatumFactory.createInt4(((SumIntContext) ctx).sum);
   }
 
   private class SumIntContext implements FunctionContext {

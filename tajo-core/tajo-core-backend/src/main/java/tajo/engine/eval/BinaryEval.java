@@ -22,8 +22,10 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 import tajo.engine.json.GsonCreator;
@@ -31,7 +33,7 @@ import tajo.engine.utils.SchemaUtil;
 import tajo.storage.Tuple;
 
 public class BinaryEval extends EvalNode implements Cloneable {
-	@Expose private DataType [] returnType = null;
+	@Expose private DataType[] returnType = null;
 
   private class BinaryEvalCtx implements EvalContext {
     EvalContext left;
@@ -56,7 +58,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 			type == Type.LEQ ||
 			type == Type.GEQ
 		) {
-			this.returnType = SchemaUtil.newNoNameSchema(DataType.BOOLEAN);
+			this.returnType = CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
 		} else if (
 			type == Type.PLUS ||
 			type == Type.MINUS ||
@@ -83,47 +85,47 @@ public class BinaryEval extends EvalNode implements Cloneable {
   }
 
   private DataType determineType(DataType left, DataType right) {
-    switch (left) {
-      case INT: {
-        switch(right) {
-          case SHORT:
-          case INT: return DataType.INT;
-          case LONG: return DataType.LONG;
-          case FLOAT: return DataType.FLOAT;
-          case DOUBLE: return DataType.DOUBLE;
+    switch (left.getType()) {
+      case INT4: {
+        switch(right.getType()) {
+          case INT2:
+          case INT4: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.INT4);
+          case INT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.INT8);
+          case FLOAT4: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.FLOAT4);
+          case FLOAT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.FLOAT8);
           default: throw new InvalidEvalException();
         }
       }
 
-      case LONG: {
-        switch(right) {
-          case SHORT:
-          case INT:
-          case LONG: return DataType.LONG;
-          case FLOAT:
-          case DOUBLE: return DataType.DOUBLE;
+      case INT8: {
+        switch(right.getType()) {
+          case INT2:
+          case INT4:
+          case INT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.INT8);
+          case FLOAT4:
+          case FLOAT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.FLOAT8);
           default: throw new InvalidEvalException();
         }
       }
 
-      case FLOAT: {
-        switch(right) {
-          case SHORT:
-          case INT:
-          case LONG:
-          case FLOAT:
-          case DOUBLE: return DataType.DOUBLE;
+      case FLOAT4: {
+        switch(right.getType()) {
+          case INT2:
+          case INT4:
+          case INT8:
+          case FLOAT4:
+          case FLOAT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.FLOAT8);
           default: throw new InvalidEvalException();
         }
       }
 
-      case DOUBLE: {
-        switch(right) {
-          case SHORT:
-          case INT:
-          case LONG:
-          case FLOAT:
-          case DOUBLE: return DataType.DOUBLE;
+      case FLOAT8: {
+        switch(right.getType()) {
+          case INT2:
+          case INT4:
+          case INT8:
+          case FLOAT4:
+          case FLOAT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.FLOAT8);
           default: throw new InvalidEvalException();
         }
       }

@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 import tajo.catalog.Schema;
 import tajo.catalog.SortSpec;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
 
@@ -42,29 +42,29 @@ public class TestTupleComparator {
   @Test
   public final void testCompare() {
     Schema schema = new Schema();
-    schema.addColumn("col1", DataType.INT);
-    schema.addColumn("col2", DataType.INT);
-    schema.addColumn("col3", DataType.INT);
-    schema.addColumn("col4", DataType.INT);
-    schema.addColumn("col5", DataType.STRING);
+    schema.addColumn("col1", Type.INT4);
+    schema.addColumn("col2", Type.INT4);
+    schema.addColumn("col3", Type.INT4);
+    schema.addColumn("col4", Type.INT4);
+    schema.addColumn("col5", Type.TEXT);
     
     Tuple tuple1 = new VTuple(5);
     Tuple tuple2 = new VTuple(5);
 
     tuple1.put(
         new Datum[] {
-        DatumFactory.createInt(9), 
-        DatumFactory.createInt(3),
-        DatumFactory.createInt(33), 
-        DatumFactory.createInt(4),
-        DatumFactory.createString("abc")});
+        DatumFactory.createInt4(9),
+        DatumFactory.createInt4(3),
+        DatumFactory.createInt4(33),
+        DatumFactory.createInt4(4),
+        DatumFactory.createText("abc")});
     tuple2.put(
         new Datum[] {
-        DatumFactory.createInt(1), 
-        DatumFactory.createInt(25),
-        DatumFactory.createInt(109),
-        DatumFactory.createInt(4),
-        DatumFactory.createString("abd")});
+        DatumFactory.createInt4(1),
+        DatumFactory.createInt4(25),
+        DatumFactory.createInt4(109),
+        DatumFactory.createInt4(4),
+        DatumFactory.createText("abd")});
 
     SortSpec sortKey1 = new SortSpec(schema.getColumn("col4"), true, false);
     SortSpec sortKey2 = new SortSpec(schema.getColumn("col5"), true, false);

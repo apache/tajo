@@ -22,11 +22,11 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Schema;
-import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.storage.CSVFile;
 
 import java.io.IOException;
@@ -47,104 +47,104 @@ public class TPCH extends BenchmarkSet {
   @Override
   public void loadSchemas() {
     Schema lineitem = new Schema()
-        .addColumn("l_orderkey", DataType.LONG) // 0
-        .addColumn("l_partkey", DataType.INT) // 1
-        .addColumn("l_suppkey", DataType.INT) // 2
-        .addColumn("l_linenumber", DataType.INT) // 3
-        .addColumn("l_quantity", DataType.FLOAT) // 4
-        .addColumn("l_extendedprice", DataType.FLOAT) // 5
-        .addColumn("l_discount", DataType.FLOAT) // 6
-        .addColumn("l_tax", DataType.FLOAT) // 7
+        .addColumn("l_orderkey", Type.INT8) // 0
+        .addColumn("l_partkey", Type.INT4) // 1
+        .addColumn("l_suppkey", Type.INT4) // 2
+        .addColumn("l_linenumber", Type.INT4) // 3
+        .addColumn("l_quantity", Type.FLOAT4) // 4
+        .addColumn("l_extendedprice", Type.FLOAT4) // 5
+        .addColumn("l_discount", Type.FLOAT4) // 6
+        .addColumn("l_tax", Type.FLOAT4) // 7
             // TODO - This is temporal solution. 8 and 9 are actually Char type.
-        .addColumn("l_returnflag", DataType.STRING) // 8
-        .addColumn("l_linestatus", DataType.STRING) // 9
+        .addColumn("l_returnflag", Type.TEXT) // 8
+        .addColumn("l_linestatus", Type.TEXT) // 9
             // TODO - This is temporal solution. 10,11, and 12 are actually Date type.
-        .addColumn("l_shipdate", DataType.STRING) // 10
-        .addColumn("l_commitdate", DataType.STRING) // 11
-        .addColumn("l_receiptdate", DataType.STRING) // 12
-        .addColumn("l_shipinstruct", DataType.STRING) // 13
-        .addColumn("l_shipmode", DataType.STRING) // 14
-        .addColumn("l_comment", DataType.STRING); // 15
+        .addColumn("l_shipdate", Type.TEXT) // 10
+        .addColumn("l_commitdate", Type.TEXT) // 11
+        .addColumn("l_receiptdate", Type.TEXT) // 12
+        .addColumn("l_shipinstruct", Type.TEXT) // 13
+        .addColumn("l_shipmode", Type.TEXT) // 14
+        .addColumn("l_comment", Type.TEXT); // 15
     schemas.put(LINEITEM, lineitem);
 
     Schema customer = new Schema()
-        .addColumn("c_custkey", DataType.INT) // 0
-        .addColumn("c_name", DataType.STRING) // 1
-        .addColumn("c_address", DataType.STRING) // 2
-        .addColumn("c_nationkey", DataType.INT) // 3
-        .addColumn("c_phone", DataType.STRING) // 4
-        .addColumn("c_acctbal", DataType.FLOAT) // 5
-        .addColumn("c_mktsegment", DataType.STRING) // 6
-        .addColumn("c_comment", DataType.STRING); // 7
+        .addColumn("c_custkey", Type.INT4) // 0
+        .addColumn("c_name", Type.TEXT) // 1
+        .addColumn("c_address", Type.TEXT) // 2
+        .addColumn("c_nationkey", Type.INT4) // 3
+        .addColumn("c_phone", Type.TEXT) // 4
+        .addColumn("c_acctbal", Type.FLOAT4) // 5
+        .addColumn("c_mktsegment", Type.TEXT) // 6
+        .addColumn("c_comment", Type.TEXT); // 7
     schemas.put(CUSTOMER, customer);
 
     Schema nation = new Schema()
-        .addColumn("n_nationkey", DataType.INT) // 0
-        .addColumn("n_name", DataType.STRING) // 1
-        .addColumn("n_regionkey", DataType.INT) // 2
-        .addColumn("n_comment", DataType.STRING); // 3
+        .addColumn("n_nationkey", Type.INT4) // 0
+        .addColumn("n_name", Type.TEXT) // 1
+        .addColumn("n_regionkey", Type.INT4) // 2
+        .addColumn("n_comment", Type.TEXT); // 3
     schemas.put(NATION, nation);
 
     Schema part = new Schema()
-        .addColumn("p_partkey", DataType.INT) // 0
-        .addColumn("p_name", DataType.STRING) // 1
-        .addColumn("p_mfgr", DataType.STRING) // 2
-        .addColumn("p_brand", DataType.STRING) // 3
-        .addColumn("p_type", DataType.STRING) // 4
-        .addColumn("p_size", DataType.INT) // 5
-        .addColumn("p_container", DataType.STRING) // 6
-        .addColumn("p_retailprice", DataType.FLOAT) // 7
-        .addColumn("p_comment", DataType.STRING); // 8
+        .addColumn("p_partkey", Type.INT4) // 0
+        .addColumn("p_name", Type.TEXT) // 1
+        .addColumn("p_mfgr", Type.TEXT) // 2
+        .addColumn("p_brand", Type.TEXT) // 3
+        .addColumn("p_type", Type.TEXT) // 4
+        .addColumn("p_size", Type.INT4) // 5
+        .addColumn("p_container", Type.TEXT) // 6
+        .addColumn("p_retailprice", Type.FLOAT4) // 7
+        .addColumn("p_comment", Type.TEXT); // 8
     schemas.put(PART, part);
 
     Schema region = new Schema()
-        .addColumn("r_regionkey", DataType.INT) // 0
-        .addColumn("r_name", DataType.STRING) // 1
-        .addColumn("r_comment", DataType.STRING); // 2
+        .addColumn("r_regionkey", Type.INT4) // 0
+        .addColumn("r_name", Type.TEXT) // 1
+        .addColumn("r_comment", Type.TEXT); // 2
     schemas.put(REGION, region);
 
     Schema orders = new Schema()
-        .addColumn("o_orderkey", DataType.INT) // 0
-        .addColumn("o_custkey", DataType.INT) // 1
-        .addColumn("o_orderstatus", DataType.STRING) // 2
-        .addColumn("o_totalprice", DataType.FLOAT) // 3
+        .addColumn("o_orderkey", Type.INT4) // 0
+        .addColumn("o_custkey", Type.INT4) // 1
+        .addColumn("o_orderstatus", Type.TEXT) // 2
+        .addColumn("o_totalprice", Type.FLOAT4) // 3
             // TODO - This is temporal solution. o_orderdate is actually Date type.
-        .addColumn("o_orderdate", DataType.STRING) // 4
-        .addColumn("o_orderpriority", DataType.STRING) // 5
-        .addColumn("o_clerk", DataType.STRING) // 6
-        .addColumn("o_shippriority", DataType.INT) // 7
-        .addColumn("o_comment", DataType.STRING); // 8
+        .addColumn("o_orderdate", Type.TEXT) // 4
+        .addColumn("o_orderpriority", Type.TEXT) // 5
+        .addColumn("o_clerk", Type.TEXT) // 6
+        .addColumn("o_shippriority", Type.INT4) // 7
+        .addColumn("o_comment", Type.TEXT); // 8
     schemas.put(ORDERS, orders);
 
     Schema partsupp = new Schema()
-        .addColumn("ps_partkey", DataType.INT) // 0
-        .addColumn("ps_suppkey", DataType.INT) // 1
-        .addColumn("ps_availqty", DataType.INT) // 2
-        .addColumn("ps_supplycost", DataType.FLOAT) // 3
-        .addColumn("ps_comment", DataType.STRING); // 4
+        .addColumn("ps_partkey", Type.INT4) // 0
+        .addColumn("ps_suppkey", Type.INT4) // 1
+        .addColumn("ps_availqty", Type.INT4) // 2
+        .addColumn("ps_supplycost", Type.FLOAT4) // 3
+        .addColumn("ps_comment", Type.TEXT); // 4
     schemas.put(PARTSUPP, partsupp);
 
     Schema supplier = new Schema()
-        .addColumn("s_suppkey", DataType.INT) // 0
-        .addColumn("s_name", DataType.STRING) // 1
-        .addColumn("s_address", DataType.STRING) // 2
-        .addColumn("s_nationkey", DataType.INT) // 3
-        .addColumn("s_phone", DataType.STRING) // 4
-        .addColumn("s_acctbal", DataType.FLOAT) // 5
-        .addColumn("s_comment", DataType.STRING); // 6
+        .addColumn("s_suppkey", Type.INT4) // 0
+        .addColumn("s_name", Type.TEXT) // 1
+        .addColumn("s_address", Type.TEXT) // 2
+        .addColumn("s_nationkey", Type.INT4) // 3
+        .addColumn("s_phone", Type.TEXT) // 4
+        .addColumn("s_acctbal", Type.FLOAT4) // 5
+        .addColumn("s_comment", Type.TEXT); // 6
     schemas.put(SUPPLIER, supplier);
   }
 
   public void loadOutSchema() {
     Schema q2 = new Schema()
-        .addColumn("s_acctbal", DataType.FLOAT)
-        .addColumn("s_name", DataType.STRING)
-        .addColumn("n_name", DataType.STRING)
-        .addColumn("p_partkey", DataType.INT)
-        .addColumn("p_mfgr", DataType.STRING)
-        .addColumn("s_address", DataType.STRING)
-        .addColumn("s_phone", DataType.STRING)
-        .addColumn("s_comment", DataType.STRING);
+        .addColumn("s_acctbal", Type.FLOAT4)
+        .addColumn("s_name", Type.TEXT)
+        .addColumn("n_name", Type.TEXT)
+        .addColumn("p_partkey", Type.INT4)
+        .addColumn("p_mfgr", Type.TEXT)
+        .addColumn("s_address", Type.TEXT)
+        .addColumn("s_phone", Type.TEXT)
+        .addColumn("s_comment", Type.TEXT);
     outSchemas.put("q2", q2);
   }
 
@@ -164,7 +164,7 @@ public class TPCH extends BenchmarkSet {
   }
 
   private void loadTable(String tableName) throws ServiceException {
-    TableMeta meta = TCatUtil.newTableMeta(getSchema(tableName), StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(getSchema(tableName), StoreType.CSV);
     meta.putOption(CSVFile.DELIMITER, "|");
     tajo.createTable(tableName, new Path(dataDir, tableName), meta);
   }

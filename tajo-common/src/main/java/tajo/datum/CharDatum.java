@@ -22,12 +22,14 @@ import com.google.gson.annotations.Expose;
 import tajo.datum.exception.InvalidOperationException;
 import tajo.datum.json.GsonCreator;
 
+import static tajo.common.TajoDataTypes.Type;
+
 public class CharDatum extends Datum {
   private static final int size = 1;
   @Expose char val;
 
 	public CharDatum() {
-		super(DatumType.CHAR);
+		super(Type.CHAR);
 	}
 
 	public CharDatum(byte val) {
@@ -50,12 +52,12 @@ public class CharDatum extends Datum {
   }
 
   @Override
-	public int asInt() {		
+	public int asInt4() {
 		return val;
 	}
 
   @Override
-	public long asLong() {
+	public long asInt8() {
 		return val;
 	}
 
@@ -72,12 +74,12 @@ public class CharDatum extends Datum {
 	}
 
   @Override
-	public float asFloat() {		
+	public float asFloat4() {
 		return val;
 	}
 
   @Override
-	public double asDouble() {
+	public double asFloat8() {
 		return val;
 	}
 
@@ -112,9 +114,9 @@ public class CharDatum extends Datum {
   }
 
   @Override
-  public BoolDatum equalsTo(Datum datum) {
+  public BooleanDatum equalsTo(Datum datum) {
     switch (datum.type()) {
-    case BYTE:
+    case CHAR:
       return DatumFactory.createBool(this.val == (((CharDatum) datum).val));
     default:
       throw new InvalidOperationException(datum.type());
@@ -124,7 +126,6 @@ public class CharDatum extends Datum {
   @Override
   public int compareTo(Datum datum) {
     switch (datum.type()) {
-      case BYTE:
       case CHAR:
       if (val < datum.asChar()) {
         return -1;

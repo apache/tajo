@@ -19,14 +19,15 @@
 package tajo.engine.eval;
 
 import com.google.gson.annotations.Expose;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos.DataType;
-import tajo.datum.BoolDatum;
+import tajo.common.TajoDataTypes;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.datum.BooleanDatum;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.datum.StringDatum;
-import tajo.engine.utils.SchemaUtil;
+import tajo.datum.TextDatum;
 import tajo.storage.Tuple;
 
 import java.util.regex.Pattern;
@@ -35,12 +36,13 @@ public class LikeEval extends BinaryEval {
   @Expose private boolean not;
   @Expose private Column column;
   @Expose private String pattern;
-  private static final DataType [] RES_TYPE = SchemaUtil.newNoNameSchema(DataType.BOOLEAN);
+  private static final DataType [] RES_TYPE =
+      CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
 
   // temporal variables
   private Integer fieldId = null;
   private Pattern compiled;
-  private BoolDatum result;
+  private BooleanDatum result;
 
   
   public LikeEval(boolean not, FieldEval field, ConstEval pattern) {
@@ -75,7 +77,7 @@ public class LikeEval extends BinaryEval {
       fieldId = schema.getColumnId(column.getQualifiedName());
       compile(this.pattern);
     }    
-    StringDatum str = tuple.getString(fieldId);
+    TextDatum str = tuple.getString(fieldId);
     if (not) {
       result.setValue(!compiled.matcher(str.asChars()).matches());      
     } else {

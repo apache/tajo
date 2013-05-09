@@ -19,6 +19,7 @@
 package tajo.datum;
 
 import org.junit.Test;
+import tajo.common.TajoDataTypes.Type;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -27,43 +28,43 @@ public class TestFloatDatum {
 
 	@Test
 	public final void testType() {
-		Datum d = DatumFactory.createFloat(1f);
-		assertEquals(DatumType.FLOAT, d.type());
+		Datum d = DatumFactory.createFloat4(1f);
+		assertEquals(Type.FLOAT4, d.type());
 	}
 
 	@Test
 	public final void testAsInt() {
-		Datum d = DatumFactory.createFloat(5f);
-		assertEquals(5,d.asInt());
+		Datum d = DatumFactory.createFloat4(5f);
+		assertEquals(5,d.asInt4());
 	}
 
 	@Test
 	public final void testAsLong() {
-		Datum d = DatumFactory.createFloat(5f);
-		assertEquals(5l,d.asLong());		
+		Datum d = DatumFactory.createFloat4(5f);
+		assertEquals(5l,d.asInt8());
 	}
 
 	@Test
 	public final void testAsFloat() {
-		Datum d = DatumFactory.createFloat(5f);
-		assertTrue(5.0f == d.asFloat());
+		Datum d = DatumFactory.createFloat4(5f);
+		assertTrue(5.0f == d.asFloat4());
 	}
 
 	@Test
 	public final void testAsDouble() {
-		Datum d = DatumFactory.createFloat(5f);
-		assertTrue(5.0d == d.asDouble());
+		Datum d = DatumFactory.createFloat4(5f);
+		assertTrue(5.0d == d.asFloat8());
 	}
 
 	@Test
 	public final void testAsChars() {
-		Datum d = DatumFactory.createFloat(5f);
+		Datum d = DatumFactory.createFloat4(5f);
 		assertEquals("5.0", d.asChars());
 	}
 	
 	@Test
   public final void testSize() {
-    Datum d = DatumFactory.createFloat(5f);
+    Datum d = DatumFactory.createFloat4(5f);
     assertEquals(4, d.size());
   }
 }

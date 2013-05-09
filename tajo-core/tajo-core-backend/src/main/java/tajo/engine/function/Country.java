@@ -20,20 +20,21 @@ package tajo.engine.function;
 
 import tajo.catalog.Column;
 import tajo.catalog.function.GeneralFunction;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.datum.Datum;
-import tajo.datum.StringDatum;
+import tajo.datum.TextDatum;
 import tajo.storage.Tuple;
 import tajo.util.GeoUtil;
 
-public class Country extends GeneralFunction<StringDatum> {
+import static tajo.common.TajoDataTypes.Type.TEXT;
+
+public class Country extends GeneralFunction<TextDatum> {
 
   public Country() {
-    super(new Column[] {new Column("addr", DataType.STRING)});
+    super(new Column[] {new Column("addr", TEXT)});
   }
 
   @Override
   public Datum eval(Tuple params) {
-    return new StringDatum(GeoUtil.getCountryCode(params.get(0).asChars()));
+    return new TextDatum(GeoUtil.getCountryCode(params.get(0).asChars()));
   }
 }

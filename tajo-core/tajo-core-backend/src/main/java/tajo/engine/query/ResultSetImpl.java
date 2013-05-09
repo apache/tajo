@@ -28,7 +28,7 @@ import tajo.catalog.TableMeta;
 import tajo.catalog.TableMetaImpl;
 import tajo.catalog.proto.CatalogProtos.TableProto;
 import tajo.datum.Datum;
-import tajo.datum.DatumType;
+import tajo.datum.NullDatum;
 import tajo.exception.UnsupportedException;
 import tajo.storage.Fragment;
 import tajo.storage.MergeScanner;
@@ -585,7 +585,7 @@ public class ResultSetImpl implements ResultSet {
   public double getDouble(int fieldId) throws SQLException {
     Datum datum = cur.getDouble(fieldId - 1);
     handleNull(datum);
-    return datum.asDouble();
+    return datum.asFloat8();
   }
 
   /*
@@ -597,7 +597,7 @@ public class ResultSetImpl implements ResultSet {
   public double getDouble(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
-    return datum.asDouble();
+    return datum.asFloat8();
   }
 
   /*
@@ -629,7 +629,7 @@ public class ResultSetImpl implements ResultSet {
   public float getFloat(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
-    return datum.asFloat();
+    return datum.asFloat4();
   }
 
   /*
@@ -641,7 +641,7 @@ public class ResultSetImpl implements ResultSet {
   public float getFloat(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
-    return datum.asFloat();
+    return datum.asFloat4();
   }
 
   /*
@@ -663,7 +663,7 @@ public class ResultSetImpl implements ResultSet {
   public int getInt(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
-    return datum.asInt();
+    return datum.asInt4();
   }
 
   /*
@@ -675,7 +675,7 @@ public class ResultSetImpl implements ResultSet {
   public int getInt(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
-    return datum.asInt();
+    return datum.asInt4();
   }
 
   /*
@@ -687,7 +687,7 @@ public class ResultSetImpl implements ResultSet {
   public long getLong(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
-    return datum.asLong();
+    return datum.asInt8();
   }
 
   /*
@@ -699,7 +699,7 @@ public class ResultSetImpl implements ResultSet {
   public long getLong(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
-    return datum.asLong();
+    return datum.asInt8();
   }
 
   /*
@@ -907,7 +907,7 @@ public class ResultSetImpl implements ResultSet {
   public short getShort(int fieldId) throws SQLException {
     Datum datum = cur.get(fieldId - 1);
     handleNull(datum);
-    return datum.asShort();
+    return datum.asInt2();
   }
 
   /*
@@ -919,7 +919,7 @@ public class ResultSetImpl implements ResultSet {
   public short getShort(String name) throws SQLException {
     Datum datum = cur.get(findColumn(name));
     handleNull(datum);
-    return datum.asShort();
+    return datum.asInt2();
   }
 
   /*
@@ -2195,6 +2195,6 @@ public class ResultSetImpl implements ResultSet {
   }
 
   private void handleNull(Datum d) {
-    wasNull = (d.type() == DatumType.NULL);
+    wasNull = (d instanceof NullDatum);
   }
 }

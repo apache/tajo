@@ -25,10 +25,10 @@ import org.apache.hadoop.fs.Path;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
 import tajo.catalog.store.DBStore;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.util.CommonTestingUtil;
 
@@ -59,15 +59,15 @@ public class TestDBStore {
   @Test
   public final void testAddAndDeleteTable() throws Exception {
     Schema schema = new Schema();
-    schema.addColumn("id", DataType.INT)
-    .addColumn("name", DataType.STRING)
-    .addColumn("age", DataType.INT)
-    .addColumn("score", DataType.DOUBLE);
+    schema.addColumn("id", Type.INT4)
+    .addColumn("name", Type.TEXT)
+    .addColumn("age", Type.INT4)
+    .addColumn("score", Type.FLOAT8);
     
     String tableName = "addedtable";
     Options opts = new Options();
     opts.put("file.delimiter", ",");
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV, opts);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV, opts);
     TableDesc desc = new TableDescImpl(tableName, meta, new Path("/addedtable"));
     assertFalse(store.existTable(tableName));
     store.addTable(desc);
@@ -83,15 +83,15 @@ public class TestDBStore {
   @Test
   public final void testGetTable() throws Exception {
     Schema schema = new Schema();
-    schema.addColumn("gettable.id", DataType.INT)
-    .addColumn("gettable.name", DataType.STRING)
-    .addColumn("gettable.age", DataType.INT)
-    .addColumn("gettable.score", DataType.DOUBLE);
+    schema.addColumn("gettable.id", Type.INT4)
+    .addColumn("gettable.name", Type.TEXT)
+    .addColumn("gettable.age", Type.INT4)
+    .addColumn("gettable.score", Type.FLOAT8);
     
     String tableName = "gettable";
     Options opts = new Options();
     opts.put("file.delimiter", ",");
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV, opts);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV, opts);
 
     TableStat stat = new TableStat();
     stat.setNumRows(957685);
@@ -114,15 +114,15 @@ public class TestDBStore {
   @Test
   public final void testGetAllTableNames() throws Exception {
     Schema schema = new Schema();
-    schema.addColumn("id", DataType.INT)
-    .addColumn("name", DataType.STRING)
-    .addColumn("age", DataType.INT)
-    .addColumn("score", DataType.DOUBLE);
+    schema.addColumn("id", Type.INT4)
+    .addColumn("name", Type.TEXT)
+    .addColumn("age", Type.INT4)
+    .addColumn("score", Type.FLOAT8);
     
     int numTables = 5;
     for (int i = 0; i < numTables; i++) {
       String tableName = "tableA_" + i;
-      TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+      TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
       TableDesc desc = new TableDescImpl(tableName, meta, 
           new Path("/tableA_" + i));
       store.addTable(desc);
@@ -196,14 +196,14 @@ public class TestDBStore {
   
   public static TableDesc prepareTable() {
     Schema schema = new Schema();
-    schema.addColumn("indexed.id", DataType.INT)
-    .addColumn("indexed.name", DataType.STRING)
-    .addColumn("indexed.age", DataType.INT)
-    .addColumn("indexed.score", DataType.DOUBLE);
+    schema.addColumn("indexed.id", Type.INT4)
+    .addColumn("indexed.name", Type.TEXT)
+    .addColumn("indexed.age", Type.INT4)
+    .addColumn("indexed.score", Type.FLOAT8);
     
     String tableName = "indexed";
     
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     return new TableDescImpl(tableName, meta, new Path("/indexed"));
   }
 

@@ -28,10 +28,10 @@ import org.junit.Test;
 import tajo.TajoTestingCluster;
 import tajo.benchmark.TPCH;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.IndexMethod;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.engine.eval.EvalNode;
 import tajo.engine.function.builtin.SumInt;
 import tajo.engine.json.GsonCreator;
@@ -64,19 +64,19 @@ public class TestLogicalPlanner {
     }
     
     Schema schema = new Schema();
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("empId", DataType.INT);
-    schema.addColumn("deptName", DataType.STRING);
+    schema.addColumn("name", Type.TEXT);
+    schema.addColumn("empId", Type.INT4);
+    schema.addColumn("deptName", Type.TEXT);
 
     Schema schema2 = new Schema();
-    schema2.addColumn("deptName", DataType.STRING);
-    schema2.addColumn("manager", DataType.STRING);
+    schema2.addColumn("deptName", Type.TEXT);
+    schema2.addColumn("manager", Type.TEXT);
 
     Schema schema3 = new Schema();
-    schema3.addColumn("deptName", DataType.STRING);
-    schema3.addColumn("score", DataType.INT);
+    schema3.addColumn("deptName", Type.TEXT);
+    schema3.addColumn("score", Type.INT4);
 
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     TableDesc people = new TableDescImpl("employee", meta,
         new Path("file:///"));
     catalog.addTable(people);
@@ -92,8 +92,8 @@ public class TestLogicalPlanner {
     catalog.addTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,
-        new DataType [] {DataType.INT},
-        new DataType [] {DataType.INT});
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4));
 
 
     // TPC-H Schema for Complex Queries
@@ -104,8 +104,8 @@ public class TestLogicalPlanner {
     tpch.loadSchemas();
     tpch.loadOutSchema();
     for (String table : tpchTables) {
-      TableMeta m = TCatUtil.newTableMeta(tpch.getSchema(table), StoreType.CSV);
-      TableDesc d = TCatUtil.newTableDesc(table, m, new Path("file:///"));
+      TableMeta m = CatalogUtil.newTableMeta(tpch.getSchema(table), StoreType.CSV);
+      TableDesc d = CatalogUtil.newTableDesc(table, m, new Path("file:///"));
       catalog.addTable(d);
     }
 
@@ -177,10 +177,10 @@ public class TestLogicalPlanner {
     TestLogicalNode.testCloneLogicalNode(root);
 
     Schema expectedSchema = new Schema();
-    expectedSchema.addColumn("name", DataType.STRING);
-    expectedSchema.addColumn("empId", DataType.INT);
-    expectedSchema.addColumn("deptName", DataType.STRING);
-    expectedSchema.addColumn("manager", DataType.STRING);
+    expectedSchema.addColumn("name", Type.TEXT);
+    expectedSchema.addColumn("empId", Type.INT4);
+    expectedSchema.addColumn("deptName", Type.TEXT);
+    expectedSchema.addColumn("manager", Type.TEXT);
     assertSchema(expectedSchema, root.getOutSchema());
 
     assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
@@ -204,7 +204,7 @@ public class TestLogicalPlanner {
     plan = planner.createPlan(context);
     TestLogicalNode.testCloneLogicalNode(plan);
 
-    expectedSchema.addColumn("score", DataType.INT);
+    expectedSchema.addColumn("score", Type.INT4);
     assertSchema(expectedSchema, plan.getOutSchema());
 
     assertEquals(ExprType.ROOT, plan.getType());
@@ -246,9 +246,9 @@ public class TestLogicalPlanner {
   static Schema expectedJoinSchema;
   static {
     expectedJoinSchema = new Schema();
-    expectedJoinSchema.addColumn("name", DataType.STRING);
-    expectedJoinSchema.addColumn("deptName", DataType.STRING);
-    expectedJoinSchema.addColumn("score", DataType.INT);
+    expectedJoinSchema.addColumn("name", Type.TEXT);
+    expectedJoinSchema.addColumn("deptName", Type.TEXT);
+    expectedJoinSchema.addColumn("score", Type.INT4);
   }
   
   @Test
@@ -586,10 +586,10 @@ public class TestLogicalPlanner {
     assertEquals(false, indexNode.isUnique());
     assertEquals(2, indexNode.getSortSpecs().length);
     assertEquals("name", indexNode.getSortSpecs()[0].getSortKey().getColumnName());
-    assertEquals(DataType.STRING, indexNode.getSortSpecs()[0].getSortKey().getDataType());
+    assertEquals(Type.TEXT, indexNode.getSortSpecs()[0].getSortKey().getDataType().getType());
     assertEquals(true, indexNode.getSortSpecs()[0].isNullFirst());
     assertEquals("empid", indexNode.getSortSpecs()[1].getSortKey().getColumnName());
-    assertEquals(DataType.INT, indexNode.getSortSpecs()[1].getSortKey().getDataType());
+    assertEquals(Type.INT4, indexNode.getSortSpecs()[1].getSortKey().getDataType().getType());
     assertEquals(false, indexNode.getSortSpecs()[1].isAscending());
     assertEquals(false, indexNode.getSortSpecs()[1].isNullFirst());
     assertEquals(IndexMethod.BITMAP, indexNode.getMethod());
@@ -628,7 +628,7 @@ public class TestLogicalPlanner {
   }
   
   static final String CREATE_TABLE [] = {
-    "create external table table1 (name string, age int, earn long, score float) using csv with ('csv.delimiter'='|') location '/tmp/data'"
+    "create external table table1 (name text, age int, earn bigint, score real) using csv with ('csv.delimiter'='|') location '/tmp/data'"
   };
   
   @Test
@@ -642,13 +642,13 @@ public class TestLogicalPlanner {
     
     Schema def = createTable.getSchema();
     assertEquals("name", def.getColumn(0).getColumnName());
-    assertEquals(DataType.STRING, def.getColumn(0).getDataType());
+    assertEquals(Type.TEXT, def.getColumn(0).getDataType().getType());
     assertEquals("age", def.getColumn(1).getColumnName());
-    assertEquals(DataType.INT, def.getColumn(1).getDataType());
+    assertEquals(Type.INT4, def.getColumn(1).getDataType().getType());
     assertEquals("earn", def.getColumn(2).getColumnName());
-    assertEquals(DataType.LONG, def.getColumn(2).getDataType());
+    assertEquals(Type.INT8, def.getColumn(2).getDataType().getType());
     assertEquals("score", def.getColumn(3).getColumnName());
-    assertEquals(DataType.FLOAT, def.getColumn(3).getDataType());    
+    assertEquals(Type.FLOAT4, def.getColumn(3).getDataType().getType());
     assertEquals(StoreType.CSV, createTable.getStorageType());
     assertEquals("/tmp/data", createTable.getPath().toString());
     assertTrue(createTable.hasOptions());
@@ -664,9 +664,9 @@ public class TestLogicalPlanner {
     = Lists.newArrayList();
   private static final Column [] testCubeByCuboids = new Column[2];
   static {
-    testGenerateCuboids[0] = new Column("col1", DataType.INT);
-    testGenerateCuboids[1] = new Column("col2", DataType.LONG);
-    testGenerateCuboids[2] = new Column("col3", DataType.FLOAT);
+    testGenerateCuboids[0] = new Column("col1", Type.INT4);
+    testGenerateCuboids[1] = new Column("col2", Type.INT8);
+    testGenerateCuboids[2] = new Column("col3", Type.FLOAT4);
     
     testGenerateCuboidsResult.add(new HashSet<Column>());
     testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[0]));
@@ -681,8 +681,8 @@ public class TestLogicalPlanner {
     testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[0], 
         testGenerateCuboids[1], testGenerateCuboids[2]));
     
-    testCubeByCuboids[0] = new Column("employee.name", DataType.STRING);
-    testCubeByCuboids[1] = new Column("employee.empid", DataType.INT);
+    testCubeByCuboids[0] = new Column("employee.name", Type.TEXT);
+    testCubeByCuboids[1] = new Column("employee.empid", Type.INT4);
     testCubeByResult.add(new HashSet<Column>());
     testCubeByResult.add(Sets.newHashSet(testCubeByCuboids[0]));
     testCubeByResult.add(Sets.newHashSet(testCubeByCuboids[1]));
@@ -694,11 +694,11 @@ public class TestLogicalPlanner {
   public final void testGenerateCuboids() {
     Column [] columns = new Column[3];
     
-    columns[0] = new Column("col1", DataType.INT);
-    columns[1] = new Column("col2", DataType.LONG);
-    columns[2] = new Column("col3", DataType.FLOAT);
+    columns[0] = new Column("col1", Type.INT4);
+    columns[1] = new Column("col2", Type.INT8);
+    columns[2] = new Column("col3", Type.FLOAT4);
     
-    List<Column[]> cube = planner.generateCuboids(columns);
+    List<Column[]> cube = LogicalPlanner.generateCuboids(columns);
     assertEquals(((int)Math.pow(2, numCubeColumns)), cube.size());    
     
     Set<Set<Column>> cuboids = Sets.newHashSet();

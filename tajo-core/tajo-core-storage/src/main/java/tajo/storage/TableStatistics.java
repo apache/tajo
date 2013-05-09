@@ -19,11 +19,13 @@
 package tajo.storage;
 
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos;
 import tajo.catalog.statistics.ColumnStat;
 import tajo.catalog.statistics.TableStat;
+import tajo.common.TajoDataTypes;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
-import tajo.datum.DatumType;
+import tajo.datum.NullDatum;
 
 /**
  * This class is not thread-safe.
@@ -51,10 +53,10 @@ public class TableStatistics {
     numNulls = new long[schema.getColumnNum()];
     comparable = new boolean[schema.getColumnNum()];
 
-    CatalogProtos.DataType type;
+    DataType type;
     for (int i = 0; i < schema.getColumnNum(); i++) {
       type = schema.getColumn(i).getDataType();
-      if (type == CatalogProtos.DataType.ARRAY) {
+      if (type.getType() == Type.ARRAY) {
         comparable[i] = false;
       } else {
         comparable[i] = true;
@@ -83,12 +85,12 @@ public class TableStatistics {
   }
 
   public void analyzeField(int idx, Datum datum) {
-    if (datum.type() == DatumType.NULL) {
+    if (datum instanceof NullDatum) {
       numNulls[idx]++;
       return;
     }
 
-    if (datum.type() != DatumType.ARRAY) {
+    if (datum.type() != TajoDataTypes.Type.ARRAY) {
       if (comparable[idx]) {
         if (!maxValues.contains(idx) ||
             maxValues.get(idx).compareTo(datum) < 0) {

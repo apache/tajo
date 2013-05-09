@@ -23,7 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.engine.eval.EvalNode.Type;
 import tajo.engine.parser.QueryBlock.Target;
 import tajo.engine.utils.SchemaUtil;
@@ -131,7 +131,7 @@ public class EvalTreeUtil {
     return schema;
   }
   
-  public static DataType [] getDomainByExpr(Schema inputSchema, EvalNode expr)
+  public static DataType[] getDomainByExpr(Schema inputSchema, EvalNode expr)
       throws InternalException {
     switch (expr.getType()) {
     case AND:      

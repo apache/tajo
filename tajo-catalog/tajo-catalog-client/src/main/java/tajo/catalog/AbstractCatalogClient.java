@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import tajo.catalog.proto.CatalogProtos.*;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 
@@ -48,7 +49,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final TableDesc getTableDesc(final String name) {
     try {
-      return TCatUtil.newTableDesc(stub.getTableDesc(null, StringProto.newBuilder()
+      return CatalogUtil.newTableDesc(stub.getTableDesc(null, StringProto.newBuilder()
           .setValue(name).build()));
     } catch (ServiceException e) {
       LOG.error(e);
@@ -210,9 +211,8 @@ public abstract class AbstractCatalogClient implements CatalogService {
     UnregisterFunctionRequest.Builder builder =
         UnregisterFunctionRequest.newBuilder();
     builder.setSignature(signature);
-    int size = paramTypes.length;
-    for (int i = 0; i < size; i++) {
-      builder.addParameterTypes(paramTypes[i]);
+    for (DataType type : paramTypes) {
+      builder.addParameterTypes(type);
     }
     try {
       return stub.unregisterFunction(null, builder.build()).getValue();
@@ -228,9 +228,8 @@ public abstract class AbstractCatalogClient implements CatalogService {
     GetFunctionMetaRequest.Builder builder =
         GetFunctionMetaRequest.newBuilder();
     builder.setSignature(signature);
-    int size = paramTypes.length;
-    for (int i = 0; i < size; i++) {
-      builder.addParameterTypes(paramTypes[i]);
+    for (DataType type : paramTypes) {
+      builder.addParameterTypes(type);
     }
 
     FunctionDescProto descProto;
@@ -249,9 +248,8 @@ public abstract class AbstractCatalogClient implements CatalogService {
     ContainFunctionRequest.Builder builder =
         ContainFunctionRequest.newBuilder();
     builder.setSignature(signature);
-    int size = paramTypes.length;
-    for (int i = 0; i < size; i++) {
-      builder.addParameterTypes(paramTypes[i]);
+    for (DataType type : paramTypes) {
+      builder.addParameterTypes(type);
     }
     try {
       return stub.containFunction(null, builder.build()).getValue();

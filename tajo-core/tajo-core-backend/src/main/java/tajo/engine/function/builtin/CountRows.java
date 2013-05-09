@@ -18,13 +18,15 @@
 
 package tajo.engine.function.builtin;
 
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.datum.LongDatum;
+import tajo.datum.Int8Datum;
 import tajo.storage.Tuple;
 
 public class CountRows extends AggFunction<Datum> {
@@ -49,22 +51,22 @@ public class CountRows extends AggFunction<Datum> {
 
   @Override
   public void merge(FunctionContext ctx, Tuple part) {
-    ((CountRowContext) ctx).count += part.get(0).asLong();
+    ((CountRowContext) ctx).count += part.get(0).asInt8();
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createLong(((CountRowContext) ctx).count);
+    return DatumFactory.createInt8(((CountRowContext) ctx).count);
   }
 
   @Override
   public DataType[] getPartialResultType() {
-    return new DataType[] {DataType.LONG};
+    return CatalogUtil.newDataTypesWithoutLen(Type.INT8);
   }
 
   @Override
-  public LongDatum terminate(FunctionContext ctx) {
-    return DatumFactory.createLong(((CountRowContext) ctx).count);
+  public Int8Datum terminate(FunctionContext ctx) {
+    return DatumFactory.createInt8(((CountRowContext) ctx).count);
   }
 
   protected class CountRowContext implements FunctionContext {

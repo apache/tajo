@@ -22,10 +22,10 @@ import tajo.catalog.Column;
 import tajo.catalog.function.GeneralFunction;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.datum.LongDatum;
+import tajo.datum.Int8Datum;
 import tajo.storage.Tuple;
 
-public class Today extends GeneralFunction<LongDatum> {
+public class Today extends GeneralFunction<Int8Datum> {
 
   public Today() {
     super(new Column[] {});
@@ -33,6 +33,6 @@ public class Today extends GeneralFunction<LongDatum> {
 
   @Override
   public Datum eval(Tuple params) {
-    return DatumFactory.createLong(System.currentTimeMillis());
+    return DatumFactory.createInt8(System.currentTimeMillis());
   }
 }

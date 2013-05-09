@@ -26,13 +26,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Options;
 import tajo.catalog.Schema;
-import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.statistics.TableStat;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.datum.DatumFactory;
@@ -83,13 +83,13 @@ public class TestMergeScanner {
   @Test
   public void testMultipleFiles() throws IOException {
     Schema schema = new Schema();
-    schema.addColumn("id", DataType.INT);
-    schema.addColumn("file", DataType.STRING);
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("age", DataType.LONG);
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("file", Type.TEXT);
+    schema.addColumn("name", Type.TEXT);
+    schema.addColumn("age", Type.INT8);
     
     Options options = new Options();
-    TableMeta meta = TCatUtil.newTableMeta(schema, storeType, options);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, storeType, options);
 
     Path table1Path = new Path(testDir, storeType + "_1.data");
     Appender appender1 = StorageManager.getAppender(conf, meta, table1Path);
@@ -100,10 +100,10 @@ public class TestMergeScanner {
 
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(4);
-      vTuple.put(0, DatumFactory.createInt(i+1));
-      vTuple.put(1, DatumFactory.createString("hyunsik"));
-      vTuple.put(2, DatumFactory.createString("jihoon"));
-      vTuple.put(3, DatumFactory.createLong(25l));
+      vTuple.put(0, DatumFactory.createInt4(i + 1));
+      vTuple.put(1, DatumFactory.createText("hyunsik"));
+      vTuple.put(2, DatumFactory.createText("jihoon"));
+      vTuple.put(3, DatumFactory.createInt8(25l));
       appender1.addTuple(vTuple);
     }
     appender1.close();
@@ -120,10 +120,10 @@ public class TestMergeScanner {
 
     for(int i = 0; i < tupleNum; i++) {
       vTuple = new VTuple(4);
-      vTuple.put(0, DatumFactory.createInt(i+1));
-      vTuple.put(1, DatumFactory.createString("hyunsik"));
-      vTuple.put(2, DatumFactory.createString("jihoon"));
-      vTuple.put(3, DatumFactory.createLong(25l));
+      vTuple.put(0, DatumFactory.createInt4(i + 1));
+      vTuple.put(1, DatumFactory.createText("hyunsik"));
+      vTuple.put(2, DatumFactory.createText("jihoon"));
+      vTuple.put(3, DatumFactory.createInt8(25l));
       appender2.addTuple(vTuple);
     }
     appender2.close();

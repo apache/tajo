@@ -21,7 +21,7 @@ package tajo.engine.planner.physical;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import tajo.TaskAttemptContext;
-import tajo.catalog.TCatUtil;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.conf.TajoConf.ConfVars;
@@ -56,7 +56,7 @@ public class ExternalSortExec extends SortExec {
 
     this.sortTmpDir = new Path(context.getWorkDir(), UUID.randomUUID().toString());
     this.localFS = FileSystem.getLocal(context.getConf());
-    meta = TCatUtil.newTableMeta(inSchema, StoreType.ROWFILE);
+    meta = CatalogUtil.newTableMeta(inSchema, StoreType.ROWFILE);
   }
 
   public void init() throws IOException {
@@ -70,7 +70,7 @@ public class ExternalSortExec extends SortExec {
 
   private void sortAndStoreChunk(int chunkId, List<Tuple> tupleSlots)
       throws IOException {
-    TableMeta meta = TCatUtil.newTableMeta(inSchema, StoreType.RAW);
+    TableMeta meta = CatalogUtil.newTableMeta(inSchema, StoreType.RAW);
     Collections.sort(tupleSlots, getComparator());
     // TODO - RawFile requires the local file path.
     // So, I add the scheme 'file:/' to path. But, it should be improved.

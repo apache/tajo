@@ -32,10 +32,12 @@ import tajo.catalog.*;
 import tajo.catalog.exception.NoSuchTableException;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.GeneralFunction;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.IndexMethod;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
+import tajo.common.exception.NotImplementedException;
 import tajo.datum.DatumFactory;
 import tajo.engine.eval.*;
 import tajo.engine.parser.QueryBlock.*;
@@ -230,18 +232,53 @@ public final class QueryAnalyzer {
 
   private Schema parseCreateTableDef(final CommonTree ast) {
     Schema tableDef = new Schema();
-    DataType type;
+    Type type;
     for (int i = 0; i < ast.getChildCount(); i++) {
-      switch(ast.getChild(i).getChild(1).getType()) {
-        case NQLParser.BOOL: type = DataType.BOOLEAN; break;
-        case NQLParser.BYTE: type = DataType.BYTE; break;
-        case NQLParser.INT: type = DataType.INT; break;
-        case NQLParser.LONG: type = DataType.LONG; break;
-        case NQLParser.FLOAT: type = DataType.FLOAT; break;
-        case NQLParser.DOUBLE: type = DataType.DOUBLE; break;
-        case NQLParser.TEXT: type = DataType.STRING; break;
-        case NQLParser.BYTES: type = DataType.BYTES; break;
-        case NQLParser.IPv4: type = DataType.IPv4; break;
+      Tree child = ast.getChild(i).getChild(1);
+      switch(child.getType()) {
+        case NQLParser.BOOLEAN: type = Type.BOOLEAN; break;
+        case NQLParser.BIT: type = Type.BIT; break;
+
+        case NQLParser.INT1:
+        case NQLParser.INT2:
+          type = Type.INT2;
+          break;
+
+        case NQLParser.INT4: type = Type.INT4; break;
+        case NQLParser.INT8: type = Type.INT8; break;
+        case NQLParser.FLOAT4: type = Type.FLOAT4; break;
+        case NQLParser.FLOAT:
+          if (child.getChildCount() > 0) {
+            int length = Integer.valueOf(child.getChild(0).getText());
+            if (length < 1 || length > 53) {
+              throw new InvalidQueryException("ERROR: floating point precision " + length + " is out of range");
+            }
+            if (length > 25) {
+              type = Type.FLOAT8;
+            } else {
+              type = Type.FLOAT4;
+            }
+          } else { // no given length
+            type = Type.FLOAT8;
+          }
+          break;
+        case NQLParser.FLOAT8:
+          type = Type.FLOAT8; break;
+        case NQLParser.TEXT: type = Type.TEXT; break;
+        case NQLParser.BLOB: type = Type.BLOB; break;
+        case NQLParser.INET4: type = Type.INET4;
+          break;
+
+        case NQLParser.CHAR:
+        case NQLParser.NCHAR:
+        case NQLParser.NUMERIC:
+        case NQLParser.VARCHAR:
+        case NQLParser.NVARCHAR:
+        case NQLParser.BINARY:
+        case NQLParser.VARBINARY:
+          throw new NotImplementedException("ERROR: " + child.toString() +
+              " type is not supported yet");
+
         default: throw new InvalidQueryException(ast.toStringTree());
       }
 
@@ -782,7 +819,7 @@ public final class QueryAnalyzer {
 
     if (evalNode instanceof ConstEval) {
       ConstEval fetchFirst = (ConstEval) evalNode;
-      LimitClause limitClause = new LimitClause(fetchFirst.getValue().asLong());
+      LimitClause limitClause = new LimitClause(fetchFirst.getValue().asInt8());
       return limitClause;
     }
 
@@ -970,15 +1007,15 @@ public final class QueryAnalyzer {
 
       // constants
       case NQLParser.DIGIT:
-        return new ConstEval(DatumFactory.createInt(
+        return new ConstEval(DatumFactory.createInt4(
             Integer.valueOf(ast.getText())));
 
-      case NQLParser.REAL:
-        return new ConstEval(DatumFactory.createDouble(
-            Double.valueOf(ast.getText())));
+      case NQLParser.REAL_NUMBER:
+        return new ConstEval(DatumFactory.createFloat4(
+            Float.valueOf(ast.getText())));
 
       case NQLParser.STRING:
-        return new ConstEval(DatumFactory.createString(ast.getText()));
+        return new ConstEval(DatumFactory.createText(ast.getText()));
 
       // unary expression
       case NQLParser.NOT:
@@ -1025,8 +1062,8 @@ public final class QueryAnalyzer {
           paramTypes[i] = givenArgs[i].getValueType()[0];
         }
         if (!catalog.containFunction(signature, paramTypes)) {
-          throw new UndefinedFunctionException(TCatUtil.
-              getCanonicalName(signature, paramTypes));
+          throw new UndefinedFunctionException(
+              CatalogUtil.getCanonicalName(signature, paramTypes));
         }
         FunctionDesc funcDesc = catalog.getFunction(signature, paramTypes);
 
@@ -1050,7 +1087,8 @@ public final class QueryAnalyzer {
         // Getting the first argument
         EvalNode colRef = createEvalTree(context, tree, ast.getChild(0));
 
-        FunctionDesc countVals = catalog.getFunction("count", DataType.ANY);
+        FunctionDesc countVals = catalog.getFunction("count",
+            CatalogUtil.newDataTypeWithoutLen(Type.ANY));
         tree.setAggregation();
         try {
           return new AggFuncCallEval(countVals, (AggFunction) countVals.newInstance(),
@@ -1151,13 +1189,13 @@ public final class QueryAnalyzer {
   public EvalNode parseDigitByTypeInfer(final PlanningContext context,
                                         final QueryBlock block, final Tree tree,
                                         DataType type) {
-    switch (type) {
-      case SHORT:
-        return new ConstEval(DatumFactory.createShort(tree.getText()));
-      case INT:
-        return new ConstEval(DatumFactory.createInt(tree.getText()));
-      case LONG:
-        return new ConstEval(DatumFactory.createLong(tree.getText()));
+    switch (type.getType()) {
+      case INT2:
+        return new ConstEval(DatumFactory.createInt2(tree.getText()));
+      case INT4:
+        return new ConstEval(DatumFactory.createInt4(tree.getText()));
+      case INT8 :
+        return new ConstEval(DatumFactory.createInt8(tree.getText()));
       default: return createEvalTree(context, block, tree);
     }
   }
@@ -1165,11 +1203,11 @@ public final class QueryAnalyzer {
   private EvalNode parseRealByTypeInfer(final PlanningContext context,
                                         final QueryBlock block, final Tree tree,
                                         DataType type) {
-    switch (type) {
-      case FLOAT:
-        return new ConstEval(DatumFactory.createFloat(tree.getText()));
-      case DOUBLE:
-        return new ConstEval(DatumFactory.createDouble(tree.getText()));
+    switch (type.getType()) {
+      case FLOAT4:
+        return new ConstEval(DatumFactory.createFloat4(tree.getText()));
+      case FLOAT8:
+        return new ConstEval(DatumFactory.createFloat8(tree.getText()));
       default: return createEvalTree(context, block, tree);
     }
   }
@@ -1178,11 +1216,11 @@ public final class QueryAnalyzer {
                                           final QueryBlock block,
                                           final Tree tree,
                                           DataType type) {
-    switch (type) {
+    switch (type.getType()) {
       case CHAR:
         return new ConstEval(DatumFactory.createChar(tree.getText().charAt(0)));
-      case STRING:
-        return new ConstEval(DatumFactory.createString(tree.getText()));
+      case TEXT:
+        return new ConstEval(DatumFactory.createText(tree.getText()));
       default: return createEvalTree(context, block, tree);
     }
   }
@@ -1214,7 +1252,7 @@ public final class QueryAnalyzer {
               exprs[fieldId].getValueType()[0]);
           break;
 
-        case NQLParser.REAL:
+        case NQLParser.REAL_NUMBER:
           exprs[constId] = parseRealByTypeInfer(context, block, constAst,
               exprs[fieldId].getValueType()[0]);
           break;

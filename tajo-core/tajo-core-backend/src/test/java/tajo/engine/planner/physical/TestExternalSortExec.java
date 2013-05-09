@@ -25,8 +25,8 @@ import org.junit.Test;
 import tajo.TajoTestingCluster;
 import tajo.TaskAttemptContext;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -72,20 +72,20 @@ public class TestExternalSortExec {
     sm = StorageManager.get(conf, testDir);
 
     Schema schema = new Schema();
-    schema.addColumn("managerId", DataType.INT);
-    schema.addColumn("empId", DataType.INT);
-    schema.addColumn("deptName", DataType.STRING);
+    schema.addColumn("managerId", Type.INT4);
+    schema.addColumn("empId", Type.INT4);
+    schema.addColumn("deptName", Type.TEXT);
 
-    TableMeta employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = StorageManager.getAppender(conf, employeeMeta, employeePath);
     appender.enableStats();
     appender.init();
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < numTuple; i++) {
-      tuple.put(new Datum[] { DatumFactory.createInt(rnd.nextInt(50)),
-          DatumFactory.createInt(rnd.nextInt(100)),
-          DatumFactory.createString("dept_" + 123) });
+      tuple.put(new Datum[] { DatumFactory.createInt4(rnd.nextInt(50)),
+          DatumFactory.createInt4(rnd.nextInt(100)),
+          DatumFactory.createText("dept_" + 123) });
       appender.addTuple(tuple);
     }
     appender.flush();

@@ -20,7 +20,7 @@ package tajo.engine.utils;
 
 import tajo.catalog.Column;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.engine.parser.QueryBlock;
 
 import java.util.Collection;
@@ -56,7 +56,7 @@ public class SchemaUtil {
     for (Column outer : left.getColumns()) {
       for (Column inner : right.getColumns()) {
         if (outer.getColumnName().equals(inner.getColumnName()) &&
-            outer.getDataType() == inner.getDataType()) {
+            outer.getDataType().equals(inner.getDataType())) {
           common.addColumn(outer.getColumnName(), outer.getDataType());
         }
       }

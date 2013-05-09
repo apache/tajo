@@ -21,7 +21,7 @@ package tajo.catalog.function;
 import com.google.gson.Gson;
 import tajo.catalog.Column;
 import tajo.catalog.json.GsonCreator;
-import tajo.catalog.proto.CatalogProtos;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.Datum;
 import tajo.storage.Tuple;
 
@@ -41,7 +41,7 @@ public abstract class AggFunction<T extends Datum> extends Function<T> {
 
   public abstract Datum getPartialResult(FunctionContext ctx);
 
-  public abstract CatalogProtos.DataType [] getPartialResultType();
+  public abstract DataType [] getPartialResultType();
 
   public abstract T terminate(FunctionContext ctx);
 

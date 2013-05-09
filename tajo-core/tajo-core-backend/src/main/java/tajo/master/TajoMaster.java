@@ -39,12 +39,9 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import tajo.QueryId;
 import tajo.QueryIdFactory;
 import tajo.TajoConstants;
-import tajo.catalog.CatalogServer;
-import tajo.catalog.CatalogService;
-import tajo.catalog.FunctionDesc;
-import tajo.catalog.LocalCatalog;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.catalog.*;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.engine.MasterWorkerProtos.TaskStatusProto;
@@ -169,93 +166,93 @@ public class TajoMaster extends CompositeService {
 
     // Sum
     sqlFuncs.add(new FunctionDesc("sum", SumInt.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.INT},
-        new DataType[] {DataType.INT}));
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
     sqlFuncs.add(new FunctionDesc("sum", SumLong.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.LONG},
-        new DataType[] {DataType.LONG}));
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8)));
     sqlFuncs.add(new FunctionDesc("sum", SumFloat.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.FLOAT},
-        new DataType[] {DataType.FLOAT}));
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT4)));
     sqlFuncs.add(new FunctionDesc("sum", SumDouble.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.DOUBLE},
-        new DataType[] {DataType.DOUBLE}));
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8),
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8)));
 
     // Max
     sqlFuncs.add(new FunctionDesc("max", MaxInt.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.INT},
-        new DataType[] {DataType.INT}));
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
     sqlFuncs.add(new FunctionDesc("max", MaxLong.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.LONG},
-        new DataType[] {DataType.LONG}));
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8)));
     sqlFuncs.add(new FunctionDesc("max", MaxFloat.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.FLOAT},
-        new DataType[] {DataType.FLOAT}));
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT4)));
     sqlFuncs.add(new FunctionDesc("max", MaxDouble.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.DOUBLE},
-        new DataType[] {DataType.DOUBLE}));
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8),
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8)));
 
     // Min
     sqlFuncs.add(new FunctionDesc("min", MinInt.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.INT},
-        new DataType[] {DataType.INT}));
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
     sqlFuncs.add(new FunctionDesc("min", MinLong.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.LONG},
-        new DataType[] {DataType.LONG}));
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8)));
     sqlFuncs.add(new FunctionDesc("min", MinFloat.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.FLOAT},
-        new DataType[] {DataType.FLOAT }));
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT4 )));
     sqlFuncs.add(new FunctionDesc("min", MinDouble.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.DOUBLE},
-        new DataType[] {DataType.DOUBLE}));
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8),
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8)));
     sqlFuncs.add(new FunctionDesc("min", MinString.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.STRING},
-        new DataType[] {DataType.STRING}));
+        CatalogUtil.newDataTypesWithoutLen(Type.TEXT),
+        CatalogUtil.newDataTypesWithoutLen(Type.TEXT)));
 
     // AVG
     sqlFuncs.add(new FunctionDesc("avg", AvgInt.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.FLOAT},
-        new DataType[] {DataType.INT}));
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
     sqlFuncs.add(new FunctionDesc("avg", AvgLong.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.DOUBLE},
-        new DataType[] {DataType.LONG}));
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8)));
     sqlFuncs.add(new FunctionDesc("avg", AvgFloat.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.FLOAT},
-        new DataType[] {DataType.FLOAT}));
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT4)));
     sqlFuncs.add(new FunctionDesc("avg", AvgDouble.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.DOUBLE},
-        new DataType[] {DataType.DOUBLE}));
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8),
+        CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8)));
 
     // Count
     sqlFuncs.add(new FunctionDesc("count", CountValue.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.LONG},
-        new DataType[] {DataType.ANY}));
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8),
+        CatalogUtil.newDataTypesWithoutLen(Type.ANY)));
     sqlFuncs.add(new FunctionDesc("count", CountRows.class, FunctionType.AGGREGATION,
-        new DataType[] {DataType.LONG},
-        new DataType[] {}));
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8),
+        CatalogUtil.newDataTypesWithoutLen()));
 
     // GeoIP
     sqlFuncs.add(new FunctionDesc("in_country", InCountry.class, FunctionType.GENERAL,
-        new DataType[] {DataType.BOOLEAN},
-        new DataType[] {DataType.STRING, DataType.STRING}));
+        CatalogUtil.newDataTypesWithoutLen(Type.BOOLEAN),
+        CatalogUtil.newDataTypesWithoutLen(Type.TEXT, Type.TEXT)));
     sqlFuncs.add(new FunctionDesc("country", Country.class, FunctionType.GENERAL,
-        new DataType[] {DataType.STRING},
-        new DataType[] {DataType.STRING}));
+        CatalogUtil.newDataTypesWithoutLen(Type.TEXT),
+        CatalogUtil.newDataTypesWithoutLen(Type.TEXT)));
 
     // Date
     sqlFuncs.add(new FunctionDesc("date", Date.class, FunctionType.GENERAL,
-        new DataType[] {DataType.LONG},
-        new DataType[] {DataType.STRING}));
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8),
+        CatalogUtil.newDataTypesWithoutLen(Type.TEXT)));
 
     // Today
     sqlFuncs.add(new FunctionDesc("today", Date.class, FunctionType.GENERAL,
-        new DataType[] {DataType.LONG},
-        new DataType[] {}));
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8),
+        CatalogUtil.newDataTypesWithoutLen()));
 
     sqlFuncs.add(
         new FunctionDesc("random", RandomInt.class, FunctionType.GENERAL,
-            new DataType[]{DataType.INT},
-            new DataType[]{DataType.INT}));
+            CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+            CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
 
     return sqlFuncs;
   }

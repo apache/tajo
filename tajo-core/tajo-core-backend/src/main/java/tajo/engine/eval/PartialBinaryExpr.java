@@ -19,7 +19,7 @@
 package tajo.engine.eval;
 
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.Datum;
 import tajo.storage.Tuple;
 
@@ -39,7 +39,7 @@ public class PartialBinaryExpr extends EvalNode {
   }
 
   @Override
-  public DataType [] getValueType() {
+  public DataType[] getValueType() {
     return null;
   }
 

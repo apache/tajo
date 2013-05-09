@@ -19,15 +19,15 @@
 package tajo.catalog;
 
 import org.junit.Test;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.Type;
 
 import static org.junit.Assert.assertEquals;
 
 public class TestCatalogUtil {
   @Test
   public final void testGetCanonicalName() {
-    String canonical = TCatUtil.getCanonicalName("sum",
-        new DataType[]{DataType.INT, DataType.LONG});
-    assertEquals("sum(INT,LONG)", canonical);
+    String canonical = CatalogUtil.getCanonicalName("sum",
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4,  Type.INT8));
+    assertEquals("sum(INT4,INT8)", canonical);
   }
 }

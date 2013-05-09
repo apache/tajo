@@ -22,43 +22,44 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static tajo.common.TajoDataTypes.Type;
 
 public class TestCharDatum {
 
 	@Test
 	public final void testType() {
 		Datum d = DatumFactory.createChar((char) 1);
-		assertEquals(DatumType.CHAR, d.type());
+		assertEquals(Type.CHAR, d.type());
 	}
 
 	@Test
 	public final void testAsInt() {
 		Datum d = DatumFactory.createChar((char)5);
-		assertEquals(5,d.asInt());
+		assertEquals(5,d.asInt4());
 	}
 	
 	@Test
 	public final void testAsLong() {
 		Datum d = DatumFactory.createChar((char)5);
-		assertEquals(5l,d.asLong());
+		assertEquals(5l,d.asInt8());
 	}
 	
 	@Test
 	public final void testAsByte() {
 		Datum d = DatumFactory.createChar((char)5);
-		assertEquals(5,d.asLong());
+		assertEquals(5,d.asInt8());
 	}
 
 	@Test
 	public final void testAsFloat() {
 		Datum d = DatumFactory.createChar((char)5);
-		assertTrue(5.0f == d.asFloat());
+		assertTrue(5.0f == d.asFloat4());
 	}
 
 	@Test
 	public final void testAsDouble() {
 		Datum d = DatumFactory.createChar((char)5);
-		assertTrue(5.0d == d.asDouble());
+		assertTrue(5.0d == d.asFloat8());
 	}
 	
 	@Test

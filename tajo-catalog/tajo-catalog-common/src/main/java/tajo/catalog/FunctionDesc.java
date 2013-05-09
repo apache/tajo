@@ -23,11 +23,11 @@ import com.google.gson.annotations.Expose;
 import tajo.catalog.function.Function;
 import tajo.catalog.function.GeneralFunction;
 import tajo.catalog.json.GsonCreator;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import tajo.catalog.proto.CatalogProtos.FunctionDescProtoOrBuilder;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.common.ProtoObject;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.exception.InternalException;
 
 import java.lang.reflect.Constructor;
@@ -65,7 +65,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
 
   @SuppressWarnings("unchecked")
   public FunctionDesc(String signature, String className, FunctionType type,
-      DataType [] retType, DataType... argTypes) throws ClassNotFoundException {
+                      DataType [] retType, DataType... argTypes) throws ClassNotFoundException {
     this(signature, (Class<? extends Function>) Class.forName(className), type,
         retType, argTypes);
   }
@@ -151,7 +151,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
     
   }
 
-  public static DataType[] newNoNameSchema(DataType... types) {
+  public static DataType [] newNoNameSchema(DataType ... types) {
     DataType [] dataTypes = types.clone();
     return dataTypes;
   }

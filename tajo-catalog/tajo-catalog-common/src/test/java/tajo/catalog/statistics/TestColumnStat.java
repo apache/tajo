@@ -20,7 +20,7 @@ package tajo.catalog.statistics;
 
 import org.junit.Test;
 import tajo.catalog.Column;
-import tajo.catalog.proto.CatalogProtos;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.DatumFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -30,7 +30,7 @@ public class TestColumnStat {
 
   @Test
   public final void testColumnStat() {
-    ColumnStat stat = new ColumnStat(new Column("test", CatalogProtos.DataType.LONG));
+    ColumnStat stat = new ColumnStat(new Column("test", Type.INT8));
     stat.setNumDistVals(1000);
     stat.setNumNulls(999);
     
@@ -44,11 +44,11 @@ public class TestColumnStat {
 
   @Test
   public final void testEqualsObject() {
-    ColumnStat stat = new ColumnStat(new Column("test", CatalogProtos.DataType.LONG));
+    ColumnStat stat = new ColumnStat(new Column("test", Type.INT8));
     stat.setNumDistVals(1000);
     stat.setNumNulls(999);
-    stat.setMinValue(DatumFactory.createLong(5));
-    stat.setMaxValue(DatumFactory.createLong(10));
+    stat.setMinValue(DatumFactory.createInt8(5));
+    stat.setMaxValue(DatumFactory.createInt8(10));
     
     ColumnStat stat2 = new ColumnStat(stat.getProto());
     assertEquals(stat, stat2);
@@ -56,11 +56,11 @@ public class TestColumnStat {
 
   @Test
   public final void testClone() throws CloneNotSupportedException {
-    ColumnStat stat = new ColumnStat(new Column("test", CatalogProtos.DataType.LONG));
+    ColumnStat stat = new ColumnStat(new Column("test", Type.INT8));
     stat.setNumDistVals(1000);
     stat.setNumNulls(999);
-    stat.setMinValue(DatumFactory.createLong(5));
-    stat.setMaxValue(DatumFactory.createLong(10));
+    stat.setMinValue(DatumFactory.createInt8(5));
+    stat.setMaxValue(DatumFactory.createInt8(10));
     
     ColumnStat stat2 = (ColumnStat) stat.clone();
     assertEquals(stat, stat2);

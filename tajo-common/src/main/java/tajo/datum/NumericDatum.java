@@ -19,9 +19,11 @@
 package tajo.datum;
 
 
+import tajo.common.TajoDataTypes;
+
 public abstract class NumericDatum extends Datum {
 
-  public NumericDatum(DatumType type) {
+  public NumericDatum(TajoDataTypes.Type type) {
     super(type);
   }
   

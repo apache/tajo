@@ -25,7 +25,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
 import tajo.TaskAttemptContext;
-import tajo.catalog.TCatUtil;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.TableMeta;
 import tajo.engine.planner.logical.StoreTableNode;
 import tajo.storage.Appender;
@@ -59,9 +59,9 @@ public class StoreTableExec extends UnaryPhysicalExec {
 
     TableMeta meta;
     if (plan.hasOptions()) {
-      meta = TCatUtil.newTableMeta(outSchema, plan.getStorageType(), plan.getOptions());
+      meta = CatalogUtil.newTableMeta(outSchema, plan.getStorageType(), plan.getOptions());
     } else {
-      meta = TCatUtil.newTableMeta(outSchema, plan.getStorageType());
+      meta = CatalogUtil.newTableMeta(outSchema, plan.getStorageType());
     }
 
     if (context.isInterQuery()) {

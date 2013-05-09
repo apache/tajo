@@ -24,8 +24,8 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.datum.DatumFactory;
@@ -57,11 +57,11 @@ public class TestSingleCSVFileBSTIndex {
     conf = new TajoConf();
     conf.setVar(ConfVars.ROOT_DIR, TEST_PATH);
     schema = new Schema();
-    schema.addColumn(new Column("int", DataType.INT));
-    schema.addColumn(new Column("long", DataType.LONG));
-    schema.addColumn(new Column("double", DataType.DOUBLE));
-    schema.addColumn(new Column("float", DataType.FLOAT));
-    schema.addColumn(new Column("string", DataType.STRING));
+    schema.addColumn(new Column("int", Type.INT4));
+    schema.addColumn(new Column("long", Type.INT8));
+    schema.addColumn(new Column("double", Type.FLOAT8));
+    schema.addColumn(new Column("float", Type.FLOAT4));
+    schema.addColumn(new Column("string", Type.TEXT));
   }
 
   @Before
@@ -72,7 +72,7 @@ public class TestSingleCSVFileBSTIndex {
 
   @Test
   public void testFindValueInSingleCSV() throws IOException {
-    meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindValueInSingleCSV", "table.csv");
     fs.mkdirs(tablePath.getParent());
@@ -82,11 +82,11 @@ public class TestSingleCSVFileBSTIndex {
     Tuple tuple;
     for (int i = 0; i < TUPLE_NUM; i++) {
       tuple = new VTuple(5);
-      tuple.put(0, DatumFactory.createInt(i));
-      tuple.put(1, DatumFactory.createLong(i));
-      tuple.put(2, DatumFactory.createDouble(i));
-      tuple.put(3, DatumFactory.createFloat(i));
-      tuple.put(4, DatumFactory.createString("field_" + i));
+      tuple.put(0, DatumFactory.createInt4(i));
+      tuple.put(1, DatumFactory.createInt8(i));
+      tuple.put(2, DatumFactory.createFloat8(i));
+      tuple.put(3, DatumFactory.createFloat4(i));
+      tuple.put(4, DatumFactory.createText("field_" + i));
       appender.addTuple(tuple);
     }
     appender.close();
@@ -101,8 +101,8 @@ public class TestSingleCSVFileBSTIndex {
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
     Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", DataType.LONG));
-    keySchema.addColumn(new Column("double", DataType.DOUBLE));
+    keySchema.addColumn(new Column("long", Type.INT8));
+    keySchema.addColumn(new Column("double", Type.FLOAT8));
 
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
 
@@ -137,13 +137,13 @@ public class TestSingleCSVFileBSTIndex {
     reader.open();
     fileScanner = new CSVScanner(conf, meta, tablet);
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
-      tuple.put(0, DatumFactory.createLong(i));
-      tuple.put(1, DatumFactory.createDouble(i));
+      tuple.put(0, DatumFactory.createInt8(i));
+      tuple.put(1, DatumFactory.createFloat8(i));
       long offsets = reader.find(tuple);
       fileScanner.seek(offsets);
       tuple = fileScanner.next();
-      assertEquals(i,  (tuple.get(1).asLong()));
-      assertEquals(i, (tuple.get(2).asDouble()) , 0.01);
+      assertEquals(i,  (tuple.get(1).asInt8()));
+      assertEquals(i, (tuple.get(2).asFloat8()) , 0.01);
 
       offsets = reader.next();
       if (offsets == -1) {
@@ -152,15 +152,15 @@ public class TestSingleCSVFileBSTIndex {
       fileScanner.seek(offsets);
       tuple = fileScanner.next();
       assertTrue("[seek check " + (i + 1) + " ]",
-          (i + 1) == (tuple.get(0).asInt()));
+          (i + 1) == (tuple.get(0).asInt4()));
       assertTrue("[seek check " + (i + 1) + " ]",
-          (i + 1) == (tuple.get(1).asLong()));
+          (i + 1) == (tuple.get(1).asInt8()));
     }
   }
 
   @Test
   public void testFindNextKeyValueInSingleCSV() throws IOException {
-    meta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindNextKeyValueInSingleCSV",
         "table1.csv");
@@ -170,11 +170,11 @@ public class TestSingleCSVFileBSTIndex {
     Tuple tuple;
     for(int i = 0 ; i < TUPLE_NUM; i ++ ) {
       tuple = new VTuple(5);
-      tuple.put(0, DatumFactory.createInt(i));
-      tuple.put(1, DatumFactory.createLong(i));
-      tuple.put(2, DatumFactory.createDouble(i));
-      tuple.put(3, DatumFactory.createFloat(i));
-      tuple.put(4, DatumFactory.createString("field_"+i));
+      tuple.put(0, DatumFactory.createInt4(i));
+      tuple.put(1, DatumFactory.createInt8(i));
+      tuple.put(2, DatumFactory.createFloat8(i));
+      tuple.put(3, DatumFactory.createFloat4(i));
+      tuple.put(4, DatumFactory.createText("field_" + i));
       appender.addTuple(tuple);
     }
     appender.close();
@@ -188,8 +188,8 @@ public class TestSingleCSVFileBSTIndex {
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
     Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("int", DataType.INT));
-    keySchema.addColumn(new Column("long", DataType.LONG));
+    keySchema.addColumn(new Column("int", Type.INT4));
+    keySchema.addColumn(new Column("long", Type.INT8));
 
     TupleComparator comp = new TupleComparator(keySchema, sortKeys);
     
@@ -223,13 +223,13 @@ public class TestSingleCSVFileBSTIndex {
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       keyTuple = new VTuple(2);
-      keyTuple.put(0, DatumFactory.createInt(i));
-      keyTuple.put(1, DatumFactory.createLong(i));
+      keyTuple.put(0, DatumFactory.createInt4(i));
+      keyTuple.put(1, DatumFactory.createInt8(i));
       long offsets = reader.find(keyTuple, true);
       fileScanner.seek(offsets);
       result = fileScanner.next();
-      assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(0).asInt()));
-      assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(1).asLong()));
+      assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(0).asInt4()));
+      assertTrue("[seek check " + (i + 1) + " ]" , (i + 1) == (result.get(1).asInt8()));
       
       offsets = reader.next();
       if (offsets == -1) {
@@ -237,8 +237,8 @@ public class TestSingleCSVFileBSTIndex {
       }
       fileScanner.seek(offsets);
       result = fileScanner.next();
-      assertTrue("[seek check " + (i + 2) + " ]" , (i + 2) == (result.get(0).asLong()));
-      assertTrue("[seek check " + (i + 2) + " ]" , (i + 2) == (result.get(1).asDouble()));
+      assertTrue("[seek check " + (i + 2) + " ]" , (i + 2) == (result.get(0).asInt8()));
+      assertTrue("[seek check " + (i + 2) + " ]" , (i + 2) == (result.get(1).asFloat8()));
     }
   }
 }

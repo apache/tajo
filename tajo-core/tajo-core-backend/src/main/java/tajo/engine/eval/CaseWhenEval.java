@@ -20,12 +20,12 @@ package tajo.engine.eval;
 
 import com.google.common.collect.Lists;
 import com.google.gson.annotations.Expose;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Schema;
-import tajo.catalog.proto.CatalogProtos;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes;
+import tajo.common.TajoDataTypes.DataType;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.engine.utils.SchemaUtil;
 import tajo.storage.Tuple;
 
 import java.util.List;
@@ -52,7 +52,7 @@ public class CaseWhenEval extends EvalNode {
   }
 
   @Override
-  public CatalogProtos.DataType[] getValueType() {
+  public DataType [] getValueType() {
     return whens.get(0).getResultExpr().getValueType();
   }
 
@@ -153,7 +153,7 @@ public class CaseWhenEval extends EvalNode {
 
     @Override
     public DataType [] getValueType() {
-      return SchemaUtil.newNoNameSchema(CatalogProtos.DataType.BOOLEAN);
+      return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
     }
 
     @Override

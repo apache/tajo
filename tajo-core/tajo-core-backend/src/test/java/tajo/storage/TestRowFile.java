@@ -27,14 +27,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import tajo.TajoTestingCluster;
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Schema;
-import tajo.catalog.TCatUtil;
 import tajo.catalog.TableMeta;
 import tajo.catalog.TableMetaImpl;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
 import tajo.catalog.proto.CatalogProtos.TableProto;
 import tajo.catalog.statistics.TableStat;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf.ConfVars;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -65,11 +65,11 @@ public class TestRowFile {
   @Test
   public void test() throws IOException {
     Schema schema = new Schema();
-    schema.addColumn("id", DataType.INT);
-    schema.addColumn("age", DataType.LONG);
-    schema.addColumn("description", DataType.STRING2);
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("age", Type.INT8);
+    schema.addColumn("description", Type.TEXT);
 
-    TableMeta meta = TCatUtil.newTableMeta(schema, StoreType.ROWFILE);
+    TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.ROWFILE);
 
     Path tablePath = new Path("hdfs:///test");
     Path metaPath = new Path(tablePath, ".meta");
@@ -87,14 +87,14 @@ public class TestRowFile {
 
     int tupleNum = 100000;
     Tuple tuple;
-    Datum stringDatum = DatumFactory.createString2("abcdefghijklmnopqrstuvwxyz");
+    Datum stringDatum = DatumFactory.createText("abcdefghijklmnopqrstuvwxyz");
     Set<Integer> idSet = Sets.newHashSet();
 
     tuple = new VTuple(3);
     long start = System.currentTimeMillis();
     for(int i = 0; i < tupleNum; i++) {
-      tuple.put(0, DatumFactory.createInt(i + 1));
-      tuple.put(1, DatumFactory.createLong(25l));
+      tuple.put(0, DatumFactory.createInt4(i + 1));
+      tuple.put(1, DatumFactory.createInt8(25l));
       tuple.put(2, stringDatum);
       appender.addTuple(tuple);
       idSet.add(i+1);
@@ -140,8 +140,8 @@ public class TestRowFile {
       scanner = new RowFile.RowFileScanner(conf, meta, fragment);
       scanner.init();
       while ((tuple=scanner.next()) != null) {
-        if (!idSet.remove(tuple.get(0).asInt())) {
-          System.out.println("duplicated! " + tuple.get(0).asInt());
+        if (!idSet.remove(tuple.get(0).asInt4())) {
+          System.out.println("duplicated! " + tuple.get(0).asInt4());
         }
         tupleCnt++;
       }

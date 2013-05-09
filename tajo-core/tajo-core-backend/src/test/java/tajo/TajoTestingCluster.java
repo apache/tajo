@@ -425,7 +425,7 @@ public class TajoTestingCluster {
       dataDir.mkdirs();
       File tableFile = new File(dataDir, tableNames[i]);
       writeLines(tableFile, tables[i]);
-      TableMeta meta = TCatUtil
+      TableMeta meta = CatalogUtil
           .newTableMeta(schemas[i], CatalogProtos.StoreType.CSV, option);
       client.createTable(tableNames[i], new Path(tableDir.getAbsolutePath()), meta);
     }
@@ -457,7 +457,7 @@ public class TajoTestingCluster {
       fs.mkdirs(dataPath);
       Path dfsPath = new Path(dataPath, localPath.getName());
       fs.copyFromLocalFile(localPath, dfsPath);
-      TableMeta meta = TCatUtil.newTableMeta(schemas[i],
+      TableMeta meta = CatalogUtil.newTableMeta(schemas[i],
           CatalogProtos.StoreType.CSV, option);
       client.createTable(names[i], tablePath, meta);
     }
@@ -492,7 +492,7 @@ public class TajoTestingCluster {
         out.write((tables[i][j]+"\n").getBytes());
       }
       out.close();
-      TableMeta meta = TCatUtil.newTableMeta(schemas[i],
+      TableMeta meta = CatalogUtil.newTableMeta(schemas[i],
           CatalogProtos.StoreType.CSV, option);
       client.createTable(names[i], tablePath, meta);
     }

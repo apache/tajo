@@ -112,8 +112,8 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     Column column = schema.getColumn(colId);
     BigDecimal candidate;
     boolean overflow = false;
-    switch (column.getDataType()) {
-      case BYTE: {
+    switch (column.getDataType().getType()) {
+      case BIT: {
         candidate = inc.add(new BigDecimal(last.asByte()));
         return new BigDecimal(range.getEnd().get(colId).asByte()).compareTo(candidate) < 0;
       }
@@ -121,27 +121,27 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
         candidate = inc.add(new BigDecimal((int)last.asChar()));
         return new BigDecimal((int)range.getEnd().get(colId).asChar()).compareTo(candidate) < 0;
       }
-      case SHORT: {
-        candidate = inc.add(new BigDecimal(last.asShort()));
-        return new BigDecimal(range.getEnd().get(colId).asShort()).compareTo(candidate) < 0;
+      case INT2: {
+        candidate = inc.add(new BigDecimal(last.asInt2()));
+        return new BigDecimal(range.getEnd().get(colId).asInt2()).compareTo(candidate) < 0;
       }
-      case INT: {
-        candidate = inc.add(new BigDecimal(last.asInt()));
-        return new BigDecimal(range.getEnd().get(colId).asInt()).compareTo(candidate) < 0;
+      case INT4: {
+        candidate = inc.add(new BigDecimal(last.asInt4()));
+        return new BigDecimal(range.getEnd().get(colId).asInt4()).compareTo(candidate) < 0;
       }
-      case LONG: {
-        candidate = inc.add(new BigDecimal(last.asLong()));
-        return new BigDecimal(range.getEnd().get(colId).asLong()).compareTo(candidate) < 0;
+      case INT8: {
+        candidate = inc.add(new BigDecimal(last.asInt8()));
+        return new BigDecimal(range.getEnd().get(colId).asInt8()).compareTo(candidate) < 0;
       }
-      case FLOAT: {
-        candidate = inc.add(new BigDecimal(last.asFloat()));
-        return new BigDecimal(range.getEnd().get(colId).asFloat()).compareTo(candidate) < 0;
+      case FLOAT4: {
+        candidate = inc.add(new BigDecimal(last.asFloat4()));
+        return new BigDecimal(range.getEnd().get(colId).asFloat4()).compareTo(candidate) < 0;
       }
-      case DOUBLE: {
-        candidate = inc.add(new BigDecimal(last.asDouble()));
-        return new BigDecimal(range.getEnd().get(colId).asDouble()).compareTo(candidate) < 0;
+      case FLOAT8: {
+        candidate = inc.add(new BigDecimal(last.asFloat8()));
+        return new BigDecimal(range.getEnd().get(colId).asFloat8()).compareTo(candidate) < 0;
       }
-      case STRING: {
+      case TEXT: {
         candidate = inc.add(new BigDecimal((int)(last.asChars().charAt(0))));
         return new BigDecimal(range.getEnd().get(colId).asChars().charAt(0)).compareTo(candidate) < 0;
       }
@@ -152,54 +152,47 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
   public long incrementAndGetReminder(int colId, Datum last, long inc) {
     Column column = schema.getColumn(colId);
     long reminder = 0;
-    switch (column.getDataType()) {
-      case BYTE: {
+    switch (column.getDataType().getType()) {
+      case BIT: {
         long candidate = last.asByte() + inc;
         byte end = range.getEnd().get(colId).asByte();
-        long longReminder = candidate - end;
-        reminder = longReminder;
+        reminder = candidate - end;
         break;
       }
       case CHAR: {
         long candidate = last.asChar() + inc;
         char end = range.getEnd().get(colId).asChar();
-        long longReminder = candidate - end;
-        reminder = longReminder;
+        reminder = candidate - end;
         break;
       }
-      case INT: {
-        int candidate = (int) (last.asInt() + inc);
-        int end = range.getEnd().get(colId).asInt();
-        int longReminder = candidate - end;
-        reminder = longReminder;
+      case INT4: {
+        int candidate = (int) (last.asInt4() + inc);
+        int end = range.getEnd().get(colId).asInt4();
+        reminder = candidate - end;
         break;
       }
-      case LONG: {
-        long candidate = last.asLong() + inc;
-        long end = range.getEnd().get(colId).asLong();
-        long longReminder = candidate - end;
-        reminder = longReminder;
+      case INT8: {
+        long candidate = last.asInt8() + inc;
+        long end = range.getEnd().get(colId).asInt8();
+        reminder = candidate - end;
         break;
       }
-      case FLOAT: {
-        float candidate = last.asFloat() + inc;
-        float end = range.getEnd().get(colId).asFloat();
-        float longReminder = candidate - end;
-        reminder = (long) longReminder;
+      case FLOAT4: {
+        float candidate = last.asFloat4() + inc;
+        float end = range.getEnd().get(colId).asFloat4();
+        reminder = (long) (candidate - end);
         break;
       }
-      case DOUBLE: {
-        double candidate = last.asDouble() + inc;
-        double end = range.getEnd().get(colId).asDouble();
-        double longReminder = candidate - end;
-        reminder = (long) Math.ceil(longReminder);
+      case FLOAT8: {
+        double candidate = last.asFloat8() + inc;
+        double end = range.getEnd().get(colId).asFloat8();
+        reminder = (long) Math.ceil(candidate - end);
         break;
       }
-      case STRING: {
+      case TEXT: {
         char candidate = ((char)(last.asChars().charAt(0) + inc));
         char end = range.getEnd().get(colId).asChars().charAt(0);
-        char charReminder = (char) (candidate - end);
-        reminder = charReminder;
+        reminder = (char) (candidate - end);
         break;
       }
     }
@@ -263,7 +256,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     Column column;
     for (int i = 0; i < last.size(); i++) {
       column = schema.getColumn(i);
-      switch (column.getDataType()) {
+      switch (column.getDataType().getType()) {
         case CHAR:
           if (overflowFlag[i]) {
             end.put(i, DatumFactory.createChar((char) (range.getStart().get(i).asChar() + incs[i].longValue())));
@@ -271,54 +264,61 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             end.put(i, DatumFactory.createChar((char) (last.get(i).asChar() + incs[i].longValue())));
           }
           break;
-        case BYTE:
+        case BIT:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createByte((byte) (range.getStart().get(i).asByte() + incs[i].longValue())));
+            end.put(i, DatumFactory.createBit(
+                (byte) (range.getStart().get(i).asByte() + incs[i].longValue())));
           } else {
-            end.put(i, DatumFactory.createByte((byte) (last.get(i).asByte() + incs[i].longValue())));
+            end.put(i, DatumFactory.createBit((byte) (last.get(i).asByte() + incs[i].longValue())));
           }
           break;
-        case SHORT:
+        case INT2:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createShort((short) (range.getStart().get(i).asShort() + incs[i].longValue())));
+            end.put(i, DatumFactory.createInt2(
+                (short) (range.getStart().get(i).asInt2() + incs[i].longValue())));
           } else {
-            end.put(i, DatumFactory.createShort((short) (last.get(i).asShort() + incs[i].longValue())));
+            end.put(i, DatumFactory.createInt2((short) (last.get(i).asInt2() + incs[i].longValue())));
           }
           break;
-        case INT:
+        case INT4:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createInt((int) (range.getStart().get(i).asInt() + incs[i].longValue())));
+            end.put(i, DatumFactory.createInt4(
+                (int) (range.getStart().get(i).asInt4() + incs[i].longValue())));
           } else {
-            end.put(i, DatumFactory.createInt((int) (last.get(i).asInt() + incs[i].longValue())));
+            end.put(i, DatumFactory.createInt4((int) (last.get(i).asInt4() + incs[i].longValue())));
           }
           break;
-        case LONG:
+        case INT8:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createLong(range.getStart().get(i).asInt() + incs[i].longValue()));
+            end.put(i, DatumFactory.createInt8(
+                range.getStart().get(i).asInt4() + incs[i].longValue()));
           } else {
-            end.put(i, DatumFactory.createLong(last.get(i).asLong() + incs[i].longValue()));
+            end.put(i, DatumFactory.createInt8(last.get(i).asInt8() + incs[i].longValue()));
           }
           break;
-        case FLOAT:
+        case FLOAT4:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createFloat(range.getStart().get(i).asFloat() + incs[i].longValue()));
+            end.put(i, DatumFactory.createFloat4(
+                range.getStart().get(i).asFloat4() + incs[i].longValue()));
           } else {
-            end.put(i, DatumFactory.createFloat(last.get(i).asFloat() + incs[i].longValue()));
+            end.put(i, DatumFactory.createFloat4(last.get(i).asFloat4() + incs[i].longValue()));
           }
           break;
-        case DOUBLE:
+        case FLOAT8:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createDouble(range.getStart().get(i).asDouble() + incs[i].longValue()));
+            end.put(i, DatumFactory.createFloat8(
+                range.getStart().get(i).asFloat8() + incs[i].longValue()));
           } else {
-            end.put(i, DatumFactory.createDouble(last.get(i).asDouble() + incs[i].longValue()));
+            end.put(i, DatumFactory.createFloat8(last.get(i).asFloat8() + incs[i].longValue()));
           }
           break;
-        case STRING:
+        case TEXT:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createString(((char)(range.getStart().get(i).asChars().charAt(0)
+            end.put(i, DatumFactory.createText(((char) (range.getStart().get(i).asChars().charAt(0)
                 + incs[i].longValue())) + ""));
           } else {
-            end.put(i, DatumFactory.createString(((char)(last.get(i).asChars().charAt(0) + incs[i].longValue())) + ""));
+            end.put(i, DatumFactory.createText(
+                ((char) (last.get(i).asChars().charAt(0) + incs[i].longValue())) + ""));
           }
           break;
         default:

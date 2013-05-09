@@ -18,21 +18,22 @@
 
 package tajo.engine.function.builtin;
 
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.datum.DoubleDatum;
+import tajo.datum.Float8Datum;
 import tajo.storage.Tuple;
 
-public class MaxDouble extends AggFunction<DoubleDatum> {
+public class MaxDouble extends AggFunction<Float8Datum> {
 
   public MaxDouble() {
     super(new Column[] {
-        new Column("val", CatalogProtos.DataType.DOUBLE)
+        new Column("val", Type.FLOAT8)
     });
   }
 
@@ -44,22 +45,22 @@ public class MaxDouble extends AggFunction<DoubleDatum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     MaxContext maxCtx = (MaxContext) ctx;
-    maxCtx.max = Math.max(maxCtx.max, params.get(0).asDouble());
+    maxCtx.max = Math.max(maxCtx.max, params.get(0).asFloat8());
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createDouble(((MaxContext)ctx).max);
+    return DatumFactory.createFloat8(((MaxContext) ctx).max);
   }
 
   @Override
   public DataType[] getPartialResultType() {
-    return new DataType[] {DataType.DOUBLE};
+    return CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8);
   }
 
   @Override
-  public DoubleDatum terminate(FunctionContext ctx) {
-    return DatumFactory.createDouble(((MaxContext)ctx).max);
+  public Float8Datum terminate(FunctionContext ctx) {
+    return DatumFactory.createFloat8(((MaxContext) ctx).max);
   }
 
   private class MaxContext implements FunctionContext {

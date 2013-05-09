@@ -25,8 +25,8 @@ import org.junit.Test;
 import tajo.TajoTestingCluster;
 import tajo.TaskAttemptContext;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -65,11 +65,11 @@ public class TestSortExec {
     sm = StorageManager.get(conf, workDir);
 
     Schema schema = new Schema();
-    schema.addColumn("managerId", DataType.INT);
-    schema.addColumn("empId", DataType.INT);
-    schema.addColumn("deptName", DataType.STRING);
+    schema.addColumn("managerId", Type.INT4);
+    schema.addColumn("empId", Type.INT4);
+    schema.addColumn("deptName", Type.TEXT);
 
-    employeeMeta = TCatUtil.newTableMeta(schema, StoreType.CSV);
+    employeeMeta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
 
     tablePath = StorageUtil.concatPath(workDir, "employee", "table1");
     sm.getFileSystem().mkdirs(tablePath.getParent());
@@ -79,9 +79,9 @@ public class TestSortExec {
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
       tuple.put(new Datum[] {
-          DatumFactory.createInt(rnd.nextInt(5)),
-          DatumFactory.createInt(rnd.nextInt(10)),
-          DatumFactory.createString("dept_" + rnd.nextInt(10))});
+          DatumFactory.createInt4(rnd.nextInt(5)),
+          DatumFactory.createInt4(rnd.nextInt(10)),
+          DatumFactory.createText("dept_" + rnd.nextInt(10))});
       appender.addTuple(tuple);
     }
     appender.flush();
@@ -139,11 +139,11 @@ public class TestSortExec {
    */
   public void testTAJO_946() {
     Schema schema = new Schema();
-    schema.addColumn("l_orderkey", DataType.LONG);
+    schema.addColumn("l_orderkey", Type.INT8);
     Tuple s = new VTuple(1);
-    s.put(0, DatumFactory.createLong(0));
+    s.put(0, DatumFactory.createInt8(0));
     Tuple e = new VTuple(1);
-    e.put(0, DatumFactory.createLong(6000000000l));
+    e.put(0, DatumFactory.createInt8(6000000000l));
     TupleRange expected = new TupleRange(schema, s, e);
     RangePartitionAlgorithm partitioner
         = new UniformRangePartition(schema, expected, true);

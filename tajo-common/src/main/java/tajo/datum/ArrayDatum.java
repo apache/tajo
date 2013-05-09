@@ -21,15 +21,17 @@ package tajo.datum;
 import com.google.gson.annotations.Expose;
 import tajo.datum.json.GsonCreator;
 
+import static tajo.common.TajoDataTypes.Type;
+
 public class ArrayDatum extends Datum {
   @Expose private Datum [] data;
   public ArrayDatum(Datum [] data) {
-    super(DatumType.ARRAY);
+    super(Type.ARRAY);
     this.data = data;
   }
 
   public ArrayDatum(int size) {
-    super(DatumType.ARRAY);
+    super(Type.ARRAY);
     this.data = new Datum[size];
   }
 

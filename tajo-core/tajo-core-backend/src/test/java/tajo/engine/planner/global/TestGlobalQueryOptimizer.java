@@ -31,9 +31,9 @@ import tajo.QueryId;
 import tajo.QueryIdFactory;
 import tajo.TajoTestingCluster;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.FunctionType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -70,10 +70,10 @@ public class TestGlobalQueryOptimizer {
     int i, j;
 
     schema = new Schema();
-    schema.addColumn("id", DataType.INT);
-    schema.addColumn("age", DataType.INT);
-    schema.addColumn("name", DataType.STRING);
-    schema.addColumn("salary", DataType.INT);
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("age", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    schema.addColumn("salary", Type.INT4);
 
     TableMeta meta;
 
@@ -81,8 +81,8 @@ public class TestGlobalQueryOptimizer {
     catalog = util.getMiniCatalogCluster().getCatalog();
     StorageManager sm = new StorageManager(util.getConfiguration());
     FunctionDesc funcDesc = new FunctionDesc("sumtest", TestSum.class, FunctionType.GENERAL,
-        new DataType [] {DataType.INT},
-        new DataType [] {DataType.INT});
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4));
     catalog.registerFunction(funcDesc);
     FileSystem fs = sm.getFileSystem();
 
@@ -98,11 +98,11 @@ public class TestGlobalQueryOptimizer {
     Appender appender;
     Tuple t = new VTuple(4);
     t.put(new Datum[] {
-        DatumFactory.createInt(1), DatumFactory.createInt(32),
-        DatumFactory.createString("h"), DatumFactory.createInt(10)});
+        DatumFactory.createInt4(1), DatumFactory.createInt4(32),
+        DatumFactory.createText("h"), DatumFactory.createInt4(10)});
 
     for (i = 0; i < tbNum; i++) {
-      meta = TCatUtil.newTableMeta((Schema)schema.clone(), StoreType.CSV);
+      meta = CatalogUtil.newTableMeta((Schema) schema.clone(), StoreType.CSV);
       meta.putOption(CSVFile.DELIMITER, ",");
 
       Path dataRoot = sm.getBaseDir();
@@ -119,7 +119,8 @@ public class TestGlobalQueryOptimizer {
       }
       appender.close();
 
-      TableDesc desc = TCatUtil.newTableDesc("table" + i, (TableMeta)meta.clone(), sm.getTablePath("table"+i));
+      TableDesc desc = CatalogUtil
+          .newTableDesc("table" + i, (TableMeta) meta.clone(), sm.getTablePath("table" + i));
       catalog.addTable(desc);
     }
 

@@ -18,20 +18,21 @@
 
 package tajo.engine.function.builtin;
 
+import tajo.catalog.CatalogUtil;
 import tajo.catalog.Column;
 import tajo.catalog.function.AggFunction;
 import tajo.catalog.function.FunctionContext;
-import tajo.catalog.proto.CatalogProtos;
-import tajo.catalog.proto.CatalogProtos.DataType;
+import tajo.common.TajoDataTypes.DataType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
-import tajo.datum.LongDatum;
+import tajo.datum.Int8Datum;
 import tajo.storage.Tuple;
 
-public class MaxLong extends AggFunction<LongDatum> {
+public class MaxLong extends AggFunction<Int8Datum> {
   public MaxLong() {
     super(new Column[] {
-        new Column("val", CatalogProtos.DataType.LONG)
+        new Column("val", Type.INT8)
     });
   }
 
@@ -43,22 +44,22 @@ public class MaxLong extends AggFunction<LongDatum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     MaxContext maxCtx = (MaxContext) ctx;
-    maxCtx.max = Math.max(maxCtx.max, params.get(0).asLong());
+    maxCtx.max = Math.max(maxCtx.max, params.get(0).asInt8());
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createLong(((MaxContext)ctx).max);
+    return DatumFactory.createInt8(((MaxContext) ctx).max);
   }
 
   @Override
-  public DataType[] getPartialResultType() {
-    return new DataType[] {DataType.LONG};
+  public DataType [] getPartialResultType() {
+    return CatalogUtil.newDataTypesWithoutLen(Type.INT8);
   }
 
   @Override
-  public LongDatum terminate(FunctionContext ctx) {
-    return DatumFactory.createLong(((MaxContext)ctx).max);
+  public Int8Datum terminate(FunctionContext ctx) {
+    return DatumFactory.createInt8(((MaxContext) ctx).max);
   }
 
   private class MaxContext implements FunctionContext {

@@ -26,8 +26,8 @@ import org.junit.Test;
 import tajo.TajoTestingCluster;
 import tajo.TaskAttemptContext;
 import tajo.catalog.*;
-import tajo.catalog.proto.CatalogProtos.DataType;
 import tajo.catalog.proto.CatalogProtos.StoreType;
+import tajo.common.TajoDataTypes.Type;
 import tajo.conf.TajoConf;
 import tajo.datum.Datum;
 import tajo.datum.DatumFactory;
@@ -70,65 +70,65 @@ public class TestMergeJoinExec {
     sm = StorageManager.get(conf, testDir);
 
     Schema employeeSchema = new Schema();
-    employeeSchema.addColumn("managerId", DataType.INT);
-    employeeSchema.addColumn("empId", DataType.INT);
-    employeeSchema.addColumn("memId", DataType.INT);
-    employeeSchema.addColumn("deptName", DataType.STRING);
+    employeeSchema.addColumn("managerId", Type.INT4);
+    employeeSchema.addColumn("empId", Type.INT4);
+    employeeSchema.addColumn("memId", Type.INT4);
+    employeeSchema.addColumn("deptName", Type.TEXT);
 
-    TableMeta employeeMeta = TCatUtil.newTableMeta(employeeSchema,
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(employeeSchema,
         StoreType.CSV);
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = StorageManager.getAppender(conf, employeeMeta, employeePath);
     appender.init();
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 10; i++) {
-      tuple.put(new Datum[] { DatumFactory.createInt(i),
-          DatumFactory.createInt(i), DatumFactory.createInt(10 + i),
-          DatumFactory.createString("dept_" + i) });
+      tuple.put(new Datum[] { DatumFactory.createInt4(i),
+          DatumFactory.createInt4(i), DatumFactory.createInt4(10 + i),
+          DatumFactory.createText("dept_" + i) });
       appender.addTuple(tuple);
     }
     for (int i = 11; i < 20; i+=2) {
-      tuple.put(new Datum[] { DatumFactory.createInt(i),
-          DatumFactory.createInt(i), DatumFactory.createInt(10 + i),
-          DatumFactory.createString("dept_" + i) });
+      tuple.put(new Datum[] { DatumFactory.createInt4(i),
+          DatumFactory.createInt4(i), DatumFactory.createInt4(10 + i),
+          DatumFactory.createText("dept_" + i) });
       appender.addTuple(tuple);
     }
 
     appender.flush();
     appender.close();
-    employee = TCatUtil.newTableDesc("employee", employeeMeta,
+    employee = CatalogUtil.newTableDesc("employee", employeeMeta,
         employeePath);
     catalog.addTable(employee);
 
     Schema peopleSchema = new Schema();
-    peopleSchema.addColumn("empId", DataType.INT);
-    peopleSchema.addColumn("fk_memId", DataType.INT);
-    peopleSchema.addColumn("name", DataType.STRING);
-    peopleSchema.addColumn("age", DataType.INT);
-    TableMeta peopleMeta = TCatUtil.newTableMeta(peopleSchema, StoreType.CSV);
+    peopleSchema.addColumn("empId", Type.INT4);
+    peopleSchema.addColumn("fk_memId", Type.INT4);
+    peopleSchema.addColumn("name", Type.TEXT);
+    peopleSchema.addColumn("age", Type.INT4);
+    TableMeta peopleMeta = CatalogUtil.newTableMeta(peopleSchema, StoreType.CSV);
     Path peoplePath = new Path(testDir, "people.csv");
     appender = StorageManager.getAppender(conf, peopleMeta, peoplePath);
     appender.init();
     tuple = new VTuple(peopleMeta.getSchema().getColumnNum());
     for (int i = 1; i < 10; i += 2) {
-      tuple.put(new Datum[] { DatumFactory.createInt(i),
-          DatumFactory.createInt(10 + i),
-          DatumFactory.createString("name_" + i),
-          DatumFactory.createInt(30 + i) });
+      tuple.put(new Datum[] { DatumFactory.createInt4(i),
+          DatumFactory.createInt4(10 + i),
+          DatumFactory.createText("name_" + i),
+          DatumFactory.createInt4(30 + i) });
       appender.addTuple(tuple);
     }
     for (int i = 10; i < 20; i++) {
-      tuple.put(new Datum[] { DatumFactory.createInt(i),
-          DatumFactory.createInt(10 + i),
-          DatumFactory.createString("name_" + i),
-          DatumFactory.createInt(30 + i) });
+      tuple.put(new Datum[] { DatumFactory.createInt4(i),
+          DatumFactory.createInt4(10 + i),
+          DatumFactory.createText("name_" + i),
+          DatumFactory.createInt4(30 + i) });
       appender.addTuple(tuple);
     }
 
     appender.flush();
     appender.close();
 
-    people = TCatUtil.newTableDesc("people", peopleMeta, peoplePath);
+    people = CatalogUtil.newTableDesc("people", peopleMeta, peoplePath);
     catalog.addTable(people);
     analyzer = new QueryAnalyzer(catalog);
     planner = new LogicalPlanner(catalog);
@@ -215,10 +215,10 @@ public class TestMergeJoinExec {
     exec.init();
     while ((tuple = exec.next()) != null) {
       count++;
-      assertTrue(i == tuple.getInt(0).asInt());
-      assertTrue(i == tuple.getInt(1).asInt());
+      assertTrue(i == tuple.getInt(0).asInt4());
+      assertTrue(i == tuple.getInt(1).asInt4());
       assertTrue(("dept_" + i).equals(tuple.getString(2).asChars()));
-      assertTrue(10 + i == tuple.getInt(3).asInt());
+      assertTrue(10 + i == tuple.getInt(3).asInt4());
 
       i += 2;
     }
