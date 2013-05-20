@@ -81,7 +81,7 @@ public class TestRowFile {
 
     FileUtil.writeProto(util.getDefaultFileSystem(), metaPath, meta.getProto());
 
-    Appender appender = new RowFile.RowFileAppender(conf, meta, dataPath);
+    Appender appender = StorageManager.getAppender(conf, meta, dataPath);
     appender.enableStats();
     appender.init();
 
@@ -117,7 +117,7 @@ public class TestRowFile {
 
     int tupleCnt = 0;
     start = System.currentTimeMillis();
-    Scanner scanner = new RowFile.RowFileScanner(conf, meta, fragment);
+    Scanner scanner = StorageManager.getScanner(conf, meta, fragment);
     scanner.init();
     while ((tuple=scanner.next()) != null) {
       tupleCnt++;

@@ -45,6 +45,8 @@ Release 0.2.0 - unreleased
 
     TAJO-54: SubQuery::allocateContainers() may ask 0 containers. (hyunsik)
 
+    TAJO-41: Storage handler name row in storage-default.xml must be rowfile. (hsaputra)
+
     TAJO-47: RowFile has the duplicated initialization problem and unflipped 
     ByteBuffer problem. (jihoon)
 

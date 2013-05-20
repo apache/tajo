@@ -42,7 +42,7 @@
   </property>
 
   <property>
-    <name>tajo.storage.scanner-handler.row.class</name>
+    <name>tajo.storage.scanner-handler.rowfile.class</name>
     <value>tajo.storage.RowFile$RowFileScanner</value>
   </property>
 
@@ -73,7 +73,7 @@
   </property>
 
   <property>
-    <name>tajo.storage.appender-handler.row.class</name>
+    <name>tajo.storage.appender-handler.rowfile.class</name>
     <value>tajo.storage.RowFile$RowFileAppender</value>
   </property>
 
