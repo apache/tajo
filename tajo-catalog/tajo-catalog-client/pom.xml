@@ -57,7 +57,6 @@
               <target>
                 <mkdir dir="target/generated-sources/proto" />
               </target>
-              <sourceRoot>target/generated-sources</sourceRoot>
             </configuration>
             <goals>
               <goal>run</goal>
@@ -84,6 +83,25 @@
             <goals>
               <goal>exec</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.5</version>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>target/generated-sources/proto</source>
+              </sources>
+            </configuration>
           </execution>
         </executions>
       </plugin>

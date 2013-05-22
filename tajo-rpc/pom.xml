@@ -63,7 +63,6 @@
               <target>
                 <mkdir dir="target/generated-sources/proto" />
               </target>
-              <sourceRoot>target/generated-sources</sourceRoot>
             </configuration>
             <goals>
               <goal>run</goal>

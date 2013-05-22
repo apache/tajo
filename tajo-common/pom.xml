@@ -67,7 +67,6 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
               <target>
                 <mkdir dir="target/generated-sources/proto" />
               </target>
-              <sourceRoot>target/generated-sources</sourceRoot>
             </configuration>
             <goals>
               <goal>run</goal>
