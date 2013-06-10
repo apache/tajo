@@ -10,6 +10,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-39 Remove the unused package tajo.engine.plan.global and all files 
+    inside the directory. (hsaputra)
+
     TAJO-37: Remove obsolete classes WorkerEventDispatcher, WorkerEvent and 
     WorkerEventType. (sunny.1324 via hyunsik)
 
