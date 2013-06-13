@@ -896,6 +896,8 @@ public final class QueryAnalyzer {
     Schema schema;
     Column column = null;
     int count = 0;
+
+    // find a column corresponding to the given column name from tables of the catalog
     for(String table : tree.getAllTableNames()) {
       desc =
           catalog.getTableDesc(table);
@@ -905,29 +907,31 @@ public final class QueryAnalyzer {
         column = schema.getColumn(table+"."+columnName);
         count++;
       }
+    }
 
-      if (tree instanceof QueryBlock) {
-        QueryBlock block = ((QueryBlock)tree);
-        if (block.getTargetList() != null) {
-          for (Target target : block.getTargetList()) {
-            if (target.hasAlias() && target.getAlias().equals(columnName)) {
-              try {
-                column = (Column) target.getColumnSchema().clone();
-                column.setName(target.getAlias());
-              } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-              }
-              count++;
+    // find a column corresponding to the given column name from the target list
+    if (tree instanceof QueryBlock) {
+      QueryBlock block = ((QueryBlock)tree);
+      if (block.getTargetList() != null) {
+        for (Target target : block.getTargetList()) {
+          if (target.hasAlias() && target.getAlias().equals(columnName)) {
+            try {
+              column = (Column) target.getColumnSchema().clone();
+              column.setName(target.getAlias());
+            } catch (CloneNotSupportedException e) {
+              e.printStackTrace();
             }
+            count++;
           }
         }
       }
-
-      // if there are more than one column, we cannot expect
-      // that this column belongs to which table.
-      if(count > 1)
-        throw new AmbiguousFieldException(columnName);
     }
+
+    // if there are more than one column, we cannot exactly expect
+    // that this column belongs to which table.
+    if(count > 1)
+      throw new AmbiguousFieldException(columnName);
+
 
     if(column == null) { // if there are no matched column
       throw new InvalidQueryException("ERROR: column \"" + columnName

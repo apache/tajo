@@ -116,4 +116,24 @@ public class TestSortQuery {
 
     assertEquals(3, cnt);
   }
+
+  @Test
+  public final void testSortAfterGroupbyWithAlias() throws Exception {
+    ResultSet res = tpch.execute("select max(l_quantity) as max_quantity, l_orderkey "
+        + "from lineitem group by l_orderkey order by max_quantity");
+
+    int cnt = 0;
+    Long prev = null;
+    while(res.next()) {
+      if (prev == null) {
+        prev = res.getLong(1);
+      } else {
+        assertTrue(prev <= res.getLong(1));
+        prev = res.getLong(1);
+      }
+      cnt++;
+    }
+
+    assertEquals(3, cnt);
+  }
 }
