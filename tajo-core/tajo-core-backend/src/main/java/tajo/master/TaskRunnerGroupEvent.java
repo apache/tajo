@@ -16,39 +16,32 @@
  * limitations under the License.
  */
 
-package tajo.master.event;
+package tajo.master;
 
 import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.Resource;
+import org.apache.hadoop.yarn.event.AbstractEvent;
 import tajo.SubQueryId;
-import tajo.master.TaskRunnerEvent;
+import tajo.master.TaskRunnerGroupEvent.EventType;
 
-public class TaskRunnerLaunchEvent extends TaskRunnerEvent {
+import java.util.Collection;
 
-  private final SubQueryId subQueryId;
-  private final Resource resource;
+public class TaskRunnerGroupEvent extends AbstractEvent<EventType> {
+  public enum EventType {
+    CONTAINER_REMOTE_LAUNCH,
+    CONTAINER_REMOTE_CLEANUP
+  }
 
-  public TaskRunnerLaunchEvent(SubQueryId subQueryId,
-                               Container container,
-                               Resource resource) {
-    super(EventType.CONTAINER_REMOTE_LAUNCH, subQueryId, container);
+  protected final SubQueryId subQueryId;
+  protected final Collection<Container> containers;
+  public TaskRunnerGroupEvent(EventType eventType,
+                              SubQueryId subQueryId,
+                              Collection<Container> containers) {
+    super(eventType);
     this.subQueryId = subQueryId;
-    this.resource = resource;
+    this.containers = containers;
   }
 
-  public SubQueryId getSubQueryId() {
-    return this.subQueryId;
+  public Collection<Container> getContainers() {
+    return containers;
   }
-
-  public Resource getCapability() {
-    return resource;
-  }
-
-  @Override
-  public String toString() {
-    return super.toString() + " for container " + getContainerId()
-        + " taskAttempt " + subQueryId;
-  }
-
-
 }

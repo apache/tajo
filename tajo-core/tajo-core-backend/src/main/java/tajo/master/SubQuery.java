@@ -48,13 +48,13 @@ import tajo.engine.planner.logical.GroupbyNode;
 import tajo.engine.planner.logical.ScanNode;
 import tajo.engine.planner.logical.StoreTableNode;
 import tajo.master.QueryMaster.QueryContext;
+import tajo.master.TaskRunnerGroupEvent.EventType;
 import tajo.master.event.*;
 import tajo.storage.Fragment;
 import tajo.storage.StorageManager;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -376,9 +376,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
   private void releaseContainers() {
     // If there are still live TaskRunners, try to kill the containers.
-    for (Entry<ContainerId, Container> entry : containers.entrySet()) {
-      eventHandler.handle(new TaskRunnerStopEvent(getId(), entry.getValue()));
-    }
+    eventHandler.handle(new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP ,getId(),
+        containers.values()));
   }
 
   private void finish() {
@@ -691,13 +690,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         subQuery.containers.put(cId, container);
         // TODO - This is debugging message. Should be removed
         subQuery.i++;
-        LOG.info("SubQuery (" + subQuery.getId() + ") has " + subQuery.i + " containers!");
-        subQuery.eventHandler.handle(
-            new TaskRunnerLaunchEvent(
-                subQuery.getId(),
-                container,
-                container.getResource()));
       }
+      LOG.info("SubQuery (" + subQuery.getId() + ") has " + subQuery.i + " containers!");
+      subQuery.eventHandler.handle(
+          new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_LAUNCH,
+              subQuery.getId(), allocationEvent.getAllocatedContainer()));
 
       subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(),
           SubQueryEventType.SQ_START));

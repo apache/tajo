@@ -34,7 +34,7 @@ import tajo.engine.planner.logical.ScanNode;
 import tajo.engine.query.QueryUnitRequestImpl;
 import tajo.ipc.protocolrecords.QueryUnitRequest;
 import tajo.master.QueryMaster.QueryContext;
-import tajo.master.TaskRunnerLauncherImpl.Container;
+import tajo.master.TaskRunnerLauncherImpl.ContainerProxy;
 import tajo.master.event.TaskAttemptAssignedEvent;
 import tajo.master.event.TaskRequestEvent;
 import tajo.master.event.TaskRequestEvent.TaskRequestEventType;
@@ -300,7 +300,7 @@ public class TaskSchedulerImpl extends AbstractService
       TaskRequestEvent taskRequest;
       while (it.hasNext() && leafTasks.size() > 0) {
         taskRequest = it.next();
-        Container container = context.getContainer(taskRequest.getContainerId());
+        ContainerProxy container = context.getContainer(taskRequest.getContainerId());
         String hostName = container.getHostName();
 
         QueryUnitAttemptId attemptId = null;
@@ -408,7 +408,7 @@ public class TaskSchedulerImpl extends AbstractService
             }
           }
 
-          Container container = context.getContainer(
+          ContainerProxy container = context.getContainer(
               taskRequest.getContainerId());
           context.getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
               taskRequest.getContainerId(), container.getHostName(), container.getPullServerPort()));

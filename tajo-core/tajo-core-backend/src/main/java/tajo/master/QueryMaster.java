@@ -42,7 +42,7 @@ import tajo.catalog.CatalogService;
 import tajo.conf.TajoConf;
 import tajo.engine.planner.global.MasterPlan;
 import tajo.master.TajoMaster.MasterContext;
-import tajo.master.TaskRunnerLauncherImpl.Container;
+import tajo.master.TaskRunnerLauncherImpl.ContainerProxy;
 import tajo.master.event.*;
 import tajo.master.rm.RMContainerAllocator;
 import tajo.storage.StorageManager;
@@ -140,7 +140,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       taskRunnerLauncher = new TaskRunnerLauncherImpl(queryContext);
       addIfService(taskRunnerLauncher);
-      dispatcher.register(TaskRunnerEvent.EventType.class, taskRunnerLauncher);
+      dispatcher.register(TaskRunnerGroupEvent.EventType.class, taskRunnerLauncher);
 
 
     } catch (Throwable t) {
@@ -224,7 +224,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   public class QueryContext {
     private QueryConf conf;
-    public Map<ContainerId, Container> containers = new ConcurrentHashMap<ContainerId, Container>();
+    public Map<ContainerId, ContainerProxy> containers = new ConcurrentHashMap<ContainerId, ContainerProxy>();
     int minCapability;
     int maxCapability;
     int numCluster;
@@ -281,7 +281,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       return taskRunnerListener.getBindAddress();
     }
 
-    public void addContainer(ContainerId cId, Container container) {
+    public void addContainer(ContainerId cId, ContainerProxy container) {
       containers.put(cId, container);
     }
 
@@ -293,7 +293,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       return containers.containsKey(cId);
     }
 
-    public Container getContainer(ContainerId cId) {
+    public ContainerProxy getContainer(ContainerId cId) {
       return containers.get(cId);
     }
 

@@ -20,6 +20,6 @@ package tajo.master;
 
 import org.apache.hadoop.yarn.event.EventHandler;
 
-public interface TaskRunnerLauncher extends EventHandler<TaskRunnerEvent> {
+public interface TaskRunnerLauncher extends EventHandler<TaskRunnerGroupEvent> {
 
 }

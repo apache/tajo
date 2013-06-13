@@ -44,12 +44,12 @@ import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.hadoop.yarn.util.ProtoUtils;
 import org.apache.hadoop.yarn.util.Records;
 import tajo.QueryConf;
+import tajo.SubQueryId;
 import tajo.conf.TajoConf;
 import tajo.master.QueryMaster.QueryContext;
-import tajo.master.TaskRunnerEvent.EventType;
+import tajo.master.TaskRunnerGroupEvent.EventType;
 import tajo.master.event.QueryEvent;
 import tajo.master.event.QueryEventType;
-import tajo.master.event.TaskRunnerLaunchEvent;
 import tajo.pullserver.PullServerAuxService;
 
 import java.io.IOException;
@@ -57,6 +57,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.security.PrivilegedAction;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunnerLauncher {
@@ -80,12 +82,17 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
   final public static FsPermission QUERYCONF_FILE_PERMISSION =
       FsPermission.createImmutable((short) 0644); // rw-r--r--
 
+  /** for launching TaskRunners in parallel */
+  private final ExecutorService executorService;
+
   public TaskRunnerLauncherImpl(QueryContext context) {
     super(TaskRunnerLauncherImpl.class.getName());
     this.context = context;
     taskListenerHost = context.getTaskListener().getHostName();
     taskListenerPort = context.getTaskListener().getPort();
     yarnRPC = context.getYarnRPC();
+    executorService = Executors.newFixedThreadPool(
+        context.getConf().getIntVar(TajoConf.ConfVars.AM_TASKRUNNER_LAUNCH_PARALLEL_NUM));
   }
 
   public void start() {
@@ -93,34 +100,56 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
   }
 
   public void stop() {
+    executorService.shutdown();
     super.stop();
   }
 
   @Override
-  public void handle(TaskRunnerEvent event) {
-
+  public void handle(TaskRunnerGroupEvent event) {
     if (event.getType() == EventType.CONTAINER_REMOTE_LAUNCH) {
-      TaskRunnerLaunchEvent castEvent = (TaskRunnerLaunchEvent) event;
-      try {
-        Container container = new Container(castEvent.getContainerId(),
-            castEvent.getContainerMgrAddress(), castEvent.getContainerToken());
-        container.launch(castEvent);
-
-      } catch (Throwable t) {
-        t.printStackTrace();
-      }
+     launchTaskRunners(event.subQueryId, event.getContainers());
     } else if (event.getType() == EventType.CONTAINER_REMOTE_CLEANUP) {
-      try {
-        if (context.containsContainer(event.getContainerId())) {
-          context.getContainer(event.getContainerId()).kill();
-        } else {
-          LOG.error("No Such Container: " + event.getContainerId());
-        }
-      } catch (Throwable t) {
-        t.printStackTrace();
-      }
+      killTaskRunners(event.getContainers());
     }
   }
+
+  private void launchTaskRunners(SubQueryId subQueryId, Collection<Container> containers) {
+    for (Container container : containers) {
+      final ContainerProxy proxy = new ContainerProxy(container, subQueryId);
+      executorService.submit(new LaunchRunner(proxy));
+    }
+  }
+
+  private class LaunchRunner implements Runnable {
+    private final ContainerProxy proxy;
+    public LaunchRunner(ContainerProxy proxy) {
+      this.proxy = proxy;
+    }
+    @Override
+    public void run() {
+      proxy.launch();
+    }
+  }
+
+  private void killTaskRunners(Collection<Container> containers) {
+    for (Container container : containers) {
+      final ContainerProxy proxy = context.getContainer(container.getId());
+      executorService.submit(new KillRunner(proxy));
+    }
+  }
+
+  private class KillRunner implements Runnable {
+    private final ContainerProxy proxy;
+    public KillRunner(ContainerProxy proxy) {
+      this.proxy = proxy;
+    }
+
+    @Override
+    public void run() {
+      proxy.kill();
+    }
+  }
+
 
   /**
    * Lock this on initialClasspath so that there is only one fork in the AM for
@@ -248,67 +277,6 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     return ctx;
   }
 
-
-  public ContainerLaunchContext createContainerLaunchContext(TaskRunnerLaunchEvent event) {
-    synchronized (commonContainerSpecLock) {
-      if (commonContainerSpec == null) {
-        commonContainerSpec = createCommonContainerLaunchContext();
-      }
-    }
-
-    // Setup environment by cloning from common env.
-    Map<String, String> env = commonContainerSpec.getEnvironment();
-    Map<String, String> myEnv = new HashMap<String, String>(env.size());
-    myEnv.putAll(env);
-
-    // Duplicate the ByteBuffers for access by multiple containers.
-    Map<String, ByteBuffer> myServiceData = new HashMap<String, ByteBuffer>();
-    for (Map.Entry<String, ByteBuffer> entry : commonContainerSpec
-        .getServiceData().entrySet()) {
-      myServiceData.put(entry.getKey(), entry.getValue().duplicate());
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    // Set the local resources
-    ////////////////////////////////////////////////////////////////////////////
-    // Set the necessary command to execute the application master
-    Vector<CharSequence> vargs = new Vector<CharSequence>(30);
-
-    // Set java executable command
-    //LOG.info("Setting up app master command");
-    vargs.add("${JAVA_HOME}" + "/bin/java");
-    // Set Xmx based on am memory size
-    vargs.add("-Xmx2000m");
-    // Set Remote Debugging
-    //if (!context.getQuery().getSubQuery(event.getSubQueryId()).isLeafQuery()) {
-    //vargs.add("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
-    //}
-    // Set class name
-    vargs.add("tajo.worker.TaskRunner");
-    vargs.add(taskListenerHost); // tasklistener hostname
-    vargs.add(String.valueOf(taskListenerPort)); // tasklistener hostname
-    vargs.add(event.getSubQueryId().toString()); // subqueryId
-    vargs.add(event.getContainerMgrAddress()); // nodeId
-    vargs.add(event.getContainerId().toString()); // containerId
-
-    vargs.add("1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout");
-    vargs.add("2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr");
-
-    // Get final commmand
-    StringBuilder command = new StringBuilder();
-    for (CharSequence str : vargs) {
-      command.append(str).append(" ");
-    }
-
-    LOG.info("Completed setting up taskrunner command " + command.toString());
-    List<String> commands = new ArrayList<String>();
-    commands.add(command.toString());
-
-    return BuilderUtils.newContainerLaunchContext(event.getContainerId(), commonContainerSpec.getUser(),
-        event.getCapability(), commonContainerSpec.getLocalResources(), myEnv, commands, myServiceData,
-        null, new HashMap<ApplicationAccessType, String>());
-  }
-
   protected ContainerManager getCMProxy(ContainerId containerID,
                                         final String containerManagerBindAddr,
                                         ContainerToken containerToken)
@@ -369,21 +337,25 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     PREP, FAILED, RUNNING, DONE, KILLED_BEFORE_LAUNCH
   }
 
-  public class Container {
+  public class ContainerProxy {
     private ContainerState state;
     // store enough information to be able to cleanup the container
+    private Container container;
     private ContainerId containerID;
     final private String containerMgrAddress;
     private ContainerToken containerToken;
     private String hostName;
     private int port = -1;
+    private final SubQueryId subQueryId;
 
-    public Container(ContainerId containerID,
-                     String containerMgrAddress, ContainerToken containerToken) {
+    public ContainerProxy(Container container, SubQueryId subQueryId) {
       this.state = ContainerState.PREP;
-      this.containerMgrAddress = containerMgrAddress;
-      this.containerID = containerID;
-      this.containerToken = containerToken;
+      this.container = container;
+      this.containerID = container.getId();
+      NodeId nodeId = container.getNodeId();
+      this.containerMgrAddress = nodeId.getHost() + ":" + nodeId.getPort();;
+      this.containerToken = container.getContainerToken();
+      this.subQueryId = subQueryId;
     }
 
     public synchronized boolean isCompletelyDone() {
@@ -391,12 +363,11 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
     }
 
     @SuppressWarnings("unchecked")
-    public synchronized void launch(TaskRunnerLaunchEvent event) {
-      LOG.info("Launching Container with Id: " + event.getContainerId());
+    public synchronized void launch() {
+      LOG.info("Launching Container with Id: " + containerID);
       if(this.state == ContainerState.KILLED_BEFORE_LAUNCH) {
         state = ContainerState.DONE;
-        LOG.error("Container (" + event.getContainerId()
-            + " was killed before it was launched");
+        LOG.error("Container (" + containerID + " was killed before it was launched");
         return;
       }
 
@@ -407,8 +378,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
             containerToken);
 
         // Construct the actual Container
-        ContainerLaunchContext containerLaunchContext =
-            createContainerLaunchContext(event);
+        ContainerLaunchContext containerLaunchContext = createContainerLaunchContext();
 
         // Now launch the actual container
         StartContainerRequest startRequest = Records
@@ -440,7 +410,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
         context.getEventHandler().handle(new QueryEvent(context.getQueryId(), QueryEventType.INIT_COMPLETED));
 
         this.state = ContainerState.RUNNING;
-        this.hostName = event.getContainerMgrAddress().split(":")[0];
+        this.hostName = containerMgrAddress.split(":")[0];
         context.addContainer(containerID, this);
       } catch (Throwable t) {
         String message = "Container launch failed for " + containerID + " : "
@@ -454,7 +424,6 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
       }
     }
 
-    @SuppressWarnings("unchecked")
     public synchronized void kill() {
 
       if(isCompletelyDone()) {
@@ -498,6 +467,66 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
         }
         this.state = ContainerState.DONE;
       }
+    }
+
+    public ContainerLaunchContext createContainerLaunchContext() {
+      synchronized (commonContainerSpecLock) {
+        if (commonContainerSpec == null) {
+          commonContainerSpec = createCommonContainerLaunchContext();
+        }
+      }
+
+      // Setup environment by cloning from common env.
+      Map<String, String> env = commonContainerSpec.getEnvironment();
+      Map<String, String> myEnv = new HashMap<String, String>(env.size());
+      myEnv.putAll(env);
+
+      // Duplicate the ByteBuffers for access by multiple containers.
+      Map<String, ByteBuffer> myServiceData = new HashMap<String, ByteBuffer>();
+      for (Map.Entry<String, ByteBuffer> entry : commonContainerSpec
+          .getServiceData().entrySet()) {
+        myServiceData.put(entry.getKey(), entry.getValue().duplicate());
+      }
+
+      ////////////////////////////////////////////////////////////////////////////
+      // Set the local resources
+      ////////////////////////////////////////////////////////////////////////////
+      // Set the necessary command to execute the application master
+      Vector<CharSequence> vargs = new Vector<CharSequence>(30);
+
+      // Set java executable command
+      //LOG.info("Setting up app master command");
+      vargs.add("${JAVA_HOME}" + "/bin/java");
+      // Set Xmx based on am memory size
+      vargs.add("-Xmx2000m");
+      // Set Remote Debugging
+      //if (!context.getQuery().getSubQuery(event.getSubQueryId()).isLeafQuery()) {
+      //vargs.add("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
+      //}
+      // Set class name
+      vargs.add("tajo.worker.TaskRunner");
+      vargs.add(taskListenerHost); // tasklistener hostname
+      vargs.add(String.valueOf(taskListenerPort)); // tasklistener hostname
+      vargs.add(subQueryId.toString()); // subqueryId
+      vargs.add(containerMgrAddress); // nodeId
+      vargs.add(containerID.toString()); // containerId
+
+      vargs.add("1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout");
+      vargs.add("2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr");
+
+      // Get final commmand
+      StringBuilder command = new StringBuilder();
+      for (CharSequence str : vargs) {
+        command.append(str).append(" ");
+      }
+
+      LOG.info("Completed setting up TaskRunner command " + command.toString());
+      List<String> commands = new ArrayList<String>();
+      commands.add(command.toString());
+
+      return BuilderUtils.newContainerLaunchContext(containerID, commonContainerSpec.getUser(),
+          container.getResource(), commonContainerSpec.getLocalResources(), myEnv, commands,
+          myServiceData, null, new HashMap<ApplicationAccessType, String>());
     }
 
     public String getHostName() {
