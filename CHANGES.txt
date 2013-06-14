@@ -10,6 +10,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-66: Support compiling and running Tajo with Java7 (Tejas Patil via hsaputra)
+
     TAJO-51: Parallel Container Launch of TaskRunnerLauncherImpl. (hyunsik)
     
     TAJO-39 Remove the unused package tajo.engine.plan.global and all files 

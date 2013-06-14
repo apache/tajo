@@ -829,6 +829,28 @@ public class ResultSetImpl implements ResultSet {
   /*
    * (non-Javadoc)
    * 
+   * @see java.sql.ResultSet#getObject(java.lang.String, java.lang.Class)
+   */
+  public <T> T getObject(String arg0, Class<T> arg1)
+      throws SQLException {
+    // TODO Auto-generated method stub
+    throw new UnsupportedException();
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.sql.ResultSet#getObject(int, java.lang.Class)
+   */
+  public <T> T getObject(int arg0, Class<T> arg1)
+      throws SQLException {
+    // TODO Auto-generated method stub
+    throw new UnsupportedException();
+  }
+  
+  /*
+   * (non-Javadoc)
+   * 
    * @see java.sql.ResultSet#getRef(int)
    */
   @Override
