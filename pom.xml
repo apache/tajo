@@ -320,6 +320,7 @@
             <exclude>**/.classpath</exclude>
             <exclude>**/.settings/**</exclude>
             <exclude>atlassian-ide-plugin.xml</exclude>
+            <exclude>.reviewboardrc</exclude>
           </excludes>
         </configuration>
       </plugin>

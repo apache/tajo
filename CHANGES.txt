@@ -10,6 +10,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-69: Add .reviewboardrc file to the ignore lists of Rat and .gitignore. (hyunsik)
+
     TAJO-66: Support compiling and running Tajo with Java7 (Tejas Patil via hsaputra)
 
     TAJO-51: Parallel Container Launch of TaskRunnerLauncherImpl. (hyunsik)
