@@ -95,7 +95,236 @@ import tajo.engine.query.exception.TQLParseError;
    }
 }
 
-// NQL Main
+/*
+===============================================================================
+  Tokens for Case Insensitive Keywords
+===============================================================================
+*/
+fragment A
+	:	'A' | 'a';
+
+fragment B
+	:	'B' | 'b';
+
+fragment C
+	:	'C' | 'c';
+
+fragment D
+	:	'D' | 'd';
+
+fragment E
+	:	'E' | 'e';
+
+fragment F
+	:	'F' | 'f';
+
+fragment G
+	:	'G' | 'g';
+
+fragment H
+	:	'H' | 'h';
+
+fragment I
+	:	'I' | 'i';
+
+fragment J
+	:	'J' | 'j';
+
+fragment K
+	:	'K' | 'k';
+
+fragment L
+	:	'L' | 'l';
+
+fragment M
+	:	'M' | 'm';
+
+fragment N
+	:	'N' | 'n';
+
+fragment O
+	:	'O' | 'o';
+
+fragment P
+	:	'P' | 'p';
+
+fragment Q
+	:	'Q' | 'q';
+
+fragment R
+	:	'R' | 'r';
+
+fragment S
+	:	'S' | 's';
+
+fragment T
+	:	'T' | 't';
+
+fragment U
+	:	'U' | 'u';
+
+fragment V
+	:	'V' | 'v';
+
+fragment W
+	:	'W' | 'w';
+
+fragment X
+	:	'X' | 'x';
+
+fragment Y
+	:	'Y' | 'y';
+
+fragment Z
+	:	'Z' | 'z';
+
+/*
+===============================================================================
+  Reserved Keywords
+===============================================================================
+*/
+
+AS : A S;
+ALL : A L L;
+AND : A N D;
+ASC : A S C;
+
+BY : B Y;
+
+CASE : C A S E;
+CHARACTER : C H A R A C T E R;
+COUNT : C O U N T;
+COPY : C O P Y;
+CREATE : C R E A T E;
+CROSS : C R O S S;
+CUBE : C U B E;
+
+DESC : D E S C;
+DISTINCT : D I S T I N C T;
+DROP : D R O P;
+
+END : E N D;
+ELSE : E L S E;
+EXCEPT : E X C E P T;
+EXTERNAL : E X T E R N A L;
+FALSE : F A L S E;
+FIRST : F I R S T;
+FORMAT : F O R M A T;
+FULL : F U L L;
+FROM : F R O M;
+
+GROUP : G R O U P;
+
+HAVING : H A V I N G;
+
+IN : I N;
+INDEX : I N D E X;
+INNER : I N N E R;
+INSERT : I N S E R T;
+INTERSECT : I N T E R S E C T;
+INTO : I N T O;
+IS : I S;
+
+JOIN : J O I N;
+
+LAST : L A S T;
+LEFT : L E F T;
+LIKE : L I K E;
+LIMIT : L I M I T;
+LOCATION : L O C A T I O N;
+
+NATIONAL : N A T I O N A L;
+NATURAL : N A T U R A L;
+NOT : N O T;
+NULL : N U L L;
+
+ON : O N;
+OUTER : O U T E R;
+OR : O R;
+ORDER : O R D E R;
+
+PRECISION : P R E C I S I ON;
+
+RIGHT : R I G H T;
+ROLLUP : R O L L U P;
+
+SET : S E T;
+SELECT : S E L E C T;
+
+TABLE : T A B L E;
+THEN : T H E N;
+TRUE : T R U E;
+
+UNION : U N I O N;
+UNIQUE : U N I Q U E;
+UNKNOWN : U N K N O W N;
+USING : U S I N G;
+
+VALUES : V A L U E S;
+VARYING : V A R Y I N G;
+
+WHEN : W H E N;
+WHERE : W H E R E;
+WITH : W I T H;
+
+ZONE : Z O N E;
+
+/*
+===============================================================================
+  Data Type Tokens
+===============================================================================
+*/
+BOOLEAN : B O O L E A N;
+BOOL : B O O L;
+BIT : B I T;
+VARBIT : V A R B I T;
+
+INT1 : I N T '1';
+INT2 : I N T '2';
+INT4 : I N T '4';
+INT8 : I N T '8';
+
+TINYINT : T I N Y I N T; // alias for INT1
+SMALLINT : S M A L L I N T; // alias for INT2
+INT : I N T; // alias for INT4
+INTEGER : I N T E G E R; // alias - INT4
+BIGINT : B I G I N T; // alias for INT8
+
+FLOAT4 : F L O A T '4';
+FLOAT8 : F L O A T '8';
+
+REAL : R E A L; // alias for FLOAT4
+FLOAT : F L O A T; // alias for FLOAT8
+DOUBLE : D O U B L E; // alias for FLOAT8
+
+NUMERIC : N U M E R I C;
+DECIMAL : D E C I M A L; // alias for number
+
+CHAR : C H A R;
+VARCHAR : V A R C H A R;
+NCHAR : N C H A R;
+NVARCHAR : N V A R C H A R;
+
+DATE : D A T E;
+TIME : T I M E;
+TIMETZ : T I M E T Z;
+TIMESTAMP : T I M E S T A M P;
+TIMESTAMPTZ : T I M E S T A M P T Z;
+
+TEXT : T E X T;
+
+BINARY : B I N A R Y;
+VARBINARY : V A R B I N A R Y;
+BLOB : B L O B;
+BYTEA : B Y T E A; // alias for BLOB
+
+INET4 : I N E T '4';
+
+/*
+===============================================================================
+  SQL Main
+===============================================================================
+*/
 sql
   : statement EOF
   ;
@@ -135,18 +364,18 @@ schemaStatement
   ;
 
 indexStatement
-  : CREATE (u=UNIQUE)? INDEX n=ID ON t=table (m=method_specifier)? LEFT_PAREN s=sort_specifier_list RIGHT_PAREN p=param_clause?-> ^(CREATE_INDEX $u? $m? $p? $n $t $s)
+  : CREATE (u=UNIQUE)? INDEX n=Identifier ON t=table (m=method_specifier)? LEFT_PAREN s=sort_specifier_list RIGHT_PAREN p=param_clause?-> ^(CREATE_INDEX $u? $m? $p? $n $t $s)
   ;
 
 createTableStatement
-  : CREATE EXTERNAL TABLE t=table def=tableElements USING f=ID p=param_clause? (LOCATION path=STRING)
+  : CREATE EXTERNAL TABLE t=table def=tableElements USING f=Identifier p=param_clause? (LOCATION path=Character_String_Literal)
       -> ^(CREATE_TABLE $t EXTERNAL ^(TABLE_DEF $def) ^(USING $f) $p? ^(LOCATION $path))
-  | CREATE TABLE t=table (def=tableElements)? (USING s=ID)? (p=param_clause)? (AS q=query_expression)?
+  | CREATE TABLE t=table (def=tableElements)? (USING s=Identifier)? (p=param_clause)? (AS q=query_expression)?
       -> ^(CREATE_TABLE $t ^(TABLE_DEF $def)? ^(USING $s)? $p? ^(AS $q)?)
   ;
 
 copyStatement
-  : COPY t=table FROM path=string_value_expr FORMAT s=ID (p=param_clause)? -> ^(COPY $t $path $s $p?)
+  : COPY t=table FROM path=string_value_expr FORMAT s=Identifier (p=param_clause)? -> ^(COPY $t $path $s $p?)
   ;
 
 tableElements
@@ -154,7 +383,7 @@ tableElements
   ;
 
 fieldElement
-  : ID fieldType -> ^(FIELD_DEF ID fieldType)
+  : Identifier fieldType -> ^(FIELD_DEF Identifier fieldType)
   ;
 
 fieldType
@@ -162,11 +391,11 @@ fieldType
   ;
 
 precision_param
-  : LEFT_PAREN! DIGIT RIGHT_PAREN!
-  | LEFT_PAREN! DIGIT COMMA! DIGIT RIGHT_PAREN!
+  : LEFT_PAREN! NUMBER RIGHT_PAREN!
+  | LEFT_PAREN! NUMBER COMMA! NUMBER RIGHT_PAREN!
   ;
 type_length
-  : LEFT_PAREN! DIGIT RIGHT_PAREN!
+  : LEFT_PAREN! NUMBER RIGHT_PAREN!
   ;
 
 boolean_type
@@ -337,7 +566,7 @@ derivedColumn
   ;
 
 fieldName
-	:	(t=ID DOT)? b=ID -> ^(FIELD_NAME $b $t?)
+	:	(t=Identifier DOT)? b=Identifier -> ^(FIELD_NAME $b $t?)
 	;
 
 asClause
@@ -349,12 +578,12 @@ column_reference
 	;
 
 table
-  : ID
+  : Identifier
   ;
 
 // TODO - to be improved
 funcCall
-	: ID LEFT_PAREN funcArgs? RIGHT_PAREN -> ^(FUNCTION[$ID.text] funcArgs?)
+	: Identifier LEFT_PAREN funcArgs? RIGHT_PAREN -> ^(FUNCTION[$Identifier.text] funcArgs?)
 	| COUNT LEFT_PAREN funcArgs RIGHT_PAREN -> ^(COUNT_VAL funcArgs)
 	| COUNT LEFT_PAREN MULTIPLY RIGHT_PAREN -> ^(COUNT_ROWS)
 	;
@@ -405,7 +634,8 @@ union_join
 
 join_type
   : INNER
-  | t=outer_join_type ('outer')? -> ^(OUTER $t)
+  | t=outer_join_type OUTER -> ^(OUTER $t)
+  | t=outer_join_type -> ^(OUTER $t)
   ;
 
 outer_join_type
@@ -428,7 +658,7 @@ named_columns_join
   ;
 
 table_primary
-  : table ((AS)? a=ID)? -> ^(TABLE table ($a)?)
+  : table ((AS)? a=Identifier)? -> ^(TABLE table ($a)?)
   ;
 
 where_clause
@@ -498,7 +728,7 @@ null_ordering
   ;
 
 set_stmt
-	:	'set' ('union'|'intersect'|'diff') table
+	:	SET (UNION|INTERSECT|EXCEPT) table
 	;
 
 search_condition
@@ -510,11 +740,11 @@ param_clause
   ;
 
 param
-  : k=STRING EQUAL v=bool_expr -> ^(PARAM $k $v)
+  : k=Character_String_Literal EQUAL v=bool_expr -> ^(PARAM $k $v)
   ;
 
 method_specifier
-  : USING m=ID -> ^(USING[$m.text])
+  : USING m=Identifier -> ^(USING[$m.text])
   ;
 
 bool_expr
@@ -604,7 +834,7 @@ literal
   ;
 
 string_value_expr
-  : STRING
+  : Character_String_Literal
   ;
 
 signed_numerical_literal
@@ -612,7 +842,7 @@ signed_numerical_literal
   ;
 
 unsigned_numerical_literal
-  : DIGIT
+  : NUMBER
   | REAL_NUMBER
   ;
 
@@ -647,125 +877,6 @@ result
   : bool_expr
   ;
 
-////////////////////////////////
-// Lexer Section
-////////////////////////////////
-// Keywords
-AS : 'as';
-ALL : 'all';
-AND : 'and';
-ASC : 'asc';
-BY : 'by';
-CASE : 'case';
-CHARACTER : 'character';
-COUNT : 'count';
-COPY : 'copy';
-CREATE : 'create';
-CROSS : 'cross';
-CUBE : 'cube';
-DESC : 'desc';
-DISTINCT : 'distinct';
-DROP : 'drop';
-END : 'end';
-ELSE : 'else';
-EXCEPT : 'except';
-EXTERNAL : 'external';
-FALSE : 'false';
-FIRST : 'first';
-FORMAT : 'format';
-FULL : 'full';
-FROM : 'from';
-GROUP : 'group';
-HAVING : 'having';
-IN : 'in';
-INDEX : 'index';
-INNER : 'inner';
-INSERT : 'insert';
-INTERSECT : 'intersect';
-INTO : 'into';
-IS : 'is';
-JOIN : 'join';
-LAST : 'last';
-LEFT : 'left';
-LIKE : 'like';
-LIMIT : 'limit';
-LOCATION : 'location';
-NATIONAL : 'national';
-NATURAL : 'natural';
-NOT : 'not';
-NULL : 'null';
-ON : 'on';
-OUTER : 'outer';
-OR : 'or';
-ORDER : 'order';
-PRECISION : 'precision';
-RIGHT : 'right';
-ROLLUP : 'rollup';
-SELECT : 'select';
-TABLE : 'table';
-THEN : 'then';
-TRUE : 'true';
-UNION : 'union';
-UNIQUE : 'unique';
-UNKNOWN: 'unknown';
-USING : 'using';
-VALUES : 'values';
-VARYING : 'varying';
-WHEN : 'when';
-WHERE : 'where';
-WITH : 'with';
-ZONE : 'zone';
-
-///////////////////////////////////////////////////
-// Data Types
-///////////////////////////////////////////////////
-BOOLEAN : 'boolean';
-BOOL : 'bool';
-BIT : 'bit';
-VARBIT : 'varbit';
-
-// Numeric Types
-INT1 : 'int1';
-INT2 : 'int2';
-INT4 : 'int4';
-INT8 : 'int8';
-
-TINYINT : 'tinyint'; // alias for INT1
-SMALLINT : 'smallint'; // alias for INT2
-INT : 'int'; // alias for INT4
-INTEGER : 'integer'; // alias - INT4
-BIGINT : 'bigint'; // alias for INT8
-
-FLOAT4 : 'float4';
-FLOAT8 : 'float8';
-
-REAL : 'real'; // alias for FLOAT4
-FLOAT : 'float'; // alias for FLOAT8
-DOUBLE : 'double'; // alias for FLOAT8
-
-NUMERIC : 'numeric';
-DECIMAL : 'decimal'; // alias for number
-
-CHAR : 'char';
-VARCHAR : 'varchar';
-NCHAR : 'nchar';
-NVARCHAR : 'nvarchar';
-
-DATE : 'date';
-TIME : 'time';
-TIMETZ : 'timetz';
-TIMESTAMP : 'timestamp';
-TIMESTAMPTZ : 'timestamptz';
-
-TEXT : 'text';
-
-BINARY : 'binary';
-VARBINARY : 'varbinary';
-BLOB : 'blob';
-BYTEA : 'bytea'; // alias for BLOB
-
-INET4 : 'inet4';
-
 // Operators
 ASSIGN  : ':=';
 EQUAL  : '=';
@@ -785,12 +896,10 @@ DIVIDE  : '/';
 MODULAR : '%';
 DOT : '.';
 
-// Regular Expressions for Tokens
-ID  : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|':')*
-    ;
+NUMBER : Digit+;
 
-DIGIT : '0'..'9'+
-    ;
+fragment
+Digit : '0'..'9';
 
 REAL_NUMBER
     :   ('0'..'9')+ '.' ('0'..'9')* EXPONENT?
@@ -803,16 +912,38 @@ COMMENT
     |   '/*' ( options {greedy=false;} : . )* '*/' {$channel=HIDDEN;}
     ;
 
-WS  :   ( ' '
-        | '\t'
-        | '\r'
-        | '\n'
-        ) {$channel=HIDDEN;}
+/*
+===============================================================================
+ Identifiers
+===============================================================================
+*/
+
+// Regular Expressions for Tokens
+Identifier  : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|Digit|'_'|':')*
     ;
 
-STRING
-    :  '\'' ( ESC_SEQ | ~('\\'|'\'') )* '\'' {setText(getText().substring(1, getText().length()-1));}
+/*
+===============================================================================
+ Literal
+===============================================================================
+*/
+
+// Some Unicode Character Ranges
+fragment
+Control_Characters                  :   '\u0001' .. '\u001F';
+fragment
+Extended_Control_Characters         :   '\u0080' .. '\u009F';
+
+Character_String_Literal
+    : Quote ( ESC_SEQ | ~('\\'|Quote) )* Quote {setText(getText().substring(1, getText().length()-1));}
+    | Double_Quote ( ESC_SEQ | ~('\\'|Double_Quote) )* Double_Quote {setText(getText().substring(1, getText().length()-1));}
     ;
+
+Quote
+  : '\'';
+
+Double_Quote
+  : '"';
 
 fragment
 EXPONENT : ('e'|'E') ('+'|'-')? ('0'..'9')+ ;
@@ -838,3 +969,25 @@ fragment
 UNICODE_ESC
     :   '\\' 'u' HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
     ;
+
+
+/*
+===============================================================================
+ Whitespace Tokens
+===============================================================================
+*/
+
+Space : ' '
+{
+	$channel = HIDDEN;
+};
+
+White_Space :	( Control_Characters  | Extended_Control_Characters )+
+{
+	$channel = HIDDEN;
+};
+
+
+BAD : . {
+  skip();
+} ;

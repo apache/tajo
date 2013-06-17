@@ -29,9 +29,9 @@ public class ParseUtil {
 
   public static boolean isConstant(final Tree tree) {
     switch (tree.getType()) {
-      case NQLParser.DIGIT:
+      case NQLParser.NUMBER:
       case NQLParser.REAL:
-      case NQLParser.STRING:
+      case NQLParser.Character_String_Literal:
         return true;
       default:
         return false;

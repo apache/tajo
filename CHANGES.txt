@@ -10,6 +10,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-71: Case-insensitive parser. (hyunsik)
+
     TAJO-40: Adopt YarnClient to GlobalEngine. (jihoon)
 
     TAJO-69: Add .reviewboardrc file to the ignore lists of Rat and .gitignore. (hyunsik)

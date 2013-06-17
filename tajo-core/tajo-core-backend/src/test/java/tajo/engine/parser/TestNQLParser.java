@@ -159,7 +159,7 @@ public class TestNQLParser {
     assertEquals(tree.getChild(0).getType(), NQLParser.FIELD_NAME);
     FieldName fieldName = new FieldName(tree.getChild(0));
     assertEquals(fieldName.getName(), "age");
-    assertEquals(tree.getChild(1).getType(), NQLParser.DIGIT);
+    assertEquals(tree.getChild(1).getType(), NQLParser.NUMBER);
     assertEquals(tree.getChild(1).getText(), "30");
   }
 
@@ -452,52 +452,52 @@ public class TestNQLParser {
     "create table name (name text, age int) using rcfile as select * from test", // 6
     "create table name (name text, age int) using rcfile with ('rcfile.buffer'= 4096) as select * from test", // 7
     "create table widetable (" +
-        "col0 bit," +
-        "col0 bit(10)," +
-        "col0 bit varying," +
-        "col0 bit varying(10)," +
-        "col1 tinyint, " +
-        "col2 smallint, " +
-        "col3 integer, " +
-        "col4 bigint, " +
-        "col5 real, " +
-        "col5 float, " +
-        "col5 float(53), " +
-        "col6 double, " +
-        "col6 double precision, " +
-        "col7 numeric, " +
-        "col7 numeric(10), " +
-        "col7 numeric(10,2), " +
-        "col8 decimal," +
-        "col8 decimal(10)," +
-        "col8 decimal(10,2)," +
-        "col9 char," +
-        "col9 character," +
-        "col10 char(10)," +
-        "col10 character(10)," +
-        "col11 varchar," +
-        "col11 character varying," +
-        "col12 varchar(255)," +
-        "col11 character varying (255)," +
-        "col11 nchar," +
-        "col11 nchar(255)," +
-        "col11 national character," +
-        "col11 national character(255)," +
-        "col11 nvarchar," +
-        "col11 nvarchar(255)," +
-        "col11 national character varying," +
-        "col11 national character varying (255)," +
-        "col11 date," +
-        "col11 time," +
-        "col11 timetz," +
-        "col11 time with time zone," +
-        "col11 timestamptz," +
-        "col11 timestamp with time zone," +
-        "col11 binary," +
-        "col11 binary(10)," +
-        "col11 varbinary(10)," +
-        "col11 binary varying(10)," +
-        "col11 blob" +
+        "col0 bit,\n" +
+        "col0 BIT(10),\n" +
+        "col0 bit varying,\n" +
+        "col0 bit VARYING(10),\n" +
+        "col1 tinyint,\n" +
+        "col2 smallInt,\n" +
+        "col3 integer,\n" +
+        "col4 biginT,\n" +
+        "col5 real,\n" +
+        "col5 float,\n" +
+        "col5 float(53),\n" +
+        "col6 double,\n" +
+        "col6 doublE precision,\n" +
+        "col7 numeric,\n" +
+        "col7 numeric(10),\n" +
+        "col7 numeric(10,2),\n" +
+        "col8 decimal,\n" +
+        "col8 decimal(10),\n" +
+        "col8 decimal(10,2),\n" +
+        "col9 char,\n" +
+        "col9 character,\n" +
+        "col10 chaR(10),\n" +
+        "col10 character(10),\n" +
+        "col11 varchar,\n" +
+        "col11 character varying,\n" +
+        "col12 varchar(255),\n" +
+        "col11 character varying (255),\n" +
+        "col11 nchar,\n" +
+        "col11 nchar(255),\n" +
+        "col11 national character,\n" +
+        "col11 national character(255),\n" +
+        "col11 nvarchar,\n" +
+        "col11 nvarchar(255),\n" +
+        "col11 natIonal character varying,\n" +
+        "col11 national character varying (255),\n" +
+        "col11 date,\n" +
+        "col11 time,\n" +
+        "col11 timetz,\n" +
+        "col11 time With time zone,\n" +
+        "col11 timesTamptz,\n" +
+        "col11 timestamp with time zone,\n" +
+        "col11 binary,\n" +
+        "col11 binary(10),\n" +
+        "col11 varbinary(10),\n" +
+        "col11 binary Varying(10),\n" +
+        "col11 blOb\n" +
         ") as select * from test", // 8
     "create table widetable (col1 float(10), col2 float) as select * from test", // 9
     "create external table table1 (name text, age int, earn bigint, score float) using csv location '/tmp/data'", // 10
@@ -507,7 +507,7 @@ public class TestNQLParser {
   public void testCreateTableAsSelect1() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[1]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
     assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
   }
 
@@ -515,7 +515,7 @@ public class TestNQLParser {
   public void testCreateTableAsSelect2() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[2]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
     assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
     assertEquals(NQLParser.USING, ast.getChild(2).getType());
     assertEquals("rcfile", ast.getChild(2).getChild(0).getText());
@@ -525,7 +525,7 @@ public class TestNQLParser {
   public void testCreateTableAsSelect3() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[3]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
     assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
     assertEquals(NQLParser.USING, ast.getChild(2).getType());
     assertEquals("rcfile", ast.getChild(2).getChild(0).getText());
@@ -536,7 +536,7 @@ public class TestNQLParser {
   public void testCreateTableAsSelect4() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[4]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
     assertEquals(NQLParser.AS, ast.getChild(1).getType());
     assertEquals(NQLParser.SELECT, ast.getChild(1).getChild(0).getType());
   }
@@ -545,7 +545,7 @@ public class TestNQLParser {
   public void testCreateTableAsSelect5() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[5]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
     assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
     assertEquals(NQLParser.AS, ast.getChild(2).getType());
     assertEquals(NQLParser.SELECT, ast.getChild(2).getChild(0).getType());
@@ -555,7 +555,7 @@ public class TestNQLParser {
   public void testCreateTableAsSelect6() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[6]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
     assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
     assertEquals(NQLParser.USING, ast.getChild(2).getType());
     assertEquals(NQLParser.AS, ast.getChild(3).getType());
@@ -566,7 +566,7 @@ public class TestNQLParser {
   public void testCreateTableAsSelect7() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[7]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
     assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
     assertEquals(NQLParser.USING, ast.getChild(2).getType());
     assertEquals(NQLParser.PARAMS, ast.getChild(3).getType());
@@ -578,7 +578,7 @@ public class TestNQLParser {
   public void testCreateTableWithVariousDataType1() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[8]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
     assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
     assertEquals(NQLParser.AS, ast.getChild(2).getType());
     assertEquals(NQLParser.SELECT, ast.getChild(2).getChild(0).getType());
@@ -588,7 +588,7 @@ public class TestNQLParser {
   public void testCreateTableWithVariousDataType2() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[9]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
     assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
     assertEquals("10", ast.getChild(1).getChild(0).getChild(1).getChild(0).getText());
     assertEquals(NQLParser.AS, ast.getChild(2).getType());
@@ -599,7 +599,7 @@ public class TestNQLParser {
   public void testCreateTableLocation1() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[10]);
     assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.ID, ast.getChild(0).getType());
+    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
     assertEquals(NQLParser.EXTERNAL, ast.getChild(1).getType());
     assertEquals(NQLParser.TABLE_DEF, ast.getChild(2).getType());
     assertEquals(NQLParser.USING, ast.getChild(3).getType());
@@ -834,8 +834,8 @@ public class TestNQLParser {
     assertEquals(node.getType(), NQLParser.NOT);
     assertEquals(node.getChild(0).getType(), NQLParser.GTH);
     CommonTree gth = (CommonTree) node.getChild(0);
-    assertEquals(gth.getChild(0).getType(), NQLParser.DIGIT);
-    assertEquals(gth.getChild(1).getType(), NQLParser.DIGIT);
+    assertEquals(gth.getChild(0).getType(), NQLParser.NUMBER);
+    assertEquals(gth.getChild(1).getType(), NQLParser.NUMBER);
   }
 
   @Test
@@ -863,7 +863,7 @@ public class TestNQLParser {
     assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
     FieldName fieldName = new FieldName(node.getChild(0));
     assertEquals(fieldName.getName(), "type");
-    assertEquals(NQLParser.STRING, node.getChild(1).getType());
+    assertEquals(NQLParser.Character_String_Literal, node.getChild(1).getType());
     
     p = parseExpr(exprs[25]);
     node = (CommonTree) p.search_condition().getTree();    
@@ -872,7 +872,7 @@ public class TestNQLParser {
     assertEquals(NQLParser.FIELD_NAME, node.getChild(1).getType());
     fieldName = new FieldName(node.getChild(1));
     assertEquals(fieldName.getName(), "type");
-    assertEquals(NQLParser.STRING, node.getChild(2).getType());
+    assertEquals(NQLParser.Character_String_Literal, node.getChild(2).getType());
   }
 
   @Test
@@ -884,7 +884,7 @@ public class TestNQLParser {
     CommonTree node = (CommonTree) p.search_condition().getTree();
     assertEquals(NQLParser.EQUAL, node.getType());
     assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
-    assertEquals(NQLParser.STRING, node.getChild(1).getType());
+    assertEquals(NQLParser.Character_String_Literal, node.getChild(1).getType());
   }
 
   @Test
@@ -959,7 +959,7 @@ public class TestNQLParser {
 
     assertEquals(NQLParser.LIKE, cond1.getChild(0).getType());
     assertEquals(NQLParser.EQUAL, cond2.getChild(0).getType());
-    assertEquals(NQLParser.DIGIT, elseStmt.getChild(0).getType());
+    assertEquals(NQLParser.NUMBER, elseStmt.getChild(0).getType());
   }
 
   public class FieldName {

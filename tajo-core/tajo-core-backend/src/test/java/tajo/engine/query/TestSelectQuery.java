@@ -168,7 +168,7 @@ public class TestSelectQuery {
         "ALGERIA", "ETHIOPIA", "INDIA", "INDONESIA", "ROMANIA", "SAUDI ARABIA", "RUSSIA");
 
     ResultSet res = tpch.execute(
-        "select n_name from nation where n_name like '%IA'");
+        "SELECT n_name FROM nation WHERE n_name LIKE '%IA'");
     int cnt = 0;
     while(res.next()) {
       assertTrue(result.contains(res.getString(1)));

@@ -1010,7 +1010,7 @@ public final class QueryAnalyzer {
     switch(ast.getType()) {
 
       // constants
-      case NQLParser.DIGIT:
+      case NQLParser.NUMBER:
         return new ConstEval(DatumFactory.createInt4(
             Integer.valueOf(ast.getText())));
 
@@ -1018,7 +1018,7 @@ public final class QueryAnalyzer {
         return new ConstEval(DatumFactory.createFloat4(
             Float.valueOf(ast.getText())));
 
-      case NQLParser.STRING:
+      case NQLParser.Character_String_Literal:
         return new ConstEval(DatumFactory.createText(ast.getText()));
 
       // unary expression
@@ -1251,7 +1251,7 @@ public final class QueryAnalyzer {
       Tree constAst = tree.getChild(constId);
 
       switch (tree.getChild(constId).getType()) {
-        case NQLParser.DIGIT:
+        case NQLParser.NUMBER:
           exprs[constId] = parseDigitByTypeInfer(context, block, constAst,
               exprs[fieldId].getValueType()[0]);
           break;
@@ -1261,7 +1261,7 @@ public final class QueryAnalyzer {
               exprs[fieldId].getValueType()[0]);
           break;
 
-        case NQLParser.STRING:
+        case NQLParser.Character_String_Literal:
           exprs[constId] = parseStringByTypeInfer(context, block, constAst,
               exprs[fieldId].getValueType()[0]);
           break;
