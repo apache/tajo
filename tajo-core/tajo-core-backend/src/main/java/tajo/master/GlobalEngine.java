@@ -23,9 +23,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.yarn.api.ClientRMProtocol;
-import org.apache.hadoop.yarn.api.protocolrecords.*;
+import org.apache.hadoop.yarn.api.protocolrecords.GetNewApplicationResponse;
 import org.apache.hadoop.yarn.api.records.*;
+import org.apache.hadoop.yarn.client.YarnClient;
+import org.apache.hadoop.yarn.client.YarnClientImpl;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
 import org.apache.hadoop.yarn.factories.RecordFactory;
@@ -80,7 +81,7 @@ public class GlobalEngine extends AbstractService {
   // Yarn
   private final RecordFactory recordFactory =
       RecordFactoryProvider.getRecordFactory(null);
-  protected ClientRMProtocol rmClient;
+  protected YarnClient yarnClient;
   protected InetSocketAddress rmAddress;
 
   public GlobalEngine(final MasterContext context, final StorageManager sm)
@@ -92,7 +93,7 @@ public class GlobalEngine extends AbstractService {
 
   public void start() {
     try  {
-      connectRMClient();
+      connectYarnClient();
       analyzer = new QueryAnalyzer(context.getCatalog());
       planner = new LogicalPlanner(context.getCatalog());
 
@@ -108,6 +109,7 @@ public class GlobalEngine extends AbstractService {
 
   public void stop() {
     super.stop();
+    yarnClient.stop();
   }
 
   private String createTable(LogicalRootNode root) throws IOException {
@@ -221,9 +223,7 @@ public class GlobalEngine extends AbstractService {
 
     // Submit the application to the applications manager
     LOG.info("Submitting application to ASM");
-    SubmitApplicationRequest req = Records.newRecord(SubmitApplicationRequest.class);
-    req.setApplicationSubmissionContext(appContext);
-    rmClient.submitApplication(req);
+    yarnClient.submitApplication(appContext);
 
     // Monitor the application to wait for launch state
     ApplicationReport appReport = monitorApplication(appId,
@@ -272,12 +272,10 @@ public class GlobalEngine extends AbstractService {
     }
   }
 
-  private void connectRMClient() {
-    this.rmAddress = getRmAddress(getConfig());
-    this.rmClient =
-        (ClientRMProtocol) context.getYarnRPC().getProxy(ClientRMProtocol.class,
-            rmAddress, getConfig());
-    LOG.debug("Connecting to ResourceManager at " + rmAddress);
+  private void connectYarnClient() {
+    this.yarnClient = new YarnClientImpl();
+    this.yarnClient.init(getConfig());
+    this.yarnClient.start();
   }
 
   private static InetSocketAddress getRmAddress(Configuration conf) {
@@ -287,9 +285,7 @@ public class GlobalEngine extends AbstractService {
 
   public GetNewApplicationResponse getNewApplication()
       throws YarnRemoteException {
-    GetNewApplicationRequest request =
-        Records.newRecord(GetNewApplicationRequest.class);
-    return rmClient.getNewApplication(request);
+    return yarnClient.getNewApplication();
   }
 
   /**
@@ -314,11 +310,7 @@ public class GlobalEngine extends AbstractService {
       }
 
       // Get application report for the appId we are interested in
-      GetApplicationReportRequest req = Records.newRecord(GetApplicationReportRequest.class);
-      req.setApplicationId(appId);
-      GetApplicationReportResponse res = rmClient.getApplicationReport(req);
-      ApplicationReport report = res.getApplicationReport();
-
+      ApplicationReport report = yarnClient.getApplicationReport(appId);
 
       LOG.info("Got application report from ASM for" + ", appId="
           + appId.getId() + ", appAttemptId="
