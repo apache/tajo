@@ -10,11 +10,14 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-72: Rename NQL.g to SQL.g. (hyunsik)
+
     TAJO-71: Case-insensitive parser. (hyunsik)
 
     TAJO-40: Adopt YarnClient to GlobalEngine. (jihoon)
 
-    TAJO-69: Add .reviewboardrc file to the ignore lists of Rat and .gitignore. (hyunsik)
+    TAJO-69: Add .reviewboardrc file to the ignore lists of Rat and .gitignore. 
+    (hyunsik)
 
     TAJO-66: Support compiling and running Tajo with Java7 (Tejas Patil via hsaputra)
 

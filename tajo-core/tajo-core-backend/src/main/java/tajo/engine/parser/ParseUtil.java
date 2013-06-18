@@ -29,9 +29,9 @@ public class ParseUtil {
 
   public static boolean isConstant(final Tree tree) {
     switch (tree.getType()) {
-      case NQLParser.NUMBER:
-      case NQLParser.REAL:
-      case NQLParser.Character_String_Literal:
+      case SQLParser.NUMBER:
+      case SQLParser.REAL:
+      case SQLParser.Character_String_Literal:
         return true;
       default:
         return false;
@@ -40,35 +40,35 @@ public class ParseUtil {
 
   public static EvalNode.Type getTypeByParseCode(int parseCode) {
     switch(parseCode) {
-      case NQLParser.AND:
+      case SQLParser.AND:
         return EvalNode.Type.AND;
-      case NQLParser.OR:
+      case SQLParser.OR:
         return EvalNode.Type.OR;
-      case NQLParser.LIKE:
+      case SQLParser.LIKE:
         return EvalNode.Type.LIKE;
-      case NQLParser.EQUAL:
+      case SQLParser.EQUAL:
         return EvalNode.Type.EQUAL;
-      case NQLParser.NOT_EQUAL:
+      case SQLParser.NOT_EQUAL:
         return EvalNode.Type.NOT_EQUAL;
-      case NQLParser.LTH:
+      case SQLParser.LTH:
         return EvalNode.Type.LTH;
-      case NQLParser.LEQ:
+      case SQLParser.LEQ:
         return EvalNode.Type.LEQ;
-      case NQLParser.GTH:
+      case SQLParser.GTH:
         return EvalNode.Type.GTH;
-      case NQLParser.GEQ:
+      case SQLParser.GEQ:
         return EvalNode.Type.GEQ;
-      case NQLParser.NOT:
+      case SQLParser.NOT:
         return EvalNode.Type.NOT;
-      case NQLParser.PLUS:
+      case SQLParser.PLUS:
         return EvalNode.Type.PLUS;
-      case NQLParser.MINUS:
+      case SQLParser.MINUS:
         return EvalNode.Type.MINUS;
-      case NQLParser.MULTIPLY:
+      case SQLParser.MULTIPLY:
         return EvalNode.Type.MULTIPLY;
-      case NQLParser.DIVIDE:
+      case SQLParser.DIVIDE:
         return EvalNode.Type.DIVIDE;
-      case NQLParser.MODULAR:
+      case SQLParser.MODULAR:
         return EvalNode.Type.MODULAR;
       default: throw new InvalidEvalException("We does not support " + parseCode + " type AST yet");
     }

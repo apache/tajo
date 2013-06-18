@@ -29,7 +29,7 @@ import tajo.engine.query.exception.TQLSyntaxError;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class TestNQLParser {
+public class TestSQLParser {
   static final String[] selQueries = {
       "select id, name, age, gender from people", // 0
       "select title, ISBN from Books", // 1
@@ -51,9 +51,9 @@ public class TestNQLParser {
 
   public static Tree parseQuery(String query) throws TQLSyntaxError {
     ANTLRStringStream input = new ANTLRStringStream(query);
-    NQLLexer lexer = new NQLLexer(input);
+    SQLLexer lexer = new SQLLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
-    NQLParser parser = new NQLParser(tokens);
+    SQLParser parser = new SQLParser(tokens);
 
     Tree tree;
     try {
@@ -69,7 +69,7 @@ public class TestNQLParser {
   public void testSelectClause() throws RecognitionException,
       TQLSyntaxError {
     Tree tree = parseQuery(selQueries[0]);
-    assertEquals(tree.getType(), NQLParser.SELECT);
+    assertEquals(tree.getType(), SQLParser.SELECT);
   }
   
   private final String groupingClause [] = {
@@ -79,39 +79,39 @@ public class TestNQLParser {
   @Test
   public void testCubeByClause() throws RecognitionException {
     Tree ast = parseQuery(groupingClause[0]);
-    assertEquals(NQLParser.SELECT, ast.getType());
+    assertEquals(SQLParser.SELECT, ast.getType());
     int idx = 0;    
-    assertEquals(NQLParser.FROM, ast.getChild(idx++).getType());
-    assertEquals(NQLParser.SEL_LIST, ast.getChild(idx++).getType());
-    assertEquals(NQLParser.GROUP_BY, ast.getChild(idx).getType());    
+    assertEquals(SQLParser.FROM, ast.getChild(idx++).getType());
+    assertEquals(SQLParser.SEL_LIST, ast.getChild(idx++).getType());
+    assertEquals(SQLParser.GROUP_BY, ast.getChild(idx).getType());
     
     Tree groupby = ast.getChild(idx);
     int grpIdx = 0;
-    assertEquals(NQLParser.FIELD_NAME, groupby.getChild(grpIdx++).getType());
-    assertEquals(NQLParser.CUBE, groupby.getChild(grpIdx).getType());
+    assertEquals(SQLParser.FIELD_NAME, groupby.getChild(grpIdx++).getType());
+    assertEquals(SQLParser.CUBE, groupby.getChild(grpIdx).getType());
     
     int cubeIdx = 0;
     Tree cube = groupby.getChild(grpIdx);
-    assertEquals(NQLParser.FIELD_NAME, cube.getChild(cubeIdx++).getType());
-    assertEquals(NQLParser.FIELD_NAME, cube.getChild(cubeIdx).getType());
+    assertEquals(SQLParser.FIELD_NAME, cube.getChild(cubeIdx++).getType());
+    assertEquals(SQLParser.FIELD_NAME, cube.getChild(cubeIdx).getType());
     grpIdx++;
-    assertEquals(NQLParser.ROLLUP, groupby.getChild(grpIdx).getType());
+    assertEquals(SQLParser.ROLLUP, groupby.getChild(grpIdx).getType());
     
     int rollupIdx = 0;
     Tree rollup = groupby.getChild(grpIdx);
-    assertEquals(NQLParser.FIELD_NAME, rollup.getChild(rollupIdx).getType());
+    assertEquals(SQLParser.FIELD_NAME, rollup.getChild(rollupIdx).getType());
     
     idx++;
-    assertEquals(NQLParser.HAVING, ast.getChild(idx).getType());
+    assertEquals(SQLParser.HAVING, ast.getChild(idx).getType());
   }
 
   @Test
   public void testColumnFamily() throws TQLSyntaxError {
     Tree ast = parseQuery(selQueries[9]);
-    assertEquals(NQLParser.SELECT, ast.getType());
-    assertEquals(NQLParser.SEL_LIST, ast.getChild(1).getType());
-    assertEquals(NQLParser.COLUMN, ast.getChild(1).getChild(0).getType());
-    assertEquals(NQLParser.FIELD_NAME, ast.getChild(1).getChild(0).getChild(0)
+    assertEquals(SQLParser.SELECT, ast.getType());
+    assertEquals(SQLParser.SEL_LIST, ast.getChild(1).getType());
+    assertEquals(SQLParser.COLUMN, ast.getChild(1).getChild(0).getType());
+    assertEquals(SQLParser.FIELD_NAME, ast.getChild(1).getChild(0).getChild(0)
         .getType());
     FieldName fieldName = new FieldName(ast.getChild(1).getChild(0).getChild(0));
     assertEquals("ipv4", fieldName.getFamilyName());
@@ -122,22 +122,22 @@ public class TestNQLParser {
   @Test
   public void testSetQualifier() throws TQLSyntaxError {
     Tree ast = parseQuery(selQueries[10]);
-    assertEquals(NQLParser.SELECT, ast.getType());
-    assertEquals(NQLParser.SET_QUALIFIER, ast.getChild(1).getType());
-    assertEquals(NQLParser.DISTINCT, ast.getChild(1).getChild(0).getType());
+    assertEquals(SQLParser.SELECT, ast.getType());
+    assertEquals(SQLParser.SET_QUALIFIER, ast.getChild(1).getType());
+    assertEquals(SQLParser.DISTINCT, ast.getChild(1).getChild(0).getType());
     assertSetListofSetQualifierTest(ast);
 
     ast = parseQuery(selQueries[11]);
-    assertEquals(NQLParser.SELECT, ast.getType());
-    assertEquals(NQLParser.SET_QUALIFIER, ast.getChild(1).getType());
-    assertEquals(NQLParser.ALL, ast.getChild(1).getChild(0).getType());
+    assertEquals(SQLParser.SELECT, ast.getType());
+    assertEquals(SQLParser.SET_QUALIFIER, ast.getChild(1).getType());
+    assertEquals(SQLParser.ALL, ast.getChild(1).getChild(0).getType());
     assertSetListofSetQualifierTest(ast);
   }
 
   private void assertSetListofSetQualifierTest(Tree ast) {
-    assertEquals(NQLParser.SEL_LIST, ast.getChild(2).getType());
-    assertEquals(NQLParser.COLUMN, ast.getChild(2).getChild(0).getType());
-    assertEquals(NQLParser.FIELD_NAME, ast.getChild(2).getChild(0).getChild(0)
+    assertEquals(SQLParser.SEL_LIST, ast.getChild(2).getType());
+    assertEquals(SQLParser.COLUMN, ast.getChild(2).getChild(0).getType());
+    assertEquals(SQLParser.FIELD_NAME, ast.getChild(2).getChild(0).getChild(0)
         .getType());
   }
 
@@ -145,21 +145,21 @@ public class TestNQLParser {
   public void testSessionClear() throws RecognitionException,
       TQLSyntaxError {
     Tree tree = parseQuery(selQueries[3]);
-    assertEquals(tree.getType(), NQLParser.SESSION_CLEAR);
+    assertEquals(tree.getType(), SQLParser.SESSION_CLEAR);
   }
 
   @Test
   public void testWhereClause() throws RecognitionException, TQLSyntaxError {
     Tree tree = parseQuery(selQueries[6]);
 
-    assertEquals(tree.getType(), NQLParser.SELECT);
+    assertEquals(tree.getType(), SQLParser.SELECT);
     tree = tree.getChild(2).getChild(0);
 
-    assertEquals(tree.getType(), NQLParser.GTH);
-    assertEquals(tree.getChild(0).getType(), NQLParser.FIELD_NAME);
+    assertEquals(tree.getType(), SQLParser.GTH);
+    assertEquals(tree.getChild(0).getType(), SQLParser.FIELD_NAME);
     FieldName fieldName = new FieldName(tree.getChild(0));
     assertEquals(fieldName.getName(), "age");
-    assertEquals(tree.getChild(1).getType(), NQLParser.NUMBER);
+    assertEquals(tree.getChild(1).getType(), SQLParser.NUMBER);
     assertEquals(tree.getChild(1).getText(), "30");
   }
 
@@ -167,7 +167,7 @@ public class TestNQLParser {
   public void testInsertClause() throws RecognitionException,
       TQLSyntaxError {
     Tree tree = parseQuery(insQueries[0]);
-    assertEquals(tree.getType(), NQLParser.INSERT);
+    assertEquals(tree.getType(), SQLParser.INSERT);
   }
   
   static String [] JOINS = {
@@ -212,33 +212,33 @@ public class TestNQLParser {
    */
   public void testNaturalJoinClause() {
     Tree tree = parseQuery(JOINS[0]);
-    assertEquals(tree.getType(), NQLParser.SELECT);
-    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    assertEquals(tree.getType(), SQLParser.SELECT);
+    assertEquals(SQLParser.FROM, tree.getChild(0).getType());
     CommonTree fromAST = (CommonTree) tree.getChild(0);
-    assertEquals(NQLParser.TABLE, fromAST.getChild(0).getType());
+    assertEquals(SQLParser.TABLE, fromAST.getChild(0).getType());
     assertEquals("people", fromAST.getChild(0).getChild(0).getText());
-    assertEquals(NQLParser.JOIN, fromAST.getChild(1).getType());
-    assertEquals(NQLParser.NATURAL, fromAST.getChild(1).getChild(0).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(1).getType());
+    assertEquals(SQLParser.NATURAL, fromAST.getChild(1).getChild(0).getType());
     assertEquals("student", fromAST.getChild(1).getChild(1).getChild(0).getText());
-    assertEquals(NQLParser.JOIN, fromAST.getChild(2).getType());
-    assertEquals(NQLParser.NATURAL, fromAST.getChild(2).getChild(0).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(2).getType());
+    assertEquals(SQLParser.NATURAL, fromAST.getChild(2).getChild(0).getType());
     assertEquals("professor", fromAST.getChild(2).getChild(1).getChild(0).getText());
   }
   
   @Test
   public void testInnerJoinClause() {
     Tree tree = parseQuery(JOINS[1]);
-    assertEquals(tree.getType(), NQLParser.SELECT);
-    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    assertEquals(tree.getType(), SQLParser.SELECT);
+    assertEquals(SQLParser.FROM, tree.getChild(0).getType());
     CommonTree fromAST = (CommonTree) tree.getChild(0);
-    assert2WayJoinAST(fromAST, NQLParser.INNER);
-    assertEquals(NQLParser.ON, fromAST.getChild(1).getChild(2).getType());
+    assert2WayJoinAST(fromAST, SQLParser.INNER);
+    assertEquals(SQLParser.ON, fromAST.getChild(1).getChild(2).getType());
     
     tree = parseQuery(JOINS[2]);
-    assertEquals(tree.getType(), NQLParser.SELECT);
+    assertEquals(tree.getType(), SQLParser.SELECT);
     fromAST = (CommonTree) tree.getChild(0);
-    assert2WayJoinAST(fromAST, NQLParser.INNER);
-    assertEquals(NQLParser.USING, fromAST.getChild(1).getChild(2).getType());
+    assert2WayJoinAST(fromAST, SQLParser.INNER);
+    assertEquals(SQLParser.USING, fromAST.getChild(1).getChild(2).getType());
     assertEquals(2, fromAST.getChild(1).getChild(2).getChildCount());
 
     /**
@@ -254,131 +254,131 @@ public class TestNQLParser {
      */
     tree = parseQuery(JOINS[3]);
     fromAST = (CommonTree) tree.getChild(0);
-    assertEquals(tree.getType(), NQLParser.SELECT);
-    assertEquals(NQLParser.TABLE, fromAST.getChild(0).getType());
+    assertEquals(tree.getType(), SQLParser.SELECT);
+    assertEquals(SQLParser.TABLE, fromAST.getChild(0).getType());
     assertEquals("people", fromAST.getChild(0).getChild(0).getText());
-    assertEquals(NQLParser.JOIN, fromAST.getChild(1).getType());
-    assertEquals(NQLParser.TABLE, fromAST.getChild(1).getChild(0).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(1).getType());
+    assertEquals(SQLParser.TABLE, fromAST.getChild(1).getChild(0).getType());
     assertEquals("student", fromAST.getChild(1).getChild(0).getChild(0).getText());
-    assertEquals(NQLParser.USING, fromAST.getChild(1).getChild(1).getType());
+    assertEquals(SQLParser.USING, fromAST.getChild(1).getChild(1).getType());
     assertEquals(2, fromAST.getChild(1).getChild(1).getChildCount());
   }
 
   private void assert2WayJoinAST(Tree fromAST, int joinType) {
-    assertEquals(NQLParser.TABLE, fromAST.getChild(0).getType());
+    assertEquals(SQLParser.TABLE, fromAST.getChild(0).getType());
     assertEquals("people", fromAST.getChild(0).getChild(0).getText());
-    assertEquals(NQLParser.JOIN, fromAST.getChild(1).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(1).getType());
     assertEquals(joinType, fromAST.getChild(1).getChild(0).getType());
-    assertEquals(NQLParser.TABLE, fromAST.getChild(1).getChild(1).getType());
+    assertEquals(SQLParser.TABLE, fromAST.getChild(1).getChild(1).getType());
     assertEquals("student", fromAST.getChild(1).getChild(1).getChild(0).getText());
   }
   
   @Test
   public void testCrossJoinClause() {
     Tree tree = parseQuery(JOINS[4]);
-    assertEquals(tree.getType(), NQLParser.SELECT);
-    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    assertEquals(tree.getType(), SQLParser.SELECT);
+    assertEquals(SQLParser.FROM, tree.getChild(0).getType());
     CommonTree fromAST = (CommonTree) tree.getChild(0);
-    assert2WayJoinAST(fromAST, NQLParser.CROSS);
+    assert2WayJoinAST(fromAST, SQLParser.CROSS);
   }
   
   @Test
   public void testLeftOuterJoinClause() {
     Tree tree = parseQuery(JOINS[5]);
-    assertEquals(tree.getType(), NQLParser.SELECT);
-    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    assertEquals(tree.getType(), SQLParser.SELECT);
+    assertEquals(SQLParser.FROM, tree.getChild(0).getType());
     CommonTree fromAST = (CommonTree) tree.getChild(0);
-    assert2WayJoinAST(fromAST, NQLParser.OUTER);
-    assertEquals(NQLParser.LEFT, fromAST.getChild(1).getChild(0).getChild(0).getType());
-    assertEquals(NQLParser.ON, fromAST.getChild(1).getChild(2).getType());
+    assert2WayJoinAST(fromAST, SQLParser.OUTER);
+    assertEquals(SQLParser.LEFT, fromAST.getChild(1).getChild(0).getChild(0).getType());
+    assertEquals(SQLParser.ON, fromAST.getChild(1).getChild(2).getType());
     assertEquals(1, fromAST.getChild(1).getChild(2).getChildCount());
   }
   
   @Test
   public void testRightOuterJoinClause() {
     Tree tree = parseQuery(JOINS[6]);
-    assertEquals(tree.getType(), NQLParser.SELECT);
-    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    assertEquals(tree.getType(), SQLParser.SELECT);
+    assertEquals(SQLParser.FROM, tree.getChild(0).getType());
     CommonTree fromAST = (CommonTree) tree.getChild(0);
-    assert2WayJoinAST(fromAST, NQLParser.OUTER);
-    assertEquals(NQLParser.RIGHT, fromAST.getChild(1).getChild(0).getChild(0).getType());
-    assertEquals(NQLParser.ON, fromAST.getChild(1).getChild(2).getType());
+    assert2WayJoinAST(fromAST, SQLParser.OUTER);
+    assertEquals(SQLParser.RIGHT, fromAST.getChild(1).getChild(0).getChild(0).getType());
+    assertEquals(SQLParser.ON, fromAST.getChild(1).getChild(2).getType());
     assertEquals(1, fromAST.getChild(1).getChild(2).getChildCount());
   }
 
   @Test
   public void testAllJoinTypes() {
     Tree tree = parseQuery(JOINS[7]);
-    assertEquals(tree.getType(), NQLParser.SELECT);
-    assertEquals(NQLParser.FROM, tree.getChild(0).getType());
+    assertEquals(tree.getType(), SQLParser.SELECT);
+    assertEquals(SQLParser.FROM, tree.getChild(0).getType());
     CommonTree fromAST = (CommonTree) tree.getChild(0);
 
     assertEquals(12,fromAST.getChildCount());
-    assertEquals(NQLParser.TABLE, fromAST.getChild(0).getType());
+    assertEquals(SQLParser.TABLE, fromAST.getChild(0).getType());
 
-    assertEquals(NQLParser.JOIN, fromAST.getChild(1).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(1).getType());
     Tree join = fromAST.getChild(1);
-    assertEquals(NQLParser.CROSS, join.getChild(0).getType());
+    assertEquals(SQLParser.CROSS, join.getChild(0).getType());
     assertEquals("table2", join.getChild(1).getChild(0).getText());
 
-    assertEquals(NQLParser.JOIN, fromAST.getChild(2).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(2).getType());
     join = fromAST.getChild(2);
-    assertEquals(NQLParser.TABLE, join.getChild(0).getType());
+    assertEquals(SQLParser.TABLE, join.getChild(0).getType());
     assertEquals("table3", join.getChild(0).getChild(0).getText());
 
-    assertEquals(NQLParser.JOIN, fromAST.getChild(3).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(3).getType());
     join = fromAST.getChild(3);
-    assertEquals(NQLParser.INNER, join.getChild(0).getType());
+    assertEquals(SQLParser.INNER, join.getChild(0).getType());
     assertEquals("table4", join.getChild(1).getChild(0).getText());
 
-    assertEquals(NQLParser.JOIN, fromAST.getChild(4).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(4).getType());
     join = fromAST.getChild(4);
-    assertEquals(NQLParser.OUTER, join.getChild(0).getType());
-    assertEquals(NQLParser.LEFT, join.getChild(0).getChild(0).getType());
+    assertEquals(SQLParser.OUTER, join.getChild(0).getType());
+    assertEquals(SQLParser.LEFT, join.getChild(0).getChild(0).getType());
     assertEquals("table5", join.getChild(1).getChild(0).getText());
 
-    assertEquals(NQLParser.JOIN, fromAST.getChild(5).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(5).getType());
     join = fromAST.getChild(5);
-    assertEquals(NQLParser.OUTER, join.getChild(0).getType());
-    assertEquals(NQLParser.RIGHT, join.getChild(0).getChild(0).getType());
+    assertEquals(SQLParser.OUTER, join.getChild(0).getType());
+    assertEquals(SQLParser.RIGHT, join.getChild(0).getChild(0).getType());
     assertEquals("table6", join.getChild(1).getChild(0).getText());
 
-    assertEquals(NQLParser.JOIN, fromAST.getChild(6).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(6).getType());
     join = fromAST.getChild(6);
-    assertEquals(NQLParser.OUTER, join.getChild(0).getType());
-    assertEquals(NQLParser.FULL, join.getChild(0).getChild(0).getType());
+    assertEquals(SQLParser.OUTER, join.getChild(0).getType());
+    assertEquals(SQLParser.FULL, join.getChild(0).getChild(0).getType());
     assertEquals("table7", join.getChild(1).getChild(0).getText());
 
-    assertEquals(NQLParser.JOIN, fromAST.getChild(7).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(7).getType());
     join = fromAST.getChild(7);
-    assertEquals(NQLParser.NATURAL, join.getChild(0).getType());
+    assertEquals(SQLParser.NATURAL, join.getChild(0).getType());
     assertEquals("table8", join.getChild(1).getChild(0).getText());
 
-    assertEquals(NQLParser.JOIN, fromAST.getChild(8).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(8).getType());
     join = fromAST.getChild(8);
-    assertEquals(NQLParser.NATURAL, join.getChild(0).getType());
-    assertEquals(NQLParser.INNER, join.getChild(1).getType());
+    assertEquals(SQLParser.NATURAL, join.getChild(0).getType());
+    assertEquals(SQLParser.INNER, join.getChild(1).getType());
     assertEquals("table9", join.getChild(2).getChild(0).getText());
 
-    assertEquals(NQLParser.JOIN, fromAST.getChild(9).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(9).getType());
     join = fromAST.getChild(9);
-    assertEquals(NQLParser.NATURAL, join.getChild(0).getType());
-    assertEquals(NQLParser.OUTER, join.getChild(1).getType());
-    assertEquals(NQLParser.LEFT, join.getChild(1).getChild(0).getType());
+    assertEquals(SQLParser.NATURAL, join.getChild(0).getType());
+    assertEquals(SQLParser.OUTER, join.getChild(1).getType());
+    assertEquals(SQLParser.LEFT, join.getChild(1).getChild(0).getType());
     assertEquals("table10", join.getChild(2).getChild(0).getText());
 
-    assertEquals(NQLParser.JOIN, fromAST.getChild(10).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(10).getType());
     join = fromAST.getChild(10);
-    assertEquals(NQLParser.NATURAL, join.getChild(0).getType());
-    assertEquals(NQLParser.OUTER, join.getChild(1).getType());
-    assertEquals(NQLParser.RIGHT, join.getChild(1).getChild(0).getType());
+    assertEquals(SQLParser.NATURAL, join.getChild(0).getType());
+    assertEquals(SQLParser.OUTER, join.getChild(1).getType());
+    assertEquals(SQLParser.RIGHT, join.getChild(1).getChild(0).getType());
     assertEquals("table11", join.getChild(2).getChild(0).getText());
 
-    assertEquals(NQLParser.JOIN, fromAST.getChild(11).getType());
+    assertEquals(SQLParser.JOIN, fromAST.getChild(11).getType());
     join = fromAST.getChild(11);
-    assertEquals(NQLParser.NATURAL, join.getChild(0).getType());
-    assertEquals(NQLParser.OUTER, join.getChild(1).getType());
-    assertEquals(NQLParser.FULL, join.getChild(1).getChild(0).getType());
+    assertEquals(SQLParser.NATURAL, join.getChild(0).getType());
+    assertEquals(SQLParser.OUTER, join.getChild(1).getType());
+    assertEquals(SQLParser.FULL, join.getChild(1).getChild(0).getType());
     assertEquals("table12", join.getChild(2).getChild(0).getText());
   }
   
@@ -396,50 +396,50 @@ public class TestNQLParser {
   @Test
   public void testUnionClause() throws RecognitionException {
     Tree tree = parseQuery(setClauses[0]);
-    assertEquals(NQLParser.UNION, tree.getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(1).getType());
+    assertEquals(SQLParser.UNION, tree.getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(1).getType());
     
     tree = parseQuery(setClauses[1]);
-    assertEquals(NQLParser.UNION, tree.getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
-    assertEquals(NQLParser.ALL, tree.getChild(1).getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(2).getType());
+    assertEquals(SQLParser.UNION, tree.getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(SQLParser.ALL, tree.getChild(1).getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(2).getType());
     
     tree = parseQuery(setClauses[2]);
-    assertEquals(NQLParser.UNION, tree.getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
-    assertEquals(NQLParser.DISTINCT, tree.getChild(1).getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(2).getType());
+    assertEquals(SQLParser.UNION, tree.getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(SQLParser.DISTINCT, tree.getChild(1).getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(2).getType());
     
     tree = parseQuery(setClauses[3]);
-    assertEquals(NQLParser.EXCEPT, tree.getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(1).getType());
+    assertEquals(SQLParser.EXCEPT, tree.getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(1).getType());
     
     tree = parseQuery(setClauses[4]);
-    assertEquals(NQLParser.EXCEPT, tree.getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
-    assertEquals(NQLParser.ALL, tree.getChild(1).getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(2).getType());
+    assertEquals(SQLParser.EXCEPT, tree.getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(SQLParser.ALL, tree.getChild(1).getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(2).getType());
     
     tree = parseQuery(setClauses[5]);
-    assertEquals(NQLParser.EXCEPT, tree.getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
-    assertEquals(NQLParser.DISTINCT, tree.getChild(1).getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(2).getType());
+    assertEquals(SQLParser.EXCEPT, tree.getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(SQLParser.DISTINCT, tree.getChild(1).getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(2).getType());
     
     tree = parseQuery(setClauses[6]);
-    assertEquals(NQLParser.UNION, tree.getType());
-    assertEquals(NQLParser.UNION, tree.getChild(0).getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(1).getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(0).getChild(0).getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(0).getChild(1).getType());
+    assertEquals(SQLParser.UNION, tree.getType());
+    assertEquals(SQLParser.UNION, tree.getChild(0).getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(1).getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(0).getChild(0).getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(0).getChild(1).getType());
     
     tree = parseQuery(setClauses[7]);
-    assertEquals(NQLParser.UNION, tree.getType());
-    assertEquals(NQLParser.SELECT, tree.getChild(0).getType());
-    assertEquals(NQLParser.INTERSECT, tree.getChild(1).getType());
+    assertEquals(SQLParser.UNION, tree.getType());
+    assertEquals(SQLParser.SELECT, tree.getChild(0).getType());
+    assertEquals(SQLParser.INTERSECT, tree.getChild(1).getType());
   }
 
   static String[] schemaStmts = { 
@@ -506,111 +506,111 @@ public class TestNQLParser {
   @Test
   public void testCreateTableAsSelect1() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[1]);
-    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
-    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(ast.getType(), SQLParser.CREATE_TABLE);
+    assertEquals(SQLParser.Identifier, ast.getChild(0).getType());
+    assertEquals(SQLParser.TABLE_DEF, ast.getChild(1).getType());
   }
 
   @Test
   public void testCreateTableAsSelect2() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[2]);
-    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
-    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
-    assertEquals(NQLParser.USING, ast.getChild(2).getType());
+    assertEquals(ast.getType(), SQLParser.CREATE_TABLE);
+    assertEquals(SQLParser.Identifier, ast.getChild(0).getType());
+    assertEquals(SQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(SQLParser.USING, ast.getChild(2).getType());
     assertEquals("rcfile", ast.getChild(2).getChild(0).getText());
   }
 
   @Test
   public void testCreateTableAsSelect3() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[3]);
-    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
-    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
-    assertEquals(NQLParser.USING, ast.getChild(2).getType());
+    assertEquals(ast.getType(), SQLParser.CREATE_TABLE);
+    assertEquals(SQLParser.Identifier, ast.getChild(0).getType());
+    assertEquals(SQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(SQLParser.USING, ast.getChild(2).getType());
     assertEquals("rcfile", ast.getChild(2).getChild(0).getText());
-    assertEquals(NQLParser.PARAMS, ast.getChild(3).getType());
+    assertEquals(SQLParser.PARAMS, ast.getChild(3).getType());
   }
 
   @Test
   public void testCreateTableAsSelect4() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[4]);
-    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
-    assertEquals(NQLParser.AS, ast.getChild(1).getType());
-    assertEquals(NQLParser.SELECT, ast.getChild(1).getChild(0).getType());
+    assertEquals(ast.getType(), SQLParser.CREATE_TABLE);
+    assertEquals(SQLParser.Identifier, ast.getChild(0).getType());
+    assertEquals(SQLParser.AS, ast.getChild(1).getType());
+    assertEquals(SQLParser.SELECT, ast.getChild(1).getChild(0).getType());
   }
 
   @Test
   public void testCreateTableAsSelect5() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[5]);
-    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
-    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
-    assertEquals(NQLParser.AS, ast.getChild(2).getType());
-    assertEquals(NQLParser.SELECT, ast.getChild(2).getChild(0).getType());
+    assertEquals(ast.getType(), SQLParser.CREATE_TABLE);
+    assertEquals(SQLParser.Identifier, ast.getChild(0).getType());
+    assertEquals(SQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(SQLParser.AS, ast.getChild(2).getType());
+    assertEquals(SQLParser.SELECT, ast.getChild(2).getChild(0).getType());
   }
 
   @Test
   public void testCreateTableAsSelect6() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[6]);
-    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
-    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
-    assertEquals(NQLParser.USING, ast.getChild(2).getType());
-    assertEquals(NQLParser.AS, ast.getChild(3).getType());
-    assertEquals(NQLParser.SELECT, ast.getChild(3).getChild(0).getType());
+    assertEquals(ast.getType(), SQLParser.CREATE_TABLE);
+    assertEquals(SQLParser.Identifier, ast.getChild(0).getType());
+    assertEquals(SQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(SQLParser.USING, ast.getChild(2).getType());
+    assertEquals(SQLParser.AS, ast.getChild(3).getType());
+    assertEquals(SQLParser.SELECT, ast.getChild(3).getChild(0).getType());
   }
 
   @Test
   public void testCreateTableAsSelect7() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[7]);
-    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
-    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
-    assertEquals(NQLParser.USING, ast.getChild(2).getType());
-    assertEquals(NQLParser.PARAMS, ast.getChild(3).getType());
-    assertEquals(NQLParser.AS, ast.getChild(4).getType());
-    assertEquals(NQLParser.SELECT, ast.getChild(4).getChild(0).getType());
+    assertEquals(ast.getType(), SQLParser.CREATE_TABLE);
+    assertEquals(SQLParser.Identifier, ast.getChild(0).getType());
+    assertEquals(SQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(SQLParser.USING, ast.getChild(2).getType());
+    assertEquals(SQLParser.PARAMS, ast.getChild(3).getType());
+    assertEquals(SQLParser.AS, ast.getChild(4).getType());
+    assertEquals(SQLParser.SELECT, ast.getChild(4).getChild(0).getType());
   }
 
   @Test
   public void testCreateTableWithVariousDataType1() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[8]);
-    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
-    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
-    assertEquals(NQLParser.AS, ast.getChild(2).getType());
-    assertEquals(NQLParser.SELECT, ast.getChild(2).getChild(0).getType());
+    assertEquals(ast.getType(), SQLParser.CREATE_TABLE);
+    assertEquals(SQLParser.Identifier, ast.getChild(0).getType());
+    assertEquals(SQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(SQLParser.AS, ast.getChild(2).getType());
+    assertEquals(SQLParser.SELECT, ast.getChild(2).getChild(0).getType());
   }
 
   @Test
   public void testCreateTableWithVariousDataType2() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[9]);
-    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
-    assertEquals(NQLParser.TABLE_DEF, ast.getChild(1).getType());
+    assertEquals(ast.getType(), SQLParser.CREATE_TABLE);
+    assertEquals(SQLParser.Identifier, ast.getChild(0).getType());
+    assertEquals(SQLParser.TABLE_DEF, ast.getChild(1).getType());
     assertEquals("10", ast.getChild(1).getChild(0).getChild(1).getChild(0).getText());
-    assertEquals(NQLParser.AS, ast.getChild(2).getType());
-    assertEquals(NQLParser.SELECT, ast.getChild(2).getChild(0).getType());
+    assertEquals(SQLParser.AS, ast.getChild(2).getType());
+    assertEquals(SQLParser.SELECT, ast.getChild(2).getChild(0).getType());
   }
   
   @Test
   public void testCreateTableLocation1() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[10]);
-    assertEquals(ast.getType(), NQLParser.CREATE_TABLE);
-    assertEquals(NQLParser.Identifier, ast.getChild(0).getType());
-    assertEquals(NQLParser.EXTERNAL, ast.getChild(1).getType());
-    assertEquals(NQLParser.TABLE_DEF, ast.getChild(2).getType());
-    assertEquals(NQLParser.USING, ast.getChild(3).getType());
-    assertEquals(NQLParser.LOCATION, ast.getChild(4).getType());
+    assertEquals(ast.getType(), SQLParser.CREATE_TABLE);
+    assertEquals(SQLParser.Identifier, ast.getChild(0).getType());
+    assertEquals(SQLParser.EXTERNAL, ast.getChild(1).getType());
+    assertEquals(SQLParser.TABLE_DEF, ast.getChild(2).getType());
+    assertEquals(SQLParser.USING, ast.getChild(3).getType());
+    assertEquals(SQLParser.LOCATION, ast.getChild(4).getType());
     assertEquals("/tmp/data", ast.getChild(4).getChild(0).getText());
   }
 
   @Test
   public void testDropTable() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(schemaStmts[0]);
-    assertEquals(ast.getType(), NQLParser.DROP_TABLE);
+    assertEquals(ast.getType(), SQLParser.DROP_TABLE);
     assertEquals(ast.getChild(0).getText(), "abc");
   }
 
@@ -621,14 +621,14 @@ public class TestNQLParser {
   @Test
   public void testCopyTable() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(copyStmts[0]);
-    assertEquals(ast.getType(), NQLParser.COPY);
+    assertEquals(ast.getType(), SQLParser.COPY);
     int idx = 0;
     assertEquals("employee", ast.getChild(idx++).getText());
     assertEquals("/tmp/table1", ast.getChild(idx++).getText());
     assertEquals("csv", ast.getChild(idx++).getText());
-    assertEquals(NQLParser.PARAMS, ast.getChild(idx).getType());
+    assertEquals(SQLParser.PARAMS, ast.getChild(idx).getType());
     Tree params = ast.getChild(idx);
-    assertEquals(NQLParser.PARAM, params.getChild(0).getType());
+    assertEquals(SQLParser.PARAM, params.getChild(0).getType());
     assertEquals("csv.delimiter", params.getChild(0).getChild(0).getText());
     assertEquals("|", params.getChild(0).getChild(1).getText());
   }
@@ -639,11 +639,11 @@ public class TestNQLParser {
   @Test
   public void testShowTable() throws RecognitionException, TQLSyntaxError {
     Tree ast = parseQuery(controlStmts[0]);
-    assertEquals(ast.getType(), NQLParser.SHOW_TABLE);
+    assertEquals(ast.getType(), SQLParser.SHOW_TABLE);
     assertEquals(ast.getChildCount(), 0);
 
     ast = parseQuery(controlStmts[1]);
-    assertEquals(ast.getType(), NQLParser.SHOW_TABLE);
+    assertEquals(ast.getType(), SQLParser.SHOW_TABLE);
     assertEquals(ast.getChild(0).getText(), "abc");
   }
 
@@ -682,16 +682,16 @@ public class TestNQLParser {
 
   };
 
-  public static NQLParser parseExpr(String expr) {
+  public static SQLParser parseExpr(String expr) {
     ANTLRStringStream input = new ANTLRStringStream(expr);
-    NQLLexer lexer = new NQLLexer(input);
+    SQLLexer lexer = new SQLLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
-    return new NQLParser(tokens);
+    return new SQLParser(tokens);
   }
 
   @Test
   public void testArithEvalTree() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[0]);
+    SQLParser p = parseExpr(exprs[0]);
     CommonTree node = (CommonTree) p.expr().getTree();
 
     assertEquals(node.getText(), "+");
@@ -725,7 +725,7 @@ public class TestNQLParser {
 
   @Test
   public void testCompEvalTree() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[5]);
+    SQLParser p = parseExpr(exprs[5]);
     CommonTree node = (CommonTree) p.comparison_predicate().getTree();
     assertEquals(node.getText(), ">");
     assertEquals("*", node.getChild(0).getText());
@@ -758,7 +758,7 @@ public class TestNQLParser {
 
   @Test
   public void testAtomArray() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[10]);
+    SQLParser p = parseExpr(exprs[10]);
     CommonTree node = (CommonTree) p.array().getTree();
     assertEquals(node.getChild(0).getText(), "3");
     assertEquals(node.getChild(1).getText(), "4");
@@ -771,26 +771,26 @@ public class TestNQLParser {
 
   @Test
   public void testInEvalTree() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[12]);
+    SQLParser p = parseExpr(exprs[12]);
     CommonTree node = (CommonTree) p.in_predicate().getTree();
-    assertEquals(node.getType(), NQLParser.IN);
+    assertEquals(node.getType(), SQLParser.IN);
     assertEquals(node.getChild(1).getText(), "male");
     assertEquals(node.getChild(2).getText(), "female");
 
     p = parseExpr(exprs[13]);
     node = (CommonTree) p.in_predicate().getTree();
-    assertEquals(node.getType(), NQLParser.IN);
-    assertEquals(node.getChild(0).getType(), NQLParser.FIELD_NAME);
+    assertEquals(node.getType(), SQLParser.IN);
+    assertEquals(node.getChild(0).getType(), SQLParser.FIELD_NAME);
     FieldName fieldName = new FieldName(node.getChild(0));
     assertEquals(fieldName.getName(), "gender");
     assertEquals(node.getChild(1).getText(), "male");
     assertEquals(node.getChild(2).getText(), "female");
-    assertEquals(node.getChild(3).getType(), NQLParser.NOT);
+    assertEquals(node.getChild(3).getType(), SQLParser.NOT);
   }
 
   @Test
   public void testAndEvalTree() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[14]);
+    SQLParser p = parseExpr(exprs[14]);
     CommonTree node = (CommonTree) p.and_predicate().getTree();
     assertEquals(node.getText(), "and");
     assertEquals(node.getChild(0).getText(), ">");
@@ -805,7 +805,7 @@ public class TestNQLParser {
 
   @Test
   public void testOrEvalTree() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[16]);
+    SQLParser p = parseExpr(exprs[16]);
     CommonTree node = (CommonTree) p.bool_expr().getTree();
     assertEquals(node.getText(), "or");
     assertEquals(node.getChild(0).getText(), ">");
@@ -820,7 +820,7 @@ public class TestNQLParser {
 
   @Test
   public void testComplexEvalTree() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[18]);
+    SQLParser p = parseExpr(exprs[18]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
     assertEquals(node.getText(), "and");
     assertEquals(node.getChild(0).getText(), "or");
@@ -829,50 +829,50 @@ public class TestNQLParser {
   
   @Test
   public void testNotEvalTree() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[23]);
+    SQLParser p = parseExpr(exprs[23]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
-    assertEquals(node.getType(), NQLParser.NOT);
-    assertEquals(node.getChild(0).getType(), NQLParser.GTH);
+    assertEquals(node.getType(), SQLParser.NOT);
+    assertEquals(node.getChild(0).getType(), SQLParser.GTH);
     CommonTree gth = (CommonTree) node.getChild(0);
-    assertEquals(gth.getChild(0).getType(), NQLParser.NUMBER);
-    assertEquals(gth.getChild(1).getType(), NQLParser.NUMBER);
+    assertEquals(gth.getChild(0).getType(), SQLParser.NUMBER);
+    assertEquals(gth.getChild(1).getType(), SQLParser.NUMBER);
   }
 
   @Test
   public void testFuncCallEvalTree() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[21]);
+    SQLParser p = parseExpr(exprs[21]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
-    assertEquals(node.getType(), NQLParser.FUNCTION);
+    assertEquals(node.getType(), SQLParser.FUNCTION);
     assertEquals(node.getText(), "sum");
-    assertEquals(node.getChild(0).getType(), NQLParser.FIELD_NAME);
+    assertEquals(node.getChild(0).getType(), SQLParser.FIELD_NAME);
     FieldName fieldName = new FieldName(node.getChild(0));
     assertEquals(fieldName.getName(), "age");
 
     p = parseExpr(exprs[22]);
     node = (CommonTree) p.search_condition().getTree();
-    assertEquals(node.getType(), NQLParser.FUNCTION);
+    assertEquals(node.getType(), SQLParser.FUNCTION);
     assertEquals(node.getText(), "now");
     assertNull(node.getChild(1));
   }
   
   @Test
   public void testLikeEvalTree() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[24]);
+    SQLParser p = parseExpr(exprs[24]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
-    assertEquals(NQLParser.LIKE, node.getType());
-    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
+    assertEquals(SQLParser.LIKE, node.getType());
+    assertEquals(SQLParser.FIELD_NAME, node.getChild(0).getType());
     FieldName fieldName = new FieldName(node.getChild(0));
     assertEquals(fieldName.getName(), "type");
-    assertEquals(NQLParser.Character_String_Literal, node.getChild(1).getType());
+    assertEquals(SQLParser.Character_String_Literal, node.getChild(1).getType());
     
     p = parseExpr(exprs[25]);
     node = (CommonTree) p.search_condition().getTree();    
-    assertEquals(NQLParser.NOT, node.getChild(0).getType());
-    assertEquals(NQLParser.LIKE, node.getType());
-    assertEquals(NQLParser.FIELD_NAME, node.getChild(1).getType());
+    assertEquals(SQLParser.NOT, node.getChild(0).getType());
+    assertEquals(SQLParser.LIKE, node.getType());
+    assertEquals(SQLParser.FIELD_NAME, node.getChild(1).getType());
     fieldName = new FieldName(node.getChild(1));
     assertEquals(fieldName.getName(), "type");
-    assertEquals(NQLParser.Character_String_Literal, node.getChild(2).getType());
+    assertEquals(SQLParser.Character_String_Literal, node.getChild(2).getType());
   }
 
   @Test
@@ -880,48 +880,48 @@ public class TestNQLParser {
    * TODO - needs more tests
    */
   public void testConstEval() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[26]);
+    SQLParser p = parseExpr(exprs[26]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
-    assertEquals(NQLParser.EQUAL, node.getType());
-    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
-    assertEquals(NQLParser.Character_String_Literal, node.getChild(1).getType());
+    assertEquals(SQLParser.EQUAL, node.getType());
+    assertEquals(SQLParser.FIELD_NAME, node.getChild(0).getType());
+    assertEquals(SQLParser.Character_String_Literal, node.getChild(1).getType());
   }
 
   @Test
   public void testIsNull() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[27]);
+    SQLParser p = parseExpr(exprs[27]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
-    assertEquals(NQLParser.IS, node.getType());
-    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
-    assertEquals(NQLParser.NULL, node.getChild(1).getType());
+    assertEquals(SQLParser.IS, node.getType());
+    assertEquals(SQLParser.FIELD_NAME, node.getChild(0).getType());
+    assertEquals(SQLParser.NULL, node.getChild(1).getType());
   }
 
   @Test
   public void testIsNotNull() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[28]);
+    SQLParser p = parseExpr(exprs[28]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
-    assertEquals(NQLParser.IS, node.getType());
-    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
-    assertEquals(NQLParser.NULL, node.getChild(1).getType());
-    assertEquals(NQLParser.NOT, node.getChild(2).getType());
+    assertEquals(SQLParser.IS, node.getType());
+    assertEquals(SQLParser.FIELD_NAME, node.getChild(0).getType());
+    assertEquals(SQLParser.NULL, node.getChild(1).getType());
+    assertEquals(SQLParser.NOT, node.getChild(2).getType());
   }
 
   @Test
   public void testEqualNull() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[29]);
+    SQLParser p = parseExpr(exprs[29]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
-    assertEquals(NQLParser.EQUAL, node.getType());
-    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
-    assertEquals(NQLParser.NULL, node.getChild(1).getType());
+    assertEquals(SQLParser.EQUAL, node.getType());
+    assertEquals(SQLParser.FIELD_NAME, node.getChild(0).getType());
+    assertEquals(SQLParser.NULL, node.getChild(1).getType());
   }
 
   @Test
   public void testNotEqualNull() throws RecognitionException {
-    NQLParser p = parseExpr(exprs[30]);
+    SQLParser p = parseExpr(exprs[30]);
     CommonTree node = (CommonTree) p.search_condition().getTree();
-    assertEquals(NQLParser.NOT_EQUAL, node.getType());
-    assertEquals(NQLParser.FIELD_NAME, node.getChild(0).getType());
-    assertEquals(NQLParser.NULL, node.getChild(1).getType());
+    assertEquals(SQLParser.NOT_EQUAL, node.getType());
+    assertEquals(SQLParser.FIELD_NAME, node.getChild(0).getType());
+    assertEquals(SQLParser.NULL, node.getChild(1).getType());
   }
 
   public static String [] caseStatements = {
@@ -936,30 +936,30 @@ public class TestNQLParser {
 
   @Test
   public void testCaseWhen() throws RecognitionException {
-    NQLParser p = parseExpr(caseStatements[0]);
+    SQLParser p = parseExpr(caseStatements[0]);
     CommonTree node = (CommonTree) p.statement().getTree();
 
-    assertEquals(NQLParser.SEL_LIST, node.getChild(1).getType());
+    assertEquals(SQLParser.SEL_LIST, node.getChild(1).getType());
     CommonTree selList = (CommonTree) node.getChild(1);
     assertEquals(1, selList.getChildCount());
-    assertEquals(NQLParser.COLUMN, selList.getChild(0).getType());
+    assertEquals(SQLParser.COLUMN, selList.getChild(0).getType());
 
     CommonTree column = (CommonTree) selList.getChild(0);
-    assertEquals(NQLParser.CASE, column.getChild(0).getType());
+    assertEquals(SQLParser.CASE, column.getChild(0).getType());
     CommonTree caseStatement = (CommonTree) column.getChild(0);
 
     assertEquals(3, caseStatement.getChildCount());
-    assertEquals(NQLParser.WHEN, caseStatement.getChild(0).getType());
-    assertEquals(NQLParser.WHEN, caseStatement.getChild(1).getType());
-    assertEquals(NQLParser.ELSE, caseStatement.getChild(2).getType());
+    assertEquals(SQLParser.WHEN, caseStatement.getChild(0).getType());
+    assertEquals(SQLParser.WHEN, caseStatement.getChild(1).getType());
+    assertEquals(SQLParser.ELSE, caseStatement.getChild(2).getType());
 
     CommonTree cond1 = (CommonTree) caseStatement.getChild(0);
     CommonTree cond2 = (CommonTree) caseStatement.getChild(1);
     CommonTree elseStmt = (CommonTree) caseStatement.getChild(2);
 
-    assertEquals(NQLParser.LIKE, cond1.getChild(0).getType());
-    assertEquals(NQLParser.EQUAL, cond2.getChild(0).getType());
-    assertEquals(NQLParser.NUMBER, elseStmt.getChild(0).getType());
+    assertEquals(SQLParser.LIKE, cond1.getChild(0).getType());
+    assertEquals(SQLParser.EQUAL, cond2.getChild(0).getType());
+    assertEquals(SQLParser.NUMBER, elseStmt.getChild(0).getType());
   }
 
   public class FieldName {

@@ -129,7 +129,7 @@ public final class QueryAnalyzer {
 
     if ((ast.getChildCount() - idx) > 1) {
       idx++;
-      if (ast.getChild(idx).getType() == NQLParser.PARAMS) {
+      if (ast.getChild(idx).getType() == SQLParser.PARAMS) {
         Options options = parseParams((CommonTree) ast.getChild(idx));
         stmt.setParams(options);
       }
@@ -163,28 +163,28 @@ public final class QueryAnalyzer {
     while(idx < ast.getChildCount()) {
       node = (CommonTree) ast.getChild(idx);
       switch (node.getType()) {
-        case NQLParser.EXTERNAL:
+        case SQLParser.EXTERNAL:
           external = true;
           break;
 
-        case NQLParser.TABLE_DEF:
+        case SQLParser.TABLE_DEF:
           tableDef = parseCreateTableDef(node);
           break;
 
-        case NQLParser.FORMAT:
-        case NQLParser.USING:
+        case SQLParser.FORMAT:
+        case SQLParser.USING:
           storeType = CatalogUtil.getStoreType(node.getChild(0).getText());
           break;
 
-        case NQLParser.PARAMS:
+        case SQLParser.PARAMS:
           options = parseParams(node);
           break;
 
-        case NQLParser.AS:
+        case SQLParser.AS:
           selectStmt = parseSelectStatement(context, (CommonTree) node.getChild(0));
           break;
 
-        case NQLParser.LOCATION:
+        case SQLParser.LOCATION:
           location = new Path(node.getChild(0).getText());
           break;
 
@@ -236,18 +236,18 @@ public final class QueryAnalyzer {
     for (int i = 0; i < ast.getChildCount(); i++) {
       Tree child = ast.getChild(i).getChild(1);
       switch(child.getType()) {
-        case NQLParser.BOOLEAN: type = Type.BOOLEAN; break;
-        case NQLParser.BIT: type = Type.BIT; break;
+        case SQLParser.BOOLEAN: type = Type.BOOLEAN; break;
+        case SQLParser.BIT: type = Type.BIT; break;
 
-        case NQLParser.INT1:
-        case NQLParser.INT2:
+        case SQLParser.INT1:
+        case SQLParser.INT2:
           type = Type.INT2;
           break;
 
-        case NQLParser.INT4: type = Type.INT4; break;
-        case NQLParser.INT8: type = Type.INT8; break;
-        case NQLParser.FLOAT4: type = Type.FLOAT4; break;
-        case NQLParser.FLOAT:
+        case SQLParser.INT4: type = Type.INT4; break;
+        case SQLParser.INT8: type = Type.INT8; break;
+        case SQLParser.FLOAT4: type = Type.FLOAT4; break;
+        case SQLParser.FLOAT:
           if (child.getChildCount() > 0) {
             int length = Integer.valueOf(child.getChild(0).getText());
             if (length < 1 || length > 53) {
@@ -262,20 +262,20 @@ public final class QueryAnalyzer {
             type = Type.FLOAT8;
           }
           break;
-        case NQLParser.FLOAT8:
+        case SQLParser.FLOAT8:
           type = Type.FLOAT8; break;
-        case NQLParser.TEXT: type = Type.TEXT; break;
-        case NQLParser.BLOB: type = Type.BLOB; break;
-        case NQLParser.INET4: type = Type.INET4;
+        case SQLParser.TEXT: type = Type.TEXT; break;
+        case SQLParser.BLOB: type = Type.BLOB; break;
+        case SQLParser.INET4: type = Type.INET4;
           break;
 
-        case NQLParser.CHAR:
-        case NQLParser.NCHAR:
-        case NQLParser.NUMERIC:
-        case NQLParser.VARCHAR:
-        case NQLParser.NVARCHAR:
-        case NQLParser.BINARY:
-        case NQLParser.VARBINARY:
+        case SQLParser.CHAR:
+        case SQLParser.NCHAR:
+        case SQLParser.NUMERIC:
+        case SQLParser.VARCHAR:
+        case SQLParser.NVARCHAR:
+        case SQLParser.BINARY:
+        case SQLParser.VARBINARY:
           throw new NotImplementedException("ERROR: " + child.toString() +
               " type is not supported yet");
 
@@ -296,13 +296,13 @@ public final class QueryAnalyzer {
     ParseTree right;
 
     switch (ast.getType()) {
-      case NQLParser.UNION:
+      case SQLParser.UNION:
         type = StatementType.UNION;
         break;
-      case NQLParser.EXCEPT:
+      case SQLParser.EXCEPT:
         type = StatementType.EXCEPT;
         break;
-      case NQLParser.INTERSECT:
+      case SQLParser.INTERSECT:
         type = StatementType.INTERSECT;
         break;
       default:
@@ -313,10 +313,10 @@ public final class QueryAnalyzer {
     left = parseQueryTree(context, (CommonTree) ast.getChild(idx));
     idx++;
     int nodeType = ast.getChild(idx).getType();
-    if (nodeType == NQLParser.ALL) {
+    if (nodeType == SQLParser.ALL) {
       distinct = true;
       idx++;
-    } else if (nodeType == NQLParser.DISTINCT) {
+    } else if (nodeType == SQLParser.DISTINCT) {
       distinct = false;
       idx++;
     }
@@ -334,37 +334,37 @@ public final class QueryAnalyzer {
       node = (CommonTree) ast.getChild(cur);
 
       switch (node.getType()) {
-        case NQLParser.FROM:
+        case SQLParser.FROM:
           parseFromClause(context, block, node);
           break;
 
-        case NQLParser.SET_QUALIFIER:
+        case SQLParser.SET_QUALIFIER:
           parseSetQualifier(block, node);
           break;
 
-        case NQLParser.SEL_LIST:
+        case SQLParser.SEL_LIST:
           parseSelectList(context, block, node);
           break;
 
-        case NQLParser.WHERE:
+        case SQLParser.WHERE:
           parseWhereClause(context, block, node);
           break;
 
-        case NQLParser.GROUP_BY:
+        case SQLParser.GROUP_BY:
           parseGroupByClause(context, block, node);
           break;
 
-        case NQLParser.HAVING:
+        case SQLParser.HAVING:
           parseHavingClause(context, block, node);
           break;
 
-        case NQLParser.ORDER_BY:
+        case SQLParser.ORDER_BY:
           SortSpec[] sortKeys = parseSortSpecifiers(context, block,
               (CommonTree) node.getChild(0));
           block.setSortKeys(sortKeys);
           break;
 
-        case NQLParser.LIMIT:
+        case SQLParser.LIMIT:
           block.setLimit(parseLimitClause(context, block, node));
           break;
 
@@ -379,7 +379,7 @@ public final class QueryAnalyzer {
   private void parseSetQualifier(final QueryBlock block, final CommonTree ast) {
     int idx = 0;
 
-    if (ast.getChild(idx).getType() == NQLParser.DISTINCT) {
+    if (ast.getChild(idx).getType() == SQLParser.DISTINCT) {
       block.setDistinct();
     }
   }
@@ -398,20 +398,20 @@ public final class QueryAnalyzer {
     int idx = 0;
     boolean unique = false;
     // the below things are optional
-    if (ast.getChild(idx).getType() == NQLParser.UNIQUE) {
+    if (ast.getChild(idx).getType() == SQLParser.UNIQUE) {
       unique = true;
       idx++;
     }
 
     IndexMethod method = null;
-    if (ast.getChild(idx).getType() == NQLParser.USING) {
+    if (ast.getChild(idx).getType() == SQLParser.USING) {
       method = getIndexMethod(ast.getChild(idx).getText());
       idx++;
     }
 
     // It's optional, so it can be null if there is no params clause.
     Options params = null;
-    if (ast.getChild(idx).getType() == NQLParser.PARAMS) {
+    if (ast.getChild(idx).getType() == SQLParser.PARAMS) {
       params = parseParams((CommonTree) ast.getChild(idx));
       idx++;
     }
@@ -458,13 +458,13 @@ public final class QueryAnalyzer {
 
       switch (node.getType()) {
 
-        case NQLParser.TABLE:
+        case SQLParser.TABLE:
           // table (AS ID)?
           // 0 - a table name, 1 - table alias
           table = parseTable(node);
           block.addFromTable(table, true);
           break;
-        case NQLParser.JOIN:
+        case SQLParser.JOIN:
           QueryBlock.JoinClause newJoin = parseExplicitJoinClause(context, block, node);
           if (isPrevJoin) {
             newJoin.setLeft(joinClause);
@@ -496,17 +496,17 @@ public final class QueryAnalyzer {
     JoinClause joinClause;
 
     switch (parsedJoinType) {
-      case NQLParser.CROSS:
-      case NQLParser.UNION:
+      case SQLParser.CROSS:
+      case SQLParser.UNION:
         joinClause = parseCrossAndUnionJoin(context, block, ast);
         break;
 
-      case NQLParser.NATURAL:
+      case SQLParser.NATURAL:
         joinClause = parseNaturalJoinClause(context, block, ast);
         break;
 
-      case NQLParser.INNER:
-      case NQLParser.OUTER:
+      case SQLParser.INNER:
+      case SQLParser.OUTER:
         joinClause = parseQualifiedJoinClause(context, block, ast, 0);
         break;
 
@@ -530,26 +530,26 @@ public final class QueryAnalyzer {
     int childIdx = idx;
     JoinClause join = null;
 
-    if (ast.getChild(childIdx).getType() == NQLParser.TABLE) { // default join
+    if (ast.getChild(childIdx).getType() == SQLParser.TABLE) { // default join
       join = new JoinClause(JoinType.INNER);
       join.setRight(parseTable((CommonTree) ast.getChild(childIdx)));
       block.addFromTable(join.getRight(), true);
 
     } else {
 
-      if (ast.getChild(childIdx).getType() == NQLParser.INNER) {
+      if (ast.getChild(childIdx).getType() == SQLParser.INNER) {
         join = new JoinClause(JoinType.INNER);
 
-      } else if (ast.getChild(childIdx).getType() == NQLParser.OUTER) {
+      } else if (ast.getChild(childIdx).getType() == SQLParser.OUTER) {
 
         switch (ast.getChild(childIdx).getChild(0).getType()) {
-          case NQLParser.LEFT:
+          case SQLParser.LEFT:
             join = new JoinClause(JoinType.LEFT_OUTER);
             break;
-          case NQLParser.RIGHT:
+          case SQLParser.RIGHT:
             join = new JoinClause(JoinType.RIGHT_OUTER);
             break;
-          case NQLParser.FULL:
+          case SQLParser.FULL:
             join = new JoinClause(JoinType.FULL_OUTER);
             break;
           default:
@@ -567,11 +567,11 @@ public final class QueryAnalyzer {
     if (ast.getChildCount() > childIdx) {
       CommonTree joinQual = (CommonTree) ast.getChild(childIdx);
 
-      if (joinQual.getType() == NQLParser.ON) {
+      if (joinQual.getType() == SQLParser.ON) {
         EvalNode joinCond = parseJoinCondition(context, block, joinQual);
         join.setJoinQual(joinCond);
 
-      } else if (joinQual.getType() == NQLParser.USING) {
+      } else if (joinQual.getType() == SQLParser.USING) {
         Column[] joinColumns = parseJoinColumns(context, block, joinQual);
         join.setJoinColumns(joinColumns);
       }
@@ -584,16 +584,16 @@ public final class QueryAnalyzer {
                                             final QueryBlock block, Tree ast) {
     JoinType joinType;
 
-    if (ast.getChild(0).getType() == NQLParser.CROSS) {
+    if (ast.getChild(0).getType() == SQLParser.CROSS) {
       joinType = JoinType.CROSS_JOIN;
-    } else if (ast.getChild(0).getType() == NQLParser.UNION) {
+    } else if (ast.getChild(0).getType() == SQLParser.UNION) {
       joinType = JoinType.UNION;
     } else {
       throw new IllegalStateException("Neither the AST has cross join or union join:\n" + ast.toStringTree());
     }
 
     JoinClause join = new JoinClause(joinType);
-    Preconditions.checkState(ast.getChild(1).getType() == NQLParser.TABLE);
+    Preconditions.checkState(ast.getChild(1).getType() == SQLParser.TABLE);
     join.setRight(parseTable((CommonTree) ast.getChild(1)));
     block.addFromTable(join.getRight(), true);
 
@@ -652,7 +652,7 @@ public final class QueryAnalyzer {
   private void parseSelectList(final PlanningContext context,
                                final QueryBlock block, final CommonTree ast) {
 
-    if (ast.getChild(0).getType() == NQLParser.ALL) {
+    if (ast.getChild(0).getType() == SQLParser.ALL) {
       block.setProjectAll();
     } else {
       CommonTree node;
@@ -696,7 +696,7 @@ public final class QueryAnalyzer {
 
     int idx = 0;
 
-    if (ast.getChild(idx).getType() == NQLParser.EMPTY_GROUPING_SET) {
+    if (ast.getChild(idx).getType() == SQLParser.EMPTY_GROUPING_SET) {
       clause.setEmptyGroupSet();
     } else {
       // the remain ones are grouping fields.
@@ -707,19 +707,19 @@ public final class QueryAnalyzer {
       for (; idx < ast.getChildCount(); idx++) {
         group = ast.getChild(idx);
         switch (group.getType()) {
-          case NQLParser.CUBE:
+          case SQLParser.CUBE:
             columns = parseColumnReferences(context, block, (CommonTree) group);
             GroupElement cube = new GroupElement(GroupType.CUBE, columns);
             clause.addGroupSet(cube);
             break;
 
-          case NQLParser.ROLLUP:
+          case SQLParser.ROLLUP:
             columns = parseColumnReferences(context, block, (CommonTree) group);
             GroupElement rollup = new GroupElement(GroupType.ROLLUP, columns);
             clause.addGroupSet(rollup);
             break;
 
-          case NQLParser.FIELD_NAME:
+          case SQLParser.FIELD_NAME:
             column = checkAndGetColumnByAST(context, block, (CommonTree) group);
             columnRefs.add(column);
             break;
@@ -794,13 +794,13 @@ public final class QueryAnalyzer {
           child = node.getChild(j);
 
           // AST: ^(ORDER ASC) | ^(ORDER DESC)
-          if (child.getType() == NQLParser.ORDER) {
-            if (child.getChild(0).getType() == NQLParser.DESC) {
+          if (child.getType() == SQLParser.ORDER) {
+            if (child.getChild(0).getType() == SQLParser.DESC) {
               sortKeys[i].setDescOrder();
             }
-          } else if (child.getType() == NQLParser.NULL_ORDER) {
+          } else if (child.getType() == SQLParser.NULL_ORDER) {
             // AST: ^(NULL_ORDER FIRST) | ^(NULL_ORDER LAST)
-            if (child.getChild(0).getType() == NQLParser.FIRST) {
+            if (child.getChild(0).getType() == SQLParser.FIRST) {
               sortKeys[i].setNullFirst();
             }
           }
@@ -830,7 +830,7 @@ public final class QueryAnalyzer {
   private Column checkAndGetColumnByAST(final PlanningContext context,
                                         final ParseTree tree,
                                         final CommonTree fieldNode) {
-    Preconditions.checkArgument(NQLParser.FIELD_NAME == fieldNode.getType());
+    Preconditions.checkArgument(SQLParser.FIELD_NAME == fieldNode.getType());
 
     String columnName = fieldNode.getChild(0).getText();
     String tableName = null;
@@ -943,9 +943,9 @@ public final class QueryAnalyzer {
 
   private static CommonTree parseTree(final String query) {
     ANTLRStringStream input = new ANTLRStringStream(query);
-    NQLLexer lexer = new NQLLexer(input);
+    SQLLexer lexer = new SQLLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
-    NQLParser parser = new NQLParser(tokens);
+    SQLParser parser = new SQLParser(tokens);
 
     CommonTree ast;
     try {
@@ -959,31 +959,31 @@ public final class QueryAnalyzer {
 
   private static StatementType getCmdType(final CommonTree ast) {
     switch (ast.getType()) {
-      case NQLParser.STORE:
+      case SQLParser.STORE:
         return StatementType.STORE;
-      case NQLParser.SELECT:
+      case SQLParser.SELECT:
         return StatementType.SELECT;
-      case NQLParser.UNION:
+      case SQLParser.UNION:
         return StatementType.UNION;
-      case NQLParser.EXCEPT:
+      case SQLParser.EXCEPT:
         return StatementType.EXCEPT;
-      case NQLParser.INTERSECT:
+      case SQLParser.INTERSECT:
         return StatementType.INTERSECT;
-      case NQLParser.INSERT:
+      case SQLParser.INSERT:
         return StatementType.INSERT;
-      case NQLParser.COPY:
+      case SQLParser.COPY:
         return StatementType.COPY;
-      case NQLParser.CREATE_INDEX:
+      case SQLParser.CREATE_INDEX:
         return StatementType.CREATE_INDEX;
-      case NQLParser.CREATE_TABLE:
+      case SQLParser.CREATE_TABLE:
         return StatementType.CREATE_TABLE;
-      case NQLParser.DROP_TABLE:
+      case SQLParser.DROP_TABLE:
         return StatementType.DROP_TABLE;
-      case NQLParser.SHOW_TABLE:
+      case SQLParser.SHOW_TABLE:
         return StatementType.SHOW_TABLES;
-      case NQLParser.DESC_TABLE:
+      case SQLParser.DESC_TABLE:
         return StatementType.DESC_TABLE;
-      case NQLParser.SHOW_FUNCTION:
+      case SQLParser.SHOW_FUNCTION:
         return StatementType.SHOW_FUNCTION;
       default:
         return null;
@@ -1010,52 +1010,52 @@ public final class QueryAnalyzer {
     switch(ast.getType()) {
 
       // constants
-      case NQLParser.NUMBER:
+      case SQLParser.NUMBER:
         return new ConstEval(DatumFactory.createInt4(
             Integer.valueOf(ast.getText())));
 
-      case NQLParser.REAL_NUMBER:
+      case SQLParser.REAL_NUMBER:
         return new ConstEval(DatumFactory.createFloat4(
             Float.valueOf(ast.getText())));
 
-      case NQLParser.Character_String_Literal:
+      case SQLParser.Character_String_Literal:
         return new ConstEval(DatumFactory.createText(ast.getText()));
 
       // unary expression
-      case NQLParser.NOT:
+      case SQLParser.NOT:
         return new NotEval(createEvalTree(context, tree, ast.getChild(0)));
 
       // binary expressions
-      case NQLParser.LIKE:
+      case SQLParser.LIKE:
         return parseLike(context, tree, ast);
 
-      case NQLParser.IS:
+      case SQLParser.IS:
         return parseIsNullPredicate(context, tree, ast);
 
-      case NQLParser.AND:
-      case NQLParser.OR:
-      case NQLParser.EQUAL:
-      case NQLParser.NOT_EQUAL:
-      case NQLParser.LTH:
-      case NQLParser.LEQ:
-      case NQLParser.GTH:
-      case NQLParser.GEQ:
-      case NQLParser.PLUS:
-      case NQLParser.MINUS:
-      case NQLParser.MULTIPLY:
-      case NQLParser.DIVIDE:
-      case NQLParser.MODULAR:
+      case SQLParser.AND:
+      case SQLParser.OR:
+      case SQLParser.EQUAL:
+      case SQLParser.NOT_EQUAL:
+      case SQLParser.LTH:
+      case SQLParser.LEQ:
+      case SQLParser.GTH:
+      case SQLParser.GEQ:
+      case SQLParser.PLUS:
+      case SQLParser.MINUS:
+      case SQLParser.MULTIPLY:
+      case SQLParser.DIVIDE:
+      case SQLParser.MODULAR:
         return parseBinaryExpr(context, tree, ast);
 
       // others
-      case NQLParser.COLUMN:
+      case SQLParser.COLUMN:
         return createEvalTree(context, tree, ast.getChild(0));
 
-      case NQLParser.FIELD_NAME:
+      case SQLParser.FIELD_NAME:
         Column column = checkAndGetColumnByAST(context, tree, (CommonTree) ast);
         return new FieldEval(column);
 
-      case NQLParser.FUNCTION:
+      case SQLParser.FUNCTION:
         String signature = ast.getText();
 
         EvalNode [] givenArgs = new EvalNode[ast.getChildCount()];
@@ -1087,7 +1087,7 @@ public final class QueryAnalyzer {
         }
 
         break;
-      case NQLParser.COUNT_VAL:
+      case SQLParser.COUNT_VAL:
         // Getting the first argument
         EvalNode colRef = createEvalTree(context, tree, ast.getChild(0));
 
@@ -1102,7 +1102,7 @@ public final class QueryAnalyzer {
         }
         break;
 
-      case NQLParser.COUNT_ROWS:
+      case SQLParser.COUNT_ROWS:
         FunctionDesc countRows = catalog.getFunction("count", new DataType [] {});
         tree.setAggregation();
         try {
@@ -1113,7 +1113,7 @@ public final class QueryAnalyzer {
         }
         break;
 
-      case NQLParser.CASE:
+      case SQLParser.CASE:
         return parseCaseWhen(context, tree, ast);
 
       default:
@@ -1125,16 +1125,16 @@ public final class QueryAnalyzer {
                                          QueryBlock block, Tree tree) {
     boolean not;
 
-    Preconditions.checkArgument(tree.getType() == NQLParser.IS, "The AST is not IS (NOT) NULL clause");
+    Preconditions.checkArgument(tree.getType() == SQLParser.IS, "The AST is not IS (NOT) NULL clause");
     int idx = 0;
 
     FieldEval field = (FieldEval) createEvalTree(context, block,
         tree.getChild(idx++));
     Preconditions.checkArgument(
-        tree.getChild(idx++).getType() == NQLParser.NULL,
+        tree.getChild(idx++).getType() == SQLParser.NULL,
         "We does not support another kind of IS clause yet");
     not = tree.getChildCount() == (idx + 1)
-        && tree.getChild(idx).getType() == NQLParser.NOT;
+        && tree.getChild(idx).getType() == SQLParser.NOT;
 
     return new IsNullEval(not, field);
   }
@@ -1172,7 +1172,7 @@ public final class QueryAnalyzer {
     Tree when;
 
     for (; idx < tree.getChildCount() &&
-        tree.getChild(idx).getType() == NQLParser.WHEN; idx++) {
+        tree.getChild(idx).getType() == SQLParser.WHEN; idx++) {
 
       when = tree.getChild(idx);
       cond = createEvalTree(context, block, when.getChild(0));
@@ -1181,7 +1181,7 @@ public final class QueryAnalyzer {
     }
 
     if (tree.getChild(idx) != null &&
-        tree.getChild(idx).getType() == NQLParser.ELSE) {
+        tree.getChild(idx).getType() == SQLParser.ELSE) {
       EvalNode elseResult = createEvalTree(context, block,
           tree.getChild(idx).getChild(0));
       caseEval.setElseResult(elseResult);
@@ -1238,7 +1238,7 @@ public final class QueryAnalyzer {
     for (int i = 0; i < 2; i++) {
       if (ParseUtil.isConstant(tree.getChild(i))) {
         constId = i;
-      } else if (tree.getChild(i).getType() == NQLParser.FIELD_NAME) {
+      } else if (tree.getChild(i).getType() == SQLParser.FIELD_NAME) {
         fieldId = i;
       }
     }
@@ -1251,17 +1251,17 @@ public final class QueryAnalyzer {
       Tree constAst = tree.getChild(constId);
 
       switch (tree.getChild(constId).getType()) {
-        case NQLParser.NUMBER:
+        case SQLParser.NUMBER:
           exprs[constId] = parseDigitByTypeInfer(context, block, constAst,
               exprs[fieldId].getValueType()[0]);
           break;
 
-        case NQLParser.REAL_NUMBER:
+        case SQLParser.REAL_NUMBER:
           exprs[constId] = parseRealByTypeInfer(context, block, constAst,
               exprs[fieldId].getValueType()[0]);
           break;
 
-        case NQLParser.Character_String_Literal:
+        case SQLParser.Character_String_Literal:
           exprs[constId] = parseStringByTypeInfer(context, block, constAst,
               exprs[fieldId].getValueType()[0]);
           break;
@@ -1298,7 +1298,7 @@ public final class QueryAnalyzer {
     int idx = 0;
 
     boolean not = false;
-    if (tree.getChild(idx).getType() == NQLParser.NOT) {
+    if (tree.getChild(idx).getType() == SQLParser.NOT) {
       not = true;
       idx++;
     }

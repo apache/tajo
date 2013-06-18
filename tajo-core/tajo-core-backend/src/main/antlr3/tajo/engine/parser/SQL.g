@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-grammar NQL;
+grammar SQL;
 
 options {
 	language=Java;
