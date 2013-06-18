@@ -10,6 +10,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-7: Enabling TajoCli to take multiple lines as one statement. (jinho)
+
     TAJO-72: Rename NQL.g to SQL.g. (hyunsik)
 
     TAJO-71: Case-insensitive parser. (hyunsik)
