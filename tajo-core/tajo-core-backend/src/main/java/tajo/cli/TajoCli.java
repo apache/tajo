@@ -20,7 +20,10 @@ package tajo.cli;
 
 import com.google.protobuf.ServiceException;
 import jline.console.ConsoleReader;
+import jline.console.history.FileHistory;
+import jline.console.history.PersistentHistory;
 import org.apache.commons.cli.*;
+import org.apache.commons.lang.StringUtils;
 import tajo.QueryId;
 import tajo.TajoProtos.QueryState;
 import tajo.catalog.Column;
@@ -34,6 +37,7 @@ import tajo.master.cluster.ServerName;
 import tajo.util.FileUtil;
 import tajo.util.TajoIdUtils;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -67,11 +71,25 @@ public class TajoCli {
     this.conf = new TajoConf(c);
     this.sin = in;
     this.out = out;
-    reader = new ConsoleReader(sin, out);
+    this.reader = new ConsoleReader(sin, out);
     this.sout = new PrintWriter(reader.getOutput());
 
     CommandLineParser parser = new PosixParser();
     CommandLine cmd = parser.parse(options, args);
+
+    String historyFile  = ".tajo_history";
+    String historyDirectory = System.getProperty("user.home");
+
+    try {
+      if ((new File(historyDirectory)).exists()) {
+        String historyPath = historyDirectory + File.separator + historyFile;
+        reader.setHistory(new FileHistory(new File(historyPath)));
+      } else {
+        System.err.println("Home directory : '" + historyDirectory +"' does not exist.");
+      }
+    } catch (Exception e) {
+      System.err.println(e.getMessage());
+    }
 
     if (cmd.hasOption("h")) {
       printUsage();
@@ -112,24 +130,54 @@ public class TajoCli {
     client = new TajoClient(conf);
   }
 
-  public int executeShell() throws Exception {
+  public int runShell() throws Exception {
 
     String line;
-    String cmd [];
-    boolean quit = false;
-    while(!quit) {
-      line = reader.readLine("tajo> ");
-      if (line == null) { // if EOF, quit
-        quit = true;
+    String prefix = "";
+    String prompt = "tajo";
+    String curPrompt = prompt;
+    int code = 0;
+
+    while((line = reader.readLine(curPrompt + "> ")) != null) {
+      if (!prefix.equals("")) {
+        prefix += '\n';
+      }
+      if (line.trim().endsWith(";") && !line.trim().endsWith("\\;")) {
+        line = prefix + line;
+        code = executeShell(line);
+        ((PersistentHistory)reader.getHistory()).flush();
+        prefix = "";
+        curPrompt = prompt;
+      } else {
+        prefix = prefix + line;
+        curPrompt = StringUtils.repeat(" ", prompt.length());
         continue;
-      } else if (line.length() == 0) {
+      }
+    }
+    return code;
+  }
+
+  public int executeShell(String line) throws Exception {
+
+    String cmd [];
+    String command = "";
+    for (String oneCmd : line.split(";")) {
+      if (StringUtils.endsWith(oneCmd, "\\")) {
+        command += StringUtils.chop(oneCmd) + ";";
+        continue;
+      } else {
+        command += oneCmd;
+      }
+      if (StringUtils.isBlank(command)) {
         continue;
       }
 
-      cmd = line.split(" ");
-
+      cmd = command.split(" ");
       if (cmd[0].equalsIgnoreCase("exit") || cmd[0].equalsIgnoreCase("quit")) {
-        quit = true;
+        sout.println("\n\nbye from data deluge...");
+        sout.flush();
+        ((PersistentHistory)this.reader.getHistory()).flush();
+        System.exit(0);
       } else if (cmd[0].equalsIgnoreCase("/c")) {
         clusterInfo();
       } else if (cmd[0].equalsIgnoreCase("/t")) {
@@ -143,7 +191,7 @@ public class TajoCli {
       } else if (cmd[0].equalsIgnoreCase("history")) {
 
       } else {
-        ClientProtocol.SubmitQueryRespose response = client.executeQuery(line);
+        ClientProtocol.SubmitQueryRespose response = client.executeQuery(command);
 
         if (response.getResultCode() == ClientProtocol.ResultCode.OK) {
           QueryId queryId = new QueryId(response.getQueryId());
@@ -158,10 +206,8 @@ public class TajoCli {
         }
         }
       }
+      command = "";
     }
-
-    sout.println("\n\nbye from data deluge...");
-    sout.flush();
     return 0;
   }
 
@@ -330,7 +376,7 @@ public class TajoCli {
     TajoConf conf = new TajoConf();
     TajoCli shell = new TajoCli(conf, args, System.in, System.out);
     System.out.println();
-    int status = shell.executeShell();
+    int status = shell.runShell();
     System.exit(status);
   }
 }
