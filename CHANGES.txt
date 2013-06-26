@@ -10,6 +10,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-74: Refactor parser rules of SQL.g. (hyunsik)
+
     TAJO-7: Enabling TajoCli to take multiple lines as one statement. (jinho)
 
     TAJO-72: Rename NQL.g to SQL.g. (hyunsik)
@@ -21,7 +23,8 @@ Release 0.2.0 - unreleased
     TAJO-69: Add .reviewboardrc file to the ignore lists of Rat and .gitignore. 
     (hyunsik)
 
-    TAJO-66: Support compiling and running Tajo with Java7 (Tejas Patil via hsaputra)
+    TAJO-66: Support compiling and running Tajo with Java7 (Tejas Patil via 
+    hsaputra)
 
     TAJO-51: Parallel Container Launch of TaskRunnerLauncherImpl. (hyunsik)
     

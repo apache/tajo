@@ -971,8 +971,6 @@ public final class QueryAnalyzer {
         return StatementType.INTERSECT;
       case SQLParser.INSERT:
         return StatementType.INSERT;
-      case SQLParser.COPY:
-        return StatementType.COPY;
       case SQLParser.CREATE_INDEX:
         return StatementType.CREATE_INDEX;
       case SQLParser.CREATE_TABLE:

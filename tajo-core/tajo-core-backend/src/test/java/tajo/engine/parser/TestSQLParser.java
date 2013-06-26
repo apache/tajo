@@ -34,7 +34,6 @@ public class TestSQLParser {
       "select id, name, age, gender from people", // 0
       "select title, ISBN from Books", // 1
       "select studentId from students", // 2
-      "session clear", // 3
       "select id, name, age, gender from people as p, students as s", // 4
       "select name, addr, sum(score) from students group by name, addr", // 5
       "select name, addr, age from people where age > 30", // 6
@@ -107,7 +106,7 @@ public class TestSQLParser {
 
   @Test
   public void testColumnFamily() throws TQLSyntaxError {
-    Tree ast = parseQuery(selQueries[9]);
+    Tree ast = parseQuery(selQueries[8]);
     assertEquals(SQLParser.SELECT, ast.getType());
     assertEquals(SQLParser.SEL_LIST, ast.getChild(1).getType());
     assertEquals(SQLParser.COLUMN, ast.getChild(1).getChild(0).getType());
@@ -121,13 +120,13 @@ public class TestSQLParser {
 
   @Test
   public void testSetQualifier() throws TQLSyntaxError {
-    Tree ast = parseQuery(selQueries[10]);
+    Tree ast = parseQuery(selQueries[9]);
     assertEquals(SQLParser.SELECT, ast.getType());
     assertEquals(SQLParser.SET_QUALIFIER, ast.getChild(1).getType());
     assertEquals(SQLParser.DISTINCT, ast.getChild(1).getChild(0).getType());
     assertSetListofSetQualifierTest(ast);
 
-    ast = parseQuery(selQueries[11]);
+    ast = parseQuery(selQueries[10]);
     assertEquals(SQLParser.SELECT, ast.getType());
     assertEquals(SQLParser.SET_QUALIFIER, ast.getChild(1).getType());
     assertEquals(SQLParser.ALL, ast.getChild(1).getChild(0).getType());
@@ -142,15 +141,8 @@ public class TestSQLParser {
   }
 
   @Test
-  public void testSessionClear() throws RecognitionException,
-      TQLSyntaxError {
-    Tree tree = parseQuery(selQueries[3]);
-    assertEquals(tree.getType(), SQLParser.SESSION_CLEAR);
-  }
-
-  @Test
   public void testWhereClause() throws RecognitionException, TQLSyntaxError {
-    Tree tree = parseQuery(selQueries[6]);
+    Tree tree = parseQuery(selQueries[5]);
 
     assertEquals(tree.getType(), SQLParser.SELECT);
     tree = tree.getChild(2).getChild(0);
@@ -614,39 +606,6 @@ public class TestSQLParser {
     assertEquals(ast.getChild(0).getText(), "abc");
   }
 
-  static String[] copyStmts = {
-      "copy employee from '/tmp/table1' format csv with ('csv.delimiter' = '|')"
-  };
-
-  @Test
-  public void testCopyTable() throws RecognitionException, TQLSyntaxError {
-    Tree ast = parseQuery(copyStmts[0]);
-    assertEquals(ast.getType(), SQLParser.COPY);
-    int idx = 0;
-    assertEquals("employee", ast.getChild(idx++).getText());
-    assertEquals("/tmp/table1", ast.getChild(idx++).getText());
-    assertEquals("csv", ast.getChild(idx++).getText());
-    assertEquals(SQLParser.PARAMS, ast.getChild(idx).getType());
-    Tree params = ast.getChild(idx);
-    assertEquals(SQLParser.PARAM, params.getChild(0).getType());
-    assertEquals("csv.delimiter", params.getChild(0).getChild(0).getText());
-    assertEquals("|", params.getChild(0).getChild(1).getText());
-  }
-
-
-  static String[] controlStmts = { "\\t", "\\t abc" };
-
-  @Test
-  public void testShowTable() throws RecognitionException, TQLSyntaxError {
-    Tree ast = parseQuery(controlStmts[0]);
-    assertEquals(ast.getType(), SQLParser.SHOW_TABLE);
-    assertEquals(ast.getChildCount(), 0);
-
-    ast = parseQuery(controlStmts[1]);
-    assertEquals(ast.getType(), SQLParser.SHOW_TABLE);
-    assertEquals(ast.getChild(0).getText(), "abc");
-  }
-
   static String[] exprs = { 
       "1 + 2", // 0
       "3 - 4", // 1
@@ -692,32 +651,32 @@ public class TestSQLParser {
   @Test
   public void testArithEvalTree() throws RecognitionException {
     SQLParser p = parseExpr(exprs[0]);
-    CommonTree node = (CommonTree) p.expr().getTree();
+    CommonTree node = (CommonTree) p.numeric_value_expression().getTree();
 
     assertEquals(node.getText(), "+");
     assertEquals(node.getChild(0).getText(), "1");
     assertEquals(node.getChild(1).getText(), "2");
 
     p = parseExpr(exprs[1]);
-    node = (CommonTree) p.expr().getTree();
+    node = (CommonTree) p.numeric_value_expression().getTree();
     assertEquals(node.getText(), "-");
     assertEquals(node.getChild(0).getText(), "3");
     assertEquals(node.getChild(1).getText(), "4");
 
     p = parseExpr(exprs[2]);
-    node = (CommonTree) p.expr().getTree();
+    node = (CommonTree) p.numeric_value_expression().getTree();
     assertEquals(node.getText(), "*");
     assertEquals(node.getChild(0).getText(), "5");
     assertEquals(node.getChild(1).getText(), "6");
 
     p = parseExpr(exprs[3]);
-    node = (CommonTree) p.expr().getTree();
+    node = (CommonTree) p.numeric_value_expression().getTree();
     assertEquals(node.getText(), "/");
     assertEquals(node.getChild(0).getText(), "7");
     assertEquals(node.getChild(1).getText(), "8");
 
     p = parseExpr(exprs[4]);
-    node = (CommonTree) p.expr().getTree();
+    node = (CommonTree) p.numeric_value_expression().getTree();
     assertEquals(node.getText(), "%");
     assertEquals(node.getChild(0).getText(), "10");
     assertEquals(node.getChild(1).getText(), "2");
@@ -806,13 +765,13 @@ public class TestSQLParser {
   @Test
   public void testOrEvalTree() throws RecognitionException {
     SQLParser p = parseExpr(exprs[16]);
-    CommonTree node = (CommonTree) p.bool_expr().getTree();
+    CommonTree node = (CommonTree) p.boolean_value_expression().getTree();
     assertEquals(node.getText(), "or");
     assertEquals(node.getChild(0).getText(), ">");
     assertEquals(node.getChild(1).getText(), "<");
 
     p = parseExpr(exprs[17]);
-    node = (CommonTree) p.bool_expr().getTree();
+    node = (CommonTree) p.boolean_value_expression().getTree();
     assertEquals(node.getText(), "or");
     assertEquals(node.getChild(0).getText(), ">");
     assertEquals(node.getChild(1).getText(), "and");

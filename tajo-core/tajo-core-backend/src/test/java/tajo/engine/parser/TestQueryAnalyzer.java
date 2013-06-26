@@ -650,30 +650,4 @@ public class TestQueryAnalyzer {
     QueryBlock.Target t2 = (QueryBlock.Target) t1.clone();
     assertEquals(t1,t2);
   }
-
-  final static String [] CopyStmt = {
-      "copy lineitem from '/tmp/tpch/lineitem' format rcfile",
-      "copy lineitem from '/tmp/tpch/lineitem' format csv with ('csv.delimiter' = '|')"
-  };
-
-  @Test
-  public void testCopy1() {
-    CopyStmt copyStmt =
-        (CopyStmt) analyzer.parse(CopyStmt[0]).getParseTree();
-    assertEquals("lineitem", copyStmt.getTableName());
-    assertEquals(new Path("/tmp/tpch/lineitem"), copyStmt.getPath());
-    assertEquals(StoreType.RCFILE, copyStmt.getStoreType());
-    assertFalse(copyStmt.hasParams());
-  }
-
-  @Test
-  public void testCopy2() {
-    CopyStmt copyStmt =
-        (CopyStmt) analyzer.parse(CopyStmt[1]).getParseTree();
-    assertEquals("lineitem", copyStmt.getTableName());
-    assertEquals(new Path("/tmp/tpch/lineitem"), copyStmt.getPath());
-    assertEquals(StoreType.CSV, copyStmt.getStoreType());
-    assertTrue(copyStmt.hasParams());
-    assertEquals("|", copyStmt.getParams().get("csv.delimiter"));
-  }
 }
