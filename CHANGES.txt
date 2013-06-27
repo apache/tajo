@@ -10,6 +10,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-75: Separate SQL.g into SQLParser.g and SQLLexer.g. (hyunsik)
+
     TAJO-74: Refactor parser rules of SQL.g. (hyunsik)
 
     TAJO-7: Enabling TajoCli to take multiple lines as one statement. (jinho)
