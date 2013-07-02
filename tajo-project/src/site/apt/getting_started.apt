@@ -67,7 +67,7 @@ export TAJO_HOME=<tajo-install-dir>
 -------------------------------------------------------------------
 <property>
   <name>yarn.nodemanager.aux-services</name>
-  <value>mapreduce.shuffle,tajo.pullserver</value>
+  <value>mapreduce.shuffle,org.apache.tajo.pullserver</value>
 </property>
 
 <property>
@@ -77,11 +77,11 @@ export TAJO_HOME=<tajo-install-dir>
 
 <property>
   <name>yarn.nodemanager.aux-services.tajo.pullserver.class</name>
-  <value>tajo.pullserver.PullServerAuxService</value>
+  <value>org.apache.tajo.pullserver.PullServerAuxService</value>
 </property>
 
 <property>
-  <name>tajo.task.localdir</name>
+  <name>org.apache.tajo.task.localdir</name>
   <value>/tmp/tajo-localdir</value>
 </property>
 -------------------------------------------------------------------
@@ -101,12 +101,12 @@ $ cp $TAJO_HOME/tajo-core-storage-x.y.z.jar $HADOOP_HOME/share/yarn/lib
 
 ---------------------------------------------------------------------
   <property>
-    <name>tajo.rootdir</name>
+    <name>org.apache.tajo.rootdir</name>
     <value>hdfs://hostname:port/tajo</value>
   </property>
 
   <property>
-    <name>tajo.cluster.distributed</name>
+    <name>org.apache.tajo.cluster.distributed</name>
     <value>true</value>
   </property>
 ---------------------------------------------------------------------

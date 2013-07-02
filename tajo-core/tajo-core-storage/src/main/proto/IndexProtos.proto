@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-option java_package = "tajo.index";
+option java_package = "org.apache.tajo.index";
 option java_outer_classname = "IndexProtos";
 option optimize_for = SPEED;
 option java_generic_services = false;

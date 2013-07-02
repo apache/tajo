@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-option java_package = "tajo.rpc.protocolrecords";
+option java_package = "org.apache.tajo.rpc.protocolrecords";
 option java_outer_classname = "PrimitiveProtos";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;

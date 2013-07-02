@@ -62,9 +62,9 @@ options{
 }
 
 @header {
-package tajo.frontend.sql;
+package org.apache.tajo.frontend.sql;
 
-import tajo.frontend.sql.SQLParseError;
+import org.apache.tajo.frontend.sql.SQLParseError;
 }
 
 @members {

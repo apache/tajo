@@ -28,27 +28,27 @@
 
   <property>
     <name>tajo.storage.scanner-handler.csv.class</name>
-    <value>tajo.storage.CSVFile$CSVScanner</value>
+    <value>org.apache.tajo.storage.CSVFile$CSVScanner</value>
   </property>
 
   <property>
     <name>tajo.storage.scanner-handler.raw.class</name>
-    <value>tajo.storage.RawFile$RawFileScanner</value>
+    <value>org.apache.tajo.storage.RawFile$RawFileScanner</value>
   </property>
 
   <property>
     <name>tajo.storage.scanner-handler.rcfile.class</name>
-    <value>tajo.storage.rcfile.RCFileWrapper$RCFileScanner</value>
+    <value>org.apache.tajo.storage.rcfile.RCFileWrapper$RCFileScanner</value>
   </property>
 
   <property>
     <name>tajo.storage.scanner-handler.rowfile.class</name>
-    <value>tajo.storage.RowFile$RowFileScanner</value>
+    <value>org.apache.tajo.storage.RowFile$RowFileScanner</value>
   </property>
 
   <property>
     <name>tajo.storage.scanner-handler.trevni.class</name>
-    <value>tajo.storage.trevni.TrevniScanner</value>
+    <value>org.apache.tajo.storage.trevni.TrevniScanner</value>
   </property>
 
   <!--- Appender Handler -->
@@ -59,26 +59,26 @@
 
   <property>
     <name>tajo.storage.appender-handler.csv.class</name>
-    <value>tajo.storage.CSVFile$CSVAppender</value>
+    <value>org.apache.tajo.storage.CSVFile$CSVAppender</value>
   </property>
 
   <property>
     <name>tajo.storage.appender-handler.raw.class</name>
-    <value>tajo.storage.RawFile$RawFileAppender</value>
+    <value>org.apache.tajo.storage.RawFile$RawFileAppender</value>
   </property>
 
   <property>
     <name>tajo.storage.appender-handler.rcfile.class</name>
-    <value>tajo.storage.rcfile.RCFileWrapper$RCFileAppender</value>
+    <value>org.apache.tajo.storage.rcfile.RCFileWrapper$RCFileAppender</value>
   </property>
 
   <property>
     <name>tajo.storage.appender-handler.rowfile.class</name>
-    <value>tajo.storage.RowFile$RowFileAppender</value>
+    <value>org.apache.tajo.storage.RowFile$RowFileAppender</value>
   </property>
 
   <property>
     <name>tajo.storage.appender-handler.trevni.class</name>
-    <value>tajo.storage.trevni.TrevniAppender</value>
+    <value>org.apache.tajo.storage.trevni.TrevniAppender</value>
   </property>
 </configuration>

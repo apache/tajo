@@ -69,7 +69,7 @@
           </dependency>
         </dependencies>
         <configuration>
-          <excludedGroups>tajo.IntegrationTest</excludedGroups>
+          <excludedGroups>org.apache.tajo.IntegrationTest</excludedGroups>
         </configuration>
       </plugin>
       <plugin>
@@ -95,7 +95,7 @@
           <includes>
             <include>**/*.class</include>
           </includes>
-          <groups>tajo.IntegrationTest</groups>
+          <groups>org.apache.tajo.IntegrationTest</groups>
           <!--
           <environmentVariables>
             <TAJO_CLASSPATH>${project.basedir}/../../tajo-dist/target/tajo-${project.version}/*:${project.basedir}/../../tajo-dist/target/tajo-${project.version}/lib/*</TAJO_CLASSPATH>

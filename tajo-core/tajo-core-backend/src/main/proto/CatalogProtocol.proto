@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-option java_package = "tajo.catalog";
+option java_package = "org.apache.tajo.catalog";
 option java_outer_classname = "CatalogProtocol";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;

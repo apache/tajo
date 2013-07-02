@@ -27,7 +27,7 @@
 
   <property>
     <name>tajo.catalog.store.class</name>
-    <value>tajo.catalog.store.DBStore</value>
+    <value>org.apache.tajo.catalog.store.DBStore</value>
   </property>
 
   <property>

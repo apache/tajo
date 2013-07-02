@@ -101,11 +101,11 @@ tokens {
 }
 
 @header {
-package tajo.frontend.sql;
+package org.apache.tajo.frontend.sql;
 
 import java.util.List;
 import java.util.ArrayList;
-import tajo.frontend.sql.SQLParseError;
+import org.apache.tajo.frontend.sql.SQLParseError;
 }
 
 @members {

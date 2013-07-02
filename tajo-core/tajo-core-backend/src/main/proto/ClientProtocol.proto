@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-option java_package = "tajo.client";
+option java_package = "org.apache.tajo.client";
 option java_outer_classname = "ClientProtocol";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;

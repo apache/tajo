@@ -18,7 +18,7 @@
 
 <FindBugsFilter>
      <Match>
-		<Package name="~nta\.engine\.parser" />
+		<Package name="~org\.apache\.tajo\.engine\.parser" />
 	</Match>
 	<Match>
 		<Class name="~.*\.*Protos" />

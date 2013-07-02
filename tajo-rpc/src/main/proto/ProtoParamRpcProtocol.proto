@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-option java_package = "tajo.rpc";
+option java_package = "org.apache.tajo.rpc";
 option java_outer_classname = "ProtoParamRpcProtocol";
 option java_generic_services = true;
 

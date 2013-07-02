@@ -52,7 +52,7 @@ Setting up catalog-site.xml
     If you want to launch a catalog server separately, specify this address.
     This config has a form of <hostname:port>. Its default value is <localhost:9002>.
 
-  * <<tajo.catalog.store.class>>
+  * <<org.apache.tajo.catalog.store.class>>
 
      If you want to change the persistent storage of the catalog server, specify the class name.
      Its default value is <tajo.catalog.store.DBStore>. In the current version, Tajo provides
@@ -71,22 +71,22 @@ Setting up tajo-site.xml
 
 ---------------------------------------------------------------------
   <property>
-    <name>tajo.rootdir</name>
+    <name>org.apache.tajo.rootdir</name>
     <value>hdfs://hostname:port/tajo</value>
   </property>
 
   <property>
-    <name>tajo.cluster.distributed</name>
+    <name>org.apache.tajo.cluster.distributed</name>
     <value>true</value>
   </property>
 ---------------------------------------------------------------------
 
-  * <<tajo.rootdir>>
+  * <<org.apache.tajo.rootdir>>
 
    Specify the root directory of tajo. This parameter should be a url form
    (e.g., <hdfs://namenode_hostname:port/path>). You can also use <file://> scheme.
 
-  * <<tajo.cluster.distributed>>
+  * <<org.apache.tajo.cluster.distributed>>
 
    It is a flag used internally. It must be true.
 
@@ -95,19 +95,19 @@ Setting up tajo-site.xml
   The followings are other parameters. DO NOT modify the following configs unless you are an expert
   of Tajo.
 
-  * <<tajo.task.localdir>>
+  * <<org.apache.tajo.task.localdir>>
 
-  * <<tajo.join.task-volume.mb>>
+  * <<org.apache.tajo.join.task-volume.mb>>
 
-  * <<tajo.sort.task-volume.mb>>
+  * <<org.apache.tajo.sort.task-volume.mb>>
 
-  * <<tajo.task-aggregation.volume.mb>>
+  * <<org.apache.tajo.task-aggregation.volume.mb>>
 
-  * <<tajo.join.part-volume.mb>>
+  * <<org.apache.tajo.join.part-volume.mb>>
 
-  * <<tajo.sort.part-volume.mb>>
+  * <<org.apache.tajo.sort.part-volume.mb>>
 
-  * <<tajo.aggregation.part-volume.mb>>
+  * <<org.apache.tajo.aggregation.part-volume.mb>>
 
   []
 

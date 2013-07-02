@@ -23,7 +23,7 @@
   <!-- Declare the existence of a servlet. -->
   <servlet>
     <servlet-name>DummyServlet</servlet-name>
-    <servlet-class>tajo.webapp.TestHttpServer$DummyServlet</servlet-class>
+    <servlet-class>org.apache.tajo.webapp.TestHttpServer$DummyServlet</servlet-class>
   </servlet>
 
   <!-- Map URLs to that servlet. -->
