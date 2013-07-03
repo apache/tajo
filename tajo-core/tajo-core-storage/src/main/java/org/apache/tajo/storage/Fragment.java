@@ -23,16 +23,16 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProtoOrBuilder;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TabletProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TabletProtoOrBuilder;
 import org.apache.tajo.storage.json.GsonCreator;
 import org.apache.tajo.util.TUtil;
 
 public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 
-  protected TabletProto proto = TabletProto.getDefaultInstance();
-  protected TabletProto.Builder builder = null;
+  protected FragmentProto proto = FragmentProto.getDefaultInstance();
+  protected FragmentProto.Builder builder = null;
   protected boolean viaProto = false;
 
   @Expose
@@ -52,7 +52,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   private String [] dataLocations;
 
   public Fragment() {
-    builder = TabletProto.newBuilder();
+    builder = FragmentProto.newBuilder();
   }
 
   public Fragment(String fragmentId, Path path, TableMeta meta, long start,
@@ -66,7 +66,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
     this.dataLocations = dataLocations;
   }
 
-  public Fragment(TabletProto proto) {
+  public Fragment(FragmentProto proto) {
     this();
     TableMeta newMeta = new TableMetaImpl(proto.getMeta());
     this.set(proto.getId(), new Path(proto.getPath()), newMeta,
@@ -94,7 +94,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   }
 
   public String getId() {
-    TabletProtoOrBuilder p = viaProto ? proto : builder;
+    FragmentProtoOrBuilder p = viaProto ? proto : builder;
 
     if (this.fragmentId != null) {
       return this.fragmentId;
@@ -116,7 +116,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   
   @Override
   public Path getPath() {
-    TabletProtoOrBuilder p = viaProto ? proto : builder;
+    FragmentProtoOrBuilder p = viaProto ? proto : builder;
 
     if (this.path != null) {
       return this.path;
@@ -139,7 +139,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   }
 
   public TableMeta getMeta() {
-    TabletProtoOrBuilder p = viaProto ? proto : builder;
+    FragmentProtoOrBuilder p = viaProto ? proto : builder;
 
     if (this.meta != null) {
       return this.meta;
@@ -158,7 +158,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   }
 
   public Long getStartOffset() {
-    TabletProtoOrBuilder p = viaProto ? proto : builder;
+    FragmentProtoOrBuilder p = viaProto ? proto : builder;
 
     if (this.startOffset != null) {
       return this.startOffset;
@@ -171,7 +171,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   }
 
   public Long getLength() {
-    TabletProtoOrBuilder p = viaProto ? proto : builder;
+    FragmentProtoOrBuilder p = viaProto ? proto : builder;
 
     if (this.length != null) {
       return this.length;
@@ -184,7 +184,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   }
 
   public Boolean isDistCached() {
-    TabletProtoOrBuilder p = viaProto ? proto : builder;
+    FragmentProtoOrBuilder p = viaProto ? proto : builder;
 
     if (this.distCached != null) {
       return distCached;
@@ -249,7 +249,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
     initFromProto();
     frag.proto = null;
     frag.viaProto = false;
-    frag.builder = TabletProto.newBuilder();
+    frag.builder = FragmentProto.newBuilder();
     frag.fragmentId = fragmentId;
     frag.path = path;
     frag.meta = (TableMeta) (meta != null ? meta.clone() : null);
@@ -266,7 +266,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   }
 
   @Override
-  public TabletProto getProto() {
+  public FragmentProto getProto() {
     if (!viaProto) {
       mergeLocalToBuilder();
       proto = builder.build();
@@ -278,14 +278,14 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
 
   private void setModified() {
     if (viaProto || builder == null) {
-      builder = TabletProto.newBuilder(proto);
+      builder = FragmentProto.newBuilder(proto);
     }
     viaProto = false;
   }
 
   protected void mergeLocalToBuilder() {
     if (builder == null) {
-      this.builder = TabletProto.newBuilder(proto);
+      this.builder = FragmentProto.newBuilder(proto);
     }
     
     if (this.fragmentId != null) {
@@ -314,7 +314,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject {
   }
   
   private void mergeProtoToLocal() {
-	  TabletProtoOrBuilder p = viaProto ? proto : builder;
+	  FragmentProtoOrBuilder p = viaProto ? proto : builder;
 	  if (fragmentId == null && p.hasId()) {
 	    fragmentId = p.getId();
 	  }

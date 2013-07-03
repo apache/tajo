@@ -80,7 +80,7 @@ message KeyValueSetProto {
   repeated KeyValueProto keyval = 1;
 }
 
-message TabletProto {
+message FragmentProto {
   required string id = 1;
   required string path = 2;
   required int64 startOffset = 3;

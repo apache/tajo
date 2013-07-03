@@ -10,6 +10,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-77: Rename TabletProto as FragmentProto in CatalogProtos.proto. (jihoon)
+
     TAJO-22: The package prefix should be org.apache.tajo. (DaeMyung Kang via hyunsik)
 
     TAJO-75: Separate SQL.g into SQLParser.g and SQLLexer.g. (hyunsik)
