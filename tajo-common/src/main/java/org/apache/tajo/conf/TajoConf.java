@@ -65,8 +65,7 @@ public class TajoConf extends YarnConfiguration {
 
     // Service Addresses
     TASKRUNNER_LISTENER_ADDRESS("tajo.master.taskrunnerlistener.addr", "0.0.0.0:0"), // used internally
-    CLIENT_SERVICE_ADDRESS("tajo.master.clientservice.addr", "0.0.0.0:9004"),
-    CLIENT_SERVICE_PORT("tajo.master.clientservice.port", 9004),
+    CLIENT_SERVICE_ADDRESS("tajo.master.clientservice.addr", "127.0.0.1:9004"),
 
     //////////////////////////////////
     // Catalog Configuration

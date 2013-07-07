@@ -22,7 +22,7 @@
 # remote nodes.
 
 # The java implementation to use.  Required.
-export JAVA_HOME=/usr
+# export JAVA_HOME=/usr
 
 # Extra Java CLASSPATH elements.  Optional.
 # export TAJO_CLASSPATH=
