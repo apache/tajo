@@ -30,7 +30,9 @@
 
   <bannerLeft>
     <name>Apache Tajo</name>
-    <href>http://incubator.apache.org/tajo/</href>
+	<src>./images/Tajo_logo.png</src>
+    <href>http://tajo.incubator.apache.org</href>
+	<width>240</width>
   </bannerLeft>
 
   <bannerRight>
