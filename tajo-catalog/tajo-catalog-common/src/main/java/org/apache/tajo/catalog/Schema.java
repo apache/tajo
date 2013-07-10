@@ -248,6 +248,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 	}
 
   public Column [] toArray() {
+    initFromProto();
     return this.fields.toArray(new Column[this.fields.size()]);
   }
 }
