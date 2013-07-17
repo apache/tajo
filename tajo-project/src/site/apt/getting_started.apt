@@ -67,7 +67,7 @@ export TAJO_HOME=<tajo-install-dir>
 -------------------------------------------------------------------
 <property>
   <name>yarn.nodemanager.aux-services</name>
-  <value>mapreduce.shuffle,org.apache.tajo.pullserver</value>
+  <value>mapreduce.shuffle,tajo.pullserver</value>
 </property>
 
 <property>
