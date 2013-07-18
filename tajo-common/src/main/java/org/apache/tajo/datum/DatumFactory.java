@@ -18,7 +18,46 @@
 
 package org.apache.tajo.datum;
 
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.util.Bytes;
+
 public class DatumFactory {
+
+  public static Datum create(DataType type, byte[] val) {
+    return create(type.getType(), val);
+  }
+
+  public static Datum create(Type type, byte[]  val) {
+    switch (type) {
+
+      case BOOLEAN:
+        return createBool(val[0]);
+      case INT2:
+        return createInt2(Bytes.toShort(val));
+      case INT4:
+        return createInt4(Bytes.toInt(val));
+      case INT8:
+        return createInt8(Bytes.toLong(val));
+      case FLOAT4:
+        return createFloat4(Bytes.toFloat(val));
+      case FLOAT8:
+        return createFloat8(Bytes.toDouble(val));
+      case CHAR:
+        return createChar(val[0]);
+      case TEXT:
+        return createText(val);
+      case BIT:
+        return createBit(val[0]);
+      case BLOB:
+        return createBlob(val);
+      case INET4:
+        return createInet4(val);
+      default:
+        throw new UnsupportedOperationException(type.toString());
+    }
+  }
+
   public static NullDatum createNullDatum() {
     return NullDatum.get();
   }
