@@ -26,8 +26,23 @@ import org.apache.tajo.engine.query.exception.TQLParseError;
 
 @members {
    @Override
-   public void reportError(RecognitionException e) {
-    throw new TQLParseError(getErrorHeader(e));
+   public String getErrorMessage(RecognitionException e, String[] tokenNames) {
+    String msg = null;
+
+    if (e instanceof NoViableAltException) {
+      msg = "character " + getCharErrorDisplay(e.c) + " not supported here";
+    } else {
+      msg = super.getErrorMessage(e, tokenNames);
+    }
+    return msg;
+   }
+
+   @Override
+   public void displayRecognitionError(String[] tokenNames, RecognitionException e) {
+
+     String hdr = getErrorHeader(e);
+     String msg = getErrorMessage(e, tokenNames);
+     throw new TQLParseError(hdr + ":" + msg);
    }
 }
 

@@ -21,7 +21,24 @@ package org.apache.tajo.engine.query.exception;
 
 @SuppressWarnings("UnusedDeclaration")
 public class TQLParseError extends RuntimeException {
+  private int errorLine;
+  private int errorPosition;
+
   public TQLParseError(String parseErrorMessage) {
     super(parseErrorMessage);
+  }
+
+  public TQLParseError(String parseErrorMessage, int line, int position) {
+    super(parseErrorMessage);
+    this.errorLine = line;
+    this.errorPosition = position;
+  }
+
+  public int getErrorPosition(){
+    return this.errorPosition;
+  }
+
+  public int getErrorLine(){
+    return this.errorLine;
   }
 }

@@ -73,7 +73,7 @@ public final class QueryAnalyzer {
       ParseTree parseTree = parseQueryTree(context,ast);
       context.setParseTree(parseTree);
     } catch (TQLParseError e) {
-      throw new TQLSyntaxError(query, e.getMessage());
+      throw new TQLSyntaxError(query, e);
     }
 
     if (LOG.isDebugEnabled()) {
@@ -944,6 +944,7 @@ public final class QueryAnalyzer {
   private static CommonTree parseTree(final String query) {
     ANTLRStringStream input = new ANTLRStringStream(query);
     SQLLexer lexer = new SQLLexer(input);
+
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     SQLParser parser = new SQLParser(tokens);
 

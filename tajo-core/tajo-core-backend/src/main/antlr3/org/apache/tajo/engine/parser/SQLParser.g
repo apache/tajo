@@ -70,18 +70,41 @@ import org.apache.tajo.engine.query.exception.TQLParseError;
 
 @members {
    @Override
-   public void reportError(RecognitionException e) {
-     throw new TQLParseError(getErrorHeader(e));
+   public void displayRecognitionError(String[] tokenNames, RecognitionException e) {
+     int pos = 0;
+     int line = 0;
+     if (e.charPositionInLine < 0 && input.LT(-1) != null) {
+        Token t = input.LT(-1);
+        line = t.getLine();
+        pos = t.getCharPositionInLine();
+     } else {
+        line = e.line;
+        pos = e.charPositionInLine;
+     }
+     String msg = getErrorMessage(e, tokenNames);
+     throw new TQLParseError(msg, line, pos);
    }
 
    @Override
-   public void displayRecognitionError(String[] tokenNames, RecognitionException e) {
-     String hdr = getErrorHeader(e);
-     String msg = getErrorMessage(e, tokenNames);
-     throw new TQLParseError(hdr + ":" + msg);
+   public String getErrorMessage(RecognitionException e, String[] tokenNames) {
+     String msg = null;
+
+     if (e instanceof NoViableAltException) {
+       msg = "syntax error at or near " + getTokenErrorDisplay(e.token) + (input.LT(2) != null ? " " + getTokenErrorDisplay(input.LT(2)) : "")
+       + (input.LT(3) != null ? " " + getTokenErrorDisplay(input.LT(3)) : "");
+      } else if (e instanceof MismatchedTokenException) {
+       MismatchedTokenException mte = (MismatchedTokenException) e;
+       msg = super.getErrorMessage(e, tokenNames) + (input.LT(-1) == null ? "" : " near '" + input.LT(-1).getText()) + "'";
+      } else if (e instanceof FailedPredicateException) {
+       FailedPredicateException fpe = (FailedPredicateException) e;
+       msg = "Failed to recognize predicate '" + fpe.token.getText() + "'. Failed rule: '" + fpe.ruleName + "'";
+      }else {
+       msg = super.getErrorMessage(e, tokenNames);
+      }
+
+      return msg;
    }
 }
-
 
 /*
 ===============================================================================
