@@ -20,29 +20,30 @@ package org.apache.tajo.master;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.protocolrecords.GetNewApplicationResponse;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.YarnClient;
 import org.apache.hadoop.yarn.client.YarnClientImpl;
-import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
-import org.apache.hadoop.yarn.factories.RecordFactory;
-import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.exception.AlreadyExistsTableException;
+import org.apache.tajo.catalog.exception.NoSuchTableException;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.engine.exception.EmptyClusterException;
 import org.apache.tajo.engine.exception.IllegalQueryStatusException;
 import org.apache.tajo.engine.exception.NoSuchQueryIdException;
 import org.apache.tajo.engine.exception.UnknownWorkerException;
+import org.apache.tajo.engine.parser.DropTableStmt;
 import org.apache.tajo.engine.parser.QueryAnalyzer;
 import org.apache.tajo.engine.parser.StatementType;
 import org.apache.tajo.engine.planner.LogicalOptimizer;
@@ -51,7 +52,6 @@ import org.apache.tajo.engine.planner.PlanningContext;
 import org.apache.tajo.engine.planner.global.GlobalOptimizer;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.CreateTableNode;
-import org.apache.tajo.engine.planner.logical.ExprType;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.engine.query.exception.TQLSyntaxError;
@@ -61,7 +61,6 @@ import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -73,22 +72,21 @@ public class GlobalEngine extends AbstractService {
   private final MasterContext context;
   private final StorageManager sm;
 
+  private CatalogService catalog;
   private QueryAnalyzer analyzer;
   private LogicalPlanner planner;
   private GlobalPlanner globalPlanner;
   private GlobalOptimizer globalOptimizer;
 
   // Yarn
-  private final RecordFactory recordFactory =
-      RecordFactoryProvider.getRecordFactory(null);
   protected YarnClient yarnClient;
-  protected InetSocketAddress rmAddress;
 
-  public GlobalEngine(final MasterContext context, final StorageManager sm)
+  public GlobalEngine(final MasterContext context)
       throws IOException {
     super(GlobalEngine.class.getName());
     this.context = context;
-    this.sm = sm;
+    this.catalog = context.getCatalog();
+    this.sm = context.getStorageManager();
   }
 
   public void start() {
@@ -112,55 +110,23 @@ public class GlobalEngine extends AbstractService {
     yarnClient.stop();
   }
 
-  private String createTable(LogicalRootNode root) throws IOException {
-    // create table queries are executed by the master
-    CreateTableNode createTable = (CreateTableNode) root.getSubNode();
-    TableMeta meta;
-    if (createTable.hasOptions()) {
-      meta = CatalogUtil.newTableMeta(createTable.getSchema(),
-          createTable.getStorageType(), createTable.getOptions());
-    } else {
-      meta = CatalogUtil.newTableMeta(createTable.getSchema(),
-          createTable.getStorageType());
-    }
-
-    FileSystem fs = createTable.getPath().getFileSystem(context.getConf());
-    if(fs.exists(createTable.getPath()) && fs.isFile(createTable.getPath())) {
-    	throw new IOException("ERROR: LOCATION must be a directory.");
-    }
-
-    long totalSize = 0;
-    try {
-      totalSize = sm.calculateSize(createTable.getPath());
-    } catch (IOException e) {
-      LOG.error("Cannot calculate the size of the relation", e);
-    }
-    TableStat stat = new TableStat();
-    stat.setNumBytes(totalSize);
-    meta.setStat(stat);
-
-    StorageUtil.writeTableMeta(context.getConf(), createTable.getPath(), meta);
-    TableDesc desc = CatalogUtil.newTableDesc(createTable.getTableName(), meta,
-        createTable.getPath());
-    context.getCatalog().addTable(desc);
-    return desc.getId();
-  }
-  
   public QueryId executeQuery(String tql)
       throws InterruptedException, IOException,
       NoSuchQueryIdException, IllegalQueryStatusException,
       UnknownWorkerException, EmptyClusterException {
     long querySubmittionTime = context.getClock().getTime();
-    LOG.info("TQL: " + tql);
+    LOG.info("SQL: " + tql);
     // parse the query
     PlanningContext planningContext = analyzer.parse(tql);
-    LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
 
-    if (plan.getSubNode().getType() == ExprType.CREATE_TABLE) {
-      createTable(plan);
+    StatementType cmdType = planningContext.getParseTree().getStatementType();
 
+    if (cmdType == StatementType.CREATE_TABLE || cmdType == StatementType.DROP_TABLE) {
+      updateQuery(planningContext);
       return TajoIdUtils.NullQueryId;
     } else {
+      LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
+
       ApplicationAttemptId appAttemptId = submitQuery();
       QueryId queryId = TajoIdUtils.createQueryId(appAttemptId);
       MasterPlan masterPlan = createGlobalPlan(queryId, plan);
@@ -171,15 +137,6 @@ public class GlobalEngine extends AbstractService {
       if (planningContext.hasExplicitOutputTable()) {
         queryConf.setOutputTable(planningContext.getExplicitOutputTable());
       }
-      /*
-        Path warehousePath = new Path(queryConf.getVar(ConfVars.WAREHOUSE_PATH));
-        Path outputDir = new Path(warehousePath, planningContext.getExplicitOutputTable());
-        queryConf.setOutputDir(outputDir);
-      } else {
-        Path queryTmpPath = new Path(queryConf.getVar(ConfVars.QUERY_TMP_DIR));
-        Path outputDir = new Path(queryTmpPath, queryId.toString());
-        queryConf.setOutputDir(outputDir);
-      } */
 
       QueryMaster query = new QueryMaster(context, appAttemptId,
           context.getClock(), querySubmittionTime, masterPlan);
@@ -234,6 +191,31 @@ public class GlobalEngine extends AbstractService {
     return attemptId;
   }
 
+  public boolean updateQuery(String sql) throws IOException {
+    LOG.info("SQL: " + sql);
+    PlanningContext planningContext = analyzer.parse(sql);
+    return updateQuery(planningContext);
+  }
+
+  public boolean updateQuery(PlanningContext planningContext) throws IOException {
+    StatementType type = planningContext.getParseTree().getStatementType();
+
+    switch (type) {
+      case CREATE_TABLE:
+        LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
+        createTable(plan);
+        return true;
+
+      case DROP_TABLE:
+        DropTableStmt stmt = (DropTableStmt) planningContext.getParseTree();
+        dropTable(stmt.getTableName());
+        return true;
+
+      default:
+        throw new TQLSyntaxError(planningContext.getRawQuery(), "updateQuery cannot handle such query");
+    }
+  }
+
   private LogicalNode createLogicalPlan(PlanningContext planningContext)
       throws IOException {
 
@@ -258,29 +240,85 @@ public class GlobalEngine extends AbstractService {
     query.start();
   }
 
-  public boolean updateQuery(String tql) throws IOException {
-    LOG.info("TQL: " + tql);
+  private TableDesc createTable(LogicalRootNode root) throws IOException {
+    CreateTableNode createTable = (CreateTableNode) root.getSubNode();
+    TableMeta meta;
 
-    PlanningContext planningContext = analyzer.parse(tql);
-    if (planningContext.getParseTree().getStatementType()
-        == StatementType.CREATE_TABLE) {
-      LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
-      createTable(plan);
-      return true;
+    if (createTable.hasOptions()) {
+      meta = CatalogUtil.newTableMeta(createTable.getSchema(),
+          createTable.getStorageType(), createTable.getOptions());
+
     } else {
-      throw new TQLSyntaxError(tql, "updateQuery cannot handle such query");
+      meta = CatalogUtil.newTableMeta(createTable.getSchema(),
+          createTable.getStorageType());
+
     }
+
+    return createTable(createTable.getTableName(), meta, createTable.getPath());
+  }
+
+  public TableDesc createTable(String tableName, TableMeta meta, Path path) throws IOException {
+    if (catalog.existsTable(tableName)) {
+      throw new AlreadyExistsTableException(tableName);
+    }
+
+    FileSystem fs = path.getFileSystem(context.getConf());
+
+    if(fs.exists(path) && fs.isFile(path)) {
+      throw new IOException("ERROR: LOCATION must be a directory.");
+    }
+
+    long totalSize = 0;
+
+    try {
+      totalSize = sm.calculateSize(path);
+    } catch (IOException e) {
+      LOG.error("Cannot calculate the size of the relation", e);
+    }
+
+    TableStat stat = new TableStat();
+    stat.setNumBytes(totalSize);
+    meta.setStat(stat);
+
+    TableDesc desc = CatalogUtil.newTableDesc(tableName, meta, path);
+    StorageUtil.writeTableMeta(context.getConf(), path, meta);
+    catalog.addTable(desc);
+
+    LOG.info("Table " + desc.getId() + " is created (" + desc.getMeta().getStat().getNumBytes() + ")");
+
+    return desc;
+  }
+
+  /**
+   * Drop a given named table
+   *
+   * @param tableName to be dropped
+   */
+  public void dropTable(String tableName) {
+    CatalogService catalog = context.getCatalog();
+
+    if (!catalog.existsTable(tableName)) {
+      throw new NoSuchTableException(tableName);
+    }
+
+    Path path = catalog.getTableDesc(tableName).getPath();
+    catalog.deleteTable(tableName);
+
+    try {
+
+      FileSystem fs = path.getFileSystem(context.getConf());
+      fs.delete(path, true);
+    } catch (IOException e) {
+      throw new InternalError(e.getMessage());
+    }
+
+    LOG.info("Table \"" + tableName + "\" is dropped.");
   }
 
   private void connectYarnClient() {
     this.yarnClient = new YarnClientImpl();
     this.yarnClient.init(getConfig());
     this.yarnClient.start();
-  }
-
-  private static InetSocketAddress getRmAddress(Configuration conf) {
-    return conf.getSocketAddr(YarnConfiguration.RM_ADDRESS,
-        YarnConfiguration.DEFAULT_RM_ADDRESS, YarnConfiguration.DEFAULT_RM_PORT);
   }
 
   public GetNewApplicationResponse getNewApplication()

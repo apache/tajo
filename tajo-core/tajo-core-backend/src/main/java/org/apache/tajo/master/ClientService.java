@@ -46,7 +46,6 @@ import org.apache.tajo.rpc.ProtoBlockingRpcServer;
 import org.apache.tajo.rpc.RemoteException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
-import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
@@ -289,59 +288,25 @@ public class ClientService extends AbstractService {
     }
 
     @Override
-    public TableResponse createTable(RpcController controller,
-                                     CreateTableRequest request)
+    public TableResponse createTable(RpcController controller, CreateTableRequest request)
         throws ServiceException {
-      if (catalog.existsTable(request.getName())) {
-        throw new AlreadyExistsTableException(request.getName());
-      }
-
       Path path = new Path(request.getPath());
-      LOG.info(path.toUri());
-
-      long totalSize = 0;
-      try {
-        totalSize = calculateSize(new Path(path, "data"));
-      } catch (IOException e) {
-        LOG.error("Cannot calculate the size of the relation", e);
-      }
-
       TableMeta meta = new TableMetaImpl(request.getMeta());
-      TableStat stat = new TableStat();
-      stat.setNumBytes(totalSize);
-      meta.setStat(stat);
-
-      TableDesc desc = new TableDescImpl(request.getName(),meta, path);
+      TableDesc desc;
       try {
-        StorageUtil.writeTableMeta(conf, path, desc.getMeta());
-      } catch (IOException e) {
-        LOG.error("Cannot write the table meta file", e);
+        desc = context.getGlobalEngine().createTable(request.getName(), meta, path);
+      } catch (Exception e) {
+        return TableResponse.newBuilder().setErrorMessage(e.getMessage()).build();
       }
-      catalog.addTable(desc);
-      LOG.info("Table " + desc.getId() + " is created (" + meta.getStat().getNumBytes() + ")");
 
-      return TableResponse.newBuilder().
-          setTableDesc((TableDescProto) desc.getProto())
-          .build();
+      return TableResponse.newBuilder().setTableDesc((TableDescProto) desc.getProto()).build();
     }
 
     @Override
     public BoolProto dropTable(RpcController controller,
                                StringProto tableNameProto)
         throws ServiceException {
-      String tableName = tableNameProto.getValue();
-      if (!catalog.existsTable(tableName)) {
-        throw new NoSuchTableException(tableName);
-      }
-
-      Path path = catalog.getTableDesc(tableName).getPath();
-      catalog.deleteTable(tableName);
-      try {
-        context.getStorageManager().delete(path);
-      } catch (IOException e) {
-        throw new RemoteException(e);
-      }
-      LOG.info("Table is dropped" + tableName);
+      context.getGlobalEngine().dropTable(tableNameProto.getValue());
       return BOOL_TRUE;
     }
 

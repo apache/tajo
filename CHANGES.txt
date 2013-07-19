@@ -10,6 +10,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-70: Refactor GlobalEngine to handle DDL statements. (hyunsik)
+
     TAJO-86: Improved error messages in query analyzer. (jinho)
 
     TAJO-85: Add an method of create(DataType, byte[]) to DatumFactory. (jihoon)

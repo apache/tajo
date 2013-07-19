@@ -111,6 +111,27 @@ public class TestTajoClient {
   }
 
   @Test
+  public final void testCreateAndDropTableByExecuteQuery() throws IOException, ServiceException {
+    TajoConf conf = util.getConfiguration();
+    final String tableName = "testCreateAndDropTableByExecuteQuery";
+
+    BackendTestingUtil.writeTmpTable(conf, "file:///tmp", tableName, false);
+    Path tablePath = writeTmpTable(tableName);
+    assertFalse(tajo.existTable(tableName));
+
+    String tql = "create external table " + tableName + " (deptname text, score int4) " + "using csv location '"
+        + tablePath + "'";
+
+    tajo.executeQueryAndGetResult(tql);
+    assertTrue(tajo.existTable(tableName));
+
+    tajo.updateQuery("drop table " + tableName);
+    assertFalse(tajo.existTable(tableName));
+    FileSystem localFS = FileSystem.getLocal(conf);
+    assertFalse(localFS.exists(tablePath));
+  }
+
+  @Test
   public final void testDDLByExecuteQuery() throws IOException, ServiceException {
     TajoConf conf = util.getConfiguration();
     final String tableName = "testDDLByExecuteQuery";
@@ -122,11 +143,6 @@ public class TestTajoClient {
             + "using csv location 'file:///tmp/" + tableName + "'";
     tajo.executeQueryAndGetResult(tql);
     assertTrue(tajo.existTable(tableName));
-  }
-
-  // disabled
-  public final void testGetClusterInfo() throws IOException, InterruptedException {
-    assertEquals(1,tajo.getClusterInfo().size());
   }
 
   @Test

@@ -16,15 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.engine.parser;
 
+import org.apache.tajo.engine.planner.PlanningContext;
 
-public class NoSuchTableException extends CatalogException {
-	private static final long serialVersionUID = 277182608283894937L;
+public class DropTableStmt extends ParseTree {
+  private final String tableName;
 
-	public NoSuchTableException() {}
+  public DropTableStmt(PlanningContext context, final String tableName) {
+    super(context, StatementType.DROP_TABLE);
+    this.tableName = tableName;
+  }
 
-	public NoSuchTableException(String relName) {
-		super("ERROR: relation \"" + relName + "\" does not exist");
-	}
+  public String getTableName() {
+    return tableName;
+  }
 }

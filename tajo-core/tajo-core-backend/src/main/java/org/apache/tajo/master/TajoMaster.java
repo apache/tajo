@@ -144,7 +144,7 @@ public class TajoMaster extends CompositeService {
       addIfService(catalogServer);
       catalog = new LocalCatalog(catalogServer);
 
-      globalEngine = new GlobalEngine(context, storeManager);
+      globalEngine = new GlobalEngine(context);
       addIfService(globalEngine);
 
       dispatcher.register(QueryEventType.class, new QueryEventDispatcher());

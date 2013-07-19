@@ -16,9 +16,6 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
 package org.apache.tajo.engine.parser;
 
 import org.apache.hadoop.fs.Path;

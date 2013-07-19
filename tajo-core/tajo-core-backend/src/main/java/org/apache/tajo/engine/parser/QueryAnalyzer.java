@@ -110,6 +110,9 @@ public final class QueryAnalyzer {
         parseTree = parseCopyStatement(context, ast);
         break;
 
+      case DROP_TABLE:
+        parseTree = parseDropTableStatement(context, ast);
+
       default:
         break;
     }
@@ -136,6 +139,12 @@ public final class QueryAnalyzer {
     }
 
     return stmt;
+  }
+
+  private DropTableStmt parseDropTableStatement(final PlanningContext context, final CommonTree ast) {
+    int idx = 0;
+    String tableName = ast.getChild(idx).getText();
+    return new DropTableStmt(context, tableName);
   }
 
   /**
