@@ -208,6 +208,7 @@ public final class QueryAnalyzer {
     } else {
       stmt = new CreateTableStmt(context, tableName);
       if (external) {
+        stmt.setExternal(external);
         if (location != null) {
           stmt.setPath(location);
         }

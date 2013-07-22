@@ -204,7 +204,7 @@ public class LogicalPlanner {
       if (query.hasPath()) {
         createTable.setPath(query.getPath());
       }
-
+      createTable.setExternal(query.isExternal());
       node = createTable;
     }
     

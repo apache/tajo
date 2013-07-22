@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
@@ -252,6 +253,13 @@ public class GlobalEngine extends AbstractService {
       meta = CatalogUtil.newTableMeta(createTable.getSchema(),
           createTable.getStorageType());
 
+    }
+
+    if(!createTable.isExternal()){
+      Path tablePath = new Path(sm.getTableBaseDir(), createTable.getTableName().toLowerCase());
+      createTable.setPath(tablePath);
+    } else {
+      Preconditions.checkState(createTable.hasPath(), "ERROR: LOCATION must be given.");
     }
 
     return createTable(createTable.getTableName(), meta, createTable.getPath());

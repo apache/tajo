@@ -238,7 +238,8 @@ public class CatalogServer extends AbstractService {
         store.addTable(new TableDescImpl(descBuilder.build()));
 
       } catch (IOException ioe) {
-        LOG.error(ioe);
+        LOG.error(ioe.getMessage(), ioe);
+        return BOOL_FALSE;
       } finally {
         wlock.unlock();
         LOG.info("Table " + tableDesc.getId() + " is added to the catalog ("
@@ -259,7 +260,8 @@ public class CatalogServer extends AbstractService {
         }
         store.deleteTable(tableId);
       } catch (IOException ioe) {
-        LOG.error(ioe);
+        LOG.error(ioe.getMessage(), ioe);
+        return BOOL_FALSE;
       } finally {
         wlock.unlock();
       }

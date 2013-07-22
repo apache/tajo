@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
    
+    TAJO-19: CREATE TABLE without external data should be supported. (jinho)
+
     TAJO-57: Recognize Parser and Catalog Standard SQL data types. (hyunsik)
 
     TAJO-33: Implement a basic query progress indicator. (hyunsik)

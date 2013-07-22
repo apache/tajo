@@ -32,6 +32,7 @@ public class CreateTableStmt extends ParseTree {
   private Path path;
   private QueryBlock selectStmt;
   private Options options;
+  private boolean external;
 
   public CreateTableStmt(final PlanningContext context,
                          final String tableName) {
@@ -121,5 +122,13 @@ public class CreateTableStmt extends ParseTree {
 
   public final Path getPath() {
     return this.path;
+  }
+
+  public boolean isExternal() {
+    return external;
+  }
+
+  public void setExternal(boolean external) {
+    this.external = external;
   }
 }
