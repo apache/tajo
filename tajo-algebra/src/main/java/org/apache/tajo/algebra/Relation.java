@@ -21,20 +21,24 @@ package org.apache.tajo.algebra;
 import org.apache.tajo.util.TUtil;
 
 public class Relation extends Expr {
-  private String rel_name;
+  private String tableName;
   private String alias;
 
-  protected Relation(ExprType type, String relationName) {
+  protected Relation(OpType type, String relationName) {
     super(type);
-    this.rel_name = relationName;
+    this.tableName = relationName;
   }
 
   public Relation(String relationName) {
-    this(ExprType.Relation, relationName);
+    this(OpType.Relation, relationName);
+  }
+
+  public String getCanonicalName() {
+    return alias == null ? tableName : alias;
   }
 
   public String getName() {
-    return rel_name;
+    return tableName;
   }
 
   public boolean hasAlias() {
@@ -57,13 +61,13 @@ public class Relation extends Expr {
   @Override
   boolean equalsTo(Expr expr) {
     Relation other = (Relation) expr;
-    return TUtil.checkEquals(rel_name, other.rel_name) &&
+    return TUtil.checkEquals(tableName, other.tableName) &&
         TUtil.checkEquals(alias, other.alias);
   }
 
   @Override
   public int hashCode() {
-    int result = rel_name.hashCode();
+    int result = tableName.hashCode();
     result = 31 * result + (alias != null ? alias.hashCode() : 0);
     return result;
   }

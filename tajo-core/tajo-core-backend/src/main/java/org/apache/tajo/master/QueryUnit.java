@@ -148,11 +148,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
         plan.getType() == ExprType.CREATE_INDEX);
     
 	  this.plan = plan;
-	  if (plan instanceof StoreTableNode) {
-      store = (StoreTableNode) plan;      
-    } else {
-      store = (StoreTableNode) ((IndexWriteNode)plan).getSubNode();
-    }
+    store = (StoreTableNode) plan;
+
 	  LogicalNode node = plan;
 	  ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
 	  s.add(node);

@@ -69,6 +69,12 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 		setModified();
 		this.keyVals.put(key, val);
 	}
+
+  public void putAll(Map<String, String> keyValues) {
+    initOptions();
+    setModified();
+    this.keyVals.putAll(keyValues);
+  }
 	
 	public void putAll(Options options) {
 	  initOptions();

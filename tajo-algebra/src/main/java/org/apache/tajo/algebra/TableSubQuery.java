@@ -20,10 +20,23 @@ package org.apache.tajo.algebra;
 
 public class TableSubQuery extends Relation {
   private Expr subquery;
+  private String [] columnNames;
 
   public TableSubQuery(String relName, Expr subquery) {
-    super(ExprType.TableSubQuery, relName);
+    super(OpType.TableSubQuery, relName);
     this.subquery = subquery;
+  }
+
+  public boolean hasColumnNames() {
+    return this.columnNames != null;
+  }
+
+  public void setColumnNames(String[] aliasList) {
+    this.columnNames = aliasList;
+  }
+
+  public String [] getColumnNames() {
+    return columnNames;
   }
 
   public Expr getSubQuery() {

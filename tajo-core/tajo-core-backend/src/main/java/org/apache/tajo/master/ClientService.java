@@ -20,6 +20,7 @@ package org.apache.tajo.master;
 
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
@@ -132,7 +133,7 @@ public class ClientService extends AbstractService {
         SubmitQueryRespose.Builder build = SubmitQueryRespose.newBuilder();
         build.setResultCode(ResultCode.ERROR);
         if (e.getMessage() != null) {
-          build.setErrorMessage(e.getMessage());
+          build.setErrorMessage(ExceptionUtils.getStackTrace(e));
         } else {
           build.setErrorMessage("Internal Error");
         }
@@ -159,7 +160,9 @@ public class ClientService extends AbstractService {
         return builder.build();
       } catch (Exception e) {
         builder.setResultCode(ResultCode.ERROR);
-        builder.setErrorMessage(e.getMessage());
+        if (e.getMessage() == null) {
+          builder.setErrorMessage(ExceptionUtils.getStackTrace(e));
+        }
         return builder.build();
       }
     }

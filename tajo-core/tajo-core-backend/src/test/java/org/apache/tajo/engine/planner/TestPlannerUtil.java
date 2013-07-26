@@ -19,10 +19,8 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.hadoop.fs.Path;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -33,11 +31,14 @@ import org.apache.tajo.engine.eval.ConstEval;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.function.builtin.SumInt;
-import org.apache.tajo.engine.parser.QueryAnalyzer;
+import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.List;
 
@@ -46,7 +47,7 @@ import static org.junit.Assert.*;
 public class TestPlannerUtil {
   private static TajoTestingCluster util;
   private static CatalogService catalog;
-  private static QueryAnalyzer analyzer;
+  private static SQLAnalyzer analyzer;
   private static LogicalPlanner planner;
 
   @BeforeClass
@@ -88,7 +89,7 @@ public class TestPlannerUtil {
         CatalogUtil.newDataTypesWithoutLen(Type.INT4));
 
     catalog.registerFunction(funcDesc);
-    analyzer = new QueryAnalyzer(catalog);
+    analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
   }
 
@@ -100,8 +101,8 @@ public class TestPlannerUtil {
   @Test
   public final void testTransformTwoPhase() {
     // without 'having clause'
-    PlanningContext context = analyzer.parse(TestLogicalPlanner.QUERIES[7]);
-    LogicalNode plan = planner.createPlan(context);
+    Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[7]);
+    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
 
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -114,8 +115,8 @@ public class TestPlannerUtil {
   
   @Test
   public final void testTrasformTwoPhaseWithStore() {
-    PlanningContext context = analyzer.parse(TestLogicalPlanner.QUERIES[9]);
-    LogicalNode plan = planner.createPlan(context);
+    Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[9]);
+    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     
     assertEquals(ExprType.ROOT, plan.getType());
     UnaryNode unary = (UnaryNode) plan;
@@ -145,8 +146,8 @@ public class TestPlannerUtil {
   @Test
   public final void testFindTopNode() throws CloneNotSupportedException {
     // two relations
-    PlanningContext context = analyzer.parse(TestLogicalPlanner.QUERIES[1]);
-    LogicalNode plan = planner.createPlan(context);
+    Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[1]);
+    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
 
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;

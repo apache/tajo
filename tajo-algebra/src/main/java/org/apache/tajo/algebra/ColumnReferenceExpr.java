@@ -21,29 +21,41 @@ package org.apache.tajo.algebra;
 import org.apache.tajo.util.TUtil;
 
 public class ColumnReferenceExpr extends Expr {
-  private String rel_name;
-  private String column_name;
+  private String tableName;
+  private String name;
 
   public ColumnReferenceExpr(String columnName) {
-    super(ExprType.Column);
-    this.column_name = columnName;
+    super(OpType.Column);
+    this.name = columnName;
   }
 
-  public void setRelationName(String tableName) {
-    this.rel_name = tableName;
+  public void setTableName(String tableName) {
+    this.tableName = tableName;
   }
 
   public String getName() {
-    return this.column_name;
+    return this.name;
   }
 
-  public String getRelationName() {
-    return this.rel_name;
+  public boolean hasTableName() {
+    return this.tableName != null;
+  }
+
+  public String getTableName() {
+    return this.tableName;
+  }
+
+  public String getCanonicalName() {
+    if (tableName != null) {
+      return tableName + "." + name;
+    } else {
+      return name;
+    }
   }
 
   public boolean equalsTo(Expr expr) {
     ColumnReferenceExpr another = (ColumnReferenceExpr) expr;
-    return column_name.equals(another.column_name) &&
-        TUtil.checkEquals(rel_name, another.rel_name);
+    return name.equals(another.name) &&
+        TUtil.checkEquals(tableName, another.tableName);
   }
 }

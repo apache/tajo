@@ -21,13 +21,17 @@ package org.apache.tajo.algebra;
 import org.apache.tajo.util.TUtil;
 
 public class Projection extends UnaryOperator implements Cloneable {
-  private boolean project_all;
+  private boolean all;
   private boolean distinct = false;
 
-  private Target [] targets;
+  private Target[] targets;
 
   public Projection() {
-    super(ExprType.Projection);
+    super(OpType.Projection);
+  }
+
+  public int size() {
+    return targets.length;
   }
 
   public boolean isDistinct() {
@@ -39,25 +43,25 @@ public class Projection extends UnaryOperator implements Cloneable {
   }
 
   public void setAll() {
-    project_all = true;
+    all = true;
   }
 
   public boolean isAllProjected() {
-    return project_all;
+    return all;
   }
 	
-	public Target [] getTargets() {
+	public Target[] getTargets() {
 	  return this.targets;
 	}
 
-  public void setTargets(Target [] targets) {
+  public void setTargets(Target[] targets) {
     this.targets = targets;
   }
 
   @Override
   boolean equalsTo(Expr expr) {
     Projection another = (Projection) expr;
-    return TUtil.checkEquals(project_all, another.project_all) &&
+    return TUtil.checkEquals(all, another.all) &&
         TUtil.checkEquals(targets, another.targets);
   }
 

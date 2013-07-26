@@ -22,12 +22,10 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.parser.QueryBlock.Target;
 import org.apache.tajo.storage.Tuple;
 
 public class Projector {
   private final Schema inSchema;
-  private final Schema outSchema;
 
   // for projection
   private final int targetNum;
@@ -39,7 +37,6 @@ public class Projector {
 
   public Projector(Schema inSchema, Schema outSchema, Target [] targets) {
     this.inSchema = inSchema;
-    this.outSchema = outSchema;
 
     this.targetNum = targets != null ? targets.length : 0;
 

@@ -1,0 +1,1 @@
+select name, addr from people inner join student on people.name = student.name

@@ -23,6 +23,8 @@ import com.google.common.collect.Maps;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +37,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.parser.QueryAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.physical.ExternalSortExec;
@@ -61,7 +62,7 @@ public class TestRangeRetrieverHandler {
   private TajoTestingCluster util;
   private TajoConf conf;
   private CatalogService catalog;
-  private QueryAnalyzer analyzer;
+  private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
   private StorageManager sm;
   private Schema schema;
@@ -80,7 +81,7 @@ public class TestRangeRetrieverHandler {
     catalog = util.getMiniCatalogCluster().getCatalog();
     sm = StorageManager.get(conf, testDir);
 
-    analyzer = new QueryAnalyzer(catalog);
+    analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
 
     schema = new Schema();
@@ -135,12 +136,12 @@ public class TestRangeRetrieverHandler {
     TaskAttemptContext
         ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, testDir);
-    PlanningContext context = analyzer.parse(SORT_QUERY[0]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
+    Expr expr = analyzer.parse(SORT_QUERY[0]);
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     ProjectionExec proj = (ProjectionExec) exec;
     ExternalSortExec sort = (ExternalSortExec) proj.getChild();
@@ -246,12 +247,12 @@ public class TestRangeRetrieverHandler {
     TaskAttemptContext
         ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, testDir);
-    PlanningContext context = analyzer.parse(SORT_QUERY[1]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
+    Expr expr = analyzer.parse(SORT_QUERY[1]);
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     ProjectionExec proj = (ProjectionExec) exec;
     ExternalSortExec sort = (ExternalSortExec) proj.getChild();

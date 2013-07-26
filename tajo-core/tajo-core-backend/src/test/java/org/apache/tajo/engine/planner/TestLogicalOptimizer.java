@@ -19,18 +19,19 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.hadoop.fs.Path;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.function.builtin.SumInt;
-import org.apache.tajo.engine.parser.QueryAnalyzer;
+import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.master.TajoMaster;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static org.junit.Assert.*;
 
@@ -38,7 +39,7 @@ public class TestLogicalOptimizer {
 
   private static TajoTestingCluster util;
   private static CatalogService catalog;
-  private static QueryAnalyzer analyzer;
+  private static SQLAnalyzer sqlAnalyzer;
   private static LogicalPlanner planner;
 
   @BeforeClass
@@ -84,7 +85,7 @@ public class TestLogicalOptimizer {
         CatalogUtil.newDataTypesWithoutLen(Type.INT4));
 
     catalog.registerFunction(funcDesc);
-    analyzer = new QueryAnalyzer(catalog);
+    sqlAnalyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
   }
 
@@ -105,8 +106,9 @@ public class TestLogicalOptimizer {
   @Test
   public final void testProjectionPushWithNaturalJoin() throws CloneNotSupportedException {
     // two relations
-    PlanningContext context = analyzer.parse(QUERIES[4]);
-    LogicalNode plan = planner.createPlan(context);
+    Expr expr = sqlAnalyzer.parse(QUERIES[4]);
+    LogicalPlan newPlan = planner.createPlan(expr);
+    LogicalNode plan = newPlan.getRootBlock().getRoot();
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     TestLogicalNode.testCloneLogicalNode(root);
@@ -117,7 +119,8 @@ public class TestLogicalOptimizer {
     assertEquals(ExprType.SCAN, joinNode.getOuterNode().getType());
     assertEquals(ExprType.SCAN, joinNode.getInnerNode().getType());
     
-    LogicalNode optimized = LogicalOptimizer.optimize(context, plan);
+    LogicalNode optimized = LogicalOptimizer.optimize(newPlan);
+
     assertEquals(ExprType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
     TestLogicalNode.testCloneLogicalNode(root);
@@ -130,19 +133,17 @@ public class TestLogicalOptimizer {
   @Test
   public final void testProjectionPushWithInnerJoin() throws CloneNotSupportedException {
     // two relations
-    PlanningContext context = analyzer.parse(QUERIES[5]);
-    LogicalNode plan = planner.createPlan(context);
-    System.out.println(plan);
-    System.out.println("--------------");
-    LogicalNode optimized = LogicalOptimizer.optimize(context, plan);
-    System.out.println(optimized);
+    Expr expr = sqlAnalyzer.parse(QUERIES[5]);
+    LogicalPlan newPlan = planner.createPlan(expr);
+    LogicalOptimizer.optimize(newPlan);
   }
   
   @Test
   public final void testProjectionPush() throws CloneNotSupportedException {
     // two relations
-    PlanningContext context = analyzer.parse(QUERIES[2]);
-    LogicalNode plan = planner.createPlan(context);
+    Expr expr = sqlAnalyzer.parse(QUERIES[2]);
+    LogicalPlan newPlan = planner.createPlan(expr);
+    LogicalNode plan = newPlan.getRootBlock().getRoot();
     
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -153,7 +154,7 @@ public class TestLogicalOptimizer {
     SelectionNode selNode = (SelectionNode) projNode.getSubNode();    
     assertEquals(ExprType.SCAN, selNode.getSubNode().getType());        
     
-    LogicalNode optimized = LogicalOptimizer.optimize(context, plan);
+    LogicalNode optimized = LogicalOptimizer.optimize(newPlan);
     assertEquals(ExprType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
     TestLogicalNode.testCloneLogicalNode(root);
@@ -162,8 +163,9 @@ public class TestLogicalOptimizer {
   
   @Test
   public final void testOptimizeWithGroupBy() throws CloneNotSupportedException {
-    PlanningContext context = analyzer.parse(QUERIES[3]);
-    LogicalNode plan = planner.createPlan(context);
+    Expr expr = sqlAnalyzer.parse(QUERIES[3]);
+    LogicalPlan newPlan = planner.createPlan(expr);
+    LogicalNode plan = newPlan.getRootBlock().getRoot();
         
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -176,7 +178,7 @@ public class TestLogicalOptimizer {
     SelectionNode selNode = (SelectionNode) groupbyNode.getSubNode();
     assertEquals(ExprType.SCAN, selNode.getSubNode().getType());
     
-    LogicalNode optimized = LogicalOptimizer.optimize(context, plan);
+    LogicalNode optimized = LogicalOptimizer.optimize(newPlan);
     assertEquals(ExprType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
     TestLogicalNode.testCloneLogicalNode(root);
@@ -188,8 +190,9 @@ public class TestLogicalOptimizer {
   @Test
   public final void testPushable() throws CloneNotSupportedException {
     // two relations
-    PlanningContext context = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(context);
+    Expr expr = sqlAnalyzer.parse(QUERIES[0]);
+    LogicalPlan newPlan = planner.createPlan(expr);
+    LogicalNode plan = newPlan.getRootBlock().getRoot();
     
     assertEquals(ExprType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -206,10 +209,10 @@ public class TestLogicalOptimizer {
     assertFalse(joinNode.hasJoinQual());
     
     // Test for Pushable
-    assertTrue(LogicalOptimizer.canBeEvaluated(selNode.getQual(), joinNode));
+    assertTrue(PlannerUtil.canBeEvaluated(selNode.getQual(), joinNode));
     
     // Optimized plan
-    LogicalNode optimized = LogicalOptimizer.optimize(context, plan);
+    LogicalNode optimized = LogicalOptimizer.optimize(newPlan);
     assertEquals(ExprType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
     
@@ -218,8 +221,9 @@ public class TestLogicalOptimizer {
     assertTrue(joinNode.hasJoinQual());
     
     // Scan Pushable Test
-    context = analyzer.parse(QUERIES[1]);
-    plan = planner.createPlan(context);
+    expr = sqlAnalyzer.parse(QUERIES[1]);
+    newPlan = planner.createPlan(expr);
+    plan = newPlan.getRootBlock().getRoot();
     
     assertEquals(ExprType.ROOT, plan.getType());
     root = (LogicalRootNode) plan;
@@ -234,6 +238,6 @@ public class TestLogicalOptimizer {
     assertEquals(ExprType.SCAN, selNode.getSubNode().getType());
     ScanNode scanNode = (ScanNode) selNode.getSubNode();
     // Test for Join Node
-    assertTrue(LogicalOptimizer.canBeEvaluated(selNode.getQual(), scanNode));
+    assertTrue(PlannerUtil.canBeEvaluated(selNode.getQual(), scanNode));
   }
 }

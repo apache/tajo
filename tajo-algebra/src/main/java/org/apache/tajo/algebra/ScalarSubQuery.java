@@ -20,8 +20,9 @@ package org.apache.tajo.algebra;
 
 public class ScalarSubQuery extends Expr {
   private Expr subquery;
+
   public ScalarSubQuery(Expr subQuery) {
-    super(ExprType.ScalarSubQuery);
+    super(OpType.ScalarSubQuery);
     this.subquery = subQuery;
   }
 

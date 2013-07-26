@@ -443,8 +443,14 @@ public class CatalogServer extends AbstractService {
       for (int i = 0; i < size; i++) {
         paramTypes.add(request.getParameterTypes(i));
       }
-      return functions.get(CatalogUtil.getCanonicalName(
-          request.getSignature().toLowerCase(), paramTypes));
+
+      String key = CatalogUtil.getCanonicalName(
+          request.getSignature().toLowerCase(), paramTypes);
+      if (!functions.containsKey(key)) {
+        return null;
+      } else {
+        return functions.get(key);
+      }
     }
 
     @Override

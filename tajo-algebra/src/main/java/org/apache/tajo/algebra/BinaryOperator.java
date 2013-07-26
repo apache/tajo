@@ -19,14 +19,14 @@
 package org.apache.tajo.algebra;
 
 public class BinaryOperator extends Expr {
-  Expr left;
-  Expr right;
+  protected Expr left;
+  protected Expr right;
 
-  BinaryOperator(ExprType opType) {
+  BinaryOperator(OpType opType) {
     super(opType);
   }
 
-  public BinaryOperator(ExprType type, Expr left, Expr right) {
+  public BinaryOperator(OpType type, Expr left, Expr right) {
     super(type);
     this.left = left;
     this.right = right;

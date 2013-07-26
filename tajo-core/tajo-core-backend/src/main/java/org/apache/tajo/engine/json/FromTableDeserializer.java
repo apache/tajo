@@ -24,7 +24,7 @@ package org.apache.tajo.engine.json;
 import com.google.gson.*;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableDescImpl;
-import org.apache.tajo.engine.parser.QueryBlock.FromTable;
+import org.apache.tajo.engine.planner.FromTable;
 import org.apache.tajo.storage.Fragment;
 
 import java.lang.reflect.Type;

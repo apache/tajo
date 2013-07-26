@@ -118,7 +118,7 @@ public class TestJoinQuery {
 
   @Test
   public void testJoinRefEval() throws Exception {
-    ResultSet res = tpch.execute("select r_regionkey, n_regionkey, (r_regionkey + n_regionkey) as plus from region, nation where r_regionkey = n_regionkey");
+    ResultSet res = tpch.execute("select r_regionkey, n_regionkey, (r_regionkey + n_regionkey) as plus from region join nation on r_regionkey = n_regionkey");
     int r, n;
     while(res.next()) {
       r = res.getInt(1);
@@ -130,10 +130,10 @@ public class TestJoinQuery {
   @Test
   public void testJoinAndCaseWhen() throws Exception {
     ResultSet res = tpch.execute("select r_regionkey, n_regionkey, " +
-        "case when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 1) then 'one' " +
-        "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 2) then 'two' " +
-        "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 3) then 'three' " +
-        "when (((r_regionkey + n_regionkey) % 2) = 0 and r_regionkey = 4) then 'four' " +
+        "case when r_regionkey = 1 then 'one' " +
+        "when r_regionkey = 2 then 'two' " +
+        "when r_regionkey = 3 then 'three' " +
+        "when r_regionkey = 4 then 'four' " +
         "else 'zero' " +
         "end as cond from region, nation where r_regionkey = n_regionkey");
 

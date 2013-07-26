@@ -19,23 +19,24 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TaskAttemptContext;
+import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.parser.QueryAnalyzer;
+import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Random;
@@ -46,7 +47,7 @@ public class TestSortExec {
   private static TajoConf conf;
   private static final String TEST_PATH = "target/test-data/TestPhysicalPlanner";
   private static CatalogService catalog;
-  private static QueryAnalyzer analyzer;
+  private static SQLAnalyzer analyzer;
   private static LogicalPlanner planner;
   private static StorageManager sm;
   private static TajoTestingCluster util;
@@ -90,7 +91,7 @@ public class TestSortExec {
     TableDesc desc = new TableDescImpl("employee", employeeMeta, tablePath);
     catalog.addTable(desc);
 
-    analyzer = new QueryAnalyzer(catalog);
+    analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
   }
 
@@ -103,18 +104,18 @@ public class TestSortExec {
       "select managerId, empId, deptName from employee order by managerId, empId desc" };
 
   @Test
-  public final void testNext() throws IOException {
+  public final void testNext() throws IOException, CloneNotSupportedException {
     Fragment [] frags = sm.splitNG(conf, "employee", employeeMeta, tablePath, Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestSortExec");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil
         .newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(context);
-    LogicalOptimizer.optimize(context, plan);
+    Expr context = analyzer.parse(QUERIES[0]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     Tuple tuple;
     Datum preVal = null;

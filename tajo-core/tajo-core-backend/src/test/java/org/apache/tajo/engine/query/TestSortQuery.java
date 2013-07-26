@@ -66,6 +66,25 @@ public class TestSortQuery {
   }
 
   @Test
+  public final void testSortWithAliasKey() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_linenumber, l_orderkey as sortkey from lineitem order by sortkey");
+    int cnt = 0;
+    Long prev = null;
+    while(res.next()) {
+      if (prev == null) {
+        prev = res.getLong(2);
+      } else {
+        assertTrue(prev <= res.getLong(2));
+        prev = res.getLong(2);
+      }
+      cnt++;
+    }
+
+    assertEquals(5, cnt);
+  }
+
+  @Test
   public final void testSortDesc() throws Exception {
     ResultSet res = tpch.execute(
         "select l_linenumber, l_orderkey from lineitem order by l_orderkey desc");

@@ -21,9 +21,7 @@ package org.apache.tajo.engine.utils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.engine.parser.QueryBlock;
-
-import java.util.Collection;
+import org.apache.tajo.engine.planner.FromTable;
 
 public class SchemaUtil {
   public static Schema merge(Schema left, Schema right) {
@@ -42,9 +40,9 @@ public class SchemaUtil {
     return merged;
   }
 
-  public static Schema merge(QueryBlock.FromTable [] fromTables) {
+  public static Schema merge(FromTable[] fromTables) {
     Schema merged = new Schema();
-    for (QueryBlock.FromTable table : fromTables) {
+    for (FromTable table : fromTables) {
       merged.addColumns(table.getSchema());
     }
 
@@ -63,31 +61,6 @@ public class SchemaUtil {
     }
     
     return common;
-  }
-
-  public static Schema mergeAllWithNoDup(Collection<Column>...columnList) {
-    Schema merged = new Schema();
-    for (Collection<Column> columns : columnList) {
-      for (Column col : columns) {
-        if (merged.contains(col.getQualifiedName())) {
-          continue;
-        }
-        merged.addColumn(col);
-      }
-    }
-
-    return merged;
-  }
-
-  public static Schema getProjectedSchema(Schema inSchema, Collection<Column> columns) {
-    Schema projected = new Schema();
-    for (Column col : columns) {
-      if (inSchema.contains(col.getQualifiedName())) {
-        projected.addColumn(col);
-      }
-    }
-
-    return projected;
   }
 
   public static DataType[] newNoNameSchema(DataType... types) {

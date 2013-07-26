@@ -12,6 +12,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-87: Integration of tajo algebra module and SQL parser. (hyunsik)
+
     TAJO-70: Refactor GlobalEngine to handle DDL statements. (hyunsik)
 
     TAJO-86: Improved error messages in query analyzer. (jinho)

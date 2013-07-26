@@ -106,17 +106,20 @@ public class TajoClient {
    *
    * @return If failed, return null.
    */
-  public ResultSet executeQueryAndGetResult(String tql)
+  public ResultSet executeQueryAndGetResult(String sql)
       throws ServiceException, IOException {
     QueryRequest.Builder builder = QueryRequest.newBuilder();
-    builder.setQuery(tql);
+    builder.setQuery(sql);
     SubmitQueryRespose response = service.submitQuery(null, builder.build());
-    QueryId queryId = new QueryId(response.getQueryId());
-    if (queryId.equals(TajoIdUtils.NullQueryId)) {
-      return null;
+    if (response.getResultCode() == ResultCode.OK) {
+      QueryId queryId = new QueryId(response.getQueryId());
+      if (queryId.equals(TajoIdUtils.NullQueryId)) {
+        return null;
+      }
+      return getQueryResultAndWait(queryId);
+    } else {
+      throw new ServiceException(response.getErrorMessage());
     }
-
-    return getQueryResultAndWait(queryId);
   }
 
   public QueryStatus getQueryStatus(QueryId queryId) throws ServiceException {
@@ -239,10 +242,6 @@ public class TajoClient {
     StringProto.Builder builder = StringProto.newBuilder();
     builder.setValue(name);
     return service.dropTable(null, builder.build()).getValue();
-  }
-
-  public List<String> getClusterInfo() {
-    return null;
   }
 
   /**

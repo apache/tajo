@@ -57,7 +57,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable {
 	public Schema(Schema schema) {
 	  this();
 		this.fields = new ArrayList<Column>(schema.fields);
-		this.fieldsByName = new HashMap<String, Integer>(schema.fieldsByName);
+		this.fieldsByName = new TreeMap<String, Integer>(schema.fieldsByName);
 	}
 	
 	public Schema(Column [] columns) {

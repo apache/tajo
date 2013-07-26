@@ -20,7 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.TaskAttemptContext;
 import org.apache.tajo.engine.eval.EvalContext;
-import org.apache.tajo.engine.parser.QueryBlock.Target;
+import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.EvalExprNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;

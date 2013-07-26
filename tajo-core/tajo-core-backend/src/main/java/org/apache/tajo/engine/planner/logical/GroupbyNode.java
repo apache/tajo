@@ -22,18 +22,18 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.json.GsonCreator;
-import org.apache.tajo.engine.parser.QueryBlock;
+import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Arrays;
 
-public class GroupbyNode extends UnaryNode implements Cloneable {
+public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
 	@Expose
 	private Column[] columns;
 	@Expose
 	private EvalNode havingCondition = null;
 	@Expose
-	private QueryBlock.Target[] targets;
+	private Target[] targets;
 	
 	public GroupbyNode() {
 		super();
@@ -65,17 +65,20 @@ public class GroupbyNode extends UnaryNode implements Cloneable {
 	public final void setHavingCondition(final EvalNode evalTree) {
 	  this.havingCondition = evalTree;
 	}
-	
-  public boolean hasTargetList() {
+
+  @Override
+  public boolean hasTargets() {
     return this.targets != null;
   }
 
-  public QueryBlock.Target[] getTargets() {
-    return this.targets;
+  @Override
+  public void setTargets(Target[] targets) {
+    this.targets = targets;
   }
 
-  public void setTargetList(QueryBlock.Target[] targets) {
-    this.targets = targets;
+  @Override
+  public Target[] getTargets() {
+    return this.targets;
   }
   
   public void setSubNode(LogicalNode subNode) {
@@ -91,9 +94,9 @@ public class GroupbyNode extends UnaryNode implements Cloneable {
     }
     
     if(hasHavingCondition()) {
-      sb.append("], \"having qual\": \""+havingCondition+"\"");
+      sb.append("], \"having qual\": \"").append(havingCondition).append("\"");
     }
-    if(hasTargetList()) {
+    if(hasTargets()) {
       sb.append(", \"target\": [");
       for (int i = 0; i < targets.length; i++) {
         sb.append("\"").append(targets[i]).append("\"");
@@ -137,9 +140,9 @@ public class GroupbyNode extends UnaryNode implements Cloneable {
     grp.havingCondition = (EvalNode) (havingCondition != null 
         ? havingCondition.clone() : null);    
     if (targets != null) {
-      grp.targets = new QueryBlock.Target[targets.length];
+      grp.targets = new Target[targets.length];
       for (int i = 0; i < targets.length; i++) {
-        grp.targets[i] = (QueryBlock.Target) targets[i].clone();
+        grp.targets[i] = (Target) targets[i].clone();
       }
     }
 

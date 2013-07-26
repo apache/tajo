@@ -33,6 +33,7 @@ import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
@@ -44,24 +45,23 @@ import org.apache.tajo.engine.exception.EmptyClusterException;
 import org.apache.tajo.engine.exception.IllegalQueryStatusException;
 import org.apache.tajo.engine.exception.NoSuchQueryIdException;
 import org.apache.tajo.engine.exception.UnknownWorkerException;
-import org.apache.tajo.engine.parser.DropTableStmt;
-import org.apache.tajo.engine.parser.QueryAnalyzer;
-import org.apache.tajo.engine.parser.StatementType;
-import org.apache.tajo.engine.planner.LogicalOptimizer;
-import org.apache.tajo.engine.planner.LogicalPlanner;
-import org.apache.tajo.engine.planner.PlanningContext;
+import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.GlobalOptimizer;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.LogicalOptimizer;
+import org.apache.tajo.engine.planner.LogicalPlanner;
 import org.apache.tajo.engine.planner.logical.CreateTableNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
-import org.apache.tajo.engine.query.exception.TQLSyntaxError;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -73,8 +73,8 @@ public class GlobalEngine extends AbstractService {
   private final MasterContext context;
   private final StorageManager sm;
 
+  private SQLAnalyzer analyzer;
   private CatalogService catalog;
-  private QueryAnalyzer analyzer;
   private LogicalPlanner planner;
   private GlobalPlanner globalPlanner;
   private GlobalOptimizer globalOptimizer;
@@ -93,7 +93,7 @@ public class GlobalEngine extends AbstractService {
   public void start() {
     try  {
       connectYarnClient();
-      analyzer = new QueryAnalyzer(context.getCatalog());
+      analyzer = new SQLAnalyzer();
       planner = new LogicalPlanner(context.getCatalog());
 
       globalPlanner = new GlobalPlanner(context.getConf(), context.getCatalog(),
@@ -115,19 +115,17 @@ public class GlobalEngine extends AbstractService {
       throws InterruptedException, IOException,
       NoSuchQueryIdException, IllegalQueryStatusException,
       UnknownWorkerException, EmptyClusterException {
+
     long querySubmittionTime = context.getClock().getTime();
     LOG.info("SQL: " + tql);
     // parse the query
-    PlanningContext planningContext = analyzer.parse(tql);
+    Expr planningContext = analyzer.parse(tql);
+    LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
 
-    StatementType cmdType = planningContext.getParseTree().getStatementType();
-
-    if (cmdType == StatementType.CREATE_TABLE || cmdType == StatementType.DROP_TABLE) {
-      updateQuery(planningContext);
+    if (PlannerUtil.checkIfDDLPlan(plan)) {
+      updateQuery(plan.getSubNode());
       return TajoIdUtils.NullQueryId;
     } else {
-      LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
-
       ApplicationAttemptId appAttemptId = submitQuery();
       QueryId queryId = TajoIdUtils.createQueryId(appAttemptId);
       MasterPlan masterPlan = createGlobalPlan(queryId, plan);
@@ -135,8 +133,9 @@ public class GlobalEngine extends AbstractService {
       queryConf.setUser(UserGroupInformation.getCurrentUser().getShortUserName());
 
       // the output table is given by user
-      if (planningContext.hasExplicitOutputTable()) {
-        queryConf.setOutputTable(planningContext.getExplicitOutputTable());
+      if (plan.getSubNode().getType() == ExprType.CREATE_TABLE) {
+        CreateTableNode createTableNode = (CreateTableNode) plan.getSubNode();
+        queryConf.setOutputTable(createTableNode.getTableName());
       }
 
       QueryMaster query = new QueryMaster(context, appAttemptId,
@@ -192,38 +191,48 @@ public class GlobalEngine extends AbstractService {
     return attemptId;
   }
 
-  public boolean updateQuery(String sql) throws IOException {
+  public QueryId updateQuery(String sql) throws IOException, SQLException {
     LOG.info("SQL: " + sql);
-    PlanningContext planningContext = analyzer.parse(sql);
-    return updateQuery(planningContext);
+    // parse the query
+    Expr planningContext = analyzer.parse(sql);
+    LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
+
+    if (!PlannerUtil.checkIfDDLPlan(plan)) {
+      throw new SQLException("This is not update query:\n" + sql);
+    } else {
+      updateQuery(plan.getSubNode());
+      return TajoIdUtils.NullQueryId;
+    }
   }
 
-  public boolean updateQuery(PlanningContext planningContext) throws IOException {
-    StatementType type = planningContext.getParseTree().getStatementType();
+  private boolean updateQuery(LogicalNode root) throws IOException {
 
-    switch (type) {
+    switch (root.getType()) {
       case CREATE_TABLE:
-        LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
-        createTable(plan);
+        CreateTableNode createTable = (CreateTableNode) root;
+        createTable(createTable);
         return true;
 
       case DROP_TABLE:
-        DropTableStmt stmt = (DropTableStmt) planningContext.getParseTree();
+        DropTableNode stmt = (DropTableNode) root;
         dropTable(stmt.getTableName());
         return true;
 
       default:
-        throw new TQLSyntaxError(planningContext.getRawQuery(), "updateQuery cannot handle such query");
+        throw new InternalError("updateQuery cannot handle such query: \n" + root.toJSON());
     }
   }
 
-  private LogicalNode createLogicalPlan(PlanningContext planningContext)
-      throws IOException {
+  private LogicalNode createLogicalPlan(Expr expression) throws IOException {
 
-    LogicalNode plan = planner.createPlan(planningContext);
-    plan = LogicalOptimizer.optimize(planningContext, plan);
-    LogicalNode optimizedPlan = LogicalOptimizer.pushIndex(plan, sm);
-    LOG.info("LogicalPlan:\n" + plan);
+    LogicalPlan plan = planner.createPlan(expression);
+    LogicalNode optimizedPlan = null;
+    try {
+      optimizedPlan = LogicalOptimizer.optimize(plan);
+    } catch (CloneNotSupportedException e) {
+      e.printStackTrace();
+    }
+    LOG.info("LogicalPlan:\n" + plan.getRootBlock().getRoot());
 
     return optimizedPlan;
   }
@@ -241,18 +250,15 @@ public class GlobalEngine extends AbstractService {
     query.start();
   }
 
-  private TableDesc createTable(LogicalRootNode root) throws IOException {
-    CreateTableNode createTable = (CreateTableNode) root.getSubNode();
+  private TableDesc createTable(CreateTableNode createTable) throws IOException {
     TableMeta meta;
 
     if (createTable.hasOptions()) {
       meta = CatalogUtil.newTableMeta(createTable.getSchema(),
           createTable.getStorageType(), createTable.getOptions());
-
     } else {
       meta = CatalogUtil.newTableMeta(createTable.getSchema(),
           createTable.getStorageType());
-
     }
 
     if(!createTable.isExternal()){

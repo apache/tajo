@@ -20,17 +20,17 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.json.GsonCreator;
-import org.apache.tajo.engine.parser.QueryBlock;
-import org.apache.tajo.engine.parser.QueryBlock.FromTable;
-import org.apache.tajo.engine.parser.QueryBlock.Target;
+import org.apache.tajo.engine.planner.FromTable;
+import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
-public class ScanNode extends LogicalNode {
+public class ScanNode extends LogicalNode implements Projectable {
 	@Expose private FromTable table;
 	@Expose private EvalNode qual;
-	@Expose private QueryBlock.Target[] targets;
+	@Expose private Target[] targets;
 	@Expose private boolean local;
   @Expose private boolean broadcast;
 	
@@ -54,6 +54,14 @@ public class ScanNode extends LogicalNode {
 	public boolean hasAlias() {
 	  return table.hasAlias();
 	}
+
+  public String getCanonicalName() {
+    return table.hasAlias() ? table.getAlias() : table.getTableName();
+  }
+
+  public Schema getTableSchema() {
+    return table.getSchema();
+  }
 	
 	public boolean hasQual() {
 	  return qual != null;
@@ -74,15 +82,18 @@ public class ScanNode extends LogicalNode {
 	public void setQual(EvalNode evalTree) {
 	  this.qual = evalTree;
 	}
-	
-	public boolean hasTargetList() {
+
+  @Override
+	public boolean hasTargets() {
 	  return this.targets != null;
 	}
-	
+
+  @Override
 	public void setTargets(Target [] targets) {
 	  this.targets = targets;
 	}
-	
+
+  @Override
 	public Target [] getTargets() {
 	  return this.targets;
 	}
@@ -119,7 +130,7 @@ public class ScanNode extends LogicalNode {
 	    sb.append(", \"qual\": \"").append(this.qual).append("\"");
 	  }
 	  
-	  if (hasTargetList()) {
+	  if (hasTargets()) {
 	    sb.append(", \"target list\": ");
       boolean first = true;
       for (Target target : targets) {
@@ -172,7 +183,7 @@ public class ScanNode extends LogicalNode {
 	    scanNode.qual = (EvalNode) this.qual.clone();
 	  }
 	  
-	  if (hasTargetList()) {
+	  if (hasTargets()) {
 	    scanNode.targets = new Target[targets.length];
       for (int i = 0; i < targets.length; i++) {
         scanNode.targets[i] = (Target) targets[i].clone();

@@ -20,43 +20,45 @@ package org.apache.tajo.algebra;
 
 import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
+
 public class Join extends BinaryOperator {
-  private JoinType join_type;
-  private Expr join_qual;
-  private ColumnReferenceExpr [] join_columns;
+  private JoinType joinType;
+  private Expr joinQual;
+  private ColumnReferenceExpr[] joinColumns;
   private boolean natural = false;
 
   public Join(JoinType joinType) {
-    super(ExprType.Join);
-    this.join_type = joinType;
+    super(OpType.Join);
+    this.joinType = joinType;
   }
 
   public JoinType getJoinType() {
-    return  this.join_type;
+    return  this.joinType;
   }
 
   public boolean hasQual() {
-    return this.join_qual != null;
+    return this.joinQual != null;
   }
 
   public Expr getQual() {
-    return this.join_qual;
+    return this.joinQual;
   }
 
   public void setQual(Expr expr) {
-    this.join_qual = expr;
+    this.joinQual = expr;
   }
 
   public boolean hasJoinColumns() {
-    return join_columns != null;
+    return joinColumns != null;
   }
 
-  public ColumnReferenceExpr [] getJoinColumns() {
-    return join_columns;
+  public ColumnReferenceExpr[] getJoinColumns() {
+    return joinColumns;
   }
 
   public void setJoinColumns(ColumnReferenceExpr[] columns) {
-    join_columns = columns;
+    joinColumns = columns;
   }
 
   public void setNatural() {
@@ -69,14 +71,24 @@ public class Join extends BinaryOperator {
 
   boolean equalsTo(Expr expr) {
     Join another = (Join) expr;
-    return join_type.equals(another.join_type) &&
-        TUtil.checkEquals(join_qual, another.join_qual) &&
-        TUtil.checkEquals(join_columns, another.join_columns) &&
+    return joinType.equals(another.joinType) &&
+        TUtil.checkEquals(joinQual, another.joinQual) &&
+        TUtil.checkEquals(joinColumns, another.joinColumns) &&
         natural == another.natural;
   }
 
   @Override
   public String toJson() {
     return JsonHelper.toJson(this);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = getType().hashCode();
+    result = 31 * result + joinType.hashCode();
+    result = 31 * result + (joinQual != null ? joinQual.hashCode() : 0);
+    result = 31 * result + (joinColumns != null ? Arrays.hashCode(joinColumns) : 0);
+    result = 31 * result + (natural ? 1 : 0);
+    return result;
   }
 }

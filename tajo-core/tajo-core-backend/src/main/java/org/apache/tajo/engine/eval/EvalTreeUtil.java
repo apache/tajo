@@ -25,7 +25,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.engine.eval.EvalNode.Type;
-import org.apache.tajo.engine.parser.QueryBlock.Target;
+import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.exception.InternalException;
 
@@ -58,15 +58,15 @@ public class EvalTreeUtil {
   /**
    * Convert a list of conjunctive normal forms into a singleton expression.
    *  
-   * @param evalNode
-   * @return
+   * @param cnfExprs
+   * @return The EvalNode object that merges all CNF-formed expressions.
    */
-  public static EvalNode transformCNF2Singleton(EvalNode...evalNode) {    
-    if (evalNode.length == 1) {
-      return evalNode[0];
+  public static EvalNode transformCNF2Singleton(EvalNode...cnfExprs) {
+    if (cnfExprs.length == 1) {
+      return cnfExprs[0];
     }
     
-    return transformCNF2Singleton_(evalNode, 0);
+    return transformCNF2Singleton_(cnfExprs, 0);
   }
   
   private static EvalNode transformCNF2Singleton_(EvalNode [] evalNode, int idx) {
@@ -81,12 +81,12 @@ public class EvalTreeUtil {
   /**
    * Get a list of exprs similar to CNF
    * 
-   * @param node
-   * @return
+   * @param expr The expression to be transformed to an array of CNF-formed expressions.
+   * @return An array of CNF-formed expressions
    */
-  public static EvalNode [] getConjNormalForm(EvalNode node) {
+  public static EvalNode [] getConjNormalForm(EvalNode expr) {
     List<EvalNode> list = new ArrayList<EvalNode>();    
-    getConjNormalForm(node, list);    
+    getConjNormalForm(expr, list);
     return list.toArray(new EvalNode[list.size()]);
   }
   
@@ -97,26 +97,6 @@ public class EvalTreeUtil {
     } else {
       found.add(node);
     }
-  }
-  
-  /**
-   * Compute a schema from a list of exprs.
-   * 
-   * @param inputSchema
-   * @param evalNodes
-   * @return
-   * @throws InternalException
-   */
-  public static Schema getSchemaByExprs(Schema inputSchema, EvalNode [] evalNodes) 
-      throws InternalException {
-    Schema schema = new Schema();
-    for (EvalNode expr : evalNodes) {
-      schema.addColumn(
-          expr.getName(),
-          getDomainByExpr(inputSchema, expr)[0]);
-    }
-    
-    return schema;
   }
   
   public static Schema getSchemaByTargets(Schema inputSchema, Target [] targets) 
@@ -203,10 +183,6 @@ public class EvalTreeUtil {
   /**
    * Examine if the expr contains the column reference corresponding 
    * to the target column
-   * 
-   * @param expr
-   * @param target
-   * @return
    */
   public static boolean containColumnRef(EvalNode expr, Column target) {
     Set<EvalNode> exprSet = Sets.newHashSet();

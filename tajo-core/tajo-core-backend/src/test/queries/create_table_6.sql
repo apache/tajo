@@ -1,0 +1,1 @@
+create table name (name text, age int) using rcfile as select * from test

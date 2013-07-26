@@ -20,15 +20,15 @@ package org.apache.tajo.algebra;
 
 
 public class Limit extends UnaryOperator {
-  private Expr fetch_first_num;
+  private Expr fetchFirstNum;
 
-  public Limit(Expr fetch_first_num) {
-    super(ExprType.Limit);
-    this.fetch_first_num = fetch_first_num;
+  public Limit(Expr fetchFirstNum) {
+    super(OpType.Limit);
+    this.fetchFirstNum = fetchFirstNum;
   }
 
   public Expr getFetchFirstNum() {
-    return this.fetch_first_num;
+    return this.fetchFirstNum;
   }
 
   @Override
@@ -44,6 +44,6 @@ public class Limit extends UnaryOperator {
   @Override
   boolean equalsTo(Expr expr) {
     Limit another = (Limit) expr;
-    return fetch_first_num.equals(another.fetch_first_num);
+    return fetchFirstNum.equals(another.fetchFirstNum);
   }
 }

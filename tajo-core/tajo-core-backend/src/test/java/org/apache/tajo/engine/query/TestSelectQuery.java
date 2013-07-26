@@ -20,11 +20,11 @@ package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.TpchTestBase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.TpchTestBase;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -134,7 +134,7 @@ public class TestSelectQuery {
     assertEquals("ly final dependencies: slyly bold",res.getString(16));
   }
 
-  //@Test
+  @Test
   public final void testSelectDistinct() throws Exception {
     Set<String> result1 = Sets.newHashSet();
     result1.add("1,1");
@@ -266,18 +266,18 @@ public class TestSelectQuery {
   @Test
   public final void testUnion1() throws Exception {
     ResultSet res = tpch.execute(
-        "select l_orderkey as num from lineitem union select c_custkey as num from customer");
+        "select o_custkey as num from orders union select c_custkey as num from customer");
     int count = 0;
     for (;res.next();) {
       count++;
     }
-    assertEquals(8, count);
+    assertEquals(6, count);
   }
 
   @Test
   public final void testUnion2() throws Exception {
     ResultSet res = tpch.execute(
-        "select l_orderkey from lineitem as l1 union select l_orderkey from lineitem as l2");
+        "select l_orderkey from lineitem l1 union select l_orderkey from lineitem l2");
     int count = 0;
     for (;res.next();) {
       count++;
@@ -289,7 +289,11 @@ public class TestSelectQuery {
   public final void testCreateAfterSelect() throws Exception {
     ResultSet res = tpch.execute(
         "create table orderkeys as select l_orderkey from lineitem");
-    assertNull(res);
+    int count = 0;
+    for (;res.next();) {
+      count++;
+    }
+    assertEquals(count, 5);
   }
 
   //@Test

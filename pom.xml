@@ -80,7 +80,6 @@
     <module>tajo-project</module>
     <module>tajo-common</module>
     <module>tajo-algebra</module>
-    <module>tajo-frontend</module>
     <module>tajo-core</module>
     <module>tajo-rpc</module>
     <module>tajo-catalog</module>
@@ -249,11 +248,6 @@
             </lifecycleMappingMetadata>
           </configuration>
         </plugin>
-        <plugin>
-          <groupId>org.antlr</groupId>
-          <artifactId>antlr3-maven-plugin</artifactId>
-          <version>3.4</version>
-        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -304,6 +298,7 @@
           <excludes>
             <exclude>CHANGES.txt</exclude>
             <exclude>**/*.tql</exclude>
+            <exclude>**/*.sql</exclude>
             <exclude>**/*.schema</exclude>
             <exclude>**/*.tbl</exclude>
             <!-- generated content -->

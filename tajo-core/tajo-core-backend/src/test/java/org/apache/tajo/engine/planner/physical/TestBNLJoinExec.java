@@ -19,6 +19,9 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.planner.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,11 +33,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.parser.QueryAnalyzer;
-import org.apache.tajo.engine.planner.LogicalPlanner;
-import org.apache.tajo.engine.planner.PhysicalPlanner;
-import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
-import org.apache.tajo.engine.planner.PlanningContext;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.storage.*;
@@ -51,7 +49,7 @@ public class TestBNLJoinExec {
   private final String TEST_PATH = "target/test-data/TestNLJoinExec";
   private TajoTestingCluster util;
   private CatalogService catalog;
-  private QueryAnalyzer analyzer;
+  private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
   private StorageManager sm;
   private Path testDir;
@@ -114,7 +112,7 @@ public class TestBNLJoinExec {
 
     people = CatalogUtil.newTableDesc("people", peopleMeta, peoplePath);
     catalog.addTable(people);
-    analyzer = new QueryAnalyzer(catalog);
+    analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
   }
 
@@ -140,21 +138,19 @@ public class TestBNLJoinExec {
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCrossJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), merged, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(context);
-    //LogicalOptimizer.optimize(ctx, plan);
+    Expr expr = analyzer.parse(QUERIES[0]);
+    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    /*ProjectionExec proj = (ProjectionExec) exec;
+    ProjectionExec proj = (ProjectionExec) exec;
     NLJoinExec nlJoin = (NLJoinExec) proj.getChild();
-    SeqScanExec scanOuter = (SeqScanExec) nlJoin.getOuter();
-    SeqScanExec scanInner = (SeqScanExec) nlJoin.getInner();
+    SeqScanExec scanOuter = (SeqScanExec) nlJoin.getOuterChild();
+    SeqScanExec scanInner = (SeqScanExec) nlJoin.getInnerChild();
 
-    BNLJoinExec bnl = new BNLJoinExec(ctx, nlJoin.getJoinNode(), scanOuter,
-        scanInner);
-    proj.setsubOp(bnl);*/
+    BNLJoinExec bnl = new BNLJoinExec(ctx, nlJoin.getPlan(), scanOuter, scanInner);
+    proj.setChild(bnl);
 
     int i = 0;
     exec.init();
@@ -178,8 +174,8 @@ public class TestBNLJoinExec {
     TaskAttemptContext ctx =
         new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
             merged, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[1]);
-    LogicalNode plan = planner.createPlan(context);
+    Expr context = analyzer.parse(QUERIES[1]);
+    LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);

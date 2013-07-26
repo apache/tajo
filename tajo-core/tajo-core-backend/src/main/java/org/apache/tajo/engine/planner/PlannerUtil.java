@@ -30,17 +30,26 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.parser.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.query.exception.InvalidQueryException;
 import org.apache.tajo.storage.TupleComparator;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 public class PlannerUtil {
   private static final Log LOG = LogFactory.getLog(PlannerUtil.class);
+
+  public static boolean checkIfDDLPlan(LogicalNode node) {
+    LogicalNode baseNode = node;
+    if (node instanceof LogicalRootNode) {
+      baseNode = ((LogicalRootNode) node).getSubNode();
+    }
+
+    return baseNode.getType() == ExprType.CREATE_TABLE || baseNode.getType() == ExprType.DROP_TABLE;
+  }
   
   public static String [] getLineage(LogicalNode node) {
     LogicalNode [] scans =  PlannerUtil.findAllNodes(node, ExprType.SCAN);
@@ -48,11 +57,7 @@ public class PlannerUtil {
     ScanNode scan;
     for (int i = 0; i < scans.length; i++) {
       scan = (ScanNode) scans[i];
-      /*if (scan.hasAlias()) {
-        tableNames[i] = scan.getAlias();
-      } else {*/
-        tableNames[i] = scan.getTableId();
-      //}
+      tableNames[i] = scan.getTableId();
     }
     return tableNames;
   }
@@ -73,25 +78,37 @@ public class PlannerUtil {
   }
   
   /**
-   * Delete the child of a given parent operator.
-   * 
-   * @param parent Must be a unary logical operator.
-   * @return input parent node
+   * Delete the logical node from a plan.
+   *
+   * @param parent this node must be a parent node of one node to be removed.
+   * @param tobeRemoved this node must be a child node of the parent.
    */
-  public static LogicalNode deleteNode(LogicalNode parent) {
+  public static LogicalNode deleteNode(LogicalNode parent, LogicalNode tobeRemoved) {
+    Preconditions.checkArgument(tobeRemoved instanceof UnaryNode,
+        "ERROR: the logical node to be removed must be unary node.");
+
+    UnaryNode child = (UnaryNode) tobeRemoved;
+    LogicalNode grandChild = child.getSubNode();
     if (parent instanceof UnaryNode) {
-      UnaryNode unary = (UnaryNode) parent;
-      if (unary.getSubNode() instanceof UnaryNode) {
-        UnaryNode child = (UnaryNode) unary.getSubNode();
-        LogicalNode grandChild = child.getSubNode();
-        unary.setSubNode(grandChild);
+      UnaryNode unaryParent = (UnaryNode) parent;
+
+      Preconditions.checkArgument(unaryParent.getSubNode() == child,
+          "ERROR: both logical node must be parent and child nodes");
+      unaryParent.setSubNode(grandChild);
+
+    } else if (parent instanceof BinaryNode) {
+      BinaryNode binaryParent = (BinaryNode) parent;
+      if (binaryParent.getOuterNode().equals(child)) {
+        binaryParent.setOuter(grandChild);
+      } else if (binaryParent.getInnerNode().equals(child)) {
+        binaryParent.setInner(grandChild);
       } else {
-        throw new InvalidQueryException("Unexpected logical plan: " + parent);
+        throw new IllegalStateException("ERROR: both logical node must be parent and child nodes");
       }
     } else {
       throw new InvalidQueryException("Unexpected logical plan: " + parent);
     }    
-    return parent;
+    return child;
   }
   
   public static void replaceNode(LogicalNode plan, LogicalNode newNode, ExprType type) {
@@ -163,13 +180,13 @@ public class PlannerUtil {
       // cloning groupby node
       GroupbyNode child = (GroupbyNode) gp.clone();
 
-      List<QueryBlock.Target> newChildTargets = Lists.newArrayList();
-      QueryBlock.Target[] secondTargets = gp.getTargets();
-      QueryBlock.Target[] firstTargets = child.getTargets();
+      List<Target> newChildTargets = Lists.newArrayList();
+      Target[] secondTargets = gp.getTargets();
+      Target[] firstTargets = child.getTargets();
 
-      QueryBlock.Target second;
-      QueryBlock.Target first;
-      int firstTargetId = 0;
+      Target second;
+      Target first;
+      int targetId =  0;
       for (int i = 0; i < firstTargets.length; i++) {
         second = secondTargets[i];
         first = firstTargets[i];
@@ -180,14 +197,13 @@ public class PlannerUtil {
 
         if (firstFuncs.size() == 0) {
           newChildTargets.add(first);
-          firstTargetId++;
+          targetId++;
         } else {
           for (AggFuncCallEval func : firstFuncs) {
             func.setFirstPhase();
-            QueryBlock.Target
-                newTarget = new QueryBlock.Target(func, firstTargetId++);
-            newTarget.setAlias("column_"+ firstTargetId);
-
+            Target newTarget = new Target(func);
+            String targetName = "column_" + (targetId++);
+            newTarget.setAlias(targetName);
 
             AggFuncCallEval secondFunc = null;
             for (AggFuncCallEval sf : secondFuncs) {
@@ -197,19 +213,18 @@ public class PlannerUtil {
               }
             }
             if (func.getValueType().length > 1) { // hack for partial result
-              secondFunc.setArgs(new EvalNode[] {new FieldEval(
-                  new Column("column_"+firstTargetId, Type.ARRAY))});
+              secondFunc.setArgs(new EvalNode[] {new FieldEval(new Column(targetName, Type.ARRAY))});
             } else {
               secondFunc.setArgs(new EvalNode [] {new FieldEval(
-                  new Column("column_"+firstTargetId, newTarget.getEvalTree().getValueType()[0]))});
+                  new Column(targetName, newTarget.getEvalTree().getValueType()[0]))});
             }
             newChildTargets.add(newTarget);
           }
         }
       }
 
-      QueryBlock.Target[] targetArray = newChildTargets.toArray(new QueryBlock.Target[newChildTargets.size()]);
-      child.setTargetList(targetArray);
+      Target[] targetArray = newChildTargets.toArray(new Target[newChildTargets.size()]);
+      child.setTargets(targetArray);
       child.setOutSchema(PlannerUtil.targetToSchema(targetArray));
       // set the groupby chaining
       gp.setSubNode(child);
@@ -316,7 +331,69 @@ public class PlannerUtil {
     }
     return finder.getFoundNodes().get(0);
   }
-  
+
+  public static boolean canBeEvaluated(EvalNode eval, LogicalNode node) {
+    Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(eval);
+
+    if (node.getType() == ExprType.JOIN) {
+      JoinNode joinNode = (JoinNode) node;
+      Set<String> tableIds = Sets.newHashSet();
+      // getting distinct table references
+      for (Column col : columnRefs) {
+        if (!tableIds.contains(col.getTableName())) {
+          tableIds.add(col.getTableName());
+        }
+      }
+
+      // if the references only indicate two relation, the condition can be
+      // pushed into a join operator.
+      if (tableIds.size() != 2) {
+        return false;
+      }
+
+      String [] outer = getLineage(joinNode.getOuterNode());
+      String [] inner = getLineage(joinNode.getInnerNode());
+
+      Set<String> o = Sets.newHashSet(outer);
+      Set<String> i = Sets.newHashSet(inner);
+      if (outer == null || inner == null) {
+        throw new InvalidQueryException("ERROR: Unexpected logical plan");
+      }
+      Iterator<String> it = tableIds.iterator();
+      if (o.contains(it.next()) && i.contains(it.next())) {
+        return true;
+      }
+
+      it = tableIds.iterator();
+
+      return i.contains(it.next()) && o.contains(it.next());
+
+    } else {
+      if (node instanceof ScanNode) {
+        ScanNode scan = (ScanNode) node;
+
+        for (Column col : columnRefs) {
+          if (scan.getTableId().equals(col.getTableName())) {
+            Column found = node.getInSchema().getColumnByName(col.getColumnName());
+            if (found == null) {
+              return false;
+            }
+          } else {
+            return false;
+          }
+        }
+      } else {
+        for (Column col : columnRefs) {
+          if (!node.getInSchema().contains(col.getQualifiedName())) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+  }
+
   private static class LogicalNodeFinder implements LogicalNodeVisitor {
     private List<LogicalNode> list = new ArrayList<LogicalNode>();
     private final ExprType [] tofind;
@@ -400,7 +477,7 @@ public class PlannerUtil {
       case PROJECTION:
         ProjectionNode projNode = (ProjectionNode) node;
 
-        for (QueryBlock.Target t : projNode.getTargets()) {
+        for (Target t : projNode.getTargets()) {
           temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
           if (!temp.isEmpty()) {
             collected.addAll(temp);
@@ -421,7 +498,7 @@ public class PlannerUtil {
       case GROUP_BY:
         GroupbyNode groupByNode = (GroupbyNode)node;
         collected.addAll(Lists.newArrayList(groupByNode.getGroupingColumns()));
-        for (QueryBlock.Target t : groupByNode.getTargets()) {
+        for (Target t : groupByNode.getTargets()) {
           temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
           if (!temp.isEmpty()) {
             collected.addAll(temp);
@@ -472,13 +549,27 @@ public class PlannerUtil {
     }
   }
 
-  public static QueryBlock.Target[] schemaToTargets(Schema schema) {
-    QueryBlock.Target[] targets = new QueryBlock.Target[schema.getColumnNum()];
+  /**
+   * fill targets with FieldEvals from a given schema
+   *
+   * @param schema to be transformed to targets
+   * @param targets to be filled
+   */
+  public static void schemaToTargets(Schema schema, Target [] targets) {
+    FieldEval eval;
+    for (int i = 0; i < schema.getColumnNum(); i++) {
+      eval = new FieldEval(schema.getColumn(i));
+      targets[i] = new Target(eval);
+    }
+  }
+
+  public static Target[] schemaToTargets(Schema schema) {
+    Target[] targets = new Target[schema.getColumnNum()];
 
     FieldEval eval;
     for (int i = 0; i < schema.getColumnNum(); i++) {
       eval = new FieldEval(schema.getColumn(i));
-      targets[i] = new QueryBlock.Target(eval, i);
+      targets[i] = new Target(eval);
     }
     return targets;
   }
@@ -504,8 +595,8 @@ public class PlannerUtil {
 
   /**
    * is it join qual or not?
-   * TODO - this method does not support the self join (NTA-740)
-   * @param qual
+   *
+   * @param qual  The condition to be checked
    * @return true if two operands refers to columns and the operator is comparison,
    */
   public static boolean isJoinQual(EvalNode qual) {
@@ -585,9 +676,9 @@ public class PlannerUtil {
     }
   }
 
-  public static Schema targetToSchema(QueryBlock.Target[] targets) {
+  public static Schema targetToSchema(Target[] targets) {
     Schema schema = new Schema();
-    for(QueryBlock.Target t : targets) {
+    for(Target t : targets) {
       DataType type;
       if (t.getEvalTree().getValueType().length > 1) {
         type = CatalogUtil.newDataTypeWithoutLen(Type.ARRAY);
@@ -606,11 +697,28 @@ public class PlannerUtil {
     return schema;
   }
 
-  public static EvalNode [] columnsToEvals(Column [] columns) {
-    EvalNode [] exprs = new EvalNode[columns.length];
-    for (int i = 0; i < columns.length; i++) {
-      exprs[i] = new FieldEval(columns[i]);
+  /**
+   * It removes all table names from FieldEvals in targets
+   *
+   * @param sourceTargets The targets to be stripped
+   * @return The stripped targets
+   */
+  public static Target [] stripTarget(Target [] sourceTargets) {
+    Target [] copy = new Target[sourceTargets.length];
+    for(int i = 0; i < sourceTargets.length; i++) {
+      try {
+        copy[i] = (Target) sourceTargets[i].clone();
+      } catch (CloneNotSupportedException e) {
+        throw new InternalError(e.getMessage());
+      }
+      if (copy[i].getEvalTree().getType() == EvalNode.Type.FIELD) {
+        FieldEval fieldEval = (FieldEval) copy[i].getEvalTree();
+        if (fieldEval.getColumnRef().isQualified()) {
+          fieldEval.getColumnRef().setName(fieldEval.getColumnName());
+        }
+      }
     }
-    return exprs;
+
+    return copy;
   }
 }

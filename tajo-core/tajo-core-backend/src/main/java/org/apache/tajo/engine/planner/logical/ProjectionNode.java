@@ -20,11 +20,11 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.json.GsonCreator;
-import org.apache.tajo.engine.parser.QueryBlock.Target;
+import org.apache.tajo.engine.planner.Target;
 
 import java.util.Arrays;
 
-public class ProjectionNode extends UnaryNode {
+public class ProjectionNode extends UnaryNode implements Projectable {
   /**
    * the targets are always filled even if the query is 'select *'
    */
@@ -34,21 +34,31 @@ public class ProjectionNode extends UnaryNode {
   /**
    * This method is for gson.
    */
+  @SuppressWarnings("unused")
 	private ProjectionNode() {
 		super();
 	}
 
+  /**
+   * @param targets they should be all evaluated ones.
+   */
 	public ProjectionNode(Target [] targets) {		
 		super(ExprType.PROJECTION);
 		this.targets = targets;
 	}
-	
-	public Target [] getTargets() {
-	  return this.targets;
-	}
 
-  public void setTargetList(Target [] targets) {
+  public boolean hasTargets() {
+    return this.targets != null;
+  }
+
+  @Override
+  public void setTargets(Target[] targets) {
     this.targets = targets;
+  }
+
+  @Override
+  public Target [] getTargets() {
+    return this.targets;
   }
 	
 	public void setSubNode(LogicalNode subNode) {

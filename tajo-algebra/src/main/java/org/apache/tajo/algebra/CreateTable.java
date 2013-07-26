@@ -23,25 +23,34 @@ import org.apache.tajo.util.TUtil;
 import java.util.Map;
 
 public class CreateTable extends Expr {
-  private String rel_name;
-  private ColumnDefinition [] table_elements;
-  private String storage_type;
+  private boolean external = false;
+  private String tableName;
+  private ColumnDefinition [] tableElements;
+  private String storageType;
   private String location;
   private Expr subquery;
   private Map<String, String> params;
 
   public CreateTable(final String tableName) {
-    super(ExprType.CreateTable);
-    this.rel_name = tableName;
+    super(OpType.CreateTable);
+    this.tableName = tableName;
   }
 
-  public CreateTable(final String relationName, final Expr subQuery) {
-    this(relationName);
+  public CreateTable(final String tableName, final Expr subQuery) {
+    this(tableName);
     this.subquery = subQuery;
   }
 
-  public String getRelationName() {
-    return this.rel_name;
+  public void setExternal() {
+    external = true;
+  }
+
+  public boolean isExternal() {
+    return external;
+  }
+
+  public String getTableName() {
+    return this.tableName;
   }
 
   public boolean hasLocation() {
@@ -57,27 +66,27 @@ public class CreateTable extends Expr {
   }
 
   public boolean hasTableElements() {
-    return this.table_elements != null;
+    return this.tableElements != null;
   }
 
   public ColumnDefinition [] getTableElements() {
-    return table_elements;
+    return tableElements;
   }
 
   public void setTableElements(ColumnDefinition [] tableElements) {
-    this.table_elements = tableElements;
+    this.tableElements = tableElements;
   }
 
   public boolean hasStorageType() {
-    return storage_type != null;
+    return storageType != null;
   }
 
   public void setStorageType(String storageType) {
-    this.storage_type = storageType;
+    this.storageType = storageType;
   }
 
   public String getStorageType() {
-    return storage_type;
+    return storageType;
   }
 
   public boolean hasParams() {
@@ -96,6 +105,10 @@ public class CreateTable extends Expr {
     return subquery != null;
   }
 
+  public void setSubQuery(Expr subquery) {
+    this.subquery = subquery;
+  }
+
   public Expr getSubQuery() {
     return subquery;
   }
@@ -103,9 +116,9 @@ public class CreateTable extends Expr {
   @Override
   boolean equalsTo(Expr expr) {
     CreateTable another = (CreateTable) expr;
-    return rel_name.equals(another.rel_name) &&
-        TUtil.checkEquals(table_elements, another.table_elements) &&
-        TUtil.checkEquals(storage_type, another.storage_type) &&
+    return tableName.equals(another.tableName) &&
+        TUtil.checkEquals(tableElements, another.tableElements) &&
+        TUtil.checkEquals(storageType, another.storageType) &&
         TUtil.checkEquals(location, another.location) &&
         TUtil.checkEquals(subquery, another.subquery) &&
         TUtil.checkEquals(params, another.params);
@@ -114,6 +127,8 @@ public class CreateTable extends Expr {
   public static class ColumnDefinition {
     String col_name;
     String data_type;
+    Integer length_or_precision;
+    Integer scale;
 
     public ColumnDefinition(String columnName, String dataType) {
       this.col_name = columnName;
@@ -128,10 +143,28 @@ public class CreateTable extends Expr {
       return this.data_type;
     }
 
+    public void setLengthOrPrecision(int lengthOrPrecision) {
+      this.length_or_precision = lengthOrPrecision;
+    }
+
+    public Integer getLengthOrPrecision() {
+      return this.length_or_precision;
+    }
+
+    public void setScale(int scale) {
+      this.scale = scale;
+    }
+
+    public Integer getScale() {
+      return this.scale;
+    }
+
     public boolean equals(Object obj) {
       if (obj instanceof ColumnDefinition) {
         ColumnDefinition another = (ColumnDefinition) obj;
-        return col_name.equals(another.col_name) && data_type.equals(another.data_type);
+        return col_name.equals(another.col_name) && data_type.equals(another.data_type) &&
+            TUtil.checkEquals(length_or_precision, another.length_or_precision) &&
+            TUtil.checkEquals(scale, another.scale);
       }
 
       return false;

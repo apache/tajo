@@ -122,7 +122,7 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
   
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("\"Store\": {\"table\": \""+tableName+"\",");
+    sb.append("\"CreateTable\": {\"table\": \""+tableName+"\",");
     if (partitionKeys != null) {
       sb.append("\"partition keys: [");
       for (int i = 0; i < partitionKeys.length; i++) {

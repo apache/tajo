@@ -25,14 +25,11 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TaskAttemptContext;
+import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -40,12 +37,12 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.engine.parser.QueryAnalyzer;
+import org.apache.tajo.engine.eval.AggFuncCallEval;
+import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.eval.EvalTreeUtil;
+import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.LogicalRootNode;
-import org.apache.tajo.engine.planner.logical.StoreTableNode;
-import org.apache.tajo.engine.planner.logical.UnionNode;
+import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.master.ExecutionBlock.PartitionType;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.*;
@@ -54,6 +51,9 @@ import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.RangeRetrieverHandler;
 import org.apache.tajo.worker.dataserver.retriever.FileChunk;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,7 +67,7 @@ public class TestPhysicalPlanner {
   private static TajoTestingCluster util;
   private static TajoConf conf;
   private static CatalogService catalog;
-  private static QueryAnalyzer analyzer;
+  private static SQLAnalyzer analyzer;
   private static LogicalPlanner planner;
   private static StorageManager sm;
   private static Path testDir;
@@ -148,7 +148,7 @@ public class TestPhysicalPlanner {
     appender.flush();
     appender.close();
     catalog.addTable(score);
-    analyzer = new QueryAnalyzer(catalog);
+    analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
   }
 
@@ -171,27 +171,27 @@ public class TestPhysicalPlanner {
       "select managerId, empId, deptName from employee order by managerId, empId desc", // 10
       "select deptName, nullable from score group by deptName, nullable", // 11
       "select 3 < 4 as ineq, 3.5 * 2 as score", // 12
-//      "select (3 > 2) = (1 > 0) and 3 > 1", // 12
       "select (1 > 0) and 3 > 1", // 13
       "select deptName, class, sum(score), max(score), min(score) from score", // 14
       "select deptname, class, sum(score), max(score), min(score) from score group by deptname" // 15
   };
 
   @Test
-  public final void testCreateScanPlan() throws IOException {
+  public final void testCreateScanPlan() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(),
         employee.getPath(), Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateScanPlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil
         .newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(context);
+    Expr expr = analyzer.parse(QUERIES[0]);
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode rootNode =plan.getRootBlock().getRoot();
+    LogicalOptimizer.optimize(plan);
 
-    LogicalOptimizer.optimize(context, plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     Tuple tuple;
     int i = 0;
@@ -207,18 +207,22 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testGroupByPlan() throws IOException {
+  public final void testGroupByPlan() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testGroupByPlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[7]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
+    Expr context = analyzer.parse(QUERIES[7]);
+    LogicalPlan plan = planner.createPlan(context);
+    System.out.println(plan.getRootBlock().getRoot());
+    System.out.println("-------------------------------");
+    LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = plan.getRootBlock().getRoot();
+    System.out.println(rootNode);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     int i = 0;
     Tuple tuple;
@@ -234,7 +238,8 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testHashGroupByPlanWithALLField() throws IOException {
+  public final void testHashGroupByPlanWithALLField() throws IOException,
+      CloneNotSupportedException {
     // TODO - currently, this query does not use hash-based group operator.
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
@@ -242,12 +247,12 @@ public class TestPhysicalPlanner {
         "target/test-data/testHashGroupByPlanWithALLField");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[15]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
+    Expr expr = analyzer.parse(QUERIES[15]);
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     int i = 0;
     Tuple tuple;
@@ -264,18 +269,18 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testSortGroupByPlan() throws IOException {
+  public final void testSortGroupByPlan() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testSortGroupByPlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[]{frags[0]}, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[7]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
+    Expr context = analyzer.parse(QUERIES[7]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalOptimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, plan.getRootBlock().getRoot());
 
     /*HashAggregateExec hashAgg = (HashAggregateExec) exec;
 
@@ -321,7 +326,7 @@ public class TestPhysicalPlanner {
   };
 
   @Test
-  public final void testStorePlan() throws IOException {
+  public final void testStorePlan() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlan");
@@ -330,15 +335,16 @@ public class TestPhysicalPlanner {
         workDir);
     ctx.setOutputPath(new Path(workDir, "grouped1"));
 
-    PlanningContext context = analyzer.parse(CreateTableAsStmts[0]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
+    Expr context = analyzer.parse(CreateTableAsStmts[0]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(plan.getOutSchema(),
+
+    TableMeta outputMeta = CatalogUtil.newTableMeta(rootNode.getOutSchema(),
         StoreType.CSV);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
     exec.close();
@@ -361,7 +367,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testStorePlanWithRCFile() throws IOException {
+  public final void testStorePlanWithRCFile() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlanWithRCFile");
@@ -370,15 +376,15 @@ public class TestPhysicalPlanner {
         workDir);
     ctx.setOutputPath(new Path(workDir, "grouped2"));
 
-    PlanningContext context = analyzer.parse(CreateTableAsStmts[1]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
+    Expr context = analyzer.parse(CreateTableAsStmts[1]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(plan.getOutSchema(),
+    TableMeta outputMeta = CatalogUtil.newTableMeta(rootNode.getOutSchema(),
         StoreType.RCFILE);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
     exec.close();
@@ -400,41 +406,33 @@ public class TestPhysicalPlanner {
     assertEquals(10, ctx.getResultStats().getNumRows().longValue());
   }
 
-  class PathFilterWithoutMeta implements PathFilter {
-
-    @Override
-    public boolean accept(Path path) {
-      String name = path.getName();
-      return name.startsWith(".");
-    }
-  }
-
   @Test
-  public final void testPartitionedStorePlan() throws IOException {
+  public final void testPartitionedStorePlan() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testPartitionedStorePlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, id, new Fragment[] { frags[0] },
         workDir);
-    PlanningContext context = analyzer.parse(QUERIES[7]);
-    LogicalNode plan = planner.createPlan(context);
+    Expr context = analyzer.parse(QUERIES[7]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = plan.getRootBlock().getRoot();
 
     int numPartitions = 3;
     Column key1 = new Column("score.deptName", Type.TEXT);
     Column key2 = new Column("score.class", Type.TEXT);
     StoreTableNode storeNode = new StoreTableNode("partition");
     storeNode.setPartitions(PartitionType.HASH, new Column[]{key1, key2}, numPartitions);
-    PlannerUtil.insertNode(plan, storeNode);
-    plan = LogicalOptimizer.optimize(context, plan);
+    PlannerUtil.insertNode(rootNode, storeNode);
+    rootNode = LogicalOptimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(plan.getOutSchema(),
+    TableMeta outputMeta = CatalogUtil.newTableMeta(rootNode.getOutSchema(),
         StoreType.CSV);
 
     FileSystem fs = sm.getFileSystem();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
     exec.close();
@@ -468,7 +466,7 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testPartitionedStorePlanWithEmptyGroupingSet()
-      throws IOException {
+      throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
@@ -477,20 +475,20 @@ public class TestPhysicalPlanner {
         "target/test-data/testPartitionedStorePlanWithEmptyGroupingSet");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, id, new Fragment[] { frags[0] },
         workDir);
-    PlanningContext context = analyzer.parse(QUERIES[14]);
-    LogicalNode plan = planner.createPlan(context);
-
+    Expr expr = analyzer.parse(QUERIES[14]);
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode rootNode = plan.getRootBlock().getRoot();
     int numPartitions = 1;
     StoreTableNode storeNode = new StoreTableNode("emptyset");
     storeNode.setPartitions(PartitionType.HASH, new Column[] {}, numPartitions);
-    PlannerUtil.insertNode(plan, storeNode);
-    plan = LogicalOptimizer.optimize(context, plan);
+    PlannerUtil.insertNode(rootNode, storeNode);
+    LogicalOptimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(plan.getOutSchema(),
+    TableMeta outputMeta = CatalogUtil.newTableMeta(rootNode.getOutSchema(),
         StoreType.CSV);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
     exec.close();
@@ -523,19 +521,29 @@ public class TestPhysicalPlanner {
     assertEquals(1, ctx.getResultStats().getNumRows().longValue());
   }
 
-  //@Test
-  public final void testAggregationFunction() throws IOException {
+  @Test
+  public final void testAggregationFunction() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testAggregationFunction");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[8]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
+    Expr context = analyzer.parse(QUERIES[8]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+
+    // Set all aggregation functions to the first phase mode
+    GroupbyNode groupbyNode = (GroupbyNode) PlannerUtil.findTopNode(rootNode, ExprType.GROUP_BY);
+    for (Target target : groupbyNode.getTargets()) {
+      for (EvalNode eval : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {
+        if (eval instanceof AggFuncCallEval) {
+          ((AggFuncCallEval) eval).setFirstPhase();
+        }
+      }
+    }
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     exec.init();
     Tuple tuple = exec.next();
@@ -546,38 +554,50 @@ public class TestPhysicalPlanner {
     exec.close();
   }
 
-  //@Test
-  public final void testCountFunction() throws IOException {
+  @Test
+  public final void testCountFunction() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCountFunction");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[10]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
+    Expr context = analyzer.parse(QUERIES[9]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    System.out.println(rootNode.toString());
+
+    // Set all aggregation functions to the first phase mode
+    GroupbyNode groupbyNode = (GroupbyNode) PlannerUtil.findTopNode(rootNode, ExprType.GROUP_BY);
+    for (Target target : groupbyNode.getTargets()) {
+      for (EvalNode eval : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {
+        if (eval instanceof AggFuncCallEval) {
+          ((AggFuncCallEval) eval).setFirstPhase();
+        }
+      }
+    }
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
-
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    exec.init();
     Tuple tuple = exec.next();
     assertEquals(30, tuple.get(0).asInt8());
     assertNull(exec.next());
+    exec.close();
   }
 
   @Test
-  public final void testGroupByWithNullValue() throws IOException {
+  public final void testGroupByWithNullValue() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testGroupByWithNullValue");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[11]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
+    Expr context = analyzer.parse(QUERIES[11]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     int count = 0;
     exec.init();
@@ -589,16 +609,16 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testUnionPlan() throws IOException {
+  public final void testUnionPlan() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testUnionPlan");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
-    LogicalRootNode root = (LogicalRootNode) plan;
+    Expr  context = analyzer.parse(QUERIES[0]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalRootNode root = (LogicalRootNode) rootNode;
     UnionNode union = new UnionNode(root.getSubNode(), root.getSubNode());
     root.setSubNode(union);
 
@@ -615,16 +635,16 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testEvalExpr() throws IOException {
+  public final void testEvalExpr() throws IOException, CloneNotSupportedException {
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testEvalExpr");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { }, workDir);
-    PlanningContext context = analyzer.parse(QUERIES[12]);
-    LogicalNode plan = planner.createPlan(context);
-    LogicalOptimizer.optimize(context, plan);
+    Expr expr = analyzer.parse(QUERIES[12]);
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     Tuple tuple;
     exec.init();
     tuple = exec.next();
@@ -632,12 +652,12 @@ public class TestPhysicalPlanner {
     assertEquals(true, tuple.get(0).asBool());
     assertTrue(7.0d == tuple.get(1).asFloat8());
 
-    context = analyzer.parse(QUERIES[13]);
-    plan = planner.createPlan(context);
-    LogicalOptimizer.optimize(context, plan);
+    expr = analyzer.parse(QUERIES[13]);
+    plan = planner.createPlan(expr);
+    rootNode = LogicalOptimizer.optimize(plan);
 
     phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    exec = phyPlanner.createPlan(ctx, plan);
+    exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     tuple = exec.next();
     exec.close();
@@ -649,18 +669,18 @@ public class TestPhysicalPlanner {
   };
 
   //@Test
-  public final void testCreateIndex() throws IOException {
+  public final void testCreateIndex() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateIndex");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
-    PlanningContext context = analyzer.parse(createIndexStmt[0]);
-    LogicalNode plan = planner.createPlan(context);
-    LogicalOptimizer.optimize(context, plan);
+    Expr context = analyzer.parse(createIndexStmt[0]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     while (exec.next() != null) {
     }
@@ -675,19 +695,19 @@ public class TestPhysicalPlanner {
   };
 
   @Test
-  public final void testDuplicateEliminate() throws IOException {
+  public final void testDuplicateEliminate() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testDuplicateEliminate");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
-    PlanningContext context = analyzer.parse(duplicateElimination[0]);
-    LogicalNode plan = planner.createPlan(context);
-    LogicalOptimizer.optimize(context, plan);
+    Expr expr = analyzer.parse(duplicateElimination[0]);
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     Tuple tuple;
 
     int cnt = 0;
@@ -706,63 +726,20 @@ public class TestPhysicalPlanner {
       "select name, empId from employee order by empId"
   };
 
-  /*
   @Test
-  public final void testBug() throws IOException {
-    Schema s1 = new Schema();
-    s1.addColumn("o_orderdate", Type.TEXT);
-    s1.addColumn("o_shippriority", Type.INT4);
-    s1.addColumn("o_orderkey", DataType.LONG);
-
-    Options opt = new Options();
-    opt.put(CSVFile.DELIMITER, "|");
-    TableMeta meta1 = new TableMetaImpl(s1, StoreType.CSV, opt);
-    TableDesc desc1 = new TableDescImpl("s1", meta1, new Path("file:/home/hyunsik/error/sample/sq_1358404721340_0001_000001_03"));
-
-    Schema s2 = new Schema();
-    s2.addColumn("l_orderkey", DataType.LONG);
-    s2.addColumn("l_extendedprice", DataType.DOUBLE);
-    s2.addColumn("l_discount", DataType.DOUBLE);
-    TableMeta meta2 = new TableMetaImpl(s2, StoreType.CSV, opt);
-    TableDesc desc2 = new TableDescImpl("s2", meta1, new Path("file:/home/hyunsik/error/sample/sq_1358404721340_0001_000001_04"));
-
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBug");
-
-
-    Fragment [] frag1 = sm.splitNG("sq_1358404721340_0001_000001_03", meta1, new Path("file:/home/hyunsik/error/sample/sq_1358404721340_0001_000001_03"), util.getDefaultFileSystem().getDefaultBlockSize());
-    Fragment [] frag2 = sm.splitNG("sq_1358404721340_0001_000001_04", meta2, new Path("file:/home/hyunsik/error/sample/sq_1358404721340_0001_000001_04"), util.getDefaultFileSystem().getDefaultBlockSize());
-
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(), null, workDir);
-    PlanningContext context = analyzer.parse("select l_orderkey,  sum(l_extendedprice*(1-l_discount)) as revenue, o_orderdate, o_shippriority from s1, s2 where l_orderkey (LONG) = o_orderkey group by l_orderkey, o_orderdate, o_shippriority order by o_orderdate");
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
-    JoinNode joinNode = (JoinNode) PlannerUtil.findTopNode(plan, ExprType.JOIN);
-
-    ScanNode [] scanNodes = (ScanNode[]) PlannerUtil.findAllNodes(plan, ExprType.SCAN);
-    System.out.println(scanNodes[0].getTableId());
-    System.out.println(scanNodes[1].getTableId());
-//    SeqScanExec seqScanExec = new SeqScanExec(ctx, sm, plan, frag1);
-//
-//    HashJoinExec join = new HashJoinExec(ctx, joinNode, scan1, scan2);
-//
-//    System.out.println(scan1.next());
-//    System.out.println(scan2.next());
-  }*/
-
-  @Test
-  public final void testIndexedStoreExec() throws IOException {
+  public final void testIndexedStoreExec() throws IOException, CloneNotSupportedException {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(),
         employee.getPath(), Integer.MAX_VALUE);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testIndexedStoreExec");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, workDir);
-    PlanningContext context = analyzer.parse(SORT_QUERY[0]);
-    LogicalNode plan = planner.createPlan(context);
-    plan = LogicalOptimizer.optimize(context, plan);
+    Expr context = analyzer.parse(SORT_QUERY[0]);
+    LogicalPlan plan = planner.createPlan(context);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     ProjectionExec proj = (ProjectionExec) exec;
     ExternalSortExec sort = (ExternalSortExec) proj.getChild();
@@ -786,7 +763,7 @@ public class TestPhysicalPlanner {
         keySchema, comp);
     reader.open();
     Path outputPath = StorageUtil.concatPath(workDir, "output", "output");
-    TableMeta meta = CatalogUtil.newTableMeta(plan.getOutSchema(), StoreType.CSV, new Options());
+    TableMeta meta = CatalogUtil.newTableMeta(rootNode.getOutSchema(), StoreType.CSV, new Options());
     SeekableScanner scanner = (SeekableScanner)
         StorageManager.getScanner(conf, meta, outputPath);
     scanner.init();

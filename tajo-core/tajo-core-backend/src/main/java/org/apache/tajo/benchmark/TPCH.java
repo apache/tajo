@@ -104,7 +104,7 @@ public class TPCH extends BenchmarkSet {
     schemas.put(REGION, region);
 
     Schema orders = new Schema()
-        .addColumn("o_orderkey", Type.INT4) // 0
+        .addColumn("o_orderkey", Type.INT8) // 0
         .addColumn("o_custkey", Type.INT4) // 1
         .addColumn("o_orderstatus", Type.TEXT) // 2
         .addColumn("o_totalprice", Type.FLOAT4) // 3

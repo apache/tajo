@@ -18,28 +18,29 @@
 
 package org.apache.tajo.algebra;
 
+import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 public class Sort extends UnaryOperator {
-  private SortSpec [] sort_specs;
+  private SortSpec [] sortSpecs;
 
   public Sort(final SortSpec [] sortSpecs) {
-    super(ExprType.Sort);
-    this.sort_specs = sortSpecs;
+    super(OpType.Sort);
+    this.sortSpecs = sortSpecs;
   }
 
-  public void setSortSpecs(SortSpec[] sort_specs) {
-    this.sort_specs = sort_specs;
+  public void setSortSpecs(SortSpec[] sortSpecs) {
+    this.sortSpecs = sortSpecs;
   }
 
   public SortSpec [] getSortSpecs() {
-    return this.sort_specs;
+    return this.sortSpecs;
   }
 
   @Override
   public boolean equalsTo(Expr expr) {
     Sort another = (Sort) expr;
-    return TUtil.checkEquals(sort_specs, another.sort_specs);
+    return TUtil.checkEquals(sortSpecs, another.sortSpecs);
   }
 
   @Override
@@ -50,7 +51,8 @@ public class Sort extends UnaryOperator {
   public static class SortSpec {
     private ColumnReferenceExpr key;
     private boolean asc = true;
-    private boolean null_first = false;
+    @SerializedName("null_first")
+    private boolean nullFirst = false;
 
     public SortSpec(final ColumnReferenceExpr key) {
       this.key = key;
@@ -67,7 +69,7 @@ public class Sort extends UnaryOperator {
                     final boolean nullFirst) {
       this(sortKey);
       this.asc = asc;
-      this.null_first = nullFirst;
+      this.nullFirst = nullFirst;
     }
 
     public final boolean isAscending() {
@@ -79,11 +81,11 @@ public class Sort extends UnaryOperator {
     }
 
     public final boolean isNullFirst() {
-      return this.null_first;
+      return this.nullFirst;
     }
 
     public final void setNullFirst() {
-      this.null_first = true;
+      this.nullFirst = true;
     }
 
     public final ColumnReferenceExpr getKey() {
@@ -95,7 +97,7 @@ public class Sort extends UnaryOperator {
         SortSpec other = (SortSpec) obj;
         return TUtil.checkEquals(key, other.key) &&
             TUtil.checkEquals(asc, other.asc) &&
-            TUtil.checkEquals(null_first, other.null_first);
+            TUtil.checkEquals(nullFirst, other.nullFirst);
       }
       return false;
     }

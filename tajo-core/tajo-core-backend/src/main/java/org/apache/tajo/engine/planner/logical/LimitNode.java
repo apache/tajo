@@ -20,24 +20,22 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.json.GsonCreator;
-import org.apache.tajo.engine.parser.QueryBlock.LimitClause;
-import org.apache.tajo.util.TUtil;
 
 public final class LimitNode extends UnaryNode implements Cloneable {
 	@Expose
-  private LimitClause limitClause;
+  private long fetchFirstNum;
 
 	public LimitNode() {
 		super();
 	}
 
-  public LimitNode(LimitClause limitClause) {
+  public LimitNode(long fetchFirstNum) {
     super(ExprType.LIMIT);
-    this.limitClause = limitClause;
+    this.fetchFirstNum = fetchFirstNum;
   }
   
   public long getFetchFirstNum() {
-    return this.limitClause.getLimitRow();
+    return fetchFirstNum;
   }
   
   @Override 
@@ -45,7 +43,7 @@ public final class LimitNode extends UnaryNode implements Cloneable {
     if (obj instanceof LimitNode) {
       LimitNode other = (LimitNode) obj;
       return super.equals(other)
-          && TUtil.checkEquals(limitClause, other.limitClause)
+          && fetchFirstNum == other.fetchFirstNum
           && subExpr.equals(other.subExpr);
     } else {
       return false;
@@ -55,17 +53,18 @@ public final class LimitNode extends UnaryNode implements Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     LimitNode newLimitNode = (LimitNode) super.clone();
-    newLimitNode.limitClause = (LimitClause) limitClause.clone();
+    newLimitNode.fetchFirstNum = fetchFirstNum;
     return newLimitNode;
   }
 
   public String toString() {
-    StringBuilder sb = new StringBuilder(limitClause.toString());
+    StringBuilder sb = new StringBuilder("LIMIT ").append(fetchFirstNum);
 
-    sb.append("\n\"out schema: " + getOutSchema()
-        + "\n\"in schema: " + getInSchema());
-    return sb.toString()+"\n"
-        + getSubNode().toString();
+    sb.append("\n\"out schema: ").append(getOutSchema())
+        .append("\n\"in schema: " + getInSchema());
+    sb.append("\n").append(getSubNode().toString());
+
+    return sb.toString();
   }
   
   public String toJSON() {

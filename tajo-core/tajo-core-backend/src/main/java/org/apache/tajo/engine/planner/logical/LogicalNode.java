@@ -25,15 +25,11 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 
 public abstract class LogicalNode implements Cloneable {
-	@Expose
-	private ExprType type;
-	@Expose
-	private Schema inputSchema;
-	@Expose
-	private Schema outputSchema;
+  @Expose private ExprType type;
+	@Expose private Schema inputSchema;
+	@Expose	private Schema outputSchema;
 
-	@Expose
-	private double cost = 0;
+	@Expose	private double cost = 0;
 	
 	public LogicalNode() {
 		

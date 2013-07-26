@@ -67,6 +67,10 @@ public class NLJoinExec extends BinaryPhysicalExec {
     outTuple = new VTuple(outSchema.getColumnNum());
   }
 
+  public JoinNode getPlan() {
+    return this.plan;
+  }
+
   public Tuple next() throws IOException {
     for (;;) {
       if (needNewOuter) {

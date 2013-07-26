@@ -24,12 +24,12 @@ package org.apache.tajo.engine.planner.logical;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.json.GsonCreator;
-import org.apache.tajo.engine.parser.QueryBlock;
+import org.apache.tajo.engine.planner.Target;
 
-public class EvalExprNode extends LogicalNode {
-  @Expose private QueryBlock.Target[] exprs;
+public class EvalExprNode extends LogicalNode implements Projectable {
+  @Expose private Target[] exprs;
 
-  public EvalExprNode(QueryBlock.Target[] exprs) {
+  public EvalExprNode(Target[] exprs) {
     super(ExprType.EXPRS);
     this.exprs = exprs;
   }
@@ -39,8 +39,23 @@ public class EvalExprNode extends LogicalNode {
     Gson gson = GsonCreator.getInstance();
     return gson.toJson(this);
   }
-  
-  public QueryBlock.Target[] getExprs() {
+
+  @Override
+  public boolean hasTargets() {
+    return true;
+  }
+
+  @Override
+  public void setTargets(Target[] targets) {
+    this.exprs = targets;
+  }
+
+  @Override
+  public Target[] getTargets() {
+    return exprs;
+  }
+
+  public Target[] getExprs() {
     return this.exprs;
   }
   

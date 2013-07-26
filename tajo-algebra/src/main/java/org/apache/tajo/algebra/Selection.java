@@ -21,24 +21,23 @@ package org.apache.tajo.algebra;
 import org.apache.tajo.util.TUtil;
 
 public class Selection extends UnaryOperator implements JsonSerializable {
-  private Expr search_condition;
+  private Expr qual;
 
-  public Selection(Expr relation, Expr qual) {
-    super(ExprType.Selection);
-    setChild(relation);
-    search_condition = qual;
+  public Selection(Expr qual) {
+    super(OpType.Filter);
+    this.qual = qual;
   }
 
   public boolean hasQual() {
-    return search_condition != null;
+    return qual != null;
   }
 
   public void setQual(Expr expr) {
-    this.search_condition = expr;
+    this.qual = expr;
   }
 
 	public Expr getQual() {
-		return this.search_condition;
+		return this.qual;
 	}
 
   @Override
@@ -50,7 +49,7 @@ public class Selection extends UnaryOperator implements JsonSerializable {
   public boolean equalsTo(Expr expr) {
     if (expr instanceof Selection) {
       Selection other = (Selection) expr;
-      return TUtil.checkEquals(search_condition, other.search_condition);
+      return TUtil.checkEquals(qual, other.qual);
     }
     return false;
   }

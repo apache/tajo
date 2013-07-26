@@ -30,9 +30,10 @@ public class TUtil {
   /**
    * check two objects as equals. 
    * It will return true even if they are all null.
-   * 
-   * @param s1
-   * @param s2
+   *
+   * @param s1 the first object to be compared.
+   * @param s2 the second object to be compared
+   *
    * @return true if they are equal or all null
    */
   public static boolean checkEquals(Object s1, Object s2) {
@@ -46,11 +47,11 @@ public class TUtil {
   }
 
   /**
-   * check two arrays as equals. 
+   * check two arrays as equals. It also check the equivalence of null.
    * It will return true even if they are all null.
-   * 
-   * @param s1
-   * @param s2
+   *
+   * @param s1 the first array to be compared.
+   * @param s2 the second array to be compared
    * @return true if they are equal or all null
    */
   public static boolean checkEquals(Object [] s1, Object [] s2) {
@@ -71,6 +72,10 @@ public class TUtil {
 
   public static <T> Set<T> newHashSet() {
     return new HashSet<T>();
+  }
+
+  public static <T> Set<T> newHashSet(T ...items) {
+    return new HashSet<T>(Arrays.asList(items));
   }
 
   public static <T> List<T> newList() {
@@ -100,5 +105,19 @@ public class TUtil {
         QueryIdFactory.newQueryUnitId(
                 QueryIdFactory.newSubQueryId(
                     QueryIdFactory.newQueryId())), 0);
+  }
+
+  /**
+   * It check if T is null or not.
+   *
+   * @param reference the object reference to be checked
+   * @param <T> The object type
+   * @return The reference
+   */
+  public static <T> T checkNotNull(T reference) {
+    if (reference == null) {
+      throw new NullPointerException();
+    }
+    return reference;
   }
 }

@@ -21,19 +21,19 @@ package org.apache.tajo.algebra;
 import org.apache.tajo.util.TUtil;
 
 public class Aggregation extends UnaryOperator {
-  private Target [] targets;
+  private Target[] targets;
   private GroupElement [] groups;
   private Expr havingCondition;
 
   public Aggregation() {
-    super(ExprType.Aggregation);
+    super(OpType.Aggregation);
   }
 
-  public Target [] getTargets() {
+  public Target[] getTargets() {
     return this.targets;
   }
 
-  public void setTargets(Target [] targets) {
+  public void setTargets(Target[] targets) {
     this.targets = targets;
   }
 
@@ -109,8 +109,18 @@ public class Aggregation extends UnaryOperator {
   }
 
   public static enum GroupType {
-    GROUPBY,
-    CUBE,
-    ROLLUP
+    OrdinaryGroup(""),
+    Cube("Cube"),
+    Rollup("Rollup"),
+    EmptySet("()");
+
+    String displayName;
+    GroupType(String displayName) {
+      this.displayName = displayName;
+    }
+
+    public String toString() {
+      return displayName;
+    }
   }
 }

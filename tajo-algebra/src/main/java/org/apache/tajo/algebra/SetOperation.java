@@ -24,11 +24,12 @@ import com.google.common.base.Preconditions;
 public class SetOperation extends BinaryOperator {
   private boolean distinct = true;
 
-  public SetOperation(ExprType type, Expr left, Expr right, boolean distinct) {
+  public SetOperation(OpType type, Expr left, Expr right, boolean distinct) {
     super(type, left, right);
-    Preconditions.checkArgument(type == ExprType.Union ||
-        type == ExprType.Intersect ||
-        type == ExprType.Except);
+    Preconditions.checkArgument(type == OpType.Union ||
+        type == OpType.Intersect ||
+        type == OpType.Except);
+    this.distinct = distinct;
   }
 
   public boolean isDistinct() {

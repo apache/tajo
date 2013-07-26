@@ -20,10 +20,8 @@ package org.apache.tajo.engine.eval;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -31,12 +29,17 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.EvalNode.Type;
 import org.apache.tajo.engine.eval.TestEvalTree.TestSum;
-import org.apache.tajo.engine.parser.QueryAnalyzer;
-import org.apache.tajo.engine.parser.QueryBlock;
-import org.apache.tajo.engine.parser.QueryBlock.Target;
 import org.apache.tajo.engine.planner.LogicalPlanner;
+import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.planner.LogicalPlan;
+import org.apache.tajo.engine.planner.logical.EvalExprNode;
+import org.apache.tajo.engine.planner.logical.ExprType;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.master.TajoMaster;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.Collection;
 import java.util.List;
@@ -51,7 +54,7 @@ public class TestEvalTreeUtil {
   static EvalNode expr1;
   static EvalNode expr2;
   static EvalNode expr3;
-  static QueryAnalyzer analyzer;
+  static SQLAnalyzer analyzer;
   static LogicalPlanner planner;
 
 
@@ -79,24 +82,33 @@ public class TestEvalTreeUtil {
         CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT4, TajoDataTypes.Type.INT4));
     catalog.registerFunction(funcMeta);
 
-    analyzer = new QueryAnalyzer(catalog);
+    analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    
-    QueryBlock block;
 
-    block = (QueryBlock) analyzer.parse(TestEvalTree.QUERIES[0]).getParseTree();
-    expr1 = block.getWhereCondition();
-
-    block = (QueryBlock) analyzer.parse(TestEvalTree.QUERIES[1]).getParseTree();
-    expr2 = block.getWhereCondition();
-    
-    block = (QueryBlock) analyzer.parse(TestEvalTree.QUERIES[2]).getParseTree();
-    expr3 = block.getWhereCondition();
+    expr1 = getRootSelection(TestEvalTree.QUERIES[0]);
+    expr2 = getRootSelection(TestEvalTree.QUERIES[1]);
+    expr3 = getRootSelection(TestEvalTree.QUERIES[2]);
   }
 
   @AfterClass
   public static void tearDown() throws Exception {
     util.shutdownCatalogCluster();
+  }
+
+  public static Target [] getRawTargets(String query) {
+    Expr expr = analyzer.parse(query);
+    LogicalPlan plan = planner.createPlan(expr);
+    if (plan.getRootBlock().getRoot().getType() == ExprType.EXPRS) {
+      return ((EvalExprNode)plan.getRootBlock().getRoot()).getExprs();
+    } else {
+      return plan.getRootBlock().getTargetListManager().getUnEvaluatedTargets();
+    }
+  }
+
+  public static EvalNode getRootSelection(String query) {
+    Expr block = analyzer.parse(query);
+    LogicalPlan plan = planner.createPlan(block);
+    return plan.getRootBlock().getSelectionNode().getQual();
   }
 
   @Test
@@ -151,9 +163,8 @@ public class TestEvalTreeUtil {
   
   @Test
   public final void testGetSchemaFromTargets() throws InternalException {
-    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[0]).getParseTree();
-    Schema schema = 
-        EvalTreeUtil.getSchemaByTargets(null, block.getTargetList());
+    Target [] targets = getRawTargets(QUERIES[0]);
+    Schema schema = EvalTreeUtil.getSchemaByTargets(null, targets);
     Column col1 = schema.getColumn(0);
     Column col2 = schema.getColumn(1);
     assertEquals("plus", col1.getColumnName());
@@ -164,9 +175,9 @@ public class TestEvalTreeUtil {
   
   @Test
   public final void testGetContainExprs() throws CloneNotSupportedException {
-    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[1]).getParseTree();
-    Target [] targets = block.getTargetList();
-    
+    Expr expr = analyzer.parse(QUERIES[1]);
+    LogicalPlan plan = planner.createPlan(expr);
+    Target [] targets = plan.getRootBlock().getTargetListManager().getUnEvaluatedTargets();
     Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
         EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
@@ -186,8 +197,7 @@ public class TestEvalTreeUtil {
   @Test
   public final void testGetCNF() {
     // "select score from people where score < 10 and 4 < score "
-    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[5]).getParseTree();
-    EvalNode node = block.getWhereCondition();
+    EvalNode node = getRootSelection(QUERIES[5]);
     EvalNode [] cnf = EvalTreeUtil.getConjNormalForm(node);
     
     Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
@@ -214,8 +224,7 @@ public class TestEvalTreeUtil {
   @Test
   public final void testTransformCNF2Singleton() {
     // "select score from people where score < 10 and 4 < score "
-    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[6]).getParseTree();
-    EvalNode node = block.getWhereCondition();
+    EvalNode node = getRootSelection(QUERIES[6]);
     EvalNode [] cnf1 = EvalTreeUtil.getConjNormalForm(node);
     assertEquals(3, cnf1.length);
     
@@ -229,8 +238,7 @@ public class TestEvalTreeUtil {
   
   @Test
   public final void testSimplify() {
-    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[0]).getParseTree();
-    Target [] targets = block.getTargetList();
+    Target [] targets = getRawTargets(QUERIES[0]);
     EvalNode node = AlgebraicUtil.simplify(targets[0].getEvalTree());
     EvalContext nodeCtx = node.newContext();
     assertEquals(Type.CONST, node.getType());
@@ -242,35 +250,30 @@ public class TestEvalTreeUtil {
     node.eval(nodeCtx, null, null);
     assertTrue(7.0d == node.terminate(nodeCtx).asFloat8());
 
-    block = (QueryBlock) analyzer.parse(QUERIES[1]).getParseTree();
-    targets = block.getTargetList();
+    Expr expr = analyzer.parse(QUERIES[1]);
+    LogicalPlan plan = planner.createPlan(expr);
+    targets = plan.getRootBlock().getTargetListManager().getUnEvaluatedTargets();
     Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
         EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
     node = exprs.iterator().next();
-    System.out.println(AlgebraicUtil.simplify(node));
   }
   
   @Test
   public final void testConatainSingleVar() {
-    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[2]).getParseTree();
-    EvalNode node = block.getWhereCondition();
+    EvalNode node = getRootSelection(QUERIES[2]);
     assertEquals(true, AlgebraicUtil.containSingleVar(node));
-    
-    block = (QueryBlock) analyzer.parse(QUERIES[3]).getParseTree();
-    node = block.getWhereCondition();
+    node = getRootSelection(QUERIES[3]);
     assertEquals(true, AlgebraicUtil.containSingleVar(node));
   }
   
   @Test
   public final void testTranspose() {
-    QueryBlock block = (QueryBlock) analyzer.parse(QUERIES[2]).getParseTree();
-    EvalNode node = block.getWhereCondition();
-    assertEquals(true, AlgebraicUtil.containSingleVar(node));
+    //EvalNode node = getRootSelection(QUERIES[2]);
+    //assertEquals(true, AlgebraicUtil.containSingleVar(node));
     
     Column col1 = new Column("people.score", TajoDataTypes.Type.INT4);
-    block = (QueryBlock) analyzer.parse(QUERIES[3]).getParseTree();
-    node = block.getWhereCondition();    
+    EvalNode node = getRootSelection(QUERIES[3]);
     // we expect that score < 3
     EvalNode transposed = AlgebraicUtil.transpose(node, col1);
     assertEquals(Type.GTH, transposed.getType());
@@ -280,8 +283,7 @@ public class TestEvalTreeUtil {
     transposed.getRightExpr().eval(evalCtx, null, null);
     assertEquals(1, transposed.getRightExpr().terminate(evalCtx).asInt4());
 
-    block = (QueryBlock) analyzer.parse(QUERIES[4]).getParseTree();
-    node = block.getWhereCondition();    
+    node = getRootSelection(QUERIES[4]);
     // we expect that score < 3
     transposed = AlgebraicUtil.transpose(node, col1);
     assertEquals(Type.LTH, transposed.getType());
@@ -294,11 +296,10 @@ public class TestEvalTreeUtil {
 
   @Test
   public final void testFindDistinctAggFunctions() {
-
-    QueryBlock block = (QueryBlock) analyzer.parse(
-        "select sum(score) + max(age) from people").getParseTree();
+    String query = "select sum(score) + max(age) from people";
+    Target [] targets = getRawTargets(query);
     List<AggFuncCallEval> list = EvalTreeUtil.
-        findDistinctAggFunction(block.getTargetList()[0].getEvalTree());
+        findDistinctAggFunction(targets[0].getEvalTree());
     assertEquals(2, list.size());
     Set<String> result = Sets.newHashSet("max", "sum");
     for (AggFuncCallEval eval : list) {

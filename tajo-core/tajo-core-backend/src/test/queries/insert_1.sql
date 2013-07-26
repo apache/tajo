@@ -1,0 +1,1 @@
+insert into people values (1, 'hyunsik', 32)

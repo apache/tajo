@@ -21,6 +21,9 @@ package org.apache.tajo.engine.planner.physical;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.planner.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,11 +35,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.parser.QueryAnalyzer;
-import org.apache.tajo.engine.planner.LogicalOptimizer;
-import org.apache.tajo.engine.planner.LogicalPlanner;
-import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
-import org.apache.tajo.engine.planner.PlanningContext;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.storage.*;
@@ -55,7 +53,7 @@ public class TestBSTIndexExec {
   private TajoConf conf;
   private Path idxPath;
   private CatalogService catalog;
-  private QueryAnalyzer analyzer;
+  private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
   private StorageManager sm;
   private Schema idxSchema;
@@ -136,7 +134,7 @@ public class TestBSTIndexExec {
         sm.getTablePath("employee"));
     catalog.addTable(desc);
 
-    analyzer = new QueryAnalyzer(catalog);
+    analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
   }
 
@@ -155,13 +153,12 @@ public class TestBSTIndexExec {
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testEqual");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), new Fragment[] { frags[0] }, workDir);
-    PlanningContext context = analyzer.parse(QUERY);
-    LogicalNode plan = planner.createPlan(context);
-
-    plan =  LogicalOptimizer.optimize(context, plan);
+    Expr expr = analyzer.parse(QUERY);
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
 
     TmpPlanner phyPlanner = new TmpPlanner(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     int tupleCount = this.randomValues.get(rndKey);
     int counter = 0;

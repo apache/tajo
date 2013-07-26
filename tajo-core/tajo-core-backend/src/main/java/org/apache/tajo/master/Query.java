@@ -31,16 +31,12 @@ import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SubQueryId;
 import org.apache.tajo.TajoProtos.QueryState;
-import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.engine.json.GsonCreator;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableDescImpl;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.ExprType;
-import org.apache.tajo.engine.planner.logical.IndexWriteNode;
 import org.apache.tajo.master.QueryMaster.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.util.IndexUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -408,25 +404,6 @@ public class Query implements EventHandler<QueryEvent> {
   private void writeStat(Path outputPath, SubQuery subQuery)
       throws IOException {
     ExecutionBlock execBlock = subQuery.getBlock();
-    if (execBlock.getPlan().getType() == ExprType.CREATE_INDEX) {
-      IndexWriteNode index = (IndexWriteNode) execBlock.getPlan();
-      Path indexPath = new Path(sm.getTablePath(index.getTableName()), "index");
-      TableMeta meta;
-      if (sm.getFileSystem().exists(new Path(indexPath, ".meta"))) {
-        meta = sm.getTableMeta(indexPath);
-      } else {
-        meta = CatalogUtil
-            .newTableMeta(execBlock.getOutputSchema(), StoreType.CSV);
-      }
-      String indexName = IndexUtil.getIndexName(index.getTableName(),
-          index.getSortSpecs());
-      String json = GsonCreator.getInstance().toJson(index.getSortSpecs());
-      meta.putOption(indexName, json);
-
-      sm.writeTableMeta(indexPath, meta);
-
-    } else {
-      sm.writeTableMeta(outputPath, subQuery.getTableMeta());
-    }
+    sm.writeTableMeta(outputPath, subQuery.getTableMeta());
   }
 }

@@ -27,7 +27,7 @@ import org.apache.tajo.SubQueryId;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.parser.QueryBlock.FromTable;
+import org.apache.tajo.engine.planner.FromTable;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
@@ -44,20 +44,14 @@ import java.util.Map;
 public class GlobalPlanner {
   private static Log LOG = LogFactory.getLog(GlobalPlanner.class);
 
-  private TajoConf conf;
   private StorageManager sm;
-  private CatalogService catalog;
   private QueryId queryId;
-  private EventHandler eventHandler;
 
   public GlobalPlanner(final TajoConf conf, final CatalogService catalog,
                        final StorageManager sm,
                        final EventHandler eventHandler)
       throws IOException {
-    this.conf = conf;
     this.sm = sm;
-    this.catalog = catalog;
-    this.eventHandler = eventHandler;
   }
 
   /**
@@ -80,28 +74,17 @@ public class GlobalPlanner {
 
     // insert store at the subnode of the root
     UnaryNode root = rootNode;
-    IndexWriteNode indexNode = null;
-    // TODO: check whether the type of the subnode is CREATE_INDEX
-    if (root.getSubNode().getType() == ExprType.CREATE_INDEX) {
-      indexNode = (IndexWriteNode) root.getSubNode();
-      root = (UnaryNode)root.getSubNode();
-      
-      StoreIndexNode store = new StoreIndexNode(
-          QueryIdFactory.newSubQueryId(this.queryId).toString());
-      store.setLocal(false);
-      PlannerUtil.insertNode(root, store);
-      
-    } else if (root.getSubNode().getType() != ExprType.STORE) {
+    if (root.getSubNode().getType() != ExprType.STORE) {
       SubQueryId subQueryId = QueryIdFactory.newSubQueryId(this.queryId);
       outputTableName = subQueryId.toString();
       insertStore(subQueryId.toString(),root).setLocal(false);
     }
     
     // convert 2-phase plan
-    LogicalNode tp = convertTo2Phase(rootNode);
+    LogicalNode twoPhased = convertTo2Phase(rootNode);
 
     // make query graph
-    MasterPlan globalPlan = convertToGlobalPlan(indexNode, tp);
+    MasterPlan globalPlan = convertToGlobalPlan(twoPhased);
     globalPlan.setOutputTableName(outputTableName);
 
     return globalPlan;
@@ -702,20 +685,13 @@ public class GlobalPlanner {
     return parent;
   }
   
-  private MasterPlan convertToGlobalPlan(IndexWriteNode index,
-                                         LogicalNode logicalPlan) throws IOException {
+  private MasterPlan convertToGlobalPlan(LogicalNode logicalPlan) throws IOException {
     recursiveBuildSubQuery(logicalPlan);
     ExecutionBlock root;
-    
-    if (index != null) {
-      SubQueryId id = QueryIdFactory.newSubQueryId(queryId);
-      ExecutionBlock unit = new ExecutionBlock(id);
-      root = makeScanSubQuery(unit);
-      root.setPlan(index);
-    } else {
-      root = convertMap.get(((LogicalRootNode)logicalPlan).getSubNode());
-      root.getStoreTableNode().setLocal(false);
-    }
+
+    root = convertMap.get(((LogicalRootNode)logicalPlan).getSubNode());
+    root.getStoreTableNode().setLocal(false);
+
     return new MasterPlan(root);
   }
 }

@@ -325,8 +325,8 @@
         </plugin>
         <plugin>
           <groupId>org.antlr</groupId>
-          <artifactId>antlr3-maven-plugin</artifactId>
-          <version>3.4</version>
+          <artifactId>antlr4-maven-plugin</artifactId>
+          <version>4.0</version>
         </plugin>
         <!--This plugin's configuration is used to store Eclipse m2e settings only. 
           It has no influence on the Maven build itself. -->
@@ -671,15 +671,15 @@
       </dependency>
       <dependency>
         <groupId>org.antlr</groupId>
-        <artifactId>antlr</artifactId>
-        <version>3.4</version>
+        <artifactId>antlr4</artifactId>
+        <version>4.0</version>
         <type>jar</type>
         <scope>compile</scope>
       </dependency>
       <dependency>
         <groupId>org.antlr</groupId>
-        <artifactId>antlr-runtime</artifactId>
-        <version>3.4</version>
+        <artifactId>antlr4-runtime</artifactId>
+        <version>4.0</version>
         <type>jar</type>
         <scope>compile</scope>
       </dependency>

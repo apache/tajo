@@ -125,11 +125,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         return new LimitExec(ctx, limitNode.getInSchema(),
             limitNode.getOutSchema(), outer, limitNode);
 
-      case CREATE_INDEX:
-        IndexWriteNode createIndexNode = (IndexWriteNode) logicalNode;
-        outer = createPlanRecursive(ctx, createIndexNode.getSubNode());
-        return createIndexWritePlan(sm, ctx, createIndexNode, outer);
-
       case BST_INDEX_SCAN:
         IndexScanNode indexScanNode = (IndexScanNode) logicalNode;
         outer = createIndexScanExec(ctx, indexScanNode);
@@ -288,14 +283,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   public PhysicalExec createSortPlan(TaskAttemptContext ctx, SortNode sortNode,
                                      PhysicalExec subOp) throws IOException {
     return new ExternalSortExec(ctx, sm, sortNode, subOp);
-  }
-
-  public PhysicalExec createIndexWritePlan(StorageManager sm,
-                                           TaskAttemptContext ctx, IndexWriteNode indexWriteNode, PhysicalExec subOp)
-      throws IOException {
-
-    return new IndexWriteExec(ctx, sm, indexWriteNode, ctx.getTable(indexWriteNode
-        .getTableName()), subOp);
   }
 
   public PhysicalExec createIndexScanExec(TaskAttemptContext ctx,

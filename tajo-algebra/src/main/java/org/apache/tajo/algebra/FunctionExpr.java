@@ -25,7 +25,37 @@ public class FunctionExpr extends Expr {
   private Expr[] params;
 
   public FunctionExpr(String signature) {
-    super(ExprType.Function);
+    this(OpType.Function, signature);
+  }
+
+  public FunctionExpr(String signature, Expr [] params) {
+    this(OpType.Function, signature);
+    setParams(params);
+  }
+
+  protected FunctionExpr(OpType type, String signature) {
+    super(type);
+    if (type != OpType.Function && type != OpType.CountRowsFunction) {
+      throw new IllegalArgumentException("FunctionExpr cannot accept " + type + "type");
+    }
+    this.signature = signature;
+  }
+
+  protected FunctionExpr(OpType type, String signature, Expr [] params) {
+    super(type);
+    if (type != OpType.Function && type != OpType.CountValueFunction) {
+      throw new IllegalArgumentException("FunctionExpr cannot accept " + type + "type");
+    }
+    this.signature = signature;
+    setParams(params);
+  }
+
+  public String getSignature() {
+    return this.signature;
+  }
+
+  public Expr[] getParams() {
+    return params;
   }
 
   public void setParams(Expr[] params) {

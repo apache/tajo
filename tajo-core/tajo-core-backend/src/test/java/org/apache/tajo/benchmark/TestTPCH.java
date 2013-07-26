@@ -19,12 +19,12 @@
 package org.apache.tajo.benchmark;
 
 import com.google.common.collect.Maps;
+import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.TpchTestBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.TpchTestBase;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -65,7 +65,7 @@ public class TestTPCH {
   }
 
   @Test
-  public void testQ2FiveWayJoin() throws Exception {
+  public void testQ2FourJoins() throws Exception {
     ResultSet res = tpch.execute(
         "select s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone, s_comment, ps_supplycost, " +
             "r_name, p_type, p_size " +
@@ -85,7 +85,7 @@ public class TestTPCH {
   @Test
   public void testTPCH14Expr() throws Exception {
     ResultSet res = tpch.execute("select 100 * sum(" +
-        "case when p_type like 'PROMO%' then l_extendedprice else 0 end) / sum(l_extendedprice * (1 - l_discount)) "
+        "case when p_type like 'PROMO%' then l_extendedprice else 0.0 end) / sum(l_extendedprice * (1 - l_discount)) "
         + "as promo_revenue from lineitem, part where l_partkey = p_partkey");
 
     res.next();

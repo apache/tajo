@@ -23,14 +23,14 @@ import com.google.gson.*;
 import java.lang.reflect.Type;
 
 public abstract class Expr implements JsonSerializable {
-  protected ExprType op_type;
+  protected OpType opType;
 
-	public Expr(ExprType op_type) {
-		this.op_type = op_type;
+	public Expr(OpType opType) {
+		this.opType = opType;
 	}
 	
-	public ExprType getType() {
-		return this.op_type;
+	public OpType getType() {
+		return this.opType;
 	}
 
   abstract boolean equalsTo(Expr expr);
@@ -40,7 +40,7 @@ public abstract class Expr implements JsonSerializable {
 	  if (obj instanceof Expr) {
 	    Expr casted = (Expr) obj;
 
-      if (this.op_type == casted.op_type && equalsTo(casted)) {
+      if (this.opType == casted.opType && equalsTo(casted)) {
         if (this instanceof UnaryOperator) {
           UnaryOperator one = (UnaryOperator) this;
           UnaryOperator another = (UnaryOperator) casted;
@@ -76,6 +76,24 @@ public abstract class Expr implements JsonSerializable {
     return JsonHelper.toJson(this);
   }
 
+  /**
+   * This method provides a visiting way in the post order.
+   *
+   * @param visitor
+   */
+  public void accept(ExprVisitor visitor) {
+    if (this instanceof UnaryOperator) {
+      UnaryOperator unary = (UnaryOperator) this;
+      unary.getChild().accept(visitor);
+    } else if (this instanceof BinaryOperator) {
+      BinaryOperator bin = (BinaryOperator) this;
+      bin.getLeft().accept(visitor);
+      bin.getRight().accept(visitor);
+    }
+
+    visitor.visit(this);
+  }
+
   static class JsonSerDer
       implements JsonSerializer<Expr>, JsonDeserializer<Expr> {
 
@@ -85,14 +103,14 @@ public abstract class Expr implements JsonSerializable {
         throws JsonParseException {
       JsonObject jsonObject = json.getAsJsonObject();
       String operator = jsonObject.get("type").getAsString();
-      return context.deserialize(json, ExprType.valueOf(operator).getBaseClass());
+      return context.deserialize(json, OpType.valueOf(operator).getBaseClass());
     }
 
 
     @Override
     public JsonElement serialize(Expr src, Type typeOfSrc,
                                  JsonSerializationContext context) {
-      return context.serialize(src, src.op_type.getBaseClass());
+      return context.serialize(src, src.opType.getBaseClass());
     }
   }
 }

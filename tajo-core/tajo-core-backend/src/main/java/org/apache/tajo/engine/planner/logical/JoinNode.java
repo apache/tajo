@@ -22,15 +22,15 @@
 package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.json.GsonCreator;
-import org.apache.tajo.engine.parser.QueryBlock;
-import org.apache.tajo.engine.planner.JoinType;
+import org.apache.tajo.engine.planner.Target;
 
-public class JoinNode extends BinaryNode implements Cloneable {
+public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private JoinType joinType;
   @Expose private EvalNode joinQual;
-  @Expose private QueryBlock.Target[] targets;
+  @Expose private Target[] targets;
 
   public JoinNode(JoinType joinType, LogicalNode left) {
     super(ExprType.JOIN);
@@ -65,15 +65,18 @@ public class JoinNode extends BinaryNode implements Cloneable {
     return this.joinQual;
   }
 
-  public boolean hasTargetList() {
+  @Override
+  public boolean hasTargets() {
     return this.targets != null;
   }
 
-  public QueryBlock.Target[] getTargets() {
+  @Override
+  public Target[] getTargets() {
     return this.targets;
   }
 
-  public void setTargetList(QueryBlock.Target[] targets) {
+  @Override
+  public void setTargets(Target[] targets) {
     this.targets = targets;
   }
 
@@ -97,11 +100,27 @@ public class JoinNode extends BinaryNode implements Cloneable {
   }
 
   public String toString() {
-    return "\"Join\": \"joinType\": \"" + joinType +"\""
-        + (joinQual != null ? ", \"qual\": " + joinQual : "")
-        + "\n\"out schema: " + getOutSchema()
-        + "\n\"in schema: " + getInSchema()
-    		+ "\n" + getOuterNode().toString() + " and " + getInnerNode();
+    StringBuilder sb = new StringBuilder();
+    sb.append("\"Join\": \"joinType\": \" ").append(joinType).append("\"");
+    if (joinQual != null) {
+      sb.append(", \"qual\": ").append(joinQual);
+    }
+    if (targets != null) {
+      sb.append(", \"target list\": ");
+      boolean first = true;
+      for (Target target : targets) {
+        if (!first) {
+          sb.append(", ");
+        }
+        sb.append(target);
+        first = false;
+      }
+    }
+
+    sb.append("\n\"out schema: ").append(getOutSchema());
+    sb.append("\n\"in schema: ").append(getInSchema());
+    sb.append("\n" + getOuterNode().toString()).append(" and ").append(getInnerNode());
+    return sb.toString();
   }
 
   public String toJSON() {

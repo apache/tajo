@@ -24,6 +24,9 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 
+/**
+ * Count(column) function
+ */
 public final class CountValue extends CountRows {
 
   public CountValue() {
@@ -33,7 +36,7 @@ public final class CountValue extends CountRows {
   }
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
-    if (params.get(0) instanceof NullDatum) {
+    if (!(params.get(0) instanceof NullDatum)) {
       ((CountRowContext) ctx).count++;
     }
   }

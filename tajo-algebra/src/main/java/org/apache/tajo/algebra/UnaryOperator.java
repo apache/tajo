@@ -21,12 +21,16 @@ package org.apache.tajo.algebra;
 public abstract class UnaryOperator extends Expr {
   private Expr child;
 
-  public UnaryOperator(ExprType type) {
+  public UnaryOperator(OpType type) {
     super(type);
   }
 
   public Expr getChild() {
     return this.child;
+  }
+
+  public boolean hasChild() {
+    return child != null;
   }
 
   public void setChild(Expr op) {

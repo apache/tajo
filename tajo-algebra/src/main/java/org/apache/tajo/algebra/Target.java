@@ -20,11 +20,12 @@ package org.apache.tajo.algebra;
 
 import org.apache.tajo.util.TUtil;
 
-public class Target implements JsonSerializable {
+public class Target extends Expr {
   private Expr expr;
   private String alias;
 
   public Target(Expr expr) {
+    super(OpType.Target);
    this.expr = expr;
   }
 
@@ -45,17 +46,17 @@ public class Target implements JsonSerializable {
   }
 
   @Override
-  public String toJson() {
-    return JsonHelper.toJson(this);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
+  public boolean equalsTo(Expr obj) {
     if (obj instanceof Target) {
       Target another = (Target) obj;
       return expr.equals(another.expr) && TUtil.checkEquals(alias, another.alias);
     }
 
     return false;
+  }
+
+  @Override
+  public String toJson() {
+    return JsonHelper.toJson(this);
   }
 }
