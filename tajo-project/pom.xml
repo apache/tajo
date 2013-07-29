@@ -572,16 +572,6 @@
         <version>${tajo.version}</version>
         <type>test-jar</type>
       </dependency>
-      <dependency>
-        <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-frontend</artifactId>
-        <version>${tajo.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-frontend-sql</artifactId>
-        <version>${tajo.version}</version>
-      </dependency>
 
       <dependency>
         <groupId>org.apache.hadoop</groupId>
