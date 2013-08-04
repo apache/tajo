@@ -4,6 +4,9 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
    
+    TAJO-96: Design and implement rewrite rule interface and the rewrite rule 
+    engine. (hyunsik)
+
     TAJO-19: CREATE TABLE without external data should be supported. (jinho)
 
     TAJO-57: Recognize Parser and Catalog Standard SQL data types. (hyunsik)

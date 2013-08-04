@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner;
+package org.apache.tajo.engine.planner.rewrite;
 
-public class VerifyException extends PlanningException {
-  public VerifyException(String message) {
-    super(message);
-  }
+import org.apache.tajo.engine.planner.LogicalPlan;
+import org.apache.tajo.engine.planner.PlanningException;
+
+public interface QueryRewriteEngine {
+  /**
+   * Rewrite a logical plan with all query rewrite rules added to this engine.
+   *
+   * @param plan The plan to be rewritten with all query rewrite rule.
+   * @return The rewritten plan.
+   */
+  LogicalPlan rewrite(LogicalPlan plan) throws PlanningException;
 }

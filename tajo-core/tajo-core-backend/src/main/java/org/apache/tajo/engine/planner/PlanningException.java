@@ -18,8 +18,12 @@
 
 package org.apache.tajo.engine.planner;
 
-public class VerifyException extends PlanningException {
-  public VerifyException(String message) {
+public class PlanningException extends Exception {
+  public PlanningException(String message) {
     super(message);
+  }
+
+  public PlanningException(Exception e) {
+    super(e);
   }
 }
