@@ -177,7 +177,7 @@ public class TestPhysicalPlanner {
   };
 
   @Test
-  public final void testCreateScanPlan() throws IOException, CloneNotSupportedException {
+  public final void testCreateScanPlan() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(),
         employee.getPath(), Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateScanPlan");
@@ -207,7 +207,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testGroupByPlan() throws IOException, CloneNotSupportedException {
+  public final void testGroupByPlan() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testGroupByPlan");
@@ -238,8 +238,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testHashGroupByPlanWithALLField() throws IOException,
-      CloneNotSupportedException {
+  public final void testHashGroupByPlanWithALLField() throws IOException, PlanningException {
     // TODO - currently, this query does not use hash-based group operator.
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
@@ -269,7 +268,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testSortGroupByPlan() throws IOException, CloneNotSupportedException {
+  public final void testSortGroupByPlan() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testSortGroupByPlan");
@@ -326,7 +325,7 @@ public class TestPhysicalPlanner {
   };
 
   @Test
-  public final void testStorePlan() throws IOException, CloneNotSupportedException {
+  public final void testStorePlan() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlan");
@@ -367,7 +366,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testStorePlanWithRCFile() throws IOException, CloneNotSupportedException {
+  public final void testStorePlanWithRCFile() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlanWithRCFile");
@@ -407,7 +406,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testPartitionedStorePlan() throws IOException, CloneNotSupportedException {
+  public final void testPartitionedStorePlan() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
@@ -466,7 +465,7 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testPartitionedStorePlanWithEmptyGroupingSet()
-      throws IOException, CloneNotSupportedException {
+      throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
@@ -522,7 +521,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testAggregationFunction() throws IOException, CloneNotSupportedException {
+  public final void testAggregationFunction() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testAggregationFunction");
@@ -555,7 +554,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testCountFunction() throws IOException, CloneNotSupportedException {
+  public final void testCountFunction() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCountFunction");
@@ -586,7 +585,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testGroupByWithNullValue() throws IOException, CloneNotSupportedException {
+  public final void testGroupByWithNullValue() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testGroupByWithNullValue");
@@ -609,7 +608,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testUnionPlan() throws IOException, CloneNotSupportedException {
+  public final void testUnionPlan() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testUnionPlan");
@@ -635,7 +634,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testEvalExpr() throws IOException, CloneNotSupportedException {
+  public final void testEvalExpr() throws IOException, PlanningException {
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testEvalExpr");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
         new Fragment[] { }, workDir);
@@ -669,7 +668,7 @@ public class TestPhysicalPlanner {
   };
 
   //@Test
-  public final void testCreateIndex() throws IOException, CloneNotSupportedException {
+  public final void testCreateIndex() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateIndex");
@@ -695,7 +694,7 @@ public class TestPhysicalPlanner {
   };
 
   @Test
-  public final void testDuplicateEliminate() throws IOException, CloneNotSupportedException {
+  public final void testDuplicateEliminate() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
 
@@ -727,7 +726,7 @@ public class TestPhysicalPlanner {
   };
 
   @Test
-  public final void testIndexedStoreExec() throws IOException, CloneNotSupportedException {
+  public final void testIndexedStoreExec() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(),
         employee.getPath(), Integer.MAX_VALUE);
 

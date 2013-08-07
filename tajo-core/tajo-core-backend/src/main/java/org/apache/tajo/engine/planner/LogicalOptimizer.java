@@ -60,7 +60,7 @@ public class LogicalOptimizer {
     }
   }
 
-  public static LogicalNode optimize(LogicalPlan plan) throws CloneNotSupportedException {
+  public static LogicalNode optimize(LogicalPlan plan) throws PlanningException {
     LogicalNode toBeOptimized;
 
     toBeOptimized = plan.getRootBlock().getRoot();
@@ -224,7 +224,7 @@ public class LogicalOptimizer {
    * @param plan
    */
   private static void pushProjection(LogicalPlan plan)
-      throws CloneNotSupportedException {
+      throws PlanningException {
     Stack<LogicalNode> stack = new Stack<LogicalNode>();
 
     OptimizationContext optCtx;
@@ -260,7 +260,7 @@ public class LogicalOptimizer {
   private static LogicalNode pushProjectionRecursive(
       final LogicalPlan plan, final OptimizationContext optContext,
       final LogicalNode node, final Stack<LogicalNode> stack,
-      final Set<Column> upperRequired) throws CloneNotSupportedException {
+      final Set<Column> upperRequired) throws PlanningException {
 
     LogicalNode currentNode = null;
 
@@ -307,7 +307,7 @@ public class LogicalOptimizer {
   }
 
   private static LogicalNode pushDownCommonPost(LogicalPlan plan, OptimizationContext context, UnaryNode node,
-                                                Set<Column> upperRequired, Stack<LogicalNode> stack) throws CloneNotSupportedException {
+                                                Set<Column> upperRequired, Stack<LogicalNode> stack) throws PlanningException {
     stack.push(node);
     LogicalNode child = pushProjectionRecursive(plan, context,
         node.getSubNode(), stack, upperRequired);
@@ -323,7 +323,7 @@ public class LogicalOptimizer {
 
   private static LogicalNode pushDownProjection(LogicalPlan plan, OptimizationContext context,
                                                    ProjectionNode projNode, Set<Column> upperRequired,
-                                                   Stack<LogicalNode> path) throws CloneNotSupportedException {
+                                                   Stack<LogicalNode> path) throws PlanningException {
 
     for (Target target : projNode.getTargets()) {
       upperRequired.add(target.getColumnSchema());
@@ -352,7 +352,7 @@ public class LogicalOptimizer {
 
   private static LogicalNode pushDownSelection(LogicalPlan plan, OptimizationContext context,
                                                  SelectionNode selectionNode, Set<Column> upperRequired,
-                                                 Stack<LogicalNode> path) throws CloneNotSupportedException {
+                                                 Stack<LogicalNode> path) throws PlanningException {
     if (selectionNode.getQual() != null) {
       upperRequired.addAll(EvalTreeUtil.findDistinctRefColumns(selectionNode.getQual()));
     }
@@ -362,7 +362,7 @@ public class LogicalOptimizer {
 
   private static GroupbyNode pushDownGroupBy(LogicalPlan plan, OptimizationContext context, GroupbyNode groupbyNode,
                                              Set<Column> upperRequired, Stack<LogicalNode> stack)
-      throws CloneNotSupportedException {
+      throws PlanningException {
 
     Set<Column> currentRequired = new HashSet<Column>(upperRequired);
 
@@ -379,8 +379,7 @@ public class LogicalOptimizer {
   }
 
   private static SortNode pushDownSort(LogicalPlan plan, OptimizationContext context, SortNode sortNode,
-                                       Set<Column> upperRequired, Stack<LogicalNode> stack)
-      throws CloneNotSupportedException {
+                                       Set<Column> upperRequired, Stack<LogicalNode> stack) throws PlanningException {
 
     for (SortSpec spec : sortNode.getSortKeys()) {
       upperRequired.add(spec.getSortKey());
@@ -393,7 +392,7 @@ public class LogicalOptimizer {
 
   private static JoinNode pushDownJoin(LogicalPlan plan, OptimizationContext context, JoinNode joinNode,
                                        Set<Column> upperRequired, Stack<LogicalNode> path)
-      throws CloneNotSupportedException {
+      throws PlanningException {
     Set<Column> currentRequired = Sets.newHashSet(upperRequired);
 
     if (joinNode.hasTargets()) {
@@ -425,8 +424,7 @@ public class LogicalOptimizer {
   }
 
   private static BinaryNode pushDownSetNode(LogicalPlan plan, OptimizationContext context, UnionNode node,
-                                            Set<Column> upperRequired, Stack<LogicalNode> stack)
-      throws CloneNotSupportedException {
+                                            Set<Column> upperRequired, Stack<LogicalNode> stack) throws PlanningException {
     BinaryNode setNode = node;
 
     LogicalPlan.QueryBlock leftBlock = plan.getBlock(setNode.getOuterNode());
@@ -452,7 +450,7 @@ public class LogicalOptimizer {
 
   private static ScanNode pushdownScanNode(OptimizationContext optContext, ScanNode scanNode,
                                            Set<Column> upperRequired, Stack<LogicalNode> stack)
-      throws CloneNotSupportedException {
+      throws PlanningException {
     return (ScanNode) pushDownProjectablePost(optContext, scanNode, upperRequired, isTopmostProjectable(stack));
   }
 
@@ -468,7 +466,7 @@ public class LogicalOptimizer {
 
   private static LogicalNode pushDownProjectablePost(OptimizationContext context, LogicalNode node,
                                                      Set<Column> upperRequired, boolean last)
-      throws CloneNotSupportedException {
+      throws PlanningException {
     TargetListManager targetListManager = context.getTargetListManager();
     EvalNode expr;
 

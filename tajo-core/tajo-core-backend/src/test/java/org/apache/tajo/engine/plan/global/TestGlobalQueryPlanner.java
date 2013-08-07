@@ -34,7 +34,10 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.TestEvalTree.TestSum;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.LogicalOptimizer;
+import org.apache.tajo.engine.planner.LogicalPlan;
+import org.apache.tajo.engine.planner.LogicalPlanner;
+import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.master.ExecutionBlock;
@@ -142,7 +145,7 @@ public class TestGlobalQueryPlanner {
   }
   
   @Test
-  public void testScan() throws IOException, CloneNotSupportedException {
+  public void testScan() throws IOException, PlanningException {
     Expr context = analyzer.parse(
         "select age, sumtest(salary) from table0");
 
@@ -164,7 +167,7 @@ public class TestGlobalQueryPlanner {
 
   @Test
   public void testGroupby() throws IOException, KeeperException,
-      InterruptedException, CloneNotSupportedException {
+      InterruptedException, PlanningException {
     Expr context = analyzer.parse(
         "create table store1 as select age, sumtest(salary) from table0 group by age");
     LogicalPlan plan = logicalPlanner.createPlan(context);
@@ -202,7 +205,7 @@ public class TestGlobalQueryPlanner {
   }
   
   @Test
-  public void testSort() throws IOException, CloneNotSupportedException {
+  public void testSort() throws IOException, PlanningException {
     Expr context = analyzer.parse(
         "create table store1 as select age from table0 order by age");
     LogicalPlan plan = logicalPlanner.createPlan(context);
@@ -244,7 +247,7 @@ public class TestGlobalQueryPlanner {
   }
   
   @Test
-  public void testJoin() throws IOException, CloneNotSupportedException {
+  public void testJoin() throws IOException, PlanningException {
     Expr expr = analyzer.parse(
         "select table0.age,table0.salary,table1.salary from table0,table1 " +
             "where table0.salary = table1.salary order by table0.age");
@@ -312,7 +315,7 @@ public class TestGlobalQueryPlanner {
   }
   
   @Test
-  public void testSelectAfterJoin() throws IOException, CloneNotSupportedException {
+  public void testSelectAfterJoin() throws IOException, PlanningException {
     String query = "select table0.name, table1.salary from table0,table1 where table0.name = table1.name and table1.salary > 10";
     Expr context = analyzer.parse(query);
     LogicalPlan plan = logicalPlanner.createPlan(context);
@@ -335,7 +338,7 @@ public class TestGlobalQueryPlanner {
   }
   
   //@Test
-  public void testCubeby() throws IOException, CloneNotSupportedException {
+  public void testCubeby() throws IOException, PlanningException {
     Expr expr = analyzer.parse(
         "select age, sum(salary) from table0 group by cube (age, id)");
     LogicalPlan plan = logicalPlanner.createPlan(expr);

@@ -229,7 +229,7 @@ public class GlobalEngine extends AbstractService {
     LogicalNode optimizedPlan = null;
     try {
       optimizedPlan = LogicalOptimizer.optimize(plan);
-    } catch (CloneNotSupportedException e) {
+    } catch (PlanningException e) {
       e.printStackTrace();
     }
     LOG.info("LogicalPlan:\n" + plan.getRootBlock().getRoot());

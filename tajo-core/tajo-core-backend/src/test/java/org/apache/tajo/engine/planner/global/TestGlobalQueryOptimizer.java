@@ -40,6 +40,7 @@ import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalOptimizer;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
+import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.master.ExecutionBlock;
 import org.apache.tajo.master.GlobalPlanner;
@@ -136,7 +137,7 @@ public class TestGlobalQueryOptimizer {
   }
 
   @Test
-  public void testReduceLogicalQueryUnitSteps() throws IOException, CloneNotSupportedException {
+  public void testReduceLogicalQueryUnitSteps() throws IOException, PlanningException {
     Expr expr = analyzer.parse(
         "select table0.age,table0.salary,table1.salary from table0,table1 where table0.salary = table1.salary order by table0.age");
     LogicalPlan plan = logicalPlanner.createPlan(expr);

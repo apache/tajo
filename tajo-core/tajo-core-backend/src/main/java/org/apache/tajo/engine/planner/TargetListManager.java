@@ -31,8 +31,8 @@ import java.util.Collection;
 public class TargetListManager {
   private LogicalPlan plan;
   private boolean [] evaluatedFlags;
-  private Target [] targets;
-  private Target [] unevaluatedTargets;
+  private Target[] targets;
+  private Target[] unevaluatedTargets;
 
   public TargetListManager(LogicalPlan plan, int targetNum) {
     this.plan = plan;
@@ -45,7 +45,7 @@ public class TargetListManager {
     this.unevaluatedTargets = new Target[targetNum];
   }
 
-  public TargetListManager(LogicalPlan plan, Target [] original) {
+  public TargetListManager(LogicalPlan plan, Target[] original) {
     this.plan = plan;
 
     targets = new Target[original.length];
@@ -69,11 +69,11 @@ public class TargetListManager {
     return targets[id];
   }
 
-  public Target [] getTargets() {
+  public Target[] getTargets() {
     return this.targets;
   }
 
-  public Target [] getUnEvaluatedTargets() {
+  public Target[] getUnEvaluatedTargets() {
     return this.unevaluatedTargets;
   }
 
@@ -100,8 +100,8 @@ public class TargetListManager {
     return evaluatedFlags[id];
   }
 
-  public Target [] getUpdatedTarget() throws CloneNotSupportedException {
-    Target [] updated = new Target[targets.length];
+  public Target[] getUpdatedTarget() throws PlanningException {
+    Target[] updated = new Target[targets.length];
     for (int i = 0; i < targets.length; i++) {
       if (targets[i] == null) { // if it is not created
         continue;
@@ -111,7 +111,11 @@ public class TargetListManager {
         Column col = getEvaluatedColumn(i);
         updated[i] = new Target(new FieldEval(col));
       } else {
-        updated[i] = (Target) targets[i].clone();
+        try {
+          updated[i] = (Target) targets[i].clone();
+        } catch (CloneNotSupportedException e) {
+          throw new PlanningException(e);
+        }
       }
     }
     targets = updated;

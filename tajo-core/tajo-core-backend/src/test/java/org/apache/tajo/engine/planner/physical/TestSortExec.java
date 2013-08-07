@@ -104,7 +104,7 @@ public class TestSortExec {
       "select managerId, empId, deptName from employee order by managerId, empId desc" };
 
   @Test
-  public final void testNext() throws IOException, CloneNotSupportedException {
+  public final void testNext() throws IOException, PlanningException {
     Fragment [] frags = sm.splitNG(conf, "employee", employeeMeta, tablePath, Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestSortExec");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil

@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.algebra.ColumnReferenceExpr;
+import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.algebra.Projection;
 import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.Column;
@@ -101,7 +102,7 @@ public class LogicalPlan {
     return queryBlocks.values();
   }
 
-  public boolean postVisit(String blockName, LogicalNode node, Stack<ExprType> path) {
+  public boolean postVisit(String blockName, LogicalNode node, Stack<OpType> path) {
     if (visited.contains(node)) {
       return false;
     }
@@ -179,7 +180,7 @@ public class LogicalPlan {
    */
   public Column findColumnFromChildNode(ColumnReferenceExpr columnRef, String blockName,
                                         LogicalNode node)
-      throws VerifyException{
+      throws VerifyException {
     List<Column> candidates = new ArrayList<Column>();
 
     Column candidate;
@@ -445,7 +446,7 @@ public class LogicalPlan {
      * It requires node's default output schemas.
      * @param node
      */
-    public void checkAndSetEvaluatedTargets(LogicalNode node) {
+    public void checkAndSetEvaluatedTargets(LogicalNode node) throws PlanningException {
       if (!(node instanceof Projectable)) {
         return;
       }
@@ -518,7 +519,7 @@ public class LogicalPlan {
 
           if (newEvaluatedTargetIds.size() > 0) {
             // fill addedTargets with output columns and new expression columns (e.g., aliased column or expressions)
-            Target [] addedTargets = new Target[baseSchema.getColumnNum() + newEvaluatedTargetIds.size()];
+            Target[] addedTargets = new Target[baseSchema.getColumnNum() + newEvaluatedTargetIds.size()];
             PlannerUtil.schemaToTargets(baseSchema, addedTargets);
             int baseIdx = baseSchema.getColumnNum();
             for (int i = 0; i < newEvaluatedTargetIds.size(); i++) {
@@ -542,11 +543,8 @@ public class LogicalPlan {
       }
 
       // replace the evaluated targets for upper operators
-      try {
-        targetListManager.getUpdatedTarget();
-      } catch (CloneNotSupportedException e) {
-        throw new InternalError(e.getMessage());
-      }
+      targetListManager.getUpdatedTarget();
+
 
       if (targetListManager.isAllEvaluated()) {
         schema = targetListManager.getUpdatedSchema();
@@ -557,7 +555,7 @@ public class LogicalPlan {
       return targetListManager;
     }
 
-    public Target [] getCurrentTargets() {
+    public Target[] getCurrentTargets() {
       return targetListManager.getTargets();
     }
   }

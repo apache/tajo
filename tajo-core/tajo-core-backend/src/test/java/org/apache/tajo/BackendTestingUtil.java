@@ -106,7 +106,7 @@ public class BackendTestingUtil {
   }
 
   public ResultSet run(String [] tableNames, File [] tables, Schema [] schemas, String query)
-      throws IOException, CloneNotSupportedException {
+      throws IOException, PlanningException {
     Path workDir = createTmpTestDir();
     StorageManager sm = StorageManager.get(new TajoConf(), workDir);
     List<Fragment> frags = Lists.newArrayList();

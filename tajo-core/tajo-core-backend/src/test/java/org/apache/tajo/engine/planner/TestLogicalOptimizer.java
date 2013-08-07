@@ -104,7 +104,7 @@ public class TestLogicalOptimizer {
   };
   
   @Test
-  public final void testProjectionPushWithNaturalJoin() throws CloneNotSupportedException {
+  public final void testProjectionPushWithNaturalJoin() throws PlanningException, CloneNotSupportedException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[4]);
     LogicalPlan newPlan = planner.createPlan(expr);
@@ -131,7 +131,7 @@ public class TestLogicalOptimizer {
   }
   
   @Test
-  public final void testProjectionPushWithInnerJoin() throws CloneNotSupportedException {
+  public final void testProjectionPushWithInnerJoin() throws PlanningException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[5]);
     LogicalPlan newPlan = planner.createPlan(expr);
@@ -139,7 +139,7 @@ public class TestLogicalOptimizer {
   }
   
   @Test
-  public final void testProjectionPush() throws CloneNotSupportedException {
+  public final void testProjectionPush() throws CloneNotSupportedException, PlanningException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[2]);
     LogicalPlan newPlan = planner.createPlan(expr);
@@ -162,7 +162,7 @@ public class TestLogicalOptimizer {
   }
   
   @Test
-  public final void testOptimizeWithGroupBy() throws CloneNotSupportedException {
+  public final void testOptimizeWithGroupBy() throws CloneNotSupportedException, PlanningException {
     Expr expr = sqlAnalyzer.parse(QUERIES[3]);
     LogicalPlan newPlan = planner.createPlan(expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
@@ -188,7 +188,7 @@ public class TestLogicalOptimizer {
   }
 
   @Test
-  public final void testPushable() throws CloneNotSupportedException {
+  public final void testPushable() throws CloneNotSupportedException, PlanningException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[0]);
     LogicalPlan newPlan = planner.createPlan(expr);
