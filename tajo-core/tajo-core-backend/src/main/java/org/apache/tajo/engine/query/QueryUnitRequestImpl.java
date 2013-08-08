@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.query;
 
-import com.google.gson.annotations.Expose;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.engine.MasterWorkerProtos.Fetch;
 import org.apache.tajo.engine.MasterWorkerProtos.QueryUnitRequestProto;
@@ -32,22 +31,14 @@ import java.util.List;
 
 public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
-  @Expose
-	private QueryUnitAttemptId id;
-  @Expose
-	private List<Fragment> fragments;
-  @Expose
-	private String outputTable;
+  private QueryUnitAttemptId id;
+  private List<Fragment> fragments;
+  private String outputTable;
 	private boolean isUpdated;
-	@Expose
 	private boolean clusteredOutput;
-	@Expose
 	private String serializedData;     // logical node
-	@Expose
 	private Boolean interQuery;
-	@Expose
 	private List<Fetch> fetches;
-  @Expose
   private Boolean shouldDie;
 	
 	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
@@ -268,37 +259,4 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		proto = builder.build();
 		viaProto = true;
 	}
-
-  @Override
-  public void initFromProto() {
-    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
-    if (id == null && p.hasId()) {
-      this.id = new QueryUnitAttemptId(p.getId());
-    }
-    if (fragments == null && p.getFragmentsCount() > 0) {
-      this.fragments = new ArrayList<Fragment>();
-      for (int i = 0; i < p.getFragmentsCount(); i++) {
-        this.fragments.add(new Fragment(p.getFragments(i)));
-      }
-    }
-    if (outputTable == null && p.hasOutputTable()) {
-      this.outputTable = p.getOutputTable();
-    }
-    if (isUpdated == false && p.hasClusteredOutput()) {
-      this.clusteredOutput = p.getClusteredOutput();
-    }
-    if (serializedData == null && p.hasSerializedData()) {
-      this.serializedData = p.getSerializedData();
-    }
-    if (interQuery == null && p.hasInterQuery()) {
-      this.interQuery = p.getInterQuery();
-    }
-    if (fetches == null && p.getFetchesCount() > 0) {
-      this.fetches = p.getFetchesList();
-    }
-    if (shouldDie == null && p.getShouldDie()) {
-      this.shouldDie = true;
-    }
-  }
-  
 }

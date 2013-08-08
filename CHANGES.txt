@@ -15,6 +15,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-95: Eliminate the lazy copy approach from the classes wrapping
+    protobuf-generated classes. (hyunsik)
+
     TAJO-102: Add AlgebraVisitor and Refactor LogicalPlanner to use the visitor.    (hyunsik)
 
     TAJO-87: Integration of tajo algebra module and SQL parser. (hyunsik)
@@ -27,9 +30,11 @@ Release 0.2.0 - unreleased
 
     TAJO-79: Refactor and Improve TajoCli. (hyunsik)
 
-    TAJO-77: Rename TabletProto as FragmentProto in CatalogProtos.proto. (jihoon)
+    TAJO-77: Rename TabletProto as FragmentProto in CatalogProtos.proto. 
+    (jihoon)
 
-    TAJO-22: The package prefix should be org.apache.tajo. (DaeMyung Kang via hyunsik)
+    TAJO-22: The package prefix should be org.apache.tajo. (DaeMyung Kang via 
+    hyunsik)
 
     TAJO-75: Separate SQL.g into SQLParser.g and SQLLexer.g. (hyunsik)
 
@@ -83,7 +88,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
-    TAJO-82: NullPointerException occurs when Schema is converted as an array of columns. (jihoon)
+    TAJO-82: NullPointerException occurs when Schema is converted as an array 
+    of columns. (jihoon)
 
     TAJO-65: Invalid pom.xml configurations for source directories. 
     (Takuya Ueshin via hyunsik)

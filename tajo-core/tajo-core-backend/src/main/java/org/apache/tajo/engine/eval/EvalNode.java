@@ -18,21 +18,18 @@
 
 package org.apache.tajo.engine.eval;
 
-import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.json.GsonCreator;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.storage.Tuple;
 
-public abstract class EvalNode implements Cloneable {
-	@Expose
-	protected Type type;
-	@Expose
-	protected EvalNode leftExpr;
-	@Expose
-	protected EvalNode rightExpr;
+public abstract class EvalNode implements Cloneable, GsonObject {
+	@Expose protected Type type;
+	@Expose protected EvalNode leftExpr;
+	@Expose protected EvalNode rightExpr;
 	
 	public EvalNode(Type type) {
 		this.type = type;
@@ -83,10 +80,10 @@ public abstract class EvalNode implements Cloneable {
 	public String toString() {
 		return "("+this.type+"("+leftExpr.toString()+" "+rightExpr.toString()+"))";
 	}
-	
-	public String toJSON() {
-	  Gson gson = GsonCreator.getInstance();
-    return gson.toJson(this, EvalNode.class);
+
+  @Override
+	public String toJson() {
+    return CoreGsonHelper.toJson(this, EvalNode.class);
 	}
 	
 	public void eval(EvalContext ctx, Schema schema, Tuple tuple) {}

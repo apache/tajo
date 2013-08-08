@@ -20,12 +20,9 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.json.GsonCreator;
 
 public class SelectionNode extends UnaryNode implements Cloneable {
-
-	@Expose
-	private EvalNode qual;
+	@Expose private EvalNode qual;
 	
 	public SelectionNode() {
 		super();
@@ -72,9 +69,5 @@ public class SelectionNode extends UnaryNode implements Cloneable {
     selNode.qual = (EvalNode) this.qual.clone();
     
     return selNode;
-  }
-  
-  public String toJSON() {
-    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

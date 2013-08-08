@@ -18,9 +18,10 @@
 
 package org.apache.tajo.catalog.statistics;
 
-import org.junit.Test;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -58,7 +59,11 @@ public class TestTableStat {
     tableStatEquals(stat, stat2);
     
     TableStat stat3 = (TableStat) stat.clone();
-    tableStatEquals(stat, stat3);    
+    tableStatEquals(stat, stat3);
+
+    String json = stat.toJson();
+    TableStat fromJson = CatalogGsonHelper.fromJson(json, TableStat.class);
+    tableStatEquals(stat, fromJson);
   }
   
   public void tableStatEquals(TableStat s1, TableStat s2) {

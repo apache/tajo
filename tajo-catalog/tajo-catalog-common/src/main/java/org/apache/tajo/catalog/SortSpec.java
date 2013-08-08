@@ -19,11 +19,12 @@
 package org.apache.tajo.catalog;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.json.GsonCreator;
+import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 
-public class SortSpec implements Cloneable {
-  @Expose
-  private Column sortKey;
+
+public class SortSpec implements Cloneable, GsonObject {
+  @Expose private Column sortKey;
   @Expose private boolean ascending = true;
   @Expose private boolean nullFirst = false;
 
@@ -38,8 +39,7 @@ public class SortSpec implements Cloneable {
    * @param nullFirst
    * Otherwise, it should be false.
    */
-  public SortSpec(final Column sortKey, final boolean asc,
-                  final boolean nullFirst) {
+  public SortSpec(final Column sortKey, final boolean asc, final boolean nullFirst) {
     this(sortKey);
     this.ascending = asc;
     this.nullFirst = nullFirst;
@@ -70,13 +70,26 @@ public class SortSpec implements Cloneable {
     SortSpec key = (SortSpec) super.clone();
     key.sortKey = (Column) sortKey.clone();
     key.ascending = ascending;
+    key.nullFirst = nullFirst;
 
     return key;
   }
 
-  public String toJSON() {
-    sortKey.initFromProto();
-    return GsonCreator.getInstance().toJson(this);
+  @Override
+  public boolean equals(Object object) {
+    if (object instanceof SortSpec) {
+      SortSpec other = (SortSpec) object;
+      return sortKey.equals(other.sortKey) &&
+          ascending == other.ascending &&
+          nullFirst == other.nullFirst;
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public String toJson() {
+    return CatalogGsonHelper.toJson(this, SortSpec.class);
   }
 
   public String toString() {

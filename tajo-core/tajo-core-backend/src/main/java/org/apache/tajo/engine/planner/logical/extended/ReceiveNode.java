@@ -25,9 +25,8 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.engine.json.GsonCreator;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.logical.ExprType;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.LogicalNodeVisitor;
@@ -107,13 +106,8 @@ public final class ReceiveNode extends LogicalNode implements Cloneable {
 
   @Override
   public String toString() {
-    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    Gson gson = CoreGsonHelper.getPrettyInstance();
     return gson.toJson(this);
-  }
-
-  @Override
-  public String toJSON() {
-    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 
   @Override

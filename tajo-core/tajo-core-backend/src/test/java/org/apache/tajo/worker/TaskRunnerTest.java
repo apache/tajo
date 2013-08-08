@@ -28,7 +28,7 @@ import org.apache.hadoop.yarn.util.BuilderUtils;
 import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SubQueryId;
-import org.apache.tajo.TestQueryUnitId;
+import org.apache.tajo.TestTajoIds;
 import org.apache.tajo.ipc.MasterWorkerProtocol.MasterWorkerProtocolService;
 import org.apache.tajo.rpc.ProtoAsyncRpcClient;
 import org.apache.tajo.util.TajoIdUtils;
@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 
 public class TaskRunnerTest {
   long ts1 = 1315890136000l;
-  QueryId q1 = TestQueryUnitId.createQueryId(ts1, 2, 5);
+  QueryId q1 = TestTajoIds.createQueryId(ts1, 2, 5);
   SubQueryId sq1 = TajoIdUtils.createSubQueryId(q1, 5);
 
   //@Test

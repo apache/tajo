@@ -19,20 +19,18 @@
 package org.apache.tajo.catalog;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.json.GsonCreator;
+import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProtoOrBuilder;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
-public class Column implements ProtoObject<ColumnProto>, Cloneable {
-	private ColumnProto proto = ColumnProto.getDefaultInstance();
+public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
 	private ColumnProto.Builder builder = null;
-	private boolean viaProto = false;
 	
-	@Expose protected String name;
-	@Expose protected DataType dataType;
+	@Expose protected String name; // required
+	@Expose protected DataType dataType; // required
 	
 	public Column() {
 		this.builder = ColumnProto.newBuilder();
@@ -49,21 +47,10 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
   }
 	
 	public Column(ColumnProto proto) {
-		this.proto = proto;
-		this.viaProto = true;
+		this(proto.getColumnName(), proto.getDataType());
 	}
-	
 
 	public String getQualifiedName() {
-		ColumnProtoOrBuilder p = viaProto ? proto : builder;
-		if(name != null) {
-			return this.name;
-		}
-		if(!p.hasColumnName()) {
-			return null;			
-		}		
-		this.name = p.getColumnName();
-		
 		return this.name;
 	}
 	
@@ -87,25 +74,14 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
   }
 	
 	public void setName(String name) {
-	  setModified();
 		this.name = name.toLowerCase();
 	}
 	
 	public DataType getDataType() {
-		ColumnProtoOrBuilder p = viaProto ? proto : builder;
-		if(dataType != null) {
-			return this.dataType;
-		}
-		if(!p.hasDataType()) {
-			return null;
-		}
-		this.dataType = p.getDataType();
-		
 		return this.dataType;
 	}
 	
 	public void setDataType(DataType dataType) {
-		setModified();
 		this.dataType = dataType;
 	}
 	
@@ -126,9 +102,6 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     Column column = (Column) super.clone();
-    initFromProto();
-    column.proto = null;
-    column.viaProto = false;
     column.builder = ColumnProto.newBuilder();
     column.name = name;
     column.dataType = dataType;
@@ -137,51 +110,18 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable {
 
 	@Override
 	public ColumnProto getProto() {
-	  if(!viaProto) {
-      mergeLocalToBuilder();
-      proto = builder.build();
-      viaProto = true;
-    }
-	  
-	  return proto;
-	}
-	
-	private void setModified() {
-	  if (viaProto && builder == null) {
-	    builder = ColumnProto.newBuilder(proto);
-	  }
-	  viaProto = false;
-	}
-	
-	private void mergeLocalToBuilder() {
-	  if (builder == null) {
-	    builder = ColumnProto.newBuilder(proto);
-	  }
-		if (this.name != null) {
-			builder.setColumnName(this.name);			
-		}
-		if (this.dataType != null) {
-			builder.setDataType(this.dataType);
-		}
+    builder.setColumnName(this.name);
+    builder.setDataType(this.dataType);
+
+    return builder.build();
 	}
 	
 	public String toString() {
 	  return getQualifiedName() +" (" + getDataType().getType() +")";
 	}
-	
-	public String toJSON() {
-		initFromProto();
-		return GsonCreator.getInstance().toJson(this);
-	}
 
-	@Override
-	public void initFromProto() {
-		ColumnProtoOrBuilder p = viaProto ? proto : builder;
-		if (this.name == null && p.hasColumnName()) {
-			this.name = p.getColumnName();
-		}
-		if (this.dataType == null && p.hasDataType()) {
-			this.dataType = p.getDataType();
-		}
+  @Override
+	public String toJson() {
+		return CatalogGsonHelper.toJson(this, Column.class);
 	}
 }

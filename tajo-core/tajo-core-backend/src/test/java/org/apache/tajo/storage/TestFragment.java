@@ -19,7 +19,6 @@
 package org.apache.tajo.storage;
 
 import com.google.common.collect.Sets;
-import com.google.gson.Gson;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +27,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.engine.json.GsonCreator;
 
 import java.util.Arrays;
 import java.util.SortedSet;
@@ -122,21 +120,5 @@ public class TestFragment {
       sortedSet.add(frag);
     }
     assertEquals(num, sortedSet.size());
-  }
-  
-//  @Test
-  public final void testJson() {
-	  Fragment frag1 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500, null);
-    frag1.setDistCached();
-	  String json = frag1.toString();
-	  System.out.println(json);
-	  Gson gson = GsonCreator.getInstance();
-	  Fragment fromJson = gson.fromJson(json, Fragment.class);
-	  assertEquals(frag1.getId(), fromJson.getId());
-	  assertEquals(frag1.getPath(), fromJson.getPath());
-	  assertEquals(frag1.getStartOffset(), fromJson.getStartOffset());
-	  assertEquals(frag1.getLength(), fromJson.getLength());
-	  assertEquals(frag1.getMeta(), fromJson.getMeta());
-    assertEquals(frag1.isDistCached(), fromJson.isDistCached());
   }
 }

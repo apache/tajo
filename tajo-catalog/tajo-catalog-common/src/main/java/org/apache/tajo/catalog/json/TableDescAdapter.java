@@ -20,10 +20,11 @@ package org.apache.tajo.catalog.json;
 
 import com.google.gson.*;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
 
-public class TableDescAdapter implements JsonSerializer<TableDesc>, JsonDeserializer<TableDesc> {
+public class TableDescAdapter implements GsonSerDerAdapter<TableDesc> {
 
 	@Override
 	public TableDesc deserialize(JsonElement json, Type type,
@@ -31,7 +32,7 @@ public class TableDescAdapter implements JsonSerializer<TableDesc>, JsonDeserial
 		JsonObject jsonObject = json.getAsJsonObject();
 		String className = jsonObject.get("classname").getAsJsonPrimitive().getAsString();
 		
-		Class clazz = null;
+		Class clazz;
 		try {
 			clazz = Class.forName(className);
 		} catch (ClassNotFoundException e) {
@@ -48,12 +49,8 @@ public class TableDescAdapter implements JsonSerializer<TableDesc>, JsonDeserial
 		String className = src.getClass().getCanonicalName();
 		jsonObj.addProperty("classname", className);
 
-		if (src.getClass().getSimpleName().equals("TableDescImpl")) {
-			src.initFromProto();
-		}
 		JsonElement jsonElem = context.serialize(src);
 		jsonObj.add("property", jsonElem);
 		return jsonObj;
 	}
-
 }

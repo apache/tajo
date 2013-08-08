@@ -18,9 +18,8 @@
 
 package org.apache.tajo.catalog.function;
 
-import com.google.gson.Gson;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.json.GsonCreator;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
@@ -45,8 +44,8 @@ public abstract class AggFunction<T extends Datum> extends Function<T> {
 
   public abstract T terminate(FunctionContext ctx);
 
-  public String toJSON() {
-    Gson gson = GsonCreator.getInstance();
-    return gson.toJson(this, AggFunction.class);
+  @Override
+  public String toJson() {
+    return CatalogGsonHelper.toJson(this, AggFunction.class);
   }
 }

@@ -19,13 +19,11 @@
 package org.apache.tajo.engine.eval;
 
 import com.google.common.base.Objects;
-import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.function.GeneralFunction;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.json.GsonCreator;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.TUtil;
@@ -66,12 +64,6 @@ public class FuncCallEval extends FuncEval {
     }
     return instance.eval(params);
   }
-
-  @Override
-	public String toJSON() {
-	  Gson gson = GsonCreator.getInstance();
-    return gson.toJson(this, EvalNode.class);
-	}
 	
 	@Override
 	public boolean equals(Object obj) {

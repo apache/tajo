@@ -19,26 +19,24 @@
 /**
  * 
  */
-package org.apache.tajo.gson;
+package org.apache.tajo.json;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
+import com.google.gson.*;
+import org.apache.hadoop.fs.Path;
 
 import java.lang.reflect.Type;
 
-public class ClassNameDeserializer implements JsonDeserializer<Class> {
+public class PathSerializer implements GsonSerDerAdapter<Path> {
 
 	@Override
-	public Class deserialize(JsonElement json, Type type,
-			JsonDeserializationContext ctx) throws JsonParseException {
-		try {
-			return Class.forName(json.getAsString());
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		return null;
+	public JsonElement serialize(Path arg0, Type arg1,
+			JsonSerializationContext arg2) {
+		return new JsonPrimitive(arg0.toString());
 	}
 
+  @Override
+  public Path deserialize(JsonElement arg0, Type arg1,
+                          JsonDeserializationContext arg2) throws JsonParseException {
+    return new Path(arg0.getAsJsonPrimitive().getAsString());
+  }
 }

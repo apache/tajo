@@ -22,12 +22,11 @@ import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.engine.json.GsonCreator;
 import org.apache.tajo.util.TUtil;
 
 public final class SortNode extends UnaryNode implements Cloneable {
 	@Expose
-  private SortSpec[] sortKeys;
+  private SortSpec [] sortKeys;
 	
 	public SortNode() {
 		super();
@@ -54,9 +53,10 @@ public final class SortNode extends UnaryNode implements Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof SortNode) {
       SortNode other = (SortNode) obj;
-      return super.equals(other)
-          && TUtil.checkEquals(sortKeys, other.sortKeys)
-          && subExpr.equals(other.subExpr);
+      boolean eq = super.equals(other);
+      eq = eq && TUtil.checkEquals(sortKeys, other.sortKeys);
+      eq = eq && subExpr.equals(other.subExpr);
+      return eq;
     } else {
       return false;
     }
@@ -85,13 +85,5 @@ public final class SortNode extends UnaryNode implements Cloneable {
         + "\n\"in schema: " + getInSchema());
     return sb.toString()+"\n"
         + getSubNode().toString();
-  }
-
-  public String toJSON() {
-    subExpr.toJSON();
-    for (int i = 0; i < sortKeys.length; i++) {
-      sortKeys[i].toJSON();
-    }
-    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

@@ -18,13 +18,13 @@
 
 package org.apache.tajo.catalog.function;
 
-import com.google.gson.Gson;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.json.GsonCreator;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 
-public abstract class GeneralFunction<T extends Datum> extends Function<T> {
+public abstract class GeneralFunction<T extends Datum> extends Function<T> implements GsonObject {
   public GeneralFunction(Column[] definedArgs) {
     super(definedArgs);
   }
@@ -36,8 +36,8 @@ public abstract class GeneralFunction<T extends Datum> extends Function<T> {
 	  GENERAL
 	}
 
-  public String toJSON() {
-    Gson gson = GsonCreator.getInstance();
-    return gson.toJson(this, GeneralFunction.class);
+  @Override
+  public String toJson() {
+    return CatalogGsonHelper.toJson(this, GeneralFunction.class);
   }
 }

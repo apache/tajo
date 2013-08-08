@@ -23,7 +23,6 @@ package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.datum.exception.InvalidOperationException;
-import org.apache.tajo.datum.json.GsonCreator;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -106,11 +105,6 @@ public class BlobDatum extends Datum {
 		initFromBytes();
 		bb.rewind();
 		return new String(bb.array(), Charset.defaultCharset());
-	}
-
-  @Override
-	public String toJSON() {
-		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
 
   @Override

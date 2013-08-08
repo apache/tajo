@@ -18,11 +18,11 @@
 
 package org.apache.tajo.catalog;
 
-import com.google.gson.Gson;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.junit.Before;
 import org.junit.Test;
-import org.apache.tajo.catalog.json.GsonCreator;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -50,50 +50,41 @@ public class TestTableDesc {
     TableMeta info = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     testClone(info);
 
-    TableDesc desc = new TableDescImpl("table1", info, new Path("/nta/data"));
+    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo/data"));
     assertEquals("table1", desc.getId());
     
-    assertEquals(new Path("/nta/data"), desc.getPath());
+    assertEquals(new Path("/tajo/data"), desc.getPath());
     assertEquals(info, desc.getMeta());
     testClone(desc);
   }
-  
-  @Test
-  public void testTableMetaToJson() throws CloneNotSupportedException {
-    TableMeta meta = new TableMetaImpl(info.getProto());
-    Gson gson = GsonCreator.getInstance();
-    String json = meta.toJSON();
-    System.out.println(json);
-    TableMeta jsonMeta = gson.fromJson(json, TableMeta.class);
-    assertEquals(meta.getSchema(), jsonMeta.getSchema());
-    assertEquals(meta.getStoreType(), jsonMeta.getStoreType());
-    assertEquals(meta, jsonMeta);
-    testClone(meta);
-  }
-  
-  @Test
-  public void testTableDescToJson() throws CloneNotSupportedException {
-    Gson gson = GsonCreator.getInstance();
 
-    TableDesc desc = new TableDescImpl("table1", info, new Path("/nta/data"));
-    testClone(desc);
+  @Test
+  public void testGetProto() throws CloneNotSupportedException {
+    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo/data"));
+    CatalogProtos.TableDescProto proto = (CatalogProtos.TableDescProto) desc.getProto();
 
-    String json = desc.toJSON();
-    System.out.println(json);
-    TableDesc fromJson = gson.fromJson(json, TableDesc.class);
-    assertEquals(desc.getId(), fromJson.getId());
-    assertEquals(desc.getPath(), fromJson.getPath());
-    assertEquals(desc.getMeta(), fromJson.getMeta());
-    testClone(fromJson);
+    TableDesc fromProto = new TableDescImpl(proto);
+    assertEquals("equality check the object deserialized from json", desc, fromProto);
   }
 
-  public void testClone(TableDesc desc) throws CloneNotSupportedException {
+  @Test
+  public void testToJson() throws CloneNotSupportedException {
+    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo/data"));
+    String json = desc.toJson();
+
+    TableDesc fromJson = CatalogGsonHelper.fromJson(json, TableDesc.class);
+    assertEquals("equality check the object deserialized from json", desc, fromJson);
+    assertEquals("equality between protos", desc.getProto(), fromJson.getProto());
+  }
+
+  public TableDesc testClone(TableDesc desc) throws CloneNotSupportedException {
     TableDesc copy = (TableDesc) desc.clone();
-    assertEquals(desc, copy);
+    assertEquals("clone check", desc, copy);
+    return copy;
   }
   
   public void testClone(TableMeta meta) throws CloneNotSupportedException {
     TableMeta copy = (TableMeta) meta.clone();
-    assertEquals(meta, copy);
+    assertEquals("clone check", meta, copy);
   }
 }

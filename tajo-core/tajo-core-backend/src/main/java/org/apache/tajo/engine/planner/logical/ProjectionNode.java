@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.engine.json.GsonCreator;
 import org.apache.tajo.engine.planner.Target;
 
 import java.util.Arrays;
@@ -108,9 +107,5 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 	  projNode.targets = targets.clone();
 	  
 	  return projNode;
-	}
-	
-	public String toJSON() {
-	  return GsonCreator.getInstance().toJson(this, LogicalNode.class);
 	}
 }

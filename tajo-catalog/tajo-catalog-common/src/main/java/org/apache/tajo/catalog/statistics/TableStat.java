@@ -23,158 +23,118 @@ package org.apache.tajo.catalog.statistics;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnStatProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableStatProtoOrBuilder;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class TableStat implements ProtoObject<TableStatProto>, Cloneable {
-  private TableStatProto proto = TableStatProto.getDefaultInstance();
-  private TableStatProto.Builder builder = null;
-  private boolean viaProto = false;
+public class TableStat implements ProtoObject<TableStatProto>, Cloneable, GsonObject {
+  private TableStatProto.Builder builder = TableStatProto.newBuilder();
 
-  @Expose private Long numRows = null;
-  @Expose private Long numBytes = null;
-  @Expose private Integer numBlocks = null;
-  @Expose private Integer numPartitions = null;
-  @Expose private Long avgRows = null;
-  @Expose private List<ColumnStat> columnStats = null;
+  @Expose private Long numRows = null; // required
+  @Expose private Long numBytes = null; // required
+  @Expose private Integer numBlocks = null; // optional
+  @Expose private Integer numPartitions = null; // optional
+  @Expose private Long avgRows = null; // optional
+  @Expose private List<ColumnStat> columnStats = null; // repeated
 
   public TableStat() {
-    builder = TableStatProto.newBuilder();
     numRows = 0l;
     numBytes = 0l;
     numBlocks = 0;
     numPartitions = 0;
     avgRows = 0l;
+    columnStats = TUtil.newList();
   }
 
   public TableStat(TableStatProto proto) {
-    this.proto = proto;
-    this.viaProto = true;
+    this.numRows = proto.getNumRows();
+    this.numBytes = proto.getNumBytes();
+
+    if (proto.hasNumBlocks()) {
+      this.numBlocks = proto.getNumBlocks();
+    }
+    if (proto.hasNumPartitions()) {
+      this.numPartitions = proto.getNumPartitions();
+    }
+    if (proto.hasAvgRows()) {
+      this.avgRows = proto.getAvgRows();
+    }
+
+    this.columnStats = TUtil.newList();
+    for (ColumnStatProto colProto : proto.getColStatList()) {
+      columnStats.add(new ColumnStat(colProto));
+    }
   }
 
   public Long getNumRows() {
-    TableStatProtoOrBuilder p = viaProto ? proto : builder;
-    if(numRows != null) {
-      return this.numRows;
-    }
-    if(!p.hasNumRows()) {
-      return 0l;
-    }
-    this.numRows = p.getNumRows();
-
     return this.numRows;
   }
 
   public void setNumRows(long numRows) {
-    setModified();
     this.numRows = numRows;
   }
 
   public Integer getNumBlocks() {
-    TableStatProtoOrBuilder p = viaProto ? proto : builder;
-    if(numBlocks != null) {
-      return this.numBlocks;
-    }
-    if(!p.hasNumBlocks()) {
-      return 0;
-    }
-    this.numBlocks = p.getNumBlocks();
-
     return this.numBlocks;
   }
 
   public void setNumBytes(long numBytes) {
-    setModified();
     this.numBytes = numBytes;
   }
 
   public Long getNumBytes() {
-    TableStatProtoOrBuilder p = viaProto ? proto : builder;
-    if (numBytes != null) {
-      return this.numBytes;
-    }
-    if (!p.hasNumBytes()) {
-      return 0l;
-    }
-    this.numBytes = p.getNumBytes();
     return this.numBytes;
   }
 
   public void setNumBlocks(int numBlocks) {
-    setModified();
     this.numBlocks = numBlocks;
   }
 
   public Integer getNumPartitions() {
-    TableStatProtoOrBuilder p = viaProto ? proto : builder;
-    if(numPartitions != null) {
-      return this.numPartitions;
-    }
-    if(!p.hasNumPartitions()) {
-      return 0;
-    }
-    this.numPartitions = p.getNumPartitions();
-
     return this.numPartitions;
   }
 
   public void setNumPartitions(int numPartitions) {
-    setModified();
     this.numPartitions = numPartitions;
   }
 
   public Long getAvgRows() {
-    TableStatProtoOrBuilder p = viaProto ? proto : builder;
-    if(avgRows != null) {
-      return this.avgRows;
-    }
-    if(!p.hasAvgRows()) {
-      return 0l;
-    }
-    this.avgRows = p.getAvgRows();
-
     return this.avgRows;
   }
 
   public void setAvgRows(long avgRows) {
-    setModified();
     this.avgRows = avgRows;
   }
 
   public List<ColumnStat> getColumnStats() {
-    initColumnStats();
     return this.columnStats;
   }
 
   public void setColumnStats(List<ColumnStat> columnStats) {
-    setModified();
     this.columnStats = new ArrayList<ColumnStat>(columnStats);
   }
 
   public void addColumnStat(ColumnStat columnStat) {
-    initColumnStats();
     this.columnStats.add(columnStat);
   }
 
   public boolean equals(Object obj) {
     if (obj instanceof TableStat) {
       TableStat other = (TableStat) obj;
-      initFromProto();
-      other.initFromProto();
 
       return this.numRows.equals(other.numRows)
           && this.numBytes.equals(other.numBytes)
-          && this.numBlocks.equals(other.numBlocks)
-          && this.numPartitions.equals(other.numPartitions)
-          && this.avgRows.equals(other.avgRows)
-          && columnStats.equals(other.columnStats);
+          && TUtil.checkEquals(this.numBlocks, other.numBlocks)
+          && TUtil.checkEquals(this.numPartitions, other.numPartitions)
+          && TUtil.checkEquals(this.avgRows, other.avgRows)
+          && TUtil.checkEquals(this.columnStats, other.columnStats);
     } else {
       return false;
     }
@@ -187,7 +147,7 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable {
 
   public Object clone() throws CloneNotSupportedException {
     TableStat stat = (TableStat) super.clone();
-    initFromProto();
+    stat.builder = TableStatProto.newBuilder();
     stat.numRows = numRows;
     stat.numBytes = numBytes;
     stat.numBlocks = numBlocks;
@@ -198,75 +158,26 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable {
   }
 
   public String toString() {
-    Gson gson = new GsonBuilder().setPrettyPrinting().
-        excludeFieldsWithoutExposeAnnotation().create();
+    Gson gson = CatalogGsonHelper.getPrettyInstance();
     return gson.toJson(this);
   }
 
-  private void initColumnStats() {
-    if (this.columnStats != null) {
-      return;
-    }
-    TableStatProtoOrBuilder p = viaProto ? proto : builder;
-    this.columnStats = new ArrayList<ColumnStat>();
-    for (ColumnStatProto colProto : p.getColStatList()) {
-      columnStats.add(new ColumnStat(colProto));
-    }
-  }
-
-  private void setModified() {
-    if (viaProto && builder == null) {
-      builder = TableStatProto.newBuilder(proto);
-    }
-    viaProto = false;
-  }
-
   @Override
-  public void initFromProto() {
-    TableStatProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.numRows == null && p.hasNumRows()) {
-      this.numRows = p.getNumRows();
-    }
-    if (this.numBytes == null && p.hasNumBytes()) {
-      this.numBytes = p.getNumBytes();
-    }
-    if (this.numBlocks == null && p.hasNumBlocks()) {
-      this.numBlocks = p.getNumBlocks();
-    }
-    if (this.numPartitions == null && p.hasNumPartitions()) {
-      this.numPartitions = p.getNumPartitions();
-    }
-    if (this.avgRows == null && p.hasAvgRows()) {
-      this.avgRows = p.getAvgRows();
-    }
-
-    initColumnStats();
-    for (ColumnStat col : columnStats) {
-      col.initFromProto();
-    }
+  public String toJson() {
+    return CatalogGsonHelper.toJson(this, TableStat.class);
   }
 
   @Override
   public TableStatProto getProto() {
-    if (!viaProto) {
-      mergeLocalToBuilder();
-      proto = builder.build();
-      viaProto = true;
-    }
-
-    return proto;
-  }
-
-  private void mergeLocalToBuilder() {
     if (builder == null) {
-      builder = TableStatProto.newBuilder(proto);
+      builder = TableStatProto.newBuilder();
+    } else {
+      builder.clear();
     }
-    if (this.numRows != null) {
-      builder.setNumRows(this.numRows);
-    }
-    if (this.numBytes != null) {
-      builder.setNumBytes(this.numBytes);
-    }
+
+    builder.setNumRows(this.numRows);
+    builder.setNumBytes(this.numBytes);
+
     if (this.numBlocks != null) {
       builder.setNumBlocks(this.numBlocks);
     }
@@ -281,5 +192,6 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable {
         builder.addColStat(colStat.getProto());
       }
     }
+    return builder.build();
   }
 }

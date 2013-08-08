@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
 import org.apache.tajo.catalog.statistics.TableStat;
@@ -26,7 +27,7 @@ import org.apache.tajo.common.ProtoObject;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-public interface TableMeta extends ProtoObject<TableProto>, Cloneable {
+public interface TableMeta extends ProtoObject<TableProto>, Cloneable, GsonObject {
   
   void setStorageType(StoreType storeType);
   
@@ -49,6 +50,4 @@ public interface TableMeta extends ProtoObject<TableProto>, Cloneable {
   TableStat getStat();
   
   Object clone() throws CloneNotSupportedException;
-  
-  public String toJSON();
 }

@@ -18,19 +18,17 @@
 
 package org.apache.tajo.engine.planner;
 
-import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.engine.json.GsonCreator;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.util.TUtil;
 
-public class FromTable implements Cloneable {
-  @Expose
-  private TableDesc desc;
-  @Expose
-  private String alias = null;
+public class FromTable implements Cloneable, GsonObject {
+  @Expose private TableDesc desc;
+  @Expose private String alias = null;
 
   public FromTable() {}
 
@@ -97,9 +95,8 @@ public class FromTable implements Cloneable {
     return table;
   }
 
-  public String toJSON() {
-    desc.initFromProto();
-    Gson gson = GsonCreator.getInstance();
-    return gson.toJson(this, FromTable.class);
+  @Override
+  public String toJson() {
+    return CoreGsonHelper.toJson(this, FromTable.class);
   }
 }

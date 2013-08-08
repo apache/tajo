@@ -18,9 +18,9 @@
 
 package org.apache.tajo.datum;
 
+import org.apache.tajo.json.CommonGsonHelper;
 import org.junit.Before;
 import org.junit.Test;
-import org.apache.tajo.datum.json.GsonCreator;
 
 import java.util.Arrays;
 
@@ -68,8 +68,8 @@ public class TestInet4Datum {
 	@Test
 	public final void testJson() {
 		Datum d = DatumFactory.createInet4("163.152.163.152");
-		String json = d.toJSON();
-		Datum fromJson = GsonCreator.getInstance().fromJson(json, Datum.class);
+		String json = d.toJson();
+		Datum fromJson = CommonGsonHelper.fromJson(json, Datum.class);
 		assertTrue(d.equalsTo(fromJson).asBool());
 	}
 }

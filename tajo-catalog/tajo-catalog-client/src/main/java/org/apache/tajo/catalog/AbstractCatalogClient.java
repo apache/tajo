@@ -87,7 +87,12 @@ public abstract class AbstractCatalogClient implements CatalogService {
     }
     int size = response.getFunctionDescCount();
     for (int i = 0; i < size; i++) {
-      list.add(new FunctionDesc(response.getFunctionDesc(i)));
+      try {
+        list.add(new FunctionDesc(response.getFunctionDesc(i)));
+      } catch (ClassNotFoundException e) {
+        LOG.error(e);
+        return null;
+      }
     }
     return list;
   }
@@ -239,7 +244,12 @@ public abstract class AbstractCatalogClient implements CatalogService {
       LOG.error(e);
       return null;
     }
-    return new FunctionDesc(descProto);
+    try {
+      return new FunctionDesc(descProto);
+    } catch (ClassNotFoundException e) {
+      LOG.error(e);
+      return null;
+    }
   }
 
   @Override

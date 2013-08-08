@@ -25,8 +25,7 @@ import org.apache.tajo.common.ProtoObject;
 
 import java.text.NumberFormat;
 
-public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId>,
-    ProtoObject<QueryUnitAttemptIdProto> {
+public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId>, ProtoObject<QueryUnitAttemptIdProto> {
   private static final String PREFIX="ta";
 
   private static final NumberFormat format = NumberFormat.getInstance();
@@ -131,21 +130,6 @@ public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId>,
   @Override
   public int compareTo(QueryUnitAttemptId o) {
     return this.getId() - o.getId();
-  }
-
-  private void mergeProtoToLocal() {
-    QueryUnitAttemptIdProtoOrBuilder p = viaProto ? proto : builder;
-    if (queryUnitId == null) {
-      queryUnitId = new QueryUnitId(p.getQueryUnitId());
-    }
-    if (id == -1) {
-      id = p.getId();
-    }
-  }
-
-  @Override
-  public void initFromProto() {
-    mergeProtoToLocal();
   }
 
   private void mergeLocalToBuilder() {

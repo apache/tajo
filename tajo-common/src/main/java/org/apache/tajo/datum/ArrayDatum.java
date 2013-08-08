@@ -19,7 +19,6 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.datum.json.GsonCreator;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -72,10 +71,5 @@ public class ArrayDatum extends Datum {
     sb.append("]");
 
     return sb.toString();
-  }
-
-  @Override
-  public String toJSON() {
-    return GsonCreator.getInstance().toJson(this, Datum.class);
   }
 }

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.gson;
+package org.apache.tajo.json;
 
 import com.google.gson.*;
 import org.apache.tajo.common.TajoDataTypes;
@@ -25,12 +25,11 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import java.lang.reflect.Type;
 
 
-public class DataTypeAdapter implements JsonSerializer<DataType>, JsonDeserializer<DataType> {
+public class DataTypeAdapter implements GsonSerDerAdapter<DataType> {
 
   @Override
   public DataType deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
       throws JsonParseException {
-
 
     JsonObject obj = (JsonObject) json;
     DataType.Builder builder = DataType.newBuilder();

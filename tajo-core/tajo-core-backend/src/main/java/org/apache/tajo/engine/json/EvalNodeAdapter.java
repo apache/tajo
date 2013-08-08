@@ -23,10 +23,11 @@ package org.apache.tajo.engine.json;
 
 import com.google.gson.*;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
 
-public class EvalNodeAdapter implements JsonSerializer<EvalNode>, JsonDeserializer<EvalNode> {
+public class EvalNodeAdapter implements GsonSerDerAdapter<EvalNode> {
 
 	@Override
 	public EvalNode deserialize(JsonElement json, Type type,

@@ -18,11 +18,14 @@
 
 package org.apache.tajo.catalog;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
+import org.apache.tajo.catalog.statistics.ColumnStat;
+import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.junit.Assert.*;
 
@@ -36,6 +39,23 @@ public class TestTableMeta {
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
     meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
+
+    TableStat stat = new TableStat();
+    stat.setNumRows(957685);
+    stat.setNumBytes(1023234);
+    stat.setNumBlocks(3123);
+    stat.setNumPartitions(5);
+    stat.setAvgRows(80000);
+
+    int numCols = 2;
+    ColumnStat[] cols = new ColumnStat[numCols];
+    for (int i = 0; i < numCols; i++) {
+      cols[i] = new ColumnStat(schema.getColumn(i));
+      cols[i].setNumDistVals(1024 * i);
+      cols[i].setNumNulls(100 * i);
+      stat.addColumnStat(cols[i]);
+    }
+    meta.setStat(stat);
   }
   
   @Test
@@ -106,22 +126,41 @@ public class TestTableMeta {
     schema2.addColumn("name", Type.BLOB);
     schema2.addColumn("addr", Type.TEXT);
     TableMeta meta2 = CatalogUtil.newTableMeta(schema2, StoreType.CSV);
-    
+
+    TableStat stat = new TableStat();
+    stat.setNumRows(957685);
+    stat.setNumBytes(1023234);
+    stat.setNumBlocks(3123);
+    stat.setNumPartitions(5);
+    stat.setAvgRows(80000);
+
+    int numCols = 2;
+    ColumnStat[] cols = new ColumnStat[numCols];
+    for (int i = 0; i < numCols; i++) {
+      cols[i] = new ColumnStat(schema2.getColumn(i));
+      cols[i].setNumDistVals(1024 * i);
+      cols[i].setNumNulls(100 * i);
+      stat.addColumnStat(cols[i]);
+    }
+    meta2.setStat(stat);
+
+
     assertTrue(meta.equals(meta2));
-    
     assertNotSame(meta, meta2);
   }
   
   @Test
-  public void testGetProto() {    
-    Schema schema1 = new Schema();
-    schema1.addColumn("name", Type.BLOB);
-    schema1.addColumn("addr", Type.TEXT);
-    TableMeta meta1 = CatalogUtil.newTableMeta(schema1, StoreType.CSV);
-    
-    TableProto proto = meta1.getProto();
+  public void testGetProto() {
+    TableProto proto = meta.getProto();
     TableMeta newMeta = new TableMetaImpl(proto);
-    
-    assertTrue(meta1.equals(newMeta));
-  }   
+    assertEquals(meta, newMeta);
+  }
+
+  @Test
+  public void testToJson() {
+    String json = meta.toJson();
+    TableMeta fromJson = CatalogGsonHelper.fromJson(json, TableMeta.class);
+    assertEquals(meta, fromJson);
+    assertEquals(meta.getProto(), fromJson.getProto());
+  }
 }

@@ -22,13 +22,11 @@
 package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.engine.json.GsonCreator;
+import org.apache.tajo.json.GsonObject;
 
-public abstract class BinaryNode extends LogicalNode implements Cloneable {
-	@Expose
-	LogicalNode outer = null;
-	@Expose
-	LogicalNode inner = null;
+public abstract class BinaryNode extends LogicalNode implements Cloneable, GsonObject {
+	@Expose LogicalNode outer = null;
+	@Expose LogicalNode inner = null;
 	
 	public BinaryNode() {
 		super();
@@ -76,11 +74,5 @@ public abstract class BinaryNode extends LogicalNode implements Cloneable {
     outer.postOrder(visitor);
     inner.postOrder(visitor);
     visitor.visit(this);
-  }
-
-  public String toJSON() {
-    outer.toJSON();
-    inner.toJSON();
-    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

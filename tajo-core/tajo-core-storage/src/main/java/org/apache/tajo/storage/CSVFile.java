@@ -32,7 +32,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
-import org.apache.tajo.storage.json.GsonCreator;
+import org.apache.tajo.storage.json.StorageGsonHelper;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -144,7 +144,7 @@ public class CSVFile {
              * sb.append(field.asChars()); } sb.append("]");
              */
             ArrayDatum array = (ArrayDatum) tuple.get(i);
-            sb.append(array.toJSON());
+            sb.append(array.toJson());
             break;
           default:
             throw new UnsupportedOperationException("Cannot write such field: "
@@ -394,7 +394,7 @@ public class CSVFile {
                 tuple.put(i, DatumFactory.createInet4(cell));
                 break;
               case ARRAY:
-                Datum data = GsonCreator.getInstance().fromJson(cell,
+                Datum data = StorageGsonHelper.getInstance().fromJson(cell,
                     Datum.class);
                 tuple.put(i, data);
                 break;

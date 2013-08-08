@@ -19,17 +19,18 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.json.GsonCreator;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.util.TUtil;
 
 /**
  * A Target contains how to evaluate an expression and its alias name.
  */
-public class Target implements Cloneable {
+public class Target implements Cloneable, GsonObject {
   @Expose private EvalNode expr;
   @Expose private Column column;
   @Expose private String alias = null;
@@ -109,7 +110,7 @@ public class Target implements Cloneable {
     return target;
   }
 
-  public String toJSON() {
-    return GsonCreator.getInstance().toJson(this, Target.class);
+  public String toJson() {
+    return CoreGsonHelper.toJson(this, Target.class);
   }
 }

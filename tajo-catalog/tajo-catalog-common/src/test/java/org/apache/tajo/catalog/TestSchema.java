@@ -18,11 +18,10 @@
 
 package org.apache.tajo.catalog;
 
-import com.google.gson.Gson;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.junit.Before;
 import org.junit.Test;
 import org.apache.tajo.catalog.exception.AlreadyExistsFieldException;
-import org.apache.tajo.catalog.json.GsonCreator;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -123,11 +122,16 @@ public class TestSchema {
 	public final void testJson() {
 		Schema schema2 = new Schema(schema.getProto());
 		String json = schema2.toJson();
-		System.out.println(json);
-		Gson gson = GsonCreator.getInstance();
-		Schema fromJson = gson.fromJson(json, Schema.class);
-		assertEquals(schema2.getProto(), fromJson.getProto());
-		assertEquals(schema2.getColumn(0), fromJson.getColumn(0));
-		assertEquals(schema2.getColumnNum(), fromJson.getColumnNum());
+		Schema fromJson = CatalogGsonHelper.fromJson(json, Schema.class);
+		assertEquals(schema2, fromJson);
+    assertEquals(schema2.getProto(), fromJson.getProto());
 	}
+
+  @Test
+  public final void testProto() {
+    Schema schema2 = new Schema(schema.getProto());
+    SchemaProto proto = schema2.getProto();
+    Schema fromJson = new Schema(proto);
+    assertEquals(schema2, fromJson);
+  }
 }

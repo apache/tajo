@@ -18,42 +18,38 @@
 
 package org.apache.tajo.catalog;
 
-import com.google.common.collect.Maps;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.json.GsonCreator;
+import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.KeyValueProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.KeyValueSetProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.KeyValueSetProtoOrBuilder;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.util.TUtil;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
-	@Expose(serialize=false,deserialize=false)
-	private KeyValueSetProto proto = KeyValueSetProto.getDefaultInstance();
-	@Expose(serialize=false,deserialize=false)
-	private KeyValueSetProto.Builder builder = null;
-	@Expose(serialize=false,deserialize=false)
-	private boolean viaProto = false;
+public class Options implements ProtoObject<KeyValueSetProto>, Cloneable, GsonObject {
+	private KeyValueSetProto.Builder builder = KeyValueSetProto.newBuilder();
 	
 	@Expose private Map<String,String> keyVals;
 	
 	public Options() {
-		builder = KeyValueSetProto.newBuilder();
+    keyVals = TUtil.newHashMap();
 	}
 	
 	public Options(KeyValueSetProto proto) {
-		this.proto = proto;
-		viaProto = true;
+    this.keyVals = TUtil.newHashMap();
+    for(KeyValueProto keyval : proto.getKeyvalList()) {
+      this.keyVals.put(keyval.getKey(), keyval.getValue());
+    }
 	}
 	
 	public Options(Options options) {
 	  this();
-	  options.initFromProto();
-	  this.keyVals = Maps.newHashMap(options.keyVals);
+	  this.keyVals.putAll(options.keyVals);
 	}
 	
 	public static Options create() {
@@ -65,30 +61,22 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
   }
 	
 	public void put(String key, String val) {
-		initOptions();
-		setModified();
 		this.keyVals.put(key, val);
 	}
 
   public void putAll(Map<String, String> keyValues) {
-    initOptions();
-    setModified();
     this.keyVals.putAll(keyValues);
   }
 	
 	public void putAll(Options options) {
-	  initOptions();
-	  setModified();
 	  this.keyVals.putAll(options.keyVals);
 	}
 	
 	public String get(String key) {
-		initOptions();
 		return this.keyVals.get(key);
 	}
 	
 	public String get(String key, String defaultVal) {
-	  initOptions();
 	  if(keyVals.containsKey(key))
 	    return keyVals.get(key);
 	  else {
@@ -97,12 +85,10 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 	}
 	
 	public Iterator<Entry<String,String>> getAllKeyValus() {
-	  initOptions();
 	  return keyVals.entrySet().iterator();
 	}
 	
 	public String delete(String key) {
-		initOptions();
 		return keyVals.remove(key);
 	}
 	
@@ -110,8 +96,6 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 	public boolean equals(Object object) {
 		if(object instanceof Options) {
 			Options other = (Options)object;
-			initOptions();
-			other.initOptions();
 			for(Entry<String, String> entry : other.keyVals.entrySet()) {
 				if(!keyVals.get(entry.getKey()).equals(entry.getValue()))
 					return false;
@@ -125,62 +109,33 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable {
 	@Override
   public Object clone() throws CloneNotSupportedException {    
     Options options = (Options) super.clone();
-    initFromProto();
-    options.proto = null;
-    options.viaProto = false;
     options.builder = KeyValueSetProto.newBuilder();
-    options.keyVals = keyVals != null ? new HashMap<String, String>(keyVals) :
-      null;    
+    options.keyVals = keyVals != null ? new HashMap<String, String>(keyVals) : null;
     return options;
 	}
 	
 	@Override
 	public KeyValueSetProto getProto() {
-	  if(!viaProto) {
-      mergeLocalToBuilder();
-      proto = builder.build();
-      viaProto = true;
-    }	  
-		return proto;
-	}
-	
-	private void initOptions() {
-		if (this.keyVals != null) {
-			return;
-		}
-		KeyValueSetProtoOrBuilder p = viaProto ? proto : builder;
-		this.keyVals = Maps.newHashMap();
-		for(KeyValueProto keyval:p.getKeyvalList()) {
-			this.keyVals.put(keyval.getKey(), keyval.getValue());
-		}		
-	}
-	
-	private void setModified() {
-		if (viaProto || builder == null) {
-			builder = KeyValueSetProto.newBuilder(proto);
-		}
-		viaProto = false;
-	}
-	
-	private void mergeLocalToBuilder() {
-		KeyValueProto.Builder kvBuilder = null;
-		if(this.keyVals != null) {
-			for(Entry<String,String> kv : keyVals.entrySet()) {
-				kvBuilder = KeyValueProto.newBuilder();
-				kvBuilder.setKey(kv.getKey());
-				kvBuilder.setValue(kv.getValue());
-				builder.addKeyval(kvBuilder.build());
-			}
-		}
-	}
+    if (builder == null) {
+      builder = KeyValueSetProto.newBuilder();
+    } else {
+      builder.clear();
+    }
 
-  @Override
-  public void initFromProto() {
-    initOptions();
-  }
+    KeyValueProto.Builder kvBuilder;
+    if(this.keyVals != null) {
+      for(Entry<String,String> kv : keyVals.entrySet()) {
+        kvBuilder = KeyValueProto.newBuilder();
+        kvBuilder.setKey(kv.getKey());
+
+        kvBuilder.setValue(kv.getValue());
+        builder.addKeyval(kvBuilder.build());
+      }
+    }
+    return builder.build();
+	}
   
-  public String toJSON() {
-    initFromProto();
-    return GsonCreator.getInstance().toJson(this, Options.class);
+  public String toJson() {
+    return CatalogGsonHelper.toJson(this, Options.class);
   }
 }

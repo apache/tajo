@@ -135,10 +135,6 @@ public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComp
   }
 
   @Override
-  public void initFromProto() {
-  }
-
-  @Override
   public TupleComparatorProto getProto() {
     TupleComparatorProto.Builder builder = TupleComparatorProto.newBuilder();
     SortSpecProto.Builder sortSpecBuilder;

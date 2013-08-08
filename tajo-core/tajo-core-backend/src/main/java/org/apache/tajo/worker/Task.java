@@ -39,7 +39,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.engine.MasterWorkerProtos.*;
 import org.apache.tajo.engine.exception.UnfinishedTaskException;
-import org.apache.tajo.engine.json.GsonCreator;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.SortNode;
@@ -146,8 +146,7 @@ public class Task {
     this.context = new TaskAttemptContext(conf, taskId,
         request.getFragments().toArray(new Fragment[request.getFragments().size()]),
         taskDir);
-    plan = GsonCreator.getInstance().fromJson(request.getSerializedData(),
-        LogicalNode.class);
+    plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
     interQuery = request.getProto().getInterQuery();
     if (interQuery) {
       context.setInterQuery();

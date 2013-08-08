@@ -219,7 +219,7 @@ public class GlobalEngine extends AbstractService {
         return true;
 
       default:
-        throw new InternalError("updateQuery cannot handle such query: \n" + root.toJSON());
+        throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
     }
   }
 

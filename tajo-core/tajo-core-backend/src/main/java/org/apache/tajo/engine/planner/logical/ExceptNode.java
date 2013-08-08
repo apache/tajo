@@ -21,8 +21,6 @@
  */
 package org.apache.tajo.engine.planner.logical;
 
-import org.apache.tajo.engine.json.GsonCreator;
-
 public class ExceptNode extends BinaryNode {
 
   public ExceptNode() {
@@ -37,10 +35,5 @@ public class ExceptNode extends BinaryNode {
 
   public String toString() {
     return getOuterNode().toString() + "\n EXCEPT \n" + getInnerNode().toString();
-  }
-
-  @Override
-  public String toJSON() {
-    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

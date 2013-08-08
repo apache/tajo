@@ -19,14 +19,15 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.json.CommonGsonHelper;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
-public abstract class Datum implements Comparable<Datum> {
-	@Expose
-	private Type type;
+public abstract class Datum implements Comparable<Datum>, GsonObject {
+	@Expose	private Type type;
 	
 	@SuppressWarnings("unused")
   private Datum() {
@@ -149,7 +150,10 @@ public abstract class Datum implements Comparable<Datum> {
 	
   public abstract int compareTo(Datum datum);
 
-  public abstract String toJSON();
+  @Override
+  public String toJson() {
+    return CommonGsonHelper.toJson(this, Datum.class);
+  }
 
   @Override
   public String toString() {

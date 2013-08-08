@@ -117,7 +117,7 @@ public class RCFileWrapper {
               break;
             case ARRAY: {
               ArrayDatum array = (ArrayDatum) t.get(i);
-              String json = array.toJSON();
+              String json = array.toJson();
               bytes = json.getBytes();
               cu = new BytesRefWritable(bytes, 0, bytes.length);
               byteRef.set(i, cu);

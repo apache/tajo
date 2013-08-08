@@ -20,10 +20,11 @@ package org.apache.tajo.catalog.json;
 
 import com.google.gson.*;
 import org.apache.tajo.catalog.function.Function;
+import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
 
-public class FunctionAdapter implements JsonDeserializer<Function>, JsonSerializer<Function> {
+public class FunctionAdapter implements GsonSerDerAdapter<Function> {
 
   @Override
   public JsonElement serialize(Function src, Type typeOfSrc,

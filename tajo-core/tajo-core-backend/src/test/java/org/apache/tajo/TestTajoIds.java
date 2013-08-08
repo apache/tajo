@@ -25,7 +25,7 @@ import org.apache.tajo.util.TajoIdUtils;
 
 import static org.junit.Assert.*;
 
-public class TestQueryUnitId {
+public class TestTajoIds {
   @Test
   public void testQueryId() {
     long ts1 = 1315890136000l;

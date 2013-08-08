@@ -23,10 +23,11 @@ package org.apache.tajo.engine.json;
 
 import com.google.gson.*;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
 
-public class LogicalNodeAdapter implements JsonSerializer<LogicalNode>, JsonDeserializer<LogicalNode> {
+public class LogicalNodeAdapter implements GsonSerDerAdapter<LogicalNode> {
 
 	@Override
 	public LogicalNode deserialize(JsonElement json, Type type,

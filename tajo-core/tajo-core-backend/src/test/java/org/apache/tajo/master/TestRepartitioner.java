@@ -18,11 +18,11 @@
 
 package org.apache.tajo.master;
 
+import org.apache.tajo.TestTajoIds;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.Test;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SubQueryId;
-import org.apache.tajo.TestQueryUnitId;
 import org.apache.tajo.master.ExecutionBlock.PartitionType;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
@@ -35,7 +35,7 @@ import static junit.framework.Assert.assertEquals;
 public class TestRepartitioner {
   @Test
   public void testCreateHashFetchURL() throws Exception {
-    QueryId q1 = TestQueryUnitId.createQueryId(1315890136000l, 2, 1);
+    QueryId q1 = TestTajoIds.createQueryId(1315890136000l, 2, 1);
     String hostName = "tajo1";
     int port = 1234;
     SubQueryId sid = TajoIdUtils.createSubQueryId(q1, 2);

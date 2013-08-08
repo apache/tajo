@@ -21,10 +21,9 @@
  */
 package org.apache.tajo.engine.planner.logical;
 
-import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.engine.json.GsonCreator;
 import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.util.TUtil;
 
 public class EvalExprNode extends LogicalNode implements Projectable {
   @Expose private Target[] exprs;
@@ -32,12 +31,6 @@ public class EvalExprNode extends LogicalNode implements Projectable {
   public EvalExprNode(Target[] exprs) {
     super(ExprType.EXPRS);
     this.exprs = exprs;
-  }
-
-  @Override
-  public String toJSON() {
-    Gson gson = GsonCreator.getInstance();
-    return gson.toJson(this);
   }
 
   @Override
@@ -76,6 +69,15 @@ public class EvalExprNode extends LogicalNode implements Projectable {
     sb.append("\n  \"in schema\": ").append(getInSchema());
     sb.append("}");
     return sb.toString();
+  }
+
+  public boolean equals(Object object) {
+    if (object instanceof EvalExprNode) {
+      EvalExprNode other = (EvalExprNode) object;
+      return TUtil.checkEquals(this.exprs, other.exprs);
+    } else {
+      return false;
+    }
   }
   
   @Override

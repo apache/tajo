@@ -20,7 +20,6 @@ package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.datum.exception.InvalidOperationException;
-import org.apache.tajo.datum.json.GsonCreator;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -86,11 +85,6 @@ public class CharDatum extends Datum {
   @Override
 	public String asChars() {
 		return String.valueOf(val);
-	}
-
-  @Override
-	public String toJSON() {
-		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
 
   @Override

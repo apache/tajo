@@ -29,7 +29,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.EvalNode.Type;
-import org.apache.tajo.engine.json.GsonCreator;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
@@ -113,10 +113,6 @@ public class TestEvalTree {
       x =  params.get(0).asInt4();
       y =  params.get(1).asInt4();
       return DatumFactory.createInt4(x + y);
-    }
-    
-    public String toJSON() {
-    	return GsonCreator.getInstance().toJson(this, GeneralFunction.class);
     }
   }
 
@@ -531,8 +527,8 @@ public class TestEvalTree {
     BinaryEval gth = new BinaryEval(Type.GTH, e3, plus3);
     assertCloneEqual(gth);
     
-    String json = gth.toJSON();
-    EvalNode eval = GsonCreator.getInstance().fromJson(json, EvalNode.class);
+    String json = gth.toJson();
+    EvalNode eval = CoreGsonHelper.fromJson(json, EvalNode.class);
     assertCloneEqual(eval);
     
     assertEquals(gth.getType(), eval.getType());

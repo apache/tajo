@@ -20,10 +20,11 @@ package org.apache.tajo.catalog.json;
 
 import com.google.gson.*;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
 
-public class TableMetaAdapter implements JsonSerializer<TableMeta>, JsonDeserializer<TableMeta> {
+public class TableMetaAdapter implements GsonSerDerAdapter<TableMeta> {
 
 	@Override
 	public TableMeta deserialize(JsonElement json, Type typeOfT,
@@ -31,7 +32,7 @@ public class TableMetaAdapter implements JsonSerializer<TableMeta>, JsonDeserial
 		JsonObject jsonObject = json.getAsJsonObject();
 		String className = jsonObject.get("classname").getAsJsonPrimitive().getAsString();
 		
-		Class clazz = null;
+		Class clazz;
 		try {
 			clazz = Class.forName(className);
 		} catch (ClassNotFoundException e) {
@@ -44,7 +45,6 @@ public class TableMetaAdapter implements JsonSerializer<TableMeta>, JsonDeserial
 	@Override
 	public JsonElement serialize(TableMeta src, Type typeOfSrc,
 			JsonSerializationContext context) {
-		src.initFromProto();
 		JsonObject jsonObj = new JsonObject();
 		String className = src.getClass().getCanonicalName();
 		jsonObj.addProperty("classname", className);

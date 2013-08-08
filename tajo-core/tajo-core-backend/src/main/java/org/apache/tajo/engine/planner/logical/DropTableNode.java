@@ -18,8 +18,6 @@
 
 package org.apache.tajo.engine.planner.logical;
 
-import org.apache.tajo.engine.json.GsonCreator;
-
 public class DropTableNode extends LogicalNode {
   private String tableName;
 
@@ -51,12 +49,6 @@ public class DropTableNode extends LogicalNode {
   @Override
   public String toString() {
     return "DROP TABLE " + tableName;
-  }
-
-
-  @Override
-  public String toJSON() {
-    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 
   @Override

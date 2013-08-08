@@ -19,11 +19,9 @@
 package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.engine.json.GsonCreator;
 
 public final class LimitNode extends UnaryNode implements Cloneable {
-	@Expose
-  private long fetchFirstNum;
+	@Expose private long fetchFirstNum;
 
 	public LimitNode() {
 		super();
@@ -65,9 +63,5 @@ public final class LimitNode extends UnaryNode implements Cloneable {
     sb.append("\n").append(getSubNode().toString());
 
     return sb.toString();
-  }
-  
-  public String toJSON() {
-    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

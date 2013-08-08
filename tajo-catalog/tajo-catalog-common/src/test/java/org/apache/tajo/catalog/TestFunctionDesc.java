@@ -18,10 +18,8 @@
 
 package org.apache.tajo.catalog;
 
-import com.google.gson.Gson;
-import org.junit.Test;
 import org.apache.tajo.catalog.function.GeneralFunction;
-import org.apache.tajo.catalog.json.GsonCreator;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.common.TajoDataTypes;
@@ -32,6 +30,7 @@ import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,13 +57,13 @@ public class TestFunctionDesc {
     }
 
     public String toJSON() {
-      return GsonCreator.getInstance().toJson(this, GeneralFunction.class);
+      return CatalogGsonHelper.toJson(this, GeneralFunction.class);
     }
   }
 
 
   @Test
-  public void testGetSignature() throws IOException {
+  public void testGetSignature() throws IOException, ClassNotFoundException {
     FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
         CatalogUtil.newDataTypesWithoutLen(Type.INT4),
         CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8));
@@ -94,23 +93,25 @@ public class TestFunctionDesc {
   }
   
   @Test
-  public void testJson() throws InternalException {
+  public void testToJson() throws InternalException {
 	  FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
         CatalogUtil.newDataTypesWithoutLen(Type.INT4),
         CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8));
-	  String json = desc.toJSON();
-	  System.out.println(json);
-	  Gson gson = GsonCreator.getInstance();
-	  FunctionDesc fromJson = gson.fromJson(json, FunctionDesc.class);
-	  
-	  assertEquals("sum", fromJson.getSignature());
-	    assertEquals(TestSum.class, fromJson.getFuncClass());
-	    assertEquals(FunctionType.GENERAL, fromJson.getFuncType());
-	    assertEquals(Type.INT4, fromJson.getReturnType()[0].getType());
-	    assertArrayEquals(CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8),
-	    		fromJson.getParamTypes());
+	  String json = desc.toJson();
+	  FunctionDesc fromJson = CatalogGsonHelper.fromJson(json, FunctionDesc.class);
+	  assertEquals(desc, fromJson);
+	  assertEquals(desc.getProto(), fromJson.getProto());
+  }
 
-	    assertEquals(desc.getProto(), fromJson.getProto());
+  @Test
+  public void testGetProto() throws InternalException, ClassNotFoundException {
+    FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
+        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8));
+    FunctionDescProto proto = desc.getProto();
+    FunctionDesc fromProto = new FunctionDesc(proto);
+    assertEquals(desc, fromProto);
+    assertEquals(desc.toJson(), fromProto.toJson());
   }
   
   @Test

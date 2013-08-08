@@ -16,22 +16,34 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.json;
+package org.apache.tajo.json;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import org.apache.hadoop.fs.Path;
+import com.google.gson.*;
 
 import java.lang.reflect.Type;
+import java.util.Map;
 
-public class PathDeserializer implements JsonDeserializer<Path> {
+public class GsonHelper {
+  private final GsonBuilder builder;
+  private final Gson gson;
 
-	@Override
-	public Path deserialize(JsonElement arg0, Type arg1,
-			JsonDeserializationContext arg2) throws JsonParseException {
-		return new Path(arg0.getAsJsonPrimitive().getAsString());
-	}
+  public GsonHelper(Map<Type, GsonSerDerAdapter> adapters) {
+    builder = new GsonBuilder().excludeFieldsWithoutExposeAnnotation();
+    registerAdapters(builder, adapters);
+    gson = builder.create();
+  }
 
+  public static void registerAdapters(GsonBuilder builder, Map<Type, GsonSerDerAdapter> adapters) {
+    for (Map.Entry<Type, GsonSerDerAdapter> entry : adapters.entrySet()) {
+      try {
+        builder.registerTypeAdapter(entry.getKey(), entry.getValue());
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  public Gson getGson() {
+    return gson;
+  }
 }

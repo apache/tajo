@@ -78,6 +78,14 @@ public class TUtil {
     return new HashSet<T>(Arrays.asList(items));
   }
 
+  public static <K,V> Map<K,V> newHashMap() {
+    return new HashMap<K, V>();
+  }
+
+  public static <K,V> Map<K,V> newHashMap(Map<K,V> map) {
+    return new HashMap<K, V>(map);
+  }
+
   public static <T> List<T> newList() {
     return new ArrayList<T>();
   }

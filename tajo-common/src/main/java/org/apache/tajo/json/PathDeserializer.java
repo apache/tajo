@@ -19,22 +19,22 @@
 /**
  * 
  */
-package org.apache.tajo.gson;
+package org.apache.tajo.json;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
+import com.google.gson.JsonParseException;
 import org.apache.hadoop.fs.Path;
 
 import java.lang.reflect.Type;
 
-public class PathSerializer implements JsonSerializer<Path> {
+public class PathDeserializer implements JsonDeserializer<Path> {
 
 	@Override
-	public JsonElement serialize(Path arg0, Type arg1,
-			JsonSerializationContext arg2) {
-		return new JsonPrimitive(arg0.toString());
+	public Path deserialize(JsonElement arg0, Type arg1,
+			JsonDeserializationContext arg2) throws JsonParseException {
+		return new Path(arg0.getAsJsonPrimitive().getAsString());
 	}
 
 }

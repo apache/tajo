@@ -22,7 +22,6 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.datum.exception.InvalidOperationException;
-import org.apache.tajo.datum.json.GsonCreator;
 
 import java.nio.ByteBuffer;
 
@@ -89,11 +88,6 @@ public class Float4Datum extends NumericDatum {
   @Override
 	public String asChars() {
 		return ""+val;
-	}
-
-  @Override
-	public String toJSON() {
-		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
 
   @Override

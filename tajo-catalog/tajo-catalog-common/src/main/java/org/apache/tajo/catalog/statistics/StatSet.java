@@ -20,7 +20,7 @@ package org.apache.tajo.catalog.statistics;
 
 import com.google.common.collect.Maps;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.json.GsonCreator;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.StatProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StatSetProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StatSetProtoOrBuilder;
@@ -83,14 +83,7 @@ public class StatSet implements ProtoObject<StatSetProto>, Cloneable {
   }
   
   public Object clone() throws CloneNotSupportedException {
-    StatSet group = (StatSet) super.clone();
-    initFromProto();
-    group.stats = Maps.newHashMap();
-    for (Stat stat : stats.values()) {
-      group.stats.put(stat.getType(), (Stat) stat.clone());
-    }
-    
-    return group;
+    return new StatSet(this.getProto());
   }
 
   private void initStats() {
@@ -109,17 +102,6 @@ public class StatSet implements ProtoObject<StatSetProto>, Cloneable {
       builder = StatSetProto.newBuilder(proto);
     }
     viaProto = false;
-  }
-
-  @Override
-  public void initFromProto() {
-    StatSetProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.stats == null && p.getStatsCount() > 0) {
-      this.stats = Maps.newHashMap();
-      for (StatProto statProto : p.getStatsList()) {
-        this.stats.put(statProto.getType(), new Stat(statProto));
-      }
-    }
   }
 
   @Override
@@ -146,6 +128,6 @@ public class StatSet implements ProtoObject<StatSetProto>, Cloneable {
   }
   
   public String toString() {
-    return GsonCreator.getPrettyInstance().toJson(this);
+    return CatalogGsonHelper.getPrettyInstance().toJson(this);
   }
 }

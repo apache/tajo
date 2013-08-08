@@ -28,7 +28,7 @@ import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalNode.Type;
 import org.apache.tajo.engine.eval.EvalNodeVisitor;
 import org.apache.tajo.engine.eval.FieldEval;
-import org.apache.tajo.engine.json.GsonCreator;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.logical.IndexScanNode;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.storage.Fragment;
@@ -50,7 +50,7 @@ public class IndexUtil {
        
   }
   
-  public static String getIndexName (String indexName , SortSpec[] keys) {
+  public static String getIndexName(String indexName , SortSpec[] keys) {
     StringBuilder builder = new StringBuilder();
     builder.append(indexName + "_");
     for(int i = 0 ; i < keys.length ; i ++) {
@@ -63,7 +63,7 @@ public class IndexUtil {
       Iterator<Entry<String, String>> iter ) {
    
     EvalNode qual = scanNode.getQual();
-    Gson gson = GsonCreator.getInstance();
+    Gson gson = CoreGsonHelper.getInstance();
     
     FieldAndValueFinder nodeFinder = new FieldAndValueFinder();
     qual.preOrder(nodeFinder);

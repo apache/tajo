@@ -18,13 +18,11 @@
 
 package org.apache.tajo.catalog;
 
-import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.function.Function;
-import org.apache.tajo.catalog.function.GeneralFunction;
-import org.apache.tajo.catalog.json.GsonCreator;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProtoOrBuilder;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -33,10 +31,8 @@ import org.apache.tajo.exception.InternalException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
-public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
-  private FunctionDescProto proto = FunctionDescProto.getDefaultInstance();
-  private FunctionDescProto.Builder builder = null;
-  private boolean viaProto = false;
+public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, GsonObject {
+  private FunctionDescProto.Builder builder = FunctionDescProto.newBuilder();
   
   @Expose private String signature;
   @Expose private Class<? extends Function> funcClass;
@@ -45,12 +41,10 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
   @Expose private DataType [] params;
 
   public FunctionDesc() {
-    this.builder = FunctionDescProto.newBuilder();
   }
-  
+
   public FunctionDesc(String signature, Class<? extends Function> clazz,
       FunctionType funcType, DataType [] retType, DataType [] params) {
-    this();
     this.signature = signature.toLowerCase();
     this.funcClass = clazz;
     this.funcType = funcType;
@@ -58,12 +52,12 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
     this.params = params;
   }
   
-  public FunctionDesc(FunctionDescProto proto) {
-    this.proto = proto;
-    this.viaProto = true;
+  public FunctionDesc(FunctionDescProto proto) throws ClassNotFoundException {
+    this(proto.getSignature(), proto.getClassName(), proto.getType(),
+        newNoNameSchema(proto.getReturnType()),
+        proto.getParameterTypesList().toArray(new DataType[proto.getParameterTypesCount()]));
   }
 
-  @SuppressWarnings("unchecked")
   public FunctionDesc(String signature, String className, FunctionType type,
                       DataType [] retType, DataType... argTypes) throws ClassNotFoundException {
     this(signature, (Class<? extends Function>) Class.forName(className), type,
@@ -85,75 +79,28 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
   }
 
   public String getSignature() {
-    FunctionDescProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.signature != null) {
-      return this.signature;
-    }
-    if (!proto.hasSignature()) {
-      return null;
-    }
-    this.signature = p.getSignature();
     return this.signature;
   }
 
   @SuppressWarnings("unchecked")
   public Class<? extends Function> getFuncClass() throws InternalException {
-    FunctionDescProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.funcClass != null) {
-      return this.funcClass;
-    }
-    if (!p.hasClassName()) {
-      return null;
-    }
-    try {
-      this.funcClass = (Class<? extends Function>)Class.forName(p.getClassName());
-    } catch (ClassNotFoundException e) {
-      throw new InternalException("The function class ("+p.getClassName()+") cannot be loaded");
-    }
     return this.funcClass;
   }
 
   public FunctionType getFuncType() {
-    FunctionDescProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.funcType != null) {
-      return this.funcType;
-    }
-    if (!p.hasType()) {
-      return null;
-    }
-    this.funcType = p.getType();
     return this.funcType;
   }
 
   public DataType [] getParamTypes() {
-    FunctionDescProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.params != null) {
-      return this.params;
-    }
-    if (p.getParameterTypesCount() == 0) {
-      return null;
-    }
-    this.params = p.getParameterTypesList().toArray(
-        new DataType[p.getParameterTypesCount()]);
     return this.params;
   }
 
   public DataType [] getReturnType() {
-    FunctionDescProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.returnType != null) {
-      return newNoNameSchema(this.returnType);
-    }
-    if (!p.hasReturnType()) {
-      return null;
-    }
-    this.returnType = newNoNameSchema(p.getReturnType());
     return this.returnType;
-    
   }
 
   public static DataType [] newNoNameSchema(DataType ... types) {
-    DataType [] dataTypes = types.clone();
-    return dataTypes;
+    return types.clone();
   }
   
   @Override
@@ -169,14 +116,10 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException{
     FunctionDesc desc  = (FunctionDesc)super.clone();
-    desc.proto = this.proto;
-    desc.builder = this.builder == null?null:this.builder.clone();
     
     desc.signature = this.signature;
-    desc.params = this.params;
-    
+    desc.params = params.clone();
     desc.returnType = this.returnType;
-    desc.viaProto = this.viaProto;
     desc.funcClass = this.funcClass;
     
     return desc;
@@ -184,91 +127,28 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable {
 
   @Override
   public FunctionDescProto getProto() {
-    mergeLocalToProto();
-    proto = viaProto ? proto : builder.build();
-    viaProto = true;
-    return proto;
-  }
-  
-  private void maybeInitBuilder() {
-    if (viaProto || builder == null) {
-      builder = FunctionDescProto.newBuilder(proto);
+    if (builder == null) {
+      builder = FunctionDescProto.newBuilder();
+    } else {
+      builder.clear();
     }
-    viaProto = false;
-  }
-  
-  private void mergeLocalToBuilder() {
-    if (this.signature  != null) {     
-      builder.setSignature(this.signature);
-    }
-    if (this.funcClass != null) {
-      builder.setClassName(this.funcClass.getName());
-    }
-    if (this.funcType != null) {
-      builder.setType(this.funcType);
-    }
-    if (this.returnType != null) {
-      builder.setReturnType(this.returnType[0]);
-    }
-    if (this.params != null) {
+    builder.setSignature(this.signature);
+    builder.setClassName(this.funcClass.getName());
+    builder.setType(this.funcType);
+    builder.setReturnType(this.returnType[0]);
+
+    if (this.params != null) { // repeated field
       builder.addAllParameterTypes(Arrays.asList(params));
     }
-  }
-  
-  private void mergeLocalToProto() {
-    if(viaProto) {
-      maybeInitBuilder();
-    }
-    mergeLocalToBuilder();
-    proto = builder.build();
-    viaProto = true;
-  }
-  
-  @SuppressWarnings("unchecked")
-  private void mergeProtoToLocal() throws InternalException {
-	  FunctionDescProtoOrBuilder p = viaProto ? proto : builder;
-	  if (signature == null && p.hasSignature()) {
-		  signature = p.getSignature();
-	  }
-	  if (funcClass == null && p.hasClassName()) {
-		  try {
-			  this.funcClass = 
-			      (Class<? extends GeneralFunction>)Class.forName(p.getClassName());
-		  } catch (ClassNotFoundException e) {
-			  throw new InternalException("The function class ("+p.getClassName()+") cannot be loaded");
-		  }
-	  }
-	  if (funcType == null && p.hasType()) {
-		  funcType = p.getType();
-	  }
-	  if (returnType == null && p.hasReturnType()) {
-		  returnType = newNoNameSchema(p.getReturnType());
-	  }
-	  if (params == null && p.getParameterTypesCount() > 0) {
-		  params = new DataType[p.getParameterTypesCount()];
-		  for (int i = 0; i < p.getParameterTypesCount(); i++) {
-			  params[i] = p.getParameterTypes(i);
-		  }
-	  }
+    return builder.build();
   }
   
   @Override
   public String toString() {
 	  return getProto().toString();
   }
-
-  @Override
-  public void initFromProto() {
-    try {
-      mergeProtoToLocal();
-    } catch (InternalException e) {
-      e.printStackTrace();
-    }
-  }
   
-  public String toJSON() {
-    initFromProto();
-    Gson gson = GsonCreator.getInstance();
-    return gson.toJson(this, FunctionDesc.class);
+  public String toJson() {
+    return CatalogGsonHelper.toJson(this, FunctionDesc.class);
   }
 }

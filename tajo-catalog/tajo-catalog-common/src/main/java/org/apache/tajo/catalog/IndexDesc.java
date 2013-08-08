@@ -21,24 +21,20 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProtoOrBuilder;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.ProtoObject;
 
 public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
-  private IndexDescProto proto;
   private IndexDescProto.Builder builder;
-  private boolean viaProto;
   
-  @Expose private String name;
-  @Expose private String tableId;
-  @Expose private Column column;
-  @Expose private IndexMethod indexMethod;
-  @Expose private boolean isUnique = false;
-  @Expose private boolean isClustered = false;
-  @Expose private boolean isAscending = false;
+  private String name; // required
+  private String tableId; // required
+  private Column column; // required
+  private IndexMethod indexMethod; // required
+  private boolean isUnique = false; // optional [default = false]
+  private boolean isClustered = false; // optional [default = false]
+  private boolean isAscending = false; // optional [default = false]
   
   public IndexDesc() {
     this.builder = IndexDescProto.newBuilder();
@@ -57,172 +53,52 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   }
   
   public IndexDesc(IndexDescProto proto) {
-    this.proto = proto;
-    this.viaProto = true;
+    this(proto.getName(), proto.getTableId(), new Column(proto.getColumn()),
+        proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered(), proto.getIsAscending());
   }
   
   public String getName() {
-    IndexDescProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.name != null) {
-      return name;
-    }
-    if (!p.hasName()) {
-      return null;
-    }
-    this.name = p.getName();
-    
     return name;
   }
   
   public String getTableId() {
-    IndexDescProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.tableId != null) {
-      return tableId;
-    }
-    if (!p.hasTableId()) {
-      return null;
-    }
-    this.tableId = p.getTableId();
-    
     return tableId;
   }
   
   public Column getColumn() {
-    IndexDescProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.column != null) {
-      return column;
-    }
-    if (!p.hasColumn()) {
-      return null;
-    }
-    this.column = new Column(p.getColumn());
-    
     return column;
   }
   
   public IndexMethod getIndexMethod() {
-    IndexDescProtoOrBuilder p = viaProto ? proto : builder;    
-    if (this.indexMethod != null) {
-      return this.indexMethod;
-    }
-    if (!p.hasIndexMethod()) { // if isCluster == false and proto has no set
-      return null;
-    }
-    this.indexMethod = p.getIndexMethod();
-    
     return this.indexMethod;
   }
   
   public boolean isClustered() {
-    IndexDescProtoOrBuilder p = viaProto ? proto : builder;
-    if (isClustered) {
-      return true;
-    }
-    if (!p.hasIsClustered()) { // if isCluster == false and proto has no set
-      return false;
-    }
-    this.isClustered = p.getIsClustered();
-    
     return this.isClustered;
   }
   
   public boolean isUnique() {
-    IndexDescProtoOrBuilder p = viaProto ? proto : builder;    
-    if (isUnique) {
-      return true;
-    }
-    if (!p.hasIsUnique()) { // if isCluster == false and proto has no set
-      return false;
-    }
-    this.isUnique = p.getIsUnique();
-    
     return this.isUnique;
   }
   
   public boolean isAscending() {
-    IndexDescProtoOrBuilder p = viaProto ? proto : builder;    
-    if (isAscending) {
-      return true;
-    }
-    if (!p.hasIsAscending()) { // if isCluster == false and proto has no set
-      return false;
-    }
-    this.isAscending = p.getIsAscending();
-    
     return this.isAscending;
   }
 
   @Override
   public IndexDescProto getProto() {
-    if(!viaProto) {
-      mergeLocalToBuilder();
-      proto = builder.build();
-      viaProto = true;
-    }
-    
-    return proto;
-  }
-  
-  @SuppressWarnings("unused")
-  private void setModified() {
-    if (viaProto && builder == null) {
-      builder = IndexDescProto.newBuilder(proto);
-    }
-    viaProto = false;
-  }
-  
-  private void mergeLocalToBuilder() {
     if (builder == null) {
-      builder = IndexDescProto.newBuilder(proto);
+      builder = IndexDescProto.newBuilder();
     }
-    if (this.name != null) {
-      builder.setName(this.name);
-    }
-    if (this.tableId != null) {
-      builder.setTableId(this.tableId);
-    }
-    if (this.column != null) {
-      builder.setColumn(this.column.getProto());
-    }
-    if (this.indexMethod != null) {
-      builder.setIndexMethod(indexMethod);
-    }
-    if (this.isUnique) {
-      builder.setIsUnique(this.isUnique);
-    }
-    if (this.isClustered) {
-      builder.setIsClustered(this.isClustered);
-    }
-    if (this.isAscending) {
-      builder.setIsAscending(this.isAscending);
-    }
-  }
-  
-  @Override
-  public void initFromProto() {
-    IndexDescProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.name == null && p.hasName()) {
-      this.name = p.getName();
-    }
-    if (this.tableId == null && p.hasTableId()) {
-      this.tableId = p.getTableId();
-    }
-    if (this.column == null && p.hasColumn()) {
-      this.column = new Column(p.getColumn());
-    }
-    if (this.indexMethod == null && p.hasIndexMethod()) {
-      this.indexMethod = p.getIndexMethod();
-    }
-    if (this.isUnique == false && p.hasIsUnique()) {
-      this.isUnique = p.getIsUnique();
-    }
-    if (this.isClustered == false && p.hasIsClustered()) {
-      this.isUnique = p.getIsUnique();
-    }
-    if (this.isAscending == false && p.hasIsAscending()) {
-      this.isAscending = p.getIsAscending();
-    }
-    viaProto = false;
+    builder.setName(this.name);
+    builder.setTableId(this.tableId);
+    builder.setColumn(this.column.getProto());
+    builder.setIndexMethod(indexMethod);
+    builder.setIsUnique(this.isUnique);
+    builder.setIsClustered(this.isClustered);
+    builder.setIsAscending(this.isAscending);
+
+    return builder.build();
   }
   
   public boolean equals(Object obj) {
@@ -247,7 +123,6 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   
   public Object clone() throws CloneNotSupportedException {
     IndexDesc desc = (IndexDesc) super.clone();
-    initFromProto();
     desc.name = name;
     desc.tableId = tableId;
     desc.column = (Column) column.clone();

@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.gson;
+package org.apache.tajo.json;
 
 import com.google.gson.*;
 import org.apache.tajo.datum.Datum;
 
 import java.lang.reflect.Type;
 
-public class DatumTypeAdapter implements JsonSerializer<Datum>, JsonDeserializer<Datum> {
+public class DatumTypeAdapter implements GsonSerDerAdapter<Datum> {
 
   @Override
   public Datum deserialize(JsonElement json, Type typeOfT,

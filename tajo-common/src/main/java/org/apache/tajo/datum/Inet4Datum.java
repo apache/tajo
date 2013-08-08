@@ -21,7 +21,6 @@ package org.apache.tajo.datum;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.datum.exception.InvalidOperationException;
-import org.apache.tajo.datum.json.GsonCreator;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -74,11 +73,6 @@ public class Inet4Datum extends Datum {
 	@Override
 	public String asChars() {
 		return numericToTextFormat(asByteArray());
-	}
-
-  @Override
-	public String toJSON() {
-		return GsonCreator.getInstance().toJson(this, Datum.class);
 	}
 
   @Override

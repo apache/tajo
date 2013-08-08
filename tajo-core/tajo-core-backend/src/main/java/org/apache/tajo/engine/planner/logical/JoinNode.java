@@ -24,7 +24,6 @@ package org.apache.tajo.engine.planner.logical;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.json.GsonCreator;
 import org.apache.tajo.engine.planner.Target;
 
 public class JoinNode extends BinaryNode implements Projectable, Cloneable {
@@ -121,9 +120,5 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     sb.append("\n\"in schema: ").append(getInSchema());
     sb.append("\n" + getOuterNode().toString()).append(" and ").append(getInnerNode());
     return sb.toString();
-  }
-
-  public String toJSON() {
-    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

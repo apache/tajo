@@ -32,7 +32,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.ArrayDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.json.GsonCreator;
+import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.util.BitArray;
 
@@ -276,7 +276,7 @@ public class RowFile {
               byte [] bytes = new byte[bufSize];
               buffer.get(bytes);
               String json = new String(bytes);
-              ArrayDatum array = (ArrayDatum) GsonCreator.getInstance().fromJson(json, Datum.class);
+              ArrayDatum array = (ArrayDatum) CommonGsonHelper.fromJson(json, Datum.class);
               tuple.put(i, array);
               break;
 
@@ -460,7 +460,7 @@ public class RowFile {
               buffer.put(t.getIPv6Bytes(i));
             case ARRAY: {
               ArrayDatum array = (ArrayDatum) t.get(i);
-              String json = array.toJSON();
+              String json = array.toJson();
               byte [] byteArray = json.getBytes();
 //              out.writeInt(byteArray.length);
 //              out.write(byteArray);

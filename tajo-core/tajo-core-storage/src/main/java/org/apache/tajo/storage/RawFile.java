@@ -26,7 +26,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.ArrayDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.json.GsonCreator;
+import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.BitArray;
 
 import java.io.File;
@@ -210,8 +210,7 @@ public class RawFile {
             byte [] arrayBytes = new byte[arrayByteSize];
             buffer.get(arrayBytes);
             String json = new String(arrayBytes);
-            ArrayDatum array = (ArrayDatum) GsonCreator
-                .getInstance().fromJson(json, Datum.class);
+            ArrayDatum array = (ArrayDatum) CommonGsonHelper.fromJson(json, Datum.class);
             tuple.put(i, array);
             break;
 
@@ -415,7 +414,7 @@ public class RawFile {
 
           case ARRAY :
             ArrayDatum array = (ArrayDatum) t.get(i);
-            String json = array.toJSON();
+            String json = array.toJson();
             byte [] jsonBytes = json.getBytes();
             if (flushBufferAndReplace(recordOffset, jsonBytes.length + 4)) {
               recordOffset = 0;

@@ -36,7 +36,7 @@ public class FragmentDeserializer implements JsonDeserializer<Fragment> {
 	@Override
 	public Fragment deserialize(JsonElement json, Type type,
 			JsonDeserializationContext ctx) throws JsonParseException {
-		Gson gson = GsonCreator.getInstance();
+		Gson gson = StorageGsonHelper.getInstance();
 		JsonObject fragObj = json.getAsJsonObject();
 		JsonObject metaObj = fragObj.get("meta").getAsJsonObject();
 		TableMetaImpl meta = new TableMetaImpl(

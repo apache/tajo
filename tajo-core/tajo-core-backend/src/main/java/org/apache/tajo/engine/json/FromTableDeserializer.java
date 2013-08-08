@@ -34,7 +34,7 @@ public class FromTableDeserializer implements JsonDeserializer<FromTable> {
 	@Override
 	public FromTable deserialize(JsonElement json, Type type,
 			JsonDeserializationContext ctx) throws JsonParseException {
-		Gson gson = GsonCreator.getInstance();
+		Gson gson = CoreGsonHelper.getInstance();
 		JsonObject fromTableObj = json.getAsJsonObject();
 		boolean isFragment = fromTableObj.get("isFragment").getAsBoolean();
 		TableDesc desc;

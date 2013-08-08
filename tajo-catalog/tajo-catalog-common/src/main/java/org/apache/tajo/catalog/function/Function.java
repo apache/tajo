@@ -19,14 +19,14 @@
 package org.apache.tajo.catalog.function;
 
 import com.google.common.base.Objects;
-import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.json.GsonCreator;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.util.TUtil;
 
-public abstract class Function<T extends Datum> implements Cloneable {
+public abstract class Function<T extends Datum> implements Cloneable, GsonObject {
   @Expose protected Column[] definedParams;
   public final static Column [] NoArgs = new Column [] {};
 
@@ -55,8 +55,8 @@ public abstract class Function<T extends Datum> implements Cloneable {
     return func;
   }
 
-  public String toJSON() {
-    Gson gson = GsonCreator.getInstance();
-    return gson.toJson(this, Function.class);
+  @Override
+  public String toJson() {
+    return CatalogGsonHelper.toJson(this, Function.class);
   }
 }

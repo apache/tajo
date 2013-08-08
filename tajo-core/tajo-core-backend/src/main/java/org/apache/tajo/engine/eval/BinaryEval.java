@@ -20,7 +20,6 @@ package org.apache.tajo.engine.eval;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -28,7 +27,6 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.json.GsonCreator;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.storage.Tuple;
 
@@ -200,11 +198,6 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	
 	public String toString() {
 		return leftExpr +" "+type+" "+rightExpr;
-	}
-	
-	public String toJSON() {
-	  Gson gson = GsonCreator.getInstance();
-	  return gson.toJson(this, EvalNode.class);
 	}
 	
   @Override

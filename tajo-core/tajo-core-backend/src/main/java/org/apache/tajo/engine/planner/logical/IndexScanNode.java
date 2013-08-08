@@ -23,11 +23,10 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.json.GsonCreator;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 
 public class IndexScanNode extends ScanNode {
-  
-  @Expose private SortSpec[]sortKeys;
+  @Expose private SortSpec [] sortKeys;
   @Expose private Schema keySchema = null;
   @Expose private Datum[] datum = null;
   //TODO- @Expose private IndexType type;
@@ -66,15 +65,10 @@ public class IndexScanNode extends ScanNode {
   public void setKeySchema( Schema keySchema ) {
     this.keySchema = keySchema;
   }
-  
-  @Override
-  public String toJSON() {
-    GsonCreator.getInstance().toJson(this, LogicalNode.class);
-    return null;
-  }
+
   @Override
   public String toString() {
-    Gson gson = GsonCreator.getInstance();
+    Gson gson = CoreGsonHelper.getInstance();
     StringBuilder builder = new StringBuilder();
     builder.append("IndexScanNode : {\n");
     builder.append("  \"keySchema\" : \"" + gson.toJson(this.keySchema) + "\"\n");

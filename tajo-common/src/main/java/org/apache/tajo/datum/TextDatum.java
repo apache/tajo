@@ -23,15 +23,12 @@ import org.apache.hadoop.io.WritableComparator;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.datum.exception.InvalidOperationException;
-import org.apache.tajo.datum.json.GsonCreator;
 
 import java.util.Arrays;
 
 public class TextDatum extends Datum {
-  @Expose
-  private int size;
-  @Expose
-  private byte[] bytes;
+  @Expose private int size;
+  @Expose private byte [] bytes;
 
   public TextDatum() {
     super(TajoDataTypes.Type.TEXT);
@@ -127,11 +124,6 @@ public class TextDatum extends Datum {
       default:
         throw new InvalidOperationException(datum.type());
     }
-  }
-
-  @Override
-  public String toJSON() {
-    return GsonCreator.getInstance().toJson(this, Datum.class);
   }
 
   @Override

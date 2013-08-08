@@ -101,9 +101,4 @@ public class NullDatum extends Datum {
   public int hashCode() {
     return 23244; // one of the prime number
   }
-
-  @Override
-  public String toJSON() {
-    return "";
-  }
 }

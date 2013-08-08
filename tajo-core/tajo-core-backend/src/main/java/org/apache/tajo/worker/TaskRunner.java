@@ -280,19 +280,24 @@ public class TaskRunner extends AbstractService {
                   }
 
                   LOG.info("Initializing: " + taskAttemptId);
-                  Task task = new Task(taskAttemptId, workerContext, master,
-                      new QueryUnitRequestImpl(taskRequest));
-                  tasks.put(taskAttemptId, task);
+                  Task task;
+                  try {
+                    task = new Task(taskAttemptId, workerContext, master,
+                        new QueryUnitRequestImpl(taskRequest));
+                    tasks.put(taskAttemptId, task);
 
-                  task.init();
-                  if (task.hasFetchPhase()) {
-                    task.fetch(); // The fetch is performed in an asynchronous way.
+                    task.init();
+                    if (task.hasFetchPhase()) {
+                      task.fetch(); // The fetch is performed in an asynchronous way.
+                    }
+                    // task.run() is a blocking call.
+                    task.run();
+                  } catch (Throwable t) {
+                    fatalError(workerContext.getMaster(), taskAttemptId, t.getMessage());
+                  } finally {
+                    callFuture = null;
+                    taskRequest = null;
                   }
-                  // task.run() is a blocking call.
-                  task.run();
-
-                  callFuture = null;
-                  taskRequest = null;
                 }
               }
             } catch (Throwable t) {

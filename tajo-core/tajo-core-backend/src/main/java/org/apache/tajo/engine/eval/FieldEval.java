@@ -18,13 +18,11 @@
 
 package org.apache.tajo.engine.eval;
 
-import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.json.GsonCreator;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.storage.Tuple;
 
@@ -129,11 +127,6 @@ public class FieldEval extends EvalNode implements Cloneable {
     eval.fieldId = fieldId;
     
     return eval;
-  }
-  
-  public String toJSON() {
-    Gson gson = GsonCreator.getInstance();
-    return gson.toJson(this, EvalNode.class);
   }
 
   public void preOrder(EvalNodeVisitor visitor) {

@@ -21,19 +21,13 @@ package org.apache.tajo.engine.planner.logical;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.json.GsonCreator;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Arrays;
-
 public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
-	@Expose
-	private Column[] columns;
-	@Expose
-	private EvalNode havingCondition = null;
-	@Expose
-	private Target[] targets;
+	@Expose private Column [] columns;
+	@Expose private EvalNode havingCondition = null;
+	@Expose private Target [] targets;
 	
 	public GroupbyNode() {
 		super();
@@ -118,11 +112,12 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof GroupbyNode) {
       GroupbyNode other = (GroupbyNode) obj;
-      return super.equals(other) 
-          && Arrays.equals(columns, other.columns)
-          && TUtil.checkEquals(havingCondition, other.havingCondition)
-          && TUtil.checkEquals(targets, other.targets)
-          && getSubNode().equals(other.getSubNode());
+      boolean eq = super.equals(other);
+      eq = eq && TUtil.checkEquals(columns, other.columns);
+      eq = eq && TUtil.checkEquals(havingCondition, other.havingCondition);
+      eq = eq && TUtil.checkEquals(targets, other.targets);
+      eq = eq && subExpr.equals(other.subExpr);
+      return eq;
     } else {
       return false;  
     }
@@ -147,9 +142,5 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     }
 
     return grp;
-  }
-  
-  public String toJSON() {
-    return GsonCreator.getInstance().toJson(this, LogicalNode.class);
   }
 }

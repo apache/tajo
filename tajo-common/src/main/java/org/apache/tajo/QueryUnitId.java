@@ -44,7 +44,7 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   private SubQueryId subQueryId = null;
   private int id = -1;
   private String finalId = null;
-  
+
   private QueryUnitIdProto proto = QueryUnitIdProto.getDefaultInstance();
   private QueryUnitIdProto.Builder builder = null;
   private boolean viaProto = false;
@@ -136,21 +136,6 @@ public class QueryUnitId implements Comparable<QueryUnitId>,
   @Override
   public final int compareTo(final QueryUnitId o) {
     return this.toString().compareTo(o.toString());
-  }
-  
-  private void mergeProtoToLocal() {
-    QueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
-    if (subQueryId == null) {
-      subQueryId = TajoIdUtils.newSubQueryId(p.getSubQueryId());
-    }
-    if (id == -1) {
-      id = p.getId();
-    }
-  }
-
-  @Override
-  public void initFromProto() {
-    mergeProtoToLocal();
   }
   
   private void mergeLocalToBuilder() {

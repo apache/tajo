@@ -18,10 +18,11 @@
 
 package org.apache.tajo.catalog.statistics;
 
-import org.junit.Test;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.DatumFactory;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -52,6 +53,19 @@ public class TestColumnStat {
     
     ColumnStat stat2 = new ColumnStat(stat.getProto());
     assertEquals(stat, stat2);
+  }
+
+  @Test
+  public final void testJson() throws CloneNotSupportedException {
+    ColumnStat stat = new ColumnStat(new Column("test", Type.INT8));
+    stat.setNumDistVals(1000);
+    stat.setNumNulls(999);
+    stat.setMinValue(DatumFactory.createInt8(5));
+    stat.setMaxValue(DatumFactory.createInt8(10));
+
+    String json = stat.toJson();
+    ColumnStat fromJson = CatalogGsonHelper.fromJson(json, ColumnStat.class);
+    assertEquals(stat, fromJson);
   }
 
   @Test

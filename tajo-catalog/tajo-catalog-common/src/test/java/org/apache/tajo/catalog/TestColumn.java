@@ -18,12 +18,12 @@
 
 package org.apache.tajo.catalog;
 
-import com.google.gson.Gson;
-import org.junit.Before;
-import org.junit.Test;
-import org.apache.tajo.catalog.json.GsonCreator;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -86,11 +86,17 @@ public class TestColumn {
 	@Test
 	public final void testToJson() {
 		Column col = new Column(field1.getProto());
-		String json = col.toJSON();
+		String json = col.toJson();
 		System.out.println(json);
-		Gson gson = GsonCreator.getInstance();
-		Column fromJson = gson.fromJson(json, Column.class);
-		assertEquals(col.getColumnName(), fromJson.getColumnName());
-		assertEquals(col.getDataType(), fromJson.getDataType());
+		Column fromJson = CatalogGsonHelper.fromJson(json, Column.class);
+		assertEquals(col, fromJson);
 	}
+
+  @Test
+  public final void testToProto() {
+    Column column = new Column(field1.getProto());
+    CatalogProtos.ColumnProto proto = column.getProto();
+    Column fromProto = new Column(proto);
+    assertEquals(column, fromProto);
+  }
 }

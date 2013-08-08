@@ -22,7 +22,6 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.json.GsonCreator;
 import org.apache.tajo.engine.planner.FromTable;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
@@ -146,10 +145,6 @@ public class ScanNode extends LogicalNode implements Projectable {
 	  sb.append("\n  \"out schema\": ").append(getOutSchema());
 	  sb.append("\n  \"in schema\": ").append(getInSchema());
 	  return sb.toString();
-	}
-	
-	public String toJSON() {
-	  return GsonCreator.getInstance().toJson(this, LogicalNode.class);
 	}
 
   @Override
