@@ -376,7 +376,7 @@ public class CSVFile {
                 tuple.put(tid, DatumFactory.createFloat4(cell));
                 break;
               case FLOAT8:
-                tuple.put(i, DatumFactory.createFloat8(cell));
+                tuple.put(tid, DatumFactory.createFloat8(cell));
                 break;
               case TEXT:
                 tuple.put(tid, DatumFactory.createText(cell));
@@ -387,7 +387,7 @@ public class CSVFile {
               case ARRAY:
                 Datum data = StorageGsonHelper.getInstance().fromJson(cell,
                     Datum.class);
-                tuple.put(i, data);
+                tuple.put(tid, data);
                 break;
               }
             }
