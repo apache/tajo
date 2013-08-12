@@ -64,6 +64,7 @@ public class TestGlobalQueryPlanner {
   private static Schema schema;
   private static SQLAnalyzer analyzer;
   private static LogicalPlanner logicalPlanner;
+  private static LogicalOptimizer optimizer;
   private static QueryId queryId;
   private static StorageManager sm;
 
@@ -103,6 +104,7 @@ public class TestGlobalQueryPlanner {
         dispatcher.getEventHandler());
     analyzer = new SQLAnalyzer();
     logicalPlanner = new LogicalPlanner(catalog);
+    optimizer = new LogicalOptimizer();
 
     int tbNum = 2;
     int tupleNum;
@@ -150,7 +152,7 @@ public class TestGlobalQueryPlanner {
         "select age, sumtest(salary) from table0");
 
     LogicalPlan plan = logicalPlanner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
 
     MasterPlan globalPlan = planner.build(queryId,
@@ -171,7 +173,7 @@ public class TestGlobalQueryPlanner {
     Expr context = analyzer.parse(
         "create table store1 as select age, sumtest(salary) from table0 group by age");
     LogicalPlan plan = logicalPlanner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     MasterPlan globalPlan = planner.build(queryId, (LogicalRootNode) rootNode);
 
@@ -209,7 +211,7 @@ public class TestGlobalQueryPlanner {
     Expr context = analyzer.parse(
         "create table store1 as select age from table0 order by age");
     LogicalPlan plan = logicalPlanner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     MasterPlan globalPlan = planner.build(queryId, (LogicalRootNode) rootNode);
 
@@ -252,7 +254,7 @@ public class TestGlobalQueryPlanner {
         "select table0.age,table0.salary,table1.salary from table0,table1 " +
             "where table0.salary = table1.salary order by table0.age");
     LogicalPlan plan = logicalPlanner.createPlan(expr);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
 
     MasterPlan globalPlan = planner.build(queryId, (LogicalRootNode) rootNode);
@@ -319,7 +321,7 @@ public class TestGlobalQueryPlanner {
     String query = "select table0.name, table1.salary from table0,table1 where table0.name = table1.name and table1.salary > 10";
     Expr context = analyzer.parse(query);
     LogicalPlan plan = logicalPlanner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
     
     MasterPlan globalPlan = planner.build(queryId, (LogicalRootNode) rootNode);
 
@@ -342,7 +344,7 @@ public class TestGlobalQueryPlanner {
     Expr expr = analyzer.parse(
         "select age, sum(salary) from table0 group by cube (age, id)");
     LogicalPlan plan = logicalPlanner.createPlan(expr);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     MasterPlan globalPlan = planner.build(queryId, (LogicalRootNode) rootNode);
 

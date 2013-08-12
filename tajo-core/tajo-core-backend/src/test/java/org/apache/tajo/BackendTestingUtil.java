@@ -98,11 +98,14 @@ public class BackendTestingUtil {
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
+  private LogicalOptimizer optimizer;
+
   public BackendTestingUtil(TajoConf conf) throws IOException {
     this.conf = conf;
     this.catalog = new LocalCatalog(conf);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
+    optimizer = new LogicalOptimizer();
   }
 
   public ResultSet run(String [] tableNames, File [] tables, Schema [] schemas, String query)
@@ -122,7 +125,7 @@ public class BackendTestingUtil {
         frags.toArray(new Fragment[frags.size()]), workDir);
     Expr EXPR = analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(EXPR);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 

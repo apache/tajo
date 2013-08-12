@@ -15,12 +15,16 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-121: Add LogicalPlanVisitor and Refactor LogicalOptimizer to use the
+    visitor. (hyunsik)
+
     TAJO-118: Refactor and Improve text file Scanner. (jinho)
 
     TAJO-95: Eliminate the lazy copy approach from the classes wrapping
     protobuf-generated classes. (hyunsik)
 
-    TAJO-102: Add AlgebraVisitor and Refactor LogicalPlanner to use the visitor.    (hyunsik)
+    TAJO-102: Add AlgebraVisitor and Refactor LogicalPlanner to use the visitor.
+    (hyunsik)
 
     TAJO-87: Integration of tajo algebra module and SQL parser. (hyunsik)
 

@@ -330,7 +330,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // Strip the table names from the targets of the both blocks
     // in order to check the equivalence the schemas of both blocks.
-    Target[] leftStrippedTargets = PlannerUtil.stripTarget(leftContext.block.getCurrentTargets());
+    Target [] leftStrippedTargets = PlannerUtil.stripTarget(leftContext.block.getCurrentTargets());
 
     Schema outSchema = PlannerUtil.targetToSchema(leftStrippedTargets);
     setOp.setInSchema(left.getOutSchema());

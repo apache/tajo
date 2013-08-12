@@ -49,6 +49,7 @@ public class TestSortExec {
   private static CatalogService catalog;
   private static SQLAnalyzer analyzer;
   private static LogicalPlanner planner;
+  private static LogicalOptimizer optimizer;
   private static StorageManager sm;
   private static TajoTestingCluster util;
   private static Path workDir;
@@ -93,6 +94,7 @@ public class TestSortExec {
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
+    optimizer = new LogicalOptimizer();
   }
 
   @After
@@ -112,7 +114,7 @@ public class TestSortExec {
         new Fragment[] { frags[0] }, workDir);
     Expr context = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);

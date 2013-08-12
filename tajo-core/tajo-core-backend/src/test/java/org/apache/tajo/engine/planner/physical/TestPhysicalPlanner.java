@@ -69,9 +69,9 @@ public class TestPhysicalPlanner {
   private static CatalogService catalog;
   private static SQLAnalyzer analyzer;
   private static LogicalPlanner planner;
+  private static LogicalOptimizer optimizer;
   private static StorageManager sm;
   private static Path testDir;
-  private static FileSystem fs;
 
   private static TableDesc employee = null;
   private static TableDesc score = null;
@@ -84,7 +84,6 @@ public class TestPhysicalPlanner {
     util.startCatalogCluster();
     conf = util.getConfiguration();
     testDir = CommonTestingUtil.getTestDir("target/test-data/TestPhysicalPlanner");
-    fs = testDir.getFileSystem(conf);
     sm = StorageManager.get(conf, testDir);
     catalog = util.getMiniCatalogCluster().getCatalog();
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
@@ -150,6 +149,7 @@ public class TestPhysicalPlanner {
     catalog.addTable(score);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
+    optimizer = new LogicalOptimizer();
   }
 
   @AfterClass
@@ -188,7 +188,7 @@ public class TestPhysicalPlanner {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode =plan.getRootBlock().getRoot();
-    LogicalOptimizer.optimize(plan);
+    optimizer.optimize(plan);
 
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
@@ -218,7 +218,7 @@ public class TestPhysicalPlanner {
     Expr expr = analyzer.parse(QUERIES[16]);
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode =plan.getRootBlock().getRoot();
-    LogicalOptimizer.optimize(plan);
+    optimizer.optimize(plan);
 
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
@@ -244,11 +244,8 @@ public class TestPhysicalPlanner {
         new Fragment[] { frags[0] }, workDir);
     Expr context = analyzer.parse(QUERIES[7]);
     LogicalPlan plan = planner.createPlan(context);
-    System.out.println(plan.getRootBlock().getRoot());
-    System.out.println("-------------------------------");
-    LogicalOptimizer.optimize(plan);
+    optimizer.optimize(plan);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
-    System.out.println(rootNode);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -277,7 +274,7 @@ public class TestPhysicalPlanner {
         new Fragment[] { frags[0] }, workDir);
     Expr expr = analyzer.parse(QUERIES[15]);
     LogicalPlan plan = planner.createPlan(expr);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -305,7 +302,7 @@ public class TestPhysicalPlanner {
         new Fragment[]{frags[0]}, workDir);
     Expr context = analyzer.parse(QUERIES[7]);
     LogicalPlan plan = planner.createPlan(context);
-    LogicalOptimizer.optimize(plan);
+    optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan.getRootBlock().getRoot());
@@ -365,7 +362,7 @@ public class TestPhysicalPlanner {
 
     Expr context = analyzer.parse(CreateTableAsStmts[0]);
     LogicalPlan plan = planner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(rootNode.getOutSchema(),
@@ -406,7 +403,7 @@ public class TestPhysicalPlanner {
 
     Expr context = analyzer.parse(CreateTableAsStmts[1]);
     LogicalPlan plan = planner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(rootNode.getOutSchema(),
         StoreType.RCFILE);
@@ -452,7 +449,7 @@ public class TestPhysicalPlanner {
     StoreTableNode storeNode = new StoreTableNode("partition");
     storeNode.setPartitions(PartitionType.HASH, new Column[]{key1, key2}, numPartitions);
     PlannerUtil.insertNode(rootNode, storeNode);
-    rootNode = LogicalOptimizer.optimize(plan);
+    rootNode = optimizer.optimize(plan);
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(rootNode.getOutSchema(),
         StoreType.CSV);
@@ -510,7 +507,7 @@ public class TestPhysicalPlanner {
     StoreTableNode storeNode = new StoreTableNode("emptyset");
     storeNode.setPartitions(PartitionType.HASH, new Column[] {}, numPartitions);
     PlannerUtil.insertNode(rootNode, storeNode);
-    LogicalOptimizer.optimize(plan);
+    optimizer.optimize(plan);
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(rootNode.getOutSchema(),
         StoreType.CSV);
@@ -558,7 +555,7 @@ public class TestPhysicalPlanner {
         new Fragment[] { frags[0] }, workDir);
     Expr context = analyzer.parse(QUERIES[8]);
     LogicalPlan plan = planner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     // Set all aggregation functions to the first phase mode
     GroupbyNode groupbyNode = (GroupbyNode) PlannerUtil.findTopNode(rootNode, ExprType.GROUP_BY);
@@ -591,7 +588,7 @@ public class TestPhysicalPlanner {
         new Fragment[] { frags[0] }, workDir);
     Expr context = analyzer.parse(QUERIES[9]);
     LogicalPlan plan = planner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
     System.out.println(rootNode.toString());
 
     // Set all aggregation functions to the first phase mode
@@ -622,7 +619,7 @@ public class TestPhysicalPlanner {
         new Fragment[] { frags[0] }, workDir);
     Expr context = analyzer.parse(QUERIES[11]);
     LogicalPlan plan = planner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -645,7 +642,7 @@ public class TestPhysicalPlanner {
         new Fragment[] { frags[0] }, workDir);
     Expr  context = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
     LogicalRootNode root = (LogicalRootNode) rootNode;
     UnionNode union = new UnionNode(root.getSubNode(), root.getSubNode());
     root.setSubNode(union);
@@ -669,7 +666,7 @@ public class TestPhysicalPlanner {
         new Fragment[] { }, workDir);
     Expr expr = analyzer.parse(QUERIES[12]);
     LogicalPlan plan = planner.createPlan(expr);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -682,7 +679,7 @@ public class TestPhysicalPlanner {
 
     expr = analyzer.parse(QUERIES[13]);
     plan = planner.createPlan(expr);
-    rootNode = LogicalOptimizer.optimize(plan);
+    rootNode = optimizer.optimize(plan);
 
     phyPlanner = new PhysicalPlannerImpl(conf, sm);
     exec = phyPlanner.createPlan(ctx, rootNode);
@@ -705,7 +702,7 @@ public class TestPhysicalPlanner {
         new Fragment[] {frags[0]}, workDir);
     Expr context = analyzer.parse(createIndexStmt[0]);
     LogicalPlan plan = planner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -732,7 +729,7 @@ public class TestPhysicalPlanner {
         new Fragment[] {frags[0]}, workDir);
     Expr expr = analyzer.parse(duplicateElimination[0]);
     LogicalPlan plan = planner.createPlan(expr);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -764,7 +761,7 @@ public class TestPhysicalPlanner {
         new Fragment[] {frags[0]}, workDir);
     Expr context = analyzer.parse(SORT_QUERY[0]);
     LogicalPlan plan = planner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);

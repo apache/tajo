@@ -62,6 +62,7 @@ public class TestGlobalQueryOptimizer {
   private static Schema schema;
   private static SQLAnalyzer analyzer;
   private static LogicalPlanner logicalPlanner;
+  private static LogicalOptimizer logicalOptimizer;
   private static QueryId queryId;
   private static GlobalOptimizer optimizer;
 
@@ -94,6 +95,7 @@ public class TestGlobalQueryOptimizer {
         dispatcher.getEventHandler());
     analyzer = new SQLAnalyzer();
     logicalPlanner = new LogicalPlanner(catalog);
+    logicalOptimizer = new LogicalOptimizer();
 
     int tbNum = 2;
     int tupleNum;
@@ -141,7 +143,7 @@ public class TestGlobalQueryOptimizer {
     Expr expr = analyzer.parse(
         "select table0.age,table0.salary,table1.salary from table0,table1 where table0.salary = table1.salary order by table0.age");
     LogicalPlan plan = logicalPlanner.createPlan(expr);
-    LogicalNode rootNode = LogicalOptimizer.optimize(plan);
+    LogicalNode rootNode = logicalOptimizer.optimize(plan);
 
     MasterPlan globalPlan = planner.build(queryId, (LogicalRootNode) rootNode);
     globalPlan = optimizer.optimize(globalPlan);

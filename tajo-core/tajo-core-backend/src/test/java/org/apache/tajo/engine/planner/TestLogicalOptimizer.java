@@ -41,6 +41,7 @@ public class TestLogicalOptimizer {
   private static CatalogService catalog;
   private static SQLAnalyzer sqlAnalyzer;
   private static LogicalPlanner planner;
+  private static LogicalOptimizer optimizer;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -87,6 +88,7 @@ public class TestLogicalOptimizer {
     catalog.registerFunction(funcDesc);
     sqlAnalyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
+    optimizer = new LogicalOptimizer();
   }
 
   @AfterClass
@@ -119,7 +121,7 @@ public class TestLogicalOptimizer {
     assertEquals(ExprType.SCAN, joinNode.getOuterNode().getType());
     assertEquals(ExprType.SCAN, joinNode.getInnerNode().getType());
     
-    LogicalNode optimized = LogicalOptimizer.optimize(newPlan);
+    LogicalNode optimized = optimizer.optimize(newPlan);
 
     assertEquals(ExprType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
@@ -135,7 +137,7 @@ public class TestLogicalOptimizer {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[5]);
     LogicalPlan newPlan = planner.createPlan(expr);
-    LogicalOptimizer.optimize(newPlan);
+    optimizer.optimize(newPlan);
   }
   
   @Test
@@ -154,7 +156,7 @@ public class TestLogicalOptimizer {
     SelectionNode selNode = (SelectionNode) projNode.getSubNode();    
     assertEquals(ExprType.SCAN, selNode.getSubNode().getType());        
     
-    LogicalNode optimized = LogicalOptimizer.optimize(newPlan);
+    LogicalNode optimized = optimizer.optimize(newPlan);
     assertEquals(ExprType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
     TestLogicalNode.testCloneLogicalNode(root);
@@ -177,8 +179,9 @@ public class TestLogicalOptimizer {
     assertEquals(ExprType.SELECTION, groupbyNode.getSubNode().getType());
     SelectionNode selNode = (SelectionNode) groupbyNode.getSubNode();
     assertEquals(ExprType.SCAN, selNode.getSubNode().getType());
-    
-    LogicalNode optimized = LogicalOptimizer.optimize(newPlan);
+
+    System.out.println(newPlan.getRootBlock().getRoot());
+    LogicalNode optimized = optimizer.optimize(newPlan);
     assertEquals(ExprType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
     TestLogicalNode.testCloneLogicalNode(root);
@@ -212,7 +215,7 @@ public class TestLogicalOptimizer {
     assertTrue(PlannerUtil.canBeEvaluated(selNode.getQual(), joinNode));
     
     // Optimized plan
-    LogicalNode optimized = LogicalOptimizer.optimize(newPlan);
+    LogicalNode optimized = optimizer.optimize(newPlan);
     assertEquals(ExprType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
     

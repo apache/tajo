@@ -16,21 +16,26 @@ package org.apache.tajo.master;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
-import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.*;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.benchmark.TPCH;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.planner.LogicalOptimizer;
+import org.apache.tajo.engine.planner.LogicalPlan;
+import org.apache.tajo.engine.planner.LogicalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.storage.StorageManager;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
@@ -41,6 +46,7 @@ public class TestExecutionBlockCursor {
   private static GlobalPlanner planner;
   private static SQLAnalyzer analyzer;
   private static LogicalPlanner logicalPlanner;
+  private static LogicalOptimizer optimizer;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -60,6 +66,7 @@ public class TestExecutionBlockCursor {
 
     analyzer = new SQLAnalyzer();
     logicalPlanner = new LogicalPlanner(catalog);
+    optimizer = new LogicalOptimizer();
 
     StorageManager sm  = new StorageManager(conf);
     AsyncDispatcher dispatcher = new AsyncDispatcher();
@@ -82,7 +89,7 @@ public class TestExecutionBlockCursor {
             "join partsupp on s_suppkey = ps_suppkey " +
             "join part on p_partkey = ps_partkey and p_type like '%BRASS' and p_size = 15");
     LogicalPlan logicalPlan = logicalPlanner.createPlan(context);
-    LogicalNode rootNode = LogicalOptimizer.optimize(logicalPlan);
+    LogicalNode rootNode = optimizer.optimize(logicalPlan);
     MasterPlan plan = planner.build(QueryIdFactory.newQueryId(), (LogicalRootNode) rootNode);
 
     ExecutionBlockCursor cursor = new ExecutionBlockCursor(plan);

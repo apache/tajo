@@ -100,8 +100,9 @@ public class TargetListManager {
     return evaluatedFlags[id];
   }
 
-  public Target[] getUpdatedTarget() throws PlanningException {
-    Target[] updated = new Target[targets.length];
+  public Target [] getUpdatedTarget() throws PlanningException {
+    Target [] updated = new Target[targets.length];
+
     for (int i = 0; i < targets.length; i++) {
       if (targets[i] == null) { // if it is not created
         continue;

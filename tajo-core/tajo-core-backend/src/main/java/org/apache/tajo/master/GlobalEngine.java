@@ -50,11 +50,6 @@ import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.GlobalOptimizer;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.planner.LogicalOptimizer;
-import org.apache.tajo.engine.planner.LogicalPlanner;
-import org.apache.tajo.engine.planner.logical.CreateTableNode;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageUtil;
@@ -76,6 +71,7 @@ public class GlobalEngine extends AbstractService {
   private SQLAnalyzer analyzer;
   private CatalogService catalog;
   private LogicalPlanner planner;
+  private LogicalOptimizer optimizer;
   private GlobalPlanner globalPlanner;
   private GlobalOptimizer globalOptimizer;
 
@@ -95,6 +91,7 @@ public class GlobalEngine extends AbstractService {
       connectYarnClient();
       analyzer = new SQLAnalyzer();
       planner = new LogicalPlanner(context.getCatalog());
+      optimizer = new LogicalOptimizer();
 
       globalPlanner = new GlobalPlanner(context.getConf(), context.getCatalog(),
           sm, context.getEventHandler());
@@ -228,7 +225,7 @@ public class GlobalEngine extends AbstractService {
     LogicalPlan plan = planner.createPlan(expression);
     LogicalNode optimizedPlan = null;
     try {
-      optimizedPlan = LogicalOptimizer.optimize(plan);
+      optimizedPlan = optimizer.optimize(plan);
     } catch (PlanningException e) {
       e.printStackTrace();
     }
