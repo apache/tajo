@@ -109,6 +109,7 @@ public class TestBSTIndex {
     creater.open();
 
     SeekableScanner scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    scanner.init();
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -130,6 +131,7 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "FindValueInCSV.idx"), keySchema, comp);
     reader.open();
     scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    scanner.init();
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       tuple.put(0, DatumFactory.createInt8(i));
       tuple.put(1, DatumFactory.createFloat8(i));
@@ -204,6 +206,7 @@ public class TestBSTIndex {
         keySchema, comp);
     reader.open();
     SeekableScanner scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    scanner.init();
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       tuple.put(0, DatumFactory.createInt8(i));
       tuple.put(1, DatumFactory.createFloat8(i));
@@ -263,6 +266,7 @@ public class TestBSTIndex {
     creater.open();
 
     SeekableScanner scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    scanner.init();
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -330,6 +334,7 @@ public class TestBSTIndex {
     creater.open();
     
     SeekableScanner scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    scanner.init();
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -351,6 +356,7 @@ public class TestBSTIndex {
         keySchema, comp);
     reader.open();
     scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    scanner.init();
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       keyTuple = new VTuple(2);
@@ -414,6 +420,7 @@ public class TestBSTIndex {
     creater.open();
 
     SeekableScanner scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    scanner.init();
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -435,6 +442,7 @@ public class TestBSTIndex {
         keySchema, comp);
     reader.open();
     scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    scanner.init();
     Tuple result;
     for(int i = 1 ; i < TUPLE_NUM -1 ; i+=2) {
       keyTuple = new VTuple(2);

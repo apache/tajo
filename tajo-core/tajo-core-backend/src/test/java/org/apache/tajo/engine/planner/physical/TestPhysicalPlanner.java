@@ -173,7 +173,8 @@ public class TestPhysicalPlanner {
       "select 3 < 4 as ineq, 3.5 * 2 as score", // 12
       "select (1 > 0) and 3 > 1", // 13
       "select deptName, class, sum(score), max(score), min(score) from score", // 14
-      "select deptname, class, sum(score), max(score), min(score) from score group by deptname" // 15
+      "select deptname, class, sum(score), max(score), min(score) from score group by deptname", // 15
+      "select name from employee where empid >= 0", // 16
   };
 
   @Test
@@ -200,6 +201,34 @@ public class TestPhysicalPlanner {
       assertTrue(tuple.contains(0));
       assertTrue(tuple.contains(1));
       assertTrue(tuple.contains(2));
+      i++;
+    }
+    exec.close();
+    assertEquals(100, i);
+  }
+
+  @Test
+  public final void testCreateScanWithFilterPlan() throws IOException, PlanningException {
+    Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(),
+        employee.getPath(), Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateScanWithFilterPlan");
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil
+        .newQueryUnitAttemptId(),
+        new Fragment[] { frags[0] }, workDir);
+    Expr expr = analyzer.parse(QUERIES[16]);
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode rootNode =plan.getRootBlock().getRoot();
+    LogicalOptimizer.optimize(plan);
+
+
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+
+    Tuple tuple;
+    int i = 0;
+    exec.init();
+    while ((tuple = exec.next()) != null) {
+      assertTrue(tuple.contains(0));
       i++;
     }
     exec.close();

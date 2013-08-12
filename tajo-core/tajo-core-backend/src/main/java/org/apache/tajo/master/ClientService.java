@@ -135,6 +135,7 @@ public class ClientService extends AbstractService {
         if (e.getMessage() != null) {
           build.setErrorMessage(ExceptionUtils.getStackTrace(e));
         } else {
+          LOG.error("Internal Error", e);
           build.setErrorMessage("Internal Error");
         }
         return build.build();

@@ -83,7 +83,7 @@ public class TestStorageManager {
 		appender.close();
 
 		Scanner scanner = StorageManager.getScanner(conf, meta, path);
-
+    scanner.init();
 		int i=0;
 		while(scanner.next() != null) {
 			i++;

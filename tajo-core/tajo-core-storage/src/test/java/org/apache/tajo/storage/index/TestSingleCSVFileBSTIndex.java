@@ -93,8 +93,7 @@ public class TestSingleCSVFileBSTIndex {
 
     FileStatus status = fs.getFileStatus(tablePath);
     long fileLen = status.getLen();
-    Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0,
-        fileLen, null);
+    Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
 
     SortSpec[] sortKeys = new SortSpec[2];
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
@@ -113,6 +112,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.open();
 
     SeekableScanner fileScanner = new CSVScanner(conf, meta, tablet);
+    fileScanner.init();
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -136,6 +136,7 @@ public class TestSingleCSVFileBSTIndex {
         "FindValueInCSV.idx"), keySchema, comp);
     reader.open();
     fileScanner = new CSVScanner(conf, meta, tablet);
+    fileScanner.init();
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
       tuple.put(0, DatumFactory.createInt8(i));
       tuple.put(1, DatumFactory.createFloat8(i));
@@ -200,6 +201,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.open();
     
     SeekableScanner fileScanner  = new CSVScanner(conf, meta, tablet);
+    fileScanner.init();
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -220,6 +222,7 @@ public class TestSingleCSVFileBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "FindNextKeyValueInCSV.idx"), keySchema, comp);
     reader.open();
     fileScanner  = new CSVScanner(conf, meta, tablet);
+    fileScanner.init();
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       keyTuple = new VTuple(2);

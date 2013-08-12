@@ -19,14 +19,20 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.TaskAttemptContext;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.planner.Projector;
+import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 public class SeqScanExec extends PhysicalExec {
   private final ScanNode plan;
@@ -56,6 +62,28 @@ public class SeqScanExec extends PhysicalExec {
   }
 
   public void init() throws IOException {
+    Schema projected;
+    if (plan.hasTargets()) {
+      projected = new Schema();
+      Set<Column> columnSet = new HashSet<Column>();
+
+      if (plan.hasQual()) {
+        columnSet.addAll(EvalTreeUtil.findDistinctRefColumns(qual));
+      }
+
+      for (Target t : plan.getTargets()) {
+        columnSet.addAll(EvalTreeUtil.findDistinctRefColumns(t.getEvalTree()));
+      }
+
+      for (Column column : inSchema.getColumns()) {
+        if (columnSet.contains(column)) {
+          projected.addColumn(column);
+        }
+      }
+    } else {
+      projected = outSchema;
+    }
+
     this.projector = new Projector(inSchema, outSchema, plan.getTargets());
     this.evalContexts = projector.renew();
 
@@ -64,7 +92,7 @@ public class SeqScanExec extends PhysicalExec {
           TUtil.newList(fragments));
     } else {
       this.scanner = StorageManager.getScanner(context.getConf(), fragments[0].getMeta(),
-          fragments[0], plan.getOutSchema());
+          fragments[0], projected);
     }
 
     scanner.init();

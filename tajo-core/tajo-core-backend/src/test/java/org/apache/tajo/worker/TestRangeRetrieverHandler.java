@@ -163,7 +163,7 @@ public class TestRangeRetrieverHandler {
     reader.open();
     SeekableScanner scanner = (SeekableScanner)
         sm.getScanner(conf, employeeMeta, StorageUtil.concatPath(testDir, "output", "output"));
-
+    scanner.init();
     int cnt = 0;
     while(scanner.next() != null) {
       cnt++;
@@ -273,7 +273,7 @@ public class TestRangeRetrieverHandler {
     reader.open();
     SeekableScanner scanner = (SeekableScanner) StorageManager.getScanner(
         conf, meta, StorageUtil.concatPath(testDir, "output", "output"));
-
+    scanner.init();
     int cnt = 0;
     while(scanner.next() != null) {
       cnt++;

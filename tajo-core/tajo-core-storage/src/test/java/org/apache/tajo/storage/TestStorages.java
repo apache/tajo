@@ -170,7 +170,7 @@ public class TestStorages {
     int tupleCnt = 0;
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
-      if (storeType == StoreType.RCFILE || storeType == StoreType.TREVNI) {
+      if (storeType == StoreType.RCFILE || storeType == StoreType.TREVNI || storeType == StoreType.CSV) {
         assertNull(tuple.get(0));
       }
       assertEquals(DatumFactory.createInt8(tupleCnt + 2), tuple.getLong(1));

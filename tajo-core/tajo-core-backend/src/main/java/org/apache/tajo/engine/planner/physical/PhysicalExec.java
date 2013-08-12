@@ -29,12 +29,14 @@ public abstract class PhysicalExec implements SchemaObject {
   protected final TaskAttemptContext context;
   protected final Schema inSchema;
   protected final Schema outSchema;
+  protected final int outColumnNum;
 
   public PhysicalExec(final TaskAttemptContext context, final Schema inSchema,
                       final Schema outSchema) {
     this.context = context;
     this.inSchema = inSchema;
     this.outSchema = outSchema;
+    this.outColumnNum = outSchema.getColumnNum();
   }
 
   public final Schema getSchema() {

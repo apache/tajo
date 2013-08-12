@@ -62,6 +62,7 @@ public class BSTIndexScanExec extends PhysicalExec {
 
     this.fileScanner = (SeekableScanner)StorageManager.getScanner(context.getConf(),
         fragment.getMeta(), fragment, outSchema);
+    this.fileScanner.init();
     this.projector = new Projector(inSchema, outSchema, scanNode.getTargets());
     this.evalContexts = projector.renew();
 

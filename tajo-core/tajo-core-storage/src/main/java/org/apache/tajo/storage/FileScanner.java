@@ -31,6 +31,7 @@ public abstract class FileScanner implements Scanner {
   protected final TableMeta meta;
   protected final Schema schema;
   protected final Fragment fragment;
+  protected final int columnNum;
 
   protected Column [] targets;
   
@@ -39,6 +40,7 @@ public abstract class FileScanner implements Scanner {
     this.meta = meta;
     this.schema = meta.getSchema();
     this.fragment = fragment;
+    this.columnNum = this.schema.getColumnNum();
   }
 
   public void init() throws IOException {
