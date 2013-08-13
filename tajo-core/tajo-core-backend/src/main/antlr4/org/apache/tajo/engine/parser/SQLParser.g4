@@ -60,7 +60,7 @@ character_string_type
   ;
 
 type_length
-  : LEFT_PAREN! NUMBER RIGHT_PAREN!
+  : LEFT_PAREN NUMBER RIGHT_PAREN
   ;
 
 national_character_string_type
@@ -107,8 +107,8 @@ approximate_numeric_type
   ;
 
 precision_param
-  : LEFT_PAREN! precision=NUMBER RIGHT_PAREN!
-  | LEFT_PAREN! precision=NUMBER COMMA! scale=NUMBER RIGHT_PAREN!
+  : LEFT_PAREN precision=NUMBER RIGHT_PAREN
+  | LEFT_PAREN precision=NUMBER COMMA scale=NUMBER RIGHT_PAREN
   ;
 
 boolean_type
@@ -389,7 +389,7 @@ join_specification
   ;
 
 join_condition
-  : ON^ search_condition
+  : ON search_condition
   ;
 
 named_columns_join
@@ -410,7 +410,7 @@ derived_table
   ;
 
 where_clause
-  : WHERE^ search_condition
+  : WHERE search_condition
   ;
 
 search_condition
@@ -438,7 +438,7 @@ table_subquery
   ;
 
 subquery
-	:  LEFT_PAREN! query_expression RIGHT_PAREN!
+	:  LEFT_PAREN query_expression RIGHT_PAREN
 	;
 
 /*
@@ -497,7 +497,7 @@ empty_grouping_set
   ;
 
 having_clause
-  : HAVING^ boolean_value_expression
+  : HAVING boolean_value_expression
   ;
 
 /*
@@ -541,11 +541,11 @@ null_ordering
 */
 
 boolean_value_expression
-  : and_predicate (OR^ and_predicate)*
+  : and_predicate (OR and_predicate)*
   ;
 
 and_predicate
-  : boolean_factor (AND^ boolean_factor)*
+  : boolean_factor (AND boolean_factor)*
   ;
 
 boolean_factor
@@ -569,7 +569,7 @@ boolean_primary
   : predicate
   | numeric_value_expression  
   | case_expression
-  | LEFT_PAREN! boolean_value_expression RIGHT_PAREN!
+  | LEFT_PAREN boolean_value_expression RIGHT_PAREN
   ;
 
 /*
@@ -620,7 +620,7 @@ in_predicate
 
 in_predicate_value
   : table_subquery
-  | LEFT_PAREN! in_value_list  RIGHT_PAREN!
+  | LEFT_PAREN in_value_list  RIGHT_PAREN
   ;
 
 in_value_list
@@ -719,7 +719,7 @@ numeric_primary
   | column_reference  
   | routine_invocation
   | scalar_subquery
-  | LEFT_PAREN! numeric_value_expression RIGHT_PAREN!
+  | LEFT_PAREN numeric_value_expression RIGHT_PAREN
   ;
 
 literal

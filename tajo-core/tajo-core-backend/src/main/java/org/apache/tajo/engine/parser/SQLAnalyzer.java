@@ -25,6 +25,8 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.engine.parser.SQLParser.*;
+import org.apache.tajo.engine.query.exception.SQLParseError;
+import org.apache.tajo.engine.query.exception.SQLSyntaxError;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +47,17 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     this.parser = new SQLParser(tokens);
     parser.setBuildParseTree(true);
-    SqlContext context = parser.sql();
+    parser.removeErrorListeners();
+
+    parser.setErrorHandler(new SQLErrorStrategy());
+    parser.addErrorListener(new SQLErrorListener());
+
+    SqlContext context;
+    try {
+      context = parser.sql();
+    } catch (SQLParseError e) {
+      throw new SQLSyntaxError(e);
+    }
     return visitSql(context);
   }
 

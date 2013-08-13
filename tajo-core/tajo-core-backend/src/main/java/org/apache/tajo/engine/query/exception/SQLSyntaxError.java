@@ -19,26 +19,31 @@
 package org.apache.tajo.engine.query.exception;
 
 
-@SuppressWarnings("UnusedDeclaration")
-public class TQLParseError extends RuntimeException {
-  private int errorLine;
-  private int errorPosition;
+public class SQLSyntaxError extends InvalidQueryException {
+  private static final long serialVersionUID = 5388279335175632066L;
 
-  public TQLParseError(String parseErrorMessage) {
-    super(parseErrorMessage);
+  private String errorMessage;
+  private String detailedMessage;
+  private SQLParseError parseError;
+
+  public SQLSyntaxError(String errorMessage) {
+    this.errorMessage = errorMessage;
   }
 
-  public TQLParseError(String parseErrorMessage, int line, int position) {
-    super(parseErrorMessage);
-    this.errorLine = line;
-    this.errorPosition = position;
+  public SQLSyntaxError(SQLParseError e) {
+    this.errorMessage = e.getMessageHeader();
+    this.parseError = e;
   }
 
-  public int getErrorPosition(){
-    return this.errorPosition;
-  }
-
-  public int getErrorLine(){
-    return this.errorLine;
+  @Override
+  public String getMessage() {
+    if (detailedMessage == null) {
+      if (parseError != null) {
+        detailedMessage = parseError.getMessage();
+      } else {
+        detailedMessage = String.format("ERROR: %s\n", errorMessage);
+      }
+    }
+    return detailedMessage;
   }
 }

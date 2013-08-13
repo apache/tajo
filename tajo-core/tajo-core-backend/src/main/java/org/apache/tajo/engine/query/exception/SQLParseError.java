@@ -19,36 +19,38 @@
 package org.apache.tajo.engine.query.exception;
 
 
+import org.antlr.v4.runtime.Token;
 import org.apache.commons.lang.StringUtils;
 
-public class TQLSyntaxError extends InvalidQueryException {
-  private static final long serialVersionUID = 5388279335175632066L;
-
-  private String query;
-  private String errorMessage;
+public class SQLParseError extends RuntimeException {
+  private String header;
+  private String errorLine;
+  private int charPositionInLine;
+  private int line;
+  private Token offendingToken;
   private String detailedMessage;
-  private TQLParseError parseError;
 
-  public TQLSyntaxError(String query, String errorMessage) {
-    this.query = query;
-    this.errorMessage = errorMessage;
-  }
-
-  public TQLSyntaxError(String query, TQLParseError e) {
-    this.query = query;
-    this.errorMessage = e.getMessage();
-    this.parseError = e;
+  public SQLParseError(Token offendingToken,
+                       int line, int charPositionInLine,
+                       String msg,
+                       String errorLine) {
+    super(msg);
+    this.offendingToken = offendingToken;
+    this.charPositionInLine = charPositionInLine;
+    this.line = line;
+    this.errorLine = errorLine;
+    this.header = msg;
   }
 
   @Override
   public String getMessage() {
     if (detailedMessage == null) {
-      if (parseError != null) {
+      if (offendingToken != null) {
         detailedMessage = getDetailedMessageWithLocation();
       } else {
         StringBuilder sb = new StringBuilder();
-        sb.append("ERROR: " + errorMessage).append("\n");
-        sb.append("LINE: " + query);
+        sb.append("ERROR: ").append(header).append("\n");
+        sb.append("LINE: ").append(errorLine);
         detailedMessage = sb.toString();
       }
     }
@@ -56,35 +58,46 @@ public class TQLSyntaxError extends InvalidQueryException {
     return detailedMessage;
   }
 
+  public String getMessageHeader(){
+    return this.header;
+  }
+
   private String getDetailedMessageWithLocation() {
     StringBuilder sb = new StringBuilder();
     int displayLimit = 80;
-    String queryPrefix = "LINE " + parseError.getErrorLine() + ":" +parseError.getErrorPosition() + " ";
+    String queryPrefix = "LINE " + line + ":" + charPositionInLine + " ";
     String prefixPadding = StringUtils.repeat(" ", queryPrefix.length());
-    String locationString = StringUtils.repeat(" ", parseError.getErrorPosition()) + "^";
+    String locationString;
 
-    sb.append("ERROR: " + this.errorMessage).append("\n");
+    int tokenLength = offendingToken.getStopIndex() - offendingToken.getStartIndex() + 1;
+    if(tokenLength > 0){
+      locationString = StringUtils.repeat(" ", charPositionInLine) + StringUtils.repeat("^", tokenLength);
+    } else {
+      locationString = StringUtils.repeat(" ", charPositionInLine) + "^";
+    }
+
+    sb.append("ERROR: ").append(header).append("\n");
     sb.append(queryPrefix);
 
-    if (query.length() > displayLimit) {
+    if (errorLine.length() > displayLimit) {
       int padding = (displayLimit / 2);
 
       String ellipsis = " ... ";
       int startPos = locationString.length() - padding - 1;
       if (startPos <= 0) {
         startPos = 0;
-        sb.append(query.substring(startPos, displayLimit)).append(ellipsis).append("\n");
+        sb.append(errorLine.substring(startPos, displayLimit)).append(ellipsis).append("\n");
         sb.append(prefixPadding).append(locationString);
-      } else if (query.length() - (locationString.length() + padding) <= 0) {
-        startPos = query.length() - displayLimit - 1;
-        sb.append(ellipsis).append(query.substring(startPos)).append("\n");
+      } else if (errorLine.length() - (locationString.length() + padding) <= 0) {
+        startPos = errorLine.length() - displayLimit - 1;
+        sb.append(ellipsis).append(errorLine.substring(startPos)).append("\n");
         sb.append(prefixPadding).append(locationString.substring(startPos - ellipsis.length()));
       } else {
-        sb.append(ellipsis).append(query.substring(startPos, startPos + displayLimit)).append(ellipsis).append("\n");
+        sb.append(ellipsis).append(errorLine.substring(startPos, startPos + displayLimit)).append(ellipsis).append("\n");
         sb.append(prefixPadding).append(locationString.substring(startPos - ellipsis.length()));
       }
     } else {
-      sb.append(query).append("\n");
+      sb.append(errorLine).append("\n");
       sb.append(prefixPadding).append(locationString);
     }
     return sb.toString();

@@ -40,6 +40,7 @@ import org.apache.tajo.client.ClientProtocol;
 import org.apache.tajo.client.ClientProtocol.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.engine.query.exception.SQLSyntaxError;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.event.QueryEvent;
 import org.apache.tajo.master.event.QueryEventType;
@@ -122,27 +123,35 @@ public class ClientService extends AbstractService {
 
     @Override
     public SubmitQueryRespose submitQuery(RpcController controller,
-                                           QueryRequest request)
+                                          QueryRequest request)
         throws ServiceException {
 
       QueryId queryId;
-
+      SubmitQueryRespose.Builder build = SubmitQueryRespose.newBuilder();
       try {
         queryId = context.getGlobalEngine().executeQuery(request.getQuery());
-      } catch (Exception e) {
-        SubmitQueryRespose.Builder build = SubmitQueryRespose.newBuilder();
+      } catch (SQLSyntaxError e) {
         build.setResultCode(ResultCode.ERROR);
-        if (e.getMessage() != null) {
-          build.setErrorMessage(ExceptionUtils.getStackTrace(e));
-        } else {
-          LOG.error("Internal Error", e);
-          build.setErrorMessage("Internal Error");
+        build.setErrorMessage(e.getMessage());
+        return build.build();
+
+      } catch (Exception e) {
+        build.setResultCode(ResultCode.ERROR);
+        String msg = e.getMessage();
+        if (msg == null) {
+          msg = "Internal Error";
         }
+
+        if (LOG.isDebugEnabled()) {
+          LOG.error(msg, e);
+        } else {
+          LOG.error(msg);
+        }
+        build.setErrorMessage(msg);
         return build.build();
       }
 
       LOG.info("Query " + queryId + " is submitted");
-      SubmitQueryRespose.Builder build = SubmitQueryRespose.newBuilder();
       build.setResultCode(ResultCode.OK);
       build.setQueryId(queryId.getProto());
 
