@@ -30,7 +30,7 @@ public class CommonTestingUtil {
    *
    * @param dir a local directory to be created
    * @return  the created path
-   * @throws IOException
+   * @throws java.io.IOException
    */
   public static Path getTestDir(String dir) throws IOException {
     Path path = new Path(dir);

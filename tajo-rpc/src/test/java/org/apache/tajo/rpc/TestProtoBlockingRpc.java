@@ -30,6 +30,8 @@ import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolBlockingImpl;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -55,8 +57,12 @@ public class TestProtoBlockingRpc {
 
   @AfterClass
   public static void tearDown() throws Exception {
-    client.close();
-    server.shutdown();
+    if(client != null) {
+      client.close();
+    }
+    if(server != null) {
+      server.shutdown();
+    }
   }
 
   @Test
@@ -79,6 +85,61 @@ public class TestProtoBlockingRpc {
   public void testGetNull() throws Exception {
     assertNull(stub.getNull(null, null));
     assertTrue(service.getNullCalled);
+  }
+
+  @Test
+  public void testShutdown() throws Exception {
+    final StringBuilder error = new StringBuilder();
+    Thread callThread = new Thread() {
+      public void run() {
+        try {
+          EchoMessage message = EchoMessage.newBuilder()
+              .setMessage(MESSAGE)
+              .build();
+          stub.deley(null, message);
+//          client.close();
+//          client = null;
+        } catch (Exception e) {
+          e.printStackTrace();
+          error.append(e.getMessage());
+        }
+        synchronized(error) {
+          error.notifyAll();
+        }
+      }
+    };
+
+    callThread.start();
+
+    final CountDownLatch latch = new CountDownLatch(1);
+    Thread shutdownThread = new Thread() {
+      public void run() {
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
+        try {
+          server.shutdown();
+          server = null;
+          latch.countDown();
+        } catch (Throwable e) {
+          e.printStackTrace();
+        }
+      }
+    };
+    shutdownThread.start();
+
+    latch.await(10 * 1000, TimeUnit.MILLISECONDS);
+
+    assertTrue(latch.getCount() == 0);
+
+    synchronized(error) {
+      error.wait(10 * 1000);
+    }
+
+    if(!error.toString().isEmpty()) {
+      fail(error.toString());
+    }
   }
 
   //@Test

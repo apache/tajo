@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.tajo.catalog.*;
@@ -154,7 +155,7 @@ public class TajoTestingCluster {
     System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA,
         this.clusterTestBuildDir.toString());
 
-    MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(conf);
+    MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(new HdfsConfiguration(conf));
     builder.hosts(hosts);
     builder.numDataNodes(servers);
     builder.format(true);
@@ -230,6 +231,8 @@ public class TajoTestingCluster {
     TajoConf c = getConfiguration();
     c.setVar(ConfVars.TASKRUNNER_LISTENER_ADDRESS, "localhost:0");
     c.setVar(ConfVars.CLIENT_SERVICE_ADDRESS, "localhost:0");
+    c.setVar(ConfVars.QUERY_MASTER_MANAGER_SERVICE_ADDRESS, "localhost:0");
+
     c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
     c.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
     c.set(CatalogConstants.JDBC_URI, "jdbc:derby:target/test-data/tcat/db");
@@ -392,11 +395,17 @@ public class TajoTestingCluster {
   }
 
   public void shutdownMiniCluster() throws IOException {
-    LOG.info("Shutting down minicluster");
+    LOG.info("========================================");
+    LOG.info("Shutdown minicluster");
+    LOG.info("========================================");
     shutdownMiniTajoCluster();
 
     if(this.catalogServer != null) {
       shutdownCatalogCluster();
+    }
+
+    if(this.yarnCluster != null) {
+      this.yarnCluster.stop();
     }
 
     if(this.dfsCluster != null) {
@@ -434,38 +443,6 @@ public class TajoTestingCluster {
       TableMeta meta = CatalogUtil
           .newTableMeta(schemas[i], CatalogProtos.StoreType.CSV, option);
       client.createTable(tableNames[i], new Path(tableDir.getAbsolutePath()), meta);
-    }
-    Thread.sleep(1000);
-    ResultSet res = client.executeQueryAndGetResult(query);
-    util.shutdownMiniCluster();
-    return res;
-  }
-
-  public static ResultSet run(String[] names,
-                              String[] tablepaths,
-                              Schema[] schemas,
-                              Options option,
-                              String query) throws Exception {
-    TajoTestingCluster util = new TajoTestingCluster();
-    util.startMiniCluster(1);
-    TajoConf conf = util.getConfiguration();
-    TajoClient client = new TajoClient(conf);
-
-    FileSystem fs = util.getDefaultFileSystem();
-    Path rootDir = util.getMaster().
-        getStorageManager().getBaseDir();
-    fs.mkdirs(rootDir);
-    for (int i = 0; i < tablepaths.length; i++) {
-      Path localPath = new Path(tablepaths[i]);
-      Path tablePath = new Path(rootDir, names[i]);
-      fs.mkdirs(tablePath);
-      Path dataPath = new Path(tablePath, "data");
-      fs.mkdirs(dataPath);
-      Path dfsPath = new Path(dataPath, localPath.getName());
-      fs.copyFromLocalFile(localPath, dfsPath);
-      TableMeta meta = CatalogUtil.newTableMeta(schemas[i],
-          CatalogProtos.StoreType.CSV, option);
-      client.createTable(names[i], tablePath, meta);
     }
     Thread.sleep(1000);
     ResultSet res = client.executeQueryAndGetResult(query);
@@ -554,23 +531,5 @@ public class TajoTestingCluster {
     TajoTestingCluster cluster2 = new TajoTestingCluster();
     File f2 = cluster2.setupClusterTestBuildDir();
     System.out.println("first setupClusterTestBuildDir of cluster2: " + f2);
-    /*
-    String [] names = {"table1"};
-    String [][] tables = new String[1][];
-    tables[0] = new String[] {"a,b,c", "b,c,d"};
-
-    Schema [] schemas = new Schema[1];
-    schemas[0] = new Schema()
-          .addColumn("f1", CatalogProtos.DataType.STRING)
-          .addColumn("f2", CatalogProtos.DataType.STRING)
-          .addColumn("f3", CatalogProtos.DataType.STRING);
-
-    ResultSet res = runInLocal(names, schemas, tables, "select f1 from table1");
-    res.next();
-    System.out.println(res.getString(0));
-    res.next();
-    System.out.println(res.getString(0));
-    System.exit(0);
-    */
 	}
 }

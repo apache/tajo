@@ -52,8 +52,17 @@ public abstract class BenchmarkSet {
   }
 
   protected void loadQueries(String dir) throws IOException {
+    // TODO - this code dead??
     File queryDir = new File(dir);
 
+    if(!queryDir.exists()) {
+      queryDir = new File(System.getProperty("user.dir") + "/tajo-core/tajo-core-backend/" + dir);
+    }
+
+    if(!queryDir.exists())
+    {
+      return;
+    }
     int last;
     String name, query;
     for (String file : queryDir.list()) {

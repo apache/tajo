@@ -16,14 +16,16 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo.engine";
-option java_outer_classname = "MasterWorkerProtos";
-option java_generic_services = false;
+option java_package = "org.apache.tajo.ipc";
+option java_outer_classname = "QueryMasterProtocol";
+option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
-import "CatalogProtos.proto";
-import "TajoIdProtos.proto";
+import "yarn_protos.proto";
 import "tajo_protos.proto";
+import "TajoIdProtos.proto";
+import "CatalogProtos.proto";
+import "PrimitiveProtos.proto";
 
 message TaskStatusProto {
   required QueryUnitAttemptIdProto id = 1;
@@ -115,4 +117,16 @@ message ServerStatusProto {
     required System system = 1;
     repeated Disk disk = 2;
     required int32 taskNum = 3;
+}
+
+service QueryMasterProtocolService {
+  //from Worker
+  rpc getTask(ContainerIdProto) returns (QueryUnitRequestProto);
+  rpc statusUpdate (TaskStatusProto) returns (BoolProto);
+  rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
+  rpc fatalError(TaskFatalErrorReport) returns (BoolProto);
+  rpc done (TaskCompletionReport) returns (BoolProto);
+
+  //from QueryMasterManager
+  rpc executeQuery(StringProto) returns (BoolProto);
 }

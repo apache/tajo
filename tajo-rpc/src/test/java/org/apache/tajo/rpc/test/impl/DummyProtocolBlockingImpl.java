@@ -70,7 +70,7 @@ public class DummyProtocolBlockingImpl implements BlockingInterface {
     try {
       Thread.sleep(3000);
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      //throw new ServiceException(e.getMessage(), e);
     }
 
     return request;

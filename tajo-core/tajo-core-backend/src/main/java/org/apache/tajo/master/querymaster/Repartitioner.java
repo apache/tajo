@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.master.querymaster;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,8 +33,9 @@ import org.apache.tajo.engine.planner.UniformRangePartition;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.master.ExecutionBlock;
 import org.apache.tajo.master.ExecutionBlock.PartitionType;
-import org.apache.tajo.master.QueryUnit.IntermediateEntry;
+import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.util.TUtil;
@@ -55,10 +56,10 @@ public class Repartitioner {
 
   private static int HTTP_REQUEST_MAXIMUM_LENGTH = 1900;
 
-  public static QueryUnit [] createJoinTasks(SubQuery subQuery)
+  public static QueryUnit[] createJoinTasks(SubQuery subQuery)
       throws IOException {
     ExecutionBlock execBlock = subQuery.getBlock();
-    CatalogService catalog = subQuery.getContext().getCatalog();
+    //CatalogService catalog = subQuery.getContext().getCatalog();
 
     ScanNode[] scans = execBlock.getScanNodes();
     Path tablePath;
@@ -68,10 +69,11 @@ public class Repartitioner {
     // initialize variables from the child operators
     for (int i =0; i < 2; i++) {
       // TODO - temporarily tables should be stored in temporarily catalog for each query
+      TableDesc tableDesc = subQuery.getContext().getTableDescMap().get(scans[i].getFromTable().getTableName());
       if (scans[i].getTableId().startsWith(SubQueryId.PREFIX)) {
         tablePath = subQuery.getStorageManager().getTablePath(scans[i].getTableId());
       } else {
-        tablePath = catalog.getTableDesc(scans[i].getTableId()).getPath();
+        tablePath = tableDesc.getPath();
       }
 
       if (scans[i].isLocal()) { // it only requires a dummy fragment.
@@ -80,7 +82,7 @@ public class Repartitioner {
             0, 0, null);
       } else {
         fragments[i] = subQuery.getStorageManager().getSplits(scans[i].getTableId(),
-            catalog.getTableDesc(scans[i].getTableId()).getMeta(),
+                tableDesc.getMeta(),
             new Path(tablePath, "data")).get(0);
       }
 

@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo.client";
-option java_outer_classname = "ClientProtocol";
+option java_package = "org.apache.tajo.ipc";
+option java_outer_classname = "ClientProtos";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
@@ -133,39 +133,4 @@ message AttachTableRequest {
 message TableResponse {
   optional TableDescProto tableDesc = 1;
   optional string errorMessage = 2;
-}
-
-service ClientProtocolService {
-  rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
-  rpc submitQuery(QueryRequest) returns (SubmitQueryResponse);
-  rpc updateQuery(QueryRequest) returns (UpdateQueryResponse);
-  rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
-  rpc getQueryList(GetQueryListRequest) returns (GetQueryListResponse);
-  rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
-  rpc killQuery(ApplicationAttemptIdProto) returns (BoolProto);
-  rpc getClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
-  rpc existTable(StringProto) returns (BoolProto);
-  rpc getTableList(GetTableListRequest) returns (GetTableListResponse);
-  rpc getTableDesc(GetTableDescRequest) returns (TableResponse);
-  rpc createTable(CreateTableRequest) returns (TableResponse);
-  rpc dropTable(StringProto) returns (BoolProto);
-  rpc attachTable(AttachTableRequest) returns (TableResponse);
-  rpc detachTable(StringProto) returns (BoolProto);
-
-
-  // TODO - to be implemented
-  //
-  // authenticate
-  //
-  // getSessionVariableList
-  // dropTable
-  // detachTable
-  // createIndex
-  // dropIndex
-  // registerUDF
-  // dropUDF
-  // listUdfs
-  // getUDFDesc
-  // registerJars
-  // getListRegisteredJars
 }

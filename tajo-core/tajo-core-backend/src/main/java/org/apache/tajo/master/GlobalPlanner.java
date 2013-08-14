@@ -47,7 +47,7 @@ public class GlobalPlanner {
   private StorageManager sm;
   private QueryId queryId;
 
-  public GlobalPlanner(final TajoConf conf, final CatalogService catalog,
+  public GlobalPlanner(final TajoConf conf,
                        final StorageManager sm,
                        final EventHandler eventHandler)
       throws IOException {

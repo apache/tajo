@@ -22,13 +22,16 @@ option java_generic_services = false;
 option java_generate_equals_and_hash = true;
 
 enum QueryState {
-  QUERY_NEW = 0;
-  QUERY_INIT = 1;
-  QUERY_RUNNING = 2;
-  QUERY_SUCCEEDED = 3;
-  QUERY_FAILED = 4;
-  QUERY_KILLED = 5;
-  QUERY_ERROR = 6;
+  QUERY_MASTER_INIT = 0;
+  QUERY_MASTER_LAUNCHED = 1;
+  QUERY_NEW = 2;
+  QUERY_INIT = 3;
+  QUERY_RUNNING = 4;
+  QUERY_SUCCEEDED = 5;
+  QUERY_FAILED = 6;
+  QUERY_KILLED = 7;
+  QUERY_ERROR = 8;
+  QUERY_NOT_ASSIGNED = 9;
 }
 
 enum TaskAttemptState {

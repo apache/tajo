@@ -16,20 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master.querymaster;
 
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.ipc.QueryMasterProtocol.TaskFatalErrorReport;
-
-public class TaskFatalErrorEvent extends TaskAttemptEvent {
-  private TaskFatalErrorReport report;
-  public TaskFatalErrorEvent(TaskFatalErrorReport report) {
-    super(new QueryUnitAttemptId(report.getId()),
-        TaskAttemptEventType.TA_FATAL_ERROR);
-    this.report = report;
-  }
-
-  public String errorMessage() {
-    return report.getErrorMessage();
-  }
+public enum SubQueryState {
+  NEW,
+  CONTAINER_ALLOCATED,
+  INIT,
+  RUNNING,
+  SUCCEEDED,
+  FAILED
 }

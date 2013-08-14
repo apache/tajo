@@ -50,70 +50,86 @@ public class TestSortQuery {
   public final void testSort() throws Exception {
     ResultSet res = tpch.execute(
         "select l_linenumber, l_orderkey from lineitem order by l_orderkey");
-    int cnt = 0;
-    Long prev = null;
-    while(res.next()) {
-      if (prev == null) {
-        prev = res.getLong(2);
-      } else {
-        assertTrue(prev <= res.getLong(2));
-        prev = res.getLong(2);
+    try {
+      int cnt = 0;
+      Long prev = null;
+      while(res.next()) {
+        if (prev == null) {
+          prev = res.getLong(2);
+        } else {
+          assertTrue(prev <= res.getLong(2));
+          prev = res.getLong(2);
+        }
+        cnt++;
       }
-      cnt++;
-    }
 
-    assertEquals(5, cnt);
+      assertEquals(5, cnt);
+    } finally {
+      res.close();
+    }
   }
 
   @Test
   public final void testSortWithAliasKey() throws Exception {
     ResultSet res = tpch.execute(
         "select l_linenumber, l_orderkey as sortkey from lineitem order by sortkey");
-    int cnt = 0;
-    Long prev = null;
-    while(res.next()) {
-      if (prev == null) {
-        prev = res.getLong(2);
-      } else {
-        assertTrue(prev <= res.getLong(2));
-        prev = res.getLong(2);
+    try {
+      int cnt = 0;
+      Long prev = null;
+      while(res.next()) {
+        if (prev == null) {
+          prev = res.getLong(2);
+        } else {
+          assertTrue(prev <= res.getLong(2));
+          prev = res.getLong(2);
+        }
+        cnt++;
       }
-      cnt++;
-    }
 
-    assertEquals(5, cnt);
+      assertEquals(5, cnt);
+    } finally {
+      res.close();
+    }
   }
 
   @Test
   public final void testSortDesc() throws Exception {
     ResultSet res = tpch.execute(
         "select l_linenumber, l_orderkey from lineitem order by l_orderkey desc");
-    int cnt = 0;
-    Long prev = null;
-    while(res.next()) {
-      if (prev == null) {
-        prev = res.getLong(2);
-      } else {
-        assertTrue(prev >= res.getLong(2));
-        prev = res.getLong(2);
+    try {
+      int cnt = 0;
+      Long prev = null;
+      while(res.next()) {
+        if (prev == null) {
+          prev = res.getLong(2);
+        } else {
+          assertTrue(prev >= res.getLong(2));
+          prev = res.getLong(2);
+        }
+        cnt++;
       }
-      cnt++;
-    }
 
-    assertEquals(5, cnt);
+      assertEquals(5, cnt);
+    } finally {
+      res.close();
+    }
   }
 
   @Test
   public final void testTopK() throws Exception {
     ResultSet res = tpch.execute(
         "select l_orderkey, l_linenumber from lineitem order by l_orderkey desc limit 3");
-    assertTrue(res.next());
-    assertEquals(3, res.getLong(1));
-    assertTrue(res.next());
-    assertEquals(3, res.getLong(1));
-    assertTrue(res.next());
-    assertEquals(2, res.getLong(1));
-    assertFalse(res.next());
+    try {
+      assertTrue(res.next());
+      assertEquals(3, res.getLong(1));
+      assertTrue(res.next());
+      assertEquals(3, res.getLong(1));
+      assertTrue(res.next());
+      assertEquals(2, res.getLong(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
   }
 
   @Test
@@ -121,19 +137,23 @@ public class TestSortQuery {
     ResultSet res = tpch.execute("select max(l_quantity), l_orderkey "
         + "from lineitem group by l_orderkey order by l_orderkey");
 
-    int cnt = 0;
-    Long prev = null;
-    while(res.next()) {
-      if (prev == null) {
-        prev = res.getLong(1);
-      } else {
-        assertTrue(prev <= res.getLong(1));
-        prev = res.getLong(1);
+    try {
+      int cnt = 0;
+      Long prev = null;
+      while(res.next()) {
+        if (prev == null) {
+          prev = res.getLong(1);
+        } else {
+          assertTrue(prev <= res.getLong(1));
+          prev = res.getLong(1);
+        }
+        cnt++;
       }
-      cnt++;
-    }
 
-    assertEquals(3, cnt);
+      assertEquals(3, cnt);
+    } finally {
+      res.close();
+    }
   }
 
   @Test
@@ -141,18 +161,22 @@ public class TestSortQuery {
     ResultSet res = tpch.execute("select max(l_quantity) as max_quantity, l_orderkey "
         + "from lineitem group by l_orderkey order by max_quantity");
 
-    int cnt = 0;
-    Long prev = null;
-    while(res.next()) {
-      if (prev == null) {
-        prev = res.getLong(1);
-      } else {
-        assertTrue(prev <= res.getLong(1));
-        prev = res.getLong(1);
+    try {
+      int cnt = 0;
+      Long prev = null;
+      while(res.next()) {
+        if (prev == null) {
+          prev = res.getLong(1);
+        } else {
+          assertTrue(prev <= res.getLong(1));
+          prev = res.getLong(1);
+        }
+        cnt++;
       }
-      cnt++;
-    }
 
-    assertEquals(3, cnt);
+      assertEquals(3, cnt);
+    } finally {
+      res.close();
+    }
   }
 }

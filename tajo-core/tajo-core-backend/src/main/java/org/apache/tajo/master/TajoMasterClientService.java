@@ -36,14 +36,14 @@ import org.apache.tajo.catalog.exception.AlreadyExistsTableException;
 import org.apache.tajo.catalog.exception.NoSuchTableException;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.catalog.statistics.TableStat;
-import org.apache.tajo.client.ClientProtocol;
-import org.apache.tajo.client.ClientProtocol.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.exception.SQLSyntaxError;
+import org.apache.tajo.ipc.ClientProtos.*;
+import org.apache.tajo.ipc.TajoMasterClientProtocol;
+import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.master.event.QueryEvent;
-import org.apache.tajo.master.event.QueryEventType;
+import org.apache.tajo.master.querymaster.QueryMasterManager;
 import org.apache.tajo.rpc.ProtoBlockingRpcServer;
 import org.apache.tajo.rpc.RemoteException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
@@ -54,12 +54,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 
-public class ClientService extends AbstractService {
-  private final static Log LOG = LogFactory.getLog(ClientService.class);
+public class TajoMasterClientService extends AbstractService {
+  private final static Log LOG = LogFactory.getLog(TajoMasterClientService.class);
   private final MasterContext context;
   private final TajoConf conf;
   private final CatalogService catalog;
-  private final ClientProtocolHandler clientHandler;
+  private final TajoMasterClientProtocolServiceHandler clientHandler;
   private ProtoBlockingRpcServer server;
   private InetSocketAddress bindAddress;
 
@@ -68,12 +68,12 @@ public class ClientService extends AbstractService {
   private final BoolProto BOOL_FALSE =
       BoolProto.newBuilder().setValue(false).build();
 
-  public ClientService(MasterContext context) {
-    super(ClientService.class.getName());
+  public TajoMasterClientService(MasterContext context) {
+    super(TajoMasterClientService.class.getName());
     this.context = context;
     this.conf = context.getConf();
     this.catalog = context.getCatalog();
-    this.clientHandler = new ClientProtocolHandler();
+    this.clientHandler = new TajoMasterClientProtocolServiceHandler();
   }
 
   @Override
@@ -83,7 +83,7 @@ public class ClientService extends AbstractService {
     String confClientServiceAddr = conf.getVar(ConfVars.CLIENT_SERVICE_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
     try {
-      server = new ProtoBlockingRpcServer(ClientProtocol.class, clientHandler, initIsa);
+      server = new ProtoBlockingRpcServer(TajoMasterClientProtocol.class, clientHandler, initIsa);
     } catch (Exception e) {
       LOG.error(e);
     }
@@ -91,13 +91,15 @@ public class ClientService extends AbstractService {
     bindAddress = server.getBindAddress();
     this.conf.setVar(ConfVars.CLIENT_SERVICE_ADDRESS,
         org.apache.tajo.util.NetUtils.getIpPortString(bindAddress));
-    LOG.info("Instantiated ClientService at " + this.bindAddress);
+    LOG.info("Instantiated TajoMasterClientService at " + this.bindAddress);
     super.start();
   }
 
   @Override
   public void stop() {
-    server.shutdown();
+    if (server != null) {
+      server.shutdown();
+    }
     super.stop();
   }
 
@@ -110,10 +112,9 @@ public class ClientService extends AbstractService {
   }
 
   /////////////////////////////////////////////////////////////////////////////
-  // ClientService
+  // TajoMasterClientProtocolService
   /////////////////////////////////////////////////////////////////////////////
-
-  public class ClientProtocolHandler implements ClientProtocolService.BlockingInterface {
+  public class TajoMasterClientProtocolServiceHandler implements TajoMasterClientProtocolService.BlockingInterface {
     @Override
     public BoolProto updateSessionVariables(RpcController controller,
                                             UpdateSessionVariableRequest request)
@@ -122,12 +123,12 @@ public class ClientService extends AbstractService {
     }
 
     @Override
-    public SubmitQueryRespose submitQuery(RpcController controller,
-                                          QueryRequest request)
+    public SubmitQueryResponse submitQuery(RpcController controller,
+                                           QueryRequest request)
         throws ServiceException {
 
       QueryId queryId;
-      SubmitQueryRespose.Builder build = SubmitQueryRespose.newBuilder();
+      SubmitQueryResponse.Builder build = SubmitQueryResponse.newBuilder();
       try {
         queryId = context.getGlobalEngine().executeQuery(request.getQuery());
       } catch (SQLSyntaxError e) {
@@ -182,16 +183,13 @@ public class ClientService extends AbstractService {
                                                  GetQueryResultRequest request)
         throws ServiceException {
       QueryId queryId = new QueryId(request.getQueryId());
-      if (queryId.equals(TajoIdUtils.NullQueryId)) {
-
-      }
-      Query query = context.getQuery(queryId).getContext().getQuery();
+      QueryMasterManager queryMasterManager = context.getQuery(queryId);
 
       GetQueryResultResponse.Builder builder
           = GetQueryResultResponse.newBuilder();
-      switch (query.getState()) {
+      switch (queryMasterManager.getState()) {
         case QUERY_SUCCEEDED:
-          builder.setTableDesc((TableDescProto) query.getResultDesc().getProto());
+          builder.setTableDesc((TableDescProto) queryMasterManager.getResultDesc().getProto());
           break;
         case QUERY_FAILED:
         case QUERY_ERROR:
@@ -224,16 +222,19 @@ public class ClientService extends AbstractService {
         builder.setResultCode(ResultCode.OK);
         builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
       } else {
-        Query query = context.getQuery(queryId).getContext().getQuery();
-        if (query != null) {
+        QueryMasterManager queryMasterManager = context.getQuery(queryId);
+        if (queryMasterManager != null) {
           builder.setResultCode(ResultCode.OK);
-          builder.setState(query.getState());
-          builder.setProgress(query.getProgress());
-          builder.setSubmitTime(query.getAppSubmitTime());
-          builder.setInitTime(query.getInitializationTime());
-          builder.setHasResult(!query.isCreateTableStmt());
-          if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
-            builder.setFinishTime(query.getFinishTime());
+          builder.setState(queryMasterManager.getState());
+          builder.setProgress(queryMasterManager.getProgress());
+          builder.setSubmitTime(queryMasterManager.getAppSubmitTime());
+          if(queryMasterManager.getQueryMasterHost() != null) {
+            builder.setQueryMasterHost(queryMasterManager.getQueryMasterHost());
+            builder.setQueryMasterPort(queryMasterManager.getQueryMasterClientPort());
+          }
+
+          if (queryMasterManager.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+            builder.setFinishTime(queryMasterManager.getFinishTime());
           } else {
             builder.setFinishTime(System.currentTimeMillis());
           }
@@ -251,8 +252,8 @@ public class ClientService extends AbstractService {
                                ApplicationAttemptIdProto request)
         throws ServiceException {
       QueryId queryId = new QueryId(request);
-      QueryMaster query = context.getQuery(queryId);
-      query.handle(new QueryEvent(queryId, QueryEventType.KILL));
+      QueryMasterManager queryMasterManager = context.getQuery(queryId);
+      //queryMasterManager.handle(new QueryEvent(queryId, QueryEventType.KILL));
 
       return BOOL_TRUE;
     }

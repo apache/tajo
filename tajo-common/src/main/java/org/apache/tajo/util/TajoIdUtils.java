@@ -21,11 +21,20 @@ package org.apache.tajo.util;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.util.BuilderUtils;
+import org.apache.hadoop.yarn.util.Records;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SubQueryId;
 import org.apache.tajo.TajoIdProtos.SubQueryIdProto;
 
+import java.util.Iterator;
+
+import static org.apache.hadoop.yarn.util.StringHelper._split;
+
 public class TajoIdUtils {
+  public static final String YARN_APPLICATION_PREFIX = "application";
+  public static final String YARN_CONTAINER_PREFIX = "container";
+  public static final String YARN_APPLICATION_ATTEMPT_PREFIX = "appattempt";
+
   /** It is mainly for DDL statements which don's have any query id. */
   public static final QueryId NullQueryId =
       TajoIdUtils.createQueryId(BuilderUtils.newApplicationId(0, 0), 0);
@@ -45,7 +54,7 @@ public class TajoIdUtils {
     String[] split = queryId.split(QueryId.SEPARATOR);
     ApplicationId appId = BuilderUtils.newApplicationId(Long.valueOf(split[1]),
         Integer.parseInt(split[2]));
-    int idInt = Integer.parseInt(split[2]);
+    int idInt = Integer.parseInt(split[3]);
     return newQueryId(appId, idInt);
   }
 
@@ -79,5 +88,34 @@ public class TajoIdUtils {
   public static SubQueryId newSubQueryId(SubQueryIdProto proto) {
     SubQueryId subId = new SubQueryId(proto);
     return subId;
+  }
+
+  public static ApplicationAttemptId toApplicationAttemptId(
+          String applicationAttmeptIdStr) {
+    //This methood from YARN.ConvertUtils
+    Iterator<String> it = _split(applicationAttmeptIdStr).iterator();
+    if (!it.next().equals(YARN_APPLICATION_ATTEMPT_PREFIX)) {
+      throw new IllegalArgumentException("Invalid AppAttemptId prefix: "
+              + applicationAttmeptIdStr);
+    }
+    try {
+      return toApplicationAttemptId(it);
+    } catch (NumberFormatException n) {
+      throw new IllegalArgumentException("Invalid AppAttemptId: "
+              + applicationAttmeptIdStr, n);
+    }
+  }
+
+  private static ApplicationAttemptId toApplicationAttemptId(
+          Iterator<String> it) throws NumberFormatException {
+    //This methood from YARN.ConvertUtils
+    ApplicationId appId = Records.newRecord(ApplicationId.class);
+    appId.setClusterTimestamp(Long.parseLong(it.next()));
+    appId.setId(Integer.parseInt(it.next()));
+    ApplicationAttemptId appAttemptId = Records
+            .newRecord(ApplicationAttemptId.class);
+    appAttemptId.setApplicationId(appId);
+    appAttemptId.setAttemptId(Integer.parseInt(it.next()));
+    return appAttemptId;
   }
 }

@@ -20,7 +20,7 @@ package org.apache.tajo.client;
 
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos.QueryState;
-import org.apache.tajo.client.ClientProtocol.GetQueryStatusResponse;
+import org.apache.tajo.ipc.ClientProtos.GetQueryStatusResponse;
 
 public class QueryStatus {
   private QueryId queryId;
@@ -31,6 +31,8 @@ public class QueryStatus {
   private long finishTime;
   private boolean hasResult;
   private String errorText;
+  private String queryMasterHost;
+  private int queryMasterPort;
 
   public QueryStatus(GetQueryStatusResponse proto) {
     queryId = new QueryId(proto.getQueryId());
@@ -43,6 +45,17 @@ public class QueryStatus {
     if (proto.hasErrorMessage()) {
       errorText = proto.getErrorMessage();
     }
+
+    queryMasterHost = proto.getQueryMasterHost();
+    queryMasterPort = proto.getQueryMasterPort();
+  }
+
+  public String getQueryMasterHost() {
+    return queryMasterHost;
+  }
+
+  public int getQueryMasterPort() {
+    return queryMasterPort;
   }
 
   public QueryId getQueryId() {

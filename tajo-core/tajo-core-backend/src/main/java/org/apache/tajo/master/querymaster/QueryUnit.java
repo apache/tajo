@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.master.querymaster;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
@@ -30,8 +30,9 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.QueryUnitId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStat;
-import org.apache.tajo.engine.MasterWorkerProtos.Partition;
+import org.apache.tajo.ipc.QueryMasterProtocol.Partition;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.Fragment;
 

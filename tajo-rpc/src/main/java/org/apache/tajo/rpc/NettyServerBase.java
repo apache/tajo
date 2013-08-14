@@ -20,9 +20,6 @@ package org.apache.tajo.rpc;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configuration.IntegerRanges;
-import org.apache.hadoop.net.NetUtils;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
@@ -30,7 +27,9 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.util.Random;
 import java.util.concurrent.Executors;
 
@@ -42,7 +41,7 @@ public class NettyServerBase {
   protected ChannelFactory factory;
   protected ChannelPipelineFactory pipelineFactory;
   protected ServerBootstrap bootstrap;
-  private Channel channel;
+  protected Channel channel;
 
   public NettyServerBase(InetSocketAddress addr) {
     if (addr.getPort() == 0) {
@@ -81,39 +80,8 @@ public class NettyServerBase {
   public void start() {
     this.channel = bootstrap.bind(serverAddr);
     this.bindAddress = (InetSocketAddress) channel.getLocalAddress();
-    LOG.info("RpcServer on " + this.bindAddress);
-  }
 
-  public static void bind(ServerSocket socket, InetSocketAddress address,
-                          int backlog, Configuration conf, String rangeConf) throws IOException {
-    try {
-      IntegerRanges range = null;
-      if (rangeConf != null) {
-        range = conf.getRange(rangeConf, "");
-      }
-      if (range == null || range.isEmpty() || (address.getPort() != 0)) {
-        socket.bind(address, backlog);
-      } else {
-        for (Integer port : range) {
-          if (socket.isBound()) break;
-          try {
-            InetSocketAddress temp = new InetSocketAddress(address.getAddress(),
-                port);
-            socket.bind(temp, backlog);
-          } catch(BindException e) {
-            //Ignored
-          }
-        }
-        if (!socket.isBound()) {
-          throw new BindException("Could not find a free port in "+range);
-        }
-      }
-    } catch (SocketException e) {
-      throw NetUtils.wrapException(null,
-          0,
-          address.getHostName(),
-          address.getPort(), e);
-    }
+    LOG.info("RpcServer on " + this.bindAddress);
   }
 
   public Channel getChannel() {
@@ -121,16 +89,22 @@ public class NettyServerBase {
   }
 
   public void shutdown() {
-    channel.close().awaitUninterruptibly();
+    if(channel != null) {
+      channel.close().awaitUninterruptibly();
+    }
+    if(factory != null) {
+      factory.releaseExternalResources();
+    }
     LOG.info("RpcServer (" + org.apache.tajo.util.NetUtils.getIpPortString(bindAddress)
         + ") shutdown");
   }
 
   private static final Random randomPort = new Random(System.currentTimeMillis());
-  private static int getUnusedPort() throws IOException {
+  private synchronized static int getUnusedPort() throws IOException {
     while (true) {
       int port = randomPort.nextInt(10000) + 50000;
       if (available(port)) {
+        LOG.info("Found unused port:" + port);
         return port;
       }
     }

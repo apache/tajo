@@ -25,17 +25,18 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.YarnException;
 import org.apache.hadoop.yarn.api.protocolrecords.AllocateResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
-import org.apache.hadoop.yarn.api.records.*;
+import org.apache.hadoop.yarn.api.records.AMResponse;
+import org.apache.hadoop.yarn.api.records.Container;
+import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.client.AMRMClientImpl;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
 import org.apache.tajo.SubQueryId;
-import org.apache.tajo.TajoProtos.QueryState;
-import org.apache.tajo.master.QueryMaster.QueryContext;
-import org.apache.tajo.master.SubQueryState;
 import org.apache.tajo.master.event.ContainerAllocationEvent;
 import org.apache.tajo.master.event.ContainerAllocatorEventType;
 import org.apache.tajo.master.event.SubQueryContainerAllocationEvent;
+import org.apache.tajo.master.querymaster.QueryMaster.QueryContext;
+import org.apache.tajo.master.querymaster.SubQueryState;
 
 import java.util.HashMap;
 import java.util.List;
@@ -115,9 +116,10 @@ public class RMContainerAllocator extends AMRMClientImpl
             if (!stopped.get()) {
               LOG.warn("Allocated thread interrupted. Returning.");
             }
-            return;
+            break;
           }
         }
+        LOG.info("Allocated thread stopped");
       }
     });
     allocatorThread.setName("RMContainerAllocator");
@@ -126,24 +128,9 @@ public class RMContainerAllocator extends AMRMClientImpl
 
   public void stop() {
     stopped.set(true);
+    allocatorThread.interrupt();
+    LOG.info("RMContainerAllocator stopped");
     super.stop();
-    FinalApplicationStatus finishState = FinalApplicationStatus.UNDEFINED;
-    QueryState state = context.getQuery().getState();
-    if (state == QueryState.QUERY_SUCCEEDED) {
-      finishState = FinalApplicationStatus.SUCCEEDED;
-    } else if (state == QueryState.QUERY_KILLED
-        || (state == QueryState.QUERY_RUNNING)) {
-      finishState = FinalApplicationStatus.KILLED;
-    } else if (state == QueryState.QUERY_FAILED
-        || state == QueryState.QUERY_ERROR) {
-      finishState = FinalApplicationStatus.FAILED;
-    }
-
-    try {
-      unregisterApplicationMaster(finishState, "", "http://localhost:1234");
-    } catch (YarnRemoteException e) {
-      LOG.error(e);
-    }
   }
 
   private final Map<Priority, SubQueryId> subQueryMap =

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.master.querymaster;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -34,7 +34,6 @@ import org.apache.hadoop.yarn.util.Records;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitId;
 import org.apache.tajo.SubQueryId;
-import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
@@ -47,9 +46,13 @@ import org.apache.tajo.engine.planner.logical.ExprType;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
-import org.apache.tajo.master.QueryMaster.QueryContext;
+import org.apache.tajo.master.ExecutionBlock;
+import org.apache.tajo.master.TaskRunnerGroupEvent;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
+import org.apache.tajo.master.TaskScheduler;
+import org.apache.tajo.master.TaskSchedulerImpl;
 import org.apache.tajo.master.event.*;
+import org.apache.tajo.master.querymaster.QueryMaster.QueryContext;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.StorageManager;
 
@@ -592,10 +595,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
 
     public static long getInputVolume(QueryContext context, ExecutionBlock execBlock) {
-      CatalogService catalog = context.getCatalog();
+      Map<String, TableDesc> tableMap = context.getTableDescMap();
       if (execBlock.isLeafBlock()) {
         ScanNode outerScan = execBlock.getScanNodes()[0];
-        TableStat stat = catalog.getTableDesc(outerScan.getTableId()).getMeta().getStat();
+        TableStat stat = tableMap.get(outerScan.getFromTable().getTableName()).getMeta().getStat();
         return stat.getNumBytes();
       } else {
         long aggregatedVolume = 0;
@@ -616,11 +619,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       int numRequest = Math.min(tasks.length, numClusterNodes * 4);
 
       final Resource resource = Records.newRecord(Resource.class);
-      if (tasks.length <= numClusterNodes) {
-        resource.setMemory(subQuery.context.getMaxContainerCapability());
-      } else {
-        resource.setMemory(2000);
-      }
+      // TODO - for each different subquery, the volume of resource should be different.
+      resource.setMemory(2000);
 
       Priority priority = Records.newRecord(Priority.class);
       priority.setPriority(subQuery.getPriority());
@@ -639,7 +639,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       Path inputPath;
 
       ScanNode scan = scans[0];
-      TableDesc desc = subQuery.context.getCatalog().getTableDesc(scan.getTableId());
+      TableDesc desc = subQuery.context.getTableDescMap().get(scan.getFromTable().getTableName());
       inputPath = desc.getPath();
       meta = desc.getMeta();
 

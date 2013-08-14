@@ -15,6 +15,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-91: Launch QueryMaster on NodeManager per query. 
+    (hyoungjunkim via hyunsik)
+
     TAJO-100: Port the parse error handling to the new parser. (jinho)
 
     TAJO-121: Add LogicalPlanVisitor and Refactor LogicalOptimizer to use the

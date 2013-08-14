@@ -18,14 +18,16 @@
 
 package org.apache.tajo.master;
 
-import org.apache.tajo.TestTajoIds;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
-import org.junit.Test;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SubQueryId;
+import org.apache.tajo.TestTajoIds;
 import org.apache.tajo.master.ExecutionBlock.PartitionType;
+import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.master.querymaster.Repartitioner;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
+import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+import org.junit.Test;
 
 import java.net.URI;
 import java.util.*;
@@ -48,7 +50,7 @@ public class TestRepartitioner {
 
     Collection<URI> uris = Repartitioner.
         createHashFetchURL(hostName + ":" + port, sid, partitionId,
-            PartitionType.HASH, intermediateEntries);
+                PartitionType.HASH, intermediateEntries);
 
     List<String> taList = TUtil.newList();
     for (URI uri : uris) {

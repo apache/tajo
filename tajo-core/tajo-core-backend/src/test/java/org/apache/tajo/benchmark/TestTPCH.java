@@ -53,15 +53,20 @@ public class TestTPCH {
     ResultSet res = tpch.execute("select l_returnflag, l_linestatus, count(*) as count_order from lineitem " +
         "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
 
-    Map<String,Integer> result = Maps.newHashMap();
-    result.put("NO", 3);
-    result.put("RF", 2);
+    try {
+      Map<String,Integer> result = Maps.newHashMap();
+      result.put("NO", 3);
+      result.put("RF", 2);
 
-    res.next();
-    assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
-    res.next();
-    assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
-    assertFalse(res.next());
+      assertNotNull(res);
+      assertTrue(res.next());
+      assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
+      assertTrue(res.next());
+      assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
   }
 
   @Test
@@ -74,12 +79,16 @@ public class TestTPCH {
             "join partsupp on s_suppkey = ps_suppkey " +
             "join part on p_partkey = ps_partkey and p_type like '%BRASS' and p_size = 15");
 
-    assertTrue(res.next());
-    assertEquals("AMERICA", res.getString(10));
-    String [] pType = res.getString(11).split(" ");
-    assertEquals("BRASS", pType[pType.length - 1]);
-    assertEquals(15, res.getInt(12));
-    assertFalse(res.next());
+    try {
+      assertTrue(res.next());
+      assertEquals("AMERICA", res.getString(10));
+      String [] pType = res.getString(11).split(" ");
+      assertEquals("BRASS", pType[pType.length - 1]);
+      assertEquals(15, res.getInt(12));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
   }
 
   @Test
@@ -88,7 +97,11 @@ public class TestTPCH {
         "case when p_type like 'PROMO%' then l_extendedprice else 0.0 end) / sum(l_extendedprice * (1 - l_discount)) "
         + "as promo_revenue from lineitem, part where l_partkey = p_partkey");
 
-    res.next();
-    assertEquals(33, res.getInt(1));
+    try {
+      assertTrue(res.next());
+      assertEquals(33, res.getInt(1));
+    } finally {
+      res.close();
+    }
   }
 }

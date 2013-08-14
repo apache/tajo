@@ -28,12 +28,11 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.client.ClientProtocol;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.master.cluster.ServerName;
+import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TajoIdUtils;
 
@@ -265,7 +264,6 @@ public class TajoCli {
   }
 
   public int executeStatements(String line) throws Exception {
-
     String stripped;
     for (String statement : line.split(";")) {
       stripped = StringUtils.chomp(statement);
@@ -284,14 +282,20 @@ public class TajoCli {
         invokeCommand(cmds);
 
       } else { // submit a query to TajoMaster
-        ClientProtocol.SubmitQueryRespose response = client.executeQuery(stripped);
-
-        if (response.getResultCode() == ClientProtocol.ResultCode.OK) {
-          QueryId queryId = new QueryId(response.getQueryId());
-          if (queryId.equals(TajoIdUtils.NullQueryId)) {
-            sout.println("OK");
-          } else {
-            getQueryResult(queryId);
+        ClientProtos.SubmitQueryResponse response = client.executeQuery(stripped);
+        if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+          QueryId queryId = null;
+          try {
+            queryId = new QueryId(response.getQueryId());
+            if (queryId.equals(TajoIdUtils.NullQueryId)) {
+              sout.println("OK");
+            } else {
+              getQueryResult(queryId);
+            }
+          } finally {
+            if(queryId != null) {
+              client.closeQuery(queryId);
+            }
           }
         } else {
         if (response.hasErrorMessage()) {
@@ -318,8 +322,13 @@ public class TajoCli {
 
       QueryStatus status;
       while (true) {
+        // TODO - configurable
         Thread.sleep(1000);
         status = client.getQueryStatus(queryId);
+        if(status.getState() == QueryState.QUERY_MASTER_INIT || status.getState() == QueryState.QUERY_MASTER_LAUNCHED) {
+          continue;
+        }
+
         if (status.getState() == QueryState.QUERY_RUNNING ||
             status.getState() == QueryState.QUERY_SUCCEEDED) {
           sout.println("Progress: " + (int)(status.getProgress() * 100.0f)
@@ -328,7 +337,7 @@ public class TajoCli {
           sout.flush();
         }
 
-        if (status.getState() != QueryState.QUERY_RUNNING) {
+        if (status.getState() != QueryState.QUERY_RUNNING && status.getState() != QueryState.QUERY_NOT_ASSIGNED) {
           break;
         }
       }

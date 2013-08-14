@@ -37,11 +37,9 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.SubQueryId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.MasterWorkerProtos.QueryUnitRequestProto;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
-import org.apache.tajo.ipc.MasterWorkerProtocol;
-import org.apache.tajo.ipc.MasterWorkerProtocol.MasterWorkerProtocolService;
-import org.apache.tajo.ipc.MasterWorkerProtocol.MasterWorkerProtocolService.Interface;
+import org.apache.tajo.ipc.QueryMasterProtocol;
+import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService.*;
 import org.apache.tajo.rpc.CallFuture2;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.ProtoAsyncRpcClient;
@@ -53,7 +51,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Map;
 import java.util.concurrent.*;
 
-import static org.apache.tajo.engine.MasterWorkerProtos.TaskFatalErrorReport;
+import static org.apache.tajo.ipc.QueryMasterProtocol.*;
 
 /**
  * The driver class for Tajo QueryUnit processing.
@@ -72,7 +70,7 @@ public class TaskRunner extends AbstractService {
   private final ContainerId containerId;
 
   // Cluster Management
-  private MasterWorkerProtocolService.Interface master;
+  private QueryMasterProtocol.QueryMasterProtocolService.Interface master;
 
   // for temporal or intermediate files
   private FileSystem localFS;
@@ -186,7 +184,7 @@ public class TaskRunner extends AbstractService {
       return nodeId.toString();
     }
 
-    public MasterWorkerProtocolService.Interface getMaster() {
+    public QueryMasterProtocolService.Interface getMaster() {
       return master;
     }
 
@@ -223,7 +221,7 @@ public class TaskRunner extends AbstractService {
     }
   }
 
-  static void fatalError(MasterWorkerProtocolService.Interface proxy,
+  static void fatalError(QueryMasterProtocolService.Interface proxy,
                          QueryUnitAttemptId taskAttemptId, String message) {
     TaskFatalErrorReport.Builder builder = TaskFatalErrorReport.newBuilder()
         .setId(taskAttemptId.getProto())
@@ -338,11 +336,11 @@ public class TaskRunner extends AbstractService {
   /**
    * TaskRunner takes 5 arguments as follows:
    * <ol>
-   * <li>1st: TaskRunnerListener hostname</li>
-   * <li>2nd: TaskRunnerListener port</li>
-   * <li>3nd: SubQueryId</li>
-   * <li>4th: NodeId</li>
-   * <li>5th: ContainerId</li>
+   * <li>1st: SubQueryId</li>
+   * <li>2nd: NodeId</li>
+   * <li>3nd: ContainerId</li>
+   * <li>4th: QueryMaster hostname</li>
+   * <li>5th: QueryMaster port</li>
    * </ol>
    */
   public static void main(String[] args) throws Exception {
@@ -356,17 +354,17 @@ public class TaskRunner extends AbstractService {
 
     UserGroupInformation.setConfiguration(conf);
 
-    // TaskRunnerListener's address
-    String host = args[0];
-    int port = Integer.parseInt(args[1]);
-    final InetSocketAddress masterAddr =
-        NetUtils.createSocketAddrForHost(host, port);
-
     // SubQueryId from String
-    final SubQueryId subQueryId = TajoIdUtils.newSubQueryId(args[2]);
+    final SubQueryId subQueryId = TajoIdUtils.newSubQueryId(args[0]);
     // NodeId has a form of hostname:port.
-    NodeId nodeId = ConverterUtils.toNodeId(args[3]);
-    ContainerId containerId = ConverterUtils.toContainerId(args[4]);
+    NodeId nodeId = ConverterUtils.toNodeId(args[1]);
+    ContainerId containerId = ConverterUtils.toContainerId(args[2]);
+
+    // QueryMaster's address
+    String host = args[3];
+    int port = Integer.parseInt(args[4]);
+    final InetSocketAddress masterAddr =
+            NetUtils.createSocketAddrForHost(host, port);
 
     // TODO - 'load credential' should be implemented
     // Getting taskOwner
@@ -374,26 +372,29 @@ public class TaskRunner extends AbstractService {
         UserGroupInformation.createRemoteUser(conf.getVar(ConfVars.QUERY_USERNAME));
     //taskOwner.addToken(token);
 
-    // TaskRunnerListener RPC
+    // QueryMasterService RPC
     ProtoAsyncRpcClient client;
-    MasterWorkerProtocolService.Interface master;
+    QueryMasterProtocolService.Interface master;
 
     // initialize MasterWorkerProtocol as an actual task owner.
     client =
         taskOwner.doAs(new PrivilegedExceptionAction<ProtoAsyncRpcClient>() {
           @Override
           public ProtoAsyncRpcClient run() throws Exception {
-            return new ProtoAsyncRpcClient(MasterWorkerProtocol.class, masterAddr);
+            return new ProtoAsyncRpcClient(QueryMasterProtocol.class, masterAddr);
           }
         });
     master = client.getStub();
 
 
     TaskRunner taskRunner = new TaskRunner(subQueryId, nodeId, taskOwner, master, containerId);
-    taskRunner.init(conf);
-    taskRunner.start();
-    client.close();
-    LOG.info("TaskRunner (" + nodeId + ") main thread exiting");
-    System.exit(0);
+    try {
+      taskRunner.init(conf);
+      taskRunner.start();
+    } finally {
+      client.close();
+      LOG.info("TaskRunner (" + nodeId + ") main thread exiting");
+      System.exit(0);
+    }
   }
 }

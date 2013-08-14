@@ -55,9 +55,13 @@ public class TestNullValues {
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable1 where col2 is null");
-    assertTrue(res.next());
-    assertEquals(2, res.getInt(1));
-    assertFalse(res.next());
+    try {
+      assertTrue(res.next());
+      assertEquals(2, res.getInt(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
   }
 
   @Test
@@ -77,11 +81,15 @@ public class TestNullValues {
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable2 where col2 is not null");
-    assertTrue(res.next());
-    assertEquals(1, res.getInt(1));
-    assertTrue(res.next());
-    assertEquals(3, res.getInt(1));
-    assertFalse(res.next());
+    try {
+      assertTrue(res.next());
+      assertEquals(1, res.getInt(1));
+      assertTrue(res.next());
+      assertEquals(3, res.getInt(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
   }
 
   @Test
@@ -108,8 +116,12 @@ public class TestNullValues {
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable3 where col1 is null and col2 is null and col3 is null and col4 = 43578");
-    assertTrue(res.next());
-    assertEquals(43578, res.getLong(4));
-    assertFalse(res.next());
+    try {
+      assertTrue(res.next());
+      assertEquals(43578, res.getLong(4));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
   }
 }

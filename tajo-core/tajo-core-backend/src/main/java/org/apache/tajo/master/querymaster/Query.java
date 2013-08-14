@@ -16,13 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.master.querymaster;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.Clock;
 import org.apache.hadoop.yarn.event.EventHandler;
@@ -34,8 +32,10 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableDescImpl;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.master.QueryMaster.QueryContext;
+import org.apache.tajo.master.ExecutionBlock;
+import org.apache.tajo.master.ExecutionBlockCursor;
 import org.apache.tajo.master.event.*;
+import org.apache.tajo.master.querymaster.QueryMaster.QueryContext;
 import org.apache.tajo.storage.StorageManager;
 
 import java.io.IOException;
@@ -110,7 +110,8 @@ public class Query implements EventHandler<QueryEvent> {
                final long appSubmitTime,
                final String queryStr,
                final EventHandler eventHandler,
-               final MasterPlan plan, final StorageManager sm) {
+               final MasterPlan plan,
+               final StorageManager sm) {
     this.context = context;
     this.conf = context.getConf();
     this.id = id;
@@ -134,9 +135,9 @@ public class Query implements EventHandler<QueryEvent> {
     return context.isCreateTableQuery();
   }
 
-  protected FileSystem getFileSystem(Configuration conf) throws IOException {
-    return FileSystem.get(conf);
-  }
+//  protected FileSystem getFileSystem(Configuration conf) throws IOException {
+//    return FileSystem.get(conf);
+//  }
 
   public float getProgress() {
     QueryState state = getStateMachine().getCurrentState();
@@ -262,6 +263,7 @@ public class Query implements EventHandler<QueryEvent> {
     @Override
     public QueryState transition(Query query, QueryEvent queryEvent) {
       query.setStartTime();
+      query.context.setState(QueryState.QUERY_INIT);
       return QueryState.QUERY_INIT;
     }
   }
@@ -317,7 +319,8 @@ public class Query implements EventHandler<QueryEvent> {
             query.eventHandler.handle(new QueryFinishEvent(query.getId()));
 
             if (query.context.isCreateTableQuery()) {
-              query.context.getCatalog().addTable(desc);
+              // TOOD move to QueryMasterManager
+              //query.context.getCatalog().addTable(desc);
             }
           }
 
@@ -360,6 +363,7 @@ public class Query implements EventHandler<QueryEvent> {
 
   public QueryState finished(QueryState finalState) {
     setFinishTime();
+    context.setState(finalState);
     return finalState;
   }
 

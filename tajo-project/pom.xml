@@ -36,7 +36,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <tajo.version>0.2.0-SNAPSHOT</tajo.version>
-    <hadoop.version>2.0.3-alpha</hadoop.version>
+    <hadoop.version>2.0.5-alpha</hadoop.version>
   </properties>
 
   <licenses>
@@ -749,10 +749,17 @@
         <version>1.9.5-rc1</version>
         <scope>test</scope>
       </dependency>
+      <!--
       <dependency>
         <groupId>org.jboss.netty</groupId>
         <artifactId>netty</artifactId>
         <version>3.2.4.Final</version>
+      </dependency>
+      -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty</artifactId>
+        <version>3.6.6.Final</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

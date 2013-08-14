@@ -48,90 +48,106 @@ public class TestSelectQuery {
   @Test
   public final void testSelect() throws Exception {
     ResultSet res = tpch.execute("select l_orderkey, l_partkey from lineitem");
-    res.next();
-    assertEquals(1, res.getInt(1));
-    assertEquals(1, res.getInt(2));
+    try {
+      res.next();
+      assertEquals(1, res.getInt(1));
+      assertEquals(1, res.getInt(2));
 
-    res.next();
-    assertEquals(1, res.getInt(1));
-    assertEquals(1, res.getInt(2));
-    assertEquals(1, res.getInt(2));
+      res.next();
+      assertEquals(1, res.getInt(1));
+      assertEquals(1, res.getInt(2));
+      assertEquals(1, res.getInt(2));
 
-    res.next();
-    assertEquals(2, res.getInt(1));
-    assertEquals(2, res.getInt(2));
+      res.next();
+      assertEquals(2, res.getInt(1));
+      assertEquals(2, res.getInt(2));
+    } finally {
+      res.close();
+    }
   }
 
   @Test
   public final void testSelect2() throws Exception {
     ResultSet res = tpch.execute("select l_orderkey, l_partkey, l_orderkey + l_partkey as plus from lineitem");
-    res.next();
-    assertEquals(1, res.getInt(1));
-    assertEquals(1, res.getInt(2));
-    assertEquals(2, res.getInt(3));
+    try {
+      res.next();
+      assertEquals(1, res.getInt(1));
+      assertEquals(1, res.getInt(2));
+      assertEquals(2, res.getInt(3));
 
-    res.next();
-    assertEquals(1, res.getInt(1));
-    assertEquals(1, res.getInt(2));
-    assertEquals(2, res.getInt(3));
+      res.next();
+      assertEquals(1, res.getInt(1));
+      assertEquals(1, res.getInt(2));
+      assertEquals(2, res.getInt(3));
 
-    res.next();
-    assertEquals(2, res.getInt(1));
-    assertEquals(2, res.getInt(2));
-    assertEquals(4, res.getInt(3));
+      res.next();
+      assertEquals(2, res.getInt(1));
+      assertEquals(2, res.getInt(2));
+      assertEquals(4, res.getInt(3));
+    } finally {
+      res.close();
+    }
   }
 
   @Test
   public final void testSelect3() throws Exception {
     ResultSet res = tpch.execute("select l_orderkey + l_partkey as plus from lineitem");
-    res.next();
-    assertEquals(2, res.getInt(1));
+    try {
+      res.next();
+      assertEquals(2, res.getInt(1));
 
-    res.next();
-    assertEquals(2, res.getInt(1));
+      res.next();
+      assertEquals(2, res.getInt(1));
 
-    res.next();
-    assertEquals(4, res.getInt(1));
+      res.next();
+      assertEquals(4, res.getInt(1));
+    } finally {
+      res.close();
+    }
   }
 
   @Test
   public final void testSelectAsterik() throws Exception {
     ResultSet res = tpch.execute("select * from lineitem");
-    res.next();
-    assertEquals(1, res.getInt(1));
-    assertEquals(1, res.getInt(2));
-    assertEquals(7706, res.getInt(3));
-    assertEquals(1, res.getInt(4));
-    assertTrue(17 == res.getFloat(5));
-    assertTrue(21168.23f == res.getFloat(6));
-    assertTrue(0.04f == res.getFloat(7));
-    assertTrue(0.02f == res.getFloat(8));
-    assertEquals("N",res.getString(9));
-    assertEquals("O",res.getString(10));
-    assertEquals("1996-03-13",res.getString(11));
-    assertEquals("1996-02-12",res.getString(12));
-    assertEquals("1996-03-22",res.getString(13));
-    assertEquals("DELIVER IN PERSON",res.getString(14));
-    assertEquals("TRUCK",res.getString(15));
-    assertEquals("egular courts above the",res.getString(16));
+    try {
+      res.next();
+      assertEquals(1, res.getInt(1));
+      assertEquals(1, res.getInt(2));
+      assertEquals(7706, res.getInt(3));
+      assertEquals(1, res.getInt(4));
+      assertTrue(17 == res.getFloat(5));
+      assertTrue(21168.23f == res.getFloat(6));
+      assertTrue(0.04f == res.getFloat(7));
+      assertTrue(0.02f == res.getFloat(8));
+      assertEquals("N",res.getString(9));
+      assertEquals("O",res.getString(10));
+      assertEquals("1996-03-13",res.getString(11));
+      assertEquals("1996-02-12",res.getString(12));
+      assertEquals("1996-03-22",res.getString(13));
+      assertEquals("DELIVER IN PERSON",res.getString(14));
+      assertEquals("TRUCK",res.getString(15));
+      assertEquals("egular courts above the",res.getString(16));
 
-    res.next();
-    assertEquals(1, res.getInt(1));
-    assertEquals(1, res.getInt(2));
-    assertEquals(7311, res.getInt(3));
-    assertEquals(2, res.getInt(4));
-    assertTrue(36 == res.getFloat(5));
-    assertTrue(45983.16f == res.getFloat(6));
-    assertTrue(0.09f == res.getFloat(7));
-    assertTrue(0.06f == res.getFloat(8));
-    assertEquals("N",res.getString(9));
-    assertEquals("O",res.getString(10));
-    assertEquals("1996-04-12",res.getString(11));
-    assertEquals("1996-02-28",res.getString(12));
-    assertEquals("1996-04-20",res.getString(13));
-    assertEquals("TAKE BACK RETURN",res.getString(14));
-    assertEquals("MAIL",res.getString(15));
-    assertEquals("ly final dependencies: slyly bold",res.getString(16));
+      res.next();
+      assertEquals(1, res.getInt(1));
+      assertEquals(1, res.getInt(2));
+      assertEquals(7311, res.getInt(3));
+      assertEquals(2, res.getInt(4));
+      assertTrue(36 == res.getFloat(5));
+      assertTrue(45983.16f == res.getFloat(6));
+      assertTrue(0.09f == res.getFloat(7));
+      assertTrue(0.06f == res.getFloat(8));
+      assertEquals("N",res.getString(9));
+      assertEquals("O",res.getString(10));
+      assertEquals("1996-04-12",res.getString(11));
+      assertEquals("1996-02-28",res.getString(12));
+      assertEquals("1996-04-20",res.getString(13));
+      assertEquals("TAKE BACK RETURN",res.getString(14));
+      assertEquals("MAIL",res.getString(15));
+      assertEquals("ly final dependencies: slyly bold",res.getString(16));
+    } finally {
+      res.close();
+    }
   }
 
   @Test
@@ -145,21 +161,29 @@ public class TestSelectQuery {
 
     ResultSet res = tpch.execute(
         "select distinct l_orderkey, l_linenumber from lineitem");
-    int cnt = 0;
-    while(res.next()) {
-      assertTrue(result1.contains(res.getInt(1) + "," + res.getInt(2)));
-      cnt++;
+    try {
+      int cnt = 0;
+      while(res.next()) {
+        assertTrue(result1.contains(res.getInt(1) + "," + res.getInt(2)));
+        cnt++;
+      }
+      assertEquals(5, cnt);
+    } finally {
+      res.close();
     }
-    assertEquals(5, cnt);
 
     res = tpch.execute("select distinct l_orderkey from lineitem");
-    Set<Integer> result2 = Sets.newHashSet(1,2,3);
-    cnt = 0;
-    while (res.next()) {
-      assertTrue(result2.contains(res.getInt(1)));
-      cnt++;
+    try {
+      Set<Integer> result2 = Sets.newHashSet(1,2,3);
+      int cnt = 0;
+      while (res.next()) {
+        assertTrue(result2.contains(res.getInt(1)));
+        cnt++;
+      }
+      assertEquals(3,cnt);
+    } finally {
+      res.close();
     }
-    assertEquals(3,cnt);
   }
 
   @Test
@@ -169,12 +193,16 @@ public class TestSelectQuery {
 
     ResultSet res = tpch.execute(
         "SELECT n_name FROM nation WHERE n_name LIKE '%IA'");
-    int cnt = 0;
-    while(res.next()) {
-      assertTrue(result.contains(res.getString(1)));
-      cnt++;
+    try {
+      int cnt = 0;
+      while(res.next()) {
+        assertTrue(result.contains(res.getString(1)));
+        cnt++;
+      }
+      assertEquals(result.size(), cnt);
+    } finally {
+      res.close();
     }
-    assertEquals(result.size(), cnt);
   }
 
   @Test
@@ -183,21 +211,29 @@ public class TestSelectQuery {
 
     ResultSet res = tpch.execute(
         "select l_orderkey from lineitem where l_shipdate <= '1996-03-22'");
-    int cnt = 0;
-    while(res.next()) {
-      assertTrue(result.contains(res.getInt(1)));
-      cnt++;
+    try {
+      int cnt = 0;
+      while(res.next()) {
+        assertTrue(result.contains(res.getInt(1)));
+        cnt++;
+      }
+      assertEquals(3, cnt);
+    } finally {
+      res.close();
     }
-    assertEquals(3, cnt);
   }
 
   @Test
   public final void testRealValueCompare() throws Exception {
     ResultSet res = tpch.execute("select ps_supplycost from partsupp where ps_supplycost = 771.64");
 
-    res.next();
-    assertTrue(771.64f == res.getFloat(1));
-    assertFalse(res.next());
+    try {
+      res.next();
+      assertTrue(771.64f == res.getFloat(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
   }
 
   @Test
@@ -211,19 +247,23 @@ public class TestSelectQuery {
             "else 'zero' " +
             "end as cond from region");
 
-    Map<Integer, String> result = Maps.newHashMap();
-    result.put(0, "zero");
-    result.put(1, "one");
-    result.put(2, "two");
-    result.put(3, "three");
-    result.put(4, "four");
-    int cnt = 0;
-    while(res.next()) {
-      assertEquals(result.get(res.getInt(1)), res.getString(2));
-      cnt++;
-    }
+    try {
+      Map<Integer, String> result = Maps.newHashMap();
+      result.put(0, "zero");
+      result.put(1, "one");
+      result.put(2, "two");
+      result.put(3, "three");
+      result.put(4, "four");
+      int cnt = 0;
+      while(res.next()) {
+        assertEquals(result.get(res.getInt(1)), res.getString(2));
+        cnt++;
+      }
 
-    assertEquals(5, cnt);
+      assertEquals(5, cnt);
+    } finally {
+      res.close();
+    }
   }
 
   @Test
@@ -235,75 +275,98 @@ public class TestSelectQuery {
         "when r_regionkey = 4 then 'four' " +
         "end as cond from region");
 
-    Map<Integer, String> result = Maps.newHashMap();
-    result.put(0, "NULL");
-    result.put(1, "one");
-    result.put(2, "two");
-    result.put(3, "three");
-    result.put(4, "four");
-    int cnt = 0;
-    while(res.next()) {
-      assertEquals(result.get(res.getInt(1)), res.getString(2));
-      cnt++;
-    }
+    try {
+      Map<Integer, String> result = Maps.newHashMap();
+      result.put(0, "NULL");
+      result.put(1, "one");
+      result.put(2, "two");
+      result.put(3, "three");
+      result.put(4, "four");
+      int cnt = 0;
+      while(res.next()) {
+        assertEquals(result.get(res.getInt(1)), res.getString(2));
+        cnt++;
+      }
 
-    assertEquals(5, cnt);
+      assertEquals(5, cnt);
+    } finally {
+      res.close();
+    }
   }
 
   @Test
   public final void testNotEqual() throws Exception {
     ResultSet res = tpch.execute(
         "select l_orderkey from lineitem where l_orderkey != 1");
-    assertTrue(res.next());
-    assertEquals(2, res.getInt(1));
-    assertTrue(res.next());
-    assertEquals(3, res.getInt(1));
-    assertTrue(res.next());
-    assertEquals(3, res.getInt(1));
-    assertFalse(res.next());
+    try {
+      assertTrue(res.next());
+      assertEquals(2, res.getInt(1));
+      assertTrue(res.next());
+      assertEquals(3, res.getInt(1));
+      assertTrue(res.next());
+      assertEquals(3, res.getInt(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
   }
 
   @Test
   public final void testUnion1() throws Exception {
     ResultSet res = tpch.execute(
         "select o_custkey as num from orders union select c_custkey as num from customer");
-    int count = 0;
-    for (;res.next();) {
-      count++;
+    try {
+      int count = 0;
+      for (;res.next();) {
+        count++;
+      }
+      assertEquals(6, count);
+    } finally {
+      res.close();
     }
-    assertEquals(6, count);
   }
 
   @Test
   public final void testUnion2() throws Exception {
     ResultSet res = tpch.execute(
         "select l_orderkey from lineitem l1 union select l_orderkey from lineitem l2");
-    int count = 0;
-    for (;res.next();) {
-      count++;
+    try {
+      int count = 0;
+      for (;res.next();) {
+        count++;
+      }
+    } finally {
+      res.close();
     }
-    assertEquals(10, count);
   }
 
   @Test
   public final void testCreateAfterSelect() throws Exception {
     ResultSet res = tpch.execute(
         "create table orderkeys as select l_orderkey from lineitem");
-    int count = 0;
-    for (;res.next();) {
-      count++;
+    try {
+      int count = 0;
+      for (;res.next();) {
+        count++;
+      }
+      assertEquals(count, 5);
+    } finally {
+      res.close();
     }
-    assertEquals(count, 5);
   }
 
   //@Test
   // TODO - fix and enable this unit test
   public final void testLimit() throws Exception {
     ResultSet res = tpch.execute("select l_orderkey from lineitem limit 3");
-    int count = 0;
-    for (;res.next();) {
-      count++;
+    try {
+      int count = 0;
+      for (;res.next();) {
+        count++;
+      }
+      assertEquals(3, count);
+    } finally {
+      res.close();
     }
-    assertEquals(3, count);
   }
 }

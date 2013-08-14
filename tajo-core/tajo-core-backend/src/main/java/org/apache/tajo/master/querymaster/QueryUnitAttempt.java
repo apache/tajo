@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.master.querymaster;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,9 +26,9 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.statistics.TableStat;
-import org.apache.tajo.engine.MasterWorkerProtos.Partition;
-import org.apache.tajo.engine.MasterWorkerProtos.TaskCompletionReport;
-import org.apache.tajo.master.QueryUnit.IntermediateEntry;
+import org.apache.tajo.ipc.QueryMasterProtocol.Partition;
+import org.apache.tajo.ipc.QueryMasterProtocol.TaskCompletionReport;
+import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 

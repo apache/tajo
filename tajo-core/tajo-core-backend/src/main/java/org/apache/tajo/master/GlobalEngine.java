@@ -51,6 +51,7 @@ import org.apache.tajo.engine.planner.global.GlobalOptimizer;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.master.TajoMaster.MasterContext;
+import org.apache.tajo.master.querymaster.QueryMasterManager;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TajoIdUtils;
@@ -93,8 +94,7 @@ public class GlobalEngine extends AbstractService {
       planner = new LogicalPlanner(context.getCatalog());
       optimizer = new LogicalOptimizer();
 
-      globalPlanner = new GlobalPlanner(context.getConf(), context.getCatalog(),
-          sm, context.getEventHandler());
+      globalPlanner = new GlobalPlanner(context.getConf(), sm, context.getEventHandler());
 
       globalOptimizer = new GlobalOptimizer();
     } catch (Throwable t) {
@@ -105,7 +105,9 @@ public class GlobalEngine extends AbstractService {
 
   public void stop() {
     super.stop();
-    yarnClient.stop();
+    if (yarnClient != null) {
+      yarnClient.stop();
+    }
   }
 
   public QueryId executeQuery(String tql)
@@ -123,21 +125,26 @@ public class GlobalEngine extends AbstractService {
       updateQuery(plan.getSubNode());
       return TajoIdUtils.NullQueryId;
     } else {
-      ApplicationAttemptId appAttemptId = submitQuery();
-      QueryId queryId = TajoIdUtils.createQueryId(appAttemptId);
-      MasterPlan masterPlan = createGlobalPlan(queryId, plan);
+      GetNewApplicationResponse newApp = yarnClient.getNewApplication();
+      ApplicationId appId = newApp.getApplicationId();
+      QueryId queryId = TajoIdUtils.createQueryId(appId, 0);
+
+      LOG.info("Get AppId: " + appId + ", QueryId: " + queryId);
+      LOG.info("Setting up application submission context for ASM");
+
+      //request QueryMaster container
       QueryConf queryConf = new QueryConf(context.getConf());
       queryConf.setUser(UserGroupInformation.getCurrentUser().getShortUserName());
-
       // the output table is given by user
       if (plan.getSubNode().getType() == ExprType.CREATE_TABLE) {
         CreateTableNode createTableNode = (CreateTableNode) plan.getSubNode();
         queryConf.setOutputTable(createTableNode.getTableName());
       }
-
-      QueryMaster query = new QueryMaster(context, appAttemptId,
-          context.getClock(), querySubmittionTime, masterPlan);
-      startQuery(queryId, queryConf, query);
+      QueryMasterManager queryMasterManager = new QueryMasterManager(context, yarnClient, queryId, tql, plan, appId,
+              context.getClock(), querySubmittionTime);
+      queryMasterManager.init(queryConf);
+      queryMasterManager.start();
+      context.addQuery(queryId, queryMasterManager);
 
       return queryId;
     }
@@ -145,9 +152,46 @@ public class GlobalEngine extends AbstractService {
 
   private ApplicationAttemptId submitQuery() throws YarnRemoteException {
     GetNewApplicationResponse newApp = getNewApplication();
+    ApplicationId appId = newApp.getApplicationId();
+    LOG.info("Get AppId: " + appId);
+    LOG.info("Setting up application submission context for ASM");
+
+    ApplicationSubmissionContext appContext = Records
+            .newRecord(ApplicationSubmissionContext.class);
+
+    // set the application id
+    appContext.setApplicationId(appId);
+    // set the application name
+    appContext.setApplicationName("Tajo");
+
+    org.apache.hadoop.yarn.api.records.Priority
+            pri = Records.newRecord(org.apache.hadoop.yarn.api.records.Priority.class);
+    pri.setPriority(5);
+    appContext.setPriority(pri);
+
+    // Set the queue to which this application is to be submitted in the RM
+    appContext.setQueue("default");
+
+    ContainerLaunchContext amContainer = Records
+            .newRecord(ContainerLaunchContext.class);
+    appContext.setAMContainerSpec(amContainer);
+
+    LOG.info("Submitting application to ASM");
+    yarnClient.submitApplication(appContext);
+
+    ApplicationReport appReport = monitorApplication(appId,
+            EnumSet.of(YarnApplicationState.ACCEPTED));
+    ApplicationAttemptId attemptId = appReport.getCurrentApplicationAttemptId();
+    LOG.info("Launching application with id: " + attemptId);
+
+    return attemptId;
+  }
+
+  private ApplicationAttemptId submitQueryOld() throws YarnRemoteException {
+    GetNewApplicationResponse newApp = getNewApplication();
     // Get a new application id
     ApplicationId appId = newApp.getApplicationId();
-    System.out.println("Get AppId: " + appId);
+    LOG.info("Get AppId: " + appId);
     LOG.info("Setting up application submission context for ASM");
     ApplicationSubmissionContext appContext = Records
         .newRecord(ApplicationSubmissionContext.class);
@@ -209,7 +253,6 @@ public class GlobalEngine extends AbstractService {
         CreateTableNode createTable = (CreateTableNode) root;
         createTable(createTable);
         return true;
-
       case DROP_TABLE:
         DropTableNode stmt = (DropTableNode) root;
         dropTable(stmt.getTableName());
@@ -227,7 +270,7 @@ public class GlobalEngine extends AbstractService {
     try {
       optimizedPlan = optimizer.optimize(plan);
     } catch (PlanningException e) {
-      e.printStackTrace();
+      LOG.error(e.getMessage(), e);
     }
     LOG.info("LogicalPlan:\n" + plan.getRootBlock().getRoot());
 
@@ -240,12 +283,12 @@ public class GlobalEngine extends AbstractService {
     return globalOptimizer.optimize(globalPlan);
   }
 
-  private void startQuery(final QueryId queryId, final QueryConf queryConf,
-                          final QueryMaster query) {
-    context.getAllQueries().put(queryId, query);
-    query.init(queryConf);
-    query.start();
-  }
+//  private void startQuery(final QueryId queryId, final QueryConf queryConf,
+//                          final QueryMaster query) {
+//    context.getAllQueries().put(queryId, query);
+//    query.init(queryConf);
+//    query.start();
+//  }
 
   private TableDesc createTable(CreateTableNode createTable) throws IOException {
     TableMeta meta;
@@ -328,7 +371,7 @@ public class GlobalEngine extends AbstractService {
 
   private void connectYarnClient() {
     this.yarnClient = new YarnClientImpl();
-    this.yarnClient.init(getConfig());
+    this.yarnClient.init(context.getConf());
     this.yarnClient.start();
   }
 

@@ -16,13 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+option java_package = "org.apache.tajo.ipc";
+option java_outer_classname = "QueryMasterClientProtocol";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
 
-public enum SubQueryState {
-  NEW,
-  CONTAINER_ALLOCATED,
-  INIT,
-  RUNNING,
-  SUCCEEDED,
-  FAILED
+import "yarn_protos.proto";
+import "tajo_protos.proto";
+import "TajoIdProtos.proto";
+import "CatalogProtos.proto";
+import "PrimitiveProtos.proto";
+import "ClientProtos.proto";
+
+service QueryMasterClientProtocolService {
+  rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
+  rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
+  rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
+  rpc killQuery(ApplicationAttemptIdProto) returns (BoolProto);
 }

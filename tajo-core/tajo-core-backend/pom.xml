@@ -173,9 +173,11 @@
                 <argument>-Isrc/main/proto/</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
                 <argument>src/main/proto/tajo_protos.proto</argument>
-                <argument>src/main/proto/MasterWorkerProtos.proto</argument>
-                <argument>src/main/proto/MasterWorkerProtocol.proto</argument>
-                <argument>src/main/proto/ClientProtocol.proto</argument>
+                <argument>src/main/proto/ClientProtos.proto</argument>
+                <argument>src/main/proto/QueryMasterClientProtocol.proto</argument>
+                <argument>src/main/proto/QueryMasterManagerProtocol.proto</argument>
+                <argument>src/main/proto/QueryMasterProtocol.proto</argument>
+                <argument>src/main/proto/TajoMasterClientProtocol.proto</argument>
               </arguments>
             </configuration>
             <goals>
@@ -365,10 +367,17 @@
       <artifactId>commons-lang</artifactId>
       <version>2.6</version>
     </dependency>
+    <!--
     <dependency>
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
     </dependency>
+    -->
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>jline</groupId>
       <artifactId>jline</artifactId>
@@ -406,6 +415,14 @@
                 </configuration>
               </execution>
             </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-report-plugin</artifactId>
+            <version>2.15</version>
+            <configuration>
+              <aggregate>true</aggregate>
+            </configuration>
           </plugin>
         </plugins>
       </build>

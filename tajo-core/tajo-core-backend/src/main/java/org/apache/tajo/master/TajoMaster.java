@@ -44,12 +44,12 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.MasterWorkerProtos.TaskStatusProto;
 import org.apache.tajo.engine.function.Country;
 import org.apache.tajo.engine.function.InCountry;
 import org.apache.tajo.engine.function.builtin.*;
-import org.apache.tajo.master.event.QueryEvent;
-import org.apache.tajo.master.event.QueryEventType;
+import org.apache.tajo.ipc.QueryMasterProtocol;
+import org.apache.tajo.master.querymaster.QueryMasterManager;
+import org.apache.tajo.master.querymaster.QueryMasterManagerService;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -78,7 +78,8 @@ public class TajoMaster extends CompositeService {
   private StorageManager storeManager;
   private GlobalEngine globalEngine;
   private AsyncDispatcher dispatcher;
-  private ClientService clientService;
+  private TajoMasterClientService tajoMasterClientService;
+  private QueryMasterManagerService queryMasterManagerService;
   private YarnRPC yarnRPC;
 
   //Web Server
@@ -97,6 +98,8 @@ public class TajoMaster extends CompositeService {
 
 
     try {
+      RackResolver.init(conf);
+
       webServer = StaticHttpServer.getInstance(this ,"admin", null, 8080 ,
           true, null, context.getConf(), null);
       webServer.start();
@@ -110,7 +113,6 @@ public class TajoMaster extends CompositeService {
       this.defaultFS = basePath.getFileSystem(conf);
       conf.set("fs.defaultFS", defaultFS.getUri().toString());
       LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
-
       if (!defaultFS.exists(basePath)) {
         defaultFS.mkdirs(basePath);
         LOG.info("Tajo Base dir (" + basePath + ") is created.");
@@ -147,12 +149,11 @@ public class TajoMaster extends CompositeService {
       globalEngine = new GlobalEngine(context);
       addIfService(globalEngine);
 
-      dispatcher.register(QueryEventType.class, new QueryEventDispatcher());
+      tajoMasterClientService = new TajoMasterClientService(context);
+      addIfService(tajoMasterClientService);
 
-      clientService = new ClientService(context);
-      addIfService(clientService);
-
-      RackResolver.init(conf);
+      queryMasterManagerService = new QueryMasterManagerService(context);
+      addIfService(queryMasterManagerService);
     } catch (Exception e) {
        e.printStackTrace();
     }
@@ -281,6 +282,10 @@ public class TajoMaster extends CompositeService {
       LOG.error(e);
     }
 
+    for(QueryMasterManager eachQuery: getContext().getAllQueries().values()) {
+      eachQuery.stop();
+    }
+
     super.stop();
     LOG.info("TajoMaster main thread exiting");
   }
@@ -306,18 +311,18 @@ public class TajoMaster extends CompositeService {
   }
 
   // TODO - to be improved
-  public Collection<TaskStatusProto> getProgressQueries() {
+  public Collection<QueryMasterProtocol.TaskStatusProto> getProgressQueries() {
     return null;
   }
 
-  private class QueryEventDispatcher implements EventHandler<QueryEvent> {
-    @Override
-    public void handle(QueryEvent queryEvent) {
-      LOG.info("QueryEvent: " + queryEvent.getQueryId());
-      LOG.info("Found: " + context.getQuery(queryEvent.getQueryId()).getContext().getQueryId());
-      context.getQuery(queryEvent.getQueryId()).handle(queryEvent);
-    }
-  }
+//  private class QueryEventDispatcher implements EventHandler<QueryEvent> {
+//    @Override
+//    public void handle(QueryEvent queryEvent) {
+//      LOG.info("QueryEvent: " + queryEvent.getQueryId());
+//      LOG.info("Found: " + context.getQuery(queryEvent.getQueryId()).getContext().getQueryId());
+//      context.getQuery(queryEvent.getQueryId()).handle(queryEvent);
+//    }
+//  }
 
   public static void main(String[] args) throws Exception {
     StringUtils.startupShutdownMessage(TajoMaster.class, args, LOG);
@@ -331,13 +336,14 @@ public class TajoMaster extends CompositeService {
       master.init(conf);
       master.start();
     } catch (Throwable t) {
-      LOG.fatal("Error starting JobHistoryServer", t);
+      LOG.fatal("Error starting TajoMaster", t);
       System.exit(-1);
     }
   }
 
   public class MasterContext {
-    private final Map<QueryId, QueryMaster> queries = Maps.newConcurrentMap();
+    //private final Map<QueryId, QueryMaster> queries = Maps.newConcurrentMap();
+    private final Map<QueryId, QueryMasterManager> queries = Maps.newConcurrentMap();
     private final TajoConf conf;
 
     public MasterContext(TajoConf conf) {
@@ -352,12 +358,16 @@ public class TajoMaster extends CompositeService {
       return clock;
     }
 
-    public QueryMaster getQuery(QueryId queryId) {
+    public QueryMasterManager getQuery(QueryId queryId) {
       return queries.get(queryId);
     }
 
-    public Map<QueryId, QueryMaster> getAllQueries() {
+    public Map<QueryId, QueryMasterManager> getAllQueries() {
       return queries;
+    }
+
+    public void addQuery(QueryId queryId, QueryMasterManager queryMasterManager) {
+      queries.put(queryId, queryMasterManager);
     }
 
     public AsyncDispatcher getDispatcher() {
@@ -384,8 +394,12 @@ public class TajoMaster extends CompositeService {
       return yarnRPC;
     }
 
-    public ClientService getClientService() {
-      return clientService;
+    public TajoMasterClientService getClientService() {
+      return tajoMasterClientService;
+    }
+
+    public QueryMasterManagerService getQueryMasterManagerService() {
+      return queryMasterManagerService;
     }
   }
 }

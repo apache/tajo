@@ -63,7 +63,6 @@ public class ProtoBlockingRpcServer extends NettyServerBase {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
         throws Exception {
-
       final RpcRequest request = (RpcRequest) e.getMessage();
 
       String methodName = request.getMethodName();
@@ -74,7 +73,6 @@ public class ProtoBlockingRpcServer extends NettyServerBase {
         throw new RemoteCallException(request.getId(),
             new NoSuchMethodException(methodName));
       }
-
       Message paramProto = null;
       if (request.hasRequestMessage()) {
         try {
@@ -86,7 +84,6 @@ public class ProtoBlockingRpcServer extends NettyServerBase {
           throw new RemoteCallException(request.getId(), methodDescriptor, t);
         }
       }
-
       Message returnValue;
       RpcController controller = new NettyRpcController();
 
@@ -107,7 +104,6 @@ public class ProtoBlockingRpcServer extends NettyServerBase {
       if (controller.failed()) {
         builder.setErrorMessage(controller.errorText());
       }
-
       e.getChannel().write(builder.build());
     }
 

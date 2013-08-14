@@ -23,14 +23,13 @@ package org.apache.tajo.ipc.protocolrecords;
 
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.common.ProtoObject;
-import org.apache.tajo.engine.MasterWorkerProtos.Fetch;
-import org.apache.tajo.engine.MasterWorkerProtos.QueryUnitRequestProto;
+import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.storage.Fragment;
 
 import java.net.URI;
 import java.util.List;
 
-public interface QueryUnitRequest extends ProtoObject<QueryUnitRequestProto> {
+public interface QueryUnitRequest extends ProtoObject<QueryMasterProtocol.QueryUnitRequestProto> {
 
 	public QueryUnitAttemptId getId();
 	public List<Fragment> getFragments();
@@ -40,7 +39,7 @@ public interface QueryUnitRequest extends ProtoObject<QueryUnitRequestProto> {
 	public boolean isInterQuery();
 	public void setInterQuery();
 	public void addFetch(String name, URI uri);
-	public List<Fetch> getFetches();
+	public List<QueryMasterProtocol.Fetch> getFetches();
   public boolean shouldDie();
   public void setShouldDie();
 }

@@ -72,7 +72,7 @@ public class TestExecutionBlockCursor {
     AsyncDispatcher dispatcher = new AsyncDispatcher();
     dispatcher.init(conf);
     dispatcher.start();
-    planner = new GlobalPlanner(conf, catalog, sm, dispatcher.getEventHandler());
+    planner = new GlobalPlanner(conf, sm, dispatcher.getEventHandler());
   }
 
   public static void tearDown() {

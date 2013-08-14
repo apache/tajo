@@ -100,7 +100,7 @@ public class TestResultSetImpl {
 
   @Test
   public void test() throws IOException, SQLException {
-    ResultSetImpl rs = new ResultSetImpl(conf, sm.getTablePath("score"));
+    ResultSetImpl rs = new ResultSetImpl(null, null, conf, sm.getTablePath("score"));
     ResultSetMetaData meta = rs.getMetaData();
     assertNotNull(meta);
     Schema schema = scoreMeta.getSchema();

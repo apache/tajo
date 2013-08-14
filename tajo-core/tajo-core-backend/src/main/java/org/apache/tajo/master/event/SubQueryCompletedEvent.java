@@ -19,7 +19,7 @@
 package org.apache.tajo.master.event;
 
 import org.apache.tajo.SubQueryId;
-import org.apache.tajo.master.SubQueryState;
+import org.apache.tajo.master.querymaster.SubQueryState;
 
 public class SubQueryCompletedEvent extends QueryEvent {
   private final SubQueryId subQueryId;

@@ -17,20 +17,34 @@
  */
 
 option java_package = "org.apache.tajo.ipc";
-option java_outer_classname = "MasterWorkerProtocol";
+option java_outer_classname = "QueryMasterManagerProtocol";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
-import "MasterWorkerProtos.proto";
-import "PrimitiveProtos.proto";
-import "TajoIdProtos.proto";
-import "tajo_protos.proto";
 import "yarn_protos.proto";
+import "tajo_protos.proto";
+import "TajoIdProtos.proto";
+import "CatalogProtos.proto";
+import "PrimitiveProtos.proto";
 
-service MasterWorkerProtocolService {
-  rpc getTask(ContainerIdProto) returns (QueryUnitRequestProto);
-  rpc statusUpdate (TaskStatusProto) returns (BoolProto);
-  rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
-  rpc fatalError(TaskFatalErrorReport) returns (BoolProto);
-  rpc done (TaskCompletionReport) returns (BoolProto);
+message QueryHeartbeat {
+  required ApplicationAttemptIdProto queryId = 1;
+  required string queryMasterHost = 2;
+  required int32 queryMasterPort = 3;
+  required int32 queryMasterClientPort = 4;
+  required QueryState state = 5;
+  optional string statusMessage = 6;
+}
+
+message QueryHeartbeatResponse {
+  message ResponseCommand {
+      required string command = 1;
+      repeated string params = 2;
+  }
+  required BoolProto heartbeatResult = 1;
+  optional ResponseCommand responseCommand = 3;
+}
+
+service QueryMasterManagerProtocolService {
+  rpc queryHeartbeat(QueryHeartbeat) returns (QueryHeartbeatResponse);
 }

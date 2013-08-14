@@ -108,6 +108,11 @@ public class MiniTajoYarnCluster extends MiniYARNCluster {
     // for corresponding uberized tests.
     conf.setBoolean(MRJobConfig.JOB_UBERTASK_ENABLE, false);
 
+    conf.setInt("yarn.nodemanager.delete.debug-delay-sec", 600);
+
+    // Disable virtual memory constraints for containers
+    conf.setBoolean("yarn.nodemanager.vmem-check-enabled", false);
+
     super.init(conf);
   }
 

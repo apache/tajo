@@ -25,9 +25,9 @@ option java_generate_equals_and_hash = true;
 import "DataTypes.proto";
 
 enum StoreType {
-  MEM = 0;
-  CSV = 1;
-  RAW = 2;
+	MEM = 0;
+	CSV = 1;
+	RAW = 2;
   RCFILE = 3;
   ROWFILE = 4;
   HCFILE = 5;
@@ -35,147 +35,147 @@ enum StoreType {
 }
 
 enum OrderType {
-  ORDER_NONE = 0;
-  ASC = 1;
-  DSC = 2;
+    ORDER_NONE = 0;
+    ASC = 1;
+    DSC = 2;
 }
 
 enum CompressType {
-  COMP_NONE = 0;
-  NULL_SUPPRESS = 1;
-  RUN_LENGTH = 2;
-  BIT_VECTOR = 3;
-  DICTIONARY = 4;
-  SNAPPY = 5;
-  LZ = 6;
+    COMP_NONE = 0;
+    NULL_SUPPRESS = 1;
+    RUN_LENGTH = 2;
+    BIT_VECTOR = 3;
+    DICTIONARY = 4;
+    SNAPPY = 5;
+    LZ = 6;
 }
 
 message ColumnMetaProto {
-  required DataType dataType = 1;
-  required bool compressed = 2;
-  required bool sorted = 3;
-  required bool contiguous = 4;
-  required StoreType storeType = 5;
-  required CompressType compType = 6;
-  required int64 startRid = 7;
-  required int32 recordNum = 8;
-  required int32 offsetToIndex = 9;
+    required DataType dataType = 1;
+    required bool compressed = 2;
+    required bool sorted = 3;
+    required bool contiguous = 4;
+    required StoreType storeType = 5;
+    required CompressType compType = 6;
+    required int64 startRid = 7;
+    required int32 recordNum = 8;
+    required int32 offsetToIndex = 9;
 }
 
 message ColumnProto {
-  required string columnName = 1;
-  required DataType dataType = 2;
+	required string columnName = 1;
+	required DataType dataType = 2;
 }
 
 message SchemaProto {
-  repeated ColumnProto fields = 1;
+	repeated ColumnProto fields = 1;
 }
 
 message KeyValueProto {
-  required string key = 1;
-  required string value = 2;
+	required string key = 1;
+	required string value = 2;
 }
 
 message KeyValueSetProto {
-  repeated KeyValueProto keyval = 1;
+	repeated KeyValueProto keyval = 1;
 }
 
 message FragmentProto {
-  required string id = 1;
-  required string path = 2;
-  required int64 startOffset = 3;
-  required int64 length = 4;
-  required TableProto meta = 5;
-  optional TableStatProto stat = 6;
+	required string id = 1;
+	required string path = 2;
+	required int64 startOffset = 3;
+	required int64 length = 4;
+	required TableProto meta = 5;
+	optional TableStatProto stat = 6;
   optional bool distCached = 7 [default = false];
 }
 
 message TableProto {
-  required SchemaProto schema = 1;
-  required StoreType storeType = 2;
-  required KeyValueSetProto params = 3;
-  optional TableStatProto stat = 4;
+    required SchemaProto schema = 1;
+    required StoreType storeType = 2;
+    required KeyValueSetProto params = 3;
+    optional TableStatProto stat = 4;
 }
 
 message TableDescProto {
-  required string id = 1;
-  required string path = 2;
-  required TableProto meta = 3;
+	required string id = 1;
+	required string path = 2;
+	required TableProto meta = 3;
 }
 
 enum FunctionType {
-  GENERAL = 0;
-  AGGREGATION = 1;
+	GENERAL = 0;
+	AGGREGATION = 1;
 }
 
 message FunctionDescProto {
-  required string signature = 1;
-  required string className = 2;
-  required FunctionType type = 3;
-  repeated DataType parameterTypes = 4;
-  required DataType returnType = 5;
+	required string signature = 1;
+	required string className = 2;
+	required FunctionType type = 3;
+	repeated DataType parameterTypes = 4;
+	required DataType returnType = 5;
 }
 
 message IndexDescProto {
-  required string name = 1;
-  required string tableId = 2;
-  required ColumnProto column = 3;
-  required IndexMethod indexMethod = 4;
-  optional bool isUnique = 5 [default = false];
-  optional bool isClustered = 6 [default = false];
-  optional bool isAscending = 7 [default = false];
+    required string name = 1;
+    required string tableId = 2;
+    required ColumnProto column = 3;
+    required IndexMethod indexMethod = 4;
+    optional bool isUnique = 5 [default = false];
+    optional bool isClustered = 6 [default = false];
+    optional bool isAscending = 7 [default = false];
 }
 
 enum IndexMethod {
-  TWO_LEVEL_BIN_TREE = 0;
-  BTREE = 1;
-  HASH = 2;
-  BITMAP = 3;
+    TWO_LEVEL_BIN_TREE = 0;
+    BTREE = 1;
+    HASH = 2;
+    BITMAP = 3;
 }
 
 message GetAllTableNamesResponse {
-  repeated string tableName = 1;
+    repeated string tableName = 1;
 }
 
 message GetIndexRequest {
-  required string tableName = 1;
-  required string columnName = 2;
+    required string tableName = 1;
+    required string columnName = 2;
 }
 
 message GetFunctionsResponse {
-  repeated FunctionDescProto functionDesc = 1;
+	repeated FunctionDescProto functionDesc = 1;
 }
 
 message UnregisterFunctionRequest {
-  required string signature = 1;
-  repeated DataType parameterTypes = 2;
+	required string signature = 1;
+	repeated DataType parameterTypes = 2;
 }
 
 message GetFunctionMetaRequest {
-  required string signature = 1;
-  repeated DataType parameterTypes = 2;
+	required string signature = 1;
+	repeated DataType parameterTypes = 2;
 }
 
 message ContainFunctionRequest {
-  required string signature = 1;
-  repeated DataType parameterTypes = 2;
+	required string signature = 1;
+	repeated DataType parameterTypes = 2;
 }
 
 message TableStatProto {
-  required int64 numRows = 1;
-  required int64 numBytes = 2;
-  optional int32 numBlocks = 3;
-  optional int32 numPartitions = 4;
-  optional int64 avgRows = 5;
-  repeated ColumnStatProto colStat = 6;
+	required int64 numRows = 1;
+	required int64 numBytes = 2;
+	optional int32 numBlocks = 3;
+	optional int32 numPartitions = 4;
+	optional int64 avgRows = 5;
+	repeated ColumnStatProto colStat = 6;
 }
 
 message ColumnStatProto {
-  required ColumnProto column = 1;
-  optional int64 numDistVal = 2;
-  optional int64 numNulls = 3;
-  optional bytes minValue = 4;
-  optional bytes maxValue = 5;
+    required ColumnProto column = 1;
+    optional int64 numDistVal = 2;
+    optional int64 numNulls = 3;
+    optional bytes minValue = 4;
+    optional bytes maxValue = 5;
 }
 
 enum StatType {

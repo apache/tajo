@@ -62,7 +62,9 @@ public class TestTajoClient {
   @AfterClass
   public static void tearDown() throws Exception {
     util.shutdownMiniCluster();
-    tajo.close();
+    if(tajo != null) {
+      tajo.close();
+    }
   }
 
   private static Path writeTmpTable(String tableName) throws IOException {

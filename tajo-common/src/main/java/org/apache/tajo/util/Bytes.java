@@ -133,7 +133,7 @@ public class Bytes {
    * Read byte-array written with a WritableableUtils.vint prefix.
    * @param in Input to read from.
    * @return byte array read off <code>in</code>
-   * @throws IOException e
+   * @throws java.io.IOException e
    */
   public static byte [] readByteArray(final DataInput in)
   throws IOException {
@@ -164,7 +164,7 @@ public class Bytes {
    * Write byte-array with a WritableableUtils.vint prefix.
    * @param out output stream to be written to
    * @param b array to write
-   * @throws IOException e
+   * @throws java.io.IOException e
    */
   public static void writeByteArray(final DataOutput out, final byte [] b)
   throws IOException {
@@ -181,7 +181,7 @@ public class Bytes {
    * @param b array
    * @param offset offset into array
    * @param length length past offset
-   * @throws IOException e
+   * @throws java.io.IOException e
    */
   public static void writeByteArray(final DataOutput out, final byte [] b,
       final int offset, final int length)
@@ -975,7 +975,7 @@ public class Bytes {
  
   interface Comparer<T> {
     abstract public int compareTo(T buffer1, int offset1, int length1,
-        T buffer2, int offset2, int length2);
+                                  T buffer2, int offset2, int length2);
   }
 
   @VisibleForTesting
@@ -985,7 +985,7 @@ public class Bytes {
 
   /**
    * Provides a lexicographical comparer implementation; either a Java
-   * implementation or a faster implementation based on {@link Unsafe}.
+   * implementation or a faster implementation based on {@link sun.misc.Unsafe}.
    *
    * <p>Uses reflection to gracefully fall back to the Java implementation if
    * {@code Unsafe} isn't available.
@@ -1224,7 +1224,7 @@ public class Bytes {
 
   /**
    * @param b bytes to hash
-   * @return Runs {@link WritableComparator#hashBytes(byte[], int)} on the
+   * @return Runs {@link org.apache.hadoop.io.WritableComparator#hashBytes(byte[], int)} on the
    * passed in array.  This method is what {@link org.apache.hadoop.io.Text} and
    * {@link ImmutableBytesWritable} use calculating hash code.
    */
@@ -1235,7 +1235,7 @@ public class Bytes {
   /**
    * @param b value
    * @param length length of the value
-   * @return Runs {@link WritableComparator#hashBytes(byte[], int)} on the
+   * @return Runs {@link org.apache.hadoop.io.WritableComparator#hashBytes(byte[], int)} on the
    * passed in array.  This method is what {@link org.apache.hadoop.io.Text} and
    * {@link ImmutableBytesWritable} use calculating hash code.
    */

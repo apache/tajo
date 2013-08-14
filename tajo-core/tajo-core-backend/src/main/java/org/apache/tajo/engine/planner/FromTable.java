@@ -41,6 +41,10 @@ public class FromTable implements Cloneable, GsonObject {
     this.alias = alias;
   }
 
+  public TableDesc getTableDesc() {
+    return this.desc;
+  }
+
   public final String getTableName() {
     return desc.getId();
   }

@@ -67,7 +67,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   /**
    * 
    * @return 함수 인스턴스
-   * @throws InternalException
+   * @throws org.apache.tajo.exception.InternalException
    */
   public Function newInstance() throws InternalException {
     try {

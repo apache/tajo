@@ -29,7 +29,7 @@ import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SubQueryId;
 import org.apache.tajo.TestTajoIds;
-import org.apache.tajo.ipc.MasterWorkerProtocol.MasterWorkerProtocolService;
+import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.rpc.ProtoAsyncRpcClient;
 import org.apache.tajo.util.TajoIdUtils;
 
@@ -46,8 +46,8 @@ public class TaskRunnerTest {
     ProtoAsyncRpcClient mockClient = mock(ProtoAsyncRpcClient.class);
     mockClient.close();
 
-    MasterWorkerProtocolService.Interface mockMaster =
-        mock(MasterWorkerProtocolService.Interface.class);
+    QueryMasterProtocolService.Interface mockMaster =
+        mock(QueryMasterProtocolService.Interface.class);
     ApplicationAttemptId appAttemptId = BuilderUtils.newApplicationAttemptId(
         q1.getApplicationId(), q1.getAttemptId());
     ContainerId cId = BuilderUtils.newContainerId(appAttemptId, 1);

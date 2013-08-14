@@ -91,7 +91,7 @@ public class TestGlobalQueryOptimizer {
 
     AsyncDispatcher dispatcher = new AsyncDispatcher();
 
-    planner = new GlobalPlanner(conf, catalog, new StorageManager(conf),
+    planner = new GlobalPlanner(conf, new StorageManager(conf),
         dispatcher.getEventHandler());
     analyzer = new SQLAnalyzer();
     logicalPlanner = new LogicalPlanner(catalog);
@@ -132,7 +132,7 @@ public class TestGlobalQueryOptimizer {
     queryId = QueryIdFactory.newQueryId();
     optimizer = new GlobalOptimizer();
   }
-  
+
   @AfterClass
   public static void terminate() throws IOException {
     util.shutdownCatalogCluster();
@@ -147,7 +147,7 @@ public class TestGlobalQueryOptimizer {
 
     MasterPlan globalPlan = planner.build(queryId, (LogicalRootNode) rootNode);
     globalPlan = optimizer.optimize(globalPlan);
-    
+
     ExecutionBlock unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
     assertEquals(ExprType.PROJECTION, store.getSubNode().getType());
@@ -156,14 +156,14 @@ public class TestGlobalQueryOptimizer {
     SortNode sort = (SortNode) proj.getSubNode();
     assertEquals(ExprType.SCAN, sort.getSubNode().getType());
     ScanNode scan = (ScanNode) sort.getSubNode();
-    
+
     assertTrue(unit.hasChildBlock());
     unit = unit.getChildBlock(scan);
     store = unit.getStoreTableNode();
     assertEquals(ExprType.SORT, store.getSubNode().getType());
     sort = (SortNode) store.getSubNode();
     assertEquals(ExprType.JOIN, sort.getSubNode().getType());
-    
+
     assertTrue(unit.hasChildBlock());
     for (ScanNode prevscan : unit.getScanNodes()) {
       ExecutionBlock prev = unit.getChildBlock(prevscan);

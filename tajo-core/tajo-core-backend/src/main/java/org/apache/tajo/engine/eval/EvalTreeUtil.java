@@ -98,7 +98,7 @@ public class EvalTreeUtil {
       found.add(node);
     }
   }
-  
+
   public static Schema getSchemaByTargets(Schema inputSchema, Target [] targets) 
       throws InternalException {
     Schema schema = new Schema();
@@ -282,7 +282,7 @@ public class EvalTreeUtil {
   }
   
   public static class VariableCounter implements EvalNodeVisitor {
-    private final Map<EvalNode.Type, Integer> counter;
+    private final Map<Type, Integer> counter;
     
     public VariableCounter() {
       counter = Maps.newHashMap();
@@ -299,7 +299,7 @@ public class EvalTreeUtil {
       }
     }
     
-    public Map<EvalNode.Type, Integer> getCounter() {
+    public Map<Type, Integer> getCounter() {
       return counter;
     }
   }

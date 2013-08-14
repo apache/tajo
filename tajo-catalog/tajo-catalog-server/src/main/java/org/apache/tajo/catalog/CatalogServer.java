@@ -134,7 +134,7 @@ public class CatalogServer extends AbstractService {
       this.rpcServer.start();
 
       this.bindAddress = this.rpcServer.getBindAddress();
-      this.serverName = org.apache.tajo.util.NetUtils.getIpPortString(bindAddress);
+      this.serverName = NetUtils.getIpPortString(bindAddress);
       conf.setVar(ConfVars.CATALOG_ADDRESS, serverName);
     } catch (Exception e) {
       LOG.error("Cannot start RPC Server of CatalogServer", e);
@@ -145,7 +145,9 @@ public class CatalogServer extends AbstractService {
   }
 
   public void stop() {
-    this.rpcServer.shutdown();
+    if (rpcServer != null) {
+      this.rpcServer.shutdown();
+    }
     LOG.info("Catalog Server (" + serverName + ") shutdown");
     super.stop();
   }

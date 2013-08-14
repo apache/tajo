@@ -24,9 +24,11 @@ package org.apache.tajo.engine.query;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.TableMetaImpl;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
+import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
@@ -56,27 +58,36 @@ public class ResultSetImpl implements ResultSet {
   private int curRow;
   private long totalRow;
   private boolean wasNull;
+  private TajoClient tajoClient;
+  QueryId queryId;
 
-  public ResultSetImpl(Configuration conf, String path) throws IOException {
-    this(conf, new Path(path));
+  public ResultSetImpl(TajoClient tajoClient, QueryId queryId) throws IOException {
+    this(tajoClient, queryId, null, null);
   }
 
-  public ResultSetImpl(Configuration conf, Path path) throws IOException {
+//  public ResultSetImpl(TajoClient tajoClient, QueryId queryId, Configuration conf, String path) throws IOException {
+//    this(tajoClient, queryId, conf, new Path(path));
+//  }
+
+  public ResultSetImpl(TajoClient tajoClient, QueryId queryId, Configuration conf, Path path) throws IOException {
+    this.tajoClient = tajoClient;
+    this.queryId = queryId;
     this.conf = conf;
-    this.fs = path.getFileSystem(this.conf);
-    // TODO - to be improved. It can be solved to get the query finish status
-    // from master.
-    try {
-      this.meta = getMeta(this.conf, path);
-    } catch (FileNotFoundException fnf) {
-      this.totalRow = 0;
-      init();
-      return;
+    if(path != null) {
+      this.fs = path.getFileSystem(this.conf);
+      // TODO - to be improved. It can be solved to get the query finish status
+      // from master.
+      try {
+        this.meta = getMeta(this.conf, path);
+      } catch (FileNotFoundException fnf) {
+        this.totalRow = 0;
+        init();
+        return;
+      }
+      this.totalRow = meta.getStat() != null ? meta.getStat().getNumRows() : 0;
+      Collection<Fragment> frags = getFragmentsNG(meta, path);
+      scanner = new MergeScanner(conf, meta, frags);
     }
-    this.totalRow = meta.getStat() != null ? meta.getStat().getNumRows() : 0;
-    Collection<Fragment> frags = getFragmentsNG(meta, path);
-    scanner = new MergeScanner(conf, meta, frags);
-    scanner.init();
     init();
   }
 
@@ -194,7 +205,9 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public void beforeFirst() throws SQLException {
     try {
-      scanner.reset();
+      if(scanner != null) {
+        scanner.reset();
+      }
       init();
     } catch (IOException e) {
       e.printStackTrace();
@@ -230,7 +243,17 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public void close() throws SQLException {
     try {
-      this.scanner.close();
+      if(tajoClient != null) {
+        this.tajoClient.closeQuery(queryId);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    try {
+      if(scanner != null) {
+        this.scanner.close();
+      }
+      //TODO clean temp result file
       cur = null;
       curRow = -1;
     } catch (IOException e) {
@@ -1232,6 +1255,9 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public boolean next() throws SQLException {
+    if(scanner == null) {
+      return false;
+    }
     try {
       if (totalRow <= 0)
         return false;
@@ -2219,5 +2245,9 @@ public class ResultSetImpl implements ResultSet {
 
   private void handleNull(Datum d) {
     wasNull = (d instanceof NullDatum);
+  }
+
+  public boolean hasResult() {
+    return scanner != null;
   }
 }

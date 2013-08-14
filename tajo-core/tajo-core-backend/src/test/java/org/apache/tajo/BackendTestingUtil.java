@@ -129,7 +129,7 @@ public class BackendTestingUtil {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
-    return new ResultSetImpl(conf, new Path(workDir, "out"));
+    return new ResultSetImpl(null, null, conf, new Path(workDir, "out"));
   }
 
   public static Path createTmpTestDir() throws IOException {

@@ -22,7 +22,6 @@ import org.apache.tajo.catalog.function.GeneralFunction;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
@@ -45,8 +44,8 @@ public class TestFunctionDesc {
     private Integer y;
 
     public TestSum() {
-      super(new Column[] { new Column("arg1", TajoDataTypes.Type.INT4),
-          new Column("arg2", TajoDataTypes.Type.INT4) });
+      super(new Column[] { new Column("arg1", org.apache.tajo.common.TajoDataTypes.Type.INT4),
+          new Column("arg2", org.apache.tajo.common.TajoDataTypes.Type.INT4) });
     }
 
     @Override
