@@ -296,8 +296,7 @@ public class TajoTestingCluster {
    */
   public void startMiniCluster(final int numSlaves)
       throws Exception {
-    String localHostName = InetAddress.getLocalHost().getHostName();
-    startMiniCluster(numSlaves, new String[] {localHostName});
+    startMiniCluster(numSlaves, null);
   }
 
   public void startMiniCluster(final int numSlaves,
