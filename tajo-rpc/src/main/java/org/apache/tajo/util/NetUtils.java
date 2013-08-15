@@ -18,15 +18,53 @@
 
 package org.apache.tajo.util;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 public class NetUtils {
-  public static String getIpPortString(InetSocketAddress addr) {
+  public static String normalizeInetSocketAddress(InetSocketAddress addr) {
     return addr.getAddress().getHostAddress() + ":" + addr.getPort();
   }
 
   public static InetSocketAddress createSocketAddr(String addr) {
     String [] splitted = addr.split(":");
     return new InetSocketAddress(splitted[0], Integer.parseInt(splitted[1]));
+  }
+
+  /**
+   * Util method to build socket addr from either:
+   *   <host>
+   *   <host>:<port>
+   *   <fs>://<host>:<port>/<path>
+   */
+  public static InetSocketAddress createSocketAddr(String host, int port) {
+    return new InetSocketAddress(host, port);
+  }
+
+  public static InetSocketAddress createUnresolved(String addr) {
+    String [] splitted = addr.split(":");
+    return InetSocketAddress.createUnresolved(splitted[0], Integer.parseInt(splitted[1]));
+  }
+
+  /**
+   * Returns InetSocketAddress that a client can use to
+   * connect to the server. NettyServerBase.getListenerAddress() is not correct when
+   * the server binds to "0.0.0.0". This returns "hostname:port" of the server,
+   * or "127.0.0.1:port" when the getListenerAddress() returns "0.0.0.0:port".
+   *
+   * @param addr of a listener
+   * @return socket address that a client can use to connect to the server.
+   */
+  public static InetSocketAddress getConnectAddress(InetSocketAddress addr) {
+    if (!addr.isUnresolved() && addr.getAddress().isAnyLocalAddress()) {
+      try {
+        addr = new InetSocketAddress(InetAddress.getLocalHost(), addr.getPort());
+      } catch (UnknownHostException uhe) {
+        // shouldn't get here unless the host doesn't have a loopback iface
+        addr = new InetSocketAddress("127.0.0.1", addr.getPort());
+      }
+    }
+    return addr;
   }
 }

@@ -20,6 +20,7 @@ package org.apache.tajo.rpc;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
@@ -32,10 +33,14 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Random;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class NettyServerBase {
   private static final Log LOG = LogFactory.getLog(NettyServerBase.class);
+  private static final String DEFAULT_PREFIX = "RpcServer_";
+  private static final AtomicInteger sequenceId = new AtomicInteger(0);
 
+  protected String serviceName;
   protected InetSocketAddress serverAddr;
   protected InetSocketAddress bindAddress;
   protected ChannelFactory factory;
@@ -43,17 +48,19 @@ public class NettyServerBase {
   protected ServerBootstrap bootstrap;
   protected Channel channel;
 
-  public NettyServerBase(InetSocketAddress addr) {
-    if (addr.getPort() == 0) {
-      try {
-        int port = getUnusedPort();
-        serverAddr = new InetSocketAddress(addr.getHostName(), port);
-      } catch (IOException e) {
-        LOG.error(e);
-      }
-    } else {
-      serverAddr = addr;
-    }
+  private InetSocketAddress initIsa;
+
+  public NettyServerBase(InetSocketAddress address) {
+    this.initIsa = address;
+  }
+
+  public NettyServerBase(String serviceName, InetSocketAddress addr) {
+    this.serviceName = serviceName;
+    this.initIsa = addr;
+  }
+
+  public void setName(String name) {
+    this.serviceName = name;
   }
 
   public void init(ChannelPipelineFactory pipeline) {
@@ -73,15 +80,30 @@ public class NettyServerBase {
     bootstrap.setOption("child.receiveBufferSize", 1048576 * 2);
   }
 
-  public InetSocketAddress getBindAddress() {
+  public InetSocketAddress getListenAddress() {
     return this.bindAddress;
   }
 
   public void start() {
+    if (serviceName == null) {
+      this.serviceName = getNextDefaultServiceName();
+    }
+
+    if (initIsa.getPort() == 0) {
+      try {
+        int port = getUnusedPort();
+        serverAddr = new InetSocketAddress(initIsa.getHostName(), port);
+      } catch (IOException e) {
+        LOG.error(e);
+      }
+    } else {
+      serverAddr = initIsa;
+    }
+
     this.channel = bootstrap.bind(serverAddr);
     this.bindAddress = (InetSocketAddress) channel.getLocalAddress();
 
-    LOG.info("RpcServer on " + this.bindAddress);
+    LOG.info("Rpc (" + serviceName + ") listens on " + this.bindAddress);
   }
 
   public Channel getChannel() {
@@ -95,16 +117,33 @@ public class NettyServerBase {
     if(factory != null) {
       factory.releaseExternalResources();
     }
-    LOG.info("RpcServer (" + org.apache.tajo.util.NetUtils.getIpPortString(bindAddress)
-        + ") shutdown");
+    LOG.info("Rpc (" + serviceName + ") listened on "
+        + NetUtils.normalizeInetSocketAddress(bindAddress)+ ") shutdown");
   }
 
-  private static final Random randomPort = new Random(System.currentTimeMillis());
+  private static String getNextDefaultServiceName() {
+    return DEFAULT_PREFIX + sequenceId.getAndIncrement();
+  }
+
+  private static final int startPortRange = 10000;
+  private static final int endPortRange = 50000;
+  private static final Random rnd = new Random(System.currentTimeMillis());
+  // each system has a different starting port number within the given range.
+  private static final AtomicInteger nextPortNum =
+      new AtomicInteger(startPortRange+ rnd.nextInt(endPortRange - startPortRange));
+
+
   private synchronized static int getUnusedPort() throws IOException {
     while (true) {
-      int port = randomPort.nextInt(10000) + 50000;
+      int port = nextPortNum.getAndIncrement();
+      if (port >= endPortRange) {
+        synchronized (nextPortNum) {
+          nextPortNum.set(startPortRange);
+          port = nextPortNum.getAndIncrement();
+        }
+      }
       if (available(port)) {
-        LOG.info("Found unused port:" + port);
+        LOG.info("Detect an unused port:" + port);
         return port;
       }
     }

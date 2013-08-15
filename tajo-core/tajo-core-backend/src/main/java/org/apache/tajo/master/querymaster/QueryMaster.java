@@ -27,7 +27,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.Clock;
@@ -68,6 +67,7 @@ import org.apache.tajo.rpc.ProtoBlockingRpcClient;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
@@ -270,14 +270,13 @@ public class QueryMaster extends CompositeService implements EventHandler {
         this.rpcServer = new ProtoAsyncRpcServer(QueryMasterProtocol.class, this, initIsa);
         this.rpcServer.start();
 
-        this.bindAddr = rpcServer.getBindAddress();
-        this.addr = bindAddr.getHostName() + ":" + bindAddr.getPort();
+        this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());
+        this.addr = NetUtils.normalizeInetSocketAddress(this.bindAddr);
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
       }
-      // Get the master address
-      LOG.info(QueryMasterService.class.getSimpleName() + " is bind to " + addr);
       queryConf.setVar(TajoConf.ConfVars.TASKRUNNER_LISTENER_ADDRESS, addr);
+      LOG.info("QueryMasterService startup");
     }
 
     @Override
@@ -311,8 +310,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
       if(clientSessionTimeoutCheckThread != null) {
         clientSessionTimeoutCheckThread.interrupt();
       }
-      LOG.info("QueryMasterService stopped");
       super.stop();
+      LOG.info("QueryMasterService stopped");
     }
 
     @Override

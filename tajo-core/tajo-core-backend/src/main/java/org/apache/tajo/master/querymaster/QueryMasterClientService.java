@@ -32,6 +32,7 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.rpc.ProtoBlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.net.InetAddress;
@@ -67,14 +68,14 @@ public class QueryMasterClientService extends AbstractService {
       this.rpcServer = new ProtoBlockingRpcServer(QueryMasterClientProtocol.class, serviceHandler, initIsa);
       this.rpcServer.start();
 
-      this.bindAddr = rpcServer.getBindAddress();
-      this.addr = bindAddr.getHostName() + ":" + bindAddr.getPort();
+      this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());
+      this.addr = NetUtils.normalizeInetSocketAddress(bindAddr);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
     // Get the master address
-    LOG.info(QueryMasterClientService.class.getSimpleName() + " is bind to " + addr);
-    //queryConf.setVar(TajoConf.ConfVars.TASKRUNNER_LISTENER_ADDRESS, addr);
+    LOG.info(QueryMasterClientService.class.getSimpleName() + " (" + queryContext.getQueryId() + ") listens on "
+        + addr);
   }
 
   @Override

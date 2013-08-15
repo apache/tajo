@@ -26,7 +26,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.proto.YarnProtos.ApplicationAttemptIdProto;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.tajo.QueryId;
@@ -48,6 +47,7 @@ import org.apache.tajo.rpc.ProtoBlockingRpcServer;
 import org.apache.tajo.rpc.RemoteException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
@@ -88,10 +88,9 @@ public class TajoMasterClientService extends AbstractService {
       LOG.error(e);
     }
     server.start();
-    bindAddress = server.getBindAddress();
-    this.conf.setVar(ConfVars.CLIENT_SERVICE_ADDRESS,
-        org.apache.tajo.util.NetUtils.getIpPortString(bindAddress));
-    LOG.info("Instantiated TajoMasterClientService at " + this.bindAddress);
+    bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
+    this.conf.setVar(ConfVars.CLIENT_SERVICE_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
+    LOG.info("TajoMasterClientService startup");
     super.start();
   }
 
@@ -100,6 +99,7 @@ public class TajoMasterClientService extends AbstractService {
     if (server != null) {
       server.shutdown();
     }
+    LOG.info("TajoMasterClientService shutdown");
     super.stop();
   }
 

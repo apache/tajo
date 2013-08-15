@@ -22,7 +22,6 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -31,14 +30,15 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.ResultSetImpl;
-import org.apache.tajo.ipc.TajoMasterClientProtocol;
-import org.apache.tajo.ipc.TajoMasterClientProtocol.*;
-import org.apache.tajo.ipc.QueryMasterClientProtocol;
-import org.apache.tajo.ipc.QueryMasterClientProtocol.*;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
+import org.apache.tajo.ipc.QueryMasterClientProtocol;
+import org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
+import org.apache.tajo.ipc.TajoMasterClientProtocol;
+import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
 import org.apache.tajo.rpc.ProtoBlockingRpcClient;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
@@ -90,7 +90,7 @@ public class TajoClient {
     }
 
     LOG.info("connected to tajo cluster (" +
-        org.apache.tajo.util.NetUtils.getIpPortString(addr) + ")");
+        org.apache.tajo.util.NetUtils.normalizeInetSocketAddress(addr) + ")");
   }
 
   public void close() {
@@ -108,10 +108,11 @@ public class TajoClient {
       try {
         queryMasterConnectionMap.get(queryId).killQuery(null, queryId.getProto());
       } catch (Exception e) {
-        LOG.warn("Fail to close query:" + queryId + "," + e.getMessage(), e);
+        LOG.warn("Fail to close a QueryMaster connection (qid=" + queryId + ", msg=" + e.getMessage() + ")", e);
       }
       queryMasterClientMap.get(queryId).close();
-      LOG.info("Closed QueryMaster connection(" + queryId + "," + queryMasterClientMap.get(queryId).getRemoteAddress() + ")");
+      LOG.info("Closed a QueryMaster connection (qid=" + queryId + ", addr="
+          + queryMasterClientMap.get(queryId).getRemoteAddress() + ")");
       queryMasterClientMap.remove(queryId);
       queryMasterConnectionMap.remove(queryId);
     }
@@ -169,7 +170,6 @@ public class TajoClient {
 
       String queryMasterHost = res.getQueryMasterHost();
       if(queryMasterHost != null && !queryMasterHost.isEmpty()) {
-        LOG.info("=========> connect to querymaster:" + queryMasterHost);
         connectionToQueryMaster(queryId, queryMasterHost, res.getQueryMasterPort());
       }
     }
@@ -185,8 +185,8 @@ public class TajoClient {
       queryMasterConnectionMap.put(queryId, service);
       queryMasterClientMap.put(queryId, client);
 
-      LOG.debug("connected to Query Master (" +
-              org.apache.tajo.util.NetUtils.getIpPortString(addr) + ")");
+      LOG.info("Connected to Query Master (qid=" + queryId + ", addr=" +
+          NetUtils.normalizeInetSocketAddress(addr) + ")");
     } catch (Exception e) {
       LOG.error(e.getMessage());
       throw new RuntimeException(e);
@@ -221,8 +221,7 @@ public class TajoClient {
 
     while(status != null && isQueryRunnning(status.getState())) {
       try {
-//        Thread.sleep(500);
-        Thread.sleep(2000);
+        Thread.sleep(1000);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
@@ -238,7 +237,7 @@ public class TajoClient {
       }
 
     } else {
-      LOG.warn("=====>Query failed:" + status.getState());
+      LOG.warn("Query " + status.getQueryId() + ") failed: " + status.getState());
 
       //TODO throw SQLException(?)
       return createNullResultSet(queryId);

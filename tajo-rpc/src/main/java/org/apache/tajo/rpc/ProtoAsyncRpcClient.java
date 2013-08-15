@@ -165,7 +165,7 @@ public class ProtoAsyncRpcClient extends NettyClientBase {
 
   private String getErrorMessage(String message) {
     return "Exception [" + protocol.getCanonicalName() +
-        "(" + NetUtils.getIpPortString((InetSocketAddress)
+        "(" + NetUtils.normalizeInetSocketAddress((InetSocketAddress)
         getChannel().getRemoteAddress()) + ")]: " + message;
   }
 

@@ -19,9 +19,7 @@
 package org.apache.tajo.rpc;
 
 import com.google.protobuf.RpcController;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.apache.tajo.rpc.test.DummyProtocol;
 import org.apache.tajo.rpc.test.DummyProtocol.DummyProtocolService.BlockingInterface;
 import org.apache.tajo.rpc.test.TestProtos.EchoMessage;
@@ -38,13 +36,13 @@ import static org.junit.Assert.*;
 public class TestProtoBlockingRpc {
   public static String MESSAGE = "TestProtoBlockingRpc";
 
-  private static ProtoBlockingRpcServer server;
-  private static ProtoBlockingRpcClient client;
-  private static BlockingInterface stub;
-  private static DummyProtocolBlockingImpl service;
+  private ProtoBlockingRpcServer server;
+  private ProtoBlockingRpcClient client;
+  private BlockingInterface stub;
+  private DummyProtocolBlockingImpl service;
 
-  @BeforeClass
-  public static void setUp() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     service = new DummyProtocolBlockingImpl();
     server = new ProtoBlockingRpcServer(DummyProtocol.class, service,
         new InetSocketAddress(10000));
@@ -55,8 +53,8 @@ public class TestProtoBlockingRpc {
     stub = client.getStub();
   }
 
-  @AfterClass
-  public static void tearDown() throws Exception {
+  @After
+  public void tearDown() throws Exception {
     if(client != null) {
       client.close();
     }
@@ -97,8 +95,6 @@ public class TestProtoBlockingRpc {
               .setMessage(MESSAGE)
               .build();
           stub.deley(null, message);
-//          client.close();
-//          client = null;
         } catch (Exception e) {
           e.printStackTrace();
           error.append(e.getMessage());
@@ -129,29 +125,16 @@ public class TestProtoBlockingRpc {
     };
     shutdownThread.start();
 
-    latch.await(10 * 1000, TimeUnit.MILLISECONDS);
+    latch.await(5 * 1000, TimeUnit.MILLISECONDS);
 
     assertTrue(latch.getCount() == 0);
 
     synchronized(error) {
-      error.wait(10 * 1000);
+      error.wait(5 * 1000);
     }
 
     if(!error.toString().isEmpty()) {
       fail(error.toString());
     }
-  }
-
-  //@Test
-  public void testGetError() throws Exception {
-    EchoMessage echoMessage2 = EchoMessage.newBuilder()
-        .setMessage("[Don't Worry! It's an exception message for unit test]").
-            build();
-
-    RpcController controller = new NettyRpcController();
-    assertNull(stub.getError(controller, echoMessage2));
-    assertTrue(service.getErrorCalled);
-    assertTrue(controller.failed());
-    assertEquals(echoMessage2.getMessage(), controller.errorText());
   }
 }

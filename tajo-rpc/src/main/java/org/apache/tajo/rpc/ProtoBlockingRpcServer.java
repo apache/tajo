@@ -41,7 +41,7 @@ public class ProtoBlockingRpcServer extends NettyServerBase {
                                 final InetSocketAddress bindAddress)
       throws Exception {
 
-    super(bindAddress);
+    super(protocol.getSimpleName(), bindAddress);
 
     String serviceClassName = protocol.getName() + "$" +
         protocol.getSimpleName() + "Service";

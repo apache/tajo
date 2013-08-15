@@ -19,18 +19,17 @@
 package org.apache.tajo.rpc;
 
 import com.google.protobuf.RpcCallback;
-import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.apache.tajo.rpc.test.DummyProtocol;
 import org.apache.tajo.rpc.test.DummyProtocol.DummyProtocolService.Interface;
 import org.apache.tajo.rpc.test.TestProtos.EchoMessage;
 import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolAsyncImpl;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
@@ -57,16 +56,21 @@ public class TestProtoAsyncRpc {
     server = new ProtoAsyncRpcServer(DummyProtocol.class,
         service, new InetSocketAddress(0));
     server.start();
-    client = new ProtoAsyncRpcClient(DummyProtocol.class, server.getBindAddress());
+    client = new ProtoAsyncRpcClient(DummyProtocol.class, server.getListenAddress());
     stub = client.getStub();
   }
 
   @After
   public void tearDown() throws Exception {
-    client.close();
-    server.shutdown();
+    if(client != null) {
+      client.close();
+    }
+    if(server != null) {
+      server.shutdown();
+    }
   }
 
+  boolean calledMarker = false;
   @Test
   public void testRpc() throws Exception {
 
@@ -87,14 +91,17 @@ public class TestProtoAsyncRpc {
 
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-
-    stub.echo(null, echoMessage, new RpcCallback<EchoMessage>() {
+    RpcCallback<EchoMessage> callback = new RpcCallback<EchoMessage>() {
       @Override
       public void run(EchoMessage parameter) {
         echo = parameter.getMessage();
         assertEquals(MESSAGE, echo);
+        calledMarker = true;
       }
-    });
+    };
+    stub.echo(null, echoMessage, callback);
+    Thread.sleep(1000);
+    assertTrue(calledMarker);
   }
 
   private CountDownLatch testNullLatch;
@@ -112,31 +119,6 @@ public class TestProtoAsyncRpc {
     });
     testNullLatch.await(1000, TimeUnit.MILLISECONDS);
     assertTrue(service.getNullCalled);
-  }
-
-  private CountDownLatch testGetErrorLatch;
-
-  //@Test
-  // TODO - to be fixed
-  public void testGetError() throws Exception {
-    EchoMessage echoMessage2 = EchoMessage.newBuilder()
-        .setMessage("[Don't Worry! It's an exception message for unit test]").
-            build();
-
-    testGetErrorLatch = new CountDownLatch(1);
-    RpcController controller = new NettyRpcController();
-    stub.getError(controller, echoMessage2, new RpcCallback<EchoMessage>() {
-      @Override
-      public void run(EchoMessage parameter) {
-        assertNull(parameter);
-        LOG.info("testGetError retrieved");
-        testGetErrorLatch.countDown();
-      }
-    });
-    testGetErrorLatch.await(1000, TimeUnit.MILLISECONDS);
-    assertTrue(service.getErrorCalled);
-    assertTrue(controller.failed());
-    assertEquals(echoMessage2.getMessage(), controller.errorText());
   }
 
   @Test

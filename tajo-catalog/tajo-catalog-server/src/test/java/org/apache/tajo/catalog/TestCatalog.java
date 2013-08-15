@@ -78,7 +78,6 @@ public class TestCatalog {
 		assertTrue(catalog.existsTable("getTable"));
 		
 		TableDesc meta2 = catalog.getTableDesc("getTable");
-		System.out.println(meta2);
 		
 		catalog.deleteTable("getTable");
 		assertFalse(catalog.existsTable("getTable"));

@@ -39,7 +39,6 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.*;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.sql.ResultSet;
@@ -209,7 +208,7 @@ public class TajoTestingCluster {
     catalogServer = new MiniCatalogServer(conf);
     CatalogServer catServer = catalogServer.getCatalogServer();
     InetSocketAddress sockAddr = catServer.getBindAddress();
-    c.setVar(ConfVars.CATALOG_ADDRESS, NetUtils.getIpPortString(sockAddr));
+    c.setVar(ConfVars.CATALOG_ADDRESS, NetUtils.normalizeInetSocketAddress(sockAddr));
 
     return this.catalogServer;
   }
@@ -352,10 +351,10 @@ public class TajoTestingCluster {
       yarnCluster.start();
 
       conf.set(YarnConfiguration.RM_ADDRESS,
-          NetUtils.getIpPortString(yarnCluster.getResourceManager().
+          NetUtils.normalizeInetSocketAddress(yarnCluster.getResourceManager().
               getClientRMService().getBindAddress()));
       conf.set(YarnConfiguration.RM_SCHEDULER_ADDRESS,
-          NetUtils.getIpPortString(yarnCluster.getResourceManager().
+          NetUtils.normalizeInetSocketAddress(yarnCluster.getResourceManager().
               getApplicationMasterService().getBindAddress()));
 
       URL url = Thread.currentThread().getContextClassLoader().getResource("yarn-site.xml");

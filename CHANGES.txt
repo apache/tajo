@@ -15,6 +15,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-129: Enable the constructor of NettyServerBase to take a service
+    name. (hyunsik)
+
     TAJO-91: Launch QueryMaster on NodeManager per query. 
     (hyoungjunkim via hyunsik)
 

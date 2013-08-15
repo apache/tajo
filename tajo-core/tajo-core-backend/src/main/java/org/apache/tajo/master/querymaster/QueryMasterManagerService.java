@@ -22,7 +22,6 @@ import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
@@ -32,8 +31,11 @@ import org.apache.tajo.ipc.QueryMasterManagerProtocol.QueryHeartbeatResponse;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.rpc.ProtoBlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
+import org.apache.tajo.util.NetUtils;
 
 import java.net.InetSocketAddress;
+
+import static org.apache.tajo.conf.TajoConf.ConfVars;
 
 public class QueryMasterManagerService extends AbstractService {
   private final static Log LOG = LogFactory.getLog(QueryMasterManagerService.class);
@@ -57,7 +59,7 @@ public class QueryMasterManagerService extends AbstractService {
   @Override
   public void start() {
     // TODO resolve hostname
-    String confMasterServiceAddr = conf.getVar(TajoConf.ConfVars.QUERY_MASTER_MANAGER_SERVICE_ADDRESS);
+    String confMasterServiceAddr = conf.getVar(ConfVars.QUERY_MASTER_MANAGER_SERVICE_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
     try {
       server = new ProtoBlockingRpcServer(QueryMasterManagerProtocol.class, masterHandler, initIsa);
@@ -65,10 +67,9 @@ public class QueryMasterManagerService extends AbstractService {
       LOG.error(e);
     }
     server.start();
-    bindAddress = server.getBindAddress();
-    this.conf.setVar(TajoConf.ConfVars.QUERY_MASTER_MANAGER_SERVICE_ADDRESS,
-            org.apache.tajo.util.NetUtils.getIpPortString(bindAddress));
-    LOG.info("Instantiated QueryMasterManagerService at " + this.bindAddress);
+    bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
+    this.conf.setVar(ConfVars.QUERY_MASTER_MANAGER_SERVICE_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
+    LOG.info("QueryMasterManagerService startup");
     super.start();
   }
 
@@ -78,6 +79,7 @@ public class QueryMasterManagerService extends AbstractService {
       server.shutdown();
       server = null;
     }
+    LOG.info("QueryMasterManagerService shutdown");
     super.stop();
   }
 

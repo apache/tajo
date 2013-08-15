@@ -128,13 +128,11 @@ public class CatalogServer extends AbstractService {
     // Creation of a HSA will force a resolve.
     InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
     try {
-      this.rpcServer = new ProtoBlockingRpcServer(
-          CatalogProtocol.class,
-          handler, initIsa);
+      this.rpcServer = new ProtoBlockingRpcServer(CatalogProtocol.class, handler, initIsa);
       this.rpcServer.start();
 
-      this.bindAddress = this.rpcServer.getBindAddress();
-      this.serverName = NetUtils.getIpPortString(bindAddress);
+      this.bindAddress = NetUtils.getConnectAddress(this.rpcServer.getListenAddress());
+      this.serverName = NetUtils.normalizeInetSocketAddress(bindAddress);
       conf.setVar(ConfVars.CATALOG_ADDRESS, serverName);
     } catch (Exception e) {
       LOG.error("Cannot start RPC Server of CatalogServer", e);
