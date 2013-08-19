@@ -37,16 +37,6 @@
   </property>
 
   <property>
-    <name>tajo.master.clientservice.addr</name>
-    <value>127.0.0.1:9004</value>
-  </property>
-
-  <property>
-    <name>tajo.master.querymastermanager.addr</name>
-    <value>127.0.0.1:9005</value>
-  </property>
-
-  <property>
     <name>tajo.query.session.timeout</name>
     <value>60000</value>
     <description>ms</description>

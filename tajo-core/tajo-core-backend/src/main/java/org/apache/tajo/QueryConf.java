@@ -24,6 +24,7 @@ import org.apache.tajo.conf.TajoConf;
 
 public class QueryConf extends TajoConf {
   public static String FILENAME = "queryconf.xml";
+  public static String QUERY_MASTER_FILENAME = "querymasterconf.xml";
 
   public QueryConf() {
     super();

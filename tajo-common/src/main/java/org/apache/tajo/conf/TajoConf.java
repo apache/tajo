@@ -86,7 +86,7 @@ public class TajoConf extends YarnConfiguration {
     /** how many launching TaskRunners in parallel */
     AM_TASKRUNNER_LAUNCH_PARALLEL_NUM("tajo.master.taskrunnerlauncher.parallel.num", 16),
 
-
+    MAX_WORKER_PER_NODE("tajo.query.max-workernum.per.node", 8),
 
     //////////////////////////////////
     // Pull Server

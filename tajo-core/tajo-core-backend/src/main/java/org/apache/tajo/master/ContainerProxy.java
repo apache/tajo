@@ -42,6 +42,7 @@ import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.hadoop.yarn.util.ProtoUtils;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.tajo.QueryConf;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.querymaster.QueryMaster;
 import org.apache.tajo.pullserver.PullServerAuxService;
@@ -226,7 +227,7 @@ public abstract class ContainerProxy {
     }
   }
 
-  public static ContainerLaunchContext createCommonContainerLaunchContext(Configuration config) {
+  public static ContainerLaunchContext createCommonContainerLaunchContext(Configuration config, String queryId, boolean isMaster) {
     TajoConf conf = (TajoConf)config;
 
     ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
@@ -309,16 +310,28 @@ public abstract class ContainerProxy {
       LOG.error(e.getMessage(), e);
     }
 
+
     LOG.info("Writing a QueryConf to HDFS and add to local environment");
-
-    Path queryConfPath = new Path(fs.getHomeDirectory(), QueryConf.FILENAME);
     try {
-      writeConf(conf, queryConfPath);
+      // TODO move to tajo temp
+      Path warehousePath = new Path(conf.getVar(TajoConf.ConfVars.ROOT_DIR), TajoConstants.WAREHOUSE_DIR);
+      Path queryConfPath = new Path(warehousePath, queryId);
+      if(isMaster) {
+        queryConfPath = new Path(queryConfPath, QueryConf.QUERY_MASTER_FILENAME);
+      } else {
+        queryConfPath = new Path(queryConfPath, QueryConf.FILENAME);
+      }
 
+      if(!fs.exists(queryConfPath)){
+        writeConf(conf, queryConfPath);
+      } else {
+        LOG.warn("QueryConf already exist. path: "  + queryConfPath.toString());
+      }
       LocalResource queryConfSrc = createApplicationResource(fsCtx, queryConfPath, LocalResourceType.FILE);
-      localResources.put(QueryConf.FILENAME,  queryConfSrc);
 
+      localResources.put(queryConfPath.getName(), queryConfSrc);
       ctx.setLocalResources(localResources);
+
     } catch (IOException e) {
       LOG.error(e.getMessage(), e);
     }

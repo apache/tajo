@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.service.AbstractService;
@@ -111,7 +112,7 @@ public class TaskSchedulerImpl extends AbstractService
 
         while(!stopEventHandling && !Thread.currentThread().isInterrupted()) {
           try {
-            Thread.sleep(1000);
+            Thread.sleep(100);
           } catch (InterruptedException e) {
             break;
           }
@@ -257,14 +258,15 @@ public class TaskSchedulerImpl extends AbstractService
 
     public void addLeafTask(TaskScheduleEvent event) {
       for (String host : event.getHosts()) {
-        LinkedList<QueryUnitAttemptId> list = leafTasksHostMapping.get(host);
+        String hostName = NetUtils.normalizeHostName(host);
+        LinkedList<QueryUnitAttemptId> list = leafTasksHostMapping.get(hostName);
         if (list == null) {
           list = new LinkedList<QueryUnitAttemptId>();
-          leafTasksHostMapping.put(host, list);
+          leafTasksHostMapping.put(hostName, list);
         }
         list.add(event.getAttemptId());
         if (LOG.isDebugEnabled()) {
-          LOG.debug("Added attempt req to host " + host);
+          LOG.debug("Added attempt req to host " + hostName);
         }
       }
       for (String rack: event.getRacks()) {
@@ -304,7 +306,7 @@ public class TaskSchedulerImpl extends AbstractService
       while (it.hasNext() && leafTasks.size() > 0) {
         taskRequest = it.next();
         ContainerProxy container = context.getContainer(taskRequest.getContainerId());
-        String hostName = container.getTaskHostName();
+        String hostName = NetUtils.normalizeHostName(container.getTaskHostName());
 
         QueryUnitAttemptId attemptId = null;
 

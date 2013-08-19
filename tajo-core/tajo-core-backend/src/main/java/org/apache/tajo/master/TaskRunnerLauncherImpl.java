@@ -70,14 +70,6 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
 
   public void stop() {
     executorService.shutdownNow();
-
-    while(!executorService.isTerminated()) {
-      LOG.info("executorService.isTerminated:" + executorService.isTerminated() + "," + executorService.isShutdown());
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-      }
-    }
     Map<ContainerId, ContainerProxy> containers = context.getContainers();
     for(ContainerProxy eachProxy: containers.values()) {
       try {
@@ -98,7 +90,7 @@ public class TaskRunnerLauncherImpl extends AbstractService implements TaskRunne
   }
 
   private void launchTaskRunners(SubQueryId subQueryId, Collection<Container> containers) {
-    commonContainerSpec = ContainerProxy.createCommonContainerLaunchContext(getConfig());
+    commonContainerSpec = ContainerProxy.createCommonContainerLaunchContext(getConfig(), subQueryId.toString(), false);
     for (Container container : containers) {
       final ContainerProxy proxy =
           new TaskRunnerContainerProxy(context, getConfig(), context.getYarnRPC(), container, subQueryId);

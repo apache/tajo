@@ -86,7 +86,7 @@ public class QueryMasterRunner extends AbstractService {
     LOG.info("QueryMasterRunner started");
 
     final QueryConf conf = new QueryConf();
-    conf.addResource(new Path(QueryConf.FILENAME));
+    conf.addResource(new Path(QueryConf.QUERY_MASTER_FILENAME));
 
     UserGroupInformation.setConfiguration(conf);
 

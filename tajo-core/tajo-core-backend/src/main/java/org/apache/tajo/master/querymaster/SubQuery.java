@@ -616,7 +616,9 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       QueryUnit [] tasks = subQuery.getQueryUnits();
 
       int numClusterNodes = subQuery.getContext().getNumClusterNode();
-      int numRequest = Math.min(tasks.length, numClusterNodes * 4);
+      TajoConf conf =  subQuery.getContext().getConf();
+      int workerNum = conf.getIntVar(ConfVars.MAX_WORKER_PER_NODE);
+      int numRequest = Math.min(tasks.length, numClusterNodes * workerNum);
 
       final Resource resource = Records.newRecord(Resource.class);
       // TODO - for each different subquery, the volume of resource should be different.

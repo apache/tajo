@@ -131,7 +131,7 @@ public class QueryMasterManager extends CompositeService {
         break;
       }
       try {
-        Thread.sleep(1000);
+        Thread.sleep(100);
       } catch (InterruptedException e) {
       }
     }
@@ -244,7 +244,7 @@ public class QueryMasterManager extends CompositeService {
     appContext.setQueue("default");
 
     ContainerLaunchContext commonContainerLaunchContext =
-            ContainerProxy.createCommonContainerLaunchContext(masterContext.getConf());
+            ContainerProxy.createCommonContainerLaunchContext(masterContext.getConf(), queryId.toString(), true);
 
     // Setup environment by cloning from common env.
     Map<String, String> env = commonContainerLaunchContext.getEnvironment();
@@ -288,7 +288,7 @@ public class QueryMasterManager extends CompositeService {
 
     final Resource resource = Records.newRecord(Resource.class);
     // TODO - get default value from conf
-    resource.setMemory(2048);
+    resource.setMemory(2000);
     resource.setVirtualCores(1);
 
     Map<String, ByteBuffer> myServiceData = new HashMap<String, ByteBuffer>();
