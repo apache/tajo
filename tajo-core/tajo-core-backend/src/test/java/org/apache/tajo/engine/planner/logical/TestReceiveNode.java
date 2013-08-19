@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner.logical.extended;
+package org.apache.tajo.engine.planner.logical;
 
 import com.google.common.collect.Lists;
 import org.junit.Test;
-import org.apache.tajo.engine.planner.logical.ExprType;
 
 import java.net.URI;
 import java.util.List;
@@ -44,14 +43,14 @@ public class TestReceiveNode {
     rec.addData("test2", set2.get(0));
     rec.addData("test2", set2.get(1));
     
-    assertEquals(ExprType.RECEIVE, rec.getType());
+    assertEquals(NodeType.RECEIVE, rec.getType());
     assertEquals(PipeType.PULL, rec.getPipeType());
     assertEquals(RepartitionType.HASH, rec.getRepartitionType());    
     assertEquals(set1, Lists.newArrayList(rec.getSrcURIs("test1")));
     assertEquals(set2, Lists.newArrayList(rec.getSrcURIs("test2")));
     
     ReceiveNode rec2 = (ReceiveNode) rec.clone();
-    assertEquals(ExprType.RECEIVE, rec2.getType());
+    assertEquals(NodeType.RECEIVE, rec2.getType());
     assertEquals(PipeType.PULL, rec2.getPipeType());
     assertEquals(RepartitionType.HASH, rec2.getRepartitionType());    
     assertEquals(set1, Lists.newArrayList(rec2.getSrcURIs("test1")));

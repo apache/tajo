@@ -61,7 +61,7 @@ public class MemStore implements CatalogStore {
   @Override
   public void addTable(TableDesc desc) throws IOException {
     synchronized(tables) {
-      tables.put(desc.getId(), desc);
+      tables.put(desc.getName(), desc);
     }
   }
 

@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
+import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
@@ -108,10 +109,10 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     }
 
     stack.push(node);
-    LogicalNode child = visitChild(plan, node.getSubNode(), stack, context);
+    LogicalNode child = visitChild(plan, node.getChild(), stack, context);
     stack.pop();
 
-    LogicalNode childNode = node.getSubNode();
+    LogicalNode childNode = node.getChild();
 
     // If all expressions are evaluated in the child operators and the last operator is projectable,
     // ProjectionNode will not be necessary. It eliminates ProjectionNode.
@@ -181,7 +182,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
       EvalNode expr;
       for (Target target : node.getTargets()) {
         expr = target.getEvalTree();
-        if (expr.getType() != EvalNode.Type.FIELD) {
+        if (expr.getType() != EvalType.FIELD) {
           currentRequired.addAll(EvalTreeUtil.findDistinctRefColumns(target.getEvalTree()));
         }
       }
@@ -197,8 +198,8 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     rightContext.upperRequired = currentRequired;
 
     stack.push(node);
-    LogicalNode outer = visitChild(plan, node.getOuterNode(), stack, leftContext);
-    LogicalNode inner = visitChild(plan, node.getInnerNode(), stack, rightContext);
+    LogicalNode outer = visitChild(plan, node.getLeftChild(), stack, leftContext);
+    LogicalNode inner = visitChild(plan, node.getRightChild(), stack, rightContext);
     stack.pop();
 
     Schema merged = SchemaUtil.merge(outer.getOutSchema(), inner.getOutSchema());
@@ -242,7 +243,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
       throws PlanningException {
 
     stack.push(node);
-    LogicalNode child = visitChild(context.plan, node.getSubNode(), stack, context);
+    LogicalNode child = visitChild(context.plan, node.getChild(), stack, context);
     stack.pop();
     node.setInSchema(child.getOutSchema());
     node.setOutSchema(child.getOutSchema());
@@ -267,7 +268,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
 
         if (node instanceof ScanNode) { // For ScanNode
 
-          if (expr.getType() == EvalNode.Type.FIELD && !targetListManager.getTarget(i).hasAlias()) {
+          if (expr.getType() == EvalType.FIELD && !targetListManager.getTarget(i).hasAlias()) {
             targetListManager.setEvaluated(i);
           } else if (EvalTreeUtil.findDistinctAggFunction(expr).size() == 0) {
             targetListManager.setEvaluated(i);
@@ -275,13 +276,13 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
           }
 
         } else if (node instanceof GroupbyNode) { // For GroupBy
-          if (EvalTreeUtil.findDistinctAggFunction(expr).size() > 0 && expr.getType() != EvalNode.Type.FIELD) {
+          if (EvalTreeUtil.findDistinctAggFunction(expr).size() > 0 && expr.getType() != EvalType.FIELD) {
             targetListManager.setEvaluated(i);
             newEvaluatedTargetIds.add(i);
           }
 
         } else if (node instanceof JoinNode) {
-          if (expr.getType() != EvalNode.Type.FIELD && EvalTreeUtil.findDistinctAggFunction(expr).size() == 0) {
+          if (expr.getType() != EvalType.FIELD && EvalTreeUtil.findDistinctAggFunction(expr).size() == 0) {
             targetListManager.setEvaluated(i);
             newEvaluatedTargetIds.add(i);
           }
@@ -338,7 +339,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
 
   private static boolean isTopmostProjectable(Stack<LogicalNode> stack) {
     for (LogicalNode node : stack) {
-      if (node.getType() == ExprType.JOIN || node.getType() == ExprType.GROUP_BY) {
+      if (node.getType() == NodeType.JOIN || node.getType() == NodeType.GROUP_BY) {
         return false;
       }
     }
@@ -349,25 +350,25 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
   private BinaryNode pushDownSetNode(LogicalPlan plan, BinaryNode setNode, Stack<LogicalNode> stack,
                                             PushDownContext context) throws PlanningException {
 
-    LogicalPlan.QueryBlock leftBlock = plan.getBlock(setNode.getOuterNode());
+    LogicalPlan.QueryBlock leftBlock = plan.getBlock(setNode.getLeftChild());
     PushDownContext leftContext = new PushDownContext(context);
     leftContext.targetListManager = new TargetListManager(plan,
         leftBlock.getTargetListManager().getUnEvaluatedTargets());
 
-    LogicalPlan.QueryBlock rightBlock = plan.getBlock(setNode.getInnerNode());
+    LogicalPlan.QueryBlock rightBlock = plan.getBlock(setNode.getRightChild());
     PushDownContext rightContext = new PushDownContext(context);
     rightContext.targetListManager = new TargetListManager(plan,
         rightBlock.getTargetListManager().getUnEvaluatedTargets());
 
 
     stack.push(setNode);
-    visitChild(plan, setNode.getOuterNode(), stack, leftContext);
-    visitChild(plan, setNode.getInnerNode(), stack, rightContext);
+    visitChild(plan, setNode.getLeftChild(), stack, leftContext);
+    visitChild(plan, setNode.getRightChild(), stack, rightContext);
     stack.pop();
 
     // if this is the final union, we assume that all targets are evalauted.
     // TODO - is it always correct?
-    if (stack.peek().getType() != ExprType.UNION) {
+    if (stack.peek().getType() != NodeType.UNION) {
       context.targetListManager.setEvaluatedAll();
     }
 

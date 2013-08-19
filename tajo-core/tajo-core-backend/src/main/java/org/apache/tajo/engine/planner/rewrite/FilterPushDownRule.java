@@ -45,13 +45,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
   public boolean isEligible(LogicalPlan plan) {
     LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
 
-    return PlannerUtil.findTopNode(toBeOptimized, ExprType.SELECTION) != null;
+    return PlannerUtil.findTopNode(toBeOptimized, NodeType.SELECTION) != null;
   }
 
   @Override
   public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
     LogicalNode root = plan.getRootBlock().getRoot();
-    SelectionNode selNode = (SelectionNode) PlannerUtil.findTopNode(root, ExprType.SELECTION);
+    SelectionNode selNode = (SelectionNode) PlannerUtil.findTopNode(root, NodeType.SELECTION);
     Preconditions.checkNotNull(selNode);
 
     Stack<LogicalNode> stack = new Stack<LogicalNode>();
@@ -64,7 +64,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
   public LogicalNode visitFilter(LogicalPlan plan, SelectionNode selNode, Stack<LogicalNode> stack, List<EvalNode> cnf)
       throws PlanningException {
     stack.push(selNode);
-    visitChild(plan, selNode.getSubNode(), stack, cnf);
+    visitChild(plan, selNode.getChild(), stack, cnf);
     stack.pop();
 
     // remove the selection operator if there is no search condition
@@ -73,7 +73,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
       LogicalNode node = stack.peek();
       if (node instanceof UnaryNode) {
         UnaryNode unary = (UnaryNode) node;
-        unary.setSubNode(selNode.getSubNode());
+        unary.setChild(selNode.getChild());
       } else {
         throw new InvalidQueryException("Unexpected Logical Query Plan");
       }
@@ -84,11 +84,11 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
 
   public LogicalNode visitJoin(LogicalPlan plan, JoinNode joinNode, Stack<LogicalNode> stack, List<EvalNode> cnf)
       throws PlanningException {
-    LogicalNode outer = joinNode.getOuterNode();
-    LogicalNode inner = joinNode.getInnerNode();
+    LogicalNode left = joinNode.getRightChild();
+    LogicalNode right = joinNode.getLeftChild();
 
-    visitChild(plan, outer, stack, cnf);
-    visitChild(plan, inner, stack, cnf);
+    visitChild(plan, left, stack, cnf);
+    visitChild(plan, right, stack, cnf);
 
     List<EvalNode> matched = Lists.newArrayList();
     for (EvalNode eval : cnf) {

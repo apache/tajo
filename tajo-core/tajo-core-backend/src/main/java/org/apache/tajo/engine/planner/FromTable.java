@@ -46,11 +46,11 @@ public class FromTable implements Cloneable, GsonObject {
   }
 
   public final String getTableName() {
-    return desc.getId();
+    return desc.getName();
   }
 
   public final String getTableId() {
-    return alias == null ? desc.getId() : alias;
+    return alias == null ? desc.getName() : alias;
   }
 
   public final CatalogProtos.StoreType getStoreType() {
@@ -75,9 +75,9 @@ public class FromTable implements Cloneable, GsonObject {
 
   public final String toString() {
     if (alias != null)
-      return desc.getId() + " as " + alias;
+      return desc.getName() + " as " + alias;
     else
-      return desc.getId();
+      return desc.getName();
   }
 
   public boolean equals(Object obj) {

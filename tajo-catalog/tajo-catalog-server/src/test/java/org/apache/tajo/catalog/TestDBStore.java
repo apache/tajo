@@ -141,7 +141,7 @@ public class TestDBStore {
     store.delIndex(TestCatalog.desc1.getName());
     assertFalse(store.existIndex(TestCatalog.desc1.getName()));
     
-    store.deleteTable(table.getId());
+    store.deleteTable(table.getName());
   }
   
   @Test
@@ -156,7 +156,7 @@ public class TestDBStore {
         new IndexDesc(store.getIndex(TestCatalog.desc2.getName())));
     store.delIndex(TestCatalog.desc2.getName());
     
-    store.deleteTable(table.getId());
+    store.deleteTable(table.getName());
   }
   
   @Test
@@ -174,7 +174,7 @@ public class TestDBStore {
         new IndexDesc(store.getIndex(tableId, columnName)));
     store.delIndex(TestCatalog.desc2.getName());
     
-    store.deleteTable(table.getId());
+    store.deleteTable(table.getName());
   }
   
   @Test
@@ -191,7 +191,7 @@ public class TestDBStore {
     store.delIndex(TestCatalog.desc1.getName());
     store.delIndex(TestCatalog.desc2.getName());
     
-    store.deleteTable(table.getId());
+    store.deleteTable(table.getName());
   }
   
   public static TableDesc prepareTable() {

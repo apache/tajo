@@ -29,7 +29,7 @@ public class SelectionNode extends UnaryNode implements Cloneable {
 	}
 	
 	public SelectionNode(EvalNode qual) {
-		super(ExprType.SELECTION);
+		super(NodeType.SELECTION);
 		setQual(qual);
 	}
 
@@ -48,7 +48,7 @@ public class SelectionNode extends UnaryNode implements Cloneable {
     sb.append("\n  \"in schema\": ").append(getInSchema()).append("}");
     
     return sb.toString()+"\n"
-    + getSubNode().toString();
+    + getChild().toString();
   }
   
   @Override
@@ -57,7 +57,7 @@ public class SelectionNode extends UnaryNode implements Cloneable {
       SelectionNode other = (SelectionNode) obj;
       return super.equals(other) 
           && this.qual.equals(other.qual)
-          && subExpr.equals(other.subExpr);
+          && child.equals(other.child);
     } else {
       return false;
     }

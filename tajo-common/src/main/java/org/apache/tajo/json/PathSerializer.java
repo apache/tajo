@@ -29,14 +29,14 @@ import java.lang.reflect.Type;
 public class PathSerializer implements GsonSerDerAdapter<Path> {
 
 	@Override
-	public JsonElement serialize(Path arg0, Type arg1,
+	public JsonElement serialize(Path path, Type arg1,
 			JsonSerializationContext arg2) {
-		return new JsonPrimitive(arg0.toString());
+		return new JsonPrimitive(path.toString());
 	}
 
   @Override
   public Path deserialize(JsonElement arg0, Type arg1,
-                          JsonDeserializationContext arg2) throws JsonParseException {
+                          JsonDeserializationContext context) throws JsonParseException {
     return new Path(arg0.getAsJsonPrimitive().getAsString());
   }
 }

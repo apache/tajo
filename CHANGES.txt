@@ -15,6 +15,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-123: Clean up the logical plan's json format. (hyunsik)
+
     TAJO-129: Enable the constructor of NettyServerBase to take a service
     name. (hyunsik)
 

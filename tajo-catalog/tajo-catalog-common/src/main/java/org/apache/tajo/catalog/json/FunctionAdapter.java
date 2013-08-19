@@ -30,10 +30,10 @@ public class FunctionAdapter implements GsonSerDerAdapter<Function> {
   public JsonElement serialize(Function src, Type typeOfSrc,
       JsonSerializationContext context) {
     JsonObject jsonObj = new JsonObject();
-    String className = src.getClass().getCanonicalName();
-    jsonObj.addProperty("className", className);
+    String className = src.getClass().getName();
+    jsonObj.addProperty("class", className);
     JsonElement jsonElem = context.serialize(src);
-    jsonObj.add("property", jsonElem);
+    jsonObj.add("body", jsonElem);
     return jsonObj;
   }
 
@@ -41,7 +41,7 @@ public class FunctionAdapter implements GsonSerDerAdapter<Function> {
   public Function deserialize(JsonElement json, Type typeOfT,
       JsonDeserializationContext context) throws JsonParseException {
     JsonObject jsonObject = json.getAsJsonObject();
-    String className = jsonObject.get("className").getAsJsonPrimitive().getAsString();
+    String className = jsonObject.get("class").getAsJsonPrimitive().getAsString();
     
     Class clazz;
     try {
@@ -50,6 +50,6 @@ public class FunctionAdapter implements GsonSerDerAdapter<Function> {
       e.printStackTrace();
       throw new JsonParseException(e);
     }
-    return context.deserialize(jsonObject.get("property"), clazz);
+    return context.deserialize(jsonObject.get("body"), clazz);
   }
 }

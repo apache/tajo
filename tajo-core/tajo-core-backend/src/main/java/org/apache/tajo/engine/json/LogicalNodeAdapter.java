@@ -23,37 +23,28 @@ package org.apache.tajo.engine.json;
 
 import com.google.gson.*;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
 
 public class LogicalNodeAdapter implements GsonSerDerAdapter<LogicalNode> {
 
-	@Override
-	public LogicalNode deserialize(JsonElement json, Type type,
-			JsonDeserializationContext ctx) throws JsonParseException {
-		JsonObject jsonObject = json.getAsJsonObject();
-		String className = jsonObject.get("classname").getAsJsonPrimitive().getAsString();
-		
-		Class clazz;
-		try {
-			clazz = Class.forName(className);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			throw new JsonParseException(e);
-		}
-		return ctx.deserialize(jsonObject.get("property"), clazz);
-	}
+  @Override
+  public LogicalNode deserialize(JsonElement src, Type type,
+                                 JsonDeserializationContext ctx) throws JsonParseException {
+    JsonObject jsonObject = src.getAsJsonObject();
+    String nodeName = jsonObject.get("type").getAsString();
+    Class clazz = NodeType.valueOf(nodeName).getBaseClass();
+    return ctx.deserialize(jsonObject.get("body"), clazz);
+  }
 
-	@Override
-	public JsonElement serialize(LogicalNode src, Type typeOfSrc,
-			JsonSerializationContext context) {
-		JsonObject jsonObj = new JsonObject();
-		String className = src.getClass().getCanonicalName();
-		jsonObj.addProperty("classname", className);
-		JsonElement jsonElem = context.serialize(src);
-		jsonObj.add("property", jsonElem);
-		return jsonObj;
-	}
-
+  @Override
+  public JsonElement serialize(LogicalNode src, Type typeOfSrc,
+                               JsonSerializationContext context) {
+    JsonObject json = new JsonObject();
+    json.addProperty("type", src.getType().name());
+    json.add("body", context.serialize(src));
+    return json;
+  }
 }

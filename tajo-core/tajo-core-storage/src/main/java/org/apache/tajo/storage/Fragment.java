@@ -32,8 +32,8 @@ import org.apache.tajo.util.TUtil;
 public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, GsonObject {
   protected FragmentProto.Builder builder = null;
 
-  @Expose private String fragmentId; // required
-  @Expose private Path path; // required
+  @Expose private String tableName; // required
+  @Expose private Path uri; // required
   @Expose private TableMeta meta; // required
   @Expose private Long startOffset; // required
   @Expose private Long length; // required
@@ -45,14 +45,14 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     builder = FragmentProto.newBuilder();
   }
 
-  public Fragment(String fragmentId, Path path, TableMeta meta, long start,
+  public Fragment(String tableName, Path uri, TableMeta meta, long start,
       long length, String [] dataLocations) {
     this();
     TableMeta newMeta = new TableMetaImpl(meta.getProto());
-    SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(fragmentId, meta
+    SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(tableName, meta
         .getSchema().getProto());
     newMeta.setSchema(new Schema(newSchemaProto));
-    this.set(fragmentId, path, newMeta, start, length);
+    this.set(tableName, uri, newMeta, start, length);
     this.dataLocations = dataLocations;
   }
 
@@ -74,32 +74,32 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     return this.dataLocations;
   }
 
-  private void set(String fragmentId, Path path, TableMeta meta, long start,
+  private void set(String tableName, Path path, TableMeta meta, long start,
       long length) {
-    this.fragmentId = fragmentId;
-    this.path = path;
+    this.tableName = tableName;
+    this.uri = path;
     this.meta = meta;
     this.startOffset = start;
     this.length = length;
   }
 
-  public String getId() {
-    return this.fragmentId;
+  public String getName() {
+    return this.tableName;
   }
 
   @Override
-  public void setId(String fragmentId) {
-    this.fragmentId = fragmentId;
+  public void setName(String tableName) {
+    this.tableName = tableName;
   }
   
   @Override
   public Path getPath() {
-    return this.path;
+    return this.uri;
   }
 
   @Override
   public void setPath(Path path) {
-    this.path = path;
+    this.uri = path;
   }
   
   public Schema getSchema() {
@@ -170,14 +170,14 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(fragmentId, path, startOffset, length, isDistCached());
+    return Objects.hashCode(tableName, uri, startOffset, length, isDistCached());
   }
   
   public Object clone() throws CloneNotSupportedException {
     Fragment frag = (Fragment) super.clone();
     frag.builder = FragmentProto.newBuilder();
-    frag.fragmentId = fragmentId;
-    frag.path = path;
+    frag.tableName = tableName;
+    frag.uri = uri;
     frag.meta = (TableMeta) (meta != null ? meta.clone() : null);
     frag.distCached = distCached;
     
@@ -186,7 +186,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
 
   @Override
   public String toString() {
-    return "\"fragment\": {\"id\": \""+fragmentId+"\", \"path\": "
+    return "\"fragment\": {\"id\": \""+ tableName +"\", \"path\": "
     		+getPath() + "\", \"start\": " + this.getStartOffset() + ",\"length\": "
         + getLength() + ", \"distCached\": " + distCached + "}" ;
   }
@@ -196,11 +196,11 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     if (builder == null) {
       builder = FragmentProto.newBuilder();
     }
-    builder.setId(this.fragmentId);
+    builder.setId(this.tableName);
     builder.setStartOffset(this.startOffset);
     builder.setMeta(meta.getProto());
     builder.setLength(this.length);
-    builder.setPath(this.path.toString());
+    builder.setPath(this.uri.toString());
     builder.setDistCached(this.distCached);
 
     return builder.build();

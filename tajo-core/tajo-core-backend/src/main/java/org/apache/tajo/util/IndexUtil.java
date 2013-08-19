@@ -23,11 +23,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.eval.ConstEval;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalNode.Type;
-import org.apache.tajo.engine.eval.EvalNodeVisitor;
-import org.apache.tajo.engine.eval.FieldEval;
+import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.logical.IndexScanNode;
 import org.apache.tajo.engine.planner.logical.ScanNode;
@@ -135,14 +131,14 @@ public class IndexUtil {
       case AND:
         break;
       case EQUAL:
-        if( node.getLeftExpr().getType() == Type.FIELD 
-          && node.getRightExpr().getType() == Type.CONST ) {
+        if( node.getLeftExpr().getType() == EvalType.FIELD
+          && node.getRightExpr().getType() == EvalType.CONST ) {
           nodeList.add(node);
         }
         break;
-      case IS:
-        if( node.getLeftExpr().getType() == Type.FIELD 
-          && node.getRightExpr().getType() == Type.CONST) {
+      case IS_NULL:
+        if( node.getLeftExpr().getType() == EvalType.FIELD
+          && node.getRightExpr().getType() == EvalType.CONST) {
           nodeList.add(node);
         }
       }

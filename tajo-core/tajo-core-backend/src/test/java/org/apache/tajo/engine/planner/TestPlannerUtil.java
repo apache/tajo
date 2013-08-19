@@ -26,10 +26,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.eval.BinaryEval;
-import org.apache.tajo.engine.eval.ConstEval;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.FieldEval;
+import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.logical.*;
@@ -104,9 +101,9 @@ public class TestPlannerUtil {
     Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[7]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
 
-    assertEquals(ExprType.ROOT, plan.getType());
+    assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
-    TestLogicalPlanner.testQuery7(root.getSubNode());
+    TestLogicalPlanner.testQuery7(root.getChild());
     
     root.postOrder(new TwoPhaseBuilder());
     
@@ -118,26 +115,26 @@ public class TestPlannerUtil {
     Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[9]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     
-    assertEquals(ExprType.ROOT, plan.getType());
+    assertEquals(NodeType.ROOT, plan.getType());
     UnaryNode unary = (UnaryNode) plan;
-    assertEquals(ExprType.PROJECTION, unary.getSubNode().getType());
-    ProjectionNode proj = (ProjectionNode) unary.getSubNode();
-    assertEquals(ExprType.GROUP_BY, proj.getSubNode().getType());
-    GroupbyNode groupby = (GroupbyNode) proj.getSubNode();
+    assertEquals(NodeType.PROJECTION, unary.getChild().getType());
+    ProjectionNode proj = (ProjectionNode) unary.getChild();
+    assertEquals(NodeType.GROUP_BY, proj.getChild().getType());
+    GroupbyNode groupby = (GroupbyNode) proj.getChild();
     unary = (UnaryNode) PlannerUtil.transformGroupbyTo2PWithStore(
         groupby, "test");
-    assertEquals(ExprType.STORE, unary.getSubNode().getType());
-    unary = (UnaryNode) unary.getSubNode();
+    assertEquals(NodeType.STORE, unary.getChild().getType());
+    unary = (UnaryNode) unary.getChild();
     
     assertEquals(groupby.getInSchema(), unary.getOutSchema());
     
-    assertEquals(ExprType.GROUP_BY, unary.getSubNode().getType());
+    assertEquals(NodeType.GROUP_BY, unary.getChild().getType());
   }
   
   private final class TwoPhaseBuilder implements LogicalNodeVisitor {
     @Override
     public void visit(LogicalNode node) {
-      if (node.getType() == ExprType.GROUP_BY) {
+      if (node.getType() == NodeType.GROUP_BY) {
         PlannerUtil.transformGroupbyTo2P((GroupbyNode) node);
       }
     }    
@@ -149,34 +146,34 @@ public class TestPlannerUtil {
     Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[1]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
 
-    assertEquals(ExprType.ROOT, plan.getType());
+    assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     TestLogicalNode.testCloneLogicalNode(root);
 
-    assertEquals(ExprType.PROJECTION, root.getSubNode().getType());
-    ProjectionNode projNode = (ProjectionNode) root.getSubNode();
+    assertEquals(NodeType.PROJECTION, root.getChild().getType());
+    ProjectionNode projNode = (ProjectionNode) root.getChild();
 
-    assertEquals(ExprType.JOIN, projNode.getSubNode().getType());
-    JoinNode joinNode = (JoinNode) projNode.getSubNode();
+    assertEquals(NodeType.JOIN, projNode.getChild().getType());
+    JoinNode joinNode = (JoinNode) projNode.getChild();
 
-    assertEquals(ExprType.SCAN, joinNode.getOuterNode().getType());
-    ScanNode leftNode = (ScanNode) joinNode.getOuterNode();
+    assertEquals(NodeType.SCAN, joinNode.getLeftChild().getType());
+    ScanNode leftNode = (ScanNode) joinNode.getLeftChild();
     assertEquals("employee", leftNode.getTableId());
-    assertEquals(ExprType.SCAN, joinNode.getInnerNode().getType());
-    ScanNode rightNode = (ScanNode) joinNode.getInnerNode();
+    assertEquals(NodeType.SCAN, joinNode.getRightChild().getType());
+    ScanNode rightNode = (ScanNode) joinNode.getRightChild();
     assertEquals("dept", rightNode.getTableId());
     
-    LogicalNode node = PlannerUtil.findTopNode(root, ExprType.ROOT);
-    assertEquals(ExprType.ROOT, node.getType());
+    LogicalNode node = PlannerUtil.findTopNode(root, NodeType.ROOT);
+    assertEquals(NodeType.ROOT, node.getType());
     
-    node = PlannerUtil.findTopNode(root, ExprType.PROJECTION);
-    assertEquals(ExprType.PROJECTION, node.getType());
+    node = PlannerUtil.findTopNode(root, NodeType.PROJECTION);
+    assertEquals(NodeType.PROJECTION, node.getType());
     
-    node = PlannerUtil.findTopNode(root, ExprType.JOIN);
-    assertEquals(ExprType.JOIN, node.getType());
+    node = PlannerUtil.findTopNode(root, NodeType.JOIN);
+    assertEquals(NodeType.JOIN, node.getType());
     
-    node = PlannerUtil.findTopNode(root, ExprType.SCAN);
-    assertEquals(ExprType.SCAN, node.getType());
+    node = PlannerUtil.findTopNode(root, NodeType.SCAN);
+    assertEquals(NodeType.SCAN, node.getType());
   }
 
   @Test
@@ -188,23 +185,23 @@ public class TestPlannerUtil {
 
     BinaryEval [] joinQuals = new BinaryEval[5];
     int idx = 0;
-    joinQuals[idx++] = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
-    joinQuals[idx++] = new BinaryEval(EvalNode.Type.LEQ, f1, f2);
-    joinQuals[idx++] = new BinaryEval(EvalNode.Type.LTH, f1, f2);
-    joinQuals[idx++] = new BinaryEval(EvalNode.Type.GEQ, f1, f2);
-    joinQuals[idx] = new BinaryEval(EvalNode.Type.GTH, f1, f2);
+    joinQuals[idx++] = new BinaryEval(EvalType.EQUAL, f1, f2);
+    joinQuals[idx++] = new BinaryEval(EvalType.LEQ, f1, f2);
+    joinQuals[idx++] = new BinaryEval(EvalType.LTH, f1, f2);
+    joinQuals[idx++] = new BinaryEval(EvalType.GEQ, f1, f2);
+    joinQuals[idx] = new BinaryEval(EvalType.GTH, f1, f2);
     for (int i = 0; i < idx; i++) {
       assertTrue(PlannerUtil.isJoinQual(joinQuals[idx]));
     }
 
     BinaryEval [] wrongJoinQuals = new BinaryEval[5];
     idx = 0;
-    wrongJoinQuals[idx++] = new BinaryEval(EvalNode.Type.OR, f1, f2);
-    wrongJoinQuals[idx++] = new BinaryEval(EvalNode.Type.PLUS, f1, f2);
-    wrongJoinQuals[idx++] = new BinaryEval(EvalNode.Type.LIKE, f1, f2);
+    wrongJoinQuals[idx++] = new BinaryEval(EvalType.OR, f1, f2);
+    wrongJoinQuals[idx++] = new BinaryEval(EvalType.PLUS, f1, f2);
+    wrongJoinQuals[idx++] = new BinaryEval(EvalType.LIKE, f1, f2);
 
     ConstEval f3 = new ConstEval(DatumFactory.createInt4(1));
-    wrongJoinQuals[idx] = new BinaryEval(EvalNode.Type.EQUAL, f1, f3);
+    wrongJoinQuals[idx] = new BinaryEval(EvalType.EQUAL, f1, f3);
 
     for (int i = 0; i < idx; i++) {
       assertFalse(PlannerUtil.isJoinQual(wrongJoinQuals[idx]));
@@ -225,7 +222,7 @@ public class TestPlannerUtil {
     FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
     FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
 
-    EvalNode joinQual = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
+    EvalNode joinQual = new BinaryEval(EvalType.EQUAL, f1, f2);
 
     // the case where part is the outer and partsupp is the inner.
     List<Column[]> pairs = PlannerUtil.getJoinKeyPairs(joinQual, outerSchema,  innerSchema);
@@ -239,8 +236,8 @@ public class TestPlannerUtil {
     assertEquals("employee.id1", pairs.get(0)[1].getQualifiedName());
 
     // composited join key test
-    EvalNode joinQual2 = new BinaryEval(EvalNode.Type.EQUAL, f3, f4);
-    EvalNode compositedJoinQual = new BinaryEval(EvalNode.Type.AND, joinQual, joinQual2);
+    EvalNode joinQual2 = new BinaryEval(EvalType.EQUAL, f3, f4);
+    EvalNode compositedJoinQual = new BinaryEval(EvalType.AND, joinQual, joinQual2);
     pairs = PlannerUtil.getJoinKeyPairs(compositedJoinQual, outerSchema,  innerSchema);
     assertEquals(2, pairs.size());
     assertEquals("employee.id1", pairs.get(0)[0].getQualifiedName());
@@ -271,7 +268,7 @@ public class TestPlannerUtil {
     FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
     FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
 
-    EvalNode joinQual = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
+    EvalNode joinQual = new BinaryEval(EvalType.EQUAL, f1, f2);
     SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(joinQual, outerSchema, innerSchema);
     assertEquals(2, sortSpecs.length);
     assertEquals(1, sortSpecs[0].length);
@@ -280,8 +277,8 @@ public class TestPlannerUtil {
     assertEquals(innerSchema.getColumnByName("fid1"), sortSpecs[1][0].getSortKey());
 
     // tests for composited join key
-    EvalNode joinQual2 = new BinaryEval(EvalNode.Type.EQUAL, f3, f4);
-    EvalNode compositedJoinQual = new BinaryEval(EvalNode.Type.AND, joinQual, joinQual2);
+    EvalNode joinQual2 = new BinaryEval(EvalType.EQUAL, f3, f4);
+    EvalNode compositedJoinQual = new BinaryEval(EvalType.AND, joinQual, joinQual2);
 
     sortSpecs = PlannerUtil.getSortKeysFromJoinQual(compositedJoinQual, outerSchema, innerSchema);
     assertEquals(2, sortSpecs.length);
@@ -307,7 +304,7 @@ public class TestPlannerUtil {
     FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
     FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
 
-    EvalNode joinQual = new BinaryEval(EvalNode.Type.EQUAL, f1, f2);
+    EvalNode joinQual = new BinaryEval(EvalType.EQUAL, f1, f2);
     TupleComparator [] comparators = PlannerUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);
 
     Tuple t1 = new VTuple(2);
@@ -327,8 +324,8 @@ public class TestPlannerUtil {
     assertTrue(innerComparator.compare(t2, t1) > 0);
 
     // tests for composited join key
-    EvalNode joinQual2 = new BinaryEval(EvalNode.Type.EQUAL, f3, f4);
-    EvalNode compositedJoinQual = new BinaryEval(EvalNode.Type.AND, joinQual, joinQual2);
+    EvalNode joinQual2 = new BinaryEval(EvalType.EQUAL, f3, f4);
+    EvalNode compositedJoinQual = new BinaryEval(EvalType.AND, joinQual, joinQual2);
     comparators = PlannerUtil.getComparatorsFromJoinQual(compositedJoinQual, outerSchema, innerSchema);
 
     outerComparator = comparators[0];

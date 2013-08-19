@@ -197,7 +197,7 @@ public class TestTajoClient {
     assertTrue(tajo.existTable(tableName1));
     TableDesc desc = tajo.getTableDesc(tableName1);
     assertNotNull(desc);
-    assertEquals(tableName1, desc.getId());
+    assertEquals(tableName1, desc.getName());
     assertTrue(desc.getMeta().getStat().getNumBytes() > 0);
   }
 }

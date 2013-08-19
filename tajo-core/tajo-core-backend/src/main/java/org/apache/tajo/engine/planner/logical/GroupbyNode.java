@@ -34,7 +34,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
 	}
 	
 	public GroupbyNode(final Column [] columns) {
-		super(ExprType.GROUP_BY);
+		super(NodeType.GROUP_BY);
 		this.columns = columns;
 	}
 	
@@ -75,8 +75,8 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     return this.targets;
   }
   
-  public void setSubNode(LogicalNode subNode) {
-    super.setSubNode(subNode);
+  public void setChild(LogicalNode subNode) {
+    super.setChild(subNode);
   }
   
   public String toString() {
@@ -105,7 +105,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     sb.append("}");
     
     return sb.toString() + "\n"
-        + getSubNode().toString();
+        + getChild().toString();
   }
   
   @Override
@@ -116,7 +116,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
       eq = eq && TUtil.checkEquals(columns, other.columns);
       eq = eq && TUtil.checkEquals(havingCondition, other.havingCondition);
       eq = eq && TUtil.checkEquals(targets, other.targets);
-      eq = eq && subExpr.equals(other.subExpr);
+      eq = eq && child.equals(other.child);
       return eq;
     } else {
       return false;  

@@ -24,7 +24,6 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.engine.eval.EvalNode.Type;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.exception.InternalException;
@@ -71,9 +70,9 @@ public class EvalTreeUtil {
   
   private static EvalNode transformCNF2Singleton_(EvalNode [] evalNode, int idx) {
     if (idx == evalNode.length - 2) {
-      return new BinaryEval(Type.AND, evalNode[idx], evalNode[idx + 1]);
+      return new BinaryEval(EvalType.AND, evalNode[idx], evalNode[idx + 1]);
     } else {
-      return new BinaryEval(Type.AND, evalNode[idx], 
+      return new BinaryEval(EvalType.AND, evalNode[idx],
           transformCNF2Singleton_(evalNode, idx + 1));
     }
   }
@@ -91,14 +90,14 @@ public class EvalTreeUtil {
   }
   
   private static void getConjNormalForm(EvalNode node, List<EvalNode> found) {
-    if (node.getType() == Type.AND) {
+    if (node.getType() == EvalType.AND) {
       getConjNormalForm(node.getLeftExpr(), found);
       getConjNormalForm(node.getRightExpr(), found);
     } else {
       found.add(node);
     }
   }
-
+  
   public static Schema getSchemaByTargets(Schema inputSchema, Target [] targets) 
       throws InternalException {
     Schema schema = new Schema();
@@ -160,7 +159,7 @@ public class EvalTreeUtil {
    * @param expr
    * @return
    */
-  public static Map<Type, Integer> getExprCounters(EvalNode expr) {
+  public static Map<EvalType, Integer> getExprCounters(EvalNode expr) {
     VariableCounter counter = new VariableCounter();
     expr.postOrder(counter);
     return counter.getCounter();
@@ -209,21 +208,21 @@ public class EvalTreeUtil {
   }
 
   public static boolean isComparisonOperator(EvalNode expr) {
-    return expr.getType() == Type.EQUAL ||
-        expr.getType() == Type.LEQ ||
-        expr.getType() == Type.LTH ||
-        expr.getType() == Type.GEQ ||
-        expr.getType() == Type.GTH;
+    return expr.getType() == EvalType.EQUAL ||
+        expr.getType() == EvalType.LEQ ||
+        expr.getType() == EvalType.LTH ||
+        expr.getType() == EvalType.GEQ ||
+        expr.getType() == EvalType.GTH;
   }
 
   public static boolean isJoinQual(EvalNode expr) {
     return isComparisonOperator(expr) &&
-        expr.getLeftExpr().getType() == Type.FIELD &&
-        expr.getRightExpr().getType() == Type.FIELD;
+        expr.getLeftExpr().getType() == EvalType.FIELD &&
+        expr.getRightExpr().getType() == EvalType.FIELD;
   }
 
   public static boolean isLogicalOperator(EvalNode expr) {
-    return expr.getType() == Type.AND || expr.getType() == Type.OR;
+    return expr.getType() == EvalType.AND || expr.getType() == EvalType.OR;
   }
   
   public static class ChangeColumnRefVisitor implements EvalNodeVisitor {    
@@ -237,7 +236,7 @@ public class EvalTreeUtil {
     
     @Override
     public void visit(EvalNode node) {
-      if (node.type == Type.FIELD) {
+      if (node.type == EvalType.FIELD) {
         FieldEval field = (FieldEval) node;
         if (field.getColumnName().equals(findColumn)
             || field.getName().equals(findColumn)) {
@@ -253,7 +252,7 @@ public class EvalTreeUtil {
     
     @Override
     public void visit(EvalNode node) {
-      if (node.getType() == Type.FIELD) {
+      if (node.getType() == EvalType.FIELD) {
         field = (FieldEval) node;
         colList.add(field.getColumnRef());
       } 
@@ -270,7 +269,7 @@ public class EvalTreeUtil {
     
     @Override
     public void visit(EvalNode node) {
-      if (node.getType() == Type.FIELD) {
+      if (node.getType() == EvalType.FIELD) {
         field = (FieldEval) node;
         colList.add(field.getColumnRef());
       }
@@ -282,12 +281,12 @@ public class EvalTreeUtil {
   }
   
   public static class VariableCounter implements EvalNodeVisitor {
-    private final Map<Type, Integer> counter;
+    private final Map<EvalType, Integer> counter;
     
     public VariableCounter() {
       counter = Maps.newHashMap();
-      counter.put(Type.FUNCTION, 0);
-      counter.put(Type.FIELD, 0);      
+      counter.put(EvalType.FUNCTION, 0);
+      counter.put(EvalType.FIELD, 0);
     }
     
     @Override
@@ -299,7 +298,7 @@ public class EvalTreeUtil {
       }
     }
     
-    public Map<Type, Integer> getCounter() {
+    public Map<EvalType, Integer> getCounter() {
       return counter;
     }
   }
@@ -316,7 +315,7 @@ public class EvalTreeUtil {
 
     @Override
     public void visit(EvalNode node) {
-      if (node.getType() == Type.AGG_FUNCTION) {
+      if (node.getType() == EvalType.AGG_FUNCTION) {
         field = (AggFuncCallEval) node;
         aggFucntions.add(field);
       }

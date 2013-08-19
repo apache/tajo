@@ -28,7 +28,7 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.util.TUtil;
 
 public abstract class LogicalNode implements Cloneable, GsonObject {
-  @Expose private ExprType type;
+  @Expose private NodeType type;
 	@Expose private Schema inputSchema;
 	@Expose	private Schema outputSchema;
 
@@ -38,15 +38,15 @@ public abstract class LogicalNode implements Cloneable, GsonObject {
 		
 	}
 
-	public LogicalNode(ExprType type) {
+	public LogicalNode(NodeType type) {
 		this.type = type;
 	}
 	
-	public ExprType getType() {
+	public NodeType getType() {
 		return this.type;
 	}
 
-	public void setType(ExprType type) {
+	public void setType(NodeType type) {
 		this.type = type;
 	}
 

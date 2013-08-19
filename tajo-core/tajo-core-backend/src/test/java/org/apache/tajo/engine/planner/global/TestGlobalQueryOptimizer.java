@@ -132,7 +132,7 @@ public class TestGlobalQueryOptimizer {
     queryId = QueryIdFactory.newQueryId();
     optimizer = new GlobalOptimizer();
   }
-
+  
   @AfterClass
   public static void terminate() throws IOException {
     util.shutdownCatalogCluster();
@@ -147,28 +147,28 @@ public class TestGlobalQueryOptimizer {
 
     MasterPlan globalPlan = planner.build(queryId, (LogicalRootNode) rootNode);
     globalPlan = optimizer.optimize(globalPlan);
-
+    
     ExecutionBlock unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
-    assertEquals(ExprType.PROJECTION, store.getSubNode().getType());
-    ProjectionNode proj = (ProjectionNode) store.getSubNode();
-    assertEquals(ExprType.SORT, proj.getSubNode().getType());
-    SortNode sort = (SortNode) proj.getSubNode();
-    assertEquals(ExprType.SCAN, sort.getSubNode().getType());
-    ScanNode scan = (ScanNode) sort.getSubNode();
-
+    assertEquals(NodeType.PROJECTION, store.getChild().getType());
+    ProjectionNode proj = (ProjectionNode) store.getChild();
+    assertEquals(NodeType.SORT, proj.getChild().getType());
+    SortNode sort = (SortNode) proj.getChild();
+    assertEquals(NodeType.SCAN, sort.getChild().getType());
+    ScanNode scan = (ScanNode) sort.getChild();
+    
     assertTrue(unit.hasChildBlock());
     unit = unit.getChildBlock(scan);
     store = unit.getStoreTableNode();
-    assertEquals(ExprType.SORT, store.getSubNode().getType());
-    sort = (SortNode) store.getSubNode();
-    assertEquals(ExprType.JOIN, sort.getSubNode().getType());
-
+    assertEquals(NodeType.SORT, store.getChild().getType());
+    sort = (SortNode) store.getChild();
+    assertEquals(NodeType.JOIN, sort.getChild().getType());
+    
     assertTrue(unit.hasChildBlock());
     for (ScanNode prevscan : unit.getScanNodes()) {
       ExecutionBlock prev = unit.getChildBlock(prevscan);
       store = prev.getStoreTableNode();
-      assertEquals(ExprType.SCAN, store.getSubNode().getType());
+      assertEquals(NodeType.SCAN, store.getChild().getType());
     }
   }
 }

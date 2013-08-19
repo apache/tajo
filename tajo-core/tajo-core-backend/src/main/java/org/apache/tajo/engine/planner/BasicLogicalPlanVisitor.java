@@ -93,7 +93,7 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   public LogicalNode visitRoot(LogicalPlan plan, LogicalRootNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getSubNode(), stack, data);
+    visitChild(plan, node.getChild(), stack, data);
     stack.pop();
     return node;
   }
@@ -102,7 +102,7 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   public LogicalNode visitProjection(LogicalPlan plan, ProjectionNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getSubNode(), stack, data);
+    visitChild(plan, node.getChild(), stack, data);
     stack.pop();
     return node;
   }
@@ -111,7 +111,7 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   public LogicalNode visitLimit(LogicalPlan plan, LimitNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getSubNode(), stack, data);
+    visitChild(plan, node.getChild(), stack, data);
     stack.pop();
     return node;
   }
@@ -120,7 +120,7 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   public LogicalNode visitSort(LogicalPlan plan, SortNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getSubNode(), stack, data);
+    visitChild(plan, node.getChild(), stack, data);
     stack.pop();
     return node;
   }
@@ -129,7 +129,7 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   public LogicalNode visitGroupBy(LogicalPlan plan, GroupbyNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getSubNode(), stack, data);
+    visitChild(plan, node.getChild(), stack, data);
     stack.pop();
     return node;
   }
@@ -138,7 +138,7 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   public LogicalNode visitFilter(LogicalPlan plan, SelectionNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getSubNode(), stack, data);
+    visitChild(plan, node.getChild(), stack, data);
     stack.pop();
     return node;
   }
@@ -147,8 +147,8 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   public LogicalNode visitJoin(LogicalPlan plan, JoinNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getOuterNode(), stack, data);
-    visitChild(plan, node.getInnerNode(), stack, data);
+    visitChild(plan, node.getLeftChild(), stack, data);
+    visitChild(plan, node.getRightChild(), stack, data);
     stack.pop();
     return node;
   }
@@ -157,8 +157,8 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   public LogicalNode visitUnion(LogicalPlan plan, UnionNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getOuterNode(), stack, data);
-    visitChild(plan, node.getInnerNode(), stack, data);
+    visitChild(plan, node.getLeftChild(), stack, data);
+    visitChild(plan, node.getRightChild(), stack, data);
     stack.pop();
     return node;
   }
@@ -167,8 +167,8 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   public LogicalNode visitExcept(LogicalPlan plan, ExceptNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getOuterNode(), stack, data);
-    visitChild(plan, node.getInnerNode(), stack, data);
+    visitChild(plan, node.getLeftChild(), stack, data);
+    visitChild(plan, node.getRightChild(), stack, data);
     stack.pop();
     return node;
   }
@@ -177,8 +177,8 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   public LogicalNode visitIntersect(LogicalPlan plan, IntersectNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getOuterNode(), stack, data);
-    visitChild(plan, node.getInnerNode(), stack, data);
+    visitChild(plan, node.getLeftChild(), stack, data);
+    visitChild(plan, node.getRightChild(), stack, data);
     stack.pop();
     return node;
   }
@@ -193,7 +193,7 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   public LogicalNode visitStoreTable(LogicalPlan plan, StoreTableNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getSubNode(), stack, data);
+    visitChild(plan, node.getChild(), stack, data);
     stack.pop();
     return node;
   }

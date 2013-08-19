@@ -52,7 +52,6 @@ public class StorageGsonHelper {
     adapters.put(TableDesc.class, new TableDescAdapter());
     adapters.put(Class.class, new ClassNameSerializer());
     adapters.put(TableMeta.class, new TableMetaAdapter());
-    adapters.put(Datum.class, new DatumTypeAdapter());
     adapters.put(Function.class, new FunctionAdapter());
     adapters.put(GeneralFunction.class, new FunctionAdapter());
     adapters.put(AggFunction.class, new FunctionAdapter());

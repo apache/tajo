@@ -32,16 +32,16 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private Target[] targets;
 
   public JoinNode(JoinType joinType, LogicalNode left) {
-    super(ExprType.JOIN);
+    super(NodeType.JOIN);
     this.joinType = joinType;
-    setOuter(left);
+    setLeftChild(left);
   }
 
   public JoinNode(JoinType joinType, LogicalNode left, LogicalNode right) {
-    super(ExprType.JOIN);
+    super(NodeType.JOIN);
     this.joinType = joinType;
-    setOuter(left);
-    setInner(right);
+    setLeftChild(left);
+    setRightChild(right);
   }
 
   public JoinType getJoinType() {
@@ -83,7 +83,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof JoinNode) {
       JoinNode other = (JoinNode) obj;
-      return super.equals(other) && outer.equals(other.outer)
+      return super.equals(other) && leftChild.equals(other.leftChild)
           && inner.equals(other.inner);
     } else {
       return false;
@@ -118,7 +118,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
 
     sb.append("\n\"out schema: ").append(getOutSchema());
     sb.append("\n\"in schema: ").append(getInSchema());
-    sb.append("\n" + getOuterNode().toString()).append(" and ").append(getInnerNode());
+    sb.append("\n" + getLeftChild().toString()).append(" and ").append(getRightChild());
     return sb.toString();
   }
 }

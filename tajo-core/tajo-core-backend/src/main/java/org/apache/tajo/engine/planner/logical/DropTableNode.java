@@ -22,7 +22,7 @@ public class DropTableNode extends LogicalNode {
   private String tableName;
 
   public DropTableNode(String tableName) {
-    super(ExprType.DROP_TABLE);
+    super(NodeType.DROP_TABLE);
     this.tableName = tableName;
   }
 

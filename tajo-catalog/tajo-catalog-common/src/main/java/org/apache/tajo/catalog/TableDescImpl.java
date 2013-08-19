@@ -30,7 +30,7 @@ import org.apache.tajo.common.ProtoObject;
 public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>, Cloneable {
   protected TableDescProto.Builder builder = null;
   
-	@Expose protected String tableId; // required
+	@Expose protected String tableName; // required
 	@Expose protected Path uri; // required
 	@Expose protected TableMeta meta; // required
   
@@ -38,30 +38,30 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>, Cl
 		builder = TableDescProto.newBuilder();
 	}
 	
-	public TableDescImpl(String tableId, TableMeta info, Path path) {
+	public TableDescImpl(String tableName, TableMeta info, Path path) {
 		this();
 		// tajo deems all identifiers as lowcase characters
-	  this.tableId = tableId.toLowerCase();
+	  this.tableName = tableName.toLowerCase();
 	  this.meta = info;
 	  this.uri = path;	   
 	}
 	
-	public TableDescImpl(String tableId, Schema schema, StoreType type, 
+	public TableDescImpl(String tableName, Schema schema, StoreType type,
 	    Options options, Path path) {
-	  this(tableId, new TableMetaImpl(schema, type, options), path);
+	  this(tableName, new TableMetaImpl(schema, type, options), path);
 	}
 	
 	public TableDescImpl(TableDescProto proto) {
 	  this(proto.getId(), new TableMetaImpl(proto.getMeta()), new Path(proto.getPath()));
 	}
 	
-	public void setId(String tableId) {
+	public void setName(String tableId) {
 	  // tajo deems all identifiers as lowcase characters
-		this.tableId = tableId.toLowerCase();
+		this.tableName = tableId.toLowerCase();
 	}
 	
-  public String getId() {
-    return this.tableId;
+  public String getName() {
+    return this.tableName;
   }
 	
 	public void setPath(Path uri) {
@@ -98,7 +98,7 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>, Cl
 	public Object clone() throws CloneNotSupportedException {	  
 	  TableDescImpl desc = (TableDescImpl) super.clone();
 	  desc.builder = TableDescProto.newBuilder();
-	  desc.tableId = tableId;
+	  desc.tableName = tableName;
 	  desc.uri = uri;
 	  desc.meta = (TableMeta) meta.clone();
 	  
@@ -119,8 +119,8 @@ public class TableDescImpl implements TableDesc, ProtoObject<TableDescProto>, Cl
     if (builder == null) {
       builder = TableDescProto.newBuilder();
     }
-    if (this.tableId != null) {
-      builder.setId(this.tableId);
+    if (this.tableName != null) {
+      builder.setId(this.tableName);
     }
     if (this.uri != null) {
       builder.setPath(this.uri.toString());

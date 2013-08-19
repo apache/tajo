@@ -61,10 +61,10 @@ public class AlgebraicUtil {
      EvalNode lTerm = null;
      EvalNode rTerm = null;
      
-    if (left.getType() == EvalNode.Type.PLUS
-        || left.getType() == EvalNode.Type.MINUS
-        || left.getType() == EvalNode.Type.MULTIPLY
-        || left.getType() == EvalNode.Type.DIVIDE) {
+    if (left.getType() == EvalType.PLUS
+        || left.getType() == EvalType.MINUS
+        || left.getType() == EvalType.MULTIPLY
+        || left.getType() == EvalType.DIVIDE) {
       
       // If the left-left term is a variable, the left-right term is transposed.
       if(EvalTreeUtil.containColumnRef(left.getLeftExpr(), target)) {
@@ -92,16 +92,16 @@ public class AlgebraicUtil {
    * @param type
    * @return inversed operator type
    */
-  public static EvalNode.Type inverseOperator(EvalNode.Type type) {
+  public static EvalType inverseOperator(EvalType type) {
     switch (type) {
     case PLUS:
-      return EvalNode.Type.MINUS;
+      return EvalType.MINUS;
     case MINUS:
-      return EvalNode.Type.PLUS;
+      return EvalType.PLUS;
     case MULTIPLY:
-      return EvalNode.Type.DIVIDE;
+      return EvalType.DIVIDE;
     case DIVIDE:
-      return EvalNode.Type.MULTIPLY;
+      return EvalType.MULTIPLY;
     default : throw new AlgebraicException("ERROR: cannot inverse the operator: " 
       + type);
     }
@@ -114,7 +114,7 @@ public class AlgebraicUtil {
    * @return true if a given expr is a variable.
    */
   private static boolean isSingleVar(EvalNode node) {
-    if (node.getType() == EvalNode.Type.FIELD) {
+    if (node.getType() == EvalType.FIELD) {
       return true;
     } else {
       return false;
@@ -152,8 +152,8 @@ public class AlgebraicUtil {
       right = simplify(right);
       
       // If both are constants, they can be evaluated immediately.
-      if (left.getType() == EvalNode.Type.CONST
-          && right.getType() == EvalNode.Type.CONST) {
+      if (left.getType() == EvalType.CONST
+          && right.getType() == EvalType.CONST) {
         EvalContext exprCtx = expr.newContext();
         expr.eval(exprCtx, null, null);
         return new ConstEval(expr.terminate(exprCtx));
@@ -174,14 +174,14 @@ public class AlgebraicUtil {
    * @return true if expr has only one field
    */
   public static boolean containSingleVar(EvalNode expr) {
-    Map<EvalNode.Type, Integer> counter = EvalTreeUtil.getExprCounters(expr);
+    Map<EvalType, Integer> counter = EvalTreeUtil.getExprCounters(expr);
     
     int sum = 0;
     for (Integer cnt : counter.values()) {      
       sum += cnt;
     }
     
-    if (sum == 1 && counter.get(EvalNode.Type.FIELD) == 1) {
+    if (sum == 1 && counter.get(EvalType.FIELD) == 1) {
       return true;
     } else {
       return false;
@@ -199,14 +199,14 @@ public class AlgebraicUtil {
    */
   public static PartialBinaryExpr splitLeftTerm(EvalNode expr) {
     
-    if (!(expr.getType() == EvalNode.Type.PLUS
-        || expr.getType() == EvalNode.Type.MINUS
-        || expr.getType() == EvalNode.Type.MULTIPLY
-        || expr.getType() == EvalNode.Type.DIVIDE)) {
+    if (!(expr.getType() == EvalType.PLUS
+        || expr.getType() == EvalType.MINUS
+        || expr.getType() == EvalType.MULTIPLY
+        || expr.getType() == EvalType.DIVIDE)) {
       throw new AlgebraicException("Invalid algebraic operation: " + expr);
     }
     
-    if (expr.getLeftExpr().getType() != EvalNode.Type.CONST) {
+    if (expr.getLeftExpr().getType() != EvalType.CONST) {
       return splitLeftTerm(expr.getLeftExpr());
     }
     
@@ -227,14 +227,14 @@ public class AlgebraicUtil {
    */
   public static PartialBinaryExpr splitRightTerm(EvalNode expr) {
     
-    if (!(expr.getType() == EvalNode.Type.PLUS
-        || expr.getType() == EvalNode.Type.MINUS
-        || expr.getType() == EvalNode.Type.MULTIPLY
-        || expr.getType() == EvalNode.Type.DIVIDE)) {
+    if (!(expr.getType() == EvalType.PLUS
+        || expr.getType() == EvalType.MINUS
+        || expr.getType() == EvalType.MULTIPLY
+        || expr.getType() == EvalType.DIVIDE)) {
       throw new AlgebraicException("Invalid algebraic operation: " + expr);
     }
     
-    if (expr.getRightExpr().getType() != EvalNode.Type.CONST) {
+    if (expr.getRightExpr().getType() != EvalType.CONST) {
       return splitRightTerm(expr.getRightExpr());
     }
     
@@ -264,19 +264,19 @@ public class AlgebraicUtil {
       break;
       
     case GTH:
-      expr = EvalTreeFactory.create(EvalNode.Type.LTH,
+      expr = EvalTreeFactory.create(EvalType.LTH,
           inputExpr.getRightExpr(), inputExpr.getLeftExpr());
       break;
     case GEQ:
-      expr = EvalTreeFactory.create(EvalNode.Type.LEQ,
+      expr = EvalTreeFactory.create(EvalType.LEQ,
           inputExpr.getRightExpr(), inputExpr.getLeftExpr());
       break;
     case LTH:
-      expr = EvalTreeFactory.create(EvalNode.Type.GTH,
+      expr = EvalTreeFactory.create(EvalType.GTH,
           inputExpr.getRightExpr(), inputExpr.getLeftExpr());
       break;
     case LEQ:
-      expr = EvalTreeFactory.create(EvalNode.Type.GEQ,
+      expr = EvalTreeFactory.create(EvalType.GEQ,
           inputExpr.getRightExpr(), inputExpr.getLeftExpr());
       break;
       

@@ -376,7 +376,7 @@ public class TajoMasterClientService extends AbstractService {
 
       desc = new TableDescImpl(request.getName(), meta, path);
       catalog.addTable(desc);
-      LOG.info("Table " + desc.getId() + " is attached ("
+      LOG.info("Table " + desc.getName() + " is attached ("
           + meta.getStat().getNumBytes() + ")");
 
       return TableResponse.newBuilder().

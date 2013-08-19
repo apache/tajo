@@ -46,7 +46,7 @@ public class LikeEval extends BinaryEval {
 
   
   public LikeEval(boolean not, FieldEval field, ConstEval pattern) {
-    super(Type.LIKE, field, pattern);
+    super(EvalType.LIKE, field, pattern);
     this.not = not;
     this.column = field.getColumnRef();
     this.pattern = pattern.getValue().asChars();

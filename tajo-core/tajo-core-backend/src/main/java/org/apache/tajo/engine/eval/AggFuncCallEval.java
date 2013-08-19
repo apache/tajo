@@ -34,7 +34,7 @@ public class AggFuncCallEval extends FuncEval implements Cloneable {
   private Tuple params;
 
   public AggFuncCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
-    super(Type.AGG_FUNCTION, desc, givenArgs);
+    super(EvalType.AGG_FUNCTION, desc, givenArgs);
     this.instance = instance;
   }
 

@@ -122,7 +122,7 @@ public class GlobalEngine extends AbstractService {
     LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
 
     if (PlannerUtil.checkIfDDLPlan(plan)) {
-      updateQuery(plan.getSubNode());
+      updateQuery(plan.getChild());
       return TajoIdUtils.NullQueryId;
     } else {
       GetNewApplicationResponse newApp = yarnClient.getNewApplication();
@@ -136,8 +136,8 @@ public class GlobalEngine extends AbstractService {
       QueryConf queryConf = new QueryConf(context.getConf());
       queryConf.setUser(UserGroupInformation.getCurrentUser().getShortUserName());
       // the output table is given by user
-      if (plan.getSubNode().getType() == ExprType.CREATE_TABLE) {
-        CreateTableNode createTableNode = (CreateTableNode) plan.getSubNode();
+      if (plan.getChild().getType() == NodeType.CREATE_TABLE) {
+        CreateTableNode createTableNode = (CreateTableNode) plan.getChild();
         queryConf.setOutputTable(createTableNode.getTableName());
       }
       QueryMasterManager queryMasterManager = new QueryMasterManager(context, yarnClient, queryId, tql, plan, appId,
@@ -241,7 +241,7 @@ public class GlobalEngine extends AbstractService {
     if (!PlannerUtil.checkIfDDLPlan(plan)) {
       throw new SQLException("This is not update query:\n" + sql);
     } else {
-      updateQuery(plan.getSubNode());
+      updateQuery(plan.getChild());
       return TajoIdUtils.NullQueryId;
     }
   }
@@ -338,7 +338,7 @@ public class GlobalEngine extends AbstractService {
     StorageUtil.writeTableMeta(context.getConf(), path, meta);
     catalog.addTable(desc);
 
-    LOG.info("Table " + desc.getId() + " is created (" + desc.getMeta().getStat().getNumBytes() + ")");
+    LOG.info("Table " + desc.getName() + " is created (" + desc.getMeta().getStat().getNumBytes() + ")");
 
     return desc;
   }

@@ -31,9 +31,9 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 
 public class IsNullEval extends BinaryEval {
-  private final static ConstEval NULL_EVAL = new ConstEval(DatumFactory.createNullDatum());
-  private static final DataType [] RES_TYPE =
-      CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
+  // it's just a hack to emulate a binary expression
+  private final static ConstEval DUMMY_EVAL = new ConstEval(DatumFactory.createBool(true));
+  private static final DataType [] RES_TYPE = CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
 
   // persistent variables
   @Expose private boolean isNot;
@@ -41,7 +41,7 @@ public class IsNullEval extends BinaryEval {
   @Expose private Integer fieldId = null;
 
   public IsNullEval(boolean not, FieldEval field) {
-    super(Type.IS, field, NULL_EVAL);
+    super(EvalType.IS_NULL, field, DUMMY_EVAL);
     this.isNot = not;
     this.columnRef = field.getColumnRef();
   }

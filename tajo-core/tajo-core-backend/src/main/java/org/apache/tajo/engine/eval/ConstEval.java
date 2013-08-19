@@ -29,7 +29,7 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
 	@Expose Datum datum = null;
 	
 	public ConstEval(Datum datum) {
-		super(Type.CONST);
+		super(EvalType.CONST);
 		this.datum = datum;
 	}
 

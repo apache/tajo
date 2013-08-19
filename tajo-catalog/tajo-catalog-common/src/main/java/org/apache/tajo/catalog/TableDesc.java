@@ -23,9 +23,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.json.GsonObject;
 
 public interface TableDesc extends Cloneable, GsonObject {
-  void setId(String tableId);
+  void setName(String tableId);
   
-  String getId();
+  String getName();
   
   void setPath(Path path);
   

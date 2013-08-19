@@ -23,34 +23,29 @@ package org.apache.tajo.engine.json;
 
 import com.google.gson.*;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.eval.EvalType;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
 
 public class EvalNodeAdapter implements GsonSerDerAdapter<EvalNode> {
 
-	@Override
-	public EvalNode deserialize(JsonElement json, Type type,
-			JsonDeserializationContext ctx) throws JsonParseException {
-		JsonObject jsonObj = json.getAsJsonObject();
-		String className = jsonObj.get("type").getAsString();
-		JsonElement elem = jsonObj.get("properties");
-		
-		try {
-			return ctx.deserialize(elem, Class.forName(className));
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
+  @Override
+  public EvalNode deserialize(JsonElement json, Type type,
+                              JsonDeserializationContext ctx) throws JsonParseException {
+    JsonObject jsonObject = json.getAsJsonObject();
+    String nodeName = jsonObject.get("type").getAsString();
+    Class clazz = EvalType.valueOf(nodeName).getBaseClass();
+    return ctx.deserialize(jsonObject.get("body"), clazz);
+  }
 
-	@Override
-	public JsonElement serialize(EvalNode evalNode, Type type,
-			JsonSerializationContext ctx) {
-		JsonObject json = new JsonObject();
-		json.add("type", new JsonPrimitive(evalNode.getClass().getName()));
-		json.add("properties", ctx.serialize(evalNode, evalNode.getClass()));
-		return json;
-	}
-
+  @Override
+  public JsonElement serialize(EvalNode evalNode, Type type,
+                               JsonSerializationContext ctx) {
+    JsonObject json = new JsonObject();
+    json.addProperty("type", evalNode.getType().name());
+    json.add("body", ctx.serialize(evalNode));
+    return json;
+  }
 }

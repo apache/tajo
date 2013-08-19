@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
+import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.planner.logical.*;
 
 import java.util.*;
@@ -481,7 +482,7 @@ public class LogicalPlan {
             if (canTargetEvaluated(i, node)) {
 
               if (node instanceof ScanNode) { // for scan node
-                if (expr.getType() == EvalNode.Type.FIELD) {
+                if (expr.getType() == EvalType.FIELD) {
                   targetListManager.setEvaluated(i);
                   if (targetListManager.getTarget(i).hasAlias()) {
                     newEvaluatedTargetIds.add(i);

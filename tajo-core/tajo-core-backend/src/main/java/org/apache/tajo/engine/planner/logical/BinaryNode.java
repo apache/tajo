@@ -25,7 +25,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.json.GsonObject;
 
 public abstract class BinaryNode extends LogicalNode implements Cloneable, GsonObject {
-	@Expose LogicalNode outer = null;
+	@Expose LogicalNode leftChild = null;
 	@Expose LogicalNode inner = null;
 	
 	public BinaryNode() {
@@ -35,30 +35,30 @@ public abstract class BinaryNode extends LogicalNode implements Cloneable, GsonO
 	/**
 	 * @param opType
 	 */
-	public BinaryNode(ExprType opType) {
+	public BinaryNode(NodeType opType) {
 		super(opType);
 	}
 	
-	public LogicalNode getOuterNode() {
-		return this.outer;
+	public LogicalNode getLeftChild() {
+		return this.leftChild;
 	}
 	
-	public void setOuter(LogicalNode op) {
-		this.outer = op;
+	public void setLeftChild(LogicalNode op) {
+		this.leftChild = op;
 	}
 
-	public LogicalNode getInnerNode() {
+	public LogicalNode getRightChild() {
 		return this.inner;
 	}
 
-	public void setInner(LogicalNode op) {
+	public void setRightChild(LogicalNode op) {
 		this.inner = op;
 	}
 	
 	@Override
   public Object clone() throws CloneNotSupportedException {
 	  BinaryNode binNode = (BinaryNode) super.clone();
-	  binNode.outer = (LogicalNode) outer.clone();
+	  binNode.leftChild = (LogicalNode) leftChild.clone();
 	  binNode.inner = (LogicalNode) inner.clone();
 	  
 	  return binNode;
@@ -66,12 +66,12 @@ public abstract class BinaryNode extends LogicalNode implements Cloneable, GsonO
 	
 	public void preOrder(LogicalNodeVisitor visitor) {
 	  visitor.visit(this);
-	  outer.postOrder(visitor);
+	  leftChild.postOrder(visitor);
     inner.postOrder(visitor);    
   }
 	
 	public void postOrder(LogicalNodeVisitor visitor) {
-    outer.postOrder(visitor);
+    leftChild.postOrder(visitor);
     inner.postOrder(visitor);
     visitor.visit(this);
   }

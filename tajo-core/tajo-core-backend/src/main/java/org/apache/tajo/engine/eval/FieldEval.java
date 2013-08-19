@@ -31,12 +31,12 @@ public class FieldEval extends EvalNode implements Cloneable {
 	@Expose	private int fieldId = -1;
 	
 	public FieldEval(String columnName, DataType domain) {
-		super(Type.FIELD);
+		super(EvalType.FIELD);
 		this.column = new Column(columnName, domain);
 	}
 	
 	public FieldEval(Column column) {
-	  super(Type.FIELD);
+	  super(EvalType.FIELD);
 	  this.column = column;
 	}
 

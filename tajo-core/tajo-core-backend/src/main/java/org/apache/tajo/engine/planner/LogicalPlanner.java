@@ -32,7 +32,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.eval.EvalNode.Type;
+import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.query.exception.InvalidQueryException;
@@ -100,7 +100,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalRootNode root = new LogicalRootNode();
     root.setInSchema(subroot.getOutSchema());
     root.setOutSchema(subroot.getOutSchema());
-    root.setSubNode(subroot);
+    root.setChild(subroot);
     plan.getRootBlock().setRoot(root);
 
     return plan;
@@ -209,8 +209,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // Determine join conditions
     if (join.isNatural()) { // if natural join, it should have the equi-join conditions by common column names
-      Schema leftSchema = joinNode.getOuterNode().getInSchema();
-      Schema rightSchema = joinNode.getInnerNode().getInSchema();
+      Schema leftSchema = joinNode.getLeftChild().getInSchema();
+      Schema rightSchema = joinNode.getRightChild().getInSchema();
       Schema commons = SchemaUtil.getCommons(leftSchema, rightSchema);
       EvalNode njCond = getNaturalJoinCondition(leftSchema, rightSchema, commons);
       joinNode.setJoinQual(njCond);
@@ -230,12 +230,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (Column common : commons.getColumns()) {
       leftJoinKey = outer.getColumnByName(common.getColumnName());
       rightJoinKey = inner.getColumnByName(common.getColumnName());
-      equiQual = new BinaryEval(EvalNode.Type.EQUAL,
+      equiQual = new BinaryEval(EvalType.EQUAL,
           new FieldEval(leftJoinKey), new FieldEval(rightJoinKey));
       if (njQual == null) {
         njQual = equiQual;
       } else {
-        njQual = new BinaryEval(EvalNode.Type.AND,
+        njQual = new BinaryEval(EvalType.AND,
             njQual, equiQual);
       }
     }
@@ -246,8 +246,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private static LogicalNode createCatasianProduct(LogicalNode left, LogicalNode right) {
     JoinNode join = new JoinNode(JoinType.CROSS_JOIN, left, right);
     Schema joinSchema = SchemaUtil.merge(
-        join.getOuterNode().getOutSchema(),
-        join.getInnerNode().getOutSchema());
+        join.getLeftChild().getOutSchema(),
+        join.getRightChild().getOutSchema());
     join.setInSchema(joinSchema);
     join.setOutSchema(joinSchema);
 
@@ -335,8 +335,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Schema outSchema = PlannerUtil.targetToSchema(leftStrippedTargets);
     setOp.setInSchema(left.getOutSchema());
     setOp.setOutSchema(outSchema);
-    setOp.setOuter(left);
-    setOp.setInner(right);
+    setOp.setLeftChild(left);
+    setOp.setRightChild(right);
 
     if (isNoUpperProjection(stack)) {
       block.targetListManager = new TargetListManager(plan, leftStrippedTargets);
@@ -385,7 +385,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     SelectionNode selectionNode = new SelectionNode(searchCondition);
 
     // 4. set child plan, update input/output schemas:
-    selectionNode.setSubNode(child);
+    selectionNode.setChild(child);
     selectionNode.setInSchema(child.getOutSchema());
     selectionNode.setOutSchema(child.getOutSchema());
 
@@ -429,7 +429,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
 
       // 4. Set Child Plan and Update Input Schemes Phase
-      groupingNode.setSubNode(child);
+      groupingNode.setChild(child);
       block.setGroupingNode(groupingNode);
       groupingNode.setInSchema(child.getInSchema());
 
@@ -462,8 +462,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         Target[] clone = cloneTargets(block.getCurrentTargets());
 
         g1.setTargets(clone);
-        g1.setSubNode((LogicalNode) subNode.clone());
-        g1.setInSchema(g1.getSubNode().getOutSchema());
+        g1.setChild((LogicalNode) subNode.clone());
+        g1.setInSchema(g1.getChild().getOutSchema());
         Schema outSchema = getProjectedSchema(plan, block.getCurrentTargets());
         g1.setOutSchema(outSchema);
 
@@ -477,16 +477,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         GroupbyNode g1 = new GroupbyNode(cuboids.get(idx));
         Target[] clone = cloneTargets(block.getCurrentTargets());
         g1.setTargets(clone);
-        g1.setSubNode((LogicalNode) subNode.clone());
-        g1.setInSchema(g1.getSubNode().getOutSchema());
+        g1.setChild((LogicalNode) subNode.clone());
+        g1.setInSchema(g1.getChild().getOutSchema());
         Schema outSchema = getProjectedSchema(plan, clone);
         g1.setOutSchema(outSchema);
 
         GroupbyNode g2 = new GroupbyNode(cuboids.get(idx+1));
         clone = cloneTargets(block.getCurrentTargets());
         g2.setTargets(clone);
-        g2.setSubNode((LogicalNode) subNode.clone());
-        g2.setInSchema(g1.getSubNode().getOutSchema());
+        g2.setChild((LogicalNode) subNode.clone());
+        g2.setInSchema(g1.getChild().getOutSchema());
         outSchema = getProjectedSchema(plan, clone);
         g2.setOutSchema(outSchema);
         union = new UnionNode(g1, g2);
@@ -577,7 +577,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     SortNode sortNode = new SortNode(annotatedSortSpecs);
 
     // 4. Set Child Plan, Update Input/Output Schemas:
-    sortNode.setSubNode(child);
+    sortNode.setChild(child);
     sortNode.setInSchema(child.getOutSchema());
     sortNode.setOutSchema(child.getOutSchema());
 
@@ -601,7 +601,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LimitNode limitNode = new LimitNode(firstFetchNum.terminate(null).asInt8());
 
     // set child plan and update input/output schemas.
-    limitNode.setSubNode(child);
+    limitNode.setChild(child);
     limitNode.setInSchema(child.getOutSchema());
     limitNode.setOutSchema(child.getOutSchema());
     return limitNode;
@@ -655,7 +655,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     block.setProjectionNode(projectionNode);
     projectionNode.setOutSchema(getProjectedSchema(plan, projectionNode.getTargets()));
     projectionNode.setInSchema(child.getOutSchema());
-    projectionNode.setSubNode(child);
+    projectionNode.setChild(child);
 
     if (projection.isDistinct() && block.hasGrouping()) {
       throw new VerifyException("Cannot support grouping and distinct at the same time");
@@ -666,8 +666,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         dupRemoval.setTargets(block.getTargetListManager().getTargets());
         dupRemoval.setInSchema(child.getOutSchema());
         dupRemoval.setOutSchema(outSchema);
-        dupRemoval.setSubNode(child);
-        projectionNode.setSubNode(dupRemoval);
+        dupRemoval.setChild(child);
+        projectionNode.setChild(dupRemoval);
       }
     }
 
@@ -684,7 +684,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     if (!block.isGroupingResolved()) {
       GroupbyNode groupbyNode = new GroupbyNode(new Column[] {});
       groupbyNode.setTargets(block.getCurrentTargets());
-      groupbyNode.setSubNode(child);
+      groupbyNode.setChild(child);
       groupbyNode.setInSchema(child.getOutSchema());
 
       plan.postVisit(blockName, groupbyNode, stack);
@@ -720,7 +720,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       LogicalNode subQuery = visitChild(context, stack, expr.getSubQuery());
       stack.pop();
       StoreTableNode storeNode = new StoreTableNode(tableName);
-      storeNode.setSubNode(subQuery);
+      storeNode.setChild(subQuery);
 
       if (expr.hasTableElements()) {
         Schema schema = convertTableElementsSchema(expr.getTableElements());
@@ -939,23 +939,23 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return new FieldEval(column);
   }
 
-  private static Type exprTypeToEvalType(OpType type) {
+  private static EvalType exprTypeToEvalType(OpType type) {
     switch (type) {
-      case And: return Type.AND;
-      case Or: return Type.OR;
-      case Equals: return Type.EQUAL;
-      case NotEquals: return Type.NOT_EQUAL;
-      case LessThan: return Type.LTH;
-      case LessThanOrEquals: return Type.LEQ;
-      case GreaterThan: return Type.GTH;
-      case GreaterThanOrEquals: return Type.GEQ;
-      case Plus: return Type.PLUS;
-      case Minus: return Type.MINUS;
-      case Multiply: return Type.MULTIPLY;
-      case Divide: return Type.DIVIDE;
-      case Modular: return Type.MODULAR;
-      case Column: return Type.FIELD;
-      case Function: return Type.FUNCTION;
+      case And: return EvalType.AND;
+      case Or: return EvalType.OR;
+      case Equals: return EvalType.EQUAL;
+      case NotEquals: return EvalType.NOT_EQUAL;
+      case LessThan: return EvalType.LTH;
+      case LessThanOrEquals: return EvalType.LEQ;
+      case GreaterThan: return EvalType.GTH;
+      case GreaterThanOrEquals: return EvalType.GEQ;
+      case Plus: return EvalType.PLUS;
+      case Minus: return EvalType.MINUS;
+      case Multiply: return EvalType.MULTIPLY;
+      case Divide: return EvalType.DIVIDE;
+      case Modular: return EvalType.MODULAR;
+      case Column: return EvalType.FIELD;
+      case Function: return EvalType.FUNCTION;
       default: throw new RuntimeException("Unsupported type: " + type);
     }
   }

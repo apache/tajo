@@ -16,10 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner.logical.extended;
+package org.apache.tajo.engine.planner.logical;
 
 import org.junit.Test;
-import org.apache.tajo.engine.planner.logical.ExprType;
 
 import java.net.URI;
 
@@ -32,14 +31,14 @@ public class TestSendNode {
     send.putDestURI(0, URI.create("http://localhost:2190"));
     send.putDestURI(1, URI.create("http://localhost:2191"));
     
-    assertEquals(ExprType.SEND, send.getType());
+    assertEquals(NodeType.SEND, send.getType());
     assertEquals(PipeType.PULL, send.getPipeType());
     assertEquals(RepartitionType.HASH, send.getRepartitionType());
     assertEquals(URI.create("http://localhost:2190"), send.getDestURI(0));
     assertEquals(URI.create("http://localhost:2191"), send.getDestURI(1));
     
     SendNode send2 = (SendNode) send.clone();
-    assertEquals(ExprType.SEND, send2.getType());
+    assertEquals(NodeType.SEND, send2.getType());
     assertEquals(PipeType.PULL, send2.getPipeType());
     assertEquals(RepartitionType.HASH, send2.getRepartitionType());
     assertEquals(URI.create("http://localhost:2190"), send2.getDestURI(0));

@@ -42,7 +42,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
    * @param targets they should be all evaluated ones.
    */
 	public ProjectionNode(Target [] targets) {		
-		super(ExprType.PROJECTION);
+		super(NodeType.PROJECTION);
 		this.targets = targets;
 	}
 
@@ -60,8 +60,8 @@ public class ProjectionNode extends UnaryNode implements Projectable {
     return this.targets;
   }
 	
-	public void setSubNode(LogicalNode subNode) {
-	  super.setSubNode(subNode);
+	public void setChild(LogicalNode subNode) {
+	  super.setChild(subNode);
 	}
 	
 	public String toString() {
@@ -83,7 +83,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 	  sb.append("\n  \"in schema\": ").append(getInSchema());
 	  sb.append("}");
 	  return sb.toString()+"\n"
-	      + getSubNode().toString();
+	      + getChild().toString();
 	}
 	
 	@Override
@@ -93,7 +93,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 	    
 	    boolean b1 = super.equals(other);
 	    boolean b2 = Arrays.equals(targets, other.targets);
-	    boolean b3 = subExpr.equals(other.subExpr);
+	    boolean b3 = child.equals(other.child);
 	    
 	    return b1 && b2 && b3;
 	  } else {

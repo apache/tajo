@@ -18,8 +18,10 @@
 
 package org.apache.tajo.catalog.json;
 
+import com.google.common.base.Preconditions;
 import com.google.gson.*;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.TableMetaImpl;
 import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
@@ -30,26 +32,18 @@ public class TableMetaAdapter implements GsonSerDerAdapter<TableMeta> {
 	public TableMeta deserialize(JsonElement json, Type typeOfT,
 			JsonDeserializationContext context) throws JsonParseException {
 		JsonObject jsonObject = json.getAsJsonObject();
-		String className = jsonObject.get("classname").getAsJsonPrimitive().getAsString();
-		
-		Class clazz;
-		try {
-			clazz = Class.forName(className);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			throw new JsonParseException(e);
-		}
-		return context.deserialize(jsonObject.get("property"), clazz);
+		String typeName = jsonObject.get("type").getAsJsonPrimitive().getAsString();
+    Preconditions.checkState(typeName.equals("TableMeta"));
+		return context.deserialize(jsonObject.get("body"), TableMetaImpl.class);
 	}
 
 	@Override
 	public JsonElement serialize(TableMeta src, Type typeOfSrc,
 			JsonSerializationContext context) {
 		JsonObject jsonObj = new JsonObject();
-		String className = src.getClass().getCanonicalName();
-		jsonObj.addProperty("classname", className);
-		JsonElement jsonElem = context.serialize(src);
-		jsonObj.add("property", jsonElem);
+		jsonObj.addProperty("type", "TableMeta");
+		JsonElement jsonElem = context.serialize(src, TableMetaImpl.class);
+		jsonObj.add("body", jsonElem);
 		return jsonObj;
 	}
 

@@ -25,11 +25,11 @@ import org.apache.tajo.storage.Tuple;
 
 public class PartialBinaryExpr extends EvalNode {
   
-  public PartialBinaryExpr(Type type) {
+  public PartialBinaryExpr(EvalType type) {
     super(type);
   }
 
-  public PartialBinaryExpr(Type type, EvalNode left, EvalNode right) {
+  public PartialBinaryExpr(EvalType type, EvalNode left, EvalNode right) {
     super(type, left, right);
   }
 

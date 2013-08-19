@@ -37,7 +37,7 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   @Expose private Options options;
 
   public StoreTableNode(String tableName) {
-    super(ExprType.STORE);
+    super(NodeType.STORE);
     this.tableName = tableName;
     this.local = false;
   }
@@ -121,7 +121,7 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
       eq = eq && this.numPartitions == other.numPartitions;
       eq = eq && TUtil.checkEquals(partitionKeys, other.partitionKeys);
       eq = eq &&  TUtil.checkEquals(options, other.options);
-      eq = eq && subExpr.equals(other.subExpr);
+      eq = eq && child.equals(other.child);
       return eq;
     } else {
       return false;
@@ -162,6 +162,6 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     .append("}");
     
     return sb.toString() + "\n"
-        + getSubNode().toString();
+        + getChild().toString();
   }
 }

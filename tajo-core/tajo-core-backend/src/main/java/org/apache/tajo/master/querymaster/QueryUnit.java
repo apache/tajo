@@ -145,8 +145,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   }
 	
 	public void setLogicalPlan(LogicalNode plan) {
-    Preconditions.checkArgument(plan.getType() == ExprType.STORE ||
-        plan.getType() == ExprType.CREATE_INDEX);
+    Preconditions.checkArgument(plan.getType() == NodeType.STORE);
     
 	  this.plan = plan;
     store = (StoreTableNode) plan;
@@ -158,11 +157,11 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	    node = s.remove(s.size()-1);
 	    if (node instanceof UnaryNode) {
 	      UnaryNode unary = (UnaryNode) node;
-	      s.add(s.size(), unary.getSubNode());
+	      s.add(s.size(), unary.getChild());
 	    } else if (node instanceof BinaryNode) {
 	      BinaryNode binary = (BinaryNode) node;
-	      s.add(s.size(), binary.getOuterNode());
-	      s.add(s.size(), binary.getInnerNode());
+	      s.add(s.size(), binary.getLeftChild());
+	      s.add(s.size(), binary.getRightChild());
 	    } else if (node instanceof ScanNode) {
 	      scan.add((ScanNode)node);
 	    }
@@ -178,7 +177,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   }
 
   public void setFragment2(Fragment fragment) {
-    this.fragMap.put(fragment.getId(), fragment);
+    this.fragMap.put(fragment.getName(), fragment);
     if (fragment.hasDataLocations()) {
       setDataLocations(fragment.getDataLocations());
     }

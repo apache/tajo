@@ -426,7 +426,7 @@ public class TajoCli {
 
   private String toFormattedString(TableDesc desc) {
     StringBuilder sb = new StringBuilder();
-    sb.append("\ntable name: ").append(desc.getId()).append("\n");
+    sb.append("\ntable name: ").append(desc.getName()).append("\n");
     sb.append("table path: ").append(desc.getPath()).append("\n");
     sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
     if (desc.getMeta().getStat() != null) {

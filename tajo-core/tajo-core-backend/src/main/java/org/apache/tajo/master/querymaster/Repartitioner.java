@@ -265,7 +265,7 @@ public class Repartitioner {
     tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableId());
 
     StoreTableNode store = (StoreTableNode) childSubQuery.getBlock().getPlan();
-    SortNode sort = (SortNode) store.getSubNode();
+    SortNode sort = (SortNode) store.getChild();
     SortSpec[] sortSpecs = sort.getSortKeys();
     Schema sortSchema = PlannerUtil.sortSpecsToSchema(sort.getSortKeys());
 
@@ -414,7 +414,7 @@ public class Repartitioner {
     }
 
     GroupbyNode groupby = (GroupbyNode) childSubQuery.getBlock().getStoreTableNode().
-        getSubNode();
+        getChild();
     // the number of tasks cannot exceed the number of merged fetch uris.
     int determinedTaskNum = Math.min(maxNum, finalFetchURI.size());
     if (groupby.getGroupingColumns().length == 0) {
@@ -547,7 +547,7 @@ public class Repartitioner {
     // TODO: the union handling is required when a join has unions as its child
     ExecutionBlock parentBlock = execBlock.getParentBlock();
     if (parentBlock != null) {
-      if (parentBlock.getStoreTableNode().getSubNode().getType() == ExprType.JOIN) {
+      if (parentBlock.getStoreTableNode().getChild().getType() == NodeType.JOIN) {
         execBlock.getStoreTableNode().setPartitions(execBlock.getPartitionType(),
             execBlock.getStoreTableNode().getPartitionKeys(), n);
         keys = execBlock.getStoreTableNode().getPartitionKeys();
@@ -557,13 +557,13 @@ public class Repartitioner {
     StoreTableNode store = execBlock.getStoreTableNode();
     // set the partition number for group by and sort
     if (execBlock.getPartitionType() == PartitionType.HASH) {
-      if (store.getSubNode().getType() == ExprType.GROUP_BY) {
-        GroupbyNode groupby = (GroupbyNode)store.getSubNode();
+      if (store.getChild().getType() == NodeType.GROUP_BY) {
+        GroupbyNode groupby = (GroupbyNode)store.getChild();
         keys = groupby.getGroupingColumns();
       }
     } else if (execBlock.getPartitionType() == PartitionType.RANGE) {
-      if (store.getSubNode().getType() == ExprType.SORT) {
-        SortNode sort = (SortNode)store.getSubNode();
+      if (store.getChild().getType() == NodeType.SORT) {
+        SortNode sort = (SortNode)store.getChild();
         keys = new Column[sort.getSortKeys().length];
         for (int i = 0; i < keys.length; i++) {
           keys[i] = sort.getSortKeys()[i].getSortKey();

@@ -52,7 +52,7 @@ public class TestFragment {
         meta1, 0, 500, null);
     fragment1.setDistCached();
 
-    assertEquals("table1_1", fragment1.getId());
+    assertEquals("table1_1", fragment1.getName());
     assertEquals(new Path("/table0"), fragment1.getPath());
     assertEquals(meta1.getStoreType(), fragment1.getMeta().getStoreType());
     assertEquals(meta1.getSchema().getColumnNum(), 
@@ -73,7 +73,7 @@ public class TestFragment {
     Fragment fragment0 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500, null);
     
     Fragment fragment1 = new Fragment(fragment0.getProto());
-    assertEquals("table1_1", fragment1.getId());
+    assertEquals("table1_1", fragment1.getName());
     assertEquals(new Path("/table0"), fragment1.getPath());
     assertEquals(meta1.getStoreType(), fragment1.getMeta().getStoreType());
     assertEquals(meta1.getSchema().getColumnNum(), 
@@ -101,7 +101,7 @@ public class TestFragment {
     Arrays.sort(tablets);
 
     for(int i = 0; i < num; i++) {
-      assertEquals("tablet1_"+i, tablets[i].getId());
+      assertEquals("tablet1_"+i, tablets[i].getName());
     }
   }
 

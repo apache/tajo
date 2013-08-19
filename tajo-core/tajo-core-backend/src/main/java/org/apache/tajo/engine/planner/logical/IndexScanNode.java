@@ -40,7 +40,7 @@ public class IndexScanNode extends ScanNode {
     setOutSchema(scanNode.getOutSchema());
     setLocal(scanNode.isLocal());
     setTargets(scanNode.getTargets());
-    setType(ExprType.BST_INDEX_SCAN);
+    setType(NodeType.BST_INDEX_SCAN);
     this.sortKeys = sortKeys;
     this.keySchema = keySchema;
     this.datum = datum;

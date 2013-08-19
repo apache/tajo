@@ -137,7 +137,7 @@ public class TestCatalog {
 	  catalog.deleteIndex(desc2.getName());
 	  assertFalse(catalog.existIndex(desc2.getName()));
 	  
-	  catalog.deleteTable(desc.getId());
+	  catalog.deleteTable(desc.getName());
 	}
 	
 	public static class TestFunc1 extends GeneralFunction {

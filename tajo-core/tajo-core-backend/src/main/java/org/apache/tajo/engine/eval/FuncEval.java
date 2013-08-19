@@ -31,7 +31,7 @@ public abstract class FuncEval extends EvalNode implements Cloneable {
 	@Expose protected FunctionDesc funcDesc;
 	@Expose protected EvalNode [] argEvals;
 
-	public FuncEval(Type type, FunctionDesc funcDesc, EvalNode[] argEvals) {
+	public FuncEval(EvalType type, FunctionDesc funcDesc, EvalNode[] argEvals) {
 		super(type);
 		this.funcDesc = funcDesc;
 		this.argEvals = argEvals;

@@ -39,7 +39,7 @@ public class ScanNode extends LogicalNode implements Projectable {
 	}
   
 	public ScanNode(FromTable table) {
-		super(ExprType.SCAN);
+		super(NodeType.SCAN);
 		this.table = table;
 		this.setInSchema(table.getSchema());
 		this.setOutSchema(table.getSchema());

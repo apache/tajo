@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -37,7 +38,7 @@ public class Target implements Cloneable, GsonObject {
 
   public Target(EvalNode expr) {
     this.expr = expr;
-    if (expr.getType() == EvalNode.Type.AGG_FUNCTION &&
+    if (expr.getType() == EvalType.AGG_FUNCTION &&
         expr.getValueType().length > 1) { // hack for partial result
       this.column = new Column(expr.getName(), Type.ARRAY);
     } else {

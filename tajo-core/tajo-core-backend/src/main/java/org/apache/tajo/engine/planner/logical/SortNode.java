@@ -33,7 +33,7 @@ public final class SortNode extends UnaryNode implements Cloneable {
 	}
 
   public SortNode(SortSpec[] sortKeys) {
-    super(ExprType.SORT);
+    super(NodeType.SORT);
     Preconditions.checkArgument(sortKeys.length > 0, 
         "At least one sort key must be specified");
     this.sortKeys = sortKeys;
@@ -55,7 +55,7 @@ public final class SortNode extends UnaryNode implements Cloneable {
       SortNode other = (SortNode) obj;
       boolean eq = super.equals(other);
       eq = eq && TUtil.checkEquals(sortKeys, other.sortKeys);
-      eq = eq && subExpr.equals(other.subExpr);
+      eq = eq && child.equals(other.child);
       return eq;
     } else {
       return false;
@@ -84,6 +84,6 @@ public final class SortNode extends UnaryNode implements Cloneable {
     sb.append("\n\"out schema: " + getOutSchema()
         + "\n\"in schema: " + getInSchema());
     return sb.toString()+"\n"
-        + getSubNode().toString();
+        + getChild().toString();
   }
 }

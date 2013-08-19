@@ -19,7 +19,7 @@
 /**
  * 
  */
-package org.apache.tajo.engine.planner.logical.extended;
+package org.apache.tajo.engine.planner.logical;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
@@ -27,7 +27,7 @@ import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.planner.logical.ExprType;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.LogicalNodeVisitor;
 
@@ -41,7 +41,7 @@ public final class ReceiveNode extends LogicalNode implements Cloneable {
   @Expose private Map<String, List<URI>> fetchMap;
 
   private ReceiveNode() {
-    super(ExprType.RECEIVE);
+    super(NodeType.RECEIVE);
   }
   public ReceiveNode(PipeType pipeType, RepartitionType shuffleType) {
     this();

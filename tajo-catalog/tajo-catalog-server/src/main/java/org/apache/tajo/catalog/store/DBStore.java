@@ -365,7 +365,7 @@ public class DBStore implements CatalogStore {
 
     String sql = 
         "INSERT INTO " + TB_TABLES + " (" + C_TABLE_ID + ", path, store_type) "
-        + "VALUES('" + table.getId() + "', "
+        + "VALUES('" + table.getName() + "', "
         + "'" + table.getPath() + "', "
         + "'" + table.getMeta().getStoreType() + "'"
         + ")";
@@ -381,14 +381,14 @@ public class DBStore implements CatalogStore {
       
       stmt = conn.createStatement();
       sql = "SELECT TID from " + TB_TABLES + " WHERE " + C_TABLE_ID 
-          + " = '" + table.getId() + "'";
+          + " = '" + table.getName() + "'";
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
       res = stmt.executeQuery(sql);
       if (!res.next()) {
         throw new IOException("ERROR: there is no tid matched to " 
-            + table.getId());
+            + table.getName());
       }
       int tid = res.getInt("TID");
 
@@ -415,7 +415,7 @@ public class DBStore implements CatalogStore {
       stmt.executeBatch();
       if (table.getMeta().getStat() != null) {
         sql = "INSERT INTO " + TB_STATISTICS + " (" + C_TABLE_ID + ", num_rows, num_bytes) "
-            + "VALUES ('" + table.getId() + "', "
+            + "VALUES ('" + table.getName() + "', "
             + table.getMeta().getStat().getNumRows() + ","
             + table.getMeta().getStat().getNumBytes() + ")";
         if (LOG.isDebugEnabled()) {
@@ -442,7 +442,7 @@ public class DBStore implements CatalogStore {
         + " (tid, " + C_TABLE_ID + ", column_id, column_name, data_type) "
         + "VALUES("
         + tid + ","
-        + "'" + desc.getId() + "',"
+        + "'" + desc.getName() + "',"
         + columnId + ", "
         + "'" + col.getColumnName() + "',"
         + "'" + col.getDataType().getType().name() + "'"
@@ -457,7 +457,7 @@ public class DBStore implements CatalogStore {
         "INSERT INTO " + TB_OPTIONS 
         + " (" + C_TABLE_ID + ", key_, value_) "
         + "VALUES("
-        + "'" + desc.getId() + "',"
+        + "'" + desc.getName() + "',"
         + "'" + keyVal.getKey() + "',"
         + "'" + keyVal.getValue() + "'"
         + ")";

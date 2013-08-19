@@ -24,16 +24,16 @@ package org.apache.tajo.engine.planner.logical;
 public class ExceptNode extends BinaryNode {
 
   public ExceptNode() {
-    super(ExprType.EXCEPT);
+    super(NodeType.EXCEPT);
   }
 
   public ExceptNode(LogicalNode outer, LogicalNode inner) {
     this();
-    setOuter(outer);
-    setInner(inner);
+    setLeftChild(outer);
+    setRightChild(inner);
   }
 
   public String toString() {
-    return getOuterNode().toString() + "\n EXCEPT \n" + getInnerNode().toString();
+    return getLeftChild().toString() + "\n EXCEPT \n" + getRightChild().toString();
   }
 }

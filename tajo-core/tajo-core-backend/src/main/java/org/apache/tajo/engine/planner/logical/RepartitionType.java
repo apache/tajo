@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner.logical.extended;
+package org.apache.tajo.engine.planner.logical;
 
-public enum PipeType {
-  PULL,
-  PUSH
+public enum RepartitionType {
+  NONE,
+  HASH,
+  SORT
 }

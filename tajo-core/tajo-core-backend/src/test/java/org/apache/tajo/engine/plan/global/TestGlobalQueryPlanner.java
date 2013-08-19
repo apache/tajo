@@ -163,8 +163,8 @@ public class TestGlobalQueryPlanner {
     assertEquals(PartitionType.LIST, unit.getPartitionType());
 
     LogicalNode plan2 = unit.getPlan();
-    assertEquals(ExprType.STORE, plan2.getType());
-    assertEquals(ExprType.SCAN, ((StoreTableNode)plan2).getSubNode().getType());
+    assertEquals(NodeType.STORE, plan2.getType());
+    assertEquals(NodeType.SCAN, ((StoreTableNode)plan2).getChild().getType());
   }
 
   @Test
@@ -218,15 +218,15 @@ public class TestGlobalQueryPlanner {
     ExecutionBlock next, prev;
     
     next = globalPlan.getRoot();
-    assertEquals(ExprType.PROJECTION,
-        next.getStoreTableNode().getSubNode().getType());
+    assertEquals(NodeType.PROJECTION,
+        next.getStoreTableNode().getChild().getType());
     assertTrue(next.hasChildBlock());
     assertEquals(PartitionType.LIST, next.getPartitionType());
     Iterator<ExecutionBlock> it= next.getChildBlocks().iterator();
 
     prev = it.next();
-    assertEquals(ExprType.SORT,
-        prev.getStoreTableNode().getSubNode().getType());
+    assertEquals(NodeType.SORT,
+        prev.getStoreTableNode().getChild().getType());
     assertTrue(prev.hasChildBlock());
     assertEquals(PartitionType.LIST, prev.getPartitionType());
     it= prev.getChildBlocks().iterator();
@@ -265,13 +265,13 @@ public class TestGlobalQueryPlanner {
     next = globalPlan.getRoot();
     assertTrue(next.hasChildBlock());
     assertEquals(PartitionType.LIST, next.getPartitionType());
-    assertEquals(ExprType.PROJECTION, next.getStoreTableNode().getSubNode().getType());
+    assertEquals(NodeType.PROJECTION, next.getStoreTableNode().getChild().getType());
     ScanNode []scans = next.getScanNodes();
     assertEquals(1, scans.length);
     Iterator<ExecutionBlock> it= next.getChildBlocks().iterator();
 
     prev = it.next();
-    assertEquals(ExprType.SORT, prev.getStoreTableNode().getSubNode().getType());
+    assertEquals(NodeType.SORT, prev.getStoreTableNode().getChild().getType());
     assertEquals(PartitionType.LIST, prev.getPartitionType());
     scans = prev.getScanNodes();
     assertEquals(1, scans.length);
@@ -279,7 +279,7 @@ public class TestGlobalQueryPlanner {
     
     // the first phase of the sort
     prev = it.next();
-    assertEquals(ExprType.SORT, prev.getStoreTableNode().getSubNode().getType());
+    assertEquals(NodeType.SORT, prev.getStoreTableNode().getChild().getType());
     assertEquals(scans[0].getInSchema(), prev.getOutputSchema());
     assertTrue(prev.hasChildBlock());
     assertEquals(PartitionType.RANGE, prev.getPartitionType());
@@ -291,7 +291,7 @@ public class TestGlobalQueryPlanner {
     
     // the second phase of the join
     prev = it.next();
-    assertEquals(ExprType.JOIN, prev.getStoreTableNode().getSubNode().getType());
+    assertEquals(NodeType.JOIN, prev.getStoreTableNode().getChild().getType());
     assertEquals(scans[0].getInSchema(), prev.getOutputSchema());
     assertTrue(prev.hasChildBlock());
     assertEquals(PartitionType.LIST, prev.getPartitionType());
@@ -303,13 +303,13 @@ public class TestGlobalQueryPlanner {
     
     // the first phase of the join
     prev = it.next();
-    assertEquals(ExprType.SCAN, prev.getStoreTableNode().getSubNode().getType());
+    assertEquals(NodeType.SCAN, prev.getStoreTableNode().getChild().getType());
     assertFalse(prev.hasChildBlock());
     assertEquals(PartitionType.HASH, prev.getPartitionType());
     assertEquals(1, prev.getScanNodes().length);
     
     prev = it.next();
-    assertEquals(ExprType.SCAN, prev.getStoreTableNode().getSubNode().getType());
+    assertEquals(NodeType.SCAN, prev.getStoreTableNode().getChild().getType());
     assertFalse(prev.hasChildBlock());
     assertEquals(PartitionType.HASH, prev.getPartitionType());
     assertEquals(1, prev.getScanNodes().length);
@@ -327,7 +327,7 @@ public class TestGlobalQueryPlanner {
 
     ExecutionBlock unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
-    assertEquals(ExprType.JOIN, store.getSubNode().getType());
+    assertEquals(NodeType.JOIN, store.getChild().getType());
     assertTrue(unit.hasChildBlock());
     ScanNode [] scans = unit.getScanNodes();
     assertEquals(2, scans.length);
@@ -335,7 +335,7 @@ public class TestGlobalQueryPlanner {
     for (ScanNode scan : scans) {
       prev = unit.getChildBlock(scan);
       store = prev.getStoreTableNode();
-      assertEquals(ExprType.SCAN, store.getSubNode().getType());
+      assertEquals(NodeType.SCAN, store.getChild().getType());
     }
   }
   
@@ -350,32 +350,32 @@ public class TestGlobalQueryPlanner {
 
     ExecutionBlock unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
-    assertEquals(ExprType.PROJECTION, store.getSubNode().getType());
+    assertEquals(NodeType.PROJECTION, store.getChild().getType());
 
     ScanNode[] scans = unit.getScanNodes();
     assertEquals(1, scans.length);
 
     unit = unit.getChildBlock(scans[0]);
     store = unit.getStoreTableNode();
-    assertEquals(ExprType.UNION, store.getSubNode().getType());
-    UnionNode union = (UnionNode) store.getSubNode();
-    assertEquals(ExprType.SCAN, union.getOuterNode().getType());
-    assertEquals(ExprType.UNION, union.getInnerNode().getType());
-    union = (UnionNode) union.getInnerNode();
-    assertEquals(ExprType.SCAN, union.getOuterNode().getType());
-    assertEquals(ExprType.UNION, union.getInnerNode().getType());
-    union = (UnionNode) union.getInnerNode();
-    assertEquals(ExprType.SCAN, union.getOuterNode().getType());
-    assertEquals(ExprType.SCAN, union.getInnerNode().getType());
+    assertEquals(NodeType.UNION, store.getChild().getType());
+    UnionNode union = (UnionNode) store.getChild();
+    assertEquals(NodeType.SCAN, union.getLeftChild().getType());
+    assertEquals(NodeType.UNION, union.getRightChild().getType());
+    union = (UnionNode) union.getRightChild();
+    assertEquals(NodeType.SCAN, union.getLeftChild().getType());
+    assertEquals(NodeType.UNION, union.getRightChild().getType());
+    union = (UnionNode) union.getRightChild();
+    assertEquals(NodeType.SCAN, union.getLeftChild().getType());
+    assertEquals(NodeType.SCAN, union.getRightChild().getType());
     assertTrue(unit.hasChildBlock());
     
     String tableId = "";
     for (ScanNode scan : unit.getScanNodes()) {
       ExecutionBlock prev = unit.getChildBlock(scan);
       store = prev.getStoreTableNode();
-      assertEquals(ExprType.GROUP_BY, store.getSubNode().getType());
-      GroupbyNode groupby = (GroupbyNode) store.getSubNode();
-      assertEquals(ExprType.SCAN, groupby.getSubNode().getType());
+      assertEquals(NodeType.GROUP_BY, store.getChild().getType());
+      GroupbyNode groupby = (GroupbyNode) store.getChild();
+      assertEquals(NodeType.SCAN, groupby.getChild().getType());
       if (tableId.equals("")) {
         tableId = store.getTableName();
       } else {
@@ -384,9 +384,9 @@ public class TestGlobalQueryPlanner {
       assertEquals(1, prev.getScanNodes().length);
       prev = prev.getChildBlock(prev.getScanNodes()[0]);
       store = prev.getStoreTableNode();
-      assertEquals(ExprType.GROUP_BY, store.getSubNode().getType());
-      groupby = (GroupbyNode) store.getSubNode();
-      assertEquals(ExprType.SCAN, groupby.getSubNode().getType());
+      assertEquals(NodeType.GROUP_BY, store.getChild().getType());
+      groupby = (GroupbyNode) store.getChild();
+      assertEquals(NodeType.SCAN, groupby.getChild().getType());
     }
   }
 }

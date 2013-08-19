@@ -36,7 +36,7 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
   @Expose private boolean external;
 
   public CreateTableNode(String tableName, Schema schema) {
-    super(ExprType.CREATE_TABLE);
+    super(NodeType.CREATE_TABLE);
     this.tableName = tableName;
     this.schema = schema;
   }

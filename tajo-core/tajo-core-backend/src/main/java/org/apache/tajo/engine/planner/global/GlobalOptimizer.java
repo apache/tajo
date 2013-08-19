@@ -20,8 +20,8 @@ package org.apache.tajo.engine.planner.global;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.logical.ExprType;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.planner.logical.UnaryNode;
 import org.apache.tajo.master.ExecutionBlock;
@@ -55,7 +55,7 @@ public class GlobalOptimizer {
     }
 
     for (ExecutionBlock childBlock: cur.getChildBlocks()) {
-      if (childBlock.getStoreTableNode().getSubNode().getType() != ExprType.UNION &&
+      if (childBlock.getStoreTableNode().getChild().getType() != NodeType.UNION &&
           childBlock.getPartitionType() == PartitionType.LIST) {
         mergeLogicalUnits(cur, childBlock);
       }
@@ -63,15 +63,15 @@ public class GlobalOptimizer {
   }
   
   private ExecutionBlock mergeLogicalUnits(ExecutionBlock parent, ExecutionBlock child) {
-    LogicalNode p = PlannerUtil.findTopParentNode(parent.getPlan(), ExprType.SCAN);
+    LogicalNode p = PlannerUtil.findTopParentNode(parent.getPlan(), NodeType.SCAN);
 
     if (p instanceof UnaryNode) {
       UnaryNode u = (UnaryNode) p;
-      ScanNode scan = (ScanNode) u.getSubNode();
-      LogicalNode c = child.getStoreTableNode().getSubNode();
+      ScanNode scan = (ScanNode) u.getChild();
+      LogicalNode c = child.getStoreTableNode().getChild();
 
       parent.removeChildBlock(scan);
-      u.setSubNode(c);
+      u.setChild(c);
       parent.setPlan(parent.getPlan());
       parent.addChildBlocks(child.getChildBlockMap());
     }

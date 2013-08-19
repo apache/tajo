@@ -62,12 +62,12 @@ public class TaskAttemptContext {
     this.queryId = queryId;
     
     for(Fragment t : fragments) {
-      if (fragmentMap.containsKey(t.getId())) {
-        fragmentMap.get(t.getId()).add(t);
+      if (fragmentMap.containsKey(t.getName())) {
+        fragmentMap.get(t.getName()).add(t);
       } else {
         List<Fragment> frags = new ArrayList<Fragment>();
         frags.add(t);
-        fragmentMap.put(t.getId(), frags);
+        fragmentMap.put(t.getName(), frags);
       }
     }
 
@@ -155,12 +155,12 @@ public class TaskAttemptContext {
   public void changeFragment(String tableId, Fragment [] fragments) {
     fragmentMap.remove(tableId);
     for(Fragment t : fragments) {
-      if (fragmentMap.containsKey(t.getId())) {
-        fragmentMap.get(t.getId()).add(t);
+      if (fragmentMap.containsKey(t.getName())) {
+        fragmentMap.get(t.getName()).add(t);
       } else {
         List<Fragment> frags = new ArrayList<Fragment>();
         frags.add(t);
-        fragmentMap.put(t.getId(), frags);
+        fragmentMap.put(t.getName(), frags);
       }
     }
   }

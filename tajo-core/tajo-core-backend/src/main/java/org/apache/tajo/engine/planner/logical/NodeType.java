@@ -17,50 +17,40 @@
  */
 
 /**
- * 
+ *
  */
 package org.apache.tajo.engine.planner.logical;
 
-import com.google.gson.annotations.Expose;
+/**
+ * This indicates a logical node type.
+ */
+public enum NodeType {
+  BST_INDEX_SCAN(IndexScanNode.class),
+  CREATE_TABLE(CreateTableNode.class),
+  DROP_TABLE(DropTableNode.class),
+  EXCEPT(ExceptNode.class),
+  EXPRS(EvalExprNode.class),
+  GROUP_BY(GroupbyNode.class),
+  INTERSECT(IntersectNode.class),
+  LIMIT(LimitNode.class),
+  JOIN(JoinNode.class),
+  PROJECTION(ProjectionNode.class),
+  RECEIVE(ReceiveNode.class),
+  ROOT(LogicalRootNode.class),
+  SEND(SendNode.class),
+  SCAN(ScanNode.class),
+  SELECTION(SelectionNode.class),
+  STORE(StoreTableNode.class),
+  SORT(SortNode.class),
+  UNION(UnionNode.class);
 
+  private final Class<? extends LogicalNode> baseClass;
 
-public abstract class UnaryNode extends LogicalNode implements Cloneable {
-	@Expose LogicalNode child;
-	
-	public UnaryNode() {
-		super();
-	}
-	
-	/**
-	 * @param type
-	 */
-	public UnaryNode(NodeType type) {
-		super(type);
-	}
-	
-	public void setChild(LogicalNode subNode) {
-		this.child = subNode;
-	}
-	
-	public LogicalNode getChild() {
-		return this.child;
-	}
-	
-	@Override
-  public Object clone() throws CloneNotSupportedException {
-	  UnaryNode unary = (UnaryNode) super.clone();
-	  unary.child = (LogicalNode) (child == null ? null : child.clone());
-	  
-	  return unary;
-	}
-	
-	public void preOrder(LogicalNodeVisitor visitor) {
-	  visitor.visit(this);
-	  child.preOrder(visitor);
+  NodeType(Class<? extends LogicalNode> baseClass) {
+    this.baseClass = baseClass;
   }
-	
-	public void postOrder(LogicalNodeVisitor visitor) {
-	  child.postOrder(visitor);
-	  visitor.visit(this);
-	}
+
+  public Class<? extends LogicalNode> getBaseClass() {
+    return this.baseClass;
+  }
 }

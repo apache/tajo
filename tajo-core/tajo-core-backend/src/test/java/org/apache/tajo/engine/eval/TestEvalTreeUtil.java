@@ -27,14 +27,13 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.eval.EvalNode.Type;
 import org.apache.tajo.engine.eval.TestEvalTree.TestSum;
-import org.apache.tajo.engine.planner.LogicalPlanner;
-import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalPlan;
+import org.apache.tajo.engine.planner.LogicalPlanner;
+import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.EvalExprNode;
-import org.apache.tajo.engine.planner.logical.ExprType;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.master.TajoMaster;
 import org.junit.AfterClass;
@@ -98,7 +97,7 @@ public class TestEvalTreeUtil {
   public static Target [] getRawTargets(String query) {
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(expr);
-    if (plan.getRootBlock().getRoot().getType() == ExprType.EXPRS) {
+    if (plan.getRootBlock().getRoot().getType() == NodeType.EXPRS) {
       return ((EvalExprNode)plan.getRootBlock().getRoot()).getExprs();
     } else {
       return plan.getRootBlock().getTargetListManager().getUnEvaluatedTargets();
@@ -182,14 +181,14 @@ public class TestEvalTreeUtil {
     Collection<EvalNode> exprs =
         EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
     EvalNode node = exprs.iterator().next();
-    assertEquals(Type.LTH, node.getType());
-    assertEquals(Type.PLUS, node.getLeftExpr().getType());
+    assertEquals(EvalType.LTH, node.getType());
+    assertEquals(EvalType.PLUS, node.getLeftExpr().getType());
     assertEquals(new ConstEval(DatumFactory.createInt4(4)), node.getRightExpr());
     
     Column col2 = new Column("people.age", TajoDataTypes.Type.INT4);
     exprs = EvalTreeUtil.getContainExpr(targets[1].getEvalTree(), col2);
     node = exprs.iterator().next();
-    assertEquals(Type.GTH, node.getType());
+    assertEquals(EvalType.GTH, node.getType());
     assertEquals("people.age", node.getLeftExpr().getName());
     assertEquals(new ConstEval(DatumFactory.createInt4(5)), node.getRightExpr());
   }
@@ -208,14 +207,14 @@ public class TestEvalTreeUtil {
     
     FieldEval field = (FieldEval) first.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
-    assertEquals(Type.LTH, first.getType());
+    assertEquals(EvalType.LTH, first.getType());
     EvalContext firstRCtx = first.getRightExpr().newContext();
     first.getRightExpr().eval(firstRCtx, null,  null);
     assertEquals(10, first.getRightExpr().terminate(firstRCtx).asInt4());
     
     field = (FieldEval) second.getRightExpr();
     assertEquals(col1, field.getColumnRef());
-    assertEquals(Type.LTH, second.getType());
+    assertEquals(EvalType.LTH, second.getType());
     EvalContext secondLCtx = second.getLeftExpr().newContext();
     second.getLeftExpr().eval(secondLCtx, null,  null);
     assertEquals(4, second.getLeftExpr().terminate(secondLCtx).asInt4());
@@ -241,11 +240,11 @@ public class TestEvalTreeUtil {
     Target [] targets = getRawTargets(QUERIES[0]);
     EvalNode node = AlgebraicUtil.simplify(targets[0].getEvalTree());
     EvalContext nodeCtx = node.newContext();
-    assertEquals(Type.CONST, node.getType());
+    assertEquals(EvalType.CONST, node.getType());
     node.eval(nodeCtx, null, null);
     assertEquals(7, node.terminate(nodeCtx).asInt4());
     node = AlgebraicUtil.simplify(targets[1].getEvalTree());
-    assertEquals(Type.CONST, node.getType());
+    assertEquals(EvalType.CONST, node.getType());
     nodeCtx = node.newContext();
     node.eval(nodeCtx, null, null);
     assertTrue(7.0d == node.terminate(nodeCtx).asFloat8());
@@ -276,7 +275,7 @@ public class TestEvalTreeUtil {
     EvalNode node = getRootSelection(QUERIES[3]);
     // we expect that score < 3
     EvalNode transposed = AlgebraicUtil.transpose(node, col1);
-    assertEquals(Type.GTH, transposed.getType());
+    assertEquals(EvalType.GTH, transposed.getType());
     FieldEval field = (FieldEval) transposed.getLeftExpr(); 
     assertEquals(col1, field.getColumnRef());
     EvalContext evalCtx = transposed.getRightExpr().newContext();
@@ -286,7 +285,7 @@ public class TestEvalTreeUtil {
     node = getRootSelection(QUERIES[4]);
     // we expect that score < 3
     transposed = AlgebraicUtil.transpose(node, col1);
-    assertEquals(Type.LTH, transposed.getType());
+    assertEquals(EvalType.LTH, transposed.getType());
     field = (FieldEval) transposed.getLeftExpr(); 
     assertEquals(col1, field.getColumnRef());
     evalCtx = transposed.getRightExpr().newContext();

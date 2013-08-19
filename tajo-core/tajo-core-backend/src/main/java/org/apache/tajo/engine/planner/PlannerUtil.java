@@ -45,14 +45,14 @@ public class PlannerUtil {
   public static boolean checkIfDDLPlan(LogicalNode node) {
     LogicalNode baseNode = node;
     if (node instanceof LogicalRootNode) {
-      baseNode = ((LogicalRootNode) node).getSubNode();
+      baseNode = ((LogicalRootNode) node).getChild();
     }
 
-    return baseNode.getType() == ExprType.CREATE_TABLE || baseNode.getType() == ExprType.DROP_TABLE;
+    return baseNode.getType() == NodeType.CREATE_TABLE || baseNode.getType() == NodeType.DROP_TABLE;
   }
   
   public static String [] getLineage(LogicalNode node) {
-    LogicalNode [] scans =  PlannerUtil.findAllNodes(node, ExprType.SCAN);
+    LogicalNode [] scans =  PlannerUtil.findAllNodes(node, NodeType.SCAN);
     String [] tableNames = new String[scans.length];
     ScanNode scan;
     for (int i = 0; i < scans.length; i++) {
@@ -67,12 +67,12 @@ public class PlannerUtil {
     Preconditions.checkArgument(newNode instanceof UnaryNode);
     
     UnaryNode p = (UnaryNode) parent;
-    LogicalNode c = p.getSubNode();
+    LogicalNode c = p.getChild();
     UnaryNode m = (UnaryNode) newNode;
     m.setInSchema(c.getOutSchema());
     m.setOutSchema(c.getOutSchema());
-    m.setSubNode(c);
-    p.setSubNode(m);
+    m.setChild(c);
+    p.setChild(m);
     
     return p;
   }
@@ -88,20 +88,20 @@ public class PlannerUtil {
         "ERROR: the logical node to be removed must be unary node.");
 
     UnaryNode child = (UnaryNode) tobeRemoved;
-    LogicalNode grandChild = child.getSubNode();
+    LogicalNode grandChild = child.getChild();
     if (parent instanceof UnaryNode) {
       UnaryNode unaryParent = (UnaryNode) parent;
 
-      Preconditions.checkArgument(unaryParent.getSubNode() == child,
+      Preconditions.checkArgument(unaryParent.getChild() == child,
           "ERROR: both logical node must be parent and child nodes");
-      unaryParent.setSubNode(grandChild);
+      unaryParent.setChild(grandChild);
 
     } else if (parent instanceof BinaryNode) {
       BinaryNode binaryParent = (BinaryNode) parent;
-      if (binaryParent.getOuterNode().equals(child)) {
-        binaryParent.setOuter(grandChild);
-      } else if (binaryParent.getInnerNode().equals(child)) {
-        binaryParent.setInner(grandChild);
+      if (binaryParent.getLeftChild().equals(child)) {
+        binaryParent.setLeftChild(grandChild);
+      } else if (binaryParent.getRightChild().equals(child)) {
+        binaryParent.setRightChild(grandChild);
       } else {
         throw new IllegalStateException("ERROR: both logical node must be parent and child nodes");
       }
@@ -111,16 +111,16 @@ public class PlannerUtil {
     return child;
   }
   
-  public static void replaceNode(LogicalNode plan, LogicalNode newNode, ExprType type) {
+  public static void replaceNode(LogicalNode plan, LogicalNode newNode, NodeType type) {
     LogicalNode parent = findTopParentNode(plan, type);
     Preconditions.checkArgument(parent instanceof UnaryNode);
     Preconditions.checkArgument(!(newNode instanceof BinaryNode));
     UnaryNode parentNode = (UnaryNode) parent;
-    LogicalNode child = parentNode.getSubNode();
+    LogicalNode child = parentNode.getChild();
     if (child instanceof UnaryNode) {
-      ((UnaryNode) newNode).setSubNode(((UnaryNode)child).getSubNode());
+      ((UnaryNode) newNode).setChild(((UnaryNode) child).getChild());
     }
-    parentNode.setSubNode(newNode);
+    parentNode.setChild(newNode);
   }
   
   public static LogicalNode insertOuterNode(LogicalNode parent, LogicalNode outer) {
@@ -128,12 +128,12 @@ public class PlannerUtil {
     Preconditions.checkArgument(outer instanceof UnaryNode);
     
     BinaryNode p = (BinaryNode) parent;
-    LogicalNode c = p.getOuterNode();
+    LogicalNode c = p.getLeftChild();
     UnaryNode m = (UnaryNode) outer;
     m.setInSchema(c.getOutSchema());
     m.setOutSchema(c.getOutSchema());
-    m.setSubNode(c);
-    p.setOuter(m);
+    m.setChild(c);
+    p.setLeftChild(m);
     return p;
   }
   
@@ -142,12 +142,12 @@ public class PlannerUtil {
     Preconditions.checkArgument(inner instanceof UnaryNode);
     
     BinaryNode p = (BinaryNode) parent;
-    LogicalNode c = p.getInnerNode();
+    LogicalNode c = p.getRightChild();
     UnaryNode m = (UnaryNode) inner;
     m.setInSchema(c.getOutSchema());
     m.setOutSchema(c.getOutSchema());
-    m.setSubNode(c);
-    p.setInner(m);
+    m.setChild(c);
+    p.setRightChild(m);
     return p;
   }
   
@@ -158,18 +158,18 @@ public class PlannerUtil {
     Preconditions.checkArgument(right instanceof UnaryNode);
     
     BinaryNode p = (BinaryNode)parent;
-    LogicalNode lc = p.getOuterNode();
-    LogicalNode rc = p.getInnerNode();
+    LogicalNode lc = p.getLeftChild();
+    LogicalNode rc = p.getRightChild();
     UnaryNode lm = (UnaryNode)left;
     UnaryNode rm = (UnaryNode)right;
     lm.setInSchema(lc.getOutSchema());
     lm.setOutSchema(lc.getOutSchema());
-    lm.setSubNode(lc);
+    lm.setChild(lc);
     rm.setInSchema(rc.getOutSchema());
     rm.setOutSchema(rc.getOutSchema());
-    rm.setSubNode(rc);
-    p.setOuter(lm);
-    p.setInner(rm);
+    rm.setChild(rc);
+    p.setLeftChild(lm);
+    p.setRightChild(rm);
     return p;
   }
   
@@ -227,7 +227,7 @@ public class PlannerUtil {
       child.setTargets(targetArray);
       child.setOutSchema(PlannerUtil.targetToSchema(targetArray));
       // set the groupby chaining
-      gp.setSubNode(child);
+      gp.setChild(child);
       gp.setInSchema(child.getOutSchema());
     } catch (CloneNotSupportedException e) {
       LOG.error(e);
@@ -241,7 +241,7 @@ public class PlannerUtil {
     
     try {
       SortNode child = (SortNode) sort.clone();
-      sort.setSubNode(child);
+      sort.setChild(child);
       sort.setInSchema(child.getOutSchema());
       sort.setOutSchema(child.getOutSchema());
     } catch (CloneNotSupportedException e) {
@@ -278,7 +278,7 @@ public class PlannerUtil {
    * @param type to find
    * @return a found logical node
    */
-  public static LogicalNode findTopNode(LogicalNode node, ExprType type) {
+  public static LogicalNode findTopNode(LogicalNode node, NodeType type) {
     Preconditions.checkNotNull(node);
     Preconditions.checkNotNull(type);
     
@@ -298,7 +298,7 @@ public class PlannerUtil {
    * @param type to find
    * @return a found logical node
    */
-  public static LogicalNode [] findAllNodes(LogicalNode node, ExprType type) {
+  public static LogicalNode [] findAllNodes(LogicalNode node, NodeType type) {
     Preconditions.checkNotNull(node);
     Preconditions.checkNotNull(type);
 
@@ -319,7 +319,7 @@ public class PlannerUtil {
    * @param type to find
    * @return the parent node of a found logical node
    */
-  public static LogicalNode findTopParentNode(LogicalNode node, ExprType type) {
+  public static LogicalNode findTopParentNode(LogicalNode node, NodeType type) {
     Preconditions.checkNotNull(node);
     Preconditions.checkNotNull(type);
     
@@ -335,7 +335,7 @@ public class PlannerUtil {
   public static boolean canBeEvaluated(EvalNode eval, LogicalNode node) {
     Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(eval);
 
-    if (node.getType() == ExprType.JOIN) {
+    if (node.getType() == NodeType.JOIN) {
       JoinNode joinNode = (JoinNode) node;
       Set<String> tableIds = Sets.newHashSet();
       // getting distinct table references
@@ -351,8 +351,8 @@ public class PlannerUtil {
         return false;
       }
 
-      String [] outer = getLineage(joinNode.getOuterNode());
-      String [] inner = getLineage(joinNode.getInnerNode());
+      String [] outer = getLineage(joinNode.getLeftChild());
+      String [] inner = getLineage(joinNode.getRightChild());
 
       Set<String> o = Sets.newHashSet(outer);
       Set<String> i = Sets.newHashSet(inner);
@@ -396,15 +396,15 @@ public class PlannerUtil {
 
   private static class LogicalNodeFinder implements LogicalNodeVisitor {
     private List<LogicalNode> list = new ArrayList<LogicalNode>();
-    private final ExprType [] tofind;
+    private final NodeType[] tofind;
     private boolean topmost = false;
     private boolean finished = false;
 
-    public LogicalNodeFinder(ExprType...type) {
+    public LogicalNodeFinder(NodeType...type) {
       this.tofind = type;
     }
 
-    public LogicalNodeFinder(ExprType [] type, boolean topmost) {
+    public LogicalNodeFinder(NodeType[] type, boolean topmost) {
       this(type);
       this.topmost = topmost;
     }
@@ -412,7 +412,7 @@ public class PlannerUtil {
     @Override
     public void visit(LogicalNode node) {
       if (!finished) {
-        for (ExprType type : tofind) {
+        for (NodeType type : tofind) {
           if (node.getType() == type) {
             list.add(node);
           }
@@ -430,9 +430,9 @@ public class PlannerUtil {
   
   private static class ParentNodeFinder implements LogicalNodeVisitor {
     private List<LogicalNode> list = new ArrayList<LogicalNode>();
-    private ExprType tofind;
+    private NodeType tofind;
 
-    public ParentNodeFinder(ExprType type) {
+    public ParentNodeFinder(NodeType type) {
       this.tofind = type;
     }
 
@@ -440,13 +440,13 @@ public class PlannerUtil {
     public void visit(LogicalNode node) {
       if (node instanceof UnaryNode) {
         UnaryNode unary = (UnaryNode) node;
-        if (unary.getSubNode().getType() == tofind) {
+        if (unary.getChild().getType() == tofind) {
           list.add(node);
         }
       } else if (node instanceof BinaryNode){
         BinaryNode bin = (BinaryNode) node;
-        if (bin.getOuterNode().getType() == tofind ||
-            bin.getInnerNode().getType() == tofind) {
+        if (bin.getLeftChild().getType() == tofind ||
+            bin.getRightChild().getType() == tofind) {
           list.add(node);
         }
       }
@@ -711,7 +711,7 @@ public class PlannerUtil {
       } catch (CloneNotSupportedException e) {
         throw new InternalError(e.getMessage());
       }
-      if (copy[i].getEvalTree().getType() == EvalNode.Type.FIELD) {
+      if (copy[i].getEvalTree().getType() == EvalType.FIELD) {
         FieldEval fieldEval = (FieldEval) copy[i].getEvalTree();
         if (fieldEval.getColumnRef().isQualified()) {
           fieldEval.getColumnRef().setName(fieldEval.getColumnName());

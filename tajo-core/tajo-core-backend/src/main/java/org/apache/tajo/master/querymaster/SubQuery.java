@@ -42,8 +42,8 @@ import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.logical.ExprType;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.master.ExecutionBlock;
@@ -497,7 +497,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       GroupbyNode grpNode = null;
       if (parent != null) {
         grpNode = (GroupbyNode) PlannerUtil.findTopNode(
-            parent.getPlan(), ExprType.GROUP_BY);
+            parent.getPlan(), NodeType.GROUP_BY);
       }
 
       // Is this subquery the first step of join?

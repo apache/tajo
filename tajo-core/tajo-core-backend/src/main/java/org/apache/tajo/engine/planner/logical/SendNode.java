@@ -19,7 +19,7 @@
 /**
  * 
  */
-package org.apache.tajo.engine.planner.logical.extended;
+package org.apache.tajo.engine.planner.logical;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
@@ -28,7 +28,7 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.planner.logical.ExprType;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.UnaryNode;
 import org.apache.tajo.util.TUtil;
 
@@ -50,7 +50,7 @@ public class SendNode extends UnaryNode {
   @Expose private int numPartitions;
 
   private SendNode() {
-    super(ExprType.SEND);
+    super(NodeType.SEND);
   }
   
   public SendNode(PipeType pipeType, RepartitionType repaType) {

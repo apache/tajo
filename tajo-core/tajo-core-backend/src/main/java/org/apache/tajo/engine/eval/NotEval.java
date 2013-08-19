@@ -34,7 +34,7 @@ public class NotEval extends EvalNode implements Cloneable {
       CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
 
   public NotEval(EvalNode subExpr) {
-    super(Type.NOT);
+    super(EvalType.NOT);
     Preconditions.checkArgument(
         subExpr instanceof BinaryEval || subExpr instanceof NotEval);
     this.subExpr = subExpr;

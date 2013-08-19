@@ -20,7 +20,6 @@ package org.apache.tajo.engine.eval;
 
 import com.google.common.collect.Lists;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -28,6 +27,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
@@ -38,7 +38,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
   @Expose private EvalNode elseResult;
 
   public CaseWhenEval() {
-    super(Type.CASE);
+    super(EvalType.CASE);
   }
 
   public void addWhen(EvalNode condition, EvalNode result) {
@@ -145,7 +145,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     @Expose private EvalNode result;
 
     public WhenEval(EvalNode condition, EvalNode result) {
-      super(Type.WHEN);
+      super(EvalType.WHEN);
       this.condition = condition;
       this.result = result;
     }

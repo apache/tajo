@@ -29,7 +29,7 @@ public class EvalExprNode extends LogicalNode implements Projectable {
   @Expose private Target[] exprs;
 
   public EvalExprNode(Target[] exprs) {
-    super(ExprType.EXPRS);
+    super(NodeType.EXPRS);
     this.exprs = exprs;
   }
 

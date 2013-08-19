@@ -35,7 +35,7 @@ public class FuncCallEval extends FuncEval {
   private Schema schema;
 
 	public FuncCallEval(FunctionDesc desc, GeneralFunction instance, EvalNode [] givenArgs) {
-		super(Type.FUNCTION, desc, givenArgs);
+		super(EvalType.FUNCTION, desc, givenArgs);
 		this.instance = instance;
   }
 

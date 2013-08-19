@@ -28,7 +28,7 @@ public final class LimitNode extends UnaryNode implements Cloneable {
 	}
 
   public LimitNode(long fetchFirstNum) {
-    super(ExprType.LIMIT);
+    super(NodeType.LIMIT);
     this.fetchFirstNum = fetchFirstNum;
   }
   
@@ -42,7 +42,7 @@ public final class LimitNode extends UnaryNode implements Cloneable {
       LimitNode other = (LimitNode) obj;
       return super.equals(other)
           && fetchFirstNum == other.fetchFirstNum
-          && subExpr.equals(other.subExpr);
+          && child.equals(other.child);
     } else {
       return false;
     }
@@ -60,7 +60,7 @@ public final class LimitNode extends UnaryNode implements Cloneable {
 
     sb.append("\n\"out schema: ").append(getOutSchema())
         .append("\n\"in schema: " + getInSchema());
-    sb.append("\n").append(getSubNode().toString());
+    sb.append("\n").append(getChild().toString());
 
     return sb.toString();
   }

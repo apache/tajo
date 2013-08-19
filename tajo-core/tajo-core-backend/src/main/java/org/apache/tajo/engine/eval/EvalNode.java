@@ -27,15 +27,15 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.storage.Tuple;
 
 public abstract class EvalNode implements Cloneable, GsonObject {
-	@Expose protected Type type;
+	@Expose protected EvalType type;
 	@Expose protected EvalNode leftExpr;
 	@Expose protected EvalNode rightExpr;
 	
-	public EvalNode(Type type) {
+	public EvalNode(EvalType type) {
 		this.type = type;
 	}
 	
-	public EvalNode(Type type, EvalNode left, EvalNode right) {
+	public EvalNode(EvalType type, EvalNode left, EvalNode right) {
 		this(type);
 		this.leftExpr = left;
 		this.rightExpr = right;
@@ -43,7 +43,7 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 
   public abstract EvalContext newContext();
 	
-	public Type getType() {
+	public EvalType getType() {
 		return this.type;
 	}
 	
@@ -100,42 +100,6 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 	  leftExpr.postOrder(visitor);
 	  rightExpr.postOrder(visitor);	  	  
 	  visitor.visit(this);
-	}
-	
-	public static enum Type {
-    AGG_FUNCTION,
-    AND,
-	  OR,
-	  EQUAL("="),
-    IS,
-	  NOT_EQUAL("<>"),
-	  LTH("<"),
-	  LEQ("<="),
-	  GTH(">"),
-	  GEQ(">="),
-	  NOT("!"),
-	  PLUS("+"),
-    MINUS("-"),
-    MODULAR("%"),
-    MULTIPLY("*"),
-    DIVIDE("/"),
-	  FIELD,
-    FUNCTION,
-    LIKE,
-    CONST,
-    CASE,
-    WHEN;
-
-    private String represent;
-    Type() {
-    }
-    Type(String represent) {
-      this.represent = represent;
-    }
-
-    public String toString() {
-      return represent == null ? this.name() : represent;
-    }
 	}
 
   public abstract boolean equals(Object obj);

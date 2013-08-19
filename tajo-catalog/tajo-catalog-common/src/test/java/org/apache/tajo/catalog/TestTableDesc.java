@@ -51,7 +51,7 @@ public class TestTableDesc {
     testClone(info);
 
     TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo/data"));
-    assertEquals("table1", desc.getId());
+    assertEquals("table1", desc.getName());
     
     assertEquals(new Path("/tajo/data"), desc.getPath());
     assertEquals(info, desc.getMeta());
