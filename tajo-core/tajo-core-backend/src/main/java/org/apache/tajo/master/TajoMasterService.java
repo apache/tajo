@@ -22,7 +22,6 @@ import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
@@ -33,6 +32,7 @@ import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.ProtoAsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
+import org.apache.tajo.util.NetUtils;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -69,7 +69,7 @@ public class TajoMasterService extends AbstractService {
     server.start();
     bindAddress = server.getListenAddress();
     this.conf.setVar(TajoConf.ConfVars.TAJO_MASTER_SERVICE_ADDRESS,
-        org.apache.tajo.util.NetUtils.getIpPortString(bindAddress));
+        NetUtils.normalizeInetSocketAddress(bindAddress));
     LOG.info("Instantiated TajoMasterService at " + this.bindAddress);
     super.start();
   }

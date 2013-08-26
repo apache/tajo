@@ -217,7 +217,7 @@ public class TajoTestingCluster {
     catalogServer = new MiniCatalogServer(conf);
     CatalogServer catServer = catalogServer.getCatalogServer();
     InetSocketAddress sockAddr = catServer.getBindAddress();
-    c.setVar(ConfVars.CATALOG_ADDRESS, NetUtils.getIpPortString(sockAddr));
+    c.setVar(ConfVars.CATALOG_ADDRESS, NetUtils.normalizeInetSocketAddress(sockAddr));
 
     return this.catalogServer;
   }
