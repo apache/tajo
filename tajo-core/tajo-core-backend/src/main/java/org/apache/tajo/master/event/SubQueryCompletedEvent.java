@@ -18,22 +18,22 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.tajo.SubQueryId;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.master.querymaster.SubQueryState;
 
 public class SubQueryCompletedEvent extends QueryEvent {
-  private final SubQueryId subQueryId;
+  private final ExecutionBlockId executionBlockId;
   private final SubQueryState finalState;
 
-  public SubQueryCompletedEvent(final SubQueryId subQueryId,
+  public SubQueryCompletedEvent(final ExecutionBlockId executionBlockId,
                                 SubQueryState finalState) {
-    super(subQueryId.getQueryId(), QueryEventType.SUBQUERY_COMPLETED);
-    this.subQueryId = subQueryId;
+    super(executionBlockId.getQueryId(), QueryEventType.SUBQUERY_COMPLETED);
+    this.executionBlockId = executionBlockId;
     this.finalState = finalState;
   }
 
-  public SubQueryId getSubQueryId() {
-    return subQueryId;
+  public ExecutionBlockId getExecutionBlockId() {
+    return executionBlockId;
   }
 
   public SubQueryState getFinalState() {

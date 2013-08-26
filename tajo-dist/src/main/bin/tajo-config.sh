@@ -54,3 +54,16 @@ fi
  
 # Allow alternate conf dir location.
 TAJO_CONF_DIR="${TAJO_CONF_DIR:-$TAJO_HOME/conf}"
+
+#check to see it is specified whether to use the workers or the
+# workers file
+if [ $# -gt 1 ]
+then
+    if [ "--hosts" = "$1" ]
+    then
+        shift
+        workesfile=$1
+        shift
+        export TAJO_WORKERS="${TAJO_CONF_DIR}/$workesfile"
+    fi
+fi

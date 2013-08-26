@@ -27,36 +27,40 @@ import org.apache.hadoop.yarn.api.protocolrecords.AllocateResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
 import org.apache.hadoop.yarn.api.records.AMResponse;
 import org.apache.hadoop.yarn.api.records.Container;
+import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.client.AMRMClientImpl;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
-import org.apache.tajo.SubQueryId;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.master.event.ContainerAllocationEvent;
 import org.apache.tajo.master.event.ContainerAllocatorEventType;
 import org.apache.tajo.master.event.SubQueryContainerAllocationEvent;
-import org.apache.tajo.master.querymaster.QueryMaster.QueryContext;
+import org.apache.tajo.master.querymaster.Query;
+import org.apache.tajo.master.querymaster.QueryMasterTask;
+import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.master.querymaster.SubQueryState;
+import org.apache.tajo.util.ApplicationIdUtils;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
-public class RMContainerAllocator extends AMRMClientImpl
+public class YarnRMContainerAllocator extends AMRMClientImpl
     implements EventHandler<ContainerAllocationEvent> {
 
   /** Class Logger */
-  private static final Log LOG = LogFactory.getLog(RMContainerAllocator.
+  private static final Log LOG = LogFactory.getLog(YarnRMContainerAllocator.
       class.getName());
 
-  private QueryContext context;
+  private QueryMasterTask.QueryContext context;
   private final EventHandler eventHandler;
 
-  public RMContainerAllocator(QueryContext context) {
-    super(context.getApplicationAttemptId());
+  public YarnRMContainerAllocator(QueryMasterTask.QueryContext context) {
+    super(ApplicationIdUtils.createApplicationAttemptId(context.getQueryId()));
     this.context = context;
     this.eventHandler = context.getDispatcher().getEventHandler();
   }
@@ -71,9 +75,9 @@ public class RMContainerAllocator extends AMRMClientImpl
 
     RegisterApplicationMasterResponse response;
     try {
-      response = registerApplicationMaster("locahost", 10080, "http://localhost:1234");
-      context.setMaxContainerCapability(response.getMaximumResourceCapability().getMemory());
-      context.setMinContainerCapability(response.getMinimumResourceCapability().getMemory());
+      response = registerApplicationMaster("localhost", 10080, "http://localhost:1234");
+      context.getResourceAllocator().setMaxContainerCapability(response.getMaximumResourceCapability().getMemory());
+      context.getResourceAllocator().setMinContainerCapability(response.getMinimumResourceCapability().getMemory());
 
       // If the number of cluster nodes is ZERO, it waits for available nodes.
       AllocateResponse allocateResponse = allocate(0.0f);
@@ -86,7 +90,7 @@ public class RMContainerAllocator extends AMRMClientImpl
           LOG.error(e);
         }
       }
-      context.setNumClusterNodes(allocateResponse.getNumClusterNodes());
+      context.getResourceAllocator().setNumClusterNodes(allocateResponse.getNumClusterNodes());
     } catch (YarnRemoteException e) {
       LOG.error(e);
     }
@@ -96,7 +100,8 @@ public class RMContainerAllocator extends AMRMClientImpl
 
   protected Thread allocatorThread;
   private final AtomicBoolean stopped = new AtomicBoolean(false);
-  private int rmPollInterval = 100;//millis
+  private int rmPollInterval = 1000;//millis
+
   protected void startAllocatorThread() {
     allocatorThread = new Thread(new Runnable() {
       @Override
@@ -111,6 +116,9 @@ public class RMContainerAllocator extends AMRMClientImpl
             } catch (Exception e) {
               LOG.error("ERROR IN CONTACTING RM. ", e);
               // TODO: for other exceptions
+              if(stopped.get()) {
+                break;
+              }
             }
             Thread.sleep(rmPollInterval);
           } catch (InterruptedException e) {
@@ -123,36 +131,57 @@ public class RMContainerAllocator extends AMRMClientImpl
         LOG.info("Allocated thread stopped");
       }
     });
-    allocatorThread.setName("RMContainerAllocator");
+    allocatorThread.setName("YarnRMContainerAllocator");
     allocatorThread.start();
   }
 
   public void stop() {
+    if(stopped.get()) {
+      return;
+    }
+    LOG.info("un-registering ApplicationMaster(QueryMaster):" + appAttemptId);
     stopped.set(true);
+
+    try {
+      FinalApplicationStatus status = FinalApplicationStatus.UNDEFINED;
+      Query query = context.getQuery();
+      if (query != null) {
+        TajoProtos.QueryState state = query.getState();
+        if (state == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+          status = FinalApplicationStatus.SUCCEEDED;
+        } else if (state == TajoProtos.QueryState.QUERY_FAILED || state == TajoProtos.QueryState.QUERY_ERROR) {
+          status = FinalApplicationStatus.FAILED;
+        } else if (state == TajoProtos.QueryState.QUERY_ERROR) {
+          status = FinalApplicationStatus.FAILED;
+        }
+      }
+      unregisterApplicationMaster(status, "tajo query finished", null);
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
+    }
+
     allocatorThread.interrupt();
-    LOG.info("RMContainerAllocator stopped");
+    LOG.info("un-registered ApplicationMAster(QueryMaster) stopped:" + appAttemptId);
+
     super.stop();
   }
 
-  private final Map<Priority, SubQueryId> subQueryMap =
-      new HashMap<Priority, SubQueryId>();
-  private AtomicLong prevReportTime = new AtomicLong(0);
-  private int reportInterval = 5 * 1000; // second
+  private final Map<Priority, ExecutionBlockId> subQueryMap =
+      new HashMap<Priority, ExecutionBlockId>();
 
   public void heartbeat() throws Exception {
     AllocateResponse allocateResponse = allocate(context.getProgress());
     AMResponse response = allocateResponse.getAMResponse();
+    if(response == null) {
+      LOG.warn("AM Response is null");
+      return;
+    }
     List<Container> allocatedContainers = response.getAllocatedContainers();
 
-    long currentTime = System.currentTimeMillis();
-    if((currentTime - prevReportTime.longValue()) >= reportInterval){
-      LOG.debug("Available Cluster Nodes: " + allocateResponse.getNumClusterNodes());
-      LOG.debug("Num of Allocated Containers: " + allocatedContainers.size());
-      LOG.info("Available Resource: " + response.getAvailableResources());
-      prevReportTime.set(currentTime);
-    }
-
-    if (allocatedContainers.size() > 0) {
+    LOG.info("Available Cluster Nodes: " + allocateResponse.getNumClusterNodes());
+    LOG.info("Available Resource: " + response.getAvailableResources());
+    LOG.info("Num of Allocated Containers: " + response.getAllocatedContainers().size());
+    if (response.getAllocatedContainers().size() > 0) {
       LOG.info("================================================================");
       for (Container container : response.getAllocatedContainers()) {
         LOG.info("> Container Id: " + container.getId());
@@ -162,32 +191,31 @@ public class RMContainerAllocator extends AMRMClientImpl
         LOG.info("> Priority: " + container.getPriority());
       }
       LOG.info("================================================================");
+    }
 
-      Map<SubQueryId, List<Container>> allocated = new HashMap<SubQueryId, List<Container>>();
-
+    Map<ExecutionBlockId, List<Container>> allocated = new HashMap<ExecutionBlockId, List<Container>>();
+    if (allocatedContainers.size() > 0) {
       for (Container container : allocatedContainers) {
-        SubQueryId subQueryId = subQueryMap.get(container.getPriority());
-        SubQueryState state = context.getSubQuery(subQueryId).getState();
-        if (!(isRunningState(state))) {
+        ExecutionBlockId executionBlockId = subQueryMap.get(container.getPriority());
+        SubQueryState state = context.getSubQuery(executionBlockId).getState();
+        if (!(SubQuery.isRunningState(state) && subQueryMap.containsKey(container.getPriority()))) {
           releaseAssignedContainer(container.getId());
+          synchronized (subQueryMap) {
+            subQueryMap.remove(container.getPriority());
+          }
         } else {
-          if (allocated.containsKey(subQueryId)) {
-            allocated.get(subQueryId).add(container);
+          if (allocated.containsKey(executionBlockId)) {
+            allocated.get(executionBlockId).add(container);
           } else {
-            allocated.put(subQueryId, Lists.newArrayList(container));
+            allocated.put(executionBlockId, Lists.newArrayList(container));
           }
         }
       }
 
-      for (Entry<SubQueryId, List<Container>> entry : allocated.entrySet()) {
+      for (Entry<ExecutionBlockId, List<Container>> entry : allocated.entrySet()) {
         eventHandler.handle(new SubQueryContainerAllocationEvent(entry.getKey(), entry.getValue()));
       }
     }
-  }
-
-  private static boolean isRunningState(SubQueryState state) {
-    return state == SubQueryState.INIT || state == SubQueryState.NEW ||
-        state == SubQueryState.CONTAINER_ALLOCATED || state == SubQueryState.RUNNING;
   }
 
   @Override
@@ -195,7 +223,7 @@ public class RMContainerAllocator extends AMRMClientImpl
 
     if (event.getType() == ContainerAllocatorEventType.CONTAINER_REQ) {
       LOG.info(event);
-      subQueryMap.put(event.getPriority(), event.getSubQueryId());
+      subQueryMap.put(event.getPriority(), event.getExecutionBlockId());
       addContainerRequest(new ContainerRequest(event.getCapability(), null, null,
           event.getPriority(), event.getRequiredNum()));
 

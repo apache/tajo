@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+//TajoClient -> TajoMaster Protocol
 option java_package = "org.apache.tajo.ipc";
 option java_outer_classname = "TajoMasterClientProtocol";
 option java_generic_services = true;
@@ -30,12 +31,12 @@ import "ClientProtos.proto";
 
 service TajoMasterClientProtocolService {
   rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
-  rpc submitQuery(QueryRequest) returns (SubmitQueryResponse);
+  rpc submitQuery(QueryRequest) returns (GetQueryStatusResponse);
   rpc updateQuery(QueryRequest) returns (UpdateQueryResponse);
   rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
   rpc getQueryList(GetQueryListRequest) returns (GetQueryListResponse);
   rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
-  rpc killQuery(ApplicationAttemptIdProto) returns (BoolProto);
+  rpc killQuery(QueryIdProto) returns (BoolProto);
   rpc getClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
   rpc existTable(StringProto) returns (BoolProto);
   rpc getTableList(GetTableListRequest) returns (GetTableListResponse);

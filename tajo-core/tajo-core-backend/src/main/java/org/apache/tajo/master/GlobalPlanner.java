@@ -21,9 +21,9 @@ package org.apache.tajo.master;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.event.EventHandler;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.SubQueryId;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
@@ -75,9 +75,9 @@ public class GlobalPlanner {
     // insert store at the subnode of the root
     UnaryNode root = rootNode;
     if (root.getChild().getType() != NodeType.STORE) {
-      SubQueryId subQueryId = QueryIdFactory.newSubQueryId(this.queryId);
-      outputTableName = subQueryId.toString();
-      insertStore(subQueryId.toString(),root).setLocal(false);
+      ExecutionBlockId executionBlockId = QueryIdFactory.newExecutionBlockId(this.queryId);
+      outputTableName = executionBlockId.toString();
+      insertStore(executionBlockId.toString(),root).setLocal(false);
     }
     
     // convert 2-phase plan
@@ -113,10 +113,10 @@ public class GlobalPlanner {
         if (groupby.getChild().getType() != NodeType.UNION &&
             groupby.getChild().getType() != NodeType.STORE &&
             groupby.getChild().getType() != NodeType.SCAN) {
-          tableId = QueryIdFactory.newSubQueryId(queryId).toString();
+          tableId = QueryIdFactory.newExecutionBlockId(queryId).toString();
           insertStore(tableId, groupby);
         }
-        tableId = QueryIdFactory.newSubQueryId(queryId).toString();
+        tableId = QueryIdFactory.newExecutionBlockId(queryId).toString();
         // insert (a store for the first group by) and (a second group by)
         PlannerUtil.transformGroupbyTo2PWithStore((GroupbyNode)node, tableId);
       } else if (node.getType() == NodeType.SORT) {
@@ -126,10 +126,10 @@ public class GlobalPlanner {
         if (sort.getChild().getType() != NodeType.UNION &&
             sort.getChild().getType() != NodeType.STORE &&
             sort.getChild().getType() != NodeType.SCAN) {
-          tableId = QueryIdFactory.newSubQueryId(queryId).toString();
+          tableId = QueryIdFactory.newExecutionBlockId(queryId).toString();
           insertStore(tableId, sort);
         }
-        tableId = QueryIdFactory.newSubQueryId(queryId).toString();
+        tableId = QueryIdFactory.newExecutionBlockId(queryId).toString();
         // insert (a store for the first sort) and (a second sort)
         PlannerUtil.transformSortTo2PWithStore((SortNode)node, tableId);
       } else if (node.getType() == NodeType.JOIN) {
@@ -138,8 +138,8 @@ public class GlobalPlanner {
         JoinNode join = (JoinNode) node;
 
         /*
-        if (join.getOuterNode().getType() == NodeType.SCAN &&
-            join.getInnerNode().getType() == NodeType.SCAN) {
+        if (join.getOuterNode().getType() == ExprType.SCAN &&
+            join.getInnerNode().getType() == ExprType.SCAN) {
           ScanNode outerScan = (ScanNode) join.getOuterNode();
           ScanNode innerScan = (ScanNode) join.getInnerNode();
 
@@ -198,14 +198,14 @@ public class GlobalPlanner {
         // insert stores for the first phase
         if (join.getLeftChild().getType() != NodeType.UNION &&
             join.getLeftChild().getType() != NodeType.STORE) {
-          tableId = QueryIdFactory.newSubQueryId(queryId).toString();
+          tableId = QueryIdFactory.newExecutionBlockId(queryId).toString();
           store = new StoreTableNode(tableId);
           store.setLocal(true);
           PlannerUtil.insertOuterNode(node, store);
         }
         if (join.getRightChild().getType() != NodeType.UNION &&
             join.getRightChild().getType() != NodeType.STORE) {
-          tableId = QueryIdFactory.newSubQueryId(queryId).toString();
+          tableId = QueryIdFactory.newExecutionBlockId(queryId).toString();
           store = new StoreTableNode(tableId);
           store.setLocal(true);
           PlannerUtil.insertInnerNode(node, store);
@@ -216,7 +216,7 @@ public class GlobalPlanner {
         // insert stores
         if (union.getLeftChild().getType() != NodeType.UNION &&
             union.getLeftChild().getType() != NodeType.STORE) {
-          tableId = QueryIdFactory.newSubQueryId(queryId).toString();
+          tableId = QueryIdFactory.newExecutionBlockId(queryId).toString();
           store = new StoreTableNode(tableId);
           if(union.getLeftChild().getType() == NodeType.GROUP_BY) {
             /*This case is for cube by operator
@@ -230,7 +230,7 @@ public class GlobalPlanner {
         }
         if (union.getRightChild().getType() != NodeType.UNION &&
             union.getRightChild().getType() != NodeType.STORE) {
-          tableId = QueryIdFactory.newSubQueryId(queryId).toString();
+          tableId = QueryIdFactory.newExecutionBlockId(queryId).toString();
           store = new StoreTableNode(tableId);
           if(union.getRightChild().getType() == NodeType.GROUP_BY) {
             /*This case is for cube by operator
@@ -246,7 +246,7 @@ public class GlobalPlanner {
         UnaryNode unary = (UnaryNode)node;
         if (unary.getType() != NodeType.STORE &&
             unary.getChild().getType() != NodeType.STORE) {
-          tableId = QueryIdFactory.newSubQueryId(queryId).toString();
+          tableId = QueryIdFactory.newExecutionBlockId(queryId).toString();
           insertStore(tableId, unary);
         }
       }
@@ -283,11 +283,11 @@ public class GlobalPlanner {
       
       if (node.getType() == NodeType.STORE) {
         store = (StoreTableNode) node;
-        SubQueryId id;
-        if (store.getTableName().startsWith(QueryId.PREFIX)) {
-          id = TajoIdUtils.newSubQueryId(store.getTableName());
+        ExecutionBlockId id;
+        if (store.getTableName().startsWith(ExecutionBlockId.EB_ID_PREFIX)) {
+          id = TajoIdUtils.createExecutionBlockId(store.getTableName());
         } else {
-          id = QueryIdFactory.newSubQueryId(queryId);
+          id = QueryIdFactory.newExecutionBlockId(queryId);
         }
         subQuery = new ExecutionBlock(id);
 

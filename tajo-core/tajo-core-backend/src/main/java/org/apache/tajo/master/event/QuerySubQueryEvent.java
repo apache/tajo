@@ -18,18 +18,18 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.tajo.SubQueryId;
+import org.apache.tajo.ExecutionBlockId;
 
 public class QuerySubQueryEvent extends QueryEvent {
-  private SubQueryId subQueryId;
+  private ExecutionBlockId executionBlockId;
 
-  public QuerySubQueryEvent(final SubQueryId id,
+  public QuerySubQueryEvent(final ExecutionBlockId id,
                             final QueryEventType queryEvent) {
     super(id.getQueryId(), queryEvent);
-    this.subQueryId = id;
+    this.executionBlockId = id;
   }
 
-  public SubQueryId getSubQueryId() {
-    return this.subQueryId;
+  public ExecutionBlockId getExecutionBlockId() {
+    return this.executionBlockId;
   }
 }

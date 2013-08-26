@@ -18,14 +18,13 @@
 
 package org.apache.tajo.master;
 
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.SubQueryId;
 import org.apache.tajo.TestTajoIds;
 import org.apache.tajo.master.ExecutionBlock.PartitionType;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.Repartitioner;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.util.TajoIdUtils;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.Test;
 
@@ -37,10 +36,10 @@ import static junit.framework.Assert.assertEquals;
 public class TestRepartitioner {
   @Test
   public void testCreateHashFetchURL() throws Exception {
-    QueryId q1 = TestTajoIds.createQueryId(1315890136000l, 2, 1);
+    QueryId q1 = TestTajoIds.createQueryId(1315890136000l, 2);
     String hostName = "tajo1";
     int port = 1234;
-    SubQueryId sid = TajoIdUtils.createSubQueryId(q1, 2);
+    ExecutionBlockId sid = new ExecutionBlockId(q1, 2);
     int partitionId = 2;
 
     List<QueryUnit.IntermediateEntry> intermediateEntries = TUtil.newList();

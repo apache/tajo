@@ -27,7 +27,7 @@ public class SubQueryTaskEvent extends SubQueryEvent {
   private QueryUnitId taskId;
   public SubQueryTaskEvent(QueryUnitId taskId,
                            SubQueryEventType subQueryEventType) {
-    super(taskId.getSubQueryId(), subQueryEventType);
+    super(taskId.getExecutionBlockId(), subQueryEventType);
     this.taskId = taskId;
   }
 

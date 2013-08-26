@@ -17,7 +17,7 @@
 # limitations under the License.
 
 
-# Stop tajo map reduce daemons.  Run this on master node.
+# Stop tajo master daemons.  Run this on master node.
 
 bin=`dirname "$0"`
 bin=`cd "$bin"; pwd`
@@ -25,3 +25,12 @@ bin=`cd "$bin"; pwd`
 . "$bin"/tajo-config.sh
 
 "$bin"/tajo-daemon.sh --config $TAJO_CONF_DIR stop master
+
+if [ -f "${TAJO_CONF_DIR}/tajo-env.sh" ]; then
+  . "${TAJO_CONF_DIR}/tajo-env.sh"
+fi
+
+if [ "$TAJO_WORKER_STANDBY_MODE" = "true" ]; then
+  exec "$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" stop worker
+fi
+

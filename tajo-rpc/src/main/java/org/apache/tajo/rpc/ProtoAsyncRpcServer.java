@@ -25,9 +25,9 @@ import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.netty.channel.*;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
+import org.jboss.netty.channel.*;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -118,7 +118,6 @@ public class ProtoAsyncRpcServer extends NettyServerBase {
         RemoteCallException callException = (RemoteCallException) e.getCause();
         e.getChannel().write(callException.getResponse());
       }
-
       throw new RemoteException(e.getCause());
     }
   }

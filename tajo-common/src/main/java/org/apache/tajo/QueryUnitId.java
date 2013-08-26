@@ -18,145 +18,71 @@
 
 package org.apache.tajo;
 
-import com.google.common.base.Objects;
-import org.apache.tajo.TajoIdProtos.QueryUnitIdProto;
-import org.apache.tajo.TajoIdProtos.QueryUnitIdProtoOrBuilder;
-import org.apache.tajo.common.ProtoObject;
-import org.apache.tajo.util.TajoIdUtils;
+public class QueryUnitId implements Comparable<QueryUnitId> {
+  public static final String QU_ID_PREFIX = "t";
 
-import java.text.NumberFormat;
+  private ExecutionBlockId executionBlockId;
+  private int id;
 
-public class QueryUnitId implements Comparable<QueryUnitId>,
-  ProtoObject<QueryUnitIdProto> {
-  private static final String PREFIX = "t";
-
-  static final ThreadLocal<NumberFormat> queryUnitIdFormat =
-      new ThreadLocal<NumberFormat>() {
-        @Override
-        public NumberFormat initialValue() {
-          NumberFormat fmt = NumberFormat.getInstance();
-          fmt.setGroupingUsed(false);
-          fmt.setMinimumIntegerDigits(6);
-          return fmt;
-        }
-      };
-  
-  private SubQueryId subQueryId = null;
-  private int id = -1;
-  private String finalId = null;
-
-  private QueryUnitIdProto proto = QueryUnitIdProto.getDefaultInstance();
-  private QueryUnitIdProto.Builder builder = null;
-  private boolean viaProto = false;
-  
-  public QueryUnitId() {
-    builder = QueryUnitIdProto.newBuilder();
-  }
-  
-  public QueryUnitId(final SubQueryId subQueryId,
-      final int id) {
-    this.subQueryId = subQueryId;
+  public QueryUnitId(ExecutionBlockId executionBlockId, int id) {
+    this.executionBlockId = executionBlockId;
     this.id = id;
   }
-  
-  public QueryUnitId(QueryUnitIdProto proto) {
-    this.proto = proto;
-    viaProto = true;
+
+  public QueryUnitId(TajoIdProtos.QueryUnitIdProto proto) {
+    this(new ExecutionBlockId(proto.getExecutionBlockId()), proto.getId());
   }
-  
-  public QueryUnitId(final String finalId) {
-    this.finalId = finalId;
-    int i = finalId.lastIndexOf(QueryId.SEPARATOR);
-    this.subQueryId = TajoIdUtils.newSubQueryId(finalId.substring(0, i));
-    this.id = Integer.valueOf(finalId.substring(i+1));
+
+  public ExecutionBlockId getExecutionBlockId() {
+    return executionBlockId;
   }
-  
+
   public int getId() {
-    QueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.id != -1) {
-      return this.id;
-    }
-    if (!p.hasId()) {
-      return -1;
-    }
-    this.id = p.getId();
     return id;
   }
-  
-  public SubQueryId getSubQueryId() {
-    QueryUnitIdProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.subQueryId != null) {
-      return this.subQueryId;
-    }
-    if (!p.hasSubQueryId()) {
-      return null;
-    }
-    this.subQueryId = TajoIdUtils.newSubQueryId(p.getSubQueryId());
-    return this.subQueryId;
+
+  public TajoIdProtos.QueryUnitIdProto getProto() {
+    return TajoIdProtos.QueryUnitIdProto.newBuilder()
+        .setExecutionBlockId(executionBlockId.getProto())
+        .setId(id)
+        .build();
   }
-  
-  public QueryId getQueryId() {
-    return this.getSubQueryId().getQueryId();
-  }
-  
+
   @Override
-  public final String toString() {
-    if (finalId == null) {
-      StringBuilder sb = new StringBuilder(PREFIX);
-      QueryId appId = getSubQueryId().getQueryId();
-      sb.append(QueryId.SEPARATOR).append(
-          appId.getApplicationId().getClusterTimestamp())
-      .append(QueryId.SEPARATOR).append(
-          QueryId.appIdFormat.get().format(appId.getApplicationId().getId()))
-      .append(QueryId.SEPARATOR).append(
-          QueryId.attemptIdFormat.get().format(appId.getAttemptId()))
-      .append(QueryId.SEPARATOR).append(
-          SubQueryId.subQueryIdFormat.get().format(getSubQueryId().getId()))
-      .append(QueryId.SEPARATOR).append(queryUnitIdFormat.get().format(getId()));
-      finalId = sb.toString();
+  public int compareTo(QueryUnitId queryUnitId) {
+    int result = executionBlockId.compareTo(queryUnitId.executionBlockId);
+    if (result == 0) {
+      return id - queryUnitId.id;
+    } else {
+      return result;
     }
-    return this.finalId;
   }
-  
+
   @Override
-  public final boolean equals(final Object o) {
-    if (o instanceof QueryUnitId) {
-      QueryUnitId other = (QueryUnitId) o;
-      return getSubQueryId().equals(other.getSubQueryId()) &&
-          getId() == other.getId();
-    }    
-    return false;
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    }
+    if (this == obj) {
+      return true;
+    }
+    if(!(obj instanceof QueryUnitId)) {
+      return false;
+    }
+    return compareTo((QueryUnitId)obj) == 0;
   }
-  
+
   @Override
   public int hashCode() {
-    return Objects.hashCode(getSubQueryId(), getId());
+    return toString().hashCode();
   }
 
   @Override
-  public final int compareTo(final QueryUnitId o) {
-    return this.toString().compareTo(o.toString());
-  }
-  
-  private void mergeLocalToBuilder() {
-    if (builder == null) {
-      builder = QueryUnitIdProto.newBuilder(proto);
-    }
-    if (this.subQueryId != null) {
-      builder.setSubQueryId(subQueryId.getProto());
-    }
-    if (this.id != -1) {
-      builder.setId(id);
-    }
+  public String toString() {
+    return QU_ID_PREFIX + QueryId.SEPARATOR + toStringNoPrefix();
   }
 
-  @Override
-  public QueryUnitIdProto getProto() {
-    if (!viaProto) {
-      mergeLocalToBuilder();
-      proto = builder.build();
-      viaProto = true;
-    }
-    return proto;
+  public String toStringNoPrefix() {
+    return executionBlockId.toStringNoPrefix() + QueryId.SEPARATOR + QueryIdFactory.QU_ID_FORMAT.format(id);
   }
 }

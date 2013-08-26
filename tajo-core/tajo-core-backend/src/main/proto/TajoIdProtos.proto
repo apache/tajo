@@ -21,15 +21,18 @@ option java_outer_classname = "TajoIdProtos";
 option java_generic_services = false;
 option java_generate_equals_and_hash = true;
 
-import "yarn_protos.proto";
+message QueryIdProto {
+    required string id = 1;
+    required int32 seq = 2;
+}
 
-message SubQueryIdProto {
-    required ApplicationAttemptIdProto queryId = 1;
+message ExecutionBlockIdProto {
+    required QueryIdProto queryId = 1;
     required int32 id = 2;
 }
 
 message QueryUnitIdProto {
-    required SubQueryIdProto subQueryId = 1;
+    required ExecutionBlockIdProto executionBlockId = 1;
     required int32 id = 2;
 }
 

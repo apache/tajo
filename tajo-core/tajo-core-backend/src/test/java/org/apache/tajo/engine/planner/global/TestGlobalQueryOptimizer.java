@@ -16,9 +16,6 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
 package org.apache.tajo.engine.planner.global;
 
 import org.apache.hadoop.fs.FileSystem;
@@ -128,11 +125,11 @@ public class TestGlobalQueryOptimizer {
       catalog.addTable(desc);
     }
 
-    QueryIdFactory.reset();
+    //QueryIdFactory.reset();
     queryId = QueryIdFactory.newQueryId();
     optimizer = new GlobalOptimizer();
   }
-  
+
   @AfterClass
   public static void terminate() throws IOException {
     util.shutdownCatalogCluster();
@@ -147,7 +144,7 @@ public class TestGlobalQueryOptimizer {
 
     MasterPlan globalPlan = planner.build(queryId, (LogicalRootNode) rootNode);
     globalPlan = optimizer.optimize(globalPlan);
-    
+
     ExecutionBlock unit = globalPlan.getRoot();
     StoreTableNode store = unit.getStoreTableNode();
     assertEquals(NodeType.PROJECTION, store.getChild().getType());
@@ -156,14 +153,14 @@ public class TestGlobalQueryOptimizer {
     SortNode sort = (SortNode) proj.getChild();
     assertEquals(NodeType.SCAN, sort.getChild().getType());
     ScanNode scan = (ScanNode) sort.getChild();
-    
+
     assertTrue(unit.hasChildBlock());
     unit = unit.getChildBlock(scan);
     store = unit.getStoreTableNode();
     assertEquals(NodeType.SORT, store.getChild().getType());
     sort = (SortNode) store.getChild();
     assertEquals(NodeType.JOIN, sort.getChild().getType());
-    
+
     assertTrue(unit.hasChildBlock());
     for (ScanNode prevscan : unit.getScanNodes()) {
       ExecutionBlock prev = unit.getChildBlock(prevscan);

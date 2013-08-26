@@ -19,14 +19,14 @@
 package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.tajo.SubQueryId;
+import org.apache.tajo.ExecutionBlockId;
 
 import java.util.List;
 
 public class SubQueryContainerAllocationEvent extends SubQueryEvent {
   private List<Container> allocatedContainer;
 
-  public SubQueryContainerAllocationEvent(final SubQueryId id,
+  public SubQueryContainerAllocationEvent(final ExecutionBlockId id,
                                           List<Container> allocatedContainer) {
     super(id, SubQueryEventType.SQ_CONTAINER_ALLOCATED);
     this.allocatedContainer = allocatedContainer;

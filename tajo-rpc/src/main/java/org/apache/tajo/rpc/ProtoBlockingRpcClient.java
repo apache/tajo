@@ -25,10 +25,10 @@ import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.netty.channel.*;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 import org.apache.tajo.util.NetUtils;
+import org.jboss.netty.channel.*;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -129,9 +129,13 @@ public class ProtoBlockingRpcClient extends NettyClientBase {
   }
 
   private String getErrorMessage(String message) {
-    return "Exception [" + protocol.getCanonicalName() +
-        "(" + NetUtils.normalizeInetSocketAddress((InetSocketAddress)
-        getChannel().getRemoteAddress()) + ")]: " + message;
+    if(protocol != null && getChannel() != null) {
+      return "Exception [" + protocol.getCanonicalName() +
+          "(" + NetUtils.normalizeInetSocketAddress((InetSocketAddress)
+          getChannel().getRemoteAddress()) + ")]: " + message;
+    } else {
+      return "Exception " + message;
+    }
   }
 
   private class ClientChannelUpstreamHandler extends SimpleChannelUpstreamHandler {

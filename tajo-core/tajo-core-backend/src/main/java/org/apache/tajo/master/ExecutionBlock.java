@@ -15,7 +15,7 @@
 package org.apache.tajo.master;
 
 import com.google.common.base.Preconditions;
-import org.apache.tajo.SubQueryId;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.planner.logical.*;
 
@@ -40,7 +40,7 @@ public class ExecutionBlock {
     RANGE
   }
 
-  private SubQueryId subQueryId;
+  private ExecutionBlockId executionBlockId;
   private LogicalNode plan = null;
   private StoreTableNode store = null;
   private List<ScanNode> scanlist = new ArrayList<ScanNode>();
@@ -50,12 +50,12 @@ public class ExecutionBlock {
   private boolean hasJoinPlan;
   private boolean hasUnionPlan;
 
-  public ExecutionBlock(SubQueryId subQueryId) {
-    this.subQueryId = subQueryId;
+  public ExecutionBlock(ExecutionBlockId executionBlockId) {
+    this.executionBlockId = executionBlockId;
   }
 
-  public SubQueryId getId() {
-    return subQueryId;
+  public ExecutionBlockId getId() {
+    return executionBlockId;
   }
 
   public String getOutputName() {

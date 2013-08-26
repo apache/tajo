@@ -23,7 +23,6 @@ import com.google.common.collect.Maps;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
@@ -73,7 +72,6 @@ public class TestRangeRetrieverHandler {
 
   @Before
   public void setUp() throws Exception {
-    QueryIdFactory.reset();
     util = new TajoTestingCluster();
     conf = util.getConfiguration();
     testDir = CommonTestingUtil.getTestDir("target/test-data/TestRangeRetrieverHandler");

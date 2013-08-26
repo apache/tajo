@@ -35,4 +35,10 @@
     <name>tajo.task.localdir</name>
     <value>/tmp/tajo-localdir</value>
   </property>
+
+  <property>
+    <name>tajo.resource.manager</name>
+    <value>org.apache.tajo.master.rm.TajoWorkerResourceManager</value>
+    <description>org.apache.tajo.master.rm.TajoWorkerResourceManager or org.apache.tajo.master.rm.YarnTajoResourceManager</description>
+  </property>
 </configuration>

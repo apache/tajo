@@ -22,14 +22,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.util.TajoIdUtils;
+import org.apache.tajo.worker.dataserver.FileAccessForbiddenException;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.SubQueryId;
-import org.apache.tajo.util.TajoIdUtils;
-import org.apache.tajo.worker.dataserver.FileAccessForbiddenException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -81,7 +81,7 @@ public class AdvancedDataRetriever implements DataRetriever {
       List<String> qids = splitMaps(params.get("qid"));
       for (String qid : qids) {
         String[] ids = qid.split("_");
-        SubQueryId suid = TajoIdUtils.newSubQueryId(params.get("sid").get(0));
+        ExecutionBlockId suid = TajoIdUtils.createExecutionBlockId(params.get("sid").get(0));
         QueryUnitId quid = new QueryUnitId(suid, Integer.parseInt(ids[0]));
         QueryUnitAttemptId attemptId = new QueryUnitAttemptId(quid,
             Integer.parseInt(ids[1]));

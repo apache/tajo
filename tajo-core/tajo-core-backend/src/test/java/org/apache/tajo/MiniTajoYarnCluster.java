@@ -110,9 +110,6 @@ public class MiniTajoYarnCluster extends MiniYARNCluster {
 
     conf.setInt("yarn.nodemanager.delete.debug-delay-sec", 600);
 
-    // Disable virtual memory constraints for containers
-    conf.setBoolean("yarn.nodemanager.vmem-check-enabled", false);
-
     super.init(conf);
   }
 

@@ -49,7 +49,6 @@ public class TpchTestBase {
     try {
       testBase = new TpchTestBase();
       testBase.setUp();
-      Runtime.getRuntime().addShutdownHook(new ShutdownHook());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
@@ -107,19 +106,11 @@ public class TpchTestBase {
     return util.getTestingCluster();
   }
 
-  public static class ShutdownHook extends Thread {
-
-    @Override
-    public void run() {
-      try {
-        testBase.tearDown();
-      } catch (IOException e) {
-        LOG.error(e);
-      }
+  public void tearDown() throws IOException {
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException e) {
     }
-  }
-
-  private void tearDown() throws IOException {
     util.shutdown();
   }
 }

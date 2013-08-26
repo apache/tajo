@@ -18,139 +18,75 @@
 
 package org.apache.tajo;
 
-import com.google.common.base.Objects;
-import org.apache.tajo.TajoIdProtos.QueryUnitAttemptIdProto;
-import org.apache.tajo.TajoIdProtos.QueryUnitAttemptIdProtoOrBuilder;
-import org.apache.tajo.common.ProtoObject;
+public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId> {
+  public static final String QUA_ID_PREFIX = "ta";
 
-import java.text.NumberFormat;
+  private QueryUnitId queryUnitId;
+  private int id;
 
-public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId>, ProtoObject<QueryUnitAttemptIdProto> {
-  private static final String PREFIX="ta";
-
-  private static final NumberFormat format = NumberFormat.getInstance();
-  static {
-    format.setGroupingUsed(false);
-    format.setMinimumIntegerDigits(2);
+  public QueryUnitId getQueryUnitId() {
+    return queryUnitId;
   }
 
-  private QueryUnitId queryUnitId = null;
-  private int id = -1;
-  private String finalId = null;
-
-  private QueryUnitAttemptIdProto proto =
-      QueryUnitAttemptIdProto.getDefaultInstance();
-  private QueryUnitAttemptIdProto.Builder builder = null;
-  private boolean viaProto = false;
-
-  public QueryUnitAttemptId() {
-    builder = QueryUnitAttemptIdProto.newBuilder();
+  public int getId() {
+    return id;
   }
 
-  public QueryUnitAttemptId(final QueryUnitId queryUnitId, final int id) {
+  public void setId(int id) {
+    this.id = id;
+  }
+
+  public QueryUnitAttemptId(QueryUnitId queryUnitId, int id) {
     this.queryUnitId = queryUnitId;
     this.id = id;
   }
 
-  public QueryUnitAttemptId(QueryUnitAttemptIdProto proto) {
-    this.proto = proto;
-    viaProto = true;
+  public QueryUnitAttemptId(TajoIdProtos.QueryUnitAttemptIdProto proto) {
+    this(new QueryUnitId(proto.getQueryUnitId()), proto.getId());
   }
 
-  public QueryUnitAttemptId(final String finalId) {
-    this.finalId = finalId;
-    int i = finalId.lastIndexOf(QueryId.SEPARATOR);
-    this.queryUnitId = new QueryUnitId(finalId.substring(0, i));
-    this.id = Integer.valueOf(finalId.substring(i+1));
-  }
-
-  public int getId() {
-    QueryUnitAttemptIdProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.id != -1) {
-      return this.id;
-    }
-    if (!p.hasId()) {
-      return -1;
-    }
-    this.id = p.getId();
-    return id;
-  }
-
-  public QueryUnitId getQueryUnitId() {
-    QueryUnitAttemptIdProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.queryUnitId != null) {
-      return this.queryUnitId;
-    }
-    if (!p.hasId()) {
-      return null;
-    }
-    this.queryUnitId = new QueryUnitId(p.getQueryUnitId());
-    return queryUnitId;
-  }
-
-  public QueryId getQueryId() {
-    return this.getQueryUnitId().getQueryId();
-  }
-
-  public SubQueryId getSubQueryId() {
-    return this.getQueryUnitId().getSubQueryId();
+  public TajoIdProtos.QueryUnitAttemptIdProto getProto() {
+    return TajoIdProtos.QueryUnitAttemptIdProto.newBuilder()
+        .setQueryUnitId(queryUnitId.getProto())
+        .setId(id)
+        .build();
   }
 
   @Override
-  public final String toString() {
-    if (finalId == null) {
-      StringBuilder sb = new StringBuilder(PREFIX);
-      SubQueryId subQueryId = getQueryUnitId().getSubQueryId();
-      QueryId appId = subQueryId.getQueryId();
-      sb.append(QueryId.SEPARATOR).append(appId.getApplicationId().getClusterTimestamp())
-          .append(QueryId.SEPARATOR).append(QueryId.appIdFormat.get().format(appId.getApplicationId().getId()))
-          .append(QueryId.SEPARATOR).append(QueryId.attemptIdFormat.get().format(appId.getAttemptId()))
-          .append(QueryId.SEPARATOR).append(SubQueryId.subQueryIdFormat.get().format(subQueryId.getId()))
-          .append(QueryId.SEPARATOR).append(QueryUnitId.queryUnitIdFormat.get().format(getQueryUnitId().getId()))
-          .append(QueryId.SEPARATOR).append(format.format(getId()));
-      finalId = sb.toString();
+  public int compareTo(QueryUnitAttemptId queryUnitAttemptId) {
+    int result = queryUnitId.compareTo(queryUnitAttemptId.queryUnitId);
+    if (result == 0) {
+      return id - queryUnitAttemptId.id;
+    } else {
+      return result;
     }
-    return this.finalId;
   }
 
   @Override
-  public final boolean equals(final Object o) {
-    if (o instanceof QueryUnitAttemptId) {
-      QueryUnitAttemptId other = (QueryUnitAttemptId) o;
-      return this.toString().equals(other.toString());
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
     }
-    return false;
+    if (this == obj) {
+      return true;
+    }
+    if(!(obj instanceof QueryUnitAttemptId)) {
+      return false;
+    }
+    return compareTo((QueryUnitAttemptId)obj) == 0;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(getQueryUnitId(), getId());
+    return toString().hashCode();
   }
 
   @Override
-  public int compareTo(QueryUnitAttemptId o) {
-    return this.getId() - o.getId();
+  public String toString() {
+    return QUA_ID_PREFIX + QueryId.SEPARATOR + toStringNoPrefix();
   }
 
-  private void mergeLocalToBuilder() {
-    if (builder == null) {
-      builder = QueryUnitAttemptIdProto.newBuilder(proto);
-    }
-    if (this.queryUnitId != null) {
-      builder.setQueryUnitId(queryUnitId.getProto());
-    }
-    if (this.id != -1) {
-      builder.setId(id);
-    }
-  }
-
-  @Override
-  public QueryUnitAttemptIdProto getProto() {
-    if (!viaProto) {
-      mergeLocalToBuilder();
-      proto = builder.build();
-      viaProto = true;
-    }
-    return proto;
+  public String toStringNoPrefix() {
+    return queryUnitId.toStringNoPrefix() + QueryId.SEPARATOR + QueryIdFactory.ATTEMPT_ID_FORMAT.format(id);
   }
 }

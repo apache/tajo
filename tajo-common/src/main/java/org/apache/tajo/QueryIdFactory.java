@@ -18,39 +18,97 @@
 
 package org.apache.tajo;
 
-import org.apache.hadoop.yarn.util.BuilderUtils;
 import org.apache.tajo.util.TajoIdUtils;
 
+import java.text.DecimalFormat;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class QueryIdFactory {
-  private static AtomicInteger nextId = 
-      new AtomicInteger(-1);
-  
-  public static void reset() {
-    nextId.set(-1);
+  public static final QueryId NULL_QUERY_ID = newQueryId(TajoIdUtils.MASTER_ID_FORMAT.format(0), 0);
+
+  public static DecimalFormat ID_FORMAT = new DecimalFormat("0000");
+
+  public static DecimalFormat EB_ID_FORMAT = new DecimalFormat("000000");
+
+  public static DecimalFormat QU_ID_FORMAT = new DecimalFormat("000000");
+
+  public static DecimalFormat ATTEMPT_ID_FORMAT = new DecimalFormat("00");
+
+  private static Map<String, AtomicInteger> queryNexIdMap = new HashMap<String, AtomicInteger>();
+
+  private static AtomicInteger nextId = new AtomicInteger(0);
+
+  /*
+   * <ul>
+   * <li>QueryId == q_{masterId}_{seq}</li>
+   * <li>masterId == tajoMasterId or YarnResourceManagerId</li>
+   * <li>seq = TajoSeq or YarnSeq</li>
+   * </ul>
+   */
+  public synchronized static QueryId newQueryId(String seedQueryId) {
+    AtomicInteger queryNextId = queryNexIdMap.get(seedQueryId);
+    if(queryNextId == null) {
+      queryNextId = new AtomicInteger(0);
+      queryNexIdMap.put(seedQueryId, queryNextId);
+    }
+    if(isYarnId(seedQueryId)) {
+      String[] tokens = seedQueryId.split("_");
+      return new QueryId(tokens[1], Integer.parseInt(tokens[2]));
+    } else {
+      int seq = queryNextId.incrementAndGet();
+      if(seq >= 10000) {
+        queryNextId.set(0);
+        seq = queryNextId.incrementAndGet();
+      }
+
+      return new QueryId(seedQueryId, seq);
+    }
   }
 
+  public synchronized static QueryId newQueryId(long timestamp, int seq) {
+    return new QueryId(String.valueOf(timestamp), seq);
+  }
+
+  /**
+   * for test
+   * @return
+   */
   public synchronized static QueryId newQueryId() {
-    int idInt = nextId.incrementAndGet();
-    return TajoIdUtils.createQueryId(BuilderUtils.newApplicationId(
-        System.currentTimeMillis(), idInt), idInt);
-  }
-  
-  public synchronized static SubQueryId newSubQueryId(QueryId queryId) {
-    return TajoIdUtils.createSubQueryId(queryId, nextId.incrementAndGet());
-  }
-  
-  public synchronized static QueryUnitId newQueryUnitId(SubQueryId subQueryId) {
-    return new QueryUnitId(subQueryId, nextId.incrementAndGet());
+    return newQueryId(TajoIdUtils.MASTER_ID_FORMAT.format(0));
   }
 
-  public synchronized static QueryUnitId newQueryUnitId(SubQueryId subQueryId, int taskId) {
-    return new QueryUnitId(subQueryId, taskId);
+  public synchronized static QueryId newQueryId(String seedQueryId, int seq) {
+    if(isYarnId(seedQueryId)) {
+      String[] tokens = seedQueryId.split("_");
+      return new QueryId(tokens[1], Integer.parseInt(tokens[2]));
+    } else {
+      return new QueryId(seedQueryId, seq);
+    }
   }
 
-  public synchronized static QueryUnitAttemptId newQueryUnitAttemptId(
-      final QueryUnitId queryUnitId, final int attemptId) {
+  private static boolean isYarnId(String id) {
+    return id.startsWith("application");
+  }
+
+  public synchronized static ExecutionBlockId newExecutionBlockId(QueryId queryId) {
+    return new ExecutionBlockId(queryId, nextId.incrementAndGet());
+  }
+
+  public synchronized static ExecutionBlockId newExecutionBlockId(QueryId queryId, int id) {
+    return new ExecutionBlockId(queryId, id);
+  }
+
+  public synchronized static QueryUnitId newQueryUnitId(ExecutionBlockId executionBlockId) {
+    return new QueryUnitId(executionBlockId, nextId.incrementAndGet());
+  }
+
+  public synchronized static QueryUnitId newQueryUnitId(ExecutionBlockId executionBlockId, int id) {
+    return new QueryUnitId(executionBlockId, id);
+  }
+
+  public synchronized static QueryUnitAttemptId newQueryUnitAttemptId(QueryUnitId queryUnitId, final int attemptId) {
     return new QueryUnitAttemptId(queryUnitId, attemptId);
   }
 }

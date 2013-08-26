@@ -26,11 +26,12 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.statistics.TableStat;
-import org.apache.tajo.ipc.QueryMasterProtocol.Partition;
-import org.apache.tajo.ipc.QueryMasterProtocol.TaskCompletionReport;
-import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
+import org.apache.tajo.ipc.TajoWorkerProtocol.Partition;
+import org.apache.tajo.ipc.TajoWorkerProtocol.TaskCompletionReport;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
+import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
+import org.apache.tajo.util.TajoIdUtils;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -144,6 +145,10 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
 
   public String getHost() {
     return this.hostName;
+  }
+
+  public int getPort() {
+    return this.port;
   }
 
   public void setHost(String host) {
@@ -324,7 +329,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       } catch (InvalidStateTransitonException e) {
         LOG.error("Can't handle this event at current state of "
             + event.getTaskAttemptId() + ")", e);
-        eventHandler.handle(new QueryEvent(getId().getQueryId(),
+        eventHandler.handle(new QueryEvent(TajoIdUtils.parseQueryId(getId().toString()),
             QueryEventType.INTERNAL_ERROR));
       }
 

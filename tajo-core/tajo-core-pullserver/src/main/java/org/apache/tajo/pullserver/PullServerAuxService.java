@@ -42,6 +42,7 @@ import org.apache.hadoop.security.ssl.SSLFactory;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.AuxServices;
 import org.apache.hadoop.yarn.service.AbstractService;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -51,6 +52,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.index.bst.BSTIndex;
+import org.apache.tajo.util.TajoIdUtils;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
@@ -104,6 +106,7 @@ public class PullServerAuxService extends AbstractService
   private int sslFileBufferSize;
 
   private ApplicationId appId;
+  private QueryId queryId;
   private FileSystem localFS;
 
   /**
@@ -189,6 +192,7 @@ public class PullServerAuxService extends AbstractService
     // TODO these bytes should be versioned
     // TODO: Once SHuffle is out of NM, this can use MR APIs
     this.appId = appId;
+    this.queryId = TajoIdUtils.parseQueryId(appId.toString());
     this.userName = user;
     userRsrc.put(appId.toString(), user);
   }
@@ -248,6 +252,10 @@ public class PullServerAuxService extends AbstractService
 
     sslFileBufferSize = conf.getInt(SUFFLE_SSL_FILE_BUFFER_SIZE_KEY,
                                     DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE);
+  }
+
+  public int getPort() {
+    return port;
   }
 
   @Override
@@ -384,7 +392,12 @@ public class PullServerAuxService extends AbstractService
       List<String> taskIds = splitMaps(taskIdList);
 
       // the working dir of tajo worker for each query
-      String queryBaseDir = appId + "/output" + "/";
+      String queryBaseDir = queryId + "/output" + "/";
+
+      LOG.info("PullServer request param: repartitionType=" + repartitionType +
+          ", sid=" + sid + ", partitionId=" + partitionId + ", taskIds=" + taskIdList);
+
+      LOG.info("PullServer baseDir: " + conf.get(ConfVars.TASK_LOCAL_DIR.varname) + "/" + queryBaseDir);
 
       // if a subquery requires a range partitioning
       if (repartitionType.equals("r")) {

@@ -22,6 +22,9 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.localizer.ContainerLocalizer;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.pullserver.retriever.DataRetriever;
+import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
@@ -29,9 +32,6 @@ import org.jboss.netty.handler.codec.http.*;
 import org.jboss.netty.handler.ssl.SslHandler;
 import org.jboss.netty.handler.stream.ChunkedFile;
 import org.jboss.netty.util.CharsetUtil;
-import org.apache.tajo.SubQueryId;
-import org.apache.tajo.pullserver.retriever.DataRetriever;
-import org.apache.tajo.pullserver.retriever.FileChunk;
 
 import java.io.*;
 import java.net.URLDecoder;
@@ -51,7 +51,8 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
   private final static Log LOG = LogFactory.getLog(HttpDataServerHandler.class);
 
-  Map<SubQueryId, DataRetriever> retrievers = new ConcurrentHashMap<SubQueryId, DataRetriever>();
+  Map<ExecutionBlockId, DataRetriever> retrievers =
+      new ConcurrentHashMap<ExecutionBlockId, DataRetriever>();
   private String userName;
   private String appId;
 

@@ -51,13 +51,13 @@ message UpdateQueryResponse {
 
 message SubmitQueryResponse {
   required ResultCode resultCode = 1;
-  optional ApplicationAttemptIdProto queryId = 2;
+  optional QueryIdProto queryId = 2;
   optional string errorMessage = 3;
 }
 
 message GetQueryResultRequest {
   optional SessionIdProto sessionId = 1;
-  required ApplicationAttemptIdProto queryId = 2;
+  required QueryIdProto queryId = 2;
 }
 
 message GetQueryResultResponse {
@@ -70,7 +70,7 @@ message GetQueryListRequest {
 }
 
 message BriefQueryStatus {
-  required ApplicationAttemptIdProto queryId = 1;
+  required QueryIdProto queryId = 1;
   required QueryState state = 2;
   required int32 executionTime = 3;
 }
@@ -81,12 +81,12 @@ message GetQueryListResponse {
 
 message GetQueryStatusRequest {
   optional SessionIdProto sessionId = 1;
-  required ApplicationAttemptIdProto queryId = 2;
+  required QueryIdProto queryId = 2;
 }
 
 message GetQueryStatusResponse {
   required ResultCode resultCode = 1;
-  required ApplicationAttemptIdProto queryId = 2;
+  required QueryIdProto queryId = 2;
   optional QueryState state = 3;
   optional float progress = 4;
   optional int64 submitTime = 5;

@@ -31,9 +31,9 @@ import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.hadoop.yarn.util.Records;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.SubQueryId;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
@@ -52,7 +52,6 @@ import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
 import org.apache.tajo.master.TaskScheduler;
 import org.apache.tajo.master.TaskSchedulerImpl;
 import org.apache.tajo.master.event.*;
-import org.apache.tajo.master.querymaster.QueryMaster.QueryContext;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.StorageManager;
 
@@ -79,14 +78,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private EventHandler eventHandler;
   private final StorageManager sm;
   private TaskSchedulerImpl taskScheduler;
-  private QueryContext context;
+  private QueryMasterTask.QueryContext context;
 
   private long startTime;
   private long finishTime;
 
   volatile Map<QueryUnitId, QueryUnit> tasks = new ConcurrentHashMap<QueryUnitId, QueryUnit>();
   volatile Map<ContainerId, Container> containers = new ConcurrentHashMap<ContainerId, Container>();
-
 
   private static ContainerLaunchTransition CONTAINER_LAUNCH_TRANSITION = new ContainerLaunchTransition();
   private StateMachine<SubQueryState, SubQueryEventType, SubQueryEvent>
@@ -140,7 +138,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
   private int completedTaskCount = 0;
 
-  public SubQuery(QueryContext context, ExecutionBlock block, StorageManager sm) {
+  public SubQuery(QueryMasterTask.QueryContext context, ExecutionBlock block, StorageManager sm) {
     this.context = context;
     this.block = block;
     this.sm = sm;
@@ -152,7 +150,12 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     stateMachine = stateMachineFactory.make(this);
   }
 
-  public QueryContext getContext() {
+  public static boolean isRunningState(SubQueryState state) {
+    return state == SubQueryState.INIT || state == SubQueryState.NEW ||
+        state == SubQueryState.CONTAINER_ALLOCATED || state == SubQueryState.RUNNING;
+  }
+
+  public QueryMasterTask.QueryContext getContext() {
     return context;
   }
 
@@ -238,7 +241,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return context.getSubQuery(block.getChildBlock(scanForChild).getId());
   }
   
-  public SubQueryId getId() {
+  public ExecutionBlockId getId() {
     return block.getId();
   }
   
@@ -399,7 +402,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   @Override
   public void handle(SubQueryEvent event) {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Processing " + event.getSubQueryId() + " of type " + event.getType());
+      LOG.debug("Processing " + event.getSubQueryId() + " of type " + event.getType() + ", preState=" + getState());
     }
 
     try {
@@ -420,11 +423,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               + getState());
         }
       }
-    }
-
-    finally {
+    } finally {
       writeLock.unlock();
     }
+  }
+
+  public void handleTaskRequestEvent(TaskRequestEvent event) {
+    taskScheduler.handleTaskRequestEvent(event);
   }
 
   private static class InitAndRequestContainer implements MultipleArcTransition<SubQuery,
@@ -564,7 +569,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
       } else { // Case 3: Others (Sort or Aggregation)
         int numTasks = getNonLeafTaskNum(subQuery);
-        SubQueryId childId = subQuery.getBlock().getChildBlocks().iterator().next().getId();
+        ExecutionBlockId childId = subQuery.getBlock().getChildBlocks().iterator().next().getId();
         SubQuery child = subQuery.context.getSubQuery(childId);
         tasks = Repartitioner.createNonLeafTask(subQuery, child, numTasks);
       }
@@ -594,7 +599,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       return maxTaskNum;
     }
 
-    public static long getInputVolume(QueryContext context, ExecutionBlock execBlock) {
+    public static long getInputVolume(QueryMasterTask.QueryContext context, ExecutionBlock execBlock) {
       Map<String, TableDesc> tableMap = context.getTableDescMap();
       if (execBlock.isLeafBlock()) {
         ScanNode outerScan = execBlock.getScanNodes()[0];
@@ -615,14 +620,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       ExecutionBlock execBlock = subQuery.getBlock();
       QueryUnit [] tasks = subQuery.getQueryUnits();
 
-      int numClusterNodes = subQuery.getContext().getNumClusterNode();
-      TajoConf conf =  subQuery.getContext().getConf();
-      int workerNum = conf.getIntVar(ConfVars.MAX_WORKER_PER_NODE);
-      int numRequest = Math.min(tasks.length, numClusterNodes * workerNum);
+      //TODO refresh worker's numClusterNodes
+      int numClusterNodes = subQuery.getContext().getResourceAllocator().getNumClusterNode();
+      int numRequest = numClusterNodes == 0 ? tasks.length: Math.min(tasks.length, numClusterNodes * 4);
 
       final Resource resource = Records.newRecord(Resource.class);
-      // TODO - for each different subquery, the volume of resource should be different.
-      resource.setMemory(2000);
+
+      resource.setMemory(512);
 
       Priority priority = Records.newRecord(Priority.class);
       priority.setPriority(subQuery.getPriority());
@@ -698,8 +702,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_LAUNCH,
               subQuery.getId(), allocationEvent.getAllocatedContainer()));
 
-      subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(),
-          SubQueryEventType.SQ_START));
+      subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_START));
     }
   }
 
@@ -734,7 +737,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       QueryUnitAttempt task = subQuery.getQueryUnit(taskEvent.getTaskId()).getSuccessfulAttempt();
 
       LOG.info(subQuery.getId() + " SubQuery Succeeded " + subQuery.completedTaskCount + "/"
-          + subQuery.tasks.size() + " on " + task.getHost());
+          + subQuery.tasks.size() + " on " + task.getHost() + ":" + task.getPort());
       if (subQuery.completedTaskCount == subQuery.tasks.size()) {
         subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(),
             SubQueryEventType.SQ_SUBQUERY_COMPLETED));
@@ -750,6 +753,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       // TODO - Commit subQuery & do cleanup
       // TODO - records succeeded, failed, killed completed task
       // TODO - records metrics
+      LOG.info("SubQuery finished:" + subQuery.getId());
       subQuery.stopScheduler();
       subQuery.releaseContainers();
       subQuery.finish();

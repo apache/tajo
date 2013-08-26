@@ -61,6 +61,7 @@ if [ $# = 0 ]; then
   echo "Usage: tajo [--config confdir] COMMAND"
   echo "where COMMAND is one of:"
   echo "  master               run the Master Server"
+  echo "  worker               run the Worker Server"
   echo "  catalog              run the Catalog server"
   echo "  catutil              catalog utility"
   echo "  cli                  run the tajo cli"
@@ -272,6 +273,9 @@ if [ "$COMMAND" = "classpath" ] ; then
 elif [ "$COMMAND" = "master" ] ; then
   CLASS='org.apache.tajo.master.TajoMaster'
   TAJO_OPTS="$TAJO_OPTS $TAJO_MASTER_OPTS"
+elif [ "$COMMAND" = "worker" ] ; then
+  CLASS='org.apache.tajo.worker.TajoWorker'
+  TAJO_OPTS="$TAJO_OPTS $TAJO_WORKER_OPTS"
 elif [ "$COMMAND" = "catalog" ] ; then
   CLASS='org.apache.tajo.catalog.CatalogServer'
   TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"

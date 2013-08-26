@@ -26,3 +26,11 @@ bin=`cd "$bin"; pwd`
 
 # start the tajo master daemon
 "$bin"/tajo-daemon.sh --config $TAJO_CONF_DIR start master
+
+if [ -f "${TAJO_CONF_DIR}/tajo-env.sh" ]; then
+  . "${TAJO_CONF_DIR}/tajo-env.sh"
+fi
+
+if [ "$TAJO_WORKER_STANDBY_MODE" = "true" ]; then
+  exec "$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" start worker
+fi

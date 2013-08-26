@@ -39,13 +39,11 @@ public class QueryMasterRunner extends AbstractService {
   private QueryConf queryConf;
   private QueryMaster queryMaster;
   private QueryId queryId;
-  private long appSubmitTime;
   private String queryMasterManagerAddress;
 
-  public QueryMasterRunner(QueryId queryId, long appSubmitTime, String queryMasterManagerAddress) {
+  public QueryMasterRunner(QueryId queryId, String queryMasterManagerAddress) {
     super(QueryMasterRunner.class.getName());
     this.queryId = queryId;
-    this.appSubmitTime = appSubmitTime;
     this.queryMasterManagerAddress = queryMasterManagerAddress;
   }
 
@@ -72,7 +70,7 @@ public class QueryMasterRunner extends AbstractService {
   @Override
   public void start() {
     //create QueryMaster
-    QueryMaster query = new QueryMaster(queryId, appSubmitTime, queryMasterManagerAddress);
+    QueryMaster query = new QueryMaster(null);
 
     query.init(queryConf);
     query.start();
@@ -90,13 +88,12 @@ public class QueryMasterRunner extends AbstractService {
 
     UserGroupInformation.setConfiguration(conf);
 
-    final QueryId queryId = TajoIdUtils.createQueryId(args[0]);
-    final long appSubmitTime = Long.parseLong(args[1]);
-    final String queryMasterManagerAddr = args[2];
+    final QueryId queryId = TajoIdUtils.parseQueryId(args[0]);
+    final String queryMasterManagerAddr = args[1];
 
     LOG.info("Received QueryId:" + queryId);
 
-    QueryMasterRunner queryMasterRunner = new QueryMasterRunner(queryId, appSubmitTime, queryMasterManagerAddr);
+    QueryMasterRunner queryMasterRunner = new QueryMasterRunner(queryId, queryMasterManagerAddr);
     queryMasterRunner.init(conf);
     queryMasterRunner.start();
 

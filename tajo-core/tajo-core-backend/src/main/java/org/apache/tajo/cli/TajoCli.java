@@ -25,6 +25,7 @@ import jline.console.history.PersistentHistory;
 import org.apache.commons.cli.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
@@ -34,7 +35,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.File;
 import java.io.InputStream;
@@ -264,6 +264,7 @@ public class TajoCli {
   }
 
   public int executeStatements(String line) throws Exception {
+
     String stripped;
     for (String statement : line.split(";")) {
       stripped = StringUtils.chomp(statement);
@@ -282,12 +283,12 @@ public class TajoCli {
         invokeCommand(cmds);
 
       } else { // submit a query to TajoMaster
-        ClientProtos.SubmitQueryResponse response = client.executeQuery(stripped);
+        ClientProtos.GetQueryStatusResponse response = client.executeQuery(stripped);
         if (response.getResultCode() == ClientProtos.ResultCode.OK) {
           QueryId queryId = null;
           try {
             queryId = new QueryId(response.getQueryId());
-            if (queryId.equals(TajoIdUtils.NullQueryId)) {
+            if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
               sout.println("OK");
             } else {
               getQueryResult(queryId);
@@ -298,9 +299,9 @@ public class TajoCli {
             }
           }
         } else {
-        if (response.hasErrorMessage()) {
-          sout.println(response.getErrorMessage());
-        }
+          if (response.hasErrorMessage()) {
+            sout.println(response.getErrorMessage());
+          }
         }
       }
     }
@@ -313,7 +314,7 @@ public class TajoCli {
 
   private void getQueryResult(QueryId queryId) {
     // if query is empty string
-    if (queryId.equals(TajoIdUtils.NullQueryId)) {
+    if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return;
     }
 

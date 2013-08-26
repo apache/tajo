@@ -21,8 +21,8 @@ package org.apache.tajo.master.querymaster;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.SubQueryId;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStat;
@@ -70,7 +70,7 @@ public class Repartitioner {
     for (int i =0; i < 2; i++) {
       // TODO - temporarily tables should be stored in temporarily catalog for each query
       TableDesc tableDesc = subQuery.getContext().getTableDescMap().get(scans[i].getFromTable().getTableName());
-      if (scans[i].getTableId().startsWith(SubQueryId.PREFIX)) {
+      if (scans[i].getTableId().startsWith(ExecutionBlockId.EB_ID_PREFIX)) {
         tablePath = subQuery.getStorageManager().getTablePath(scans[i].getTableId());
       } else {
         tablePath = tableDesc.getPath();
@@ -355,12 +355,13 @@ public class Repartitioner {
   }
 
   public static String createBasicFetchUri(String hostName, int port,
-                                           SubQueryId childSid,
+                                           ExecutionBlockId childSid,
                                            int taskId, int attemptId) {
     String scheme = "http://";
     StringBuilder sb = new StringBuilder(scheme);
-    sb.append(hostName).append(":").append(port)
-        .append("/?").append("sid=").append(childSid.getId())
+    sb.append(hostName).append(":").append(port).append("/?")
+        .append("qid=").append(childSid.getQueryId().toString())
+        .append("&sid=").append(childSid.getId())
         .append("&").append("ta=").append(taskId).append("_").append(attemptId)
         .append("&").append("p=0")
         .append("&").append("type=r");
@@ -436,15 +437,16 @@ public class Repartitioner {
     return tasks;
   }
 
-  public static Collection<URI> createHashFetchURL(String hostAndPort, SubQueryId childSid,
+  public static Collection<URI> createHashFetchURL(String hostAndPort, ExecutionBlockId ebid,
                                        int partitionId, PartitionType type,
                                        List<IntermediateEntry> entries) {
     String scheme = "http://";
     StringBuilder urlPrefix = new StringBuilder(scheme);
-    urlPrefix.append(hostAndPort)
-        .append("/?").append("sid=").append(childSid.getId())
-        .append("&").append("p=").append(partitionId)
-        .append("&").append("type=");
+    urlPrefix.append(hostAndPort).append("/?")
+        .append("qid=").append(ebid.getQueryId().toString())
+        .append("&sid=").append(ebid.getId())
+        .append("&p=").append(partitionId)
+        .append("&type=");
     if (type == PartitionType.HASH) {
       urlPrefix.append("h");
     } else if (type == PartitionType.RANGE) {

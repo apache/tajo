@@ -27,7 +27,6 @@ public class TestQueryIdFactory {
   
   @Before
   public void setup() {
-    QueryIdFactory.reset();
   }
 
   @Test
@@ -40,15 +39,15 @@ public class TestQueryIdFactory {
   @Test
   public void testNewSubQueryId() {
     QueryId qid = QueryIdFactory.newQueryId();
-    SubQueryId subqid1 = QueryIdFactory.newSubQueryId(qid);
-    SubQueryId subqid2 = QueryIdFactory.newSubQueryId(qid);
+    ExecutionBlockId subqid1 = QueryIdFactory.newExecutionBlockId(qid);
+    ExecutionBlockId subqid2 = QueryIdFactory.newExecutionBlockId(qid);
     assertTrue(subqid1.compareTo(subqid2) < 0);
   }
   
   @Test
   public void testNewQueryUnitId() {
     QueryId qid = QueryIdFactory.newQueryId();
-    SubQueryId subid = QueryIdFactory.newSubQueryId(qid);
+    ExecutionBlockId subid = QueryIdFactory.newExecutionBlockId(qid);
     QueryUnitId quid1 = QueryIdFactory.newQueryUnitId(subid);
     QueryUnitId quid2 = QueryIdFactory.newQueryUnitId(subid);
     assertTrue(quid1.compareTo(quid2) < 0);

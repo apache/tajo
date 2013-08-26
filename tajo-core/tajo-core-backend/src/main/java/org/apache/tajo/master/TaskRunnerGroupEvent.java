@@ -20,7 +20,7 @@ package org.apache.tajo.master;
 
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.event.AbstractEvent;
-import org.apache.tajo.SubQueryId;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
 
 import java.util.Collection;
@@ -31,17 +31,21 @@ public class TaskRunnerGroupEvent extends AbstractEvent<EventType> {
     CONTAINER_REMOTE_CLEANUP
   }
 
-  protected final SubQueryId subQueryId;
+  protected final ExecutionBlockId executionBlockId;
   protected final Collection<Container> containers;
   public TaskRunnerGroupEvent(EventType eventType,
-                              SubQueryId subQueryId,
+                              ExecutionBlockId executionBlockId,
                               Collection<Container> containers) {
     super(eventType);
-    this.subQueryId = subQueryId;
+    this.executionBlockId = executionBlockId;
     this.containers = containers;
   }
 
   public Collection<Container> getContainers() {
     return containers;
+  }
+
+  public ExecutionBlockId getExecutionBlockId() {
+    return executionBlockId;
   }
 }

@@ -19,15 +19,15 @@
 package org.apache.tajo.worker.dataserver;
 
 import org.apache.hadoop.net.NetUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.SubQueryId;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.InterDataRetriever;
 import org.apache.tajo.worker.dataserver.retriever.DataRetriever;
 import org.apache.tajo.worker.dataserver.retriever.DirectoryRetriever;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -77,8 +77,7 @@ public class TestHttpDataServer {
   
   @Test
   public final void testInterDataRetriver() throws Exception {
-    QueryIdFactory.reset();
-    SubQueryId schid = QueryIdFactory.newSubQueryId(
+    ExecutionBlockId schid = QueryIdFactory.newExecutionBlockId(
             QueryIdFactory.newQueryId());
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(schid);
     QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(schid);
@@ -119,8 +118,7 @@ public class TestHttpDataServer {
   
   @Test(expected = FileNotFoundException.class)
   public final void testNoSuchFile() throws Exception {
-    QueryIdFactory.reset();
-    SubQueryId schid = QueryIdFactory.newSubQueryId(
+    ExecutionBlockId schid = QueryIdFactory.newExecutionBlockId(
             QueryIdFactory.newQueryId());
     QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(schid);
     QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(schid);

@@ -17,7 +17,7 @@
 # limitations under the License.
 
 
-# Runs a Hadoop command as a daemon.
+# Runs a Tajo command as a daemon.
 #
 # Environment Variables
 #
@@ -69,11 +69,11 @@ if [ -f "${TAJO_CONF_DIR}/tajo-env.sh" ]; then
   . "${TAJO_CONF_DIR}/tajo-env.sh"
 fi
 
-# Determine if we're starting a secure datanode, and if so, redefine appropriate variables
-if [ "$command" == "datanode" ] && [ "$EUID" -eq 0 ] && [ -n "$TAJO_SECURE_DN_USER" ]; then
-  export TAJO_PID_DIR=$TAJO_SECURE_DN_PID_DIR
-  export TAJO_LOG_DIR=$TAJO_SECURE_DN_LOG_DIR
-  export TAJO_IDENT_STRING=$TAJO_SECURE_DN_USER   
+# Determine if we're starting a secure server, and if so, redefine appropriate variables
+if [ "$command" == "worker" ] && [ "$EUID" -eq 0 ] && [ -n "$TAJO_SECURE_WORKER_USER" ]; then
+  export TAJO_PID_DIR=$TAJO_SECURE_WORKER_PID_DIR
+  export TAJO_LOG_DIR=$TAJO_SECURE_WORKER_LOG_DIR
+  export TAJO_IDENT_STRING=$TAJO_SECURE_WORKER_USER
 fi
 
 if [ "$TAJO_IDENT_STRING" = "" ]; then

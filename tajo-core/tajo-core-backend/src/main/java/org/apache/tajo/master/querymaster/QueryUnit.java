@@ -30,11 +30,12 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.QueryUnitId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStat;
-import org.apache.tajo.ipc.QueryMasterProtocol.Partition;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.ipc.TajoWorkerProtocol.Partition;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.Fragment;
+import org.apache.tajo.util.TajoIdUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -299,9 +300,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	}
 
   public QueryUnitAttempt newAttempt() {
-    QueryUnitAttempt attempt = new QueryUnitAttempt(
-        QueryIdFactory.newQueryUnitAttemptId(this.getId(),
-            ++lastAttemptId), this, eventHandler);
+    QueryUnitAttempt attempt = new QueryUnitAttempt(QueryIdFactory.newQueryUnitAttemptId(
+        this.getId(), ++lastAttemptId), this, eventHandler);
     return attempt;
   }
 
@@ -310,7 +310,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   }
 
   public QueryUnitAttempt getAttempt(int attempt) {
-    return this.attempts.get(new QueryUnitAttemptId(this.getId(), attempt));
+    return this.attempts.get(QueryIdFactory.newQueryUnitAttemptId(this.getId(), attempt));
   }
 
   public QueryUnitAttempt getLastAttempt() {
@@ -433,7 +433,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
         stateMachine.doTransition(event.getType(), event);
       } catch (InvalidStateTransitonException e) {
         LOG.error("Can't handle this event at current state", e);
-        eventHandler.handle(new QueryEvent(getId().getQueryId(),
+        eventHandler.handle(new QueryEvent(TajoIdUtils.parseQueryId(getId().toString()),
             QueryEventType.INTERNAL_ERROR));
       }
 

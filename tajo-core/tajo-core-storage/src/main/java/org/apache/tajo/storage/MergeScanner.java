@@ -80,9 +80,13 @@ public class MergeScanner implements Scanner {
 
   @Override
   public void close() throws IOException {
-    currentScanner.close();
+    if(currentScanner != null) {
+      currentScanner.close();
+    }
     iterator = null;
-    fragments.clear();
+    if(fragments != null) {
+      fragments.clear();
+    }
   }
 
   @Override

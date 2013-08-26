@@ -91,6 +91,14 @@
       <plugins>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-report-plugin</artifactId>
+          <version>2.15</version>
+          <configuration>
+            <aggregate>true</aggregate>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>2.5.1</version>
           <configuration>
@@ -297,6 +305,7 @@
           <numUnapprovedLicenses>0</numUnapprovedLicenses>
           <excludes>
             <exclude>CHANGES.txt</exclude>
+            <exclude>**/workers</exclude>
             <exclude>**/*.tql</exclude>
             <exclude>**/*.sql</exclude>
             <exclude>**/*.schema</exclude>

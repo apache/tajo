@@ -136,7 +136,6 @@ public class TestGlobalQueryPlanner {
       catalog.addTable(desc);
     }
 
-    QueryIdFactory.reset();
     queryId = QueryIdFactory.newQueryId();
     dispatcher.stop();
   }

@@ -23,7 +23,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Options;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
@@ -83,7 +86,11 @@ public class LocalTajoTestingUtility {
   }
 
   public void shutdown() throws IOException {
-    client.close();
-    util.shutdownMiniCluster();
+    if(client != null) {
+      client.close();
+    }
+    if(util != null) {
+      util.shutdownMiniCluster();
+    }
   }
 }

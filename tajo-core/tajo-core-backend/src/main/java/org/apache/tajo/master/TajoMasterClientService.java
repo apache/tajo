@@ -26,9 +26,11 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.yarn.proto.YarnProtos.ApplicationAttemptIdProto;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.AlreadyExistsTableException;
@@ -37,18 +39,18 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.query.exception.SQLSyntaxError;
+import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.master.querymaster.QueryMasterManager;
+import org.apache.tajo.master.querymaster.QueryInProgress;
+import org.apache.tajo.master.querymaster.QueryInfo;
+import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.rpc.ProtoBlockingRpcServer;
 import org.apache.tajo.rpc.RemoteException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
-import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -88,9 +90,10 @@ public class TajoMasterClientService extends AbstractService {
       LOG.error(e);
     }
     server.start();
-    bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
-    this.conf.setVar(ConfVars.CLIENT_SERVICE_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
-    LOG.info("TajoMasterClientService startup");
+    bindAddress = server.getListenAddress();
+    this.conf.setVar(ConfVars.CLIENT_SERVICE_ADDRESS,
+        org.apache.tajo.util.NetUtils.getIpPortString(bindAddress));
+    LOG.info("Instantiated TajoMasterClientService at " + this.bindAddress);
     super.start();
   }
 
@@ -99,7 +102,6 @@ public class TajoMasterClientService extends AbstractService {
     if (server != null) {
       server.shutdown();
     }
-    LOG.info("TajoMasterClientService shutdown");
     super.stop();
   }
 
@@ -123,40 +125,26 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public SubmitQueryResponse submitQuery(RpcController controller,
+    public GetQueryStatusResponse submitQuery(RpcController controller,
                                            QueryRequest request)
         throws ServiceException {
 
-      QueryId queryId;
-      SubmitQueryResponse.Builder build = SubmitQueryResponse.newBuilder();
       try {
-        queryId = context.getGlobalEngine().executeQuery(request.getQuery());
-      } catch (SQLSyntaxError e) {
-        build.setResultCode(ResultCode.ERROR);
-        build.setErrorMessage(e.getMessage());
-        return build.build();
-
+        if(LOG.isDebugEnabled()) {
+          LOG.debug("Query [" + request.getQuery() + "] is submitted");
+        }
+        return context.getGlobalEngine().executeQuery(request.getQuery());
       } catch (Exception e) {
-        build.setResultCode(ResultCode.ERROR);
-        String msg = e.getMessage();
-        if (msg == null) {
-          msg = "Internal Error";
-        }
-
-        if (LOG.isDebugEnabled()) {
-          LOG.error(msg, e);
+        LOG.error(e.getMessage(), e);
+        ClientProtos.GetQueryStatusResponse.Builder responseBuilder = ClientProtos.GetQueryStatusResponse.newBuilder();
+        responseBuilder.setResultCode(ResultCode.ERROR);
+        if (e.getMessage() != null) {
+          responseBuilder.setErrorMessage(ExceptionUtils.getStackTrace(e));
         } else {
-          LOG.error(msg);
+          responseBuilder.setErrorMessage("Internal Error");
         }
-        build.setErrorMessage(msg);
-        return build.build();
+        return responseBuilder.build();
       }
-
-      LOG.info("Query " + queryId + " is submitted");
-      build.setResultCode(ResultCode.OK);
-      build.setQueryId(queryId.getProto());
-
-      return build.build();
     }
 
     @Override
@@ -183,13 +171,17 @@ public class TajoMasterClientService extends AbstractService {
                                                  GetQueryResultRequest request)
         throws ServiceException {
       QueryId queryId = new QueryId(request.getQueryId());
-      QueryMasterManager queryMasterManager = context.getQuery(queryId);
+      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
 
+      }
+      QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
+      QueryInfo queryInfo = queryInProgress.getQueryInfo();
       GetQueryResultResponse.Builder builder
           = GetQueryResultResponse.newBuilder();
-      switch (queryMasterManager.getState()) {
+      switch (queryInfo.getQueryState()) {
         case QUERY_SUCCEEDED:
-          builder.setTableDesc((TableDescProto) queryMasterManager.getResultDesc().getProto());
+          // TODO check this logic needed
+          //builder.setTableDesc((TableDescProto) queryJobManager.getResultDesc().getProto());
           break;
         case QUERY_FAILED:
         case QUERY_ERROR:
@@ -218,23 +210,25 @@ public class TajoMasterClientService extends AbstractService {
       QueryId queryId = new QueryId(request.getQueryId());
       builder.setQueryId(request.getQueryId());
 
-      if (queryId.equals(TajoIdUtils.NullQueryId)) {
+      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
         builder.setResultCode(ResultCode.OK);
         builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
       } else {
-        QueryMasterManager queryMasterManager = context.getQuery(queryId);
-        if (queryMasterManager != null) {
+        QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
+        if (queryInProgress != null) {
+          QueryInfo queryInfo = queryInProgress.getQueryInfo();
           builder.setResultCode(ResultCode.OK);
-          builder.setState(queryMasterManager.getState());
-          builder.setProgress(queryMasterManager.getProgress());
-          builder.setSubmitTime(queryMasterManager.getAppSubmitTime());
-          if(queryMasterManager.getQueryMasterHost() != null) {
-            builder.setQueryMasterHost(queryMasterManager.getQueryMasterHost());
-            builder.setQueryMasterPort(queryMasterManager.getQueryMasterClientPort());
+          builder.setState(queryInfo.getQueryState());
+          builder.setProgress(queryInfo.getProgress());
+          builder.setSubmitTime(queryInfo.getStartTime());
+          if(queryInfo.getQueryMasterHost() != null) {
+            builder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+            builder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
           }
-
-          if (queryMasterManager.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
-            builder.setFinishTime(queryMasterManager.getFinishTime());
+          //builder.setInitTime(queryJobManager.getInitializationTime());
+          //builder.setHasResult(!queryJobManager.isCreateTableStmt());
+          if (queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+            builder.setFinishTime(queryInfo.getFinishTime());
           } else {
             builder.setFinishTime(System.currentTimeMillis());
           }
@@ -249,11 +243,12 @@ public class TajoMasterClientService extends AbstractService {
 
     @Override
     public BoolProto killQuery(RpcController controller,
-                               ApplicationAttemptIdProto request)
+                               TajoIdProtos.QueryIdProto request)
         throws ServiceException {
       QueryId queryId = new QueryId(request);
-      QueryMasterManager queryMasterManager = context.getQuery(queryId);
-      //queryMasterManager.handle(new QueryEvent(queryId, QueryEventType.KILL));
+      QueryJobManager queryJobManager = context.getQueryJobManager();
+      //TODO KHJ, change QueryJobManager to event handler
+      //queryJobManager.handle(new QueryEvent(queryId, QueryEventType.KILL));
 
       return BOOL_TRUE;
     }

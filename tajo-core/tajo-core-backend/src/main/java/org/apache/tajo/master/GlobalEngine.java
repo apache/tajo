@@ -23,16 +23,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.yarn.api.protocolrecords.GetNewApplicationResponse;
-import org.apache.hadoop.yarn.api.records.*;
-import org.apache.hadoop.yarn.client.YarnClient;
-import org.apache.hadoop.yarn.client.YarnClientImpl;
-import org.apache.hadoop.yarn.exceptions.YarnRemoteException;
+import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.service.AbstractService;
-import org.apache.hadoop.yarn.util.Records;
-import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -48,18 +43,19 @@ import org.apache.tajo.engine.exception.UnknownWorkerException;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.GlobalOptimizer;
-import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.logical.CreateTableNode;
+import org.apache.tajo.engine.planner.logical.DropTableNode;
+import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.planner.logical.LogicalRootNode;
+import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.master.querymaster.QueryMasterManager;
+import org.apache.tajo.master.querymaster.QueryInfo;
+import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.EnumSet;
-import java.util.Set;
 
 @SuppressWarnings("unchecked")
 public class GlobalEngine extends AbstractService {
@@ -76,9 +72,6 @@ public class GlobalEngine extends AbstractService {
   private GlobalPlanner globalPlanner;
   private GlobalOptimizer globalOptimizer;
 
-  // Yarn
-  protected YarnClient yarnClient;
-
   public GlobalEngine(final MasterContext context)
       throws IOException {
     super(GlobalEngine.class.getName());
@@ -89,7 +82,6 @@ public class GlobalEngine extends AbstractService {
 
   public void start() {
     try  {
-      connectYarnClient();
       analyzer = new SQLAnalyzer();
       planner = new LogicalPlanner(context.getCatalog());
       optimizer = new LogicalOptimizer();
@@ -98,138 +90,60 @@ public class GlobalEngine extends AbstractService {
 
       globalOptimizer = new GlobalOptimizer();
     } catch (Throwable t) {
-      t.printStackTrace();
+      LOG.error(t.getMessage(), t);
     }
     super.start();
   }
 
   public void stop() {
     super.stop();
-    if (yarnClient != null) {
-      yarnClient.stop();
-    }
   }
 
-  public QueryId executeQuery(String tql)
+  public ClientProtos.GetQueryStatusResponse executeQuery(String sql)
       throws InterruptedException, IOException,
       NoSuchQueryIdException, IllegalQueryStatusException,
       UnknownWorkerException, EmptyClusterException {
 
-    long querySubmittionTime = context.getClock().getTime();
-    LOG.info("SQL: " + tql);
+    LOG.info("SQL: " + sql);
     // parse the query
-    Expr planningContext = analyzer.parse(tql);
+    Expr planningContext = analyzer.parse(sql);
     LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
+
+    ClientProtos.GetQueryStatusResponse.Builder responseBuilder = ClientProtos.GetQueryStatusResponse.newBuilder();
 
     if (PlannerUtil.checkIfDDLPlan(plan)) {
       updateQuery(plan.getChild());
-      return TajoIdUtils.NullQueryId;
+
+      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      responseBuilder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
     } else {
-      GetNewApplicationResponse newApp = yarnClient.getNewApplication();
-      ApplicationId appId = newApp.getApplicationId();
-      QueryId queryId = TajoIdUtils.createQueryId(appId, 0);
+      QueryJobManager queryJobManager = context.getQueryJobManager();
+      QueryInfo queryInfo = null;
+      try {
+        queryInfo = queryJobManager.createNewQueryJob(sql, plan);
+      } catch (Exception e) {
+        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+        responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
+        responseBuilder.setState(TajoProtos.QueryState.QUERY_ERROR);
+        responseBuilder.setErrorMessage(StringUtils.stringifyException(e));
 
-      LOG.info("Get AppId: " + appId + ", QueryId: " + queryId);
-      LOG.info("Setting up application submission context for ASM");
-
-      //request QueryMaster container
-      QueryConf queryConf = new QueryConf(context.getConf());
-      queryConf.setUser(UserGroupInformation.getCurrentUser().getShortUserName());
-      // the output table is given by user
-      if (plan.getChild().getType() == NodeType.CREATE_TABLE) {
-        CreateTableNode createTableNode = (CreateTableNode) plan.getChild();
-        queryConf.setOutputTable(createTableNode.getTableName());
+        return responseBuilder.build();
       }
-      QueryMasterManager queryMasterManager = new QueryMasterManager(context, yarnClient, queryId, tql, plan, appId,
-              context.getClock(), querySubmittionTime);
-      queryMasterManager.init(queryConf);
-      queryMasterManager.start();
-      context.addQuery(queryId, queryMasterManager);
 
-      return queryId;
+      //queryJobManager.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_START, queryInfo));
+
+      responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
+      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      responseBuilder.setState(queryInfo.getQueryState());
+      if(queryInfo.getQueryMasterHost() != null) {
+        responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+      }
+      responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
     }
-  }
 
-  private ApplicationAttemptId submitQuery() throws YarnRemoteException {
-    GetNewApplicationResponse newApp = getNewApplication();
-    ApplicationId appId = newApp.getApplicationId();
-    LOG.info("Get AppId: " + appId);
-    LOG.info("Setting up application submission context for ASM");
-
-    ApplicationSubmissionContext appContext = Records
-            .newRecord(ApplicationSubmissionContext.class);
-
-    // set the application id
-    appContext.setApplicationId(appId);
-    // set the application name
-    appContext.setApplicationName("Tajo");
-
-    org.apache.hadoop.yarn.api.records.Priority
-            pri = Records.newRecord(org.apache.hadoop.yarn.api.records.Priority.class);
-    pri.setPriority(5);
-    appContext.setPriority(pri);
-
-    // Set the queue to which this application is to be submitted in the RM
-    appContext.setQueue("default");
-
-    ContainerLaunchContext amContainer = Records
-            .newRecord(ContainerLaunchContext.class);
-    appContext.setAMContainerSpec(amContainer);
-
-    LOG.info("Submitting application to ASM");
-    yarnClient.submitApplication(appContext);
-
-    ApplicationReport appReport = monitorApplication(appId,
-            EnumSet.of(YarnApplicationState.ACCEPTED));
-    ApplicationAttemptId attemptId = appReport.getCurrentApplicationAttemptId();
-    LOG.info("Launching application with id: " + attemptId);
-
-    return attemptId;
-  }
-
-  private ApplicationAttemptId submitQueryOld() throws YarnRemoteException {
-    GetNewApplicationResponse newApp = getNewApplication();
-    // Get a new application id
-    ApplicationId appId = newApp.getApplicationId();
-    LOG.info("Get AppId: " + appId);
-    LOG.info("Setting up application submission context for ASM");
-    ApplicationSubmissionContext appContext = Records
-        .newRecord(ApplicationSubmissionContext.class);
-
-    // set the application id
-    appContext.setApplicationId(appId);
-    // set the application name
-    appContext.setApplicationName("Tajo");
-
-    // Set the priority for the application master
-    org.apache.hadoop.yarn.api.records.Priority
-        pri = Records.newRecord(org.apache.hadoop.yarn.api.records.Priority.class);
-    pri.setPriority(5);
-    appContext.setPriority(pri);
-
-    // Set the queue to which this application is to be submitted in the RM
-    appContext.setQueue("default");
-
-    // Set up the container launch context for the application master
-    ContainerLaunchContext amContainer = Records
-        .newRecord(ContainerLaunchContext.class);
-    appContext.setAMContainerSpec(amContainer);
-
-    // unmanaged AM
-    appContext.setUnmanagedAM(true);
-    LOG.info("Setting unmanaged AM");
-
-    // Submit the application to the applications manager
-    LOG.info("Submitting application to ASM");
-    yarnClient.submitApplication(appContext);
-
-    // Monitor the application to wait for launch state
-    ApplicationReport appReport = monitorApplication(appId,
-        EnumSet.of(YarnApplicationState.ACCEPTED));
-    ApplicationAttemptId attemptId = appReport.getCurrentApplicationAttemptId();
-    LOG.info("Launching application with id: " + attemptId);
-
-    return attemptId;
+    ClientProtos.GetQueryStatusResponse response = responseBuilder.build();
+    return response;
   }
 
   public QueryId updateQuery(String sql) throws IOException, SQLException {
@@ -242,7 +156,7 @@ public class GlobalEngine extends AbstractService {
       throw new SQLException("This is not update query:\n" + sql);
     } else {
       updateQuery(plan.getChild());
-      return TajoIdUtils.NullQueryId;
+      return QueryIdFactory.NULL_QUERY_ID;
     }
   }
 
@@ -272,23 +186,13 @@ public class GlobalEngine extends AbstractService {
     } catch (PlanningException e) {
       LOG.error(e.getMessage(), e);
     }
-    LOG.info("LogicalPlan:\n" + plan.getRootBlock().getRoot());
+
+    if(LOG.isDebugEnabled()) {
+      LOG.debug("LogicalPlan:\n" + plan.getRootBlock().getRoot());
+    }
 
     return optimizedPlan;
   }
-
-  private MasterPlan createGlobalPlan(QueryId id, LogicalRootNode rootNode)
-      throws IOException {
-    MasterPlan globalPlan = globalPlanner.build(id, rootNode);
-    return globalOptimizer.optimize(globalPlan);
-  }
-
-//  private void startQuery(final QueryId queryId, final QueryConf queryConf,
-//                          final QueryMaster query) {
-//    context.getAllQueries().put(queryId, query);
-//    query.init(queryConf);
-//    query.start();
-//  }
 
   private TableDesc createTable(CreateTableNode createTable) throws IOException {
     TableMeta meta;
@@ -367,59 +271,5 @@ public class GlobalEngine extends AbstractService {
     }
 
     LOG.info("Table \"" + tableName + "\" is dropped.");
-  }
-
-  private void connectYarnClient() {
-    this.yarnClient = new YarnClientImpl();
-    this.yarnClient.init(context.getConf());
-    this.yarnClient.start();
-  }
-
-  public GetNewApplicationResponse getNewApplication()
-      throws YarnRemoteException {
-    return yarnClient.getNewApplication();
-  }
-
-  /**
-   * Monitor the submitted application for completion. Kill application if time
-   * expires.
-   *
-   * @param appId
-   *          Application Id of application to be monitored
-   * @return true if application completed successfully
-   * @throws YarnRemoteException
-   */
-  private ApplicationReport monitorApplication(ApplicationId appId,
-                                               Set<YarnApplicationState> finalState) throws YarnRemoteException {
-
-    while (true) {
-
-      // Check app status every 1 second.
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        LOG.debug("Thread sleep in monitoring loop interrupted");
-      }
-
-      // Get application report for the appId we are interested in
-      ApplicationReport report = yarnClient.getApplicationReport(appId);
-
-      LOG.info("Got application report from ASM for" + ", appId="
-          + appId.getId() + ", appAttemptId="
-          + report.getCurrentApplicationAttemptId() + ", clientToken="
-          + report.getClientToken() + ", appDiagnostics="
-          + report.getDiagnostics() + ", appMasterHost=" + report.getHost()
-          + ", appQueue=" + report.getQueue() + ", appMasterRpcPort="
-          + report.getRpcPort() + ", appStartTime=" + report.getStartTime()
-          + ", yarnAppState=" + report.getYarnApplicationState().toString()
-          + ", distributedFinalState="
-          + report.getFinalApplicationStatus().toString() + ", appTrackingUrl="
-          + report.getTrackingUrl() + ", appUser=" + report.getUser());
-
-      YarnApplicationState state = report.getYarnApplicationState();
-      if (finalState.contains(state)) {
-        return report;
-      }
-    }
   }
 }

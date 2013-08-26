@@ -108,11 +108,11 @@ public class TUtil {
     return list;
   }
 
-  public  static QueryUnitAttemptId newQueryUnitAttemptId() {
+  public static QueryUnitAttemptId newQueryUnitAttemptId() {
     return QueryIdFactory.newQueryUnitAttemptId(
         QueryIdFactory.newQueryUnitId(
-                QueryIdFactory.newSubQueryId(
-                    QueryIdFactory.newQueryId())), 0);
+            QueryIdFactory.newExecutionBlockId(
+                QueryIdFactory.newQueryId())), 0);
   }
 
   /**

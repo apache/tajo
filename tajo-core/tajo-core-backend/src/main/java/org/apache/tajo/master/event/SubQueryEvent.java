@@ -19,17 +19,17 @@
 package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.event.AbstractEvent;
-import org.apache.tajo.SubQueryId;
+import org.apache.tajo.ExecutionBlockId;
 
 public class SubQueryEvent extends AbstractEvent<SubQueryEventType> {
-  private final SubQueryId id;
+  private final ExecutionBlockId id;
 
-  public SubQueryEvent(SubQueryId id, SubQueryEventType subQueryEventType) {
+  public SubQueryEvent(ExecutionBlockId id, SubQueryEventType subQueryEventType) {
     super(subQueryEventType);
     this.id = id;
   }
 
-  public SubQueryId getSubQueryId() {
+  public ExecutionBlockId getSubQueryId() {
     return id;
   }
 }

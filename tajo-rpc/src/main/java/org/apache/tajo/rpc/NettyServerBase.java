@@ -143,7 +143,6 @@ public class NettyServerBase {
         }
       }
       if (available(port)) {
-        LOG.info("Detect an unused port:" + port);
         return port;
       }
     }

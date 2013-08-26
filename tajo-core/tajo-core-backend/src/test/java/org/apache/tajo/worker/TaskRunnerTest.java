@@ -25,31 +25,27 @@ import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 import org.apache.hadoop.yarn.util.BuilderUtils;
-import org.apache.tajo.QueryConf;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.SubQueryId;
-import org.apache.tajo.TestTajoIds;
-import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
+import org.apache.tajo.*;
+import org.apache.tajo.ipc.TajoWorkerProtocol.TajoWorkerProtocolService;
 import org.apache.tajo.rpc.ProtoAsyncRpcClient;
-import org.apache.tajo.util.TajoIdUtils;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TaskRunnerTest {
   long ts1 = 1315890136000l;
-  QueryId q1 = TestTajoIds.createQueryId(ts1, 2, 5);
-  SubQueryId sq1 = TajoIdUtils.createSubQueryId(q1, 5);
+  QueryId q1 = TestTajoIds.createQueryId(ts1, 2);
+  ExecutionBlockId sq1 = QueryIdFactory.newExecutionBlockId(q1, 5);
 
   //@Test
   public void testInit() throws Exception {
     ProtoAsyncRpcClient mockClient = mock(ProtoAsyncRpcClient.class);
     mockClient.close();
 
-    QueryMasterProtocolService.Interface mockMaster =
-        mock(QueryMasterProtocolService.Interface.class);
+    TajoWorkerProtocolService.Interface mockMaster =
+        mock(TajoWorkerProtocolService.Interface.class);
     ApplicationAttemptId appAttemptId = BuilderUtils.newApplicationAttemptId(
-        q1.getApplicationId(), q1.getAttemptId());
+        BuilderUtils.newApplicationId(Integer.parseInt(q1.getId()), q1.getSeq()), 1);
     ContainerId cId = BuilderUtils.newContainerId(appAttemptId, 1);
 
     NodeId nodeId = RecordFactoryProvider.getRecordFactory(null).

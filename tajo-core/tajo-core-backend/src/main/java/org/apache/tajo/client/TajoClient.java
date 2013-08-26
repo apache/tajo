@@ -22,7 +22,9 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
@@ -30,7 +32,6 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.ResultSetImpl;
-import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
@@ -38,8 +39,6 @@ import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
 import org.apache.tajo.rpc.ProtoBlockingRpcClient;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
-import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -128,7 +127,7 @@ public class TajoClient {
    * In order to get the result, you should use {@link #getQueryResult(org.apache.tajo.QueryId)}
    * or {@link #getQueryResultAndWait(org.apache.tajo.QueryId)}.
    */
-  public ClientProtos.SubmitQueryResponse executeQuery(String tql) throws ServiceException {
+  public GetQueryStatusResponse executeQuery(String tql) throws ServiceException {
     QueryRequest.Builder builder = QueryRequest.newBuilder();
     builder.setQuery(tql);
 
@@ -147,9 +146,9 @@ public class TajoClient {
       throws ServiceException, IOException {
     QueryRequest.Builder builder = QueryRequest.newBuilder();
     builder.setQuery(sql);
-    SubmitQueryResponse response = tajoMasterService.submitQuery(null, builder.build());
+    GetQueryStatusResponse response = tajoMasterService.submitQuery(null, builder.build());
     QueryId queryId = new QueryId(response.getQueryId());
-    if (queryId.equals(TajoIdUtils.NullQueryId)) {
+    if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return this.createNullResultSet(queryId);
     } else {
       return this.getQueryResultAndWait(queryId);
@@ -171,6 +170,9 @@ public class TajoClient {
       String queryMasterHost = res.getQueryMasterHost();
       if(queryMasterHost != null && !queryMasterHost.isEmpty()) {
         connectionToQueryMaster(queryId, queryMasterHost, res.getQueryMasterPort());
+
+        QueryMasterClientProtocolService.BlockingInterface queryMasterService = queryMasterConnectionMap.get(queryId);
+        res = queryMasterService.getQueryStatus(null, builder.build());
       }
     }
     return new QueryStatus(res);
@@ -204,7 +206,7 @@ public class TajoClient {
 
   public ResultSet getQueryResult(QueryId queryId)
       throws ServiceException, IOException {
-      if (queryId.equals(TajoIdUtils.NullQueryId)) {
+      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
         return createNullResultSet(queryId);
       }
 
@@ -214,14 +216,14 @@ public class TajoClient {
 
   public ResultSet getQueryResultAndWait(QueryId queryId)
       throws ServiceException, IOException {
-    if (queryId.equals(TajoIdUtils.NullQueryId)) {
+    if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }
     QueryStatus status = getQueryStatus(queryId);
 
     while(status != null && isQueryRunnning(status.getState())) {
       try {
-        Thread.sleep(1000);
+        Thread.sleep(500);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
@@ -237,7 +239,7 @@ public class TajoClient {
       }
 
     } else {
-      LOG.warn("Query " + status.getQueryId() + ") failed: " + status.getState());
+      LOG.warn("Query (" + status.getQueryId() + ") failed: " + status.getState());
 
       //TODO throw SQLException(?)
       return createNullResultSet(queryId);
@@ -249,7 +251,7 @@ public class TajoClient {
   }
 
   public TableDesc getResultDesc(QueryId queryId) throws ServiceException {
-    if (queryId.equals(TajoIdUtils.NullQueryId)) {
+    if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return null;
     }
 

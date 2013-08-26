@@ -25,9 +25,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.Clock;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.SubQueryId;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableDescImpl;
@@ -35,7 +35,6 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.master.ExecutionBlock;
 import org.apache.tajo.master.ExecutionBlockCursor;
 import org.apache.tajo.master.event.*;
-import org.apache.tajo.master.querymaster.QueryMaster.QueryContext;
 import org.apache.tajo.storage.StorageManager;
 
 import java.io.IOException;
@@ -50,16 +49,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class Query implements EventHandler<QueryEvent> {
   private static final Log LOG = LogFactory.getLog(Query.class);
 
-
   // Facilities for Query
   private final QueryConf conf;
   private final Clock clock;
   private String queryStr;
-  private Map<SubQueryId, SubQuery> subqueries;
+  private Map<ExecutionBlockId, SubQuery> subqueries;
   private final EventHandler eventHandler;
   private final MasterPlan plan;
   private final StorageManager sm;
-  private QueryContext context;
+  private QueryMasterTask.QueryContext context;
   private ExecutionBlockCursor cursor;
 
   // Query Status
@@ -106,22 +104,21 @@ public class Query implements EventHandler<QueryEvent> {
 
       .installTopology();
 
-  public Query(final QueryContext context, final QueryId id, Clock clock,
+  public Query(final QueryMasterTask.QueryContext context, final QueryId id,
                final long appSubmitTime,
                final String queryStr,
                final EventHandler eventHandler,
-               final MasterPlan plan,
-               final StorageManager sm) {
+               final MasterPlan plan) {
     this.context = context;
     this.conf = context.getConf();
     this.id = id;
-    this.clock = clock;
+    this.clock = context.getClock();
     this.appSubmitTime = appSubmitTime;
     this.queryStr = queryStr;
     subqueries = Maps.newHashMap();
     this.eventHandler = eventHandler;
     this.plan = plan;
-    this.sm = sm;
+    this.sm = context.getStorageManager();
     cursor = new ExecutionBlockCursor(plan);
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
@@ -131,23 +128,19 @@ public class Query implements EventHandler<QueryEvent> {
     stateMachine = stateMachineFactory.make(this);
   }
 
-  public boolean isCreateTableStmt() {
-    return context.isCreateTableQuery();
-  }
-
-//  protected FileSystem getFileSystem(Configuration conf) throws IOException {
-//    return FileSystem.get(conf);
-//  }
-
   public float getProgress() {
     QueryState state = getStateMachine().getCurrentState();
     if (state == QueryState.QUERY_SUCCEEDED) {
       return 1.0f;
     } else {
       int idx = 0;
-      float [] subProgresses = new float[subqueries.size()];
+      List<SubQuery> tempSubQueries = new ArrayList<SubQuery>();
+      synchronized(subqueries) {
+        tempSubQueries.addAll(subqueries.values());
+      }
+      float [] subProgresses = new float[tempSubQueries.size()];
       boolean finished = true;
-      for (SubQuery subquery: subqueries.values()) {
+      for (SubQuery subquery: tempSubQueries) {
         if (subquery.getState() != SubQueryState.NEW) {
           subProgresses[idx] = subquery.getProgress();
           if (finished && subquery.getState() != SubQueryState.SUCCEEDED) {
@@ -239,8 +232,8 @@ public class Query implements EventHandler<QueryEvent> {
   public QueryId getId() {
     return this.id;
   }
-  
-  public SubQuery getSubQuery(SubQueryId id) {
+
+  public SubQuery getSubQuery(ExecutionBlockId id) {
     return this.subqueries.get(id);
   }
 
@@ -263,7 +256,7 @@ public class Query implements EventHandler<QueryEvent> {
     @Override
     public QueryState transition(Query query, QueryEvent queryEvent) {
       query.setStartTime();
-      query.context.setState(QueryState.QUERY_INIT);
+      //query.context.setState(QueryState.QUERY_INIT);
       return QueryState.QUERY_INIT;
     }
   }
@@ -277,7 +270,8 @@ public class Query implements EventHandler<QueryEvent> {
           query.sm);
       subQuery.setPriority(query.priority--);
       query.addSubQuery(subQuery);
-      LOG.info("Schedule unit plan: \n" + subQuery.getBlock().getPlan());
+      LOG.debug("Schedule unit plan: \n" + subQuery.getBlock().getPlan());
+
       subQuery.handle(new SubQueryEvent(subQuery.getId(),
           SubQueryEventType.SQ_INIT));
     }
@@ -301,13 +295,16 @@ public class Query implements EventHandler<QueryEvent> {
           query.addSubQuery(nextSubQuery);
           nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(),
               SubQueryEventType.SQ_INIT));
-          LOG.info("Scheduling SubQuery's Priority: " + nextSubQuery.getPriority());
-          LOG.info("Scheduling SubQuery's Plan: \n" + nextSubQuery.getBlock().getPlan());
+          LOG.info("Scheduling SubQuery:" + nextSubQuery.getId());
+          if(LOG.isDebugEnabled()) {
+            LOG.debug("Scheduling SubQuery's Priority: " + nextSubQuery.getPriority());
+            LOG.debug("Scheduling SubQuery's Plan: \n" + nextSubQuery.getBlock().getPlan());
+          }
           return query.checkQueryForCompleted();
 
         } else { // Finish a query
           if (query.checkQueryForCompleted() == QueryState.QUERY_SUCCEEDED) {
-            SubQuery subQuery = query.getSubQuery(castEvent.getSubQueryId());
+            SubQuery subQuery = query.getSubQuery(castEvent.getExecutionBlockId());
             TableDesc desc = new TableDescImpl(query.conf.getOutputTable(),
                 subQuery.getTableMeta(), query.context.getOutputPath());
             query.setResultDesc(desc);
@@ -319,7 +316,7 @@ public class Query implements EventHandler<QueryEvent> {
             query.eventHandler.handle(new QueryFinishEvent(query.getId()));
 
             if (query.context.isCreateTableQuery()) {
-              // TOOD move to QueryMasterManager
+              // TOOD move to QueryJobManager
               //query.context.getCatalog().addTable(desc);
             }
           }
@@ -363,7 +360,6 @@ public class Query implements EventHandler<QueryEvent> {
 
   public QueryState finished(QueryState finalState) {
     setFinishTime();
-    context.setState(finalState);
     return finalState;
   }
 

@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
+// TajoMaster -> TajoWorker, TajoWorker(QueryMaster) <-> TajoWorker Protocol
 option java_package = "org.apache.tajo.ipc";
-option java_outer_classname = "QueryMasterProtocol";
+option java_outer_classname = "TajoWorkerProtocol";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
@@ -101,32 +102,36 @@ message Partition {
     optional string fileName = 2;
 }
 
-message ServerStatusProto {
-    message System {
-        required int32 availableProcessors = 1;
-        required int64 freeMemory = 2;
-        required int64 maxMemory = 3;
-        required int64 totalMemory = 4;
-    }
-    message Disk {
-        required string absolutePath = 1;
-        required int64 totalSpace = 2;
-        required int64 freeSpace = 3;
-        required int64 usableSpace = 4;
-    }
-    required System system = 1;
-    repeated Disk disk = 2;
-    required int32 taskNum = 3;
+message QueryExecutionRequestProto {
+    required QueryIdProto queryId = 1;
+    required StringProto logicalPlanJson = 2;
 }
 
-service QueryMasterProtocolService {
+message GetTaskRequestProto {
+    required ContainerIdProto containerId = 1;
+    required ExecutionBlockIdProto executionBlockId = 2;
+}
+
+message RunExecutionBlockRequestProto {
+    required string executionBlockId = 1;
+    required string queryMasterHost = 2;
+    required int32 queryMasterPort = 3;
+    required string nodeId = 4;
+    required string containerId = 5;
+    optional string queryOutputPath = 6;
+}
+
+service TajoWorkerProtocolService {
   //from Worker
-  rpc getTask(ContainerIdProto) returns (QueryUnitRequestProto);
+  rpc getTask(GetTaskRequestProto) returns (QueryUnitRequestProto);
   rpc statusUpdate (TaskStatusProto) returns (BoolProto);
   rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
   rpc fatalError(TaskFatalErrorReport) returns (BoolProto);
   rpc done (TaskCompletionReport) returns (BoolProto);
 
-  //from QueryMasterManager
-  rpc executeQuery(StringProto) returns (BoolProto);
+  //from TajoMaster's QueryJobManager
+  rpc executeQuery(QueryExecutionRequestProto) returns (BoolProto);
+
+  //from QueryMaster(Worker)
+  rpc executeExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
 }

@@ -19,7 +19,7 @@
 package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.event.AbstractEvent;
-import org.apache.tajo.SubQueryId;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 
 public class TaskSchedulerEvent extends AbstractEvent<EventType> {
@@ -28,14 +28,14 @@ public class TaskSchedulerEvent extends AbstractEvent<EventType> {
     T_SUBQUERY_COMPLETED
   }
 
-  private final SubQueryId subQueryId;
+  private final ExecutionBlockId executionBlockId;
 
-  public TaskSchedulerEvent(EventType eventType, SubQueryId subQueryId) {
+  public TaskSchedulerEvent(EventType eventType, ExecutionBlockId queryBlockId) {
     super(eventType);
-    this.subQueryId = subQueryId;
+    this.executionBlockId = queryBlockId;
   }
 
-  public SubQueryId getSubQueryId() {
-    return this.subQueryId;
+  public ExecutionBlockId getExecutionBlockId() {
+    return this.executionBlockId;
   }
 }

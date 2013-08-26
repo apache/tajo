@@ -1,0 +1,98 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+//TajoWorker -> TajoMaster protocol
+
+option java_package = "org.apache.tajo.ipc";
+option java_outer_classname = "TajoMasterProtocol";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
+
+import "yarn_protos.proto";
+import "tajo_protos.proto";
+import "TajoIdProtos.proto";
+import "CatalogProtos.proto";
+import "PrimitiveProtos.proto";
+
+message ServerStatusProto {
+    message System {
+        required int32 availableProcessors = 1;
+        required int32 freeMemoryMB = 2;
+        required int32 maxMemoryMB = 3;
+        required int32 totalMemoryMB = 4;
+    }
+    message Disk {
+        required string absolutePath = 1;
+        required int64 totalSpace = 2;
+        required int64 freeSpace = 3;
+        required int64 usableSpace = 4;
+    }
+    required System system = 1;
+    required int32 diskSlots = 2;
+    repeated Disk disk = 3;
+    required int32 runningTaskNum = 4;
+}
+
+message TajoHeartbeat {
+  required string tajoWorkerHost = 1;
+  required int32 tajoWorkerPort = 2;
+  optional ServerStatusProto serverStatus = 3;
+  optional int32 tajoWorkerClientPort = 4;
+  optional QueryIdProto queryId = 5;
+  optional QueryState state = 6;
+  optional string statusMessage = 7;
+}
+
+message TajoHeartbeatResponse {
+  message ResponseCommand {
+      required string command = 1;
+      repeated string params = 2;
+  }
+  required BoolProto heartbeatResult = 1;
+  optional ResponseCommand responseCommand = 3;
+}
+
+message WorkerResourceAllocationRequest {
+    required ExecutionBlockIdProto executionBlockId = 1;
+    required int32 numWorks = 2;
+    required int32 memoryMBSlots = 3 ;
+    required int32 diskSlots = 4;
+}
+
+message WorkerResourceProto {
+    required string workerHostAndPort = 1;
+    required ExecutionBlockIdProto executionBlockId = 2;
+    required int32 memoryMBSlots = 3 ;
+    required int32 diskSlots = 4;
+}
+
+message WorkerResourceReleaseRequest {
+    repeated WorkerResourceProto workerResources = 1;
+}
+
+message WorkerResourceAllocationResponse {
+    required ExecutionBlockIdProto executionBlockId = 1;
+    repeated string allocatedWorks = 2;
+}
+
+service TajoMasterProtocolService {
+  rpc heartbeat(TajoHeartbeat) returns (TajoHeartbeatResponse);
+  rpc allocateWorkerResources(WorkerResourceAllocationRequest) returns (WorkerResourceAllocationResponse);
+  rpc releaseWorkerResource(WorkerResourceReleaseRequest) returns (BoolProto);
+  rpc stopQueryMaster(QueryIdProto) returns (BoolProto);
+}

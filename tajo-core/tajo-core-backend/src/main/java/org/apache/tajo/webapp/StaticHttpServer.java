@@ -19,27 +19,24 @@
 package org.apache.tajo.webapp;
 
 import org.apache.hadoop.conf.Configuration;
-import org.mortbay.jetty.Connector;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.master.TajoMaster;
+import org.mortbay.jetty.Connector;
 
 import java.io.IOException;
 
 public class StaticHttpServer extends HttpServer {
   private static StaticHttpServer instance = null;
-  private TajoMaster master = null;
-  
-  private StaticHttpServer(TajoMaster master , String name, String bindAddress, int port,
+
+  private StaticHttpServer(Object containerObject , String name, String bindAddress, int port,
       boolean findPort, Connector connector, Configuration conf,
       String[] pathSpecs) throws IOException {
     super( name, bindAddress, port, findPort, connector, conf, pathSpecs);
-    this.master = master;
   }
   public static StaticHttpServer getInstance() {
     return instance;
   }
-  public static StaticHttpServer getInstance( TajoMaster master, String name,
+  public static StaticHttpServer getInstance(Object containerObject, String name,
       String bindAddress, int port, boolean findPort, Connector connector,
       TajoConf conf,
       String[] pathSpecs) throws IOException {
@@ -49,19 +46,16 @@ public class StaticHttpServer extends HttpServer {
         addr = conf.getVar(ConfVars.TASKRUNNER_LISTENER_ADDRESS).split(":")[0];
       }
       
-      instance = new StaticHttpServer(master, name, addr, port,
+      instance = new StaticHttpServer(containerObject, name, addr, port,
           findPort, connector, conf, pathSpecs);
-      instance.setAttribute("tajo.master", master);
-      instance.setAttribute("tajo.master.addr", addr);
-      instance.setAttribute("tajo.master.conf", conf);
-      instance.setAttribute("tajo.master.starttime", System.currentTimeMillis());
+      instance.setAttribute("tajo.info.server.object", containerObject);
+      instance.setAttribute("tajo.info.server.addr", addr);
+      instance.setAttribute("tajo.info.server.conf", conf);
+      instance.setAttribute("tajo.info.server.starttime", System.currentTimeMillis());
     }
     return instance;
   }
-  public TajoMaster getMaster() {
-    
-    return this.master;
-  }
+
   public void set(String name, Object object) {
     instance.setAttribute(name, object);
   }

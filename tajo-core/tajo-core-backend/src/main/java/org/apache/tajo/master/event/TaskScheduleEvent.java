@@ -34,7 +34,7 @@ public class TaskScheduleEvent extends TaskSchedulerEvent {
                            final EventType eventType, boolean isLeafQuery,
                            final List<QueryUnit.DataLocation> dataLocations,
                            final String[] racks) {
-    super(eventType, attemptId.getSubQueryId());
+    super(eventType, attemptId.getQueryUnitId().getExecutionBlockId());
     this.attemptId = attemptId;
     this.isLeafQuery = isLeafQuery;
     this.dataLocations = dataLocations;

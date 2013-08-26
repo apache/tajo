@@ -16,9 +16,6 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
 package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Lists;
@@ -297,7 +294,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Array getArray(int arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -308,7 +304,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Array getArray(String arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -319,7 +314,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public InputStream getAsciiStream(int arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -330,7 +324,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public InputStream getAsciiStream(String arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -363,7 +356,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public BigDecimal getBigDecimal(int arg0, int arg1) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -374,7 +366,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public BigDecimal getBigDecimal(String arg0, int arg1) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -385,7 +376,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public InputStream getBinaryStream(int arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -396,7 +386,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public InputStream getBinaryStream(String arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -499,7 +488,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Reader getCharacterStream(int arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -510,7 +498,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Reader getCharacterStream(String arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -561,7 +548,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Date getDate(int arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -572,7 +558,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Date getDate(String arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -583,7 +568,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Date getDate(int arg0, Calendar arg1) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -594,7 +578,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Date getDate(String arg0, Calendar arg1) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -741,7 +724,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Reader getNCharacterStream(int arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -752,7 +734,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Reader getNCharacterStream(String arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -783,7 +764,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public String getNString(int fieldId) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -794,7 +774,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public String getNString(String arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -832,7 +811,6 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public Object getObject(int arg0, Map<String, Class<?>> arg1)
       throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -844,7 +822,6 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public Object getObject(String arg0, Map<String, Class<?>> arg1)
       throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -855,7 +832,6 @@ public class ResultSetImpl implements ResultSet {
    */
   public <T> T getObject(String arg0, Class<T> arg1)
       throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -866,10 +842,9 @@ public class ResultSetImpl implements ResultSet {
    */
   public <T> T getObject(int arg0, Class<T> arg1)
       throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
-  
+
   /*
    * (non-Javadoc)
    * 
@@ -907,7 +882,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public RowId getRowId(int fieldId) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -918,7 +892,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public RowId getRowId(String arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -1007,7 +980,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Time getTime(int fieldId) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -1018,7 +990,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Time getTime(String name) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -1029,7 +1000,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Time getTime(int fieldId, Calendar arg1) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -1040,7 +1010,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Time getTime(String name, Calendar arg1) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -1051,7 +1020,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Timestamp getTimestamp(int fieldId) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -1062,7 +1030,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Timestamp getTimestamp(String arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -1073,7 +1040,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Timestamp getTimestamp(int fieldId, Calendar arg1) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -1084,7 +1050,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public Timestamp getTimestamp(String arg0, Calendar arg1) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -1105,7 +1070,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public URL getURL(int fieldId) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -1116,7 +1080,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public URL getURL(String arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 
@@ -1147,7 +1110,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    // TODO
     throw new UnsupportedException();
   }
 
@@ -1298,7 +1260,6 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public boolean relative(int arg0) throws SQLException {
-    // TODO Auto-generated method stub
     throw new UnsupportedException();
   }
 

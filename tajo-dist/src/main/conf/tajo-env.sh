@@ -34,14 +34,23 @@
 # export TAJO_OPTS=-server
 export TAJO_OPTS=-XX:+PrintGCTimeStamps
 
+# Extra TajoMaster's java runtime options for TajoMaster. Empty by default
+# export TAJO_MASTER_OPTS=
+
+# Extra TajoWorker's java runtime options for TajoMaster. Empty by default
+# export TAJO_WORKER_OPTS=
+
 # Where log files are stored.  $TAJO_HOME/logs by default.
 # export TAJO_LOG_DIR=${TAJO_HOME}/logs
 
 # The directory where pid files are stored. /tmp by default.
-# export TAJO_PID_DIR=/var/hadoop/pids
+# export TAJO_PID_DIR=/var/tajo/pids
 
-# A string representing this instance of hadoop. $USER by default.
+# A string representing this instance of tajo. $USER by default.
 # export TAJO_IDENT_STRING=$USER
 
 # The scheduling priority for daemon processes.  See 'man nice'.
 # export TAJO_NICENESS=10
+
+export TAJO_WORKER_STANDBY_MODE=true
+

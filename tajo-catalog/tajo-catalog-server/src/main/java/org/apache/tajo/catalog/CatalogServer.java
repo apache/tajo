@@ -128,7 +128,9 @@ public class CatalogServer extends AbstractService {
     // Creation of a HSA will force a resolve.
     InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
     try {
-      this.rpcServer = new ProtoBlockingRpcServer(CatalogProtocol.class, handler, initIsa);
+      this.rpcServer = new ProtoBlockingRpcServer(
+          CatalogProtocol.class,
+          handler, initIsa);
       this.rpcServer.start();
 
       this.bindAddress = NetUtils.getConnectAddress(this.rpcServer.getListenAddress());
