@@ -201,8 +201,8 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
       if (taskAttempt.isLeafTask()
           && taskAttempt.getQueryUnit().getScanNodes().length == 1) {
         Set<String> racks = new HashSet<String>();
-        for (String host : taskAttempt.getQueryUnit().getDataLocations()) {
-          racks.add(RackResolver.resolve(host).getNetworkLocation());
+        for (QueryUnit.DataLocation location : taskAttempt.getQueryUnit().getDataLocations()) {
+          racks.add(RackResolver.resolve(location.getHost()).getNetworkLocation());
         }
 
         taskAttempt.eventHandler.handle(new TaskScheduleEvent(

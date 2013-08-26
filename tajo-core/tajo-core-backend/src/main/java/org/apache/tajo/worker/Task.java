@@ -460,7 +460,7 @@ public class Task {
       if (f.getLen() == 0) {
         continue;
       }
-      tablet = new Fragment(name, f.getPath(), meta, 0l, f.getLen(), null);
+      tablet = new Fragment(name, f.getPath(), meta, 0l, f.getLen());
       listTablets.add(tablet);
     }
 

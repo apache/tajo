@@ -19,23 +19,25 @@
 package org.apache.tajo.master.event;
 
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.master.querymaster.QueryUnit;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class TaskScheduleEvent extends TaskSchedulerEvent {
   private final QueryUnitAttemptId attemptId;
   private final boolean isLeafQuery;
-  private final String[] hosts;
+  private final List<QueryUnit.DataLocation> dataLocations;
   private final String[] racks;
 
   public TaskScheduleEvent(final QueryUnitAttemptId attemptId,
                            final EventType eventType, boolean isLeafQuery,
-                           final String[] hosts,
+                           final List<QueryUnit.DataLocation> dataLocations,
                            final String[] racks) {
     super(eventType, attemptId.getSubQueryId());
     this.attemptId = attemptId;
     this.isLeafQuery = isLeafQuery;
-    this.hosts = hosts;
+    this.dataLocations = dataLocations;
     this.racks = racks;
   }
 
@@ -47,11 +49,11 @@ public class TaskScheduleEvent extends TaskSchedulerEvent {
     return this.isLeafQuery;
   }
 
-  public String [] getHosts() {
-    return this.hosts;
+  public List<QueryUnit.DataLocation> getDataLocations() {
+    return this.dataLocations;
   }
 
-  public String [] getRacks() {
+  public String[] getRacks() {
     return this.racks;
   }
 
@@ -60,7 +62,7 @@ public class TaskScheduleEvent extends TaskSchedulerEvent {
     return "TaskScheduleEvent{" +
         "attemptId=" + attemptId +
         ", isLeafQuery=" + isLeafQuery +
-        ", hosts=" + (hosts == null ? null : Arrays.asList(hosts)) +
+        ", hosts=" + (dataLocations == null ? null : dataLocations) +
         ", racks=" + (racks == null ? null : Arrays.asList(racks)) +
         '}';
   }

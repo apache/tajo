@@ -101,7 +101,7 @@ public class SeqScanExec extends PhysicalExec {
   @Override
   public Tuple next() throws IOException {
     Tuple tuple;
-    Tuple outTuple = new VTuple(outSchema.getColumnNum());
+    Tuple outTuple = new VTuple(outColumnNum);
 
     if (!plan.hasQual()) {
       if ((tuple = scanner.next()) != null) {

@@ -460,5 +460,10 @@ public class CSVFile {
       }
       return this.tupleOffsets[currentIdx];
     }
+
+    @Override
+    public boolean isSplittable(){
+      return true;
+    }
   }
 }

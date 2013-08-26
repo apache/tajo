@@ -59,7 +59,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	
   private List<Partition> partitions;
 	private TableStat stats;
-  private String [] dataLocations;
+  private List<DataLocation> dataLocations;
   private final boolean isLeafTask;
   private List<IntermediateEntry> intermediateData;
 
@@ -127,11 +127,18 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     return this.isLeafTask;
   }
 
-  public void setDataLocations(String [] dataLocations) {
-    this.dataLocations = dataLocations;
+  public void setDataLocations(Fragment fragment) {
+    String[] hosts = fragment.getHosts();
+    int[] blockCount = fragment.getHostsBlockCount();
+    int[] volumeIds = fragment.getDiskIds();
+    this.dataLocations = new ArrayList<DataLocation>(hosts.length);
+
+    for (int i = 0; i < hosts.length; i++) {
+      this.dataLocations.add(new DataLocation(hosts[i], blockCount[i], volumeIds[i]));
+    }
   }
 
-  public String [] getDataLocations() {
+  public List<DataLocation> getDataLocations() {
     return this.dataLocations;
   }
 
@@ -171,16 +178,12 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   @Deprecated
   public void setFragment(String tableId, Fragment fragment) {
     this.fragMap.put(tableId, fragment);
-    if (fragment.hasDataLocations()) {
-      setDataLocations(fragment.getDataLocations());
-    }
+    setDataLocations(fragment);
   }
 
   public void setFragment2(Fragment fragment) {
     this.fragMap.put(fragment.getName(), fragment);
-    if (fragment.hasDataLocations()) {
-      setDataLocations(fragment.getDataLocations());
-    }
+    setDataLocations(fragment);
   }
 	
 	public void addFetch(String tableId, String uri) throws URISyntaxException {
@@ -494,6 +497,39 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
     public String getPullAddress() {
       return pullHost + ":" + port;
+    }
+  }
+
+  public static class DataLocation {
+    private String host;
+    private int blockCount; // for Non-Splittable
+    private int volumeId;
+
+    public DataLocation(String host, int blockCount, int volumeId) {
+      this.host = host;
+      this.blockCount = blockCount;
+      this.volumeId = volumeId;
+    }
+
+    public String getHost() {
+      return host;
+    }
+
+    public int getBlockCount() {
+      return blockCount;
+    }
+
+    public int getVolumeId() {
+      return volumeId;
+    }
+
+    @Override
+    public String toString() {
+      return "DataLocation{" +
+          "host=" + host +
+          ", blocks=" + blockCount +
+          ", volumeId=" + volumeId +
+          '}';
     }
   }
 }

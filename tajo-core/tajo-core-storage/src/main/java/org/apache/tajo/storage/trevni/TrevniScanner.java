@@ -171,4 +171,9 @@ public class TrevniScanner extends FileScanner {
   public boolean isSelectable() {
     return false;
   }
+
+  @Override
+  public boolean isSplittable(){
+    return false;
+  }
 }

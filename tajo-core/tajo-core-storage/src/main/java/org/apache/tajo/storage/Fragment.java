@@ -21,6 +21,7 @@ package org.apache.tajo.storage;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.*;
@@ -28,6 +29,9 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.storage.json.StorageGsonHelper;
 import org.apache.tajo.util.TUtil;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, GsonObject {
   protected FragmentProto.Builder builder = null;
@@ -39,21 +43,44 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
   @Expose private Long length; // required
   @Expose private boolean distCached = false; // optional
 
-  private String [] dataLocations;
+  private String[] hosts; // Datanode hostnames
+  private int[] hostsBlockCount; // list of block count of hosts
+  private int[] diskIds;
 
   public Fragment() {
     builder = FragmentProto.newBuilder();
   }
 
-  public Fragment(String tableName, Path uri, TableMeta meta, long start,
-      long length, String [] dataLocations) {
+  public Fragment(String tableName, Path uri, TableMeta meta, BlockLocation blockLocation, int[] diskIds) throws IOException {
+    this();
+    TableMeta newMeta = new TableMetaImpl(meta.getProto());
+    SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(tableName, meta
+        .getSchema().getProto());
+    newMeta.setSchema(new Schema(newSchemaProto));
+    this.set(tableName, uri, newMeta, blockLocation.getOffset(), blockLocation.getLength());
+    this.hosts = blockLocation.getHosts();
+    this.diskIds = diskIds;
+  }
+
+  // Non splittable
+  public Fragment(String tableName, Path uri, TableMeta meta, long start, long length, String[] hosts, int[] hostsBlockCount) {
     this();
     TableMeta newMeta = new TableMetaImpl(meta.getProto());
     SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(tableName, meta
         .getSchema().getProto());
     newMeta.setSchema(new Schema(newSchemaProto));
     this.set(tableName, uri, newMeta, start, length);
-    this.dataLocations = dataLocations;
+    this.hosts = hosts;
+    this.hostsBlockCount = hostsBlockCount;
+  }
+
+  public Fragment(String fragmentId, Path path, TableMeta meta, long start, long length) {
+    this();
+    TableMeta newMeta = new TableMetaImpl(meta.getProto());
+    SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(fragmentId, meta
+        .getSchema().getProto());
+    newMeta.setSchema(new Schema(newSchemaProto));
+    this.set(fragmentId, path, newMeta, start, length);
   }
 
   public Fragment(FragmentProto proto) {
@@ -66,14 +93,6 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     }
   }
 
-  public boolean hasDataLocations() {
-    return this.dataLocations != null;
-  }
-
-  public String [] getDataLocations() {
-    return this.dataLocations;
-  }
-
   private void set(String tableName, Path path, TableMeta meta, long start,
       long length) {
     this.tableName = tableName;
@@ -81,6 +100,41 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     this.meta = meta;
     this.startOffset = start;
     this.length = length;
+  }
+
+
+  /**
+   * Get the list of hosts (hostname) hosting this block
+   */
+  public String[] getHosts() {
+    if (hosts == null) {
+      this.hosts = new String[0];
+    }
+    return hosts;
+  }
+
+  /**
+   * Get the list of hosts block count
+   * if a fragment given multiple block, it returned 'host0:3, host1:1 ...'
+   */
+  public int[] getHostsBlockCount() {
+    if (hostsBlockCount == null) {
+      this.hostsBlockCount = new int[getHosts().length];
+      Arrays.fill(this.hostsBlockCount, 1);
+    }
+    return hostsBlockCount;
+  }
+
+  /**
+   * Get the list of Disk Ids
+   * Unknown disk is -1. Others 0 ~ N
+   */
+  public int[] getDiskIds() {
+    if (diskIds == null) {
+      this.diskIds = new int[getHosts().length];
+      Arrays.fill(this.diskIds, -1);
+    }
+    return diskIds;
   }
 
   public String getName() {

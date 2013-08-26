@@ -469,7 +469,7 @@ public class TestPhysicalPlanner {
     Fragment [] fragments = new Fragment[list.length];
     int i = 0;
     for (FileStatus status : list) {
-      fragments[i++] = new Fragment("partition", status.getPath(), outputMeta, 0, status.getLen(), null);
+      fragments[i++] = new Fragment("partition", status.getPath(), outputMeta, 0, status.getLen());
     }
     Scanner scanner = new MergeScanner(conf, outputMeta,TUtil.newList(fragments));
     scanner.init();
@@ -527,7 +527,7 @@ public class TestPhysicalPlanner {
     Fragment [] fragments = new Fragment[list.length];
     int i = 0;
     for (FileStatus status : list) {
-      fragments[i++] = new Fragment("partition", status.getPath(), outputMeta, 0, status.getLen(), null);
+      fragments[i++] = new Fragment("partition", status.getPath(), outputMeta, 0, status.getLen());
     }
     Scanner scanner = new MergeScanner(conf, outputMeta,TUtil.newList(fragments));
     scanner.init();

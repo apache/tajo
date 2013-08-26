@@ -93,7 +93,7 @@ public class TestSingleCSVFileBSTIndex {
 
     FileStatus status = fs.getFileStatus(tablePath);
     long fileLen = status.getLen();
-    Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
+    Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
 
     SortSpec[] sortKeys = new SortSpec[2];
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
@@ -182,7 +182,7 @@ public class TestSingleCSVFileBSTIndex {
 
     FileStatus status = fs.getFileStatus(tablePath);
     long fileLen = status.getLen();
-    Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
+    Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
     SortSpec [] sortKeys = new SortSpec[2];
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);

@@ -113,7 +113,7 @@ public class TestRowFile {
     TableProto proto = (TableProto) FileUtil.loadProto(
         util.getDefaultFileSystem(), metaPath, TableProto.getDefaultInstance());
     meta = new TableMetaImpl(proto);
-    Fragment fragment = new Fragment("test.tbl", dataPath, meta, 0, file.getLen(), null);
+    Fragment fragment = new Fragment("test.tbl", dataPath, meta, 0, file.getLen());
 
     int tupleCnt = 0;
     start = System.currentTimeMillis();
@@ -136,7 +136,7 @@ public class TestRowFile {
 
     for (int i = 0; i < 13; i++) {
       System.out.println("range: " + fileStart + ", " + fileLen);
-      fragment = new Fragment("test.tbl", dataPath, meta, fileStart, fileLen, null);
+      fragment = new Fragment("test.tbl", dataPath, meta, fileStart, fileLen);
       scanner = new RowFile.RowFileScanner(conf, meta, fragment);
       scanner.init();
       while ((tuple=scanner.next()) != null) {

@@ -311,6 +311,11 @@ public class RowFile {
     public boolean isSelectable() {
       return false;
     }
+
+    @Override
+    public boolean isSplittable(){
+      return true;
+    }
   }
 
   public static class RowFileAppender extends FileAppender {

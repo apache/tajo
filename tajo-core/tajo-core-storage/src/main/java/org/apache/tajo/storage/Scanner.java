@@ -84,4 +84,11 @@ public interface Scanner extends SchemaObject, Closeable {
    * TODO - to be changed Object type
    */
   void setSearchCondition(Object expr);
+
+  /**
+   * It returns if the file is splittable.
+   *
+   * @return true if this scanner can split the a file.
+   */
+  boolean isSplittable();
 }

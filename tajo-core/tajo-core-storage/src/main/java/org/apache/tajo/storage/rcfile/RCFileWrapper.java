@@ -333,5 +333,10 @@ public class RCFileWrapper {
     public boolean isSelectable() {
       return false;
     }
+
+    @Override
+    public boolean isSplittable(){
+      return true;
+    }
   }
 }

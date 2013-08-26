@@ -137,10 +137,8 @@ public class TestMergeScanner {
     FileStatus status1 = fs.getFileStatus(table1Path);
     FileStatus status2 = fs.getFileStatus(table2Path);
     Fragment[] tablets = new Fragment[2];
-    tablets[0] = new Fragment("tablet1", table1Path, meta, 0,
-        status1.getLen(), null);
-    tablets[1] = new Fragment("tablet1", table2Path, meta, 0,
-        status2.getLen(), null);
+    tablets[0] = new Fragment("tablet1", table1Path, meta, 0, status1.getLen());
+    tablets[1] = new Fragment("tablet1", table2Path, meta, 0, status2.getLen());
     
     Scanner scanner = new MergeScanner(conf, meta, TUtil.newList(tablets));
     scanner.init();

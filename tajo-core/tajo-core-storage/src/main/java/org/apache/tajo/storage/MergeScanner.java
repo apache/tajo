@@ -107,4 +107,9 @@ public class MergeScanner implements Scanner {
   public Schema getSchema() {
     return meta.getSchema();
   }
+
+  @Override
+  public boolean isSplittable(){
+    return false;
+  }
 }

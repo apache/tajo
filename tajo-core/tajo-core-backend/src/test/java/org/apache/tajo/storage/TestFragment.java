@@ -48,8 +48,7 @@ public class TestFragment {
 
   @Test
   public final void testGetAndSetFields() {    
-    Fragment fragment1 = new Fragment("table1_1", new Path("/table0"),
-        meta1, 0, 500, null);
+    Fragment fragment1 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500);
     fragment1.setDistCached();
 
     assertEquals("table1_1", fragment1.getName());
@@ -70,7 +69,7 @@ public class TestFragment {
 
   @Test
   public final void testTabletTabletProto() {
-    Fragment fragment0 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500, null);
+    Fragment fragment0 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500);
     
     Fragment fragment1 = new Fragment(fragment0.getProto());
     assertEquals("table1_1", fragment1.getName());
@@ -93,9 +92,7 @@ public class TestFragment {
     final int num = 10;
     Fragment [] tablets = new Fragment[num];
     for (int i = num - 1; i >= 0; i--) {
-      tablets[i]
-          = new Fragment("tablet1_"+i, new Path("tablet0"), meta1, i * 500, 
-              (i+1) * 500, null);
+      tablets[i] = new Fragment("tablet1_"+i, new Path("tablet0"), meta1, i * 500, (i+1) * 500);
     }
     
     Arrays.sort(tablets);
@@ -110,9 +107,7 @@ public class TestFragment {
     final int num = 1860;
     Fragment [] tablets = new Fragment[num];
     for (int i = num - 1; i >= 0; i--) {
-      tablets[i]
-          = new Fragment("tablet1_"+i, new Path("tablet0"), meta1, (long)i * 6553500,
-          (long)(i+1) * 6553500, null);
+      tablets[i] = new Fragment("tablet1_"+i, new Path("tablet0"), meta1, (long)i * 6553500, (long)(i+1) * 6553500);
     }
 
     SortedSet sortedSet = Sets.newTreeSet();

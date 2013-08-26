@@ -111,10 +111,8 @@ public class TestStorages {
       long randomNum = (long) (Math.random() * fileLen) + 1;
 
       Fragment[] tablets = new Fragment[2];
-      tablets[0] = new Fragment("Splitable", tablePath, meta,
-          0, randomNum, null);
-      tablets[1] = new Fragment("Splitable", tablePath, meta,
-          randomNum, (fileLen - randomNum), null);
+      tablets[0] = new Fragment("Splitable", tablePath, meta, 0, randomNum);
+      tablets[1] = new Fragment("Splitable", tablePath, meta, randomNum, (fileLen - randomNum));
 
       Scanner scanner = StorageManager.getScanner(conf, meta, tablets[0], schema);
       scanner.init();
@@ -160,7 +158,7 @@ public class TestStorages {
     appender.close();
 
     FileStatus status = fs.getFileStatus(tablePath);
-    Fragment fragment = new Fragment("testReadAndWrite", tablePath, meta, 0, status.getLen(), null);
+    Fragment fragment = new Fragment("testReadAndWrite", tablePath, meta, 0, status.getLen());
 
     Schema target = new Schema();
     target.addColumn("age", Type.INT8);
@@ -224,7 +222,7 @@ public class TestStorages {
     appender.close();
 
     FileStatus status = fs.getFileStatus(tablePath);
-    Fragment fragment = new Fragment("table", tablePath, meta, 0, status.getLen(), null);
+    Fragment fragment = new Fragment("table", tablePath, meta, 0, status.getLen());
     Scanner scanner =  StorageManager.getScanner(conf, meta, fragment);
     scanner.init();
     Tuple retrieved = scanner.next();

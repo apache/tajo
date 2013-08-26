@@ -245,6 +245,11 @@ public class RawFile {
     public boolean isSelectable() {
       return false;
     }
+
+    @Override
+    public boolean isSplittable(){
+      return false;
+    }
   }
 
   public static class RawFileAppender extends FileAppender {
