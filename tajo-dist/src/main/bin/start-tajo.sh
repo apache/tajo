@@ -32,5 +32,5 @@ if [ -f "${TAJO_CONF_DIR}/tajo-env.sh" ]; then
 fi
 
 if [ "$TAJO_WORKER_STANDBY_MODE" = "true" ]; then
-  exec "$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" start worker
+  exec "$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" start worker standby
 fi

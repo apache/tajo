@@ -72,8 +72,10 @@ public class Repartitioner {
       TableDesc tableDesc = subQuery.getContext().getTableDescMap().get(scans[i].getFromTable().getTableName());
       if (scans[i].getTableId().startsWith(ExecutionBlockId.EB_ID_PREFIX)) {
         tablePath = subQuery.getStorageManager().getTablePath(scans[i].getTableId());
+        stats[i] = subQuery.getChildQuery(scans[i]).getTableStat();
       } else {
         tablePath = tableDesc.getPath();
+        stats[i] = tableDesc.getMeta().getStat();
       }
 
       if (scans[i].isLocal()) { // it only requires a dummy fragment.
@@ -84,9 +86,6 @@ public class Repartitioner {
                 tableDesc.getMeta(),
             new Path(tablePath, "data")).get(0);
       }
-
-      // Getting a table stat for each scan
-      stats[i] = subQuery.getChildQuery(scans[i]).getTableStat();
     }
 
     // Assigning either fragments or fetch urls to query units

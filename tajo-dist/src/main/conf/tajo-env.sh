@@ -52,5 +52,6 @@ export TAJO_OPTS=-XX:+PrintGCTimeStamps
 # The scheduling priority for daemon processes.  See 'man nice'.
 # export TAJO_NICENESS=10
 
+# Tajo Distributed Execution Mode
 export TAJO_WORKER_STANDBY_MODE=true
 

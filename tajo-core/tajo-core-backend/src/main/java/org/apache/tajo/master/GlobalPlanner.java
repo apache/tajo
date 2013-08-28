@@ -41,9 +41,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.tajo.conf.TajoConf.ConfVars;
+
 public class GlobalPlanner {
   private static Log LOG = LogFactory.getLog(GlobalPlanner.class);
 
+  private TajoConf conf;
   private StorageManager sm;
   private QueryId queryId;
 
@@ -51,6 +54,7 @@ public class GlobalPlanner {
                        final StorageManager sm,
                        final EventHandler eventHandler)
       throws IOException {
+    this.conf = conf;
     this.sm = sm;
   }
 
@@ -137,17 +141,14 @@ public class GlobalPlanner {
         // the first phase of two-phase join can be any logical nodes
         JoinNode join = (JoinNode) node;
 
-        /*
-        if (join.getOuterNode().getType() == ExprType.SCAN &&
-            join.getInnerNode().getType() == ExprType.SCAN) {
-          ScanNode outerScan = (ScanNode) join.getOuterNode();
-          ScanNode innerScan = (ScanNode) join.getInnerNode();
+        if (join.getRightChild().getType() == NodeType.SCAN &&
+            join.getLeftChild().getType() == NodeType.SCAN) {
+          ScanNode outerScan = (ScanNode) join.getRightChild();
+          ScanNode innerScan = (ScanNode) join.getLeftChild();
 
 
-          TableMeta outerMeta =
-              catalog.getTableDesc(outerScan.getTableId()).getMeta();
-          TableMeta innerMeta =
-              catalog.getTableDesc(innerScan.getTableId()).getMeta();
+          TableMeta outerMeta = outerScan.getFromTable().getTableDesc().getMeta();
+          TableMeta innerMeta = innerScan.getFromTable().getTableDesc().getMeta();
           long threshold = conf.getLongVar(ConfVars.BROADCAST_JOIN_THRESHOLD);
 
 
@@ -193,7 +194,7 @@ public class GlobalPlanner {
           if (outerScan.isBroadcast() || innerScan.isBroadcast()) {
             return;
           }
-        } */
+        }
 
         // insert stores for the first phase
         if (join.getLeftChild().getType() != NodeType.UNION &&
