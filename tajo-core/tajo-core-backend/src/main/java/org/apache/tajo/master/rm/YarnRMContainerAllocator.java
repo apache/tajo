@@ -76,8 +76,6 @@ public class YarnRMContainerAllocator extends AMRMClientImpl
     RegisterApplicationMasterResponse response;
     try {
       response = registerApplicationMaster("localhost", 10080, "http://localhost:1234");
-      context.getResourceAllocator().setMaxContainerCapability(response.getMaximumResourceCapability().getMemory());
-      context.getResourceAllocator().setMinContainerCapability(response.getMinimumResourceCapability().getMemory());
 
       // If the number of cluster nodes is ZERO, it waits for available nodes.
       AllocateResponse allocateResponse = allocate(0.0f);
@@ -90,7 +88,7 @@ public class YarnRMContainerAllocator extends AMRMClientImpl
           LOG.error(e);
         }
       }
-      context.getResourceAllocator().setNumClusterNodes(allocateResponse.getNumClusterNodes());
+      context.getQueryMasterContext().getWorkerContext().setNumClusterNodes(allocateResponse.getNumClusterNodes());
     } catch (YarnRemoteException e) {
       LOG.error(e);
     }

@@ -620,13 +620,15 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       ExecutionBlock execBlock = subQuery.getBlock();
       QueryUnit [] tasks = subQuery.getQueryUnits();
 
-      //TODO refresh worker's numClusterNodes
-      int numClusterNodes = subQuery.getContext().getResourceAllocator().getNumClusterNode();
-      int numRequest = numClusterNodes == 0 ? tasks.length: Math.min(tasks.length, numClusterNodes * 4);
+      int numRequest = subQuery.getContext().getResourceAllocator().calculateNumRequestContainers(
+          subQuery.getContext().getQueryMasterContext().getWorkerContext(), tasks.length
+      );
 
       final Resource resource = Records.newRecord(Resource.class);
 
       resource.setMemory(512);
+
+      LOG.info("Request Container for " + subQuery.getId() + " containers=" + numRequest);
 
       Priority priority = Records.newRecord(Priority.class);
       priority.setPriority(subQuery.getPriority());

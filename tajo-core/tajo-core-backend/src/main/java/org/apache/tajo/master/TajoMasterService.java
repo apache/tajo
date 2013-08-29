@@ -117,6 +117,9 @@ public class TajoMasterService extends AbstractService {
       if(command != null) {
         builder.setResponseCommand(command);
       }
+
+      builder.setNumClusterNodes(context.getResourceManager().getWorkers().size());
+      builder.setNumClusterSlots(context.getResourceManager().getNumClusterSlots());
       done.run(builder.build());
     }
 
@@ -126,17 +129,6 @@ public class TajoMasterService extends AbstractService {
         TajoMasterProtocol.WorkerResourceAllocationRequest request,
         RpcCallback<TajoMasterProtocol.WorkerResourceAllocationResponse> done) {
       context.getResourceManager().allocateWorkerResources(request, done);
-
-//      List<String> workerHosts = new ArrayList<String>();
-//      for(WorkerResource eachWorker: workerResources) {
-//        workerHosts.add(eachWorker.getAllocatedHost() + ":" + eachWorker.getPorts()[0]);
-//      }
-//
-//      done.run(TajoMasterProtocol.WorkerResourceAllocationResponse.newBuilder()
-//          .setExecutionBlockId(request.getExecutionBlockId())
-//          .addAllAllocatedWorks(workerHosts)
-//          .build()
-//      );
     }
 
     @Override
@@ -148,11 +140,11 @@ public class TajoMasterService extends AbstractService {
         WorkerResource workerResource = new WorkerResource();
         String[] tokens = eachWorkerResource.getWorkerHostAndPort().split(":");
         workerResource.setAllocatedHost(tokens[0]);
-        workerResource.setPorts(new int[]{Integer.parseInt(tokens[1])});
+        workerResource.setManagerPort(Integer.parseInt(tokens[1]));
         workerResource.setMemoryMBSlots(eachWorkerResource.getMemoryMBSlots());
         workerResource.setDiskSlots(eachWorkerResource.getDiskSlots());
 
-        LOG.info("====> releaseWorkerResource:" + workerResource);
+        LOG.info("releaseWorkerResource:" + workerResource);
         context.getResourceManager().releaseWorkerResource(
             new QueryId(eachWorkerResource.getExecutionBlockId().getQueryId()),
             workerResource);

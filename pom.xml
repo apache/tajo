@@ -310,6 +310,7 @@
             <exclude>**/*.sql</exclude>
             <exclude>**/*.schema</exclude>
             <exclude>**/*.tbl</exclude>
+            <exclude>**/*.jsp</exclude>
             <!-- generated content -->
             <exclude>**/target/**</exclude>
             <exclude>**/*.log</exclude>

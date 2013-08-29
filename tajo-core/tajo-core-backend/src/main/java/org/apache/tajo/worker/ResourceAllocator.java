@@ -24,4 +24,5 @@ import org.apache.hadoop.yarn.proto.YarnProtos;
 public interface ResourceAllocator {
   public void allocateTaskWorker();
   public ContainerId makeContainerId(YarnProtos.ContainerIdProto containerId);
+  public int calculateNumRequestContainers(TajoWorker.WorkerContext workerContext, int numTasks);
 }

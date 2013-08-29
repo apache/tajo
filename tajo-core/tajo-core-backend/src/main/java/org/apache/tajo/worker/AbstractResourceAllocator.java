@@ -26,10 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class AbstractResourceAllocator extends CompositeService implements ResourceAllocator {
-  private int minCapability;
-  private int maxCapability;
-  private int numCluster;
-
   private Map<ContainerId, ContainerProxy> containers = new HashMap<ContainerId, ContainerProxy>();
 
   public AbstractResourceAllocator() {
@@ -55,25 +51,4 @@ public abstract class AbstractResourceAllocator extends CompositeService impleme
   public Map<ContainerId, ContainerProxy> getContainers() {
     return containers;
   }
-
-  public void setMaxContainerCapability(int capability) {
-    this.maxCapability = capability;
-  }
-
-  public int getMaxContainerCapability() {
-    return this.maxCapability;
-  }
-
-  public void setMinContainerCapability(int capability) {
-    this.minCapability = capability;
-  }
-
-  public int getNumClusterNode() {
-    return numCluster;
-  }
-
-  public void setNumClusterNodes(int num) {
-    numCluster = num;
-  }
-
 }

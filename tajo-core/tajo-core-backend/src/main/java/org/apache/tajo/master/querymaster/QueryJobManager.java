@@ -42,9 +42,9 @@ public class QueryJobManager extends CompositeService {
 
   private AsyncDispatcher dispatcher;
 
-  private Map<QueryId, QueryInProgress> runningQueries = new HashMap<QueryId, QueryInProgress>();
+  private final Map<QueryId, QueryInProgress> runningQueries = new HashMap<QueryId, QueryInProgress>();
 
-  private Map<QueryId, QueryInProgress> finishedQueries = new HashMap<QueryId, QueryInProgress>();
+  private final Map<QueryId, QueryInProgress> finishedQueries = new HashMap<QueryId, QueryInProgress>();
 
   public QueryJobManager(final TajoMaster.MasterContext masterContext) {
     super(QueryJobManager.class.getName());
@@ -160,7 +160,9 @@ public class QueryJobManager extends CompositeService {
     if(queryHeartbeat.getTajoWorkerHost() != null) {
       WorkerResource queryMasterResource = new WorkerResource();
       queryMasterResource.setAllocatedHost(queryHeartbeat.getTajoWorkerHost());
-      queryMasterResource.setPorts(new int[]{queryHeartbeat.getTajoWorkerPort(), queryHeartbeat.getTajoWorkerClientPort()});
+      queryMasterResource.setManagerPort(queryHeartbeat.getTajoWorkerPort());
+      queryMasterResource.setClientPort(queryHeartbeat.getTajoWorkerClientPort());
+      queryMasterResource.setPullServerPort(queryHeartbeat.getTajoWorkerPullServerPort());
 
       queryInfo.setQueryMasterResource(queryMasterResource);
     }

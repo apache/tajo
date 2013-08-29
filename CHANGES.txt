@@ -112,6 +112,9 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-137: Unreleased resources and wrong allocation requests in
+    TajoWorkerResourceManager. (hyoungjunkim via hyunsik)
+
     TAJO-130: Same queryConf file conflicts. (jinho)
 
     TAJO-82: NullPointerException occurs when Schema is converted as an array 

@@ -66,14 +66,14 @@ public class QueryInfo {
     if(queryMasterResource == null) {
       return 0;
     }
-    return queryMasterResource.getPorts()[0];
+    return queryMasterResource.getManagerPort();
   }
 
   public int getQueryMasterClientPort() {
     if(queryMasterResource == null) {
       return 0;
     }
-    return queryMasterResource.getPorts()[1];
+    return queryMasterResource.getClientPort();
   }
 
   public TajoProtos.QueryState getQueryState() {

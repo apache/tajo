@@ -22,7 +22,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.service.CompositeService;
-import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryConf;
 import org.apache.tajo.conf.TajoConf;
 
@@ -33,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class TaskRunnerManager extends CompositeService {
   private static final Log LOG = LogFactory.getLog(TaskRunnerManager.class);
 
-  private Map<ExecutionBlockId, TaskRunner> taskRunnerMap = new HashMap<ExecutionBlockId, TaskRunner>();
+  private final Map<String, TaskRunner> taskRunnerMap = new HashMap<String, TaskRunner>();
   private TajoWorker.WorkerContext workerContext;
   private TajoConf tajoConf;
   private AtomicBoolean stop = new AtomicBoolean(false);
@@ -74,10 +73,10 @@ public class TaskRunnerManager extends CompositeService {
     }
   }
 
-  public void stopTask(ExecutionBlockId executionBlockId) {
-    LOG.info("Stop Task:" + executionBlockId);
+  public void stopTask(String id) {
+    LOG.info("Stop Task:" + id);
     synchronized(taskRunnerMap) {
-      taskRunnerMap.remove(executionBlockId);
+      taskRunnerMap.remove(id);
     }
     if(!workerContext.isStandbyMode()) {
       stop();
@@ -91,8 +90,9 @@ public class TaskRunnerManager extends CompositeService {
         try {
           QueryConf queryConf = new QueryConf(tajoConf);
           TaskRunner taskRunner = new TaskRunner(TaskRunnerManager.this, queryConf, params);
+          LOG.info("Start TaskRunner:" + taskRunner.getId());
           synchronized(taskRunnerMap) {
-            taskRunnerMap.put(taskRunner.getContext().getExecutionBlockId(), taskRunner);
+            taskRunnerMap.put(taskRunner.getId(), taskRunner);
           }
           taskRunner.init(queryConf);
           taskRunner.start();

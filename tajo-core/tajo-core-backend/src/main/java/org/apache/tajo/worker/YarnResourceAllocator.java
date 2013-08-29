@@ -61,7 +61,12 @@ public class YarnResourceAllocator extends AbstractResourceAllocator {
 
   @Override
   public void allocateTaskWorker() {
-    //To change body of implemented methods use File | Settings | File Templates.
+  }
+
+  @Override
+  public int calculateNumRequestContainers(TajoWorker.WorkerContext workerContext, int numTasks) {
+    int numClusterNodes = workerContext.getNumClusterNodes();
+    return numClusterNodes == 0 ? numTasks: Math.min(numTasks, numClusterNodes * 4);
   }
 
   @Override

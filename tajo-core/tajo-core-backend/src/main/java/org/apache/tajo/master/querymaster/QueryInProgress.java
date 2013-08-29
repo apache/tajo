@@ -23,13 +23,13 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.service.CompositeService;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.master.rm.WorkerResourceManager;
@@ -45,7 +45,7 @@ public class QueryInProgress extends CompositeService {
 
   private QueryId queryId;
 
-  private AsyncDispatcher dispatcher;
+  private TajoAsyncDispatcher dispatcher;
 
   private LogicalRootNode plan;
 
@@ -75,7 +75,7 @@ public class QueryInProgress extends CompositeService {
 
   @Override
   public void init(Configuration conf) {
-    dispatcher = new AsyncDispatcher();
+    dispatcher = new TajoAsyncDispatcher("QueryInProgress:" + queryId);
     this.addService(dispatcher);
 
     dispatcher.register(QueryJobEvent.Type.class, new QueryInProgressEventHandler());
@@ -256,30 +256,4 @@ public class QueryInProgress extends CompositeService {
         state == TajoProtos.QueryState.QUERY_KILLED ||
         state == TajoProtos.QueryState.QUERY_SUCCEEDED;
   }
-
-//  private void checkQueryMasterShutdown() {
-//    //run background
-//    Thread t = new Thread() {
-//      public void run() {
-//        while(true) {
-//          try {
-//            if(masterContext.getResourceManager().isQueryMasterStopped(queryId)) {
-//              queryMasterStopped.set(true);
-//              LOG.info("==========> " + queryId + " QueryMaster stopped");
-//              break;
-//            }
-//          } catch (Exception e) {
-//            LOG.error(e.getMessage(), e);
-//          }
-//          try {
-//            Thread.sleep(1000);
-//          } catch (InterruptedException e) {
-//            break;
-//          }
-//        }
-//      }
-//    };
-//
-//    t.start();
-//  }
 }

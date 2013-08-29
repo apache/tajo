@@ -173,6 +173,10 @@ public class TaskRunner extends AbstractService {
     }
   }
 
+  public String getId() {
+    return executionBlockId + "," + containerId;
+  }
+
   @Override
   public void init(Configuration conf) {
     this.queryConf = (QueryConf)conf;
@@ -313,7 +317,7 @@ public class TaskRunner extends AbstractService {
             try {
               if (callFuture == null) {
                 callFuture = new CallFuture2<QueryUnitRequestProto>();
-                LOG.info("====>Request GetTask:" + executionBlockId + "," + containerId);
+                LOG.info("====>Request GetTask:" + getId());
                 GetTaskRequestProto request = GetTaskRequestProto.newBuilder()
                     .setExecutionBlockId(executionBlockId.getProto())
                     .setContainerId(((ContainerIdPBImpl) containerId).getProto())
@@ -333,7 +337,7 @@ public class TaskRunner extends AbstractService {
                 }
                 // if there has been no assigning task for a given period,
                 // TaskRunner will retry to request an assigning task.
-                LOG.warn("Timeout getResource:" + executionBlockId + ", but retry", te);
+                LOG.warn("Timeout getResource:" + getId() + ", but retry", te);
                 continue;
               }
 
@@ -342,11 +346,11 @@ public class TaskRunner extends AbstractService {
                 // If TaskRunner receives the terminal signal, TaskRunner will be terminated
                 // immediately.
                 if (taskRequest.getShouldDie()) {
-                  LOG.info("Received ShouldDie flag:" + executionBlockId);
+                  LOG.info("Received ShouldDie flag:" + getId());
                   stop();
                   if(taskRunnerManager != null) {
                     //notify to TaskRunnerManager
-                    taskRunnerManager.stopTask(executionBlockId);
+                    taskRunnerManager.stopTask(getId());
                   }
                 } else {
 

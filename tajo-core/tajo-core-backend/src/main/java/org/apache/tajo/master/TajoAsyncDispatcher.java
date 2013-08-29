@@ -72,7 +72,7 @@ public class TajoAsyncDispatcher extends AbstractService  implements Dispatcher 
             }
           } catch(InterruptedException ie) {
             if (!stopped) {
-              LOG.warn("AsyncDispatcher thread interrupted", ie);
+              LOG.warn("AsyncDispatcher thread interrupted");
             }
             return;
           }
@@ -112,7 +112,7 @@ public class TajoAsyncDispatcher extends AbstractService  implements Dispatcher 
       try {
         eventHandlingThread.join();
       } catch (InterruptedException ie) {
-        LOG.warn("Interrupted Exception while stopping", ie);
+        LOG.warn("Interrupted Exception while stopping");
       }
     }
 

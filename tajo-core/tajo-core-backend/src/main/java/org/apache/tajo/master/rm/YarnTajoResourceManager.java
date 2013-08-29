@@ -75,6 +75,14 @@ public class YarnTajoResourceManager implements WorkerResourceManager {
   public void stop() {
   }
 
+  public Map<String, WorkerResource> getWorkers() {
+    return new HashMap<String, WorkerResource>();
+  }
+
+  public int getNumClusterSlots() {
+    return 0;
+  }
+
   @Override
   public void workerHeartbeat(TajoMasterProtocol.TajoHeartbeat request) {
     //nothing to do

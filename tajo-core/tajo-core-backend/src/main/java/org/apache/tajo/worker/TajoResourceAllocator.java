@@ -92,7 +92,12 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
 
   @Override
   public void allocateTaskWorker() {
-    //To change body of implemented methods use File | Settings | File Templates.
+  }
+
+  @Override
+  public int calculateNumRequestContainers(TajoWorker.WorkerContext workerContext, int numTasks) {
+    int clusterSlots = workerContext.getNumClusterSlots();
+    return clusterSlots == 0 ? 1: Math.min(numTasks, clusterSlots);
   }
 
   @Override
@@ -283,14 +288,14 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
           continue;
         }
 
-        List<String> workerHosts = response.getAllocatedWorksList();
+        List<TajoMasterProtocol.WorkerAllocatedResource> workerHosts = response.getWorkerAllocatedResourceList();
         ExecutionBlockId executionBlockId = event.getExecutionBlockId();
 
         List<Container> containers = new ArrayList<Container>();
-        for(String eachWorker: workerHosts) {
+        for(TajoMasterProtocol.WorkerAllocatedResource eachWorker: workerHosts) {
           TajoWorkerContainer container = new TajoWorkerContainer();
           NodeIdPBImpl nodeId = new NodeIdPBImpl();
-          String[] tokens = eachWorker.split(":");
+          String[] tokens = eachWorker.getWorkerHostAndPort().split(":");
 
           nodeId.setHost(tokens[0]);
           nodeId.setPort(Integer.parseInt(tokens[1]));
@@ -306,7 +311,8 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
 
           WorkerResource workerResource = new WorkerResource();
           workerResource.setAllocatedHost(nodeId.getHost());
-          workerResource.setPorts(new int[]{nodeId.getPort()});
+          workerResource.setManagerPort(nodeId.getPort());
+          workerResource.setPullServerPort(eachWorker.getWorkerPullServerPort());
           workerResource.setMemoryMBSlots(requiredMemoryMBSlot);
           workerResource.setDiskSlots(requiredDiskSlots);
 

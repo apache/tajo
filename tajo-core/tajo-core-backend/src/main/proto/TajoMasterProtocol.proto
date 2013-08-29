@@ -56,6 +56,7 @@ message TajoHeartbeat {
   optional QueryIdProto queryId = 5;
   optional QueryState state = 6;
   optional string statusMessage = 7;
+  optional int32 tajoWorkerPullServerPort = 8;
 }
 
 message TajoHeartbeatResponse {
@@ -64,7 +65,9 @@ message TajoHeartbeatResponse {
       repeated string params = 2;
   }
   required BoolProto heartbeatResult = 1;
-  optional ResponseCommand responseCommand = 3;
+  required int32 numClusterNodes = 2;
+  required int32 numClusterSlots = 3;
+  optional ResponseCommand responseCommand = 4;
 }
 
 message WorkerResourceAllocationRequest {
@@ -85,9 +88,14 @@ message WorkerResourceReleaseRequest {
     repeated WorkerResourceProto workerResources = 1;
 }
 
+message WorkerAllocatedResource {
+    required string workerHostAndPort = 1;
+    required int32 workerPullServerPort = 2;
+}
+
 message WorkerResourceAllocationResponse {
     required ExecutionBlockIdProto executionBlockId = 1;
-    repeated string allocatedWorks = 2;
+    repeated WorkerAllocatedResource workerAllocatedResource = 2;
 }
 
 service TajoMasterProtocolService {

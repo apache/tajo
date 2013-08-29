@@ -25,7 +25,9 @@ public class WorkerResource {
   private static final Log LOG = LogFactory.getLog(WorkerResource.class);
 
   private String allocatedHost;
-  private int[] ports;
+  private int managerPort;
+  private int clientPort;
+  private int pullServerPort;
 
   private int diskSlots;
   private int cpuCoreSlots;
@@ -42,11 +44,12 @@ public class WorkerResource {
   private long lastHeartbeat;
 
   public String getId() {
-    if(ports.length > 0) {
-      return allocatedHost + ":" + ports[0];
-    } else {
-      return allocatedHost;
-    }
+    return allocatedHost + ":" + managerPort;
+  }
+
+  public void copyId(WorkerResource workerResource) {
+    managerPort = workerResource.getManagerPort();
+    allocatedHost = workerResource.getAllocatedHost();
   }
 
   public String getAllocatedHost() {
@@ -55,14 +58,6 @@ public class WorkerResource {
 
   public void setAllocatedHost(String allocatedHost) {
     this.allocatedHost = allocatedHost;
-  }
-
-  public int[] getPorts() {
-    return ports;
-  }
-
-  public void setPorts(int[] ports) {
-    this.ports = ports;
   }
 
   public void addUsedDiskSlots(int diskSlots) {
@@ -115,18 +110,8 @@ public class WorkerResource {
         ", used=" + usedMemoryMBSlots + ":" + usedCpuCoreSlots + ":" + usedDiskSlots;
   }
 
-  private String portsToStr() {
-    if(ports == null) {
-      return "null";
-    }
-    String result = "";
-    String prefix = "";
-    for(int i = 0; i < ports.length; i++) {
-      result += prefix + ports[i];
-      prefix = ",";
-    }
-
-    return result;
+  public String portsToStr() {
+    return managerPort + "," + clientPort + "," + pullServerPort;
   }
 
   public void setLastHeartbeat(long heartbeatTime) {
@@ -182,13 +167,51 @@ public class WorkerResource {
         queryMasterAllocated = false;
     }
 
-    usedMemoryMBSlots -= workerResource.memoryMBSlots;
-    usedDiskSlots -= workerResource.diskSlots;
+    usedMemoryMBSlots = usedMemoryMBSlots - workerResource.memoryMBSlots;
+    //usedDiskSlots = usedDiskSlots - workerResource.diskSlots;
 
     if(usedMemoryMBSlots < 0 || usedDiskSlots < 0 || usedCpuCoreSlots < 0) {
-//      LOG.warn("Used resources can't be a minus.");
-      LOG.trace("Used resources can't be a minus.");
+      LOG.warn("Used resources can't be a minus.");
       LOG.warn(this + " ==> " + workerResource);
     }
+  }
+
+  public int getSlots() {
+    //TODO what is slot? 512MB = 1slot?
+    return memoryMBSlots/512;
+  }
+
+  public int getAvaliableSlots() {
+    //TODO what is slot? 512MB = 1slot?
+    return getAvailableMemoryMBSlots()/512;
+  }
+
+  public int getUsedSlots() {
+    //TODO what is slot? 512MB = 1slot?
+    return usedMemoryMBSlots/512;
+  }
+
+  public int getManagerPort() {
+    return managerPort;
+  }
+
+  public void setManagerPort(int managerPort) {
+    this.managerPort = managerPort;
+  }
+
+  public int getClientPort() {
+    return clientPort;
+  }
+
+  public void setClientPort(int clientPort) {
+    this.clientPort = clientPort;
+  }
+
+  public int getPullServerPort() {
+    return pullServerPort;
+  }
+
+  public void setPullServerPort(int pullServerPort) {
+    this.pullServerPort = pullServerPort;
   }
 }

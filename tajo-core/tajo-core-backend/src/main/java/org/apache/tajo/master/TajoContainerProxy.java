@@ -47,9 +47,14 @@ public class TajoContainerProxy extends ContainerProxy {
   @Override
   public void launch(ContainerLaunchContext containerLaunchContext) {
     context.getResourceAllocator().addContainer(containerID, this);
+
     this.hostName = container.getNodeId().getHost();
-    this.port = context.getQueryMasterContext().getWorkerContext().getPullService().getPort();
+    //this.port = context.getQueryMasterContext().getWorkerContext().getPullService().getPort();
+    this.port = ((TajoWorkerContainer)container).getWorkerResource().getPullServerPort();
     this.state = ContainerState.RUNNING;
+
+    LOG.info("=======>Launch Container:" + executionBlockId + "," + containerID.getId() + "," +
+        container.getId() + "," + container.getNodeId() + ", pullServer=" + port);
 
     assignExecutionBlock(executionBlockId, container);
 

@@ -33,7 +33,7 @@ import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryMaster;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.pullserver.TajoPullServerService;
-import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.rpc.CallFuture2;
 import org.apache.tajo.rpc.ProtoAsyncRpcClient;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.TajoIdUtils;
@@ -45,7 +45,10 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TajoWorker extends CompositeService {
   public static PrimitiveProtos.BoolProto TRUE_PROTO = PrimitiveProtos.BoolProto.newBuilder().setValue(true).build();
@@ -77,6 +80,10 @@ public class TajoWorker extends CompositeService {
   private WorkerHeartbeatThread workerHeartbeatThread;
 
   private AtomicBoolean stopped = new AtomicBoolean(false);
+
+  private AtomicInteger numClusterNodes = new AtomicInteger();
+
+  private AtomicInteger numClusterSlots = new AtomicInteger();
 
   public TajoWorker(String daemonMode) throws Exception {
     super(TajoWorker.class.getName());
@@ -214,6 +221,22 @@ public class TajoWorker extends CompositeService {
     public boolean isStandbyMode() {
       return !"qm".equals(daemonMode) && !"tr".equals(daemonMode);
     }
+
+    public void setNumClusterNodes(int numClusterNodes) {
+      TajoWorker.this.numClusterNodes.set(numClusterNodes);
+    }
+
+    public int getNumClusterNodes() {
+      return TajoWorker.this.numClusterNodes.get();
+    }
+
+    public void setNumClusterSlots(int numClusterSlots) {
+      TajoWorker.this.numClusterSlots.set(numClusterSlots);
+    }
+
+    public int getNumClusterSlots() {
+      return TajoWorker.this.numClusterSlots.get();
+    }
   }
 
   public void stopWorkerForce() {
@@ -225,14 +248,7 @@ public class TajoWorker extends CompositeService {
       //QueryMaster mode
       String tajoMasterAddress = params[2];
 
-      LOG.info("Init TajoMaster connection to:" + tajoMasterAddress);
-      InetSocketAddress addr = NetUtils.createSocketAddr(tajoMasterAddress);
-      try {
-        tajoMasterRpc = new ProtoAsyncRpcClient(TajoMasterProtocol.class, addr);
-        tajoMasterRpcClient = tajoMasterRpc.getStub();
-      } catch (Exception e) {
-        LOG.error("Can't connect to TajoMaster[" + addr + "], " + e.getMessage(), e);
-      }
+      connectToTajoMaster(tajoMasterAddress);
 
       QueryId queryId = TajoIdUtils.parseQueryId(params[1]);
       tajoWorkerManagerService.getQueryMaster().reportQueryStatusToQueryMaster(
@@ -242,17 +258,28 @@ public class TajoWorker extends CompositeService {
       taskRunnerManager.startTask(params);
     } else {
       //Standby mode
-      String tajoMasterAddress = tajoConf.get("tajo.master.manager.addr");
-      LOG.info("Init TajoMaster connection to:" + tajoMasterAddress);
-      InetSocketAddress addr = NetUtils.createSocketAddr(tajoMasterAddress);
+      connectToTajoMaster(tajoConf.get("tajo.master.manager.addr"));
+      workerHeartbeatThread = new WorkerHeartbeatThread();
+      workerHeartbeatThread.start();
+    }
+  }
+
+  private void connectToTajoMaster(String tajoMasterAddress) {
+    LOG.info("Init TajoMaster connection to:" + tajoMasterAddress);
+    InetSocketAddress addr = NetUtils.createSocketAddr(tajoMasterAddress);
+    while(true) {
       try {
         tajoMasterRpc = new ProtoAsyncRpcClient(TajoMasterProtocol.class, addr);
         tajoMasterRpcClient = tajoMasterRpc.getStub();
+        break;
       } catch (Exception e) {
         LOG.error("Can't connect to TajoMaster[" + addr + "], " + e.getMessage(), e);
       }
-      workerHeartbeatThread = new WorkerHeartbeatThread();
-      workerHeartbeatThread.start();
+
+      try {
+        Thread.sleep(3000);
+      } catch (InterruptedException e) {
+      }
     }
   }
 
@@ -302,8 +329,15 @@ public class TajoWorker extends CompositeService {
     }
 
     public void run() {
+      CallFuture2<TajoMasterProtocol.TajoHeartbeatResponse> callBack =
+          new CallFuture2<TajoMasterProtocol.TajoHeartbeatResponse>();
       LOG.info("Worker Resource Heartbeat Thread start.");
       int sendDiskInfoCount = 0;
+      int pullServerPort = 0;
+      if(pullService != null) {
+        pullServerPort = pullService.getPort();
+      }
+
       while(true) {
         if(sendDiskInfoCount == 0 && mountPaths != null) {
           for(File eachFile: mountPaths) {
@@ -323,14 +357,33 @@ public class TajoWorker extends CompositeService {
             .setDiskSlots(workerDiskSlots)
             .build();
 
+
         TajoMasterProtocol.TajoHeartbeat heartbeatProto = TajoMasterProtocol.TajoHeartbeat.newBuilder()
             .setTajoWorkerHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName())
             .setTajoWorkerPort(workerContext.getTajoWorkerManagerService().getBindAddr().getPort())
             .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
+            .setTajoWorkerPullServerPort(pullServerPort)
             .setServerStatus(serverStatus)
             .build();
 
-        workerContext.getTajoMasterRpcClient().heartbeat(null, heartbeatProto, NullCallback.get());
+        workerContext.getTajoMasterRpcClient().heartbeat(null, heartbeatProto, callBack);
+
+        try {
+          TajoMasterProtocol.TajoHeartbeatResponse response = callBack.get(2, TimeUnit.SECONDS);
+          if(response != null) {
+            if(response.getNumClusterNodes() > 0) {
+              workerContext.setNumClusterNodes(response.getNumClusterNodes());
+            }
+
+            if(response.getNumClusterSlots() > 0) {
+              workerContext.setNumClusterSlots(response.getNumClusterSlots());
+            }
+          }
+        } catch (InterruptedException e) {
+          break;
+        } catch (TimeoutException e) {
+        }
+
         try {
           Thread.sleep(10 * 1000);
         } catch (InterruptedException e) {
