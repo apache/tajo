@@ -185,7 +185,7 @@ public class TestStorages {
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
     schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR);
+    schema.addColumn("col3", Type.CHAR, 7);
     schema.addColumn("col4", Type.INT2);
     schema.addColumn("col5", Type.INT4);
     schema.addColumn("col6", Type.INT8);
@@ -206,7 +206,7 @@ public class TestStorages {
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createBit((byte) 0x99),
-        DatumFactory.createChar('7'),
+        DatumFactory.createChar("hyunsik"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
         DatumFactory.createInt8(23l),
@@ -225,9 +225,12 @@ public class TestStorages {
     Fragment fragment = new Fragment("table", tablePath, meta, 0, status.getLen());
     Scanner scanner =  StorageManager.getScanner(conf, meta, fragment);
     scanner.init();
-    Tuple retrieved = scanner.next();
-    for (int i = 0; i < tuple.size(); i++) {
-      assertEquals(tuple.get(i), retrieved.get(i));
+
+    Tuple retrieved;
+    while ((retrieved=scanner.next()) != null) {
+      for (int i = 0; i < tuple.size(); i++) {
+        assertEquals(tuple.get(i), retrieved.get(i));
+      }
     }
   }
 }

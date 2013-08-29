@@ -21,72 +21,96 @@ package org.apache.tajo.datum;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 
+import java.util.Arrays;
+
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CharDatum extends Datum {
-  private static final int size = 1;
-  @Expose char val;
+  @Expose private int size;
+  @Expose private byte[] bytes;
+  private String chars = null;
 
 	public CharDatum() {
 		super(Type.CHAR);
 	}
 
 	public CharDatum(byte val) {
-		this();
-		this.val = (char)val;
+    this();
+    this.size = 1;
+    bytes = new byte[size];
+    bytes[0] = val;
 	}
 
-  public CharDatum(byte [] bytes) {
-    this(bytes[0]);
+  public CharDatum(char val) {
+    this((byte)val);
   }
 
-	public CharDatum(char val) {
-	  this();
-	  this.val = val;
-	}
+  public CharDatum(byte [] bytes) {
+    this();
+    this.bytes = bytes;
+    this.size = bytes.length;
+  }
+
+  public CharDatum(String val) {
+    this(val.getBytes());
+  }
+
+  private String getString() {
+    if (chars == null) {
+      chars = new String(bytes);
+    }
+    return chars;
+  }
 
   @Override
   public char asChar() {
-    return val;
+    return getString().charAt(0);
+  }
+
+  @Override
+  public short asInt2() {
+    return Short.valueOf(getString());
   }
 
   @Override
 	public int asInt4() {
-		return val;
+		return Integer.valueOf(getString());
 	}
 
   @Override
 	public long asInt8() {
-		return val;
-	}
-
-  @Override
-	public byte asByte() {
-		return (byte)val;
+		return Long.valueOf(getString());
 	}
 
   @Override
 	public byte[] asByteArray() {
-		byte [] bytes = new byte[1];
-    bytes[0] = (byte) val;
 		return bytes;
 	}
 
   @Override
 	public float asFloat4() {
-		return val;
+    return Float.valueOf(getString());
 	}
 
   @Override
 	public double asFloat8() {
-		return val;
+		return Double.valueOf(getString());
 	}
 
   @Override
+  public byte asByte() {
+    return bytes[0];
+  }
+
+  @Override
 	public String asChars() {
-		return String.valueOf(val);
+		return getString();
 	}
 
+  /**
+   * Return the real length of the string
+   * @return the length of the string
+   */
   @Override
   public int size() {
     return size;
@@ -94,14 +118,15 @@ public class CharDatum extends Datum {
   
   @Override
   public int hashCode() {
-    return val;
+    return getString().hashCode();
   }
 
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof CharDatum) {
       CharDatum other = (CharDatum) obj;
-      return val == other.val;
+      return this.size == other.size &&
+          Arrays.equals(this.bytes, other.bytes);
     }
     
     return false;
@@ -111,7 +136,7 @@ public class CharDatum extends Datum {
   public BooleanDatum equalsTo(Datum datum) {
     switch (datum.type()) {
     case CHAR:
-      return DatumFactory.createBool(this.val == (((CharDatum) datum).val));
+      return DatumFactory.createBool(this.equals(datum));
     default:
       throw new InvalidOperationException(datum.type());
     }
@@ -121,13 +146,8 @@ public class CharDatum extends Datum {
   public int compareTo(Datum datum) {
     switch (datum.type()) {
       case CHAR:
-      if (val < datum.asChar()) {
-        return -1;
-      } else if (val > datum.asChar()) {
-        return 1;
-      } else {
-        return 0;
-      }
+        CharDatum other = (CharDatum) datum;
+        return this.getString().compareTo(other.getString());
     default:
       throw new InvalidOperationException(datum.type());
     }

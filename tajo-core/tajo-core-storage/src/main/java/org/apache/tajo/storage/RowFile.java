@@ -211,8 +211,11 @@ public class RowFile {
               break;
 
             case CHAR :
-              datum = DatumFactory.createChar(buffer.getChar());
-              tuple.put(i, datum);
+              int realLen = buffer.getInt();
+              byte[] buf = new byte[col.getDataType().getLength()];
+              buffer.get(buf);
+              byte[] charBuf = Arrays.copyOf(buf, realLen);
+              tuple.put(i, DatumFactory.createChar(charBuf));
               break;
 
             case INT2 :
@@ -401,74 +404,51 @@ public class RowFile {
           col = schema.getColumn(i);
           switch (col.getDataType().getType()) {
             case BOOLEAN:
-//              out.writeBoolean(t.getByte(i).asBool());
               buffer.put(t.getBoolean(i).asByte());
               break;
             case BIT:
-//              out.writeByte(t.getByte(i).asByte());
               buffer.put(t.getByte(i).asByte());
               break;
             case CHAR:
-//              out.writeChar(t.getChar(i).asChar());
-              buffer.putChar(t.getChar(i).asChar());
+              byte[] src = t.getChar(i).asByteArray();
+              byte[] dst = Arrays.copyOf(src, col.getDataType().getLength());
+              buffer.putInt(src.length);
+              buffer.put(dst);
               break;
-//            case TEXT:
-//              byte[] buf = t.getString(i).asByteArray();
-//              if (buf.length > 256) {
-//                buf = new byte[256];
-//                byte[] str = t.getString(i).asByteArray();
-//                System.arraycopy(str, 0, buf, 0, 256);
-//              }
-////              out.writeShort(buf.length);
-////              out.write(buf, 0, buf.length);
-//              buffer.putShort((short)buf.length);
-//              buffer.put(buf, 0, buf.length);
-//              break;
             case TEXT:
               byte [] strbytes = t.getText(i).asByteArray();
               buffer.putShort((short)strbytes.length);
               buffer.put(strbytes, 0, strbytes.length);
               break;
             case INT2:
-//              out.writeShort(t.getShort(i).asShort());
               buffer.putShort(t.getShort(i).asInt2());
               break;
             case INT4:
-//              out.writeInt(t.getInt(i).asInt());
               buffer.putInt(t.getInt(i).asInt4());
               break;
             case INT8:
-//              out.writeLong(t.getLong(i).asLong());
               buffer.putLong(t.getLong(i).asInt8());
               break;
             case FLOAT4:
-//              out.writeFloat(t.getFloat(i).asFloat());
               buffer.putFloat(t.getFloat(i).asFloat4());
               break;
             case FLOAT8:
-//              out.writeDouble(t.getDouble(i).asDouble());
               buffer.putDouble(t.getDouble(i).asFloat8());
               break;
             case BLOB:
               byte [] bytes = t.getBytes(i).asByteArray();
-//              out.writeInt(bytes.length);
-//              out.write(bytes);
               buffer.putShort((short)bytes.length);
               buffer.put(bytes);
               break;
             case INET4:
-//              out.write(t.getIPv4Bytes(i));
               buffer.put(t.getIPv4Bytes(i));
               break;
             case INET6:
-//              out.write(t.getIPv6Bytes(i));
               buffer.put(t.getIPv6Bytes(i));
             case ARRAY: {
               ArrayDatum array = (ArrayDatum) t.get(i);
               String json = array.toJson();
               byte [] byteArray = json.getBytes();
-//              out.writeInt(byteArray.length);
-//              out.write(byteArray);
               buffer.putShort((short)byteArray.length);
               buffer.put(byteArray);
               break;

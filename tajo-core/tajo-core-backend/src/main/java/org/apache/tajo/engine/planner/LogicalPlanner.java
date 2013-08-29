@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
+import org.apache.tajo.algebra.CreateTable.ColumnDefinition;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.function.AggFunction;
 import org.apache.tajo.catalog.function.GeneralFunction;
@@ -785,14 +786,42 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private Schema convertTableElementsSchema(CreateTable.ColumnDefinition [] elements) {
     Schema schema = new Schema();
 
-    Column column;
     for (CreateTable.ColumnDefinition columnDefinition: elements) {
-      column = new Column(columnDefinition.getColumnName(),
-          TajoDataTypes.Type.valueOf(columnDefinition.getDataType()));
-      schema.addColumn(column);
+      schema.addColumn(convertColumn(columnDefinition));
     }
 
     return schema;
+  }
+
+  private Column convertColumn(ColumnDefinition columnDefinition) {
+    TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(columnDefinition.getDataType());
+    Column column;
+    switch (type) {
+      case CHAR:
+      case VARCHAR:
+      case NCHAR:
+      case NVARCHAR:
+        column = new Column(columnDefinition.getColumnName(),
+            TajoDataTypes.Type.valueOf(columnDefinition.getDataType()),
+            columnDefinition.getLengthOrPrecision());
+        break;
+      case FLOAT4:
+      case FLOAT8:
+        // TODO: support precision
+        column = new Column(columnDefinition.getColumnName(),
+            TajoDataTypes.Type.valueOf(columnDefinition.getDataType()));
+        break;
+      case NUMERIC:
+      case DECIMAL:
+        // TODO: support precision and scale
+        column = new Column(columnDefinition.getColumnName(),
+            TajoDataTypes.Type.valueOf(columnDefinition.getDataType()));
+        break;
+      default:
+        column = new Column(columnDefinition.getColumnName(),
+            TajoDataTypes.Type.valueOf(columnDefinition.getDataType()));
+    }
+    return column;
   }
 
   @Override

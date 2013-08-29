@@ -178,4 +178,8 @@ public class CatalogUtil {
     }
     return dataTypes;
   }
+
+  public static DataType newDataTypeWithLen(Type type, int length) {
+    return DataType.newBuilder().setType(type).setLength(length).build();
+  }
 }

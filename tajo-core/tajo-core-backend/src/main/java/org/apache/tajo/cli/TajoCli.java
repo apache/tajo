@@ -441,6 +441,9 @@ public class TajoCli {
     for(int i = 0; i < desc.getMeta().getSchema().getColumnNum(); i++) {
       Column col = desc.getMeta().getSchema().getColumn(i);
       sb.append(col.getColumnName()).append("\t").append(col.getDataType().getType());
+      if (col.getDataType().hasLength()) {
+        sb.append("(").append(col.getDataType().getLength()).append(")");
+      }
       sb.append("\n");
     }
     return sb.toString();

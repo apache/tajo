@@ -34,51 +34,53 @@ public class TestCharDatum {
 
 	@Test
 	public final void testAsInt() {
-		Datum d = DatumFactory.createChar((char)5);
+		Datum d = DatumFactory.createChar("5");
 		assertEquals(5,d.asInt4());
 	}
 	
 	@Test
 	public final void testAsLong() {
-		Datum d = DatumFactory.createChar((char)5);
+		Datum d = DatumFactory.createChar("5");
 		assertEquals(5l,d.asInt8());
 	}
 	
 	@Test
 	public final void testAsByte() {
 		Datum d = DatumFactory.createChar((char)5);
-		assertEquals(5,d.asInt8());
+		assertEquals(5,d.asByte());
 	}
 
 	@Test
 	public final void testAsFloat() {
-		Datum d = DatumFactory.createChar((char)5);
+		Datum d = DatumFactory.createChar("5");
 		assertTrue(5.0f == d.asFloat4());
 	}
 
 	@Test
 	public final void testAsDouble() {
-		Datum d = DatumFactory.createChar((char)5);
+		Datum d = DatumFactory.createChar("5");
 		assertTrue(5.0d == d.asFloat8());
 	}
 	
 	@Test
 	public final void testAsChars() {
-		Datum d = DatumFactory.createChar((char)5);
-		System.out.println(d.asChars());
+		Datum d = DatumFactory.createChar("1234567890");
+    assertEquals("1234567890", d.asChars());
 	}
 	
 	@Test
   public final void testSize() {
-    Datum d = DatumFactory.createChar((char) 1);
-    assertEquals(1, d.size());
+    Datum d = DatumFactory.createChar("1234567890".getBytes());
+    assertEquals(10, d.size());
+    d = DatumFactory.createChar("1234567890");
+    assertEquals(10, d.size());
   }
 
   @Test
   public final void testCompare() {
-    Datum a = DatumFactory.createChar('a');
-    Datum b = DatumFactory.createChar('b');
-    Datum c = DatumFactory.createChar('c');
+    Datum a = DatumFactory.createChar("abc");
+    Datum b = DatumFactory.createChar("abd");
+    Datum c = DatumFactory.createChar("ace");
 
     assertTrue(a.compareTo(b) < 0);
     assertTrue(b.compareTo(a) > 0);

@@ -3,6 +3,8 @@ Tajo Change Log
 Release 0.2.0 - unreleased
 
   NEW FEATURES
+
+    TAJO-59: Implement Char Datum Type. (jihoon)
    
     TAJO-96: Design and implement rewrite rule interface and the rewrite rule 
     engine. (hyunsik)

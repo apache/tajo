@@ -106,11 +106,11 @@ public class CSVFile {
                   .asByteArray(), false)));
               break;
             case CHAR:
-              sb.append(tuple.getChar(i));
+              CharDatum charDatum = tuple.getChar(i);
+              sb.append(charDatum);
+              byte[] pad = new byte[col.getDataType().getLength()-charDatum.size()];
+              sb.append(new String(pad));
               break;
-//          case STRING:
-//            sb.append(tuple.getString(i));
-//            break;
             case TEXT:
               TextDatum td = tuple.getText(i);
               sb.append(td.toString());
@@ -361,7 +361,8 @@ public class CSVFile {
                   tuple.put(tid, DatumFactory.createBit(Base64.decodeBase64(cell)[0]));
                   break;
                 case CHAR:
-                  tuple.put(tid, DatumFactory.createChar(cell.charAt(0)));
+                  String trimmed = cell.trim();
+                  tuple.put(tid, DatumFactory.createChar(trimmed));
                   break;
                 case BLOB:
                   tuple.put(tid, DatumFactory.createBlob(Base64.decodeBase64(cell)));

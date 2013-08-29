@@ -250,8 +250,9 @@ public class RCFileWrapper {
                   DatumFactory.createBit(column.get(tid).getBytesCopy()[0]));
               break;
             case CHAR:
+              byte[] buf = column.get(tid).getBytesCopy();
               tuple.put(tid,
-                  DatumFactory.createChar(column.get(tid).getBytesCopy()[0]));
+                  DatumFactory.createChar(buf));
               break;
 
             case INT2:

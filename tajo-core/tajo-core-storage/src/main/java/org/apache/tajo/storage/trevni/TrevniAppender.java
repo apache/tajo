@@ -89,7 +89,7 @@ public class TrevniAppender extends FileAppender {
       case BIT:
         return ValueType.INT;
       case CHAR:
-        return ValueType.INT;
+        return ValueType.STRING;
       case INT2:
         return ValueType.INT;
       case INT4:
@@ -134,7 +134,6 @@ public class TrevniAppender extends FileAppender {
         switch (col.getDataType().getType()) {
           case BOOLEAN:
           case BIT:
-          case CHAR:
           case INT2:
           case INT4:
             writer.writeValue(t.get(i).asInt4(), i);
@@ -148,6 +147,7 @@ public class TrevniAppender extends FileAppender {
           case FLOAT8:
             writer.writeValue(t.get(i).asFloat8(), i);
             break;
+          case CHAR:
           case TEXT:
             writer.writeValue(t.get(i).asChars(), i);
             break;

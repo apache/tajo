@@ -23,6 +23,8 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.Bytes;
 
+import java.io.UnsupportedEncodingException;
+
 public class DatumFactory {
 
   public static Datum create(DataType type, byte[] val) {
@@ -78,7 +80,7 @@ public class DatumFactory {
       case FLOAT8:
         return createFloat8(Bytes.toDouble(val));
       case CHAR:
-        return createChar(val[0]);
+        return createChar(val);
       case TEXT:
         return createText(val);
       case BIT:
@@ -131,12 +133,14 @@ public class DatumFactory {
     return new CharDatum(val);
   }
 
-  /*
-  public static CharDatum createChar(Integer val) {
+  public static CharDatum createChar(byte[] bytes) {
+    return new CharDatum(bytes);
+  }
+
+  public static CharDatum createChar(String val) {
     return new CharDatum(val);
   }
-  */
-	
+
 	public static Int2Datum createInt2(short val) {
 		return new Int2Datum(val);
 	}

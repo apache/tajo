@@ -93,8 +93,9 @@ public class TrevniScanner extends FileScanner {
               DatumFactory.createBit(((Integer) columns[i].nextValue()).byteValue()));
           break;
         case CHAR:
+          String str = (String) columns[i].nextValue();
           tuple.put(tid,
-              DatumFactory.createChar(((Integer)columns[i].nextValue()).byteValue()));
+              DatumFactory.createChar(str));
           break;
 
         case INT2:

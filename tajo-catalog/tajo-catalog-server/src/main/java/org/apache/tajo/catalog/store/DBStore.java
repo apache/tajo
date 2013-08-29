@@ -216,7 +216,7 @@ public class DBStore implements CatalogStore {
           + C_TABLE_ID + " VARCHAR(256) NOT NULL REFERENCES " + TB_TABLES + "("
           + C_TABLE_ID + ") ON DELETE CASCADE, "
           + "column_id INT NOT NULL,"
-          + "column_name VARCHAR(256) NOT NULL, " + "data_type CHAR(16), "
+          + "column_name VARCHAR(256) NOT NULL, " + "data_type CHAR(16), " + "type_length INTEGER, "
           + "CONSTRAINT C_COLUMN_ID UNIQUE (" + C_TABLE_ID + ", column_name))";
       if (LOG.isDebugEnabled()) {
         LOG.debug(columns_ddl);
@@ -439,13 +439,14 @@ public class DBStore implements CatalogStore {
       final int columnId, final Column col) {
     String sql =
         "INSERT INTO " + TB_COLUMNS 
-        + " (tid, " + C_TABLE_ID + ", column_id, column_name, data_type) "
+        + " (tid, " + C_TABLE_ID + ", column_id, column_name, data_type, type_length) "
         + "VALUES("
         + tid + ","
         + "'" + desc.getName() + "',"
         + columnId + ", "
         + "'" + col.getColumnName() + "',"
-        + "'" + col.getDataType().getType().name() + "'"
+        + "'" + col.getDataType().getType().name() + "',"
+        + (col.getDataType().hasLength() ? col.getDataType().getLength() : 0)
         + ")";
     
     return sql;
@@ -615,7 +616,7 @@ public class DBStore implements CatalogStore {
       
       Schema schema = null;
       try {
-        String sql = "SELECT column_name, data_type from " + TB_COLUMNS
+        String sql = "SELECT column_name, data_type, type_length from " + TB_COLUMNS
             + " WHERE " + C_TABLE_ID + "='" + name + "' ORDER by column_id asc";
 
         stmt = conn.createStatement();
@@ -630,7 +631,12 @@ public class DBStore implements CatalogStore {
               + res.getString("column_name").trim();
           Type dataType = getDataType(res.getString("data_type")
               .trim());
-          schema.addColumn(columnName, dataType);
+          int typeLength = res.getInt("type_length");
+          if (typeLength > 0) {
+            schema.addColumn(columnName, dataType, typeLength);
+          } else {
+            schema.addColumn(columnName, dataType);
+          }
         }
       } catch (SQLException se) {
         throw new IOException(se);

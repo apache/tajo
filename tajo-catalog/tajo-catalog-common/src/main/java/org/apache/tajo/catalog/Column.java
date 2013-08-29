@@ -45,6 +45,10 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
   public Column(String columnName, TajoDataTypes.Type type) {
     this(columnName, CatalogUtil.newDataTypeWithoutLen(type));
   }
+
+  public Column(String columnName, TajoDataTypes.Type type, int typeLength) {
+    this(columnName, CatalogUtil.newDataTypeWithLen(type, typeLength));
+  }
 	
 	public Column(ColumnProto proto) {
 		this(proto.getColumnName(), proto.getDataType());
