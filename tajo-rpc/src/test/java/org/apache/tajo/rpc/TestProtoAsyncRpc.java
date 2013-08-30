@@ -27,6 +27,7 @@ import org.apache.tajo.rpc.test.TestProtos.EchoMessage;
 import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolAsyncImpl;
+import org.apache.tajo.util.NetUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,7 +57,8 @@ public class TestProtoAsyncRpc {
     server = new ProtoAsyncRpcServer(DummyProtocol.class,
         service, new InetSocketAddress(0));
     server.start();
-    client = new ProtoAsyncRpcClient(DummyProtocol.class, server.getListenAddress());
+    client = new ProtoAsyncRpcClient(DummyProtocol.class,
+        NetUtils.getConnectAddress(server.getListenAddress()));
     stub = client.getStub();
   }
 

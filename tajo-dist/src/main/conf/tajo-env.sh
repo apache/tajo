@@ -53,5 +53,6 @@ export TAJO_OPTS=-XX:+PrintGCTimeStamps
 # export TAJO_NICENESS=10
 
 # Tajo Distributed Execution Mode
-export TAJO_WORKER_STANDBY_MODE=true
+# the default mode is on-demand mode using YarnTajoResourceManager.
+# export TAJO_WORKER_STANDBY_MODE=yes
 

@@ -42,19 +42,6 @@
     <description>ms</description>
   </property>
 
-
-
-  <property>
-    <name>tajo.master.clientservice.addr</name>
-    <value>127.0.0.1:9004</value>
-  </property>
-
-  <property>
-    <name>tajo.master.manager.addr</name>
-    <value>127.0.0.1:9005</value>
-    <description>rpc port for tajo worker</description>
-  </property>
-
   <property>
     <name>tajo.query.session.timeout</name>
     <value>60000</value>
@@ -63,7 +50,7 @@
 
   <property>
     <name>tajo.resource.manager</name>
-    <value>org.apache.tajo.master.rm.TajoWorkerResourceManager</value>
+    <value>org.apache.tajo.master.rm.YarnTajoResourceManager</value>
     <description>This can be org.apache.tajo.master.rm.TajoWorkerResourceManager or org.apache.tajo.master.rm.YarnTajoResourceManager</description>
   </property>
 

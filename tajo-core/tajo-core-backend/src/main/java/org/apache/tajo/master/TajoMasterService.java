@@ -58,7 +58,6 @@ public class TajoMasterService extends AbstractService {
 
   @Override
   public void start() {
-    // TODO resolve hostname
     String confMasterServiceAddr = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_SERVICE_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
     try {
@@ -67,7 +66,7 @@ public class TajoMasterService extends AbstractService {
       LOG.error(e);
     }
     server.start();
-    bindAddress = server.getListenAddress();
+    bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
     this.conf.setVar(TajoConf.ConfVars.TAJO_MASTER_SERVICE_ADDRESS,
         NetUtils.normalizeInetSocketAddress(bindAddress));
     LOG.info("Instantiated TajoMasterService at " + this.bindAddress);

@@ -90,7 +90,7 @@ public class TajoMasterClientService extends AbstractService {
       LOG.error(e);
     }
     server.start();
-    bindAddress = server.getListenAddress();
+    bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
     this.conf.setVar(ConfVars.CLIENT_SERVICE_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
     LOG.info("Instantiated TajoMasterClientService at " + this.bindAddress);
     super.start();

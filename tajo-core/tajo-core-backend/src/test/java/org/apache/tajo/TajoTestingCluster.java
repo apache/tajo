@@ -19,6 +19,7 @@
 package org.apache.tajo;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
 import com.google.common.io.Closeables;
 import com.google.common.io.Files;
 import org.apache.commons.logging.Log;
@@ -37,6 +38,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
+import org.apache.tajo.master.rm.YarnTajoResourceManager;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -79,6 +81,16 @@ public class TajoTestingCluster {
 
 	public TajoTestingCluster() {
     this.conf = new TajoConf();
+    if (System.getProperty("tajo.resource.manager") != null) {
+      String testResourceManager = System.getProperty("tajo.resource.manager");
+      Preconditions.checkState(
+          testResourceManager.equals(TajoWorkerResourceManager.class.getCanonicalName()) ||
+          testResourceManager.equals(YarnTajoResourceManager.class.getCanonicalName()),
+          "tajo.resource.manager must be either " + TajoWorkerResourceManager.class.getCanonicalName() + " or " +
+              YarnTajoResourceManager.class.getCanonicalName() +"."
+      );
+      this.conf.set("tajo.resource.manager", System.getProperty("tajo.resource.manager"));
+    }
     this.standbyWorkerMode =
         this.conf.get("tajo.resource.manager", TajoWorkerResourceManager.class.getCanonicalName())
             .indexOf(TajoWorkerResourceManager.class.getName()) >= 0;

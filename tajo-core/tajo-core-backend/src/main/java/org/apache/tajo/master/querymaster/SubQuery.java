@@ -626,7 +626,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
       final Resource resource = Records.newRecord(Resource.class);
 
-      resource.setMemory(512);
+      resource.setMemory(2048);
 
       LOG.info("Request Container for " + subQuery.getId() + " containers=" + numRequest);
 
