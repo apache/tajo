@@ -22,9 +22,10 @@ import org.apache.tajo.rpc.Callback;
 import org.apache.tajo.rpc.NettyRpc;
 import org.apache.tajo.rpc.NettyRpcServer;
 import org.apache.tajo.rpc.RemoteException;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 
 import java.net.InetSocketAddress;
+
+import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 
 public class BenchmarkAsyncRPC {
 

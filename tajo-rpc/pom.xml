@@ -86,7 +86,6 @@
                 <argument>src/main/proto/ProtoParamRpcProtos.proto</argument>
                 <argument>src/main/proto/ProtoParamRpcProtocol.proto</argument>
                 <argument>src/main/proto/DummyProtos.proto</argument>
-                <argument>src/main/proto/PrimitiveProtos.proto</argument>
                 <argument>src/main/proto/RpcProtos.proto</argument>
                 <argument>src/main/proto/TestProtos.proto</argument>
                 <argument>src/main/proto/TestProtocol.proto</argument>
@@ -126,6 +125,12 @@
   </build>
 
   <dependencies>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-common</artifactId>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>

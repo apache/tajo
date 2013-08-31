@@ -17,6 +17,10 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-94: Remove duplicate proto files. (hyunsik)
+
+    TAJO-141: Set on demand as the default cluster mode. (hyunsik)
+
     TAJO-136: Broadcast join should be enabled. (hyunsik)
 
     TAJO-127: Implement Tajo Resource Manager. (hyoungjunkim via hyunsik)

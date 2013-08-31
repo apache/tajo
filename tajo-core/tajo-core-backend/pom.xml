@@ -123,6 +123,8 @@
               <executable>protoc</executable>
               <arguments>
                 <argument>-Isrc/main/proto/</argument>
+                <argument>--proto_path=../../tajo-common/src/main/proto</argument>
+                <argument>--proto_path=../../tajo-catalog/tajo-catalog-common/src/main/proto</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
                 <argument>src/main/proto/tajo_protos.proto</argument>
                 <argument>src/main/proto/ClientProtos.proto</argument>
