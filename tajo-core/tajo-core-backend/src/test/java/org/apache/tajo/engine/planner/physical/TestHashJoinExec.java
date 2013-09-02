@@ -129,7 +129,7 @@ public class TestHashJoinExec {
   };
 
   @Test
-  public final void testInnerJoin() throws IOException {
+  public final void testHashInnerJoin() throws IOException {
     Fragment[] empFrags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Fragment[] peopleFrags = StorageManager.splitNG(conf, "people", people.getMeta(), people.getPath(),
@@ -137,7 +137,7 @@ public class TestHashJoinExec {
 
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testInnerJoin");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testHashInnerJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), merged, workDir);
     Expr expr = analyzer.parse(QUERIES[0]);
@@ -149,12 +149,12 @@ public class TestHashJoinExec {
     ProjectionExec proj = (ProjectionExec) exec;
     if (proj.getChild() instanceof MergeJoinExec) {
       MergeJoinExec join = (MergeJoinExec) proj.getChild();
-      ExternalSortExec sortout = (ExternalSortExec) join.getOuterChild();
-      ExternalSortExec sortin = (ExternalSortExec) join.getInnerChild();
+      ExternalSortExec sortout = (ExternalSortExec) join.getLeftChild();
+      ExternalSortExec sortin = (ExternalSortExec) join.getRightChild();
       SeqScanExec scanout = (SeqScanExec) sortout.getChild();
       SeqScanExec scanin = (SeqScanExec) sortin.getChild();
 
-      HashJoinExec hashjoin = new HashJoinExec(ctx, join.getJoinNode(), scanout, scanin);
+      HashJoinExec hashjoin = new HashJoinExec(ctx, join.getPlan(), scanout, scanin);
       proj.setChild(hashjoin);
 
       exec = proj;

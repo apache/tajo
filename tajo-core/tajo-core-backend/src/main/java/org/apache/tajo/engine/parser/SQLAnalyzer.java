@@ -299,7 +299,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Join visitJoined_table_primary(SQLParser.Joined_table_primaryContext ctx) {
     Join join;
     if (ctx.CROSS() != null) {
-      join = new Join(JoinType.CROSS_JOIN);
+      join = new Join(JoinType.CROSS);
     } else if (ctx.UNION() != null) {
       join = new Join(JoinType.UNION);
     } else { // qualified join or natural

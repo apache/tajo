@@ -150,8 +150,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
                                      PhysicalExec outer, PhysicalExec inner)
       throws IOException {
     switch (joinNode.getJoinType()) {
-      case CROSS_JOIN:
-        LOG.info("The planner chooses NLJoinExec");
+      case CROSS:
+        LOG.info("The planner chooses [Nested Loop Join]");
         return new NLJoinExec(ctx, joinNode, outer, inner);
 
       case INNER:
@@ -180,7 +180,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
             selectedOuter = outer;
           }
 
-          LOG.info("The planner chooses HashJoinExec");
+          LOG.info("The planner chooses [InMemory Hash Join]");
           return new HashJoinExec(ctx, joinNode, selectedOuter, selectedInner);
         }
 
@@ -194,7 +194,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
             new SortNode(sortSpecs[1], inner.getSchema(), inner.getSchema()),
             inner);
 
-        LOG.info("The planner chooses MergeJoinExec");
+        LOG.info("The planner chooses [Merge Join]");
         return new MergeJoinExec(ctx, joinNode, outerSort, innerSort,
             sortSpecs[0], sortSpecs[1]);
     }
@@ -243,7 +243,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
                                         GroupbyNode groupbyNode, PhysicalExec subOp) throws IOException {
     Column[] grpColumns = groupbyNode.getGroupingColumns();
     if (grpColumns.length == 0) {
-      LOG.info("The planner chooses HashAggregationExec");
+      LOG.info("The planner chooses [Hash Aggregation]");
       return new HashAggregateExec(ctx, groupbyNode, subOp);
     } else {
       String [] outerLineage = PlannerUtil.getLineage(groupbyNode.getChild());
@@ -253,7 +253,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       // if the relation size is less than the reshold,
       // the hash aggregation will be used.
       if (estimatedSize <= threshold) {
-        LOG.info("The planner chooses HashAggregationExec");
+        LOG.info("The planner chooses [Hash Aggregation]");
         return new HashAggregateExec(ctx, groupbyNode, subOp);
       } else {
         SortSpec[] specs = new SortSpec[grpColumns.length];
@@ -266,7 +266,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         // SortExec sortExec = new SortExec(sortNode, child);
         ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode,
             subOp);
-        LOG.info("The planner chooses SortAggregationExec");
+        LOG.info("The planner chooses [Sort Aggregation]");
         return new SortAggregateExec(ctx, groupbyNode, sortExec);
       }
     }

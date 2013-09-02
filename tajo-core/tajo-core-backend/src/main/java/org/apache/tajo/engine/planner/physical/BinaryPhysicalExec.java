@@ -24,40 +24,40 @@ import org.apache.tajo.catalog.Schema;
 import java.io.IOException;
 
 public abstract class BinaryPhysicalExec extends PhysicalExec {
-  protected final PhysicalExec outerChild;
-  protected final PhysicalExec innerChild;
+  protected final PhysicalExec leftChild;
+  protected final PhysicalExec rightChild;
 
   public BinaryPhysicalExec(final TaskAttemptContext context,
                             final Schema inSchema, final Schema outSchema,
                             final PhysicalExec outer, final PhysicalExec inner) {
     super(context, inSchema, outSchema);
-    this.outerChild = outer;
-    this.innerChild = inner;
+    this.leftChild = outer;
+    this.rightChild = inner;
   }
 
-  public PhysicalExec getOuterChild() {
-    return outerChild;
+  public PhysicalExec getLeftChild() {
+    return leftChild;
   }
 
-  public PhysicalExec getInnerChild() {
-    return innerChild;
+  public PhysicalExec getRightChild() {
+    return rightChild;
   }
 
   @Override
   public void init() throws IOException {
-    outerChild.init();
-    innerChild.init();
+    leftChild.init();
+    rightChild.init();
   }
 
   @Override
   public void rescan() throws IOException {
-    outerChild.rescan();
-    innerChild.rescan();
+    leftChild.rescan();
+    rightChild.rescan();
   }
 
   @Override
   public void close() throws IOException {
-    outerChild.close();
-    innerChild.close();
+    leftChild.close();
+    rightChild.close();
   }
 }

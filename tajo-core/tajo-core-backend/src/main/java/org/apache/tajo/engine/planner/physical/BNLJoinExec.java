@@ -84,7 +84,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
 
     if (outerTupleSlots.isEmpty()) {
       for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
-        Tuple t = outerChild.next();
+        Tuple t = leftChild.next();
         if (t == null) {
           outerEnd = true;
           break;
@@ -97,7 +97,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
 
     if (innerTupleSlots.isEmpty()) {
       for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
-        Tuple t = innerChild.next();
+        Tuple t = rightChild.next();
         if (t == null) {
           innerEnd = true;
           break;
@@ -107,7 +107,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
       innerIterator = innerTupleSlots.iterator();
     }
 
-    if((innext = innerChild.next()) == null){
+    if((innext = rightChild.next()) == null){
       innerEnd = true;
     }
 
@@ -118,7 +118,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
           innerIterator = innerTupleSlots.iterator();
         } else {
           if (innerEnd) {
-            innerChild.rescan();
+            rightChild.rescan();
             innerEnd = false;
             
             if (outerEnd) {
@@ -126,7 +126,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
             }
             outerTupleSlots.clear();
             for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
-              Tuple t = outerChild.next();
+              Tuple t = leftChild.next();
               if (t == null) {
                 outerEnd = true;
                 break;
@@ -148,7 +148,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
           if (innext != null) {
             innerTupleSlots.add(innext);
             for (int k = 1; k < TUPLE_SLOT_SIZE; k++) { // fill inner
-              Tuple t = innerChild.next();
+              Tuple t = rightChild.next();
               if (t == null) {
                 innerEnd = true;
                 break;
@@ -157,7 +157,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
             }
           } else {
             for (int k = 0; k < TUPLE_SLOT_SIZE; k++) { // fill inner
-              Tuple t = innerChild.next();
+              Tuple t = rightChild.next();
               if (t == null) {
                 innerEnd = true;
                 break;
@@ -166,7 +166,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
             }
           }
           
-          if ((innext = innerChild.next()) == null) {
+          if ((innext = rightChild.next()) == null) {
             innerEnd = true;
           }
           innerIterator = innerTupleSlots.iterator();

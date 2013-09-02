@@ -115,7 +115,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
       } else {
         joinNode.setJoinQual(qual);
       }
-      if (joinNode.getJoinType() == JoinType.CROSS_JOIN) {
+      if (joinNode.getJoinType() == JoinType.CROSS) {
         joinNode.setJoinType(JoinType.INNER);
       }
       cnf.removeAll(matched);

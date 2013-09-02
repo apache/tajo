@@ -19,10 +19,14 @@
 package org.apache.tajo.algebra;
 
 public enum JoinType {
-  CROSS_JOIN,
+  CROSS,
   INNER,
   LEFT_OUTER,
   RIGHT_OUTER,
   FULL_OUTER,
-  UNION
+  UNION,
+  LEFT_ANTI,
+  RIGHT_ANTI,
+  LEFT_SEMI,
+  RIGHT_SEMI
 }

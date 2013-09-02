@@ -245,7 +245,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private static LogicalNode createCatasianProduct(LogicalNode left, LogicalNode right) {
-    JoinNode join = new JoinNode(JoinType.CROSS_JOIN, left, right);
+    JoinNode join = new JoinNode(JoinType.CROSS, left, right);
     Schema joinSchema = SchemaUtil.merge(
         join.getLeftChild().getOutSchema(),
         join.getRightChild().getOutSchema());

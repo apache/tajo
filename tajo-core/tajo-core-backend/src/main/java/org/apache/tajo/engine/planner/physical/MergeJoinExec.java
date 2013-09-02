@@ -96,7 +96,7 @@ public class MergeJoinExec extends BinaryPhysicalExec {
     outTuple = new VTuple(outSchema.getColumnNum());
   }
 
-  public JoinNode getJoinNode(){
+  public JoinNode getPlan(){
     return this.joinNode;
   }
 
@@ -110,10 +110,10 @@ public class MergeJoinExec extends BinaryPhysicalExec {
         }
 
         if(outerTuple == null){
-          outerTuple = outerChild.next();
+          outerTuple = leftChild.next();
         }
         if(innerTuple == null){
-          innerTuple = innerChild.next();
+          innerTuple = rightChild.next();
         }
 
         outerTupleSlots.clear();
@@ -122,9 +122,9 @@ public class MergeJoinExec extends BinaryPhysicalExec {
         int cmp;
         while ((cmp = joincomparator.compare(outerTuple, innerTuple)) != 0) {
           if (cmp > 0) {
-            innerTuple = innerChild.next();
+            innerTuple = rightChild.next();
           } else if (cmp < 0) {
-            outerTuple = outerChild.next();
+            outerTuple = leftChild.next();
           }
           if (innerTuple == null || outerTuple == null) {
             return null;
@@ -134,7 +134,7 @@ public class MergeJoinExec extends BinaryPhysicalExec {
         previous = outerTuple;
         do {
           outerTupleSlots.add(outerTuple);
-          outerTuple = outerChild.next();
+          outerTuple = leftChild.next();
           if (outerTuple == null) {
             end = true;
             break;
@@ -146,7 +146,7 @@ public class MergeJoinExec extends BinaryPhysicalExec {
         previous = innerTuple;
         do {
           innerTupleSlots.add(innerTuple);
-          innerTuple = innerChild.next();
+          innerTuple = rightChild.next();
           if (innerTuple == null) {
             end = true;
             break;

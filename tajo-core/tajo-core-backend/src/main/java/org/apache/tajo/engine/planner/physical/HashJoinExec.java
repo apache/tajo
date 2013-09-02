@@ -35,30 +35,30 @@ import java.util.*;
 
 public class HashJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  private JoinNode plan;
-  private EvalNode joinQual;
+  protected JoinNode plan;
+  protected EvalNode joinQual;
 
-  private List<Column[]> joinKeyPairs;
+  protected List<Column[]> joinKeyPairs;
 
   // temporal tuples and states for nested loop join
-  private boolean first = true;
-  private FrameTuple frameTuple;
-  private Tuple outTuple = null;
-  private Map<Tuple, List<Tuple>> tupleSlots;
-  private Iterator<Tuple> iterator = null;
-  private EvalContext qualCtx;
-  private Tuple outerTuple;
-  private Tuple outerKeyTuple;
+  protected boolean first = true;
+  protected FrameTuple frameTuple;
+  protected Tuple outTuple = null;
+  protected Map<Tuple, List<Tuple>> tupleSlots;
+  protected Iterator<Tuple> iterator = null;
+  protected EvalContext qualCtx;
+  protected Tuple leftTuple;
+  protected Tuple leftKeyTuple;
 
-  private int [] outerKeyList;
-  private int [] innerKeyList;
+  protected int [] leftKeyList;
+  protected int [] rightKeyList;
 
-  private boolean finished = false;
-  boolean nextOuter = true;
+  protected boolean finished = false;
+  protected boolean shouldGetLeftTuple = true;
 
   // projection
-  private final Projector projector;
-  private final EvalContext [] evalContexts;
+  protected final Projector projector;
+  protected final EvalContext [] evalContexts;
 
   public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner) {
@@ -72,15 +72,15 @@ public class HashJoinExec extends BinaryPhysicalExec {
     this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual,
         outer.getSchema(), inner.getSchema());
 
-    outerKeyList = new int[joinKeyPairs.size()];
-    innerKeyList = new int[joinKeyPairs.size()];
+    leftKeyList = new int[joinKeyPairs.size()];
+    rightKeyList = new int[joinKeyPairs.size()];
 
     for (int i = 0; i < joinKeyPairs.size(); i++) {
-      outerKeyList[i] = outer.getSchema().getColumnId(joinKeyPairs.get(i)[0].getQualifiedName());
+      leftKeyList[i] = outer.getSchema().getColumnId(joinKeyPairs.get(i)[0].getQualifiedName());
     }
 
     for (int i = 0; i < joinKeyPairs.size(); i++) {
-      innerKeyList[i] = inner.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
+      rightKeyList[i] = inner.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
     }
 
     // for projection
@@ -90,56 +90,56 @@ public class HashJoinExec extends BinaryPhysicalExec {
     // for join
     frameTuple = new FrameTuple();
     outTuple = new VTuple(outSchema.getColumnNum());
-    outerKeyTuple = new VTuple(outerKeyList.length);
+    leftKeyTuple = new VTuple(leftKeyList.length);
   }
 
-  private void getKeyOuterTuple(final Tuple outerTuple, Tuple keyTuple) {
-    for (int i = 0; i < outerKeyList.length; i++) {
-      keyTuple.put(i, outerTuple.get(outerKeyList[i]));
+  protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
+    for (int i = 0; i < leftKeyList.length; i++) {
+      keyTuple.put(i, outerTuple.get(leftKeyList[i]));
     }
   }
 
   public Tuple next() throws IOException {
     if (first) {
-      loadInnerTable();
+      loadRightToHashTable();
     }
 
-    Tuple innerTuple;
+    Tuple rightTuple;
     boolean found = false;
 
     while(!finished) {
 
-      if (nextOuter) {
+      if (shouldGetLeftTuple) { // initially, it is true.
         // getting new outer
-        outerTuple = outerChild.next();
-        if (outerTuple == null) {
+        leftTuple = leftChild.next(); // it comes from a disk
+        if (leftTuple == null) { // if no more tuples in left tuples on disk, a join is completed.
           finished = true;
           return null;
         }
 
-        // getting corresponding inner
-        getKeyOuterTuple(outerTuple, outerKeyTuple);
-        if (tupleSlots.containsKey(outerKeyTuple)) {
-          iterator = tupleSlots.get(outerKeyTuple).iterator();
-          nextOuter = false;
+        // getting corresponding right
+        getKeyLeftTuple(leftTuple, leftKeyTuple); // get a left key tuple
+        if (tupleSlots.containsKey(leftKeyTuple)) { // finds right tuples on in-memory hash table.
+          iterator = tupleSlots.get(leftKeyTuple).iterator();
+          shouldGetLeftTuple = false;
         } else {
-          nextOuter = true;
+          shouldGetLeftTuple = true;
           continue;
         }
       }
 
-      // getting next inner tuple
-      innerTuple = iterator.next();
-      frameTuple.set(outerTuple, innerTuple);
+      // getting a next right tuple on in-memory hash table.
+      rightTuple = iterator.next();
+      frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
       joinQual.eval(qualCtx, inSchema, frameTuple);
-      if (joinQual.terminate(qualCtx).asBool()) {
+      if (joinQual.terminate(qualCtx).asBool()) { // if both tuples are joinable
         projector.eval(evalContexts, frameTuple);
         projector.terminate(evalContexts, outTuple);
         found = true;
       }
 
-      if (!iterator.hasNext()) { // no more inner tuple
-        nextOuter = true;
+      if (!iterator.hasNext()) { // no more right tuples for this hash key
+        shouldGetLeftTuple = true;
       }
 
       if (found) {
@@ -150,15 +150,15 @@ public class HashJoinExec extends BinaryPhysicalExec {
     return outTuple;
   }
 
-  private void loadInnerTable() throws IOException {
+  protected void loadRightToHashTable() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
 
-    while ((tuple = innerChild.next()) != null) {
+    while ((tuple = rightChild.next()) != null) {
       keyTuple = new VTuple(joinKeyPairs.size());
       List<Tuple> newValue;
-      for (int i = 0; i < innerKeyList.length; i++) {
-        keyTuple.put(i, tuple.get(innerKeyList[i]));
+      for (int i = 0; i < rightKeyList.length; i++) {
+        keyTuple.put(i, tuple.get(rightKeyList[i]));
       }
 
       if (tupleSlots.containsKey(keyTuple)) {
@@ -183,7 +183,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
 
     finished = false;
     iterator = null;
-    nextOuter = true;
+    shouldGetLeftTuple = true;
   }
 
   public void close() throws IOException {

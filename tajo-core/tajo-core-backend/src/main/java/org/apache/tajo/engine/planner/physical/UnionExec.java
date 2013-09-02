@@ -42,7 +42,7 @@ public class UnionExec extends BinaryPhysicalExec {
   @Override
   public Tuple next() throws IOException {
     if (nextOuter) {
-      tuple = outerChild.next();
+      tuple = leftChild.next();
       if (tuple == null) {
        nextOuter = false; 
       } else {
@@ -50,7 +50,7 @@ public class UnionExec extends BinaryPhysicalExec {
       }
     }
     
-    return innerChild.next();
+    return rightChild.next();
   }
 
   @Override

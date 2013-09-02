@@ -129,7 +129,7 @@ public class TestBNLJoinExec {
           "inner join people as p on e.empId = p.empId and e.memId = p.fk_memId" };
 
   @Test
-  public final void testCrossJoin() throws IOException {
+  public final void testBNLCrossJoin() throws IOException {
     Fragment[] empFrags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Fragment[] peopleFrags = StorageManager.splitNG(conf, "people", people.getMeta(), people.getPath(),
@@ -137,7 +137,7 @@ public class TestBNLJoinExec {
 
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCrossJoin");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBNLCrossJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), merged, workDir);
     Expr expr = analyzer.parse(QUERIES[0]);
@@ -148,8 +148,8 @@ public class TestBNLJoinExec {
 
     ProjectionExec proj = (ProjectionExec) exec;
     NLJoinExec nlJoin = (NLJoinExec) proj.getChild();
-    SeqScanExec scanOuter = (SeqScanExec) nlJoin.getOuterChild();
-    SeqScanExec scanInner = (SeqScanExec) nlJoin.getInnerChild();
+    SeqScanExec scanOuter = (SeqScanExec) nlJoin.getLeftChild();
+    SeqScanExec scanInner = (SeqScanExec) nlJoin.getRightChild();
 
     BNLJoinExec bnl = new BNLJoinExec(ctx, nlJoin.getPlan(), scanOuter, scanInner);
     proj.setChild(bnl);
@@ -164,7 +164,7 @@ public class TestBNLJoinExec {
   }
 
   @Test
-  public final void testInnerJoin() throws IOException {
+  public final void testBNLInnerJoin() throws IOException {
     Fragment[] empFrags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Fragment[] peopleFrags = StorageManager.splitNG(conf, "people", people.getMeta(), people.getPath(),
@@ -172,7 +172,7 @@ public class TestBNLJoinExec {
 
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testEvalExpr");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBNLInnerJoin");
     TaskAttemptContext ctx =
         new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
             merged, workDir);
@@ -189,15 +189,15 @@ public class TestBNLJoinExec {
     JoinNode joinNode = null;
     if (proj.getChild() instanceof MergeJoinExec) {
       MergeJoinExec join = (MergeJoinExec) proj.getChild();
-      ExternalSortExec sortOut = (ExternalSortExec) join.getOuterChild();
-      ExternalSortExec sortIn = (ExternalSortExec) join.getInnerChild();
+      ExternalSortExec sortOut = (ExternalSortExec) join.getLeftChild();
+      ExternalSortExec sortIn = (ExternalSortExec) join.getRightChild();
       scanOuter = (SeqScanExec) sortOut.getChild();
       scanInner = (SeqScanExec) sortIn.getChild();
-      joinNode = join.getJoinNode();
+      joinNode = join.getPlan();
     } else if (proj.getChild() instanceof HashJoinExec) {
       HashJoinExec join = (HashJoinExec) proj.getChild();
-      scanOuter = (SeqScanExec) join.getOuterChild();
-      scanInner = (SeqScanExec) join.getInnerChild();
+      scanOuter = (SeqScanExec) join.getLeftChild();
+      scanInner = (SeqScanExec) join.getRightChild();
       joinNode = join.getPlan();
     }
 
