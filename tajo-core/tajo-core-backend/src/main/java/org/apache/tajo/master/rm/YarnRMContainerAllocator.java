@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class YarnRMContainerAllocator extends AMRMClientImpl
     implements EventHandler<ContainerAllocationEvent> {
@@ -98,7 +99,7 @@ public class YarnRMContainerAllocator extends AMRMClientImpl
 
   protected Thread allocatorThread;
   private final AtomicBoolean stopped = new AtomicBoolean(false);
-  private int rmPollInterval = 1000;//millis
+  private int rmPollInterval = 100;//millis
 
   protected void startAllocatorThread() {
     allocatorThread = new Thread(new Runnable() {
@@ -167,6 +168,9 @@ public class YarnRMContainerAllocator extends AMRMClientImpl
   private final Map<Priority, ExecutionBlockId> subQueryMap =
       new HashMap<Priority, ExecutionBlockId>();
 
+  private AtomicLong prevReportTime = new AtomicLong(0);
+  private int reportInterval = 5 * 1000; // second
+
   public void heartbeat() throws Exception {
     AllocateResponse allocateResponse = allocate(context.getProgress());
     AMResponse response = allocateResponse.getAMResponse();
@@ -176,10 +180,15 @@ public class YarnRMContainerAllocator extends AMRMClientImpl
     }
     List<Container> allocatedContainers = response.getAllocatedContainers();
 
-    LOG.info("Available Cluster Nodes: " + allocateResponse.getNumClusterNodes());
-    LOG.info("Available Resource: " + response.getAvailableResources());
-    LOG.info("Num of Allocated Containers: " + response.getAllocatedContainers().size());
-    if (response.getAllocatedContainers().size() > 0) {
+    long currentTime = System.currentTimeMillis();
+    if ((currentTime - prevReportTime.longValue()) >= reportInterval) {
+      LOG.debug("Available Cluster Nodes: " + allocateResponse.getNumClusterNodes());
+      LOG.debug("Num of Allocated Containers: " + allocatedContainers.size());
+      LOG.info("Available Resource: " + response.getAvailableResources());
+      prevReportTime.set(currentTime);
+    }
+
+    if (allocatedContainers.size() > 0) {
       LOG.info("================================================================");
       for (Container container : response.getAllocatedContainers()) {
         LOG.info("> Container Id: " + container.getId());
@@ -189,18 +198,13 @@ public class YarnRMContainerAllocator extends AMRMClientImpl
         LOG.info("> Priority: " + container.getPriority());
       }
       LOG.info("================================================================");
-    }
 
-    Map<ExecutionBlockId, List<Container>> allocated = new HashMap<ExecutionBlockId, List<Container>>();
-    if (allocatedContainers.size() > 0) {
+      Map<ExecutionBlockId, List<Container>> allocated = new HashMap<ExecutionBlockId, List<Container>>();
       for (Container container : allocatedContainers) {
         ExecutionBlockId executionBlockId = subQueryMap.get(container.getPriority());
         SubQueryState state = context.getSubQuery(executionBlockId).getState();
-        if (!(SubQuery.isRunningState(state) && subQueryMap.containsKey(container.getPriority()))) {
+        if (!(SubQuery.isRunningState(state))) {
           releaseAssignedContainer(container.getId());
-          synchronized (subQueryMap) {
-            subQueryMap.remove(container.getPriority());
-          }
         } else {
           if (allocated.containsKey(executionBlockId)) {
             allocated.get(executionBlockId).add(container);

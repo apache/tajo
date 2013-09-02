@@ -425,7 +425,7 @@ public class RCFile {
           - skipped];
       this.codec = codec;
       if (codec != null) {
-        valDecompressor = CodecPool.getDecompressor(codec);
+        valDecompressor = org.apache.tajo.storage.compress.CodecPool.getDecompressor(codec);
         deflatFilter = codec.createInputStream(decompressBuffer,
             valDecompressor);
       }
@@ -525,7 +525,7 @@ public class RCFile {
       }
       if (codec != null) {
         IOUtils.closeStream(decompressBuffer);
-        CodecPool.returnDecompressor(valDecompressor);
+        org.apache.tajo.storage.compress.CodecPool.returnDecompressor(valDecompressor);
       }
     }
 
@@ -894,7 +894,7 @@ public class RCFile {
       int valueLength = 0;
       if (isCompressed) {
         ReflectionUtils.setConf(codec, this.conf);
-        compressor = CodecPool.getCompressor(codec);
+        compressor = org.apache.tajo.storage.compress.CodecPool.getCompressor(codec);
         valueBuffer = new NonSyncDataOutputBuffer();
         deflateFilter = codec.createOutputStream(valueBuffer, compressor);
         deflateOut = new DataOutputStream(deflateFilter);
@@ -935,7 +935,7 @@ public class RCFile {
         throw new IOException("negative length keys not allowed: " + key);
       }
       if (compressor != null) {
-        CodecPool.returnCompressor(compressor);
+        org.apache.tajo.storage.compress.CodecPool.returnCompressor(compressor);
       }
 
       // Write the key out
@@ -975,7 +975,7 @@ public class RCFile {
       out.writeInt(keyLength); // key portion length
 
       if(this.isCompressed()) {
-        Compressor compressor = CodecPool.getCompressor(codec);
+        Compressor compressor = org.apache.tajo.storage.compress.CodecPool.getCompressor(codec);
         NonSyncDataOutputBuffer compressionBuffer =
             new NonSyncDataOutputBuffer();
         CompressionOutputStream deflateFilter =
@@ -1267,7 +1267,7 @@ public class RCFile {
           throw new IllegalArgumentException(
               "Unknown codec: " + codecClassname, cnfe);
         }
-        keyDecompressor = CodecPool.getDecompressor(codec);
+        keyDecompressor = org.apache.tajo.storage.compress.CodecPool.getDecompressor(codec);
       }
 
       metadata = new Metadata();
@@ -1732,7 +1732,7 @@ public class RCFile {
       currentValue.close();
       if (decompress) {
         IOUtils.closeStream(keyDecompressedData);
-        CodecPool.returnDecompressor(keyDecompressor);
+        org.apache.tajo.storage.compress.CodecPool.returnDecompressor(keyDecompressor);
       }
     }
 

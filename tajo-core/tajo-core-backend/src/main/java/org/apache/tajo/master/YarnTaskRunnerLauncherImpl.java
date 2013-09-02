@@ -80,13 +80,6 @@ public class YarnTaskRunnerLauncherImpl extends AbstractService implements TaskR
   public void stop() {
     executorService.shutdownNow();
 
-    while(!executorService.isTerminated()) {
-      LOG.info("====>executorService.isTerminated:" + executorService.isTerminated() + "," + executorService.isShutdown());
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-      }
-    }
     Map<ContainerId, ContainerProxy> containers = context.getResourceAllocator().getContainers();
     for(ContainerProxy eachProxy: containers.values()) {
       try {

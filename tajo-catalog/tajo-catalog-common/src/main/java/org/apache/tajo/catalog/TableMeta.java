@@ -28,7 +28,9 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 
 public interface TableMeta extends ProtoObject<TableProto>, Cloneable, GsonObject {
-  
+
+  static String COMPRESSION_CODEC = "compression.codec";
+
   void setStorageType(StoreType storeType);
   
   StoreType getStoreType();

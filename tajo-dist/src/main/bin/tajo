@@ -243,6 +243,7 @@ export HADOOP_EXT_CLASSPATH
 # Append $HADOOP_JAR_CLASSPATH to $CLASSPATH
 CLASSPATH="${CLASSPATH}:${HADOOP_EXT_CLASSPATH}"
 
+HDFS_LIBRARY_PATH="${HADOOP_HOME}/lib/native/"
 ##############################################################################
 # Hadoop Home Configuration End
 ##############################################################################
@@ -318,6 +319,12 @@ if [ -d "${TAJO_HOME}/build/native" -o -d "${TAJO_HOME}/lib/native" ]; then
       JAVA_LIBRARY_PATH=${TAJO_HOME}/lib/native/${JAVA_PLATFORM}
     fi
   fi
+fi
+
+if [ "x$JAVA_LIBRARY_PATH" != "x" ]; then
+    JAVA_LIBRARY_PATH=${JAVA_LIBRARY_PATH}:${HDFS_LIBRARY_PATH}
+  else
+    JAVA_LIBRARY_PATH=${HDFS_LIBRARY_PATH}
 fi
 
 # cygwin path translation

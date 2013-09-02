@@ -28,6 +28,7 @@ import org.apache.hadoop.yarn.client.YarnClientImpl;
 import org.apache.hadoop.yarn.ipc.YarnRPC;
 import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.QueryConf;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TaskRunnerGroupEvent;
 import org.apache.tajo.master.TaskRunnerLauncher;
 import org.apache.tajo.master.YarnTaskRunnerLauncherImpl;
@@ -66,7 +67,10 @@ public class YarnResourceAllocator extends AbstractResourceAllocator {
   @Override
   public int calculateNumRequestContainers(TajoWorker.WorkerContext workerContext, int numTasks) {
     int numClusterNodes = workerContext.getNumClusterNodes();
-    return numClusterNodes == 0 ? numTasks: Math.min(numTasks, numClusterNodes * 4);
+
+    TajoConf conf =  (TajoConf)workerContext.getQueryMaster().getConfig();
+    int workerNum = conf.getIntVar(TajoConf.ConfVars.MAX_WORKER_PER_NODE);
+    return numClusterNodes == 0 ? numTasks: Math.min(numTasks, numClusterNodes * workerNum);
   }
 
   @Override

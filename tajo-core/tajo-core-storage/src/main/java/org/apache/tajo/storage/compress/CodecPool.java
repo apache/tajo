@@ -16,13 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.rcfile;
+package org.apache.tajo.storage.compress;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.Compressor;
 import org.apache.hadoop.io.compress.Decompressor;
+import org.apache.hadoop.io.compress.DoNotPool;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -95,18 +97,26 @@ public final class CodecPool {
    * @param codec
    *          the <code>CompressionCodec</code> for which to get the
    *          <code>Compressor</code>
+   * @param conf the <code>Configuration</code> object which contains confs for creating or reinit the compressor
    * @return <code>Compressor</code> for the given <code>CompressionCodec</code>
    *         from the pool or a new one
    */
-  public static Compressor getCompressor(CompressionCodec codec) {
+  public static Compressor getCompressor(CompressionCodec codec, Configuration conf) {
     Compressor compressor = borrow(COMPRESSOR_POOL, codec.getCompressorType());
     if (compressor == null) {
       compressor = codec.createCompressor();
-      LOG.info("Got brand-new compressor");
+      LOG.info("Got brand-new compressor ["+codec.getDefaultExtension()+"]");
     } else {
-      LOG.debug("Got recycled compressor");
+      compressor.reinit(conf);
+      if(LOG.isDebugEnabled()) {
+        LOG.debug("Got recycled compressor");
+      }
     }
     return compressor;
+  }
+
+  public static Compressor getCompressor(CompressionCodec codec) {
+    return getCompressor(codec, null);
   }
 
   /**
@@ -124,9 +134,11 @@ public final class CodecPool {
         .getDecompressorType());
     if (decompressor == null) {
       decompressor = codec.createDecompressor();
-      LOG.info("Got brand-new decompressor");
+      LOG.info("Got brand-new decompressor ["+codec.getDefaultExtension()+"]");
     } else {
-      LOG.debug("Got recycled decompressor");
+      if(LOG.isDebugEnabled()) {
+        LOG.debug("Got recycled decompressor");
+      }
     }
     return decompressor;
   }
@@ -141,18 +153,26 @@ public final class CodecPool {
     if (compressor == null) {
       return;
     }
+    // if the compressor can't be reused, don't pool it.
+    if (compressor.getClass().isAnnotationPresent(DoNotPool.class)) {
+      return;
+    }
     compressor.reset();
     payback(COMPRESSOR_POOL, compressor);
   }
 
   /**
    * Return the {@link Decompressor} to the pool.
-   * 
+   *
    * @param decompressor
    *          the <code>Decompressor</code> to be returned to the pool
    */
   public static void returnDecompressor(Decompressor decompressor) {
     if (decompressor == null) {
+      return;
+    }
+    // if the decompressor can't be reused, don't pool it.
+    if (decompressor.getClass().isAnnotationPresent(DoNotPool.class)) {
       return;
     }
     decompressor.reset();
