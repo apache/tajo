@@ -43,7 +43,7 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestHashAntiJoinExec {
+public class TestHashSemiJoinExec {
   private TajoConf conf;
   private final String TEST_PATH = "target/test-data/TestHashJoinExec";
   private TajoTestingCluster util;
@@ -103,13 +103,17 @@ public class TestHashAntiJoinExec {
     appender = StorageManager.getAppender(conf, peopleMeta, peoplePath);
     appender.init();
     tuple = new VTuple(peopleMeta.getSchema().getColumnNum());
+    // make 27 tuples
     for (int i = 1; i < 10; i += 2) {
-      tuple.put(new Datum[] {
-          DatumFactory.createInt4(i), // empid [1, 3, 5, 7, 9]
-          DatumFactory.createInt4(10 + i),
-          DatumFactory.createText("name_" + i),
-          DatumFactory.createInt4(30 + i) });
-      appender.addTuple(tuple);
+      // make three duplicated tuples for each tuples
+      for (int j = 0; j < 3; j++) {
+        tuple.put(new Datum[] {
+            DatumFactory.createInt4(i), // empid [1, 3, 5, 7, 9]
+            DatumFactory.createInt4(10 + i),
+            DatumFactory.createText("name_" + i),
+            DatumFactory.createInt4(30 + i) });
+        appender.addTuple(tuple);
+      }
     }
 
     appender.flush();
@@ -137,7 +141,7 @@ public class TestHashAntiJoinExec {
   };
 
   @Test
-  public final void testHashAntiJoin() throws IOException, PlanningException {
+  public final void testHashSemiJoin() throws IOException, PlanningException {
     Fragment[] empFrags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Fragment[] peopleFrags = StorageManager.splitNG(conf, "people", people.getMeta(), people.getPath(),
@@ -145,7 +149,7 @@ public class TestHashAntiJoinExec {
 
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testHashAntiJoin");
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testHashSemiJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         TUtil.newQueryUnitAttemptId(), merged, workDir);
     Expr expr = analyzer.parse(QUERIES[0]);
@@ -166,9 +170,9 @@ public class TestHashAntiJoinExec {
 
       // 'people' should be outer table. So, the below code guarantees that people becomes the outer table.
       if (scanLeftChild.getTableName().equals("people")) {
-        exec = new HashAntiJoinExec(ctx, join.getPlan(), scanRightChild, scanLeftChild);
+        exec = new HashSemiJoinExec(ctx, join.getPlan(), scanRightChild, scanLeftChild);
       } else {
-        exec = new HashAntiJoinExec(ctx, join.getPlan(), scanLeftChild, scanRightChild);
+        exec = new HashSemiJoinExec(ctx, join.getPlan(), scanLeftChild, scanRightChild);
       }
     } else if (exec instanceof HashJoinExec) {
       HashJoinExec join = (HashJoinExec) exec;
@@ -176,26 +180,27 @@ public class TestHashAntiJoinExec {
 
       // 'people' should be outer table. So, the below code guarantees that people becomes the outer table.
       if (scanLeftChild.getTableName().equals("people")) {
-        exec = new HashAntiJoinExec(ctx, join.getPlan(), join.getRightChild(), join.getLeftChild());
+        exec = new HashSemiJoinExec(ctx, join.getPlan(), join.getRightChild(), join.getLeftChild());
       } else {
-        exec = new HashAntiJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
+        exec = new HashSemiJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       }
     }
 
     Tuple tuple;
     int count = 0;
-    int i = 0;
+    int i = 1;
     exec.init();
+    // expect result without duplicated tuples.
     while ((tuple = exec.next()) != null) {
       count++;
       assertTrue(i == tuple.getInt(0).asInt4());
-      assertTrue(i == tuple.getInt(1).asInt4()); // expected empid [0, 2, 4, 6, 8]
+      assertTrue(i == tuple.getInt(1).asInt4());
       assertTrue(("dept_" + i).equals(tuple.getString(2).asChars()));
       assertTrue(10 + i == tuple.getInt(3).asInt4());
 
       i += 2;
     }
     exec.close();
-    assertEquals(5 , count); // the expected result : [0, 2, 4, 6, 8]
+    assertEquals(5 , count); // the expected result: [1, 3, 5, 7, 9]
   }
 }
