@@ -18,14 +18,16 @@
 
 package org.apache.tajo.rpc;
 
-import com.google.protobuf.RpcController;
-import org.junit.*;
 import org.apache.tajo.rpc.test.DummyProtocol;
 import org.apache.tajo.rpc.test.DummyProtocol.DummyProtocolService.BlockingInterface;
 import org.apache.tajo.rpc.test.TestProtos.EchoMessage;
 import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolBlockingImpl;
+import org.apache.tajo.util.NetUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
@@ -45,11 +47,10 @@ public class TestProtoBlockingRpc {
   public void setUp() throws Exception {
     service = new DummyProtocolBlockingImpl();
     server = new ProtoBlockingRpcServer(DummyProtocol.class, service,
-        new InetSocketAddress(10000));
+        new InetSocketAddress("127.0.0.1", 0));
     server.start();
-
     client = new ProtoBlockingRpcClient(DummyProtocol.class,
-        new InetSocketAddress(10000));
+        NetUtils.getConnectAddress(server.getListenAddress()));
     stub = client.getStub();
   }
 

@@ -19,9 +19,15 @@
 package org.apache.tajo.algebra;
 
 public class InPredicate extends BinaryOperator {
+  private boolean not;
 
-  public InPredicate(Expr predicand, Expr in_values) {
+  public InPredicate(Expr predicand, Expr in_values, boolean not) {
     super(OpType.InPredicate, predicand, in_values);
+    this.not = not;
+  }
+
+  public boolean isNot() {
+    return this.not;
   }
 
   public Expr getPredicand() {

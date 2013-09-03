@@ -72,4 +72,24 @@ public class ArrayDatum extends Datum {
 
     return sb.toString();
   }
+
+  public boolean equals(Object obj) {
+    if (obj instanceof ArrayDatum) {
+      ArrayDatum other = (ArrayDatum) obj;
+      if (data.length != other.data.length) {
+        return false;
+      }
+
+
+      for (int i = 0; i < data.length; i++) {
+        if (!data[i].equals(other.data[i])) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    return false;
+  }
 }

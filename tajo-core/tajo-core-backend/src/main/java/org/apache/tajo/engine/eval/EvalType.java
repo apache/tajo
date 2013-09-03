@@ -46,10 +46,12 @@ public enum EvalType {
   LIKE(LikeEval.class),
   CASE(CaseWhenEval.class),
   WHEN(CaseWhenEval.WhenEval.class),
+  IN(InEval.class),
 
   // Value or Reference
   FIELD(FieldEval.class),
-  CONST(ConstEval.class);
+  CONST(ConstEval.class),
+  ROW_CONSTANT(RowConstant.class);
 
   private Class<? extends EvalNode> baseClass;
 

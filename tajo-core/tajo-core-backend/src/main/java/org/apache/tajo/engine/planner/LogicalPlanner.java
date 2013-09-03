@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.function.GeneralFunction;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.eval.EvalType;
@@ -854,6 +855,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
             throw new RuntimeException("Unsupported type: " + literal.getValueType());
         }
 
+      case ValueList: {
+        ValueListExpr valueList = (ValueListExpr) expr;
+        Datum[] values = new Datum[valueList.getValues().length];
+        ConstEval [] constEvals = new ConstEval[valueList.getValues().length];
+        for (int i = 0; i < valueList.getValues().length; i++) {
+          constEvals[i] = (ConstEval) createEvalTree(plan, blockName, valueList.getValues()[i]);
+          values[i] = constEvals[i].getValue();
+        }
+        return new RowConstant(values);
+      }
+
         // unary expression
       case Not:
         NotExpr notExpr = (NotExpr) expr;
@@ -865,6 +877,14 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         FieldEval field = (FieldEval) createEvalTree(plan, blockName, like.getColumnRef());
         ConstEval pattern = (ConstEval) createEvalTree(plan, blockName, like.getPattern());
         return new LikeEval(like.isNot(), field, pattern);
+
+      case InPredicate: {
+        InPredicate inPredicate = (InPredicate) expr;
+        FieldEval predicand =
+            new FieldEval(plan.findColumn(blockName, (ColumnReferenceExpr) inPredicate.getPredicand()));
+        RowConstant rowConstant = (RowConstant) createEvalTree(plan, blockName, inPredicate.getInValue());
+        return new InEval(predicand, rowConstant, inPredicate.isNot());
+      }
 
       case Is:
         break;

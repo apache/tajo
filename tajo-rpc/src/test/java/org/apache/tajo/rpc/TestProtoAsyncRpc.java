@@ -55,7 +55,7 @@ public class TestProtoAsyncRpc {
   public void setUp() throws Exception {
     service = new DummyProtocolAsyncImpl();
     server = new ProtoAsyncRpcServer(DummyProtocol.class,
-        service, new InetSocketAddress(0));
+        service, new InetSocketAddress("127.0.0.1", 0));
     server.start();
     client = new ProtoAsyncRpcClient(DummyProtocol.class,
         NetUtils.getConnectAddress(server.getListenAddress()));

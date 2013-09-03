@@ -312,6 +312,68 @@ public class TestSelectQuery {
   }
 
   @Test
+  public final void testInClause() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_orderkey from lineitem where l_partkey in (2,3)");
+    try {
+      assertTrue(res.next());
+      assertEquals(2, res.getInt(1));
+      assertTrue(res.next());
+      assertEquals(3, res.getInt(1));
+      assertTrue(res.next());
+      assertEquals(3, res.getInt(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
+  public final void testInStrClause() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_orderkey from lineitem where l_returnflag in ('R', 'S')");
+    try {
+      assertTrue(res.next());
+      assertEquals(3, res.getInt(1));
+      assertTrue(res.next());
+      assertEquals(3, res.getInt(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
+  public final void testNotInStrClause() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_orderkey from lineitem where l_returnflag not in ('N', 'S')");
+    try {
+      assertTrue(res.next());
+      assertEquals(3, res.getInt(1));
+      assertTrue(res.next());
+      assertEquals(3, res.getInt(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
+  public final void testNotInClause() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_orderkey from lineitem where l_partkey not in (2,3)");
+    try {
+      assertTrue(res.next());
+      assertEquals(1, res.getInt(1));
+      assertTrue(res.next());
+      assertEquals(1, res.getInt(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
   public final void testUnion1() throws Exception {
     ResultSet res = tpch.execute(
         "select o_custkey as num from orders union select c_custkey as num from customer");

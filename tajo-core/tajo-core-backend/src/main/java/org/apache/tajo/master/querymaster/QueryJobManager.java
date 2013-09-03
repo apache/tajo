@@ -123,7 +123,7 @@ public class QueryJobManager extends CompositeService {
   }
 
   public void stopQuery(QueryId queryId) {
-    LOG.info("====>Stop QueryInProgress:" + queryId);
+    LOG.info("Stop QueryInProgress:" + queryId);
     QueryInProgress queryInProgress = getQueryInProgress(queryId);
     if(queryInProgress != null) {
       queryInProgress.stop();
@@ -132,7 +132,7 @@ public class QueryJobManager extends CompositeService {
         finishedQueries.put(queryId, queryInProgress);
       }
     } else {
-      LOG.warn("====> No QueryInProgress while query stopping: " + queryId);
+      LOG.warn("No QueryInProgress while query stopping: " + queryId);
     }
   }
 

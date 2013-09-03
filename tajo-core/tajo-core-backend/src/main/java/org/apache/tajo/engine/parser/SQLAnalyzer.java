@@ -557,15 +557,15 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public InPredicate visitIn_predicate(SQLParser.In_predicateContext ctx) {
     return new InPredicate(visitChildren(ctx.numeric_value_expression()),
-        visitChildren(ctx.in_predicate_value()));
+        visitIn_predicate_value(ctx.in_predicate_value()), ctx.NOT() != null);
   }
 
   @Override
-  public ValueListExpr visitIn_value_list(SQLParser.In_value_listContext ctx) {
-    int size = ctx.numeric_value_expression().size();
+  public ValueListExpr visitIn_predicate_value(SQLParser.In_predicate_valueContext ctx) {
+    int size = ctx.in_value_list().numeric_value_expression().size();
     Expr [] exprs = new Expr[size];
     for (int i = 0; i < size; i++) {
-      exprs[i] = visit(ctx.numeric_value_expression(i));
+      exprs[i] = visit(ctx.in_value_list().numeric_value_expression(i));
     }
     return new ValueListExpr(exprs);
   }
@@ -592,10 +592,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public IsNullPredicate visitNull_predicate(SQLParser.Null_predicateContext ctx) {
-    boolean not = ctx.NOT() != null;
-
     ColumnReferenceExpr predicand = (ColumnReferenceExpr) visit(ctx.numeric_value_expression());
-    return new IsNullPredicate(not, predicand);
+    return new IsNullPredicate(ctx.NOT() != null, predicand);
   }
 
   @Override

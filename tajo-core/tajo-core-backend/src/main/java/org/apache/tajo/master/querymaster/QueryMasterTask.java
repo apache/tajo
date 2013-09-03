@@ -151,14 +151,14 @@ public class QueryMasterTask extends CompositeService {
     }
     stopped.set(true);
 
-    LOG.info("====> Stopping QueryMasterTask:" + queryId);
+    LOG.info("Stopping QueryMasterTask:" + queryId);
 
     queryMasterContext.getWorkerContext().getTajoMasterRpcClient()
         .stopQueryMaster(null, queryId.getProto(), NullCallback.get());
 
     super.stop();
 
-    LOG.info("====> Stopped QueryMasterTask:" + queryId);
+    LOG.info("Stopped QueryMasterTask:" + queryId);
   }
 
   public void handleTaskRequestEvent(TaskRequestEvent event) {
