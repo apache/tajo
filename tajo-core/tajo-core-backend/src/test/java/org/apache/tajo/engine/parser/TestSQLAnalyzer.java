@@ -245,6 +245,12 @@ public class TestSQLAnalyzer {
     parseQuery(sql);
   }
 
+  @Test
+  public void testTableSubQuery1() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/table_subquery1.sql"));
+    parseQuery(sql);
+  }
+
   static String[] exprs = {
       "1 + 2", // 0
       "3 - 4", // 1

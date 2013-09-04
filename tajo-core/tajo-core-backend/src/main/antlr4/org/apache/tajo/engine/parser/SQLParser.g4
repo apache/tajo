@@ -282,7 +282,12 @@ query_specification
 
 select_list
   : MULTIPLY
-  | derived_column (COMMA derived_column)*
+  | select_sublist (COMMA select_sublist)*
+  ;
+
+select_sublist
+  : derived_column
+  | asterisked_qualifier=Identifier DOT MULTIPLY
   ;
 
 set_qualifier

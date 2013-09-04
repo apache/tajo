@@ -124,6 +124,9 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-151: Multiple union queries within a table subquery causes NPE.
+    (hyunsik)
+
     TAJO-137: Unreleased resources and wrong allocation requests in
     TajoWorkerResourceManager. (hyoungjunkim via hyunsik)
 

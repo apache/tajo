@@ -184,20 +184,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
     }
 
-    Projection projection = new Projection();
+    Projection projection = visitSelect_list(ctx.select_list());
 
     if (ctx.set_qualifier() != null && ctx.set_qualifier().DISTINCT() != null) {
       projection.setDistinct();
-    }
-
-    if (ctx.select_list().MULTIPLY() != null) {
-      projection.setAll();
-    } else {
-      Target targets [] = new Target[ctx.select_list().derived_column().size()];
-      for (int i = 0; i < targets.length; i++) {
-        targets[i] = visitDerived_column(ctx.select_list().derived_column(i));
-      }
-      projection.setTargets(targets);
     }
 
     if (current != null) {
@@ -207,6 +197,51 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     current = projection;
 
     return current;
+  }
+
+  /**
+   * <pre>
+   *   select_list
+   *   : MULTIPLY
+   *   | select_sublist (COMMA select_sublist)*
+   *   ;
+   * </pre>
+   * @param ctx
+   * @return
+   */
+  @Override
+  public Projection visitSelect_list(SQLParser.Select_listContext ctx) {
+    Projection projection = new Projection();
+    if (ctx.MULTIPLY() != null) {
+      projection.setAll();
+    } else {
+      Target [] targets = new Target[ctx.select_sublist().size()];
+      for (int i = 0; i < targets.length; i++) {
+        targets[i] = visitSelect_sublist(ctx.select_sublist(i));
+      }
+      projection.setTargets(targets);
+    }
+
+    return projection;
+  }
+
+  /**
+   * <pre>
+   *   select_sublist
+   *   : derived_column
+   *   | asterisked_qualifier=Identifier DOT MULTIPLY
+   *   ;
+   * </pre>
+   * @param ctx
+   * @return
+   */
+  @Override
+  public Target visitSelect_sublist(SQLParser.Select_sublistContext ctx) {
+    if (ctx.asterisked_qualifier != null) {
+      return new Target(new ColumnReferenceExpr(ctx.asterisked_qualifier.getText(), "*"));
+    } else {
+      return visitDerived_column(ctx.derived_column());
+    }
   }
 
   @Override

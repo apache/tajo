@@ -29,6 +29,12 @@ public class ColumnReferenceExpr extends Expr {
     this.name = columnName;
   }
 
+  public ColumnReferenceExpr(String tableName, String columnName) {
+    super(OpType.Column);
+    this.tableName = tableName;
+    this.name = columnName;
+  }
+
   public void setTableName(String tableName) {
     this.tableName = tableName;
   }
