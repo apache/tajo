@@ -28,6 +28,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.ArrayDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.BitArray;
 
@@ -193,14 +194,6 @@ public class RawFile {
             tuple.put(i, DatumFactory.createFloat8(buffer.getDouble()));
             break;
 
-//          case TEXT :
-//            // TODO - shoud use CharsetEncoder / CharsetDecoder
-//            int strSize = buffer.getInt();
-//            byte [] strBytes = new byte[strSize];
-//            buffer.get(strBytes);
-//            tuple.put(i, DatumFactory.createText(new String(strBytes)));
-//            break;
-
           case TEXT :
             // TODO - shoud use CharsetEncoder / CharsetDecoder
             int strSize2 = buffer.getInt();
@@ -231,7 +224,11 @@ public class RawFile {
             tuple.put(i, array);
             break;
 
-            default:
+          case NULL:
+            tuple.put(i, NullDatum.get());
+            break;
+
+          default:
         }
       }
 
@@ -379,6 +376,10 @@ public class RawFile {
         }
 
         switch(columnTypes[i].getType()) {
+          case NULL:
+            nullFlags.set(i);
+            continue;
+
           case BOOLEAN:
           case BIT:
             buffer.put(t.get(i).asByte());

@@ -39,7 +39,6 @@ import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.TajoWorkerProtocolService.Interface;
 import org.apache.tajo.rpc.CallFuture2;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.ProtoAsyncRpcClient;
@@ -106,20 +105,6 @@ public class TaskRunner extends AbstractService {
 
   private TaskRunnerManager taskRunnerManager;
 
-  public TaskRunner(
-      final ExecutionBlockId executionBlockId,
-      final NodeId nodeId,
-      UserGroupInformation taskOwner,
-      Interface master, ContainerId containerId) {
-    super(TaskRunner.class.getName());
-    this.executionBlockId = executionBlockId;
-    this.queryId = executionBlockId.getQueryId();
-    this.nodeId = nodeId;
-    this.taskOwner = taskOwner;
-    this.master = master;
-    this.containerId = containerId;
-  }
-
   public TaskRunner(TaskRunnerManager taskRunnerManager, QueryConf conf, String[] args) {
     super(TaskRunner.class.getName());
 
@@ -127,10 +112,7 @@ public class TaskRunner extends AbstractService {
     try {
       final ExecutionBlockId executionBlockId = TajoIdUtils.createExecutionBlockId(args[1]);
 
-      conf.setOutputPath(new Path(args[6]));
-
       LOG.info("NM Local Dir: " + conf.get(ConfVars.TASK_LOCAL_DIR.varname));
-      LOG.info("OUTPUT DIR: " + conf.getOutputPath());
       LOG.info("Tajo Root Dir: " + conf.getVar(ConfVars.ROOT_DIR));
 
       UserGroupInformation.setConfiguration(conf);

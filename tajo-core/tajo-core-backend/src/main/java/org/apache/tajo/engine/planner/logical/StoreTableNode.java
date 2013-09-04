@@ -35,6 +35,8 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   @Expose private Column [] partitionKeys;
   @Expose private boolean local;
   @Expose private Options options;
+  @Expose private boolean isCreatedTable = false;
+  @Expose private boolean isOverwritten = false;
 
   public StoreTableNode(String tableName) {
     super(NodeType.STORE);
@@ -110,6 +112,22 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   public Options getOptions() {
     return this.options;
   }
+
+  public boolean isCreatedTable() {
+    return isCreatedTable;
+  }
+
+  public void setCreateTable() {
+    isCreatedTable = true;
+  }
+
+  public boolean isOverwrite() {
+    return isOverwritten;
+  }
+
+  public void setOverwrite() {
+    isOverwritten = true;
+  }
   
   @Override
   public boolean equals(Object obj) {
@@ -120,7 +138,9 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
       eq = eq && this.storageType.equals(other.storageType);
       eq = eq && this.numPartitions == other.numPartitions;
       eq = eq && TUtil.checkEquals(partitionKeys, other.partitionKeys);
-      eq = eq &&  TUtil.checkEquals(options, other.options);
+      eq = eq && TUtil.checkEquals(options, other.options);
+      eq = eq && isCreatedTable == other.isCreatedTable;
+      eq = eq && isOverwritten == other.isOverwritten;
       eq = eq && child.equals(other.child);
       return eq;
     } else {
@@ -136,6 +156,8 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     store.numPartitions = numPartitions;
     store.partitionKeys = partitionKeys != null ? partitionKeys.clone() : null;
     store.options = options != null ? (Options) options.clone() : null;
+    store.isCreatedTable = isCreatedTable;
+    store.isOverwritten = isOverwritten;
     return store;
   }
   

@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-144: Implement INSERT OVERWRITE clause. (hyunsik)
+
     TAJO-139: TAJO-139: In predicate support. (hyunsik)
 
     TAJO-134: Support for compression/decompression of CSVFile. (jinho)

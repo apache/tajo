@@ -39,6 +39,7 @@ import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.master.QueryMeta;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
@@ -64,6 +65,8 @@ public class QueryMasterTask extends CompositeService {
 
   private QueryId queryId;
 
+  private QueryMeta queryMeta;
+
   private QueryContext queryContext;
 
   private QueryMaster.QueryMasterContext queryMasterContext;
@@ -78,8 +81,6 @@ public class QueryMasterTask extends CompositeService {
 
   private final long querySubmitTime;
 
-  private boolean isCreateTableStmt;
-
   private Path outputPath;
 
   private Map<String, TableDesc> tableDescMap = new HashMap<String, TableDesc>();
@@ -93,10 +94,11 @@ public class QueryMasterTask extends CompositeService {
   private AtomicBoolean stopped = new AtomicBoolean(false);
 
   public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
-                         QueryId queryId, String logicalPlanJson) {
+                         QueryId queryId, QueryMeta queryMeta, String logicalPlanJson) {
     super(QueryMasterTask.class.getName());
     this.queryMasterContext = queryMasterContext;
     this.queryId = queryId;
+    this.queryMeta = queryMeta;
     this.logicalPlanJson = logicalPlanJson;
     this.querySubmitTime = System.currentTimeMillis();
   }
@@ -269,13 +271,12 @@ public class QueryMasterTask extends CompositeService {
     realUser = ugi.getShortUserName();
     currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
 
-    String givenOutputTableName = queryConf.getOutputTable();
+    String givenOutputTableName = queryMeta.getOutputTable();
     Path stagingDir;
 
     // If final output directory is not given by an user,
     // we use the query id as a output directory.
     if (givenOutputTableName == null || givenOutputTableName.isEmpty()) {
-      this.isCreateTableStmt = false;
       FileSystem defaultFS = FileSystem.get(queryConf);
 
       Path homeDirectory = defaultFS.getHomeDirectory();
@@ -318,25 +319,31 @@ public class QueryMasterTask extends CompositeService {
       }
 
       // Set the query id to the output table name
-      queryConf.setOutputTable(queryId.toString());
+      queryMeta.setOutputTable(queryId.toString());
 
-    } else {
-      this.isCreateTableStmt = true;
+    } else { // if a output table is given
+
       Path warehouseDir = new Path(queryConf.getVar(TajoConf.ConfVars.ROOT_DIR),
           TajoConstants.WAREHOUSE_DIR);
-      stagingDir = new Path(warehouseDir, queryConf.getOutputTable());
-
       FileSystem fs = warehouseDir.getFileSystem(queryConf);
-      if (fs.exists(stagingDir)) {
-        throw new IOException("The staging directory " + stagingDir
-            + " already exists. The directory must be unique to each query");
+
+      if (queryMeta.isFileOutput()) {
+        stagingDir = queryMeta.getOutputPath();
       } else {
-        // TODO - should have appropriate permission
-        fs.mkdirs(stagingDir, new FsPermission(USER_DIR_PERMISSION));
+        stagingDir = new Path(warehouseDir, queryMeta.getOutputTable());
       }
+
+      if (!queryMeta.isOutputOverwrite()) {
+        if (fs.exists(stagingDir)) {
+          throw new IOException("The staging directory " + stagingDir
+              + " already exists. The directory must be unique to each query");
+        }
+      }
+
+      fs.mkdirs(stagingDir, new FsPermission(USER_DIR_PERMISSION));
     }
 
-    queryConf.setOutputPath(stagingDir);
+    queryMeta.setOutputPath(stagingDir);
     outputPath = stagingDir;
     LOG.info("Initialized Query Staging Dir: " + outputPath);
   }
@@ -383,6 +390,10 @@ public class QueryMasterTask extends CompositeService {
       return queryMasterContext;
     }
 
+    public QueryMeta getQueryMeta() {
+      return queryMeta;
+    }
+
     public QueryConf getConf() {
       return queryConf;
     }
@@ -405,10 +416,6 @@ public class QueryMasterTask extends CompositeService {
 
     public Path getOutputPath() {
       return outputPath;
-    }
-
-    public boolean isCreateTableQuery() {
-      return isCreateTableStmt;
     }
 
     public synchronized EventHandler getEventHandler() {

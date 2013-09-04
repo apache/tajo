@@ -20,11 +20,11 @@ package org.apache.tajo.catalog;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.rpc.ProtoBlockingRpcClient;
+import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -34,7 +34,6 @@ import java.net.InetSocketAddress;
  */
 public class CatalogClient extends AbstractCatalogClient {
   private final Log LOG = LogFactory.getLog(CatalogClient.class);
-  private final TajoConf conf;
   private ProtoBlockingRpcClient client;
 
   /**
@@ -42,24 +41,25 @@ public class CatalogClient extends AbstractCatalogClient {
    *
    */
   public CatalogClient(final TajoConf conf) throws IOException {
-    this.conf = conf;
-    connect();
+    String catalogAddr = conf.getVar(ConfVars.CATALOG_ADDRESS);
+    connect(NetUtils.createSocketAddr(catalogAddr));
   }
 
-  private void connect() throws IOException {
-    String serverName = conf.getVar(ConfVars.CATALOG_ADDRESS);
-    LOG.info("Trying to connect the catalog (" + serverName + ")");
-    InetSocketAddress addr = NetUtils.createSocketAddr(serverName);
+  public CatalogClient(String host, int port) throws IOException {
+    connect(NetUtils.createSocketAddr(host, port));
+  }
+
+  private void connect(InetSocketAddress serverAddr) throws IOException {
+    String addrStr = NetUtils.normalizeInetSocketAddress(serverAddr);
+    LOG.info("Trying to connect the catalog (" + addrStr + ")");
     try {
-      client = new ProtoBlockingRpcClient(
-          CatalogProtocol.class,
-          addr);
+      client = new ProtoBlockingRpcClient(CatalogProtocol.class, serverAddr);
       setStub((BlockingInterface) client.getStub());
     } catch (Exception e) {
       throw new IOException(e);
     }
 
-    LOG.info("Connected to the catalog server (" + serverName + ")");
+    LOG.info("Connected to the catalog server (" + addrStr + ")");
   }
 
   public void close() {

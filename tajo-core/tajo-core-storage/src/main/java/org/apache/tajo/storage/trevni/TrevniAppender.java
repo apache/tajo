@@ -23,10 +23,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.trevni.ColumnFileMetaData;
-import org.apache.trevni.ColumnFileWriter;
-import org.apache.trevni.ColumnMetaData;
-import org.apache.trevni.ValueType;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStat;
@@ -34,6 +30,10 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
+import org.apache.trevni.ColumnFileMetaData;
+import org.apache.trevni.ColumnFileWriter;
+import org.apache.trevni.ColumnMetaData;
+import org.apache.trevni.ValueType;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -110,6 +110,8 @@ public class TrevniAppender extends FileAppender {
         return ValueType.BYTES;
       case ARRAY:
         return ValueType.BYTES;
+      case NULL:
+        return ValueType.NULL;
       default:
         return null;
     }
@@ -132,6 +134,8 @@ public class TrevniAppender extends FileAppender {
       if (!t.isNull(i)) {
         col = schema.getColumn(i);
         switch (col.getDataType().getType()) {
+          case NULL:
+            break;
           case BOOLEAN:
           case BIT:
           case INT2:

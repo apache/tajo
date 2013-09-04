@@ -52,6 +52,7 @@ public class LogicalPlan {
   /** a map from between a block name to a block plan */
   private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<String, QueryBlock>();
   private Map<LogicalNode, QueryBlock> queryBlockByNode = new HashMap<LogicalNode, QueryBlock>();
+  private QueryBlockGraph queryBlockGraph = new QueryBlockGraph();
   private Set<LogicalNode> visited = new HashSet<LogicalNode>();
 
   public LogicalPlan(LogicalPlanner planner) {
@@ -99,6 +100,25 @@ public class LogicalPlan {
     return queryBlockByNode.get(node);
   }
 
+  public void removeBlock(QueryBlock block) {
+    queryBlocks.remove(block.getName());
+    List<LogicalNode> tobeRemoved = new ArrayList<LogicalNode>();
+    for (Map.Entry<LogicalNode, QueryBlock> entry : queryBlockByNode.entrySet()) {
+      tobeRemoved.add(entry.getKey());
+    }
+    for (LogicalNode rn : tobeRemoved) {
+      queryBlockByNode.remove(rn);
+    }
+  }
+
+  public void connectBlocks(QueryBlock srcBlock, QueryBlock targetBlock, QueryBlockGraph.BlockType type) {
+    queryBlockGraph.connectBlocks(srcBlock.getName(), targetBlock.getName(), type);
+  }
+
+  public Collection<QueryBlockGraph.BlockEdge> getConnectedBlocks(String blockName) {
+    return queryBlockGraph.getBlockEdges(blockName);
+  }
+
   public Collection<QueryBlock> getQueryBlocks() {
     return queryBlocks.values();
   }
@@ -112,6 +132,10 @@ public class LogicalPlan {
 
     // if an added operator is a relation, add it to relation set.
     switch (node.getType()) {
+      case STORE:
+        block.setStoreTableNode((StoreTableNode) node);
+        break;
+
       case SCAN:
         ScanNode relationOp = (ScanNode) node;
         block.addRelation(relationOp);
@@ -119,6 +143,14 @@ public class LogicalPlan {
 
       case GROUP_BY:
         block.resolveGrouping();
+        break;
+
+      case SELECTION:
+        block.setSelectionNode((SelectionNode) node);
+        break;
+
+      case INSERT:
+        block.setInsertNode((InsertNode) node);
         break;
     }
 
@@ -311,7 +343,8 @@ public class LogicalPlan {
 
   public class QueryBlock {
     private String blockName;
-    private LogicalNode blockRoot;
+    private LogicalNode rootNode;
+    private NodeType rootType;
     private Map<String, ScanNode> relations = new HashMap<String, ScanNode>();
     private Projection projection;
 
@@ -320,6 +353,8 @@ public class LogicalPlan {
     private Projectable projectionNode;
     private SelectionNode selectionNode;
     private GroupbyNode groupingNode;
+    private StoreTableNode storeTableNode;
+    private InsertNode insertNode;
     private Schema schema;
 
     TargetListManager targetListManager;
@@ -333,16 +368,28 @@ public class LogicalPlan {
     }
 
     public boolean hasRoot() {
-      return blockRoot != null;
+      return rootNode != null;
+    }
+
+    public void refresh() {
+      setRoot(rootNode);
     }
 
     public void setRoot(LogicalNode blockRoot) {
-      this.blockRoot = blockRoot;
+      this.rootNode = blockRoot;
+      if (blockRoot instanceof LogicalRootNode) {
+        LogicalRootNode rootNode = (LogicalRootNode) blockRoot;
+        rootType = rootNode.getChild().getType();
+      }
       queryBlockByNode.put(blockRoot, this);
     }
 
     public LogicalNode getRoot() {
-      return blockRoot;
+      return rootNode;
+    }
+
+    public NodeType getRootType() {
+      return rootType;
     }
 
     public boolean containRelation(String name) {
@@ -428,6 +475,30 @@ public class LogicalPlan {
 
     public SelectionNode getSelectionNode() {
       return selectionNode;
+    }
+
+    public boolean hasStoreTableNode() {
+      return this.storeTableNode != null;
+    }
+
+    public void setStoreTableNode(StoreTableNode storeTableNode) {
+      this.storeTableNode = storeTableNode;
+    }
+
+    public StoreTableNode getStoreTableNode() {
+      return this.storeTableNode;
+    }
+
+    public boolean hasInsertNode() {
+      return this.insertNode != null;
+    }
+
+    public InsertNode getInsertNode() {
+      return this.insertNode;
+    }
+
+    public void setInsertNode(InsertNode insertNode) {
+      this.insertNode = insertNode;
     }
 
     public String toString() {

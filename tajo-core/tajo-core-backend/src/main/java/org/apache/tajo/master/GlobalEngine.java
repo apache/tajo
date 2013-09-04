@@ -29,24 +29,20 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.AlreadyExistsTableException;
 import org.apache.tajo.catalog.exception.NoSuchTableException;
 import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.engine.eval.ConstEval;
+import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.exception.EmptyClusterException;
 import org.apache.tajo.engine.exception.IllegalQueryStatusException;
 import org.apache.tajo.engine.exception.NoSuchQueryIdException;
 import org.apache.tajo.engine.exception.UnknownWorkerException;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
-import org.apache.tajo.engine.planner.global.GlobalOptimizer;
-import org.apache.tajo.engine.planner.logical.CreateTableNode;
-import org.apache.tajo.engine.planner.logical.DropTableNode;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.LogicalRootNode;
+import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.querymaster.QueryInfo;
@@ -56,8 +52,12 @@ import org.apache.tajo.storage.StorageUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
-@SuppressWarnings("unchecked")
+import static org.apache.tajo.ipc.ClientProtos.GetQueryStatusResponse;
+
 public class GlobalEngine extends AbstractService {
   /** Class Logger */
   private final static Log LOG = LogFactory.getLog(GlobalEngine.class);
@@ -69,11 +69,9 @@ public class GlobalEngine extends AbstractService {
   private CatalogService catalog;
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
-  private GlobalPlanner globalPlanner;
-  private GlobalOptimizer globalOptimizer;
+  private DistributedQueryHookManager hookManager;
 
-  public GlobalEngine(final MasterContext context)
-      throws IOException {
+  public GlobalEngine(final MasterContext context) {
     super(GlobalEngine.class.getName());
     this.context = context;
     this.catalog = context.getCatalog();
@@ -86,9 +84,10 @@ public class GlobalEngine extends AbstractService {
       planner = new LogicalPlanner(context.getCatalog());
       optimizer = new LogicalOptimizer();
 
-      globalPlanner = new GlobalPlanner(context.getConf(), sm, context.getEventHandler());
+      hookManager = new DistributedQueryHookManager();
+      hookManager.addHook(new CreateTableHook());
+      hookManager.addHook(new InsertHook());
 
-      globalOptimizer = new GlobalOptimizer();
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
     }
@@ -99,63 +98,70 @@ public class GlobalEngine extends AbstractService {
     super.stop();
   }
 
-  public ClientProtos.GetQueryStatusResponse executeQuery(String sql)
+  public GetQueryStatusResponse executeQuery(String sql)
       throws InterruptedException, IOException,
       NoSuchQueryIdException, IllegalQueryStatusException,
       UnknownWorkerException, EmptyClusterException {
 
     LOG.info("SQL: " + sql);
-    // parse the query
-    Expr planningContext = analyzer.parse(sql);
-    LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
 
-    ClientProtos.GetQueryStatusResponse.Builder responseBuilder = ClientProtos.GetQueryStatusResponse.newBuilder();
+    try {
+      Expr planningContext = analyzer.parse(sql);
+      LogicalPlan plan = createLogicalPlan(planningContext);
+      LogicalRootNode rootNode = (LogicalRootNode) plan.getRootBlock().getRoot();
 
-    if (PlannerUtil.checkIfDDLPlan(plan)) {
-      updateQuery(plan.getChild());
-
-      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
-      responseBuilder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
-    } else {
-      QueryJobManager queryJobManager = context.getQueryJobManager();
-      QueryInfo queryInfo = null;
-      try {
-        queryInfo = queryJobManager.createNewQueryJob(sql, plan);
-      } catch (Exception e) {
+      GetQueryStatusResponse.Builder responseBuilder = GetQueryStatusResponse.newBuilder();
+      if (PlannerUtil.checkIfDDLPlan(rootNode)) {
+        updateQuery(rootNode.getChild());
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
-        responseBuilder.setState(TajoProtos.QueryState.QUERY_ERROR);
-        responseBuilder.setErrorMessage(StringUtils.stringifyException(e));
+        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+        responseBuilder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
+      } else {
+        QueryMeta queryMeta = new QueryMeta();
+        hookManager.doHooks(queryMeta, plan);
 
-        return responseBuilder.build();
+        QueryJobManager queryJobManager = this.context.getQueryJobManager();
+        QueryInfo queryInfo;
+
+        queryInfo = queryJobManager.createNewQueryJob(queryMeta, sql, rootNode);
+
+        responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
+        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+        responseBuilder.setState(queryInfo.getQueryState());
+        if(queryInfo.getQueryMasterHost() != null) {
+          responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+        }
+        responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
       }
+      GetQueryStatusResponse response = responseBuilder.build();
 
-      //queryJobManager.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_START, queryInfo));
-
-      responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
-      responseBuilder.setState(queryInfo.getQueryState());
-      if(queryInfo.getQueryMasterHost() != null) {
-        responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+      return response;
+    } catch (Throwable t) {
+      LOG.error("\nStack Trace:\n" + StringUtils.stringifyException(t));
+      GetQueryStatusResponse.Builder responseBuilder = GetQueryStatusResponse.newBuilder();
+      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+      responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
+      responseBuilder.setState(TajoProtos.QueryState.QUERY_ERROR);
+      String errorMessage = t.getMessage();
+      if (t.getMessage() == null) {
+        errorMessage = StringUtils.stringifyException(t);
       }
-      responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
+      responseBuilder.setErrorMessage(errorMessage);
+      return responseBuilder.build();
     }
-
-    ClientProtos.GetQueryStatusResponse response = responseBuilder.build();
-    return response;
   }
 
-  public QueryId updateQuery(String sql) throws IOException, SQLException {
+  public QueryId updateQuery(String sql) throws IOException, SQLException, PlanningException {
     LOG.info("SQL: " + sql);
     // parse the query
-    Expr planningContext = analyzer.parse(sql);
-    LogicalRootNode plan = (LogicalRootNode) createLogicalPlan(planningContext);
+    Expr expr = analyzer.parse(sql);
+    LogicalPlan plan = createLogicalPlan(expr);
+    LogicalRootNode rootNode = (LogicalRootNode) plan.getRootBlock().getRoot();
 
-    if (!PlannerUtil.checkIfDDLPlan(plan)) {
+    if (!PlannerUtil.checkIfDDLPlan(rootNode)) {
       throw new SQLException("This is not update query:\n" + sql);
     } else {
-      updateQuery(plan.getChild());
+      updateQuery(rootNode.getChild());
       return QueryIdFactory.NULL_QUERY_ID;
     }
   }
@@ -177,21 +183,15 @@ public class GlobalEngine extends AbstractService {
     }
   }
 
-  private LogicalNode createLogicalPlan(Expr expression) throws IOException {
+  private LogicalPlan createLogicalPlan(Expr expression) throws PlanningException {
 
     LogicalPlan plan = planner.createPlan(expression);
-    LogicalNode optimizedPlan = null;
-    try {
-      optimizedPlan = optimizer.optimize(plan);
-    } catch (PlanningException e) {
-      LOG.error(e.getMessage(), e);
-    }
-
-    if(LOG.isDebugEnabled()) {
+    optimizer.optimize(plan);
+    if (LOG.isDebugEnabled()) {
       LOG.debug("LogicalPlan:\n" + plan.getRootBlock().getRoot());
     }
 
-    return optimizedPlan;
+    return plan;
   }
 
   private TableDesc createTable(CreateTableNode createTable) throws IOException {
@@ -271,5 +271,158 @@ public class GlobalEngine extends AbstractService {
     }
 
     LOG.info("Table \"" + tableName + "\" is dropped.");
+  }
+
+  public interface DistributedQueryHook {
+    boolean isEligible(QueryMeta queryMeta, LogicalPlan plan);
+    void hook(QueryMeta queryMeta, LogicalPlan plan) throws Exception;
+  }
+
+  public class DistributedQueryHookManager {
+    private List<DistributedQueryHook> hooks = new ArrayList<DistributedQueryHook>();
+    public void addHook(DistributedQueryHook hook) {
+      hooks.add(hook);
+    }
+
+    public void doHooks(QueryMeta queryMeta, LogicalPlan plan) {
+      for (DistributedQueryHook hook : hooks) {
+        if (hook.isEligible(queryMeta, plan)) {
+          try {
+            hook.hook(queryMeta, plan);
+          } catch (Throwable t) {
+            t.printStackTrace();
+          }
+        }
+      }
+    }
+  }
+
+  private class CreateTableHook implements DistributedQueryHook {
+
+    @Override
+    public boolean isEligible(QueryMeta queryMeta, LogicalPlan plan) {
+      if (plan.getRootBlock().hasStoreTableNode()) {
+        StoreTableNode storeTableNode = plan.getRootBlock().getStoreTableNode();
+        return storeTableNode.isCreatedTable();
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public void hook(QueryMeta queryMeta, LogicalPlan plan) throws Exception {
+      StoreTableNode storeTableNode = plan.getRootBlock().getStoreTableNode();
+      queryMeta.setOutputTable(storeTableNode.getTableName());
+      queryMeta.setCreateTable();
+    }
+  }
+
+  private class InsertHook implements DistributedQueryHook {
+
+    @Override
+    public boolean isEligible(QueryMeta queryMeta, LogicalPlan plan) {
+      return plan.getRootBlock().getRootType() == NodeType.INSERT;
+    }
+
+    @Override
+  public void hook(QueryMeta queryMeta, LogicalPlan plan) throws Exception {
+      queryMeta.setInsert();
+
+      InsertNode insertNode = plan.getRootBlock().getInsertNode();
+      StoreTableNode storeNode;
+
+      // Set QueryMeta settings, such as output table name and output path.
+      // It also remove data files if overwrite is true.
+      String outputTableName;
+      Path outputPath;
+      if (insertNode.hasTargetTable()) {
+        TableDesc desc = insertNode.getTargetTable();
+        outputTableName = desc.getName();
+        outputPath = desc.getPath();
+      } else {
+        outputTableName = PlannerUtil.normalizeTableName(insertNode.getPath().getName());
+        outputPath = insertNode.getPath();
+        queryMeta.setFileOutput();
+      }
+
+      storeNode = new StoreTableNode(outputTableName);
+      queryMeta.setOutputTable(outputTableName);
+      queryMeta.setOutputPath(outputPath);
+
+      if (insertNode.isOverwrite() && sm.exists(outputPath)) {
+        queryMeta.setOutputOverwrite();
+        storeNode.setOverwrite();
+        sm.deleteData(outputPath);
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////
+      //             [TARGET TABLE]  [TARGET COLUMN]         [SUBQUERY Schema]           /
+      // INSERT INTO    TB_NAME      (col1, col2)     SELECT    c1,   c2        FROM ... /
+      ////////////////////////////////////////////////////////////////////////////////////
+      LogicalNode subQuery = insertNode.getSubQuery();
+      Schema subQueryOutSchema = subQuery.getOutSchema();
+
+      if (insertNode.hasTargetTable()) { // if a target table is given, it computes the proper schema.
+        Schema targetTableSchema = insertNode.getTargetTable().getMeta().getSchema();
+        Schema targetProjectedSchema = insertNode.getTargetSchema();
+
+        int [] targetColumnIds = new int[targetProjectedSchema.getColumnNum()];
+        int idx = 0;
+        for (Column column : targetProjectedSchema.getColumns()) {
+          targetColumnIds[idx++] = targetTableSchema.getColumnId(column.getQualifiedName());
+        }
+
+        Target [] targets = new Target[targetTableSchema.getColumnNum()];
+        boolean matched = false;
+        for (int i = 0; i < targetTableSchema.getColumnNum(); i++) {
+          Column column = targetTableSchema.getColumn(i);
+          for (int j = 0; j < targetColumnIds.length; j++) {
+            if (targetColumnIds[j] == i) {
+              Column outputColumn = subQueryOutSchema.getColumn(j);
+              targets[i] = new Target(new FieldEval(outputColumn), column.getColumnName());
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) {
+            targets[i] = new Target(new ConstEval(NullDatum.get()), column.getColumnName());
+          }
+          matched = false;
+        }
+
+
+        ProjectionNode projectionNode = new ProjectionNode(targets);
+        projectionNode.setInSchema(insertNode.getSubQuery().getOutSchema());
+        projectionNode.setOutSchema(PlannerUtil.targetToSchema(targets));
+        Collection<QueryBlockGraph.BlockEdge> edges = plan.getConnectedBlocks(LogicalPlan.ROOT_BLOCK);
+        LogicalPlan.QueryBlock block = plan.getBlock(edges.iterator().next().getTargetBlock());
+        projectionNode.setChild(block.getRoot());
+
+
+        storeNode.setOutSchema(projectionNode.getOutSchema());
+        storeNode.setInSchema(projectionNode.getOutSchema());
+        storeNode.setChild(projectionNode);
+      } else {
+        storeNode.setOutSchema(subQueryOutSchema);
+        storeNode.setInSchema(subQueryOutSchema);
+        Collection<QueryBlockGraph.BlockEdge> edges = plan.getConnectedBlocks(LogicalPlan.ROOT_BLOCK);
+        LogicalPlan.QueryBlock block = plan.getBlock(edges.iterator().next().getTargetBlock());
+        storeNode.setChild(block.getRoot());
+      }
+
+      storeNode.setListPartition();
+      if (insertNode.hasStorageType()) {
+        storeNode.setStorageType(insertNode.getStorageType());
+      }
+      if (insertNode.hasOptions()) {
+        storeNode.setOptions(insertNode.getOptions());
+      }
+
+      // find a subquery query of insert node and merge root block and subquery into one query block.
+      PlannerUtil.replaceNode(plan.getRootBlock().getRoot(), storeNode, NodeType.INSERT);
+      plan.getRootBlock().refresh();
+      LogicalPlan.QueryBlock subBlock = plan.getBlock(insertNode.getSubQuery());
+      plan.removeBlock(subBlock);
+    }
   }
 }

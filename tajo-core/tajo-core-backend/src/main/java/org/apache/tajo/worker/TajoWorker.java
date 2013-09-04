@@ -21,13 +21,14 @@ package org.apache.tajo.worker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.service.CompositeService;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.catalog.CatalogClient;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryMaster;
@@ -36,11 +37,13 @@ import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.CallFuture2;
 import org.apache.tajo.rpc.ProtoAsyncRpcClient;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.webapp.StaticHttpServer;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -64,10 +67,14 @@ public class TajoWorker extends CompositeService {
 
   private TajoWorkerManagerService tajoWorkerManagerService;
 
+  private InetSocketAddress tajoMasterAddress;
+
   //to TajoMaster
   private ProtoAsyncRpcClient tajoMasterRpc;
 
   private TajoMasterProtocol.TajoMasterProtocolService tajoMasterRpcClient;
+
+  private CatalogClient catalogClient;
 
   private WorkerContext workerContext;
 
@@ -171,17 +178,14 @@ public class TajoWorker extends CompositeService {
       workerHeartbeatThread.interrupt();
     }
 
-//    try {
-//      FileSystem.closeAll();
-//    } catch (IOException e) {
-//      LOG.error(e.getMessage(), e);
-//    }
+    if (catalogClient != null) {
+      catalogClient.close();
+    }
+
     if(tajoMasterRpc != null) {
       tajoMasterRpc.close();
     }
-//    for(Service eachService: getServices()) {
-//      System.out.println("Service:" + eachService);
-//    }
+
     super.stop();
     LOG.info("TajoWorker main thread exiting");
   }
@@ -205,6 +209,10 @@ public class TajoWorker extends CompositeService {
 
     public TaskRunnerManager getTaskRunnerManager() {
       return taskRunnerManager;
+    }
+
+    public CatalogService getCatalog() {
+      return catalogClient;
     }
 
     public TajoPullServerService getPullService() {
@@ -246,9 +254,10 @@ public class TajoWorker extends CompositeService {
   private void setWorkerMode(String[] params) {
     if("qm".equals(daemonMode)) {
       //QueryMaster mode
-      String tajoMasterAddress = params[2];
 
+      String tajoMasterAddress = params[2];
       connectToTajoMaster(tajoMasterAddress);
+      connectToCatalog();
 
       QueryId queryId = TajoIdUtils.parseQueryId(params[1]);
       tajoWorkerManagerService.getQueryMaster().reportQueryStatusToQueryMaster(
@@ -259,27 +268,41 @@ public class TajoWorker extends CompositeService {
     } else {
       //Standby mode
       connectToTajoMaster(tajoConf.get("tajo.master.manager.addr"));
+      connectToCatalog();
       workerHeartbeatThread = new WorkerHeartbeatThread();
       workerHeartbeatThread.start();
     }
   }
 
-  private void connectToTajoMaster(String tajoMasterAddress) {
-    LOG.info("Init TajoMaster connection to:" + tajoMasterAddress);
-    InetSocketAddress addr = NetUtils.createSocketAddr(tajoMasterAddress);
+  private void connectToTajoMaster(String tajoMasterAddrString) {
+    LOG.info("Connecting to TajoMaster (" + tajoMasterAddrString +")");
+    this.tajoMasterAddress = NetUtils.createSocketAddr(tajoMasterAddrString);
+
     while(true) {
       try {
-        tajoMasterRpc = new ProtoAsyncRpcClient(TajoMasterProtocol.class, addr);
+        tajoMasterRpc = new ProtoAsyncRpcClient(TajoMasterProtocol.class, this.tajoMasterAddress);
         tajoMasterRpcClient = tajoMasterRpc.getStub();
         break;
       } catch (Exception e) {
-        LOG.error("Can't connect to TajoMaster[" + addr + "], " + e.getMessage(), e);
+        LOG.error("Can't connect to TajoMaster[" + NetUtils.normalizeInetSocketAddress(tajoMasterAddress) + "], "
+            + e.getMessage(), e);
       }
 
       try {
         Thread.sleep(3000);
       } catch (InterruptedException e) {
       }
+    }
+  }
+
+  private void connectToCatalog() {
+    // TODO: To be improved. it's a hack. It assumes that CatalogServer is embedded in TajoMaster.
+    String hostName = this.tajoMasterAddress.getHostName();
+    int port = Integer.parseInt(tajoConf.getVar(TajoConf.ConfVars.CATALOG_ADDRESS).split(":")[1]);
+    try {
+      catalogClient = new CatalogClient(hostName, port);
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
 

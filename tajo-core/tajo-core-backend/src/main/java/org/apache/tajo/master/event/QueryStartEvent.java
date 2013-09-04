@@ -20,23 +20,33 @@ package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.master.QueryMeta;
 
+/**
+ * This event is conveyed to QueryMaster.
+ */
 public class QueryStartEvent extends AbstractEvent {
   public enum EventType {
     QUERY_START
   }
 
   private QueryId queryId;
+  private QueryMeta queryMeta;
   private String logicalPlanJson;
 
-  public QueryStartEvent(QueryId queryId, String logicalPlanJson) {
+  public QueryStartEvent(QueryId queryId, QueryMeta queryMeta, String logicalPlanJson) {
     super(EventType.QUERY_START);
     this.queryId = queryId;
+    this.queryMeta = queryMeta;
     this.logicalPlanJson = logicalPlanJson;
   }
 
   public QueryId getQueryId() {
     return queryId;
+  }
+
+  public QueryMeta getQueryMeta() {
+    return this.queryMeta;
   }
 
   public String getLogicalPlanJson() {

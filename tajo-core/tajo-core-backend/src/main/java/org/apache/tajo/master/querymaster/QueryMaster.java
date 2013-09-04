@@ -60,7 +60,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private GlobalOptimizer globalOptimizer;
 
-//  private boolean isCreateTableStmt;
   private StorageManager storageManager;
 
   private QueryConf queryConf;
@@ -88,7 +87,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       queryConf = new QueryConf(conf);
       queryConf.addResource(new Path(QueryConf.QUERY_MASTER_FILENAME));
 
-      QUERY_SESSION_TIMEOUT = 60 * 1000;//queryConf.getIntVar(TajoConf.ConfVars.QUERY_SESSION_TIMEOUT);
+      QUERY_SESSION_TIMEOUT = 60 * 1000;
       queryMasterContext = new QueryMasterContext(queryConf);
 
       clock = new SystemClock();
@@ -112,7 +111,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   @Override
   public void start() {
-    LOG.info("====>QueryMaster start");
+    LOG.info("QueryMaster start");
 
     queryHeartbeatThread = new QueryHeartbeatThread();
     queryHeartbeatThread.start();
@@ -253,10 +252,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
   private class QueryStartEventHandler implements EventHandler<QueryStartEvent> {
     @Override
     public void handle(QueryStartEvent event) {
-      LOG.info("====>Start QueryStartEventHandler:" + event.getQueryId());
+      LOG.info("Start QueryStartEventHandler:" + event.getQueryId());
       //To change body of implemented methods use File | Settings | File Templates.
       QueryMasterTask queryMasterTask = new QueryMasterTask(queryMasterContext,
-          event.getQueryId(), event.getLogicalPlanJson());
+          event.getQueryId(), event.getQueryMeta(), event.getLogicalPlanJson());
 
       queryMasterTask.init(queryConf);
       queryMasterTask.start();

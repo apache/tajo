@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner.rewrite;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.eval.EvalNode;
@@ -43,21 +42,26 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
 
   @Override
   public boolean isEligible(LogicalPlan plan) {
-    LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
-
-    return PlannerUtil.findTopNode(toBeOptimized, NodeType.SELECTION) != null;
+    for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
+      LogicalNode toBeOptimized = block.getRoot();
+      if (PlannerUtil.findTopNode(toBeOptimized, NodeType.SELECTION) != null) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
   public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
-    LogicalNode root = plan.getRootBlock().getRoot();
-    SelectionNode selNode = (SelectionNode) PlannerUtil.findTopNode(root, NodeType.SELECTION);
-    Preconditions.checkNotNull(selNode);
+    for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
+      if (block.hasSelectionNode()) {
+        SelectionNode filterNode = block.getSelectionNode();
+        Stack<LogicalNode> stack = new Stack<LogicalNode>();
+        EvalNode [] cnf = EvalTreeUtil.getConjNormalForm(filterNode.getQual());
+        visitChild(plan, block.getRoot(), stack, Lists.newArrayList(cnf));
+      }
+    }
 
-    Stack<LogicalNode> stack = new Stack<LogicalNode>();
-    EvalNode [] cnf = EvalTreeUtil.getConjNormalForm(selNode.getQual());
-
-    visitChild(plan, root, stack, Lists.newArrayList(cnf));
     return plan;
   }
 

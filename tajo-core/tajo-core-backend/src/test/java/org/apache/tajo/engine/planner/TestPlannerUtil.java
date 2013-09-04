@@ -96,7 +96,7 @@ public class TestPlannerUtil {
   }
 
   @Test
-  public final void testTransformTwoPhase() {
+  public final void testTransformTwoPhase() throws PlanningException {
     // without 'having clause'
     Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[7]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
@@ -111,7 +111,7 @@ public class TestPlannerUtil {
   }
   
   @Test
-  public final void testTrasformTwoPhaseWithStore() {
+  public final void testTrasformTwoPhaseWithStore() throws PlanningException {
     Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[9]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     
@@ -141,7 +141,7 @@ public class TestPlannerUtil {
   }
   
   @Test
-  public final void testFindTopNode() throws CloneNotSupportedException {
+  public final void testFindTopNode() throws CloneNotSupportedException, PlanningException {
     // two relations
     Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[1]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();

@@ -49,7 +49,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
   public boolean isEligible(LogicalPlan plan) {
     LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
 
-    if (PlannerUtil.checkIfDDLPlan(toBeOptimized) || !plan.getRootBlock().hasTableExpression()) {
+    if (PlannerUtil.checkIfDDLPlan(toBeOptimized) && !plan.getRootBlock().hasTableExpression()) {
       LOG.info("This query skips the logical optimization step.");
       return false;
     }
@@ -59,39 +59,48 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
 
   @Override
   public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
-    Stack<LogicalNode> stack = new Stack<LogicalNode>();
-
-    PushDownContext context = new PushDownContext();
-    context.plan = plan;
-
-    if (plan.getRootBlock().getProjection() != null &&
-        plan.getRootBlock().getProjection().isAllProjected()) {
-      context.targetListManager = new TargetListManager(plan,
-          plan.getRootBlock().getProjectionNode().getTargets());
-    } else {
-      context.targetListManager= new TargetListManager(plan, LogicalPlan.ROOT_BLOCK);
+    for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
+      NodeType nodeType = block.getRootType();
+      // skip a non-table-expression block.
+      if (!(nodeType == NodeType.INSERT || nodeType == NodeType.CREATE_TABLE || nodeType == NodeType.EXPRS)) {
+        Stack<LogicalNode> stack = new Stack<LogicalNode>();
+        PushDownContext context = new PushDownContext(block);
+        context.plan = plan;
+        if (block.getProjection() != null &&
+            block.getProjection().isAllProjected()) {
+          context.targetListManager = new TargetListManager(plan,
+              block.getProjectionNode().getTargets());
+        } else {
+          context.targetListManager= new TargetListManager(plan, block.getName());
+        }
+        context.upperRequired = new HashSet<Column>(block.getSchema().getColumns());
+        visitChild(plan, block.getRoot(), stack, context);
+      }
     }
-
-    context.upperRequired = new HashSet<Column>(plan.getRootBlock().getSchema().getColumns());
-
-
-    visitChild(plan, plan.getRootBlock().getRoot(), stack, context);
 
     return plan;
   }
 
   public static class PushDownContext {
+    LogicalPlan.QueryBlock queryBlock;
     LogicalPlan plan;
     TargetListManager targetListManager;
     Set<Column> upperRequired;
 
-    public PushDownContext() {
+    public PushDownContext(LogicalPlan.QueryBlock block) {
+      this.queryBlock = block;
     }
 
     public PushDownContext(ProjectionPushDownRule.PushDownContext context) {
       this.plan = context.plan;
+      this.queryBlock = context.queryBlock;
       this.targetListManager = context.targetListManager;
       this.upperRequired = context.upperRequired;
+    }
+
+    public PushDownContext(ProjectionPushDownRule.PushDownContext context, LogicalPlan.QueryBlock queryBlock) {
+      this(context);
+      this.queryBlock = queryBlock;
     }
   }
 
@@ -117,10 +126,15 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     // If all expressions are evaluated in the child operators and the last operator is projectable,
     // ProjectionNode will not be necessary. It eliminates ProjectionNode.
     if (context.targetListManager.isAllEvaluated() && (childNode instanceof Projectable)) {
-      LogicalNode parent = stack.peek();
-      // update the child node's output schemas
-      child.setOutSchema(context.targetListManager.getUpdatedSchema());
-      PlannerUtil.deleteNode(parent, node);
+      if (stack.isEmpty()) {
+        // update the child node's output schemas
+        child.setOutSchema(context.targetListManager.getUpdatedSchema());
+        context.queryBlock.setRoot(child);
+      } else {
+        LogicalNode parent = stack.peek();
+        child.setOutSchema(context.targetListManager.getUpdatedSchema());
+        PlannerUtil.deleteNode(parent, node);
+      }
       return child;
     } else {
       node.setInSchema(child.getOutSchema());
@@ -351,12 +365,12 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
                                             PushDownContext context) throws PlanningException {
 
     LogicalPlan.QueryBlock leftBlock = plan.getBlock(setNode.getLeftChild());
-    PushDownContext leftContext = new PushDownContext(context);
+    PushDownContext leftContext = new PushDownContext(context, leftBlock);
     leftContext.targetListManager = new TargetListManager(plan,
         leftBlock.getTargetListManager().getUnEvaluatedTargets());
 
     LogicalPlan.QueryBlock rightBlock = plan.getBlock(setNode.getRightChild());
-    PushDownContext rightContext = new PushDownContext(context);
+    PushDownContext rightContext = new PushDownContext(context, rightBlock);
     rightContext.targetListManager = new TargetListManager(plan,
         rightBlock.getTargetListManager().getUnEvaluatedTargets());
 

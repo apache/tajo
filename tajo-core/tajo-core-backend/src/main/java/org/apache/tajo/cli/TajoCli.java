@@ -349,51 +349,55 @@ public class TajoCli {
         sout.println(queryId + " is killed.");
       } else {
         if (status.getState() == QueryState.QUERY_SUCCEEDED) {
-          ResultSet res = client.getQueryResult(queryId);
-          if (res == null) {
-            sout.println("OK");
-            return;
-          }
+          if (status.hasResult()) {
+            ResultSet res = client.getQueryResult(queryId);
+            if (res == null) {
+              sout.println("OK");
+              return;
+            }
 
-          ResultSetMetaData rsmd = res.getMetaData();
-          TableDesc desc = client.getResultDesc(queryId);
-          sout.println("final state: " + status.getState()
-              + ", init time: " + (((float)(status.getInitTime() - status.getSubmitTime())
-              / 1000.0) + " sec")
-              + ", execution time: " + (((float)status.getFinishTime() - status.getInitTime())
-              / 1000.0) + " sec"
-              + ", total response time: " + (((float)(status.getFinishTime() -
-              status.getSubmitTime()) / 1000.0) + " sec"));
-          sout.println("result: " + desc.getPath() + "\n");
+            ResultSetMetaData rsmd = res.getMetaData();
+            TableDesc desc = client.getResultDesc(queryId);
+            sout.println("final state: " + status.getState()
+                + ", init time: " + (((float)(status.getInitTime() - status.getSubmitTime())
+                / 1000.0) + " sec")
+                + ", execution time: " + (((float)status.getFinishTime() - status.getInitTime())
+                / 1000.0) + " sec"
+                + ", total response time: " + (((float)(status.getFinishTime() -
+                status.getSubmitTime()) / 1000.0) + " sec"));
+            sout.println("result: " + desc.getPath() + "\n");
 
-          int numOfColumns = rsmd.getColumnCount();
-          for (int i = 1; i <= numOfColumns; i++) {
-            if (i > 1) sout.print(",  ");
-            String columnName = rsmd.getColumnName(i);
-            sout.print(columnName);
-          }
-          sout.println("\n-------------------------------");
-
-          int numOfPrintedRows = 0;
-          while (res.next()) {
-            // TODO - to be improved to print more formatted text
+            int numOfColumns = rsmd.getColumnCount();
             for (int i = 1; i <= numOfColumns; i++) {
               if (i > 1) sout.print(",  ");
-              String columnValue = res.getObject(i).toString();
-              sout.print(columnValue);
+              String columnName = rsmd.getColumnName(i);
+              sout.print(columnName);
             }
-            sout.println();
-            sout.flush();
-            numOfPrintedRows++;
-            if (numOfPrintedRows >= PRINT_LIMIT) {
-              sout.print("continue... ('q' is quit)");
-              sout.flush();
-              if (sin.read() == 'q') {
-                break;
+            sout.println("\n-------------------------------");
+
+            int numOfPrintedRows = 0;
+            while (res.next()) {
+              // TODO - to be improved to print more formatted text
+              for (int i = 1; i <= numOfColumns; i++) {
+                if (i > 1) sout.print(",  ");
+                String columnValue = res.getObject(i).toString();
+                sout.print(columnValue);
               }
-              numOfPrintedRows = 0;
               sout.println();
+              sout.flush();
+              numOfPrintedRows++;
+              if (numOfPrintedRows >= PRINT_LIMIT) {
+                sout.print("continue... ('q' is quit)");
+                sout.flush();
+                if (sin.read() == 'q') {
+                  break;
+                }
+                numOfPrintedRows = 0;
+                sout.println();
+              }
             }
+          } else {
+            sout.println("OK");
           }
         }
       }

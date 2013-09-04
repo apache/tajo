@@ -23,6 +23,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.Fetch;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProtoOrBuilder;
 import org.apache.tajo.ipc.protocolrecords.QueryUnitRequest;
+import org.apache.tajo.master.QueryMeta;
 import org.apache.tajo.storage.Fragment;
 
 import java.net.URI;
@@ -40,6 +41,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	private Boolean interQuery;
 	private List<Fetch> fetches;
   private Boolean shouldDie;
+  private QueryMeta queryMeta;
 	
 	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
 	private QueryUnitRequestProto.Builder builder = null;
@@ -52,10 +54,10 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	}
 	
 	public QueryUnitRequestImpl(QueryUnitAttemptId id, List<Fragment> fragments,
-			String outputTable, boolean clusteredOutput, 
-			String serializedData) {
+			String outputTable, boolean clusteredOutput,
+			String serializedData, QueryMeta queryMeta) {
 		this();
-		this.set(id, fragments, outputTable, clusteredOutput, serializedData);
+		this.set(id, fragments, outputTable, clusteredOutput, serializedData, queryMeta);
 	}
 	
 	public QueryUnitRequestImpl(QueryUnitRequestProto proto) {
@@ -67,13 +69,14 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
 	public void set(QueryUnitAttemptId id, List<Fragment> fragments,
 			String outputTable, boolean clusteredOutput, 
-			String serializedData) {
+			String serializedData, QueryMeta queryMeta) {
 		this.id = id;
 		this.fragments = fragments;
 		this.outputTable = outputTable;
 		this.clusteredOutput = clusteredOutput;
 		this.serializedData = serializedData;
 		this.isUpdated = true;
+    this.queryMeta = queryMeta;
 	}
 
 	@Override
@@ -178,6 +181,23 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	    .setUrls(uri.toString()).build());
 	  
 	}
+
+  public QueryMeta getQueryMeta() {
+    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    if (queryMeta != null) {
+      return queryMeta;
+    }
+    if (!p.hasQueryMeta()) {
+      return null;
+    }
+    this.queryMeta = new QueryMeta(p.getQueryMeta());
+    return this.queryMeta;
+  }
+
+  public void setQueryMeta(QueryMeta queryMeta) {
+    maybeInitBuilder();
+    this.queryMeta = queryMeta;
+  }
 	
 	public List<Fetch> getFetches() {
 	  initFetches();    
@@ -248,6 +268,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		}
     if (this.shouldDie != null) {
       builder.setShouldDie(this.shouldDie);
+    }
+    if (this.queryMeta != null) {
+      builder.setQueryMeta(queryMeta.getProto());
     }
 	}
 

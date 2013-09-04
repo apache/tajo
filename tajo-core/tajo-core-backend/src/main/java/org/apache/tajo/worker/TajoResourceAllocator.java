@@ -189,7 +189,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       queryConfPath = new Path(queryConfPath, QueryConf.FILENAME);
 
       if(!fs.exists(queryConfPath)){
-        LOG.info("Writing a QueryConf to HDFS and add to local environment, outputPath=" + queryConf.getOutputPath());
+        LOG.info("Writing a QueryConf to HDFS and add to local environment, outputPath=" + queryConfPath);
         writeConf(queryConf, queryConfPath);
       } else {
         LOG.warn("QueryConf already exist. path: "  + queryConfPath.toString());

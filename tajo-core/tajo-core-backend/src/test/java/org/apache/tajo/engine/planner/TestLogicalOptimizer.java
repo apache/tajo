@@ -242,4 +242,11 @@ public class TestLogicalOptimizer {
     // Test for Join Node
     assertTrue(PlannerUtil.canBeEvaluated(selNode.getQual(), scanNode));
   }
+
+  @Test
+  public final void testInsertInto() throws CloneNotSupportedException, PlanningException {
+    Expr expr = sqlAnalyzer.parse(TestLogicalPlanner.insertStatements[0]);
+    LogicalPlan newPlan = planner.createPlan(expr);
+    optimizer.optimize(newPlan);
+  }
 }

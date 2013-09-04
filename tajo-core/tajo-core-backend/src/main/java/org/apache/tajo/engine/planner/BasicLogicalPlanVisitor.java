@@ -197,4 +197,12 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
     stack.pop();
     return node;
   }
+
+  @Override
+  public LogicalNode visitInsert(LogicalPlan plan, InsertNode node, Stack<LogicalNode> stack, T data) throws PlanningException {
+    stack.push(node);
+    visitChild(plan, node.getSubQuery(), stack, data);
+    stack.pop();
+    return node;
+  }
 }

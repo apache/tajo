@@ -44,6 +44,9 @@ public enum OpType {
   CreateTable(CreateTable.class),
   DropTable(DropTable.class),
 
+  // Insert or Update
+  Insert(Insert.class),
+
   // logical operators
   And(BinaryOperator.class),
   Or(BinaryOperator.class),

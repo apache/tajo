@@ -19,17 +19,18 @@
 package org.apache.tajo.storage.trevni;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.trevni.ColumnFileReader;
-import org.apache.trevni.ColumnValues;
-import org.apache.trevni.avro.HadoopInput;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.BlobDatum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.trevni.ColumnFileReader;
+import org.apache.trevni.ColumnValues;
+import org.apache.trevni.avro.HadoopInput;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -127,11 +128,6 @@ public class TrevniScanner extends FileScanner {
               DatumFactory.createInet4(((ByteBuffer) columns[i].nextValue()).array()));
           break;
 
-//        case TEXT:
-//          tuple.put(tid,
-//              DatumFactory.createText((String) columns[i].nextValue()));
-//          break;
-
         case TEXT:
           tuple.put(tid,
               DatumFactory.createText((String) columns[i].nextValue()));
@@ -140,6 +136,10 @@ public class TrevniScanner extends FileScanner {
         case BLOB:
           tuple.put(tid,
               new BlobDatum(((ByteBuffer) columns[i].nextValue())));
+          break;
+
+        case NULL:
+          tuple.put(tid, NullDatum.get());
           break;
 
         default:

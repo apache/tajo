@@ -21,6 +21,8 @@
  */
 package org.apache.tajo.engine.planner.logical;
 
+import org.apache.tajo.engine.planner.InsertNode;
+
 /**
  * This indicates a logical node type.
  */
@@ -31,6 +33,7 @@ public enum NodeType {
   EXCEPT(ExceptNode.class),
   EXPRS(EvalExprNode.class),
   GROUP_BY(GroupbyNode.class),
+  INSERT(InsertNode.class),
   INTERSECT(IntersectNode.class),
   LIMIT(LimitNode.class),
   JOIN(JoinNode.class),

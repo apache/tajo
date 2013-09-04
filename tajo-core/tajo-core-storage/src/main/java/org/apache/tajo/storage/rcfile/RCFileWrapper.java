@@ -123,6 +123,11 @@ public class RCFileWrapper {
               byteRef.set(i, cu);
               break;
             }
+            case NULL:
+              cu = new BytesRefWritable(new byte[0]);
+              byteRef.set(i, cu);
+              break;
+
             default:
               throw new IOException("ERROR: Unsupported Data Type");
           }

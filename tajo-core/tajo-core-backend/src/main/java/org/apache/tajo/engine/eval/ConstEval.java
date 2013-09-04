@@ -67,6 +67,7 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
       case BLOB : return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BLOB);
       case TEXT: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.TEXT);
       case INET4: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INET4);
+      case NULL: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.NULL);
       default: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.ANY);
 		}
 	}

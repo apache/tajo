@@ -30,7 +30,7 @@ public class NullDatum extends Datum {
   }
   
   private NullDatum() {
-    super(Type.ANY);
+    super(Type.NULL);
   }
   
   public static NullDatum get() {
@@ -64,7 +64,7 @@ public class NullDatum extends Datum {
 
   @Override
   public byte[] asByteArray() {
-    return Bytes.toBytes("NULL");
+    return Bytes.toBytes("null");
   }
 
   @Override
@@ -79,7 +79,7 @@ public class NullDatum extends Datum {
 
   @Override
   public String asChars() {
-    return "NULL";
+    return "null";
   }
 
   @Override

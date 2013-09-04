@@ -21,7 +21,10 @@ package org.apache.tajo.engine.query;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.TableDesc;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -44,7 +47,7 @@ public class TestSelectQuery {
   public static void setUp() throws Exception {
     tpch = TpchTestBase.getInstance();
   }
-  
+
   @Test
   public final void testSelect() throws Exception {
     ResultSet res = tpch.execute("select l_orderkey, l_partkey from lineitem");
@@ -277,7 +280,7 @@ public class TestSelectQuery {
 
     try {
       Map<Integer, String> result = Maps.newHashMap();
-      result.put(0, "NULL");
+      result.put(0, "null");
       result.put(1, "one");
       result.put(2, "two");
       result.put(3, "three");
@@ -406,15 +409,12 @@ public class TestSelectQuery {
   public final void testCreateAfterSelect() throws Exception {
     ResultSet res = tpch.execute(
         "create table orderkeys as select l_orderkey from lineitem");
-    try {
-      int count = 0;
-      for (;res.next();) {
-        count++;
-      }
-      assertEquals(count, 5);
-    } finally {
-      res.close();
-    }
+    res.close();
+    TajoTestingCluster cluster = tpch.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable("orderkeys"));
+    TableDesc orderKeys = catalog.getTableDesc("orderkeys");
+    assertEquals(5, orderKeys.getMeta().getStat().getNumRows().intValue());
   }
 
   //@Test

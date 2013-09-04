@@ -32,6 +32,7 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
+import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.Tuple;
@@ -124,7 +125,7 @@ public class TestEvalTree {
       "select name from people where NOT (20 > 30)", // 5
   };
 
-  public static Target[] getRawTargets(String query) {
+  public static Target[] getRawTargets(String query) throws PlanningException {
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(expr);
     Target [] targets = plan.getRootBlock().getTargetListManager().getUnEvaluatedTargets();
@@ -136,7 +137,12 @@ public class TestEvalTree {
 
   public static EvalNode getRootSelection(String query) {
     Expr block = analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(block);
+    LogicalPlan plan = null;
+    try {
+      plan = planner.createPlan(block);
+    } catch (PlanningException e) {
+      e.printStackTrace();
+    }
     EvalNode qual = plan.getRootBlock().getSelectionNode().getQual();
     assertJsonSerDer(qual);
     return qual;

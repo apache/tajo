@@ -32,6 +32,7 @@ import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
+import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.storage.*;
@@ -129,7 +130,7 @@ public class TestBNLJoinExec {
           "inner join people as p on e.empId = p.empId and e.memId = p.fk_memId" };
 
   @Test
-  public final void testBNLCrossJoin() throws IOException {
+  public final void testBNLCrossJoin() throws IOException, PlanningException {
     Fragment[] empFrags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Fragment[] peopleFrags = StorageManager.splitNG(conf, "people", people.getMeta(), people.getPath(),
@@ -164,7 +165,7 @@ public class TestBNLJoinExec {
   }
 
   @Test
-  public final void testBNLInnerJoin() throws IOException {
+  public final void testBNLInnerJoin() throws IOException, PlanningException {
     Fragment[] empFrags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Fragment[] peopleFrags = StorageManager.splitNG(conf, "people", people.getMeta(), people.getPath(),

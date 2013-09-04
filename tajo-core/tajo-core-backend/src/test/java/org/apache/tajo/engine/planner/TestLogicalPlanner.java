@@ -44,8 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestLogicalPlanner {
   private static TajoTestingCluster util;
@@ -62,7 +61,7 @@ public class TestLogicalPlanner {
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
       catalog.registerFunction(funcDesc);
     }
-    
+
     Schema schema = new Schema();
     schema.addColumn("name", Type.TEXT);
     schema.addColumn("empid", Type.INT4);
@@ -98,7 +97,7 @@ public class TestLogicalPlanner {
 
     // TPC-H Schema for Complex Queries
     String [] tpchTables = {
-        "part", "supplier", "partsupp", "nation", "region"
+        "part", "supplier", "partsupp", "nation", "region", "lineitem"
     };
     tpch = new TPCH();
     tpch.loadSchemas();
@@ -136,7 +135,7 @@ public class TestLogicalPlanner {
   };
 
   @Test
-  public final void testSingleRelation() throws CloneNotSupportedException {
+  public final void testSingleRelation() throws CloneNotSupportedException, PlanningException {
     Expr expr = sqlAnalyzer.parse(QUERIES[0]);
     LogicalPlan planNode = planner.createPlan(expr);
     LogicalNode plan = planNode.getRootBlock().getRoot();
@@ -168,7 +167,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testImplicityJoinPlan() throws CloneNotSupportedException {
+  public final void testImplicityJoinPlan() throws CloneNotSupportedException, PlanningException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[1]);
     LogicalPlan planNode = planner.createPlan(expr);
@@ -264,7 +263,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testNaturalJoinPlan() {
+  public final void testNaturalJoinPlan() throws PlanningException {
     // two relations
     Expr context = sqlAnalyzer.parse(JOINS[0]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
@@ -300,7 +299,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testInnerJoinPlan() {
+  public final void testInnerJoinPlan() throws PlanningException {
     // two relations
     Expr expr = sqlAnalyzer.parse(JOINS[1]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
@@ -336,7 +335,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testOuterJoinPlan() {
+  public final void testOuterJoinPlan() throws PlanningException {
     // two relations
     Expr expr = sqlAnalyzer.parse(JOINS[2]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
@@ -374,7 +373,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testGroupby() throws CloneNotSupportedException {
+  public final void testGroupby() throws CloneNotSupportedException, PlanningException {
     // without 'having clause'
     Expr context = sqlAnalyzer.parse(QUERIES[7]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
@@ -412,7 +411,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testMultipleJoin() throws IOException {
+  public final void testMultipleJoin() throws IOException, PlanningException {
     Expr expr = sqlAnalyzer.parse(
         FileUtil.readTextFile(new File("src/test/queries/tpch_q2_simplified.tql")));
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
@@ -444,7 +443,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testStoreTable() throws CloneNotSupportedException {
+  public final void testStoreTable() throws CloneNotSupportedException, PlanningException {
     Expr context = sqlAnalyzer.parse(QUERIES[8]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
     TestLogicalNode.testCloneLogicalNode(plan);
@@ -460,7 +459,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testOrderBy() throws CloneNotSupportedException {
+  public final void testOrderBy() throws CloneNotSupportedException, PlanningException {
     Expr expr = sqlAnalyzer.parse(QUERIES[4]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
@@ -487,7 +486,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testLimit() throws CloneNotSupportedException {
+  public final void testLimit() throws CloneNotSupportedException, PlanningException {
     Expr expr = sqlAnalyzer.parse(QUERIES[12]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
@@ -506,7 +505,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testSPJPush() throws CloneNotSupportedException {
+  public final void testSPJPush() throws CloneNotSupportedException, PlanningException {
     Expr expr = sqlAnalyzer.parse(QUERIES[5]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
@@ -535,7 +534,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testSPJ() throws CloneNotSupportedException {
+  public final void testSPJ() throws CloneNotSupportedException, PlanningException {
     Expr expr = sqlAnalyzer.parse(QUERIES[6]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
@@ -543,7 +542,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testJson() {
+  public final void testJson() throws PlanningException {
 	  Expr expr = sqlAnalyzer.parse(QUERIES[9]);
 	  LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
@@ -560,7 +559,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testVisitor() {
+  public final void testVisitor() throws PlanningException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
@@ -585,7 +584,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testExprNode() {
+  public final void testExprNode() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(QUERIES[10]);
     LogicalPlan rootNode = planner.createPlan(expr);
     LogicalNode plan = rootNode.getRootBlock().getRoot();
@@ -611,7 +610,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testAlias1() {
+  public final void testAlias1() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(ALIAS[0]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -638,7 +637,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testAlias2() {
+  public final void testAlias2() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(ALIAS[1]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -657,7 +656,7 @@ public class TestLogicalPlanner {
   };
 
   @Test
-  public final void testCreateTableDef() {
+  public final void testCreateTableDef() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(CREATE_TABLE[0]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -741,7 +740,7 @@ public class TestLogicalPlanner {
   };
 
   @Test
-  public final void testCubeBy() {
+  public final void testCubeBy() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(CUBE_ROLLUP[0]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
@@ -778,7 +777,6 @@ public class TestLogicalPlanner {
     }
   }
 
-
   static final String setStatements [] = {
     "select deptName from employee where deptName like 'data%' union select deptName from score where deptName like 'data%'",
     "select deptName from employee union select deptName from score as s1 intersect select deptName from score as s2",
@@ -786,7 +784,7 @@ public class TestLogicalPlanner {
   };
 
   @Test
-  public final void testSetPlan() {
+  public final void testSetPlan() throws PlanningException {
     Expr expr = sqlAnalyzer.parse(setStatements[0]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
@@ -803,7 +801,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testSetPlan2() {
+  public final void testSetPlan2() throws PlanningException {
     // for testing multiple set statements
     Expr expr = sqlAnalyzer.parse(setStatements[1]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
@@ -820,7 +818,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testSetPlan3() {
+  public final void testSetPlan3() throws PlanningException {
     // for testing multiple set statements
     Expr expr = sqlAnalyzer.parse(setStatements[2]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
@@ -839,8 +837,6 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.PROJECTION, intersect.getRightChild().getType());
   }
 
-
-
   static final String [] setQualifiers = {
     "select name, empid from employee",
     "select distinct name, empid from employee",
@@ -848,7 +844,7 @@ public class TestLogicalPlanner {
   };
 
   @Test
-  public void testSetQualifier() {
+  public void testSetQualifier() throws PlanningException {
     Expr context = sqlAnalyzer.parse(setQualifiers[0]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
@@ -880,5 +876,94 @@ public class TestLogicalPlanner {
     String json = rootNode.toJson();
     LogicalNode fromJson = CoreGsonHelper.fromJson(json, LogicalNode.class);
     assertEquals("JSON (de) serialization equivalence check", rootNode, fromJson);
+  }
+
+  // Table descriptions
+  //
+  // employee (name text, empid int4, deptname text)
+  // dept (deptname text, nameger text)
+  // score (deptname text, score inet4)
+
+  static final String [] insertStatements = {
+      "insert into score select name from employee",                        // 0
+      "insert into score select name, empid from employee",                 // 1
+      "insert into employee (name, deptname) select * from dept",           // 2
+      "insert into location '/tmp/data' select name, empid from employee",  // 3
+      "insert overwrite into employee (name, deptname) select * from dept", // 4
+      "insert overwrite into LOCATION '/tmp/data' select * from dept"       // 5
+  };
+
+  @Test
+  public final void testInsertInto0() throws PlanningException {
+    Expr expr = sqlAnalyzer.parse(insertStatements[0]);
+    LogicalPlan plan = planner.createPlan(expr);
+    assertEquals(2, plan.getQueryBlocks().size());
+    InsertNode insertNode = getInsertNode(plan);
+    assertFalse(insertNode.isOverwrite());
+    assertTrue(insertNode.hasTargetTable());
+    assertEquals("score", insertNode.getTargetTable().getName());
+  }
+
+  @Test
+  public final void testInsertInto1() throws PlanningException {
+    Expr expr = sqlAnalyzer.parse(insertStatements[1]);
+    LogicalPlan plan = planner.createPlan(expr);
+    assertEquals(2, plan.getQueryBlocks().size());
+    InsertNode insertNode = getInsertNode(plan);
+    assertFalse(insertNode.isOverwrite());
+    assertEquals("score", insertNode.getTargetTable().getName());
+  }
+
+  @Test
+  public final void testInsertInto2() throws PlanningException {
+    Expr expr = sqlAnalyzer.parse(insertStatements[2]);
+    LogicalPlan plan = planner.createPlan(expr);
+    assertEquals(2, plan.getQueryBlocks().size());
+    InsertNode insertNode = getInsertNode(plan);
+    assertFalse(insertNode.isOverwrite());
+    assertEquals("employee", insertNode.getTargetTable().getName());
+    assertTrue(insertNode.hasTargetSchema());
+    assertEquals(insertNode.getTargetSchema().getColumn(0).getColumnName(), "name");
+    assertEquals(insertNode.getTargetSchema().getColumn(1).getColumnName(), "deptname");
+  }
+
+  @Test
+  public final void testInsertInto3() throws PlanningException {
+    Expr expr = sqlAnalyzer.parse(insertStatements[3]);
+    LogicalPlan plan = planner.createPlan(expr);
+    assertEquals(2, plan.getQueryBlocks().size());
+    InsertNode insertNode = getInsertNode(plan);
+    assertFalse(insertNode.isOverwrite());
+    assertTrue(insertNode.hasPath());
+  }
+
+  @Test
+  public final void testInsertInto4() throws PlanningException {
+    Expr expr = sqlAnalyzer.parse(insertStatements[4]);
+    LogicalPlan plan = planner.createPlan(expr);
+    assertEquals(2, plan.getQueryBlocks().size());
+    InsertNode insertNode = getInsertNode(plan);
+    assertTrue(insertNode.isOverwrite());
+    assertTrue(insertNode.hasTargetTable());
+    assertEquals("employee", insertNode.getTargetTable().getName());
+    assertTrue(insertNode.hasTargetSchema());
+    assertEquals(insertNode.getTargetSchema().getColumn(0).getColumnName(), "name");
+    assertEquals(insertNode.getTargetSchema().getColumn(1).getColumnName(), "deptname");
+  }
+
+  @Test
+  public final void testInsertInto5() throws PlanningException {
+    Expr expr = sqlAnalyzer.parse(insertStatements[5]);
+    LogicalPlan plan = planner.createPlan(expr);
+    assertEquals(2, plan.getQueryBlocks().size());
+    InsertNode insertNode = getInsertNode(plan);
+    assertTrue(insertNode.isOverwrite());
+    assertTrue(insertNode.hasPath());
+  }
+
+  private static InsertNode getInsertNode(LogicalPlan plan) {
+    LogicalRootNode root = (LogicalRootNode) plan.getRootBlock().getRoot();
+    assertEquals(NodeType.INSERT, root.getChild().getType());
+    return (InsertNode) root.getChild();
   }
 }

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.parser;
 
+import com.google.common.base.Preconditions;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -922,6 +923,48 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     public Integer getScale() {
       return this.scale;
     }
+  }
+
+  @Override
+  public Expr visitInsert_statement(SQLParser.Insert_statementContext ctx) {
+    Insert insertExpr = new Insert();
+
+    if (ctx.OVERWRITE() != null) {
+      insertExpr.setOverwrite();
+    }
+
+    if (ctx.table_name() != null) {
+      insertExpr.setTableName(ctx.table_name().getText());
+
+      if (ctx.column_name_list() != null) {
+        String [] targetColumns = new String[ctx.column_name_list().Identifier().size()];
+        for (int i = 0; i < targetColumns.length; i++) {
+          targetColumns[i] = ctx.column_name_list().Identifier().get(i).getText();
+        }
+
+        insertExpr.setTargetColumns(targetColumns);
+      }
+    }
+
+    if (ctx.LOCATION() != null) {
+      insertExpr.setLocation(stripQuote(ctx.path.getText()));
+
+      if (ctx.USING() != null) {
+        insertExpr.setStorageType(ctx.file_type.getText());
+
+        if (ctx.param_clause() != null) {
+          insertExpr.setParams(getParams(ctx.param_clause()));
+        }
+      }
+    }
+
+    insertExpr.setSubQuery(visitQuery_expression(ctx.query_expression()));
+
+    Preconditions.checkState(insertExpr.hasTableName() || insertExpr.hasLocation(),
+        "Either a table name or a location should be given.");
+    Preconditions.checkState(insertExpr.hasTableName() ^ insertExpr.hasLocation(),
+        "A table name and a location cannot coexist.");
+    return insertExpr;
   }
 
   @Override

@@ -56,6 +56,8 @@ public class DatumFactory {
         return NullDatum.class;
       case ARRAY:
         return ArrayDatum.class;
+      case NULL:
+        return NullDatum.class;
       default:
         throw new UnsupportedOperationException(type.name());
     }

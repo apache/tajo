@@ -58,6 +58,7 @@ enum Type {
   BLOB = 47;
 
   UDT = 51; // user-defined function
+  NULL = 52; // NULL type
 
   ANY = 61;
   ARRAY = 62;

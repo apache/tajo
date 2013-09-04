@@ -7,3 +7,4 @@ target
 *.iml
 derby.log
 .reviewboardrc
+atlassian-ide-plugin.xml

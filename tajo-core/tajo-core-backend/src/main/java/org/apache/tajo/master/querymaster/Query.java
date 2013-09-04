@@ -29,9 +29,13 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableDescImpl;
+import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.master.ExecutionBlock;
 import org.apache.tajo.master.ExecutionBlockCursor;
 import org.apache.tajo.master.event.*;
@@ -57,7 +61,7 @@ public class Query implements EventHandler<QueryEvent> {
   private final EventHandler eventHandler;
   private final MasterPlan plan;
   private final StorageManager sm;
-  private QueryMasterTask.QueryContext context;
+  QueryMasterTask.QueryContext context;
   private ExecutionBlockCursor cursor;
 
   // Query Status
@@ -305,19 +309,29 @@ public class Query implements EventHandler<QueryEvent> {
         } else { // Finish a query
           if (query.checkQueryForCompleted() == QueryState.QUERY_SUCCEEDED) {
             SubQuery subQuery = query.getSubQuery(castEvent.getExecutionBlockId());
-            TableDesc desc = new TableDescImpl(query.conf.getOutputTable(),
-                subQuery.getTableMeta(), query.context.getOutputPath());
-            query.setResultDesc(desc);
-            try {
-              query.writeStat(query.context.getOutputPath(), subQuery);
-            } catch (IOException e) {
-              e.printStackTrace();
+            TableDesc outputTableDesc = new TableDescImpl(query.context.getQueryMeta().getOutputTable(),
+                subQuery.getTableMeta(), query.context.getQueryMeta().getOutputPath());
+            query.setResultDesc(outputTableDesc);
+
+            if (!query.context.getQueryMeta().isFileOutput()) {
+              try {
+                query.writeStat(query.context.getQueryMeta().getOutputPath(), subQuery);
+              } catch (IOException e) {
+                e.printStackTrace();
+              }
             }
             query.eventHandler.handle(new QueryFinishEvent(query.getId()));
 
-            if (query.context.isCreateTableQuery()) {
-              // TOOD move to QueryJobManager
-              //query.context.getCatalog().addTable(desc);
+            StoreTableNode storeTableNode = (StoreTableNode) PlannerUtil.findTopNode(subQuery.getBlock().getPlan(),
+                NodeType.STORE);
+            if (storeTableNode.isCreatedTable()) {
+              query.context.getQueryMasterContext().getWorkerContext().getCatalog().addTable(outputTableDesc);
+            } else if (storeTableNode.isOverwrite() && !query.context.getQueryMeta().isFileOutput()) {
+              CatalogService catalog = query.context.getQueryMasterContext().getWorkerContext().getCatalog();
+              TableDesc updatingTable = catalog.getTableDesc(outputTableDesc.getName());
+              updatingTable.getMeta().setStat(outputTableDesc.getMeta().getStat());
+              catalog.deleteTable(outputTableDesc.getName());
+              catalog.addTable(updatingTable);
             }
           }
 

@@ -133,7 +133,7 @@ public class TajoTestingCluster {
 		String dirStr = getTestDir(randomStr).toString();
 		File dir = new File(dirStr).getAbsoluteFile();
 		// Have it cleaned up on exit
-		//dir.deleteOnExit();
+		dir.deleteOnExit();
 		return dir;
 	}
 

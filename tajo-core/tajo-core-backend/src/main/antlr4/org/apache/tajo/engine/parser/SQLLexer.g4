@@ -177,6 +177,7 @@ ON : O N;
 OUTER : O U T E R;
 OR : O R;
 ORDER : O R D E R;
+OVERWRITE : O V E R W R I T E;
 
 PRECISION : P R E C I S I ON;
 

@@ -21,9 +21,6 @@ package org.apache.tajo.storage;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Options;
 import org.apache.tajo.catalog.Schema;
@@ -34,8 +31,12 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -194,6 +195,7 @@ public class TestStorages {
     schema.addColumn("col9", Type.TEXT);
     schema.addColumn("col10", Type.BLOB);
     schema.addColumn("col11", Type.INET4);
+    schema.addColumn("col12", Type.NULL);
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(schema, storeType, options);
@@ -202,7 +204,7 @@ public class TestStorages {
     Appender appender = StorageManager.getAppender(conf, meta, tablePath);
     appender.init();
 
-    Tuple tuple = new VTuple(11);
+    Tuple tuple = new VTuple(12);
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createBit((byte) 0x99),
@@ -215,7 +217,7 @@ public class TestStorages {
         DatumFactory.createText("hyunsik"),
         DatumFactory.createBlob("hyunsik".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
-        DatumFactory.createText("hyunsik")
+        NullDatum.get()
     });
     appender.addTuple(tuple);
     appender.flush();

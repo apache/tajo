@@ -31,6 +31,7 @@ import org.apache.tajo.engine.eval.TestEvalTree.TestSum;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.LogicalPlanner;
+import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.planner.logical.EvalExprNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
@@ -96,7 +97,12 @@ public class TestEvalTreeUtil {
 
   public static Target [] getRawTargets(String query) {
     Expr expr = analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(expr);
+    LogicalPlan plan = null;
+    try {
+      plan = planner.createPlan(expr);
+    } catch (PlanningException e) {
+      e.printStackTrace();
+    }
     if (plan.getRootBlock().getRoot().getType() == NodeType.EXPRS) {
       return ((EvalExprNode)plan.getRootBlock().getRoot()).getExprs();
     } else {
@@ -106,7 +112,12 @@ public class TestEvalTreeUtil {
 
   public static EvalNode getRootSelection(String query) {
     Expr block = analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(block);
+    LogicalPlan plan = null;
+    try {
+      plan = planner.createPlan(block);
+    } catch (PlanningException e) {
+      e.printStackTrace();
+    }
     return plan.getRootBlock().getSelectionNode().getQual();
   }
 
@@ -173,7 +184,7 @@ public class TestEvalTreeUtil {
   }
   
   @Test
-  public final void testGetContainExprs() throws CloneNotSupportedException {
+  public final void testGetContainExprs() throws CloneNotSupportedException, PlanningException {
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalPlan plan = planner.createPlan(expr);
     Target [] targets = plan.getRootBlock().getTargetListManager().getUnEvaluatedTargets();
@@ -236,7 +247,7 @@ public class TestEvalTreeUtil {
   }
   
   @Test
-  public final void testSimplify() {
+  public final void testSimplify() throws PlanningException {
     Target [] targets = getRawTargets(QUERIES[0]);
     EvalNode node = AlgebraicUtil.simplify(targets[0].getEvalTree());
     EvalContext nodeCtx = node.newContext();

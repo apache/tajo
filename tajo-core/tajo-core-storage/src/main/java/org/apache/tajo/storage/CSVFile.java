@@ -32,9 +32,9 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.json.StorageGsonHelper;
-import org.apache.tajo.storage.compress.CodecPool;
 
 import java.io.*;
 import java.util.Arrays;
@@ -502,6 +502,9 @@ public class CSVFile {
                   Datum data = StorageGsonHelper.getInstance().fromJson(cell,
                       Datum.class);
                   tuple.put(tid, data);
+                  break;
+                case NULL:
+                  tuple.put(tid, NullDatum.get());
                   break;
               }
             }

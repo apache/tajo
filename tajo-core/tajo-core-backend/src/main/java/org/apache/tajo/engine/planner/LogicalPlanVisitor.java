@@ -47,4 +47,6 @@ public interface LogicalPlanVisitor <T> {
       throws PlanningException;
   LogicalNode visitStoreTable(LogicalPlan plan, StoreTableNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException;
+  LogicalNode visitInsert(LogicalPlan plan, InsertNode node, Stack<LogicalNode> stack, T data)
+      throws PlanningException;
 }

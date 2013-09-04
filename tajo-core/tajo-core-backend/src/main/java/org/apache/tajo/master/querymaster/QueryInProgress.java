@@ -29,6 +29,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.QueryMeta;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResource;
@@ -44,6 +45,8 @@ public class QueryInProgress extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryInProgress.class.getName());
 
   private QueryId queryId;
+
+  private QueryMeta queryMeta;
 
   private TajoAsyncDispatcher dispatcher;
 
@@ -63,9 +66,11 @@ public class QueryInProgress extends CompositeService {
 
   public QueryInProgress(
       TajoMaster.MasterContext masterContext,
+      QueryMeta queryMeta,
       QueryId queryId, String sql, LogicalRootNode plan) {
     super(QueryInProgress.class.getName());
     this.masterContext = masterContext;
+    this.queryMeta = queryMeta;
     this.queryId = queryId;
     this.plan = plan;
 
@@ -195,12 +200,13 @@ public class QueryInProgress extends CompositeService {
         //TODO wait
         return;
       }
-      LOG.info("====>Call executeQuery to :" +
+      LOG.info("Call executeQuery to :" +
           queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort() + "," + queryId);
       queryMasterRpcClient.executeQuery(
           null,
           TajoWorkerProtocol.QueryExecutionRequestProto.newBuilder()
               .setQueryId(queryId.getProto())
+              .setQueryMeta(queryMeta.getProto())
               .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build())
               .build(), NullCallback.get());
       querySubmitted.set(true);

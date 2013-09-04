@@ -34,7 +34,6 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.query.exception.InvalidQueryException;
@@ -84,7 +83,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param expr A relational algebraic expression for a query.
    * @return A logical plan
    */
-  public LogicalPlan createPlan(Expr expr) {
+  public LogicalPlan createPlan(Expr expr) throws PlanningException {
 
     LogicalPlan plan = new LogicalPlan(this);
     LogicalNode subroot = null;
@@ -93,11 +92,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     QueryBlock rootBlock = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
     PlanContext context = new PlanContext(plan, rootBlock);
-    try {
-      subroot = visitChild(context, stack, expr);
-    } catch (PlanningException e) {
-      e.printStackTrace();
-    }
+    subroot = visitChild(context, stack, expr);
 
     LogicalRootNode root = new LogicalRootNode();
     root.setInSchema(subroot.getOutSchema());
@@ -147,7 +142,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // 2. build child plans
     // 3. build scan plan
-    Relation relation = (Relation) expr;
+    Relation relation = expr;
     TableDesc desc = catalog.getTableDesc(relation.getName());
     FromTable fromTable = new FromTable(desc);
 
@@ -722,6 +717,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       LogicalNode subQuery = visitChild(context, stack, expr.getSubQuery());
       stack.pop();
       StoreTableNode storeNode = new StoreTableNode(tableName);
+      storeNode.setCreateTable();
       storeNode.setChild(subQuery);
 
       if (expr.hasTableElements()) {
@@ -823,6 +819,71 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
             TajoDataTypes.Type.valueOf(columnDefinition.getDataType()));
     }
     return column;
+  }
+
+  protected LogicalNode visitInsert(PlanContext ctx, Stack<OpType> stack, Insert expr) throws PlanningException {
+    stack.push(expr.getType());
+    QueryBlock newQueryBlock = ctx.plan.newAnonymousBlock();
+    PlanContext newContext = new PlanContext(ctx.plan, newQueryBlock);
+    Stack<OpType> subStack = new Stack<OpType>();
+    LogicalNode subQuery = visitChild(newContext, subStack, expr.getSubQuery());
+    ctx.plan.connectBlocks(ctx.block, newQueryBlock, QueryBlockGraph.BlockType.TableSubQuery);
+    stack.pop();
+
+    InsertNode insertNode = null;
+    if (expr.hasTableName()) {
+      TableDesc desc = catalog.getTableDesc(expr.getTableName());
+      ctx.block.addRelation(new ScanNode(new FromTable(desc)));
+
+      Schema targetSchema = new Schema();
+      if (expr.hasTargetColumns()) {
+        String [] targetColumnNames = expr.getTargetColumns();
+        for (int i = 0; i < targetColumnNames.length; i++) {
+          Column targetColumn = ctx.plan.findColumn(ctx.block.getName(), new ColumnReferenceExpr(targetColumnNames[i]));
+          targetSchema.addColumn(targetColumn);
+        }
+      } else {
+        Schema targetTableSchema = desc.getMeta().getSchema();
+        for (int i = 0; i < subQuery.getOutSchema().getColumnNum(); i++) {
+          targetSchema.addColumn(targetTableSchema.getColumn(i));
+        }
+      }
+
+      checkInsertDomains(targetSchema, subQuery.getOutSchema());
+      insertNode = new InsertNode(desc, subQuery);
+      insertNode.setTargetSchema(targetSchema);
+      insertNode.setOutSchema(targetSchema);
+    }
+
+    if (expr.hasLocation()) {
+      insertNode = new InsertNode(new Path(expr.getLocation()), subQuery);
+      if (expr.hasStorageType()) {
+        insertNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
+      }
+      if (expr.hasParams()) {
+        Options options = new Options();
+        options.putAll(expr.getParams());
+        insertNode.setOptions(options);
+      }
+    }
+
+    insertNode.setOverwrite(expr.isOverwrite());
+
+    return insertNode;
+  }
+
+  private static void checkInsertDomains(Schema targetTableScheme, Schema insertSchema)
+      throws PlanningException {
+    for (int i = 0; i < insertSchema.getColumnNum(); i++) {
+      if (!insertSchema.getColumn(i).getDataType().equals(targetTableScheme.getColumn(i).getDataType())) {
+        Column targetColumn = targetTableScheme.getColumn(i);
+        Column insertColumn = insertSchema.getColumn(i);
+        throw new PlanningException("ERROR: " +
+            insertColumn.getColumnName() + " is of type " + insertColumn.getDataType().getType().name() +
+                ", but target column '" + targetColumn.getColumnName() + "' is of type " +
+                targetColumn.getDataType().getType().name());
+      }
+    }
   }
 
   @Override

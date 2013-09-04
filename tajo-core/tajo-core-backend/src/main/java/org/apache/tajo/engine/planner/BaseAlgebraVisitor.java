@@ -82,6 +82,9 @@ public abstract class BaseAlgebraVisitor<T1, T2> implements AlgebraVisitor<T1, T
       case Relation:
         current = visitRelation(ctx, stack, (Relation) expr);
         break;
+      case Insert:
+        current = visitInsert(ctx, stack, (Insert) expr);
+        break;
       case CreateTable:
         current = visitCreateTable(ctx, stack, (CreateTable) expr);
         break;
@@ -95,6 +98,13 @@ public abstract class BaseAlgebraVisitor<T1, T2> implements AlgebraVisitor<T1, T
     postHook(ctx, stack, expr, current);
 
     return current;
+  }
+
+  protected T2 visitInsert(T1 ctx, Stack<OpType> stack, Insert expr) throws PlanningException {
+    stack.push(expr.getType());
+    T2 child = visitChild(ctx, stack, expr.getSubQuery());
+    stack.pop();
+    return child;
   }
 
   @Override

@@ -24,6 +24,7 @@ package org.apache.tajo.ipc.protocolrecords;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.QueryMeta;
 import org.apache.tajo.storage.Fragment;
 
 import java.net.URI;
@@ -42,4 +43,5 @@ public interface QueryUnitRequest extends ProtoObject<TajoWorkerProtocol.QueryUn
 	public List<TajoWorkerProtocol.Fetch> getFetches();
   public boolean shouldDie();
   public void setShouldDie();
+  public QueryMeta getQueryMeta();
 }

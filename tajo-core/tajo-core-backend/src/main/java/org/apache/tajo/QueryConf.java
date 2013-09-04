@@ -19,7 +19,6 @@
 package org.apache.tajo;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.conf.TajoConf;
 
 public class QueryConf extends TajoConf {
@@ -35,31 +34,5 @@ public class QueryConf extends TajoConf {
     if (! (conf instanceof QueryConf)) {
       this.reloadConfiguration();
     }
-  }
-
-  public void setUser(String username) {
-    setVar(ConfVars.QUERY_USERNAME, username);
-  }
-
-  public String getUser() {
-    return getVar(ConfVars.QUERY_USERNAME);
-  }
-
-  public void setOutputTable(String tableName) {
-    // it is determined in GlobalEngine.executeQuery().
-    setVar(ConfVars.QUERY_OUTPUT_TABLE, tableName);
-  }
-
-  public String getOutputTable() {
-    return getVar(ConfVars.QUERY_OUTPUT_TABLE);
-  }
-
-  public void setOutputPath(Path path) {
-    // it is determined in QueryMaster.initStagingDir().
-    setVar(ConfVars.QUERY_OUTPUT_DIR, path.toUri().toString());
-  }
-
-  public Path getOutputPath() {
-    return new Path(getVar(ConfVars.QUERY_OUTPUT_DIR));
   }
 }

@@ -48,6 +48,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TajoWorkerProtocolService.Interface;
 import org.apache.tajo.ipc.protocolrecords.QueryUnitRequest;
 import org.apache.tajo.master.ExecutionBlock.PartitionType;
+import org.apache.tajo.master.QueryMeta;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.StorageUtil;
@@ -69,6 +70,7 @@ public class Task {
   private static final Log LOG = LogFactory.getLog(Task.class);
 
   private final QueryConf conf;
+  private final QueryMeta queryMeta;
   private final FileSystem localFS;
   private final TaskRunner.TaskRunnerContext taskRunnerContext;
   private final Interface masterProxy;
@@ -136,6 +138,7 @@ public class Task {
 
     this.taskId = request.getId();
     this.conf = worker.getQueryConf();
+    this.queryMeta = request.getQueryMeta();
     this.taskRunnerContext = worker;
     this.masterProxy = masterProxy;
     this.localFS = worker.getLocalFS();
@@ -160,7 +163,7 @@ public class Task {
     } else {
       // The final result of a task will be written in a file named part-ss-nnnnnnn,
       // where ss is the subquery id associated with this task, and nnnnnn is the task id.
-      Path outFilePath = new Path(conf.getOutputPath(),
+      Path outFilePath = new Path(queryMeta.getOutputPath(),
           OUTPUT_FILE_PREFIX +
           OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskId.getQueryUnitId().getExecutionBlockId().getId()) + "-" +
           OUTPUT_FILE_FORMAT_TASK.get().format(taskId.getQueryUnitId().getId()));

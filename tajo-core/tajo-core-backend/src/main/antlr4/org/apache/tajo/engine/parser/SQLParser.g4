@@ -144,7 +144,7 @@ binary_type
 ===============================================================================
 */
 sql
-  : statement EOF
+  : statement (SEMI_COLON)? EOF
   ;
 
 statement
@@ -214,7 +214,8 @@ drop_table_statement
 */
 
 insert_statement
-  : INSERT INTO table_name (LEFT_PAREN column_name_list RIGHT_PAREN)? VALUES array
+  : INSERT (OVERWRITE)? INTO table_name (LEFT_PAREN column_name_list RIGHT_PAREN)? query_expression
+  | INSERT (OVERWRITE)? INTO LOCATION path=Character_String_Literal (USING file_type=Identifier (param_clause)?)? query_expression
   ;
 
 /*

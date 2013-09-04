@@ -42,6 +42,10 @@ import java.util.Set;
 public class PlannerUtil {
   private static final Log LOG = LogFactory.getLog(PlannerUtil.class);
 
+  public static String normalizeTableName(String tableName) {
+    return tableName.toLowerCase();
+  }
+
   public static boolean checkIfDDLPlan(LogicalNode node) {
     LogicalNode baseNode = node;
     if (node instanceof LogicalRootNode) {

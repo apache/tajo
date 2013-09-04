@@ -31,6 +31,7 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.QueryMeta;
 import org.apache.tajo.master.TaskSchedulerImpl;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.querymaster.QueryMaster;
@@ -199,8 +200,9 @@ public class TajoWorkerManagerService extends CompositeService
                            RpcCallback<PrimitiveProtos.BoolProto> done) {
     try {
       QueryId queryId = new QueryId(request.getQueryId());
-      LOG.info("====>Receive executeQuery request:" + queryId);
-      queryMaster.handle(new QueryStartEvent(queryId, request.getLogicalPlanJson().getValue()));
+      LOG.info("Receive executeQuery request:" + queryId);
+      queryMaster.handle(new QueryStartEvent(queryId,
+          new QueryMeta(request.getQueryMeta()), request.getLogicalPlanJson().getValue()));
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);

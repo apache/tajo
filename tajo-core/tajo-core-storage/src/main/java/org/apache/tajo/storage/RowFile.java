@@ -453,6 +453,9 @@ public class RowFile {
               buffer.put(byteArray);
               break;
             }
+            case NULL:
+              nullFlags.set(i);
+              break;
             default:
               break;
           }

@@ -118,7 +118,6 @@ public class TaskSchedulerImpl extends AbstractService
 
           schedule();
         }
-        //req.getCallback().run(stopTaskRunnerReq);
         LOG.info("TaskScheduler schedulingThread stopped");
       }
     };
@@ -459,7 +458,8 @@ public class TaskSchedulerImpl extends AbstractService
               new ArrayList<Fragment>(task.getAllFragments()),
               task.getOutputName(),
               false,
-              task.getLogicalPlan().toJson());
+              task.getLogicalPlan().toJson(),
+              context.getQueryMeta());
           if (task.getStoreTableNode().isLocal()) {
             taskAssign.setInterQuery();
           }
@@ -503,7 +503,8 @@ public class TaskSchedulerImpl extends AbstractService
               Lists.newArrayList(task.getAllFragments()),
               task.getOutputName(),
               false,
-              task.getLogicalPlan().toJson());
+              task.getLogicalPlan().toJson(),
+              context.getQueryMeta());
           if (task.getStoreTableNode().isLocal()) {
             taskAssign.setInterQuery();
           }

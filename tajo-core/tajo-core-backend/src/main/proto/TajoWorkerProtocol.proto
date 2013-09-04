@@ -59,6 +59,7 @@ message QueryUnitRequestProto {
     optional bool interQuery = 6 [default = false];
     repeated Fetch fetches = 7;
     optional bool shouldDie = 8;
+    optional KeyValueSetProto queryMeta = 9;
 }
 
 message Fetch {
@@ -104,7 +105,8 @@ message Partition {
 
 message QueryExecutionRequestProto {
     required QueryIdProto queryId = 1;
-    required StringProto logicalPlanJson = 2;
+    required KeyValueSetProto queryMeta = 2;
+    required StringProto logicalPlanJson = 3;
 }
 
 message GetTaskRequestProto {

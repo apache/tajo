@@ -30,6 +30,10 @@ public class MiniCatalogServer {
     catalogServers.init(conf);
     catalogServers.start();
   }
+
+  public MiniCatalogServer(CatalogServer server) {
+    this.catalogServers = server;
+  }
   
   public void shutdown() {
     this.catalogServers.stop();
