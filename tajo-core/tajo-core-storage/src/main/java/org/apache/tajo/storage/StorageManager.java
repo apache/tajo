@@ -655,7 +655,7 @@ public class StorageManager {
       }
     }
 
-    LOG.debug("Total # of splits: " + splits.size());
+    LOG.info("Total # of splits: " + splits.size());
     return splits;
   }
 

@@ -126,6 +126,9 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-157: The CSVScanner.isSplittable() function does not work properly.
+    (jinho)
+
     TAJO-156: BufferUnderflowException occurs during processing the 
     intermediate file. (jinho)
 

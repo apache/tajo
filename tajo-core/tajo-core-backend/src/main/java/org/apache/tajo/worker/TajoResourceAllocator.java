@@ -112,23 +112,16 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
   }
 
   @Override
-  public void stop() {
+  public synchronized void stop() {
     if(stopped.get()) {
       return;
     }
     stopped.set(true);
     executorService.shutdownNow();
 
-    while(!executorService.isTerminated()) {
-      LOG.info("====>executorService.isTerminated:" + executorService.isTerminated() + "," +
-          executorService.isShutdown());
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-      }
-    }
     Map<ContainerId, ContainerProxy> containers = queryContext.getResourceAllocator().getContainers();
-    for(ContainerProxy eachProxy: containers.values()) {
+    List<ContainerProxy> list = new ArrayList<ContainerProxy>(containers.values());
+    for(ContainerProxy eachProxy: list) {
       try {
         eachProxy.stopContainer();
       } catch (Exception e) {

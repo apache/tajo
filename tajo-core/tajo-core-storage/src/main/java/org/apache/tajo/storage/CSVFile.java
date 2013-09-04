@@ -249,6 +249,9 @@ public class CSVFile {
       super(conf, meta, fragment);
       factory = new CompressionCodecFactory(conf);
       codec = factory.getCodec(fragment.getPath());
+      if (isCompress() && !(codec instanceof SplittableCompressionCodec)) {
+          splittable = false;
+      }
     }
 
     private final static int DEFAULT_BUFFER_SIZE = 256 * 1024;
@@ -302,7 +305,6 @@ public class CSVFile {
           is = cIn;
         } else {
           is = new DataInputStream(codec.createInputStream(fis, decompressor));
-          splittable = false;
         }
       } else {
         fis.seek(startOffset);
@@ -321,7 +323,7 @@ public class CSVFile {
       }
       super.init();
 
-      if(LOG.isDebugEnabled()) {
+      if (LOG.isDebugEnabled()) {
         LOG.debug("CSVScanner open:" + fragment.getPath() + "," + startOffset + "," + length +
             "," + fs.getFileStatus(fragment.getPath()).getLen());
       }
@@ -533,6 +535,7 @@ public class CSVFile {
         is.close();
       } finally {
         if (decompressor != null) {
+          decompressor.reset();
           CodecPool.returnDecompressor(decompressor);
           decompressor = null;
         }

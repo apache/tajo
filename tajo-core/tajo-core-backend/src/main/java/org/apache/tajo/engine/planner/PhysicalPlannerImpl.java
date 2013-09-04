@@ -248,9 +248,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     } else {
       String [] outerLineage = PlannerUtil.getLineage(groupbyNode.getChild());
       long estimatedSize = estimateSizeRecursive(ctx, outerLineage);
-      final long threshold = 1048576 * 256;
+      final long threshold = conf.getLongVar(TajoConf.ConfVars.HASH_AGGREGATION_THRESHOLD);
 
-      // if the relation size is less than the reshold,
+      // if the relation size is less than the threshold,
       // the hash aggregation will be used.
       if (estimatedSize <= threshold) {
         LOG.info("The planner chooses [Hash Aggregation]");
