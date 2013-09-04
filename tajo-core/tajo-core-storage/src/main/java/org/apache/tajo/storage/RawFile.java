@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.TableMeta;
@@ -38,6 +40,8 @@ import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
 public class RawFile {
+  private static final Log LOG = LogFactory.getLog(RawFile.class);
+
   public static class RawFileScanner extends FileScanner implements SeekableScanner {
     private FileChannel channel;
     private DataType[] columnTypes;
@@ -50,6 +54,8 @@ public class RawFile {
     private BitArray nullFlags;
     private static final int RECORD_SIZE = 4;
     private int numBitsOfNullFlags;
+    private boolean eof = false;
+    private long fileSize;
 
     public RawFileScanner(Configuration conf, TableMeta meta, Path path) throws IOException {
       super(conf, meta, null);
@@ -68,8 +74,13 @@ public class RawFile {
       URI uri = path.toUri();
       RandomAccessFile raf = new RandomAccessFile(new File(uri), "r");
       channel = raf.getChannel();
+      fileSize = channel.size();
 
-      buffer = ByteBuffer.allocateDirect(65535);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("RawFileScanner open:" + path + "," + channel.position() + ", size :" + channel.size());
+      }
+
+      buffer = ByteBuffer.allocateDirect(65535 * 4);
 
       columnTypes = new DataType[schema.getColumnNum()];
       for (int i = 0; i < schema.getColumnNum(); i++) {
@@ -111,6 +122,7 @@ public class RawFile {
 
     @Override
     public Tuple next() throws IOException {
+      if(eof) return null;
 
       if (buffer.remaining() < headerSize) {
         if (!fillBuffer()) {
@@ -223,6 +235,9 @@ public class RawFile {
         }
       }
 
+      if(!buffer.hasRemaining() && channel.position() == fileSize){
+        eof = true;
+      }
       return tuple;
     }
 
@@ -234,10 +249,12 @@ public class RawFile {
       channel.position(0);
       channel.read(buffer);
       buffer.flip();
+      eof = false;
     }
 
     @Override
     public void close() throws IOException {
+      buffer.clear();
       channel.close();
     }
 

@@ -166,7 +166,7 @@ public class TestExternalSortExec {
       cnt++;
     }
     assertEquals(numTuple, cnt);
-
+    exec.close();
     System.out.println("Sort Time: " + (end - start) + " msc");
   }
 }

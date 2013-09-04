@@ -124,6 +124,9 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-156: BufferUnderflowException occurs during processing the 
+    intermediate file. (jinho)
+
     TAJO-151: Multiple union queries within a table subquery causes NPE.
     (hyunsik)
 
