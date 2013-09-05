@@ -20,18 +20,13 @@
   -->
 
 <configuration>
-<property>
-  <name>tajo.catalog.master.addr</name>
-  <value>127.0.0.1:9002</value>
-</property>
+  <property>
+    <name>tajo.catalog.store.class</name>
+    <value>org.apache.tajo.catalog.store.DBStore</value>
+  </property>
 
-<property>
-  <name>tajo.catalog.store.class</name>
-  <value>org.apache.tajo.catalog.store.DBStore</value>
-</property>
-
-<property>
-  <name>tajo.catalog.jdbc.uri</name>
-  <value>jdbc:derby:/tmp/tcat-${user.name}/db</value>
-</property>
+  <property>
+    <name>tajo.catalog.jdbc.uri</name>
+    <value>jdbc:derby:/tmp/tcat-${user.name}/db</value>
+  </property>
 </configuration>

@@ -71,7 +71,7 @@ public class TajoConf extends YarnConfiguration {
     //////////////////////////////////
     // Catalog Configuration
     //////////////////////////////////
-    CATALOG_ADDRESS("tajo.catalog.master.addr", "127.0.0.1:9002"),
+    CATALOG_ADDRESS("tajo.catalog.master.addr", "0.0.0.0:9002"),
 
     //////////////////////////////////
     // AM and RM

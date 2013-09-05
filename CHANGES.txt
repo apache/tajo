@@ -126,6 +126,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-159: QueryMaster cannot connect the remote CatalogServer. (hyunsik)
+
     TAJO-158: Can't allocate worker when single SubQuery requests more than
     cluster capacity. (hyoungjunkim via hyunsik)
 
