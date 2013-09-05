@@ -50,7 +50,7 @@ public class TestSingleCSVFileBSTIndex {
 
   private static final int TUPLE_NUM = 10000;
   private static final int LOAD_NUM = 100;
-  private static final String TEST_PATH = "target/test-data/TestSingleCSVFileBSTIndex/data";
+  private static final String TEST_PATH = "target/test-data/TestSingleCSVFileBSTIndex";
   private Path testDir;
   
   public TestSingleCSVFileBSTIndex() {

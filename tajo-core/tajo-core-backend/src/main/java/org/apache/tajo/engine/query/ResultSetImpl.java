@@ -138,7 +138,7 @@ public class ResultSetImpl implements ResultSet {
   private Fragment[] getFragments(TableMeta meta, Path tablePath)
       throws IOException {
     List<Fragment> fraglist = Lists.newArrayList();
-    FileStatus[] files = fs.listStatus(new Path(tablePath, "data"));
+    FileStatus[] files = fs.listStatus(tablePath);
     Arrays.sort(files, new FileNameComparator());
 
     String tbname = tablePath.getName();

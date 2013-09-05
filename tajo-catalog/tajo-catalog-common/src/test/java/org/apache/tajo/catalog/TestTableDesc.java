@@ -39,7 +39,7 @@ public class TestTableDesc {
     schema.addColumn("addr", Type.TEXT);
     info = CatalogUtil.newTableMeta(schema, StoreType.CSV);
 
-    desc = new TableDescImpl("table1", info, new Path("/nta/data"));
+    desc = new TableDescImpl("table1", info, new Path("/table1"));
 	}
 
   @Test
@@ -50,17 +50,17 @@ public class TestTableDesc {
     TableMeta info = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     testClone(info);
 
-    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo/data"));
+    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo"));
     assertEquals("table1", desc.getName());
     
-    assertEquals(new Path("/tajo/data"), desc.getPath());
+    assertEquals(new Path("/tajo"), desc.getPath());
     assertEquals(info, desc.getMeta());
     testClone(desc);
   }
 
   @Test
   public void testGetProto() throws CloneNotSupportedException {
-    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo/data"));
+    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo"));
     CatalogProtos.TableDescProto proto = (CatalogProtos.TableDescProto) desc.getProto();
 
     TableDesc fromProto = new TableDescImpl(proto);
@@ -69,7 +69,7 @@ public class TestTableDesc {
 
   @Test
   public void testToJson() throws CloneNotSupportedException {
-    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo/data"));
+    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo"));
     String json = desc.toJson();
 
     TableDesc fromJson = CatalogGsonHelper.fromJson(json, TableDesc.class);

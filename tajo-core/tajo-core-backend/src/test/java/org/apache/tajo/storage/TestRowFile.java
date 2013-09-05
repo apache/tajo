@@ -73,11 +73,9 @@ public class TestRowFile {
 
     Path tablePath = new Path("hdfs:///test");
     Path metaPath = new Path(tablePath, ".meta");
-    Path dataDir = new Path(tablePath, "data");
-    Path dataPath = new Path(dataDir, "test.tbl");
+    Path dataPath = new Path(tablePath, "test.tbl");
     FileSystem fs = tablePath.getFileSystem(conf);
     fs.mkdirs(tablePath);
-    fs.mkdirs(dataDir);
 
     FileUtil.writeProto(util.getDefaultFileSystem(), metaPath, meta.getProto());
 

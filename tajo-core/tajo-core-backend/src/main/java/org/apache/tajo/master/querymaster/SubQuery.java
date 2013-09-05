@@ -650,11 +650,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       meta = desc.getMeta();
 
       // TODO - should be change the inner directory
-      Path oldPath = new Path(inputPath, "data");
-      FileSystem fs = inputPath.getFileSystem(subQuery.context.getConf());
-      if (fs.exists(oldPath)) {
-        inputPath = oldPath;
-      }
       List<Fragment> fragments = subQuery.getStorageManager().getSplits(scan.getTableId(), meta, inputPath);
 
       QueryUnit queryUnit;

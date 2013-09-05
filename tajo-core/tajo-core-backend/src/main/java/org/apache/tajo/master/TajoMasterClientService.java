@@ -328,29 +328,15 @@ public class TajoMasterClientService extends AbstractService {
         throw new AlreadyExistsTableException(request.getName());
       }
 
-      Path path = new Path(request.getPath());
+      Path tablePath = new Path(request.getPath());
 
-      LOG.info(path.toUri());
+      LOG.info(tablePath.toUri());
 
       TableMeta meta;
       try {
-        meta = TableUtil.getTableMeta(conf, path);
+        meta = TableUtil.getTableMeta(conf, tablePath);
       } catch (IOException e) {
         throw new RemoteException(e);
-      }
-
-      FileSystem fs;
-
-      // for legacy table structure
-      Path tablePath = new Path(path, "data");
-      try {
-        fs = path.getFileSystem(conf);
-        if (!fs.exists(tablePath)) {
-          tablePath = path;
-        }
-      } catch (IOException e) {
-        LOG.error(e);
-        return null;
       }
 
       if (meta.getStat() == null) {
@@ -368,7 +354,7 @@ public class TajoMasterClientService extends AbstractService {
         meta.setStat(stat);
       }
 
-      desc = new TableDescImpl(request.getName(), meta, path);
+      desc = new TableDescImpl(request.getName(), meta, tablePath);
       catalog.addTable(desc);
       LOG.info("Table " + desc.getName() + " is attached ("
           + meta.getStat().getNumBytes() + ")");

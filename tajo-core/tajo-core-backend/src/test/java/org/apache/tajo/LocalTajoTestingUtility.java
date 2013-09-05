@@ -62,9 +62,7 @@ public class LocalTajoTestingUtility {
       Path localPath = new Path(tablepaths[i]);
       Path tablePath = new Path(rootDir, names[i]);
       fs.mkdirs(tablePath);
-      Path dataPath = new Path(tablePath, "data");
-      fs.mkdirs(dataPath);
-      Path dfsPath = new Path(dataPath, localPath.getName());
+      Path dfsPath = new Path(tablePath, localPath.getName());
       fs.copyFromLocalFile(localPath, dfsPath);
       TableMeta meta = CatalogUtil.newTableMeta(schemas[i],
           CatalogProtos.StoreType.CSV, option);

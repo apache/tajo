@@ -491,9 +491,7 @@ public class TajoTestingCluster {
     for (int i = 0; i < tableNames.length; i++) {
       File tableDir = new File(tmpDir,tableNames[i]);
       tableDir.mkdirs();
-      File dataDir = new File(tableDir, "data");
-      dataDir.mkdirs();
-      File tableFile = new File(dataDir, tableNames[i]);
+      File tableFile = new File(tableDir, tableNames[i]);
       writeLines(tableFile, tables[i]);
       TableMeta meta = CatalogUtil
           .newTableMeta(schemas[i], CatalogProtos.StoreType.CSV, option);
@@ -528,9 +526,7 @@ public class TajoTestingCluster {
     for (int i = 0; i < names.length; i++) {
       Path tablePath = new Path(rootDir, names[i]);
       fs.mkdirs(tablePath);
-      Path dataPath = new Path(tablePath, "data");
-      fs.mkdirs(dataPath);
-      Path dfsPath = new Path(dataPath, names[i] + ".tbl");
+      Path dfsPath = new Path(tablePath, names[i] + ".tbl");
       FSDataOutputStream out = fs.create(dfsPath);
       for (int j = 0; j < tables[i].length; j++) {
         out.write((tables[i][j]+"\n").getBytes());

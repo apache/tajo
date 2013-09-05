@@ -83,8 +83,7 @@ public class Repartitioner {
             CatalogUtil.newTableMeta(scans[i].getInSchema(), StoreType.CSV), 0, 0);
       } else {
         fragments[i] = subQuery.getStorageManager().getSplits(scans[i].getTableId(),
-                tableDesc.getMeta(),
-            new Path(tablePath, "data")).get(0);
+                tableDesc.getMeta(), tablePath).get(0);
       }
     }
 

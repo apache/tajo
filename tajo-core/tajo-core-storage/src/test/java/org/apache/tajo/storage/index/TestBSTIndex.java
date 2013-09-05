@@ -46,7 +46,7 @@ public class TestBSTIndex {
 
   private static final int TUPLE_NUM = 10000;
   private static final int LOAD_NUM = 100;
-  private static final String TEST_PATH = "target/test-data/TestIndex/data";
+  private static final String TEST_PATH = "target/test-data/TestIndex";
   private Path testDir;
   private FileSystem fs;
   
