@@ -25,9 +25,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
-import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.api.records.impl.pb.ApplicationAttemptIdPBImpl;
 import org.apache.hadoop.yarn.api.records.impl.pb.NodeIdPBImpl;
 import org.apache.hadoop.yarn.event.EventHandler;
@@ -267,20 +265,23 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       queryContext.getQueryMasterContext().getWorkerContext().
           getTajoMasterRpcClient().allocateWorkerResources(null, request, callBack);
 
-      int numAllocatedWorkers = 0;
+      TajoMasterProtocol.WorkerResourceAllocationResponse response = null;
       while(!stopped.get()) {
-        TajoMasterProtocol.WorkerResourceAllocationResponse response = null;
         try {
           response = callBack.get(3, TimeUnit.SECONDS);
+          break;
         } catch (InterruptedException e) {
           if(stopped.get()) {
-            break;
+            return;
           }
         } catch (TimeoutException e) {
           LOG.info("No available worker resource for " + event.getExecutionBlockId());
           continue;
         }
+      }
+      int numAllocatedWorkers = 0;
 
+      if(response != null) {
         List<TajoMasterProtocol.WorkerAllocatedResource> workerHosts = response.getWorkerAllocatedResourceList();
         ExecutionBlockId executionBlockId = event.getExecutionBlockId();
 
@@ -335,11 +336,19 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
           queryContext.getEventHandler().handle(new SubQueryContainerAllocationEvent(executionBlockId, containers));
         }
         numAllocatedWorkers += workerHosts.size();
-        if(numAllocatedWorkers >= event.getRequiredNum()) {
-          break;
-        }
+
       }
-      LOG.info("======> Stop TajoWorkerAllocationThread");
+      if(event.getRequiredNum() > numAllocatedWorkers) {
+        ContainerAllocationEvent shortRequestEvent = new ContainerAllocationEvent(
+            event.getType(), event.getExecutionBlockId(), event.getPriority(),
+            event.getResource(),
+            event.getRequiredNum() - numAllocatedWorkers,
+            event.isLeafQuery(), event.getProgress()
+        );
+        queryContext.getEventHandler().handle(shortRequestEvent);
+
+      }
+      LOG.info("Stop TajoWorkerAllocationThread");
     }
   }
 }

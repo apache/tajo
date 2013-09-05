@@ -126,6 +126,9 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-158: Can't allocate worker when single SubQuery requests more than
+    cluster capacity. (hyoungjunkim via hyunsik)
+
     TAJO-157: The CSVScanner.isSplittable() function does not work properly.
     (jinho)
 

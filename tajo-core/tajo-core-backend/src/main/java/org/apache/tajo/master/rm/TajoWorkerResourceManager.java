@@ -55,8 +55,6 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
 
   private final BlockingQueue<WorkerResourceRequest> requestQueue;
 
-  private ReAllocationThread reAllocator;
-
   private final List<WorkerResourceRequest> reAllocationList;
 
   private AtomicBoolean stopped = new AtomicBoolean(false);
@@ -76,9 +74,6 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
 
     workerResourceAllocator = new WorkerResourceAllocationThread();
     workerResourceAllocator.start();
-
-    reAllocator = new ReAllocationThread();
-    reAllocator.start();
   }
 
   public Map<String, WorkerResource> getWorkers() {
@@ -104,10 +99,6 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
     stopped.set(true);
     if(workerResourceAllocator != null) {
       workerResourceAllocator.interrupt();
-    }
-
-    if(reAllocator != null) {
-      reAllocator.interrupt();
     }
   }
 
@@ -258,49 +249,7 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
               LOG.debug("=========================================");
             }
           }
-          if(workerResources.size() < resourceRequest.request.getNumWorks()) {
-            reAllocationList.add(new WorkerResourceRequest(
-                resourceRequest.queryId,
-                resourceRequest.queryMasterRequest,
-                TajoMasterProtocol.WorkerResourceAllocationRequest.newBuilder()
-                  .setMemoryMBSlots(resourceRequest.request.getMemoryMBSlots())
-                  .setDiskSlots(resourceRequest.request.getDiskSlots())
-                  .setExecutionBlockId(resourceRequest.request.getExecutionBlockId())
-                  .setNumWorks(resourceRequest.request.getNumWorks() - workerResources.size())
-                  .build(),
-                resourceRequest.callBack));
-          }
         } catch(InterruptedException ie) {
-        }
-      }
-    }
-  }
-
-  class ReAllocationThread extends Thread {
-    public void run() {
-      List<WorkerResourceRequest> copiedList = new ArrayList<WorkerResourceRequest>();
-      while(!stopped.get()) {
-        copiedList.clear();
-        synchronized(reAllocationList) {
-          try {
-            reAllocationList.wait(3 * 1000);
-          } catch (InterruptedException e) {
-            if(stopped.get()) {
-              break;
-            }
-          }
-          copiedList.addAll(reAllocationList);
-        }
-
-        for(WorkerResourceRequest eachRequest: copiedList) {
-          try {
-            requestQueue.put(eachRequest);
-          } catch (InterruptedException e) {
-            break;
-          }
-        }
-        synchronized(reAllocationList) {
-          reAllocationList.clear();
         }
       }
     }

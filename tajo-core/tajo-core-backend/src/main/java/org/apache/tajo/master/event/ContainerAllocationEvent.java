@@ -70,4 +70,8 @@ public class ContainerAllocationEvent extends AbstractEvent<ContainerAllocatorEv
   public float getProgress() {
     return progress;
   }
+
+  public Resource getResource() {
+    return resource;
+  }
 }

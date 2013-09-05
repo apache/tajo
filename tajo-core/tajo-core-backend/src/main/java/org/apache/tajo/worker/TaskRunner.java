@@ -299,7 +299,7 @@ public class TaskRunner extends AbstractService {
             try {
               if (callFuture == null) {
                 callFuture = new CallFuture2<QueryUnitRequestProto>();
-                LOG.info("====>Request GetTask:" + getId());
+                LOG.info("Request GetTask: " + getId());
                 GetTaskRequestProto request = GetTaskRequestProto.newBuilder()
                     .setExecutionBlockId(executionBlockId.getProto())
                     .setContainerId(((ContainerIdPBImpl) containerId).getProto())
@@ -319,7 +319,7 @@ public class TaskRunner extends AbstractService {
                 }
                 // if there has been no assigning task for a given period,
                 // TaskRunner will retry to request an assigning task.
-                LOG.warn("Timeout getResource:" + getId() + ", but retry", te);
+                LOG.warn("Timeout GetTask:" + getId() + ", but retry", te);
                 continue;
               }
 
