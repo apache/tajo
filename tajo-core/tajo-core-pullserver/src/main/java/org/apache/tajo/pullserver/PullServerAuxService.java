@@ -397,7 +397,12 @@ public class PullServerAuxService extends AbstractService
       LOG.info("PullServer request param: repartitionType=" + repartitionType +
           ", sid=" + sid + ", partitionId=" + partitionId + ", taskIds=" + taskIdList);
 
-      LOG.info("PullServer baseDir: " + conf.get(ConfVars.TASK_LOCAL_DIR.varname) + "/" + queryBaseDir);
+      String taskLocalDir = conf.get(ConfVars.TASK_LOCAL_DIR.varname);
+      if (taskLocalDir == null ||
+          taskLocalDir.equals("")) {
+        LOG.error("Tajo local directory should be specified.");
+      }
+      LOG.info("PullServer baseDir: " + taskLocalDir + "/" + queryBaseDir);
 
       // if a subquery requires a range partitioning
       if (repartitionType.equals("r")) {

@@ -126,6 +126,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-152: The tajo local directory path is mismatched in PullServer. (jihoon)
+
     TAJO-80: Remove codes of legacy data paths. (jihoon)
 
     TAJO-159: QueryMaster cannot connect the remote CatalogServer. (hyunsik)

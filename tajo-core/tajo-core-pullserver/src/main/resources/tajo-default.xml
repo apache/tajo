@@ -30,9 +30,4 @@
     <value>file:///tmp/tajo-${user.name}</value>
     <description>A base for other temporary directories.</description>
   </property>
-
-  <property>
-    <name>tajo.task.localdir</name>
-    <value>/tmp/tajo-localdir</value>
-  </property>
 </configuration>

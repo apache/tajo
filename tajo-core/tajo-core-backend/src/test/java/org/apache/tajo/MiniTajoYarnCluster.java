@@ -101,6 +101,9 @@ public class MiniTajoYarnCluster extends MiniYARNCluster {
     // Non-standard shuffle port
     conf.setInt(TajoConf.ConfVars.PULLSERVER_PORT.name(), 0);
 
+    // local directory
+    conf.set(TajoConf.ConfVars.TASK_LOCAL_DIR.name(), "/tmp/tajo-localdir");
+
     conf.setClass(YarnConfiguration.NM_CONTAINER_EXECUTOR,
         DefaultContainerExecutor.class, ContainerExecutor.class);
 
