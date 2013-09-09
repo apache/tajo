@@ -1,1 +1,1 @@
-create table namde (name string, age int)
+create table name (name string, age int)

@@ -4,8 +4,6 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
-    TAJO-170: mvn compile error when building tar file. (jaehwa)
-
     TAJO-101: HiveQL converter. (jaehwa)
 
     TAJO-144: Implement INSERT OVERWRITE clause. (hyunsik)
@@ -134,6 +132,8 @@ Release 0.2.0 - unreleased
     TAJO-2: remove all @author tags and update license header. (hyunsik)
 
   BUG FIXES
+
+    TAJO-170: mvn compile error when building tar file. (jaehwa)
 
     TAJO-154: Query calculates wrong progress in multiple step queries.
     (hyunsik)
