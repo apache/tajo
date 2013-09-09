@@ -308,6 +308,7 @@
             <exclude>**/workers</exclude>
             <exclude>**/*.tql</exclude>
             <exclude>**/*.sql</exclude>
+            <exclude>**/*.hiveql</exclude>
             <exclude>**/*.schema</exclude>
             <exclude>**/*.tbl</exclude>
             <exclude>**/*.jsp</exclude>
