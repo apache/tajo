@@ -76,7 +76,7 @@ public class TestEvalTreeUtil {
     TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
     catalog.addTable(desc);
 
-    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class,
+    FunctionDesc funcMeta = new FunctionDesc("test_sum", TestSum.class,
         FunctionType.GENERAL,
         CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT4),
         CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT4, TajoDataTypes.Type.INT4));

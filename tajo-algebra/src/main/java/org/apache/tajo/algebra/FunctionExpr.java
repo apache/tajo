@@ -43,7 +43,7 @@ public class FunctionExpr extends Expr {
 
   protected FunctionExpr(OpType type, String signature, Expr [] params) {
     super(type);
-    if (type != OpType.Function && type != OpType.CountValueFunction) {
+    if (type != OpType.Function && type != OpType.GeneralSetFunction) {
       throw new IllegalArgumentException("FunctionExpr cannot accept " + type + "type");
     }
     this.signature = signature;

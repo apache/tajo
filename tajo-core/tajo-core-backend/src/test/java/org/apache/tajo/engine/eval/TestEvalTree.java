@@ -69,7 +69,7 @@ public class TestEvalTree {
     TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
     cat.addTable(desc);
 
-    FunctionDesc funcMeta = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
+    FunctionDesc funcMeta = new FunctionDesc("test_sum", TestSum.class, FunctionType.GENERAL,
         CatalogUtil.newDataTypesWithoutLen(INT4),
         CatalogUtil.newDataTypesWithoutLen(INT4, INT4));
     cat.registerFunction(funcMeta);
@@ -119,7 +119,7 @@ public class TestEvalTree {
   static String[] QUERIES = {
       "select name, score, age from people where score > 30", // 0
       "select name, score, age from people where score * age", // 1
-      "select name, score, age from people where sum(score * age, 50)", // 2
+      "select name, score, age from people where test_sum(score * age, 50)", // 2
       "select 2+3", // 3
       "select sum(score) from people", // 4
       "select name from people where NOT (20 > 30)", // 5

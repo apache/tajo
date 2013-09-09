@@ -347,7 +347,6 @@ table_reference
   ;
 
 joined_table
-//  : table_primary (cross_join | qualified_join | natural_join | union_join)+
   : table_primary joined_table_primary+
   ;
 
@@ -447,6 +446,55 @@ subquery
 	:  LEFT_PAREN query_expression RIGHT_PAREN
 	;
 
+
+
+/*
+===============================================================================
+  <set function specification>
+
+  Invoke an SQL-invoked routine.
+===============================================================================
+*/
+set_function_specification
+  : aggregate_function
+  ;
+
+aggregate_function
+  : COUNT LEFT_PAREN MULTIPLY RIGHT_PAREN
+  | general_set_function filter_clause?
+  ;
+
+general_set_function
+  : set_function_type LEFT_PAREN set_qualifier? boolean_value_expression RIGHT_PAREN
+  ;
+
+set_function_type
+  : AVG
+  | MAX
+  | MIN
+  | SUM
+  | EVERY
+  | ANY
+  | SOME
+  | COUNT
+  | STDDEV_POP
+  | STDDEV_SAMP
+  | VAR_SAMP
+  | VAR_POP
+  | COLLECT
+  | FUSION
+  | INTERSECTION
+  ;
+
+filter_clause
+  : FILTER LEFT_PAREN WHERE search_condition RIGHT_PAREN
+  ;
+
+grouping_operation
+  : GROUPING LEFT_PAREN column_reference_list RIGHT_PAREN
+  ;
+
+
 /*
 ===============================================================================
   <routine invocation>
@@ -456,9 +504,7 @@ subquery
 */
 
 routine_invocation
-  : COUNT LEFT_PAREN sql_argument_list RIGHT_PAREN
-  | COUNT LEFT_PAREN MULTIPLY RIGHT_PAREN
-  | Identifier LEFT_PAREN sql_argument_list? RIGHT_PAREN
+  : Identifier LEFT_PAREN sql_argument_list? RIGHT_PAREN
   ;
 
 sql_argument_list
@@ -722,7 +768,8 @@ array
 
 numeric_primary
   : literal
-  | column_reference  
+  | column_reference
+  | set_function_specification
   | routine_invocation
   | scalar_subquery
   | LEFT_PAREN numeric_value_expression RIGHT_PAREN

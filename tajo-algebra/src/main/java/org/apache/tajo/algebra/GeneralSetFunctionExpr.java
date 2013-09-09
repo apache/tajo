@@ -14,8 +14,15 @@
 
 package org.apache.tajo.algebra;
 
-public class CountValueFunctionExpr extends FunctionExpr {
-  public CountValueFunctionExpr(Expr param) {
-    super(OpType.CountValueFunction, "count", new Expr[] {param});
+public class GeneralSetFunctionExpr extends FunctionExpr {
+  private boolean distinct = false;
+
+  public GeneralSetFunctionExpr(String signature, boolean distinct, Expr param) {
+    super(OpType.GeneralSetFunction, signature, new Expr[] {param});
+    this.distinct = distinct;
+  }
+
+  public boolean isDistinct() {
+    return distinct;
   }
 }

@@ -23,6 +23,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-167: Implement GeneralSetFunctionExpr to represent all SQL standard
+    set functions. (hyunsik)
+
     TAJO-149: Eliminate QueryConf and its file write. (hyunsik)
 
     TAJO-143: Implement hash semi-join operator. (hyunsik)

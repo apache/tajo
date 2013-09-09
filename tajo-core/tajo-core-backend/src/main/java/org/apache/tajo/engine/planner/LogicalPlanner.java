@@ -985,7 +985,34 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
               getCanonicalName(countRows.getSignature(), new DataType[]{}));
         }
 
-      case CountValueFunction:
+      case GeneralSetFunction: {
+        GeneralSetFunctionExpr setFunction = (GeneralSetFunctionExpr) expr;
+        Expr[] params = setFunction.getParams();
+        EvalNode[] givenArgs = new EvalNode[params.length];
+        DataType[] paramTypes = new DataType[params.length];
+
+        givenArgs[0] = createEvalTree(plan, blockName, params[0]);
+        if (setFunction.getSignature().equalsIgnoreCase("count")) {
+          paramTypes[0] = CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.ANY);
+        } else {
+          paramTypes[0] = givenArgs[0].getValueType()[0];
+        }
+
+        if (!catalog.containFunction(setFunction.getSignature(), paramTypes)) {
+          throw new UndefinedFunctionException(CatalogUtil.
+              getCanonicalName(setFunction.getSignature(), paramTypes));
+        }
+
+        FunctionDesc funcDesc = catalog.getFunction(setFunction.getSignature(), paramTypes);
+        plan.getBlock(blockName).setHasGrouping();
+        try {
+          return new AggFuncCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
+        } catch (InternalException e) {
+          e.printStackTrace();
+        }
+      }
+      break;
+
       case Function:
         FunctionExpr function = (FunctionExpr) expr;
         // Given parameters
@@ -993,14 +1020,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         EvalNode[] givenArgs = new EvalNode[params.length];
         DataType[] paramTypes = new DataType[params.length];
 
-        if (expr.getType() == OpType.CountValueFunction) {
-          givenArgs[0] = createEvalTree(plan, blockName, params[0]);
-          paramTypes[0] = CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.ANY);
-        } else {
-          for (int i = 0; i < params.length; i++) {
+        for (int i = 0; i < params.length; i++) {
             givenArgs[i] = createEvalTree(plan, blockName, params[i]);
             paramTypes[i] = givenArgs[i].getValueType()[0];
-          }
         }
 
         if (!catalog.containFunction(function.getSignature(), paramTypes)) {
@@ -1023,6 +1045,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         } catch (InternalException e) {
           e.printStackTrace();
         }
+        break;
 
       case CaseWhen:
         CaseWhenPredicate caseWhenExpr = (CaseWhenPredicate) expr;

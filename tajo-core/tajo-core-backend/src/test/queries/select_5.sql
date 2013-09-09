@@ -1,1 +1,1 @@
-select name as n, sum(score, 3+4, 3>4) as total, 3+4 as id from people where age = 30
+select name as n, func(score, 3+4, 3>4) as total, 3+4 as id from people where age = 30

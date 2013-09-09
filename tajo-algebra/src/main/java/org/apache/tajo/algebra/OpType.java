@@ -82,7 +82,7 @@ public enum OpType {
 
   // set functions
   CountRowsFunction(CountRowsFunctionExpr.class),
-  CountValueFunction(CountValueFunctionExpr.class),
+  GeneralSetFunction(GeneralSetFunctionExpr.class),
 
   Literal(LiteralValue.class),
   Null(NullValue.class),

@@ -119,6 +119,7 @@ ALL : A L L;
 AND : A N D;
 ANY : A N Y;
 ASC : A S C;
+AVG : A V G;
 
 BY : B Y;
 
@@ -137,17 +138,20 @@ DROP : D R O P;
 
 END : E N D;
 ELSE : E L S E;
+EVERY : E V E R Y;
 EXCEPT : E X C E P T;
 EXISTS : E X I S T S;
 EXTERNAL : E X T E R N A L;
 
 FALSE : F A L S E;
+FILTER : F I L T E R;
 FIRST : F I R S T;
 FORMAT : F O R M A T;
 FULL : F U L L;
 FROM : F R O M;
 
 GROUP : G R O U P;
+GROUPING : G R O U P I N G;
 
 HAVING : H A V I N G;
 
@@ -172,6 +176,9 @@ NATURAL : N A T U R A L;
 NOT : N O T;
 NULL : N U L L;
 NULLIF : N U L L I F;
+
+MAX : M A X;
+MIN : M I N;
 
 ON : O N;
 OUTER : O U T E R;
@@ -198,6 +205,8 @@ UNKNOWN : U N K N O W N;
 USING : U S I N G;
 
 VALUES : V A L U E S;
+VAR_SAMP : V A R UNDERLINE S A M P;
+VAR_POP : V A R UNDERLINE P O P;
 VARYING : V A R Y I N G;
 
 WHEN : W H E N;
@@ -205,6 +214,31 @@ WHERE : W H E R E;
 WITH : W I T H;
 
 ZONE : Z O N E;
+
+/*
+===============================================================================
+  Non Reserved Keywords
+===============================================================================
+*/
+
+COLLECT : C O L L E C T;
+
+FUSION : F U S I O N;
+
+INTERSECTION : I N T E R S E C T I O N;
+
+STDDEV_POP : S T D D E V UNDERLINE P O P;
+STDDEV_SAMP : S T D D E V UNDERLINE S A M P;
+SUM : S U M;
+
+Nonreserved_keywords
+  : COLLECT
+  | FUSION
+  | INTERSECTION
+  | STDDEV_POP
+  | STDDEV_SAMP
+  | SUM
+  ;
 
 /*
 ===============================================================================
@@ -275,6 +309,7 @@ MULTIPLY: '*';
 DIVIDE  : '/';
 MODULAR : '%';
 DOT : '.';
+UNDERLINE : '_';
 
 NUMBER : Digit+;
 
@@ -302,6 +337,11 @@ LineComment
 */
 
 Identifier
+  : Nonreserved_keywords
+  | Regular_Identifier
+  ;
+
+Regular_Identifier
   : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|Digit|'_'|':')*
   ;
 

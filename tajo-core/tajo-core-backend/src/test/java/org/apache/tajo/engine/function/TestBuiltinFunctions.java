@@ -48,7 +48,7 @@ public class TestBuiltinFunctions {
 
   @Test
   public void testMaxLong() throws Exception {
-    ResultSet res = tpch.execute("select max(l_orderkey) as max from lineitem");
+    ResultSet res = tpch.execute("select max(l_orderkey) as total_max from lineitem");
     try {
       res.next();
       assertEquals(3, res.getInt(1));
@@ -59,7 +59,7 @@ public class TestBuiltinFunctions {
 
   @Test
   public void testMinLong() throws Exception {
-    ResultSet res = tpch.execute("select min(l_orderkey) as max from lineitem");
+    ResultSet res = tpch.execute("select min(l_orderkey) as total_min from lineitem");
     try {
       res.next();
       assertEquals(1, res.getInt(1));
@@ -99,7 +99,7 @@ public class TestBuiltinFunctions {
 
   @Test
   public void testAvgLong() throws Exception {
-    ResultSet res = tpch.execute("select avg(l_orderkey) as avg from lineitem");
+    ResultSet res = tpch.execute("select avg(l_orderkey) as total_avg from lineitem");
     try {
       res.next();
       assertEquals(2, res.getLong(1));
@@ -110,7 +110,7 @@ public class TestBuiltinFunctions {
 
   @Test
   public void testAvgInt() throws Exception {
-    ResultSet res = tpch.execute("select avg(l_partkey) as avg from lineitem");
+    ResultSet res = tpch.execute("select avg(l_partkey) as total_avg from lineitem");
     try {
       res.next();
       System.out.println(res.getFloat(1));

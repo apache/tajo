@@ -21,6 +21,7 @@ package org.apache.tajo.engine.parser;
 import com.google.common.base.Preconditions;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
@@ -60,6 +61,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       throw new SQLSyntaxError(e);
     }
     return visitSql(context);
+  }
+
+  private static boolean checkIfExist(Object obj) {
+    return obj != null;
   }
 
   @Override
@@ -651,28 +656,37 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
   }
 
-  @Override
-  public FunctionExpr visitRoutine_invocation(SQLParser.Routine_invocationContext ctx) {
+  @Override public FunctionExpr visitAggregate_function(@NotNull SQLParser.Aggregate_functionContext ctx) {
     if (ctx.COUNT() != null && ctx.MULTIPLY() != null) {
       return new CountRowsFunctionExpr();
-    }else if (ctx.COUNT() != null && ctx.sql_argument_list().boolean_value_expression().size() == 1) {
-      return new CountValueFunctionExpr(visitBoolean_value_expression(
-          ctx.sql_argument_list().boolean_value_expression().get(0)));
     } else {
-      String signature = ctx.Identifier().getText();
-      FunctionExpr function = new FunctionExpr(signature);
-      if (ctx.sql_argument_list() != null) {
-        int numArgs = ctx.sql_argument_list().boolean_value_expression().size();
-        Expr [] argument_list = new Expr[numArgs];
-        for (int i = 0; i < numArgs; i++) {
-          argument_list[i] = visitBoolean_value_expression(ctx.sql_argument_list().
-              boolean_value_expression().get(i));
-        }
-
-        function.setParams(argument_list);
-      }
-      return function;
+      return visitGeneral_set_function(ctx.general_set_function());
     }
+  }
+
+  @Override public FunctionExpr visitGeneral_set_function(@NotNull SQLParser.General_set_functionContext ctx) {
+    String signature = ctx.set_function_type().getText();
+    boolean distinct = checkIfExist(ctx.set_qualifier()) && checkIfExist(ctx.set_qualifier().DISTINCT()) ? true : false;
+    Expr param = visitBoolean_value_expression(ctx.boolean_value_expression());
+
+    return new GeneralSetFunctionExpr(signature, distinct, param);
+  }
+
+  @Override
+  public FunctionExpr visitRoutine_invocation(SQLParser.Routine_invocationContext ctx) {
+    String signature = ctx.Identifier().getText();
+    FunctionExpr function = new FunctionExpr(signature);
+    if (ctx.sql_argument_list() != null) {
+      int numArgs = ctx.sql_argument_list().boolean_value_expression().size();
+      Expr [] argument_list = new Expr[numArgs];
+      for (int i = 0; i < numArgs; i++) {
+        argument_list[i] = visitBoolean_value_expression(ctx.sql_argument_list().
+            boolean_value_expression().get(i));
+      }
+
+      function.setParams(argument_list);
+    }
+    return function;
   }
 
   @Override
