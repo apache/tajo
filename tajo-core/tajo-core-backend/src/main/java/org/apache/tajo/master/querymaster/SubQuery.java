@@ -69,14 +69,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
   private static final Log LOG = LogFactory.getLog(SubQuery.class);
 
-  private QueryMeta queryMeta;
+  private QueryContext queryContext;
   private ExecutionBlock block;
   private int priority;
   private TableMeta meta;
   private EventHandler eventHandler;
   private final StorageManager sm;
   private TaskSchedulerImpl taskScheduler;
-  private QueryMasterTask.QueryContext context;
+  private QueryMasterTask.QueryMasterTaskContext context;
 
   private long startTime;
   private long finishTime;
@@ -136,7 +136,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
   private int completedTaskCount = 0;
 
-  public SubQuery(QueryMasterTask.QueryContext context, ExecutionBlock block, StorageManager sm) {
+  public SubQuery(QueryMasterTask.QueryMasterTaskContext context, ExecutionBlock block, StorageManager sm) {
     this.context = context;
     this.block = block;
     this.sm = sm;
@@ -153,7 +153,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         state == SubQueryState.CONTAINER_ALLOCATED || state == SubQueryState.RUNNING;
   }
 
-  public QueryMasterTask.QueryContext getContext() {
+  public QueryMasterTask.QueryMasterTaskContext getContext() {
     return context;
   }
 
@@ -335,9 +335,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     } else {
       stat = computeStatFromTasks();
     }
-    TableMeta meta = writeStat(this, stat);
+
+    StoreTableNode storeTableNode = getBlock().getStoreTableNode();
+    TableMeta meta = toTableMeta(storeTableNode);
     meta.setStat(stat);
-    setTableMeta(meta);
     return meta;
   }
 
@@ -356,7 +357,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     StoreTableNode storeTableNode = execBlock.getStoreTableNode();
     TableMeta meta = toTableMeta(storeTableNode);
     meta.setStat(stat);
-    sm.writeTableMeta(sm.getTablePath(execBlock.getOutputName()), meta);
+    //sm.writeTableMeta(sm.getTablePath(execBlock.getOutputName()), meta);
     return meta;
   }
 
@@ -597,7 +598,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       return maxTaskNum;
     }
 
-    public static long getInputVolume(QueryMasterTask.QueryContext context, ExecutionBlock execBlock) {
+    public static long getInputVolume(QueryMasterTask.QueryMasterTaskContext context, ExecutionBlock execBlock) {
       Map<String, TableDesc> tableMap = context.getTableDescMap();
       if (execBlock.isLeafBlock()) {
         ScanNode outerScan = execBlock.getScanNodes()[0];

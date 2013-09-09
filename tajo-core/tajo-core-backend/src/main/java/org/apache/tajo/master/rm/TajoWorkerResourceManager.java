@@ -211,15 +211,6 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
 
           LOG.info("====> allocateWorkerResources: allocated:" + workerResources.size());
 
-//          if(LOG.isDebugEnabled()) {
-//            LOG.debug("====> allocateWorkerResources:" +
-//                (new ExecutionBlockId(resourceRequest.request.getExecutionBlockId())) +
-//                ", required:" + resourceRequest.request.getNumWorks() + ", allocated:" + workerResources.size());
-//          } else {
-//            LOG.info("====> allocateWorkerResources: required:" + resourceRequest.request.getNumWorks() +
-//                ", allocated:" + workerResources.size() + ", queryMasterRequest=" + resourceRequest.queryMasterRequest);
-//          }
-
           if(workerResources.size() > 0) {
             if(resourceRequest.queryMasterRequest) {
               startQueryMaster(resourceRequest.queryId, workerResources.get(0));
@@ -386,7 +377,7 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
         allWorkerResourceMap.put(workerResource.getId(), workerResource);
         liveWorkerResources.add(hostAndPort);
 
-        LOG.info("====> TajoWorker:" + workerResource + " added in live TajoWorker list");
+        LOG.info("TajoWorker:" + workerResource + " added in live TajoWorker list");
 
         workerResourceLock.notifyAll();
       }

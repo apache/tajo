@@ -22,6 +22,8 @@ import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.TableMetaImpl;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
@@ -50,7 +52,8 @@ public class ResultSetImpl implements ResultSet {
   private Configuration conf;
   private FileSystem fs;
   private Scanner scanner;
-  private TableMeta meta;
+  private TableDesc desc;
+  private Schema schema;
   private Tuple cur;
   private int curRow;
   private long totalRow;
@@ -58,32 +61,23 @@ public class ResultSetImpl implements ResultSet {
   private TajoClient tajoClient;
   QueryId queryId;
 
-  public ResultSetImpl(TajoClient tajoClient, QueryId queryId) throws IOException {
-    this(tajoClient, queryId, null, null);
+  public ResultSetImpl(TajoClient tajoClient, QueryId queryId) {
+    this.tajoClient = tajoClient;
+    this.queryId = queryId;
+    init();
   }
 
-//  public ResultSetImpl(TajoClient tajoClient, QueryId queryId, Configuration conf, String path) throws IOException {
-//    this(tajoClient, queryId, conf, new Path(path));
-//  }
-
-  public ResultSetImpl(TajoClient tajoClient, QueryId queryId, Configuration conf, Path path) throws IOException {
+  public ResultSetImpl(TajoClient tajoClient, QueryId queryId, Configuration conf, TableDesc desc) throws IOException {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.conf = conf;
-    if(path != null) {
-      this.fs = path.getFileSystem(this.conf);
-      // TODO - to be improved. It can be solved to get the query finish status
-      // from master.
-      try {
-        this.meta = getMeta(this.conf, path);
-      } catch (FileNotFoundException fnf) {
-        this.totalRow = 0;
-        init();
-        return;
-      }
-      this.totalRow = meta.getStat() != null ? meta.getStat().getNumRows() : 0;
-      Collection<Fragment> frags = getFragmentsNG(meta, path);
-      scanner = new MergeScanner(conf, meta, frags);
+    this.desc = desc;
+    this.schema = desc.getMeta().getSchema();
+    if(desc != null) {
+      fs = desc.getPath().getFileSystem(conf);
+      this.totalRow = desc.getMeta().getStat() != null ? desc.getMeta().getStat().getNumRows() : 0;
+      Collection<Fragment> frags = getFragmentsNG(desc.getMeta(), desc.getPath());
+      scanner = new MergeScanner(conf, desc.getMeta(), frags);
     }
     init();
   }
@@ -273,7 +267,7 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public int findColumn(String colName) throws SQLException {
-    return this.meta.getSchema().getColumnIdByName(colName);
+    return schema.getColumnIdByName(colName);
   }
 
   /*
@@ -714,7 +708,7 @@ public class ResultSetImpl implements ResultSet {
    */
   @Override
   public ResultSetMetaData getMetaData() throws SQLException {
-    return new ResultSetMetaDataImpl(meta);
+    return new ResultSetMetaDataImpl(desc.getMeta());
   }
 
   /*

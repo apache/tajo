@@ -47,7 +47,7 @@ public class YarnTaskRunnerLauncherImpl extends AbstractService implements TaskR
   //private final YarnRPC yarnRPC;
   private final static RecordFactory recordFactory =
       RecordFactoryProvider.getRecordFactory(null);
-  private QueryMasterTask.QueryContext context;
+  private QueryMasterTask.QueryMasterTaskContext context;
 
   // For ContainerLauncherSpec
   private static AtomicBoolean initialClasspathFlag = new AtomicBoolean();
@@ -63,7 +63,7 @@ public class YarnTaskRunnerLauncherImpl extends AbstractService implements TaskR
 
   private YarnRPC yarnRPC;
 
-  public YarnTaskRunnerLauncherImpl(QueryMasterTask.QueryContext context, YarnRPC yarnRPC) {
+  public YarnTaskRunnerLauncherImpl(QueryMasterTask.QueryMasterTaskContext context, YarnRPC yarnRPC) {
     super(YarnTaskRunnerLauncherImpl.class.getName());
     this.context = context;
     this.yarnRPC = yarnRPC;

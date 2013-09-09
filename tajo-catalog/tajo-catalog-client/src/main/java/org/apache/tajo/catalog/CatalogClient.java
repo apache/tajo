@@ -56,9 +56,8 @@ public class CatalogClient extends AbstractCatalogClient {
       client = new ProtoBlockingRpcClient(CatalogProtocol.class, serverAddr);
       setStub((BlockingInterface) client.getStub());
     } catch (Exception e) {
-      throw new IOException(e);
+      throw new IOException("Can't connect the catalog server (" + addrStr +")");
     }
-
     LOG.info("Connected to the catalog server (" + addrStr + ")");
   }
 

@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
@@ -71,8 +72,7 @@ public class TajoTestingCluster {
 	 * System property key to get test directory value.
 	 * Name is as it is because mini dfs has hard-codings to put test data here.
 	 */
-	public static final String TEST_DIRECTORY_KEY =
-      MiniDFSCluster.PROP_TEST_BUILD_DATA;
+	public static final String TEST_DIRECTORY_KEY = MiniDFSCluster.PROP_TEST_BUILD_DATA;
 
 	/**
 	 * Default parent directory for test output.
@@ -222,7 +222,7 @@ public class TajoTestingCluster {
     }
 
     conf.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
-    conf.set(CatalogConstants.JDBC_URI, "jdbc:derby:target/test-data/tcat/db");
+    conf.set(CatalogConstants.JDBC_URI, "jdbc:derby:" + clusterTestBuildDir.getAbsolutePath() + "/db");
     LOG.info("Apache Derby repository is set to "+conf.get(CatalogConstants.JDBC_URI));
     conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
 
@@ -255,7 +255,7 @@ public class TajoTestingCluster {
 
     c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
     c.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
-    c.set(CatalogConstants.JDBC_URI, "jdbc:derby:target/test-data/tcat/db");
+    c.set(CatalogConstants.JDBC_URI, "jdbc:derby:" + testBuildDir.getAbsolutePath() + "/db");
 
     LOG.info("derby repository is set to "+conf.get(CatalogConstants.JDBC_URI));
 
@@ -300,7 +300,7 @@ public class TajoTestingCluster {
 
       tajoWorker.startWorker(workerConf, new String[]{"standby"});
 
-      LOG.info("=====> MiniTajoCluster Worker #" + (i + 1) + " started.");
+      LOG.info("MiniTajoCluster Worker #" + (i + 1) + " started.");
       tajoWorkers.add(tajoWorker);
     }
   }
@@ -348,14 +348,10 @@ public class TajoTestingCluster {
    */
   public void startMiniCluster(final int numSlaves)
       throws Exception {
-    String localHostName = InetAddress.getLocalHost().getHostName();
-    startMiniCluster(numSlaves, new String[] {localHostName});
+    startMiniCluster(numSlaves, null);
   }
 
-  public void startMiniCluster(final int numSlaves,
-                                          final String [] dataNodeHosts) throws Exception {
-    // the conf is set to the distributed mode.
-    this.conf.setBoolVar(ConfVars.CLUSTER_DISTRIBUTED, true);
+  public void startMiniCluster(final int numSlaves, final String [] dataNodeHosts) throws Exception {
 
     int numDataNodes = numSlaves;
     if(dataNodeHosts != null && dataNodeHosts.length != 0) {
@@ -406,12 +402,11 @@ public class TajoTestingCluster {
       yarnCluster.init(conf);
       yarnCluster.start();
 
-      conf.set(YarnConfiguration.RM_ADDRESS,
-          NetUtils.normalizeInetSocketAddress(yarnCluster.getResourceManager().
-              getClientRMService().getBindAddress()));
-      conf.set(YarnConfiguration.RM_SCHEDULER_ADDRESS,
-          NetUtils.normalizeInetSocketAddress(yarnCluster.getResourceManager().
-              getApplicationMasterService().getBindAddress()));
+      ResourceManager resourceManager = yarnCluster.getResourceManager();
+      InetSocketAddress rmAddr = resourceManager.getClientRMService().getBindAddress();
+      InetSocketAddress rmSchedulerAddr = resourceManager.getApplicationMasterService().getBindAddress();
+      conf.set(YarnConfiguration.RM_ADDRESS, NetUtils.normalizeInetSocketAddress(rmAddr));
+      conf.set(YarnConfiguration.RM_SCHEDULER_ADDRESS, NetUtils.normalizeInetSocketAddress(rmSchedulerAddr));
 
       URL url = Thread.currentThread().getContextClassLoader().getResource("yarn-site.xml");
       if (url == null) {
@@ -425,9 +420,6 @@ public class TajoTestingCluster {
   }
 
   public void startMiniClusterInLocal(final int numSlaves) throws Exception {
-    // the conf is set to the distributed mode.
-    this.conf.setBoolVar(ConfVars.CLUSTER_DISTRIBUTED, true);
-
     // If we already put up a cluster, fail.
     String testBuildPath = conf.get(TEST_DIRECTORY_KEY, null);
     isRunningCluster(testBuildPath);

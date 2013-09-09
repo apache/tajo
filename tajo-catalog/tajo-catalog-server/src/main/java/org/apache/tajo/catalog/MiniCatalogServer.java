@@ -44,6 +44,6 @@ public class MiniCatalogServer {
   }
   
   public CatalogService getCatalog() {
-    return new LocalCatalog(this.catalogServers);
+    return new LocalCatalogWrapper(this.catalogServers);
   }
 }

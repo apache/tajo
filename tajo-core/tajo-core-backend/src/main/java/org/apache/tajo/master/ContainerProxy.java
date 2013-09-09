@@ -41,7 +41,7 @@ public abstract class ContainerProxy {
 
   protected final ExecutionBlockId executionBlockId;
   protected Configuration conf;
-  protected QueryMasterTask.QueryContext context;
+  protected QueryMasterTask.QueryMasterTaskContext context;
 
   protected ContainerState state;
   // store enough information to be able to cleanup the container
@@ -53,7 +53,7 @@ public abstract class ContainerProxy {
   public abstract void launch(ContainerLaunchContext containerLaunchContext);
   public abstract void stopContainer();
 
-  public ContainerProxy(QueryMasterTask.QueryContext context, Configuration conf,
+  public ContainerProxy(QueryMasterTask.QueryMasterTaskContext context, Configuration conf,
                         ExecutionBlockId executionBlockId, Container container) {
     this.context = context;
     this.conf = conf;

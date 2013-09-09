@@ -211,7 +211,7 @@ public class TajoClient {
       }
 
     TableDesc tableDesc = getResultDesc(queryId);
-    return new ResultSetImpl(this, queryId, conf, tableDesc.getPath());
+    return new ResultSetImpl(this, queryId, conf, tableDesc);
   }
 
   public ResultSet getQueryResultAndWait(QueryId queryId)

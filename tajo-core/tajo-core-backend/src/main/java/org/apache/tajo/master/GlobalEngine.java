@@ -33,6 +33,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.AlreadyExistsTableException;
 import org.apache.tajo.catalog.exception.NoSuchTableException;
 import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ConstEval;
 import org.apache.tajo.engine.eval.FieldEval;
@@ -117,13 +118,13 @@ public class GlobalEngine extends AbstractService {
         responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
         responseBuilder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
       } else {
-        QueryMeta queryMeta = new QueryMeta();
-        hookManager.doHooks(queryMeta, plan);
+        QueryContext queryContext = new QueryContext();
+        hookManager.doHooks(queryContext, plan);
 
         QueryJobManager queryJobManager = this.context.getQueryJobManager();
         QueryInfo queryInfo;
 
-        queryInfo = queryJobManager.createNewQueryJob(queryMeta, sql, rootNode);
+        queryInfo = queryJobManager.createNewQueryJob(queryContext, sql, rootNode);
 
         responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
         responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
@@ -274,8 +275,8 @@ public class GlobalEngine extends AbstractService {
   }
 
   public interface DistributedQueryHook {
-    boolean isEligible(QueryMeta queryMeta, LogicalPlan plan);
-    void hook(QueryMeta queryMeta, LogicalPlan plan) throws Exception;
+    boolean isEligible(QueryContext queryContext, LogicalPlan plan);
+    void hook(QueryContext queryContext, LogicalPlan plan) throws Exception;
   }
 
   public class DistributedQueryHookManager {
@@ -284,11 +285,11 @@ public class GlobalEngine extends AbstractService {
       hooks.add(hook);
     }
 
-    public void doHooks(QueryMeta queryMeta, LogicalPlan plan) {
+    public void doHooks(QueryContext queryContext, LogicalPlan plan) {
       for (DistributedQueryHook hook : hooks) {
-        if (hook.isEligible(queryMeta, plan)) {
+        if (hook.isEligible(queryContext, plan)) {
           try {
-            hook.hook(queryMeta, plan);
+            hook.hook(queryContext, plan);
           } catch (Throwable t) {
             t.printStackTrace();
           }
@@ -300,7 +301,7 @@ public class GlobalEngine extends AbstractService {
   private class CreateTableHook implements DistributedQueryHook {
 
     @Override
-    public boolean isEligible(QueryMeta queryMeta, LogicalPlan plan) {
+    public boolean isEligible(QueryContext queryContext, LogicalPlan plan) {
       if (plan.getRootBlock().hasStoreTableNode()) {
         StoreTableNode storeTableNode = plan.getRootBlock().getStoreTableNode();
         return storeTableNode.isCreatedTable();
@@ -310,49 +311,49 @@ public class GlobalEngine extends AbstractService {
     }
 
     @Override
-    public void hook(QueryMeta queryMeta, LogicalPlan plan) throws Exception {
+    public void hook(QueryContext queryContext, LogicalPlan plan) throws Exception {
       StoreTableNode storeTableNode = plan.getRootBlock().getStoreTableNode();
-      queryMeta.setOutputTable(storeTableNode.getTableName());
-      queryMeta.setCreateTable();
+      String tableName = storeTableNode.getTableName();
+      queryContext.setOutputTable(tableName);
+      queryContext.setOutputPath(new Path(TajoConf.getWarehousePath(context.getConf()), tableName));
+      queryContext.setCreateTable();
     }
   }
 
   private class InsertHook implements DistributedQueryHook {
 
     @Override
-    public boolean isEligible(QueryMeta queryMeta, LogicalPlan plan) {
+    public boolean isEligible(QueryContext queryContext, LogicalPlan plan) {
       return plan.getRootBlock().getRootType() == NodeType.INSERT;
     }
 
     @Override
-  public void hook(QueryMeta queryMeta, LogicalPlan plan) throws Exception {
-      queryMeta.setInsert();
+  public void hook(QueryContext queryContext, LogicalPlan plan) throws Exception {
+      queryContext.setInsert();
 
       InsertNode insertNode = plan.getRootBlock().getInsertNode();
       StoreTableNode storeNode;
 
-      // Set QueryMeta settings, such as output table name and output path.
+      // Set QueryContext settings, such as output table name and output path.
       // It also remove data files if overwrite is true.
       String outputTableName;
       Path outputPath;
-      if (insertNode.hasTargetTable()) {
+      if (insertNode.hasTargetTable()) { // INSERT INTO [TB_NAME]
         TableDesc desc = insertNode.getTargetTable();
         outputTableName = desc.getName();
         outputPath = desc.getPath();
-      } else {
+        queryContext.setOutputTable(outputTableName);
+      } else { // INSERT INTO LOCATION ...
         outputTableName = PlannerUtil.normalizeTableName(insertNode.getPath().getName());
         outputPath = insertNode.getPath();
-        queryMeta.setFileOutput();
+        queryContext.setFileOutput();
       }
 
       storeNode = new StoreTableNode(outputTableName);
-      queryMeta.setOutputTable(outputTableName);
-      queryMeta.setOutputPath(outputPath);
+      queryContext.setOutputPath(outputPath);
 
-      if (insertNode.isOverwrite() && sm.exists(outputPath)) {
-        queryMeta.setOutputOverwrite();
-        storeNode.setOverwrite();
-        sm.deleteData(outputPath);
+      if (insertNode.isOverwrite()) {
+        queryContext.setOutputOverwrite();
       }
 
       ////////////////////////////////////////////////////////////////////////////////////

@@ -66,7 +66,7 @@ public class CatalogServer extends AbstractService {
   // RPC variables
   private ProtoBlockingRpcServer rpcServer;
   private InetSocketAddress bindAddress;
-  private String serverName;
+  private String bindAddressStr;
   final CatalogProtocolHandler handler;
 
   // Server status variables
@@ -94,14 +94,14 @@ public class CatalogServer extends AbstractService {
 
   @Override
   public void init(Configuration _conf) {
-    this.conf = (TajoConf) _conf;
+    this.conf = (TajoConf)_conf;
 
     Constructor<?> cons;
     try {
       Class<?> storeClass =
           this.conf.getClass(CatalogConstants.STORE_CLASS, DBStore.class);
-      LOG.info("Catalog Store Class: " + storeClass.getCanonicalName());
 
+      LOG.info("Catalog Store Class: " + storeClass.getCanonicalName());
       cons = storeClass.
           getConstructor(new Class [] {Configuration.class});
 
@@ -109,7 +109,8 @@ public class CatalogServer extends AbstractService {
 
       initBuiltinFunctions(builtingFuncs);
     } catch (Throwable t) {
-      LOG.error("cannot initialize CatalogServer", t);
+      LOG.error("CatalogServer initialization failed", t);
+      throw new CatalogException(t);
     }
 
     super.init(conf);
@@ -123,9 +124,7 @@ public class CatalogServer extends AbstractService {
   }
 
   public void start() {
-    // Server to handle client requests.
     String serverAddr = conf.getVar(ConfVars.CATALOG_ADDRESS);
-    // Creation of a HSA will force a resolve.
     InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
     try {
       this.rpcServer = new ProtoBlockingRpcServer(
@@ -134,13 +133,14 @@ public class CatalogServer extends AbstractService {
       this.rpcServer.start();
 
       this.bindAddress = NetUtils.getConnectAddress(this.rpcServer.getListenAddress());
-      this.serverName = NetUtils.normalizeInetSocketAddress(bindAddress);
-      conf.setVar(ConfVars.CATALOG_ADDRESS, serverName);
+      this.bindAddressStr = NetUtils.normalizeInetSocketAddress(bindAddress);
+      conf.set(ConfVars.CATALOG_ADDRESS.varname, bindAddressStr);
     } catch (Exception e) {
-      LOG.error("Cannot start RPC Server of CatalogServer", e);
+      LOG.error("CatalogServer startup failed", e);
+      throw new CatalogException(e);
     }
 
-    LOG.info("Catalog Server startup (" + serverName + ")");
+    LOG.info("Catalog Server startup (" + bindAddressStr + ")");
     super.start();
   }
 
@@ -148,7 +148,7 @@ public class CatalogServer extends AbstractService {
     if (rpcServer != null) {
       this.rpcServer.shutdown();
     }
-    LOG.info("Catalog Server (" + serverName + ") shutdown");
+    LOG.info("Catalog Server (" + bindAddressStr + ") shutdown");
     super.stop();
   }
 
@@ -245,7 +245,7 @@ public class CatalogServer extends AbstractService {
       } finally {
         wlock.unlock();
         LOG.info("Table " + tableDesc.getId() + " is added to the catalog ("
-            + serverName + ")");
+            + bindAddressStr + ")");
       }
 
       return BOOL_TRUE;

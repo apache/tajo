@@ -39,9 +39,11 @@ import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.hadoop.yarn.service.Service;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.pullserver.PullServerAuxService;
+import org.apache.tajo.util.NetUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
  * Configures and starts the Tajo-specific components in the YARN cluster.
@@ -64,6 +66,10 @@ public class MiniTajoYarnCluster extends MiniYARNCluster {
 
   @Override
   public void init(Configuration conf) {
+
+    conf.setSocketAddr(YarnConfiguration.RM_ADDRESS, new InetSocketAddress("127.0.0.1", 0));
+    conf.setSocketAddr(YarnConfiguration.RM_SCHEDULER_ADDRESS, new InetSocketAddress("127.0.0.1", 0));
+
     conf.set(MRConfig.FRAMEWORK_NAME, MRConfig.YARN_FRAMEWORK_NAME);
     if (conf.get(MRJobConfig.MR_AM_STAGING_DIR) == null) {
       conf.set(MRJobConfig.MR_AM_STAGING_DIR, new File(getTestWorkDir(),

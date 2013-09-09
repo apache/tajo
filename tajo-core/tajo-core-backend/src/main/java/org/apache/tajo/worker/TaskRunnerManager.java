@@ -22,7 +22,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.service.CompositeService;
-import org.apache.tajo.QueryConf;
 import org.apache.tajo.conf.TajoConf;
 
 import java.util.HashMap;
@@ -88,13 +87,13 @@ public class TaskRunnerManager extends CompositeService {
     Thread t = new Thread() {
       public void run() {
         try {
-          QueryConf queryConf = new QueryConf(tajoConf);
-          TaskRunner taskRunner = new TaskRunner(TaskRunnerManager.this, queryConf, params);
+          TajoConf systemConf = new TajoConf(tajoConf);
+          TaskRunner taskRunner = new TaskRunner(TaskRunnerManager.this, systemConf, params);
           LOG.info("Start TaskRunner:" + taskRunner.getId());
           synchronized(taskRunnerMap) {
             taskRunnerMap.put(taskRunner.getId(), taskRunner);
           }
-          taskRunner.init(queryConf);
+          taskRunner.init(systemConf);
           taskRunner.start();
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);

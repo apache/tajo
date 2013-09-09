@@ -40,7 +40,6 @@ import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.hadoop.yarn.util.ProtoUtils;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryConf;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.event.QueryEvent;
@@ -62,7 +61,7 @@ public class YarnContainerProxy extends ContainerProxy {
   final protected String containerMgrAddress;
   protected ContainerToken containerToken;
 
-  public YarnContainerProxy(QueryMasterTask.QueryContext context, Configuration conf, YarnRPC yarnRPC,
+  public YarnContainerProxy(QueryMasterTask.QueryMasterTaskContext context, Configuration conf, YarnRPC yarnRPC,
                                   Container container, ExecutionBlockId executionBlockId) {
     super(context, conf, executionBlockId, container);
     this.yarnRPC = yarnRPC;
@@ -244,9 +243,8 @@ public class YarnContainerProxy extends ContainerProxy {
 
     if (prop.getProperty("tajo.test", "FALSE").equalsIgnoreCase("TRUE") ||
         (System.getenv("tajo.test") != null && System.getenv("tajo.test").equalsIgnoreCase("TRUE"))) {
-      LOG.info("=========> tajo.test is TRUE");
-      environment.put(ApplicationConstants.Environment.CLASSPATH.name(), prop.getProperty(
-          "java.class.path", null));
+      LOG.info("tajo.test is TRUE");
+      environment.put(ApplicationConstants.Environment.CLASSPATH.name(), prop.getProperty("java.class.path", null));
       environment.put("tajo.test", "TRUE");
     } else {
       // Add AppMaster.jar location to classpath
@@ -297,58 +295,30 @@ public class YarnContainerProxy extends ContainerProxy {
     ////////////////////////////////////////////////////////////////////////////
     Map<String, LocalResource> localResources = new HashMap<String, LocalResource>();
     FileSystem fs = null;
-
-    LOG.info("defaultFS: " + conf.get("fs.default.name"));
+    FileContext fsCtx = null;
     LOG.info("defaultFS: " + conf.get("fs.defaultFS"));
     try {
       fs = FileSystem.get(conf);
+      fsCtx = FileContext.getFileContext(conf);
     } catch (IOException e) {
       LOG.error(e.getMessage(), e);
     }
 
-    FileContext fsCtx = null;
     try {
-      fsCtx = FileContext.getFileContext(conf);
-    } catch (UnsupportedFileSystemException e) {
-      LOG.error(e.getMessage(), e);
-    }
-
-    LOG.info("Writing a QueryConf to HDFS and add to local environment");
-    //Path queryConfPath = new Path(fs.getHomeDirectory(), QueryConf.FILENAME);
-    try {
-      //writeConf(conf, queryConfPath);
-      // TODO move to tajo temp
-      Path warehousePath = new Path(conf.getVar(TajoConf.ConfVars.ROOT_DIR), TajoConstants.WAREHOUSE_DIR);
-      Path queryConfPath = new Path(warehousePath, queryId);
-      if(isMaster) {
-        queryConfPath = new Path(queryConfPath, QueryConf.QUERY_MASTER_FILENAME);
-      } else {
-        queryConfPath = new Path(queryConfPath, QueryConf.FILENAME);
+      Path systemConfPath = TajoConf.getSystemConf(conf);
+      if (!fs.exists(systemConfPath)) {
+        LOG.error("system_conf.xml (" + systemConfPath.toString() + ") Not Found");
       }
-
-      if(!fs.exists(queryConfPath)){
-        writeConf(conf, queryConfPath);
-      } else {
-        LOG.warn("QueryConf already exist. path: "  + queryConfPath.toString());
-      }
-
-      LocalResource queryConfSrc = createApplicationResource(fsCtx,
-          queryConfPath, LocalResourceType.FILE);
-//        localResources.put(QueryConf.FILENAME,  queryConfSrc);
-      localResources.put(queryConfPath.getName(), queryConfSrc);
-
+      LocalResource systemConfResource = createApplicationResource(fsCtx, systemConfPath, LocalResourceType.FILE);
+      localResources.put(TajoConstants.SYSTEM_CONF_FILENAME, systemConfResource);
       ctx.setLocalResources(localResources);
     } catch (IOException e) {
       LOG.error(e.getMessage(), e);
     }
 
-    // TODO - move to sub-class
-    // Add shuffle token
     Map<String, ByteBuffer> serviceData = new HashMap<String, ByteBuffer>();
     try {
-      //LOG.info("Putting shuffle token in serviceData");
-      serviceData.put(PullServerAuxService.PULLSERVER_SERVICEID,
-          PullServerAuxService.serializeMetaData(0));
+      serviceData.put(PullServerAuxService.PULLSERVER_SERVICEID, PullServerAuxService.serializeMetaData(0));
     } catch (IOException ioe) {
       LOG.error(ioe);
     }
@@ -440,7 +410,7 @@ public class YarnContainerProxy extends ContainerProxy {
     Vector<CharSequence> taskParams = new Vector<CharSequence>();
     taskParams.add(queryMasterHost); // queryMaster hostname
     taskParams.add(String.valueOf(queryMasterPort)); // queryMaster port
-    taskParams.add(context.getOutputPath().toString());
+    taskParams.add(context.getStagingDir().toString());
     return taskParams;
   }
 }

@@ -23,7 +23,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.Fetch;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProtoOrBuilder;
 import org.apache.tajo.ipc.protocolrecords.QueryUnitRequest;
-import org.apache.tajo.master.QueryMeta;
+import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.storage.Fragment;
 
 import java.net.URI;
@@ -41,7 +41,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	private Boolean interQuery;
 	private List<Fetch> fetches;
   private Boolean shouldDie;
-  private QueryMeta queryMeta;
+  private QueryContext queryContext;
 	
 	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
 	private QueryUnitRequestProto.Builder builder = null;
@@ -55,9 +55,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
 	public QueryUnitRequestImpl(QueryUnitAttemptId id, List<Fragment> fragments,
 			String outputTable, boolean clusteredOutput,
-			String serializedData, QueryMeta queryMeta) {
+			String serializedData, QueryContext queryContext) {
 		this();
-		this.set(id, fragments, outputTable, clusteredOutput, serializedData, queryMeta);
+		this.set(id, fragments, outputTable, clusteredOutput, serializedData, queryContext);
 	}
 	
 	public QueryUnitRequestImpl(QueryUnitRequestProto proto) {
@@ -69,14 +69,14 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
 	public void set(QueryUnitAttemptId id, List<Fragment> fragments,
 			String outputTable, boolean clusteredOutput, 
-			String serializedData, QueryMeta queryMeta) {
+			String serializedData, QueryContext queryContext) {
 		this.id = id;
 		this.fragments = fragments;
 		this.outputTable = outputTable;
 		this.clusteredOutput = clusteredOutput;
 		this.serializedData = serializedData;
 		this.isUpdated = true;
-    this.queryMeta = queryMeta;
+    this.queryContext = queryContext;
 	}
 
 	@Override
@@ -182,21 +182,21 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	  
 	}
 
-  public QueryMeta getQueryMeta() {
+  public QueryContext getQueryContext() {
     QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
-    if (queryMeta != null) {
-      return queryMeta;
+    if (queryContext != null) {
+      return queryContext;
     }
-    if (!p.hasQueryMeta()) {
+    if (!p.hasQueryContext()) {
       return null;
     }
-    this.queryMeta = new QueryMeta(p.getQueryMeta());
-    return this.queryMeta;
+    this.queryContext = new QueryContext(p.getQueryContext());
+    return this.queryContext;
   }
 
-  public void setQueryMeta(QueryMeta queryMeta) {
+  public void setQueryContext(QueryContext queryContext) {
     maybeInitBuilder();
-    this.queryMeta = queryMeta;
+    this.queryContext = queryContext;
   }
 	
 	public List<Fetch> getFetches() {
@@ -269,8 +269,8 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     if (this.shouldDie != null) {
       builder.setShouldDie(this.shouldDie);
     }
-    if (this.queryMeta != null) {
-      builder.setQueryMeta(queryMeta.getProto());
+    if (this.queryContext != null) {
+      builder.setQueryContext(queryContext.getProto());
     }
 	}
 

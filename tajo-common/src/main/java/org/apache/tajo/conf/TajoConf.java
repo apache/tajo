@@ -18,16 +18,19 @@
 
 package org.apache.tajo.conf;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.tajo.TajoConstants;
 
 import java.io.PrintStream;
 import java.util.Map;
 
 public class TajoConf extends YarnConfiguration {
-  static{
+
+  static {
     Configuration.addDefaultResource("catalog-default.xml");
     Configuration.addDefaultResource("catalog-site.xml");
     Configuration.addDefaultResource("storage-default.xml");
@@ -35,6 +38,8 @@ public class TajoConf extends YarnConfiguration {
     Configuration.addDefaultResource("tajo-default.xml");
     Configuration.addDefaultResource("tajo-site.xml");
   }
+
+  private static final String EMPTY_VALUE = "";
 
   private static final Map<String, ConfVars> vars = Maps.newHashMap();
 
@@ -53,38 +58,36 @@ public class TajoConf extends YarnConfiguration {
 
   public static enum ConfVars {
     //////////////////////////////////
-    // System Configuration
+    // Tajo System Configuration
     //////////////////////////////////
 
-    // Cluster Mode
-    CLUSTER_DISTRIBUTED("tajo.cluster.distributed", false),
+    // a username for a running Tajo cluster
+    TAJO_USERNAME("tajo.cluster.username", "tajo"),
 
-    // System Directories
+    // Configurable System Directories
     ROOT_DIR("tajo.rootdir", "/tajo"),
-    TASK_LOCAL_DIR("tajo.task.localdir", ""),
+    WAREHOUSE_DIR("tajo.wahrehouse-dir", EMPTY_VALUE),
+    STAGING_ROOT_DIR("tajo.staging.root.dir", ""),
+    TASK_LOCAL_DIR("tajo.task.localdir", ""), // local directory for temporal files
+    SYSTEM_CONF_PATH("tajo.system.conf.path", ""),
+    SYSTEM_CONF_REPLICA_COUNT("tajo.system.conf.replica.count", 20),
 
     // Service Addresses
-    TASKRUNNER_LISTENER_ADDRESS("tajo.master.taskrunnerlistener.addr", "0.0.0.0:0"), // used internally
+    TASKRUNNER_LISTENER_ADDRESS("tajo.master.taskrunnerlistener.addr", "0.0.0.0:0"),
     CLIENT_SERVICE_ADDRESS("tajo.master.clientservice.addr", "127.0.0.1:9004"),
     TAJO_MASTER_SERVICE_ADDRESS("tajo.master.manager.addr", "0.0.0.0:9005"),
 
-    //////////////////////////////////
-    // Catalog Configuration
-    //////////////////////////////////
+    // Resource Manager
+    RESOURCE_MANAGER_CLASS("tajo.resource.manager", "org.apache.tajo.master.rm.YarnTajoResourceManager"),
+
+    // Catalog Address
     CATALOG_ADDRESS("tajo.catalog.master.addr", "0.0.0.0:9002"),
 
     //////////////////////////////////
-    // AM and RM
+    // Worker
     //////////////////////////////////
-    AM_TO_RM_HEARTBEAT_INTERVAL_MS("tajo.am.scheduler.heartbeat.interval-ms", 1000),
-    AM_TO_RM_WAIT_INTERVAL_MS("tajo.am.scheduler.connection.wait.interval-ms", 360000L),
-    /** Enable blacklisting of nodes in the job.*/
-    AM_QUERY_NODE_BLACKLISTING_ENABLE("tajo.query.node-blacklisting.enable", true),
-    MAX_TASK_FAILURES_PER_TRACKER("tajo.query.maxtaskfailures.per.worker", 3),
-    AM_IGNORE_BLACKLISTING_BLACKLISTED_NODE_PERECENT("tajo.query.node-blacklisting.ignore-threshold-node-percent", 33),
     /** how many launching TaskRunners in parallel */
     AM_TASKRUNNER_LAUNCH_PARALLEL_NUM("tajo.master.taskrunnerlauncher.parallel.num", 16),
-
     MAX_WORKER_PER_NODE("tajo.query.max-workernum.per.node", 8),
 
     //////////////////////////////////
@@ -123,31 +126,10 @@ public class TajoConf extends YarnConfiguration {
     //////////////////////////////////
     // The Below is reserved
     //////////////////////////////////
-    WORKING_DIR("tajo.query.workingdir", null),
-
-    // Query Master
-    QUERY_AM_VMEM_MB("tajo.query.am.vmem", 4096),
-    QUERY_AM_JAVA_OPT("tajo.query.am.javaopt", "-Xmx1024m"),
-
-    // QueryC
-    QUERY_NAME("tajo.query.name", "tajo query"),
-    QUEUE_NAME("tajo.query.queue.name", "default"),
-    QUERY_USERNAME("tajo.query.user.name", "anonymous"),
-    QUERY_OUTPUT_DIR_SUCCESSFUL_MARKER("tajo.query.output.successfulmaker", true),
-    QUERY_OUTPUT_DIR("tajo.query.output.dir", ""),
-    QUERY_OUTPUT_TABLE("tajo.query.output.table", ""),
-
-    // Task
-    LOCAL_TMP_DIR("tajo.task.local.tmpdir", null),
-
-    // TaskAttempt
-    APPLICATION_ATTEMPT_ID("tajo.app.attempt.id", 0),
-    TASK_ATTEMPT_ID("tajo.task.attempt.id", ""),
-    ATTEMPT_ID("tajo.query.attempt.id", ""),
-    FINAL_SUBQUERY_ID("tajo.query.finalsubquery.id", ""),
 
     // GeoIP
     GEOIP_DATA("tajo.geoip.data", "/usr/local/share/GeoIP/GeoIP.dat"),
+
     ;
 
     public final String varname;
@@ -348,5 +330,50 @@ public class TajoConf extends YarnConfiguration {
     for (ConfVars one : ConfVars.values()) {
       ps.println(one.varname + "=" + ((get(one.varname) != null) ? get(one.varname) : ""));
     }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Tajo System Specific Methods
+  /////////////////////////////////////////////////////////////////////////////
+
+  public static Path getTajoRootPath(TajoConf conf) {
+    String rootPath = conf.getVar(ConfVars.ROOT_DIR);
+    Preconditions.checkNotNull(rootPath,
+          ConfVars.ROOT_DIR.varname + " must be set before a Tajo Cluster starts up");
+    return new Path(rootPath);
+  }
+
+  public static Path getWarehousePath(TajoConf conf) {
+    String warehousePath = conf.getVar(ConfVars.WAREHOUSE_DIR);
+    if (warehousePath == null || warehousePath.equals("")) {
+      Path rootDir = getTajoRootPath(conf);
+      warehousePath = new Path(rootDir, TajoConstants.WAREHOUSE_DIR_NAME).toString();
+      conf.setVar(ConfVars.WAREHOUSE_DIR, warehousePath);
+      return new Path(warehousePath);
+    } else {
+      return new Path(warehousePath);
+    }
+  }
+
+  public static Path getSystemPath(TajoConf conf) {
+    Path rootPath = getTajoRootPath(conf);
+    return new Path(rootPath, TajoConstants.SYSTEM_DIR_NAME);
+  }
+
+  public static Path getSystemResourcePath(TajoConf conf) {
+    return new Path(getSystemPath(conf), TajoConstants.SYSTEM_RESOURCE_DIR_NAME);
+  }
+
+  public static Path getStagingRoot(TajoConf conf) {
+    String stagingRootDir = conf.getVar(ConfVars.STAGING_ROOT_DIR);
+    Preconditions.checkState(stagingRootDir != null && !stagingRootDir.equals(""),
+        TajoConstants.STAGING_DIR_NAME + " must be set before starting a Tajo Cluster starts up");
+    return new Path(stagingRootDir);
+  }
+
+  public static Path getSystemConf(TajoConf conf) {
+    String stagingRootDir = conf.getVar(ConfVars.SYSTEM_CONF_PATH);
+    Preconditions.checkNotNull(stagingRootDir, ConfVars.SYSTEM_CONF_PATH.varname + " is not set.");
+    return new Path(stagingRootDir);
   }
 }

@@ -23,6 +23,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-149: Eliminate QueryConf and its file write. (hyunsik)
+
     TAJO-143: Implement hash semi-join operator. (hyunsik)
 
     TAJO-142: Implement hash anti-join operator. (hyunsik)

@@ -85,6 +85,7 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
   public Tuple next() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
+    Tuple prevKeyTuple = null;
     long offset;
 
 
@@ -93,7 +94,10 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
       appender.addTuple(tuple);
       keyTuple = new VTuple(keySchema.getColumnNum());
       RowStoreUtil.project(tuple, keyTuple, indexKeys);
-      indexWriter.write(keyTuple, offset);
+      if (prevKeyTuple == null || !prevKeyTuple.equals(keyTuple)) {
+        indexWriter.write(keyTuple, offset);
+        prevKeyTuple = keyTuple;
+      }
     }
 
     return null;

@@ -21,11 +21,9 @@
  */
 package org.apache.tajo;
 
-import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -33,17 +31,10 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.physical.PhysicalExec;
-import org.apache.tajo.engine.query.ResultSetImpl;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.TUtil;
 
-import java.io.File;
 import java.io.IOException;
-import java.sql.ResultSet;
-import java.util.List;
 import java.util.UUID;
 
 public class BackendTestingUtil {
@@ -102,34 +93,10 @@ public class BackendTestingUtil {
 
   public BackendTestingUtil(TajoConf conf) throws IOException {
     this.conf = conf;
-    this.catalog = new LocalCatalog(conf);
+    this.catalog = new LocalCatalogWrapper(conf);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
     optimizer = new LogicalOptimizer();
-  }
-
-  public ResultSet run(String [] tableNames, File [] tables, Schema [] schemas, String query)
-      throws IOException, PlanningException {
-    Path workDir = createTmpTestDir();
-    StorageManager sm = StorageManager.get(new TajoConf(), workDir);
-    List<Fragment> frags = Lists.newArrayList();
-    for (int i = 0; i < tableNames.length; i++) {
-      Fragment [] splits = sm.split(tableNames[i], new Path(tables[i].getAbsolutePath()));
-      for (Fragment f : splits) {
-        frags.add(f);
-      }
-    }
-
-    TaskAttemptContext ctx = new TaskAttemptContext(conf,
-        TUtil.newQueryUnitAttemptId(),
-        frags.toArray(new Fragment[frags.size()]), workDir);
-    Expr EXPR = analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(EXPR);
-    LogicalNode rootNode = optimizer.optimize(plan);
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-
-    return new ResultSetImpl(null, null, conf, new Path(workDir, "out"));
   }
 
   public static Path createTmpTestDir() throws IOException {

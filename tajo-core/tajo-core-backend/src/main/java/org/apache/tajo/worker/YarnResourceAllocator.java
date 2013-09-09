@@ -27,7 +27,6 @@ import org.apache.hadoop.yarn.client.YarnClient;
 import org.apache.hadoop.yarn.client.YarnClientImpl;
 import org.apache.hadoop.yarn.ipc.YarnRPC;
 import org.apache.hadoop.yarn.proto.YarnProtos;
-import org.apache.tajo.QueryConf;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TaskRunnerGroupEvent;
 import org.apache.tajo.master.TaskRunnerLauncher;
@@ -47,12 +46,12 @@ public class YarnResourceAllocator extends AbstractResourceAllocator {
 
   private static final Log LOG = LogFactory.getLog(YarnResourceAllocator.class.getName());
 
-  private QueryMasterTask.QueryContext queryContext;
+  private QueryMasterTask.QueryMasterTaskContext queryTaskContext;
 
-  private QueryConf queryConf;
+  private TajoConf systemConf;
 
-  public YarnResourceAllocator(QueryMasterTask.QueryContext queryContext) {
-    this.queryContext = queryContext;
+  public YarnResourceAllocator(QueryMasterTask.QueryMasterTaskContext queryTaskContext) {
+    this.queryTaskContext = queryTaskContext;
   }
 
   @Override
@@ -75,19 +74,19 @@ public class YarnResourceAllocator extends AbstractResourceAllocator {
 
   @Override
   public void init(Configuration conf) {
-    queryConf = (QueryConf)conf;
+    systemConf = (TajoConf)conf;
 
-    yarnRPC = YarnRPC.create(queryConf);
+    yarnRPC = YarnRPC.create(systemConf);
 
     connectYarnClient();
 
-    taskRunnerLauncher = new YarnTaskRunnerLauncherImpl(queryContext, yarnRPC);
+    taskRunnerLauncher = new YarnTaskRunnerLauncherImpl(queryTaskContext, yarnRPC);
     addService((org.apache.hadoop.yarn.service.Service) taskRunnerLauncher);
-    queryContext.getDispatcher().register(TaskRunnerGroupEvent.EventType.class, taskRunnerLauncher);
+    queryTaskContext.getDispatcher().register(TaskRunnerGroupEvent.EventType.class, taskRunnerLauncher);
 
-    rmAllocator = new YarnRMContainerAllocator(queryContext);
+    rmAllocator = new YarnRMContainerAllocator(queryTaskContext);
     addService(rmAllocator);
-    queryContext.getDispatcher().register(ContainerAllocatorEventType.class, rmAllocator);
+    queryTaskContext.getDispatcher().register(ContainerAllocatorEventType.class, rmAllocator);
     super.init(conf);
   }
 
@@ -108,7 +107,7 @@ public class YarnResourceAllocator extends AbstractResourceAllocator {
 
   private void connectYarnClient() {
     this.yarnClient = new YarnClientImpl();
-    this.yarnClient.init(queryConf);
+    this.yarnClient.init(systemConf);
     this.yarnClient.start();
   }
 

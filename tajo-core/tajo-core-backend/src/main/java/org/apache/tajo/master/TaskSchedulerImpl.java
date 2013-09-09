@@ -52,7 +52,7 @@ public class TaskSchedulerImpl extends AbstractService
     implements TaskScheduler {
   private static final Log LOG = LogFactory.getLog(TaskScheduleEvent.class);
 
-  private final QueryMasterTask.QueryContext context;
+  private final QueryMasterTask.QueryMasterTaskContext context;
   private TajoAsyncDispatcher dispatcher;
 
   private Thread eventHandlingThread;
@@ -69,7 +69,7 @@ public class TaskSchedulerImpl extends AbstractService
   private int rackLocalAssigned = 0;
   private int totalAssigned = 0;
 
-  public TaskSchedulerImpl(QueryMasterTask.QueryContext context) {
+  public TaskSchedulerImpl(QueryMasterTask.QueryMasterTaskContext context) {
     super(TaskSchedulerImpl.class.getName());
     this.context = context;
     this.dispatcher = context.getDispatcher();
@@ -228,7 +228,7 @@ public class TaskSchedulerImpl extends AbstractService
 
     @Override
     public void handle(TaskRequestEvent event) {
-      LOG.info("====>TaskRequest:" + event.getContainerId() + "," + event.getExecutionBlockId());
+      LOG.info("TaskRequest: " + event.getContainerId() + "," + event.getExecutionBlockId());
       if(stopEventHandling) {
         event.getCallback().run(stopTaskRunnerReq);
         return;
@@ -459,7 +459,7 @@ public class TaskSchedulerImpl extends AbstractService
               task.getOutputName(),
               false,
               task.getLogicalPlan().toJson(),
-              context.getQueryMeta());
+              context.getQueryContext());
           if (task.getStoreTableNode().isLocal()) {
             taskAssign.setInterQuery();
           }
@@ -486,7 +486,7 @@ public class TaskSchedulerImpl extends AbstractService
       TaskRequestEvent taskRequest;
       while (it.hasNext()) {
         taskRequest = it.next();
-        LOG.info("====> assignToNonLeafTasks: " + taskRequest.getExecutionBlockId());
+        LOG.info("assignToNonLeafTasks: " + taskRequest.getExecutionBlockId());
 
         QueryUnitAttemptId attemptId;
         // random allocation
@@ -504,7 +504,7 @@ public class TaskSchedulerImpl extends AbstractService
               task.getOutputName(),
               false,
               task.getLogicalPlan().toJson(),
-              context.getQueryMeta());
+              context.getQueryContext());
           if (task.getStoreTableNode().isLocal()) {
             taskAssign.setInterQuery();
           }

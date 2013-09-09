@@ -39,13 +39,12 @@ import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.master.QueryMeta;
+import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.worker.AbstractResourceAllocator;
 import org.apache.tajo.worker.TajoResourceAllocator;
 import org.apache.tajo.worker.YarnResourceAllocator;
@@ -60,14 +59,14 @@ public class QueryMasterTask extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryMasterTask.class.getName());
 
   // query submission directory is private!
-  final public static FsPermission USER_DIR_PERMISSION =
+  final public static FsPermission STAGING_DIR_PERMISSION =
       FsPermission.createImmutable((short) 0700); // rwx--------
 
   private QueryId queryId;
 
-  private QueryMeta queryMeta;
-
   private QueryContext queryContext;
+
+  private QueryMasterTaskContext queryTaskContext;
 
   private QueryMaster.QueryMasterContext queryMasterContext;
 
@@ -81,11 +80,9 @@ public class QueryMasterTask extends CompositeService {
 
   private final long querySubmitTime;
 
-  private Path outputPath;
-
   private Map<String, TableDesc> tableDescMap = new HashMap<String, TableDesc>();
 
-  private QueryConf queryConf;
+  private TajoConf systemConf;
 
   private AtomicLong lastClientHeartbeat = new AtomicLong(-1);
 
@@ -94,28 +91,28 @@ public class QueryMasterTask extends CompositeService {
   private AtomicBoolean stopped = new AtomicBoolean(false);
 
   public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
-                         QueryId queryId, QueryMeta queryMeta, String logicalPlanJson) {
+                         QueryId queryId, QueryContext queryContext, String logicalPlanJson) {
     super(QueryMasterTask.class.getName());
     this.queryMasterContext = queryMasterContext;
     this.queryId = queryId;
-    this.queryMeta = queryMeta;
+    this.queryContext = queryContext;
     this.logicalPlanJson = logicalPlanJson;
     this.querySubmitTime = System.currentTimeMillis();
   }
 
   @Override
   public void init(Configuration conf) {
-    queryConf = new QueryConf(conf);
-    queryConf.addResource(new Path(QueryConf.QUERY_MASTER_FILENAME));
+    systemConf = (TajoConf)conf;
+
     try {
-      queryContext = new QueryContext();
+      queryTaskContext = new QueryMasterTaskContext();
       String resourceManagerClassName = conf.get("tajo.resource.manager",
           TajoWorkerResourceManager.class.getCanonicalName());
 
       if(resourceManagerClassName.indexOf(TajoWorkerResourceManager.class.getName()) >= 0) {
-        resourceAllocator = new TajoResourceAllocator(queryContext);
+        resourceAllocator = new TajoResourceAllocator(queryTaskContext);
       } else {
-        resourceAllocator = new YarnResourceAllocator(queryContext);
+        resourceAllocator = new YarnResourceAllocator(queryTaskContext);
       }
       addService(resourceAllocator);
 
@@ -130,7 +127,7 @@ public class QueryMasterTask extends CompositeService {
 
       initStagingDir();
 
-      super.init(queryConf);
+      super.init(systemConf);
     } catch (IOException e) {
       LOG.error(e.getMessage(), e);
     }
@@ -242,14 +239,14 @@ public class QueryMasterTask extends CompositeService {
       MasterPlan globalPlan = queryMasterContext.getGlobalPlanner().build(queryId, logicalNodeRoot);
       this.masterPlan = queryMasterContext.getGlobalOptimizer().optimize(globalPlan);
 
-      query = new Query(queryContext, queryId, querySubmitTime,
-          "", queryContext.getEventHandler(), masterPlan);
+      query = new Query(queryTaskContext, queryId, querySubmitTime,
+          "", queryTaskContext.getEventHandler(), masterPlan);
 
       dispatcher.register(QueryEventType.class, query);
 
-      queryContext.getEventHandler().handle(new QueryEvent(queryId,
+      queryTaskContext.getEventHandler().handle(new QueryEvent(queryId,
           QueryEventType.INIT));
-      queryContext.getEventHandler().handle(new QueryEvent(queryId,
+      queryTaskContext.getEventHandler().handle(new QueryEvent(queryId,
           QueryEventType.START));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -264,88 +261,85 @@ public class QueryMasterTask extends CompositeService {
    * them to variables.
    */
   private void initStagingDir() throws IOException {
+
     String realUser;
     String currentUser;
     UserGroupInformation ugi;
     ugi = UserGroupInformation.getLoginUser();
     realUser = ugi.getShortUserName();
     currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
+    FileSystem defaultFS = FileSystem.get(systemConf);
 
-    String givenOutputTableName = queryMeta.getOutputTable();
-    Path stagingDir;
+    Path stagingDir = null;
+    Path outputDir = null;
+    try {
+      ////////////////////////////////////////////
+      // Create Output Directory
+      ////////////////////////////////////////////
 
-    // If final output directory is not given by an user,
-    // we use the query id as a output directory.
-    if (givenOutputTableName == null || givenOutputTableName.isEmpty()) {
-      FileSystem defaultFS = FileSystem.get(queryConf);
-
-      Path homeDirectory = defaultFS.getHomeDirectory();
-      if (!defaultFS.exists(homeDirectory)) {
-        defaultFS.mkdirs(homeDirectory, new FsPermission(USER_DIR_PERMISSION));
-      }
-
-      Path userQueryDir = new Path(homeDirectory, TajoConstants.USER_QUERYDIR_PREFIX);
-
-      if (defaultFS.exists(userQueryDir)) {
-        FileStatus fsStatus = defaultFS.getFileStatus(userQueryDir);
-        String owner = fsStatus.getOwner();
-
-        if (!(owner.equals(currentUser) || owner.equals(realUser))) {
-          throw new IOException("The ownership on the user's query " +
-              "directory " + userQueryDir + " is not as expected. " +
-              "It is owned by " + owner + ". The directory must " +
-              "be owned by the submitter " + currentUser + " or " +
-              "by " + realUser);
-        }
-
-        if (!fsStatus.getPermission().equals(USER_DIR_PERMISSION)) {
-          LOG.info("Permissions on staging directory " + userQueryDir + " are " +
-              "incorrect: " + fsStatus.getPermission() + ". Fixing permissions " +
-              "to correct value " + USER_DIR_PERMISSION);
-          defaultFS.setPermission(userQueryDir, new FsPermission(USER_DIR_PERMISSION));
-        }
-      } else {
-        defaultFS.mkdirs(userQueryDir,
-            new FsPermission(USER_DIR_PERMISSION));
-      }
-
-      stagingDir = StorageUtil.concatPath(userQueryDir, queryId.toString());
+      stagingDir = new Path(TajoConf.getStagingRoot(systemConf), queryId.toString());
 
       if (defaultFS.exists(stagingDir)) {
-        throw new IOException("The staging directory " + stagingDir
-            + "already exists. The directory must be unique to each query");
-      } else {
-        defaultFS.mkdirs(stagingDir, new FsPermission(USER_DIR_PERMISSION));
+        throw new IOException("The staging directory '" + stagingDir + "' already exists");
+      }
+      defaultFS.mkdirs(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
+      FileStatus fsStatus = defaultFS.getFileStatus(stagingDir);
+      String owner = fsStatus.getOwner();
+
+      if (!(owner.equals(currentUser) || owner.equals(realUser))) {
+        throw new IOException("The ownership on the user's query " +
+            "directory " + stagingDir + " is not as expected. " +
+            "It is owned by " + owner + ". The directory must " +
+            "be owned by the submitter " + currentUser + " or " +
+            "by " + realUser);
       }
 
-      // Set the query id to the output table name
-      queryMeta.setOutputTable(queryId.toString());
-
-    } else { // if a output table is given
-
-      Path warehouseDir = new Path(queryConf.getVar(TajoConf.ConfVars.ROOT_DIR),
-          TajoConstants.WAREHOUSE_DIR);
-      FileSystem fs = warehouseDir.getFileSystem(queryConf);
-
-      if (queryMeta.isFileOutput()) {
-        stagingDir = queryMeta.getOutputPath();
-      } else {
-        stagingDir = new Path(warehouseDir, queryMeta.getOutputTable());
+      if (!fsStatus.getPermission().equals(STAGING_DIR_PERMISSION)) {
+        LOG.info("Permissions on staging directory " + stagingDir + " are " +
+            "incorrect: " + fsStatus.getPermission() + ". Fixing permissions " +
+            "to correct value " + STAGING_DIR_PERMISSION);
+        defaultFS.setPermission(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
       }
 
-      if (!queryMeta.isOutputOverwrite()) {
-        if (fs.exists(stagingDir)) {
-          throw new IOException("The staging directory " + stagingDir
-              + " already exists. The directory must be unique to each query");
+      // Create a subdirectories
+      defaultFS.mkdirs(new Path(stagingDir, TajoConstants.RESULT_DIR_NAME));
+      LOG.info("The staging dir '" + outputDir + "' is created.");
+      queryContext.setStagingDir(stagingDir);
+
+      ////////////////////////////////////////////////////
+      // Check and Create An Output Directory If Necessary
+      ////////////////////////////////////////////////////
+      if (queryContext.hasOutputPath()) {
+        outputDir = queryContext.getOutputPath();
+        if (queryContext.isOutputOverwrite()) {
+          if (defaultFS.exists(outputDir.getParent())) {
+            if (defaultFS.exists(outputDir)) {
+              defaultFS.delete(outputDir, true);
+              LOG.info("The output directory '" + outputDir + "' is cleaned.");
+            }
+          } else {
+            defaultFS.mkdirs(outputDir.getParent());
+            LOG.info("The output directory's parent '" + outputDir.getParent() + "' is created.");
+          }
+        } else {
+          if (defaultFS.exists(outputDir)) {
+            throw new IOException("The output directory '" + outputDir + " already exists.");
+          }
         }
       }
+    } catch (IOException ioe) {
+      if (stagingDir != null && defaultFS.exists(stagingDir)) {
+        defaultFS.delete(stagingDir, true);
+        LOG.info("The staging directory '" + stagingDir + "' is deleted");
+      }
 
-      fs.mkdirs(stagingDir, new FsPermission(USER_DIR_PERMISSION));
+      if (outputDir != null && defaultFS.exists(outputDir)) {
+        defaultFS.delete(outputDir, true);
+        LOG.info("The output directory '" + outputDir + "' is deleted");
+      }
+
+      throw ioe;
     }
-
-    queryMeta.setOutputPath(stagingDir);
-    outputPath = stagingDir;
-    LOG.info("Initialized Query Staging Dir: " + outputPath);
   }
 
   public Query getQuery() {
@@ -356,12 +350,12 @@ public class QueryMasterTask extends CompositeService {
     stop();
   }
 
-  public QueryContext getQueryContext() {
-    return queryContext;
+  public QueryMasterTaskContext getQueryTaskContext() {
+    return queryTaskContext;
   }
 
   public EventHandler getEventHandler() {
-    return queryContext.getEventHandler();
+    return queryTaskContext.getEventHandler();
   }
 
   public void touchSessionTime() {
@@ -384,18 +378,18 @@ public class QueryMasterTask extends CompositeService {
     }
   }
 
-  public class QueryContext {
+  public class QueryMasterTaskContext {
     EventHandler eventHandler;
     public QueryMaster.QueryMasterContext getQueryMasterContext() {
       return queryMasterContext;
     }
 
-    public QueryMeta getQueryMeta() {
-      return queryMeta;
+    public QueryContext getQueryContext() {
+      return queryContext;
     }
 
-    public QueryConf getConf() {
-      return queryConf;
+    public TajoConf getConf() {
+      return systemConf;
     }
 
     public Clock getClock() {
@@ -414,8 +408,8 @@ public class QueryMasterTask extends CompositeService {
       return queryMasterContext.getStorageManager();
     }
 
-    public Path getOutputPath() {
-      return outputPath;
+    public Path getStagingDir() {
+      return queryContext.getStagingDir();
     }
 
     public synchronized EventHandler getEventHandler() {
@@ -445,7 +439,7 @@ public class QueryMasterTask extends CompositeService {
     }
 
     public AbstractResourceAllocator getResourceAllocator() {
-      return (AbstractResourceAllocator)resourceAllocator;
+      return resourceAllocator;
     }
   }
 

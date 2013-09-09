@@ -22,7 +22,7 @@
 <configuration>
   <property>
     <name>tajo.catalog.master.addr</name>
-    <value>127.0.0.1:0</value>
+    <value>0.0.0.0:0</value>
   </property>
 
   <property>

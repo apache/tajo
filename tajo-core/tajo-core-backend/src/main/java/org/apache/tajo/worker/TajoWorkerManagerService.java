@@ -31,7 +31,7 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.QueryMeta;
+import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.master.TaskSchedulerImpl;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.querymaster.QueryMaster;
@@ -125,13 +125,13 @@ public class TajoWorkerManagerService extends CompositeService
       ExecutionBlockId ebId = new ExecutionBlockId(request.getExecutionBlockId());
       QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(ebId.getQueryId());
       ContainerId cid =
-          queryMasterTask.getQueryContext().getResourceAllocator().makeContainerId(request.getContainerId());
+          queryMasterTask.getQueryTaskContext().getResourceAllocator().makeContainerId(request.getContainerId());
 
       if(queryMasterTask == null || queryMasterTask.isStopped()) {
-        LOG.info("====>getTask:" + cid + ", ebId:" + ebId + ", but query is finished.");
+        LOG.info("getTask:" + cid + ", ebId:" + ebId + ", but query is finished.");
         done.run(TaskSchedulerImpl.stopTaskRunnerReq);
       } else {
-        LOG.info("====>getTask:" + cid + ", ebId:" + ebId);
+        LOG.info("getTask:" + cid + ", ebId:" + ebId);
         queryMasterTask.handleTaskRequestEvent(new TaskRequestEvent(cid, ebId, done));
       }
     } catch (Exception e) {
@@ -202,7 +202,7 @@ public class TajoWorkerManagerService extends CompositeService
       QueryId queryId = new QueryId(request.getQueryId());
       LOG.info("Receive executeQuery request:" + queryId);
       queryMaster.handle(new QueryStartEvent(queryId,
-          new QueryMeta(request.getQueryMeta()), request.getLogicalPlanJson().getValue()));
+          new QueryContext(request.getQueryContext()), request.getLogicalPlanJson().getValue()));
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);

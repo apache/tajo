@@ -18,28 +18,29 @@
 
 package org.apache.tajo.master.querymaster;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.Clock;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableDescImpl;
-import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.StoreTableNode;
-import org.apache.tajo.master.ExecutionBlock;
 import org.apache.tajo.master.ExecutionBlockCursor;
+import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,14 +55,14 @@ public class Query implements EventHandler<QueryEvent> {
   private static final Log LOG = LogFactory.getLog(Query.class);
 
   // Facilities for Query
-  private final QueryConf conf;
+  private final TajoConf systemConf;
   private final Clock clock;
   private String queryStr;
   private Map<ExecutionBlockId, SubQuery> subqueries;
   private final EventHandler eventHandler;
   private final MasterPlan plan;
   private final StorageManager sm;
-  QueryMasterTask.QueryContext context;
+  QueryMasterTask.QueryMasterTaskContext context;
   private ExecutionBlockCursor cursor;
 
   // Query Status
@@ -108,13 +109,13 @@ public class Query implements EventHandler<QueryEvent> {
 
       .installTopology();
 
-  public Query(final QueryMasterTask.QueryContext context, final QueryId id,
+  public Query(final QueryMasterTask.QueryMasterTaskContext context, final QueryId id,
                final long appSubmitTime,
                final String queryStr,
                final EventHandler eventHandler,
                final MasterPlan plan) {
     this.context = context;
-    this.conf = context.getConf();
+    this.systemConf = context.getConf();
     this.id = id;
     this.clock = context.getClock();
     this.appSubmitTime = appSubmitTime;
@@ -308,31 +309,21 @@ public class Query implements EventHandler<QueryEvent> {
 
         } else { // Finish a query
           if (query.checkQueryForCompleted() == QueryState.QUERY_SUCCEEDED) {
-            SubQuery subQuery = query.getSubQuery(castEvent.getExecutionBlockId());
-            TableDesc outputTableDesc = new TableDescImpl(query.context.getQueryMeta().getOutputTable(),
-                subQuery.getTableMeta(), query.context.getQueryMeta().getOutputPath());
-            query.setResultDesc(outputTableDesc);
 
-            if (!query.context.getQueryMeta().isFileOutput()) {
-              try {
-                query.writeStat(query.context.getQueryMeta().getOutputPath(), subQuery);
-              } catch (IOException e) {
-                e.printStackTrace();
+            Path finalOutputDir = commitOutputData(query);
+            TableDesc finalTableDesc = buildOrUpdateResultTableDesc(query, castEvent.getExecutionBlockId(), finalOutputDir);
+
+            QueryContext queryContext = query.context.getQueryContext();
+            CatalogService catalog = query.context.getQueryMasterContext().getWorkerContext().getCatalog();
+
+            if (queryContext.hasOutputTable()) { // TRUE only if a query command is 'CREATE TABLE' OR 'INSERT INTO'
+              if (queryContext.isOutputOverwrite()) { // TRUE only if a query is 'INSERT OVERWRITE INTO'
+                catalog.deleteTable(finalOutputDir.getName());
               }
+              catalog.addTable(finalTableDesc);
             }
+            query.setResultDesc(finalTableDesc);
             query.eventHandler.handle(new QueryFinishEvent(query.getId()));
-
-            StoreTableNode storeTableNode = (StoreTableNode) PlannerUtil.findTopNode(subQuery.getBlock().getPlan(),
-                NodeType.STORE);
-            if (storeTableNode.isCreatedTable()) {
-              query.context.getQueryMasterContext().getWorkerContext().getCatalog().addTable(outputTableDesc);
-            } else if (storeTableNode.isOverwrite() && !query.context.getQueryMeta().isFileOutput()) {
-              CatalogService catalog = query.context.getQueryMasterContext().getWorkerContext().getCatalog();
-              TableDesc updatingTable = catalog.getTableDesc(outputTableDesc.getName());
-              updatingTable.getMeta().setStat(outputTableDesc.getMeta().getStat());
-              catalog.deleteTable(outputTableDesc.getName());
-              catalog.addTable(updatingTable);
-            }
           }
 
           return query.finished(QueryState.QUERY_SUCCEEDED);
@@ -342,14 +333,58 @@ public class Query implements EventHandler<QueryEvent> {
         return QueryState.QUERY_FAILED;
       }
     }
-  }
 
-  private static class DiagnosticsUpdateTransition implements
-      SingleArcTransition<Query, QueryEvent> {
-    @Override
-    public void transition(Query query, QueryEvent event) {
-      query.addDiagnostic(((QueryDiagnosticsUpdateEvent) event)
-          .getDiagnosticUpdate());
+    /**
+     * It moves a result data stored in a staging output dir into a final output dir.
+     */
+    public Path commitOutputData(Query query) {
+      QueryContext queryContext = query.context.getQueryContext();
+      Path stagingResultDir = new Path(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME);
+      Path finalOutputDir;
+      if (queryContext.hasOutputPath()) {
+        finalOutputDir = queryContext.getOutputPath();
+        try {
+          FileSystem fs = stagingResultDir.getFileSystem(query.systemConf);
+          fs.rename(stagingResultDir, finalOutputDir);
+          LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      } else {
+        finalOutputDir = new Path(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME);
+      }
+
+      return finalOutputDir;
+    }
+
+    /**
+     * It builds a table desc and update the table desc if necessary.
+     */
+    public TableDesc buildOrUpdateResultTableDesc(Query query, ExecutionBlockId finalExecBlockId, Path finalOutputDir) {
+      // Determine the output table name
+      SubQuery subQuery = query.getSubQuery(finalExecBlockId);
+      QueryContext queryContext = query.context.getQueryContext();
+      String outputTableName;
+      if (queryContext.hasOutputTable()) { // CREATE TABLE or INSERT STATEMENT
+        outputTableName = queryContext.getOutputTable();
+      } else { // SELECT STATEMENT
+        outputTableName = query.getId().toString();
+      }
+
+      TableDesc outputTableDesc = new TableDescImpl(outputTableName, subQuery.getTableMeta(), finalOutputDir);
+      TableDesc finalTableDesc = outputTableDesc;
+
+      // If a query has a target table, a TableDesc is updated.
+      if (queryContext.hasOutputTable()) { // CREATE TABLE or INSERT STATEMENT
+        if (queryContext.isOutputOverwrite()) {
+          CatalogService catalog = query.context.getQueryMasterContext().getWorkerContext().getCatalog();
+          Preconditions.checkNotNull(catalog, "CatalogService is NULL");
+          TableDesc updatingTable = catalog.getTableDesc(outputTableDesc.getName());
+          updatingTable.getMeta().setStat(outputTableDesc.getMeta().getStat());
+          finalTableDesc = updatingTable;
+        }
+      }
+      return finalTableDesc;
     }
   }
 
@@ -415,9 +450,32 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
-  private void writeStat(Path outputPath, SubQuery subQuery)
-      throws IOException {
-    ExecutionBlock execBlock = subQuery.getBlock();
-    sm.writeTableMeta(outputPath, subQuery.getTableMeta());
+  public static interface QueryHook {
+    QueryState getTargetState();
+    void onEvent(Query query);
+  }
+
+  public static class QueryHookManager {
+    Map<QueryState, List<QueryHook>> hookList = TUtil.newHashMap();
+
+    public void addHook(QueryHook hook) {
+      if (hookList.containsKey(hook.getTargetState())) {
+        hookList.get(hook.getTargetState()).add(hook);
+      } else {
+        hookList.put(hook.getTargetState(), TUtil.newList(hook));
+      }
+    }
+
+    public void doHooks(Query query) {
+      QueryState finalState = query.checkQueryForCompleted();
+      List<QueryHook> list = hookList.get(finalState);
+      if (list != null) {
+        for (QueryHook hook : list) {
+          hook.onEvent(query);
+        }
+      } else {
+        LOG.error("QueryHookManager cannot deal with " + finalState + " event");
+      }
+    }
   }
 }

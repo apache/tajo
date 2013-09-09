@@ -21,16 +21,15 @@ package org.apache.tajo.master.querymaster;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.Clock;
 import org.apache.hadoop.yarn.SystemClock;
 import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.service.CompositeService;
 import org.apache.hadoop.yarn.service.Service;
-import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalOptimizer;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.GlobalPlanner;
@@ -62,7 +61,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private StorageManager storageManager;
 
-  private QueryConf queryConf;
+  private TajoConf systemConf;
 
   private Map<QueryId, QueryMasterTask> queryMasterTasks = new HashMap<QueryId, QueryMasterTask>();
 
@@ -84,20 +83,19 @@ public class QueryMaster extends CompositeService implements EventHandler {
   public void init(Configuration conf) {
     LOG.info("QueryMaster init");
     try {
-      queryConf = new QueryConf(conf);
-      queryConf.addResource(new Path(QueryConf.QUERY_MASTER_FILENAME));
+      systemConf = (TajoConf)conf;
 
       QUERY_SESSION_TIMEOUT = 60 * 1000;
-      queryMasterContext = new QueryMasterContext(queryConf);
+      queryMasterContext = new QueryMasterContext(systemConf);
 
       clock = new SystemClock();
 
       this.dispatcher = new TajoAsyncDispatcher("querymaster_" + System.currentTimeMillis());
       addIfService(dispatcher);
 
-      this.storageManager = new StorageManager(queryConf);
+      this.storageManager = new StorageManager(systemConf);
 
-      globalPlanner = new GlobalPlanner(queryConf, storageManager, dispatcher.getEventHandler());
+      globalPlanner = new GlobalPlanner(systemConf, storageManager, dispatcher.getEventHandler());
       globalOptimizer = new GlobalOptimizer();
 
       dispatcher.register(QueryStartEvent.EventType.class, new QueryStartEventHandler());
@@ -188,13 +186,13 @@ public class QueryMaster extends CompositeService implements EventHandler {
   }
 
   public class QueryMasterContext {
-    private QueryConf conf;
+    private TajoConf conf;
 
-    public QueryMasterContext(QueryConf conf) {
+    public QueryMasterContext(TajoConf conf) {
       this.conf = conf;
     }
 
-    public QueryConf getConf() {
+    public TajoConf getConf() {
       return conf;
     }
 
@@ -255,9 +253,9 @@ public class QueryMaster extends CompositeService implements EventHandler {
       LOG.info("Start QueryStartEventHandler:" + event.getQueryId());
       //To change body of implemented methods use File | Settings | File Templates.
       QueryMasterTask queryMasterTask = new QueryMasterTask(queryMasterContext,
-          event.getQueryId(), event.getQueryMeta(), event.getLogicalPlanJson());
+          event.getQueryId(), event.getQueryContext(), event.getLogicalPlanJson());
 
-      queryMasterTask.init(queryConf);
+      queryMasterTask.init(systemConf);
       queryMasterTask.start();
       synchronized(queryMasterTasks) {
         queryMasterTasks.put(event.getQueryId(), queryMasterTask);

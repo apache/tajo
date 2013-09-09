@@ -32,6 +32,11 @@
   </property>
 
   <property>
+    <name>tajo.staging.root.dir</name>
+    <value>/tmp/tajo-${user.name}/staging</value>
+  </property>
+
+  <property>
     <name>tajo.task.localdir</name>
     <value>/tmp/tajo-localdir</value>
   </property>

@@ -38,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TajoContainerProxy extends ContainerProxy {
-  public TajoContainerProxy(QueryMasterTask.QueryContext context,
+  public TajoContainerProxy(QueryMasterTask.QueryMasterTaskContext context,
                             Configuration conf, Container container,
                             ExecutionBlockId executionBlockId) {
     super(context, conf, executionBlockId, container);
@@ -53,7 +53,7 @@ public class TajoContainerProxy extends ContainerProxy {
     this.port = ((TajoWorkerContainer)container).getWorkerResource().getPullServerPort();
     this.state = ContainerState.RUNNING;
 
-    LOG.info("=======>Launch Container:" + executionBlockId + "," + containerID.getId() + "," +
+    LOG.info("Launch Container:" + executionBlockId + "," + containerID.getId() + "," +
         container.getId() + "," + container.getNodeId() + ", pullServer=" + port);
 
     assignExecutionBlock(executionBlockId, container);
@@ -78,7 +78,7 @@ public class TajoContainerProxy extends ContainerProxy {
               .setQueryMasterPort(myAddr.getPort())
               .setNodeId(container.getNodeId().toString())
               .setContainerId(container.getId().toString())
-              .setQueryOutputPath(context.getOutputPath().toString())
+              .setQueryOutputPath(context.getStagingDir().toString())
               .build();
 
       tajoWorkerRpcClient.executeExecutionBlock(null, request, NullCallback.get());
@@ -112,7 +112,7 @@ public class TajoContainerProxy extends ContainerProxy {
   public synchronized void stopContainer() {
     LOG.info("Release TajoWorker Resource: " + executionBlockId + "," + containerID + ", state:" + this.state);
     if(isCompletelyDone()) {
-      LOG.info("====> Container already stopped:" + containerID);
+      LOG.info("Container already stopped:" + containerID);
       return;
     }
     if(this.state == ContainerState.PREP) {
@@ -134,7 +134,7 @@ public class TajoContainerProxy extends ContainerProxy {
     }
   }
 
-  public static void releaseWorkerResource(QueryMasterTask.QueryContext context,
+  public static void releaseWorkerResource(QueryMasterTask.QueryMasterTaskContext context,
                                            ExecutionBlockId executionBlockId,
                                            WorkerResource workerResource) throws Exception {
     List<WorkerResource> workerResources = new ArrayList<WorkerResource>();
@@ -143,7 +143,7 @@ public class TajoContainerProxy extends ContainerProxy {
     releaseWorkerResource(context, executionBlockId, workerResources);
   }
 
-  public static void releaseWorkerResource(QueryMasterTask.QueryContext context,
+  public static void releaseWorkerResource(QueryMasterTask.QueryMasterTaskContext context,
                                            ExecutionBlockId executionBlockId,
                                            List<WorkerResource> workerResources) throws Exception {
     List<TajoMasterProtocol.WorkerResourceProto> workerResourceProtos =

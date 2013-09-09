@@ -175,8 +175,8 @@ public class TajoWorkerClientService extends AbstractService {
           builder.setSubmitTime(query.getAppSubmitTime());
           builder.setInitTime(query.getInitializationTime());
           builder.setHasResult(
-              !(queryMasterTask.getQueryContext().getQueryMeta().isCreateTable() ||
-                  queryMasterTask.getQueryContext().getQueryMeta().isInsert())
+              !(queryMasterTask.getQueryTaskContext().getQueryContext().isCreateTable() ||
+                  queryMasterTask.getQueryTaskContext().getQueryContext().isInsert())
           );
           if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
             builder.setFinishTime(query.getFinishTime());

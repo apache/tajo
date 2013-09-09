@@ -20,7 +20,7 @@ package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.master.QueryMeta;
+import org.apache.tajo.master.QueryContext;
 
 /**
  * This event is conveyed to QueryMaster.
@@ -31,13 +31,13 @@ public class QueryStartEvent extends AbstractEvent {
   }
 
   private QueryId queryId;
-  private QueryMeta queryMeta;
+  private QueryContext queryContext;
   private String logicalPlanJson;
 
-  public QueryStartEvent(QueryId queryId, QueryMeta queryMeta, String logicalPlanJson) {
+  public QueryStartEvent(QueryId queryId, QueryContext queryContext, String logicalPlanJson) {
     super(EventType.QUERY_START);
     this.queryId = queryId;
-    this.queryMeta = queryMeta;
+    this.queryContext = queryContext;
     this.logicalPlanJson = logicalPlanJson;
   }
 
@@ -45,8 +45,8 @@ public class QueryStartEvent extends AbstractEvent {
     return queryId;
   }
 
-  public QueryMeta getQueryMeta() {
-    return this.queryMeta;
+  public QueryContext getQueryContext() {
+    return this.queryContext;
   }
 
   public String getLogicalPlanJson() {

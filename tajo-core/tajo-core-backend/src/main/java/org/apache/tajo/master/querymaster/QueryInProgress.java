@@ -29,7 +29,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.QueryMeta;
+import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResource;
@@ -46,7 +46,7 @@ public class QueryInProgress extends CompositeService {
 
   private QueryId queryId;
 
-  private QueryMeta queryMeta;
+  private QueryContext queryContext;
 
   private TajoAsyncDispatcher dispatcher;
 
@@ -66,11 +66,11 @@ public class QueryInProgress extends CompositeService {
 
   public QueryInProgress(
       TajoMaster.MasterContext masterContext,
-      QueryMeta queryMeta,
+      QueryContext queryContext,
       QueryId queryId, String sql, LogicalRootNode plan) {
     super(QueryInProgress.class.getName());
     this.masterContext = masterContext;
-    this.queryMeta = queryMeta;
+    this.queryContext = queryContext;
     this.queryId = queryId;
     this.plan = plan;
 
@@ -105,7 +105,7 @@ public class QueryInProgress extends CompositeService {
     while(true) {
       try {
         if(masterContext.getResourceManager().isQueryMasterStopped(queryId)) {
-          LOG.info("====> " + queryId + " QueryMaster stopped");
+          LOG.info(queryId + " QueryMaster stopped");
           queryMasterStopped = true;
           break;
         }
@@ -206,7 +206,7 @@ public class QueryInProgress extends CompositeService {
           null,
           TajoWorkerProtocol.QueryExecutionRequestProto.newBuilder()
               .setQueryId(queryId.getProto())
-              .setQueryMeta(queryMeta.getProto())
+              .setQueryContext(queryContext.getProto())
               .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build())
               .build(), NullCallback.get());
       querySubmitted.set(true);

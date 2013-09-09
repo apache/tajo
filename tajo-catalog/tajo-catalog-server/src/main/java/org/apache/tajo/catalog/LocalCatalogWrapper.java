@@ -31,18 +31,18 @@ import java.io.IOException;
  * This class provides a catalog service interface in
  * local.
  */
-public class LocalCatalog extends AbstractCatalogClient {
-  private static final Log LOG = LogFactory.getLog(LocalCatalog.class);
+public class LocalCatalogWrapper extends AbstractCatalogClient {
+  private static final Log LOG = LogFactory.getLog(LocalCatalogWrapper.class);
   private CatalogServer catalog;
 
-  public LocalCatalog(final TajoConf conf) throws IOException {
+  public LocalCatalogWrapper(final TajoConf conf) throws IOException {
     this.catalog = new CatalogServer();
     this.catalog.init(conf);
     this.catalog.start();
     setStub(catalog.getHandler());
   }
 
-  public LocalCatalog(final CatalogServer server) {
+  public LocalCatalogWrapper(final CatalogServer server) {
     this.catalog = server;
     setStub(server.getHandler());
   }

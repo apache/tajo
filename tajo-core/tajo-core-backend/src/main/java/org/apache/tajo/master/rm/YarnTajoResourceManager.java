@@ -246,7 +246,6 @@ public class YarnTajoResourceManager implements WorkerResourceManager {
     //vargs.add("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
     //}
     // Set class name
-    //vargs.add(QueryMasterRunner.class.getCanonicalName());
     vargs.add(TajoWorker.class.getCanonicalName());
     vargs.add("qm");
     vargs.add(queryId.toString()); // queryId

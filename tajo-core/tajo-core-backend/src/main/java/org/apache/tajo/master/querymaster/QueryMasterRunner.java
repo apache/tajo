@@ -25,8 +25,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.hadoop.yarn.util.RackResolver;
-import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.TajoConstants;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.PrintWriter;
@@ -34,9 +35,10 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 
+@Deprecated
 public class QueryMasterRunner extends AbstractService {
   private static final Log LOG = LogFactory.getLog(QueryMasterRunner.class);
-  private QueryConf queryConf;
+  private TajoConf systemConf;
   private QueryMaster queryMaster;
   private QueryId queryId;
   private String queryMasterManagerAddress;
@@ -59,11 +61,9 @@ public class QueryMasterRunner extends AbstractService {
 
   @Override
   public void init(Configuration conf) {
-    this.queryConf = (QueryConf)conf;
-    RackResolver.init(queryConf);
-
+    this.systemConf = (TajoConf)conf;
+    RackResolver.init(systemConf);
     Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
-
     super.init(conf);
   }
 
@@ -72,7 +72,7 @@ public class QueryMasterRunner extends AbstractService {
     //create QueryMaster
     QueryMaster query = new QueryMaster(null);
 
-    query.init(queryConf);
+    query.init(systemConf);
     query.start();
   }
 
@@ -83,8 +83,8 @@ public class QueryMasterRunner extends AbstractService {
   public static void main(String[] args) throws Exception {
     LOG.info("QueryMasterRunner started");
 
-    final QueryConf conf = new QueryConf();
-    conf.addResource(new Path(QueryConf.QUERY_MASTER_FILENAME));
+    final TajoConf conf = new TajoConf();
+    conf.addResource(new Path(TajoConstants.SYSTEM_CONF_FILENAME));
 
     UserGroupInformation.setConfiguration(conf);
 

@@ -22,8 +22,10 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.Clock;
@@ -34,7 +36,6 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.service.CompositeService;
 import org.apache.hadoop.yarn.service.Service;
 import org.apache.hadoop.yarn.util.RackResolver;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -44,11 +45,13 @@ import org.apache.tajo.engine.function.Country;
 import org.apache.tajo.engine.function.InCountry;
 import org.apache.tajo.engine.function.builtin.*;
 import org.apache.tajo.master.querymaster.QueryJobManager;
-import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
+import org.apache.tajo.master.rm.YarnTajoResourceManager;
 import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.webapp.StaticHttpServer;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,12 +63,26 @@ public class TajoMaster extends CompositeService {
 
   public static final int SHUTDOWN_HOOK_PRIORITY = 30;
 
+  /** rw-r--r-- */
+  final public static FsPermission TAJO_ROOT_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
+  /** rw-r--r-- */
+  final public static FsPermission SYSTEM_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
+  /** rw-r--r-- */
+  final public static FsPermission SYSTEM_RESOURCE_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
+  /** rw-r--r-- */
+  final public static FsPermission WAREHOUSE_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
+  /** rw-r--r-- */
+  final public static FsPermission STAGING_ROOTDIR_PERMISSION = FsPermission.createImmutable((short) 0644);
+  /** rw-r--r-- */
+  final public static FsPermission SYSTEM_CONF_FILE_PERMISSION = FsPermission.createImmutable((short) 0644);
+
+
   private MasterContext context;
-  private TajoConf conf;
+  private TajoConf systemConf;
   private FileSystem defaultFS;
   private Clock clock;
 
-  private Path basePath;
+  private Path tajoRootPath;
   private Path wareHousePath;
 
   private CatalogServer catalogServer;
@@ -88,65 +105,27 @@ public class TajoMaster extends CompositeService {
 
   @Override
   public void init(Configuration _conf) {
-    this.conf = (TajoConf) _conf;
+    this.systemConf = (TajoConf) _conf;
 
-    context = new MasterContext(conf);
+    context = new MasterContext(systemConf);
     clock = new SystemClock();
 
     try {
-      RackResolver.init(conf);
+      RackResolver.init(systemConf);
 
-//      this.conf.writeXml(System.out);
-      String className = this.conf.get("tajo.resource.manager", TajoWorkerResourceManager.class.getCanonicalName());
-      Class<WorkerResourceManager> resourceManagerClass =
-          (Class<WorkerResourceManager>)Class.forName(className);
-
-      Constructor<WorkerResourceManager> constructor = resourceManagerClass.getConstructor(MasterContext.class);
-      resourceManager = constructor.newInstance(context);
-      resourceManager.init(context.getConf());
-
-      //TODO WebServer port configurable
-      webServer = StaticHttpServer.getInstance(this ,"admin", null, 8080 ,
-          true, null, context.getConf(), null);
-      webServer.start();
-
-      // Get the tajo base dir
-      this.basePath = new Path(conf.getVar(ConfVars.ROOT_DIR));
-      LOG.info("Tajo Root dir is set " + basePath);
-      // Get default DFS uri from the base dir
-      this.defaultFS = basePath.getFileSystem(conf);
-      conf.set("fs.defaultFS", defaultFS.getUri().toString());
-      LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
-      if (!defaultFS.exists(basePath)) {
-        defaultFS.mkdirs(basePath);
-        LOG.info("Tajo Base dir (" + basePath + ") is created.");
-      }
-
-      this.storeManager = new StorageManager(conf);
-
-      // Get the tajo data warehouse dir
-      this.wareHousePath = new Path(basePath, TajoConstants.WAREHOUSE_DIR);
-      LOG.info("Tajo Warehouse dir is set to " + wareHousePath);
-      if (!defaultFS.exists(wareHousePath)) {
-        defaultFS.mkdirs(wareHousePath);
-        LOG.info("Warehouse dir (" + wareHousePath + ") is created");
-      }
+      initResourceManager();
+      initWebServer();
 
       this.dispatcher = new AsyncDispatcher();
       addIfService(dispatcher);
 
-      // The below is some mode-dependent codes
-      // If tajo is local mode
-      final boolean mode = conf.getBoolVar(ConfVars.CLUSTER_DISTRIBUTED);
-      if (!mode) {
-        LOG.info("Enabled Pseudo Distributed Mode");
-      } else { // if tajo is distributed mode
-        LOG.info("Enabled Distributed Mode");
-      }
-      // This is temporal solution of the above problem.
+      // check the system directory and create if they are not created.
+      checkAndInitializeSystemDirectories();
+      this.storeManager = new StorageManager(systemConf);
+
       catalogServer = new CatalogServer(initBuiltinFunctions());
       addIfService(catalogServer);
-      catalog = new LocalCatalog(catalogServer);
+      catalog = new LocalCatalogWrapper(catalogServer);
 
       globalEngine = new GlobalEngine(context);
       addIfService(globalEngine);
@@ -159,12 +138,70 @@ public class TajoMaster extends CompositeService {
 
       tajoMasterService = new TajoMasterService(context);
       addIfService(tajoMasterService);
+
     } catch (Exception e) {
        LOG.error(e.getMessage(), e);
     }
 
-    LOG.info("====> Tajo master started");
-    super.init(conf);
+    super.init(systemConf);
+
+    LOG.info("Tajo Master is initialized.");
+  }
+
+  private void initResourceManager() throws Exception {
+    Class<WorkerResourceManager>  resourceManagerClass = (Class<WorkerResourceManager>)
+        systemConf.getClass(ConfVars.RESOURCE_MANAGER_CLASS.varname, YarnTajoResourceManager.class);
+    Constructor<WorkerResourceManager> constructor = resourceManagerClass.getConstructor(MasterContext.class);
+    resourceManager = constructor.newInstance(context);
+    resourceManager.init(context.getConf());
+  }
+
+  private void initWebServer() throws Exception {
+    webServer = StaticHttpServer.getInstance(this ,"admin", null, 8080 ,
+        true, null, context.getConf(), null);
+    webServer.start();
+  }
+
+  private void checkAndInitializeSystemDirectories() throws IOException {
+    // Get Tajo root dir
+    this.tajoRootPath = TajoConf.getTajoRootPath(systemConf);
+    LOG.info("Tajo Root Directory: " + tajoRootPath);
+
+    // Check and Create Tajo root dir
+    this.defaultFS = tajoRootPath.getFileSystem(systemConf);
+    systemConf.set("fs.defaultFS", defaultFS.getUri().toString());
+    LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
+    if (!defaultFS.exists(tajoRootPath)) {
+      defaultFS.mkdirs(tajoRootPath, new FsPermission(TAJO_ROOT_DIR_PERMISSION));
+      LOG.info("Tajo Root Directory '" + tajoRootPath + "' is created.");
+    }
+
+    // Check and Create system and system resource dir
+    Path systemPath = TajoConf.getSystemPath(systemConf);
+    if (!defaultFS.exists(systemPath)) {
+      defaultFS.mkdirs(systemPath, new FsPermission(SYSTEM_DIR_PERMISSION));
+      LOG.info("System dir '" + systemPath + "' is created");
+    }
+    Path systemResourcePath = TajoConf.getSystemResourcePath(systemConf);
+    if (!defaultFS.exists(systemResourcePath)) {
+      defaultFS.mkdirs(systemResourcePath, new FsPermission(SYSTEM_RESOURCE_DIR_PERMISSION));
+      LOG.info("System resource dir '" + systemResourcePath + "' is created");
+    }
+
+    // Get Warehouse dir
+    this.wareHousePath = TajoConf.getWarehousePath(systemConf);
+    LOG.info("Tajo Warehouse Dir: " + wareHousePath);
+
+    // Check and Create Warehouse dir
+    if (!defaultFS.exists(wareHousePath)) {
+      defaultFS.mkdirs(wareHousePath, new FsPermission(WAREHOUSE_DIR_PERMISSION));
+      LOG.info("Warehouse dir '" + wareHousePath + "' is created");
+    }
+
+    Path stagingPath = TajoConf.getStagingRoot(systemConf);
+    if (!defaultFS.exists(stagingPath)) {
+      defaultFS.mkdirs(stagingPath, new FsPermission(STAGING_ROOTDIR_PERMISSION));
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -278,6 +315,33 @@ public class TajoMaster extends CompositeService {
   public void start() {
     LOG.info("TajoMaster startup");
     super.start();
+
+    // Setting the system global configs
+    systemConf.setSocketAddr(ConfVars.CATALOG_ADDRESS.varname,
+        NetUtils.getConnectAddress(catalogServer.getBindAddress()));
+
+    try {
+      writeSystemConf();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void writeSystemConf() throws IOException {
+    // Storing the system configs
+    Path systemResourcePath = TajoConf.getSystemResourcePath(systemConf);
+    Path systemConfPath = new Path(systemResourcePath, "system_conf.xml");
+    systemConf.setVar(ConfVars.SYSTEM_CONF_PATH, systemConfPath.toUri().toString());
+
+    defaultFS.delete(systemConfPath, true);
+    FSDataOutputStream out = FileSystem.create(defaultFS, systemConfPath,
+        new FsPermission(SYSTEM_CONF_FILE_PERMISSION));
+    try {
+      systemConf.writeXml(out);
+    } finally {
+      out.close();
+    }
+    defaultFS.setReplication(systemConfPath, (short)systemConf.getIntVar(ConfVars.SYSTEM_CONF_REPLICA_COUNT));
   }
 
   @Override
@@ -289,15 +353,11 @@ public class TajoMaster extends CompositeService {
     }
 
     super.stop();
-    LOG.info("TajoMaster main thread exiting");
+    LOG.info("Tajo Master main thread exiting");
   }
 
   public EventHandler getEventHandler() {
     return dispatcher.getEventHandler();
-  }
-
-  public String getMasterServerName() {
-    return null;
   }
 
   public boolean isMasterRunning() {

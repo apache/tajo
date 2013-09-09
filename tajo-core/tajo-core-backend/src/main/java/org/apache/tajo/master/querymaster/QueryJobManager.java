@@ -28,7 +28,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.ipc.TajoMasterProtocol;
-import org.apache.tajo.master.QueryMeta;
+import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResource;
 
@@ -85,9 +85,9 @@ public class QueryJobManager extends CompositeService {
     return dispatcher.getEventHandler();
   }
 
-  public QueryInfo createNewQueryJob(QueryMeta queryMeta, String sql, LogicalRootNode plan) throws Exception {
+  public QueryInfo createNewQueryJob(QueryContext queryContext, String sql, LogicalRootNode plan) throws Exception {
     QueryId queryId = QueryIdFactory.newQueryId(masterContext.getResourceManager().getSeedQueryId());
-    QueryInProgress queryInProgress = new QueryInProgress(masterContext,queryMeta, queryId, sql, plan);
+    QueryInProgress queryInProgress = new QueryInProgress(masterContext, queryContext, queryId, sql, plan);
 
     synchronized(runningQueries) {
       runningQueries.put(queryId, queryInProgress);

@@ -76,12 +76,13 @@ public class StorageManager {
   public StorageManager(TajoConf conf) throws IOException {
     this.conf = conf;
     this.baseDir = new Path(conf.getVar(ConfVars.ROOT_DIR));
-    this.tableBaseDir = new Path(this.baseDir, TajoConstants.WAREHOUSE_DIR);
+    this.tableBaseDir = new Path(this.baseDir, TajoConstants.WAREHOUSE_DIR_NAME);
     this.fs = baseDir.getFileSystem(conf);
     this.blocksMetadataEnabled = conf.getBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED,
         DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT);
-    if (!this.blocksMetadataEnabled)
+    if (!this.blocksMetadataEnabled) {
       LOG.warn("does not support block metadata. ('dfs.datanode.hdfs-blocks-metadata.enabled')");
+    }
   }
 
   public static StorageManager get(TajoConf conf) throws IOException {
@@ -325,15 +326,6 @@ public class StorageManager {
     listTablets.toArray(tablets);
 
     return tablets;
-  }
-
-  public void writeTableMeta(Path tableRoot, TableMeta meta)
-      throws IOException {
-    FileSystem fs = tableRoot.getFileSystem(conf);
-    FSDataOutputStream out = fs.create(new Path(tableRoot, ".meta"));
-    FileUtil.writeProto(out, meta.getProto());
-    out.flush();
-    out.close();
   }
 
   public long calculateSize(Path tablePath) throws IOException {

@@ -48,10 +48,15 @@ public class TestCatalog {
 
 	@BeforeClass
 	public static void setUp() throws Exception {
+    TajoConf conf = new TajoConf();
+
+    conf.set(CatalogConstants.JDBC_URI, "jdbc:derby:target/test-data/TestCatalog/db");
+    conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
+
 	  server = new CatalogServer();
-    server.init(new TajoConf());
+    server.init(conf);
     server.start();
-    catalog = new LocalCatalog(server);
+    catalog = new LocalCatalogWrapper(server);
 	}
 	
 	@AfterClass

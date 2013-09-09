@@ -30,13 +30,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.util.ConverterUtils;
-import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptContext;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.exception.UnfinishedTaskException;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlannerUtil;
@@ -48,7 +49,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TajoWorkerProtocolService.Interface;
 import org.apache.tajo.ipc.protocolrecords.QueryUnitRequest;
 import org.apache.tajo.master.ExecutionBlock.PartitionType;
-import org.apache.tajo.master.QueryMeta;
+import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.StorageUtil;
@@ -69,8 +70,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Task {
   private static final Log LOG = LogFactory.getLog(Task.class);
 
-  private final QueryConf conf;
-  private final QueryMeta queryMeta;
+  private final TajoConf systemConf;
+  private final QueryContext queryContext;
   private final FileSystem localFS;
   private final TaskRunner.TaskRunnerContext taskRunnerContext;
   private final Interface masterProxy;
@@ -137,8 +138,8 @@ public class Task {
     this.reporter.startCommunicationThread();
 
     this.taskId = request.getId();
-    this.conf = worker.getQueryConf();
-    this.queryMeta = request.getQueryMeta();
+    this.systemConf = worker.getConf();
+    this.queryContext = request.getQueryContext();
     this.taskRunnerContext = worker;
     this.masterProxy = masterProxy;
     this.localFS = worker.getLocalFS();
@@ -146,7 +147,7 @@ public class Task {
     this.taskDir = StorageUtil.concatPath(taskRunnerContext.getBaseDir(),
         taskId.getQueryUnitId().getId() + "_" + taskId.getId());
 
-    this.context = new TaskAttemptContext(conf, taskId,
+    this.context = new TaskAttemptContext(systemConf, taskId,
         request.getFragments().toArray(new Fragment[request.getFragments().size()]),
         taskDir);
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
@@ -163,7 +164,7 @@ public class Task {
     } else {
       // The final result of a task will be written in a file named part-ss-nnnnnnn,
       // where ss is the subquery id associated with this task, and nnnnnn is the task id.
-      Path outFilePath = new Path(queryMeta.getOutputPath(),
+      Path outFilePath = StorageUtil.concatPath(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME,
           OUTPUT_FILE_PREFIX +
           OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskId.getQueryUnitId().getExecutionBlockId().getId()) + "-" +
           OUTPUT_FILE_FORMAT_TASK.get().format(taskId.getQueryUnitId().getId()));
@@ -201,7 +202,7 @@ public class Task {
     if (request.getFetches().size() > 0) {
       inputTableBaseDir = localFS.makeQualified(
           lDirAllocator.getLocalPathForWrite(
-              getTaskAttemptDir(context.getTaskId()).toString() + "/in", conf));
+              getTaskAttemptDir(context.getTaskId()).toString() + "/in", systemConf));
       localFS.mkdirs(inputTableBaseDir);
       Path tableDir;
       for (String inputTable : context.getInputTables()) {
@@ -451,7 +452,7 @@ public class Task {
 
   private Fragment[] localizeFetchedData(File file, String name, TableMeta meta)
       throws IOException {
-    Configuration c = new Configuration(conf);
+    Configuration c = new Configuration(systemConf);
     c.set("fs.default.name", "file:///");
     FileSystem fs = FileSystem.get(c);
     Path tablePath = new Path(file.getAbsolutePath());
@@ -525,7 +526,7 @@ public class Task {
     if (fetches.size() > 0) {
       Path inputDir = lDirAllocator.
           getLocalPathToRead(
-              getTaskAttemptDir(ctx.getTaskId()).toString() + "/in", conf);
+              getTaskAttemptDir(ctx.getTaskId()).toString() + "/in", systemConf);
       File storeDir;
 
       int i = 0;

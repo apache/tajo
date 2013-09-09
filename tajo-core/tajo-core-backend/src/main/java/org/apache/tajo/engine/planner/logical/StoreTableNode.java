@@ -120,14 +120,6 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   public void setCreateTable() {
     isCreatedTable = true;
   }
-
-  public boolean isOverwrite() {
-    return isOverwritten;
-  }
-
-  public void setOverwrite() {
-    isOverwritten = true;
-  }
   
   @Override
   public boolean equals(Object obj) {

@@ -22,15 +22,13 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -52,6 +50,7 @@ public class TestResultSetImpl {
   private static TajoTestingCluster util;
   private static TajoConf conf;
   private static StorageManager sm;
+  private static TableDesc desc;
   private static TableMeta scoreMeta;
 
   @BeforeClass
@@ -90,7 +89,7 @@ public class TestResultSetImpl {
     stat.setNumBlocks(1000);
     stat.setNumPartitions(100);
     scoreMeta.setStat(stat);
-    sm.writeTableMeta(sm.getTablePath("score"), scoreMeta);
+    desc = new TableDescImpl("score", scoreMeta, p);
   }
 
   @AfterClass
@@ -100,7 +99,7 @@ public class TestResultSetImpl {
 
   @Test
   public void test() throws IOException, SQLException {
-    ResultSetImpl rs = new ResultSetImpl(null, null, conf, sm.getTablePath("score"));
+    ResultSetImpl rs = new ResultSetImpl(null, null, conf, desc);
     ResultSetMetaData meta = rs.getMetaData();
     assertNotNull(meta);
     Schema schema = scoreMeta.getSchema();

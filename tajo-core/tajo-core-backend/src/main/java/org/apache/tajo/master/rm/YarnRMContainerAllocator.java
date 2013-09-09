@@ -57,10 +57,10 @@ public class YarnRMContainerAllocator extends AMRMClientImpl
   private static final Log LOG = LogFactory.getLog(YarnRMContainerAllocator.
       class.getName());
 
-  private QueryMasterTask.QueryContext context;
+  private QueryMasterTask.QueryMasterTaskContext context;
   private final EventHandler eventHandler;
 
-  public YarnRMContainerAllocator(QueryMasterTask.QueryContext context) {
+  public YarnRMContainerAllocator(QueryMasterTask.QueryMasterTaskContext context) {
     super(ApplicationIdUtils.createApplicationAttemptId(context.getQueryId()));
     this.context = context;
     this.eventHandler = context.getDispatcher().getEventHandler();

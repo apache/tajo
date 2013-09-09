@@ -32,10 +32,10 @@ import org.apache.hadoop.yarn.api.records.impl.pb.ContainerIdPBImpl;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryConf;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -59,7 +59,7 @@ public class TaskRunner extends AbstractService {
   /** class logger */
   private static final Log LOG = LogFactory.getLog(TaskRunner.class);
 
-  private QueryConf queryConf;
+  private TajoConf systemConf;
 
   private volatile boolean stopped = false;
 
@@ -105,7 +105,7 @@ public class TaskRunner extends AbstractService {
 
   private TaskRunnerManager taskRunnerManager;
 
-  public TaskRunner(TaskRunnerManager taskRunnerManager, QueryConf conf, String[] args) {
+  public TaskRunner(TaskRunnerManager taskRunnerManager, TajoConf conf, String[] args) {
     super(TaskRunner.class.getName());
 
     this.taskRunnerManager = taskRunnerManager;
@@ -130,8 +130,7 @@ public class TaskRunner extends AbstractService {
       LOG.info("QueryMaster Address:" + masterAddr);
       // TODO - 'load credential' should be implemented
       // Getting taskOwner
-      UserGroupInformation taskOwner =
-          UserGroupInformation.createRemoteUser(conf.getVar(ConfVars.QUERY_USERNAME));
+      UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(conf.getVar(ConfVars.TAJO_USERNAME));
       //taskOwner.addToken(token);
 
       // initialize MasterWorkerProtocol as an actual task owner.
@@ -161,16 +160,15 @@ public class TaskRunner extends AbstractService {
 
   @Override
   public void init(Configuration conf) {
-    this.queryConf = (QueryConf)conf;
+    this.systemConf = (TajoConf)conf;
 
     try {
       // initialize DFS and LocalFileSystems
-      defaultFS = FileSystem.get(URI.create(queryConf.getVar(ConfVars.ROOT_DIR)),conf);
+      defaultFS = TajoConf.getTajoRootPath(systemConf).getFileSystem(conf);
       localFS = FileSystem.getLocal(conf);
 
       // the base dir for an output dir
-      baseDir = queryId.toString()
-          + "/output" + "/" + executionBlockId.getId();
+      baseDir = queryId.toString() + "/output" + "/" + executionBlockId.getId();
 
       // initialize LocalDirAllocator
       lDirAllocator = new LocalDirAllocator(ConfVars.TASK_LOCAL_DIR.varname);
@@ -180,7 +178,7 @@ public class TaskRunner extends AbstractService {
 
       // Setup QueryEngine according to the query plan
       // Here, we can setup row-based query engine or columnar query engine.
-      this.queryEngine = new TajoQueryEngine(queryConf);
+      this.queryEngine = new TajoQueryEngine(systemConf);
     } catch (Throwable t) {
       LOG.error(t);
     }
@@ -222,8 +220,8 @@ public class TaskRunner extends AbstractService {
   }
 
   public class TaskRunnerContext {
-    public QueryConf getQueryConf() {
-      return queryConf;
+    public TajoConf getConf() {
+      return systemConf;
     }
 
     public String getNodeId() {

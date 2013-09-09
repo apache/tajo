@@ -19,10 +19,13 @@
 package org.apache.tajo;
 
 public class TajoConstants {
+  public static String SYSTEM_CONF_FILENAME = "system_conf.xml";
 
-  public static String WAREHOUSE_DIR = "warehouse";
-
-  public static String USER_QUERYDIR_PREFIX = "tajo";
+  public static String SYSTEM_DIR_NAME = "system";
+  public static String WAREHOUSE_DIR_NAME = "warehouse";
+  public static String STAGING_DIR_NAME = "staging";
+  public static String SYSTEM_RESOURCE_DIR_NAME = "resource";
+  public static String RESULT_DIR_NAME="RESULT";
 
   private TajoConstants() {}
 }
