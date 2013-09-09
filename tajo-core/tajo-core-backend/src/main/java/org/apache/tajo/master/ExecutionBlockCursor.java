@@ -32,6 +32,10 @@ public class ExecutionBlockCursor {
     buildOrder(plan.getRoot());
   }
 
+  public int size() {
+    return orderedBlocks.size();
+  }
+
   private void buildOrder(ExecutionBlock current) {
     if (current.hasChildBlock()) {
       if (current.getChildNum() == 1) {

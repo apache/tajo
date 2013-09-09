@@ -162,7 +162,7 @@ public class Query implements EventHandler<QueryEvent> {
       }
 
       float totalProgress = 0;
-      float proportion = 1.0f / (float)subqueries.size();
+      float proportion = 1.0f / (float)getExecutionBlockCursor().size();
 
       for (int i = 0; i < subProgresses.length; i++) {
         totalProgress += subProgresses[i] * proportion;
