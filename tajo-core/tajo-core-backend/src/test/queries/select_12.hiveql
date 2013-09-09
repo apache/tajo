@@ -1,0 +1,3 @@
+SELECT name, salary
+FROM  employees
+limit 10

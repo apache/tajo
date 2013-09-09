@@ -1,0 +1,2 @@
+select A.*
+from table1 AS A

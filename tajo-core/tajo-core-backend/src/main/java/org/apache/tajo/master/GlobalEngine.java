@@ -41,6 +41,7 @@ import org.apache.tajo.engine.exception.EmptyClusterException;
 import org.apache.tajo.engine.exception.IllegalQueryStatusException;
 import org.apache.tajo.engine.exception.NoSuchQueryIdException;
 import org.apache.tajo.engine.exception.UnknownWorkerException;
+import org.apache.tajo.engine.parser.HiveConverter;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
@@ -67,6 +68,7 @@ public class GlobalEngine extends AbstractService {
   private final StorageManager sm;
 
   private SQLAnalyzer analyzer;
+  private HiveConverter converter;
   private CatalogService catalog;
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
@@ -82,6 +84,7 @@ public class GlobalEngine extends AbstractService {
   public void start() {
     try  {
       analyzer = new SQLAnalyzer();
+      converter = new HiveConverter();
       planner = new LogicalPlanner(context.getCatalog());
       optimizer = new LogicalOptimizer();
 
@@ -107,7 +110,25 @@ public class GlobalEngine extends AbstractService {
     LOG.info("SQL: " + sql);
 
     try {
-      Expr planningContext = analyzer.parse(sql);
+      // setting environment variables
+      String [] cmds = sql.split(" ");
+      if(cmds != null) {
+          if(cmds[0].equalsIgnoreCase("set")) {
+              String[] params = cmds[1].split("=");
+              context.getConf().set(params[0], params[1]);
+              GetQueryStatusResponse.Builder responseBuilder = GetQueryStatusResponse.newBuilder();
+              responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+              responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+              responseBuilder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
+              return responseBuilder.build();
+          }
+      }
+
+      final boolean hiveQueryMode = context.getConf().getBoolVar(TajoConf.ConfVars.HIVE_QUERY_MODE);
+      LOG.info("hive.query.mode:" + hiveQueryMode);
+
+      Expr planningContext = hiveQueryMode ? converter.parse(sql) : analyzer.parse(sql);
+      
       LogicalPlan plan = createLogicalPlan(planningContext);
       LogicalRootNode rootNode = (LogicalRootNode) plan.getRootBlock().getRoot();
 

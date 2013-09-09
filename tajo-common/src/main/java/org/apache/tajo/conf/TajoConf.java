@@ -130,6 +130,10 @@ public class TajoConf extends YarnConfiguration {
     // GeoIP
     GEOIP_DATA("tajo.geoip.data", "/usr/local/share/GeoIP/GeoIP.dat"),
 
+    //////////////////////////////////
+    // Hive Configuration
+    //////////////////////////////////
+    HIVE_QUERY_MODE("tajo.hive.query.mode", false),
     ;
 
     public final String varname;
