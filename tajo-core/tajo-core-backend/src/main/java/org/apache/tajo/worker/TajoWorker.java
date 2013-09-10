@@ -23,14 +23,12 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.service.CompositeService;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogClient;
-import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
@@ -317,7 +315,7 @@ public class TajoWorker extends CompositeService {
       int workerMemoryMBSlots;
       int workerCpuCoreSlots;
 
-      boolean useSystemInfo = tajoConf.getBoolean("tajo.worker.slots.use.os.info", true);
+      boolean useSystemInfo = tajoConf.getBoolean("tajo.worker.slots.use.os.info", false);
 
       try {
         mountPaths = getMountPath();
@@ -476,7 +474,7 @@ public class TajoWorker extends CompositeService {
         (com.sun.management.OperatingSystemMXBean)
             java.lang.management.ManagementFactory.getOperatingSystemMXBean();
     long max = bean.getTotalPhysicalMemorySize();
-    return ((int)(max/1024));
+    return ((int) (max / (1024 * 1024)));
   }
 
   public static void main(String[] args) throws Exception {

@@ -133,6 +133,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-172: TajoWorker allocate wrong container slots.(jinho)
+
     TAJO-174: SQL error handler sometimes occurred NPE. (jinho)
 
     TAJO-170: mvn compile error when building tar file. (jaehwa)
