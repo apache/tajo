@@ -133,6 +133,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-174: SQL error handler sometimes occurred NPE. (jinho)
+
     TAJO-170: mvn compile error when building tar file. (jaehwa)
 
     TAJO-154: Query calculates wrong progress in multiple step queries.
