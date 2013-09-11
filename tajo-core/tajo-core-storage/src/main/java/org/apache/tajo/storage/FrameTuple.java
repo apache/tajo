@@ -197,6 +197,11 @@ public class FrameTuple implements Tuple {
     return (TextDatum) get(fieldId);
   }
 
+  @Override
+  public Tuple clone() throws CloneNotSupportedException {
+    return new FrameTuple(this.left.clone(), this.right.clone());
+  }
+
   public String toString() {
     boolean first = true;
     StringBuilder str = new StringBuilder();

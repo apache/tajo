@@ -22,7 +22,7 @@ import org.apache.tajo.datum.*;
 
 import java.net.InetAddress;
 
-public interface Tuple {
+public interface Tuple extends Cloneable {
   
 	public int size();
 	
@@ -75,4 +75,6 @@ public interface Tuple {
 	public TextDatum getString(int fieldId);
 
   public TextDatum getText(int fieldId);
+
+  public Tuple clone() throws CloneNotSupportedException;
 }

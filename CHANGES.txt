@@ -133,6 +133,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-177: Call by reference bug in MergeJoinExec. (jihoon)
+
     TAJO-171: BitArray always returned false. (jinho)
 
     TAJO-172: TajoWorker allocate wrong container slots.(jinho)

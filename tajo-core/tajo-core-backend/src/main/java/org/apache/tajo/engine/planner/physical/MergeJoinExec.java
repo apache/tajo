@@ -131,28 +131,32 @@ public class MergeJoinExec extends BinaryPhysicalExec {
           }
         }
 
-        previous = outerTuple;
-        do {
-          outerTupleSlots.add(outerTuple);
-          outerTuple = leftChild.next();
-          if (outerTuple == null) {
-            end = true;
-            break;
-          }
-        } while (tupleComparator[0].compare(previous, outerTuple) == 0);
-        outerIterator = outerTupleSlots.iterator();
-        outerNext = outerIterator.next();
+        try {
+          previous = outerTuple.clone();
+          do {
+            outerTupleSlots.add(outerTuple.clone());
+            outerTuple = leftChild.next();
+            if (outerTuple == null) {
+              end = true;
+              break;
+            }
+          } while (tupleComparator[0].compare(previous, outerTuple) == 0);
+          outerIterator = outerTupleSlots.iterator();
+          outerNext = outerIterator.next();
 
-        previous = innerTuple;
-        do {
-          innerTupleSlots.add(innerTuple);
-          innerTuple = rightChild.next();
-          if (innerTuple == null) {
-            end = true;
-            break;
-          }
-        } while (tupleComparator[1].compare(previous, innerTuple) == 0);
-        innerIterator = innerTupleSlots.iterator();
+          previous = innerTuple.clone();
+          do {
+            innerTupleSlots.add(innerTuple.clone());
+            innerTuple = rightChild.next();
+            if (innerTuple == null) {
+              end = true;
+              break;
+            }
+          } while (tupleComparator[1].compare(previous, innerTuple) == 0);
+          innerIterator = innerTupleSlots.iterator();
+        } catch (CloneNotSupportedException e) {
+
+        }
       }
 
       if(!innerIterator.hasNext()){
