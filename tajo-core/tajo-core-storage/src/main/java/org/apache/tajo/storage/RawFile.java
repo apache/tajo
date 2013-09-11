@@ -54,7 +54,6 @@ public class RawFile {
     private int headerSize = 0;
     private BitArray nullFlags;
     private static final int RECORD_SIZE = 4;
-    private int numBitsOfNullFlags;
     private boolean eof = false;
     private long fileSize;
 
@@ -94,9 +93,8 @@ public class RawFile {
       channel.read(buffer);
       buffer.flip();
 
-      numBitsOfNullFlags = (int) Math.ceil((double)schema.getColumnNum());
-      nullFlags = new BitArray(numBitsOfNullFlags);
-      headerSize = RECORD_SIZE + 2 + nullFlags.size();
+      nullFlags = new BitArray(schema.getColumnNum());
+      headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength();
 
       super.init();
     }
@@ -280,7 +278,6 @@ public class RawFile {
     private BitArray nullFlags;
     private int headerSize = 0;
     private static final int RECORD_SIZE = 4;
-    private int numBitsOfNullFlags;
 
     private TableStatistics stats;
 
@@ -303,9 +300,9 @@ public class RawFile {
       buffer = ByteBuffer.allocateDirect(65535);
 
       // comput the number of bytes, representing the null flags
-      numBitsOfNullFlags = (int) Math.ceil((double)schema.getColumnNum());
-      nullFlags = new BitArray(numBitsOfNullFlags);
-      headerSize = RECORD_SIZE + 2 + nullFlags.size();
+
+      nullFlags = new BitArray(schema.getColumnNum());
+      headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength();
 
       if (enabledStats) {
         this.stats = new TableStatistics(this.schema);

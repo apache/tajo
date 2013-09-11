@@ -133,6 +133,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-171: BitArray always returned false. (jinho)
+
     TAJO-172: TajoWorker allocate wrong container slots.(jinho)
 
     TAJO-174: SQL error handler sometimes occurred NPE. (jinho)

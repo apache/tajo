@@ -20,6 +20,9 @@ package org.apache.tajo.util;
 
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -27,13 +30,47 @@ public class TestBitArrayTest {
 
   @Test
   public void test() {
-    int num = 80;
-    BitArray bitArray = new BitArray(num);
+    int numBit = 90;
+    BitArray bitArray = new BitArray(numBit);
+    assertEquals(numBit, bitArray.bitsLength());
 
-    for (int i = 0; i < num; i++) {
+    for (int i = 0; i < numBit; i++) {
       assertFalse(bitArray.get(i));
       bitArray.set(i);
       assertTrue(bitArray.get(i));
+    }
+  }
+
+  @Test
+  public void testFromByteBuffer() {
+    int numBit = 80;
+    BitArray bitArray = new BitArray(numBit);
+    assertEquals(numBit, bitArray.bitsLength());
+
+    for (int i = 0; i < numBit; i++) {
+      if((i % 2) == 0){
+        bitArray.set(i);
+      }
+    }
+
+    ByteBuffer buffer = ByteBuffer.allocate(bitArray.bytesLength());
+    buffer.put(bitArray.toArray());
+    for (int i = 0; i < numBit; i++) {
+      if((i % 2) == 0){
+        assertTrue(bitArray.get(i));
+      } else {
+        assertFalse(bitArray.get(i));
+      }
+    }
+
+    buffer.rewind();
+    bitArray.fromByteBuffer(buffer);
+    for (int i = 0; i < numBit; i++) {
+      if((i % 2) == 0){
+        assertTrue(bitArray.get(i));
+      } else {
+        assertFalse(bitArray.get(i));
+      }
     }
   }
 }

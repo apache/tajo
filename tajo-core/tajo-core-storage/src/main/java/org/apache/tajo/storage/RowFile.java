@@ -76,7 +76,7 @@ public class RowFile {
               SYNC_SIZE * 100);
       numBitsOfNullFlags = (int) Math.ceil(((double)schema.getColumnNum()));
       nullFlags = new BitArray(numBitsOfNullFlags);
-      tupleHeaderSize = nullFlags.size() + (2 * Short.SIZE/8);
+      tupleHeaderSize = nullFlags.bytesLength() + (2 * Short.SIZE/8);
       this.start = fragment.getStartOffset();
       this.end = this.start + fragment.getLength();
     }

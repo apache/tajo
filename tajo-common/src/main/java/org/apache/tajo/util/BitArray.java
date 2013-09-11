@@ -25,9 +25,10 @@ public class BitArray {
   private int length;
 
   public BitArray(int numBits) {
-    data = new byte[numBits];
+    data = new byte[(int) Math.ceil((double) numBits / 8)];
     this.length = numBits;
   }
+
   public BitArray(byte [] bytes) {
     this.data = bytes;
     length = bytes.length * 8;
@@ -64,7 +65,11 @@ public class BitArray {
     }
   }
 
-  public int size() {
+  public int bytesLength() {
+    return data.length;
+  }
+
+  public int bitsLength() {
     return length;
   }
 
@@ -77,6 +82,7 @@ public class BitArray {
     int i = 0;
     while(byteBuffer.hasRemaining()) {
       data[i] = byteBuffer.get();
+      i++;
     }
   }
 
