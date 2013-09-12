@@ -398,6 +398,9 @@ public class TaskSchedulerImpl extends AbstractService
         LOG.info("assignToLeafTasks: " + taskRequest.getExecutionBlockId() + "," +
             "containerId=" + taskRequest.getContainerId());
         ContainerProxy container = context.getResourceAllocator().getContainer(taskRequest.getContainerId());
+
+        if(container == null) continue;
+
         String host = container.getTaskHostName();
 
         QueryUnitAttemptId attemptId = null;

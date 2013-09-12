@@ -267,7 +267,7 @@ public class YarnTajoResourceManager implements WorkerResourceManager {
 
     final Resource resource = Records.newRecord(Resource.class);
     // TODO - get default value from conf
-    resource.setMemory(2048);
+    resource.setMemory(2000);
     resource.setVirtualCores(1);
 
     Map<String, ByteBuffer> myServiceData = new HashMap<String, ByteBuffer>();

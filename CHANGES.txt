@@ -133,6 +133,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-168: infinite loop occurs when QueryMaster is stopping. (jinho)
+
     TAJO-180: Better error messages for 
     StorageManager.listStatus$InvalidInputException. (hyunsik)
 

@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
@@ -625,7 +624,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
       final Resource resource = Records.newRecord(Resource.class);
 
-      resource.setMemory(2048);
+      resource.setMemory(2000);
 
       LOG.info("Request Container for " + subQuery.getId() + " containers=" + numRequest);
 

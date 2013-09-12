@@ -209,7 +209,7 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
               resourceRequest.request.getDiskSlots(),
               resourceRequest.request.getNumWorks());
 
-          LOG.info("====> allocateWorkerResources: allocated:" + workerResources.size());
+          LOG.debug("====> allocateWorkerResources: allocated:" + workerResources.size());
 
           if(workerResources.size() > 0) {
             if(resourceRequest.queryMasterRequest) {
@@ -239,6 +239,8 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
               }
               LOG.debug("=========================================");
             }
+            requestQueue.add(resourceRequest);
+            Thread.sleep(100);
           }
         } catch(InterruptedException ie) {
         }
@@ -332,13 +334,13 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
         queryMasterWorkerResource = queryMasterMap.remove(queryId);
       }
     }
-    LOG.info("release QueryMaster resource:" + queryId + "," + queryMasterWorkerResource);
     WorkerResource workerResource = new WorkerResource();
     workerResource.copyId(queryMasterWorkerResource);
     workerResource.setMemoryMBSlots(queryMasterMemoryMB);
     workerResource.setDiskSlots(queryMasterDiskSlot);
     workerResource.setCpuCoreSlots(0);
     releaseWorkerResource(queryId, workerResource);
+    LOG.info("released QueryMaster resource:" + queryId + "," + queryMasterWorkerResource);
   }
 
   public void workerHeartbeat(TajoMasterProtocol.TajoHeartbeat request) {

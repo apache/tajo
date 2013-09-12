@@ -21,6 +21,9 @@ package org.apache.tajo.master.rm;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 public class WorkerResource {
   private static final Log LOG = LogFactory.getLog(WorkerResource.class);
 
@@ -38,6 +41,10 @@ public class WorkerResource {
   private int usedCpuCoreSlots;
 
   private boolean queryMasterAllocated;
+
+  private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+  private final Lock rlock = lock.readLock();
+  private final Lock wlock = lock.writeLock();
 
   private WorkerStatus workerStatus;
 
@@ -65,7 +72,12 @@ public class WorkerResource {
   }
 
   public void addUsedMemoryMBSlots(int memoryMBSlots) {
-    usedMemoryMBSlots += memoryMBSlots;
+    try {
+      wlock.lock();
+      usedMemoryMBSlots += memoryMBSlots;
+    } finally {
+      wlock.unlock();
+    }
   }
 
   public void addUsedCpuCoreSlots(int cpuCoreSlots) {
@@ -89,11 +101,21 @@ public class WorkerResource {
   }
 
   public int getMemoryMBSlots() {
-    return memoryMBSlots;
+    try {
+      rlock.lock();
+      return memoryMBSlots;
+    } finally {
+      rlock.unlock();
+    }
   }
 
   public void setMemoryMBSlots(int memoryMBSlots) {
-    this.memoryMBSlots = memoryMBSlots;
+    try {
+      wlock.lock();
+      this.memoryMBSlots = memoryMBSlots;
+    } finally {
+      wlock.unlock();
+    }
   }
 
   public int getAvailableDiskSlots() {
@@ -101,13 +123,13 @@ public class WorkerResource {
   }
 
   public int getAvailableMemoryMBSlots() {
-    return memoryMBSlots - usedMemoryMBSlots;
+    return getMemoryMBSlots() - getUsedMemoryMBSlots();
   }
 
   @Override
   public String toString() {
     return "host:" + allocatedHost + ", port=" + portsToStr() + ", slots=" + memoryMBSlots + ":" + cpuCoreSlots + ":" + diskSlots +
-        ", used=" + usedMemoryMBSlots + ":" + usedCpuCoreSlots + ":" + usedDiskSlots;
+        ", used=" + getUsedMemoryMBSlots() + ":" + usedCpuCoreSlots + ":" + usedDiskSlots;
   }
 
   public String portsToStr() {
@@ -119,11 +141,22 @@ public class WorkerResource {
   }
 
   public int getUsedMemoryMBSlots() {
-    return usedMemoryMBSlots;
+    try {
+      rlock.lock();
+      return usedMemoryMBSlots;
+    } finally {
+      rlock.unlock();
+    }
   }
 
   public void setUsedMemoryMBSlots(int usedMemoryMBSlots) {
-    this.usedMemoryMBSlots = usedMemoryMBSlots;
+    try {
+      wlock.lock();
+      this.usedMemoryMBSlots = usedMemoryMBSlots;
+    } finally {
+      wlock.unlock();
+    }
+
   }
 
   public int getUsedCpuCoreSlots() {
@@ -167,10 +200,14 @@ public class WorkerResource {
         queryMasterAllocated = false;
     }
 
-    usedMemoryMBSlots = usedMemoryMBSlots - workerResource.memoryMBSlots;
-    //usedDiskSlots = usedDiskSlots - workerResource.diskSlots;
+    try {
+      wlock.lock();
+      usedMemoryMBSlots = usedMemoryMBSlots - workerResource.getMemoryMBSlots();
+    } finally {
+      wlock.unlock();
+    }
 
-    if(usedMemoryMBSlots < 0 || usedDiskSlots < 0 || usedCpuCoreSlots < 0) {
+    if(getUsedMemoryMBSlots() < 0 || usedDiskSlots < 0 || usedCpuCoreSlots < 0) {
       LOG.warn("Used resources can't be a minus.");
       LOG.warn(this + " ==> " + workerResource);
     }
@@ -178,7 +215,7 @@ public class WorkerResource {
 
   public int getSlots() {
     //TODO what is slot? 512MB = 1slot?
-    return memoryMBSlots/512;
+    return getMemoryMBSlots()/512;
   }
 
   public int getAvaliableSlots() {
@@ -188,7 +225,7 @@ public class WorkerResource {
 
   public int getUsedSlots() {
     //TODO what is slot? 512MB = 1slot?
-    return usedMemoryMBSlots/512;
+    return getUsedMemoryMBSlots()/512;
   }
 
   public int getManagerPort() {
