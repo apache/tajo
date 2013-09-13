@@ -25,6 +25,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-178: Implements StorageManager for scanning asynchronously. 
+    (hyoungjunkim via hyunsik)
+
     TAJO-167: Implement GeneralSetFunctionExpr to represent all SQL standard
     set functions. (hyunsik)
 
