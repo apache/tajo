@@ -69,7 +69,7 @@ public class TestPhysicalPlanner {
   private static SQLAnalyzer analyzer;
   private static LogicalPlanner planner;
   private static LogicalOptimizer optimizer;
-  private static StorageManager sm;
+  private static AbstractStorageManager sm;
   private static Path testDir;
 
   private static TableDesc employee = null;
@@ -82,7 +82,7 @@ public class TestPhysicalPlanner {
     util.startCatalogCluster();
     conf = util.getConfiguration();
     testDir = CommonTestingUtil.getTestDir("target/test-data/TestPhysicalPlanner");
-    sm = StorageManager.get(conf, testDir);
+    sm = StorageManagerFactory.getStorageManager(conf, testDir);
     catalog = util.getMiniCatalogCluster().getCatalog();
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
       catalog.registerFunction(funcDesc);
@@ -107,7 +107,7 @@ public class TestPhysicalPlanner {
 
 
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = StorageManager.getAppender(conf, employeeMeta, employeePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, employeePath);
     appender.init();
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {
@@ -123,7 +123,7 @@ public class TestPhysicalPlanner {
 
     Path scorePath = new Path(testDir, "score");
     TableMeta scoreMeta = CatalogUtil.newTableMeta(scoreSchema, StoreType.CSV, new Options());
-    appender = StorageManager.getAppender(conf, scoreMeta, scorePath);
+    appender = StorageManagerFactory.getStorageManager(conf).getAppender(scoreMeta, scorePath);
     appender.init();
     score = new TableDescImpl("score", scoreMeta, scorePath);
     tuple = new VTuple(score.getMeta().getSchema().getColumnNum());
@@ -189,7 +189,7 @@ public class TestPhysicalPlanner {
     optimizer.optimize(plan);
 
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     Tuple tuple;
@@ -372,7 +372,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    Scanner scanner = StorageManager.getScanner(conf, outputMeta, ctx.getOutputPath());
+    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(outputMeta, ctx.getOutputPath());
     scanner.init();
     Tuple tuple;
     int i = 0;
@@ -412,7 +412,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    Scanner scanner = StorageManager.getScanner(conf, outputMeta, ctx.getOutputPath());
+    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(outputMeta, ctx.getOutputPath());
     scanner.init();
     Tuple tuple;
     int i = 0;
@@ -787,8 +787,8 @@ public class TestPhysicalPlanner {
     reader.open();
     Path outputPath = StorageUtil.concatPath(workDir, "output", "output");
     TableMeta meta = CatalogUtil.newTableMeta(rootNode.getOutSchema(), StoreType.CSV, new Options());
-    SeekableScanner scanner = (SeekableScanner)
-        StorageManager.getScanner(conf, meta, outputPath);
+    SeekableScanner scanner =
+        StorageManagerFactory.getSeekableScanner(conf, meta, outputPath);
     scanner.init();
 
     int cnt = 0;

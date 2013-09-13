@@ -173,12 +173,12 @@ public class TaskSchedulerImpl extends AbstractService
 
     if (taskRequests.size() > 0) {
       if (scheduledRequests.leafTaskNum() > 0) {
-        LOG.info("Try to schedule tasks with taskRequestEvents: " +
+        LOG.debug("Try to schedule tasks with taskRequestEvents: " +
             taskRequests.size() + ", LeafTask Schedule Request: " +
             scheduledRequests.leafTaskNum());
         taskRequests.getTaskRequests(taskRequestEvents,
             scheduledRequests.leafTaskNum());
-        LOG.info("Get " + taskRequestEvents.size() + " taskRequestEvents ");
+        LOG.debug("Get " + taskRequestEvents.size() + " taskRequestEvents ");
         if (taskRequestEvents.size() > 0) {
           scheduledRequests.assignToLeafTasks(taskRequestEvents);
           taskRequestEvents.clear();
@@ -188,7 +188,7 @@ public class TaskSchedulerImpl extends AbstractService
 
     if (taskRequests.size() > 0) {
       if (scheduledRequests.nonLeafTaskNum() > 0) {
-        LOG.info("Try to schedule tasks with taskRequestEvents: " +
+        LOG.debug("Try to schedule tasks with taskRequestEvents: " +
             taskRequests.size() + ", NonLeafTask Schedule Request: " +
             scheduledRequests.nonLeafTaskNum());
         taskRequests.getTaskRequests(taskRequestEvents,
@@ -390,17 +390,18 @@ public class TaskSchedulerImpl extends AbstractService
     public Set<QueryUnitAttemptId> assignedRequest = new HashSet<QueryUnitAttemptId>();
 
     public void assignToLeafTasks(List<TaskRequestEvent> taskRequests) {
+      Collections.shuffle(taskRequests);
       Iterator<TaskRequestEvent> it = taskRequests.iterator();
 
       TaskRequestEvent taskRequest;
       while (it.hasNext() && leafTasks.size() > 0) {
         taskRequest = it.next();
-        LOG.info("assignToLeafTasks: " + taskRequest.getExecutionBlockId() + "," +
+        LOG.debug("assignToLeafTasks: " + taskRequest.getExecutionBlockId() + "," +
             "containerId=" + taskRequest.getContainerId());
         ContainerProxy container = context.getResourceAllocator().getContainer(taskRequest.getContainerId());
-
-        if(container == null) continue;
-
+        if(container == null) {
+          continue;
+        }
         String host = container.getTaskHostName();
 
         QueryUnitAttemptId attemptId = null;
@@ -479,8 +480,8 @@ public class TaskSchedulerImpl extends AbstractService
         }
       }
 
-      LOG.info("HostLocalAssigned / Total: " + hostLocalAssigned + " / " + totalAssigned);
-      LOG.info("RackLocalAssigned: " + rackLocalAssigned + " / " + totalAssigned);
+      LOG.debug("HostLocalAssigned / Total: " + hostLocalAssigned + " / " + totalAssigned);
+      LOG.debug("RackLocalAssigned: " + rackLocalAssigned + " / " + totalAssigned);
     }
 
     public void assignToNonLeafTasks(List<TaskRequestEvent> taskRequests) {
@@ -489,7 +490,7 @@ public class TaskSchedulerImpl extends AbstractService
       TaskRequestEvent taskRequest;
       while (it.hasNext()) {
         taskRequest = it.next();
-        LOG.info("assignToNonLeafTasks: " + taskRequest.getExecutionBlockId());
+        LOG.debug("assignToNonLeafTasks: " + taskRequest.getExecutionBlockId());
 
         QueryUnitAttemptId attemptId;
         // random allocation

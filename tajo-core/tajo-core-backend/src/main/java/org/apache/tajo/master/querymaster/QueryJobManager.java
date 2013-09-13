@@ -32,6 +32,8 @@ import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResource;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -83,6 +85,14 @@ public class QueryJobManager extends CompositeService {
 
   public EventHandler getEventHandler() {
     return dispatcher.getEventHandler();
+  }
+
+  public Collection<QueryInProgress> getRunningQueries() {
+    return Collections.unmodifiableCollection(runningQueries.values());
+  }
+
+  public Collection<QueryInProgress> getFinishedQueries() {
+    return Collections.unmodifiableCollection(finishedQueries.values());
   }
 
   public QueryInfo createNewQueryJob(QueryContext queryContext, String sql, LogicalRootNode plan) throws Exception {

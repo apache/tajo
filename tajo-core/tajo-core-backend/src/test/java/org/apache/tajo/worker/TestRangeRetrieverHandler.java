@@ -64,7 +64,7 @@ public class TestRangeRetrieverHandler {
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
-  private StorageManager sm;
+  private AbstractStorageManager sm;
   private Schema schema;
   private static int TEST_TUPLE = 10000;
   private FileSystem fs;
@@ -78,7 +78,7 @@ public class TestRangeRetrieverHandler {
     fs = testDir.getFileSystem(conf);
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();
-    sm = StorageManager.get(conf, testDir);
+    sm = StorageManagerFactory.getStorageManager(conf, testDir);
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
@@ -108,7 +108,7 @@ public class TestRangeRetrieverHandler {
 
     Path tableDir = StorageUtil.concatPath(testDir, "testGet", "table.csv");
     fs.mkdirs(tableDir.getParent());
-    Appender appender = sm.getAppender(conf, employeeMeta, tableDir);
+    Appender appender = sm.getAppender(employeeMeta, tableDir);
     appender.init();
 
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
@@ -161,8 +161,10 @@ public class TestRangeRetrieverHandler {
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(
         new Path(testDir, "output/index"), keySchema, comp);
     reader.open();
-    SeekableScanner scanner = (SeekableScanner)
-        sm.getScanner(conf, employeeMeta, StorageUtil.concatPath(testDir, "output", "output"));
+
+    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, employeeMeta,
+        StorageUtil.concatPath(testDir, "output", "output"));
+
     scanner.init();
     int cnt = 0;
     while(scanner.next() != null) {
@@ -220,7 +222,7 @@ public class TestRangeRetrieverHandler {
     TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     Path tablePath = StorageUtil.concatPath(testDir, "testGetFromDescendingOrder", "table.csv");
     fs.mkdirs(tablePath.getParent());
-    Appender appender = sm.getAppender(conf, meta, tablePath);
+    Appender appender = sm.getAppender(meta, tablePath);
     appender.init();
     Tuple tuple = new VTuple(meta.getSchema().getColumnNum());
     for (int i = (TEST_TUPLE - 1); i >= 0 ; i--) {
@@ -271,8 +273,8 @@ public class TestRangeRetrieverHandler {
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(
         new Path(testDir, "output/index"), keySchema, comp);
     reader.open();
-    SeekableScanner scanner = (SeekableScanner) StorageManager.getScanner(
-        conf, meta, StorageUtil.concatPath(testDir, "output", "output"));
+    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, meta,
+        StorageUtil.concatPath(testDir, "output", "output"));
     scanner.init();
     int cnt = 0;
     while(scanner.next() != null) {

@@ -32,8 +32,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.Fragment;
-import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.util.IndexUtil;
 
@@ -42,9 +42,9 @@ import java.io.IOException;
 public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(PhysicalPlannerImpl.class);
   protected final TajoConf conf;
-  protected final StorageManager sm;
+  protected final AbstractStorageManager sm;
 
-  public PhysicalPlannerImpl(final TajoConf conf, final StorageManager sm) {
+  public PhysicalPlannerImpl(final TajoConf conf, final AbstractStorageManager sm) {
     this.conf = conf;
     this.sm = sm;
   }
@@ -227,7 +227,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       return new TunnelExec(ctx, plan.getOutSchema(), subOp);
     }
 
-    return new StoreTableExec(ctx, sm, plan, subOp);
+    return new StoreTableExec(ctx, plan, subOp);
   }
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode)

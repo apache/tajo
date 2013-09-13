@@ -47,7 +47,8 @@ import org.apache.tajo.engine.function.builtin.*;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.master.rm.YarnTajoResourceManager;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -87,7 +88,7 @@ public class TajoMaster extends CompositeService {
 
   private CatalogServer catalogServer;
   private CatalogService catalog;
-  private StorageManager storeManager;
+  private AbstractStorageManager storeManager;
   private GlobalEngine globalEngine;
   private AsyncDispatcher dispatcher;
   private TajoMasterClientService tajoMasterClientService;
@@ -121,7 +122,7 @@ public class TajoMaster extends CompositeService {
 
       // check the system directory and create if they are not created.
       checkAndInitializeSystemDirectories();
-      this.storeManager = new StorageManager(systemConf);
+      this.storeManager = StorageManagerFactory.getStorageManager(systemConf);
 
       catalogServer = new CatalogServer(initBuiltinFunctions());
       addIfService(catalogServer);
@@ -140,7 +141,7 @@ public class TajoMaster extends CompositeService {
       addIfService(tajoMasterService);
 
     } catch (Exception e) {
-       LOG.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
     }
 
     super.init(systemConf);
@@ -157,7 +158,8 @@ public class TajoMaster extends CompositeService {
   }
 
   private void initWebServer() throws Exception {
-    webServer = StaticHttpServer.getInstance(this ,"admin", null, 8080 ,
+    int httpPort = systemConf.getInt("tajo.master.http.port", 8080);
+    webServer = StaticHttpServer.getInstance(this ,"admin", null, httpPort ,
         true, null, context.getConf(), null);
     webServer.start();
   }
@@ -341,7 +343,7 @@ public class TajoMaster extends CompositeService {
     } finally {
       out.close();
     }
-    defaultFS.setReplication(systemConfPath, (short)systemConf.getIntVar(ConfVars.SYSTEM_CONF_REPLICA_COUNT));
+    defaultFS.setReplication(systemConfPath, (short) systemConf.getIntVar(ConfVars.SYSTEM_CONF_REPLICA_COUNT));
   }
 
   @Override
@@ -368,7 +370,7 @@ public class TajoMaster extends CompositeService {
     return this.catalog;
   }
 
-  public StorageManager getStorageManager() {
+  public AbstractStorageManager getStorageManager() {
     return this.storeManager;
   }
 
@@ -407,7 +409,7 @@ public class TajoMaster extends CompositeService {
       return globalEngine;
     }
 
-    public StorageManager getStorageManager() {
+    public AbstractStorageManager getStorageManager() {
       return storeManager;
     }
 

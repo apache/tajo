@@ -31,6 +31,7 @@ public class WorkerResource {
   private int managerPort;
   private int clientPort;
   private int pullServerPort;
+  private int httpPort;
 
   private int diskSlots;
   private int cpuCoreSlots;
@@ -39,6 +40,12 @@ public class WorkerResource {
   private int usedDiskSlots;
   private int usedMemoryMBSlots;
   private int usedCpuCoreSlots;
+
+  private long maxHeap;
+  private long freeHeap;
+  private long totalHeap;
+
+  private int numRunningTasks;
 
   private boolean queryMasterAllocated;
 
@@ -250,5 +257,45 @@ public class WorkerResource {
 
   public void setPullServerPort(int pullServerPort) {
     this.pullServerPort = pullServerPort;
+  }
+
+  public int getHttpPort() {
+    return httpPort;
+  }
+
+  public void setHttpPort(int httpPort) {
+    this.httpPort = httpPort;
+  }
+
+  public long getMaxHeap() {
+    return maxHeap;
+  }
+
+  public void setMaxHeap(long maxHeap) {
+    this.maxHeap = maxHeap;
+  }
+
+  public long getFreeHeap() {
+    return freeHeap;
+  }
+
+  public void setFreeHeap(long freeHeap) {
+    this.freeHeap = freeHeap;
+  }
+
+  public long getTotalHeap() {
+    return totalHeap;
+  }
+
+  public void setTotalHeap(long totalHeap) {
+    this.totalHeap = totalHeap;
+  }
+
+  public int getNumRunningTasks() {
+    return numRunningTasks;
+  }
+
+  public void setNumRunningTasks(int numRunningTasks) {
+    this.numRunningTasks = numRunningTasks;
   }
 }

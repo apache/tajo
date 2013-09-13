@@ -67,6 +67,7 @@
           <systemProperties>
             <tajo.test>TRUE</tajo.test>
           </systemProperties>
+          <argLine>-Xms512m -Xmx1024m</argLine>
         </configuration>
       </plugin>
       <plugin>

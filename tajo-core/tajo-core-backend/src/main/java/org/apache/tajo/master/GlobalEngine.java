@@ -49,7 +49,7 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.querymaster.QueryInfo;
 import org.apache.tajo.master.querymaster.QueryJobManager;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageUtil;
 
 import java.io.IOException;
@@ -65,7 +65,7 @@ public class GlobalEngine extends AbstractService {
   private final static Log LOG = LogFactory.getLog(GlobalEngine.class);
 
   private final MasterContext context;
-  private final StorageManager sm;
+  private final AbstractStorageManager sm;
 
   private SQLAnalyzer analyzer;
   private HiveConverter converter;
@@ -107,7 +107,7 @@ public class GlobalEngine extends AbstractService {
       NoSuchQueryIdException, IllegalQueryStatusException,
       UnknownWorkerException, EmptyClusterException {
 
-    LOG.info("SQL: " + sql);
+    LOG.info(">>>>>SQL: " + sql);
 
     try {
       // setting environment variables

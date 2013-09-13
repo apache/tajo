@@ -21,11 +21,6 @@ package org.apache.tajo.storage;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Options;
 import org.apache.tajo.catalog.Schema;
@@ -38,6 +33,11 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -48,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class TestMergeScanner {
   private TajoConf conf;
-  StorageManager sm;
+  AbstractStorageManager sm;
   private static String TEST_PATH = "target/test-data/TestMergeScanner";
   private Path testDir;
   private StoreType storeType;
@@ -77,7 +77,7 @@ public class TestMergeScanner {
     conf.setVar(ConfVars.ROOT_DIR, TEST_PATH);
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
-    sm = StorageManager.get(conf, testDir);
+    sm = StorageManagerFactory.getStorageManager(conf, testDir);
   }
   
   @Test
@@ -92,7 +92,7 @@ public class TestMergeScanner {
     TableMeta meta = CatalogUtil.newTableMeta(schema, storeType, options);
 
     Path table1Path = new Path(testDir, storeType + "_1.data");
-    Appender appender1 = StorageManager.getAppender(conf, meta, table1Path);
+    Appender appender1 = StorageManagerFactory.getStorageManager(conf).getAppender(meta, table1Path);
     appender1.enableStats();
     appender1.init();
     int tupleNum = 10000;
@@ -114,7 +114,7 @@ public class TestMergeScanner {
     }
 
     Path table2Path = new Path(testDir, storeType + "_2.data");
-    Appender appender2 = StorageManager.getAppender(conf, meta, table2Path);
+    Appender appender2 = StorageManagerFactory.getStorageManager(conf).getAppender(meta, table2Path);
     appender2.enableStats();
     appender2.init();
 

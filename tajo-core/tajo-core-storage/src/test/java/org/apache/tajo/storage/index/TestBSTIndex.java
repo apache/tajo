@@ -21,8 +21,6 @@ package org.apache.tajo.storage.index;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.junit.Before;
-import org.junit.Test;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -32,7 +30,10 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexReader;
 import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexWriter;
+import org.apache.tajo.storage.v2.FileScannerV2;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -73,7 +74,7 @@ public class TestBSTIndex {
     meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     
     Path tablePath = new Path(testDir, "FindValueInCSV.csv");
-    Appender appender  = StorageManager.getAppender(conf, meta, tablePath);
+    Appender appender  = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
     appender.init();
     Tuple tuple;
     for(int i = 0 ; i < TUPLE_NUM; i ++ ) {
@@ -108,8 +109,9 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, meta, tablet, meta.getSchema());
     scanner.init();
+
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -130,8 +132,11 @@ public class TestBSTIndex {
     tuple = new VTuple(keySchema.getColumnNum());
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "FindValueInCSV.idx"), keySchema, comp);
     reader.open();
-    scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    scanner = StorageManagerFactory.getSeekableScanner(conf, meta, tablet, meta.getSchema());
     scanner.init();
+    if(scanner instanceof FileScannerV2) {
+      ((FileScannerV2)scanner).waitScanStart();
+    }
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       tuple.put(0, DatumFactory.createInt8(i));
       tuple.put(1, DatumFactory.createFloat8(i));
@@ -157,7 +162,7 @@ public class TestBSTIndex {
     meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
 
     Path tablePath = new Path(testDir, "BuildIndexWithAppender.csv");
-    FileAppender appender  = (FileAppender) StorageManager.getAppender(conf, meta, tablePath);
+    FileAppender appender  = (FileAppender) StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
     appender.init();
 
     SortSpec [] sortKeys = new SortSpec[2];
@@ -205,8 +210,9 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "BuildIndexWithAppender.idx"),
         keySchema, comp);
     reader.open();
-    SeekableScanner scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, meta, tablet, meta.getSchema());
     scanner.init();
+
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       tuple.put(0, DatumFactory.createInt8(i));
       tuple.put(1, DatumFactory.createFloat8(i));
@@ -232,7 +238,7 @@ public class TestBSTIndex {
     meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     
     Path tablePath = StorageUtil.concatPath(testDir, "FindOmittedValueInCSV.csv");
-    Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
     appender.init();
     Tuple tuple;
     for(int i = 0 ; i < TUPLE_NUM; i += 2 ) {
@@ -265,8 +271,9 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    SeekableScanner scanner  = StorageManagerFactory.getSeekableScanner(conf, meta, tablet, meta.getSchema());
     scanner.init();
+
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -299,7 +306,7 @@ public class TestBSTIndex {
     meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
 
     Path tablePath = new Path(testDir, "FindNextKeyValueInCSV.csv");
-    Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
     appender.init();
     Tuple tuple;
     for(int i = 0 ; i < TUPLE_NUM; i ++ ) {
@@ -332,9 +339,10 @@ public class TestBSTIndex {
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
-    
-    SeekableScanner scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+
+    SeekableScanner scanner  = StorageManagerFactory.getSeekableScanner(conf, meta, tablet, meta.getSchema());
     scanner.init();
+
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -355,8 +363,9 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "FindNextKeyValueInCSV.idx"),
         keySchema, comp);
     reader.open();
-    scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    scanner  = StorageManagerFactory.getSeekableScanner(conf, meta, tablet, meta.getSchema());
     scanner.init();
+
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       keyTuple = new VTuple(2);
@@ -385,7 +394,7 @@ public class TestBSTIndex {
     meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
 
     Path tablePath = new Path(testDir, "FindNextKeyOmittedValueInCSV.csv");
-    Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
     appender.init();
     Tuple tuple;
     for(int i = 0 ; i < TUPLE_NUM; i+=2) {
@@ -419,8 +428,9 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    SeekableScanner scanner  = StorageManagerFactory.getSeekableScanner(conf, meta, tablet, meta.getSchema());
     scanner.init();
+
     Tuple keyTuple;
     long offset;
     while (true) {
@@ -441,8 +451,13 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "FindNextKeyOmittedValueInCSV.idx"),
         keySchema, comp);
     reader.open();
-    scanner  = (SeekableScanner)(StorageManager.getScanner(conf, meta, tablet));
+    scanner  = StorageManagerFactory.getSeekableScanner(conf, meta, tablet, meta.getSchema());
     scanner.init();
+
+    if(scanner instanceof FileScannerV2) {
+      ((FileScannerV2)scanner).waitScanStart();
+    }
+
     Tuple result;
     for(int i = 1 ; i < TUPLE_NUM -1 ; i+=2) {
       keyTuple = new VTuple(2);

@@ -91,7 +91,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(schema, storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+      Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
       appender.enableStats();
       appender.init();
       int tupleNum = 10000;
@@ -115,7 +115,7 @@ public class TestStorages {
       tablets[0] = new Fragment("Splitable", tablePath, meta, 0, randomNum);
       tablets[1] = new Fragment("Splitable", tablePath, meta, randomNum, (fileLen - randomNum));
 
-      Scanner scanner = StorageManager.getScanner(conf, meta, tablets[0], schema);
+      Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, tablets[0], schema);
       scanner.init();
       int tupleCnt = 0;
       while (scanner.next() != null) {
@@ -123,7 +123,7 @@ public class TestStorages {
       }
       scanner.close();
 
-      scanner = StorageManager.getScanner(conf, meta, tablets[1], schema);
+      scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, tablets[1], schema);
       scanner.init();
       while (scanner.next() != null) {
         tupleCnt++;
@@ -144,7 +144,7 @@ public class TestStorages {
     TableMeta meta = CatalogUtil.newTableMeta(schema, storeType);
 
     Path tablePath = new Path(testDir, "testProjection.data");
-    Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
     appender.init();
     int tupleNum = 10000;
     VTuple vTuple;
@@ -164,7 +164,7 @@ public class TestStorages {
     Schema target = new Schema();
     target.addColumn("age", Type.INT8);
     target.addColumn("score", Type.FLOAT4);
-    Scanner scanner = StorageManager.getScanner(conf, meta, fragment, target);
+    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, fragment, target);
     scanner.init();
     int tupleCnt = 0;
     Tuple tuple;
@@ -201,7 +201,7 @@ public class TestStorages {
     TableMeta meta = CatalogUtil.newTableMeta(schema, storeType, options);
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
     appender.init();
 
     Tuple tuple = new VTuple(12);
@@ -225,7 +225,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     Fragment fragment = new Fragment("table", tablePath, meta, 0, status.getLen());
-    Scanner scanner =  StorageManager.getScanner(conf, meta, fragment);
+    Scanner scanner =  StorageManagerFactory.getStorageManager(conf).getScanner(meta, fragment);
     scanner.init();
 
     Tuple retrieved;

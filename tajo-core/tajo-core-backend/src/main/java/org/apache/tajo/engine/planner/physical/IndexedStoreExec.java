@@ -44,7 +44,7 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
   private FileAppender appender;
   private TableMeta meta;
 
-  public IndexedStoreExec(final TaskAttemptContext context, final StorageManager sm,
+  public IndexedStoreExec(final TaskAttemptContext context, final AbstractStorageManager sm,
       final PhysicalExec child, final Schema inSchema, final Schema outSchema,
       final SortSpec[] sortSpecs) throws IOException {
     super(context, inSchema, outSchema, child);
@@ -71,7 +71,7 @@ public class IndexedStoreExec extends UnaryPhysicalExec {
         .newTableMeta(this.outSchema, CatalogProtos.StoreType.CSV);
     FileSystem fs = new RawLocalFileSystem();
     fs.mkdirs(storeTablePath);
-    this.appender = (FileAppender) StorageManager.getAppender(context.getConf(), meta,
+    this.appender = (FileAppender) StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
         new Path(storeTablePath, "output"));
     this.appender.enableStats();
     this.appender.init();

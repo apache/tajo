@@ -22,6 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.conf.TajoConf;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,7 +62,7 @@ public class MergeScanner implements Scanner {
         currentScanner.close();
       }
       currentFragment = iterator.next();
-      currentScanner = StorageManager.getScanner(conf, meta, currentFragment);
+      currentScanner = StorageManagerFactory.getStorageManager((TajoConf)conf).getScanner(meta, currentFragment);
       currentScanner.init();
       return currentScanner.next();
     } else {
@@ -74,7 +75,7 @@ public class MergeScanner implements Scanner {
     iterator = fragments.iterator();
     if (iterator.hasNext()) {
       currentFragment = iterator.next();
-      currentScanner = StorageManager.getScanner(conf, meta, currentFragment);
+      currentScanner = StorageManagerFactory.getStorageManager((TajoConf)conf).getScanner(meta, currentFragment);
     }
   }
 

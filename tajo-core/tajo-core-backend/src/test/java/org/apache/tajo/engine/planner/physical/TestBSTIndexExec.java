@@ -59,7 +59,7 @@ public class TestBSTIndexExec {
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
-  private StorageManager sm;
+  private AbstractStorageManager sm;
   private Schema idxSchema;
   private TupleComparator comp;
   private BSTIndex.BSTIndexWriter writer;
@@ -82,7 +82,7 @@ public class TestBSTIndexExec {
     catalog = util.getMiniCatalogCluster().getCatalog();
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestPhysicalPlanner");
-    sm = StorageManager.get(conf, workDir);
+    sm = StorageManagerFactory.getStorageManager(conf, workDir);
 
     idxPath = new Path(workDir, "test.idx");
 
@@ -108,7 +108,7 @@ public class TestBSTIndexExec {
     fs = tablePath.getFileSystem(conf);
     fs.mkdirs(tablePath.getParent());
 
-    FileAppender appender = (FileAppender)StorageManager.getAppender(conf, meta, tablePath);
+    FileAppender appender = (FileAppender)StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
     appender.init();
     Tuple tuple = new VTuple(meta.getSchema().getColumnNum());
     for (int i = 0; i < 10000; i++) {
@@ -150,7 +150,9 @@ public class TestBSTIndexExec {
 
   @Test
   public void testEqual() throws Exception {
-    
+    if(conf.getBoolean("tajo.storage.manager.v2", false)) {
+      return;
+    }
     this.rndKey = rnd.nextInt(250);
     final String QUERY = "select * from employee where managerId = " + rndKey;
     
@@ -180,7 +182,7 @@ public class TestBSTIndexExec {
   }
 
   private class TmpPlanner extends PhysicalPlannerImpl {
-    public TmpPlanner(TajoConf conf, StorageManager sm) {
+    public TmpPlanner(TajoConf conf, AbstractStorageManager sm) {
       super(conf, sm);
     }
 

@@ -193,23 +193,25 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
   class WorkerResourceAllocationThread extends Thread {
     @Override
     public void run() {
-      LOG.info("====>WorkerResourceAllocationThread start");
+      LOG.info("WorkerResourceAllocationThread start");
       while(!stopped.get()) {
         try {
           WorkerResourceRequest resourceRequest = requestQueue.take();
 
-          LOG.info("====> allocateWorkerResources:" +
-              (new ExecutionBlockId(resourceRequest.request.getExecutionBlockId())) +
-              ", required:" + resourceRequest.request.getNumWorks() +
-              ", queryMasterRequest=" + resourceRequest.queryMasterRequest +
-              ", liveWorkers=" + liveWorkerResources.size());
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("allocateWorkerResources:" +
+                (new ExecutionBlockId(resourceRequest.request.getExecutionBlockId())) +
+                ", required:" + resourceRequest.request.getNumWorks() +
+                ", queryMasterRequest=" + resourceRequest.queryMasterRequest +
+                ", liveWorkers=" + liveWorkerResources.size());
+          }
 
           List<WorkerResource> workerResources = chooseWorkers(false,
               resourceRequest.request.getMemoryMBSlots(),
               resourceRequest.request.getDiskSlots(),
               resourceRequest.request.getNumWorks());
 
-          LOG.debug("====> allocateWorkerResources: allocated:" + workerResources.size());
+          LOG.debug("allocateWorkerResources: allocated:" + workerResources.size());
 
           if(workerResources.size() > 0) {
             if(resourceRequest.queryMasterRequest) {
@@ -239,10 +241,11 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
               }
               LOG.debug("=========================================");
             }
-            requestQueue.add(resourceRequest);
+            requestQueue.put(resourceRequest);
             Thread.sleep(100);
           }
         } catch(InterruptedException ie) {
+          LOG.error(ie);
         }
       }
     }
@@ -334,13 +337,14 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
         queryMasterWorkerResource = queryMasterMap.remove(queryId);
       }
     }
+
     WorkerResource workerResource = new WorkerResource();
     workerResource.copyId(queryMasterWorkerResource);
     workerResource.setMemoryMBSlots(queryMasterMemoryMB);
     workerResource.setDiskSlots(queryMasterDiskSlot);
     workerResource.setCpuCoreSlots(0);
     releaseWorkerResource(queryId, workerResource);
-    LOG.info("released QueryMaster resource:" + queryId + "," + queryMasterWorkerResource);
+    LOG.info("release QueryMaster resource:" + queryId + "," + queryMasterWorkerResource);
   }
 
   public void workerHeartbeat(TajoMasterProtocol.TajoHeartbeat request) {
@@ -354,6 +358,10 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
         WorkerResource workerResource = allWorkerResourceMap.get(hostAndPort);
         workerResource.setLastHeartbeat(System.currentTimeMillis());
         workerResource.setWorkerStatus(WorkerStatus.LIVE);
+        workerResource.setNumRunningTasks(request.getServerStatus().getRunningTaskNum());
+        workerResource.setMaxHeap(request.getServerStatus().getJvmHeap().getMaxHeap());
+        workerResource.setFreeHeap(request.getServerStatus().getJvmHeap().getFreeHeap());
+        workerResource.setTotalHeap(request.getServerStatus().getJvmHeap().getTotalHeap());
       } else {
         WorkerResource workerResource = new WorkerResource();
         workerResource.setAllocatedHost(request.getTajoWorkerHost());
@@ -363,6 +371,7 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
         workerResource.setManagerPort(request.getTajoWorkerPort());
         workerResource.setClientPort(request.getTajoWorkerClientPort());
         workerResource.setPullServerPort(request.getTajoWorkerPullServerPort());
+        workerResource.setHttpPort(request.getTajoWorkerHttpPort());
 
         workerResource.setLastHeartbeat(System.currentTimeMillis());
         workerResource.setWorkerStatus(WorkerStatus.LIVE);
@@ -370,6 +379,10 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
           workerResource.setMemoryMBSlots(request.getServerStatus().getSystem().getTotalMemoryMB());
           workerResource.setCpuCoreSlots(request.getServerStatus().getSystem().getAvailableProcessors());
           workerResource.setDiskSlots(request.getServerStatus().getDiskSlots());
+          workerResource.setNumRunningTasks(request.getServerStatus().getRunningTaskNum());
+          workerResource.setMaxHeap(request.getServerStatus().getJvmHeap().getMaxHeap());
+          workerResource.setFreeHeap(request.getServerStatus().getJvmHeap().getFreeHeap());
+          workerResource.setTotalHeap(request.getServerStatus().getJvmHeap().getTotalHeap());
         } else {
           workerResource.setMemoryMBSlots(4096);
           workerResource.setDiskSlots(4);

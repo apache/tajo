@@ -27,17 +27,18 @@ import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.StorageManagerFactory;
 
 import java.io.IOException;
 
 public class TajoQueryEngine {
-  private final static Log LOG = LogFactory.getLog(TajoQueryEngine.class);
-  private final StorageManager storageManager;
+
+  private final AbstractStorageManager storageManager;
   private final PhysicalPlanner phyPlanner;
 
   public TajoQueryEngine(TajoConf conf) throws IOException {
-    this.storageManager = new StorageManager(conf);
+    this.storageManager = StorageManagerFactory.getStorageManager(conf);
     this.phyPlanner = new PhysicalPlannerImpl(conf, storageManager);
   }
   

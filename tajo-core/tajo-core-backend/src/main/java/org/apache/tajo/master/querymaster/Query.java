@@ -39,14 +39,11 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.master.ExecutionBlockCursor;
 import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.master.event.*;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -61,7 +58,7 @@ public class Query implements EventHandler<QueryEvent> {
   private Map<ExecutionBlockId, SubQuery> subqueries;
   private final EventHandler eventHandler;
   private final MasterPlan plan;
-  private final StorageManager sm;
+  private final AbstractStorageManager sm;
   QueryMasterTask.QueryMasterTaskContext context;
   private ExecutionBlockCursor cursor;
 
@@ -240,6 +237,10 @@ public class Query implements EventHandler<QueryEvent> {
 
   public SubQuery getSubQuery(ExecutionBlockId id) {
     return this.subqueries.get(id);
+  }
+
+  public Collection<SubQuery> getSubQueries() {
+    return Collections.unmodifiableCollection(this.subqueries.values());
   }
 
   public QueryState getState() {

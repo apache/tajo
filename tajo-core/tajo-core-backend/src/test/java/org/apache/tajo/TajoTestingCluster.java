@@ -44,7 +44,6 @@ import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.io.*;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.sql.ResultSet;
@@ -188,6 +187,8 @@ public class TajoTestingCluster {
     this.conf.set("fs.defaultFS", defaultFS.getUri().toString());
     // Do old style too just to be safe.
     this.conf.set("fs.default.name", defaultFS.getUri().toString());
+
+    this.conf.set(TajoConf.ConfVars.ROOT_DIR.name(), defaultFS.getUri() + "/tajo");
 
     return this.dfsCluster;
   }

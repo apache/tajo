@@ -82,6 +82,12 @@ public class TaskRunnerManager extends CompositeService {
     }
   }
 
+  public int getNumTasks() {
+    synchronized(taskRunnerMap) {
+      return taskRunnerMap.size();
+    }
+  }
+
   public void startTask(final String[] params) {
     //TODO change to use event dispatcher
     Thread t = new Thread() {

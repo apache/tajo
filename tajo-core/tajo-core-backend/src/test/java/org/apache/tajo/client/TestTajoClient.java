@@ -22,10 +22,6 @@ import com.google.common.collect.Sets;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.apache.tajo.BackendTestingUtil;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
@@ -33,6 +29,10 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
 import java.util.Set;
@@ -41,7 +41,7 @@ import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestTajoClient {
-  private static TajoTestingCluster util;
+  private static TajoTestingCluster cluster;
   private static TajoConf conf;
   private static TajoClient tajo;
   private static String TEST_PATH = "target/test-data/"
@@ -50,9 +50,9 @@ public class TestTajoClient {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    util = new TajoTestingCluster();
-    util.startMiniCluster(1);
-    conf = util.getConfiguration();
+    cluster = new TajoTestingCluster();
+    cluster.startMiniCluster(1);
+    conf = cluster.getConfiguration();
     Thread.sleep(3000);
     tajo = new TajoClient(conf);
 
@@ -61,7 +61,7 @@ public class TestTajoClient {
 
   @AfterClass
   public static void tearDown() throws Exception {
-    util.shutdownMiniCluster();
+    cluster.shutdownMiniCluster();
     if(tajo != null) {
       tajo.close();
     }
@@ -114,7 +114,7 @@ public class TestTajoClient {
 
   @Test
   public final void testCreateAndDropExternalTableByExecuteQuery() throws IOException, ServiceException {
-    TajoConf conf = util.getConfiguration();
+    TajoConf conf = cluster.getConfiguration();
     final String tableName = "testCreateAndDropExternalTableByExecuteQuery";
 
     BackendTestingUtil.writeTmpTable(conf, "file:///tmp", tableName, false);
@@ -135,7 +135,7 @@ public class TestTajoClient {
 
   @Test
   public final void testCreateAndDropTableByExecuteQuery() throws IOException, ServiceException {
-    TajoConf conf = util.getConfiguration();
+    TajoConf conf = cluster.getConfiguration();
     final String tableName = "testCreateAndDropTableByExecuteQuery";
 
     assertFalse(tajo.existTable(tableName));
@@ -145,8 +145,8 @@ public class TestTajoClient {
     tajo.updateQuery(tql);
     assertTrue(tajo.existTable(tableName));
 
-    FileSystem hdfs = FileSystem.get(conf);
     Path tablePath = tajo.getTableDesc(tableName).getPath();
+    FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
     tajo.updateQuery("drop table " + tableName);
@@ -156,7 +156,7 @@ public class TestTajoClient {
 
   @Test
   public final void testDDLByExecuteQuery() throws IOException, ServiceException {
-    TajoConf conf = util.getConfiguration();
+    TajoConf conf = cluster.getConfiguration();
     final String tableName = "testDDLByExecuteQuery";
     BackendTestingUtil.writeTmpTable(conf, "file:///tmp", tableName, false);
 

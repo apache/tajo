@@ -32,7 +32,7 @@ import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.master.ExecutionBlock.PartitionType;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
@@ -47,11 +47,11 @@ public class GlobalPlanner {
   private static Log LOG = LogFactory.getLog(GlobalPlanner.class);
 
   private TajoConf conf;
-  private StorageManager sm;
+  private AbstractStorageManager sm;
   private QueryId queryId;
 
   public GlobalPlanner(final TajoConf conf,
-                       final StorageManager sm,
+                       final AbstractStorageManager sm,
                        final EventHandler eventHandler)
       throws IOException {
     this.conf = conf;

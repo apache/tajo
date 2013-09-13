@@ -55,6 +55,7 @@ public class ProjectionExec extends UnaryPhysicalExec {
   @Override
   public Tuple next() throws IOException {
     Tuple tuple = child.next();
+
     if (tuple ==  null) {
       return null;
     }

@@ -66,7 +66,7 @@ public class TestGlobalQueryPlanner {
   private static LogicalPlanner logicalPlanner;
   private static LogicalOptimizer optimizer;
   private static QueryId queryId;
-  private static StorageManager sm;
+  private static AbstractStorageManager sm;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -89,7 +89,7 @@ public class TestGlobalQueryPlanner {
       catalog.registerFunction(funcDesc);
     }
 
-    sm = new StorageManager(util.getConfiguration());
+    sm = StorageManagerFactory.getStorageManager(util.getConfiguration());
     FunctionDesc funcDesc = new FunctionDesc("sumtest", TestSum.class, FunctionType.GENERAL,
         CatalogUtil.newDataTypesWithoutLen(Type.INT4),
         CatalogUtil.newDataTypesWithoutLen(Type.INT4));
@@ -100,7 +100,7 @@ public class TestGlobalQueryPlanner {
     dispatcher.init(conf);
     dispatcher.start();
 
-    planner = new GlobalPlanner(conf, new StorageManager(conf),
+    planner = new GlobalPlanner(conf, sm,
         dispatcher.getEventHandler());
     analyzer = new SQLAnalyzer();
     logicalPlanner = new LogicalPlanner(catalog);
@@ -124,7 +124,7 @@ public class TestGlobalQueryPlanner {
         fs.delete(tablePath.getParent(), true);
       }
       fs.mkdirs(tablePath.getParent());
-      appender = StorageManager.getAppender(conf, meta, tablePath);
+      appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
       appender.init();
       tupleNum = 100;
       for (j = 0; j < tupleNum; j++) {

@@ -105,7 +105,7 @@ public class TestCompressionStorages {
     meta.putOption("compression.codec", BZip2Codec.class.getCanonicalName());
 
     Path tablePath = new Path(testDir, "SplitCompression");
-    Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
     appender.enableStats();
 
     appender.init();
@@ -138,7 +138,7 @@ public class TestCompressionStorages {
     tablets[0] = new Fragment("SplitCompression", tablePath, meta, 0, randomNum);
     tablets[1] = new Fragment("SplitCompression", tablePath, meta, randomNum, (fileLen - randomNum));
 
-    Scanner scanner = StorageManager.getScanner(conf, meta, tablets[0], schema);
+    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, tablets[0], schema);
     scanner.init();
     int tupleCnt = 0;
     Tuple tuple;
@@ -147,7 +147,7 @@ public class TestCompressionStorages {
     }
     scanner.close();
 
-    scanner = StorageManager.getScanner(conf, meta, tablets[1], schema);
+    scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, tablets[1], schema);
     scanner.init();
     while ((tuple = scanner.next()) != null) {
       tupleCnt++;
@@ -167,7 +167,7 @@ public class TestCompressionStorages {
 
     String fileName = "Compression_" + codec.getSimpleName();
     Path tablePath = new Path(testDir, fileName);
-    Appender appender = StorageManager.getAppender(conf, meta, tablePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
     appender.enableStats();
 
     appender.init();
@@ -196,7 +196,7 @@ public class TestCompressionStorages {
     Fragment[] tablets = new Fragment[1];
     tablets[0] = new Fragment(fileName, tablePath, meta, 0, fileLen);
 
-    Scanner scanner = StorageManager.getScanner(conf, meta, tablets[0], schema);
+    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, tablets[0], schema);
     scanner.init();
     int tupleCnt = 0;
     Tuple tuple;

@@ -19,13 +19,9 @@
 package org.apache.tajo.storage;
 
 import com.google.common.collect.Sets;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -35,10 +31,14 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.util.FileUtil;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Set;
@@ -46,20 +46,20 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 
 public class TestRowFile {
-  private TajoTestingCluster util;
-  private Configuration conf;
+  private TajoTestingCluster cluster;
+  private TajoConf conf;
 
   @Before
   public void setup() throws Exception {
-    util = new TajoTestingCluster();
-    conf = util.getConfiguration();
+    cluster = new TajoTestingCluster();
+    conf = cluster.getConfiguration();
     conf.setInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname, 100);
-    util.startMiniDFSCluster(1);
+    cluster.startMiniDFSCluster(1);
   }
 
   @After
   public void teardown() throws Exception {
-    util.shutdownMiniDFSCluster();
+    cluster.shutdownMiniDFSCluster();
   }
 
   @Test
@@ -71,15 +71,18 @@ public class TestRowFile {
 
     TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.ROWFILE);
 
-    Path tablePath = new Path("hdfs:///test");
+    AbstractStorageManager sm = StorageManagerFactory.getStorageManager(conf,
+        new Path(conf.get(TajoConf.ConfVars.ROOT_DIR.name())));
+
+    Path tablePath = new Path("/test");
     Path metaPath = new Path(tablePath, ".meta");
     Path dataPath = new Path(tablePath, "test.tbl");
-    FileSystem fs = tablePath.getFileSystem(conf);
+    FileSystem fs = sm.getFileSystem();
     fs.mkdirs(tablePath);
 
-    FileUtil.writeProto(util.getDefaultFileSystem(), metaPath, meta.getProto());
+    FileUtil.writeProto(fs, metaPath, meta.getProto());
 
-    Appender appender = StorageManager.getAppender(conf, meta, dataPath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, dataPath);
     appender.enableStats();
     appender.init();
 
@@ -96,7 +99,6 @@ public class TestRowFile {
       tuple.put(2, stringDatum);
       appender.addTuple(tuple);
       idSet.add(i+1);
-//      System.out.println(tuple.toString());
     }
 
     long end = System.currentTimeMillis();
@@ -105,21 +107,20 @@ public class TestRowFile {
     TableStat stat = appender.getStats();
     assertEquals(tupleNum, stat.getNumRows().longValue());
 
-    System.out.println("append time: " + (end-start));
+    System.out.println("append time: " + (end - start));
 
     FileStatus file = fs.getFileStatus(dataPath);
     TableProto proto = (TableProto) FileUtil.loadProto(
-        util.getDefaultFileSystem(), metaPath, TableProto.getDefaultInstance());
+        cluster.getDefaultFileSystem(), metaPath, TableProto.getDefaultInstance());
     meta = new TableMetaImpl(proto);
     Fragment fragment = new Fragment("test.tbl", dataPath, meta, 0, file.getLen());
 
     int tupleCnt = 0;
     start = System.currentTimeMillis();
-    Scanner scanner = StorageManager.getScanner(conf, meta, fragment);
+    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, fragment);
     scanner.init();
     while ((tuple=scanner.next()) != null) {
       tupleCnt++;
-//      System.out.println(tuple.toString());
     }
     scanner.close();
     end = System.currentTimeMillis();

@@ -22,22 +22,19 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.*;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.storage.Appender;
-import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
 import java.sql.ResultSetMetaData;
@@ -49,8 +46,8 @@ import static org.junit.Assert.*;
 public class TestResultSetImpl {
   private static TajoTestingCluster util;
   private static TajoConf conf;
-  private static StorageManager sm;
   private static TableDesc desc;
+  private static AbstractStorageManager sm;
   private static TableMeta scoreMeta;
 
   @BeforeClass
@@ -58,7 +55,7 @@ public class TestResultSetImpl {
     util = new TajoTestingCluster();
     util.startMiniCluster(3);
     conf = util.getConfiguration();
-    sm = new StorageManager(conf);
+    sm = StorageManagerFactory.getStorageManager(conf);
 
     Schema scoreSchema = new Schema();
     scoreSchema.addColumn("deptname", Type.TEXT);
@@ -68,7 +65,7 @@ public class TestResultSetImpl {
 
     Path p = sm.getTablePath("score");
     sm.getFileSystem().mkdirs(p);
-    Appender appender = StorageManager.getAppender(conf, scoreMeta, new Path(p, "score"));
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(scoreMeta, new Path(p, "score"));
     appender.init();
     int deptSize = 100;
     int tupleNum = 10000;

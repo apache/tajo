@@ -21,21 +21,19 @@
  */
 package org.apache.tajo;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.IOException;
-import java.util.UUID;
 
 public class BackendTestingUtil {
 	public final static Schema mockupSchema;
@@ -51,7 +49,7 @@ public class BackendTestingUtil {
   public static void writeTmpTable(TajoConf conf, Path path,
                                    String tableName, boolean writeMeta)
       throws IOException {
-    StorageManager sm = StorageManager.get(conf, path);
+    AbstractStorageManager sm = StorageManagerFactory.getStorageManager(conf, path);
     FileSystem fs = sm.getFileSystem();
     Appender appender;
 
@@ -64,7 +62,7 @@ public class BackendTestingUtil {
     if (writeMeta) {
       FileUtil.writeProto(fs, new Path(tablePath.getParent(), ".meta"), mockupMeta.getProto());
     }
-    appender = StorageManager.getAppender(conf, mockupMeta, tablePath);
+    appender = StorageManagerFactory.getStorageManager(conf).getAppender(mockupMeta, tablePath);
     appender.init();
 
     int deptSize = 10000;
@@ -85,28 +83,6 @@ public class BackendTestingUtil {
     writeTmpTable(conf, new Path(parent), tableName, writeMeta);
 	}
 
-  private TajoConf conf;
-  private CatalogService catalog;
-  private SQLAnalyzer analyzer;
-  private LogicalPlanner planner;
-  private LogicalOptimizer optimizer;
-
   public BackendTestingUtil(TajoConf conf) throws IOException {
-    this.conf = conf;
-    this.catalog = new LocalCatalogWrapper(conf);
-    analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer();
-  }
-
-  public static Path createTmpTestDir() throws IOException {
-    String randomStr = UUID.randomUUID().toString();
-    FileSystem fs = FileSystem.getLocal(new Configuration());
-    Path dir = new Path("target/test-data", randomStr);
-    // Have it cleaned up on exit
-    if (fs.exists(dir)) {
-      fs.delete(dir, true);
-    }
-    return dir;
   }
 }

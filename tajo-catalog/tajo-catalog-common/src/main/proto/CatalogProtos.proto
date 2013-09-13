@@ -88,6 +88,8 @@ message FragmentProto {
 	required TableProto meta = 5;
 	optional TableStatProto stat = 6;
   optional bool distCached = 7 [default = false];
+  repeated string hosts = 8;
+  repeated int32 diskIds = 9;
 }
 
 message TableProto {

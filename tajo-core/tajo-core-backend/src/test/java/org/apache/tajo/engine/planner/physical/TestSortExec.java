@@ -50,7 +50,7 @@ public class TestSortExec {
   private static SQLAnalyzer analyzer;
   private static LogicalPlanner planner;
   private static LogicalOptimizer optimizer;
-  private static StorageManager sm;
+  private static AbstractStorageManager sm;
   private static TajoTestingCluster util;
   private static Path workDir;
   private static Path tablePath;
@@ -64,7 +64,7 @@ public class TestSortExec {
     util = new TajoTestingCluster();
     catalog = util.startCatalogCluster().getCatalog();
     workDir = CommonTestingUtil.getTestDir(TEST_PATH);
-    sm = StorageManager.get(conf, workDir);
+    sm = StorageManagerFactory.getStorageManager(conf, workDir);
 
     Schema schema = new Schema();
     schema.addColumn("managerId", Type.INT4);
@@ -76,7 +76,7 @@ public class TestSortExec {
     tablePath = StorageUtil.concatPath(workDir, "employee", "table1");
     sm.getFileSystem().mkdirs(tablePath.getParent());
 
-    Appender appender = StorageManager.getAppender(conf, employeeMeta, tablePath);
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, tablePath);
     appender.init();
     Tuple tuple = new VTuple(employeeMeta.getSchema().getColumnNum());
     for (int i = 0; i < 100; i++) {

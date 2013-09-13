@@ -36,13 +36,11 @@ import org.apache.tajo.master.GlobalPlanner;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.worker.TajoWorker;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 // TODO - when exception, send error status to QueryJobManager
@@ -59,7 +57,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private GlobalOptimizer globalOptimizer;
 
-  private StorageManager storageManager;
+  private AbstractStorageManager storageManager;
 
   private TajoConf systemConf;
 
@@ -93,7 +91,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       this.dispatcher = new TajoAsyncDispatcher("querymaster_" + System.currentTimeMillis());
       addIfService(dispatcher);
 
-      this.storageManager = new StorageManager(systemConf);
+      this.storageManager = StorageManagerFactory.getStorageManager(systemConf);
 
       globalPlanner = new GlobalPlanner(systemConf, storageManager, dispatcher.getEventHandler());
       globalOptimizer = new GlobalOptimizer();
@@ -185,6 +183,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
     return this.queryMasterContext;
   }
 
+  public Collection<QueryMasterTask> getQueryMasterTasks() {
+    return queryMasterTasks.values();
+  }
+
   public class QueryMasterContext {
     private TajoConf conf;
 
@@ -204,7 +206,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       return clock;
     }
 
-    public StorageManager getStorageManager() {
+    public AbstractStorageManager getStorageManager() {
       return storageManager;
     }
 
@@ -272,7 +274,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
     public void run() {
       LOG.info("Start QueryMaster heartbeat thread");
       while(!queryMasterStop.get()) {
-        //TODO report all query status
         List<QueryMasterTask> tempTasks = new ArrayList<QueryMasterTask>();
         synchronized(queryMasterTasks) {
           tempTasks.addAll(queryMasterTasks.values());
@@ -285,6 +286,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
                 .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
                 .setState(eachTask.getState())
                 .setQueryId(eachTask.getQueryId().getProto())
+                .setQueryProgress(eachTask.getQuery().getProgress())
+                .setQueryFinishTime(eachTask.getQuery().getFinishTime())
                 .build();
 
             workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeat, NullCallback.get());
@@ -318,15 +321,17 @@ public class QueryMaster extends CompositeService implements EventHandler {
         }
 
         for(QueryMasterTask eachTask: tempTasks) {
-          try {
-            long lastHeartbeat = eachTask.getLastClientHeartbeat();
-            long time = System.currentTimeMillis() - lastHeartbeat;
-            if(lastHeartbeat > 0 && time > QUERY_SESSION_TIMEOUT) {
-              LOG.warn("Query " + eachTask.getQueryId() + " stopped cause query sesstion timeout: " + time + " ms");
-              eachTask.expiredSessionTimeout();
+          if(!eachTask.isStopped()) {
+            try {
+              long lastHeartbeat = eachTask.getLastClientHeartbeat();
+              long time = System.currentTimeMillis() - lastHeartbeat;
+              if(lastHeartbeat > 0 && time > QUERY_SESSION_TIMEOUT) {
+                LOG.warn("Query " + eachTask.getQueryId() + " stopped cause query sesstion timeout: " + time + " ms");
+                eachTask.expiredSessionTimeout();
+              }
+            } catch (Exception e) {
+              LOG.error(eachTask.getQueryId() + ":" + e.getMessage(), e);
             }
-          } catch (Exception e) {
-            LOG.error(eachTask.getQueryId() + ":" + e.getMessage(), e);
           }
         }
       }

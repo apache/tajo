@@ -235,6 +235,8 @@ public class QueryInProgress extends CompositeService {
       this.queryInfo.setQueryMasterResource(queryInfo.getQueryMasterResource());
     }
     this.queryInfo.setQueryState(queryInfo.getQueryState());
+    this.queryInfo.setProgress(queryInfo.getProgress());
+    this.queryInfo.setFinishTime(queryInfo.getFinishTime());
 
     if(queryInfo.getLastMessage() != null && !queryInfo.getLastMessage().isEmpty()) {
       this.queryInfo.setLastMessage(queryInfo.getLastMessage());

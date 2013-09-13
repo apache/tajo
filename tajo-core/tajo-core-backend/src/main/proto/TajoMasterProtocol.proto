@@ -42,10 +42,18 @@ message ServerStatusProto {
         required int64 freeSpace = 3;
         required int64 usableSpace = 4;
     }
+
+    message JvmHeap {
+        required int64 maxHeap = 1;
+        required int64 totalHeap = 2;
+        required int64 freeHeap = 3;
+    }
+
     required System system = 1;
     required int32 diskSlots = 2;
     repeated Disk disk = 3;
     required int32 runningTaskNum = 4;
+    required JvmHeap jvmHeap = 5;
 }
 
 message TajoHeartbeat {
@@ -57,6 +65,9 @@ message TajoHeartbeat {
   optional QueryState state = 6;
   optional string statusMessage = 7;
   optional int32 tajoWorkerPullServerPort = 8;
+  optional int32 tajoWorkerHttpPort = 9;
+  optional float queryProgress = 10;
+  optional int64 queryFinishTime = 11;
 }
 
 message TajoHeartbeatResponse {

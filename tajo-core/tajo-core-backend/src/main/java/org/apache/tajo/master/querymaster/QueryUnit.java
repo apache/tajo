@@ -75,6 +75,9 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   private int failedAttempts;
   private int finishedAttempts; // finish are total of success, failed and killed
 
+  private long launchTime;
+  private long finishTime;
+
   private static final StateMachineFactory
       <QueryUnit, TaskState, TaskEventType, TaskEvent> stateMachineFactory =
       new StateMachineFactory
@@ -84,7 +87,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
           TaskEventType.T_SCHEDULE, new InitialScheduleTransition())
 
        .addTransition(TaskState.SCHEDULED, TaskState.RUNNING,
-           TaskEventType.T_ATTEMPT_LAUNCHED)
+           TaskEventType.T_ATTEMPT_LAUNCHED, new AttemptLaunchedTransition())
 
         .addTransition(TaskState.RUNNING, TaskState.RUNNING,
            TaskEventType.T_ATTEMPT_LAUNCHED)
@@ -186,7 +189,11 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     this.fragMap.put(fragment.getName(), fragment);
     setDataLocations(fragment);
   }
-	
+
+  public String getSucceededHost() {
+    return succeededHost;
+  }
+
 	public void addFetch(String tableId, String uri) throws URISyntaxException {
 	  this.addFetch(tableId, new URI(uri));
 	}
@@ -317,7 +324,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     return this.attempts.get(this.lastAttemptId);
   }
 
-  protected QueryUnitAttempt getSuccessfulAttempt() {
+  public QueryUnitAttempt getSuccessfulAttempt() {
     readLock.lock();
     try {
       if (null == successfulAttempt) {
@@ -339,6 +346,22 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     @Override
     public void transition(QueryUnit task, TaskEvent taskEvent) {
       task.addAndScheduleAttempt();
+    }
+  }
+
+  public long getLaunchTime() {
+    return launchTime;
+  }
+
+  public long getFinishTime() {
+    return finishTime;
+  }
+
+  public long getRunningTime() {
+    if(finishTime > 0) {
+      return finishTime - launchTime;
+    } else {
+      return System.currentTimeMillis() - launchTime;
     }
   }
 
@@ -385,11 +408,21 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
       QueryUnitAttempt attempt = task.attempts.get(
           attemptEvent.getTaskAttemptId());
+
       task.successfulAttempt = attemptEvent.getTaskAttemptId();
       task.succeededHost = attempt.getHost();
+      task.finishTime = System.currentTimeMillis();
       task.succeededPullServerPort = attempt.getPullServerPort();
       task.eventHandler.handle(new SubQueryTaskEvent(event.getTaskId(),
           SubQueryEventType.SQ_TASK_COMPLETED));
+    }
+  }
+
+  private static class AttemptLaunchedTransition implements SingleArcTransition<QueryUnit, TaskEvent> {
+    @Override
+    public void transition(QueryUnit task,
+                           TaskEvent event) {
+      task.launchTime = System.currentTimeMillis();
     }
   }
 

@@ -93,6 +93,8 @@ public class TajoWorker extends CompositeService {
 
   private AtomicInteger numClusterSlots = new AtomicInteger();
 
+  private int httpPort;
+
   public TajoWorker(String daemonMode) throws Exception {
     super(TajoWorker.class.getName());
     this.daemonMode = daemonMode;
@@ -114,7 +116,6 @@ public class TajoWorker extends CompositeService {
     if(resourceManagerClassName.indexOf(TajoWorkerResourceManager.class.getName()) >= 0) {
       randomPort = false;
     }
-    int infoPort = tajoConf.getInt("tajo.worker.info.port", 8090);
     int clientPort = tajoConf.getInt("tajo.worker.client.rpc.port", 8091);
     int managerPort = tajoConf.getInt("tajo.worker.manager.rpc.port", 8092);
 
@@ -123,14 +124,6 @@ public class TajoWorker extends CompositeService {
       managerPort = 0;
       tajoConf.setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname, 0);
       //infoPort = 0;
-    }
-    try {
-      //TODO WebServer port configurable
-      webServer = StaticHttpServer.getInstance(this, "admin", null, infoPort,
-          true, null, tajoConf, null);
-      webServer.start();
-    } catch (Exception e) {
-      LOG.error("Can' start info http server:" + e.getMessage(), e);
     }
 
     if(!"qm".equals(daemonMode)) {
@@ -149,12 +142,31 @@ public class TajoWorker extends CompositeService {
 
       tajoWorkerManagerService = new TajoWorkerManagerService(workerContext, managerPort);
       addService(tajoWorkerManagerService);
-      LOG.info("Tajo worker started: mode=" + daemonMode + ", clientPort=" + clientPort + ", managerPort=" + managerPort);
+      LOG.info("Tajo worker started: mode=" + daemonMode + ", clientPort=" + clientPort + ", managerPort="
+          + managerPort);
+
+      try {
+        httpPort = tajoConf.getInt("tajo.worker.http.port", 28080);
+        webServer = StaticHttpServer.getInstance(this ,"worker", null, httpPort ,
+            true, null, tajoConf, null);
+        webServer.start();
+        httpPort = webServer.getPort();
+        LOG.info("Worker info server started:" + httpPort);
+      } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+      }
+      LOG.info("Tajo worker started: mode=" + daemonMode + ", clientPort=" + clientPort + ", managerPort="
+          + managerPort);
+
     } else {
       LOG.info("Tajo worker started: mode=" + daemonMode);
     }
 
     super.init(conf);
+  }
+
+  public WorkerContext getWorkerContext() {
+    return workerContext;
   }
 
   @Override
@@ -187,6 +199,12 @@ public class TajoWorker extends CompositeService {
       tajoMasterRpc.close();
     }
 
+    if(webServer != null) {
+      try {
+        webServer.stop();
+      } catch (Exception e) {
+      }
+    }
     super.stop();
     LOG.info("TajoWorker main thread exiting");
   }
@@ -220,6 +238,9 @@ public class TajoWorker extends CompositeService {
       return pullService;
     }
 
+    public String getWorkerName() {
+      return getTajoWorkerManagerService().getHostAndPort();
+    }
     public void stopWorker(boolean force) {
       stop();
       if(force) {
@@ -371,18 +392,26 @@ public class TajoWorker extends CompositeService {
                 .build());
           }
         }
-        TajoMasterProtocol.ServerStatusProto serverStatus = TajoMasterProtocol.ServerStatusProto.newBuilder()
-            .addAllDisk(diskInfos)
-            .setRunningTaskNum(0)   //TODO
-            .setSystem(systemInfo)
-            .setDiskSlots(workerDiskSlots)
+        TajoMasterProtocol.ServerStatusProto.JvmHeap jvmHeap =
+          TajoMasterProtocol.ServerStatusProto.JvmHeap.newBuilder()
+            .setMaxHeap(Runtime.getRuntime().maxMemory())
+            .setFreeHeap(Runtime.getRuntime().freeMemory())
+            .setTotalHeap(Runtime.getRuntime().totalMemory())
             .build();
 
+        TajoMasterProtocol.ServerStatusProto serverStatus = TajoMasterProtocol.ServerStatusProto.newBuilder()
+            .addAllDisk(diskInfos)
+            .setRunningTaskNum(taskRunnerManager == null ? 1 : taskRunnerManager.getNumTasks())   //TODO
+            .setSystem(systemInfo)
+            .setDiskSlots(workerDiskSlots)
+            .setJvmHeap(jvmHeap)
+            .build();
 
         TajoMasterProtocol.TajoHeartbeat heartbeatProto = TajoMasterProtocol.TajoHeartbeat.newBuilder()
             .setTajoWorkerHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName())
             .setTajoWorkerPort(workerContext.getTajoWorkerManagerService().getBindAddr().getPort())
             .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
+            .setTajoWorkerHttpPort(httpPort)
             .setTajoWorkerPullServerPort(pullServerPort)
             .setServerStatus(serverStatus)
             .build();

@@ -128,10 +128,10 @@ public class TajoWorkerManagerService extends CompositeService
           queryMasterTask.getQueryTaskContext().getResourceAllocator().makeContainerId(request.getContainerId());
 
       if(queryMasterTask == null || queryMasterTask.isStopped()) {
-        LOG.info("getTask:" + cid + ", ebId:" + ebId + ", but query is finished.");
+        LOG.debug("getTask:" + cid + ", ebId:" + ebId + ", but query is finished.");
         done.run(TaskSchedulerImpl.stopTaskRunnerReq);
       } else {
-        LOG.info("getTask:" + cid + ", ebId:" + ebId);
+        LOG.debug("getTask:" + cid + ", ebId:" + ebId);
         queryMasterTask.handleTaskRequestEvent(new TaskRequestEvent(cid, ebId, done));
       }
     } catch (Exception e) {

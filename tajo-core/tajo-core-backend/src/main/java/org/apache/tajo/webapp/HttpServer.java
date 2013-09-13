@@ -88,13 +88,15 @@ public class HttpServer {
 
     final String appDir = getWebAppsPath(name);
     ContextHandlerCollection contexts = new ContextHandlerCollection();
-    webServer.setHandler(contexts);
 
     webAppContext = new WebAppContext();
     webAppContext.setDisplayName(name);
     webAppContext.setContextPath("/");
-    webAppContext.setWar(appDir + "/" + name);
-    webServer.addHandler(webAppContext);
+    webAppContext.setResourceBase(appDir + "/" + name);
+    webAppContext.setDescriptor(appDir + "/" + name + "/WEB-INF/web.xml");
+
+    contexts.addHandler(webAppContext);
+    webServer.setHandler(contexts);
 
     addDefaultApps(contexts, appDir, conf);
   }
@@ -236,11 +238,10 @@ public class HttpServer {
     }
   }
   
-  protected String getWebAppsPath(String appName) throws FileNotFoundException {
-    URL url = getClass().getClassLoader().getResource("webapps/" + appName);
+  protected String getWebAppsPath(String name) throws FileNotFoundException {
+    URL url = getClass().getClassLoader().getResource("webapps/" + name);
     if (url == null) {
-      throw new FileNotFoundException("webapps/" + appName
-          + " not found in CLASSPATH");
+      throw new FileNotFoundException("webapps/" + name + " not found in CLASSPATH");
     }
     String urlString = url.toString();
     return urlString.substring(0, urlString.lastIndexOf('/'));

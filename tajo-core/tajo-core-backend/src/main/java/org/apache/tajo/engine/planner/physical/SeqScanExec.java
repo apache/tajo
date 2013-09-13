@@ -46,7 +46,7 @@ public class SeqScanExec extends PhysicalExec {
   private Projector projector;
   private EvalContext [] evalContexts;
 
-  public SeqScanExec(TaskAttemptContext context, StorageManager sm,
+  public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm,
                      ScanNode plan, Fragment[] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 
@@ -91,8 +91,8 @@ public class SeqScanExec extends PhysicalExec {
       this.scanner = new MergeScanner(context.getConf(), fragments[0].getMeta(),
           TUtil.newList(fragments));
     } else {
-      this.scanner = StorageManager.getScanner(context.getConf(), fragments[0].getMeta(),
-          fragments[0], projected);
+      this.scanner = StorageManagerFactory.getStorageManager(
+          context.getConf()).getScanner(fragments[0].getMeta(), fragments[0], projected);
     }
 
     scanner.init();

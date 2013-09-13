@@ -79,7 +79,7 @@ public class TestGlobalQueryOptimizer {
 
     conf = new TajoConf(util.getConfiguration());
     catalog = util.getMiniCatalogCluster().getCatalog();
-    StorageManager sm = new StorageManager(util.getConfiguration());
+    AbstractStorageManager sm = StorageManagerFactory.getStorageManager(util.getConfiguration());
     FunctionDesc funcDesc = new FunctionDesc("sumtest", TestSum.class, FunctionType.GENERAL,
         CatalogUtil.newDataTypesWithoutLen(Type.INT4),
         CatalogUtil.newDataTypesWithoutLen(Type.INT4));
@@ -88,7 +88,7 @@ public class TestGlobalQueryOptimizer {
 
     AsyncDispatcher dispatcher = new AsyncDispatcher();
 
-    planner = new GlobalPlanner(conf, new StorageManager(conf),
+    planner = new GlobalPlanner(conf, sm,
         dispatcher.getEventHandler());
     analyzer = new SQLAnalyzer();
     logicalPlanner = new LogicalPlanner(catalog);
@@ -112,7 +112,7 @@ public class TestGlobalQueryOptimizer {
         fs.delete(tablePath.getParent(), true);
       }
       fs.mkdirs(tablePath.getParent());
-      appender = StorageManager.getAppender(conf, meta, tablePath);
+      appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
       appender.init();
       tupleNum = 100;
       for (j = 0; j < tupleNum; j++) {

@@ -33,10 +33,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
-import org.apache.tajo.storage.Appender;
-import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.*;
 
 import java.io.IOException;
 import java.text.NumberFormat;
@@ -64,7 +61,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
   private final Path storeTablePath;
   private final Map<Integer, Appender> appenderMap = new HashMap<Integer, Appender>();
   
-  public PartitionedStoreExec(TaskAttemptContext context, final StorageManager sm,
+  public PartitionedStoreExec(TaskAttemptContext context, final AbstractStorageManager sm,
       final StoreTableNode plan, final PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     Preconditions.checkArgument(plan.hasPartitionKey());
@@ -101,7 +98,7 @@ public final class PartitionedStoreExec extends UnaryPhysicalExec {
         FileStatus status = fs.getFileStatus(dataFile);
         LOG.info("File size: " + status.getLen());
       }
-      appender = StorageManager.getAppender(context.getConf(), meta, dataFile);
+      appender = StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta, dataFile);
       appender.enableStats();
       appender.init();
       appenderMap.put(partition, appender);

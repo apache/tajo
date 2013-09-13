@@ -23,15 +23,17 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.storage.json.StorageGsonHelper;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, GsonObject {
   protected FragmentProto.Builder builder = null;
@@ -44,8 +46,8 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
   @Expose private boolean distCached = false; // optional
 
   private String[] hosts; // Datanode hostnames
-  private int[] hostsBlockCount; // list of block count of hosts
-  private int[] diskIds;
+  @Expose private int[] hostsBlockCount; // list of block count of hosts
+  @Expose private int[] diskIds;
 
   public Fragment() {
     builder = FragmentProto.newBuilder();
@@ -53,13 +55,13 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
 
   public Fragment(String tableName, Path uri, TableMeta meta, BlockLocation blockLocation, int[] diskIds) throws IOException {
     this();
-    TableMeta newMeta = new TableMetaImpl(meta.getProto());
+    //TableMeta newMeta = new TableMetaImpl(meta.getProto());
+    TableMeta newMeta = meta;
     SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(tableName, meta
         .getSchema().getProto());
     newMeta.setSchema(new Schema(newSchemaProto));
-    this.set(tableName, uri, newMeta, blockLocation.getOffset(), blockLocation.getLength());
-    this.hosts = blockLocation.getHosts();
-    this.diskIds = diskIds;
+    this.set(tableName, uri, newMeta, blockLocation.getOffset(), blockLocation.getLength(),
+        blockLocation.getHosts(), diskIds);
   }
 
   // Non splittable
@@ -69,7 +71,7 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(tableName, meta
         .getSchema().getProto());
     newMeta.setSchema(new Schema(newSchemaProto));
-    this.set(tableName, uri, newMeta, start, length);
+    this.set(tableName, uri, newMeta, start, length, null, null);
     this.hosts = hosts;
     this.hostsBlockCount = hostsBlockCount;
   }
@@ -80,26 +82,35 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     SchemaProto newSchemaProto = CatalogUtil.getQualfiedSchema(fragmentId, meta
         .getSchema().getProto());
     newMeta.setSchema(new Schema(newSchemaProto));
-    this.set(fragmentId, path, newMeta, start, length);
+    this.set(fragmentId, path, newMeta, start, length, null, null);
   }
 
   public Fragment(FragmentProto proto) {
     this();
     TableMeta newMeta = new TableMetaImpl(proto.getMeta());
+    int[] diskIds = new int[proto.getDiskIdsList().size()];
+    int i = 0;
+    for(Integer eachValue: proto.getDiskIdsList()) {
+      diskIds[i++] = eachValue;
+    }
     this.set(proto.getId(), new Path(proto.getPath()), newMeta,
-        proto.getStartOffset(), proto.getLength());
+        proto.getStartOffset(), proto.getLength(),
+        proto.getHostsList().toArray(new String[]{}),
+        diskIds);
     if (proto.hasDistCached() && proto.getDistCached()) {
       distCached = true;
     }
   }
 
   private void set(String tableName, Path path, TableMeta meta, long start,
-      long length) {
+      long length, String[] hosts, int[] diskIds) {
     this.tableName = tableName;
     this.uri = path;
     this.meta = meta;
     this.startOffset = start;
     this.length = length;
+    this.hosts = hosts;
+    this.diskIds = diskIds;
   }
 
 
@@ -234,6 +245,9 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     frag.uri = uri;
     frag.meta = (TableMeta) (meta != null ? meta.clone() : null);
     frag.distCached = distCached;
+    frag.diskIds = diskIds;
+    frag.hosts = hosts;
+    frag.hostsBlockCount = hostsBlockCount;
     
     return frag;
   }
@@ -256,6 +270,17 @@ public class Fragment implements TableDesc, Comparable<Fragment>, SchemaObject, 
     builder.setLength(this.length);
     builder.setPath(this.uri.toString());
     builder.setDistCached(this.distCached);
+    if(diskIds != null) {
+      List<Integer> idList = new ArrayList<Integer>();
+      for(int eachId: diskIds) {
+        idList.add(eachId);
+      }
+      builder.addAllDiskIds(idList);
+    }
+
+    if(hosts != null) {
+      builder.addAllHosts(TUtil.newList(hosts));
+    }
 
     return builder.build();
   }

@@ -360,7 +360,6 @@ public class Task {
   }
 
   public void run() {
-
     String errorMessage = null;
     try {
       context.setState(TaskAttemptState.TA_RUNNING);

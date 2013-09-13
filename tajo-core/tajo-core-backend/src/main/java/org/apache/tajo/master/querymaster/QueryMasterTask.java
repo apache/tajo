@@ -44,7 +44,7 @@ import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.worker.AbstractResourceAllocator;
 import org.apache.tajo.worker.TajoResourceAllocator;
 import org.apache.tajo.worker.YarnResourceAllocator;
@@ -404,7 +404,7 @@ public class QueryMasterTask extends CompositeService {
       return queryId;
     }
 
-    public StorageManager getStorageManager() {
+    public AbstractStorageManager getStorageManager() {
       return queryMasterContext.getStorageManager();
     }
 
