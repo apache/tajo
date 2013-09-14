@@ -18,27 +18,22 @@
 
 package org.apache.tajo.storage.v2;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.storage.v2.StorageManagerV2.StorgaeManagerContext;
 
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class ScanScheduler extends Thread {
   private static final Log LOG = LogFactory.getLog(ScanScheduler.class);
 
-  private Object scanQueueLock;
+  private final Object scanQueueLock;
   private StorgaeManagerContext context;
 
   private Map<String, FileScannerV2> requestMap = new HashMap<String, FileScannerV2>();
 
-  private Map<Integer, DiskFileScanScheduler> diskFileScannerMap = new HashMap<Integer, DiskFileScanScheduler>();
+  private final Map<Integer, DiskFileScanScheduler> diskFileScannerMap = new HashMap<Integer, DiskFileScanScheduler>();
 
   private Map<Integer, DiskDeviceInfo> diskDeviceInfoMap = new HashMap<Integer, DiskDeviceInfo>();
 
@@ -80,19 +75,21 @@ public class ScanScheduler extends Thread {
         } else {
           int diskId = fileScannerV2.getDiskId();
 
-          //LOG.info("Scan Scheduled:" + diskId + "," + fileScannerV2.toString());
-
-          if(diskId < 0 || diskId >= diskDeviceInfoMap.size()) {
-            diskId = findDiskPartitionPath(fileScannerV2.getPath().toString());
-            if(diskId < 0) {
-
-              diskId = findMinQueueDisk();
+          int emptyDiskId = findEmptyDisk();
+          if(emptyDiskId < 0) {
+            if(diskId < 0 || diskId >= diskDeviceInfoMap.size()) {
+              diskId = findDiskPartitionPath(fileScannerV2.getPath().toString());
               if(diskId < 0) {
-                diskId = rand.nextInt(diskDeviceInfoMap.size());
+
+                diskId = findMinQueueDisk();
+                if(diskId < 0) {
+                  diskId = rand.nextInt(diskDeviceInfoMap.size());
+                }
               }
             }
+          } else {
+            diskId = emptyDiskId;
           }
-
           synchronized(diskFileScannerMap) {
             requestMap.put(fileScannerV2.getId(), fileScannerV2);
             DiskFileScanScheduler diskScheduler = diskFileScannerMap.get(diskId);
@@ -103,6 +100,18 @@ public class ScanScheduler extends Thread {
     }
   }
 
+  private int findEmptyDisk() {
+    synchronized(diskFileScannerMap) {
+      for(DiskFileScanScheduler eachDiskScanner: diskFileScannerMap.values()) {
+        int queueSize = eachDiskScanner.getTotalQueueSize();
+        if(queueSize == 0) {
+          return eachDiskScanner.getDiskId();
+        }
+      }
+      return -1;
+    }
+  }
+  
   private int findMinQueueDisk() {
     int minValue = Integer.MAX_VALUE;
     int minId = -1;
