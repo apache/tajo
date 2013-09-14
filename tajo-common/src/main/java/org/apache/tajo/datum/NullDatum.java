@@ -24,6 +24,8 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class NullDatum extends Datum {
   private static final NullDatum instance;
+  private static String NULL_STRING = "null";
+  private static byte[] NULL_CHAR = NULL_STRING.getBytes();
   
   static {
     instance = new NullDatum();
@@ -64,7 +66,7 @@ public class NullDatum extends Datum {
 
   @Override
   public byte[] asByteArray() {
-    return Bytes.toBytes("null");
+    return NULL_CHAR.clone();
   }
 
   @Override
@@ -79,7 +81,12 @@ public class NullDatum extends Datum {
 
   @Override
   public String asChars() {
-    return "null";
+    return NULL_STRING;
+  }
+
+  @Override
+  public byte[] asTextBytes() {
+    return asByteArray();
   }
 
   @Override
@@ -100,5 +107,13 @@ public class NullDatum extends Datum {
   @Override
   public int hashCode() {
     return 23244; // one of the prime number
+  }
+
+  public static boolean isNull(String val){
+    return val == null || val.length() == 0 || ((val.length() == NULL_CHAR.length) && NULL_STRING.equals(val));
+  }
+
+  public static boolean isNull(byte[] val){
+    return val == null || val.length == 0 || ((val.length == NULL_CHAR.length) && Bytes.equals(val, NULL_CHAR));
   }
 }

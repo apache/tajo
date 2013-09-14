@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -72,4 +73,10 @@ public class TestInet4Datum {
 		Datum fromJson = CommonGsonHelper.fromJson(json, Datum.class);
 		assertTrue(d.equalsTo(fromJson).asBool());
 	}
+
+  @Test
+  public final void testAsTextBytes() {
+    Datum d = DatumFactory.createInet4("163.152.23.222");
+    assertArrayEquals(d.toString().getBytes(), d.asTextBytes());
+  }
 }

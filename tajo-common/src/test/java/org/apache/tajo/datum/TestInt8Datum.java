@@ -21,6 +21,7 @@ package org.apache.tajo.datum;
 import org.junit.Test;
 import org.apache.tajo.common.TajoDataTypes.Type;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -66,5 +67,11 @@ public class TestInt8Datum {
   public final void testSize() {
     Datum d = DatumFactory.createInt8(5l);
     assertEquals(8, d.size());
+  }
+
+  @Test
+  public final void testAsTextBytes() {
+    Datum d = DatumFactory.createInt8(5l);
+    assertArrayEquals(d.toString().getBytes(), d.asTextBytes());
   }
 }

@@ -27,4 +27,47 @@ public class NumberUtil {
 	public static int unsigned16(short n) {
 		return n & 0xFFFF;
 	}
+
+  public static byte[] toAsciiBytes(Number i){
+    return Bytes.toASCIIBytes(String.valueOf(i).toCharArray());
+  }
+
+  public static byte[] toAsciiBytes(short i){
+    return Bytes.toASCIIBytes(String.valueOf(i).toCharArray());
+  }
+
+  public static byte[] toAsciiBytes(int i){
+    return Bytes.toASCIIBytes(String.valueOf(i).toCharArray());
+  }
+
+  public static byte[] toAsciiBytes(long i){
+    return Bytes.toASCIIBytes(String.valueOf(i).toCharArray());
+  }
+
+  public static byte[] toAsciiBytes(float i){
+    return Bytes.toASCIIBytes(String.valueOf(i).toCharArray());
+  }
+
+  public static byte[] toAsciiBytes(double i){
+    return Bytes.toASCIIBytes(String.valueOf(i).toCharArray());
+  }
+
+  private static void benchmark(int num){
+    System.out.println("Start benchmark. # of :" + num);
+    long start =  System.currentTimeMillis();
+    for (int i = 0; i < num; i ++){
+      String.valueOf(i).getBytes();
+    }
+
+    long end =  System.currentTimeMillis();
+    System.out.println("JDK getBytes() \t\t\t\t" + (end - start) + " ms");
+    for (int i = 0; i < num; i ++){
+      toAsciiBytes(i);
+    }
+    System.out.println( "NumberUtil toByte() \t" + (System.currentTimeMillis() - end) + " ms");
+  }
+
+  public static void main(String[] args) throws Exception {
+    benchmark(1024 * 1024 * 10);
+  }
 }

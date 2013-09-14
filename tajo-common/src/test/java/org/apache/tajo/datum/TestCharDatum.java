@@ -20,9 +20,8 @@ package org.apache.tajo.datum;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.junit.Assert.*;
 
 public class TestCharDatum {
 
@@ -85,5 +84,11 @@ public class TestCharDatum {
     assertTrue(a.compareTo(b) < 0);
     assertTrue(b.compareTo(a) > 0);
     assertTrue(c.compareTo(c) == 0);
+  }
+
+  @Test
+  public final void testAsTextBytes() {
+    Datum d = DatumFactory.createChar("1234567890");
+    assertArrayEquals(d.asByteArray(), d.asTextBytes());
   }
 }

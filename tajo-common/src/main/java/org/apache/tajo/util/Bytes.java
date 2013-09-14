@@ -37,8 +37,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Utility class that handles byte arrays, conversions to/from other types,
@@ -422,6 +424,20 @@ public class Bytes {
       LOG.error("UTF-8 not supported?", e);
       return null;
     }
+  }
+
+  /**
+   * Converts a char array to a ascii byte array.
+   *
+   * @param chars string
+   * @return the byte array
+   */
+  public static byte[] toASCIIBytes(char[] chars) {
+    byte[] buffer = new byte[chars.length];
+    for (int i = 0; i < chars.length; i++) {
+      buffer[i] = (byte) chars[i];
+    }
+    return buffer;
   }
 
   /**
@@ -1226,7 +1242,6 @@ public class Bytes {
    * @param b bytes to hash
    * @return Runs {@link org.apache.hadoop.io.WritableComparator#hashBytes(byte[], int)} on the
    * passed in array.  This method is what {@link org.apache.hadoop.io.Text} and
-   * {@link ImmutableBytesWritable} use calculating hash code.
    */
   public static int hashCode(final byte [] b) {
     return hashCode(b, b.length);
@@ -1237,7 +1252,6 @@ public class Bytes {
    * @param length length of the value
    * @return Runs {@link org.apache.hadoop.io.WritableComparator#hashBytes(byte[], int)} on the
    * passed in array.  This method is what {@link org.apache.hadoop.io.Text} and
-   * {@link ImmutableBytesWritable} use calculating hash code.
    */
   public static int hashCode(final byte [] b, final int length) {
     return WritableComparator.hashBytes(b, length);
@@ -1358,7 +1372,100 @@ public class Bytes {
     }
     return ret;
   }
-  
+
+  public static byte[][] splitPreserveAllTokens(byte[] str, char separatorChar, int[] target) {
+    return splitWorker(str, 0, separatorChar, true, target);
+  }
+
+  public static byte[][] splitPreserveAllTokens(byte[] str, int length, char separatorChar, int[] target) {
+    return splitWorker(str, length, separatorChar, true, target);
+  }
+
+  public static byte[][] splitPreserveAllTokens(byte[] str, char separatorChar) {
+    return splitWorker(str, 0, separatorChar, true, null);
+  }
+
+  public static byte[][] splitPreserveAllTokens(byte[] str, int length, char separatorChar) {
+    return splitWorker(str, length, separatorChar, true, null);
+  }
+
+  /**
+   * Performs the logic for the <code>split</code> and
+   * <code>splitPreserveAllTokens</code> methods that do not return a
+   * maximum array length.
+   *
+   * @param str  the String to parse, may be <code>null</code>
+   * @param length amount of bytes to str
+   * @param separatorChar the separate character
+   * @param preserveAllTokens if <code>true</code>, adjacent separators are
+   * @param target the projection target
+   * treated as empty token separators; if <code>false</code>, adjacent
+   * separators are treated as one separator.
+   * @return an array of parsed Strings, <code>null</code> if null String input
+   */
+  private static byte[][] splitWorker(byte[] str, int length, char separatorChar, boolean preserveAllTokens, int[] target) {
+    // Performance tuned for 2.0 (JDK1.4)
+
+    if (str == null) {
+      return null;
+    }
+    int len = length;
+    if(len < 1){
+      len = str.length;
+    }
+
+    if (len == 0) {
+      return new byte[0][];
+    }
+    List list = new ArrayList();
+    int i = 0, start = 0;
+    boolean match = false;
+    boolean lastMatch = false;
+    int currentTarget = 0;
+    int currentIndex = 0;
+    while (i < len) {
+      if (str[i] == separatorChar) {
+        if (match || preserveAllTokens) {
+          if (target == null) {
+            byte[] bytes = new byte[i - start];
+            System.arraycopy(str, start, bytes, 0, bytes.length);
+            list.add(bytes);
+          } else if (target.length > currentTarget && currentIndex == target[currentTarget]) {
+            byte[] bytes = new byte[i - start];
+            System.arraycopy(str, start, bytes, 0, bytes.length);
+            list.add(bytes);
+            currentTarget++;
+          } else {
+            list.add(null);
+          }
+          currentIndex++;
+          match = false;
+          lastMatch = true;
+        }
+        start = ++i;
+        continue;
+      }
+      lastMatch = false;
+      match = true;
+      i++;
+    }
+    if (match || (preserveAllTokens && lastMatch)) {
+      if (target == null) {
+        byte[] bytes = new byte[i - start];
+        System.arraycopy(str, start, bytes, 0, bytes.length);
+        list.add(bytes);
+      } else if (target.length > currentTarget && currentIndex == target[currentTarget]) {
+        byte[] bytes = new byte[i - start];
+        System.arraycopy(str, start, bytes, 0, bytes.length);
+        list.add(bytes); //str.substring(start, i));
+        currentTarget++;
+      } else {
+        list.add(null);
+      }
+      currentIndex++;
+    }
+    return (byte[][]) list.toArray(new byte[list.size()][]);
+  }
   /**
    * Iterate over keys within the passed inclusive range.
    */

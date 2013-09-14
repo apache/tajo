@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,11 +31,15 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStat;
-import org.apache.tajo.datum.*;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.ArrayDatum;
+import org.apache.tajo.datum.CharDatum;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
-import org.apache.tajo.storage.json.StorageGsonHelper;
+import org.apache.tajo.util.Bytes;
 
 import java.io.*;
 import java.util.Arrays;
@@ -43,6 +48,7 @@ public class CSVFile {
   public static final String DELIMITER = "csvfile.delimiter";
   public static final String DELIMITER_DEFAULT = "|";
   public static final byte LF = '\n';
+  public static int EOF = -1;
   private static final Log LOG = LogFactory.getLog(CSVFile.class);
 
   public static class CSVAppender extends FileAppender {
@@ -109,82 +115,104 @@ public class CSVFile {
 
     @Override
     public void addTuple(Tuple tuple) throws IOException {
-      StringBuilder sb = new StringBuilder();
       Column col;
       Datum datum;
-      for (int i = 0; i < schema.getColumnNum(); i++) {
-        datum = tuple.get(i);
-        if (enabledStats) {
-          stats.analyzeField(i, datum);
-        }
-        if (datum instanceof NullDatum) {
-        } else {
+
+      int colNum = schema.getColumnNum();
+      if(tuple instanceof LazyTuple){
+        LazyTuple  lTuple = (LazyTuple)tuple;
+        for (int i = 0; i < colNum; i++) {
           col = schema.getColumn(i);
-          switch (col.getDataType().getType()) {
-            case BOOLEAN:
-              sb.append(tuple.getBoolean(i));
-              break;
-            case BIT:
-              sb.append(new String(Base64.encodeBase64(tuple.getByte(i)
-                  .asByteArray(), false)));
-              break;
-            case BLOB:
-              sb.append(new String(Base64.encodeBase64(tuple.getBytes(i)
-                  .asByteArray(), false)));
-              break;
-            case CHAR:
-              CharDatum charDatum = tuple.getChar(i);
-              sb.append(charDatum);
-              byte[] pad = new byte[col.getDataType().getLength()-charDatum.size()];
-              sb.append(new String(pad));
-              break;
-            case TEXT:
-              TextDatum td = tuple.getText(i);
-              sb.append(td.toString());
-              break;
-            case INT2:
-              sb.append(tuple.getShort(i));
-              break;
-            case INT4:
-              sb.append(tuple.getInt(i));
-              break;
-            case INT8:
-              sb.append(tuple.getLong(i));
-              break;
-            case FLOAT4:
-              sb.append(tuple.getFloat(i));
-              break;
-            case FLOAT8:
-              sb.append(tuple.getDouble(i));
-              break;
-            case INET4:
-              sb.append(tuple.getIPv4(i));
-              break;
-            case INET6:
-              sb.append(tuple.getIPv6(i));
-            case ARRAY:
+          if (col.getDataType().getType().equals(TajoDataTypes.Type.NULL)) {
+
+          } else if (col.getDataType().getType().equals(TajoDataTypes.Type.CHAR)){
+            datum = tuple.get(i);
+            byte[] pad = new byte[col.getDataType().getLength()- datum.size()];
+            outputStream.write(lTuple.getTextBytes(i));
+            outputStream.write(pad);
+          }
+          else {
+            outputStream.write(lTuple.getTextBytes(i));
+          }
+
+          if(colNum - 1 > i){
+            outputStream.write(delimiter.getBytes());
+          }
+
+          if (enabledStats) {
+            datum = tuple.get(i);
+            stats.analyzeField(i, datum);
+          }
+        }
+      } else {
+        for (int i = 0; i < schema.getColumnNum(); i++) {
+          datum = tuple.get(i);
+          if (enabledStats) {
+            stats.analyzeField(i, datum);
+          }
+          if (datum instanceof NullDatum) {
+            outputStream.write(NullDatum.get().asTextBytes());
+          } else {
+            col = schema.getColumn(i);
+            switch (col.getDataType().getType()) {
+              case BOOLEAN:
+                outputStream.write(tuple.getBoolean(i).asTextBytes());
+                break;
+              case BIT:
+                outputStream.write(tuple.getByte(i).asTextBytes());
+                break;
+              case BLOB:
+                outputStream.write(Base64.encodeBase64(tuple.getBytes(i).asByteArray(), false));
+                break;
+              case CHAR:
+                CharDatum charDatum = tuple.getChar(i);
+                outputStream.write(charDatum.asTextBytes());
+                break;
+              case TEXT:
+                outputStream.write(tuple.getText(i).asTextBytes());
+                break;
+              case INT2:
+                outputStream.write(tuple.getShort(i).asTextBytes());
+                break;
+              case INT4:
+                outputStream.write(tuple.getInt(i).asTextBytes());
+                break;
+              case INT8:
+                outputStream.write(tuple.getLong(i).asTextBytes());
+                break;
+              case FLOAT4:
+                outputStream.write(tuple.getFloat(i).asTextBytes());
+                break;
+              case FLOAT8:
+                outputStream.write(tuple.getDouble(i).asTextBytes());
+                break;
+              case INET4:
+                outputStream.write(tuple.getIPv4(i).asTextBytes());
+                break;
+              case INET6:
+                outputStream.write(tuple.getIPv6(i).toString().getBytes());
+              case ARRAY:
             /*
              * sb.append("["); boolean first = true; ArrayDatum array =
              * (ArrayDatum) tuple.get(i); for (Datum field : array.toArray()) {
              * if (first) { first = false; } else { sb.append(delimiter); }
              * sb.append(field.asChars()); } sb.append("]");
              */
-              ArrayDatum array = (ArrayDatum) tuple.get(i);
-              sb.append(array.toJson());
-              break;
-            default:
-              throw new UnsupportedOperationException("Cannot write such field: "
-                  + tuple.get(i).type());
+                ArrayDatum array = (ArrayDatum) tuple.get(i);
+                outputStream.write(array.toJson().getBytes());
+                break;
+              default:
+                throw new UnsupportedOperationException("Cannot write such field: "
+                    + tuple.get(i).type());
+            }
+          }
+          if(colNum - 1 > i){
+            outputStream.write(delimiter.getBytes());
           }
         }
-        sb.append(delimiter);
       }
-      if (sb.length() > 0) {
-        sb.deleteCharAt(sb.length() - 1);
-      }
-      sb.append('\n');
-      outputStream.write(sb.toString().getBytes());
       // Statistical section
+      outputStream.write('\n');
       if (enabledStats) {
         stats.incrementRow();
       }
@@ -267,7 +295,7 @@ public class CSVFile {
     private boolean splittable = true;
     private long startOffset, length;
     private byte[] buf = null;
-    private String[] tuples = null;
+    private byte[][] tuples = null;
     private long[] tupleOffsets = null;
     private int currentIdx = 0, validIdx = 0;
     private byte[] tail = null;
@@ -312,7 +340,7 @@ public class CSVFile {
         is = fis;
       }
 
-      tuples = new String[0];
+      tuples = new byte[0][];
       if (targets == null) {
         targets = schema.toArray();
       }
@@ -321,8 +349,9 @@ public class CSVFile {
       for (int i = 0; i < targets.length; i++) {
         targetColumnIndexes[i] = schema.getColumnIdByName(targets[i].getColumnName());
       }
-      super.init();
 
+      super.init();
+      Arrays.sort(targetColumnIndexes);
       if (LOG.isDebugEnabled()) {
         LOG.debug("CSVScanner open:" + fragment.getPath() + "," + startOffset + "," + length +
             "," + fs.getFileStatus(fragment.getPath()).getLen());
@@ -331,7 +360,7 @@ public class CSVFile {
       if (startOffset != 0) {
         int rbyte;
         while ((rbyte = is.read()) != LF) {
-          if(rbyte == -1) break;
+          if(rbyte == EOF) break;
         }
       }
 
@@ -378,39 +407,43 @@ public class CSVFile {
       buf = new byte[bufSize];
       rbyte = is.read(buf);
 
-      if(rbyte < 0){
-        eof = true; //EOF
-        return;
-      }
-
       if (prevTailLen == 0) {
+        if(rbyte == EOF){
+          eof = true; //EOF
+          return;
+        }
+
         tail = new byte[0];
-        tuples = StringUtils.split(new String(buf, 0, rbyte), (char)LF);
+        tuples = Bytes.splitPreserveAllTokens(buf, rbyte, (char) LF);
       } else {
-        tuples = StringUtils.split(new String(tail) + new String(buf, 0, rbyte), (char)LF);
+        byte[] lastRow = ArrayUtils.addAll(tail, buf);
+        tuples = Bytes.splitPreserveAllTokens(lastRow, rbyte + tail.length, (char) LF);
         tail = null;
       }
 
       // Check tail
       if ((char) buf[rbyte - 1] != LF) {
+        // splittable bzip2 compression returned 1 byte when sync maker found
         if (isSplittable() && (fragmentable() < 1 || rbyte != bufSize)) {
-          int cnt = 0;
+          int lineFeedPos = 0;
           byte[] temp = new byte[DEFAULT_BUFFER_SIZE];
-          // Read bytes
-          while ((temp[cnt] = (byte)is.read()) != LF) {
-            cnt++;
+
+          // find line feed
+          while ((temp[lineFeedPos] = (byte)is.read()) != (byte)LF) {
+            lineFeedPos++;
           }
 
-          // Replace tuple
-          tuples[tuples.length - 1] = tuples[tuples.length - 1] + new String(temp, 0, cnt);
+          tuples[tuples.length - 1] = ArrayUtils.addAll(tuples[tuples.length - 1],
+              ArrayUtils.subarray(temp, 0, lineFeedPos));
           validIdx = tuples.length;
+
         } else {
-          tail = tuples[tuples.length - 1].getBytes();
+          tail = tuples[tuples.length - 1];
           validIdx = tuples.length - 1;
         }
       } else {
         tail = new byte[0];
-        validIdx = tuples.length;
+        validIdx = tuples.length - 1;   //remove last empty row ( .... \n .... \n  length is 3)
       }
 
      if(!isCompress()) makeTupleOffset();
@@ -421,7 +454,7 @@ public class CSVFile {
       this.tupleOffsets = new long[this.validIdx];
       for (int i = 0; i < this.validIdx; i++) {
         this.tupleOffsets[i] = curTupleOffset + this.pageStart;
-        curTupleOffset += this.tuples[i].getBytes().length + 1;//tuple byte +  1byte line feed
+        curTupleOffset += this.tuples[i].length + 1;//tuple byte +  1byte line feed
       }
     }
 
@@ -442,77 +475,13 @@ public class CSVFile {
           }
         }
 
-
         long offset = -1;
         if(!isCompress()){
           offset = this.tupleOffsets[currentIdx];
         }
 
-        String[] cells = StringUtils.splitPreserveAllTokens(tuples[currentIdx++], delimiter);
-
-        int targetLen = targets.length;
-        VTuple tuple = new VTuple(columnNum);
-        Column field;
-        tuple.setOffset(offset);
-        for (int i = 0; i < targetLen; i++) {
-          field = targets[i];
-          int tid = targetColumnIndexes[i];
-          if (cells.length <= tid) {
-            tuple.put(tid, DatumFactory.createNullDatum());
-          } else {
-            String cell = cells[tid].trim();
-
-            if (cell.equals("")) {
-              tuple.put(tid, DatumFactory.createNullDatum());
-            } else {
-              switch (field.getDataType().getType()) {
-                case BOOLEAN:
-                  tuple.put(tid, DatumFactory.createBool(cell));
-                  break;
-                case BIT:
-                  tuple.put(tid, DatumFactory.createBit(Base64.decodeBase64(cell)[0]));
-                  break;
-                case CHAR:
-                  String trimmed = cell.trim();
-                  tuple.put(tid, DatumFactory.createChar(trimmed));
-                  break;
-                case BLOB:
-                  tuple.put(tid, DatumFactory.createBlob(Base64.decodeBase64(cell)));
-                  break;
-                case INT2:
-                  tuple.put(tid, DatumFactory.createInt2(cell));
-                  break;
-                case INT4:
-                  tuple.put(tid, DatumFactory.createInt4(cell));
-                  break;
-                case INT8:
-                  tuple.put(tid, DatumFactory.createInt8(cell));
-                  break;
-                case FLOAT4:
-                  tuple.put(tid, DatumFactory.createFloat4(cell));
-                  break;
-                case FLOAT8:
-                  tuple.put(tid, DatumFactory.createFloat8(cell));
-                  break;
-                case TEXT:
-                  tuple.put(tid, DatumFactory.createText(cell));
-                  break;
-                case INET4:
-                  tuple.put(tid, DatumFactory.createInet4(cell));
-                  break;
-                case ARRAY:
-                  Datum data = StorageGsonHelper.getInstance().fromJson(cell,
-                      Datum.class);
-                  tuple.put(tid, data);
-                  break;
-                case NULL:
-                  tuple.put(tid, NullDatum.get());
-                  break;
-              }
-            }
-          }
-        }
-        return tuple;
+        byte[][] cells = Bytes.splitPreserveAllTokens(tuples[currentIdx++], delimiter, targetColumnIndexes);
+        return new LazyTuple(schema, cells, offset);
       } catch (Throwable t) {
         LOG.error("Tuple list length: " + (tuples != null ? tuples.length : 0), t);
         LOG.error("Tuple list current index: " + currentIdx, t);

@@ -44,17 +44,18 @@ public class TestNullValues {
     Schema schema = new Schema();
     schema.addColumn("col1", Type.INT4);
     schema.addColumn("col2", Type.TEXT);
+    schema.addColumn("col3", Type.FLOAT4);
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
-        "1|filled|",
+        "1|filled|0.1",
         "2||",
-        "3|filled|"
+        "3|filled|0.2"
     };
     Options opts = new Options();
     opts.put(CSVFile.DELIMITER, "|");
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
-            "select * from nulltable1 where col2 is null");
+            "select * from nulltable1 where col3 is null");
     try {
       assertTrue(res.next());
       assertEquals(2, res.getInt(1));
@@ -73,14 +74,14 @@ public class TestNullValues {
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
         "1|filled|",
-        "2||",
+        "||",
         "3|filled|"
     };
     Options opts = new Options();
     opts.put(CSVFile.DELIMITER, "|");
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
-            "select * from nulltable2 where col2 is not null");
+            "select * from nulltable2 where col1 is not null");
     try {
       assertTrue(res.next());
       assertEquals(1, res.getInt(1));

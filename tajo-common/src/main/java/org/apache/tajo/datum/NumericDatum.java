@@ -19,21 +19,15 @@
 package org.apache.tajo.datum;
 
 
-import org.apache.tajo.common.TajoDataTypes;
+public interface NumericDatum {
 
-public abstract class NumericDatum extends Datum {
-
-  public NumericDatum(TajoDataTypes.Type type) {
-    super(type);
-  }
+  Datum plus(Datum datum);
   
-  public abstract Datum plus(Datum datum);
+  Datum minus(Datum datum);
   
-  public abstract Datum minus(Datum datum);
+  Datum multiply(Datum datum);
   
-  public abstract Datum multiply(Datum datum);
+  Datum divide(Datum datum);
   
-  public abstract Datum divide(Datum datum);
-  
-  public abstract void inverseSign();
+  void inverseSign();
 }

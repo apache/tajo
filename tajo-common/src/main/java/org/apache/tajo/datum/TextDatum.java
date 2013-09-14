@@ -89,6 +89,11 @@ public class TextDatum extends Datum {
   }
 
   @Override
+  public byte[] asTextBytes() {
+    return asByteArray();
+  }
+
+  @Override
   public int size() {
     return size;
   }

@@ -21,10 +21,11 @@ package org.apache.tajo.datum;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.exception.InvalidOperationException;
+import org.apache.tajo.util.NumberUtil;
 
 import java.nio.ByteBuffer;
 
-public class Int2Datum extends NumericDatum {
+public class Int2Datum extends Datum implements NumericDatum {
   private static final int size = 2;  
   @Expose private short val;
 
@@ -79,6 +80,11 @@ public class Int2Datum extends NumericDatum {
 	public String asChars() {
 		return ""+val;
 	}
+
+  @Override
+  public byte[] asTextBytes() {
+    return NumberUtil.toAsciiBytes(val);
+  }
 
   @Override
   public int size() {

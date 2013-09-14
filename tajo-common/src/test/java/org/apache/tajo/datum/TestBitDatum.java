@@ -19,8 +19,10 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.util.NumberUtil;
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -72,5 +74,11 @@ public class TestBitDatum {
   public final void testSize() {
     Datum d = DatumFactory.createBit((byte) 1);
     assertEquals(1, d.size());
+  }
+
+  @Test
+  public final void testAsTextBytes() {
+    Datum d = DatumFactory.createBit((byte) 5);
+    assertArrayEquals(NumberUtil.toAsciiBytes(d.asInt4()), d.asTextBytes());
   }
 }

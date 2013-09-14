@@ -22,6 +22,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -51,5 +52,11 @@ public class TestBytesDatum {
 	  String json = d.toJson();
 	  Datum fromJson = CommonGsonHelper.fromJson(json, Datum.class);
 	  assertTrue(d.equalsTo(fromJson).asBool());
+  }
+
+  @Test
+  public final void testAsTextBytes() {
+    Datum d = DatumFactory.createBlob("12345".getBytes());
+    assertArrayEquals(d.toString().getBytes(), d.asTextBytes());
   }
 }

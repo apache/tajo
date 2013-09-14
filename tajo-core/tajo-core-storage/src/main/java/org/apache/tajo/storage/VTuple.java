@@ -206,13 +206,16 @@ public class VTuple implements Tuple {
 	  return hashCode;
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if(obj instanceof VTuple) {
-	    VTuple other = (VTuple) obj;
-	    return Arrays.equals(values, other.values);
-		}
-		
-		return false;
-	}
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof VTuple) {
+      VTuple other = (VTuple) obj;
+      return Arrays.equals(values, other.values);
+    } else if (obj instanceof LazyTuple) {
+      LazyTuple other = (LazyTuple) obj;
+      return Arrays.equals(values, other.toArray());
+    }
+
+    return false;
+  }
 }

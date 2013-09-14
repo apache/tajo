@@ -19,10 +19,10 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 import org.apache.tajo.json.CommonGsonHelper;
+import org.apache.tajo.json.GsonObject;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -82,6 +82,10 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
 
 	public String asChars() {
     throw new InvalidCastException(type + " cannot be casted to STRING type");
+  }
+
+  public byte[] asTextBytes() {
+    return toString().getBytes();
   }
 	
 	public boolean isNumeric() {
