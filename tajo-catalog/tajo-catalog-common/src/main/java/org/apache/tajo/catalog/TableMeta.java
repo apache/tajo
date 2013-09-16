@@ -52,4 +52,6 @@ public interface TableMeta extends ProtoObject<TableProto>, Cloneable, GsonObjec
   TableStat getStat();
   
   Object clone() throws CloneNotSupportedException;
+
+  void mergeProtoToLocal();
 }

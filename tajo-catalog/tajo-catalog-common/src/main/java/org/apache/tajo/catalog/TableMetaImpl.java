@@ -22,6 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableProtoOrBuilder;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -33,6 +34,8 @@ import java.util.Map.Entry;
 
 public class TableMetaImpl implements TableMeta, GsonObject {
 	protected TableProto.Builder builder = null;
+  private TableProto proto = TableProto.getDefaultInstance();
+  private boolean viaProto = false;
 	
 	@Expose protected Schema schema;
 	@Expose protected StoreType storeType;
@@ -60,54 +63,91 @@ public class TableMetaImpl implements TableMeta, GsonObject {
   }
 	
 	public TableMetaImpl(TableProto proto) {
-    this();
-    schema = new Schema(proto.getSchema());
-    storeType = proto.getStoreType();
-    options = new Options(proto.getParams());
-
-    if (proto.hasStat() && stat == null) {
-      stat = new TableStat(proto.getStat());
-    }
+    this.proto = proto;
+    viaProto = true;
 	}
 	
 	public void setStorageType(StoreType storeType) {
+    maybeInitBuilder();
     this.storeType = storeType;
   }	
 	
 	public StoreType getStoreType() {
+    TableProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.storeType != null) {
+      return storeType;
+    }
+    if (!p.hasStoreType()) {
+      return null;
+    }
+    this.storeType = p.getStoreType();
 		return this.storeType;		
 	}
 	
   public void setSchema(Schema schema) {
+    maybeInitBuilder();
     this.schema = schema;
   }
 	
-	public Schema getSchema() {
-		return this.schema;
-	}
-	
   public void setOptions(Options options) {
+    maybeInitBuilder();
     this.options = options;
   }
 
   @Override
   public void putOption(String key, String val) {
+    maybeInitBuilder();
     options.put(key, val);
   }
-  
+
+  public Schema getSchema() {
+    TableProtoOrBuilder p = viaProto ? proto : builder;
+    if (schema != null) {
+      return this.schema;
+    }
+    if (!p.hasSchema()) {
+      return null;
+    }
+    this.schema = new Schema(p.getSchema());
+    return this.schema;
+  }
 
   @Override
-  public String getOption(String key) {    
+  public String getOption(String key) {
+    TableProtoOrBuilder p = viaProto ? proto : builder;
+    if (options != null) {
+      return this.options.get(key);
+    }
+    if (!p.hasParams()) {
+      return null;
+    }
+    this.options = new Options(p.getParams());
     return options.get(key);
   }
 
   @Override
   public String getOption(String key, String defaultValue) {
+    TableProtoOrBuilder p = viaProto ? proto : builder;
+    if (options != null) {
+      return this.options.get(key, defaultValue);
+    }
+    if (!p.hasParams()) {
+      return null;
+    }
+    this.options = new Options(p.getParams());
     return options.get(key, defaultValue);
   }
   
   @Override
-  public Iterator<Entry<String,String>> getOptions() {    
+  public Iterator<Entry<String,String>> getOptions() {
+    TableProtoOrBuilder p = viaProto ? proto : builder;
+    if (options != null) {
+      return this.options.getAllKeyValus();
+    }
+    if (!p.hasParams()) {
+      return null;
+    }
+    this.options = new Options(p.getParams());
     return options.getAllKeyValus();
   }
 	
@@ -122,17 +162,17 @@ public class TableMetaImpl implements TableMeta, GsonObject {
 	}
 	
 	public int hashCode() {
-	  return Objects.hashCode(getSchema(), storeType);
+	  return Objects.hashCode(getSchema(), getStoreType());
 	}
 	
 	@Override
 	public Object clone() throws CloneNotSupportedException {
 	  TableMetaImpl meta = (TableMetaImpl) super.clone();
     meta.builder = TableProto.newBuilder();
-    meta.schema = (Schema) schema.clone();
-    meta.storeType = storeType;
-    meta.stat = (TableStat) (stat != null ? stat.clone() : null);
-    meta.options = (Options) (options != null ? options.clone() : null);
+    meta.schema = (Schema) getSchema().clone();
+    meta.storeType = getStoreType();
+    meta.stat = (TableStat) (getStat() != null ? stat.clone() : null);
+    meta.options = (Options) (getOptions() != null ? options.clone() : null);
     
     return meta;
 	}
@@ -148,31 +188,72 @@ public class TableMetaImpl implements TableMeta, GsonObject {
 	////////////////////////////////////////////////////////////////////////
 	@Override
 	public TableProto getProto() {
-    if (builder == null) {
-      builder = TableProto.newBuilder();
-    }
-    builder.setSchema(this.schema.getProto());
-    builder.setStoreType(storeType);
-    builder.setParams(options.getProto());
-
-    if (this.stat != null) {
-      builder.setStat(this.stat.getProto());
-    }
-    return builder.build();
+    mergeLocalToProto();
+    proto = viaProto ? proto : builder.build();
+    viaProto = true;
+    return proto;
 	}
 
   @Override
 	public String toJson() {
+    mergeProtoToLocal();
 		return CatalogGsonHelper.toJson(this, TableMeta.class);
 	}
 
+  public void mergeProtoToLocal() {
+    getSchema();
+    getStoreType();
+    getOptions();
+    getStat();
+  }
+
   @Override
   public void setStat(TableStat stat) {
+    maybeInitBuilder();
     this.stat = stat;
   }
 
   @Override
   public TableStat getStat() {
+    TableProtoOrBuilder p = viaProto ? proto : builder;
+    if (this.stat != null) {
+      return this.stat;
+    }
+    if (!p.hasStat()) {
+      return null;
+    }
+    this.stat = new TableStat(p.getStat());
     return this.stat;
+  }
+
+  private void maybeInitBuilder() {
+    if (viaProto || builder == null) {
+      builder = TableProto.newBuilder(proto);
+    }
+    viaProto = true;
+  }
+
+  private void mergeLocalToBuilder() {
+    if (schema != null) {
+      builder.setSchema(schema.getProto());
+    }
+    if (storeType != null) {
+      builder.setStoreType(storeType);
+    }
+    if (this.options != null) {
+      builder.setParams(options.getProto());
+    }
+    if (this.stat != null) {
+      builder.setStat(stat.getProto());
+    }
+  }
+
+  private void mergeLocalToProto() {
+    if(viaProto) {
+      maybeInitBuilder();
+    }
+    mergeLocalToBuilder();
+    proto = builder.build();
+    viaProto = true;
   }
 }

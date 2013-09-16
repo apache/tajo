@@ -25,6 +25,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-183: Creating too many TableMetaProto objects might lead a potential memory leak. (jihoon)
+
     TAJO-184: Refactor GlobalPlanner and global plan data structure. (hyunsik)
 
     TAJO-119: Refactor and Improve Datum. (jinho)
