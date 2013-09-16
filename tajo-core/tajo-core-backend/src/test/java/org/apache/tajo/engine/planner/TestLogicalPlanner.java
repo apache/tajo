@@ -145,14 +145,14 @@ public class TestLogicalPlanner {
     testJsonSerDerObject(root);
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode projNode = (ProjectionNode) root.getChild();
+    ProjectionNode projNode = root.getChild();
 
     assertEquals(NodeType.SELECTION, projNode.getChild().getType());
-    SelectionNode selNode = (SelectionNode) projNode.getChild();
+    SelectionNode selNode = projNode.getChild();
 
     assertEquals(NodeType.SCAN, selNode.getChild().getType());
-    ScanNode scanNode = (ScanNode) selNode.getChild();
-    assertEquals("employee", scanNode.getTableId());
+    ScanNode scanNode = selNode.getChild();
+    assertEquals("employee", scanNode.getTableName());
   }
 
   public static void assertSchema(Schema expected, Schema schema) {
@@ -190,22 +190,17 @@ public class TestLogicalPlanner {
     }
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode projNode = (ProjectionNode) root.getChild();
+    ProjectionNode projNode = root.getChild();
 
     assertEquals(NodeType.JOIN, projNode.getChild().getType());
-    JoinNode joinNode = (JoinNode) projNode.getChild();
+    JoinNode joinNode = projNode.getChild();
 
     assertEquals(NodeType.SCAN, joinNode.getLeftChild().getType());
-    ScanNode leftNode = (ScanNode) joinNode.getLeftChild();
-    assertEquals("employee", leftNode.getTableId());
+    ScanNode leftNode = joinNode.getLeftChild();
+    assertEquals("employee", leftNode.getTableName());
     assertEquals(NodeType.SCAN, joinNode.getRightChild().getType());
-    ScanNode rightNode = (ScanNode) joinNode.getRightChild();
-    assertEquals("dept", rightNode.getTableId());
-    /*
-    LogicalNode optimized = LogicalOptimizer.optimize(expr, plan);
-    assertSchema(expectedSchema, optimized.getOutSchema());
-    */
-
+    ScanNode rightNode = joinNode.getRightChild();
+    assertEquals("dept", rightNode.getTableName());
 
     // three relations
     expr = sqlAnalyzer.parse(QUERIES[2]);
@@ -220,30 +215,27 @@ public class TestLogicalPlanner {
     root = (LogicalRootNode) plan;
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    projNode = (ProjectionNode) root.getChild();
+    projNode = root.getChild();
 
     assertEquals(NodeType.JOIN, projNode.getChild().getType());
-    joinNode = (JoinNode) projNode.getChild();
+    joinNode = projNode.getChild();
 
     assertEquals(NodeType.JOIN, joinNode.getLeftChild().getType());
 
     assertEquals(NodeType.SCAN, joinNode.getRightChild().getType());
-    ScanNode scan1 = (ScanNode) joinNode.getRightChild();
-    assertEquals("score", scan1.getTableId());
+    ScanNode scan1 = joinNode.getRightChild();
+    assertEquals("score", scan1.getTableName());
 
-    JoinNode leftNode2 = (JoinNode) joinNode.getLeftChild();
+    JoinNode leftNode2 = joinNode.getLeftChild();
     assertEquals(NodeType.JOIN, leftNode2.getType());
 
     assertEquals(NodeType.SCAN, leftNode2.getLeftChild().getType());
-    ScanNode leftScan = (ScanNode) leftNode2.getLeftChild();
-    assertEquals("employee", leftScan.getTableId());
+    ScanNode leftScan = leftNode2.getLeftChild();
+    assertEquals("employee", leftScan.getTableName());
 
     assertEquals(NodeType.SCAN, leftNode2.getRightChild().getType());
-    ScanNode rightScan = (ScanNode) leftNode2.getRightChild();
-    assertEquals("dept", rightScan.getTableId());
-    /*
-    optimized = LogicalOptimizer.optimize(expr, plan);
-    assertSchema(expectedSchema, optimized.getOutSchema());*/
+    ScanNode rightScan = leftNode2.getRightChild();
+    assertEquals("dept", rightScan.getTableName());
   }
 
 
@@ -273,29 +265,24 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode proj = (ProjectionNode) root.getChild();
+    ProjectionNode proj = root.getChild();
     assertEquals(NodeType.JOIN, proj.getChild().getType());
-    JoinNode join = (JoinNode) proj.getChild();
+    JoinNode join = proj.getChild();
     assertEquals(JoinType.INNER, join.getJoinType());
     assertEquals(NodeType.SCAN, join.getRightChild().getType());
     assertTrue(join.hasJoinQual());
-    ScanNode scan = (ScanNode) join.getRightChild();
-    assertEquals("score", scan.getTableId());
+    ScanNode scan = join.getRightChild();
+    assertEquals("score", scan.getTableName());
 
     assertEquals(NodeType.JOIN, join.getLeftChild().getType());
-    join = (JoinNode) join.getLeftChild();
+    join = join.getLeftChild();
     assertEquals(JoinType.INNER, join.getJoinType());
     assertEquals(NodeType.SCAN, join.getLeftChild().getType());
-    ScanNode outer = (ScanNode) join.getLeftChild();
-    assertEquals("employee", outer.getTableId());
+    ScanNode outer = join.getLeftChild();
+    assertEquals("employee", outer.getTableName());
     assertEquals(NodeType.SCAN, join.getRightChild().getType());
-    ScanNode inner = (ScanNode) join.getRightChild();
-    assertEquals("dept", inner.getTableId());
-
-    /*
-    LogicalNode optimized = LogicalOptimizer.optimize(context, plan);
-    assertSchema(expectedJoinSchema, optimized.getOutSchema());
-    */
+    ScanNode inner = join.getRightChild();
+    assertEquals("dept", inner.getTableName());
   }
 
   @Test
@@ -309,29 +296,25 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode proj = (ProjectionNode) root.getChild();
+    ProjectionNode proj = root.getChild();
     assertEquals(NodeType.JOIN, proj.getChild().getType());
-    JoinNode join = (JoinNode) proj.getChild();
+    JoinNode join = proj.getChild();
     assertEquals(JoinType.INNER, join.getJoinType());
     assertEquals(NodeType.SCAN, join.getRightChild().getType());
-    ScanNode scan = (ScanNode) join.getRightChild();
-    assertEquals("score", scan.getTableId());
+    ScanNode scan = join.getRightChild();
+    assertEquals("score", scan.getTableName());
 
     assertEquals(NodeType.JOIN, join.getLeftChild().getType());
-    join = (JoinNode) join.getLeftChild();
+    join = join.getLeftChild();
     assertEquals(JoinType.INNER, join.getJoinType());
     assertEquals(NodeType.SCAN, join.getLeftChild().getType());
-    ScanNode outer = (ScanNode) join.getLeftChild();
-    assertEquals("employee", outer.getTableId());
+    ScanNode outer = join.getLeftChild();
+    assertEquals("employee", outer.getTableName());
     assertEquals(NodeType.SCAN, join.getRightChild().getType());
-    ScanNode inner = (ScanNode) join.getRightChild();
-    assertEquals("dept", inner.getTableId());
+    ScanNode inner = join.getRightChild();
+    assertEquals("dept", inner.getTableName());
     assertTrue(join.hasJoinQual());
     assertEquals(EvalType.EQUAL, join.getJoinQual().getType());
-    /*
-    LogicalNode optimized = LogicalOptimizer.optimize(expr, plan);
-    assertSchema(expectedJoinSchema, optimized.getOutSchema());
-    */
   }
 
   @Test
@@ -345,30 +328,25 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode proj = (ProjectionNode) root.getChild();
+    ProjectionNode proj = root.getChild();
     assertEquals(NodeType.JOIN, proj.getChild().getType());
-    JoinNode join = (JoinNode) proj.getChild();
+    JoinNode join = proj.getChild();
     assertEquals(JoinType.RIGHT_OUTER, join.getJoinType());
     assertEquals(NodeType.SCAN, join.getRightChild().getType());
-    ScanNode scan = (ScanNode) join.getRightChild();
-    assertEquals("score", scan.getTableId());
+    ScanNode scan = join.getRightChild();
+    assertEquals("score", scan.getTableName());
 
     assertEquals(NodeType.JOIN, join.getLeftChild().getType());
-    join = (JoinNode) join.getLeftChild();
+    join = join.getLeftChild();
     assertEquals(JoinType.LEFT_OUTER, join.getJoinType());
     assertEquals(NodeType.SCAN, join.getLeftChild().getType());
-    ScanNode outer = (ScanNode) join.getLeftChild();
-    assertEquals("employee", outer.getTableId());
+    ScanNode outer = join.getLeftChild();
+    assertEquals("employee", outer.getTableName());
     assertEquals(NodeType.SCAN, join.getRightChild().getType());
-    ScanNode inner = (ScanNode) join.getRightChild();
-    assertEquals("dept", inner.getTableId());
+    ScanNode inner = join.getRightChild();
+    assertEquals("dept", inner.getTableName());
     assertTrue(join.hasJoinQual());
     assertEquals(EvalType.EQUAL, join.getJoinQual().getType());
-
-    /*
-    LogicalNode optimized = LogicalOptimizer.optimize(context, plan);
-    assertSchema(expectedJoinSchema, optimized.getOutSchema());
-    */
   }
 
 
@@ -392,19 +370,19 @@ public class TestLogicalPlanner {
     root = (LogicalRootNode) plan;
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode projNode = (ProjectionNode) root.getChild();
+    ProjectionNode projNode = root.getChild();
     assertEquals(NodeType.GROUP_BY, projNode.getChild().getType());
-    GroupbyNode groupByNode = (GroupbyNode) projNode.getChild();
+    GroupbyNode groupByNode =  projNode.getChild();
 
     assertEquals(NodeType.JOIN, groupByNode.getChild().getType());
-    JoinNode joinNode = (JoinNode) groupByNode.getChild();
+    JoinNode joinNode = groupByNode.getChild();
 
     assertEquals(NodeType.SCAN, joinNode.getLeftChild().getType());
-    ScanNode leftNode = (ScanNode) joinNode.getLeftChild();
-    assertEquals("dept", leftNode.getTableId());
+    ScanNode leftNode = joinNode.getLeftChild();
+    assertEquals("dept", leftNode.getTableName());
     assertEquals(NodeType.SCAN, joinNode.getRightChild().getType());
-    ScanNode rightNode = (ScanNode) joinNode.getRightChild();
-    assertEquals("score", rightNode.getTableId());
+    ScanNode rightNode = joinNode.getRightChild();
+    assertEquals("score", rightNode.getTableName());
 
     //LogicalOptimizer.optimize(context, plan);
   }
@@ -418,9 +396,6 @@ public class TestLogicalPlanner {
     testJsonSerDerObject(plan);
     Schema expected = tpch.getOutSchema("q2");
     assertSchema(expected, plan.getOutSchema());
-//    LogicalNode optimized = LogicalOptimizer.optimize(context, plan);
-//    System.out.println(optimized);
-//    assertSchema(expected, optimized.getOutSchema());
   }
 
 
@@ -428,17 +403,17 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.PROJECTION, plan.getType());
     ProjectionNode projNode = (ProjectionNode) plan;
     assertEquals(NodeType.GROUP_BY, projNode.getChild().getType());
-    GroupbyNode groupByNode = (GroupbyNode) projNode.getChild();
+    GroupbyNode groupByNode = projNode.getChild();
 
     assertEquals(NodeType.JOIN, groupByNode.getChild().getType());
-    JoinNode joinNode = (JoinNode) groupByNode.getChild();
+    JoinNode joinNode = groupByNode.getChild();
 
     assertEquals(NodeType.SCAN, joinNode.getLeftChild().getType());
-    ScanNode leftNode = (ScanNode) joinNode.getLeftChild();
-    assertEquals("dept", leftNode.getTableId());
+    ScanNode leftNode = joinNode.getLeftChild();
+    assertEquals("dept", leftNode.getTableName());
     assertEquals(NodeType.SCAN, joinNode.getRightChild().getType());
-    ScanNode rightNode = (ScanNode) joinNode.getRightChild();
-    assertEquals("score", rightNode.getTableId());
+    ScanNode rightNode = joinNode.getRightChild();
+    assertEquals("score", rightNode.getTableName());
   }
 
 
@@ -453,9 +428,8 @@ public class TestLogicalPlanner {
     LogicalRootNode root = (LogicalRootNode) plan;
 
     assertEquals(NodeType.STORE, root.getChild().getType());
-    StoreTableNode storeNode = (StoreTableNode) root.getChild();
+    StoreTableNode storeNode = root.getChild();
     testQuery7(storeNode.getChild());
-    //LogicalOptimizer.optimize(context, plan);
   }
 
   @Test
@@ -469,20 +443,20 @@ public class TestLogicalPlanner {
     LogicalRootNode root = (LogicalRootNode) plan;
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode projNode = (ProjectionNode) root.getChild();
+    ProjectionNode projNode = root.getChild();
 
     assertEquals(NodeType.SORT, projNode.getChild().getType());
-    SortNode sortNode = (SortNode) projNode.getChild();
+    SortNode sortNode = projNode.getChild();
 
     assertEquals(NodeType.JOIN, sortNode.getChild().getType());
-    JoinNode joinNode = (JoinNode) sortNode.getChild();
+    JoinNode joinNode = sortNode.getChild();
 
     assertEquals(NodeType.SCAN, joinNode.getLeftChild().getType());
-    ScanNode leftNode = (ScanNode) joinNode.getLeftChild();
-    assertEquals("dept", leftNode.getTableId());
+    ScanNode leftNode = joinNode.getLeftChild();
+    assertEquals("dept", leftNode.getTableName());
     assertEquals(NodeType.SCAN, joinNode.getRightChild().getType());
-    ScanNode rightNode = (ScanNode) joinNode.getRightChild();
-    assertEquals("score", rightNode.getTableId());
+    ScanNode rightNode = joinNode.getRightChild();
+    assertEquals("score", rightNode.getTableName());
   }
 
   @Test
@@ -496,10 +470,10 @@ public class TestLogicalPlanner {
     LogicalRootNode root = (LogicalRootNode) plan;
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode projNode = (ProjectionNode) root.getChild();
+    ProjectionNode projNode = root.getChild();
 
     assertEquals(NodeType.LIMIT, projNode.getChild().getType());
-    LimitNode limitNode = (LimitNode) projNode.getChild();
+    LimitNode limitNode = projNode.getChild();
 
     assertEquals(NodeType.SORT, limitNode.getChild().getType());
   }
@@ -514,21 +488,12 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode projNode = (ProjectionNode) root.getChild();
+    ProjectionNode projNode = root.getChild();
     assertEquals(NodeType.SELECTION, projNode.getChild().getType());
-    SelectionNode selNode = (SelectionNode) projNode.getChild();
+    SelectionNode selNode = projNode.getChild();
     assertEquals(NodeType.SCAN, selNode.getChild().getType());
-    ScanNode scanNode = (ScanNode) selNode.getChild();
-    assertEquals(scanNode.getTableId(), "employee");
-
-    /*
-    LogicalNode optimized = LogicalOptimizer.optimize(expr, plan);
-    assertEquals(NodeType.ROOT, optimized.getType());
-    root = (LogicalRootNode) optimized;
-
-    assertEquals(NodeType.SCAN, root.getSubNode().getType());
-    scanNode = (ScanNode) root.getSubNode();
-    assertEquals("employee", scanNode.getTableId());*/
+    ScanNode scanNode = selNode.getChild();
+    assertEquals(scanNode.getTableName(), "employee");
   }
 
 
@@ -625,7 +590,6 @@ public class TestLogicalPlanner {
 
     expr = sqlAnalyzer.parse(ALIAS[1]);
     plan = planner.createPlan(expr).getRootBlock().getRoot();
-//    plan = LogicalOptimizer.optimize(expr, plan);
     root = (LogicalRootNode) plan;
 
     finalSchema = root.getOutSchema();
@@ -662,7 +626,7 @@ public class TestLogicalPlanner {
     LogicalRootNode root = (LogicalRootNode) plan;
     testJsonSerDerObject(root);
     assertEquals(NodeType.CREATE_TABLE, root.getChild().getType());
-    CreateTableNode createTable = (CreateTableNode) root.getChild();
+    CreateTableNode createTable = root.getChild();
 
     Schema def = createTable.getSchema();
     assertEquals("name", def.getColumn(0).getColumnName());
@@ -749,26 +713,26 @@ public class TestLogicalPlanner {
 
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode projNode = (ProjectionNode) root.getChild();
+    ProjectionNode projNode = root.getChild();
     assertEquals(NodeType.UNION, projNode.getChild().getType());
-    UnionNode u0 = (UnionNode) projNode.getChild();
+    UnionNode u0 = projNode.getChild();
     assertEquals(NodeType.GROUP_BY, u0.getLeftChild().getType());
     assertEquals(NodeType.UNION, u0.getRightChild().getType());
-    GroupbyNode grp = (GroupbyNode) u0.getLeftChild();
+    GroupbyNode grp = u0.getLeftChild();
     cuboids.add(Sets.newHashSet(grp.getGroupingColumns()));
 
-    UnionNode u1 = (UnionNode) u0.getRightChild();
+    UnionNode u1 = u0.getRightChild();
     assertEquals(NodeType.GROUP_BY, u1.getLeftChild().getType());
     assertEquals(NodeType.UNION, u1.getRightChild().getType());
-    grp = (GroupbyNode) u1.getLeftChild();
+    grp = u1.getLeftChild();
     cuboids.add(Sets.newHashSet(grp.getGroupingColumns()));
 
-    UnionNode u2 = (UnionNode) u1.getRightChild();
+    UnionNode u2 = u1.getRightChild();
     assertEquals(NodeType.GROUP_BY, u2.getLeftChild().getType());
-    grp = (GroupbyNode) u2.getRightChild();
+    grp = u2.getRightChild();
     cuboids.add(Sets.newHashSet(grp.getGroupingColumns()));
     assertEquals(NodeType.GROUP_BY, u2.getRightChild().getType());
-    grp = (GroupbyNode) u2.getLeftChild();
+    grp = u2.getLeftChild();
     cuboids.add(Sets.newHashSet(grp.getGroupingColumns()));
 
     assertEquals((int)Math.pow(2, 2), cuboids.size());
@@ -791,50 +755,48 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.UNION, root.getChild().getType());
-    UnionNode union = (UnionNode) root.getChild();
-    assertEquals(NodeType.PROJECTION, union.getLeftChild().getType());
-    ProjectionNode projL = (ProjectionNode) union.getLeftChild();
-    assertEquals(NodeType.SELECTION, projL.getChild().getType());
-    assertEquals(NodeType.PROJECTION, union.getRightChild().getType());
-    ProjectionNode projR = (ProjectionNode) union.getRightChild();
-    assertEquals(NodeType.SELECTION, projR.getChild().getType());
+    UnionNode union = root.getChild();
+    assertEquals(NodeType.TABLE_SUBQUERY, union.getLeftChild().getType());
+    TableSubQueryNode leftSub = union.getLeftChild();
+    assertEquals(NodeType.PROJECTION, leftSub.getSubQuery().getType());
+    assertEquals(NodeType.TABLE_SUBQUERY, union.getRightChild().getType());
+    TableSubQueryNode rightSub = union.getRightChild();
+    assertEquals(NodeType.PROJECTION, rightSub.getSubQuery().getType());
   }
 
   @Test
   public final void testSetPlan2() throws PlanningException {
     // for testing multiple set statements
     Expr expr = sqlAnalyzer.parse(setStatements[1]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
-    assertEquals(NodeType.ROOT, plan.getType());
-    LogicalRootNode root = (LogicalRootNode) plan;
+    LogicalPlan plan = planner.createPlan(expr);
+    System.out.println(plan);
+    LogicalRootNode root = plan.getRootBlock().getRoot();
+    testJsonSerDerObject(root);
+    assertEquals(NodeType.ROOT, root.getType());
     assertEquals(NodeType.UNION, root.getChild().getType());
-    UnionNode union = (UnionNode) root.getChild();
-    assertEquals(NodeType.PROJECTION, union.getLeftChild().getType());
-    assertEquals(NodeType.INTERSECT, union.getRightChild().getType());
-    IntersectNode intersect = (IntersectNode) union.getRightChild();
-    assertEquals(NodeType.PROJECTION, intersect.getLeftChild().getType());
-    assertEquals(NodeType.PROJECTION, intersect.getRightChild().getType());
+    UnionNode union = root.getChild();
+    assertEquals(NodeType.TABLE_SUBQUERY, union.getLeftChild().getType());
+    assertEquals(NodeType.TABLE_SUBQUERY, union.getRightChild().getType());
+    TableSubQueryNode subQuery = union.getRightChild();
+    assertEquals(NodeType.INTERSECT, subQuery.getSubQuery().getType());
   }
 
   @Test
   public final void testSetPlan3() throws PlanningException {
     // for testing multiple set statements
     Expr expr = sqlAnalyzer.parse(setStatements[2]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
-    assertEquals(NodeType.ROOT, plan.getType());
-    LogicalRootNode root = (LogicalRootNode) plan;
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalRootNode root = plan.getRootBlock().getRoot();
+    testJsonSerDerObject(root);
+    assertEquals(NodeType.ROOT, root.getType());
     assertEquals(NodeType.EXCEPT, root.getChild().getType());
-    ExceptNode except = (ExceptNode) root.getChild();
-    assertEquals(NodeType.UNION, except.getLeftChild().getType());
-    assertEquals(NodeType.INTERSECT, except.getRightChild().getType());
-    UnionNode union = (UnionNode) except.getLeftChild();
-    assertEquals(NodeType.PROJECTION, union.getLeftChild().getType());
-    assertEquals(NodeType.PROJECTION, union.getRightChild().getType());
-    IntersectNode intersect = (IntersectNode) except.getRightChild();
-    assertEquals(NodeType.PROJECTION, intersect.getLeftChild().getType());
-    assertEquals(NodeType.PROJECTION, intersect.getRightChild().getType());
+    ExceptNode except = root.getChild();
+    assertEquals(NodeType.TABLE_SUBQUERY, except.getLeftChild().getType());
+    assertEquals(NodeType.TABLE_SUBQUERY, except.getRightChild().getType());
+    TableSubQueryNode leftSubQuery = except.getLeftChild();
+    TableSubQueryNode rightSubQuery = except.getRightChild();
+    assertEquals(NodeType.UNION, leftSubQuery.getSubQuery().getType());
+    assertEquals(NodeType.INTERSECT, rightSubQuery.getSubQuery().getType());
   }
 
   static final String [] setQualifiers = {
@@ -851,7 +813,7 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode projectionNode = (ProjectionNode) root.getChild();
+    ProjectionNode projectionNode = root.getChild();
     assertEquals(NodeType.SCAN, projectionNode.getChild().getType());
 
     context = sqlAnalyzer.parse(setQualifiers[1]);
@@ -860,7 +822,7 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ROOT, plan.getType());
     root = (LogicalRootNode) plan;
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    projectionNode = (ProjectionNode) root.getChild();
+    projectionNode = root.getChild();
     assertEquals(NodeType.GROUP_BY, projectionNode.getChild().getType());
 
     context = sqlAnalyzer.parse(setQualifiers[2]);
@@ -868,7 +830,7 @@ public class TestLogicalPlanner {
     testJsonSerDerObject(plan);
     root = (LogicalRootNode) plan;
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    projectionNode = (ProjectionNode) root.getChild();
+    projectionNode = root.getChild();
     assertEquals(NodeType.SCAN, projectionNode.getChild().getType());
   }
 
@@ -962,8 +924,8 @@ public class TestLogicalPlanner {
   }
 
   private static InsertNode getInsertNode(LogicalPlan plan) {
-    LogicalRootNode root = (LogicalRootNode) plan.getRootBlock().getRoot();
+    LogicalRootNode root = plan.getRootBlock().getRoot();
     assertEquals(NodeType.INSERT, root.getChild().getType());
-    return (InsertNode) root.getChild();
+    return root.getChild();
   }
 }

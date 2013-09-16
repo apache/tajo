@@ -24,6 +24,7 @@ package org.apache.tajo.engine.planner.logical;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.Target;
 
 public class JoinNode extends BinaryNode implements Projectable, Cloneable {
@@ -80,11 +81,21 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   }
 
   @Override
+  public PlanString getPlanString() {
+    PlanString planStr = new PlanString("Join (type : ")
+        .appendTitle(joinType +")");
+    if (hasJoinQual()) {
+      planStr.addExplan("Join Cond: " + joinQual.toString());
+    }
+    return planStr;
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof JoinNode) {
       JoinNode other = (JoinNode) obj;
       return super.equals(other) && leftChild.equals(other.leftChild)
-          && inner.equals(other.inner);
+          && rightChild.equals(other.rightChild);
     } else {
       return false;
     }

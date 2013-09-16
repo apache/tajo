@@ -71,14 +71,6 @@ public class QueryIdFactory {
     return new QueryId(String.valueOf(timestamp), seq);
   }
 
-  /**
-   * for test
-   * @return
-   */
-  public synchronized static QueryId newQueryId() {
-    return newQueryId(TajoIdUtils.MASTER_ID_FORMAT.format(0));
-  }
-
   public synchronized static QueryId newQueryId(String seedQueryId, int seq) {
     if(isYarnId(seedQueryId)) {
       String[] tokens = seedQueryId.split("_");

@@ -25,9 +25,11 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.DataChannel;
 import org.apache.tajo.TaskAttemptContext;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.*;
@@ -39,6 +41,8 @@ import org.apache.tajo.util.IndexUtil;
 
 import java.io.IOException;
 
+import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
+
 public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(PhysicalPlannerImpl.class);
   protected final TajoConf conf;
@@ -49,19 +53,42 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     this.sm = sm;
   }
 
-  public PhysicalExec createPlan(final TaskAttemptContext context,
-      final LogicalNode logicalPlan) throws InternalException {
+  public PhysicalExec createPlan(final TaskAttemptContext context, final LogicalNode logicalPlan)
+      throws InternalException {
 
-    PhysicalExec plan;
+    PhysicalExec execPlan;
 
     try {
-      plan = createPlanRecursive(context, logicalPlan);
-
+      execPlan = createPlanRecursive(context, logicalPlan);
+      if (execPlan instanceof StoreTableExec || execPlan instanceof IndexedStoreExec
+          || execPlan instanceof PartitionedStoreExec) {
+        return execPlan;
+      } else if (context.getDataChannel() != null) {
+        return buildOutputOperator(context, logicalPlan, execPlan);
+      } else {
+        return execPlan;
+      }
     } catch (IOException ioe) {
       throw new InternalException(ioe);
     }
+  }
 
-    return plan;
+  private PhysicalExec buildOutputOperator(TaskAttemptContext context, LogicalNode plan,
+                                           PhysicalExec execPlan) throws IOException {
+    DataChannel channel = context.getDataChannel();
+    StoreTableNode storeTableNode = new StoreTableNode(channel.getTargetId().toString());
+    storeTableNode.setStorageType(CatalogProtos.StoreType.CSV);
+    storeTableNode.setInSchema(execPlan.getSchema());
+    storeTableNode.setOutSchema(execPlan.getSchema());
+    if (channel.getPartitionType() != PartitionType.NONE_PARTITION) {
+      storeTableNode.setPartitions(channel.getPartitionType(), channel.getPartitionKey(), channel.getPartitionNum());
+    } else {
+      storeTableNode.setDefaultParition();
+    }
+    storeTableNode.setChild(plan);
+
+    PhysicalExec outExecPlan = createStorePlan(context, storeTableNode, execPlan);
+    return outExecPlan;
   }
 
   private PhysicalExec createPlanRecursive(TaskAttemptContext ctx, LogicalNode logicalNode) throws IOException {
@@ -93,7 +120,12 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         outer = createPlanRecursive(ctx, prjNode.getChild());
         return new ProjectionExec(ctx, prjNode, outer);
 
-      case SCAN:
+      case TABLE_SUBQUERY: {
+        TableSubQueryNode subQueryNode = (TableSubQueryNode) logicalNode;
+        outer = createPlanRecursive(ctx, subQueryNode.getSubQuery());
+        return outer;
+
+      } case SCAN:
         outer = createScanPlan(ctx, (ScanNode) logicalNode);
         return outer;
 
@@ -202,17 +234,20 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public PhysicalExec createStorePlan(TaskAttemptContext ctx,
                                       StoreTableNode plan, PhysicalExec subOp) throws IOException {
-    if (plan.hasPartitionKey()) {
-      switch (plan.getPartitionType()) {
-        case HASH:
+    if (plan.getPartitionType() == PartitionType.HASH_PARTITION
+        || plan.getPartitionType() == PartitionType.RANGE_PARTITION) {
+      switch (ctx.getDataChannel().getPartitionType()) {
+        case HASH_PARTITION:
           return new PartitionedStoreExec(ctx, sm, plan, subOp);
 
-        case RANGE:
+        case RANGE_PARTITION:
+          SortExec sortExec = PhysicalPlanUtil.findExecutor(subOp, SortExec.class);
+
           SortSpec [] sortSpecs = null;
-          if (subOp instanceof SortExec) {
-            sortSpecs = ((SortExec)subOp).getSortSpecs();
+          if (sortExec != null) {
+            sortSpecs = sortExec.getSortSpecs();
           } else {
-            Column[] columns = plan.getPartitionKeys();
+            Column[] columns = ctx.getDataChannel().getPartitionKey();
             SortSpec specs[] = new SortSpec[columns.length];
             for (int i = 0; i < columns.length; i++) {
               specs[i] = new SortSpec(columns[i]);
@@ -232,10 +267,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode)
       throws IOException {
-    Preconditions.checkNotNull(ctx.getTable(scanNode.getTableId()),
-        "Error: There is no table matched to %s", scanNode.getTableId());
+    Preconditions.checkNotNull(ctx.getTable(scanNode.getTableName()),
+        "Error: There is no table matched to %s", scanNode.getTableName());
 
-    Fragment[] fragments = ctx.getTables(scanNode.getTableId());
+    Fragment[] fragments = ctx.getTables(scanNode.getTableName());
     return new SeqScanExec(ctx, sm, scanNode, fragments);
   }
 
@@ -281,14 +316,14 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
                                           IndexScanNode annotation)
       throws IOException {
     //TODO-general Type Index
-    Preconditions.checkNotNull(ctx.getTable(annotation.getTableId()),
-        "Error: There is no table matched to %s", annotation.getTableId());
+    Preconditions.checkNotNull(ctx.getTable(annotation.getTableName()),
+        "Error: There is no table matched to %s", annotation.getTableName());
 
-    Fragment[] fragments = ctx.getTables(annotation.getTableId());
+    Fragment[] fragments = ctx.getTables(annotation.getTableName());
 
     String indexName = IndexUtil.getIndexNameOfFrag(fragments[0],
         annotation.getSortKeys());
-    Path indexPath = new Path(sm.getTablePath(annotation.getTableId()), "index");
+    Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
 
     TupleComparator comp = new TupleComparator(annotation.getKeySchema(),
         annotation.getSortKeys());

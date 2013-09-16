@@ -65,14 +65,14 @@ public class Projector {
             continue outer;
         }
 
-        col = inSchema.getColumn(outSchema.getColumn(targetId).getQualifiedName());
+        col = inSchema.getColumnByFQN(outSchema.getColumn(targetId).getQualifiedName());
         outMap[mapId] = targetId;
         inMap[mapId] = inSchema.getColumnId(col.getQualifiedName());
         mapId++;
       }
     } else {
       for (int targetId = 0; targetId < outSchema.getColumnNum(); targetId ++) {
-        col = inSchema.getColumn(outSchema.getColumn(targetId).getQualifiedName());
+        col = inSchema.getColumnByFQN(outSchema.getColumn(targetId).getQualifiedName());
         outMap[mapId] = targetId;
         inMap[mapId] = inSchema.getColumnId(col.getQualifiedName());
         mapId++;

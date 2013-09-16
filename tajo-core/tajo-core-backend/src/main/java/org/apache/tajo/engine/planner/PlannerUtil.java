@@ -61,7 +61,7 @@ public class PlannerUtil {
     ScanNode scan;
     for (int i = 0; i < scans.length; i++) {
       scan = (ScanNode) scans[i];
-      tableNames[i] = scan.getTableId();
+      tableNames[i] = scan.getTableName();
     }
     return tableNames;
   }
@@ -127,65 +127,16 @@ public class PlannerUtil {
     parentNode.setChild(newNode);
   }
   
-  public static LogicalNode insertOuterNode(LogicalNode parent, LogicalNode outer) {
-    Preconditions.checkArgument(parent instanceof BinaryNode);
-    Preconditions.checkArgument(outer instanceof UnaryNode);
-    
-    BinaryNode p = (BinaryNode) parent;
-    LogicalNode c = p.getLeftChild();
-    UnaryNode m = (UnaryNode) outer;
-    m.setInSchema(c.getOutSchema());
-    m.setOutSchema(c.getOutSchema());
-    m.setChild(c);
-    p.setLeftChild(m);
-    return p;
-  }
-  
-  public static LogicalNode insertInnerNode(LogicalNode parent, LogicalNode inner) {
-    Preconditions.checkArgument(parent instanceof BinaryNode);
-    Preconditions.checkArgument(inner instanceof UnaryNode);
-    
-    BinaryNode p = (BinaryNode) parent;
-    LogicalNode c = p.getRightChild();
-    UnaryNode m = (UnaryNode) inner;
-    m.setInSchema(c.getOutSchema());
-    m.setOutSchema(c.getOutSchema());
-    m.setChild(c);
-    p.setRightChild(m);
-    return p;
-  }
-  
-  public static LogicalNode insertNode(LogicalNode parent, 
-      LogicalNode left, LogicalNode right) {
-    Preconditions.checkArgument(parent instanceof BinaryNode);
-    Preconditions.checkArgument(left instanceof UnaryNode);
-    Preconditions.checkArgument(right instanceof UnaryNode);
-    
-    BinaryNode p = (BinaryNode)parent;
-    LogicalNode lc = p.getLeftChild();
-    LogicalNode rc = p.getRightChild();
-    UnaryNode lm = (UnaryNode)left;
-    UnaryNode rm = (UnaryNode)right;
-    lm.setInSchema(lc.getOutSchema());
-    lm.setOutSchema(lc.getOutSchema());
-    lm.setChild(lc);
-    rm.setInSchema(rc.getOutSchema());
-    rm.setOutSchema(rc.getOutSchema());
-    rm.setChild(rc);
-    p.setLeftChild(lm);
-    p.setRightChild(rm);
-    return p;
-  }
-  
-  public static LogicalNode transformGroupbyTo2P(GroupbyNode gp) {
-    Preconditions.checkNotNull(gp);
-        
+  public static GroupbyNode transformGroupbyTo2P(GroupbyNode groupBy) {
+    Preconditions.checkNotNull(groupBy);
+
+    GroupbyNode child = null;
     try {
       // cloning groupby node
-      GroupbyNode child = (GroupbyNode) gp.clone();
+      child = (GroupbyNode) groupBy.clone();
 
       List<Target> newChildTargets = Lists.newArrayList();
-      Target[] secondTargets = gp.getTargets();
+      Target[] secondTargets = groupBy.getTargets();
       Target[] firstTargets = child.getTargets();
 
       Target second;
@@ -231,45 +182,17 @@ public class PlannerUtil {
       child.setTargets(targetArray);
       child.setOutSchema(PlannerUtil.targetToSchema(targetArray));
       // set the groupby chaining
-      gp.setChild(child);
-      gp.setInSchema(child.getOutSchema());
+      groupBy.setChild(child);
+      groupBy.setInSchema(child.getOutSchema());
     } catch (CloneNotSupportedException e) {
       LOG.error(e);
     }
     
-    return gp;
+    return child;
   }
   
-  public static LogicalNode transformSortTo2P(SortNode sort) {
-    Preconditions.checkNotNull(sort);
-    
-    try {
-      SortNode child = (SortNode) sort.clone();
-      sort.setChild(child);
-      sort.setInSchema(child.getOutSchema());
-      sort.setOutSchema(child.getOutSchema());
-    } catch (CloneNotSupportedException e) {
-      LOG.error(e);
-    }
-    return sort;
-  }
-  
-  public static LogicalNode transformGroupbyTo2PWithStore(GroupbyNode gb, 
-      String tableId) {
-    GroupbyNode groupby = (GroupbyNode) transformGroupbyTo2P(gb);
-    return insertStore(groupby, tableId);
-  }
-  
-  public static LogicalNode transformSortTo2PWithStore(SortNode sort, 
-      String tableId) {
-    SortNode sort2p = (SortNode) transformSortTo2P(sort);
-    return insertStore(sort2p, tableId);
-  }
-  
-  private static LogicalNode insertStore(LogicalNode parent, 
-      String tableId) {
-    StoreTableNode store = new StoreTableNode(tableId);
-    store.setLocal(true);
+  private static LogicalNode insertStore(LogicalNode parent, String tableName) {
+    StoreTableNode store = new StoreTableNode(tableName);
     insertNode(parent, store);
     
     return parent;
@@ -282,7 +205,7 @@ public class PlannerUtil {
    * @param type to find
    * @return a found logical node
    */
-  public static LogicalNode findTopNode(LogicalNode node, NodeType type) {
+  public static <T extends LogicalNode> T findTopNode(LogicalNode node, NodeType type) {
     Preconditions.checkNotNull(node);
     Preconditions.checkNotNull(type);
     
@@ -292,7 +215,7 @@ public class PlannerUtil {
     if (finder.getFoundNodes().size() == 0) {
       return null;
     }
-    return finder.getFoundNodes().get(0);
+    return (T) finder.getFoundNodes().get(0);
   }
 
   /**
@@ -344,8 +267,8 @@ public class PlannerUtil {
       Set<String> tableIds = Sets.newHashSet();
       // getting distinct table references
       for (Column col : columnRefs) {
-        if (!tableIds.contains(col.getTableName())) {
-          tableIds.add(col.getTableName());
+        if (!tableIds.contains(col.getQualifier())) {
+          tableIds.add(col.getQualifier());
         }
       }
 
@@ -373,11 +296,12 @@ public class PlannerUtil {
       return i.contains(it.next()) && o.contains(it.next());
 
     } else {
-      if (node instanceof ScanNode) {
-        ScanNode scan = (ScanNode) node;
+      if (node instanceof RelationNode) {
+
+        RelationNode scan = (RelationNode) node;
 
         for (Column col : columnRefs) {
-          if (scan.getTableId().equals(col.getTableName())) {
+          if (scan.getTableName().equals(col.getQualifier())) {
             Column found = node.getInSchema().getColumnByName(col.getColumnName());
             if (found == null) {
               return false;
@@ -459,12 +383,6 @@ public class PlannerUtil {
     public List<LogicalNode> getFoundNodes() {
       return list;
     }
-  }
-  
-  public static Set<Column> collectColumnRefs(LogicalNode node) {
-    ColumnRefCollector collector = new ColumnRefCollector();
-    node.postOrder(collector);
-    return collector.getColumns();
   }
   
   private static class ColumnRefCollector implements LogicalNodeVisitor {
@@ -609,7 +527,7 @@ public class PlannerUtil {
       List<Column> right = EvalTreeUtil.findAllColumnRefs(qual.getRightExpr());
 
       if (left.size() == 1 && right.size() == 1 &&
-          !left.get(0).getTableName().equals(right.get(0).getTableName()))
+          !left.get(0).getQualifier().equals(right.get(0).getQualifier()))
         return true;
     }
 
@@ -717,12 +635,27 @@ public class PlannerUtil {
       }
       if (copy[i].getEvalTree().getType() == EvalType.FIELD) {
         FieldEval fieldEval = (FieldEval) copy[i].getEvalTree();
-        if (fieldEval.getColumnRef().isQualified()) {
+        if (fieldEval.getColumnRef().hasQualifier()) {
           fieldEval.getColumnRef().setName(fieldEval.getColumnName());
         }
       }
     }
 
     return copy;
+  }
+
+  public static <T extends LogicalNode> T clone(LogicalNode node) {
+    try {
+      return (T) node.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static Schema getQualifiedSchema(Schema targetSchema, String qualifier) {
+    Schema copied;
+    copied = (Schema) targetSchema.clone();
+    copied.setQualifier(qualifier);
+    return copied;
   }
 }

@@ -136,6 +136,6 @@ public class SeqScanExec extends PhysicalExec {
   }
 
   public String getTableName() {
-    return plan.getTableId();
+    return plan.getTableName();
   }
 }

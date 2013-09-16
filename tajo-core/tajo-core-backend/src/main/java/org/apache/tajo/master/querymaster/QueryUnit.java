@@ -156,10 +156,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   }
 	
 	public void setLogicalPlan(LogicalNode plan) {
-    Preconditions.checkArgument(plan.getType() == NodeType.STORE);
-    
 	  this.plan = plan;
-    store = (StoreTableNode) plan;
 
 	  LogicalNode node = plan;
 	  ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
@@ -250,7 +247,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	}
 	
 	public Collection<URI> getFetch(ScanNode scan) {
-	  return this.fetchMap.get(scan.getTableId());
+	  return this.fetchMap.get(scan.getTableName());
 	}
 
 	public String getOutputName() {

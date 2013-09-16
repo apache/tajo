@@ -22,10 +22,12 @@ import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Options;
-import org.apache.tajo.master.ExecutionBlock.PartitionType;
+import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.TUtil;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType.LIST_PARTITION;
 
 public class StoreTableNode extends UnaryNode implements Cloneable {
   @Expose private String tableName;
@@ -33,7 +35,6 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   @Expose private PartitionType partitionType;
   @Expose private int numPartitions;
   @Expose private Column [] partitionKeys;
-  @Expose private boolean local;
   @Expose private Options options;
   @Expose private boolean isCreatedTable = false;
   @Expose private boolean isOverwritten = false;
@@ -41,7 +42,6 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   public StoreTableNode(String tableName) {
     super(NodeType.STORE);
     this.tableName = tableName;
-    this.local = false;
   }
 
   public final String getTableName() {
@@ -59,14 +59,6 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   public StoreType getStorageType() {
     return this.storageType;
   }
-
-  public final void setLocal(boolean local) {
-    this.local = local;
-  }
-
-  public final boolean isLocal() {
-    return this.local;
-  }
     
   public final int getNumPartitions() {
     return this.numPartitions;
@@ -80,10 +72,10 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     return this.partitionKeys;
   }
 
-  public final void setListPartition() {
-    this.partitionType = PartitionType.LIST;
+  public final void setDefaultParition() {
+    this.partitionType = LIST_PARTITION;
     this.partitionKeys = null;
-    this.numPartitions = 0;
+    this.numPartitions = 1;
   }
   
   public final void setPartitions(PartitionType type, Column [] keys, int numPartitions) {
@@ -111,6 +103,16 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
 
   public Options getOptions() {
     return this.options;
+  }
+
+
+  @Override
+  public PlanString getPlanString() {
+    PlanString planStr = new PlanString("Store");
+    planStr.appendTitle(" into ").appendTitle(tableName);
+    planStr.addExplan("Store type: " + storageType);
+
+    return planStr;
   }
 
   public boolean isCreatedTable() {
@@ -152,7 +154,7 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
     store.isOverwritten = isOverwritten;
     return store;
   }
-  
+
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("\"Store\": {\"table\": \""+tableName);

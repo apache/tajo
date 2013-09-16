@@ -180,4 +180,16 @@ public class InsertNode extends LogicalNode implements Cloneable {
   public void postOrder(LogicalNodeVisitor visitor) {
     visitor.visit(this);    
   }
+
+  @Override
+  public PlanString getPlanString() {
+    PlanString planString = new PlanString("INSERT");
+    planString.addExplan(" INTO ");
+    if (hasTargetTable()) {
+      planString.addExplan(getTargetTable().getName());
+    } else {
+      planString.addExplan("LOCATION " + path);
+    }
+    return planString;
+  }
 }

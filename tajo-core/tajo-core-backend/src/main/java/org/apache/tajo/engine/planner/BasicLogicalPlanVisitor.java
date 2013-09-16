@@ -76,6 +76,9 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
       case INTERSECT:
         current = visitIntersect(plan, (IntersectNode) node, stack, data);
         break;
+      case TABLE_SUBQUERY:
+        current = visitTableSubQuery(plan, (TableSubQueryNode) node, stack, data);
+        break;
       case SCAN:
         current = visitScan(plan, (ScanNode) node, stack, data);
         break;
@@ -179,6 +182,15 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
     stack.push(node);
     visitChild(plan, node.getLeftChild(), stack, data);
     visitChild(plan, node.getRightChild(), stack, data);
+    stack.pop();
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitTableSubQuery(LogicalPlan plan, TableSubQueryNode node, Stack<LogicalNode> stack, T data)
+      throws PlanningException {
+    stack.push(node);
+    visitChild(plan, node.getSubQuery(), stack, data);
     stack.pop();
     return node;
   }

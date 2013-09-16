@@ -179,7 +179,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
    */
   @Override
   public String getTableName(int column) throws SQLException {
-    return meta.getSchema().getColumn(column - 1).getTableName();
+    return meta.getSchema().getColumn(column - 1).getQualifier();
   }
 
   /* (non-Javadoc)

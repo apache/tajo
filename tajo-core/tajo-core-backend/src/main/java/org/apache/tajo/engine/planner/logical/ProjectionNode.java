@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.Target;
 
 import java.util.Arrays;
@@ -108,4 +109,31 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 	  
 	  return projNode;
 	}
+
+  @Override
+  public PlanString getPlanString() {
+    PlanString planStr = new PlanString("Projection: ");
+
+    if (distinct) {
+      planStr.appendTitle(" (distinct)");
+    }
+
+
+    StringBuilder sb = new StringBuilder("Targets: ");
+    for (int i = 0; i < targets.length; i++) {
+      sb.append(targets[i]);
+      if( i < targets.length - 1) {
+        sb.append(", ");
+      }
+    }
+    planStr.addExplan(sb.toString());
+    if (getOutSchema() != null) {
+      planStr.addExplan("out schema: " + getOutSchema().toString());
+    }
+    if (getInSchema() != null) {
+      planStr.addExplan("in  schema: " + getInSchema().toString());
+    }
+
+    return planStr;
+  }
 }

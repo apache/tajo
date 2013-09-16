@@ -27,9 +27,7 @@ import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.LogicalNodeVisitor;
+import org.apache.tajo.engine.planner.PlanString;
 
 import java.net.URI;
 import java.util.*;
@@ -72,6 +70,12 @@ public final class ReceiveNode extends LogicalNode implements Cloneable {
 
   public Collection<Entry<String, List<URI>>> getAllDataSet() {
     return Collections.unmodifiableSet(fetchMap.entrySet());
+  }
+
+
+  @Override
+  public PlanString getPlanString() {
+    return new PlanString("Receive ");
   }
 
   @Override

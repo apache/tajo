@@ -23,19 +23,17 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.FromTable;
+import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
-public class ScanNode extends LogicalNode implements Projectable {
+public class ScanNode extends RelationNode implements Projectable {
 	@Expose private FromTable table;
 	@Expose private EvalNode qual;
 	@Expose private Target[] targets;
-	@Expose private boolean local;
-  @Expose private boolean broadcast;
 	
 	public ScanNode() {
-		super();
-		local = false;
+		super(NodeType.SCAN);
 	}
   
 	public ScanNode(FromTable table) {
@@ -43,10 +41,9 @@ public class ScanNode extends LogicalNode implements Projectable {
 		this.table = table;
 		this.setInSchema(table.getSchema());
 		this.setOutSchema(table.getSchema());
-		local = false;
 	}
 	
-	public String getTableId() {
+	public String getTableName() {
 	  return table.getTableName();
 	}
 	
@@ -70,14 +67,6 @@ public class ScanNode extends LogicalNode implements Projectable {
 	  return this.qual;
 	}
 	
-	public boolean isLocal() {
-	  return this.local;
-	}
-	
-	public void setLocal(boolean local) {
-	  this.local = local;
-	}
-	
 	public void setQual(EvalNode evalTree) {
 	  this.qual = evalTree;
 	}
@@ -96,14 +85,6 @@ public class ScanNode extends LogicalNode implements Projectable {
 	public Target [] getTargets() {
 	  return this.targets;
 	}
-
-  public boolean isBroadcast() {
-    return broadcast;
-  }
-
-  public void setBroadcast() {
-    broadcast = true;
-  }
 	
 	public FromTable getFromTable() {
 	  return this.table;
@@ -120,10 +101,6 @@ public class ScanNode extends LogicalNode implements Projectable {
 	  if (hasAlias()) {
 	    sb.append(",\"alias\": \"").append(table.getAlias());
 	  }
-
-    if (isBroadcast()) {
-      sb.append(",\"broadcast\": true\"");
-    }
 	  
 	  if (hasQual()) {
 	    sb.append(", \"qual\": \"").append(this.qual).append("\"");
@@ -195,5 +172,34 @@ public class ScanNode extends LogicalNode implements Projectable {
 	
 	public void postOrder(LogicalNodeVisitor visitor) {        
     visitor.visit(this);
+  }
+
+  @Override
+  public PlanString getPlanString() {
+    PlanString planStr = new PlanString("Scan on ").appendTitle(getTableName());
+    if (table.hasAlias()) {
+      planStr.appendTitle(" as ").appendTitle(table.getAlias());
+    }
+
+    if (hasQual()) {
+      planStr.addExplan("filter: ").appendExplain(this.qual.toString());
+    }
+
+    if (hasTargets()) {
+      planStr.addExplan("target list: ");
+      boolean first = true;
+      for (Target target : targets) {
+        if (!first) {
+          planStr.appendExplain(", ");
+        }
+        planStr.appendExplain(target.toString());
+        first = false;
+      }
+    }
+
+    planStr.addDetail("out schema: ").appendDetail(getOutSchema().toString());
+    planStr.addDetail("in schema: ").appendDetail(getInSchema().toString());
+
+    return planStr;
   }
 }

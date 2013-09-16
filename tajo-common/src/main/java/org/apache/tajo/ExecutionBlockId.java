@@ -32,16 +32,6 @@ public class ExecutionBlockId implements Comparable<ExecutionBlockId> {
     this(new QueryId(proto.getQueryId()),  proto.getId());
   }
 
-//  public ExecutionBlockId(String idStr) {
-//    String[] tokens = idStr.split(QueryId.SEPARATOR);
-//    if(tokens.length < 3) {
-//      throw new RuntimeException("Wrong ExecutionBlockId format[" + idStr + "]");
-//    }
-//
-//    this.queryId = new QueryId(tokens);
-//    this.id = Integer.parseInt(tokens[3]);
-//  }
-
   @Override
   public String toString() {
       return EB_ID_PREFIX + QueryId.SEPARATOR + toStringNoPrefix();

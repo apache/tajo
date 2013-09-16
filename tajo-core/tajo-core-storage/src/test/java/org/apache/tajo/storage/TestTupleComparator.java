@@ -66,8 +66,8 @@ public class TestTupleComparator {
         DatumFactory.createInt4(4),
         DatumFactory.createText("abd")});
 
-    SortSpec sortKey1 = new SortSpec(schema.getColumn("col4"), true, false);
-    SortSpec sortKey2 = new SortSpec(schema.getColumn("col5"), true, false);
+    SortSpec sortKey1 = new SortSpec(schema.getColumnByFQN("col4"), true, false);
+    SortSpec sortKey2 = new SortSpec(schema.getColumnByFQN("col5"), true, false);
 
     TupleComparator tc = new TupleComparator(schema,
         new SortSpec[] {sortKey1, sortKey2});

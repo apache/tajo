@@ -45,7 +45,9 @@ public enum NodeType {
   SELECTION(SelectionNode.class),
   STORE(StoreTableNode.class),
   SORT(SortNode.class),
-  UNION(UnionNode.class);
+  UNION(UnionNode.class),
+  TABLE_SUBQUERY(TableSubQueryNode.class);
+
 
   private final Class<? extends LogicalNode> baseClass;
 

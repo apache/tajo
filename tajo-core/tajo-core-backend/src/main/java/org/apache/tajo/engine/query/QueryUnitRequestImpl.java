@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.tajo.DataChannel;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.ipc.TajoWorkerProtocol.Fetch;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
@@ -42,6 +43,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	private List<Fetch> fetches;
   private Boolean shouldDie;
   private QueryContext queryContext;
+  private DataChannel dataChannel;
 	
 	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
 	private QueryUnitRequestProto.Builder builder = null;
@@ -55,9 +57,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
 	public QueryUnitRequestImpl(QueryUnitAttemptId id, List<Fragment> fragments,
 			String outputTable, boolean clusteredOutput,
-			String serializedData, QueryContext queryContext) {
+			String serializedData, QueryContext queryContext, DataChannel channel) {
 		this();
-		this.set(id, fragments, outputTable, clusteredOutput, serializedData, queryContext);
+		this.set(id, fragments, outputTable, clusteredOutput, serializedData, queryContext, channel);
 	}
 	
 	public QueryUnitRequestImpl(QueryUnitRequestProto proto) {
@@ -68,8 +70,8 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	}
 	
 	public void set(QueryUnitAttemptId id, List<Fragment> fragments,
-			String outputTable, boolean clusteredOutput, 
-			String serializedData, QueryContext queryContext) {
+			String outputTable, boolean clusteredOutput,
+			String serializedData, QueryContext queryContext, DataChannel dataChannel) {
 		this.id = id;
 		this.fragments = fragments;
 		this.outputTable = outputTable;
@@ -77,6 +79,8 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		this.serializedData = serializedData;
 		this.isUpdated = true;
     this.queryContext = queryContext;
+    this.queryContext = queryContext;
+    this.dataChannel = dataChannel;
 	}
 
 	@Override
@@ -198,6 +202,24 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     maybeInitBuilder();
     this.queryContext = queryContext;
   }
+
+  public void setDataChannel(DataChannel dataChannel) {
+    maybeInitBuilder();
+    this.dataChannel = dataChannel;
+  }
+
+  @Override
+  public DataChannel getDataChannel() {
+    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    if (dataChannel != null) {
+      return dataChannel;
+    }
+    if (!p.hasQueryContext()) {
+      return null;
+    }
+    this.dataChannel = new DataChannel(p.getDataChannel());
+    return this.dataChannel;
+  }
 	
 	public List<Fetch> getFetches() {
 	  initFetches();    
@@ -271,6 +293,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     }
     if (this.queryContext != null) {
       builder.setQueryContext(queryContext.getProto());
+    }
+    if (this.dataChannel != null) {
+      builder.setDataChannel(dataChannel.getProto());
     }
 	}
 

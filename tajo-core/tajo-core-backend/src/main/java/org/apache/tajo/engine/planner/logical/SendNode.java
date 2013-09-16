@@ -28,8 +28,7 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.UnaryNode;
+import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.TUtil;
 
 import java.net.URI;
@@ -105,6 +104,11 @@ public class SendNode extends UnaryNode {
   
   public void setDestURIs(Map<Integer, URI> destURIs) {
     this.destURIs = destURIs;
+  }
+
+  @Override
+  public PlanString getPlanString() {
+    return null;
   }
 
   @Override

@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
@@ -156,7 +157,7 @@ public class TestMergeJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testMergeInnerJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
-        TUtil.newQueryUnitAttemptId(), merged, workDir);
+        LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
 

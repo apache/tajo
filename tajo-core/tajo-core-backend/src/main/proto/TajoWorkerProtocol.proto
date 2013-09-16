@@ -60,6 +60,7 @@ message QueryUnitRequestProto {
     repeated Fetch fetches = 7;
     optional bool shouldDie = 8;
     optional KeyValueSetProto queryContext = 9;
+    optional DataChannelProto dataChannel = 10;
 }
 
 message Fetch {
@@ -106,12 +107,41 @@ message Partition {
 message QueryExecutionRequestProto {
     required QueryIdProto queryId = 1;
     required KeyValueSetProto queryContext = 2;
-    required StringProto logicalPlanJson = 3;
+    required StringProto sql = 3;
+    optional StringProto logicalPlanJson = 4;
 }
 
 message GetTaskRequestProto {
     required ContainerIdProto containerId = 1;
     required ExecutionBlockIdProto executionBlockId = 2;
+}
+
+enum PartitionType {
+  NONE_PARTITION = 0;
+  LIST_PARTITION = 1;
+  HASH_PARTITION = 2;
+  RANGE_PARTITION = 3;
+}
+
+enum TransmitType {
+  PUSH_TRANSMIT = 0;
+  PULL_TRANSMIT = 1;
+  FILE_WRITE = 2;
+}
+
+message DataChannelProto {
+  required ExecutionBlockIdProto srcId = 1;
+  required ExecutionBlockIdProto targetId = 2;
+  required TransmitType transmitType = 3 [default = PULL_TRANSMIT];
+  required PartitionType partitionType = 4;
+
+  optional SchemaProto schema = 5;
+
+  repeated ColumnProto partitionKey = 7;
+  optional int32 partitionNum = 8 [default = 1];
+  repeated SortSpecProto sortSpecs = 9;
+
+  optional StoreType storeType = 10 [default = CSV];
 }
 
 message RunExecutionBlockRequestProto {

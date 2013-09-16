@@ -30,7 +30,7 @@ import org.apache.hadoop.yarn.service.Service;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.global.GlobalOptimizer;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.GlobalPlanner;
 import org.apache.tajo.master.TajoAsyncDispatcher;
@@ -54,8 +54,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
   private TajoAsyncDispatcher dispatcher;
 
   private GlobalPlanner globalPlanner;
-
-  private GlobalOptimizer globalOptimizer;
 
   private AbstractStorageManager storageManager;
 
@@ -93,8 +91,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       this.storageManager = StorageManagerFactory.getStorageManager(systemConf);
 
-      globalPlanner = new GlobalPlanner(systemConf, storageManager, dispatcher.getEventHandler());
-      globalOptimizer = new GlobalOptimizer();
+      globalPlanner = new GlobalPlanner(systemConf, storageManager);
 
       dispatcher.register(QueryStartEvent.EventType.class, new QueryStartEventHandler());
 
@@ -217,9 +214,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
     public GlobalPlanner getGlobalPlanner() {
       return globalPlanner;
     }
-    public GlobalOptimizer getGlobalOptimizer() {
-      return globalOptimizer;
-    }
 
     public TajoWorker.WorkerContext getWorkerContext() {
       return workerContext;
@@ -253,9 +247,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
     @Override
     public void handle(QueryStartEvent event) {
       LOG.info("Start QueryStartEventHandler:" + event.getQueryId());
-      //To change body of implemented methods use File | Settings | File Templates.
       QueryMasterTask queryMasterTask = new QueryMasterTask(queryMasterContext,
-          event.getQueryId(), event.getQueryContext(), event.getLogicalPlanJson());
+          event.getQueryId(), event.getQueryContext(), event.getSql(), event.getLogicalPlanJson());
 
       queryMasterTask.init(systemConf);
       queryMasterTask.start();
@@ -280,17 +273,21 @@ public class QueryMaster extends CompositeService implements EventHandler {
         }
         synchronized(queryMasterTasks) {
           for(QueryMasterTask eachTask: tempTasks) {
-            TajoMasterProtocol.TajoHeartbeat queryHeartbeat = TajoMasterProtocol.TajoHeartbeat.newBuilder()
-                .setTajoWorkerHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName())
-                .setTajoWorkerPort(workerContext.getTajoWorkerManagerService().getBindAddr().getPort())
-                .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
-                .setState(eachTask.getState())
-                .setQueryId(eachTask.getQueryId().getProto())
-                .setQueryProgress(eachTask.getQuery().getProgress())
-                .setQueryFinishTime(eachTask.getQuery().getFinishTime())
-                .build();
+            try {
+              TajoMasterProtocol.TajoHeartbeat queryHeartbeat = TajoMasterProtocol.TajoHeartbeat.newBuilder()
+                  .setTajoWorkerHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName())
+                  .setTajoWorkerPort(workerContext.getTajoWorkerManagerService().getBindAddr().getPort())
+                  .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
+                  .setState(eachTask.getState())
+                  .setQueryId(eachTask.getQueryId().getProto())
+                  .setQueryProgress(eachTask.getQuery().getProgress())
+                  .setQueryFinishTime(eachTask.getQuery().getFinishTime())
+                  .build();
 
-            workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeat, NullCallback.get());
+              workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeat, NullCallback.get());
+            } catch (Throwable t) {
+              t.printStackTrace();
+            }
           }
         }
         synchronized(queryMasterStop) {
@@ -309,7 +306,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
   class ClientSessionTimeoutCheckThread extends Thread {
     public void run() {
       LOG.info("ClientSessionTimeoutCheckThread started");
-      while(true) {
+      while(!queryMasterStop.get()) {
         try {
           Thread.sleep(1000);
         } catch (InterruptedException e) {
@@ -337,5 +334,4 @@ public class QueryMaster extends CompositeService implements EventHandler {
       }
     }
   }
-
 }

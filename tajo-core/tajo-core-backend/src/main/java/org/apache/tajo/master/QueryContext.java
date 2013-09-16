@@ -168,4 +168,12 @@ public class QueryContext extends Options {
   public boolean isInsert() {
     return getCommandType() == NodeType.INSERT;
   }
+
+  public void setHiveQueryMode() {
+    setBool("hive.query.mode", true);
+  }
+
+  public boolean isHiveQueryMode() {
+    return getBool("hive.query.mode");
+  }
 }

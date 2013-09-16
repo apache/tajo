@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Stack;
 
 import static org.apache.tajo.algebra.Aggregation.GroupType;
+import static org.apache.tajo.engine.planner.LogicalPlan.BlockType;
 
 /**
  * This class creates a logical plan from a parse tree ({@link org.apache.tajo.engine.parser.SQLAnalyzer})
@@ -134,6 +135,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return block;
     }
   }
+
+  public TableSubQueryNode visitTableSubQuery(PlanContext context, Stack<OpType> stack, TableSubQuery expr) throws PlanningException {
+    QueryBlock newBlock = context.plan.newAndGetBlock(expr.getName());
+    PlanContext newContext = new PlanContext(context.plan, newBlock);
+    Stack<OpType> newStack = new Stack<OpType>();
+    LogicalNode child = visitChild(newContext, newStack, expr.getSubQuery());
+    context.plan.connectBlocks(newContext.block, context.block, BlockType.TableSubQuery);
+    return new TableSubQueryNode(expr.getName(), child);
+  }
+
 
   @Override
   public ScanNode visitRelation(PlanContext context, Stack<OpType> stack, Relation expr)
@@ -307,22 +318,26 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     PlanContext leftContext = new PlanContext(plan, plan.newAnonymousBlock());
     Stack<OpType> leftStack = new Stack<OpType>();
     LogicalNode left = visitChild(leftContext, leftStack, setOperation.getLeft());
+    TableSubQueryNode leftSubQuery = new TableSubQueryNode(leftContext.block.getName(), left);
+    context.plan.connectBlocks(leftContext.block, context.block, BlockType.TableSubQuery);
 
     PlanContext rightContext = new PlanContext(plan, plan.newAnonymousBlock());
     Stack<OpType> rightStack = new Stack<OpType>();
     LogicalNode right = visitChild(rightContext, rightStack, setOperation.getRight());
+    TableSubQueryNode rightSubQuery = new TableSubQueryNode(rightContext.block.getName(), right);
+    context.plan.connectBlocks(rightContext.block, context.block, BlockType.TableSubQuery);
 
     verifySetStatement(setOperation.getType(), leftContext.block, rightContext.block);
 
     BinaryNode setOp;
     if (setOperation.getType() == OpType.Union) {
-      setOp = new UnionNode(left, right);
+      setOp = new UnionNode(leftSubQuery, rightSubQuery);
     } else if (setOperation.getType() == OpType.Except) {
-      setOp = new ExceptNode(left, right);
+      setOp = new ExceptNode(leftSubQuery, rightSubQuery);
     } else if (setOperation.getType() == OpType.Intersect) {
-      setOp = new IntersectNode(left, right);
+      setOp = new IntersectNode(leftSubQuery, rightSubQuery);
     } else {
-      throw new VerifyException(setOperation.toJson());
+      throw new VerifyException("Invalid Type: " + setOperation.getType());
     }
 
     // Strip the table names from the targets of the both blocks
@@ -330,10 +345,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Target [] leftStrippedTargets = PlannerUtil.stripTarget(leftContext.block.getCurrentTargets());
 
     Schema outSchema = PlannerUtil.targetToSchema(leftStrippedTargets);
-    setOp.setInSchema(left.getOutSchema());
+    setOp.setInSchema(leftSubQuery.getOutSchema());
     setOp.setOutSchema(outSchema);
-    setOp.setLeftChild(left);
-    setOp.setRightChild(right);
 
     if (isNoUpperProjection(stack)) {
       block.targetListManager = new TargetListManager(plan, leftStrippedTargets);
@@ -357,7 +370,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     for (int i = 0; i < targets1.length; i++) {
       if (!targets1[i].getDataType().equals(targets2[i].getDataType())) {
-        throw new VerifyException("UNION types " + targets1[i].getDataType().getType() + " and "
+        throw new VerifyException(type + " types " + targets1[i].getDataType().getType() + " and "
             + targets2[i].getDataType().getType() + " cannot be matched");
       }
     }
@@ -428,7 +441,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // 4. Set Child Plan and Update Input Schemes Phase
       groupingNode.setChild(child);
       block.setGroupingNode(groupingNode);
-      groupingNode.setInSchema(child.getInSchema());
+      groupingNode.setInSchema(child.getOutSchema());
 
       // 5. Update Output Schema and Targets for Upper Plan
 
@@ -438,7 +451,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       List<Column[]> cuboids  = generateCuboids(annotateGroupingColumn(plan, block.getName(),
           groupElements[0].getColumns(), child));
       UnionNode topUnion = createGroupByUnion(plan, block, child, cuboids, 0);
-      block.resolveGrouping();
+      block.needToResolveGrouping();
       block.getTargetListManager().setEvaluatedAll();
 
       return topUnion;
@@ -827,7 +840,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     PlanContext newContext = new PlanContext(ctx.plan, newQueryBlock);
     Stack<OpType> subStack = new Stack<OpType>();
     LogicalNode subQuery = visitChild(newContext, subStack, expr.getSubQuery());
-    ctx.plan.connectBlocks(ctx.block, newQueryBlock, QueryBlockGraph.BlockType.TableSubQuery);
+    ctx.plan.connectBlocks(newQueryBlock, ctx.block, BlockType.TableSubQuery);
     stack.pop();
 
     InsertNode insertNode = null;
@@ -849,7 +862,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         }
       }
 
-      checkInsertDomains(targetSchema, subQuery.getOutSchema());
+      ensureDomains(targetSchema, subQuery.getOutSchema());
       insertNode = new InsertNode(desc, subQuery);
       insertNode.setTargetSchema(targetSchema);
       insertNode.setOutSchema(targetSchema);
@@ -872,12 +885,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return insertNode;
   }
 
-  private static void checkInsertDomains(Schema targetTableScheme, Schema insertSchema)
+  /**
+   * This ensures that corresponding columns in both tables are equivalent to each other.
+   */
+  private static void ensureDomains(Schema targetTableScheme, Schema schema)
       throws PlanningException {
-    for (int i = 0; i < insertSchema.getColumnNum(); i++) {
-      if (!insertSchema.getColumn(i).getDataType().equals(targetTableScheme.getColumn(i).getDataType())) {
+    for (int i = 0; i < schema.getColumnNum(); i++) {
+      if (!schema.getColumn(i).getDataType().equals(targetTableScheme.getColumn(i).getDataType())) {
         Column targetColumn = targetTableScheme.getColumn(i);
-        Column insertColumn = insertSchema.getColumn(i);
+        Column insertColumn = schema.getColumn(i);
         throw new PlanningException("ERROR: " +
             insertColumn.getColumnName() + " is of type " + insertColumn.getDataType().getType().name() +
                 ", but target column '" + targetColumn.getColumnName() + "' is of type " +

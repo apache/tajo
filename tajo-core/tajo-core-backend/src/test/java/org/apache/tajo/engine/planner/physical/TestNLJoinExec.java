@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
@@ -33,6 +34,7 @@ import org.apache.tajo.engine.planner.LogicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -58,6 +60,8 @@ public class TestNLJoinExec {
 
   private TableDesc employee;
   private TableDesc people;
+
+  private MasterPlan masterPlan;
 
   @Before
   public void setUp() throws Exception {
@@ -118,6 +122,8 @@ public class TestNLJoinExec {
     catalog.addTable(people);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
+
+    masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
   }
 
   @After
@@ -142,7 +148,7 @@ public class TestNLJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testNLCrossJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
-        TUtil.newQueryUnitAttemptId(), merged, workDir);
+        LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     Expr context = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
 
@@ -170,7 +176,7 @@ public class TestNLJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testNLInnerJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
-        TUtil.newQueryUnitAttemptId(), merged, workDir);
+        LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan), merged, workDir);
     Expr context =  analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
     //LogicalOptimizer.optimize(ctx, plan);

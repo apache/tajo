@@ -25,9 +25,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TaskAttemptContext;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -41,8 +39,8 @@ import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.master.ExecutionBlock.PartitionType;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -60,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
 import static org.junit.Assert.*;
 
 public class TestPhysicalPlanner {
@@ -74,6 +73,8 @@ public class TestPhysicalPlanner {
 
   private static TableDesc employee = null;
   private static TableDesc score = null;
+
+  private static MasterPlan masterPlan;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -148,6 +149,8 @@ public class TestPhysicalPlanner {
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
     optimizer = new LogicalOptimizer();
+
+    masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
   }
 
   @AfterClass
@@ -180,8 +183,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(),
         employee.getPath(), Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateScanPlan");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil
-        .newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] { frags[0] }, workDir);
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(expr);
@@ -210,8 +212,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(),
         employee.getPath(), Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateScanWithFilterPlan");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil
-        .newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] { frags[0] }, workDir);
     Expr expr = analyzer.parse(QUERIES[16]);
     LogicalPlan plan = planner.createPlan(expr);
@@ -238,7 +239,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testGroupByPlan");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] { frags[0] }, workDir);
     Expr context = analyzer.parse(QUERIES[7]);
     LogicalPlan plan = planner.createPlan(context);
@@ -268,7 +269,7 @@ public class TestPhysicalPlanner {
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(
         "target/test-data/testHashGroupByPlanWithALLField");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] { frags[0] }, workDir);
     Expr expr = analyzer.parse(QUERIES[15]);
     LogicalPlan plan = planner.createPlan(expr);
@@ -296,7 +297,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testSortGroupByPlan");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[]{frags[0]}, workDir);
     Expr context = analyzer.parse(QUERIES[7]);
     LogicalPlan plan = planner.createPlan(context);
@@ -353,7 +354,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlan");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] { frags[0] },
         workDir);
     ctx.setOutputPath(new Path(workDir, "grouped1"));
@@ -394,7 +395,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlanWithRCFile");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] { frags[0] },
         workDir);
     ctx.setOutputPath(new Path(workDir, "grouped2"));
@@ -433,10 +434,9 @@ public class TestPhysicalPlanner {
   public final void testPartitionedStorePlan() throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
-    QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
+    QueryUnitAttemptId id = LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testPartitionedStorePlan");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, id, new Fragment[] { frags[0] },
-        workDir);
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, id, new Fragment[] { frags[0] }, workDir);
     Expr context = analyzer.parse(QUERIES[7]);
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
@@ -444,13 +444,13 @@ public class TestPhysicalPlanner {
     int numPartitions = 3;
     Column key1 = new Column("score.deptName", Type.TEXT);
     Column key2 = new Column("score.class", Type.TEXT);
-    StoreTableNode storeNode = new StoreTableNode("partition");
-    storeNode.setPartitions(PartitionType.HASH, new Column[]{key1, key2}, numPartitions);
-    PlannerUtil.insertNode(rootNode, storeNode);
+    DataChannel dataChannel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
+        PartitionType.HASH_PARTITION, numPartitions);
+    dataChannel.setPartitionKey(new Column[]{key1, key2});
+    ctx.setDataChannel(dataChannel);
     rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(rootNode.getOutSchema(),
-        StoreType.CSV);
+    TableMeta outputMeta = CatalogUtil.newTableMeta(rootNode.getOutSchema(), StoreType.CSV);
 
     FileSystem fs = sm.getFileSystem();
 
@@ -492,7 +492,7 @@ public class TestPhysicalPlanner {
       throws IOException, PlanningException {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
-    QueryUnitAttemptId id = TUtil.newQueryUnitAttemptId();
+    QueryUnitAttemptId id = LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan);
 
     Path workDir = CommonTestingUtil.getTestDir(
         "target/test-data/testPartitionedStorePlanWithEmptyGroupingSet");
@@ -502,9 +502,10 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
     int numPartitions = 1;
-    StoreTableNode storeNode = new StoreTableNode("emptyset");
-    storeNode.setPartitions(PartitionType.HASH, new Column[] {}, numPartitions);
-    PlannerUtil.insertNode(rootNode, storeNode);
+    DataChannel dataChannel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
+        PartitionType.HASH_PARTITION, numPartitions);
+    dataChannel.setPartitionKey(new Column[]{});
+    ctx.setDataChannel(dataChannel);
     optimizer.optimize(plan);
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(rootNode.getOutSchema(),
@@ -549,14 +550,14 @@ public class TestPhysicalPlanner {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testAggregationFunction");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] { frags[0] }, workDir);
     Expr context = analyzer.parse(QUERIES[8]);
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
     // Set all aggregation functions to the first phase mode
-    GroupbyNode groupbyNode = (GroupbyNode) PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
+    GroupbyNode groupbyNode = PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
     for (Target target : groupbyNode.getTargets()) {
       for (EvalNode eval : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {
         if (eval instanceof AggFuncCallEval) {
@@ -582,7 +583,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCountFunction");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] { frags[0] }, workDir);
     Expr context = analyzer.parse(QUERIES[9]);
     LogicalPlan plan = planner.createPlan(context);
@@ -613,7 +614,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = StorageManager.splitNG(conf, "score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testGroupByWithNullValue");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] { frags[0] }, workDir);
     Expr context = analyzer.parse(QUERIES[11]);
     LogicalPlan plan = planner.createPlan(context);
@@ -636,7 +637,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testUnionPlan");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] { frags[0] }, workDir);
     Expr  context = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(context);
@@ -660,7 +661,7 @@ public class TestPhysicalPlanner {
   @Test
   public final void testEvalExpr() throws IOException, PlanningException {
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testEvalExpr");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] { }, workDir);
     Expr expr = analyzer.parse(QUERIES[12]);
     LogicalPlan plan = planner.createPlan(expr);
@@ -696,7 +697,7 @@ public class TestPhysicalPlanner {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateIndex");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] {frags[0]}, workDir);
     Expr context = analyzer.parse(createIndexStmt[0]);
     LogicalPlan plan = planner.createPlan(context);
@@ -723,7 +724,7 @@ public class TestPhysicalPlanner {
         Integer.MAX_VALUE);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testDuplicateEliminate");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] {frags[0]}, workDir);
     Expr expr = analyzer.parse(duplicateElimination[0]);
     LogicalPlan plan = planner.createPlan(expr);
@@ -755,23 +756,28 @@ public class TestPhysicalPlanner {
         employee.getPath(), Integer.MAX_VALUE);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testIndexedStoreExec");
-    TaskAttemptContext ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] {frags[0]}, workDir);
     Expr context = analyzer.parse(SORT_QUERY[0]);
     LogicalPlan plan = planner.createPlan(context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
+    SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
+    DataChannel channel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
+        PartitionType.RANGE_PARTITION);
+    channel.setPartitionKey(PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys()).toArray());
+    ctx.setDataChannel(channel);
+
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
-    ProjectionExec proj = (ProjectionExec) exec;
-    ExternalSortExec sort = (ExternalSortExec) proj.getChild();
-
-    SortSpec[] sortSpecs = sort.getPlan().getSortKeys();
-    IndexedStoreExec idxStoreExec = new IndexedStoreExec(ctx, sm, sort, sort.getSchema(), sort.getSchema(), sortSpecs);
+//    ProjectionExec proj = (ProjectionExec) exec;
+//    ExternalSortExec sort = (ExternalSortExec) proj.getChild();
+//
+//    SortSpec[] sortSpecs = sort.getPlan().getSortKeys();
+    //IndexedStoreExec idxStoreExec = new IndexedStoreExec(ctx, sm, sort, sort.getSchema(), sort.getSchema(), sortSpecs);
 
     Tuple tuple;
-    exec = idxStoreExec;
     exec.init();
     exec.next();
     exec.close();

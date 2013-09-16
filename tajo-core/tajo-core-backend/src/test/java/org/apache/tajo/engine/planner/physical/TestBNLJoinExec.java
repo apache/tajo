@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
@@ -140,7 +141,7 @@ public class TestBNLJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBNLCrossJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
-        TUtil.newQueryUnitAttemptId(), merged, workDir);
+        LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
 
@@ -175,7 +176,7 @@ public class TestBNLJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBNLInnerJoin");
     TaskAttemptContext ctx =
-        new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+        new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
             merged, workDir);
     Expr context = analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();

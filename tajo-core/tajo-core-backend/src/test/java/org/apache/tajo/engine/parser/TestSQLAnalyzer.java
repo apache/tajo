@@ -168,6 +168,12 @@ public class TestSQLAnalyzer {
   }
 
   @Test
+  public void testSet4() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/set_4.sql"));
+    System.out.println(parseQuery(sql));
+  }
+
+  @Test
   public void testDropTable() throws IOException {
     String sql = FileUtil.readTextFile(new File("src/test/queries/drop_table.sql"));
     parseQuery(sql);
@@ -236,6 +242,12 @@ public class TestSQLAnalyzer {
   @Test
   public void testTableSubQuery1() throws IOException {
     String sql = FileUtil.readTextFile(new File("src/test/queries/table_subquery1.sql"));
+    parseQuery(sql);
+  }
+
+  @Test
+  public void testTableSubQuery2() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/table_subquery2.sql"));
     parseQuery(sql);
   }
 

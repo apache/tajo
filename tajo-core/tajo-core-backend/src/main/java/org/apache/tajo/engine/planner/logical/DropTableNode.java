@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.logical;
 
+import org.apache.tajo.engine.planner.PlanString;
+
 public class DropTableNode extends LogicalNode {
   private String tableName;
 
@@ -28,6 +30,11 @@ public class DropTableNode extends LogicalNode {
 
   public String getTableName() {
     return this.tableName;
+  }
+
+  @Override
+  public PlanString getPlanString() {
+    return new PlanString("DropTable");
   }
 
   public boolean equals(Object obj) {

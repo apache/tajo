@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
@@ -42,7 +43,6 @@ import org.apache.tajo.engine.planner.physical.ProjectionExec;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.dataserver.retriever.FileChunk;
 import org.junit.After;
 import org.junit.Before;
@@ -134,7 +134,7 @@ public class TestRangeRetrieverHandler {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", employeeMeta, tableDir, Integer.MAX_VALUE);
 
     TaskAttemptContext
-        ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+        ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, testDir);
     Expr expr = analyzer.parse(SORT_QUERY[0]);
     LogicalPlan plan = planner.createPlan(expr);
@@ -247,7 +247,7 @@ public class TestRangeRetrieverHandler {
     Fragment[] frags = sm.splitNG(conf, "employee", meta, tablePath, Integer.MAX_VALUE);
 
     TaskAttemptContext
-        ctx = new TaskAttemptContext(conf, TUtil.newQueryUnitAttemptId(),
+        ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
         new Fragment[] {frags[0]}, testDir);
     Expr expr = analyzer.parse(SORT_QUERY[1]);
     LogicalPlan plan = planner.createPlan(expr);

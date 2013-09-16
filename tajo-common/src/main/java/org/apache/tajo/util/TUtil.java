@@ -18,9 +18,6 @@
 
 package org.apache.tajo.util;
 
-import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.QueryUnitAttemptId;
-
 import java.util.*;
 
 /**
@@ -86,6 +83,22 @@ public class TUtil {
     return new HashMap<K, V>(map);
   }
 
+  public static <K, V> Map<K,V> newHashMap(K k, V v) {
+    HashMap<K, V> newMap = new HashMap<K, V>();
+    newMap.put(k, v);
+    return newMap;
+  }
+
+  public static <K,V> Map<K,V> newLinkedHashMap() {
+    return new LinkedHashMap<K, V>();
+  }
+
+  public static <K, V> Map<K,V> newLinkedHashMap(K k, V v) {
+    HashMap<K, V> newMap = new LinkedHashMap<K, V>();
+    newMap.put(k, v);
+    return newMap;
+  }
+
   public static <T> List<T> newList() {
     return new ArrayList<T>();
   }
@@ -108,13 +121,6 @@ public class TUtil {
     return list;
   }
 
-  public static QueryUnitAttemptId newQueryUnitAttemptId() {
-    return QueryIdFactory.newQueryUnitAttemptId(
-        QueryIdFactory.newQueryUnitId(
-            QueryIdFactory.newExecutionBlockId(
-                QueryIdFactory.newQueryId())), 0);
-  }
-
   /**
    * It check if T is null or not.
    *
@@ -127,5 +133,14 @@ public class TUtil {
       throw new NullPointerException();
     }
     return reference;
+  }
+
+  public static <KEY1, KEY2, VALUE> void putToNestedMap(Map<KEY1, Map<KEY2, VALUE>> map, KEY1 k1, KEY2 k2,
+                                                        VALUE value) {
+    if (map.containsKey(k1)) {
+      map.get(k1).put(k2, value);
+    } else {
+      map.put(k1, TUtil.newLinkedHashMap(k2, value));
+    }
   }
 }

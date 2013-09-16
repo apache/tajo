@@ -22,6 +22,7 @@
 package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
@@ -88,5 +89,10 @@ public class EvalExprNode extends LogicalNode implements Projectable {
   @Override
   public void postOrder(LogicalNodeVisitor visitor) {
     // nothing
+  }
+
+  @Override
+  public PlanString getPlanString() {
+    return null;
   }
 }

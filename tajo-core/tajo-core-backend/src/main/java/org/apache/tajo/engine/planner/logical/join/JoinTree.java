@@ -37,8 +37,8 @@ public class JoinTree {
     List<Column> left = EvalTreeUtil.findAllColumnRefs(node.getLeftExpr());
     List<Column> right = EvalTreeUtil.findAllColumnRefs(node.getRightExpr());
 
-    String ltbName = left.get(0).getTableName();
-    String rtbName = right.get(0).getTableName();
+    String ltbName = left.get(0).getQualifier();
+    String rtbName = right.get(0).getQualifier();
 
     Edge l2r = new Edge(ltbName, rtbName, node);
     Edge r2l = new Edge(rtbName, ltbName, node);

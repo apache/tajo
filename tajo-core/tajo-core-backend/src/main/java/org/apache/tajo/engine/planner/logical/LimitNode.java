@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.engine.planner.PlanString;
 
 public final class LimitNode extends UnaryNode implements Cloneable {
 	@Expose private long fetchFirstNum;
@@ -34,6 +35,11 @@ public final class LimitNode extends UnaryNode implements Cloneable {
   
   public long getFetchFirstNum() {
     return fetchFirstNum;
+  }
+
+  @Override
+  public PlanString getPlanString() {
+    return new PlanString("Limit");
   }
   
   @Override 
@@ -56,10 +62,10 @@ public final class LimitNode extends UnaryNode implements Cloneable {
   }
 
   public String toString() {
-    StringBuilder sb = new StringBuilder("LIMIT ").append(fetchFirstNum);
+    StringBuilder sb = new StringBuilder("Limit (").append(fetchFirstNum).append(")");
 
-    sb.append("\n\"out schema: ").append(getOutSchema())
-        .append("\n\"in schema: " + getInSchema());
+    sb.append("\n  \"out schema: ").append(getOutSchema())
+        .append("\n  \"in schema: " + getInSchema());
     sb.append("\n").append(getChild().toString());
 
     return sb.toString();

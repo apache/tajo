@@ -21,7 +21,7 @@ package org.apache.tajo.master;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TestTajoIds;
-import org.apache.tajo.master.ExecutionBlock.PartitionType;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.Repartitioner;
 import org.apache.tajo.util.TUtil;
@@ -49,7 +49,7 @@ public class TestRepartitioner {
 
     Collection<URI> uris = Repartitioner.
         createHashFetchURL(hostName + ":" + port, sid, partitionId,
-                PartitionType.HASH, intermediateEntries);
+                TajoWorkerProtocol.PartitionType.HASH_PARTITION, intermediateEntries);
 
     List<String> taList = TUtil.newList();
     for (URI uri : uris) {

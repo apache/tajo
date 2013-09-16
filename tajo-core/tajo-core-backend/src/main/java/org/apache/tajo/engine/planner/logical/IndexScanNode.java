@@ -29,7 +29,6 @@ public class IndexScanNode extends ScanNode {
   @Expose private SortSpec [] sortKeys;
   @Expose private Schema keySchema = null;
   @Expose private Datum[] datum = null;
-  //TODO- @Expose private IndexType type;
   
   public IndexScanNode(ScanNode scanNode , 
       Schema keySchema , Datum[] datum, SortSpec[] sortKeys ) {
@@ -38,7 +37,6 @@ public class IndexScanNode extends ScanNode {
     setFromTable(scanNode.getFromTable());
     setInSchema(scanNode.getInSchema());
     setOutSchema(scanNode.getOutSchema());
-    setLocal(scanNode.isLocal());
     setTargets(scanNode.getTargets());
     setType(NodeType.BST_INDEX_SCAN);
     this.sortKeys = sortKeys;

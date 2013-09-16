@@ -77,11 +77,21 @@ public class TestColumn {
 	public final void testQualifiedName() {
 	  Column col = new Column("table_1.id", Type.INT4);
 	  
-	  assertTrue(col.isQualified());
+	  assertTrue(col.hasQualifier());
 	  assertEquals("id", col.getColumnName());
 	  assertEquals("table_1.id", col.getQualifiedName());
-	  assertEquals("table_1", col.getTableName());
+	  assertEquals("table_1", col.getQualifier());
 	}
+
+  @Test
+  public final void testMultiLevelQualifiedName() {
+    Column col = new Column("database1.table_1.id", Type.INT4);
+
+    assertTrue(col.hasQualifier());
+    assertEquals("id", col.getColumnName());
+    assertEquals("database1.table_1.id", col.getQualifiedName());
+    assertEquals("database1.table_1", col.getQualifier());
+  }
 
 	@Test
 	public final void testToJson() {

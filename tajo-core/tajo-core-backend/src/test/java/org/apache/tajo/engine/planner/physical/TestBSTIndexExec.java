@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TaskAttemptContext;
 import org.apache.tajo.algebra.Expr;
@@ -40,7 +41,6 @@ import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.TUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -94,7 +94,7 @@ public class TestBSTIndexExec {
     this.idxSchema = new Schema();
     idxSchema.addColumn("managerId", Type.INT4);
     SortSpec[] sortKeys = new SortSpec[1];
-    sortKeys[0] = new SortSpec(idxSchema.getColumn("managerId"), true, false);
+    sortKeys[0] = new SortSpec(idxSchema.getColumnByFQN("managerId"), true, false);
     this.comp = new TupleComparator(idxSchema, sortKeys);
 
     this.writer = new BSTIndex(conf).getIndexWriter(idxPath,
@@ -159,7 +159,7 @@ public class TestBSTIndexExec {
     Fragment[] frags = StorageManager.splitNG(conf, "employee", meta, tablePath, Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testEqual");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
-        TUtil.newQueryUnitAttemptId(), new Fragment[] { frags[0] }, workDir);
+        LocalTajoTestingUtility.newQueryUnitAttemptId(), new Fragment[] { frags[0] }, workDir);
     Expr expr = analyzer.parse(QUERY);
     LogicalPlan plan = planner.createPlan(expr);
     LogicalNode rootNode = optimizer.optimize(plan);
@@ -189,10 +189,10 @@ public class TestBSTIndexExec {
     @Override
     public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode)
         throws IOException {
-      Preconditions.checkNotNull(ctx.getTable(scanNode.getTableId()),
-          "Error: There is no table matched to %s", scanNode.getTableId());
+      Preconditions.checkNotNull(ctx.getTable(scanNode.getTableName()),
+          "Error: There is no table matched to %s", scanNode.getTableName());
 
-      Fragment[] fragments = ctx.getTables(scanNode.getTableId());
+      Fragment[] fragments = ctx.getTables(scanNode.getTableName());
       
       Datum[] datum = new Datum[]{DatumFactory.createInt4(rndKey)};
 

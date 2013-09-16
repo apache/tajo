@@ -93,8 +93,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", Type.INT8));
@@ -166,8 +166,8 @@ public class TestBSTIndex {
     appender.init();
 
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", Type.INT8));
@@ -256,8 +256,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, status.getLen());
     
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", Type.INT8));
@@ -325,8 +325,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", Type.INT4));
@@ -413,8 +413,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen);
     
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", Type.INT4));
@@ -497,8 +497,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
     
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("long"), false, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), false, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", DataType.LONG));
@@ -570,8 +570,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
     
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("long"), false, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), false, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", DataType.LONG));
@@ -638,8 +638,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
     
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", DataType.INT));
@@ -720,8 +720,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
     
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", DataType.INT));
@@ -793,8 +793,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
     
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", DataType.INT));
@@ -876,8 +876,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
 
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", DataType.LONG));
@@ -950,8 +950,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
 
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", DataType.INT));
@@ -1050,8 +1050,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
 
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), true, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), true, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", DataType.INT));
@@ -1126,8 +1126,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
 
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("long"), false, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("double"), false, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("long"), false, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("double"), false, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("long", DataType.LONG));
@@ -1206,8 +1206,8 @@ public class TestBSTIndex {
     Fragment tablet = new Fragment("table1_1", status.getPath(), meta, 0, fileLen, null);
 
     SortSpec [] sortKeys = new SortSpec[2];
-    sortKeys[0] = new SortSpec(schema.getColumn("int"), false, false);
-    sortKeys[1] = new SortSpec(schema.getColumn("long"), false, false);
+    sortKeys[0] = new SortSpec(schema.getColumnByFQN("int"), false, false);
+    sortKeys[1] = new SortSpec(schema.getColumnByFQN("long"), false, false);
 
     Schema keySchema = new Schema();
     keySchema.addColumn(new Column("int", DataType.INT));

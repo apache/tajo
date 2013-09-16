@@ -400,9 +400,11 @@ public class TestSelectQuery {
       for (;res.next();) {
         count++;
       }
+      assertEquals(10, count);
     } finally {
       res.close();
     }
+
   }
 
   @Test
@@ -417,8 +419,7 @@ public class TestSelectQuery {
     assertEquals(5, orderKeys.getMeta().getStat().getNumRows().intValue());
   }
 
-  //@Test
-  // TODO - fix and enable this unit test
+  @Test
   public final void testLimit() throws Exception {
     ResultSet res = tpch.execute("select l_orderkey from lineitem limit 3");
     try {

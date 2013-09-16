@@ -43,6 +43,8 @@ public interface LogicalPlanVisitor <T> {
       throws PlanningException;
   LogicalNode visitIntersect(LogicalPlan plan, IntersectNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException;
+  LogicalNode visitTableSubQuery(LogicalPlan plan, TableSubQueryNode node, Stack<LogicalNode> stack, T data)
+      throws PlanningException;
   LogicalNode visitScan(LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack, T data)
       throws PlanningException;
   LogicalNode visitStoreTable(LogicalPlan plan, StoreTableNode node, Stack<LogicalNode> stack, T data)

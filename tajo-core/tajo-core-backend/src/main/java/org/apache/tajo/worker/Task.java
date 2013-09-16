@@ -30,6 +30,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.util.ConverterUtils;
+import org.apache.tajo.DataChannel;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
@@ -48,7 +49,6 @@ import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TajoWorkerProtocolService.Interface;
 import org.apache.tajo.ipc.protocolrecords.QueryUnitRequest;
-import org.apache.tajo.master.ExecutionBlock.PartitionType;
 import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.Fragment;
@@ -150,13 +150,15 @@ public class Task {
     this.context = new TaskAttemptContext(systemConf, taskId,
         request.getFragments().toArray(new Fragment[request.getFragments().size()]),
         taskDir);
+    this.context.setDataChannel(request.getDataChannel());
+
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
     interQuery = request.getProto().getInterQuery();
     if (interQuery) {
       context.setInterQuery();
       StoreTableNode store = (StoreTableNode) plan;
       this.partitionType = store.getPartitionType();
-      if (partitionType == PartitionType.RANGE) {
+      if (partitionType == PartitionType.RANGE_PARTITION) {
         SortNode sortNode = (SortNode) store.getChild();
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
         this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
@@ -180,12 +182,12 @@ public class Task {
 
     LOG.info("* Fragments (num: " + request.getFragments().size() + ")");
     for (Fragment f: request.getFragments()) {
-      LOG.info("==> Table Id:" + f.getName() + ", path:" + f.getPath() + "(" + f.getMeta().getStoreType() + "), " +
+      LOG.info("Table Id:" + f.getName() + ", path:" + f.getPath() + "(" + f.getMeta().getStoreType() + "), " +
           "(start:" + f.getStartOffset() + ", length: " + f.getLength() + ")");
     }
     LOG.info("* Fetches (total:" + request.getFetches().size() + ") :");
     for (Fetch f : request.getFetches()) {
-      LOG.info("==> Table Id: " + f.getName() + ", url: " + f.getUrls());
+      LOG.info("Table Id: " + f.getName() + ", url: " + f.getUrls());
     }
     LOG.info("* Local task dir: " + taskDir);
     if(LOG.isDebugEnabled()) {

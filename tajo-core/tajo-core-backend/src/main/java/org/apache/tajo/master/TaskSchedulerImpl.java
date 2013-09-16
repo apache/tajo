@@ -40,6 +40,7 @@ import org.apache.tajo.master.event.TaskSchedulerEvent;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.util.NetUtils;
 
@@ -454,17 +455,19 @@ public class TaskSchedulerImpl extends AbstractService
           }
         }
 
+        SubQuery subQuery = context.getQuery().getSubQuery(attemptId.getQueryUnitId().getExecutionBlockId());
+
         if (attemptId != null) {
-          QueryUnit task = context.getQuery()
-              .getSubQuery(attemptId.getQueryUnitId().getExecutionBlockId()).getQueryUnit(attemptId.getQueryUnitId());
+          QueryUnit task = subQuery.getQueryUnit(attemptId.getQueryUnitId());
           QueryUnitRequest taskAssign = new QueryUnitRequestImpl(
               attemptId,
               new ArrayList<Fragment>(task.getAllFragments()),
-              task.getOutputName(),
+              "",
               false,
               task.getLogicalPlan().toJson(),
-              context.getQueryContext());
-          if (task.getStoreTableNode().isLocal()) {
+              context.getQueryContext(),
+              subQuery.getDataChannel());
+          if (!subQuery.getBlock().isRoot()) {
             taskAssign.setInterQuery();
           }
 
@@ -500,23 +503,24 @@ public class TaskSchedulerImpl extends AbstractService
           LOG.debug("Assigned based on * match");
 
           QueryUnit task;
-          task = context.getSubQuery(
-              attemptId.getQueryUnitId().getExecutionBlockId()).getQueryUnit(attemptId.getQueryUnitId());
+          SubQuery subQuery = context.getSubQuery(attemptId.getQueryUnitId().getExecutionBlockId());
+          task = subQuery.getQueryUnit(attemptId.getQueryUnitId());
           QueryUnitRequest taskAssign = new QueryUnitRequestImpl(
               attemptId,
               Lists.newArrayList(task.getAllFragments()),
-              task.getOutputName(),
+              "",
               false,
               task.getLogicalPlan().toJson(),
-              context.getQueryContext());
-          if (task.getStoreTableNode().isLocal()) {
+              context.getQueryContext(),
+              subQuery.getDataChannel());
+          if (!subQuery.getBlock().isRoot()) {
             taskAssign.setInterQuery();
           }
           for (ScanNode scan : task.getScanNodes()) {
             Collection<URI> fetches = task.getFetch(scan);
             if (fetches != null) {
               for (URI fetch : fetches) {
-                taskAssign.addFetch(scan.getTableId(), fetch);
+                taskAssign.addFetch(scan.getTableName(), fetch);
               }
             }
           }

@@ -18,6 +18,7 @@
 
 package org.apache.tajo;
 
+import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,23 +32,25 @@ public class TestQueryIdFactory {
 
   @Test
   public void testNewQueryId() {
-    QueryId qid1 = QueryIdFactory.newQueryId();
-    QueryId qid2 = QueryIdFactory.newQueryId();
+    QueryId qid1 = LocalTajoTestingUtility.newQueryId();
+    QueryId qid2 = LocalTajoTestingUtility.newQueryId();
     assertTrue(qid1.compareTo(qid2) < 0);
   }
   
   @Test
   public void testNewSubQueryId() {
-    QueryId qid = QueryIdFactory.newQueryId();
-    ExecutionBlockId subqid1 = QueryIdFactory.newExecutionBlockId(qid);
-    ExecutionBlockId subqid2 = QueryIdFactory.newExecutionBlockId(qid);
+    QueryId qid = LocalTajoTestingUtility.newQueryId();
+    MasterPlan plan = new MasterPlan(qid, null, null);
+    ExecutionBlockId subqid1 = plan.newExecutionBlockId();
+    ExecutionBlockId subqid2 = plan.newExecutionBlockId();
     assertTrue(subqid1.compareTo(subqid2) < 0);
   }
   
   @Test
   public void testNewQueryUnitId() {
-    QueryId qid = QueryIdFactory.newQueryId();
-    ExecutionBlockId subid = QueryIdFactory.newExecutionBlockId(qid);
+    QueryId qid = LocalTajoTestingUtility.newQueryId();
+    MasterPlan plan = new MasterPlan(qid, null, null);
+    ExecutionBlockId subid = plan.newExecutionBlockId();
     QueryUnitId quid1 = QueryIdFactory.newQueryUnitId(subid);
     QueryUnitId quid2 = QueryIdFactory.newQueryUnitId(subid);
     assertTrue(quid1.compareTo(quid2) < 0);

@@ -33,6 +33,7 @@ public interface AlgebraVisitor<T1, T2> {
   T2 visitExcept(T1 ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException;
   T2 visitIntersect(T1 ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException;
   T2 visitRelationList(T1 ctx, Stack<OpType> stack, RelationList expr) throws PlanningException;
+  T2 visitTableSubQuery(T1 ctx, Stack<OpType> stack, TableSubQuery expr) throws PlanningException;
   T2 visitRelation(T1 ctx, Stack<OpType> stack, Relation expr) throws PlanningException;
   T2 visitCreateTable(T1 ctx, Stack<OpType> stack, CreateTable expr) throws PlanningException;
   T2 visitDropTable(T1 ctx, Stack<OpType> stack, DropTable expr) throws PlanningException;

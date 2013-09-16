@@ -47,7 +47,7 @@ public class FieldEval extends EvalNode implements Cloneable {
 	     fieldId = schema.getColumnId(column.getQualifiedName());
 	    } else {
 	      if(schema.getColumnNum() != 0) {
-	        String schemaColQualName = schema.getColumn(0).getTableName() + 
+	        String schemaColQualName = schema.getColumn(0).getQualifier() +
 	            "." +  column.getColumnName();
 	        fieldId = schema.getColumnId(schemaColQualName);
 	      } else {
@@ -86,7 +86,7 @@ public class FieldEval extends EvalNode implements Cloneable {
   }
 	
 	public String getTableId() {	  
-	  return column.getTableName();
+	  return column.getQualifier();
 	}
 	
 	public String getColumnName() {

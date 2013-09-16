@@ -129,8 +129,6 @@ public class TajoAsyncDispatcher extends AbstractService  implements Dispatcher 
       LOG.debug("Dispatching the event " + event.getClass().getName() + "."
           + event.toString());
     }
-//    LOG.info("====> Dispatching the event " + event.getClass().getName() + "."
-//        + event.toString() );
     Class<? extends Enum> type = event.getType().getDeclaringClass();
 
     try{

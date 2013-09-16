@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.planner.PlanString;
 
 public class SelectionNode extends UnaryNode implements Cloneable {
 	@Expose private EvalNode qual;
@@ -40,17 +41,14 @@ public class SelectionNode extends UnaryNode implements Cloneable {
 	public void setQual(EvalNode qual) {
 		this.qual = qual;
 	}
-  
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("\"Selection\": {\"qual\": \"").append(qual.toString()).append("\",");
-    sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",");
-    sb.append("\n  \"in schema\": ").append(getInSchema()).append("}");
-    
-    return sb.toString()+"\n"
-    + getChild().toString();
+
+  @Override
+  public PlanString getPlanString() {
+    PlanString planStr = new PlanString("Filter");
+    planStr.addExplan("Search Cond: " + getQual());
+    return planStr;
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof SelectionNode) {
@@ -69,5 +67,15 @@ public class SelectionNode extends UnaryNode implements Cloneable {
     selNode.qual = (EvalNode) this.qual.clone();
     
     return selNode;
+  }
+
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("\"Selection\": {\"qual\": \"").append(qual.toString()).append("\",");
+    sb.append("\n  \"out schema\": ").append(getOutSchema()).append(",");
+    sb.append("\n  \"in schema\": ").append(getInSchema()).append("}");
+
+    return sb.toString()+"\n"
+        + getChild().toString();
   }
 }

@@ -20,6 +20,7 @@ package org.apache.tajo;
 
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.util.BuilderUtils;
+import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.util.TajoIdUtils;
 import org.junit.Test;
 
@@ -121,12 +122,12 @@ public class TestTajoIds {
   
   @Test
   public void testConstructFromString() {
-//    QueryIdFactory.reset();
-    QueryId qid1 = QueryIdFactory.newQueryId();
+    QueryId qid1 = LocalTajoTestingUtility.newQueryId();
     QueryId qid2 = TajoIdUtils.parseQueryId(qid1.toString());
     assertEquals(qid1, qid2);
 
-    ExecutionBlockId sub1 = QueryIdFactory.newExecutionBlockId(qid1);
+    MasterPlan plan1 = new MasterPlan(qid1, null, null);
+    ExecutionBlockId sub1 = plan1.newExecutionBlockId();
     ExecutionBlockId sub2 = TajoIdUtils.createExecutionBlockId(sub1.toString());
     assertEquals(sub1, sub2);
     
@@ -141,12 +142,12 @@ public class TestTajoIds {
 
   @Test
   public void testConstructFromPB() {
-//    QueryIdFactory.reset();
-    QueryId qid1 = QueryIdFactory.newQueryId();
+    QueryId qid1 = LocalTajoTestingUtility.newQueryId();
     QueryId qid2 = new QueryId(qid1.getProto());
     assertEquals(qid1, qid2);
 
-    ExecutionBlockId sub1 = QueryIdFactory.newExecutionBlockId(qid1);
+    MasterPlan plan = new MasterPlan(qid1, null, null);
+    ExecutionBlockId sub1 = plan.newExecutionBlockId();
     ExecutionBlockId sub2 = TajoIdUtils.createExecutionBlockId(sub1.toString());
     assertEquals(sub1, sub2);
 

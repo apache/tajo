@@ -79,6 +79,9 @@ public abstract class BaseAlgebraVisitor<T1, T2> implements AlgebraVisitor<T1, T
       case RelationList:
         current = visitRelationList(ctx, stack, (RelationList) expr);
         break;
+      case TableSubQuery:
+        current = visitTableSubQuery(ctx, stack, (TableSubQuery) expr);
+        break;
       case Relation:
         current = visitRelation(ctx, stack, (Relation) expr);
         break;
@@ -190,6 +193,14 @@ public abstract class BaseAlgebraVisitor<T1, T2> implements AlgebraVisitor<T1, T
     for (Expr e : expr.getRelations()) {
       child = visitChild(ctx, stack, e);
     }
+    stack.pop();
+    return child;
+  }
+
+  @Override
+  public T2 visitTableSubQuery(T1 ctx, Stack<OpType> stack, TableSubQuery expr) throws PlanningException {
+    stack.push(expr.getType());
+    T2 child = visitChild(ctx, stack, expr.getSubQuery());
     stack.pop();
     return child;
   }

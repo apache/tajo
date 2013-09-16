@@ -103,7 +103,7 @@ public class TestResultSetImpl {
     assertEquals(schema.getColumnNum(), meta.getColumnCount());
     for (int i = 0; i < meta.getColumnCount(); i++) {
       assertEquals(schema.getColumn(i).getColumnName(), meta.getColumnName(i + 1));
-      assertEquals(schema.getColumn(i).getTableName(), meta.getTableName(i + 1));
+      assertEquals(schema.getColumn(i).getQualifier(), meta.getTableName(i + 1));
       assertEquals(schema.getColumn(i).getDataType().getClass().getCanonicalName(),
           meta.getColumnTypeName(i + 1));
     }

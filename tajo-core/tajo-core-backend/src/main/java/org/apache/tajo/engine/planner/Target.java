@@ -38,8 +38,7 @@ public class Target implements Cloneable, GsonObject {
 
   public Target(EvalNode expr) {
     this.expr = expr;
-    if (expr.getType() == EvalType.AGG_FUNCTION &&
-        expr.getValueType().length > 1) { // hack for partial result
+    if (expr.getType() == EvalType.AGG_FUNCTION && expr.getValueType().length > 1) { // hack for partial result
       this.column = new Column(expr.getName(), Type.ARRAY);
     } else {
       this.column = new Column(expr.getName(), expr.getValueType()[0]);
@@ -48,11 +47,16 @@ public class Target implements Cloneable, GsonObject {
 
   public Target(final EvalNode eval, final String alias) {
     this(eval);
-    this.alias = alias;
+    setAlias(alias);
+  }
+
+  public String getCanonicalName() {
+    return !hasAlias() ? column.getQualifiedName() : alias;
   }
 
   public final void setAlias(String alias) {
     this.alias = alias;
+    this.column = new Column(alias, expr.getValueType()[0]);
   }
 
   public final String getAlias() {

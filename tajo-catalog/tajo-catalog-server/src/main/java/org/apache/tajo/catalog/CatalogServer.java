@@ -27,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.exception.*;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
 import org.apache.tajo.catalog.store.DBStore;
@@ -173,7 +174,11 @@ public class CatalogServer extends AbstractService {
         if (!store.existTable(tableId)) {
           throw new NoSuchTableException(tableId);
         }
-        return (TableDescProto) store.getTable(tableId).getProto();
+        TableDesc desc = store.getTable(tableId);
+        SchemaProto schemaProto = desc.getMeta().getSchema().getProto();
+        SchemaProto qualifiedSchema = CatalogUtil.getQualfiedSchema(tableId, schemaProto);
+        desc.getMeta().setSchema(new Schema(qualifiedSchema));
+        return (TableDescProto) desc.getProto();
       } catch (IOException ioe) {
         // TODO - handle exception
         LOG.error(ioe);
@@ -228,12 +233,8 @@ public class CatalogServer extends AbstractService {
         }
 
         // rewrite schema
-        SchemaProto revisedSchema =
-            CatalogUtil.getQualfiedSchema(tableDesc.getId(), tableDesc.getMeta()
-                .getSchema());
-
         TableProto.Builder metaBuilder = TableProto.newBuilder(tableDesc.getMeta());
-        metaBuilder.setSchema(revisedSchema);
+        metaBuilder.setSchema(tableDesc.getMeta().getSchema());
         TableDescProto.Builder descBuilder = TableDescProto.newBuilder(tableDesc);
         descBuilder.setMeta(metaBuilder.build());
 

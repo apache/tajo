@@ -25,10 +25,12 @@ import java.util.Iterator;
  * For each call of nextBlock(), it retrieves a next ExecutionBlock in a postfix order.
  */
 public class ExecutionBlockCursor {
+  private MasterPlan masterPlan;
   private ArrayList<ExecutionBlock> orderedBlocks = new ArrayList<ExecutionBlock>();
   private int cursor = 0;
 
   public ExecutionBlockCursor(MasterPlan plan) {
+    this.masterPlan = plan;
     buildOrder(plan.getRoot());
   }
 
@@ -37,26 +39,14 @@ public class ExecutionBlockCursor {
   }
 
   private void buildOrder(ExecutionBlock current) {
-    if (current.hasChildBlock()) {
-      if (current.getChildNum() == 1) {
-        ExecutionBlock block = current.getChildBlocks().iterator().next();
+    if (!masterPlan.isLeaf(current.getId())) {
+      if (masterPlan.getChildCount(current.getId()) == 1) {
+        ExecutionBlock block = masterPlan.getChild(current, 0);
         buildOrder(block);
       } else {
-        Iterator<ExecutionBlock> it = current.getChildBlocks().iterator();
-        ExecutionBlock outer = it.next();
-        ExecutionBlock inner = it.next();
-
-        // Switch between outer and inner
-        // if an inner has a child and an outer doesn't.
-        // It is for left-deep-first search.
-        if (!outer.hasChildBlock() && inner.hasChildBlock()) {
-          ExecutionBlock tmp = outer;
-          outer = inner;
-          inner = tmp;
+        for (ExecutionBlock exec : masterPlan.getChilds(current)) {
+          buildOrder(exec);
         }
-
-        buildOrder(outer);
-        buildOrder(inner);
       }
     }
     orderedBlocks.add(current);

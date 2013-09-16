@@ -18,17 +18,20 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.TUtil;
 
 public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
 	private ColumnProto.Builder builder = null;
-	
+
+  @Expose protected String qualifier; // optional
 	@Expose protected String name; // required
 	@Expose protected DataType dataType; // required
 	
@@ -38,7 +41,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
 	  
 	public Column(String columnName, DataType dataType) {
 	  this();
-		this.name = columnName.toLowerCase();
+		checkAndSetName(columnName.toLowerCase());
 		this.dataType = dataType;
 	}
 
@@ -51,34 +54,55 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
   }
 	
 	public Column(ColumnProto proto) {
-		this(proto.getColumnName(), proto.getDataType());
+    this();
+    name = proto.getColumnName();
+    dataType = proto.getDataType();
+    if (proto.hasQualifier()) {
+      qualifier = proto.getQualifier();
+    }
 	}
 
-	public String getQualifiedName() {
-		return this.name;
-	}
-	
-  public boolean isQualified() {
-    return getQualifiedName().split("\\.").length == 2;
+  private void checkAndSetName(String qualifiedOrName) {
+    String [] splits = qualifiedOrName.split("\\.");
+    if (splits.length > 1) {
+      qualifier = qualifiedOrName.substring(0, qualifiedOrName.lastIndexOf("."));
+      name = qualifiedOrName.substring(qualifiedOrName.lastIndexOf(".") + 1, qualifiedOrName.length());
+    } else {
+      qualifier = null;
+      name = qualifiedOrName;
+    }
   }
 
-  public String getTableName() {
-    if (isQualified()) {
-      return getQualifiedName().split("\\.")[0];
+	public String getQualifiedName() {
+    if (qualifier != null) {
+      return qualifier + "." + name;
+    } else {
+      return name;
+    }
+	}
+	
+  public boolean hasQualifier() {
+    return qualifier != null;
+  }
+
+  public void setQualifier(String qualifier) {
+    this.qualifier = qualifier;
+  }
+
+  public String getQualifier() {
+    if (qualifier != null) {
+      return qualifier;
     } else {
       return "";
     }    
   }
 
   public String getColumnName() {
-    if (isQualified())
-      return getQualifiedName().split("\\.")[1];
-    else
-      return getQualifiedName();
+    return name;
   }
 	
 	public void setName(String name) {
-		this.name = name.toLowerCase();
+    checkAndSetName(name.toLowerCase());
 	}
 	
 	public DataType getDataType() {
@@ -92,15 +116,17 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Column) {
-			Column cd = (Column)o;
-			return this.getQualifiedName().equals(cd.getQualifiedName()) &&
-					this.getDataType().equals(cd.getDataType());
-		}
+			Column another = (Column)o;
+			return name.equals(another.name) &&
+          dataType.equals(another.dataType) &&
+          TUtil.checkEquals(qualifier, another.qualifier);
+    }
 		return false;
 	}
 	
   public int hashCode() {
-    return getQualifiedName().hashCode() ^ (getDataType().hashCode() * 17);
+    return Objects.hashCode(name, dataType, qualifier);
+
   }
   
   @Override
@@ -109,6 +135,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
     column.builder = ColumnProto.newBuilder();
     column.name = name;
     column.dataType = dataType;
+    column.qualifier = qualifier != null ? qualifier : null;
     return column;
   }
 
@@ -116,12 +143,15 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
 	public ColumnProto getProto() {
     builder.setColumnName(this.name);
     builder.setDataType(this.dataType);
+    if (qualifier != null) {
+      builder.setQualifier(qualifier);
+    }
 
     return builder.build();
 	}
 	
 	public String toString() {
-	  return getQualifiedName() +" (" + getDataType().getType() +")";
+	  return getQualifiedName() +" (" + getDataType().getType() +"(" + getDataType().getLength() + "))";
 	}
 
   @Override

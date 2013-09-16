@@ -21,6 +21,8 @@
  */
 package org.apache.tajo.engine.planner.logical;
 
+import org.apache.tajo.engine.planner.PlanString;
+
 public class UnionNode extends BinaryNode {
 
   public UnionNode() {
@@ -31,6 +33,16 @@ public class UnionNode extends BinaryNode {
     this();
     setLeftChild(outer);
     setRightChild(inner);
+  }
+
+
+  @Override
+  public PlanString getPlanString() {
+    PlanString planStr = new PlanString("Union");
+    planStr.appendTitle(" (L - " + ((TableSubQueryNode)getLeftChild()).getTableName());
+    planStr.appendTitle(", R - " + ((TableSubQueryNode)getRightChild()).getTableName());
+    planStr.appendTitle(")");
+    return planStr;
   }
 
   public String toString() {

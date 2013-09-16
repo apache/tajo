@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.logical;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
@@ -42,6 +43,10 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
 	    final EvalNode havingCondition) {
     this(columns);
     this.havingCondition = havingCondition;
+  }
+
+  public final boolean isEmptyGrouping() {
+    return columns == null || columns.length == 0;
   }
 	
 	public final Column [] getGroupingColumns() {
@@ -142,5 +147,34 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     }
 
     return grp;
+  }
+
+  @Override
+  public PlanString getPlanString() {
+    PlanString planStr = new PlanString("Aggregation");
+
+    StringBuilder sb = new StringBuilder("Targets: ");
+    for (int i = 0; i < targets.length; i++) {
+      sb.append(targets[i]);
+      if( i < targets.length - 1) {
+        sb.append(",");
+      }
+    }
+    planStr.addExplan(sb.toString());
+
+    sb = new StringBuilder("Groups: ");
+    sb.append("(");
+    Column [] groupingColumns = columns;
+    for (int j = 0; j < groupingColumns.length; j++) {
+      sb.append(groupingColumns[j].getColumnName());
+      if(j < groupingColumns.length - 1) {
+        sb.append(",");
+      }
+    }
+
+    sb.append(")");
+
+    planStr.addExplan(sb.toString());
+    return planStr;
   }
 }

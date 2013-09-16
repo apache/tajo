@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.tajo.client.ResultSetUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -61,6 +62,25 @@ public class TestGroupByQuery {
   }
 
   @Test
+  public final void testComplexParameterWithSubQuery() throws Exception {
+
+
+    ResultSet res = tpch.execute(
+        "select count(*) as total from ("+
+            "        select * from lineitem " +
+            "        union all"+
+            "        select * from lineitem ) l");
+    try {
+      assertNotNull(res);
+      assertTrue(res.next());
+      assertTrue(10 == (int) res.getDouble("total"));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
   public final void testComplexParameter2() throws Exception {
     ResultSet res = tpch.execute("select count(*) + max(l_orderkey) as merged from lineitem");
     try {
@@ -70,6 +90,8 @@ public class TestGroupByQuery {
       res.close();
     }
   }
+
+
 
   //@Test
   public final void testCube() throws Exception {
@@ -81,21 +103,6 @@ public class TestGroupByQuery {
         count++;
       }
       assertEquals(11, count);
-    } finally {
-      res.close();
-    }
-  }
-
-  //@Test
-  // TODO - to fix the limit processing and then enable it
-  public final void testGroupByLimit() throws Exception {
-    ResultSet res = tpch.execute("select l_orderkey from lineitem limit 2");
-    try {
-      int count = 0;
-      for (;res.next();) {
-        count++;
-      }
-      assertEquals(2, count);
     } finally {
       res.close();
     }

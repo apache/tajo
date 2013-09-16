@@ -30,6 +30,8 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -40,6 +42,22 @@ public class LocalTajoTestingUtility {
   private TajoTestingCluster util;
   private TajoConf conf;
   private TajoClient client;
+
+  public static QueryUnitAttemptId newQueryUnitAttemptId() {
+    return QueryIdFactory.newQueryUnitAttemptId(
+        QueryIdFactory.newQueryUnitId(new MasterPlan(newQueryId(), null, null).newExecutionBlockId()), 0);
+  }
+  public static QueryUnitAttemptId newQueryUnitAttemptId(MasterPlan plan) {
+    return QueryIdFactory.newQueryUnitAttemptId(QueryIdFactory.newQueryUnitId(plan.newExecutionBlockId()), 0);
+  }
+
+  /**
+   * for test
+   * @return
+   */
+  public synchronized static QueryId newQueryId() {
+    return QueryIdFactory.newQueryId(TajoIdUtils.MASTER_ID_FORMAT.format(0));
+  }
 
   public void setup(String[] names,
                     String[] tablepaths,

@@ -30,15 +30,19 @@ import org.apache.hadoop.yarn.Clock;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.service.CompositeService;
 import org.apache.tajo.*;
+import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.engine.parser.HiveConverter;
+import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.LogicalRootNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.master.QueryContext;
+import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.*;
@@ -74,6 +78,8 @@ public class QueryMasterTask extends CompositeService {
 
   private MasterPlan masterPlan;
 
+  private String sql;
+
   private String logicalPlanJson;
 
   private TajoAsyncDispatcher dispatcher;
@@ -91,11 +97,12 @@ public class QueryMasterTask extends CompositeService {
   private AtomicBoolean stopped = new AtomicBoolean(false);
 
   public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
-                         QueryId queryId, QueryContext queryContext, String logicalPlanJson) {
+                         QueryId queryId, QueryContext queryContext, String sql, String logicalPlanJson) {
     super(QueryMasterTask.class.getName());
     this.queryMasterContext = queryMasterContext;
     this.queryId = queryId;
     this.queryContext = queryContext;
+    this.sql = sql;
     this.logicalPlanJson = logicalPlanJson;
     this.querySubmitTime = System.currentTimeMillis();
   }
@@ -227,17 +234,44 @@ public class QueryMasterTask extends CompositeService {
       return;
     }
 
+    CatalogService catalog = getQueryTaskContext().getQueryMasterContext().getWorkerContext().getCatalog();
+    LogicalPlanner planner = new LogicalPlanner(catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer();
+    Expr expr;
+    if (queryContext.isHiveQueryMode()) {
+      HiveConverter hiveConverter = new HiveConverter();
+      expr = hiveConverter.parse(sql);
+    } else {
+      SQLAnalyzer analyzer = new SQLAnalyzer();
+      expr = analyzer.parse(sql);
+    }
+    LogicalPlan plan = null;
     try {
-      LogicalRootNode logicalNodeRoot = (LogicalRootNode) CoreGsonHelper.fromJson(logicalPlanJson, LogicalNode.class);
-      LogicalNode[] scanNodes = PlannerUtil.findAllNodes(logicalNodeRoot, NodeType.SCAN);
-      if(scanNodes != null) {
-        for(LogicalNode eachScanNode: scanNodes) {
-          ScanNode scanNode = (ScanNode)eachScanNode;
-          tableDescMap.put(scanNode.getFromTable().getTableName(), scanNode.getFromTable().getTableDesc());
+      plan = planner.createPlan(expr);
+      optimizer.optimize(plan);
+    } catch (PlanningException e) {
+      e.printStackTrace();
+    }
+
+    GlobalEngine.DistributedQueryHookManager hookManager = new GlobalEngine.DistributedQueryHookManager();
+    hookManager.addHook(new GlobalEngine.InsertHook());
+    hookManager.doHooks(queryContext, plan);
+
+    try {
+
+      for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
+        LogicalNode[] scanNodes = PlannerUtil.findAllNodes(block.getRoot(), NodeType.SCAN);
+        if(scanNodes != null) {
+          for(LogicalNode eachScanNode: scanNodes) {
+            ScanNode scanNode = (ScanNode)eachScanNode;
+            tableDescMap.put(scanNode.getFromTable().getTableName(), scanNode.getFromTable().getTableDesc());
+          }
         }
       }
-      MasterPlan globalPlan = queryMasterContext.getGlobalPlanner().build(queryId, logicalNodeRoot);
-      this.masterPlan = queryMasterContext.getGlobalOptimizer().optimize(globalPlan);
+
+      MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
+      queryMasterContext.getGlobalPlanner().build(masterPlan);
+      //this.masterPlan = queryMasterContext.getGlobalOptimizer().optimize(masterPlan);
 
       query = new Query(queryTaskContext, queryId, querySubmitTime,
           "", queryTaskContext.getEventHandler(), masterPlan);
@@ -306,9 +340,9 @@ public class QueryMasterTask extends CompositeService {
       LOG.info("The staging dir '" + outputDir + "' is created.");
       queryContext.setStagingDir(stagingDir);
 
-      ////////////////////////////////////////////////////
-      // Check and Create An Output Directory If Necessary
-      ////////////////////////////////////////////////////
+      /////////////////////////////////////////////////
+      // Check and Create Output Directory If Necessary
+      /////////////////////////////////////////////////
       if (queryContext.hasOutputPath()) {
         outputDir = queryContext.getOutputPath();
         if (queryContext.isOutputOverwrite()) {

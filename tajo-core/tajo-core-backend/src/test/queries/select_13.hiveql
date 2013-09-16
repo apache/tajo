@@ -1,2 +1,2 @@
 select A.*
-from table1 AS A
+from table1 A

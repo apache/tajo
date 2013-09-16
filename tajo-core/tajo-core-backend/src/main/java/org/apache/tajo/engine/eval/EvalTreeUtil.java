@@ -31,13 +31,7 @@ import org.apache.tajo.exception.InternalException;
 import java.util.*;
 
 public class EvalTreeUtil {
-  public static void changeColumnRef(EvalNode node, Column oldName, 
-      Column newName) {
-    node.postOrder(new ChangeColumnRefVisitor(oldName.getQualifiedName(), 
-        newName.getQualifiedName()));
-  }
-  
-  public static void changeColumnRef(EvalNode node, String oldName, 
+  public static void changeColumnRef(EvalNode node, String oldName,
       String newName) {
     node.postOrder(new ChangeColumnRefVisitor(oldName, newName));
   }
@@ -131,7 +125,7 @@ public class EvalTreeUtil {
 
     case FIELD:
       FieldEval fieldEval = (FieldEval) expr;
-      return SchemaUtil.newNoNameSchema(inputSchema.getColumn(fieldEval.getName()).getDataType());
+      return SchemaUtil.newNoNameSchema(inputSchema.getColumnByFQN(fieldEval.getName()).getDataType());
 
       
     default:

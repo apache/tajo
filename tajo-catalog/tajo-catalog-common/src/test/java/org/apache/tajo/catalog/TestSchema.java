@@ -61,9 +61,9 @@ public class TestSchema {
 
 	@Test
 	public final void testGetColumnString() {
-		assertEquals(col1, schema.getColumn("name"));
-		assertEquals(col2, schema.getColumn("age"));
-		assertEquals(col3, schema.getColumn("addr"));
+		assertEquals(col1, schema.getColumnByFQN("name"));
+		assertEquals(col2, schema.getColumnByFQN("age"));
+		assertEquals(col3, schema.getColumnByFQN("addr"));
 	}
 
 	@Test
@@ -133,5 +133,14 @@ public class TestSchema {
     SchemaProto proto = schema2.getProto();
     Schema fromJson = new Schema(proto);
     assertEquals(schema2, fromJson);
+  }
+
+  @Test
+  public final void testSetQualifier() {
+    Schema schema2 = new Schema(schema.getProto());
+    schema2.setQualifier("test1");
+    Column column = schema2.getColumn(1);
+    assertEquals(column, schema2.getColumnByName("age"));
+    assertEquals(column, schema2.getColumnByFQN("test1.age"));
   }
 }

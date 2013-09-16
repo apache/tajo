@@ -18,27 +18,33 @@
 
 package org.apache.tajo.master.querymaster;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.DataChannel;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
 import org.apache.tajo.engine.planner.UniformRangePartition;
+import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.master.ExecutionBlock;
-import org.apache.tajo.master.ExecutionBlock.PartitionType;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
+import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -46,6 +52,10 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
+
+import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType.HASH_PARTITION;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType.RANGE_PARTITION;
 
 /**
  * Repartitioner creates non-leaf tasks and shuffles intermediate data.
@@ -58,53 +68,68 @@ public class Repartitioner {
 
   public static QueryUnit[] createJoinTasks(SubQuery subQuery)
       throws IOException {
+    MasterPlan masterPlan = subQuery.getMasterPlan();
     ExecutionBlock execBlock = subQuery.getBlock();
-    //CatalogService catalog = subQuery.getContext().getCatalog();
+    QueryMasterTask.QueryMasterTaskContext masterContext = subQuery.getContext();
+    AbstractStorageManager storageManager = subQuery.getStorageManager();
 
     ScanNode[] scans = execBlock.getScanNodes();
+    ExecutionBlock [] childBlocks = new ExecutionBlock[2];
+    childBlocks[0] = masterPlan.getChild(execBlock.getId(), 0);
+    childBlocks[1] = masterPlan.getChild(execBlock.getId(), 1);
+
     Path tablePath;
     Fragment [] fragments = new Fragment[2];
     TableStat [] stats = new TableStat[2];
 
     // initialize variables from the child operators
     for (int i =0; i < 2; i++) {
-      // TODO - temporarily tables should be stored in temporarily catalog for each query
-      TableDesc tableDesc = subQuery.getContext().getTableDescMap().get(scans[i].getFromTable().getTableName());
-      if (scans[i].getTableId().startsWith(ExecutionBlockId.EB_ID_PREFIX)) {
-        tablePath = subQuery.getStorageManager().getTablePath(scans[i].getTableId());
-        stats[i] = subQuery.getChildQuery(scans[i]).getTableStat();
+      TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getFromTable().getTableName());
+      if (tableDesc == null) { // if it is a real table stored on storage
+        // TODO - to be fixed (wrong directory)
+        tablePath = storageManager.getTablePath(scans[i].getTableName());
+        stats[i] = masterContext.getSubQuery(childBlocks[i].getId()).getTableStat();
+        fragments[i] = new Fragment(scans[i].getTableName(), tablePath,
+            CatalogUtil.newTableMeta(scans[i].getInSchema(), StoreType.CSV), 0, 0);
       } else {
         tablePath = tableDesc.getPath();
         stats[i] = tableDesc.getMeta().getStat();
-      }
-
-      if (scans[i].isLocal()) { // it only requires a dummy fragment.
-        fragments[i] = new Fragment(scans[i].getTableId(), tablePath,
-            CatalogUtil.newTableMeta(scans[i].getInSchema(), StoreType.CSV), 0, 0);
-      } else {
-        fragments[i] = subQuery.getStorageManager().getSplits(scans[i].getTableId(),
-                tableDesc.getMeta(), tablePath).get(0);
+        fragments[i] = storageManager.getSplits(scans[i].getTableName(),
+            tableDesc.getMeta(), tablePath).get(0);
       }
     }
 
     // Assigning either fragments or fetch urls to query units
     QueryUnit [] tasks;
-    if (scans[0].isBroadcast() || scans[1].isBroadcast()) {
+    boolean leftSmall = execBlock.isBroadcastTable(scans[0].getCanonicalName());
+    boolean rightSmall = execBlock.isBroadcastTable(scans[1].getCanonicalName());
+
+    if (leftSmall && rightSmall) {
+      LOG.info("[Distributed Join Strategy] : Immediate Two Way Join on Single Machine");
       tasks = new QueryUnit[1];
       tasks[0] = new QueryUnit(QueryIdFactory.newQueryUnitId(subQuery.getId(), 0),
           false, subQuery.getEventHandler());
       tasks[0].setLogicalPlan(execBlock.getPlan());
-      tasks[0].setFragment(scans[0].getTableId(), fragments[0]);
-      tasks[0].setFragment(scans[1].getTableId(), fragments[1]);
+      tasks[0].setFragment(scans[0].getTableName(), fragments[0]);
+      tasks[0].setFragment(scans[1].getTableName(), fragments[1]);
+    } else if (leftSmall ^ rightSmall) {
+      LOG.info("[Distributed Join Strategy] : Broadcast Join");
+      int broadcastIdx = leftSmall ? 0 : 1;
+      int baseScanIdx = leftSmall ? 1 : 0;
+
+      LOG.info("Broadcasting Table Volume: " + stats[broadcastIdx].getNumBytes());
+      LOG.info("Base Table Volume: " + stats[baseScanIdx].getNumBytes());
+
+      tasks = createLeafTasksWithBroadcastTable(subQuery, baseScanIdx, fragments[broadcastIdx]);
     } else {
+      LOG.info("[Distributed Join Strategy] : Repartition Join");
       // The hash map is modeling as follows:
       // <Partition Id, <Table Name, Intermediate Data>>
-      Map<Integer, Map<String, List<IntermediateEntry>>> hashEntries =
-          new HashMap<Integer, Map<String, List<IntermediateEntry>>>();
+      Map<Integer, Map<String, List<IntermediateEntry>>> hashEntries = new HashMap<Integer, Map<String, List<IntermediateEntry>>>();
 
       // Grouping IntermediateData by a partition key and a table name
       for (ScanNode scan : scans) {
-        SubQuery childSubQuery = subQuery.getChildQuery(scan);
+        SubQuery childSubQuery = masterContext.getSubQuery(TajoIdUtils.createExecutionBlockId(scan.getTableName()));
         for (QueryUnit task : childSubQuery.getQueryUnits()) {
           if (task.getIntermediateData() != null) {
             for (IntermediateEntry intermEntry : task.getIntermediateData()) {
@@ -112,15 +137,15 @@ public class Repartitioner {
                 Map<String, List<IntermediateEntry>> tbNameToInterm =
                     hashEntries.get(intermEntry.getPartitionId());
 
-                if (tbNameToInterm.containsKey(scan.getTableId())) {
-                  tbNameToInterm.get(scan.getTableId()).add(intermEntry);
+                if (tbNameToInterm.containsKey(scan.getTableName())) {
+                  tbNameToInterm.get(scan.getTableName()).add(intermEntry);
                 } else {
-                  tbNameToInterm.put(scan.getTableId(), TUtil.newList(intermEntry));
+                  tbNameToInterm.put(scan.getTableName(), TUtil.newList(intermEntry));
                 }
               } else {
                 Map<String, List<IntermediateEntry>> tbNameToInterm =
                     new HashMap<String, List<IntermediateEntry>>();
-                tbNameToInterm.put(scan.getTableId(), TUtil.newList(intermEntry));
+                tbNameToInterm.put(scan.getTableName(), TUtil.newList(intermEntry));
                 hashEntries.put(intermEntry.getPartitionId(), tbNameToInterm);
               }
             }
@@ -174,6 +199,41 @@ public class Repartitioner {
     return tasks;
   }
 
+  private static QueryUnit [] createLeafTasksWithBroadcastTable(SubQuery subQuery, int baseScanId, Fragment broadcasted) throws IOException {
+    ExecutionBlock execBlock = subQuery.getBlock();
+    ScanNode[] scans = execBlock.getScanNodes();
+    Preconditions.checkArgument(scans.length == 2, "Must be Join Query");
+    TableMeta meta;
+    Path inputPath;
+    ScanNode scan = scans[baseScanId];
+    TableDesc desc = subQuery.getContext().getTableDescMap().get(scan.getTableName());
+    inputPath = desc.getPath();
+    meta = desc.getMeta();
+
+    FileSystem fs = inputPath.getFileSystem(subQuery.getContext().getConf());
+    List<Fragment> fragments = subQuery.getStorageManager().getSplits(scan.getTableName(), meta, inputPath);
+    QueryUnit queryUnit;
+    List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
+
+    int i = 0;
+    for (Fragment fragment : fragments) {
+      queryUnit = newQueryUnit(subQuery, i++, fragment);
+      queryUnit.setFragment2(broadcasted);
+      queryUnits.add(queryUnit);
+    }
+    return queryUnits.toArray(new QueryUnit[queryUnits.size()]);
+  }
+
+  private static QueryUnit newQueryUnit(SubQuery subQuery, int taskId, Fragment fragment) {
+    ExecutionBlock execBlock = subQuery.getBlock();
+    QueryUnit unit = new QueryUnit(
+        QueryIdFactory.newQueryUnitId(subQuery.getId(), taskId), execBlock.isLeafBlock(),
+        subQuery.getEventHandler());
+    unit.setLogicalPlan(execBlock.getPlan());
+    unit.setFragment2(fragment);
+    return unit;
+  }
+
   private static QueryUnit [] newEmptyJoinTask(SubQuery subQuery, Fragment [] fragments, int taskNum) {
     ExecutionBlock execBlock = subQuery.getBlock();
     QueryUnit [] tasks = new QueryUnit[taskNum];
@@ -193,22 +253,22 @@ public class Repartitioner {
   private static void addJoinPartition(QueryUnit task, SubQuery subQuery, int partitionId,
                                        Map<String, List<IntermediateEntry>> grouppedPartitions) {
 
-    for (ScanNode scanNode : subQuery.getBlock().getScanNodes()) {
+    for (ExecutionBlock execBlock : subQuery.getMasterPlan().getChilds(subQuery.getId())) {
       Map<String, List<IntermediateEntry>> requests;
-      if (grouppedPartitions.containsKey(scanNode.getTableId())) {
-          requests = mergeHashPartitionRequest(grouppedPartitions.get(scanNode.getTableId()));
+      if (grouppedPartitions.containsKey(execBlock.getId().toString())) {
+          requests = mergeHashPartitionRequest(grouppedPartitions.get(execBlock.getId().toString()));
       } else {
         return;
       }
       Set<URI> fetchURIs = TUtil.newHashSet();
       for (Entry<String, List<IntermediateEntry>> requestPerNode : requests.entrySet()) {
         Collection<URI> uris = createHashFetchURL(requestPerNode.getKey(),
-            subQuery.getChildQuery(scanNode).getId(),
-            partitionId, PartitionType.HASH,
+            execBlock.getId(),
+            partitionId, HASH_PARTITION,
             requestPerNode.getValue());
         fetchURIs.addAll(uris);
       }
-      task.addFetches(scanNode.getTableId(), fetchURIs);
+      task.addFetches(execBlock.getId().toString(), fetchURIs);
     }
   }
 
@@ -233,23 +293,20 @@ public class Repartitioner {
     return mergedPartitions;
   }
 
-  public static QueryUnit [] createNonLeafTask(SubQuery subQuery,
-                                               SubQuery childSubQuery,
-                                               int maxNum)
+  public static QueryUnit [] createNonLeafTask(MasterPlan masterPlan, SubQuery subQuery, SubQuery childSubQuery,
+                                               DataChannel channel, int maxNum)
       throws InternalException {
-    ExecutionBlock childExecBlock = childSubQuery.getBlock();
-    if (childExecBlock.getPartitionType() == PartitionType.HASH) {
-      return createHashPartitionedTasks(subQuery, childSubQuery, maxNum);
-    } else if (childExecBlock.getPartitionType() == PartitionType.RANGE) {
-      return createRangePartitionedTasks(subQuery, childSubQuery, maxNum);
+    if (channel.getPartitionType() == HASH_PARTITION) {
+      return createHashPartitionedTasks(masterPlan, subQuery, childSubQuery, channel, maxNum);
+    } else if (channel.getPartitionType() == RANGE_PARTITION) {
+      return createRangePartitionedTasks(subQuery, childSubQuery, channel, maxNum);
     } else {
       throw new InternalException("Cannot support partition type");
     }
   }
 
   public static QueryUnit [] createRangePartitionedTasks(SubQuery subQuery,
-                                                         SubQuery childSubQuery,
-                                                         int maxNum)
+                                                         SubQuery childSubQuery, DataChannel channel, int maxNum)
       throws InternalException {
     ExecutionBlock execBlock = subQuery.getBlock();
     TableStat stat = childSubQuery.getTableStat();
@@ -259,19 +316,15 @@ public class Repartitioner {
 
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
-    tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableId());
+    tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
 
-    StoreTableNode store = (StoreTableNode) childSubQuery.getBlock().getPlan();
-    SortNode sort = (SortNode) store.getChild();
-    SortSpec[] sortSpecs = sort.getSortKeys();
-    Schema sortSchema = PlannerUtil.sortSpecsToSchema(sort.getSortKeys());
+    SortNode sortNode = PlannerUtil.findTopNode(childSubQuery.getBlock().getPlan(), NodeType.SORT);
+    SortSpec [] sortSpecs = sortNode.getSortKeys();
+    Schema sortSchema = new Schema(channel.getPartitionKey());
 
     // calculate the number of maximum query ranges
-    TupleRange mergedRange =
-        TupleUtil.columnStatToRange(sort.getOutSchema(),
-            sortSchema, stat.getColumnStats());
-    RangePartitionAlgorithm partitioner =
-        new UniformRangePartition(sortSchema, mergedRange);
+    TupleRange mergedRange = TupleUtil.columnStatToRange(channel.getSchema(), sortSchema, stat.getColumnStats());
+    RangePartitionAlgorithm partitioner = new UniformRangePartition(sortSchema, mergedRange);
     BigDecimal card = partitioner.getTotalCardinality();
 
     // if the number of the range cardinality is less than the desired number of tasks,
@@ -289,14 +342,12 @@ public class Repartitioner {
         " sub ranges (total units: " + determinedTaskNum + ")");
     TupleRange [] ranges = partitioner.partition(determinedTaskNum);
 
-    Fragment dummyFragment = new Fragment(scan.getTableId(), tablePath,
+    Fragment dummyFragment = new Fragment(scan.getTableName(), tablePath,
         CatalogUtil.newTableMeta(scan.getInSchema(), StoreType.CSV),0, 0);
 
     List<String> basicFetchURIs = new ArrayList<String>();
 
-    SubQuery child = childSubQuery.getContext().getSubQuery(
-        subQuery.getBlock().getChildBlock(scan).getId());
-    for (QueryUnit qu : child.getQueryUnits()) {
+    for (QueryUnit qu : childSubQuery.getQueryUnits()) {
       for (IntermediateEntry p : qu.getIntermediateData()) {
         String uri = createBasicFetchUri(p.getPullHost(), p.getPullPort(),
             childSubQuery.getId(), p.taskId, p.attemptId);
@@ -330,7 +381,7 @@ public class Repartitioner {
     }
 
     QueryUnit [] tasks = createEmptyNonLeafTasks(subQuery, determinedTaskNum, dummyFragment);
-    assignPartitionByRoundRobin(map, scan.getTableId(), tasks);
+    assignPartitionByRoundRobin(map, scan.getTableName(), tasks);
     return tasks;
   }
 
@@ -367,50 +418,58 @@ public class Repartitioner {
     return sb.toString();
   }
 
-  public static QueryUnit [] createHashPartitionedTasks(SubQuery subQuery,
-                                                 SubQuery childSubQuery,
-                                                 int maxNum) {
+  public static QueryUnit [] createHashPartitionedTasks(MasterPlan masterPlan, SubQuery subQuery,
+                                                 SubQuery childSubQuery, DataChannel channel, int maxNum) {
     ExecutionBlock execBlock = subQuery.getBlock();
-    TableStat stat = childSubQuery.getTableStat();
-    if (stat.getNumRows() == 0) {
+
+    List<TableStat> tableStats = new ArrayList<TableStat>();
+    List<ExecutionBlock> childBlocks = masterPlan.getChilds(subQuery.getId());
+    for (ExecutionBlock childBlock : childBlocks) {
+      SubQuery childExecSM = subQuery.getContext().getSubQuery(childBlock.getId());
+      tableStats.add(childExecSM.getTableStat());
+    }
+    TableStat totalStat = StatisticsUtil.computeStatFromUnionBlock(tableStats);
+
+    if (totalStat.getNumRows() == 0) {
       return new QueryUnit[0];
     }
 
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
-    tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableId());
+    tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
 
-    List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
-    for (QueryUnit tasks : childSubQuery.getQueryUnits()) {
-      if (tasks.getIntermediateData() != null) {
-        partitions.addAll(tasks.getIntermediateData());
-      }
-    }
 
-    Fragment frag = new Fragment(scan.getTableId(), tablePath,
+    Fragment frag = new Fragment(scan.getTableName(), tablePath,
         CatalogUtil.newTableMeta(scan.getInSchema(), StoreType.CSV), 0, 0);
 
-    Map<Integer, List<IntermediateEntry>> hashed = hashByKey(partitions);
+
     Map<String, List<IntermediateEntry>> hashedByHost;
     Map<Integer, List<URI>> finalFetchURI = new HashMap<Integer, List<URI>>();
 
-    for (Entry<Integer, List<IntermediateEntry>> interm : hashed.entrySet()) {
-      hashedByHost = hashByHost(interm.getValue());
-      for (Entry<String, List<IntermediateEntry>> e : hashedByHost.entrySet()) {
-        Collection<URI> uris = createHashFetchURL(e.getKey(), childSubQuery.getId(),
-            interm.getKey(),
-            childSubQuery.getBlock().getPartitionType(), e.getValue());
+    for (ExecutionBlock block : childBlocks) {
+      List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
+      for (QueryUnit tasks : subQuery.getContext().getSubQuery(block.getId()).getQueryUnits()) {
+        if (tasks.getIntermediateData() != null) {
+          partitions.addAll(tasks.getIntermediateData());
+        }
+      }
+      Map<Integer, List<IntermediateEntry>> hashed = hashByKey(partitions);
+      for (Entry<Integer, List<IntermediateEntry>> interm : hashed.entrySet()) {
+        hashedByHost = hashByHost(interm.getValue());
+        for (Entry<String, List<IntermediateEntry>> e : hashedByHost.entrySet()) {
+          Collection<URI> uris = createHashFetchURL(e.getKey(), block.getId(),
+              interm.getKey(), channel.getPartitionType(), e.getValue());
 
-        if (finalFetchURI.containsKey(interm.getKey())) {
-          finalFetchURI.get(interm.getKey()).addAll(uris);
-        } else {
-          finalFetchURI.put(interm.getKey(), TUtil.newList(uris));
+          if (finalFetchURI.containsKey(interm.getKey())) {
+            finalFetchURI.get(interm.getKey()).addAll(uris);
+          } else {
+            finalFetchURI.put(interm.getKey(), TUtil.newList(uris));
+          }
         }
       }
     }
 
-    GroupbyNode groupby = (GroupbyNode) childSubQuery.getBlock().getStoreTableNode().
-        getChild();
+    GroupbyNode groupby = (GroupbyNode) childSubQuery.getBlock().getPlan();
     // the number of tasks cannot exceed the number of merged fetch uris.
     int determinedTaskNum = Math.min(maxNum, finalFetchURI.size());
     if (groupby.getGroupingColumns().length == 0) {
@@ -422,7 +481,7 @@ public class Repartitioner {
     int tid = 0;
     for (Entry<Integer, List<URI>> entry : finalFetchURI.entrySet()) {
       for (URI uri : entry.getValue()) {
-        tasks[tid].addFetch(scan.getTableId(), uri);
+        tasks[tid].addFetch(scan.getTableName(), uri);
       }
 
       tid ++;
@@ -436,8 +495,7 @@ public class Repartitioner {
   }
 
   public static Collection<URI> createHashFetchURL(String hostAndPort, ExecutionBlockId ebid,
-                                       int partitionId, PartitionType type,
-                                       List<IntermediateEntry> entries) {
+                                       int partitionId, PartitionType type, List<IntermediateEntry> entries) {
     String scheme = "http://";
     StringBuilder urlPrefix = new StringBuilder(scheme);
     urlPrefix.append(hostAndPort).append("/?")
@@ -445,9 +503,9 @@ public class Repartitioner {
         .append("&sid=").append(ebid.getId())
         .append("&p=").append(partitionId)
         .append("&type=");
-    if (type == PartitionType.HASH) {
+    if (type == HASH_PARTITION) {
       urlPrefix.append("h");
-    } else if (type == PartitionType.RANGE) {
+    } else if (type == RANGE_PARTITION) {
       urlPrefix.append("r");
     }
     urlPrefix.append("&ta=");
@@ -536,31 +594,35 @@ public class Repartitioner {
     return hashed;
   }
 
-  public static SubQuery setPartitionNumberForTwoPhase(SubQuery subQuery, final int n) {
+  public static SubQuery setPartitionNumberForTwoPhase(SubQuery subQuery, final int n, DataChannel channel) {
     ExecutionBlock execBlock = subQuery.getBlock();
     Column[] keys = null;
     // if the next query is join,
     // set the partition number for the current logicalUnit
     // TODO: the union handling is required when a join has unions as its child
+    MasterPlan masterPlan = subQuery.getMasterPlan();
     ExecutionBlock parentBlock = execBlock.getParentBlock();
     if (parentBlock != null) {
       if (parentBlock.getStoreTableNode().getChild().getType() == NodeType.JOIN) {
         execBlock.getStoreTableNode().setPartitions(execBlock.getPartitionType(),
             execBlock.getStoreTableNode().getPartitionKeys(), n);
         keys = execBlock.getStoreTableNode().getPartitionKeys();
+
+        masterPlan.getOutgoingChannels(subQuery.getId()).iterator().next()
+            .setPartition(execBlock.getPartitionType(), execBlock.getStoreTableNode().getPartitionKeys(), n);
       }
     }
 
-    StoreTableNode store = execBlock.getStoreTableNode();
+
     // set the partition number for group by and sort
-    if (execBlock.getPartitionType() == PartitionType.HASH) {
-      if (store.getChild().getType() == NodeType.GROUP_BY) {
-        GroupbyNode groupby = (GroupbyNode)store.getChild();
+    if (channel.getPartitionType() == HASH_PARTITION) {
+      if (execBlock.getPlan().getType() == NodeType.GROUP_BY) {
+        GroupbyNode groupby = (GroupbyNode) execBlock.getPlan();
         keys = groupby.getGroupingColumns();
       }
-    } else if (execBlock.getPartitionType() == PartitionType.RANGE) {
-      if (store.getChild().getType() == NodeType.SORT) {
-        SortNode sort = (SortNode)store.getChild();
+    } else if (channel.getPartitionType() == RANGE_PARTITION) {
+      if (execBlock.getPlan().getType() == NodeType.SORT) {
+        SortNode sort = (SortNode) execBlock.getPlan();
         keys = new Column[sort.getSortKeys().length];
         for (int i = 0; i < keys.length; i++) {
           keys[i] = sort.getSortKeys()[i].getSortKey();
@@ -569,12 +631,10 @@ public class Repartitioner {
     }
     if (keys != null) {
       if (keys.length == 0) {
-        store.setPartitions(execBlock.getPartitionType(), new Column[]{}, 1);
+        channel.setPartition(execBlock.getPartitionType(), new Column[]{}, 1);
       } else {
-        store.setPartitions(execBlock.getPartitionType(), keys, n);
+        channel.setPartition(execBlock.getPartitionType(), keys, n);
       }
-    } else {
-      store.setListPartition();
     }
     return subQuery;
   }

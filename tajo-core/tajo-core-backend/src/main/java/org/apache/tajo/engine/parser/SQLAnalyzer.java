@@ -21,7 +21,6 @@ package org.apache.tajo.engine.parser;
 import com.google.common.base.Preconditions;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
@@ -82,7 +81,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     OpType operatorType;
     Expr left;
-    for (int i = 1; i < ctx.getChildCount();) {
+    for (int i = 1; i < ctx.getChildCount(); i++) {
       int idx = i;
       boolean distinct = true;
 
@@ -110,7 +109,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         left = current;
         current = new SetOperation(operatorType, left, right, distinct);
 
-        i+=idx;
+        i = idx;
       }
     }
 
@@ -254,7 +253,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public RelationList visitFrom_clause(SQLParser.From_clauseContext ctx) {
     Expr [] relations = new Expr[ctx.table_reference_list().table_reference().size()];
     for (int i = 0; i < relations.length; i++) {
-      relations[i] = visit(ctx.table_reference_list().table_reference(i));
+      relations[i] = visitTable_reference(ctx.table_reference_list().table_reference(i));
     }
     return new RelationList(relations);
   }
@@ -391,7 +390,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Expr visitTable_primary(SQLParser.Table_primaryContext ctx) {
     if (ctx.table_or_query_name() != null) {
       Relation relation = new Relation(ctx.table_or_query_name().getText());
-      if (ctx.AS() != null) {
+      if (ctx.alias != null) {
         relation.setAlias(ctx.alias.getText());
       }
       return relation;
@@ -656,7 +655,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
   }
 
-  @Override public FunctionExpr visitAggregate_function(@NotNull SQLParser.Aggregate_functionContext ctx) {
+  @Override public FunctionExpr visitAggregate_function( SQLParser.Aggregate_functionContext ctx) {
     if (ctx.COUNT() != null && ctx.MULTIPLY() != null) {
       return new CountRowsFunctionExpr();
     } else {
@@ -664,7 +663,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
   }
 
-  @Override public FunctionExpr visitGeneral_set_function(@NotNull SQLParser.General_set_functionContext ctx) {
+  @Override public FunctionExpr visitGeneral_set_function(SQLParser.General_set_functionContext ctx) {
     String signature = ctx.set_function_type().getText();
     boolean distinct = checkIfExist(ctx.set_qualifier()) && checkIfExist(ctx.set_qualifier().DISTINCT()) ? true : false;
     Expr param = visitBoolean_value_expression(ctx.boolean_value_expression());

@@ -202,7 +202,8 @@ public class TajoWorkerManagerService extends CompositeService
       QueryId queryId = new QueryId(request.getQueryId());
       LOG.info("Receive executeQuery request:" + queryId);
       queryMaster.handle(new QueryStartEvent(queryId,
-          new QueryContext(request.getQueryContext()), request.getLogicalPlanJson().getValue()));
+          new QueryContext(request.getQueryContext()), request.getSql().getValue(),
+          request.getLogicalPlanJson().getValue()));
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);

@@ -25,6 +25,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-184: Refactor GlobalPlanner and global plan data structure. (hyunsik)
+
     TAJO-119: Refactor and Improve Datum. (jinho)
 
     TAJO-178: Implements StorageManager for scanning asynchronously. 

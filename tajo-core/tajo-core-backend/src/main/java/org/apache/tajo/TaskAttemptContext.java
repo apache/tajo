@@ -54,6 +54,7 @@ public class TaskAttemptContext {
   private boolean stopped = false;
   private boolean interQuery = false;
   private Path outputPath;
+  private DataChannel dataChannel;
 
   public TaskAttemptContext(TajoConf conf, final QueryUnitAttemptId queryId,
                             final Fragment[] fragments,
@@ -88,6 +89,14 @@ public class TaskAttemptContext {
   public void setState(TaskAttemptState state) {
     this.state = state;
     LOG.info("Query status of " + getTaskId() + " is changed to " + state);
+  }
+
+  public void setDataChannel(DataChannel dataChannel) {
+    this.dataChannel = dataChannel;
+  }
+
+  public DataChannel getDataChannel() {
+    return dataChannel;
   }
 
   public boolean hasResultStats() {

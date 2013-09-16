@@ -207,6 +207,7 @@ public class QueryInProgress extends CompositeService {
           TajoWorkerProtocol.QueryExecutionRequestProto.newBuilder()
               .setQueryId(queryId.getProto())
               .setQueryContext(queryContext.getProto())
+              .setSql(PrimitiveProtos.StringProto.newBuilder().setValue(queryInfo.getSql()))
               .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build())
               .build(), NullCallback.get());
       querySubmitted.set(true);

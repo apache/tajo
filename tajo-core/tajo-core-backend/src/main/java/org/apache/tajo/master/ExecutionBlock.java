@@ -17,9 +17,12 @@ package org.apache.tajo.master;
 import com.google.common.base.Preconditions;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.*;
 
 import java.util.*;
+
+import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
 
 /**
  * A distributed execution plan (DEP) is a direct acyclic graph (DAG) of ExecutionBlocks.
@@ -29,17 +32,6 @@ import java.util.*;
  * In addition, it includes a logical plan to be executed in each node.
  */
 public class ExecutionBlock {
-
-  public static enum PartitionType {
-    /** for hash partitioning */
-    HASH,
-    LIST,
-    /** for map-side join */
-    BROADCAST,
-    /** for range partitioning */
-    RANGE
-  }
-
   private ExecutionBlockId executionBlockId;
   private LogicalNode plan = null;
   private StoreTableNode store = null;
@@ -47,8 +39,11 @@ public class ExecutionBlock {
   private ExecutionBlock parent;
   private Map<ScanNode, ExecutionBlock> childSubQueries = new HashMap<ScanNode, ExecutionBlock>();
   private PartitionType outputType;
+
   private boolean hasJoinPlan;
   private boolean hasUnionPlan;
+
+  private Set<String> broadcasted = new HashSet<String>();
 
   public ExecutionBlock(ExecutionBlockId executionBlockId) {
     this.executionBlockId = executionBlockId;
@@ -56,10 +51,6 @@ public class ExecutionBlock {
 
   public ExecutionBlockId getId() {
     return executionBlockId;
-  }
-
-  public String getOutputName() {
-    return store.getTableName();
   }
 
   public void setPartitionType(PartitionType partitionType) {
@@ -72,10 +63,9 @@ public class ExecutionBlock {
 
   public void setPlan(LogicalNode plan) {
     hasJoinPlan = false;
-    Preconditions.checkArgument(plan.getType() == NodeType.STORE);
-
+    hasUnionPlan = false;
+    this.scanlist.clear();
     this.plan = plan;
-    store = (StoreTableNode) plan;
 
     LogicalNode node = plan;
     ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
@@ -96,6 +86,9 @@ public class ExecutionBlock {
         s.add(s.size(), binary.getRightChild());
       } else if (node instanceof ScanNode) {
         scanlist.add((ScanNode)node);
+      } else if (node instanceof TableSubQueryNode) {
+        TableSubQueryNode subQuery = (TableSubQueryNode) node;
+        s.add(s.size(), subQuery.getSubQuery());
       }
     }
   }
@@ -103,6 +96,10 @@ public class ExecutionBlock {
 
   public LogicalNode getPlan() {
     return plan;
+  }
+
+  public boolean isRoot() {
+    return !hasParentBlock() || !(getParentBlock().hasParentBlock()) && getParentBlock().hasUnion();
   }
 
   public boolean hasParentBlock() {
@@ -172,5 +169,25 @@ public class ExecutionBlock {
 
   public boolean hasUnion() {
     return hasUnionPlan;
+  }
+
+  public void addBroadcastTables(Collection<String> tableNames) {
+    broadcasted.addAll(tableNames);
+  }
+
+  public void addBroadcastTable(String tableName) {
+    broadcasted.add(tableName);
+  }
+
+  public boolean isBroadcastTable(String tableName) {
+    return broadcasted.contains(tableName);
+  }
+
+  public Collection<String> getBroadcastTables() {
+    return broadcasted;
+  }
+
+  public String toString() {
+    return executionBlockId.toString();
   }
 }

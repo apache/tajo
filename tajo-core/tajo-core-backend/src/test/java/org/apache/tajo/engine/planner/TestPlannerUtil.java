@@ -110,27 +110,6 @@ public class TestPlannerUtil {
     System.out.println(root);
   }
   
-  @Test
-  public final void testTrasformTwoPhaseWithStore() throws PlanningException {
-    Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[9]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
-    
-    assertEquals(NodeType.ROOT, plan.getType());
-    UnaryNode unary = (UnaryNode) plan;
-    assertEquals(NodeType.PROJECTION, unary.getChild().getType());
-    ProjectionNode proj = (ProjectionNode) unary.getChild();
-    assertEquals(NodeType.GROUP_BY, proj.getChild().getType());
-    GroupbyNode groupby = (GroupbyNode) proj.getChild();
-    unary = (UnaryNode) PlannerUtil.transformGroupbyTo2PWithStore(
-        groupby, "test");
-    assertEquals(NodeType.STORE, unary.getChild().getType());
-    unary = (UnaryNode) unary.getChild();
-    
-    assertEquals(groupby.getInSchema(), unary.getOutSchema());
-    
-    assertEquals(NodeType.GROUP_BY, unary.getChild().getType());
-  }
-  
   private final class TwoPhaseBuilder implements LogicalNodeVisitor {
     @Override
     public void visit(LogicalNode node) {
@@ -158,10 +137,10 @@ public class TestPlannerUtil {
 
     assertEquals(NodeType.SCAN, joinNode.getLeftChild().getType());
     ScanNode leftNode = (ScanNode) joinNode.getLeftChild();
-    assertEquals("employee", leftNode.getTableId());
+    assertEquals("employee", leftNode.getTableName());
     assertEquals(NodeType.SCAN, joinNode.getRightChild().getType());
     ScanNode rightNode = (ScanNode) joinNode.getRightChild();
-    assertEquals("dept", rightNode.getTableId());
+    assertEquals("dept", rightNode.getTableName());
     
     LogicalNode node = PlannerUtil.findTopNode(root, NodeType.ROOT);
     assertEquals(NodeType.ROOT, node.getType());

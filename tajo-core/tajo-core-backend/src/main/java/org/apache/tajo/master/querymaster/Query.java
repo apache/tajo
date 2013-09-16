@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.Clock;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
+import org.apache.tajo.DataChannel;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoConstants;
@@ -36,11 +37,11 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableDescImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.master.ExecutionBlock;
 import org.apache.tajo.master.ExecutionBlockCursor;
 import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.storage.AbstractStorageManager;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.*;
@@ -159,7 +160,7 @@ public class Query implements EventHandler<QueryEvent> {
       }
 
       float totalProgress = 0;
-      float proportion = 1.0f / (float)getExecutionBlockCursor().size();
+      float proportion = 1.0f / (float)(getExecutionBlockCursor().size() - 1); // minus one is due to
 
       for (int i = 0; i < subProgresses.length; i++) {
         totalProgress += subProgresses[i] * proportion;
@@ -240,7 +241,7 @@ public class Query implements EventHandler<QueryEvent> {
   }
 
   public Collection<SubQuery> getSubQueries() {
-    return Collections.unmodifiableCollection(this.subqueries.values());
+    return this.subqueries.values();
   }
 
   public QueryState getState() {
@@ -272,8 +273,8 @@ public class Query implements EventHandler<QueryEvent> {
 
     @Override
     public void transition(Query query, QueryEvent queryEvent) {
-      SubQuery subQuery = new SubQuery(query.context, query.getExecutionBlockCursor().nextBlock(),
-          query.sm);
+      SubQuery subQuery = new SubQuery(query.context, query.getPlan(),
+          query.getExecutionBlockCursor().nextBlock(), query.sm);
       subQuery.setPriority(query.priority--);
       query.addSubQuery(subQuery);
       LOG.debug("Schedule unit plan: \n" + subQuery.getBlock().getPlan());
@@ -292,11 +293,12 @@ public class Query implements EventHandler<QueryEvent> {
       query.completedSubQueryCount++;
       SubQueryCompletedEvent castEvent = (SubQueryCompletedEvent) event;
       ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
-
+      MasterPlan masterPlan = query.getPlan();
       // if the subquery is succeeded
       if (castEvent.getFinalState() == SubQueryState.SUCCEEDED) {
-        if (cursor.hasNext()) {
-          SubQuery nextSubQuery = new SubQuery(query.context, cursor.nextBlock(), query.sm);
+        ExecutionBlock nextBlock = cursor.nextBlock();
+        if (!query.getPlan().isTerminal(nextBlock) || !query.getPlan().isRoot(nextBlock)) {
+          SubQuery nextSubQuery = new SubQuery(query.context, query.getPlan(), nextBlock, query.sm);
           nextSubQuery.setPriority(query.priority--);
           query.addSubQuery(nextSubQuery);
           nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(),
@@ -310,7 +312,7 @@ public class Query implements EventHandler<QueryEvent> {
 
         } else { // Finish a query
           if (query.checkQueryForCompleted() == QueryState.QUERY_SUCCEEDED) {
-
+            DataChannel finalChannel = masterPlan.getChannel(castEvent.getExecutionBlockId(), nextBlock.getId());
             Path finalOutputDir = commitOutputData(query);
             TableDesc finalTableDesc = buildOrUpdateResultTableDesc(query, castEvent.getExecutionBlockId(), finalOutputDir);
 
@@ -361,7 +363,8 @@ public class Query implements EventHandler<QueryEvent> {
     /**
      * It builds a table desc and update the table desc if necessary.
      */
-    public TableDesc buildOrUpdateResultTableDesc(Query query, ExecutionBlockId finalExecBlockId, Path finalOutputDir) {
+    public TableDesc buildOrUpdateResultTableDesc(Query query, ExecutionBlockId finalExecBlockId,
+                                                  Path finalOutputDir) {
       // Determine the output table name
       SubQuery subQuery = query.getSubQuery(finalExecBlockId);
       QueryContext queryContext = query.context.getQueryContext();
@@ -448,35 +451,6 @@ public class Query implements EventHandler<QueryEvent> {
 
     finally {
       writeLock.unlock();
-    }
-  }
-
-  public static interface QueryHook {
-    QueryState getTargetState();
-    void onEvent(Query query);
-  }
-
-  public static class QueryHookManager {
-    Map<QueryState, List<QueryHook>> hookList = TUtil.newHashMap();
-
-    public void addHook(QueryHook hook) {
-      if (hookList.containsKey(hook.getTargetState())) {
-        hookList.get(hook.getTargetState()).add(hook);
-      } else {
-        hookList.put(hook.getTargetState(), TUtil.newList(hook));
-      }
-    }
-
-    public void doHooks(Query query) {
-      QueryState finalState = query.checkQueryForCompleted();
-      List<QueryHook> list = hookList.get(finalState);
-      if (list != null) {
-        for (QueryHook hook : list) {
-          hook.onEvent(query);
-        }
-      } else {
-        LOG.error("QueryHookManager cannot deal with " + finalState + " event");
-      }
     }
   }
 }

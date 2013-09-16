@@ -27,6 +27,8 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.eval.EvalType;
+import org.apache.tajo.engine.planner.graph.DirectedGraphVisitor;
+import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
 import org.apache.tajo.engine.planner.logical.*;
 
 import java.util.*;
@@ -52,7 +54,7 @@ public class LogicalPlan {
   /** a map from between a block name to a block plan */
   private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<String, QueryBlock>();
   private Map<LogicalNode, QueryBlock> queryBlockByNode = new HashMap<LogicalNode, QueryBlock>();
-  private QueryBlockGraph queryBlockGraph = new QueryBlockGraph();
+  private SimpleDirectedGraph<QueryBlock, BlockEdge> blockGraph = new SimpleDirectedGraph<QueryBlock, BlockEdge>();
   private Set<LogicalNode> visited = new HashSet<LogicalNode>();
 
   public LogicalPlan(LogicalPlanner planner) {
@@ -111,16 +113,20 @@ public class LogicalPlan {
     }
   }
 
-  public void connectBlocks(QueryBlock srcBlock, QueryBlock targetBlock, QueryBlockGraph.BlockType type) {
-    queryBlockGraph.connectBlocks(srcBlock.getName(), targetBlock.getName(), type);
+  public void connectBlocks(QueryBlock srcBlock, QueryBlock targetBlock, BlockType type) {
+    blockGraph.connect(srcBlock, targetBlock, new BlockEdge(srcBlock, targetBlock, type));
   }
 
-  public Collection<QueryBlockGraph.BlockEdge> getConnectedBlocks(String blockName) {
-    return queryBlockGraph.getBlockEdges(blockName);
+  public List<QueryBlock> getChildBlocks(QueryBlock block) {
+    return blockGraph.getChilds(block);
   }
 
   public Collection<QueryBlock> getQueryBlocks() {
     return queryBlocks.values();
+  }
+
+  public SimpleDirectedGraph<QueryBlock, BlockEdge> getBlockGraph() {
+    return blockGraph;
   }
 
   public boolean postVisit(String blockName, LogicalNode node, Stack<OpType> path) {
@@ -142,7 +148,7 @@ public class LogicalPlan {
         break;
 
       case GROUP_BY:
-        block.resolveGrouping();
+        block.needToResolveGrouping();
         break;
 
       case SELECTION:
@@ -151,6 +157,11 @@ public class LogicalPlan {
 
       case INSERT:
         block.setInsertNode((InsertNode) node);
+        break;
+
+      case TABLE_SUBQUERY:
+        TableSubQueryNode tableSubQueryNode = (TableSubQueryNode) node;
+        block.addRelation(tableSubQueryNode);
         break;
     }
 
@@ -172,7 +183,7 @@ public class LogicalPlan {
       throws VerifyException {
 
     QueryBlock block = queryBlocks.get(blockName);
-    ScanNode relationOp = block.getRelation(relName);
+    RelationNode relationOp = block.getRelation(relName);
 
     // if a column name is outside of this query block
     if (relationOp == null) {
@@ -200,7 +211,7 @@ public class LogicalPlan {
     } catch (CloneNotSupportedException e) {
       e.printStackTrace();
     }
-    String tableName = relationOp.getTableId();
+    String tableName = relationOp.getTableName();
     column.setName(tableName + "." + column.getColumnName());
 
     return column;
@@ -218,11 +229,11 @@ public class LogicalPlan {
 
     Column candidate;
     if (columnRef.hasTableName()) {
-      candidate = node.getOutSchema().getColumn(columnRef.getCanonicalName());
+      candidate = node.getOutSchema().getColumnByFQN(columnRef.getCanonicalName());
 
       if (candidate == null) { // If not found, try to find the column with alias name
-        String tableName = getBlock(blockName).getRelation(columnRef.getTableName()).getTableId();
-        candidate = node.getOutSchema().getColumn(tableName + "." + columnRef.getName());
+        String tableName = getBlock(blockName).getRelation(columnRef.getTableName()).getTableName();
+        candidate = node.getOutSchema().getColumnByFQN(tableName + "." + columnRef.getName());
       }
       candidates.add(candidate);
 
@@ -266,7 +277,7 @@ public class LogicalPlan {
     Column candidate;
 
     // Try to find a column from the current query block
-    for (ScanNode rel : queryBlocks.get(blockName).getRelations()) {
+    for (RelationNode rel : queryBlocks.get(blockName).getRelations()) {
       candidate = findColumnFromRelationOp(rel, name);
 
       if (candidate != null) {
@@ -276,7 +287,7 @@ public class LogicalPlan {
           } catch (CloneNotSupportedException e) {
             e.printStackTrace();
           }
-          candidate.setName(rel.getTableId() + "." + candidate.getColumnName());
+          candidate.setName(rel.getTableName() + "." + candidate.getColumnName());
         }
         candidates.add(candidate);
         if (candidates.size() > 0) {
@@ -290,7 +301,7 @@ public class LogicalPlan {
       // for each block
       Outer:
       for (QueryBlock block : queryBlocks.values()) {
-        for (ScanNode rel : block.getRelations()) {
+        for (RelationNode rel : block.getRelations()) {
           candidate = findColumnFromRelationOp(rel, name);
 
           if (candidate != null) {
@@ -300,7 +311,7 @@ public class LogicalPlan {
               } catch (CloneNotSupportedException e) {
                 e.printStackTrace();
               }
-              candidate.setName(rel.getTableId() + "." + candidate.getColumnName());
+              candidate.setName(rel.getTableName() + "." + candidate.getColumnName());
             }
             candidates.add(candidate);
             if (candidates.size() > 0)
@@ -311,7 +322,7 @@ public class LogicalPlan {
     }
 
     if (candidates.isEmpty()) {
-      throw new VerifyException("ERROR: no such a column name "+ name);
+      throw new VerifyException("ERROR: no such a column '"+ name + "'");
     } else  if (candidates.size() > 1) {
       throw new VerifyException("ERROR: column name "+ name + " is ambiguous");
     }
@@ -319,7 +330,7 @@ public class LogicalPlan {
     return candidates.get(0);
   }
 
-  private Column findColumnFromRelationOp(ScanNode relation, String name) throws VerifyException {
+  private Column findColumnFromRelationOp(RelationNode relation, String name) throws VerifyException {
     Column candidate = relation.getTableSchema().getColumnByName(name);
     if (candidate != null) {
       try {
@@ -328,7 +339,7 @@ public class LogicalPlan {
         throw new RuntimeException(e);
       }
       if (!isVirtualRelation(relation.getCanonicalName())) {
-        candidate.setName(relation.getTableId() + "." + name);
+        candidate.setName(relation.getTableName() + "." + name);
       }
 
       return candidate;
@@ -345,7 +356,7 @@ public class LogicalPlan {
     private String blockName;
     private LogicalNode rootNode;
     private NodeType rootType;
-    private Map<String, ScanNode> relations = new HashMap<String, ScanNode>();
+    private Map<String, RelationNode> relations = new HashMap<String, RelationNode>();
     private Projection projection;
 
     private boolean resolvedGrouping = true;
@@ -384,8 +395,8 @@ public class LogicalPlan {
       queryBlockByNode.put(blockRoot, this);
     }
 
-    public LogicalNode getRoot() {
-      return rootNode;
+    public <T extends LogicalNode> T getRoot() {
+      return (T) rootNode;
     }
 
     public NodeType getRootType() {
@@ -396,15 +407,15 @@ public class LogicalPlan {
       return relations.containsKey(name);
     }
 
-    public void addRelation(ScanNode relation) {
+    public void addRelation(RelationNode relation) {
       relations.put(relation.getCanonicalName(), relation);
     }
 
-    public ScanNode getRelation(String name) {
+    public RelationNode getRelation(String name) {
       return relations.get(name);
     }
 
-    public Collection<ScanNode> getRelations() {
+    public Collection<RelationNode> getRelations() {
       return this.relations.values();
     }
 
@@ -440,7 +451,7 @@ public class LogicalPlan {
       return this.resolvedGrouping;
     }
 
-    public void resolveGrouping() {
+    public void needToResolveGrouping() {
       this.resolvedGrouping = true;
     }
 
@@ -524,7 +535,7 @@ public class LogicalPlan {
       }
 
       // If all columns are projected and do not include any expression
-      if (projection.isAllProjected() && node instanceof ScanNode) {
+      if (projection.isAllProjected() && node instanceof RelationNode) {
         targetListManager = new TargetListManager(LogicalPlan.this, PlannerUtil.schemaToTargets(node.getInSchema()));
         targetListManager.setEvaluatedAll();
 
@@ -536,7 +547,7 @@ public class LogicalPlan {
         for (int i = 0; i < targetListManager.size(); i++) {
           if (targetListManager.getTarget(i) == null) {
             try {
-              targetListManager.updateTarget(i,planner.createTarget(LogicalPlan.this, blockName,
+              targetListManager.updateTarget(i, planner.createTarget(LogicalPlan.this, blockName,
                   projection.getTargets()[i]));
             } catch (VerifyException e) {
             }
@@ -552,7 +563,7 @@ public class LogicalPlan {
 
             if (canTargetEvaluated(i, node)) {
 
-              if (node instanceof ScanNode) { // for scan node
+              if (node instanceof RelationNode) { // for scan node
                 if (expr.getType() == EvalType.FIELD) {
                   targetListManager.setEvaluated(i);
                   if (targetListManager.getTarget(i).hasAlias()) {
@@ -629,6 +640,78 @@ public class LogicalPlan {
 
     public Target[] getCurrentTargets() {
       return targetListManager.getTargets();
+    }
+  }
+
+  public String getQueryGraphAsString() {
+    StringBuilder sb = new StringBuilder();
+
+    sb.append("-----------------------------\n");
+    sb.append("Query Block Graph\n");
+    sb.append("-----------------------------\n");
+    sb.append(blockGraph.toStringGraph(getRootBlock()));
+    sb.append("-----------------------------\n");
+
+    sb.append("\n");
+
+    sb.append(getLogicalPlanAsString());
+
+    return sb.toString();
+  }
+
+  public String getLogicalPlanAsString() {
+    ExplainLogicalPlanVisitor explain = new ExplainLogicalPlanVisitor();
+
+    StringBuilder explains = new StringBuilder();
+    try {
+    ExplainLogicalPlanVisitor.Context explainContext = explain.getBlockPlanStrings(this, ROOT_BLOCK);
+    while(!explainContext.explains.empty()) {
+      explains.append(
+          ExplainLogicalPlanVisitor.printDepthString(explainContext.getMaxDepth(), explainContext.explains.pop()));
+    }
+    } catch (PlanningException e) {
+      e.printStackTrace();
+    }
+
+    return explains.toString();
+  }
+
+  @Override
+  public String toString() {
+    return getQueryGraphAsString();
+  }
+
+  public static enum BlockType {
+    TableSubQuery,
+    ScalarSubQuery
+  }
+
+  public static class BlockEdge {
+    private String childName;
+    private String parentName;
+    private BlockType blockType;
+
+
+    public BlockEdge(String childName, String parentName, BlockType blockType) {
+      this.childName = childName;
+      this.parentName = parentName;
+      this.blockType = blockType;
+    }
+
+    public BlockEdge(QueryBlock child, QueryBlock parent, BlockType blockType) {
+      this(child.getName(), parent.getName(), blockType);
+    }
+
+    public String getParentName() {
+      return parentName;
+    }
+
+    public String getChildName() {
+      return childName;
+    }
+
+    public BlockType getBlockType() {
+      return blockType;
     }
   }
 }

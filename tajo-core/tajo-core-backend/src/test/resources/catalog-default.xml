@@ -21,7 +21,7 @@
 
 <configuration>
   <property>
-    <name>catalog.master.addr</name>
+    <name>tajo.catalog.master.addr</name>
     <value>127.0.0.1:9002</value>
   </property>
 

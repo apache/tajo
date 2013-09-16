@@ -141,27 +141,14 @@ public class CatalogUtil {
   *
   * @return
   */
-  public static SchemaProto getQualfiedSchema(String tableName,
-      SchemaProto schema) {
+  public static SchemaProto getQualfiedSchema(String tableName, SchemaProto schema) {
     SchemaProto.Builder revisedSchema = SchemaProto.newBuilder(schema);
     revisedSchema.clearFields();
-    String[] split;
     for (ColumnProto col : schema.getFieldsList()) {
-      split = col.getColumnName().split("\\.");
-      if (split.length == 1) { // if not qualified name
-        // rewrite the column
-        ColumnProto.Builder builder = ColumnProto.newBuilder(col);
-        builder.setColumnName(tableName + "." + col.getColumnName());
-        col = builder.build();
-      } else if (split.length == 2) {
-        ColumnProto.Builder builder = ColumnProto.newBuilder(col);
-        builder.setColumnName(tableName + "." + split[1]);
-        col = builder.build();
-      } else {
-        throw new InternalError("Unaccetable field name "
-            + col.getColumnName());
-      }
-      revisedSchema.addFields(col);
+      ColumnProto.Builder builder = ColumnProto.newBuilder(col);
+      builder.setColumnName(col.getColumnName());
+      builder.setQualifier(tableName);
+      revisedSchema.addFields(builder.build());
     }
 
     return revisedSchema.build();

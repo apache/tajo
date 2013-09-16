@@ -22,6 +22,8 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 public class StatisticsUtil {
@@ -100,5 +102,32 @@ public class StatisticsUtil {
     }
 
     return aggregated;
+  }
+
+  public static TableStat computeStatFromUnionBlock(Collection<TableStat> stats) {
+    TableStat stat = new TableStat();
+    TableStat childStat;
+    long avgRows = 0, numBytes = 0, numRows = 0;
+    int numBlocks = 0, numPartitions = 0;
+    List<ColumnStat> columnStats = Lists.newArrayList();
+
+    Iterator<TableStat> it = stats.iterator();
+    while (it.hasNext()) {
+      childStat = it.next();
+      avgRows += childStat.getAvgRows();
+      columnStats.addAll(childStat.getColumnStats());
+      numBlocks += childStat.getNumBlocks();
+      numBytes += childStat.getNumBytes();
+      numPartitions += childStat.getNumPartitions();
+      numRows += childStat.getNumRows();
+    }
+
+    stat.setColumnStats(columnStats);
+    stat.setNumBlocks(numBlocks);
+    stat.setNumBytes(numBytes);
+    stat.setNumPartitions(numPartitions);
+    stat.setNumRows(numRows);
+    stat.setAvgRows(avgRows);
+    return stat;
   }
 }
