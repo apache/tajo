@@ -84,17 +84,17 @@ public class Repartitioner {
 
     // initialize variables from the child operators
     for (int i =0; i < 2; i++) {
-      TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getFromTable().getTableName());
+      TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getCanonicalName());
       if (tableDesc == null) { // if it is a real table stored on storage
         // TODO - to be fixed (wrong directory)
         tablePath = storageManager.getTablePath(scans[i].getTableName());
         stats[i] = masterContext.getSubQuery(childBlocks[i].getId()).getTableStat();
-        fragments[i] = new Fragment(scans[i].getTableName(), tablePath,
+        fragments[i] = new Fragment(scans[i].getCanonicalName(), tablePath,
             CatalogUtil.newTableMeta(scans[i].getInSchema(), StoreType.CSV), 0, 0);
       } else {
         tablePath = tableDesc.getPath();
         stats[i] = tableDesc.getMeta().getStat();
-        fragments[i] = storageManager.getSplits(scans[i].getTableName(),
+        fragments[i] = storageManager.getSplits(scans[i].getCanonicalName(),
             tableDesc.getMeta(), tablePath).get(0);
       }
     }
@@ -110,8 +110,8 @@ public class Repartitioner {
       tasks[0] = new QueryUnit(QueryIdFactory.newQueryUnitId(subQuery.getId(), 0),
           false, subQuery.getEventHandler());
       tasks[0].setLogicalPlan(execBlock.getPlan());
-      tasks[0].setFragment(scans[0].getTableName(), fragments[0]);
-      tasks[0].setFragment(scans[1].getTableName(), fragments[1]);
+      tasks[0].setFragment(scans[0].getCanonicalName(), fragments[0]);
+      tasks[0].setFragment(scans[1].getCanonicalName(), fragments[1]);
     } else if (leftSmall ^ rightSmall) {
       LOG.info("[Distributed Join Strategy] : Broadcast Join");
       int broadcastIdx = leftSmall ? 0 : 1;
@@ -129,7 +129,7 @@ public class Repartitioner {
 
       // Grouping IntermediateData by a partition key and a table name
       for (ScanNode scan : scans) {
-        SubQuery childSubQuery = masterContext.getSubQuery(TajoIdUtils.createExecutionBlockId(scan.getTableName()));
+        SubQuery childSubQuery = masterContext.getSubQuery(TajoIdUtils.createExecutionBlockId(scan.getCanonicalName()));
         for (QueryUnit task : childSubQuery.getQueryUnits()) {
           if (task.getIntermediateData() != null) {
             for (IntermediateEntry intermEntry : task.getIntermediateData()) {
@@ -137,15 +137,15 @@ public class Repartitioner {
                 Map<String, List<IntermediateEntry>> tbNameToInterm =
                     hashEntries.get(intermEntry.getPartitionId());
 
-                if (tbNameToInterm.containsKey(scan.getTableName())) {
-                  tbNameToInterm.get(scan.getTableName()).add(intermEntry);
+                if (tbNameToInterm.containsKey(scan.getCanonicalName())) {
+                  tbNameToInterm.get(scan.getCanonicalName()).add(intermEntry);
                 } else {
-                  tbNameToInterm.put(scan.getTableName(), TUtil.newList(intermEntry));
+                  tbNameToInterm.put(scan.getCanonicalName(), TUtil.newList(intermEntry));
                 }
               } else {
                 Map<String, List<IntermediateEntry>> tbNameToInterm =
                     new HashMap<String, List<IntermediateEntry>>();
-                tbNameToInterm.put(scan.getTableName(), TUtil.newList(intermEntry));
+                tbNameToInterm.put(scan.getCanonicalName(), TUtil.newList(intermEntry));
                 hashEntries.put(intermEntry.getPartitionId(), tbNameToInterm);
               }
             }
@@ -206,12 +206,12 @@ public class Repartitioner {
     TableMeta meta;
     Path inputPath;
     ScanNode scan = scans[baseScanId];
-    TableDesc desc = subQuery.getContext().getTableDescMap().get(scan.getTableName());
+    TableDesc desc = subQuery.getContext().getTableDescMap().get(scan.getCanonicalName());
     inputPath = desc.getPath();
     meta = desc.getMeta();
 
     FileSystem fs = inputPath.getFileSystem(subQuery.getContext().getConf());
-    List<Fragment> fragments = subQuery.getStorageManager().getSplits(scan.getTableName(), meta, inputPath);
+    List<Fragment> fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, inputPath);
     QueryUnit queryUnit;
     List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
 
@@ -439,7 +439,7 @@ public class Repartitioner {
     tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
 
 
-    Fragment frag = new Fragment(scan.getTableName(), tablePath,
+    Fragment frag = new Fragment(scan.getCanonicalName(), tablePath,
         CatalogUtil.newTableMeta(scan.getInSchema(), StoreType.CSV), 0, 0);
 
 

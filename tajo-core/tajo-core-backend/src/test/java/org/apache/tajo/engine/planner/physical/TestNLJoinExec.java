@@ -132,16 +132,16 @@ public class TestNLJoinExec {
   }
   
   String[] QUERIES = {
-    "select managerId, e.empId, deptName, e.memId from employee as e, people",
+    "select managerId, e.empId, deptName, e.memId from employee as e, people p",
     "select managerId, e.empId, deptName, e.memId from employee as e inner join people as p on " +
         "e.empId = p.empId and e.memId = p.fk_memId"
   };
   
   @Test
   public final void testNLCrossJoin() throws IOException, PlanningException {
-    Fragment[] empFrags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
+    Fragment[] empFrags = StorageManager.splitNG(conf, "e", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
-    Fragment[] peopleFrags = StorageManager.splitNG(conf, "people", people.getMeta(), people.getPath(),
+    Fragment[] peopleFrags = StorageManager.splitNG(conf, "p", people.getMeta(), people.getPath(),
         Integer.MAX_VALUE);
     
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);
@@ -157,8 +157,7 @@ public class TestNLJoinExec {
 
     int i = 0;
     exec.init();
-    Tuple tuple = null;
-    while ( (tuple = exec.next()) != null) {
+    while (exec.next() != null) {
       i++;
     }
     exec.close();
@@ -167,9 +166,9 @@ public class TestNLJoinExec {
 
   @Test
   public final void testNLInnerJoin() throws IOException, PlanningException {
-    Fragment[] empFrags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
+    Fragment[] empFrags = StorageManager.splitNG(conf, "e", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
-    Fragment[] peopleFrags = StorageManager.splitNG(conf, "people", people.getMeta(), people.getPath(),
+    Fragment[] peopleFrags = StorageManager.splitNG(conf, "p", people.getMeta(), people.getPath(),
         Integer.MAX_VALUE);
     
     Fragment [] merged = TUtil.concat(empFrags, peopleFrags);

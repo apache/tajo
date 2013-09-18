@@ -61,7 +61,7 @@ public class PlannerUtil {
     ScanNode scan;
     for (int i = 0; i < scans.length; i++) {
       scan = (ScanNode) scans[i];
-      tableNames[i] = scan.getTableName();
+      tableNames[i] = scan.getCanonicalName();
     }
     return tableNames;
   }
@@ -295,31 +295,44 @@ public class PlannerUtil {
 
       return i.contains(it.next()) && o.contains(it.next());
 
-    } else {
-      if (node instanceof RelationNode) {
+    } else if (node instanceof ScanNode) {
 
-        RelationNode scan = (RelationNode) node;
+      RelationNode scan = (RelationNode) node;
 
-        for (Column col : columnRefs) {
-          if (scan.getTableName().equals(col.getQualifier())) {
-            Column found = node.getInSchema().getColumnByName(col.getColumnName());
-            if (found == null) {
-              return false;
-            }
-          } else {
+      for (Column col : columnRefs) {
+        if (scan.getCanonicalName().equals(col.getQualifier())) {
+          Column found = node.getInSchema().getColumnByName(col.getColumnName());
+          if (found == null) {
             return false;
           }
-        }
-      } else {
-        for (Column col : columnRefs) {
-          if (!node.getInSchema().contains(col.getQualifiedName())) {
-            return false;
-          }
+        } else {
+          return false;
         }
       }
 
-      return true;
+    } else if (node instanceof TableSubQueryNode) {
+      TableSubQueryNode subQueryNode = (TableSubQueryNode) node;
+      for (Column col : columnRefs) {
+        if (subQueryNode.getCanonicalName().equals(col.getQualifier())) {
+          Column found = node.getOutSchema().getColumnByName(col.getColumnName());
+          if (found == null) {
+            return false;
+          }
+        } else {
+          return false;
+        }
+      }
+
+    } else {
+
+      for (Column col : columnRefs) {
+        if (!node.getInSchema().contains(col.getQualifiedName())) {
+          return false;
+        }
+      }
     }
+
+    return true;
   }
 
   private static class LogicalNodeFinder implements LogicalNodeVisitor {
@@ -382,92 +395,6 @@ public class PlannerUtil {
 
     public List<LogicalNode> getFoundNodes() {
       return list;
-    }
-  }
-  
-  private static class ColumnRefCollector implements LogicalNodeVisitor {
-    private Set<Column> collected = Sets.newHashSet();
-    
-    public Set<Column> getColumns() {
-      return this.collected;
-    }
-
-    @Override
-    public void visit(LogicalNode node) {
-      Set<Column> temp;
-      switch (node.getType()) {
-      case PROJECTION:
-        ProjectionNode projNode = (ProjectionNode) node;
-
-        for (Target t : projNode.getTargets()) {
-          temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
-          if (!temp.isEmpty()) {
-            collected.addAll(temp);
-          }
-        }
-
-        break;
-
-      case SELECTION:
-        SelectionNode selNode = (SelectionNode) node;
-        temp = EvalTreeUtil.findDistinctRefColumns(selNode.getQual());
-        if (!temp.isEmpty()) {
-          collected.addAll(temp);
-        }
-
-        break;
-        
-      case GROUP_BY:
-        GroupbyNode groupByNode = (GroupbyNode)node;
-        collected.addAll(Lists.newArrayList(groupByNode.getGroupingColumns()));
-        for (Target t : groupByNode.getTargets()) {
-          temp = EvalTreeUtil.findDistinctRefColumns(t.getEvalTree());
-          if (!temp.isEmpty()) {
-            collected.addAll(temp);
-          }
-        }
-        if(groupByNode.hasHavingCondition()) {
-          temp = EvalTreeUtil.findDistinctRefColumns(groupByNode.
-              getHavingCondition());
-          if (!temp.isEmpty()) {
-            collected.addAll(temp);
-          }
-        }
-        
-        break;
-        
-      case SORT:
-        SortNode sortNode = (SortNode) node;
-        for (SortSpec key : sortNode.getSortKeys()) {
-          collected.add(key.getSortKey());
-        }
-        
-        break;
-        
-      case JOIN:
-        JoinNode joinNode = (JoinNode) node;
-        if (joinNode.hasJoinQual()) {
-          temp = EvalTreeUtil.findDistinctRefColumns(joinNode.getJoinQual());
-          if (!temp.isEmpty()) {
-            collected.addAll(temp);
-          }
-        }
-        
-        break;
-        
-      case SCAN:
-        ScanNode scanNode = (ScanNode) node;
-        if (scanNode.hasQual()) {
-          temp = EvalTreeUtil.findDistinctRefColumns(scanNode.getQual());
-          if (!temp.isEmpty()) {
-            collected.addAll(temp);
-          }
-        }
-
-        break;
-        
-      default:
-      }
     }
   }
 
@@ -650,12 +577,5 @@ public class PlannerUtil {
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  public static Schema getQualifiedSchema(Schema targetSchema, String qualifier) {
-    Schema copied;
-    copied = (Schema) targetSchema.clone();
-    copied.setQualifier(qualifier);
-    return copied;
   }
 }

@@ -580,7 +580,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       Map<String, TableDesc> tableMap = context.getTableDescMap();
       if (masterPlan.isLeaf(execBlock)) {
         ScanNode outerScan = execBlock.getScanNodes()[0];
-        TableStat stat = tableMap.get(outerScan.getFromTable().getTableName()).getMeta().getStat();
+        TableStat stat = tableMap.get(outerScan.getCanonicalName()).getMeta().getStat();
         return stat.getNumBytes();
       } else {
         long aggregatedVolume = 0;
@@ -624,12 +624,12 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       Path inputPath;
 
       ScanNode scan = scans[0];
-      TableDesc desc = subQuery.context.getTableDescMap().get(scan.getFromTable().getTableName());
+      TableDesc desc = subQuery.context.getTableDescMap().get(scan.getCanonicalName());
       inputPath = desc.getPath();
       meta = desc.getMeta();
 
       // TODO - should be change the inner directory
-      List<Fragment> fragments = subQuery.getStorageManager().getSplits(scan.getTableName(), meta, inputPath);
+      List<Fragment> fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, inputPath);
 
       QueryUnit queryUnit;
       List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();

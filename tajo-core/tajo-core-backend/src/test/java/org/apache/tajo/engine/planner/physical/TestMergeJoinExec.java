@@ -148,9 +148,9 @@ public class TestMergeJoinExec {
 
   @Test
   public final void testMergeInnerJoin() throws IOException, PlanningException {
-    Fragment[] empFrags = sm.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
+    Fragment[] empFrags = sm.splitNG(conf, "e", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
-    Fragment[] peopleFrags = sm.splitNG(conf, "people", people.getMeta(), people.getPath(),
+    Fragment[] peopleFrags = sm.splitNG(conf, "p", people.getMeta(), people.getPath(),
         Integer.MAX_VALUE);
 
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
@@ -184,6 +184,7 @@ public class TestMergeJoinExec {
 
       Schema employeeSchema = catalog.getTableDesc("employee").getMeta()
           .getSchema();
+      employeeSchema.setQualifier("e", true);
       outerSortKeys[0] = new SortSpec(
           employeeSchema.getColumnByName("empId"));
       outerSortKeys[1] = new SortSpec(
@@ -193,6 +194,7 @@ public class TestMergeJoinExec {
       outerSort.setOutSchema(outerScan.getSchema());
 
       Schema peopleSchema = catalog.getTableDesc("people").getMeta().getSchema();
+      peopleSchema.setQualifier("p", true);
       innerSortKeys[0] = new SortSpec(
           peopleSchema.getColumnByName("empId"));
       innerSortKeys[1] = new SortSpec(

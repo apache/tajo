@@ -21,42 +21,51 @@ package org.apache.tajo.engine.planner.logical;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.planner.FromTable;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
 public class ScanNode extends RelationNode implements Projectable {
-	@Expose private FromTable table;
+	@Expose private TableDesc tableDesc;
+  @Expose private String alias;
+  @Expose private Schema renamedSchema;
 	@Expose private EvalNode qual;
 	@Expose private Target[] targets;
 	
 	public ScanNode() {
 		super(NodeType.SCAN);
 	}
+
+  public ScanNode(TableDesc desc) {
+    super(NodeType.SCAN);
+    this.tableDesc = desc;
+    this.setInSchema(tableDesc.getSchema());
+    this.setOutSchema(tableDesc.getSchema());
+  }
   
-	public ScanNode(FromTable table) {
-		super(NodeType.SCAN);
-		this.table = table;
-		this.setInSchema(table.getSchema());
-		this.setOutSchema(table.getSchema());
+	public ScanNode(TableDesc desc, String alias) {
+    this(desc);
+    this.alias = alias;
+    renamedSchema = getOutSchema();
+    renamedSchema.setQualifier(alias, true);
 	}
 	
 	public String getTableName() {
-	  return table.getTableName();
+	  return tableDesc.getName();
 	}
 	
 	public boolean hasAlias() {
-	  return table.hasAlias();
+	  return alias != null;
 	}
 
   public String getCanonicalName() {
-    return table.hasAlias() ? table.getAlias() : table.getTableName();
+    return hasAlias() ? alias : tableDesc.getName();
   }
 
   public Schema getTableSchema() {
-    return table.getSchema();
+    return hasAlias() ? renamedSchema : tableDesc.getSchema();
   }
 	
 	public boolean hasQual() {
@@ -85,21 +94,17 @@ public class ScanNode extends RelationNode implements Projectable {
 	public Target [] getTargets() {
 	  return this.targets;
 	}
-	
-	public FromTable getFromTable() {
-	  return this.table;
-	}
-	
-	public void setFromTable(FromTable from) {
-	  this.table = from;
-	}
+
+  public TableDesc getTableDesc() {
+    return tableDesc;
+  }
 	
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();	  
 	  sb.append("\"Scan\" : {\"table\":\"")
-	  .append(table.getTableName()).append("\"");
+	  .append(getTableName()).append("\"");
 	  if (hasAlias()) {
-	    sb.append(",\"alias\": \"").append(table.getAlias());
+	    sb.append(",\"alias\": \"").append(alias);
 	  }
 	  
 	  if (hasQual()) {
@@ -126,7 +131,7 @@ public class ScanNode extends RelationNode implements Projectable {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(this.table, this.qual, this.targets);
+    return Objects.hashCode(this.tableDesc, this.qual, this.targets);
   }
 	
 	@Override
@@ -135,7 +140,7 @@ public class ScanNode extends RelationNode implements Projectable {
 	    ScanNode other = (ScanNode) obj;
 	    
 	    boolean eq = super.equals(other); 
-	    eq = eq && TUtil.checkEquals(this.table, other.table);
+	    eq = eq && TUtil.checkEquals(this.tableDesc, other.tableDesc);
 	    eq = eq && TUtil.checkEquals(this.qual, other.qual);
 	    eq = eq && TUtil.checkEquals(this.targets, other.targets);
 	    
@@ -149,7 +154,7 @@ public class ScanNode extends RelationNode implements Projectable {
 	public Object clone() throws CloneNotSupportedException {
 	  ScanNode scanNode = (ScanNode) super.clone();
 	  
-	  scanNode.table = (FromTable) this.table.clone();
+	  scanNode.tableDesc = (TableDesc) this.tableDesc.clone();
 	  
 	  if (hasQual()) {
 	    scanNode.qual = (EvalNode) this.qual.clone();
@@ -177,8 +182,8 @@ public class ScanNode extends RelationNode implements Projectable {
   @Override
   public PlanString getPlanString() {
     PlanString planStr = new PlanString("Scan on ").appendTitle(getTableName());
-    if (table.hasAlias()) {
-      planStr.appendTitle(" as ").appendTitle(table.getAlias());
+    if (hasAlias()) {
+      planStr.appendTitle(" as ").appendTitle(alias);
     }
 
     if (hasQual()) {

@@ -289,14 +289,14 @@ public class TestLogicalPlanner {
   public final void testInnerJoinPlan() throws PlanningException {
     // two relations
     Expr expr = sqlAnalyzer.parse(JOINS[1]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
-    assertSchema(expectedJoinSchema, plan.getOutSchema());
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode root = plan.getRootBlock().getRoot();
+    testJsonSerDerObject(root);
+    assertSchema(expectedJoinSchema, root.getOutSchema());
 
-    assertEquals(NodeType.ROOT, plan.getType());
-    LogicalRootNode root = (LogicalRootNode) plan;
-    assertEquals(NodeType.PROJECTION, root.getChild().getType());
-    ProjectionNode proj = root.getChild();
+    assertEquals(NodeType.ROOT, root.getType());
+    assertEquals(NodeType.PROJECTION, ((LogicalRootNode)root).getChild().getType());
+    ProjectionNode proj = ((LogicalRootNode)root).getChild();
     assertEquals(NodeType.JOIN, proj.getChild().getType());
     JoinNode join = proj.getChild();
     assertEquals(JoinType.INNER, join.getJoinType());

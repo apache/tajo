@@ -50,7 +50,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestBNLJoinExec {
   private TajoConf conf;
-  private final String TEST_PATH = "target/test-data/TestNLJoinExec";
+  private final String TEST_PATH = "target/test-data/TestBNLJoinExec";
   private TajoTestingCluster util;
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
@@ -125,16 +125,18 @@ public class TestBNLJoinExec {
     util.shutdownCatalogCluster();
   }
 
+  // employee (managerId, empId, memId, deptName)
+  // people (empId, fk_memId, name, age)
   String[] QUERIES = {
-      "select managerId, e.empId, deptName, e.memId from employee as e, people",
+      "select managerId, e.empId, deptName, e.memId from employee as e, people p",
       "select managerId, e.empId, deptName, e.memId from employee as e " +
           "inner join people as p on e.empId = p.empId and e.memId = p.fk_memId" };
 
   @Test
   public final void testBNLCrossJoin() throws IOException, PlanningException {
-    Fragment[] empFrags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
+    Fragment[] empFrags = StorageManager.splitNG(conf, "e", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
-    Fragment[] peopleFrags = StorageManager.splitNG(conf, "people", people.getMeta(), people.getPath(),
+    Fragment[] peopleFrags = StorageManager.splitNG(conf, "p", people.getMeta(), people.getPath(),
         Integer.MAX_VALUE);
 
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
@@ -167,9 +169,9 @@ public class TestBNLJoinExec {
 
   @Test
   public final void testBNLInnerJoin() throws IOException, PlanningException {
-    Fragment[] empFrags = StorageManager.splitNG(conf, "employee", employee.getMeta(), employee.getPath(),
+    Fragment[] empFrags = StorageManager.splitNG(conf, "e", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
-    Fragment[] peopleFrags = StorageManager.splitNG(conf, "people", people.getMeta(), people.getPath(),
+    Fragment[] peopleFrags = StorageManager.splitNG(conf, "p", people.getMeta(), people.getPath(),
         Integer.MAX_VALUE);
 
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);

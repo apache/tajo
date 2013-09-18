@@ -145,7 +145,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
 
     // If all expressions are evaluated in the child operators and the last operator is projectable,
     // ProjectionNode will not be necessary. It eliminates ProjectionNode.
-    if (context.targetListManager.isAllEvaluated() && (childNode instanceof Projectable)) {
+    if (context.targetListManager.isAllResolved() && (childNode instanceof Projectable)) {
       child.setOutSchema(context.targetListManager.getUpdatedSchema());
       if (stack.isEmpty()) {
         // update the child node's output schemas
@@ -276,7 +276,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
       newContext.targetListManager = new TargetListManager(plan, subBlock.getProjectionNode().getTargets());
     } else {
      List<Target> projectedTarget = new ArrayList<Target>();
-      for (Target target : subBlock.getTargetListManager().getUnEvaluatedTargets()) {
+      for (Target target : subBlock.getTargetListManager().getUnresolvedTargets()) {
         for (Column column : context.upperRequired) {
           if (column.hasQualifier() && !node.getTableName().equals(column.getQualifier())) {
             continue;
@@ -294,7 +294,9 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
 
     LogicalNode child = visitChild(plan, subRoot, newStack, newContext);
     newStack.pop();
-    node.setInSchema(PlannerUtil.getQualifiedSchema(child.getOutSchema(), node.getTableName()));
+    Schema inSchema = (Schema) child.getOutSchema().clone();
+    inSchema.setQualifier(node.getCanonicalName(), true);
+    node.setInSchema(inSchema);
     return pushDownProjectablePost(context, node, isTopmostProjectable(stack));
   }
 
@@ -340,21 +342,21 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
         if (node instanceof RelationNode) { // For ScanNode
 
           if (expr.getType() == EvalType.FIELD && !targetListManager.getTarget(i).hasAlias()) {
-            targetListManager.setEvaluated(i);
+            targetListManager.resolve(i);
           } else if (EvalTreeUtil.findDistinctAggFunction(expr).size() == 0) {
-            targetListManager.setEvaluated(i);
+            targetListManager.resolve(i);
             newEvaluatedTargetIds.add(i);
           }
 
         } else if (node instanceof GroupbyNode) { // For GroupBy
           if (EvalTreeUtil.findDistinctAggFunction(expr).size() > 0 && expr.getType() != EvalType.FIELD) {
-            targetListManager.setEvaluated(i);
+            targetListManager.resolve(i);
             newEvaluatedTargetIds.add(i);
           }
 
         } else if (node instanceof JoinNode) {
           if (expr.getType() != EvalType.FIELD && EvalTreeUtil.findDistinctAggFunction(expr).size() == 0) {
-            targetListManager.setEvaluated(i);
+            targetListManager.resolve(i);
             newEvaluatedTargetIds.add(i);
           }
         }
@@ -363,9 +365,8 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
 
     Projectable projectable = (Projectable) node;
     if (last) {
-      Preconditions.checkState(targetListManager.isAllEvaluated(), "Not all targets are evaluated");
+      Preconditions.checkState(targetListManager.isAllResolved(), "Not all targets are evaluated");
       projectable.setTargets(targetListManager.getTargets());
-      targetListManager.getUpdatedTarget();
       node.setOutSchema(targetListManager.getUpdatedSchema());
     } else {
       // Preparing targets regardless of that the node has targets or not.
@@ -422,7 +423,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
       LogicalPlan.QueryBlock subQueryBlock, TableSubQueryNode subQueryNode, Set<Column> upperRequired) {
     TargetListManager subBlockTargetList;
     List<Target> projectedTarget = new ArrayList<Target>();
-    for (Target target : subQueryBlock.getTargetListManager().getUnEvaluatedTargets()) {
+    for (Target target : subQueryBlock.getTargetListManager().getUnresolvedTargets()) {
       for (Column column : upperRequired) {
         if (!subQueryNode.getTableName().equals(column.getQualifier())) {
           continue;
@@ -460,7 +461,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     // if this is the final union, we assume that all targets are evalauted.
     // TODO - is it always correct?
     if (stack.peek().getType() != NodeType.UNION) {
-      context.targetListManager.setEvaluatedAll();
+      context.targetListManager.resolveAll();
     }
 
     return setNode;

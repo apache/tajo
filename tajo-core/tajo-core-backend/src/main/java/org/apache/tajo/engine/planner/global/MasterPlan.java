@@ -47,8 +47,7 @@ public class MasterPlan {
 
   private ExecutionBlock terminalBlock;
   private Map<ExecutionBlockId, ExecutionBlock> execBlockMap = new HashMap<ExecutionBlockId, ExecutionBlock>();
-  private SimpleDirectedGraph<ExecutionBlockId, DataChannel> execBlockGraph =
-      new SimpleDirectedGraph<ExecutionBlockId, DataChannel>();
+  private SimpleDirectedGraph<ExecutionBlockId, DataChannel> execBlockGraph = new SimpleDirectedGraph<ExecutionBlockId, DataChannel>();
 
   public ExecutionBlockId newExecutionBlockId() {
     return new ExecutionBlockId(queryId, nextId.incrementAndGet());

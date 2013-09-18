@@ -109,7 +109,7 @@ public class GlobalPlanner {
         "Channel schema (" + channel.getSrcId().getId() +" -> "+ channel.getTargetId().getId()+") is not initialized");
     TableMeta meta = new TableMetaImpl(channel.getSchema(), channel.getStoreType(), new Options());
     TableDesc desc = new TableDescImpl(channel.getSrcId().toString(), meta, new Path("/"));
-    return new ScanNode(new FromTable(desc));
+    return new ScanNode(desc);
   }
 
   public class NewPlanner extends BasicLogicalPlanVisitor<GlobalPlanContext> {

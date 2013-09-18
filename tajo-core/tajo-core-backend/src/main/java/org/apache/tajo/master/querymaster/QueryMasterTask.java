@@ -264,7 +264,7 @@ public class QueryMasterTask extends CompositeService {
         if(scanNodes != null) {
           for(LogicalNode eachScanNode: scanNodes) {
             ScanNode scanNode = (ScanNode)eachScanNode;
-            tableDescMap.put(scanNode.getFromTable().getTableName(), scanNode.getFromTable().getTableDesc());
+            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
           }
         }
       }

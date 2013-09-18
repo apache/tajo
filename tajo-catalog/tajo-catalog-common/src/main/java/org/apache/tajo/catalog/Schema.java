@@ -80,10 +80,31 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     }
   }
 
+  /**
+   * Set a qualifier to this schema.
+   * This changes the qualifier of all columns except for not-qualified columns.
+   *
+   * @param qualifier The qualifier
+   */
   public void setQualifier(String qualifier) {
+    setQualifier(qualifier, false);
+  }
+
+  /**
+   * Set a qualifier to this schema. This changes the qualifier of all columns if force is true.
+   * Otherwise, it changes the qualifier of all columns except for non-qualified columns
+   *
+   * @param qualifier The qualifier
+   * @param force If true, all columns' qualifiers will be changed. Otherwise, only qualified columns' qualifiers will
+   *              be changed.
+   */
+  public void setQualifier(String qualifier, boolean force) {
     fieldsByQialifiedName.clear();
 
     for (int i = 0; i < getColumnNum(); i++) {
+      if (!force && fields.get(i).hasQualifier()) {
+        continue;
+      }
       fields.get(i).setQualifier(qualifier);
       fieldsByQialifiedName.put(fields.get(i).getQualifiedName(), i);
     }

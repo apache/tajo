@@ -142,6 +142,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-186: Improve column resolving method. (hyunsik)
+
     TAJO-168: infinite loop occurs when QueryMaster is stopping. (jinho)
 
     TAJO-180: Better error messages for 

@@ -267,10 +267,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode)
       throws IOException {
-    Preconditions.checkNotNull(ctx.getTable(scanNode.getTableName()),
-        "Error: There is no table matched to %s", scanNode.getTableName());
+    Preconditions.checkNotNull(ctx.getTable(scanNode.getCanonicalName()),
+        "Error: There is no table matched to %s", scanNode.getCanonicalName() + "(" + scanNode.getTableName() + ")");
 
-    Fragment[] fragments = ctx.getTables(scanNode.getTableName());
+    Fragment[] fragments = ctx.getTables(scanNode.getCanonicalName());
     return new SeqScanExec(ctx, sm, scanNode, fragments);
   }
 
@@ -316,8 +316,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
                                           IndexScanNode annotation)
       throws IOException {
     //TODO-general Type Index
-    Preconditions.checkNotNull(ctx.getTable(annotation.getTableName()),
-        "Error: There is no table matched to %s", annotation.getTableName());
+    Preconditions.checkNotNull(ctx.getTable(annotation.getCanonicalName()),
+        "Error: There is no table matched to %s", annotation.getCanonicalName());
 
     Fragment[] fragments = ctx.getTables(annotation.getTableName());
 

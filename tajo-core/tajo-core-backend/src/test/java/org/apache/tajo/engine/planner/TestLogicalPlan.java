@@ -89,28 +89,33 @@ public class TestLogicalPlan {
     LogicalPlan.QueryBlock new1 = plan.newAndGetBlock("@new1");
     LogicalPlan.QueryBlock new2 = plan.newAndGetBlock("@new2");
 
-    plan.getBlockGraph().connect(new1, root, new LogicalPlan.BlockEdge(new1, root, BlockType.TableSubQuery));
-    plan.getBlockGraph().connect(new2, root, new LogicalPlan.BlockEdge(new2, root, BlockType.TableSubQuery));
+    plan.getQueryBlockGraph().connect(new1.getName(), root.getName(),
+        new LogicalPlan.BlockEdge(new1, root, BlockType.TableSubQuery));
+    plan.getQueryBlockGraph().connect(new2.getName(), root.getName(),
+        new LogicalPlan.BlockEdge(new2, root, BlockType.TableSubQuery));
 
-    SimpleDirectedGraph<LogicalPlan.QueryBlock, LogicalPlan.BlockEdge> graph = plan.getBlockGraph();
-    assertEquals(2, graph.getChildCount(root));
+    SimpleDirectedGraph<String, LogicalPlan.BlockEdge> graph = plan.getQueryBlockGraph();
+    assertEquals(2, graph.getChildCount(root.getName()));
 
-    assertEquals(root, graph.getParent(new1));
-    assertEquals(root, graph.getParent(new2));
+    assertEquals(root.getName(), graph.getParent(new1.getName()));
+    assertEquals(root.getName(), graph.getParent(new2.getName()));
 
-    assertTrue(graph.isRoot(root));
-    assertFalse(graph.isRoot(new1));
-    assertFalse(graph.isRoot(new2));
+    assertTrue(graph.isRoot(root.getName()));
+    assertFalse(graph.isRoot(new1.getName()));
+    assertFalse(graph.isRoot(new2.getName()));
 
-    assertFalse(graph.isLeaf(root));
-    assertTrue(graph.isLeaf(new1));
-    assertTrue(graph.isLeaf(new2));
+    assertFalse(graph.isLeaf(root.getName()));
+    assertTrue(graph.isLeaf(new1.getName()));
+    assertTrue(graph.isLeaf(new2.getName()));
 
     Set<LogicalPlan.QueryBlock> result = new HashSet<LogicalPlan.QueryBlock>();
     result.add(new1);
     result.add(new2);
 
-    Set<LogicalPlan.QueryBlock> childs = new HashSet<LogicalPlan.QueryBlock>(graph.getChilds(root));
+    Set<LogicalPlan.QueryBlock> childs = new HashSet<LogicalPlan.QueryBlock>(plan.getChildBlocks(root));
     assertEquals(result, childs);
+
+    assertEquals(root, plan.getParentBlock(new1));
+    assertEquals(root, plan.getParentBlock(new2));
   }
 }

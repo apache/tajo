@@ -34,6 +34,8 @@ public interface TableDesc extends Cloneable, GsonObject {
   void setMeta(TableMeta info);
   
   TableMeta getMeta();
+
+  Schema getSchema();
   
   Message getProto();
  

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.tajo.algebra.Projection;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
@@ -29,40 +30,42 @@ import java.util.Collection;
  * It manages a list of targets.
  */
 public class TargetListManager {
-  private LogicalPlan plan;
-  private boolean [] evaluatedFlags;
+  private final LogicalPlan plan;
+  private boolean [] resolvedFlags;
+  private Projection projection;
   private Target[] targets;
-  private Target[] unevaluatedTargets;
+  private Target[] unresolvedTargets;
 
-  public TargetListManager(LogicalPlan plan, int targetNum) {
+  public TargetListManager(LogicalPlan plan, Projection projection) {
     this.plan = plan;
-    if (targetNum == 0) {
-      evaluatedFlags = new boolean[0];
+    int targetNum = projection.size();
+    if (projection.size() == 0) {
+      resolvedFlags = new boolean[0];
     } else {
-      evaluatedFlags = new boolean[targetNum];
+      resolvedFlags = new boolean[targetNum];
     }
     this.targets = new Target[targetNum];
-    this.unevaluatedTargets = new Target[targetNum];
+    this.unresolvedTargets = new Target[targetNum];
   }
 
-  public TargetListManager(LogicalPlan plan, Target[] original) {
+  public TargetListManager(LogicalPlan plan, Target[] unresolvedTargets) {
     this.plan = plan;
 
-    targets = new Target[original.length];
-    unevaluatedTargets = new Target[original.length];
-    for (int i = 0; i < original.length; i++) {
+    this.targets = new Target[unresolvedTargets.length];
+    this.unresolvedTargets = new Target[unresolvedTargets.length];
+    for (int i = 0; i < unresolvedTargets.length; i++) {
       try {
-        targets[i] = (Target) original[i].clone();
-        unevaluatedTargets[i] = (Target) original[i].clone();
+        this.targets[i] = (Target) unresolvedTargets[i].clone();
+        this.unresolvedTargets[i] = (Target) unresolvedTargets[i].clone();
       } catch (CloneNotSupportedException e) {
         e.printStackTrace();
       }
     }
-    evaluatedFlags = new boolean[original.length];
+    resolvedFlags = new boolean[unresolvedTargets.length];
   }
 
   public TargetListManager(LogicalPlan plan, String blockName) {
-    this(plan, plan.getBlock(blockName).getTargetListManager().getUnEvaluatedTargets());
+    this(plan, plan.getBlock(blockName).getTargetListManager().getUnresolvedTargets());
   }
 
   public Target getTarget(int id) {
@@ -73,31 +76,31 @@ public class TargetListManager {
     return this.targets;
   }
 
-  public Target[] getUnEvaluatedTargets() {
-    return this.unevaluatedTargets;
+  public Target[] getUnresolvedTargets() {
+    return this.unresolvedTargets;
   }
 
-  public void updateTarget(int id, Target target) {
+  public void update(int id, Target target) {
     this.targets[id] = target;
-    this.unevaluatedTargets[id] = target;
+    this.unresolvedTargets[id] = target;
   }
 
   public int size() {
     return targets.length;
   }
 
-  public void setEvaluated(int id) {
-    evaluatedFlags[id] = true;
+  public void resolve(int id) {
+    resolvedFlags[id] = true;
   }
 
-  public void setEvaluatedAll() {
-    for (int i = 0; i < evaluatedFlags.length; i++) {
-      evaluatedFlags[i] = true;
+  public void resolveAll() {
+    for (int i = 0; i < resolvedFlags.length; i++) {
+      resolvedFlags[i] = true;
     }
   }
 
   public boolean isEvaluated(int id) {
-    return evaluatedFlags[id];
+    return resolvedFlags[id];
   }
 
   public Target [] getUpdatedTarget() throws PlanningException {
@@ -108,8 +111,8 @@ public class TargetListManager {
         continue;
       }
 
-      if (evaluatedFlags[i]) { // if this target was evaluated, it becomes a column target.
-        Column col = getEvaluatedColumn(i);
+      if (resolvedFlags[i]) { // if this target was evaluated, it becomes a column target.
+        Column col = getResolvedTargetToColumn(i);
         updated[i] = new Target(new FieldEval(col));
       } else {
         try {
@@ -125,9 +128,9 @@ public class TargetListManager {
 
   public Schema getUpdatedSchema() {
     Schema schema = new Schema();
-    for (int i = 0; i < evaluatedFlags.length; i++) {
-      if (evaluatedFlags[i]) {
-        Column col = getEvaluatedColumn(i);
+    for (int i = 0; i < resolvedFlags.length; i++) {
+      if (resolvedFlags[i]) {
+        Column col = getResolvedTargetToColumn(i);
         if (!schema.contains(col.getQualifiedName()))
         schema.addColumn(col);
       } else {
@@ -139,7 +142,6 @@ public class TargetListManager {
         }
       }
     }
-
     return schema;
   }
 
@@ -147,7 +149,7 @@ public class TargetListManager {
     return EvalTreeUtil.findDistinctRefColumns(targets[id].getEvalTree());
   }
 
-  public Column getEvaluatedColumn(int id) {
+  public Column getResolvedTargetToColumn(int id) {
     Target t = targets[id];
     String name;
     if (t.hasAlias()) {
@@ -160,9 +162,9 @@ public class TargetListManager {
     return new Column(name, t.getEvalTree().getValueType()[0]);
   }
 
-  public boolean isAllEvaluated() {
-    for (boolean isEval : evaluatedFlags) {
-      if (!isEval) {
+  public boolean isAllResolved() {
+    for (boolean resolved : resolvedFlags) {
+      if (!resolved) {
         return false;
       }
     }

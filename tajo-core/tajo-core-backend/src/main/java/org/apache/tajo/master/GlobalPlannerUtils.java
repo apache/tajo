@@ -26,7 +26,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.engine.planner.FromTable;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 
 public class GlobalPlannerUtils {
@@ -37,7 +36,7 @@ public class GlobalPlannerUtils {
                                      Path inputPath) {
     TableMeta meta = CatalogUtil.newTableMeta(inputSchema, StoreType.CSV);
     TableDesc desc = CatalogUtil.newTableDesc(inputTableId, meta, inputPath);
-    ScanNode newScan = new ScanNode(new FromTable(desc));
+    ScanNode newScan = new ScanNode(desc);
     newScan.setInSchema(desc.getMeta().getSchema());
     newScan.setOutSchema(desc.getMeta().getSchema());
     return newScan;

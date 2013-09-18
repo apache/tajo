@@ -543,7 +543,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr>{
         if(targets.length == 1) {
             if(targets[0].getExpr().getType().equals(OpType.Column)) {
                 ColumnReferenceExpr columnReferenceExprs = (ColumnReferenceExpr)targets[0].getExpr();
-                if(columnReferenceExprs.getTableName() == null && columnReferenceExprs.getName().equals("*"))
+                if(columnReferenceExprs.getQualifier() == null && columnReferenceExprs.getName().equals("*"))
                     projection.setAll();;
             }
         }
@@ -575,7 +575,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr>{
 
         columnReference = new ColumnReferenceExpr(itemName);
         if(!tableName.equals(""))
-            columnReference.setTableName(tableName);
+            columnReference.setQualifier(tableName);
 
         if(ctx.selectExpression() != null) {
             if(ctx.selectExpression().expression() != null) {
@@ -1049,7 +1049,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr>{
         if(ctx.DOT().size() > 0) {
             ColumnReferenceExpr column = new ColumnReferenceExpr(ctx.identifier(0).getText());
             ColumnReferenceExpr table = (ColumnReferenceExpr)current;
-            column.setTableName(table.getName());
+            column.setQualifier(table.getName());
             current = column;
         }
         return current;

@@ -21,7 +21,6 @@ package org.apache.tajo.engine.utils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.engine.planner.FromTable;
 
 public class SchemaUtil {
   public static Schema merge(Schema left, Schema right) {
@@ -37,15 +36,6 @@ public class SchemaUtil {
       }
     }
     
-    return merged;
-  }
-
-  public static Schema merge(FromTable[] fromTables) {
-    Schema merged = new Schema();
-    for (FromTable table : fromTables) {
-      merged.addColumns(table.getSchema());
-    }
-
     return merged;
   }
   

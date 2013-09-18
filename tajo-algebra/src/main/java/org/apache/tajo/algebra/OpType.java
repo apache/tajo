@@ -27,6 +27,7 @@ public enum OpType {
   // relational operators
   Relation(Relation.class),
   RelationList(RelationList.class),
+  Rename,
   TableSubQuery(TableSubQuery.class),
   Except(SetOperation.class),
   Having(Having.class),
@@ -34,7 +35,6 @@ public enum OpType {
   Intersect(SetOperation.class),
   Join(Join.class),
   Projection(Projection.class),
-  Rename,
   Filter(Selection.class),
   Sort(Sort.class),
   Union(SetOperation.class),

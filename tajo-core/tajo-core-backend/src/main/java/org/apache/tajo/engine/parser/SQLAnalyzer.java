@@ -640,7 +640,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public ColumnReferenceExpr visitColumn_reference(SQLParser.Column_referenceContext ctx) {
     ColumnReferenceExpr column = new ColumnReferenceExpr(ctx.name.getText());
     if (ctx.tb_name != null) {
-      column.setTableName(ctx.tb_name.getText());
+      column.setQualifier(ctx.tb_name.getText());
     }
 
     return column;

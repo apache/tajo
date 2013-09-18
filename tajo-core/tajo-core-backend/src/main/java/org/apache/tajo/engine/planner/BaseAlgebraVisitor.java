@@ -22,19 +22,19 @@ import org.apache.tajo.algebra.*;
 
 import java.util.Stack;
 
-public abstract class BaseAlgebraVisitor<T1, T2> implements AlgebraVisitor<T1, T2> {
+public abstract class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTEXT, RESULT> {
 
   /**
    * The prehook is called before each expression is visited.
    */
-  public void preHook(T1 ctx, Stack<OpType> stack, Expr expr) throws PlanningException {
+  public void preHook(CONTEXT ctx, Stack<OpType> stack, Expr expr) throws PlanningException {
   }
 
 
   /**
    * The posthook is called before each expression is visited.
    */
-  public T2 postHook(T1 ctx, Stack<OpType> stack, Expr expr, T2 current) throws PlanningException {
+  public RESULT postHook(CONTEXT ctx, Stack<OpType> stack, Expr expr, RESULT current) throws PlanningException {
     return current;
   }
 
@@ -44,10 +44,10 @@ public abstract class BaseAlgebraVisitor<T1, T2> implements AlgebraVisitor<T1, T
    * @param stack The stack contains the upper operators' type.
    * @param expr The visiting relational operator
    */
-  public T2 visitChild(T1 ctx, Stack<OpType> stack, Expr expr) throws PlanningException {
+  public RESULT visitChild(CONTEXT ctx, Stack<OpType> stack, Expr expr) throws PlanningException {
     preHook(ctx, stack, expr);
 
-    T2 current;
+    RESULT current;
     switch (expr.getType()) {
       case Projection:
         current = visitProjection(ctx, stack, (Projection) expr);
@@ -103,93 +103,93 @@ public abstract class BaseAlgebraVisitor<T1, T2> implements AlgebraVisitor<T1, T
     return current;
   }
 
-  protected T2 visitInsert(T1 ctx, Stack<OpType> stack, Insert expr) throws PlanningException {
+  protected RESULT visitInsert(CONTEXT ctx, Stack<OpType> stack, Insert expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = visitChild(ctx, stack, expr.getSubQuery());
+    RESULT child = visitChild(ctx, stack, expr.getSubQuery());
     stack.pop();
     return child;
   }
 
   @Override
-  public T2 visitProjection(T1 ctx, Stack<OpType> stack, Projection expr) throws PlanningException {
+  public RESULT visitProjection(CONTEXT ctx, Stack<OpType> stack, Projection expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = visitChild(ctx, stack, expr.getChild());
+    RESULT child = visitChild(ctx, stack, expr.getChild());
     stack.pop();
     return child;
   }
 
   @Override
-  public T2 visitLimit(T1 ctx, Stack<OpType> stack, Limit expr) throws PlanningException {
+  public RESULT visitLimit(CONTEXT ctx, Stack<OpType> stack, Limit expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = visitChild(ctx, stack, expr.getChild());
+    RESULT child = visitChild(ctx, stack, expr.getChild());
     stack.pop();
     return child;
   }
 
   @Override
-  public T2 visitSort(T1 ctx, Stack<OpType> stack, Sort expr) throws PlanningException {
+  public RESULT visitSort(CONTEXT ctx, Stack<OpType> stack, Sort expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = visitChild(ctx, stack, expr.getChild());
+    RESULT child = visitChild(ctx, stack, expr.getChild());
     stack.pop();
     return child;
   }
 
   @Override
-  public T2 visitGroupBy(T1 ctx, Stack<OpType> stack, Aggregation expr) throws PlanningException {
+  public RESULT visitGroupBy(CONTEXT ctx, Stack<OpType> stack, Aggregation expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = visitChild(ctx, stack, expr.getChild());
+    RESULT child = visitChild(ctx, stack, expr.getChild());
     stack.pop();
     return child;
   }
 
   @Override
-  public T2 visitJoin(T1 ctx, Stack<OpType> stack, Join expr) throws PlanningException {
+  public RESULT visitJoin(CONTEXT ctx, Stack<OpType> stack, Join expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = visitChild(ctx, stack, expr.getLeft());
+    RESULT child = visitChild(ctx, stack, expr.getLeft());
     visitChild(ctx, stack, expr.getRight());
     stack.pop();
     return child;
   }
 
   @Override
-  public T2 visitFilter(T1 ctx, Stack<OpType> stack, Selection expr) throws PlanningException {
+  public RESULT visitFilter(CONTEXT ctx, Stack<OpType> stack, Selection expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = visitChild(ctx, stack, expr.getChild());
+    RESULT child = visitChild(ctx, stack, expr.getChild());
     stack.pop();
     return child;
   }
 
   @Override
-  public T2 visitUnion(T1 ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException {
+  public RESULT visitUnion(CONTEXT ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = visitChild(ctx, stack, expr.getLeft());
+    RESULT child = visitChild(ctx, stack, expr.getLeft());
     visitChild(ctx, stack, expr.getRight());
     stack.pop();
     return child;
   }
 
   @Override
-  public T2 visitExcept(T1 ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException {
+  public RESULT visitExcept(CONTEXT ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = visitChild(ctx, stack, expr.getLeft());
+    RESULT child = visitChild(ctx, stack, expr.getLeft());
     visitChild(ctx, stack, expr.getRight());
     stack.pop();
     return child;
   }
 
   @Override
-  public T2 visitIntersect(T1 ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException {
+  public RESULT visitIntersect(CONTEXT ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = visitChild(ctx, stack, expr.getLeft());
+    RESULT child = visitChild(ctx, stack, expr.getLeft());
     visitChild(ctx, stack, expr.getRight());
     stack.pop();
     return child;
   }
 
   @Override
-  public T2 visitRelationList(T1 ctx, Stack<OpType> stack, RelationList expr) throws PlanningException {
+  public RESULT visitRelationList(CONTEXT ctx, Stack<OpType> stack, RelationList expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = null;
+    RESULT child = null;
     for (Expr e : expr.getRelations()) {
       child = visitChild(ctx, stack, e);
     }
@@ -198,22 +198,22 @@ public abstract class BaseAlgebraVisitor<T1, T2> implements AlgebraVisitor<T1, T
   }
 
   @Override
-  public T2 visitTableSubQuery(T1 ctx, Stack<OpType> stack, TableSubQuery expr) throws PlanningException {
+  public RESULT visitTableSubQuery(CONTEXT ctx, Stack<OpType> stack, TableSubQuery expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = visitChild(ctx, stack, expr.getSubQuery());
+    RESULT child = visitChild(ctx, stack, expr.getSubQuery());
     stack.pop();
     return child;
   }
 
   @Override
-  public T2 visitRelation(T1 ctx, Stack<OpType> stack, Relation expr) throws PlanningException {
+  public RESULT visitRelation(CONTEXT ctx, Stack<OpType> stack, Relation expr) throws PlanningException {
     return null;
   }
 
   @Override
-  public T2 visitCreateTable(T1 ctx, Stack<OpType> stack, CreateTable expr) throws PlanningException {
+  public RESULT visitCreateTable(CONTEXT ctx, Stack<OpType> stack, CreateTable expr) throws PlanningException {
     stack.push(expr.getType());
-    T2 child = null;
+    RESULT child = null;
     if (expr.hasSubQuery()) {
        child = visitChild(ctx, stack, expr.getSubQuery());
     }
@@ -222,7 +222,7 @@ public abstract class BaseAlgebraVisitor<T1, T2> implements AlgebraVisitor<T1, T
   }
 
   @Override
-  public T2 visitDropTable(T1 ctx, Stack<OpType> stack, DropTable expr) throws PlanningException {
+  public RESULT visitDropTable(CONTEXT ctx, Stack<OpType> stack, DropTable expr) throws PlanningException {
     return null;
   }
 }
