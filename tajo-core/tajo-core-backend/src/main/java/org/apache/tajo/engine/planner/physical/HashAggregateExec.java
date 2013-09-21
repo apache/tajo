@@ -47,12 +47,13 @@ public class HashAggregateExec extends AggregationExec {
                            PhysicalExec subOp) throws IOException {
     super(ctx, annotation, subOp);
     tupleSlots = new HashMap<Tuple, EvalContext[]>(10000);
-    this.tuple = new VTuple(outSchema.getColumnNum());
+    this.tuple = new VTuple(evalSchema.getColumnNum());
   }
   
   private void compute() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
+    int targetLength = plan.getTargets().length;
     while((tuple = child.next()) != null && !context.isStopped()) {
       keyTuple = new VTuple(keylist.length);
       // build one key tuple
@@ -66,8 +67,8 @@ public class HashAggregateExec extends AggregationExec {
           evals[measureList[i]].eval(tmpTuple[measureList[i]], inSchema, tuple);
         }
       } else { // if the key occurs firstly
-        EvalContext evalCtx [] = new EvalContext[outSchema.getColumnNum()];
-        for(int i = 0; i < outSchema.getColumnNum(); i++) {
+        EvalContext evalCtx [] = new EvalContext[targetLength];
+        for(int i = 0; i < targetLength; i++) {
           evalCtx[i] = evals[i].newContext();
           evals[i].eval(evalCtx[i], inSchema, tuple);
         }
@@ -83,14 +84,31 @@ public class HashAggregateExec extends AggregationExec {
       iterator = tupleSlots.entrySet().iterator();
       computed = true;
     }
-        
-    if(iterator.hasNext()) {
-      EvalContext [] ctx =  iterator.next().getValue();
+
+    EvalContext [] ctx;
+    if (havingQual == null) {
+      if (iterator.hasNext()) {
+      ctx =  iterator.next().getValue();
+
       for (int i = 0; i < ctx.length; i++) {
         tuple.put(i, evals[i].terminate(ctx[i]));
       }
+
       return tuple;
+      } else {
+        return null;
+      }
     } else {
+      while(iterator.hasNext()) {
+        ctx =  iterator.next().getValue();
+        for (int i = 0; i < ctx.length; i++) {
+          tuple.put(i, evals[i].terminate(ctx[i]));
+        }
+        havingQual.eval(havingContext, evalSchema, tuple);
+        if (havingQual.terminate(havingContext).asBool()) {
+          return tuple;
+        }
+      }
       return null;
     }
   }

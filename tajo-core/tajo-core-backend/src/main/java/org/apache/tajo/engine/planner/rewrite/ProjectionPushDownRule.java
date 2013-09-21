@@ -185,10 +185,6 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
       throws PlanningException {
     Set<Column> currentRequired = new HashSet<Column>(context.upperRequired);
 
-    if (node.hasHavingCondition()) {
-      currentRequired.addAll(EvalTreeUtil.findDistinctRefColumns(node.getHavingCondition()));
-    }
-
     for (Target target : node.getTargets()) {
       currentRequired.addAll(EvalTreeUtil.findDistinctRefColumns(target.getEvalTree()));
     }
@@ -271,7 +267,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     Stack<LogicalNode> newStack = new Stack<LogicalNode>();
     newStack.push(node);
     PushDownContext newContext = new PushDownContext(subBlock);
-    if (subBlock.getProjection() != null && subBlock.getProjection().isAllProjected()
+    if (subBlock.hasProjection() && subBlock.getProjection().isAllProjected()
         && context.upperRequired.size() == 0) {
       newContext.targetListManager = new TargetListManager(plan, subBlock.getProjectionNode().getTargets());
     } else {
@@ -366,7 +362,9 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     Projectable projectable = (Projectable) node;
     if (last) {
       Preconditions.checkState(targetListManager.isAllResolved(), "Not all targets are evaluated");
-      projectable.setTargets(targetListManager.getTargets());
+      if (node.getType() != NodeType.GROUP_BY) {
+        projectable.setTargets(targetListManager.getTargets());
+      }
       node.setOutSchema(targetListManager.getUpdatedSchema());
     } else {
       // Preparing targets regardless of that the node has targets or not.

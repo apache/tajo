@@ -25,10 +25,10 @@ import org.apache.tajo.datum.ArrayDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.util.TUtil;
 
-public class RowConstant extends EvalNode {
+public class RowConstantEval extends EvalNode {
   @Expose ArrayDatum values;
 
-  public RowConstant(Datum [] values) {
+  public RowConstantEval(Datum[] values) {
     super(EvalType.ROW_CONSTANT);
     this.values = new ArrayDatum(values);
   }
@@ -55,8 +55,8 @@ public class RowConstant extends EvalNode {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof RowConstant) {
-      RowConstant other = (RowConstant) obj;
+    if (obj instanceof RowConstantEval) {
+      RowConstantEval other = (RowConstantEval) obj;
       return TUtil.checkEquals(values, other.values);
     }
 

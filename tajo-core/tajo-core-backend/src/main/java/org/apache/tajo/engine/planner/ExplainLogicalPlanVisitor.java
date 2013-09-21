@@ -72,11 +72,12 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
   }
 
   @Override
-  public LogicalNode visitRoot(LogicalPlan plan, LogicalRootNode node, Stack<LogicalNode> stack, Context data)
+  public LogicalNode visitRoot(LogicalPlan plan, LogicalRootNode node, Stack<LogicalNode> stack, Context context)
       throws PlanningException {
-    return visitChild(plan, node.getChild(), stack, data);
+    return visitChild(plan, node.getChild(), stack, context);
   }
 
+  @Override
   public LogicalNode visitProjection(LogicalPlan plan, ProjectionNode node, Stack<LogicalNode> stack,
                                      Context context) throws PlanningException {
     return visitUnaryNode(plan, node, stack, context);
@@ -88,11 +89,13 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
     return visitUnaryNode(plan, node, stack, context);
   }
 
+  @Override
   public LogicalNode visitSort(LogicalPlan plan, SortNode node, Stack<LogicalNode> stack,
                                Context context) throws PlanningException {
     return visitUnaryNode(plan, node, stack, context);
   }
 
+  @Override
   public LogicalNode visitGroupBy(LogicalPlan plan, GroupbyNode node, Stack<LogicalNode> stack,
                                   Context context) throws PlanningException {
     return visitUnaryNode(plan, node, stack, context);
@@ -120,6 +123,7 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
     return node;
   }
 
+  @Override
   public LogicalNode visitFilter(LogicalPlan plan, SelectionNode node, Stack<LogicalNode> stack,
                                  Context context) throws PlanningException {
     return visitUnaryNode(plan, node, stack, context);

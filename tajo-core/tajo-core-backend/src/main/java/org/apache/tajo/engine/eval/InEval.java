@@ -36,7 +36,7 @@ public class InEval extends BinaryEval {
   private Integer fieldId = null;
   Datum [] values;
 
-  public InEval(FieldEval columnRef, RowConstant valueList, boolean not) {
+  public InEval(FieldEval columnRef, RowConstantEval valueList, boolean not) {
     super(EvalType.IN, columnRef, valueList);
     this.not = not;
   }
@@ -65,7 +65,7 @@ public class InEval extends BinaryEval {
     InEvalCtx isNullCtx = (InEvalCtx) ctx;
     if (fieldId == null) {
       fieldId = schema.getColumnId(((FieldEval)leftExpr).getColumnRef().getQualifiedName());
-      values = ((RowConstant)rightExpr).getValues();
+      values = ((RowConstantEval)rightExpr).getValues();
     }
 
     boolean isIncluded = false;

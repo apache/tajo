@@ -34,7 +34,7 @@ import org.apache.tajo.util.TUtil;
 import java.util.List;
 
 public class CaseWhenEval extends EvalNode implements GsonObject {
-  @Expose private List<WhenEval> whens = Lists.newArrayList();
+  @Expose private List<IfThenEval> whens = Lists.newArrayList();
   @Expose private EvalNode elseResult;
 
   public CaseWhenEval() {
@@ -42,7 +42,19 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
   }
 
   public void addWhen(EvalNode condition, EvalNode result) {
-    whens.add(new WhenEval(condition, result));
+    whens.add(new IfThenEval(condition, result));
+  }
+
+  public List<IfThenEval> getIfThenEvals() {
+    return whens;
+  }
+
+  public boolean hasElse() {
+    return this.elseResult != null;
+  }
+
+  public EvalNode getElse() {
+    return elseResult;
   }
 
   public void setElseResult(EvalNode elseResult) {
@@ -93,7 +105,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder("CASE\n");
-    for (WhenEval when : whens) {
+    for (IfThenEval when : whens) {
      sb.append(when).append("\n");
     }
 
@@ -105,7 +117,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
   @Override
   public void preOrder(EvalNodeVisitor visitor) {
     visitor.visit(this);
-    for (WhenEval when : whens) {
+    for (IfThenEval when : whens) {
       when.preOrder(visitor);
     }
     if (elseResult != null) { // without else clause
@@ -115,7 +127,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
 
   @Override
   public void postOrder(EvalNodeVisitor visitor) {
-    for (WhenEval when : whens) {
+    for (IfThenEval when : whens) {
       when.postOrder(visitor);
     }
     if (elseResult != null) { // without else clause
@@ -140,12 +152,12 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     }
   }
 
-  public static class WhenEval extends EvalNode implements GsonObject {
+  public static class IfThenEval extends EvalNode implements GsonObject {
     @Expose private EvalNode condition;
     @Expose private EvalNode result;
 
-    public WhenEval(EvalNode condition, EvalNode result) {
-      super(EvalType.WHEN);
+    public IfThenEval(EvalNode condition, EvalNode result) {
+      super(EvalType.IF_THEN);
       this.condition = condition;
       this.result = result;
     }
@@ -185,8 +197,8 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
 
     @Override
     public boolean equals(Object object) {
-      if (object instanceof WhenEval) {
-        WhenEval other = (WhenEval) object;
+      if (object instanceof IfThenEval) {
+        IfThenEval other = (IfThenEval) object;
         return condition.equals(other.condition) &&
             result.equals(other.result);
       } else {
@@ -201,7 +213,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
 
     @Override
     public String toJson() {
-      return CoreGsonHelper.toJson(WhenEval.this, WhenEval.class);
+      return CoreGsonHelper.toJson(IfThenEval.this, IfThenEval.class);
     }
 
     private class WhenContext implements EvalContext {
@@ -237,7 +249,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     EvalContext [] contexts;
     EvalContext elseCtx;
 
-    CaseContext(List<WhenEval> whens, EvalContext elseCtx) {
+    CaseContext(List<IfThenEval> whens, EvalContext elseCtx) {
       contexts = new EvalContext[whens.size()];
       for (int i = 0; i < whens.size(); i++) {
         contexts[i] = whens.get(i).newContext();

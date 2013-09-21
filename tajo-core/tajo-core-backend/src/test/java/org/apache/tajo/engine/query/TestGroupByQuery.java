@@ -18,16 +18,17 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.client.ResultSetUtil;
+import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.TpchTestBase;
 
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -89,6 +90,40 @@ public class TestGroupByQuery {
     } finally {
       res.close();
     }
+  }
+
+  @Test
+  public final void testHavingWithNamedTarget() throws Exception {
+    ResultSet res = tpch.execute("select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey having total >= 2 or num = 3");
+    Map<Integer, Double> result = TUtil.newHashMap();
+    result.put(3, 2.5d);
+    result.put(2, 2.0d);
+    result.put(1, 1.0d);
+
+    for (int i = 0; i < 3; i++) {
+      assertTrue(res.next());
+      assertTrue(result.containsKey(res.getInt("l_orderkey")));
+      assertTrue(result.get(res.getInt("l_orderkey")) == res.getDouble("total"));
+    }
+    assertFalse(res.next());
+    res.close();
+  }
+
+
+  @Test
+  public final void testHavingWithAggFunction() throws Exception {
+    ResultSet res = tpch.execute("select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey having avg(l_partkey) = 2.5 or num = 1");
+    Map<Integer, Double> result = TUtil.newHashMap();
+    result.put(3, 2.5d);
+    result.put(2, 2.0d);
+
+    for (int i = 0; i < 2; i++) {
+      assertTrue(res.next());
+      assertTrue(result.containsKey(res.getInt("l_orderkey")));
+      assertTrue(result.get(res.getInt("l_orderkey")) == res.getDouble("total"));
+    }
+    assertFalse(res.next());
+    res.close();
   }
 
 

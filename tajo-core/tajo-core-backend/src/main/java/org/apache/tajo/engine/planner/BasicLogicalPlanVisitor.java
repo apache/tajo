@@ -93,127 +93,127 @@ public class BasicLogicalPlanVisitor<T> implements LogicalPlanVisitor<T> {
   }
 
   @Override
-  public LogicalNode visitRoot(LogicalPlan plan, LogicalRootNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitRoot(LogicalPlan plan, LogicalRootNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getChild(), stack, data);
+    visitChild(plan, node.getChild(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitProjection(LogicalPlan plan, ProjectionNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitProjection(LogicalPlan plan, ProjectionNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getChild(), stack, data);
+    visitChild(plan, node.getChild(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitLimit(LogicalPlan plan, LimitNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitLimit(LogicalPlan plan, LimitNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getChild(), stack, data);
+    visitChild(plan, node.getChild(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitSort(LogicalPlan plan, SortNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitSort(LogicalPlan plan, SortNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getChild(), stack, data);
+    visitChild(plan, node.getChild(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitGroupBy(LogicalPlan plan, GroupbyNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitGroupBy(LogicalPlan plan, GroupbyNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getChild(), stack, data);
+    visitChild(plan, node.getChild(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitFilter(LogicalPlan plan, SelectionNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitFilter(LogicalPlan plan, SelectionNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getChild(), stack, data);
+    visitChild(plan, node.getChild(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitJoin(LogicalPlan plan, JoinNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitJoin(LogicalPlan plan, JoinNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getLeftChild(), stack, data);
-    visitChild(plan, node.getRightChild(), stack, data);
+    visitChild(plan, node.getLeftChild(), stack, context);
+    visitChild(plan, node.getRightChild(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitUnion(LogicalPlan plan, UnionNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitUnion(LogicalPlan plan, UnionNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getLeftChild(), stack, data);
-    visitChild(plan, node.getRightChild(), stack, data);
+    visitChild(plan, node.getLeftChild(), stack, context);
+    visitChild(plan, node.getRightChild(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitExcept(LogicalPlan plan, ExceptNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitExcept(LogicalPlan plan, ExceptNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getLeftChild(), stack, data);
-    visitChild(plan, node.getRightChild(), stack, data);
+    visitChild(plan, node.getLeftChild(), stack, context);
+    visitChild(plan, node.getRightChild(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitIntersect(LogicalPlan plan, IntersectNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitIntersect(LogicalPlan plan, IntersectNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getLeftChild(), stack, data);
-    visitChild(plan, node.getRightChild(), stack, data);
+    visitChild(plan, node.getLeftChild(), stack, context);
+    visitChild(plan, node.getRightChild(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitTableSubQuery(LogicalPlan plan, TableSubQueryNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitTableSubQuery(LogicalPlan plan, TableSubQueryNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getSubQuery(), stack, data);
+    visitChild(plan, node.getSubQuery(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitScan(LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitScan(LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     return node;
   }
 
   @Override
-  public LogicalNode visitStoreTable(LogicalPlan plan, StoreTableNode node, Stack<LogicalNode> stack, T data)
+  public LogicalNode visitStoreTable(LogicalPlan plan, StoreTableNode node, Stack<LogicalNode> stack, T context)
       throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getChild(), stack, data);
+    visitChild(plan, node.getChild(), stack, context);
     stack.pop();
     return node;
   }
 
   @Override
-  public LogicalNode visitInsert(LogicalPlan plan, InsertNode node, Stack<LogicalNode> stack, T data) throws PlanningException {
+  public LogicalNode visitInsert(LogicalPlan plan, InsertNode node, Stack<LogicalNode> stack, T context) throws PlanningException {
     stack.push(node);
-    visitChild(plan, node.getSubQuery(), stack, data);
+    visitChild(plan, node.getSubQuery(), stack, context);
     stack.pop();
     return node;
   }

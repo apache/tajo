@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.eval;
 
+@Deprecated
 public interface EvalNodeVisitor {
   public void visit(EvalNode node);
 }

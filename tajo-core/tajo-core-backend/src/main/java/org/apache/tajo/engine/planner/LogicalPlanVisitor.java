@@ -22,33 +22,33 @@ import org.apache.tajo.engine.planner.logical.*;
 
 import java.util.Stack;
 
-public interface LogicalPlanVisitor <T> {
-  LogicalNode visitRoot(LogicalPlan plan, LogicalRootNode node, Stack<LogicalNode> stack, T data)
+public interface LogicalPlanVisitor <CONTEXT> {
+  LogicalNode visitRoot(LogicalPlan plan, LogicalRootNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitProjection(LogicalPlan plan, ProjectionNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitProjection(LogicalPlan plan, ProjectionNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitLimit(LogicalPlan plan, LimitNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitLimit(LogicalPlan plan, LimitNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitSort(LogicalPlan plan, SortNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitSort(LogicalPlan plan, SortNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitGroupBy(LogicalPlan plan, GroupbyNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitGroupBy(LogicalPlan plan, GroupbyNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitFilter(LogicalPlan plan, SelectionNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitFilter(LogicalPlan plan, SelectionNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitJoin(LogicalPlan plan, JoinNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitJoin(LogicalPlan plan, JoinNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitUnion(LogicalPlan plan, UnionNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitUnion(LogicalPlan plan, UnionNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitExcept(LogicalPlan plan, ExceptNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitExcept(LogicalPlan plan, ExceptNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitIntersect(LogicalPlan plan, IntersectNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitIntersect(LogicalPlan plan, IntersectNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitTableSubQuery(LogicalPlan plan, TableSubQueryNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitTableSubQuery(LogicalPlan plan, TableSubQueryNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitScan(LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitScan(LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitStoreTable(LogicalPlan plan, StoreTableNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitStoreTable(LogicalPlan plan, StoreTableNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
-  LogicalNode visitInsert(LogicalPlan plan, InsertNode node, Stack<LogicalNode> stack, T data)
+  LogicalNode visitInsert(LogicalPlan plan, InsertNode node, Stack<LogicalNode> stack, CONTEXT context)
       throws PlanningException;
 }

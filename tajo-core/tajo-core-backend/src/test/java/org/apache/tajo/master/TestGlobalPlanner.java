@@ -90,17 +90,17 @@ public class TestGlobalPlanner {
 
   @Test
   public void testSelectDistinct() throws Exception {
-    MasterPlan masterPlan = buildPlan("select distinct l_orderkey from lineitem");
+    buildPlan("select distinct l_orderkey from lineitem");
   }
 
   @Test
   public void testSortAfterGroupBy() throws Exception {
-    MasterPlan masterPlan = buildPlan("select max(l_quantity) as max_quantity, l_orderkey from lineitem group by l_orderkey order by max_quantity");
+    buildPlan("select max(l_quantity) as max_quantity, l_orderkey from lineitem group by l_orderkey order by max_quantity");
   }
 
   @Test
   public void testSortLimit() throws Exception {
-    MasterPlan masterPlan = buildPlan("select max(l_quantity) as max_quantity, l_orderkey from lineitem group by l_orderkey order by max_quantity limit 3");
+    buildPlan("select max(l_quantity) as max_quantity, l_orderkey from lineitem group by l_orderkey order by max_quantity limit 3");
   }
 
   @Test

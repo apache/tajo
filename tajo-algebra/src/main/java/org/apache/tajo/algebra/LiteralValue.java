@@ -23,6 +23,7 @@ public class LiteralValue extends Expr {
   private LiteralType valueType;
 
   public static enum LiteralType {
+    Boolean,
     String,
     Unsigned_Integer,
     Unsigned_Float,

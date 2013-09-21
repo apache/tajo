@@ -82,7 +82,7 @@ public class Target implements Cloneable, GsonObject {
   public String toString() {
     StringBuilder sb = new StringBuilder(expr.toString());
     if(hasAlias()) {
-      sb.append(", alias=").append(alias);
+      sb.append(" as ").append(alias);
     }
     return sb.toString();
   }

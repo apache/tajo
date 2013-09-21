@@ -58,6 +58,9 @@ public abstract class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisi
       case Sort:
         current = visitSort(ctx, stack, (Sort) expr);
         break;
+      case Having:
+        current = visitHaving(ctx, stack, (Having) expr);
+        break;
       case Aggregation:
         current = visitGroupBy(ctx, stack, (Aggregation) expr);
         break;
@@ -128,6 +131,14 @@ public abstract class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisi
 
   @Override
   public RESULT visitSort(CONTEXT ctx, Stack<OpType> stack, Sort expr) throws PlanningException {
+    stack.push(expr.getType());
+    RESULT child = visitChild(ctx, stack, expr.getChild());
+    stack.pop();
+    return child;
+  }
+
+  @Override
+  public RESULT visitHaving(CONTEXT ctx, Stack<OpType> stack, Having expr) throws PlanningException {
     stack.push(expr.getType());
     RESULT child = visitChild(ctx, stack, expr.getChild());
     stack.pop();
@@ -215,7 +226,7 @@ public abstract class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisi
     stack.push(expr.getType());
     RESULT child = null;
     if (expr.hasSubQuery()) {
-       child = visitChild(ctx, stack, expr.getSubQuery());
+      child = visitChild(ctx, stack, expr.getSubQuery());
     }
     stack.pop();
     return child;

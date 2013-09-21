@@ -92,8 +92,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   }
 
   private PhysicalExec createPlanRecursive(TaskAttemptContext ctx, LogicalNode logicalNode) throws IOException {
-    PhysicalExec outer;
-    PhysicalExec inner;
+    PhysicalExec leftExec;
+    PhysicalExec rightExec;
 
     switch (logicalNode.getType()) {
 
@@ -107,60 +107,60 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
       case STORE:
         StoreTableNode storeNode = (StoreTableNode) logicalNode;
-        outer = createPlanRecursive(ctx, storeNode.getChild());
-        return createStorePlan(ctx, storeNode, outer);
+        leftExec = createPlanRecursive(ctx, storeNode.getChild());
+        return createStorePlan(ctx, storeNode, leftExec);
 
       case SELECTION:
         SelectionNode selNode = (SelectionNode) logicalNode;
-        outer = createPlanRecursive(ctx, selNode.getChild());
-        return new SelectionExec(ctx, selNode, outer);
+        leftExec = createPlanRecursive(ctx, selNode.getChild());
+        return new SelectionExec(ctx, selNode, leftExec);
 
       case PROJECTION:
         ProjectionNode prjNode = (ProjectionNode) logicalNode;
-        outer = createPlanRecursive(ctx, prjNode.getChild());
-        return new ProjectionExec(ctx, prjNode, outer);
+        leftExec = createPlanRecursive(ctx, prjNode.getChild());
+        return new ProjectionExec(ctx, prjNode, leftExec);
 
       case TABLE_SUBQUERY: {
         TableSubQueryNode subQueryNode = (TableSubQueryNode) logicalNode;
-        outer = createPlanRecursive(ctx, subQueryNode.getSubQuery());
-        return outer;
+        leftExec = createPlanRecursive(ctx, subQueryNode.getSubQuery());
+        return leftExec;
 
       } case SCAN:
-        outer = createScanPlan(ctx, (ScanNode) logicalNode);
-        return outer;
+        leftExec = createScanPlan(ctx, (ScanNode) logicalNode);
+        return leftExec;
 
       case GROUP_BY:
         GroupbyNode grpNode = (GroupbyNode) logicalNode;
-        outer = createPlanRecursive(ctx, grpNode.getChild());
-        return createGroupByPlan(ctx, grpNode, outer);
+        leftExec = createPlanRecursive(ctx, grpNode.getChild());
+        return createGroupByPlan(ctx, grpNode, leftExec);
 
       case SORT:
         SortNode sortNode = (SortNode) logicalNode;
-        outer = createPlanRecursive(ctx, sortNode.getChild());
-        return createSortPlan(ctx, sortNode, outer);
+        leftExec = createPlanRecursive(ctx, sortNode.getChild());
+        return createSortPlan(ctx, sortNode, leftExec);
 
       case JOIN:
         JoinNode joinNode = (JoinNode) logicalNode;
-        outer = createPlanRecursive(ctx, joinNode.getLeftChild());
-        inner = createPlanRecursive(ctx, joinNode.getRightChild());
-        return createJoinPlan(ctx, joinNode, outer, inner);
+        leftExec = createPlanRecursive(ctx, joinNode.getLeftChild());
+        rightExec = createPlanRecursive(ctx, joinNode.getRightChild());
+        return createJoinPlan(ctx, joinNode, leftExec, rightExec);
 
       case UNION:
         UnionNode unionNode = (UnionNode) logicalNode;
-        outer = createPlanRecursive(ctx, unionNode.getLeftChild());
-        inner = createPlanRecursive(ctx, unionNode.getRightChild());
-        return new UnionExec(ctx, outer, inner);
+        leftExec = createPlanRecursive(ctx, unionNode.getLeftChild());
+        rightExec = createPlanRecursive(ctx, unionNode.getRightChild());
+        return new UnionExec(ctx, leftExec, rightExec);
 
       case LIMIT:
         LimitNode limitNode = (LimitNode) logicalNode;
-        outer = createPlanRecursive(ctx, limitNode.getChild());
+        leftExec = createPlanRecursive(ctx, limitNode.getChild());
         return new LimitExec(ctx, limitNode.getInSchema(),
-            limitNode.getOutSchema(), outer, limitNode);
+            limitNode.getOutSchema(), leftExec, limitNode);
 
       case BST_INDEX_SCAN:
         IndexScanNode indexScanNode = (IndexScanNode) logicalNode;
-        outer = createIndexScanExec(ctx, indexScanNode);
-        return outer;
+        leftExec = createIndexScanExec(ctx, indexScanNode);
+        return leftExec;
 
       default:
         return null;

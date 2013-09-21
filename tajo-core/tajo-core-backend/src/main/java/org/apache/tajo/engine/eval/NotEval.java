@@ -35,8 +35,7 @@ public class NotEval extends EvalNode implements Cloneable {
 
   public NotEval(EvalNode subExpr) {
     super(EvalType.NOT);
-    Preconditions.checkArgument(
-        subExpr instanceof BinaryEval || subExpr instanceof NotEval);
+    Preconditions.checkArgument(subExpr instanceof BinaryEval || subExpr instanceof NotEval);
     this.subExpr = subExpr;
   }
 
@@ -45,6 +44,10 @@ public class NotEval extends EvalNode implements Cloneable {
     NotEvalCtx newCtx = new NotEvalCtx();
     newCtx.subExprCtx = subExpr.newContext();
     return newCtx;
+  }
+
+  public EvalNode getChild() {
+    return subExpr;
   }
 
   @Override

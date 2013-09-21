@@ -25,7 +25,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
-    TAJO-183: Creating too many TableMetaProto objects might lead a potential memory leak. (jihoon)
+    TAJO-183: Creating too many TableMetaProto objects might lead a potential 
+    memory leak. (jihoon)
 
     TAJO-184: Refactor GlobalPlanner and global plan data structure. (hyunsik)
 
@@ -141,6 +142,8 @@ Release 0.2.0 - unreleased
     TAJO-2: remove all @author tags and update license header. (hyunsik)
 
   BUG FIXES
+
+    TAJO-46: The "having" clause does not work properly. (hyunsik)
 
     TAJO-186: Improve column resolving method. (hyunsik)
 

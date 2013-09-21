@@ -26,7 +26,12 @@ public class Target extends Expr {
 
   public Target(Expr expr) {
     super(OpType.Target);
-   this.expr = expr;
+    this.expr = expr;
+  }
+
+  public Target(Expr expr, String alias) {
+    this(expr);
+    setAlias(alias);
   }
 
   public Expr getExpr() {

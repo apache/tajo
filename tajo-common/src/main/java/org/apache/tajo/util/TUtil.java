@@ -67,6 +67,20 @@ public class TUtil {
     return result;
   }
 
+  public static <T> T[] concatAll(T[] first, T[]... rest) {
+    int totalLength = first.length;
+    for (T[] array : rest) {
+      totalLength += array.length;
+    }
+    T[] result = Arrays.copyOf(first, totalLength);
+    int offset = first.length;
+    for (T[] array : rest) {
+      System.arraycopy(array, 0, result, offset, array.length);
+      offset += array.length;
+    }
+    return result;
+  }
+
   public static <T> Set<T> newHashSet() {
     return new HashSet<T>();
   }
@@ -133,6 +147,14 @@ public class TUtil {
       throw new NullPointerException();
     }
     return reference;
+  }
+
+  public static <KEY1, VALUE> void putToNestedList(Map<KEY1, List<VALUE>> map, KEY1 k1, VALUE value) {
+    if (map.containsKey(k1)) {
+      map.get(k1).add(value);
+    } else {
+      map.put(k1, TUtil.newList(value));
+    }
   }
 
   public static <KEY1, KEY2, VALUE> void putToNestedMap(Map<KEY1, Map<KEY2, VALUE>> map, KEY1 k1, KEY2 k2,

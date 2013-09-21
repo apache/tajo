@@ -18,15 +18,11 @@
 
 package org.apache.tajo.engine.planner;
 
-import org.apache.tajo.algebra.ColumnReferenceExpr;
-import org.apache.tajo.algebra.OpType;
-import org.apache.tajo.algebra.Projection;
+import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalTreeUtil;
-import org.apache.tajo.engine.eval.EvalType;
+import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.util.TUtil;
@@ -320,15 +316,15 @@ public class LogicalPlan {
     private LogicalNode rootNode;
     private NodeType rootType;
     private Map<String, RelationNode> relations = new HashMap<String, RelationNode>();
-    private Projection projection;
+    private Map<OpType, List<Expr>> algebraicExprs = TUtil.newHashMap();
 
     // changing states
     private LogicalNode latestNode;
     private boolean resolvedGrouping = true;
     private boolean hasGrouping;
     private Projectable projectionNode;
-    private SelectionNode selectionNode;
     private GroupbyNode groupingNode;
+    private SelectionNode selectionNode;
     private StoreTableNode storeTableNode;
     private InsertNode insertNode;
     private Schema schema;
@@ -404,12 +400,40 @@ public class LogicalPlan {
       return (T) this.latestNode;
     }
 
-    public void setProjection(Projection projection) {
-      this.projection = projection;
+    public void setAlgebraicExpr(Expr expr) {
+      TUtil.putToNestedList(algebraicExprs, expr.getType(), expr);
+    }
+
+    public boolean hasAlgebraicExpr(OpType opType) {
+      return algebraicExprs.containsKey(opType);
+    }
+
+    public <T extends Expr> List<T> getAlgebraicExpr(OpType opType) {
+      return (List<T>) algebraicExprs.get(opType);
+    }
+
+    public <T extends Expr> T getSingletonExpr(OpType opType) {
+      if (hasAlgebraicExpr(opType)) {
+        return (T) algebraicExprs.get(opType).get(0);
+      } else {
+        return null;
+      }
+    }
+
+    public boolean hasProjection() {
+      return hasAlgebraicExpr(OpType.Projection);
     }
 
     public Projection getProjection() {
-      return this.projection;
+      return getSingletonExpr(OpType.Projection);
+    }
+
+    public boolean hasHaving() {
+      return hasAlgebraicExpr(OpType.Having);
+    }
+
+    public Having getHaving() {
+      return getSingletonExpr(OpType.Having);
     }
 
     public void setProjectionNode(Projectable node) {
@@ -424,7 +448,7 @@ public class LogicalPlan {
       return this.resolvedGrouping;
     }
 
-    public void needToResolveGrouping() {
+    public void resolveGroupingRequired() {
       this.resolvedGrouping = true;
     }
 
@@ -434,18 +458,18 @@ public class LogicalPlan {
     }
 
     public boolean hasGrouping() {
-      return hasGrouping || hasGroupingNode();
+      return hasGrouping || hasGroupbyNode();
     }
 
-    public boolean hasGroupingNode() {
+    public boolean hasGroupbyNode() {
       return this.groupingNode != null;
     }
 
-    public void setGroupingNode(GroupbyNode groupingNode) {
+    public void setGroupbyNode(GroupbyNode groupingNode) {
       this.groupingNode = groupingNode;
     }
 
-    public GroupbyNode getGroupingNode() {
+    public GroupbyNode getGroupbyNode() {
       return this.groupingNode;
     }
 
@@ -502,7 +526,8 @@ public class LogicalPlan {
           break;
 
         case GROUP_BY:
-          needToResolveGrouping();
+          resolveGroupingRequired();
+          setGroupbyNode((GroupbyNode) node);
           break;
 
         case SELECTION:
@@ -574,7 +599,7 @@ public class LogicalPlan {
     }
 
     public void fillTarget(int idx) throws VerifyException {
-      targetListManager.update(idx, planner.createTarget(LogicalPlan.this, this, projection.getTargets()[idx]));
+      targetListManager.update(idx, planner.createTarget(LogicalPlan.this, this, getProjection().getTargets()[idx]));
     }
 
     public boolean checkIfTargetCanBeEvaluated(int targetId, LogicalNode node) {
@@ -607,7 +632,7 @@ public class LogicalPlan {
 
     public void checkAndResolveTargets(LogicalNode node) throws PlanningException {
       // If all columns are projected and do not include any expression
-      if (projection.isAllProjected() && node instanceof RelationNode) {
+      if (getProjection().isAllProjected() && node instanceof RelationNode) {
         initTargetList(PlannerUtil.schemaToTargets(node.getOutSchema()));
         resolveAllTargetList();
 
@@ -682,8 +707,31 @@ public class LogicalPlan {
           }
         } else if (node instanceof GroupbyNode) {
           // Set the current targets to the GroupByNode because the GroupByNode is the last projection operator.
-          ((Projectable)node).setTargets(getCurrentTargets());
+          GroupbyNode groupbyNode = (GroupbyNode) node;
+          groupbyNode.setTargets(getCurrentTargets());
           node.setOutSchema(updateSchema());
+
+          // if a having condition is given,
+          if (hasHaving()) {
+            EvalNode havingCondition = planner.createEvalTree(LogicalPlan.this, this, getHaving().getQual());
+            List<AggFuncCallEval> aggrFunctions = EvalTreeUtil.findDistinctAggFunction(havingCondition);
+
+            if (aggrFunctions.size() == 0) {
+              groupbyNode.setHavingCondition(havingCondition);
+            } else {
+              Target [] addedTargets = new Target[aggrFunctions.size()];
+              for (int i = 0; i < aggrFunctions.size(); i++) {
+                Target aggrFunctionTarget = new Target(aggrFunctions.get(i), newAnonymousColumnName());
+                addedTargets[i] = aggrFunctionTarget;
+                EvalTreeUtil.replace(havingCondition, aggrFunctions.get(i),
+                    new FieldEval(aggrFunctionTarget.getColumnSchema()));
+              }
+              Target [] updatedTargets = TUtil.concat(groupbyNode.getTargets(), addedTargets);
+              groupbyNode.setTargets(updatedTargets);
+              groupbyNode.setHavingCondition(havingCondition);
+              groupbyNode.setHavingSchema(PlannerUtil.targetToSchema(groupbyNode.getTargets()));
+            }
+          }
         }
       }
     }

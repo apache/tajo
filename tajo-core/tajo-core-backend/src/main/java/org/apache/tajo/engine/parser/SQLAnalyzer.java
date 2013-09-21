@@ -172,7 +172,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         if (ctx.table_expression().having_clause() != null) {
           Expr havingCondition = visitBoolean_value_expression(
               ctx.table_expression().having_clause().boolean_value_expression());
-          aggregation.setHavingCondition(havingCondition);
+          Having having = new Having(havingCondition);
+          having.setChild(current);
+          current = having;
         }
       }
 

@@ -87,7 +87,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   public LogicalPlan createPlan(Expr expr) throws PlanningException {
 
     LogicalPlan plan = new LogicalPlan(this);
-    LogicalNode subroot = null;
+    LogicalNode subroot;
 
     Stack<OpType> stack = new Stack<OpType>();
 
@@ -106,6 +106,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
   public void preHook(PlanContext context, Stack<OpType> stack, Expr expr) {
     context.block = checkIfNewBlockOrGet(context.plan, context.block.getName());
+    context.block.setAlgebraicExpr(expr);
   }
 
   public LogicalNode postHook(PlanContext context, Stack<OpType> stack, Expr expr, LogicalNode current)
@@ -441,7 +442,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       // 4. Set Child Plan and Update Input Schemes Phase
       groupingNode.setChild(child);
-      block.setGroupingNode(groupingNode);
+      block.setGroupbyNode(groupingNode);
       groupingNode.setInSchema(child.getOutSchema());
 
       // 5. Update Output Schema and Targets for Upper Plan
@@ -452,7 +453,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       List<Column[]> cuboids  = generateCuboids(annotateGroupingColumn(plan, block.getName(),
           groupElements[0].getColumns(), null));
       UnionNode topUnion = createGroupByUnion(plan, block, child, cuboids, 0);
-      block.needToResolveGrouping();
+      block.resolveGroupingRequired();
       block.getTargetListManager().resolveAll();
 
       return topUnion;
@@ -573,7 +574,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // 2. Build Child Plans:
     stack.push(OpType.Sort);
     LogicalNode child = visitChild(context, stack, sort.getChild());
-    child = insertGroupingIfUnresolved(plan, block, child, stack);
+    child = insertGroupbyNodeIfUnresolved(block, child, stack);
     stack.pop();
 
     // 3. Build this plan:
@@ -630,7 +631,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalPlan plan = context.plan;
     QueryBlock block = context.block;
 
-    block.setProjection(projection);
     if (!projection.isAllProjected()) {
       block.targetListManager = new TargetListManager(plan, projection);
     }
@@ -649,7 +649,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // 2: Build Child Plans
     stack.push(OpType.Projection);
     LogicalNode child = visitChild(context, stack, projection.getChild());
-    child = insertGroupingIfUnresolved(plan, block, child, stack);
+    child = insertGroupbyNodeIfUnresolved(block, child, stack);
     stack.pop();
 
     // All targets must be evaluable before the projection.
@@ -689,8 +689,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * Insert a group-by operator before a sort or a projection operator.
    * It is used only when a group-by clause is not given.
    */
-  private LogicalNode insertGroupingIfUnresolved(LogicalPlan plan, QueryBlock block,
-                                                 LogicalNode child, Stack<OpType> stack) throws PlanningException {
+  private LogicalNode insertGroupbyNodeIfUnresolved(QueryBlock block,
+                                                    LogicalNode child, Stack<OpType> stack) throws PlanningException {
 
     if (!block.isGroupingResolved()) {
       GroupbyNode groupbyNode = new GroupbyNode(new Column[] {});
@@ -921,6 +921,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       case Literal:
         LiteralValue literal = (LiteralValue) expr;
         switch (literal.getValueType()) {
+          case Boolean:
+            return new ConstEval(DatumFactory.createBool(literal.getValue()));
           case String:
             return new ConstEval(DatumFactory.createText(literal.getValue()));
           case Unsigned_Integer:
@@ -941,7 +943,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           constEvals[i] = (ConstEval) createEvalTree(plan, block, valueList.getValues()[i]);
           values[i] = constEvals[i].getValue();
         }
-        return new RowConstant(values);
+        return new RowConstantEval(values);
       }
 
         // unary expression
@@ -960,8 +962,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         InPredicate inPredicate = (InPredicate) expr;
         FieldEval predicand =
             new FieldEval(plan.resolveColumn(block, null, (ColumnReferenceExpr) inPredicate.getPredicand()));
-        RowConstant rowConstant = (RowConstant) createEvalTree(plan, block, inPredicate.getInValue());
-        return new InEval(predicand, rowConstant, inPredicate.isNot());
+        RowConstantEval rowConstantEval = (RowConstantEval) createEvalTree(plan, block, inPredicate.getInValue());
+        return new InEval(predicand, rowConstantEval, inPredicate.isNot());
       }
 
       case Is:
@@ -1021,7 +1023,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         }
 
         FunctionDesc funcDesc = catalog.getFunction(setFunction.getSignature(), paramTypes);
-        block.setHasGrouping();
+        if (!block.hasGroupbyNode()) {
+          block.setHasGrouping();
+        }
         try {
           return new AggFuncCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
         } catch (InternalException e) {
@@ -1055,7 +1059,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
             return new FuncCallEval(funcDesc,
                 (GeneralFunction) funcDesc.newInstance(), givenArgs);
           else {
-            block.setHasGrouping();
+            if (!block.hasGroupbyNode()) {
+              block.setHasGrouping();
+            }
             return new AggFuncCallEval(funcDesc,
                 (AggFunction) funcDesc.newInstance(), givenArgs);
           }

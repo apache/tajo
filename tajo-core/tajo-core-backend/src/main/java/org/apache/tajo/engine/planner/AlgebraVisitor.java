@@ -22,19 +22,20 @@ import org.apache.tajo.algebra.*;
 
 import java.util.Stack;
 
-public interface AlgebraVisitor<T1, T2> {
-  T2 visitProjection(T1 ctx, Stack<OpType> stack, Projection expr) throws PlanningException;
-  T2 visitLimit(T1 ctx, Stack<OpType> stack, Limit expr) throws PlanningException;
-  T2 visitSort(T1 ctx, Stack<OpType> stack, Sort expr) throws PlanningException;
-  T2 visitGroupBy(T1 ctx, Stack<OpType> stack, Aggregation expr) throws PlanningException;
-  T2 visitJoin(T1 ctx, Stack<OpType> stack, Join expr) throws PlanningException;
-  T2 visitFilter(T1 ctx, Stack<OpType> stack, Selection expr) throws PlanningException;
-  T2 visitUnion(T1 ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException;
-  T2 visitExcept(T1 ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException;
-  T2 visitIntersect(T1 ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException;
-  T2 visitRelationList(T1 ctx, Stack<OpType> stack, RelationList expr) throws PlanningException;
-  T2 visitTableSubQuery(T1 ctx, Stack<OpType> stack, TableSubQuery expr) throws PlanningException;
-  T2 visitRelation(T1 ctx, Stack<OpType> stack, Relation expr) throws PlanningException;
-  T2 visitCreateTable(T1 ctx, Stack<OpType> stack, CreateTable expr) throws PlanningException;
-  T2 visitDropTable(T1 ctx, Stack<OpType> stack, DropTable expr) throws PlanningException;
+public interface AlgebraVisitor<CONTEXT, RESULT> {
+  RESULT visitProjection(CONTEXT ctx, Stack<OpType> stack, Projection expr) throws PlanningException;
+  RESULT visitLimit(CONTEXT ctx, Stack<OpType> stack, Limit expr) throws PlanningException;
+  RESULT visitSort(CONTEXT ctx, Stack<OpType> stack, Sort expr) throws PlanningException;
+  RESULT visitHaving(CONTEXT ctx, Stack<OpType> stack, Having expr) throws PlanningException;
+  RESULT visitGroupBy(CONTEXT ctx, Stack<OpType> stack, Aggregation expr) throws PlanningException;
+  RESULT visitJoin(CONTEXT ctx, Stack<OpType> stack, Join expr) throws PlanningException;
+  RESULT visitFilter(CONTEXT ctx, Stack<OpType> stack, Selection expr) throws PlanningException;
+  RESULT visitUnion(CONTEXT ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException;
+  RESULT visitExcept(CONTEXT ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException;
+  RESULT visitIntersect(CONTEXT ctx, Stack<OpType> stack, SetOperation expr) throws PlanningException;
+  RESULT visitRelationList(CONTEXT ctx, Stack<OpType> stack, RelationList expr) throws PlanningException;
+  RESULT visitTableSubQuery(CONTEXT ctx, Stack<OpType> stack, TableSubQuery expr) throws PlanningException;
+  RESULT visitRelation(CONTEXT ctx, Stack<OpType> stack, Relation expr) throws PlanningException;
+  RESULT visitCreateTable(CONTEXT ctx, Stack<OpType> stack, CreateTable expr) throws PlanningException;
+  RESULT visitDropTable(CONTEXT ctx, Stack<OpType> stack, DropTable expr) throws PlanningException;
 }

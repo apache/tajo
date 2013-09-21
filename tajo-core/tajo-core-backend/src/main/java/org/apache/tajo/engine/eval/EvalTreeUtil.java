@@ -35,6 +35,39 @@ public class EvalTreeUtil {
       String newName) {
     node.postOrder(new ChangeColumnRefVisitor(oldName, newName));
   }
+
+  public static void replace(EvalNode expr, EvalNode targetExpr, EvalNode tobeReplaced) {
+    EvalReplaceVisitor replacer = new EvalReplaceVisitor(targetExpr, tobeReplaced);
+    replacer.visitChild(null, new Stack<EvalNode>(), expr);
+  }
+
+  public static class EvalReplaceVisitor extends BasicEvalNodeVisitor<EvalNode, EvalNode> {
+    private EvalNode target;
+    private EvalNode tobeReplaced;
+
+    public EvalReplaceVisitor(EvalNode target, EvalNode tobeReplaced) {
+      this.target = target;
+      this.tobeReplaced = tobeReplaced;
+    }
+
+    @Override
+    public EvalNode visitChild(EvalNode context, Stack<EvalNode> stack, EvalNode evalNode) {
+      super.visitChild(context, stack, evalNode);
+
+      if (evalNode.equals(target)) {
+        EvalNode parent = stack.peek();
+
+        if (parent.getLeftExpr().equals(evalNode)) {
+          parent.setLeftExpr(tobeReplaced);
+        }
+        if (parent.getRightExpr().equals(evalNode)) {
+          parent.setRightExpr(tobeReplaced);
+        }
+      }
+
+      return evalNode;
+    }
+  }
   
   public static Set<Column> findDistinctRefColumns(EvalNode node) {
     DistinctColumnRefFinder finder = new DistinctColumnRefFinder();
@@ -213,10 +246,6 @@ public class EvalTreeUtil {
     return isComparisonOperator(expr) &&
         expr.getLeftExpr().getType() == EvalType.FIELD &&
         expr.getRightExpr().getType() == EvalType.FIELD;
-  }
-
-  public static boolean isLogicalOperator(EvalNode expr) {
-    return expr.getType() == EvalType.AND || expr.getType() == EvalType.OR;
   }
   
   public static class ChangeColumnRefVisitor implements EvalNodeVisitor {    

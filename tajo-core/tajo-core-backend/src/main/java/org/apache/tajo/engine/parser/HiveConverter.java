@@ -117,7 +117,9 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr>{
 
             if(ctx.havingClause() != null) {
                 Expr havingCondition = visitHavingClause(ctx.havingClause());
-                aggregation.setHavingCondition(havingCondition);
+                Having having = new Having(havingCondition);
+                having.setChild(current);
+                current = having;
             }
         }
 
@@ -213,8 +215,10 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr>{
                 current = aggregation;
 
                 if(ctx.havingClause() != null) {
-                    Expr havingCondition = visitHavingClause(ctx.havingClause());
-                    aggregation.setHavingCondition(havingCondition);
+                  Expr havingCondition = visitHavingClause(ctx.havingClause());
+                  Having having = new Having(havingCondition);
+                  having.setChild(current);
+                  current = having;
                 }
             }
 
@@ -325,8 +329,10 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr>{
             current = aggregation;
 
             if(ctx.havingClause() != null) {
-                Expr havingCondition = visitHavingClause(ctx.havingClause());
-                aggregation.setHavingCondition(havingCondition);
+              Expr havingCondition = visitHavingClause(ctx.havingClause());
+              Having having = new Having(havingCondition);
+              having.setChild(current);
+              current = having;
             }
         }
 

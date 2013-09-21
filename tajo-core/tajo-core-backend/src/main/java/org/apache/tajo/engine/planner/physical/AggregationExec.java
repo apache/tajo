@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import com.google.common.collect.Sets;
 import org.apache.tajo.TaskAttemptContext;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.ConstEval;
 import org.apache.tajo.engine.eval.EvalContext;
@@ -33,21 +34,33 @@ import java.io.IOException;
 import java.util.Set;
 
 public abstract class AggregationExec extends UnaryPhysicalExec {
-  protected GroupbyNode annotation;
-
-  @SuppressWarnings("unused")
-  protected final EvalNode havingQual;
+  protected GroupbyNode plan;
 
   protected Set<Column> nonNullGroupingFields;
   protected int keylist [];
   protected int measureList[];
   protected final EvalNode evals [];
   protected EvalContext evalContexts [];
+  protected Schema evalSchema;
+
+  protected EvalNode havingQual;
+  protected EvalContext havingContext;
 
   public AggregationExec(final TaskAttemptContext context, GroupbyNode plan,
                          PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
-    this.havingQual = plan.getHavingCondition();
+    this.plan = plan;
+
+    if (plan.hasHavingCondition()) {
+      this.havingQual = plan.getHavingCondition();
+      this.havingContext = plan.getHavingCondition().newContext();
+    }
+
+    if (plan.getHavingSchema() != null) {
+      this.evalSchema = plan.getHavingSchema();
+    } else {
+      this.evalSchema = plan.getOutSchema();
+    }
 
     nonNullGroupingFields = Sets.newHashSet();
     // keylist will contain a list of IDs of grouping column
