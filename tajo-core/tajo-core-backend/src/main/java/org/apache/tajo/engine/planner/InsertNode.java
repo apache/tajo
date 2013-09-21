@@ -44,6 +44,7 @@ public class InsertNode extends LogicalNode implements Cloneable {
     this.targetTableDesc = desc;
     this.subQuery = subQuery;
     this.setInSchema(subQuery.getOutSchema());
+    this.setOutSchema(subQuery.getOutSchema());
   }
 
   public InsertNode(Path location, LogicalNode subQuery) {
@@ -51,6 +52,7 @@ public class InsertNode extends LogicalNode implements Cloneable {
     this.path = location;
     this.subQuery = subQuery;
     this.setInSchema(subQuery.getOutSchema());
+    this.setOutSchema(subQuery.getOutSchema());
   }
 
   public boolean isOverwrite() {

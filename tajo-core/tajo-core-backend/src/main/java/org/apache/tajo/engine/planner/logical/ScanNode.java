@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlanString;
+import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
@@ -47,9 +48,9 @@ public class ScanNode extends RelationNode implements Projectable {
   
 	public ScanNode(TableDesc desc, String alias) {
     this(desc);
-    this.alias = alias;
+    this.alias = PlannerUtil.normalizeTableName(alias);
     renamedSchema = getOutSchema();
-    renamedSchema.setQualifier(alias, true);
+    renamedSchema.setQualifier(this.alias, true);
 	}
 	
 	public String getTableName() {

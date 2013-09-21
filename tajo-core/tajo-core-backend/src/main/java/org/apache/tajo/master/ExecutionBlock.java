@@ -14,10 +14,8 @@
 
 package org.apache.tajo.master;
 
-import com.google.common.base.Preconditions;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.*;
 
 import java.util.*;
@@ -110,41 +108,8 @@ public class ExecutionBlock {
     return parent;
   }
 
-  public void setParentBlock(ExecutionBlock parent) {
-    this.parent = parent;
-  }
-
-  public boolean hasChildBlock() {
-    return childSubQueries.size() > 0;
-  }
-
-  public ExecutionBlock getChildBlock(ScanNode scanNode) {
-    return childSubQueries.get(scanNode);
-  }
-
   public Collection<ExecutionBlock> getChildBlocks() {
     return Collections.unmodifiableCollection(childSubQueries.values());
-  }
-
-  public Map<ScanNode, ExecutionBlock> getChildBlockMap() {
-    return childSubQueries;
-  }
-
-  public void addChildBlock(ScanNode scanNode, ExecutionBlock child) {
-    childSubQueries.put(scanNode, child);
-  }
-
-  public int getChildNum() {
-    return childSubQueries.size();
-  }
-
-  public void removeChildBlock(ScanNode scanNode) {
-    scanlist.remove(scanNode);
-    this.childSubQueries.remove(scanNode);
-  }
-
-  public void addChildBlocks(Map<ScanNode, ExecutionBlock> childBlocks) {
-    childSubQueries.putAll(childBlocks);
   }
 
   public boolean isLeafBlock() {

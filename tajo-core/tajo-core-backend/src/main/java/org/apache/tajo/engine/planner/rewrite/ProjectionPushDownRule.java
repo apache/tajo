@@ -385,9 +385,8 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
       }
 
       List<Target> projectedTargets = new ArrayList<Target>();
-      for (Column column : context.upperRequired) {
-        for (Target target : checkingTargets) {
-
+      for (Target target : checkingTargets) {
+        for (Column column : context.upperRequired) {
           if (target.hasAlias() && target.getAlias().equalsIgnoreCase(column.getQualifiedName())) {
             projectedTargets.add(target);
           } else {
@@ -449,7 +448,6 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     PushDownContext rightContext = new PushDownContext(context, rightBlock);
     rightContext.targetListManager = buildSubBlockTargetList(plan, rightBlock,
         (TableSubQueryNode) setNode.getRightChild(), context.upperRequired);
-
 
     stack.push(setNode);
     visitChild(plan, setNode.getLeftChild(), stack, leftContext);

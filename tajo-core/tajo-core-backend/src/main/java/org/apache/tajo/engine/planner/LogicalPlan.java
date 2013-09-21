@@ -161,7 +161,7 @@ public class LogicalPlan {
 
       Column column = schema.getColumnByFQN(columnRef.getCanonicalName());
       if (column == null) {
-        throw new VerifyException("ERROR: no such a column '"+ column.getQualifiedName() + "'");
+        throw new VerifyException("ERROR: no such a column '"+ columnRef.getCanonicalName() + "'");
       }
 
       return column;
@@ -365,15 +365,15 @@ public class LogicalPlan {
     }
 
     public boolean containRelation(String name) {
-      return relations.containsKey(name);
+      return relations.containsKey(PlannerUtil.normalizeTableName(name));
     }
 
     public void addRelation(RelationNode relation) {
-      relations.put(relation.getCanonicalName(), relation);
+      relations.put(PlannerUtil.normalizeTableName(relation.getCanonicalName()), relation);
     }
 
     public RelationNode getRelation(String name) {
-      return relations.get(name);
+      return relations.get(PlannerUtil.normalizeTableName(name));
     }
 
     public Collection<RelationNode> getRelations() {

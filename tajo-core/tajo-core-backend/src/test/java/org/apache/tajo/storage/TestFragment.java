@@ -54,11 +54,11 @@ public class TestFragment {
     assertEquals("table1_1", fragment1.getName());
     assertEquals(new Path("/table0"), fragment1.getPath());
     assertEquals(meta1.getStoreType(), fragment1.getMeta().getStoreType());
-    assertEquals(meta1.getSchema().getColumnNum(), 
+    assertEquals(meta1.getSchema().getColumnNum(),
         fragment1.getMeta().getSchema().getColumnNum());
     assertTrue(fragment1.isDistCached());
     for(int i=0; i < meta1.getSchema().getColumnNum(); i++) {
-      assertEquals(meta1.getSchema().getColumn(i).getColumnName(), 
+      assertEquals(meta1.getSchema().getColumn(i).getColumnName(),
           fragment1.getMeta().getSchema().getColumn(i).getColumnName());
       assertEquals(meta1.getSchema().getColumn(i).getDataType(), 
           fragment1.getMeta().getSchema().getColumn(i).getDataType());
@@ -75,10 +75,10 @@ public class TestFragment {
     assertEquals("table1_1", fragment1.getName());
     assertEquals(new Path("/table0"), fragment1.getPath());
     assertEquals(meta1.getStoreType(), fragment1.getMeta().getStoreType());
-    assertEquals(meta1.getSchema().getColumnNum(), 
+    assertEquals(meta1.getSchema().getColumnNum(),
         fragment1.getMeta().getSchema().getColumnNum());
     for(int i=0; i < meta1.getSchema().getColumnNum(); i++) {
-      assertEquals(meta1.getSchema().getColumn(i).getColumnName(), 
+      assertEquals(meta1.getSchema().getColumn(i).getColumnName(),
           fragment1.getMeta().getSchema().getColumn(i).getColumnName());
       assertEquals(meta1.getSchema().getColumn(i).getDataType(), 
           fragment1.getMeta().getSchema().getColumn(i).getDataType());

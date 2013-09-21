@@ -18,12 +18,12 @@
 
 package org.apache.tajo.catalog;
 
-import org.apache.tajo.catalog.json.CatalogGsonHelper;
-import org.junit.Before;
-import org.junit.Test;
 import org.apache.tajo.catalog.exception.AlreadyExistsFieldException;
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.junit.Assert.*;
 

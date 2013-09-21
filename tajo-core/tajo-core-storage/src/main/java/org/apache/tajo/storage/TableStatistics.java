@@ -45,10 +45,6 @@ public class TableStatistics {
     this.schema = schema;
     minValues = new VTuple(schema.getColumnNum());
     maxValues = new VTuple(schema.getColumnNum());
-    /*for (int i = 0; i < schema.getColumnNum(); i++) {
-      minValues[i] = Long.MAX_VALUE;
-      maxValues[i] = Long.MIN_VALUE;
-    }*/
 
     numNulls = new long[schema.getColumnNum()];
     comparable = new boolean[schema.getColumnNum()];

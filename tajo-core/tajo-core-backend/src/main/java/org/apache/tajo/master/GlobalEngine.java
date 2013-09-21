@@ -134,7 +134,7 @@ public class GlobalEngine extends AbstractService {
       Expr planningContext = hiveQueryMode ? converter.parse(sql) : analyzer.parse(sql);
       
       LogicalPlan plan = createLogicalPlan(planningContext);
-      LogicalRootNode rootNode = (LogicalRootNode) plan.getRootBlock().getRoot();
+      LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
       GetQueryStatusResponse.Builder responseBuilder = GetQueryStatusResponse.newBuilder();
       if (PlannerUtil.checkIfDDLPlan(rootNode)) {

@@ -78,7 +78,7 @@
     	 out.write("<li> Store Type : " + table.getMeta().getStoreType() + "</li>");
     	 out.write("<li> Schema<ul>");
     	 Schema schema = table.getMeta().getSchema();
-    	 for(int i = 0 ; i < table.getMeta().getSchema().getColumnNum() ; i ++) {
+    	 for(int i = 0 ; i < table.getMeta().getSchema().size() ; i ++) {
     		 out.write("<li>" + schema.getColumn(i).toString() + "</li>");
     	 }
     	 out.write("</ul>");

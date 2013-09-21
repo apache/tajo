@@ -143,6 +143,9 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-187: The exception 'Some targets cannot be evaluated' is caused in 
+    nested joins. (hyunsik)
+
     TAJO-46: The "having" clause does not work properly. (hyunsik)
 
     TAJO-186: Improve column resolving method. (hyunsik)

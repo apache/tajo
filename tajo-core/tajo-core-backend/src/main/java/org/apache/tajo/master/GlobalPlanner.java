@@ -281,7 +281,7 @@ public class GlobalPlanner {
         LogicalNode leftNode = joinNode.getLeftChild();
         LogicalNode rightNode = joinNode.getRightChild();
 
-        ExecutionBlock leftBlock = null;
+        ExecutionBlock leftBlock;
         if (lastChildBlock == null) {
           leftBlock = masterPlan.newExecutionBlock();
           leftBlock.setPlan(leftNode);

@@ -28,6 +28,9 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TUtil;
 
+/**
+ * It represents a column. It is usually used for relations.
+ */
 public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
 	private ColumnProto.Builder builder = null;
 
@@ -55,10 +58,10 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
 	
 	public Column(ColumnProto proto) {
     this();
-    name = proto.getColumnName();
+    name = proto.getColumnName().toLowerCase();
     dataType = proto.getDataType();
     if (proto.hasQualifier()) {
-      qualifier = proto.getQualifier();
+      qualifier = proto.getQualifier().toLowerCase();
     }
 	}
 
@@ -86,7 +89,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
   }
 
   public void setQualifier(String qualifier) {
-    this.qualifier = qualifier;
+    this.qualifier = qualifier.toLowerCase();
   }
 
   public String getQualifier() {

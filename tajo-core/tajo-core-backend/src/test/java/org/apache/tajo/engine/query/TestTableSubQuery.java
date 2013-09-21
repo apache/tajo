@@ -70,4 +70,14 @@ public class TestTableSubQuery {
       res.close();
     }
   }
+
+  @Test
+  public final void testJoinSubQuery() throws Exception {
+    ResultSet res = tpch.execute(
+        "SELECT A.n_regionkey, B.r_regionkey, A.n_name, B.r_name " +
+        "FROM\n" +
+        "(SELECT * FROM nation WHERE n_name LIKE 'A%') A " +
+        "JOIN region B ON A.n_regionkey=B.r_regionkey");
+    System.out.println(ResultSetUtil.prettyFormat(res));
+  }
 }

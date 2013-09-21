@@ -167,7 +167,7 @@ public class DataChannel {
   }
 
   public void setSchema(Schema schema) {
-    this.schema = schema;
+    this.schema = (Schema) schema.clone();
   }
 
   public Schema getSchema() {
