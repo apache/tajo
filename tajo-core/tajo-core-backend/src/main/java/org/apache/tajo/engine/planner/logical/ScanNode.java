@@ -34,20 +34,16 @@ public class ScanNode extends RelationNode implements Projectable {
   @Expose private Schema renamedSchema;
 	@Expose private EvalNode qual;
 	@Expose private Target[] targets;
-	
-	public ScanNode() {
-		super(NodeType.SCAN);
-	}
 
-  public ScanNode(TableDesc desc) {
-    super(NodeType.SCAN);
+  public ScanNode(int pid, TableDesc desc) {
+    super(pid, NodeType.SCAN);
     this.tableDesc = desc;
     this.setInSchema(tableDesc.getSchema());
     this.setOutSchema(tableDesc.getSchema());
   }
   
-	public ScanNode(TableDesc desc, String alias) {
-    this(desc);
+	public ScanNode(int pid, TableDesc desc, String alias) {
+    this(pid, desc);
     this.alias = PlannerUtil.normalizeTableName(alias);
     renamedSchema = getOutSchema();
     renamedSchema.setQualifier(this.alias, true);

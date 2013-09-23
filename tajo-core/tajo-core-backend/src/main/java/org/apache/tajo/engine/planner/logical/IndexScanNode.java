@@ -30,9 +30,9 @@ public class IndexScanNode extends ScanNode {
   @Expose private Schema keySchema = null;
   @Expose private Datum[] datum = null;
   
-  public IndexScanNode(ScanNode scanNode , 
+  public IndexScanNode(int pid, ScanNode scanNode ,
       Schema keySchema , Datum[] datum, SortSpec[] sortKeys ) {
-    super(scanNode.getTableDesc());
+    super(pid, scanNode.getTableDesc());
     setQual(scanNode.getQual());
     setInSchema(scanNode.getInSchema());
     setOutSchema(scanNode.getOutSchema());

@@ -155,7 +155,7 @@ public class TargetListManager {
     if (t.hasAlias()) {
       name = t.getAlias();
     } else if (t.getEvalTree().getName().equals("?")) {
-      name = plan.newAnonymousColumnName();
+      name = plan.newNonameColumnName();
     } else {
       name = t.getEvalTree().getName();
     }

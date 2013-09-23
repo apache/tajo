@@ -31,10 +31,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.LogicalPlanner;
-import org.apache.tajo.engine.planner.PhysicalPlanner;
-import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
-import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.SortNode;
 import org.apache.tajo.storage.*;
@@ -159,10 +156,11 @@ public class TestMergeJoinExec {
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
     Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode root = plan.getRootBlock().getRoot();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, root);
 
     ProjectionExec proj = (ProjectionExec) exec;
 
@@ -189,7 +187,7 @@ public class TestMergeJoinExec {
           employeeSchema.getColumnByName("empId"));
       outerSortKeys[1] = new SortSpec(
           employeeSchema.getColumnByName("memId"));
-      SortNode outerSort = new SortNode(outerSortKeys);
+      SortNode outerSort = new SortNode(plan.newPID(), outerSortKeys);
       outerSort.setInSchema(outerScan.getSchema());
       outerSort.setOutSchema(outerScan.getSchema());
 
@@ -199,7 +197,7 @@ public class TestMergeJoinExec {
           peopleSchema.getColumnByName("empId"));
       innerSortKeys[1] = new SortSpec(
           peopleSchema.getColumnByName("fk_memid"));
-      SortNode innerSort = new SortNode(innerSortKeys);
+      SortNode innerSort = new SortNode(plan.newPID(), innerSortKeys);
       innerSort.setInSchema(innerScan.getSchema());
       innerSort.setOutSchema(innerScan.getSchema());
 

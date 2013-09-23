@@ -104,12 +104,12 @@ public class GlobalPlanner {
     LOG.info(masterPlan);
   }
 
-  public static ScanNode buildInputExecutor(DataChannel channel) {
+  public static ScanNode buildInputExecutor(LogicalPlan plan, DataChannel channel) {
     Preconditions.checkArgument(channel.getSchema() != null,
         "Channel schema (" + channel.getSrcId().getId() +" -> "+ channel.getTargetId().getId()+") is not initialized");
     TableMeta meta = new TableMetaImpl(channel.getSchema(), channel.getStoreType(), new Options());
     TableDesc desc = new TableDescImpl(channel.getSrcId().toString(), meta, new Path("/"));
-    return new ScanNode(desc);
+    return new ScanNode(plan.newPID(), desc);
   }
 
   public class DistributedPlannerVisitor extends BasicLogicalPlanVisitor<GlobalPlanContext> {
@@ -183,7 +183,7 @@ public class GlobalPlanner {
               execBlock.setPlan(g1);
               dataChannel = new DataChannel(execBlock, currentBlock, HASH_PARTITION, 32);
 
-              ScanNode scanNode = buildInputExecutor(dataChannel);
+              ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), dataChannel);
               secondGroupBy.setChild(scanNode);
               masterPlan.addConnect(dataChannel);
             }
@@ -194,7 +194,7 @@ public class GlobalPlanner {
               execBlock.setPlan(g1);
               dataChannel = new DataChannel(execBlock, currentBlock, HASH_PARTITION, 32);
 
-              ScanNode scanNode = buildInputExecutor(dataChannel);
+              ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), dataChannel);
               secondGroupBy.setChild(scanNode);
               masterPlan.addConnect(dataChannel);
             }
@@ -224,7 +224,7 @@ public class GlobalPlanner {
           channel.setSchema(firstGroupBy.getOutSchema());
 
           GroupbyNode secondGroupBy = groupByNode;
-          ScanNode scanNode = buildInputExecutor(channel);
+          ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
           secondGroupBy.setChild(scanNode);
 
           LogicalNode parent = PlannerUtil.findTopParentNode(curNode, lastDistNode.getType());
@@ -248,7 +248,7 @@ public class GlobalPlanner {
         channel.setSchema(childNode.getOutSchema());
 
         SortNode secondSort = PlannerUtil.clone(lastDistNode);
-        ScanNode secondScan = buildInputExecutor(channel);
+        ScanNode secondScan = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
         secondSort.setChild(secondScan);
 
         LimitNode limitAndSort;
@@ -296,8 +296,8 @@ public class GlobalPlanner {
         DataChannel leftChannel = new DataChannel(leftBlock, currentBlock, HASH_PARTITION, 32);
         DataChannel rightChannel = new DataChannel(rightBlock, currentBlock, HASH_PARTITION, 32);
 
-        ScanNode leftScan = buildInputExecutor(leftChannel);
-        ScanNode rightScan = buildInputExecutor(rightChannel);
+        ScanNode leftScan = buildInputExecutor(masterPlan.getLogicalPlan(), leftChannel);
+        ScanNode rightScan = buildInputExecutor(masterPlan.getLogicalPlan(), rightChannel);
 
         joinNode.setLeftChild(leftScan);
         joinNode.setRightChild(rightScan);

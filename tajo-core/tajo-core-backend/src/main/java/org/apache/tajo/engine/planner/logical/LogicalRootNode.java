@@ -21,8 +21,8 @@ package org.apache.tajo.engine.planner.logical;
 import org.apache.tajo.engine.planner.PlanString;
 
 public class LogicalRootNode extends UnaryNode implements Cloneable {
-  public LogicalRootNode() {
-    super(NodeType.ROOT);
+  public LogicalRootNode(int pid) {
+    super(pid, NodeType.ROOT);
   }
   
   public String toString() {

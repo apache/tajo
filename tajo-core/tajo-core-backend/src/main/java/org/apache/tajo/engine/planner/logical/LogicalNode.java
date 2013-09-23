@@ -29,18 +29,21 @@ import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TUtil;
 
 public abstract class LogicalNode implements Cloneable, GsonObject {
+  @Expose private int pid;
   @Expose private NodeType type;
 	@Expose private Schema inputSchema;
 	@Expose	private Schema outputSchema;
 
 	@Expose	private double cost = 0;
-	
-	public LogicalNode() {
+
+	public LogicalNode(int pid, NodeType type) {
+    this.pid = pid;
+    this.type = type;
 	}
 
-	public LogicalNode(NodeType type) {
-		this.type = type;
-	}
+  public int getPID() {
+    return pid;
+  }
 	
 	public NodeType getType() {
 		return this.type;
@@ -79,7 +82,8 @@ public abstract class LogicalNode implements Cloneable, GsonObject {
 	  if (obj instanceof LogicalNode) {
 	    LogicalNode other = (LogicalNode) obj;
 
-      boolean eq = this.type == other.type;
+      boolean eq = this.pid == other.pid;
+      eq = this.type == other.type;
       eq = eq && TUtil.checkEquals(this.inputSchema, other.inputSchema);
       eq = eq && TUtil.checkEquals(this.outputSchema, other.outputSchema);
       eq = eq && this.cost == other.cost;
@@ -93,12 +97,10 @@ public abstract class LogicalNode implements Cloneable, GsonObject {
 	@Override
 	public Object clone() throws CloneNotSupportedException {
 	  LogicalNode node = (LogicalNode)super.clone();
+    node.pid = pid;
 	  node.type = type;
-	  node.inputSchema = 
-	      (Schema) (inputSchema != null ? inputSchema.clone() : null);
-	  node.outputSchema = 
-	      (Schema) (outputSchema != null ? outputSchema.clone() : null);
-	  
+	  node.inputSchema =  (Schema) (inputSchema != null ? inputSchema.clone() : null);
+	  node.outputSchema = (Schema) (outputSchema != null ? outputSchema.clone() : null);
 	  return node;
 	}
 

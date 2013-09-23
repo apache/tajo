@@ -40,18 +40,16 @@ public class LogicalPlan {
   public static final char VIRTUAL_TABLE_PREFIX='@';
   /** it indicates the root block */
   public static final String ROOT_BLOCK = VIRTUAL_TABLE_PREFIX + "ROOT";
-  /** it indicates a table itself */
-  public static final String TABLE_SELF = VIRTUAL_TABLE_PREFIX + "SELF";
-
-  public static final String ANONYMOUS_TABLE_PREFIX = VIRTUAL_TABLE_PREFIX + "NONAME_";
-  public static Integer anonymousBlockId = 0;
-  public static Integer anonymousColumnId = 0;
+  public static final String NONAME_BLOCK_PREFIX = VIRTUAL_TABLE_PREFIX + "NONAME_";
+  private int nextPid = 0;
+  private Integer noNameBlockId = 0;
+  private Integer noNameColumnId = 0;
 
   /** a map from between a block name to a block plan */
   private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<String, QueryBlock>();
-  private Map<LogicalNode, QueryBlock> queryBlockByNode = new HashMap<LogicalNode, QueryBlock>();
+  private Map<Integer, LogicalNode> nodeMap = new HashMap<Integer, LogicalNode>();
+  private Map<Integer, QueryBlock> queryBlockByPID = new HashMap<Integer, QueryBlock>();
   private SimpleDirectedGraph<String, BlockEdge> queryBlockGraph = new SimpleDirectedGraph<String, BlockEdge>();
-  private Set<LogicalNode> visited = new HashSet<LogicalNode>();
 
   public LogicalPlan(LogicalPlanner planner) {
     this.planner = planner;
@@ -69,12 +67,16 @@ public class LogicalPlan {
     return block;
   }
 
-  public QueryBlock newAnonymousBlock() {
-    return newAndGetBlock(ANONYMOUS_TABLE_PREFIX + (anonymousBlockId++));
+  public int newPID() {
+    return nextPid++;
   }
 
-  public String newAnonymousColumnName() {
-    return "?_" + (anonymousColumnId ++);
+  public QueryBlock newNoNameBlock() {
+    return newAndGetBlock(NONAME_BLOCK_PREFIX + (noNameBlockId++));
+  }
+
+  public String newNonameColumnName() {
+    return "?_" + (noNameColumnId++);
   }
 
   /**
@@ -95,17 +97,17 @@ public class LogicalPlan {
   }
 
   public QueryBlock getBlock(LogicalNode node) {
-    return queryBlockByNode.get(node);
+    return queryBlockByPID.get(node.getPID());
   }
 
   public void removeBlock(QueryBlock block) {
     queryBlocks.remove(block.getName());
-    List<LogicalNode> tobeRemoved = new ArrayList<LogicalNode>();
-    for (Map.Entry<LogicalNode, QueryBlock> entry : queryBlockByNode.entrySet()) {
+    List<Integer> tobeRemoved = new ArrayList<Integer>();
+    for (Map.Entry<Integer, QueryBlock> entry : queryBlockByPID.entrySet()) {
       tobeRemoved.add(entry.getKey());
     }
-    for (LogicalNode rn : tobeRemoved) {
-      queryBlockByNode.remove(rn);
+    for (Integer rn : tobeRemoved) {
+      queryBlockByPID.remove(rn);
     }
   }
 
@@ -353,7 +355,7 @@ public class LogicalPlan {
         LogicalRootNode rootNode = (LogicalRootNode) blockRoot;
         rootType = rootNode.getChild().getType();
       }
-      queryBlockByNode.put(blockRoot, this);
+      queryBlockByPID.put(blockRoot.getPID(), this);
     }
 
     public <T extends LogicalNode> T getRoot() {
@@ -510,9 +512,11 @@ public class LogicalPlan {
     }
 
     public boolean postVisit(LogicalNode node, Stack<OpType> path) {
-      if (visited.contains(node)) {
+      if (nodeMap.containsKey(node.getPID())) {
         return false;
       }
+
+      nodeMap.put(node.getPID(), node);
 
       // if an added operator is a relation, add it to relation set.
       switch (node.getType()) {
@@ -721,7 +725,7 @@ public class LogicalPlan {
             } else {
               Target [] addedTargets = new Target[aggrFunctions.size()];
               for (int i = 0; i < aggrFunctions.size(); i++) {
-                Target aggrFunctionTarget = new Target(aggrFunctions.get(i), newAnonymousColumnName());
+                Target aggrFunctionTarget = new Target(aggrFunctions.get(i), newNonameColumnName());
                 addedTargets[i] = aggrFunctionTarget;
                 EvalTreeUtil.replace(havingCondition, aggrFunctions.get(i),
                     new FieldEval(aggrFunctionTarget.getColumnSchema()));

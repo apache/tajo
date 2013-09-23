@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.logical.IndexScanNode;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.storage.Fragment;
@@ -55,7 +56,7 @@ public class IndexUtil {
     return builder.toString();
   }
   
-  public static IndexScanNode indexEval( ScanNode scanNode, 
+  public static IndexScanNode indexEval(LogicalPlan plan, ScanNode scanNode,
       Iterator<Entry<String, String>> iter ) {
    
     EvalNode qual = scanNode.getQual();
@@ -112,7 +113,7 @@ public class IndexUtil {
         datum[i] = ((ConstEval)(nodeList.get(i).getRightExpr())).getValue();
       }
       
-      return new IndexScanNode(scanNode, keySchema , datum , maxIndex);
+      return new IndexScanNode(plan.newPID(), scanNode, keySchema , datum , maxIndex);
     }
 
   }

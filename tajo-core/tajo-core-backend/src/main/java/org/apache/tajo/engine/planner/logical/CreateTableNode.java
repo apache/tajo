@@ -36,8 +36,8 @@ public class CreateTableNode extends LogicalNode implements Cloneable {
   @Expose private Options options;
   @Expose private boolean external;
 
-  public CreateTableNode(String tableName, Schema schema) {
-    super(NodeType.CREATE_TABLE);
+  public CreateTableNode(int pid, String tableName, Schema schema) {
+    super(pid, NodeType.CREATE_TABLE);
     this.tableName = tableName;
     this.schema = schema;
   }

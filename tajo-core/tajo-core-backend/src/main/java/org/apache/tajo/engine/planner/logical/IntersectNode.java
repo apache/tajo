@@ -24,13 +24,8 @@ package org.apache.tajo.engine.planner.logical;
 import org.apache.tajo.engine.planner.PlanString;
 
 public class IntersectNode extends BinaryNode {
-
-  public IntersectNode() {
-    super(NodeType.INTERSECT);
-  }
-
-  public IntersectNode(LogicalNode outer, LogicalNode inner) {
-    this();
+  public IntersectNode(int pid, LogicalNode outer, LogicalNode inner) {
+    super(pid, NodeType.INTERSECT);
     setLeftChild(outer);
     setRightChild(inner);
   }

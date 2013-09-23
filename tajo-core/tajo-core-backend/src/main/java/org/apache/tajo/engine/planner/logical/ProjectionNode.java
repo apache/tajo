@@ -32,18 +32,10 @@ public class ProjectionNode extends UnaryNode implements Projectable {
   @Expose private boolean distinct = false;
 
   /**
-   * This method is for gson.
-   */
-  @SuppressWarnings("unused")
-	private ProjectionNode() {
-		super();
-	}
-
-  /**
    * @param targets they should be all evaluated ones.
    */
-	public ProjectionNode(Target [] targets) {		
-		super(NodeType.PROJECTION);
+	public ProjectionNode(int pid, Target [] targets) {
+		super(pid, NodeType.PROJECTION);
 		this.targets = targets;
 	}
 

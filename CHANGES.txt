@@ -29,6 +29,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-194: LogicalNode should have an identifier to distinguish each
+    logical node instance. (hyunsik)
+
     TAJO-183: Creating too many TableMetaProto objects might lead a potential 
     memory leak. (jihoon)
 

@@ -45,8 +45,11 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
 
 public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(PhysicalPlannerImpl.class);
+  private static final int UNGENERATED_PID = -1;
+
   protected final TajoConf conf;
   protected final AbstractStorageManager sm;
+
 
   public PhysicalPlannerImpl(final TajoConf conf, final AbstractStorageManager sm) {
     this.conf = conf;
@@ -76,7 +79,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private PhysicalExec buildOutputOperator(TaskAttemptContext context, LogicalNode plan,
                                            PhysicalExec execPlan) throws IOException {
     DataChannel channel = context.getDataChannel();
-    StoreTableNode storeTableNode = new StoreTableNode(channel.getTargetId().toString());
+    StoreTableNode storeTableNode = new StoreTableNode(UNGENERATED_PID, channel.getTargetId().toString());
     storeTableNode.setStorageType(CatalogProtos.StoreType.CSV);
     storeTableNode.setInSchema(execPlan.getSchema());
     storeTableNode.setOutSchema(execPlan.getSchema());
@@ -220,10 +223,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(
             joinNode.getJoinQual(), outer.getSchema(), inner.getSchema());
         ExternalSortExec outerSort = new ExternalSortExec(ctx, sm,
-            new SortNode(sortSpecs[0], outer.getSchema(), outer.getSchema()),
+            new SortNode(UNGENERATED_PID, sortSpecs[0], outer.getSchema(), outer.getSchema()),
             outer);
         ExternalSortExec innerSort = new ExternalSortExec(ctx, sm,
-            new SortNode(sortSpecs[1], inner.getSchema(), inner.getSchema()),
+            new SortNode(UNGENERATED_PID, sortSpecs[1], inner.getSchema(), inner.getSchema()),
             inner);
 
         LOG.info("The planner chooses [Merge Join]");
@@ -295,7 +298,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         for (int i = 0; i < grpColumns.length; i++) {
           specs[i] = new SortSpec(grpColumns[i], true, false);
         }
-        SortNode sortNode = new SortNode(specs);
+        SortNode sortNode = new SortNode(UNGENERATED_PID, specs);
         sortNode.setInSchema(subOp.getSchema());
         sortNode.setOutSchema(subOp.getSchema());
         // SortExec sortExec = new SortExec(sortNode, child);

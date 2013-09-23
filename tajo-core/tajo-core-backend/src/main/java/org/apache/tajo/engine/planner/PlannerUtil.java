@@ -66,21 +66,6 @@ public class PlannerUtil {
     return tableNames;
   }
   
-  public static LogicalNode insertNode(LogicalNode parent, LogicalNode newNode) {
-    Preconditions.checkArgument(parent instanceof UnaryNode);
-    Preconditions.checkArgument(newNode instanceof UnaryNode);
-    
-    UnaryNode p = (UnaryNode) parent;
-    LogicalNode c = p.getChild();
-    UnaryNode m = (UnaryNode) newNode;
-    m.setInSchema(c.getOutSchema());
-    m.setOutSchema(c.getOutSchema());
-    m.setChild(c);
-    p.setChild(m);
-    
-    return p;
-  }
-  
   /**
    * Delete the logical node from a plan.
    *
@@ -189,13 +174,6 @@ public class PlannerUtil {
     }
     
     return child;
-  }
-  
-  private static LogicalNode insertStore(LogicalNode parent, String tableName) {
-    StoreTableNode store = new StoreTableNode(tableName);
-    insertNode(parent, store);
-    
-    return parent;
   }
   
   /**

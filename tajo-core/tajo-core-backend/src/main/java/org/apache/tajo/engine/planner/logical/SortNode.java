@@ -26,22 +26,17 @@ import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.TUtil;
 
 public final class SortNode extends UnaryNode implements Cloneable {
-	@Expose
-  private SortSpec [] sortKeys;
-	
-	public SortNode() {
-		super();
-	}
+	@Expose private SortSpec [] sortKeys;
 
-  public SortNode(SortSpec[] sortKeys) {
-    super(NodeType.SORT);
+  public SortNode(int pid, SortSpec[] sortKeys) {
+    super(pid, NodeType.SORT);
     Preconditions.checkArgument(sortKeys.length > 0, 
         "At least one sort key must be specified");
     this.sortKeys = sortKeys;
   }
 
-  public SortNode(SortSpec[] sortKeys, Schema inSchema, Schema outSchema) {
-    this(sortKeys);
+  public SortNode(int pid, SortSpec[] sortKeys, Schema inSchema, Schema outSchema) {
+    this(pid, sortKeys);
     this.setInSchema(inSchema);
     this.setOutSchema(outSchema);
   }

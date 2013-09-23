@@ -39,17 +39,13 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
   @Expose private boolean isCreatedTable = false;
   @Expose private boolean isOverwritten = false;
 
-  public StoreTableNode(String tableName) {
-    super(NodeType.STORE);
+  public StoreTableNode(int pid, String tableName) {
+    super(pid, NodeType.STORE);
     this.tableName = tableName;
   }
 
   public final String getTableName() {
     return this.tableName;
-  }
-
-  public final void setTableName(String tableName) {
-    this.tableName = tableName;
   }
 
   public void setStorageType(StoreType storageType) {

@@ -24,15 +24,11 @@ import com.google.gson.annotations.Expose;
 public abstract class UnaryNode extends LogicalNode implements Cloneable {
 	@Expose LogicalNode child;
 	
-	public UnaryNode() {
-		super();
-	}
-	
 	/**
 	 * @param type
 	 */
-	public UnaryNode(NodeType type) {
-		super(type);
+	public UnaryNode(int pid, NodeType type) {
+		super(pid, type);
 	}
 	
 	public void setChild(LogicalNode subNode) {

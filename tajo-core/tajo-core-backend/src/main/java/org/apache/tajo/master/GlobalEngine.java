@@ -373,7 +373,7 @@ public class GlobalEngine extends AbstractService {
         queryContext.setFileOutput();
       }
 
-      storeNode = new StoreTableNode(outputTableName);
+      storeNode = new StoreTableNode(plan.newPID(), outputTableName);
       queryContext.setOutputPath(outputPath);
 
       if (insertNode.isOverwrite()) {
@@ -416,7 +416,7 @@ public class GlobalEngine extends AbstractService {
         }
 
 
-        ProjectionNode projectionNode = new ProjectionNode(targets);
+        ProjectionNode projectionNode = new ProjectionNode(plan.newPID(), targets);
         projectionNode.setInSchema(insertNode.getSubQuery().getOutSchema());
         projectionNode.setOutSchema(PlannerUtil.targetToSchema(targets));
         List<LogicalPlan.QueryBlock> blocks = plan.getChildBlocks(plan.getRootBlock());

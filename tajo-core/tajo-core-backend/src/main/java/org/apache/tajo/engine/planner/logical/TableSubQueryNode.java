@@ -30,8 +30,8 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   @Expose private LogicalNode subQuery;
   @Expose private Target [] targets; // unused
 
-  public TableSubQueryNode(String tableName, LogicalNode subQuery) {
-    super(NodeType.TABLE_SUBQUERY);
+  public TableSubQueryNode(int pid, String tableName, LogicalNode subQuery) {
+    super(pid, NodeType.TABLE_SUBQUERY);
     this.tableName = PlannerUtil.normalizeTableName(tableName);
     this.subQuery = subQuery;
     setOutSchema((Schema) this.subQuery.getOutSchema().clone());

@@ -39,16 +39,16 @@ public class InsertNode extends LogicalNode implements Cloneable {
   @Expose private LogicalNode subQuery;
 
 
-  public InsertNode(TableDesc desc, LogicalNode subQuery) {
-    super(NodeType.INSERT);
+  public InsertNode(int pid, TableDesc desc, LogicalNode subQuery) {
+    super(pid, NodeType.INSERT);
     this.targetTableDesc = desc;
     this.subQuery = subQuery;
     this.setInSchema(subQuery.getOutSchema());
     this.setOutSchema(subQuery.getOutSchema());
   }
 
-  public InsertNode(Path location, LogicalNode subQuery) {
-    super(NodeType.INSERT);
+  public InsertNode(int pid, Path location, LogicalNode subQuery) {
+    super(pid, NodeType.INSERT);
     this.path = location;
     this.subQuery = subQuery;
     this.setInSchema(subQuery.getOutSchema());

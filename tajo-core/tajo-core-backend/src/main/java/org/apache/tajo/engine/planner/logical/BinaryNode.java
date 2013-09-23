@@ -27,16 +27,9 @@ import org.apache.tajo.json.GsonObject;
 public abstract class BinaryNode extends LogicalNode implements Cloneable, GsonObject {
 	@Expose LogicalNode leftChild = null;
 	@Expose LogicalNode rightChild = null;
-	
-	public BinaryNode() {
-		super();
-	}
-	
-	/**
-	 * @param opType
-	 */
-	public BinaryNode(NodeType opType) {
-		super(opType);
+
+	public BinaryNode(int pid, NodeType nodeType) {
+		super(pid, nodeType);
 	}
 	
 	public <T extends LogicalNode> T getLeftChild() {

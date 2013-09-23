@@ -24,12 +24,8 @@ import org.apache.tajo.engine.planner.PlanString;
 public final class LimitNode extends UnaryNode implements Cloneable {
 	@Expose private long fetchFirstNum;
 
-	public LimitNode() {
-		super();
-	}
-
-  public LimitNode(long fetchFirstNum) {
-    super(NodeType.LIMIT);
+  public LimitNode(int pid, long fetchFirstNum) {
+    super(pid, NodeType.LIMIT);
     this.fetchFirstNum = fetchFirstNum;
   }
   
