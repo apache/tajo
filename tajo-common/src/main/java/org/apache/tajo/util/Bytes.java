@@ -1396,7 +1396,7 @@ public class Bytes {
    *
    * @param str  the String to parse, may be <code>null</code>
    * @param length amount of bytes to str
-   * @param separatorChar the separate character
+   * @param separatorChar the ascii separate character
    * @param preserveAllTokens if <code>true</code>, adjacent separators are
    * @param target the projection target
    * treated as empty token separators; if <code>false</code>, adjacent
@@ -1415,7 +1415,7 @@ public class Bytes {
     }
 
     if (len == 0) {
-      return new byte[0][];
+      return new byte[1][0];
     }
     List list = new ArrayList();
     int i = 0, start = 0;

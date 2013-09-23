@@ -108,13 +108,15 @@ public class LazyTuple implements Tuple {
   //////////////////////////////////////////////////////
   @Override
   public Datum get(int fieldId) {
-    if(values[fieldId] != null)
+    if (values[fieldId] != null)
       return values[fieldId];
-    else if (textBytes.length > fieldId && (textBytes[fieldId] != null)) {
+    else if (textBytes.length <= fieldId) {
+      values[fieldId] = NullDatum.get();  // split error. (col : 3, separator: ',', row text: "a,")
+    } else if (textBytes[fieldId] != null) {
       values[fieldId] = createByTextBytes(schema.getColumn(fieldId).getDataType().getType(), textBytes[fieldId]);
       textBytes[fieldId] = null;
     } else {
-      values[fieldId] = NullDatum.get();
+      //non-projection
     }
     return values[fieldId];
   }
@@ -277,17 +279,17 @@ public class LazyTuple implements Tuple {
   private static Datum createByTextBytes(TajoDataTypes.Type type, byte[] val) {
     switch (type) {
       case BOOLEAN:
-        return NullDatum.isNull(val) ? NullDatum.get() : DatumFactory.createBool(new String(val));
+        return NullDatum.isNotNull(val) ? DatumFactory.createBool(new String(val)) : NullDatum.get();
       case INT2:
-        return NullDatum.isNull(val) ? NullDatum.get() : DatumFactory.createInt2(new String(val));
+        return NullDatum.isNotNull(val) ? DatumFactory.createInt2(new String(val)) : NullDatum.get();
       case INT4:
-        return NullDatum.isNull(val) ? NullDatum.get() : DatumFactory.createInt4(new String(val));
+        return NullDatum.isNotNull(val) ? DatumFactory.createInt4(new String(val)) : NullDatum.get();
       case INT8:
-        return NullDatum.isNull(val) ? NullDatum.get() : DatumFactory.createInt8(new String(val));
+        return NullDatum.isNotNull(val) ? DatumFactory.createInt8(new String(val)) : NullDatum.get();
       case FLOAT4:
-        return NullDatum.isNull(val) ? NullDatum.get() : DatumFactory.createFloat4(new String(val));
+        return NullDatum.isNotNull(val) ? DatumFactory.createFloat4(new String(val)) : NullDatum.get();
       case FLOAT8:
-        return NullDatum.isNull(val) ? NullDatum.get() : DatumFactory.createFloat8(new String(val));
+        return NullDatum.isNotNull(val) ? DatumFactory.createFloat8(new String(val)) : NullDatum.get();
       case CHAR:
         return DatumFactory.createChar(new String(val).trim());
       case TEXT:
@@ -297,9 +299,9 @@ public class LazyTuple implements Tuple {
       case BLOB:
         return DatumFactory.createBlob(Base64.decodeBase64(val));
       case INET4:
-        return NullDatum.isNull(val) ? NullDatum.get() : DatumFactory.createInet4(new String(val));
+        return NullDatum.isNotNull(val) ? DatumFactory.createInet4(new String(val)) : NullDatum.get();
       case ARRAY:
-        return NullDatum.isNull(val) ? NullDatum.get() : StorageGsonHelper.getInstance().fromJson(new String(val), Datum.class);
+        return NullDatum.isNotNull(val) ? StorageGsonHelper.getInstance().fromJson(new String(val), Datum.class) : NullDatum.get();
       case NULL:
         return NullDatum.get();
       default:

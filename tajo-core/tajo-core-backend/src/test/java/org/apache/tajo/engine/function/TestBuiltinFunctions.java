@@ -19,21 +19,18 @@
 package org.apache.tajo.engine.function;
 
 import com.google.common.collect.Maps;
-import org.apache.tajo.client.ResultSetUtil;
+import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.TpchTestBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.TpchTestBase;
 
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestBuiltinFunctions {
@@ -137,7 +134,7 @@ public class TestBuiltinFunctions {
 
   @Test
   public void testSplitPart() throws Exception {
-    ResultSet res = tpch.execute("select split_part(l_shipinstruct, ' ', 0) from lineitem");
+    ResultSet res = tpch.execute("select split_part(l_shipinstruct, ' ', 1) from lineitem");
 
     String [] result ={
       "DELIVER",
@@ -157,8 +154,29 @@ public class TestBuiltinFunctions {
   }
 
   @Test
+  public void testSplitPartByString() throws Exception {
+    ResultSet res = tpch.execute("select split_part(l_shipinstruct, 'KE', 1) from lineitem");
+
+    String [] result ={
+        "DELIVER IN PERSON",
+        "TA",
+        "TA",
+        "NONE",
+        "TA"
+    };
+
+    for (int i = 0; i < result.length; i++) {
+      assertTrue(res.next());
+      assertEquals(result[i], res.getString(1));
+    }
+    assertFalse(res.next());
+
+    res.close();
+  }
+
+  @Test
   public void testSplitPartNested() throws Exception {
-    ResultSet res = tpch.execute("select split_part(split_part(l_shipinstruct, ' ', 0), 'A', 1) from lineitem");
+    ResultSet res = tpch.execute("select split_part(split_part(l_shipinstruct, ' ', 1), 'A', 2) from lineitem");
 
     String [] result ={
         "",

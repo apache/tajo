@@ -106,7 +106,7 @@ public class NullDatum extends Datum {
 
   @Override
   public int hashCode() {
-    return 23244; // one of the prime number
+    return 0; // one of the prime number
   }
 
   public static boolean isNull(String val){
@@ -115,5 +115,13 @@ public class NullDatum extends Datum {
 
   public static boolean isNull(byte[] val){
     return val == null || val.length == 0 || ((val.length == NULL_CHAR.length) && Bytes.equals(val, NULL_CHAR));
+  }
+
+  public static boolean isNotNull(String val){
+    return !isNull(val);
+  }
+
+  public static boolean isNotNull(byte[] val){
+    return !isNull(val);
   }
 }

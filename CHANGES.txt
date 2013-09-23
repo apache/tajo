@@ -147,6 +147,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-198: The split function does not work properly. (jinho)
+
     TAJO-187: The exception 'Some targets cannot be evaluated' is caused in 
     nested joins. (hyunsik)
 

@@ -44,8 +44,11 @@ public class SplitPart extends GeneralFunction<TextDatum> {
 
   @Override
   public Datum eval(Tuple params) {
-    String [] split = StringUtils.split(params.get(0).asChars(), params.get(1).asChars());
-    int idx = params.get(2).asInt4();
+    Datum datum = params.get(0);
+    if(datum instanceof NullDatum) return NullDatum.get();
+
+    String [] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(datum.asChars(), params.get(1).asChars(), -1);
+    int idx = params.get(2).asInt4() - 1;
     if (split.length > idx) {
       return DatumFactory.createText(split[idx]);
     } else {
