@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-193: Add string pattern matching operators. (hyunsik)
+
     TAJO-101: HiveQL converter. (jaehwa)
 
     TAJO-144: Implement INSERT OVERWRITE clause. (hyunsik)

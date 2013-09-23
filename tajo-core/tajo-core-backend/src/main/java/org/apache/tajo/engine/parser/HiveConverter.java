@@ -705,10 +705,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr>{
 
     /**
      * This method parse operators for equals expressions as follows:
-     *   =, <>, !=, >=, >, <=, <, IN, NOT IN, LIKE
-     *
-     * And Tajo doesn't provide some operators as follows:
-     *   REGEXP, RLIKE
+     *   =, <>, !=, >=, >, <=, <, IN, NOT IN, LIKE, REGEXP, RLIKE
      *
      * In this case, this make RuntimeException>
      *
@@ -763,9 +760,9 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr>{
                 } else if(keyword.equals("!=")) {
                     type = OpType.NotEquals;
                 } else if(keyword.equals("REGEXP")) {
-                    throw new RuntimeException("Unexpected operator : REGEXP");
+                    type = OpType.Regexp;
                 } else if(keyword.equals("RLIKE")) {
-                    throw new RuntimeException("Unexpected operator : RLIKE");
+                    type = OpType.Regexp;
                 } else if(keyword.equals("LIKE")) {
                     type = OpType.LikePredicate;
                 }
@@ -774,8 +771,12 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr>{
 
         if(type != null && right != null) {
             if(type.equals(OpType.LikePredicate)) {
-                LikePredicate like = new LikePredicate(isNot, (ColumnReferenceExpr)left, (LiteralValue)right);
+                PatternMatchPredicate like = new PatternMatchPredicate(OpType.LikePredicate,
+                    isNot, left, right);
                 current = like;
+            } else if (type.equals(OpType.Regexp)) {
+              PatternMatchPredicate regex = new PatternMatchPredicate(OpType.Regexp, isNot, left, right);
+              current = regex;
             } else {
                 BinaryOperator binaryOperator = new BinaryOperator(type, left, right);
                 current = binaryOperator;

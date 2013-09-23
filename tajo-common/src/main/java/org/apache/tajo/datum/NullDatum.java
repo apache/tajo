@@ -24,7 +24,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class NullDatum extends Datum {
   private static final NullDatum instance;
-  private static String NULL_STRING = "null";
+  private static String NULL_STRING = "";
   private static byte[] NULL_CHAR = NULL_STRING.getBytes();
   
   static {
@@ -51,17 +51,17 @@ public class NullDatum extends Datum {
 
   @Override
   public short asInt2() {
-    return Short.MIN_VALUE;
+    return 0;
   }
 
   @Override
   public int asInt4() {
-    return Integer.MIN_VALUE;
+    return 0;
   }
 
   @Override
   public long asInt8() {
-    return Long.MIN_VALUE;
+    return 0;
   }
 
   @Override
@@ -71,12 +71,12 @@ public class NullDatum extends Datum {
 
   @Override
   public float asFloat4() {
-    return Float.NaN;
+    return 0f;
   }
 
   @Override
   public double asFloat8() {
-    return Double.NaN;
+    return 0d;
   }
 
   @Override

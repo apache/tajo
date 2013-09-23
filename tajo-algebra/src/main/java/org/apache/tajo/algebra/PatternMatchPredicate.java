@@ -18,23 +18,35 @@
 
 package org.apache.tajo.algebra;
 
-public class LikePredicate extends Expr {
-  private boolean not;
-  private ColumnReferenceExpr columnRef;
-  private Expr pattern;
+import com.google.common.base.Preconditions;
 
-  public LikePredicate(boolean not, ColumnReferenceExpr columnReferenceExpr, Expr pattern) {
-    super(OpType.LikePredicate);
+public class PatternMatchPredicate extends Expr {
+  private boolean not;
+  private Expr columnRef;
+  private Expr pattern;
+  private boolean caseInsensitive;
+
+  public PatternMatchPredicate(OpType opType, boolean not, Expr predicand, Expr pattern,
+                               boolean caseInsensitive) {
+    super(opType);
+    Preconditions.checkArgument(
+        opType == OpType.LikePredicate || opType == OpType.SimilarToPredicate || opType == OpType.Regexp,
+        "pattern matching predicate is only available: " + opType.name());
     this.not = not;
-    this.columnRef = columnReferenceExpr;
+    this.columnRef = predicand;
     this.pattern = pattern;
+    this.caseInsensitive = caseInsensitive;
+  }
+
+  public PatternMatchPredicate(OpType opType, boolean not, Expr predicand, Expr pattern) {
+    this(opType, not, predicand, pattern, false);
   }
 
   public boolean isNot() {
     return not;
   }
 
-  public ColumnReferenceExpr getColumnRef() {
+  public Expr getPredicand() {
     return this.columnRef;
   }
 
@@ -42,10 +54,16 @@ public class LikePredicate extends Expr {
     return this.pattern;
   }
 
+  public boolean isCaseInsensitive() {
+    return this.caseInsensitive;
+  }
+
   boolean equalsTo(Expr expr) {
-    LikePredicate another = (LikePredicate) expr;
-    return not == another.not &&
+    PatternMatchPredicate another = (PatternMatchPredicate) expr;
+    return opType == another.opType &&
+        not == another.not &&
         columnRef.equals(another.columnRef) &&
-        pattern.equals(another.pattern);
+        pattern.equals(another.pattern) &&
+        caseInsensitive == another.caseInsensitive;
   }
 }

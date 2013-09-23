@@ -42,8 +42,12 @@ public enum EvalType {
   AGG_FUNCTION(AggFuncCallEval.class),
   FUNCTION(FuncCallEval.class),
 
-  // Predicate
-  LIKE(LikeEval.class),
+  // String pattern matching
+  LIKE(LikePredicateEval.class),
+  SIMILAR_TO(SimilarToPredicateEval.class),
+  Regex(RegexPredicateEval.class),
+
+  // Other predicates
   CASE(CaseWhenEval.class),
   IF_THEN(CaseWhenEval.IfThenEval.class),
   IN(InEval.class),

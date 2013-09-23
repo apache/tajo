@@ -113,8 +113,6 @@ public class LazyTuple implements Tuple {
     else if (textBytes.length > fieldId && (textBytes[fieldId] != null)) {
       values[fieldId] = createByTextBytes(schema.getColumn(fieldId).getDataType().getType(), textBytes[fieldId]);
       textBytes[fieldId] = null;
-    } else {
-      //values[fieldId] = NullDatum.get();
     }
     return values[fieldId];
   }

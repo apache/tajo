@@ -84,7 +84,7 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
         result = visitGreaterThanOrEqual(context, stack, (BinaryEval) evalNode);
         break;
 
-      // Other Predicates
+      // SQL standard predicates
       case IS_NULL:
         result = visitIsNull(context, stack, (IsNullEval) evalNode);
         break;
@@ -97,8 +97,16 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
       case IN:
         result = visitInPredicate(context, stack, (InEval) evalNode);
         break;
+
+      // Pattern match predicates
       case LIKE:
-        result = visitLike(context, stack, (LikeEval) evalNode);
+        result = visitLike(context, stack, (LikePredicateEval) evalNode);
+        break;
+      case SIMILAR_TO:
+        result = visitSimilarTo(context, stack, (SimilarToPredicateEval) evalNode);
+        break;
+      case Regex:
+        result = visitRegex(context, stack, (RegexPredicateEval) evalNode);
         break;
 
       // Functions
@@ -264,7 +272,17 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   }
 
   @Override
-  public RESULT visitLike(CONTEXT context, Stack<EvalNode> stack, LikeEval evalNode) {
+  public RESULT visitLike(CONTEXT context, Stack<EvalNode> stack, LikePredicateEval evalNode) {
+    return visitDefaultBinaryEval(context, stack, evalNode);
+  }
+
+  @Override
+  public RESULT visitSimilarTo(CONTEXT context, Stack<EvalNode> stack, SimilarToPredicateEval evalNode) {
+    return visitDefaultBinaryEval(context, stack, evalNode);
+  }
+
+  @Override
+  public RESULT visitRegex(CONTEXT context, Stack<EvalNode> stack, RegexPredicateEval evalNode) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 

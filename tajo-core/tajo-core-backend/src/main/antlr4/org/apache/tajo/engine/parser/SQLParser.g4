@@ -633,7 +633,7 @@ boolean_primary
 predicate
   : comparison_predicate
   | in_predicate
-  | like_predicate
+  | pattern_matching_predicate
   | null_predicate
   ;
 
@@ -681,14 +681,34 @@ in_value_list
 
 /*
 ===============================================================================
-  <like_predicate>
+  <pattern_matching_predicate>
 
-  Specify a pattern-match comparison.
+  Specify a pattern-matching comparison.
 ===============================================================================
 */
 
-like_predicate
-  : f=column_reference NOT? LIKE s=Character_String_Literal
+pattern_matching_predicate
+  : f=numeric_primary pattern_matcher s=Character_String_Literal
+  ;
+
+pattern_matcher
+  : NOT? negativable_matcher
+  | regex_matcher
+  ;
+
+negativable_matcher
+  : LIKE
+  | ILIKE
+  | SIMILAR TO
+  | REGEXP
+  | RLIKE
+  ;
+
+regex_matcher
+  : Similar_To
+  | Not_Similar_To
+  | Similar_To_Case_Insensitive
+  | Not_Similar_To_Case_Insensitive
   ;
 
 /*

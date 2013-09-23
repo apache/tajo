@@ -279,15 +279,15 @@ public class TestSelectQuery {
         "end as cond from region");
 
     try {
-      Map<Integer, String> result = Maps.newHashMap();
-      result.put(0, "null");
-      result.put(1, "11");
-      result.put(2, "12");
-      result.put(3, "13");
-      result.put(4, "14");
+      Map<Integer, Integer> result = Maps.newHashMap();
+      result.put(0, 0);
+      result.put(1, 11);
+      result.put(2, 12);
+      result.put(3, 13);
+      result.put(4, 14);
       int cnt = 0;
       while(res.next()) {
-        assertEquals(result.get(res.getInt(1)), res.getString(2));
+        assertTrue(result.get(res.getInt(1)) == res.getInt(2));
         cnt++;
       }
 

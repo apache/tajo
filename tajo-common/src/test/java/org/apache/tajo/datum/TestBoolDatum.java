@@ -65,7 +65,7 @@ public class TestBoolDatum {
 	@Test
 	public final void testAsChars() {
 		Datum d = DatumFactory.createBool(true);
-		assertEquals("true", d.asChars());
+		assertEquals("t", d.asChars());
 	}
 	
 	@Test

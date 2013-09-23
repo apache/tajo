@@ -90,27 +90,31 @@ public class TestInsertQuery {
     ResultSet res = tpch.execute("select * from " + tableName);
     assertTrue(res.next());
     assertEquals(1, res.getLong(1));
-    assertEquals("null", res.getString(2));
+    assertTrue(0f == res.getFloat(2));
+    assertTrue(res.wasNull());
     assertTrue(17.0 == res.getFloat(3));
 
     assertTrue(res.next());
     assertEquals(1, res.getLong(1));
-    assertEquals("null", res.getString(2));
+    assertTrue(0f == res.getFloat(2));
+    assertTrue(res.wasNull());
     assertTrue(36.0 == res.getFloat(3));
 
     assertTrue(res.next());
     assertEquals(2, res.getLong(1));
-    assertEquals("null", res.getString(2));
+    assertTrue(0f == res.getFloat(2));
+    assertTrue(res.wasNull());
     assertTrue(38.0 == res.getFloat(3));
 
     assertTrue(res.next());
-    assertEquals(3, res.getLong(1));
-    assertEquals("null", res.getString(2));
+    assertTrue(0f == res.getFloat(2));
+    assertTrue(res.wasNull());
     assertTrue(45.0 == res.getFloat(3));
 
     assertTrue(res.next());
     assertEquals(3, res.getLong(1));
-    assertEquals("null", res.getString(2));
+    assertTrue(0f == res.getFloat(2));
+    assertTrue(res.wasNull());
     assertTrue(49.0 == res.getFloat(3));
 
     assertFalse(res.next());

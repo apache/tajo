@@ -117,7 +117,7 @@ public class BooleanDatum extends Datum {
 	 */
 	@Override
 	public String asChars() {
-		return val ? "true" : "false";
+		return val ? "t" : "f";
 	}
 
   @Override

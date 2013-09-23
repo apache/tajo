@@ -33,6 +33,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
@@ -918,6 +919,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     switch(expr.getType()) {
       // constants
+      case Null:
+        return new ConstEval(NullDatum.get());
+
       case Literal:
         LiteralValue literal = (LiteralValue) expr;
         switch (literal.getValueType()) {
@@ -951,12 +955,27 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         NotExpr notExpr = (NotExpr) expr;
         return new NotEval(createEvalTree(plan, block, notExpr.getChild()));
 
-      // binary expressions
+      // pattern matching predicates
       case LikePredicate:
-        LikePredicate like = (LikePredicate) expr;
-        FieldEval field = (FieldEval) createEvalTree(plan, block, like.getColumnRef());
-        ConstEval pattern = (ConstEval) createEvalTree(plan, block, like.getPattern());
-        return new LikeEval(like.isNot(), field, pattern);
+      case SimilarToPredicate:
+      case Regexp:
+        PatternMatchPredicate patternMatch = (PatternMatchPredicate) expr;
+        EvalNode field = createEvalTree(plan, block, patternMatch.getPredicand());
+        ConstEval pattern = (ConstEval) createEvalTree(plan, block, patternMatch.getPattern());
+
+        // A pattern is a const value in pattern matching predicates.
+        // In a binary expression, the result is always null if a const value in left or right side is null.
+        if (pattern.getValue() instanceof NullDatum) {
+          return new ConstEval(NullDatum.get());
+        } else {
+          if (expr.getType() == OpType.LikePredicate) {
+            return new LikePredicateEval(patternMatch.isNot(), field, pattern, patternMatch.isCaseInsensitive());
+          } else if (expr.getType() == OpType.SimilarToPredicate) {
+            return new SimilarToPredicateEval(patternMatch.isNot(), field, pattern);
+          } else {
+            return new RegexPredicateEval(patternMatch.isNot(), field, pattern, patternMatch.isCaseInsensitive());
+          }
+        }
 
       case InPredicate: {
         InPredicate inPredicate = (InPredicate) expr;

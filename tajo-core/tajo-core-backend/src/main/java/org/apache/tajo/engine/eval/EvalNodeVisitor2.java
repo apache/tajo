@@ -53,7 +53,11 @@ public interface EvalNodeVisitor2<CONTEXT, RESULT> {
   RESULT visitCaseWhen(CONTEXT context, Stack<EvalNode> stack, CaseWhenEval evalNode);
   RESULT visitIfThen(CONTEXT context, Stack<EvalNode> stack, CaseWhenEval.IfThenEval evalNode);
   RESULT visitInPredicate(CONTEXT context, Stack<EvalNode> stack, InEval evalNode);
-  RESULT visitLike(CONTEXT context, Stack<EvalNode> stack, LikeEval evalNode);
+
+  // Pattern matching predicates
+  RESULT visitLike(CONTEXT context, Stack<EvalNode> stack, LikePredicateEval evalNode);
+  RESULT visitSimilarTo(CONTEXT context, Stack<EvalNode> stack, SimilarToPredicateEval evalNode);
+  RESULT visitRegex(CONTEXT context, Stack<EvalNode> stack, RegexPredicateEval evalNode);
 
   // Functions
   RESULT visitFuncCall(CONTEXT context, Stack<EvalNode> stack, FuncCallEval evalNode);

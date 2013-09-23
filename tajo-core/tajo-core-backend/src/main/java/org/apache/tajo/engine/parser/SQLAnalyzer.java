@@ -21,6 +21,7 @@ package org.apache.tajo.engine.parser;
 import com.google.common.base.Preconditions;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
@@ -623,19 +624,56 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public LikePredicate visitLike_predicate(SQLParser.Like_predicateContext ctx) {
-    boolean not = ctx.NOT() != null;
-
-    ColumnReferenceExpr predicand = (ColumnReferenceExpr) visit(ctx.column_reference());
+  public Expr visitPattern_matching_predicate(SQLParser.Pattern_matching_predicateContext ctx) {
+    Expr predicand = visitChildren(ctx.numeric_primary());
     Expr pattern = new LiteralValue(stripQuote(ctx.Character_String_Literal().getText()),
         LiteralType.String);
-    return new LikePredicate(not, predicand, pattern);
+
+    if (checkIfExist(ctx.pattern_matcher().negativable_matcher())) {
+      boolean not = ctx.pattern_matcher().NOT() != null;
+      Negativable_matcherContext matcher = ctx.pattern_matcher().negativable_matcher();
+      if (checkIfExist(matcher.LIKE())) {
+        return new PatternMatchPredicate(OpType.LikePredicate, not, predicand, pattern);
+      } else if (checkIfExist(matcher.ILIKE())) {
+        return new PatternMatchPredicate(OpType.LikePredicate, not, predicand, pattern, true);
+      } else if (checkIfExist(matcher.SIMILAR())) {
+        return new PatternMatchPredicate(OpType.SimilarToPredicate, not, predicand, pattern);
+      } else if (checkIfExist(matcher.REGEXP()) || checkIfExist(matcher.RLIKE())) {
+        return new PatternMatchPredicate(OpType.Regexp, not, predicand, pattern);
+      } else {
+        throw new SQLSyntaxError("Unsupported predicate: " + matcher.getText());
+      }
+    } else if (checkIfExist(ctx.pattern_matcher().regex_matcher())) {
+      Regex_matcherContext matcher = ctx.pattern_matcher().regex_matcher();
+      if (checkIfExist(matcher.Similar_To())) {
+        return new PatternMatchPredicate(OpType.Regexp, false, predicand, pattern, false);
+      } else if (checkIfExist(matcher.Not_Similar_To())) {
+        return new PatternMatchPredicate(OpType.Regexp, true, predicand, pattern, false);
+      } else if (checkIfExist(matcher.Similar_To_Case_Insensitive())) {
+        return new PatternMatchPredicate(OpType.Regexp, false, predicand, pattern, true);
+      } else if (checkIfExist(matcher.Not_Similar_To_Case_Insensitive())) {
+        return new PatternMatchPredicate(OpType.Regexp, true, predicand, pattern, true);
+      } else {
+        throw new SQLSyntaxError("Unsupported predicate: " + matcher.getText());
+      }
+    } else {
+      throw new SQLSyntaxError("Unsupported predicate: " + ctx.pattern_matcher().getText());
+    }
   }
 
   @Override
   public IsNullPredicate visitNull_predicate(SQLParser.Null_predicateContext ctx) {
     ColumnReferenceExpr predicand = (ColumnReferenceExpr) visit(ctx.numeric_value_expression());
     return new IsNullPredicate(ctx.NOT() != null, predicand);
+  }
+
+  @Override
+  public Expr visitLiteral(@NotNull SQLParser.LiteralContext ctx) {
+    if (checkIfExist(ctx.NULL())) {
+      return new NullValue();
+    } else {
+      return visitChildren(ctx);
+    }
   }
 
   @Override

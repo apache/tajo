@@ -64,9 +64,13 @@ public enum OpType {
   CaseWhen(CaseWhenPredicate.class),
   IsNullPredicate(IsNullPredicate.class),
   InPredicate(InPredicate.class),
-  LikePredicate(LikePredicate.class),
   ValueList(ValueListExpr.class),
   Is,
+
+  // pattern matching predicates
+  LikePredicate(PatternMatchPredicate.class),
+  SimilarToPredicate(PatternMatchPredicate.class),
+  Regexp(PatternMatchPredicate.class),
 
   // arithmetic operators
   Plus(BinaryOperator.class),

@@ -20,46 +20,44 @@ package org.apache.tajo.engine.eval;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.BooleanDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
-public class LikeEval extends BinaryEval {
-  @Expose private boolean not;
-  @Expose private Column column;
-  @Expose private String pattern;
-  private static final DataType [] RES_TYPE =
-      CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
+public abstract class PatternMatchPredicateEval extends BinaryEval {
+  private static final DataType [] RES_TYPE = CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
 
-  // temporal variables
-  private Integer fieldId = null;
-  private Pattern compiled;
+  @Expose protected boolean not;
+  @Expose protected String pattern;
+  @Expose protected boolean caseInsensitive;
+
+  // transient variables
+  private EvalContext leftContext;
+  private boolean isNullResult = false;
   private BooleanDatum result;
+  protected Pattern compiled;
 
-  
-  public LikeEval(boolean not, FieldEval field, ConstEval pattern) {
-    super(EvalType.LIKE, field, pattern);
+  public PatternMatchPredicateEval(EvalType evalType, boolean not, EvalNode predicand, ConstEval pattern,
+                                   boolean caseInsensitive) {
+    super(evalType, predicand, pattern);
     this.not = not;
-    this.column = field.getColumnRef();
     this.pattern = pattern.getValue().asChars();
+    this.caseInsensitive = caseInsensitive;
   }
-  
-  public void compile(String pattern) {
-    String regex = pattern.replace("?", ".");
-    regex = regex.replace("%", ".*");
-    
-    this.compiled = Pattern.compile(regex,
-        Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-    result = DatumFactory.createBool(false);
+
+  public PatternMatchPredicateEval(EvalType evalType, boolean not, EvalNode field, ConstEval pattern) {
+    this(evalType, not, field, pattern, false);
   }
+
+  abstract void compile(String pattern) throws PatternSyntaxException;
 
   @Override
   public DataType [] getValueType() {
@@ -73,24 +71,20 @@ public class LikeEval extends BinaryEval {
 
   @Override
   public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    if (fieldId == null) {
-      fieldId = schema.getColumnId(column.getQualifiedName());
+    if (leftContext == null) {
+      leftContext = leftExpr.newContext();
+      result = DatumFactory.createBool(false);
       compile(this.pattern);
-    }    
-    TextDatum str = tuple.getString(fieldId);
-    if (not) {
-      result.setValue(!compiled.matcher(str.asChars()).matches());      
-    } else {
-      result.setValue(compiled.matcher(str.asChars()).matches());
     }
+
+    leftExpr.eval(leftContext, schema, tuple);
+    Datum predicand = leftExpr.terminate(leftContext);
+    isNullResult = predicand instanceof NullDatum;
+    boolean matched = compiled.matcher(predicand.asChars()).matches();
+    result.setValue(matched ^ not);
   }
 
   public Datum terminate(EvalContext ctx) {
-    return result;
-  }
-  
-  @Override
-  public String toString() {
-    return this.column + " like '" + pattern +"'";
+    return !isNullResult ? result : NullDatum.get();
   }
 }

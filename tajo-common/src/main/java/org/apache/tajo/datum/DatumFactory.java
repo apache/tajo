@@ -98,7 +98,7 @@ public class DatumFactory {
   }
   
   public static BooleanDatum createBool(String val) {
-    boolean boolVal = val.equalsIgnoreCase("true");
+    boolean boolVal = val.equalsIgnoreCase("t");
     return new BooleanDatum(boolVal);
   }
   
