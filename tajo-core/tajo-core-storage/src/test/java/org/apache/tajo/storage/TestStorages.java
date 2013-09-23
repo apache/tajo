@@ -44,6 +44,7 @@ import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class TestStorages {
@@ -170,7 +171,7 @@ public class TestStorages {
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
       if (storeType == StoreType.RCFILE || storeType == StoreType.TREVNI || storeType == StoreType.CSV) {
-        assertNull(tuple.get(0));
+        assertTrue(tuple.get(0) == null || tuple.get(0) instanceof NullDatum);
       }
       assertEquals(DatumFactory.createInt8(tupleCnt + 2), tuple.getLong(1));
       assertEquals(DatumFactory.createFloat4(tupleCnt + 3), tuple.getFloat(2));

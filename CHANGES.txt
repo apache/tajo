@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-185: Implement split_part function. (hyunsik)
+
     TAJO-193: Add string pattern matching operators. (hyunsik)
 
     TAJO-101: HiveQL converter. (jaehwa)

@@ -38,12 +38,14 @@ import org.apache.hadoop.yarn.service.Service;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.Country;
 import org.apache.tajo.engine.function.InCountry;
 import org.apache.tajo.engine.function.builtin.*;
+import org.apache.tajo.engine.function.string.SplitPart;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.master.rm.YarnTajoResourceManager;
@@ -299,6 +301,11 @@ public class TajoMaster extends CompositeService {
         new FunctionDesc("random", RandomInt.class, FunctionType.GENERAL,
             CatalogUtil.newDataTypesWithoutLen(Type.INT4),
             CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("split_part", SplitPart.class, FunctionType.GENERAL,
+            CatalogUtil.newDataTypesWithoutLen(Type.TEXT),
+            CatalogUtil.newDataTypesWithoutLen(Type.TEXT, Type.TEXT, Type.INT4)));
 
     return sqlFuncs;
   }

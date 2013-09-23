@@ -124,6 +124,14 @@ public class TestLazyTuple {
     assertTrue(t1.getFloat(11).asFloat4() == 0.76f);
   }
 
+  public VTuple createVTuple(int size) {
+    VTuple vtuple = new VTuple(size);
+    for (int i = 0; i < size; i++) {
+      vtuple.put(i, NullDatum.get());
+    }
+    return vtuple;
+  }
+
   @Test
   public void testEquals() {
     int colNum = schema.getColumnNum();
@@ -140,7 +148,7 @@ public class TestLazyTuple {
 
     assertEquals(t1, t2);
 
-    Tuple t3 = new VTuple(colNum);
+    Tuple t3 = createVTuple(colNum);
     t3.put(0, DatumFactory.createInt4(1));
     t3.put(1, DatumFactory.createInt4(2));
     t3.put(3, DatumFactory.createInt4(2));
@@ -169,7 +177,7 @@ public class TestLazyTuple {
 
     assertEquals(t1.hashCode(), t2.hashCode());
 
-    Tuple t3 = new VTuple(colNum);
+    Tuple t3 = createVTuple(colNum);
     t3.put(0, DatumFactory.createInt4(1));
     t3.put(1, DatumFactory.createInt4(2));
     t3.put(3, DatumFactory.createInt4(2));

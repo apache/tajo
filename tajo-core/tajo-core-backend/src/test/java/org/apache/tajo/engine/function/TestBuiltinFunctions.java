@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.function;
 
 import com.google.common.collect.Maps;
+import org.apache.tajo.client.ResultSetUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,6 +32,7 @@ import java.sql.ResultSet;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
@@ -131,5 +133,47 @@ public class TestBuiltinFunctions {
     } finally {
       res.close();
     }
+  }
+
+  @Test
+  public void testSplitPart() throws Exception {
+    ResultSet res = tpch.execute("select split_part(l_shipinstruct, ' ', 0) from lineitem");
+
+    String [] result ={
+      "DELIVER",
+      "TAKE",
+      "TAKE",
+      "NONE",
+      "TAKE"
+    };
+
+    for (int i = 0; i < result.length; i++) {
+      assertTrue(res.next());
+      assertEquals(result[i], res.getString(1));
+    }
+    assertFalse(res.next());
+
+    res.close();
+  }
+
+  @Test
+  public void testSplitPartNested() throws Exception {
+    ResultSet res = tpch.execute("select split_part(split_part(l_shipinstruct, ' ', 0), 'A', 1) from lineitem");
+
+    String [] result ={
+        "",
+        "KE",
+        "KE",
+        "",
+        "KE"
+    };
+
+    for (int i = 0; i < result.length; i++) {
+      assertTrue(res.next());
+      assertEquals(result[i], res.getString(1));
+    }
+    assertFalse(res.next());
+
+    res.close();
   }
 }

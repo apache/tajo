@@ -20,13 +20,14 @@ package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.TableMetaImpl;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
@@ -35,9 +36,7 @@ import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.MergeScanner;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.FileUtil;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -49,7 +48,6 @@ import java.util.*;
 
 public class ResultSetImpl implements ResultSet {
   private final String cursorName = "tajo";
-  private Configuration conf;
   private FileSystem fs;
   private Scanner scanner;
   private TableDesc desc;
@@ -70,13 +68,12 @@ public class ResultSetImpl implements ResultSet {
   public ResultSetImpl(TajoClient tajoClient, QueryId queryId, Configuration conf, TableDesc desc) throws IOException {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
-    this.conf = conf;
     this.desc = desc;
     this.schema = desc.getMeta().getSchema();
     if(desc != null) {
       fs = desc.getPath().getFileSystem(conf);
       this.totalRow = desc.getMeta().getStat() != null ? desc.getMeta().getStat().getNumRows() : 0;
-      Collection<Fragment> frags = getFragmentsNG(desc.getMeta(), desc.getPath());
+      Collection<Fragment> frags = getFragments(desc.getMeta(), desc.getPath());
       scanner = new MergeScanner(conf, desc.getMeta(), frags);
     }
     init();
@@ -87,19 +84,6 @@ public class ResultSetImpl implements ResultSet {
     curRow = 0;
   }
 
-  private TableMeta getMeta(Configuration conf, Path tablePath)
-      throws IOException {
-    Path tableMetaPath = new Path(tablePath, ".meta");
-    if (!fs.exists(tableMetaPath)) {
-      throw new FileNotFoundException(".meta file not found in "
-          + tablePath.toString());
-    }
-    FSDataInputStream in = fs.open(tableMetaPath);
-    TableProto tableProto = (TableProto) FileUtil.loadProto(in,
-        TableProto.getDefaultInstance());
-    return new TableMetaImpl(tableProto);
-  }
-
   class FileNameComparator implements Comparator<FileStatus> {
 
     @Override
@@ -108,7 +92,7 @@ public class ResultSetImpl implements ResultSet {
     }
   }
 
-  private Collection<Fragment> getFragmentsNG(TableMeta meta, Path tablePath)
+  private Collection<Fragment> getFragments(TableMeta meta, Path tablePath)
       throws IOException {
     List<Fragment> fraglist = Lists.newArrayList();
     FileStatus[] files = fs.listStatus(tablePath, new PathFilter() {
@@ -127,22 +111,6 @@ public class ResultSetImpl implements ResultSet {
       fraglist.add(new Fragment(tbname + "_" + i, files[i].getPath(), meta, 0l, files[i].getLen()));
     }
     return fraglist;
-  }
-
-  private Fragment[] getFragments(TableMeta meta, Path tablePath)
-      throws IOException {
-    List<Fragment> fraglist = Lists.newArrayList();
-    FileStatus[] files = fs.listStatus(tablePath);
-    Arrays.sort(files, new FileNameComparator());
-
-    String tbname = tablePath.getName();
-    for (int i = 0; i < files.length; i++) {
-      if (files[i].getLen() == 0) {
-        continue;
-      }
-      fraglist.add(new Fragment(tbname + "_" + i, files[i].getPath(), meta, 0l, files[i].getLen()));
-    }
-    return fraglist.toArray(new Fragment[fraglist.size()]);
   }
 
   /*
