@@ -29,6 +29,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-197: Implement Enforcer that forces physical planner to choose
+    specified algorithms. (hyunsik)
+
     TAJO-194: LogicalNode should have an identifier to distinguish each
     logical node instance. (hyunsik)
 

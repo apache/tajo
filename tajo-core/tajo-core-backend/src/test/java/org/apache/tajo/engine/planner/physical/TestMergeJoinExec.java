@@ -32,8 +32,12 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.SortNode;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
@@ -43,6 +47,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -145,71 +150,27 @@ public class TestMergeJoinExec {
 
   @Test
   public final void testMergeInnerJoin() throws IOException, PlanningException {
-    Fragment[] empFrags = sm.splitNG(conf, "e", employee.getMeta(), employee.getPath(),
-        Integer.MAX_VALUE);
-    Fragment[] peopleFrags = sm.splitNG(conf, "p", people.getMeta(), people.getPath(),
-        Integer.MAX_VALUE);
+    Expr expr = analyzer.parse(QUERIES[0]);
+    LogicalPlan plan = planner.createPlan(expr);
+    LogicalNode root = plan.getRootBlock().getRoot();
 
+    JoinNode joinNode = PlannerUtil.findTopNode(root, NodeType.JOIN);
+    Enforcer enforcer = new Enforcer();
+    enforcer.addJoin(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);;
+
+    Fragment[] empFrags = sm.splitNG(conf, "e", employee.getMeta(), employee.getPath(), Integer.MAX_VALUE);
+    Fragment[] peopleFrags = sm.splitNG(conf, "p", people.getMeta(), people.getPath(), Integer.MAX_VALUE);
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testMergeInnerJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
-    Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalPlan plan = planner.createPlan(expr);
-    LogicalNode root = plan.getRootBlock().getRoot();
+    ctx.setEnforcer(enforcer);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, root);
-
     ProjectionExec proj = (ProjectionExec) exec;
-
-    // TODO - should be planed with user's optimization hint
-    if (!(proj.getChild() instanceof MergeJoinExec)) {
-      BinaryPhysicalExec nestedLoopJoin = (BinaryPhysicalExec) proj.getChild();
-      SeqScanExec outerScan = (SeqScanExec) nestedLoopJoin.getLeftChild();
-      SeqScanExec innerScan = (SeqScanExec) nestedLoopJoin.getRightChild();
-
-      SeqScanExec tmp;
-      if (!outerScan.getTableName().equals("employee")) {
-        tmp = outerScan;
-        outerScan = innerScan;
-        innerScan = tmp;
-      }
-
-      SortSpec[] outerSortKeys = new SortSpec[2];
-      SortSpec[] innerSortKeys = new SortSpec[2];
-
-      Schema employeeSchema = catalog.getTableDesc("employee").getMeta()
-          .getSchema();
-      employeeSchema.setQualifier("e", true);
-      outerSortKeys[0] = new SortSpec(
-          employeeSchema.getColumnByName("empId"));
-      outerSortKeys[1] = new SortSpec(
-          employeeSchema.getColumnByName("memId"));
-      SortNode outerSort = new SortNode(plan.newPID(), outerSortKeys);
-      outerSort.setInSchema(outerScan.getSchema());
-      outerSort.setOutSchema(outerScan.getSchema());
-
-      Schema peopleSchema = catalog.getTableDesc("people").getMeta().getSchema();
-      peopleSchema.setQualifier("p", true);
-      innerSortKeys[0] = new SortSpec(
-          peopleSchema.getColumnByName("empId"));
-      innerSortKeys[1] = new SortSpec(
-          peopleSchema.getColumnByName("fk_memid"));
-      SortNode innerSort = new SortNode(plan.newPID(), innerSortKeys);
-      innerSort.setInSchema(innerScan.getSchema());
-      innerSort.setOutSchema(innerScan.getSchema());
-
-      MemSortExec outerSortExec = new MemSortExec(ctx, outerSort, outerScan);
-      MemSortExec innerSortExec = new MemSortExec(ctx, innerSort, innerScan);
-
-      MergeJoinExec mergeJoin = new MergeJoinExec(ctx,
-          ((HashJoinExec)nestedLoopJoin).getPlan(), outerSortExec, innerSortExec,
-          outerSortKeys, innerSortKeys);
-      proj.setChild(mergeJoin);
-      exec = proj;
-    }
+    assertTrue(proj.getChild() instanceof MergeJoinExec);
 
     Tuple tuple;
     int count = 0;

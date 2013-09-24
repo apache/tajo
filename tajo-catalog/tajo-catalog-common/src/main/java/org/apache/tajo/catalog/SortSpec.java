@@ -19,11 +19,14 @@
 package org.apache.tajo.catalog;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
+import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.json.GsonObject;
+
+import static org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 
 
-public class SortSpec implements Cloneable, GsonObject {
+public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProto> {
   @Expose private Column sortKey;
   @Expose private boolean ascending = true;
   @Expose private boolean nullFirst = false;
@@ -43,6 +46,12 @@ public class SortSpec implements Cloneable, GsonObject {
     this(sortKey);
     this.ascending = asc;
     this.nullFirst = nullFirst;
+  }
+
+  public SortSpec(SortSpecProto sortSpec) {
+    this.sortKey = new Column(sortSpec.getColumn());
+    this.ascending = sortSpec.getAscending();
+    this.nullFirst = sortSpec.getNullFirst();
   }
 
   public final boolean isAscending() {
@@ -93,7 +102,15 @@ public class SortSpec implements Cloneable, GsonObject {
   }
 
   public String toString() {
-    return "Sortkey (key="+sortKey
-        + " "+(ascending ? "asc" : "desc")+")";
+    return "Sortkey (key="+sortKey + " "+(ascending ? "asc" : "desc")+")";
+  }
+
+  @Override
+  public SortSpecProto getProto() {
+    SortSpecProto.Builder builder = SortSpecProto.newBuilder();
+    builder.setColumn(sortKey.getProto());
+    builder.setAscending(ascending);
+    builder.setNullFirst(nullFirst);
+    return builder.build();
   }
 }

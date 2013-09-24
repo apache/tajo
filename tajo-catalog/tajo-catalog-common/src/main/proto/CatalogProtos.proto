@@ -207,8 +207,14 @@ message ServerNameProto {
   required int32 port = 3;
 }
 
+message TupleComparatorSpecProto {
+  required int32 columnId = 1;
+  optional bool ascending = 2 [default = true];
+  optional bool nullFirst = 3 [default = false];
+}
+
 message SortSpecProto {
-  required int32 sortColumnId = 1;
+  required ColumnProto column = 1;
   optional bool ascending = 2 [default = true];
   optional bool nullFirst = 3 [default = false];
 }

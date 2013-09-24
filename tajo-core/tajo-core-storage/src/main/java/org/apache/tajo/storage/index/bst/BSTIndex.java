@@ -31,7 +31,6 @@ import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.index.IndexMethod;
-import org.apache.tajo.storage.index.IndexProtos.TupleComparatorProto;
 import org.apache.tajo.storage.index.IndexWriter;
 import org.apache.tajo.storage.index.OrderIndexReader;
 
@@ -41,6 +40,8 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeMap;
+
+import static org.apache.tajo.index.IndexProtos.TupleComparatorProto;
 
 /**
  * This is two-level binary search tree index. This is one of the value-list 

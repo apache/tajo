@@ -21,13 +21,14 @@ package org.apache.tajo.storage;
 import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.storage.index.IndexProtos.TupleComparatorProto;
 
 import java.util.Comparator;
+
+import static org.apache.tajo.catalog.proto.CatalogProtos.TupleComparatorSpecProto;
+import static org.apache.tajo.index.IndexProtos.TupleComparatorProto;
 
 /**
  * The Comparator class for Tuples
@@ -47,7 +48,7 @@ public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComp
   public TupleComparator(Schema schema, SortSpec[] sortKeys) {
     Preconditions.checkArgument(sortKeys.length > 0, 
         "At least one sort key must be specified.");
-    
+
     this.sortKeyIds = new int[sortKeys.length];
     this.asc = new boolean[sortKeys.length];
     this.nullFirsts = new boolean[sortKeys.length];
@@ -60,13 +61,13 @@ public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComp
   }
 
   public TupleComparator(TupleComparatorProto proto) {
-    this.sortKeyIds = new int[proto.getSortSpecsCount()];
-    this.asc = new boolean[proto.getSortSpecsCount()];
-    this.nullFirsts = new boolean[proto.getSortSpecsCount()];
+    this.sortKeyIds = new int[proto.getCompSpecsCount()];
+    this.asc = new boolean[proto.getCompSpecsCount()];
+    this.nullFirsts = new boolean[proto.getCompSpecsCount()];
 
-    for (int i = 0; i < proto.getSortSpecsCount(); i++) {
-      SortSpecProto sortSepcProto = proto.getSortSpecs(i);
-      sortKeyIds[i] = sortSepcProto.getSortColumnId();
+    for (int i = 0; i < proto.getCompSpecsCount(); i++) {
+      TupleComparatorSpecProto sortSepcProto = proto.getCompSpecs(i);
+      sortKeyIds[i] = sortSepcProto.getColumnId();
       asc[i] = sortSepcProto.getAscending();
       nullFirsts[i] = sortSepcProto.getNullFirst();
     }
@@ -137,14 +138,14 @@ public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComp
   @Override
   public TupleComparatorProto getProto() {
     TupleComparatorProto.Builder builder = TupleComparatorProto.newBuilder();
-    SortSpecProto.Builder sortSpecBuilder;
+    TupleComparatorSpecProto.Builder sortSpecBuilder;
 
     for (int i = 0; i < sortKeyIds.length; i++) {
-      sortSpecBuilder = SortSpecProto.newBuilder();
-      sortSpecBuilder.setSortColumnId(sortKeyIds[i]);
+      sortSpecBuilder = TupleComparatorSpecProto.newBuilder();
+      sortSpecBuilder.setColumnId(sortKeyIds[i]);
       sortSpecBuilder.setAscending(asc[i]);
       sortSpecBuilder.setNullFirst(nullFirsts[i]);
-      builder.addSortSpecs(sortSpecBuilder);
+      builder.addCompSpecs(sortSpecBuilder);
     }
 
     return builder.build();

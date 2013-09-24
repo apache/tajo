@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.storage.Fragment;
 
 import java.io.File;
@@ -55,6 +56,7 @@ public class TaskAttemptContext {
   private boolean interQuery = false;
   private Path outputPath;
   private DataChannel dataChannel;
+  private Enforcer enforcer;
 
   public TaskAttemptContext(TajoConf conf, final QueryUnitAttemptId queryId,
                             final Fragment[] fragments,
@@ -97,6 +99,14 @@ public class TaskAttemptContext {
 
   public DataChannel getDataChannel() {
     return dataChannel;
+  }
+
+  public void setEnforcer(Enforcer enforcer) {
+    this.enforcer = enforcer;
+  }
+
+  public Enforcer getEnforcer() {
+    return this.enforcer;
   }
 
   public boolean hasResultStats() {

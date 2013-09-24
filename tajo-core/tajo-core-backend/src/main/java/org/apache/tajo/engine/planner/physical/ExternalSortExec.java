@@ -47,8 +47,7 @@ public class ExternalSortExec extends SortExec {
   public ExternalSortExec(final TaskAttemptContext context,
       final AbstractStorageManager sm, final SortNode plan, final PhysicalExec child)
       throws IOException {
-    super(context, plan.getInSchema(), plan.getOutSchema(), child,
-        plan.getSortKeys());
+    super(context, plan.getInSchema(), plan.getOutSchema(), child, plan.getSortKeys());
     this.plan = plan;
 
     this.SORT_BUFFER_SIZE = context.getConf().getIntVar(ConfVars.EXT_SORT_BUFFER);

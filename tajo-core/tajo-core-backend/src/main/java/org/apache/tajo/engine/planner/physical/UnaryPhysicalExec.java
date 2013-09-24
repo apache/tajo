@@ -34,8 +34,8 @@ public abstract class UnaryPhysicalExec extends PhysicalExec {
     this.child = child;
   }
 
-  public PhysicalExec getChild() {
-    return this.child;
+  public <T extends PhysicalExec> T getChild() {
+    return (T) this.child;
   }
 
   @VisibleForTesting

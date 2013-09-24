@@ -37,8 +37,7 @@ public class MemSortExec extends SortExec {
   
   public MemSortExec(final TaskAttemptContext context,
                      SortNode plan, PhysicalExec child) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), child,
-        plan.getSortKeys());
+    super(context, plan.getInSchema(), plan.getOutSchema(), child, plan.getSortKeys());
     this.plan = plan;
   }
 

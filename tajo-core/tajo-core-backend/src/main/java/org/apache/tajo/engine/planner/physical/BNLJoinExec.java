@@ -35,6 +35,7 @@ import java.util.List;
 
 public class BNLJoinExec extends BinaryPhysicalExec {
   // from logical plan
+  private JoinNode plan;
   private EvalNode joinQual;
   private EvalContext qualCtx;
 
@@ -57,11 +58,12 @@ public class BNLJoinExec extends BinaryPhysicalExec {
   // projection
   private final int[] targetIds;
 
-  public BNLJoinExec(final TaskAttemptContext context, final JoinNode join,
+  public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
                      final PhysicalExec outer, PhysicalExec inner) {
     super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
         SchemaUtil.merge(outer.getSchema(), inner.getSchema()), outer, inner);
-    this.joinQual = join.getJoinQual();
+    this.plan = plan;
+    this.joinQual = plan.getJoinQual();
     if (joinQual != null) { // if join type is not 'cross join'
       this.qualCtx = this.joinQual.newContext();
     }
@@ -78,6 +80,10 @@ public class BNLJoinExec extends BinaryPhysicalExec {
     // for join
     frameTuple = new FrameTuple();
     outputTuple = new VTuple(outSchema.getColumnNum());
+  }
+
+  public JoinNode getPlan() {
+    return plan;
   }
 
   public Tuple next() throws IOException {

@@ -30,12 +30,12 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.LogicalPlanner;
-import org.apache.tajo.engine.planner.PhysicalPlanner;
-import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
-import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
@@ -45,6 +45,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -134,29 +135,27 @@ public class TestBNLJoinExec {
 
   @Test
   public final void testBNLCrossJoin() throws IOException, PlanningException {
+    Expr expr = analyzer.parse(QUERIES[0]);
+    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+    JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
+    Enforcer enforcer = new Enforcer();
+    enforcer.addJoin(joinNode.getPID(), JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN);
+
     Fragment[] empFrags = StorageManager.splitNG(conf, "e", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Fragment[] peopleFrags = StorageManager.splitNG(conf, "p", people.getMeta(), people.getPath(),
         Integer.MAX_VALUE);
-
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
-
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBNLCrossJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf,
         LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
-    Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
+    ctx.setEnforcer(enforcer);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    NLJoinExec nlJoin = (NLJoinExec) proj.getChild();
-    SeqScanExec scanOuter = (SeqScanExec) nlJoin.getLeftChild();
-    SeqScanExec scanInner = (SeqScanExec) nlJoin.getRightChild();
-
-    BNLJoinExec bnl = new BNLJoinExec(ctx, nlJoin.getPlan(), scanOuter, scanInner);
-    proj.setChild(bnl);
+    assertTrue(proj.getChild() instanceof BNLJoinExec);
 
     int i = 0;
     exec.init();
@@ -169,45 +168,31 @@ public class TestBNLJoinExec {
 
   @Test
   public final void testBNLInnerJoin() throws IOException, PlanningException {
+    Expr context = analyzer.parse(QUERIES[1]);
+    LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
+
     Fragment[] empFrags = StorageManager.splitNG(conf, "e", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Fragment[] peopleFrags = StorageManager.splitNG(conf, "p", people.getMeta(), people.getPath(),
         Integer.MAX_VALUE);
-
     Fragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
+
+    JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
+    Enforcer enforcer = new Enforcer();
+    enforcer.addJoin(joinNode.getPID(), JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN);
+
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBNLInnerJoin");
-    TaskAttemptContext ctx =
-        new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
-            merged, workDir);
-    Expr context = analyzer.parse(QUERIES[1]);
-    LogicalNode plan = planner.createPlan(context).getRootBlock().getRoot();
+    TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),
+        merged, workDir);
+    ctx.setEnforcer(enforcer);
+
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    SeqScanExec scanOuter = null;
-    SeqScanExec scanInner = null;
-
     ProjectionExec proj = (ProjectionExec) exec;
-    JoinNode joinNode = null;
-    if (proj.getChild() instanceof MergeJoinExec) {
-      MergeJoinExec join = (MergeJoinExec) proj.getChild();
-      ExternalSortExec sortOut = (ExternalSortExec) join.getLeftChild();
-      ExternalSortExec sortIn = (ExternalSortExec) join.getRightChild();
-      scanOuter = (SeqScanExec) sortOut.getChild();
-      scanInner = (SeqScanExec) sortIn.getChild();
-      joinNode = join.getPlan();
-    } else if (proj.getChild() instanceof HashJoinExec) {
-      HashJoinExec join = (HashJoinExec) proj.getChild();
-      scanOuter = (SeqScanExec) join.getLeftChild();
-      scanInner = (SeqScanExec) join.getRightChild();
-      joinNode = join.getPlan();
-    }
-
-    BNLJoinExec bnl = new BNLJoinExec(ctx, joinNode, scanOuter,
-        scanInner);
-    proj.setChild(bnl);
+    assertTrue(proj.getChild() instanceof BNLJoinExec);
 
     Tuple tuple;
     int i = 1;

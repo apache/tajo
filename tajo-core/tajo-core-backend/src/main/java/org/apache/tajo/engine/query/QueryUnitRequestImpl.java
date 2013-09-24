@@ -20,6 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.DataChannel;
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.ipc.TajoWorkerProtocol.Fetch;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProtoOrBuilder;
@@ -44,6 +45,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
   private Boolean shouldDie;
   private QueryContext queryContext;
   private DataChannel dataChannel;
+  private Enforcer enforcer;
 	
 	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
 	private QueryUnitRequestProto.Builder builder = null;
@@ -57,9 +59,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
 	public QueryUnitRequestImpl(QueryUnitAttemptId id, List<Fragment> fragments,
 			String outputTable, boolean clusteredOutput,
-			String serializedData, QueryContext queryContext, DataChannel channel) {
+			String serializedData, QueryContext queryContext, DataChannel channel, Enforcer enforcer) {
 		this();
-		this.set(id, fragments, outputTable, clusteredOutput, serializedData, queryContext, channel);
+		this.set(id, fragments, outputTable, clusteredOutput, serializedData, queryContext, channel, enforcer);
 	}
 	
 	public QueryUnitRequestImpl(QueryUnitRequestProto proto) {
@@ -71,7 +73,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	
 	public void set(QueryUnitAttemptId id, List<Fragment> fragments,
 			String outputTable, boolean clusteredOutput,
-			String serializedData, QueryContext queryContext, DataChannel dataChannel) {
+			String serializedData, QueryContext queryContext, DataChannel dataChannel, Enforcer enforcer) {
 		this.id = id;
 		this.fragments = fragments;
 		this.outputTable = outputTable;
@@ -81,6 +83,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     this.queryContext = queryContext;
     this.queryContext = queryContext;
     this.dataChannel = dataChannel;
+    this.enforcer = enforcer;
 	}
 
 	@Override
@@ -214,14 +217,27 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     if (dataChannel != null) {
       return dataChannel;
     }
-    if (!p.hasQueryContext()) {
+    if (!p.hasDataChannel()) {
       return null;
     }
     this.dataChannel = new DataChannel(p.getDataChannel());
     return this.dataChannel;
   }
-	
-	public List<Fetch> getFetches() {
+
+  @Override
+  public Enforcer getEnforcer() {
+    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    if (enforcer != null) {
+      return enforcer;
+    }
+    if (!p.hasEnforcer()) {
+      return null;
+    }
+    this.enforcer = new Enforcer(p.getEnforcer());
+    return this.enforcer;
+  }
+
+  public List<Fetch> getFetches() {
 	  initFetches();    
 
     return this.fetches;
@@ -296,6 +312,9 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     }
     if (this.dataChannel != null) {
       builder.setDataChannel(dataChannel.getProto());
+    }
+    if (this.enforcer != null) {
+      builder.setEnforcer(enforcer.getProto());
     }
 	}
 

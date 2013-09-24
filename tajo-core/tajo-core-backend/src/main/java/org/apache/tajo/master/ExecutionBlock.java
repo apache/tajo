@@ -16,6 +16,7 @@ package org.apache.tajo.master;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.*;
 
 import java.util.*;
@@ -37,6 +38,7 @@ public class ExecutionBlock {
   private ExecutionBlock parent;
   private Map<ScanNode, ExecutionBlock> childSubQueries = new HashMap<ScanNode, ExecutionBlock>();
   private PartitionType outputType;
+  private Enforcer enforcer = new Enforcer();
 
   private boolean hasJoinPlan;
   private boolean hasUnionPlan;
@@ -49,10 +51,6 @@ public class ExecutionBlock {
 
   public ExecutionBlockId getId() {
     return executionBlockId;
-  }
-
-  public void setPartitionType(PartitionType partitionType) {
-    this.outputType = partitionType;
   }
 
   public PartitionType getPartitionType() {
@@ -94,6 +92,10 @@ public class ExecutionBlock {
 
   public LogicalNode getPlan() {
     return plan;
+  }
+
+  public Enforcer getEnforcer() {
+    return enforcer;
   }
 
   public boolean isRoot() {

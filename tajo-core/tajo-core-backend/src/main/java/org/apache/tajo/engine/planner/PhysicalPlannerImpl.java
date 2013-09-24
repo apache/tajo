@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.exception.InternalException;
@@ -40,8 +41,12 @@ import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.util.IndexUtil;
 
 import java.io.IOException;
+import java.util.List;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.GroupbyEnforce.GroupbyAlgorithm;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
 
 public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(PhysicalPlannerImpl.class);
@@ -63,7 +68,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     try {
       execPlan = createPlanRecursive(context, logicalPlan);
-      if (execPlan instanceof StoreTableExec || execPlan instanceof IndexedStoreExec
+      if (execPlan instanceof StoreTableExec
+          || execPlan instanceof IndexedStoreExec
           || execPlan instanceof PartitionedStoreExec) {
         return execPlan;
       } else if (context.getDataChannel() != null) {
@@ -181,58 +187,140 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return size;
   }
 
-  public PhysicalExec createJoinPlan(TaskAttemptContext ctx, JoinNode joinNode,
-                                     PhysicalExec outer, PhysicalExec inner)
-      throws IOException {
+  public PhysicalExec createJoinPlan(TaskAttemptContext context, JoinNode joinNode, PhysicalExec leftExec,
+                                     PhysicalExec rightExec) throws IOException {
+
     switch (joinNode.getJoinType()) {
       case CROSS:
         LOG.info("The planner chooses [Nested Loop Join]");
-        return new NLJoinExec(ctx, joinNode, outer, inner);
+        return createCrossJoinPlan(context, joinNode, leftExec, rightExec);
 
       case INNER:
-        String [] outerLineage = PlannerUtil.getLineage(joinNode.getLeftChild());
-        String [] innerLineage = PlannerUtil.getLineage(joinNode.getRightChild());
-        long outerSize = estimateSizeRecursive(ctx, outerLineage);
-        long innerSize = estimateSizeRecursive(ctx, innerLineage);
+        return createInnerJoinPlan(context, joinNode, leftExec, rightExec);
 
-        final long threshold = 1048576 * 128; // 64MB
+      case FULL_OUTER:
+      case LEFT_OUTER:
+      case RIGHT_OUTER:
 
-        boolean hashJoin = false;
-        if (outerSize < threshold || innerSize < threshold) {
-          hashJoin = true;
-        }
+      case LEFT_SEMI:
+      case RIGHT_SEMI:
 
-        if (hashJoin) {
-          PhysicalExec selectedOuter;
-          PhysicalExec selectedInner;
-
-          // HashJoinExec loads the inner relation to memory.
-          if (outerSize <= innerSize) {
-            selectedInner = outer;
-            selectedOuter = inner;
-          } else {
-            selectedInner = inner;
-            selectedOuter = outer;
-          }
-
-          LOG.info("The planner chooses [InMemory Hash Join]");
-          return new HashJoinExec(ctx, joinNode, selectedOuter, selectedInner);
-        }
+      case LEFT_ANTI:
+      case RIGHT_ANTI:
 
       default:
-        SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(
-            joinNode.getJoinQual(), outer.getSchema(), inner.getSchema());
-        ExternalSortExec outerSort = new ExternalSortExec(ctx, sm,
-            new SortNode(UNGENERATED_PID, sortSpecs[0], outer.getSchema(), outer.getSchema()),
-            outer);
-        ExternalSortExec innerSort = new ExternalSortExec(ctx, sm,
-            new SortNode(UNGENERATED_PID, sortSpecs[1], inner.getSchema(), inner.getSchema()),
-            inner);
-
-        LOG.info("The planner chooses [Merge Join]");
-        return new MergeJoinExec(ctx, joinNode, outerSort, innerSort,
-            sortSpecs[0], sortSpecs[1]);
+        throw new PhysicalPlanningException("Cannot support join type: " + joinNode.getJoinType().name());
     }
+  }
+
+  private PhysicalExec createCrossJoinPlan(TaskAttemptContext context, JoinNode plan,
+                                           PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
+    Enforcer enforcer = context.getEnforcer();
+    EnforceProperty property = getAlgorithmEnforceProperty(enforcer, plan);
+
+    if (property != null) {
+      JoinAlgorithm algorithm = property.getJoin().getAlgorithm();
+
+      switch (algorithm) {
+        case NESTED_LOOP_JOIN:
+          LOG.info("Join (" + plan.getPID() +") chooses [Nested Loop Join]");
+          return new NLJoinExec(context, plan, leftExec, rightExec);
+        case BLOCK_NESTED_LOOP_JOIN:
+          LOG.info("Join (" + plan.getPID() +") chooses [Block Nested Loop Join]");
+          return new BNLJoinExec(context, plan, leftExec, rightExec);
+        default:
+          // fallback algorithm
+          LOG.error("Invalid Cross Join Algorithm Enforcer: " + algorithm.name());
+          return new BNLJoinExec(context, plan, leftExec, rightExec);
+      }
+
+    } else {
+      return new BNLJoinExec(context, plan, leftExec, rightExec);
+    }
+  }
+
+  private PhysicalExec createInnerJoinPlan(TaskAttemptContext context, JoinNode plan,
+                                           PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
+    Enforcer enforcer = context.getEnforcer();
+    EnforceProperty property = getAlgorithmEnforceProperty(enforcer, plan);
+
+    if (property != null) {
+      JoinAlgorithm algorithm = property.getJoin().getAlgorithm();
+
+      switch (algorithm) {
+        case NESTED_LOOP_JOIN:
+          LOG.info("Join (" + plan.getPID() +") chooses [Nested Loop Join]");
+          return new NLJoinExec(context, plan, leftExec, rightExec);
+        case BLOCK_NESTED_LOOP_JOIN:
+          LOG.info("Join (" + plan.getPID() +") chooses [Block Nested Loop Join]");
+          return new BNLJoinExec(context, plan, leftExec, rightExec);
+        case IN_MEMORY_HASH_JOIN:
+          LOG.info("Join (" + plan.getPID() +") chooses [In-memory Hash Join]");
+          return new HashJoinExec(context, plan, leftExec, rightExec);
+        case MERGE_JOIN:
+          LOG.info("Join (" + plan.getPID() +") chooses [Sort Merge Join]");
+          return createMergeJoin(context, plan, leftExec, rightExec);
+        case HYBRID_HASH_JOIN:
+
+        default:
+          LOG.error("Invalid Inner Join Algorithm Enforcer: " + algorithm.name());
+          LOG.error("Choose a fallback inner join algorithm: " + JoinAlgorithm.MERGE_JOIN.name());
+          return createMergeJoin(context, plan, leftExec, rightExec);
+      }
+
+
+    } else {
+      return createBestInnerJoinPlan(context, plan, leftExec, rightExec);
+    }
+  }
+
+  private PhysicalExec createBestInnerJoinPlan(TaskAttemptContext context, JoinNode plan,
+                                               PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
+    String [] leftLineage = PlannerUtil.getLineage(plan.getLeftChild());
+    String [] rightLineage = PlannerUtil.getLineage(plan.getRightChild());
+    long leftSize = estimateSizeRecursive(context, leftLineage);
+    long rightSize = estimateSizeRecursive(context, rightLineage);
+
+    final long threshold = 1048576 * 128; // 64MB
+
+    boolean hashJoin = false;
+    if (leftSize < threshold || rightSize < threshold) {
+      hashJoin = true;
+    }
+
+    if (hashJoin) {
+      PhysicalExec selectedOuter;
+      PhysicalExec selectedInner;
+
+      // HashJoinExec loads the inner relation to memory.
+      if (leftSize <= rightSize) {
+        selectedInner = leftExec;
+        selectedOuter = rightExec;
+      } else {
+        selectedInner = rightExec;
+        selectedOuter = leftExec;
+      }
+
+      LOG.info("Join (" + plan.getPID() +") chooses [InMemory Hash Join]");
+      return new HashJoinExec(context, plan, selectedOuter, selectedInner);
+    } else {
+      return createMergeJoin(context, plan, leftExec, rightExec);
+    }
+  }
+
+  private MergeJoinExec createMergeJoin(TaskAttemptContext context, JoinNode plan,
+                                        PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
+    SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(
+        plan.getJoinQual(), leftExec.getSchema(), rightExec.getSchema());
+    ExternalSortExec outerSort = new ExternalSortExec(context, sm,
+        new SortNode(UNGENERATED_PID, sortSpecs[0], leftExec.getSchema(), leftExec.getSchema()),
+        leftExec);
+    ExternalSortExec innerSort = new ExternalSortExec(context, sm,
+        new SortNode(UNGENERATED_PID, sortSpecs[1], rightExec.getSchema(), rightExec.getSchema()),
+        rightExec);
+
+    LOG.info("Join (" + plan.getPID() +") chooses [Merge Join]");
+    return new MergeJoinExec(context, plan, outerSort, innerSort, sortSpecs[0], sortSpecs[1]);
   }
 
   public PhysicalExec createStorePlan(TaskAttemptContext ctx,
@@ -277,42 +365,94 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return new SeqScanExec(ctx, sm, scanNode, fragments);
   }
 
-  public PhysicalExec createGroupByPlan(TaskAttemptContext ctx,
-                                        GroupbyNode groupbyNode, PhysicalExec subOp) throws IOException {
+  public PhysicalExec createGroupByPlan(TaskAttemptContext context,GroupbyNode groupbyNode, PhysicalExec subOp)
+      throws IOException {
+
+    Enforcer enforcer = context.getEnforcer();
+    EnforceProperty property = getAlgorithmEnforceProperty(enforcer, groupbyNode);
+    if (property != null) {
+      GroupbyAlgorithm algorithm = property.getGroupby().getAlgorithm();
+      if (algorithm == GroupbyAlgorithm.HASH_AGGREGATION) {
+        return createInMemoryHashAggregation(context, groupbyNode, subOp);
+      } else {
+        return createSortAggregation(context, groupbyNode, subOp);
+      }
+    }
+    return createBestAggregationPlan(context, groupbyNode, subOp);
+  }
+
+  private PhysicalExec createInMemoryHashAggregation(TaskAttemptContext ctx,GroupbyNode groupbyNode, PhysicalExec subOp)
+      throws IOException {
+    LOG.info("The planner chooses [Hash Aggregation]");
+    return new HashAggregateExec(ctx, groupbyNode, subOp);
+  }
+
+  private PhysicalExec createSortAggregation(TaskAttemptContext ctx,GroupbyNode groupbyNode, PhysicalExec subOp)
+      throws IOException {
+    Column[] grpColumns = groupbyNode.getGroupingColumns();
+    SortSpec[] specs = new SortSpec[grpColumns.length];
+    for (int i = 0; i < grpColumns.length; i++) {
+      specs[i] = new SortSpec(grpColumns[i], true, false);
+    }
+    SortNode sortNode = new SortNode(-1, specs);
+    sortNode.setInSchema(subOp.getSchema());
+    sortNode.setOutSchema(subOp.getSchema());
+    // SortExec sortExec = new SortExec(sortNode, child);
+    ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
+    LOG.info("The planner chooses [Sort Aggregation]");
+    return new SortAggregateExec(ctx, groupbyNode, sortExec);
+  }
+
+  private PhysicalExec createBestAggregationPlan(TaskAttemptContext context, GroupbyNode groupbyNode,
+                                                 PhysicalExec subOp) throws IOException {
     Column[] grpColumns = groupbyNode.getGroupingColumns();
     if (grpColumns.length == 0) {
-      LOG.info("The planner chooses [Hash Aggregation]");
-      return new HashAggregateExec(ctx, groupbyNode, subOp);
-    } else {
-      String [] outerLineage = PlannerUtil.getLineage(groupbyNode.getChild());
-      long estimatedSize = estimateSizeRecursive(ctx, outerLineage);
-      final long threshold = conf.getLongVar(TajoConf.ConfVars.HASH_AGGREGATION_THRESHOLD);
+      return createInMemoryHashAggregation(context, groupbyNode, subOp);
+    }
 
-      // if the relation size is less than the threshold,
-      // the hash aggregation will be used.
-      if (estimatedSize <= threshold) {
-        LOG.info("The planner chooses [Hash Aggregation]");
-        return new HashAggregateExec(ctx, groupbyNode, subOp);
-      } else {
-        SortSpec[] specs = new SortSpec[grpColumns.length];
-        for (int i = 0; i < grpColumns.length; i++) {
-          specs[i] = new SortSpec(grpColumns[i], true, false);
-        }
-        SortNode sortNode = new SortNode(UNGENERATED_PID, specs);
-        sortNode.setInSchema(subOp.getSchema());
-        sortNode.setOutSchema(subOp.getSchema());
-        // SortExec sortExec = new SortExec(sortNode, child);
-        ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode,
-            subOp);
-        LOG.info("The planner chooses [Sort Aggregation]");
-        return new SortAggregateExec(ctx, groupbyNode, sortExec);
-      }
+    String [] outerLineage = PlannerUtil.getLineage(groupbyNode.getChild());
+    long estimatedSize = estimateSizeRecursive(context, outerLineage);
+    final long threshold = conf.getLongVar(TajoConf.ConfVars.HASH_AGGREGATION_THRESHOLD);
+
+    // if the relation size is less than the threshold,
+    // the hash aggregation will be used.
+    if (estimatedSize <= threshold) {
+      LOG.info("The planner chooses [Hash Aggregation]");
+      return createInMemoryHashAggregation(context, groupbyNode, subOp);
+    } else {
+      return createSortAggregation(context, groupbyNode, subOp);
     }
   }
 
-  public PhysicalExec createSortPlan(TaskAttemptContext ctx, SortNode sortNode,
-                                     PhysicalExec subOp) throws IOException {
-    return new ExternalSortExec(ctx, sm, sortNode, subOp);
+  public PhysicalExec createSortPlan(TaskAttemptContext context, SortNode sortNode,
+                                     PhysicalExec child) throws IOException {
+    Enforcer enforcer = context.getEnforcer();
+    EnforceProperty property = getAlgorithmEnforceProperty(enforcer, sortNode);
+    if (property != null) {
+      SortEnforce.SortAlgorithm algorithm = property.getSort().getAlgorithm();
+      if (algorithm == SortEnforce.SortAlgorithm.IN_MEMORY_SORT) {
+        return new MemSortExec(context, sortNode, child);
+      } else {
+        return new ExternalSortExec(context, sm, sortNode, child);
+      }
+    }
+
+    return createBestSortPlan(context, sortNode, child);
+  }
+
+  public SortExec createBestSortPlan(TaskAttemptContext context, SortNode sortNode,
+                                     PhysicalExec child) throws IOException {
+    String [] outerLineage = PlannerUtil.getLineage(sortNode.getChild());
+    long estimatedSize = estimateSizeRecursive(context, outerLineage);
+    final long threshold = 1048576 * 2000;
+
+    // if the relation size is less than the reshold,
+    // the in-memory sort will be used.
+    if (estimatedSize <= threshold) {
+      return new MemSortExec(context, sortNode, child);
+    } else {
+      return new ExternalSortExec(context, sm, sortNode, child);
+    }
   }
 
   public PhysicalExec createIndexScanExec(TaskAttemptContext ctx,
@@ -334,5 +474,39 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         indexPath, indexName), annotation.getKeySchema(), comp,
         annotation.getDatum());
 
+  }
+
+  private EnforceProperty getAlgorithmEnforceProperty(Enforcer enforcer, LogicalNode node) {
+    if (enforcer == null) {
+      return null;
+    }
+
+    EnforceType type;
+    if (node.getType() == NodeType.JOIN) {
+      type = EnforceType.JOIN;
+    } else if (node.getType() == NodeType.GROUP_BY) {
+      type = EnforceType.GROUP_BY;
+    } else if (node.getType() == NodeType.SORT) {
+      type = EnforceType.SORT;
+    } else {
+      return null;
+    }
+
+    if (enforcer.hasEnforceProperty(type)) {
+      List<EnforceProperty> properties = enforcer.getEnforceProperties(type);
+      EnforceProperty found = null;
+      for (EnforceProperty property : properties) {
+        if (type == EnforceType.JOIN && property.getJoin().getPid() == node.getPID()) {
+          found = property;
+        } else if (type == EnforceType.GROUP_BY && property.getGroupby().getPid() == node.getPID()) {
+          found = property;
+        } else if (type == EnforceType.SORT && property.getSort().getPid() == node.getPID()) {
+          found = property;
+        }
+      }
+      return found;
+    } else {
+      return null;
+    }
   }
 }

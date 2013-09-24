@@ -16,14 +16,16 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo.index";
-option java_outer_classname = "IndexProtos";
-option optimize_for = SPEED;
-option java_generic_services = false;
-option java_generate_equals_and_hash = true;
+package org.apache.tajo.engine.planner;
 
-import "CatalogProtos.proto";
+import java.io.IOException;
 
-message TupleComparatorProto {
-  repeated TupleComparatorSpecProto compSpecs = 1;
+public class PhysicalPlanningException extends IOException {
+  public PhysicalPlanningException(String message) {
+    super(message);
+  }
+
+  public PhysicalPlanningException(Throwable t) {
+    super(t);
+  }
 }

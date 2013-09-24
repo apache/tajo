@@ -151,6 +151,7 @@ public class Task {
         request.getFragments().toArray(new Fragment[request.getFragments().size()]),
         taskDir);
     this.context.setDataChannel(request.getDataChannel());
+    this.context.setEnforcer(request.getEnforcer());
 
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
     interQuery = request.getProto().getInterQuery();

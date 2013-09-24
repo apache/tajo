@@ -61,6 +61,7 @@ message QueryUnitRequestProto {
     optional bool shouldDie = 8;
     optional KeyValueSetProto queryContext = 9;
     optional DataChannelProto dataChannel = 10;
+    optional EnforcerProto enforcer = 11;
 }
 
 message Fetch {
@@ -139,7 +140,6 @@ message DataChannelProto {
 
   repeated ColumnProto partitionKey = 7;
   optional int32 partitionNum = 8 [default = 1];
-  repeated SortSpecProto sortSpecs = 9;
 
   optional StoreType storeType = 10 [default = CSV];
 }
@@ -166,4 +166,75 @@ service TajoWorkerProtocolService {
 
   //from QueryMaster(Worker)
   rpc executeExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
+}
+
+message EnforceProperty {
+  enum EnforceType {
+    SORTED_INPUT = 0;
+    OUTPUT_DISTINCT = 1;
+    GROUP_BY = 2;
+    JOIN = 3;
+    SORT = 4;
+    BROADCAST = 5;
+  }
+
+  // Identifies which field is filled in.
+  required EnforceType type = 1;
+
+  // One of the following will be filled in.
+  optional SortedInputEnforce sortedInput = 2;
+  optional OutputDistinctEnforce outputDistinct = 3;
+  optional GroupbyEnforce groupby = 4;
+  optional JoinEnforce join = 5;
+  optional SortEnforce sort = 6;
+  optional BroadcastEnforce broadcast = 7;
+}
+
+message SortedInputEnforce {
+  required string tableName = 1;
+  repeated SortSpecProto sortSpecs = 2;
+}
+
+message OutputDistinctEnforce {
+}
+
+message JoinEnforce {
+  enum JoinAlgorithm {
+    NESTED_LOOP_JOIN = 0;
+    BLOCK_NESTED_LOOP_JOIN = 1;
+    IN_MEMORY_HASH_JOIN = 2;
+    HYBRID_HASH_JOIN = 3;
+    MERGE_JOIN = 4;
+  }
+
+  required int32 pid = 1;
+  required JoinAlgorithm algorithm = 2;
+}
+
+message GroupbyEnforce {
+  enum GroupbyAlgorithm {
+    HASH_AGGREGATION = 0;
+    SORT_AGGREGATION = 1;
+  }
+
+  required int32 pid = 1;
+  required GroupbyAlgorithm algorithm = 2;
+}
+
+message SortEnforce {
+  enum SortAlgorithm {
+    IN_MEMORY_SORT = 0;
+    MERGE_SORT = 1;
+  }
+
+  required int32 pid = 1;
+  required SortAlgorithm algorithm = 2;
+}
+
+message BroadcastEnforce {
+  required string tableName = 1;
+}
+
+message EnforcerProto {
+  repeated EnforceProperty properties = 1;
 }
