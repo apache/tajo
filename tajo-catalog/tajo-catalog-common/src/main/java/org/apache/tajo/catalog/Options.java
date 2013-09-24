@@ -19,15 +19,14 @@
 package org.apache.tajo.catalog;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.KeyValueProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.KeyValueSetProto;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TUtil;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -84,8 +83,8 @@ public class Options implements ProtoObject<KeyValueSetProto>, Cloneable, GsonOb
 	  }
 	}
 	
-	public Iterator<Entry<String,String>> getAllKeyValus() {
-	  return keyVals.entrySet().iterator();
+	public Map<String,String> getAllKeyValus() {
+	  return keyVals;
 	}
 	
 	public String delete(String key) {

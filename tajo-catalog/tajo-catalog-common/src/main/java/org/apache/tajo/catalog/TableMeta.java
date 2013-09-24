@@ -18,14 +18,13 @@
 
 package org.apache.tajo.catalog;
 
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.json.GsonObject;
 
-import java.util.Iterator;
-import java.util.Map.Entry;
+import java.util.Map;
 
 public interface TableMeta extends ProtoObject<TableProto>, Cloneable, GsonObject {
 
@@ -47,7 +46,7 @@ public interface TableMeta extends ProtoObject<TableProto>, Cloneable, GsonObjec
   
   String getOption(String key, String defaultValue);
   
-  Iterator<Entry<String,String>> getOptions();
+  Map<String,String> getOptions();
   
   TableStat getStat();
   

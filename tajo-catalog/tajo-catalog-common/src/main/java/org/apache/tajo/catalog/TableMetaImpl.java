@@ -22,15 +22,14 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableProtoOrBuilder;
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableProtoOrBuilder;
 import org.apache.tajo.catalog.statistics.TableStat;
+import org.apache.tajo.json.GsonObject;
 
-import java.util.Iterator;
-import java.util.Map.Entry;
+import java.util.Map;
 
 public class TableMetaImpl implements TableMeta, GsonObject {
 	protected TableProto.Builder builder = null;
@@ -139,7 +138,7 @@ public class TableMetaImpl implements TableMeta, GsonObject {
   }
   
   @Override
-  public Iterator<Entry<String,String>> getOptions() {
+  public Map<String,String> getOptions() {
     TableProtoOrBuilder p = viaProto ? proto : builder;
     if (options != null) {
       return this.options.getAllKeyValus();

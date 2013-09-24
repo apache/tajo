@@ -18,8 +18,12 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
@@ -180,5 +184,42 @@ public class TestInsertQuery {
     FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
     assertTrue(fs.exists(new Path("/tajo-data/testInsertOverwriteCapitalTableName")));
     assertEquals(1, fs.listStatus(new Path("/tajo-data/testInsertOverwriteCapitalTableName")).length);
+  }
+
+  @Test
+  public final void testInsertOverwriteWithCompression() throws Exception {
+    String tableName = "testInsertOverwriteWithCompression";
+    tpch.execute("create table " + tableName + " (col1 int8, col2 int4, col3 float4) USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec')");
+    TajoTestingCluster cluster = tpch.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(tableName));
+
+    tpch.execute("insert overwrite into " + tableName + " select  l_orderkey, l_partkey, l_quantity from lineitem where l_orderkey = 3");
+    TableDesc desc = catalog.getTableDesc(tableName);
+    assertEquals(2, desc.getMeta().getStat().getNumRows().intValue());
+
+    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    assertTrue(fs.exists(desc.getPath()));
+    CompressionCodecFactory factory = new CompressionCodecFactory(tpch.getTestingCluster().getConfiguration());
+
+    for (FileStatus file : fs.listStatus(desc.getPath())){
+      CompressionCodec codec = factory.getCodec(file.getPath());
+      assertTrue(codec instanceof DeflateCodec);
+    }
+  }
+
+  @Test
+  public final void testInsertOverwriteLocationWithCompression() throws Exception {
+    tpch.execute("insert overwrite into location '/tajo-data/testInsertOverwriteLocationWithCompression' USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') select * from lineitem where l_orderkey = 3");
+    FileSystem fs = FileSystem.get(tpch.getTestingCluster().getConfiguration());
+    Path path = new Path("/tajo-data/testInsertOverwriteLocationWithCompression");
+    assertTrue(fs.exists(path));
+    assertEquals(1, fs.listStatus(path).length);
+
+    CompressionCodecFactory factory = new CompressionCodecFactory(tpch.getTestingCluster().getConfiguration());
+    for (FileStatus file : fs.listStatus(path)){
+      CompressionCodec codec = factory.getCodec(file.getPath());
+      assertTrue(codec instanceof DeflateCodec);
+    }
   }
 }
