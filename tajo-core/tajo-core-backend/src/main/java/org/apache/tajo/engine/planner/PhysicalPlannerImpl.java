@@ -87,8 +87,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     DataChannel channel = context.getDataChannel();
     StoreTableNode storeTableNode = new StoreTableNode(UNGENERATED_PID, channel.getTargetId().toString());
     storeTableNode.setStorageType(CatalogProtos.StoreType.CSV);
-    storeTableNode.setInSchema(execPlan.getSchema());
-    storeTableNode.setOutSchema(execPlan.getSchema());
+    storeTableNode.setInSchema(plan.getOutSchema());
+    storeTableNode.setOutSchema(plan.getOutSchema());
     if (channel.getPartitionType() != PartitionType.NONE_PARTITION) {
       storeTableNode.setPartitions(channel.getPartitionType(), channel.getPartitionKey(), channel.getPartitionNum());
     } else {
@@ -281,7 +281,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     long leftSize = estimateSizeRecursive(context, leftLineage);
     long rightSize = estimateSizeRecursive(context, rightLineage);
 
-    final long threshold = 1048576 * 128; // 64MB
+    final long threshold = conf.getLongVar(TajoConf.ConfVars.INMEMORY_HASH_JOIN_THRESHOLD);
 
     boolean hashJoin = false;
     if (leftSize < threshold || rightSize < threshold) {
@@ -412,7 +412,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     String [] outerLineage = PlannerUtil.getLineage(groupbyNode.getChild());
     long estimatedSize = estimateSizeRecursive(context, outerLineage);
-    final long threshold = conf.getLongVar(TajoConf.ConfVars.HASH_AGGREGATION_THRESHOLD);
+    final long threshold = conf.getLongVar(TajoConf.ConfVars.INMEMORY_HASH_AGGREGATION_THRESHOLD);
 
     // if the relation size is less than the threshold,
     // the hash aggregation will be used.

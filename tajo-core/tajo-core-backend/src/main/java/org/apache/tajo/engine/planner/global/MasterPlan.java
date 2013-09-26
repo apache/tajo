@@ -170,6 +170,10 @@ public class MasterPlan {
     execBlockGraph.disconnect(src, target);
   }
 
+  public ExecutionBlock getParent(ExecutionBlock executionBlock) {
+    return execBlockMap.get(execBlockGraph.getParent(executionBlock.getId()));
+  }
+
   public List<ExecutionBlock> getChilds(ExecutionBlock execBlock) {
     return getChilds(execBlock.getId());
   }

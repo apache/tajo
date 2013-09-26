@@ -107,19 +107,20 @@ public class TajoConf extends YarnConfiguration {
     //////////////////////////////////
     // Physical Executors
     //////////////////////////////////
-    EXT_SORT_BUFFER("tajo.extsort.buffer", 400000),
+    EXTENAL_SORT_BUFFER_NUM("tajo.sort.external.buffer", 1000000),
     BROADCAST_JOIN_THRESHOLD("tajo.join.broadcast.threshold", (long)5 * 1048576),
-    HASH_AGGREGATION_THRESHOLD("tajo.aggregation.hash.threshold", (long)512 * 1048576),
+    INMEMORY_HASH_TABLE_DEFAULT_SIZE("tajo.join.inmemory.table.num", (long)1000000),
+    INMEMORY_HASH_JOIN_THRESHOLD("tajo.join.memhash, threshold", (long)256 * 1048576),
+    INMEMORY_HASH_AGGREGATION_THRESHOLD("tajo.aggregation.hash.threshold", (long)256 * 1048576),
 
     //////////////////////////////////////////
     // Distributed Query Execution Parameters
     //////////////////////////////////////////
-    SORT_BUFFER_SIZE("tajo.sort.mb", 128),
     JOIN_TASK_VOLUME("tajo.join.task-volume.mb", 128),
-    SORT_TASK_VOLUME("tajo.sort.task-volume.mb", 256),
+    SORT_TASK_VOLUME("tajo.sort.task-volume.mb", 128),
     AGGREGATION_TASK_VOLUME("tajo.task-aggregation.volume.mb", 128),
 
-    JOIN_PARTITION_VOLUME("tajo.join.part-volume.mb", 64),
+    JOIN_PARTITION_VOLUME("tajo.join.part-volume.mb", 128),
     SORT_PARTITION_VOLUME("tajo.sort.part-volume.mb", 256),
     AGGREGATION_PARTITION_VOLUME("tajo.aggregation.part-volume.mb", 256),
 

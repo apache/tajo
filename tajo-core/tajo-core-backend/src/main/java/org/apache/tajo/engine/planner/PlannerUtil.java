@@ -452,16 +452,31 @@ public class PlannerUtil {
     return new SortSpec[][] {outerSortSpec, innerSortSpec};
   }
 
-  public static TupleComparator[] getComparatorsFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {
-    SortSpec[][] sortSpecs = getSortKeysFromJoinQual(joinQual, outer, inner);
+  public static TupleComparator[] getComparatorsFromJoinQual(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
+    SortSpec[][] sortSpecs = getSortKeysFromJoinQual(joinQual, leftSchema, rightSchema);
     TupleComparator [] comparators = new TupleComparator[2];
-    comparators[0] = new TupleComparator(outer, sortSpecs[0]);
-    comparators[1] = new TupleComparator(inner, sortSpecs[1]);
+    comparators[0] = new TupleComparator(leftSchema, sortSpecs[0]);
+    comparators[1] = new TupleComparator(rightSchema, sortSpecs[1]);
     return comparators;
   }
 
-  public static List<Column []> getJoinKeyPairs(EvalNode joinQual, Schema outer, Schema inner) {
-    JoinKeyPairFinder finder = new JoinKeyPairFinder(outer, inner);
+  /**
+   * @return the first array contains left table's columns, and the second array contains right table's columns.
+   */
+  public static Column [][] joinJoinKeyForEachTable(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
+    List<Column []> joinKeys = getJoinKeyPairs(joinQual, leftSchema, rightSchema);
+    Column [] leftColumns = new Column[joinKeys.size()];
+    Column [] rightColumns = new Column[joinKeys.size()];
+    for (int i = 0; i < joinKeys.size(); i++) {
+      leftColumns[i] = joinKeys.get(i)[0];
+      rightColumns[i] = joinKeys.get(i)[1];
+    }
+
+    return new Column[][] {leftColumns, rightColumns};
+  }
+
+  public static List<Column []> getJoinKeyPairs(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
+    JoinKeyPairFinder finder = new JoinKeyPairFinder(leftSchema, rightSchema);
     joinQual.preOrder(finder);
     return finder.getPairs();
   }

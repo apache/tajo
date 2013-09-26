@@ -160,7 +160,7 @@ public class InsertNode extends LogicalNode implements Cloneable {
     sb.append("INTO");
 
     if (hasTargetTable()) {
-      sb.append(targetTableDesc);
+      sb.append(targetTableDesc.getName());
     }
 
     if (hasPath()) {

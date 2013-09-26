@@ -18,19 +18,17 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TpchTestBase;
-import org.apache.tajo.client.ResultSetUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
-@Category(IntegrationTest.class)
 public class TestTableSubQuery {
   private static TpchTestBase tpch;
   public TestTableSubQuery() throws IOException {
@@ -78,6 +76,19 @@ public class TestTableSubQuery {
         "FROM\n" +
         "(SELECT * FROM nation WHERE n_name LIKE 'A%') A " +
         "JOIN region B ON A.n_regionkey=B.r_regionkey");
-    System.out.println(ResultSetUtil.prettyFormat(res));
+
+    Map<String,String> expected = new HashMap<String, String>();
+    expected.put("ARGENTINA", "AMERICA");
+    expected.put("ALGERIA", "AFRICA");
+    try {
+      assertNotNull(res);
+      assertTrue(res.next());
+      assertTrue(expected.get(res.getString("n_name")).equals(res.getString("r_name")));
+      assertTrue(res.next());
+      assertTrue(expected.get(res.getString("n_name")).equals(res.getString("r_name")));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
   }
 }

@@ -153,6 +153,9 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-205: Repartitioner occasionally chooses a partition number as one.
+    (hyunsik)
+
     TAJO-191: INSERT OVERWRITE INTO statement should follow the table meta in 
     catalog. (jinho)
 

@@ -594,22 +594,18 @@ public class Repartitioner {
     return hashed;
   }
 
-  public static SubQuery setPartitionNumberForTwoPhase(SubQuery subQuery, final int n, DataChannel channel) {
+  public static SubQuery setPartitionNumberForTwoPhase(SubQuery subQuery, final int desiredNum, DataChannel channel) {
     ExecutionBlock execBlock = subQuery.getBlock();
     Column[] keys = null;
     // if the next query is join,
     // set the partition number for the current logicalUnit
     // TODO: the union handling is required when a join has unions as its child
     MasterPlan masterPlan = subQuery.getMasterPlan();
-    ExecutionBlock parentBlock = execBlock.getParentBlock();
-    if (parentBlock != null) {
-      if (parentBlock.getStoreTableNode().getChild().getType() == NodeType.JOIN) {
-        execBlock.getStoreTableNode().setPartitions(execBlock.getPartitionType(),
-            execBlock.getStoreTableNode().getPartitionKeys(), n);
-        keys = execBlock.getStoreTableNode().getPartitionKeys();
-
-        masterPlan.getOutgoingChannels(subQuery.getId()).iterator().next()
-            .setPartition(execBlock.getPartitionType(), execBlock.getStoreTableNode().getPartitionKeys(), n);
+    keys = channel.getPartitionKey();
+    if (!masterPlan.isRoot(subQuery.getBlock()) ) {
+      ExecutionBlock parentBlock = masterPlan.getParent(subQuery.getBlock());
+      if (parentBlock.getPlan().getType() == NodeType.JOIN) {
+        channel.setPartitionNum(desiredNum);
       }
     }
 
@@ -631,9 +627,11 @@ public class Repartitioner {
     }
     if (keys != null) {
       if (keys.length == 0) {
-        channel.setPartition(execBlock.getPartitionType(), new Column[]{}, 1);
+        channel.setPartitionKey(new Column[] {});
+        channel.setPartitionNum(1);
       } else {
-        channel.setPartition(execBlock.getPartitionType(), keys, n);
+        channel.setPartitionKey(keys);
+        channel.setPartitionNum(desiredNum);
       }
     }
     return subQuery;

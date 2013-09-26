@@ -133,13 +133,14 @@ enum TransmitType {
 message DataChannelProto {
   required ExecutionBlockIdProto srcId = 1;
   required ExecutionBlockIdProto targetId = 2;
+
   required TransmitType transmitType = 3 [default = PULL_TRANSMIT];
   required PartitionType partitionType = 4;
 
   optional SchemaProto schema = 5;
 
   repeated ColumnProto partitionKey = 7;
-  optional int32 partitionNum = 8 [default = 1];
+  optional int32 partitionNum = 9 [default = 1];
 
   optional StoreType storeType = 10 [default = CSV];
 }

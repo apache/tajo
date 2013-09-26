@@ -42,7 +42,7 @@ public class ExternalSortExec extends SortExec {
 
   private final TableMeta meta;
   private final Path sortTmpDir;
-  private int SORT_BUFFER_SIZE;
+  private int MEM_TUPLE_NUM;
 
   public ExternalSortExec(final TaskAttemptContext context,
       final AbstractStorageManager sm, final SortNode plan, final PhysicalExec child)
@@ -50,8 +50,8 @@ public class ExternalSortExec extends SortExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), child, plan.getSortKeys());
     this.plan = plan;
 
-    this.SORT_BUFFER_SIZE = context.getConf().getIntVar(ConfVars.EXT_SORT_BUFFER);
-    this.tupleSlots = new ArrayList<Tuple>(SORT_BUFFER_SIZE);
+    this.MEM_TUPLE_NUM = context.getConf().getIntVar(ConfVars.EXTENAL_SORT_BUFFER_NUM);
+    this.tupleSlots = new ArrayList<Tuple>(MEM_TUPLE_NUM);
 
     this.sortTmpDir = new Path(context.getWorkDir(), UUID.randomUUID().toString());
     this.localFS = FileSystem.getLocal(context.getConf());
@@ -96,7 +96,7 @@ public class ExternalSortExec extends SortExec {
     Tuple tuple;
     while ((tuple = child.next()) != null) { // partition sort start
       tupleSlots.add(new VTuple(tuple));
-      if (tupleSlots.size() == SORT_BUFFER_SIZE) {
+      if (tupleSlots.size() == MEM_TUPLE_NUM) {
         sortAndStoreChunk(chunkId, tupleSlots);
         chunkId++;
       }

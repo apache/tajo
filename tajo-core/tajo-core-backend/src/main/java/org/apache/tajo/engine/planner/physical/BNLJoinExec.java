@@ -60,8 +60,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
 
   public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
                      final PhysicalExec outer, PhysicalExec inner) {
-    super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
-        SchemaUtil.merge(outer.getSchema(), inner.getSchema()), outer, inner);
+    super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()), plan.getOutSchema(), outer, inner);
     this.plan = plan;
     this.joinQual = plan.getJoinQual();
     if (joinQual != null) { // if join type is not 'cross join'
