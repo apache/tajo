@@ -1485,8 +1485,8 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr>{
 
             if(ctx.tableRowFormat() != null) {
                 if(ctx.tableRowFormat().rowFormatDelimited() != null) {
-                    params.put("csvfile.delimiter"
-                            , ctx.tableRowFormat().rowFormatDelimited().tableRowFormatFieldIdentifier().getChild(3).getText().replaceAll("'", ""));
+                  String delimiter = ctx.tableRowFormat().rowFormatDelimited().tableRowFormatFieldIdentifier().getChild(3).getText().replaceAll("'", "");
+                    params.put("csvfile.delimiter", SQLAnalyzer.escapeDelimiter(delimiter));
                 }
             }
 

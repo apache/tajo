@@ -199,7 +199,7 @@ public class TajoWorker extends CompositeService {
       tajoMasterRpc.close();
     }
 
-    if(webServer != null) {
+    if(webServer != null && webServer.isAlive()) {
       try {
         webServer.stop();
       } catch (Exception e) {

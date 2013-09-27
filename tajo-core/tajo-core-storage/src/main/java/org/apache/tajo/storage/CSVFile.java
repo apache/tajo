@@ -47,6 +47,7 @@ import java.util.Arrays;
 
 public class CSVFile {
   public static final String DELIMITER = "csvfile.delimiter";
+  public static final String NULL = "csvfile.null";     //read only
   public static final String DELIMITER_DEFAULT = "|";
   public static final byte LF = '\n';
   public static int EOF = -1;
@@ -65,6 +66,7 @@ public class CSVFile {
     private CompressionCodecFactory codecFactory;
     private CompressionCodec codec;
     private Path compressedPath;
+    private byte[] nullChars;
 
     public CSVAppender(Configuration conf, final TableMeta meta,
                        final Path path) throws IOException {
@@ -73,6 +75,13 @@ public class CSVFile {
       this.meta = meta;
       this.schema = meta.getSchema();
       this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(DELIMITER, DELIMITER_DEFAULT)).charAt(0);
+
+      String nullCharacters = this.meta.getOption(NULL);
+      if (StringUtils.isEmpty(nullCharacters)) {
+        nullChars = NullDatum.get().asTextBytes();
+      } else {
+        nullChars = nullCharacters.getBytes();
+      }
     }
 
     @Override
@@ -126,13 +135,23 @@ public class CSVFile {
           col = schema.getColumn(i);
           if (col.getDataType().getType().equals(TajoDataTypes.Type.NULL)) {
 
-          } else if (col.getDataType().getType().equals(TajoDataTypes.Type.CHAR)){
+          } else if (col.getDataType().getType().equals(TajoDataTypes.Type.CHAR)) {
             datum = tuple.get(i);
-            byte[] pad = new byte[col.getDataType().getLength()- datum.size()];
-            outputStream.write(lTuple.getTextBytes(i));
-            outputStream.write(pad);
-          }
-          else {
+            if (datum instanceof NullDatum) {
+              outputStream.write(nullChars);
+            } else {
+              byte[] pad = new byte[col.getDataType().getLength() - datum.size()];
+              outputStream.write(datum.asTextBytes());
+              outputStream.write(pad);
+            }
+          } else if (col.getDataType().getType().equals(TajoDataTypes.Type.TEXT)) {
+            datum = tuple.get(i);
+            if (datum instanceof NullDatum) {
+              outputStream.write(nullChars);
+            } else {
+              outputStream.write(datum.asTextBytes());
+            }
+          } else {
             outputStream.write(lTuple.getTextBytes(i));
           }
 
@@ -152,7 +171,7 @@ public class CSVFile {
             stats.analyzeField(i, datum);
           }
           if (datum instanceof NullDatum) {
-            outputStream.write(NullDatum.get().asTextBytes());
+            outputStream.write(nullChars);
           } else {
             col = schema.getColumn(i);
             switch (col.getDataType().getType()) {
@@ -167,7 +186,9 @@ public class CSVFile {
                 break;
               case CHAR:
                 CharDatum charDatum = tuple.getChar(i);
+                byte[] pad = new byte[col.getDataType().getLength() - datum.size()];
                 outputStream.write(charDatum.asTextBytes());
+                outputStream.write(pad);
                 break;
               case TEXT:
                 outputStream.write(tuple.getText(i).asTextBytes());
@@ -281,9 +302,21 @@ public class CSVFile {
       if (isCompress() && !(codec instanceof SplittableCompressionCodec)) {
           splittable = false;
       }
+
+      // Buffer size, Delimiter
+      this.bufSize = DEFAULT_BUFFER_SIZE;
+      String delim  = fragment.getMeta().getOption(DELIMITER, DELIMITER_DEFAULT);
+      this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
+
+      String nullCharacters = fragment.getMeta().getOption(NULL);
+      if (StringUtils.isEmpty(nullCharacters)) {
+        nullChars = NullDatum.get().asTextBytes();
+      } else {
+        nullChars = nullCharacters.getBytes();
+      }
     }
 
-    private final static int DEFAULT_BUFFER_SIZE = 256 * 1024;
+    private final static int DEFAULT_BUFFER_SIZE = 128 * 1024;
     private int bufSize;
     private char delimiter;
     private FileSystem fs;
@@ -304,14 +337,11 @@ public class CSVFile {
     private long prevTailLen = -1;
     private int[] targetColumnIndexes;
     private boolean eof = false;
+    private final byte[] nullChars;
 
     @Override
     public void init() throws IOException {
 
-      // Buffer size, Delimiter
-      this.bufSize = DEFAULT_BUFFER_SIZE;
-      String delim  = fragment.getMeta().getOption(DELIMITER, DELIMITER_DEFAULT);
-      this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
       // Fragment information
       fs = fragment.getPath().getFileSystem(conf);
       fis = fs.open(fragment.getPath());
@@ -481,7 +511,7 @@ public class CSVFile {
         }
 
         byte[][] cells = Bytes.splitPreserveAllTokens(tuples[currentIdx++], delimiter, targetColumnIndexes);
-        return new LazyTuple(schema, cells, offset);
+        return new LazyTuple(schema, cells, offset, nullChars);
       } catch (Throwable t) {
         LOG.error("Tuple list length: " + (tuples != null ? tuples.length : 0), t);
         LOG.error("Tuple list current index: " + currentIdx, t);

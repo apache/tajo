@@ -1037,19 +1037,28 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return params;
   }
 
-  private Map<String, String> escapeTableMeta(Map<String, String> map) {
+  public Map<String, String> escapeTableMeta(Map<String, String> map) {
     Map<String, String> params = new HashMap<String, String>();
     for (Map.Entry<String, String> entry : map.entrySet()) {
-      String value = StringEscapeUtils.unescapeJava(entry.getValue());
       if (entry.getKey().equals(CSVFile.DELIMITER)) {
-        try {
-          value = new String(new byte[]{Byte.valueOf(value).byteValue()});
-        } catch (NumberFormatException e) {
-        }
+        params.put(entry.getKey(), escapeDelimiter(entry.getValue()));
+      } else if (entry.getKey().equals(CSVFile.NULL)) {
+        params.put(entry.getKey(), StringEscapeUtils.unescapeJava(entry.getValue()));
+      } else {
+        params.put(entry.getKey(), entry.getValue());
       }
-      params.put(entry.getKey(), StringEscapeUtils.escapeJava(value));
     }
     return params;
+  }
+
+  public static String escapeDelimiter(String value) {
+    try {
+      String delimiter = StringEscapeUtils.unescapeJava(value);
+      delimiter = new String(new byte[]{Byte.valueOf(delimiter).byteValue()});
+      return StringEscapeUtils.escapeJava(delimiter);
+    } catch (NumberFormatException e) {
+    }
+    return value;
   }
 
   private static String stripQuote(String str) {

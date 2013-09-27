@@ -33,9 +33,12 @@ public class TestLazyTuple {
 
   Schema schema;
   byte[][] textRow;
+  byte[] nullbytes;
 
   @Before
   public void setUp() {
+    nullbytes = "\\N".getBytes();
+
     schema = new Schema();
     schema.addColumn("col1", TajoDataTypes.Type.BOOLEAN);
     schema.addColumn("col2", TajoDataTypes.Type.BIT);
@@ -48,7 +51,8 @@ public class TestLazyTuple {
     schema.addColumn("col9", TajoDataTypes.Type.TEXT);
     schema.addColumn("col10", TajoDataTypes.Type.BLOB);
     schema.addColumn("col11", TajoDataTypes.Type.INET4);
-    schema.addColumn("col12", TajoDataTypes.Type.NULL);
+    schema.addColumn("col12", TajoDataTypes.Type.INT4);
+    schema.addColumn("col13", TajoDataTypes.Type.NULL);
 
     StringBuilder sb = new StringBuilder();
     sb.append(DatumFactory.createBool(true)).append('|');
@@ -62,15 +66,15 @@ public class TestLazyTuple {
     sb.append(DatumFactory.createText("str2")).append('|');
     sb.append(DatumFactory.createBlob("jinho".getBytes())).append('|');
     sb.append(DatumFactory.createInet4("192.168.0.1")).append('|');
+    sb.append(new String(nullbytes)).append('|');
     sb.append(NullDatum.get());
-
     textRow = Bytes.splitPreserveAllTokens(sb.toString().getBytes(), '|');
   }
 
   @Test
   public void testGetDatum() {
 
-    LazyTuple t1 = new LazyTuple(schema, textRow, -1);
+    LazyTuple t1 = new LazyTuple(schema, textRow, -1, nullbytes);
     assertEquals(DatumFactory.createBool(true), t1.get(0));
     assertEquals(DatumFactory.createBit((byte) 0x99), t1.get(1));
     assertEquals(DatumFactory.createChar("str"), t1.get(2));
@@ -83,6 +87,7 @@ public class TestLazyTuple {
     assertEquals(DatumFactory.createBlob("jinho".getBytes()), t1.get(9));
     assertEquals(DatumFactory.createInet4("192.168.0.1"), t1.get(10));
     assertEquals(NullDatum.get(), t1.get(11));
+    assertEquals(NullDatum.get(), t1.get(12));
   }
 
   @Test
@@ -106,6 +111,7 @@ public class TestLazyTuple {
     assertFalse(t1.contains(9));
     assertFalse(t1.contains(10));
     assertFalse(t1.contains(11));
+    assertFalse(t1.contains(12));
   }
 
   @Test

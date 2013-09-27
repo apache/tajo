@@ -747,7 +747,7 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public Object getObject(int fieldId) throws SQLException {
     Datum d = cur.get(fieldId - 1);
-    wasNull = (d == null);
+    handleNull(d);
 
     // TODO - to be changed to return Object type
     return d;
@@ -761,7 +761,7 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public Object getObject(String arg0) throws SQLException {
     Datum d = cur.get(findColumn(arg0));
-    wasNull = (d == null);
+    handleNull(d);
     return d;
   }
 

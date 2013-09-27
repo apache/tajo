@@ -18,23 +18,19 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.util.Bytes;
-
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class NullDatum extends Datum {
-  private static final NullDatum instance;
-  private static String NULL_STRING = "";
-  private static byte[] NULL_CHAR = NULL_STRING.getBytes();
-  
+  private static NullDatum instance;
+
   static {
     instance = new NullDatum();
   }
-  
+
   private NullDatum() {
     super(Type.NULL);
   }
-  
+
   public static NullDatum get() {
     return instance;
   }
@@ -66,7 +62,7 @@ public class NullDatum extends Datum {
 
   @Override
   public byte[] asByteArray() {
-    return NULL_CHAR.clone();
+    return new byte[0];
   }
 
   @Override
@@ -81,12 +77,12 @@ public class NullDatum extends Datum {
 
   @Override
   public String asChars() {
-    return NULL_STRING;
+    return "";
   }
 
   @Override
   public byte[] asTextBytes() {
-    return asByteArray();
+    return new byte[0];
   }
 
   @Override
@@ -107,21 +103,5 @@ public class NullDatum extends Datum {
   @Override
   public int hashCode() {
     return 0; // one of the prime number
-  }
-
-  public static boolean isNull(String val){
-    return val == null || val.length() == 0 || ((val.length() == NULL_CHAR.length) && NULL_STRING.equals(val));
-  }
-
-  public static boolean isNull(byte[] val){
-    return val == null || val.length == 0 || ((val.length == NULL_CHAR.length) && Bytes.equals(val, NULL_CHAR));
-  }
-
-  public static boolean isNotNull(String val){
-    return !isNull(val);
-  }
-
-  public static boolean isNotNull(byte[] val){
-    return !isNull(val);
   }
 }

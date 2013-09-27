@@ -382,7 +382,11 @@ public class TajoCli {
                 for (int i = 1; i <= numOfColumns; i++) {
                   if (i > 1) sout.print(",  ");
                   String columnValue = res.getObject(i).toString();
-                  sout.print(columnValue);
+                  if(res.wasNull()){
+                    sout.print("null");
+                  } else {
+                    sout.print(columnValue);
+                  }
                 }
                 sout.println();
                 sout.flush();
