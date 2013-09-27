@@ -169,7 +169,12 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	
 	public boolean contains(String colName) {
 		return fieldsByQialifiedName.containsKey(colName.toLowerCase());
+
 	}
+
+  public boolean containsAll(Collection<Column> columns) {
+    return fields.containsAll(columns);
+  }
 
   public synchronized Schema addColumn(String name, Type type) {
     if (type == Type.CHAR) {

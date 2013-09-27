@@ -27,6 +27,9 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.DISTINCT_AGGREGATION;
+import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.DISTINCT_UDA;
+
 public abstract class FuncEval extends EvalNode implements Cloneable {
 	@Expose protected FunctionDesc funcDesc;
 	@Expose protected EvalNode [] argEvals;
@@ -36,6 +39,10 @@ public abstract class FuncEval extends EvalNode implements Cloneable {
 		this.funcDesc = funcDesc;
 		this.argEvals = argEvals;
 	}
+
+  public boolean isDistinct() {
+    return funcDesc.getFuncType() == DISTINCT_AGGREGATION || funcDesc.getFuncType() == DISTINCT_UDA;
+  }
 
   @Override
   public EvalContext newContext() {

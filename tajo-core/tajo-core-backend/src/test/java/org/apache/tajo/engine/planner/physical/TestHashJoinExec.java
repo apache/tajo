@@ -35,7 +35,6 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
@@ -139,7 +138,7 @@ public class TestHashJoinExec {
 
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
-    enforcer.addJoin(joinNode.getPID(), JoinAlgorithm.IN_MEMORY_HASH_JOIN);
+    enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.IN_MEMORY_HASH_JOIN);
 
     Fragment[] empFrags = StorageManager.splitNG(conf, "e", employee.getMeta(), employee.getPath(), Integer.MAX_VALUE);
     Fragment[] peopleFrags = StorageManager.splitNG(conf, "p", people.getMeta(), people.getPath(), Integer.MAX_VALUE);

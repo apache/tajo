@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Stack;
 
 import static org.apache.tajo.algebra.Aggregation.GroupType;
+import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import static org.apache.tajo.engine.planner.LogicalPlan.BlockType;
 
 /**
@@ -916,7 +917,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    ===============================================================================================*/
 
   public EvalNode createEvalTree(LogicalPlan plan, QueryBlock block, final Expr expr)
-      throws VerifyException {
+      throws PlanningException {
 
     switch(expr.getType()) {
       // constants
@@ -1012,8 +1013,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       case Column:
         return createFieldEval(plan, block, (ColumnReferenceExpr) expr);
 
-      case CountRowsFunction:
-        FunctionDesc countRows = catalog.getFunction("count", new DataType[] {});
+      case CountRowsFunction: {
+        FunctionDesc countRows = catalog.getFunction("count", FunctionType.AGGREGATION, new DataType[] {});
 
         try {
           block.setHasGrouping();
@@ -1024,13 +1025,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           throw new UndefinedFunctionException(CatalogUtil.
               getCanonicalName(countRows.getSignature(), new DataType[]{}));
         }
-
+      }
       case GeneralSetFunction: {
         GeneralSetFunctionExpr setFunction = (GeneralSetFunctionExpr) expr;
         Expr[] params = setFunction.getParams();
         EvalNode[] givenArgs = new EvalNode[params.length];
         DataType[] paramTypes = new DataType[params.length];
 
+        FunctionType functionType = setFunction.isDistinct() ?
+            FunctionType.DISTINCT_AGGREGATION : FunctionType.AGGREGATION;
         givenArgs[0] = createEvalTree(plan, block, params[0]);
         if (setFunction.getSignature().equalsIgnoreCase("count")) {
           paramTypes[0] = CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.ANY);
@@ -1038,12 +1041,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           paramTypes[0] = givenArgs[0].getValueType()[0];
         }
 
-        if (!catalog.containFunction(setFunction.getSignature(), paramTypes)) {
-          throw new UndefinedFunctionException(CatalogUtil.
-              getCanonicalName(setFunction.getSignature(), paramTypes));
+        if (!catalog.containFunction(setFunction.getSignature(), functionType, paramTypes)) {
+          throw new UndefinedFunctionException(CatalogUtil. getCanonicalName(setFunction.getSignature(), paramTypes));
         }
 
-        FunctionDesc funcDesc = catalog.getFunction(setFunction.getSignature(), paramTypes);
+        FunctionDesc funcDesc = catalog.getFunction(setFunction.getSignature(), functionType, paramTypes);
         if (!block.hasGroupbyNode()) {
           block.setHasGrouping();
         }
@@ -1068,23 +1070,23 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         }
 
         if (!catalog.containFunction(function.getSignature(), paramTypes)) {
-            throw new UndefinedFunctionException(CatalogUtil.
-                getCanonicalName(function.getSignature(), paramTypes));
+            throw new UndefinedFunctionException(CatalogUtil.getCanonicalName(function.getSignature(), paramTypes));
         }
 
         FunctionDesc funcDesc = catalog.getFunction(function.getSignature(), paramTypes);
 
         try {
-          if (funcDesc.getFuncType() == CatalogProtos.FunctionType.GENERAL)
 
-            return new FuncCallEval(funcDesc,
-                (GeneralFunction) funcDesc.newInstance(), givenArgs);
-          else {
+          FunctionType functionType = funcDesc.getFuncType();
+          if (functionType == FunctionType.GENERAL || functionType == FunctionType.UDF) {
+            return new FuncCallEval(funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
+          } else if (functionType == FunctionType.AGGREGATION || functionType == FunctionType.UDA) {
             if (!block.hasGroupbyNode()) {
               block.setHasGrouping();
             }
-            return new AggFuncCallEval(funcDesc,
-                (AggFunction) funcDesc.newInstance(), givenArgs);
+            return new AggFuncCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
+          } else if (functionType == FunctionType.DISTINCT_AGGREGATION || functionType == FunctionType.DISTINCT_UDA) {
+            throw new PlanningException("Unsupported function: " + funcDesc.toString());
           }
         } catch (InternalException e) {
           e.printStackTrace();
@@ -1134,7 +1136,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   public CaseWhenEval createCaseWhenEval(LogicalPlan plan, QueryBlock block,
-                                              CaseWhenPredicate caseWhen) throws VerifyException {
+                                              CaseWhenPredicate caseWhen) throws PlanningException {
     CaseWhenEval caseEval = new CaseWhenEval();
     EvalNode condition;
     EvalNode result;
@@ -1153,7 +1155,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   Target[] annotateTargets(LogicalPlan plan, QueryBlock block, org.apache.tajo.algebra.Target [] targets)
-      throws VerifyException {
+      throws PlanningException {
     Target annotatedTargets [] = new Target[targets.length];
 
     for (int i = 0; i < targets.length; i++) {
@@ -1163,7 +1165,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   Target createTarget(LogicalPlan plan, QueryBlock block,
-                             org.apache.tajo.algebra.Target target) throws VerifyException {
+                             org.apache.tajo.algebra.Target target) throws PlanningException {
     if (target.hasAlias()) {
       return new Target(createEvalTree(plan, block, target.getExpr()),
           target.getAlias());

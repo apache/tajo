@@ -220,6 +220,7 @@ message GroupbyEnforce {
 
   required int32 pid = 1;
   required GroupbyAlgorithm algorithm = 2;
+  repeated SortSpecProto sortSpecs = 3;
 }
 
 message SortEnforce {

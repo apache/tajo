@@ -19,6 +19,7 @@
 package org.apache.tajo.master;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -26,6 +27,8 @@ import org.apache.tajo.DataChannel;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.eval.AggFuncCallEval;
+import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
@@ -126,7 +129,7 @@ public class GlobalPlanner {
 
     return currentBlock;
   }
-  
+
   public static ScanNode buildInputExecutor(LogicalPlan plan, DataChannel channel) {
     Preconditions.checkArgument(channel.getSchema() != null,
         "Channel schema (" + channel.getSrcId().getId() +" -> "+ channel.getTargetId().getId()+") is not initialized");
@@ -194,69 +197,33 @@ public class GlobalPlanner {
     ExecutionBlock currentBlock = null;
     GroupbyNode groupByNode = (GroupbyNode) lastDistNode;
 
-    GroupbyNode firstGroupBy = PlannerUtil.transformGroupbyTo2P(groupByNode);
-    firstGroupBy.setHavingCondition(null);
-
-    if (firstGroupBy.getChild().getType() == NodeType.TABLE_SUBQUERY &&
-        ((TableSubQueryNode)firstGroupBy.getChild()).getSubQuery().getType() == NodeType.UNION) {
-
-      UnionNode unionNode = PlannerUtil.findTopNode(groupByNode, NodeType.UNION);
-      ConsecutiveUnionFinder finder = new ConsecutiveUnionFinder();
-      UnionsFinderContext finderContext = new UnionsFinderContext();
-      finder.visitChild(masterPlan.getLogicalPlan(), unionNode, new Stack<LogicalNode>(), finderContext);
-
-      currentBlock = masterPlan.newExecutionBlock();
-      GroupbyNode secondGroupBy = groupByNode;
-      for (UnionNode union : finderContext.unionList) {
-        TableSubQueryNode leftSubQuery = union.getLeftChild();
-        TableSubQueryNode rightSubQuery = union.getRightChild();
-        DataChannel dataChannel;
-        if (leftSubQuery.getSubQuery().getType() != NodeType.UNION) {
-          ExecutionBlock execBlock = masterPlan.newExecutionBlock();
-          GroupbyNode g1 = PlannerUtil.clone(firstGroupBy);
-          g1.setChild(leftSubQuery);
-          execBlock.setPlan(g1);
-          dataChannel = new DataChannel(execBlock, currentBlock, HASH_PARTITION, 32);
-
-          ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), dataChannel);
-          secondGroupBy.setChild(scanNode);
-          masterPlan.addConnect(dataChannel);
-        }
-        if (rightSubQuery.getSubQuery().getType() != NodeType.UNION) {
-          ExecutionBlock execBlock = masterPlan.newExecutionBlock();
-          GroupbyNode g1 = PlannerUtil.clone(firstGroupBy);
-          g1.setChild(rightSubQuery);
-          execBlock.setPlan(g1);
-          dataChannel = new DataChannel(execBlock, currentBlock, HASH_PARTITION, 32);
-
-          ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), dataChannel);
-          secondGroupBy.setChild(scanNode);
-          masterPlan.addConnect(dataChannel);
-        }
-      }
-      LogicalNode parent = PlannerUtil.findTopParentNode(currentNode, lastDistNode.getType());
-      if (parent instanceof UnaryNode && parent != secondGroupBy) {
-        ((UnaryNode)parent).setChild(secondGroupBy);
-      }
-      currentBlock.setPlan(currentNode);
-    } else {
-
+    if (groupByNode.isDistinct()) {
       if (childBlock == null) { // first repartition node
         childBlock = masterPlan.newExecutionBlock();
       }
-      childBlock.setPlan(firstGroupBy);
-
+      childBlock.setPlan(groupByNode.getChild());
       currentBlock = masterPlan.newExecutionBlock();
 
-      DataChannel channel;
-      if (firstGroupBy.isEmptyGrouping()) {
-        channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 1);
-        channel.setPartitionKey(firstGroupBy.getGroupingColumns());
-      } else {
-        channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 32);
-        channel.setPartitionKey(firstGroupBy.getGroupingColumns());
+      LinkedHashSet<Column> columnsForDistinct = new LinkedHashSet<Column>();
+
+      for (Target target : groupByNode.getTargets()) {
+        List<AggFuncCallEval> functions = EvalTreeUtil.findDistinctAggFunction(target.getEvalTree());
+        for (AggFuncCallEval function : functions) {
+          if (function.isDistinct()) {
+            columnsForDistinct.addAll(EvalTreeUtil.findDistinctRefColumns(function));
+          }
+        }
       }
-      channel.setSchema(firstGroupBy.getOutSchema());
+
+      Set<Column> existingColumns = Sets.newHashSet(groupByNode.getGroupingColumns());
+      columnsForDistinct.removeAll(existingColumns); // remove existing grouping columns
+      SortSpec [] sortSpecs = PlannerUtil.columnsToSortSpec(columnsForDistinct);
+      currentBlock.getEnforcer().enforceSortAggregation(groupByNode.getPID(), sortSpecs);
+
+      DataChannel channel;
+      channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 32);
+      channel.setPartitionKey(groupByNode.getGroupingColumns());
+      channel.setSchema(groupByNode.getInSchema());
 
       GroupbyNode secondGroupBy = groupByNode;
       ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
@@ -269,6 +236,85 @@ public class GlobalPlanner {
 
       masterPlan.addConnect(channel);
       currentBlock.setPlan(currentNode);
+      
+    } else {
+
+      GroupbyNode firstGroupBy = PlannerUtil.transformGroupbyTo2P(groupByNode);
+      firstGroupBy.setHavingCondition(null);
+
+      if (firstGroupBy.getChild().getType() == NodeType.TABLE_SUBQUERY &&
+          ((TableSubQueryNode)firstGroupBy.getChild()).getSubQuery().getType() == NodeType.UNION) {
+
+        UnionNode unionNode = PlannerUtil.findTopNode(groupByNode, NodeType.UNION);
+        ConsecutiveUnionFinder finder = new ConsecutiveUnionFinder();
+        UnionsFinderContext finderContext = new UnionsFinderContext();
+        finder.visitChild(masterPlan.getLogicalPlan(), unionNode, new Stack<LogicalNode>(), finderContext);
+
+        currentBlock = masterPlan.newExecutionBlock();
+        GroupbyNode secondGroupBy = groupByNode;
+        for (UnionNode union : finderContext.unionList) {
+          TableSubQueryNode leftSubQuery = union.getLeftChild();
+          TableSubQueryNode rightSubQuery = union.getRightChild();
+          DataChannel dataChannel;
+          if (leftSubQuery.getSubQuery().getType() != NodeType.UNION) {
+            ExecutionBlock execBlock = masterPlan.newExecutionBlock();
+            GroupbyNode g1 = PlannerUtil.clone(firstGroupBy);
+            g1.setChild(leftSubQuery);
+            execBlock.setPlan(g1);
+            dataChannel = new DataChannel(execBlock, currentBlock, HASH_PARTITION, 32);
+
+            ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), dataChannel);
+            secondGroupBy.setChild(scanNode);
+            masterPlan.addConnect(dataChannel);
+          }
+          if (rightSubQuery.getSubQuery().getType() != NodeType.UNION) {
+            ExecutionBlock execBlock = masterPlan.newExecutionBlock();
+            GroupbyNode g1 = PlannerUtil.clone(firstGroupBy);
+            g1.setChild(rightSubQuery);
+            execBlock.setPlan(g1);
+            dataChannel = new DataChannel(execBlock, currentBlock, HASH_PARTITION, 32);
+
+            ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), dataChannel);
+            secondGroupBy.setChild(scanNode);
+            masterPlan.addConnect(dataChannel);
+          }
+        }
+        LogicalNode parent = PlannerUtil.findTopParentNode(currentNode, lastDistNode.getType());
+        if (parent instanceof UnaryNode && parent != secondGroupBy) {
+          ((UnaryNode)parent).setChild(secondGroupBy);
+        }
+        currentBlock.setPlan(currentNode);
+      } else {
+
+        if (childBlock == null) { // first repartition node
+          childBlock = masterPlan.newExecutionBlock();
+        }
+        childBlock.setPlan(firstGroupBy);
+
+        currentBlock = masterPlan.newExecutionBlock();
+
+        DataChannel channel;
+        if (firstGroupBy.isEmptyGrouping()) {
+          channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 1);
+          channel.setPartitionKey(firstGroupBy.getGroupingColumns());
+        } else {
+          channel = new DataChannel(childBlock, currentBlock, HASH_PARTITION, 32);
+          channel.setPartitionKey(firstGroupBy.getGroupingColumns());
+        }
+        channel.setSchema(firstGroupBy.getOutSchema());
+
+        GroupbyNode secondGroupBy = groupByNode;
+        ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
+        secondGroupBy.setChild(scanNode);
+
+        LogicalNode parent = PlannerUtil.findTopParentNode(currentNode, lastDistNode.getType());
+        if (parent instanceof UnaryNode && parent != secondGroupBy) {
+          ((UnaryNode)parent).setChild(secondGroupBy);
+        }
+
+        masterPlan.addConnect(channel);
+        currentBlock.setPlan(currentNode);
+      }
     }
 
     return new ExecutionBlock [] {currentBlock, childBlock};

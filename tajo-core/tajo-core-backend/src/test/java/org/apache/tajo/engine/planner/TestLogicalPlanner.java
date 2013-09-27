@@ -59,7 +59,7 @@ public class TestLogicalPlanner {
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
-      catalog.registerFunction(funcDesc);
+      catalog.createFunction(funcDesc);
     }
 
     Schema schema = new Schema();
@@ -108,7 +108,7 @@ public class TestLogicalPlanner {
       catalog.addTable(d);
     }
 
-    catalog.registerFunction(funcDesc);
+    catalog.createFunction(funcDesc);
     sqlAnalyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
   }

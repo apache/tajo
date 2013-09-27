@@ -22,6 +22,7 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ObjectArrays;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -39,6 +40,7 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.util.IndexUtil;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.List;
@@ -375,7 +377,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       if (algorithm == GroupbyAlgorithm.HASH_AGGREGATION) {
         return createInMemoryHashAggregation(context, groupbyNode, subOp);
       } else {
-        return createSortAggregation(context, groupbyNode, subOp);
+        return createSortAggregation(context, property, groupbyNode, subOp);
       }
     }
     return createBestAggregationPlan(context, groupbyNode, subOp);
@@ -387,19 +389,33 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return new HashAggregateExec(ctx, groupbyNode, subOp);
   }
 
-  private PhysicalExec createSortAggregation(TaskAttemptContext ctx,GroupbyNode groupbyNode, PhysicalExec subOp)
+  private PhysicalExec createSortAggregation(TaskAttemptContext ctx, EnforceProperty property, GroupbyNode groupbyNode, PhysicalExec subOp)
       throws IOException {
+
     Column[] grpColumns = groupbyNode.getGroupingColumns();
-    SortSpec[] specs = new SortSpec[grpColumns.length];
+    SortSpec[] sortSpecs = new SortSpec[grpColumns.length];
     for (int i = 0; i < grpColumns.length; i++) {
-      specs[i] = new SortSpec(grpColumns[i], true, false);
+      sortSpecs[i] = new SortSpec(grpColumns[i], true, false);
     }
-    SortNode sortNode = new SortNode(-1, specs);
+
+    if (property != null) {
+      List<CatalogProtos.SortSpecProto> sortSpecProtos = property.getGroupby().getSortSpecsList();
+      SortSpec[] enforcedSortSpecs = new SortSpec[sortSpecProtos.size()];
+      int i = 0;
+
+      for (int j = 0; j < sortSpecProtos.size(); i++, j++) {
+        enforcedSortSpecs[i] = new SortSpec(sortSpecProtos.get(j));
+      }
+
+      sortSpecs = ObjectArrays.concat(sortSpecs, enforcedSortSpecs, SortSpec.class);
+    }
+
+    SortNode sortNode = new SortNode(-1, sortSpecs);
     sortNode.setInSchema(subOp.getSchema());
     sortNode.setOutSchema(subOp.getSchema());
     // SortExec sortExec = new SortExec(sortNode, child);
     ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
-    LOG.info("The planner chooses [Sort Aggregation]");
+    LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
     return new SortAggregateExec(ctx, groupbyNode, sortExec);
   }
 
@@ -420,7 +436,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       LOG.info("The planner chooses [Hash Aggregation]");
       return createInMemoryHashAggregation(context, groupbyNode, subOp);
     } else {
-      return createSortAggregation(context, groupbyNode, subOp);
+      return createSortAggregation(context, null, groupbyNode, subOp);
     }
   }
 

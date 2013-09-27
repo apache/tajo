@@ -35,13 +35,11 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
-  public static String getCanonicalName(String signature,
-      Collection<DataType> paramTypes) {
+  public static String getCanonicalName(String signature, Collection<DataType> paramTypes) {
     DataType [] types = paramTypes.toArray(new DataType[paramTypes.size()]);
     return getCanonicalName(signature, types);
   }
-  public static String getCanonicalName(String signature,
-      DataType...paramTypes) {
+  public static String getCanonicalName(String signature, DataType...paramTypes) {
     StringBuilder sb = new StringBuilder(signature);
     sb.append("(");
     int i = 0;
@@ -50,7 +48,6 @@ public class CatalogUtil {
       if(i < paramTypes.length - 1) {
         sb.append(",");
       }
-      
       i++;
     }
     sb.append(")");

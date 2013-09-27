@@ -34,6 +34,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-145: count(distinct column) should be supported. (hyunsik)
+
     TAJO-197: Implement Enforcer that forces physical planner to choose
     specified algorithms. (hyunsik)
 

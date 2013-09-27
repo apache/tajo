@@ -16,29 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.builtin;
+package org.apache.tajo.annotation;
 
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.function.FunctionContext;
-import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.storage.Tuple;
-
-/**
- * Count(column) function
- */
-public final class CountValue extends CountRows {
-
-  public CountValue() {
-    super(new Column[] {
-        new Column("col", Type.ANY)
-    });
-  }
-
-  @Override
-  public void eval(FunctionContext ctx, Tuple params) {
-    if (!(params.get(0) instanceof NullDatum)) {
-      ((CountRowContext) ctx).count++;
-    }
-  }
+@java.lang.annotation.Documented
+@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+@java.lang.annotation.Target({java.lang.annotation.ElementType.PARAMETER, java.lang.annotation.ElementType.FIELD})
+public @interface Nullable {
 }

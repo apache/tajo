@@ -189,6 +189,10 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
       currentRequired.addAll(EvalTreeUtil.findDistinctRefColumns(target.getEvalTree()));
     }
 
+    for (Column column : node.getGroupingColumns()) {
+      currentRequired.add(column);
+    }
+
     PushDownContext groupByContext = new PushDownContext(context);
     groupByContext.upperRequired = currentRequired;
     return pushDownCommonPost(groupByContext, node, stack);

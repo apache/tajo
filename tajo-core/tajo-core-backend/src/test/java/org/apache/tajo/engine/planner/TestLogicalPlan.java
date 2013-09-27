@@ -52,7 +52,7 @@ public class TestLogicalPlan {
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
-      catalog.registerFunction(funcDesc);
+      catalog.createFunction(funcDesc);
     }
 
     // TPC-H Schema for Complex Queries

@@ -35,7 +35,6 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
@@ -139,7 +138,7 @@ public class TestBNLJoinExec {
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
-    enforcer.addJoin(joinNode.getPID(), JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN);
+    enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN);
 
     Fragment[] empFrags = StorageManager.splitNG(conf, "e", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
@@ -180,7 +179,7 @@ public class TestBNLJoinExec {
 
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
     Enforcer enforcer = new Enforcer();
-    enforcer.addJoin(joinNode.getPID(), JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN);
+    enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBNLInnerJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(),

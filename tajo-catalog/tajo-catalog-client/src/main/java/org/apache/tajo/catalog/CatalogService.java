@@ -22,6 +22,8 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 
 import java.util.Collection;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
+
 public interface CatalogService {
 
   /**
@@ -76,21 +78,15 @@ public interface CatalogService {
 
   boolean deleteIndex(String indexName);
 
-  boolean registerFunction(FunctionDesc funcDesc);
+  boolean createFunction(FunctionDesc funcDesc);
 
-  boolean unregisterFunction(String signature, DataType... paramTypes);
+  boolean dropFunction(String signature);
 
-  /**
-   *
-   * @param signature
-   * @return
-   */
   FunctionDesc getFunction(String signature, DataType... paramTypes);
 
-  /**
-   *
-   * @param signature
-   * @return
-   */
+  FunctionDesc getFunction(String signature, FunctionType funcType, DataType... paramTypes);
+
   boolean containFunction(String signature, DataType... paramTypes);
+
+  boolean containFunction(String signature, FunctionType funcType, DataType... paramTypes);
 }

@@ -107,8 +107,12 @@ message TableDescProto {
 }
 
 enum FunctionType {
-	GENERAL = 0;
-	AGGREGATION = 1;
+  GENERAL = 0;
+  AGGREGATION = 1;
+  DISTINCT_AGGREGATION = 2;
+	UDF = 3;
+	UDA = 4;
+	DISTINCT_UDA = 5;
 }
 
 message FunctionDescProto {
@@ -151,17 +155,18 @@ message GetFunctionsResponse {
 
 message UnregisterFunctionRequest {
 	required string signature = 1;
-	repeated DataType parameterTypes = 2;
 }
 
 message GetFunctionMetaRequest {
 	required string signature = 1;
-	repeated DataType parameterTypes = 2;
+	optional FunctionType functionType = 2;
+	repeated DataType parameterTypes = 3;
 }
 
 message ContainFunctionRequest {
 	required string signature = 1;
-	repeated DataType parameterTypes = 2;
+	optional FunctionType functionType = 2;
+	repeated DataType parameterTypes = 3;
 }
 
 message TableStatProto {

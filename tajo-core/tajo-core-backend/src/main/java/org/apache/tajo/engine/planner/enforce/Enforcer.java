@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.enforce;
 
 
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.TUtil;
@@ -29,6 +30,7 @@ import java.util.Map;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.GroupbyEnforce.GroupbyAlgorithm;
 
 public class Enforcer implements ProtoObject<EnforcerProto> {
   Map<EnforceType, List<EnforceProperty>> properties;
@@ -88,7 +90,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
     TUtil.putToNestedList(properties, builder.getType(), builder.build());
   }
 
-  public void addJoin(int pid, JoinEnforce.JoinAlgorithm algorithm) {
+  public void enforceJoinAlgorithm(int pid, JoinEnforce.JoinAlgorithm algorithm) {
     EnforceProperty.Builder builder = newProperty();
     JoinEnforce.Builder enforce = JoinEnforce.newBuilder();
     enforce.setPid(pid);
@@ -99,18 +101,34 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
     TUtil.putToNestedList(properties, builder.getType(), builder.build());
   }
 
-  public void addGroupby(int pid, GroupbyEnforce.GroupbyAlgorithm algorithm) {
+  public void enforceSortAggregation(int pid, @Nullable SortSpec[] sortSpecs) {
     EnforceProperty.Builder builder = newProperty();
     GroupbyEnforce.Builder enforce = GroupbyEnforce.newBuilder();
     enforce.setPid(pid);
-    enforce.setAlgorithm(algorithm);
+    enforce.setAlgorithm(GroupbyAlgorithm.SORT_AGGREGATION);
+    if (sortSpecs != null) {
+      for (SortSpec sortSpec : sortSpecs) {
+        enforce.addSortSpecs(sortSpec.getProto());
+      }
+    }
 
     builder.setType(EnforceType.GROUP_BY);
     builder.setGroupby(enforce.build());
     TUtil.putToNestedList(properties, builder.getType(), builder.build());
   }
 
-  public void addSort(int pid, SortEnforce.SortAlgorithm algorithm) {
+  public void enforceHashAggregation(int pid) {
+    EnforceProperty.Builder builder = newProperty();
+    GroupbyEnforce.Builder enforce = GroupbyEnforce.newBuilder();
+    enforce.setPid(pid);
+    enforce.setAlgorithm(GroupbyAlgorithm.HASH_AGGREGATION);
+
+    builder.setType(EnforceType.GROUP_BY);
+    builder.setGroupby(enforce.build());
+    TUtil.putToNestedList(properties, builder.getType(), builder.build());
+  }
+
+  public void enforceSortAlgorithm(int pid, SortEnforce.SortAlgorithm algorithm) {
     EnforceProperty.Builder builder = newProperty();
     SortEnforce.Builder enforce = SortEnforce.newBuilder();
     enforce.setPid(pid);

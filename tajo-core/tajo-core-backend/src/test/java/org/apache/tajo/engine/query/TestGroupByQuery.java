@@ -18,8 +18,11 @@
 
 package org.apache.tajo.engine.query;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -29,6 +32,7 @@ import org.junit.experimental.categories.Category;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -46,6 +50,54 @@ public class TestGroupByQuery {
 
   @AfterClass
   public static void tearDown() throws Exception {
+  }
+
+  @Test
+  public final void testGroupBy() throws Exception {
+    ResultSet res = tpch.execute(
+        "select count(1) as unique_key from lineitem;");
+    assertTrue(res.next());
+    assertEquals(5, res.getLong(1));
+    assertFalse(res.next());
+    res.close();
+  }
+
+  @Test
+  public final void testGroupBy2() throws Exception {
+    ResultSet res = tpch.execute(
+        "select count(1) as unique_key from lineitem group by l_linenumber");
+    Set<Long> expected = Sets.newHashSet(2l,3l);
+    for (int i = 0; i < 2; i++) {
+      assertTrue(res.next());
+      assertTrue(expected.contains(res.getLong(1)));
+    }
+    assertFalse(res.next());
+    res.close();
+  }
+
+  @Test
+  public final void testCountDistinct() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_orderkey, max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key from lineitem " +
+            "group by l_orderkey");
+
+    long [][] expectedRows = new long[3][];
+    expectedRows[0] = new long [] {1,1,2};
+    expectedRows[1] = new long [] {2,2,1};
+    expectedRows[2] = new long [] {3,3,2};
+
+    Map<Long, long []> expected = Maps.newHashMap();
+    for (long [] expectedRow : expectedRows) {
+      expected.put(expectedRow[0], expectedRow);
+    }
+    for (int i = 0; i < expectedRows.length; i++) {
+      assertTrue(res.next());
+      long [] expectedRow = expected.get(res.getLong(1));
+      assertEquals(expectedRow[1], res.getLong(2));
+      assertEquals(expectedRow[2], res.getLong(3));
+    }
+    assertFalse(res.next());
+    res.close();
   }
 
   @Test
@@ -94,7 +146,9 @@ public class TestGroupByQuery {
 
   @Test
   public final void testHavingWithNamedTarget() throws Exception {
-    ResultSet res = tpch.execute("select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey having total >= 2 or num = 3");
+    ResultSet res = tpch.execute(
+        "select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem " +
+            "group by l_orderkey having total >= 2 or num = 3");
     Map<Integer, Double> result = TUtil.newHashMap();
     result.put(3, 2.5d);
     result.put(2, 2.0d);
@@ -112,7 +166,9 @@ public class TestGroupByQuery {
 
   @Test
   public final void testHavingWithAggFunction() throws Exception {
-    ResultSet res = tpch.execute("select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey having avg(l_partkey) = 2.5 or num = 1");
+    ResultSet res = tpch.execute(
+        "select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem " +
+            "group by l_orderkey having avg(l_partkey) = 2.5 or num = 1");
     Map<Integer, Double> result = TUtil.newHashMap();
     result.put(3, 2.5d);
     result.put(2, 2.0d);
@@ -131,7 +187,8 @@ public class TestGroupByQuery {
   //@Test
   public final void testCube() throws Exception {
     ResultSet res = tpch.execute(
-        "cube_test := select l_orderkey, l_partkey, sum(l_quantity) from lineitem group by cube(l_orderkey, l_partkey)");
+        "cube_test := select l_orderkey, l_partkey, sum(l_quantity) from lineitem " +
+            "group by cube(l_orderkey, l_partkey)");
     try {
       int count = 0;
       for (;res.next();) {

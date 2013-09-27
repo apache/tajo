@@ -85,7 +85,7 @@ public class TestPlannerUtil {
         CatalogUtil.newDataTypesWithoutLen(Type.INT4),
         CatalogUtil.newDataTypesWithoutLen(Type.INT4));
 
-    catalog.registerFunction(funcDesc);
+    catalog.createFunction(funcDesc);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
   }

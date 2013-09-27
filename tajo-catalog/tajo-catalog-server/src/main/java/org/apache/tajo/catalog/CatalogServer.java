@@ -27,7 +27,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.exception.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
 import org.apache.tajo.catalog.store.DBStore;
@@ -39,13 +38,20 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.*;
 
 /**
  * This class provides the catalog service. The catalog service enables clients
@@ -53,7 +59,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * cluster information.
  */
 public class CatalogServer extends AbstractService {
-
   private final static Log LOG = LogFactory.getLog(CatalogServer.class);
   private TajoConf conf;
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -61,8 +66,8 @@ public class CatalogServer extends AbstractService {
   private final Lock wlock = lock.writeLock();
 
   private CatalogStore store;
-
-  private Map<String, FunctionDescProto> functions = new HashMap<String, FunctionDescProto>();
+  private Map<String, List<FunctionDescProto>> functions = new ConcurrentHashMap<String,
+      List<FunctionDescProto>>();
 
   // RPC variables
   private ProtoBlockingRpcServer rpcServer;
@@ -120,7 +125,7 @@ public class CatalogServer extends AbstractService {
   private void initBuiltinFunctions(List<FunctionDesc> functions)
       throws ServiceException {
     for (FunctionDesc desc : functions) {
-      handler.registerFunction(null, desc.getProto());
+      handler.createFunction(null, desc.getProto());
     }
   }
 
@@ -161,8 +166,7 @@ public class CatalogServer extends AbstractService {
     return this.bindAddress;
   }
 
-  public class CatalogProtocolHandler
-      implements CatalogProtocolService.BlockingInterface {
+  public class CatalogProtocolHandler implements CatalogProtocolService.BlockingInterface {
 
     @Override
     public TableDescProto getTableDesc(RpcController controller,
@@ -210,10 +214,10 @@ public class CatalogServer extends AbstractService {
     public GetFunctionsResponse getFunctions(RpcController controller,
                                              NullProto request)
         throws ServiceException {
-      Iterator<FunctionDescProto> iterator = functions.values().iterator();
+      Iterator<List<FunctionDescProto>> iterator = functions.values().iterator();
       GetFunctionsResponse.Builder builder = GetFunctionsResponse.newBuilder();
       while (iterator.hasNext()) {
-        builder.addFunctionDesc(iterator.next());
+        builder.addAllFunctionDesc(iterator.next());
       }
       return builder.build();
     }
@@ -397,78 +401,191 @@ public class CatalogServer extends AbstractService {
       return BOOL_TRUE;
     }
 
+    public boolean checkIfBuiltin(FunctionType type) {
+      return type == GENERAL || type == AGGREGATION || type == DISTINCT_AGGREGATION;
+    }
+
+    private boolean containFunction(String signature) {
+      List<FunctionDescProto> found = findFunction(signature);
+      return found != null && found.size() > 0;
+    }
+
+    private boolean containFunction(String signature, FunctionType type, List<DataType> params) {
+      return findFunction(signature, type, params) != null;
+    }
+
+    private List<FunctionDescProto> findFunction(String signature) {
+      return functions.get(signature);
+    }
+
+    private FunctionDescProto findFunction(String signature, List<DataType> params) {
+      if (functions.containsKey(signature)) {
+        for (FunctionDescProto existing : functions.get(signature)) {
+          if (existing.getParameterTypesList().containsAll(params) &&
+              params.containsAll(existing.getParameterTypesList())) {
+            return existing;
+          }
+        }
+      }
+      return null;
+    }
+
+    private FunctionDescProto findFunction(String signature, FunctionType type, List<DataType> params) {
+      if (functions.containsKey(signature)) {
+        for (FunctionDescProto existing : functions.get(signature)) {
+          if (existing.getType() == type &&
+              existing.getParameterTypesList().containsAll(params)
+              && params.containsAll(existing.getParameterTypesList())) {
+            return existing;
+          }
+        }
+      }
+      return null;
+    }
+
+    private FunctionDescProto findFunction(FunctionDescProto target) {
+      return findFunction(target.getSignature(), target.getType(), target.getParameterTypesList());
+    }
+
     @Override
-    public BoolProto registerFunction(RpcController controller,
-                                      FunctionDescProto funcDesc)
+    public BoolProto createFunction(RpcController controller, FunctionDescProto funcDesc)
         throws ServiceException {
-      String canonicalName =
-          CatalogUtil.getCanonicalName(funcDesc.getSignature(),
-              funcDesc.getParameterTypesList());
-      if (functions.containsKey(canonicalName)) {
-        throw new AlreadyExistsFunctionException(canonicalName);
+      FunctionSignature signature = FunctionSignature.create(funcDesc);
+
+      if (functions.containsKey(funcDesc.getSignature())) {
+        FunctionDescProto found = findFunction(funcDesc);
+        if (found != null) {
+          throw new AlreadyExistsFunctionException(signature.toString());
+        }
       }
 
-      functions.put(canonicalName, funcDesc);
+      TUtil.putToNestedList(functions, funcDesc.getSignature(), funcDesc);
       if (LOG.isDebugEnabled()) {
-        LOG.info("Function " + canonicalName + " is registered.");
+        LOG.info("Function " + signature + " is registered.");
       }
 
       return BOOL_TRUE;
     }
 
     @Override
-    public BoolProto unregisterFunction(RpcController controller,
-                                        UnregisterFunctionRequest request)
+    public BoolProto dropFunction(RpcController controller, UnregisterFunctionRequest request)
         throws ServiceException {
-      String signature = request.getSignature();
-      List<DataType> paramTypes = new ArrayList<DataType>();
-      int size = request.getParameterTypesCount();
-      for (int i = 0; i < size; i++) {
-        paramTypes.add(request.getParameterTypes(i));
-      }
-      String canonicalName = CatalogUtil.getCanonicalName(signature, paramTypes);
-      if (!functions.containsKey(canonicalName)) {
-        throw new NoSuchFunctionException(canonicalName);
+
+      if (!containFunction(request.getSignature())) {
+        throw new NoSuchFunctionException(request.getSignature());
       }
 
-      functions.remove(canonicalName);
-      LOG.info("GeneralFunction " + canonicalName + " is unregistered.");
+      functions.remove(request.getSignature());
+      LOG.info(request.getSignature() + " is dropped.");
 
       return BOOL_TRUE;
     }
 
     @Override
-    public FunctionDescProto getFunctionMeta(RpcController controller,
-                                             GetFunctionMetaRequest request)
+    public FunctionDescProto getFunctionMeta(RpcController controller, GetFunctionMetaRequest request)
         throws ServiceException {
-      List<DataType> paramTypes = new ArrayList<DataType>();
-      int size = request.getParameterTypesCount();
-      for (int i = 0; i < size; i++) {
-        paramTypes.add(request.getParameterTypes(i));
-      }
-
-      String key = CatalogUtil.getCanonicalName(
-          request.getSignature().toLowerCase(), paramTypes);
-      if (!functions.containsKey(key)) {
+      if (request.hasFunctionType()) {
+        if (containFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList())) {
+          FunctionDescProto desc = findFunction(request.getSignature(), request.getFunctionType(),
+              request.getParameterTypesList());
+          return desc;
+        }
         return null;
       } else {
-        return functions.get(key);
+        FunctionDescProto function = findFunction(request.getSignature(), request.getParameterTypesList());
+        return function;
       }
     }
 
     @Override
-    public BoolProto containFunction(RpcController controller,
-                                     ContainFunctionRequest request)
+    public BoolProto containFunction(RpcController controller, ContainFunctionRequest request)
         throws ServiceException {
-      List<DataType> paramTypes = new ArrayList<DataType>();
-      int size = request.getParameterTypesCount();
-      for (int i = 0; i < size; i++) {
-        paramTypes.add(request.getParameterTypes(i));
+      boolean returnValue;
+      if (request.hasFunctionType()) {
+        returnValue = containFunction(request.getSignature(), request.getFunctionType(),
+            request.getParameterTypesList());
+      } else {
+        returnValue = containFunction(request.getSignature());
       }
-      boolean returnValue =
-          functions.containsKey(CatalogUtil.getCanonicalName(
-              request.getSignature().toLowerCase(), paramTypes));
+
       return BoolProto.newBuilder().setValue(returnValue).build();
+    }
+  }
+
+  private static class FunctionSignature implements Comparable<FunctionSignature> {
+    private String signature;
+    private FunctionType type;
+    private DataType [] arguments;
+
+    public FunctionSignature(String signature, FunctionType type, List<DataType> arguments) {
+      this.signature = signature;
+      this.type = type;
+      this.arguments = arguments.toArray(new DataType[arguments.size()]);
+    }
+
+    public static FunctionSignature create(FunctionDescProto proto) {
+      return new FunctionSignature(proto.getSignature(), proto.getType(), proto.getParameterTypesList());
+    }
+
+    public static FunctionSignature create (GetFunctionMetaRequest proto) {
+      return new FunctionSignature(proto.getSignature(), proto.getFunctionType(), proto.getParameterTypesList());
+    }
+
+    public static FunctionSignature create(ContainFunctionRequest proto) {
+      return new FunctionSignature(proto.getSignature(), proto.getFunctionType(), proto.getParameterTypesList());
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append(signature);
+      sb.append("#").append(type.name());
+      sb.append("(");
+      int i = 0;
+      for (DataType type : arguments) {
+        sb.append(type.getType());
+        sb.append("[").append(type.getLength()).append("]");
+        if(i < arguments.length - 1) {
+          sb.append(",");
+        }
+        i++;
+      }
+      sb.append(")");
+
+      return sb.toString();
+    }
+
+    @Override
+    public int hashCode() {
+      return com.google.common.base.Objects.hashCode(signature, type, arguments);
+    }
+
+    @Override
+    public int compareTo(FunctionSignature o) {
+      int signatureCmp = signature.compareTo(o.signature);
+      if (signatureCmp != 0) {
+        return signatureCmp;
+      }
+
+      int typeCmp = type.compareTo(o.type);
+      if (typeCmp != 0) {
+        return typeCmp;
+      }
+
+      int min = Math.min(arguments.length, o.arguments.length);
+      int argCmp = 0;
+      for (int i = 0; i < min; i++) {
+        if (arguments.length < min && o.arguments.length < min) {
+          argCmp = arguments[i].getType().compareTo(o.arguments[i].getType());
+
+          if (argCmp != 0) {
+            return argCmp;
+          }
+        } else {
+          argCmp = arguments.length - o.arguments.length;
+        }
+      }
+      return argCmp;
     }
   }
 

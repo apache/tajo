@@ -602,7 +602,7 @@ public class LogicalPlan {
       return targetListManager.size();
     }
 
-    public void fillTarget(int idx) throws VerifyException {
+    public void fillTarget(int idx) throws PlanningException {
       targetListManager.update(idx, planner.createTarget(LogicalPlan.this, this, getProjection().getTargets()[idx]));
     }
 
@@ -623,7 +623,7 @@ public class LogicalPlan {
       return targetListManager.getUpdatedSchema();
     }
 
-    public void fillTargets() {
+    public void fillTargets() throws PlanningException {
       for (int i = 0; i < getTargetListNum(); i++) {
         if (!isAlreadyTargetCreated(i)) {
           try {
@@ -713,6 +713,16 @@ public class LogicalPlan {
           // Set the current targets to the GroupByNode because the GroupByNode is the last projection operator.
           GroupbyNode groupbyNode = (GroupbyNode) node;
           groupbyNode.setTargets(getCurrentTargets());
+          boolean distinct = false;
+          for (Target target : groupbyNode.getTargets()) {
+            for (AggFuncCallEval aggrFunc : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {
+              if (aggrFunc.isDistinct()) {
+                distinct = true;
+                break;
+              }
+            }
+          }
+          groupbyNode.setDistinct(distinct);
           node.setOutSchema(updateSchema());
 
           // if a having condition is given,

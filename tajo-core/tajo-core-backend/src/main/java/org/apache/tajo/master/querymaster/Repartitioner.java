@@ -469,7 +469,7 @@ public class Repartitioner {
       }
     }
 
-    GroupbyNode groupby = (GroupbyNode) childSubQuery.getBlock().getPlan();
+    GroupbyNode groupby = PlannerUtil.findTopNode(subQuery.getBlock().getPlan(), NodeType.GROUP_BY);
     // the number of tasks cannot exceed the number of merged fetch uris.
     int determinedTaskNum = Math.min(maxNum, finalFetchURI.size());
     if (groupby.getGroupingColumns().length == 0) {

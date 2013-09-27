@@ -37,8 +37,8 @@ service CatalogProtocolService {
   rpc getIndexByName(StringProto) returns (IndexDescProto);
   rpc getIndex(GetIndexRequest) returns (IndexDescProto);
   rpc delIndex(StringProto) returns (BoolProto);
-  rpc registerFunction(FunctionDescProto) returns (BoolProto);
-  rpc unregisterFunction(UnregisterFunctionRequest) returns (BoolProto);
+  rpc createFunction(FunctionDescProto) returns (BoolProto);
+  rpc dropFunction(UnregisterFunctionRequest) returns (BoolProto);
   rpc getFunctionMeta(GetFunctionMetaRequest) returns (FunctionDescProto);
   rpc containFunction(ContainFunctionRequest) returns (BoolProto);
 }

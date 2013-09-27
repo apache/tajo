@@ -31,6 +31,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   @Expose private Schema havingSchema;
 	@Expose private EvalNode havingCondition = null;
 	@Expose private Target [] targets;
+  @Expose private boolean hasDistinct = false;
 	
 	public GroupbyNode(int pid, final Column [] columns) {
 		super(pid, NodeType.GROUP_BY);
@@ -45,10 +46,18 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   public final boolean isEmptyGrouping() {
     return columns == null || columns.length == 0;
   }
-	
+
 	public final Column [] getGroupingColumns() {
 	  return this.columns;
 	}
+
+  public final boolean isDistinct() {
+    return hasDistinct;
+  }
+
+  public void setDistinct(boolean distinct) {
+    hasDistinct = distinct;
+  }
 	
 	public final boolean hasHavingCondition() {
 	  return this.havingCondition != null;

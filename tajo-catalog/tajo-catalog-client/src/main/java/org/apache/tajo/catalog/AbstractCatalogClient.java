@@ -49,8 +49,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   @Override
   public final TableDesc getTableDesc(final String name) {
     try {
-      return CatalogUtil.newTableDesc(stub.getTableDesc(null, StringProto.newBuilder()
-          .setValue(name).build()));
+      return CatalogUtil.newTableDesc(stub.getTableDesc(null, StringProto.newBuilder().setValue(name).build()));
     } catch (ServiceException e) {
       LOG.error(e);
       return null;
@@ -201,9 +200,9 @@ public abstract class AbstractCatalogClient implements CatalogService {
   }
 
   @Override
-  public final boolean registerFunction(final FunctionDesc funcDesc) {
+  public final boolean createFunction(final FunctionDesc funcDesc) {
     try {
-      return stub.registerFunction(null, funcDesc.getProto()).getValue();
+      return stub.createFunction(null, funcDesc.getProto()).getValue();
     } catch (ServiceException e) {
       LOG.error(e);
       return false;
@@ -211,16 +210,11 @@ public abstract class AbstractCatalogClient implements CatalogService {
   }
 
   @Override
-  public final boolean unregisterFunction(final String signature,
-                                          DataType... paramTypes) {
-    UnregisterFunctionRequest.Builder builder =
-        UnregisterFunctionRequest.newBuilder();
+  public final boolean dropFunction(final String signature) {
+    UnregisterFunctionRequest.Builder builder = UnregisterFunctionRequest.newBuilder();
     builder.setSignature(signature);
-    for (DataType type : paramTypes) {
-      builder.addParameterTypes(type);
-    }
     try {
-      return stub.unregisterFunction(null, builder.build()).getValue();
+      return stub.dropFunction(null, builder.build()).getValue();
     } catch (ServiceException e) {
       LOG.error(e);
       return false;
@@ -228,11 +222,17 @@ public abstract class AbstractCatalogClient implements CatalogService {
   }
 
   @Override
-  public final FunctionDesc getFunction(final String signature,
-                                        DataType... paramTypes) {
-    GetFunctionMetaRequest.Builder builder =
-        GetFunctionMetaRequest.newBuilder();
+  public final FunctionDesc getFunction(final String signature, DataType... paramTypes) {
+    return getFunction(signature, null, paramTypes);
+  }
+
+  @Override
+  public final FunctionDesc getFunction(final String signature, FunctionType funcType, DataType... paramTypes) {
+    GetFunctionMetaRequest.Builder builder = GetFunctionMetaRequest.newBuilder();
     builder.setSignature(signature);
+    if (funcType != null) {
+      builder.setFunctionType(funcType);
+    }
     for (DataType type : paramTypes) {
       builder.addParameterTypes(type);
     }
@@ -253,10 +253,17 @@ public abstract class AbstractCatalogClient implements CatalogService {
   }
 
   @Override
-  public final boolean containFunction(final String signature,
-                                       DataType... paramTypes) {
+  public final boolean containFunction(final String signature, DataType... paramTypes) {
+    return containFunction(signature, null, paramTypes);
+  }
+
+  @Override
+  public final boolean containFunction(final String signature, FunctionType funcType, DataType... paramTypes) {
     ContainFunctionRequest.Builder builder =
         ContainFunctionRequest.newBuilder();
+    if (funcType != null) {
+      builder.setFunctionType(funcType);
+    }
     builder.setSignature(signature);
     for (DataType type : paramTypes) {
       builder.addParameterTypes(type);

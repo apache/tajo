@@ -38,7 +38,6 @@ import org.apache.hadoop.yarn.service.Service;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -278,6 +277,9 @@ public class TajoMaster extends CompositeService {
     sqlFuncs.add(new FunctionDesc("count", CountRows.class, FunctionType.AGGREGATION,
         CatalogUtil.newDataTypesWithoutLen(Type.INT8),
         CatalogUtil.newDataTypesWithoutLen()));
+    sqlFuncs.add(new FunctionDesc("count", CountValueDistinct.class, FunctionType.DISTINCT_AGGREGATION,
+        CatalogUtil.newDataTypesWithoutLen(Type.INT8),
+        CatalogUtil.newDataTypesWithoutLen(Type.ANY)));
 
     // GeoIP
     sqlFuncs.add(new FunctionDesc("in_country", InCountry.class, FunctionType.GENERAL,

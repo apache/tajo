@@ -42,7 +42,6 @@ import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -60,7 +59,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.GroupbyEnforce;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.PartitionType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.SortEnforce.SortAlgorithm;
 import static org.junit.Assert.*;
@@ -90,7 +88,7 @@ public class TestPhysicalPlanner {
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
     catalog = util.getMiniCatalogCluster().getCatalog();
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
-      catalog.registerFunction(funcDesc);
+      catalog.createFunction(funcDesc);
     }
 
     Schema schema = new Schema();
@@ -864,7 +862,7 @@ public class TestPhysicalPlanner {
     SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
 
     Enforcer enforcer = new Enforcer();
-    enforcer.addSort(sortNode.getPID(), SortAlgorithm.IN_MEMORY_SORT);
+    enforcer.enforceSortAlgorithm(sortNode.getPID(), SortAlgorithm.IN_MEMORY_SORT);
     TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
@@ -885,7 +883,7 @@ public class TestPhysicalPlanner {
     sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
 
     enforcer = new Enforcer();
-    enforcer.addSort(sortNode.getPID(), SortAlgorithm.MERGE_SORT);
+    enforcer.enforceSortAlgorithm(sortNode.getPID(), SortAlgorithm.MERGE_SORT);
     ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
@@ -912,7 +910,7 @@ public class TestPhysicalPlanner {
     GroupbyNode groupByNode = PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
 
     Enforcer enforcer = new Enforcer();
-    enforcer.addGroupby(groupByNode.getPID(), GroupbyEnforce.GroupbyAlgorithm.HASH_AGGREGATION);
+    enforcer.enforceHashAggregation(groupByNode.getPID());
     TaskAttemptContext ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
@@ -933,7 +931,7 @@ public class TestPhysicalPlanner {
     groupByNode = PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
 
     enforcer = new Enforcer();
-    enforcer.addGroupby(groupByNode.getPID(), GroupbyEnforce.GroupbyAlgorithm.SORT_AGGREGATION);
+    enforcer.enforceSortAggregation(groupByNode.getPID(), null);
     ctx = new TaskAttemptContext(conf, LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new Fragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);

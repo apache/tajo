@@ -165,4 +165,20 @@ public class TUtil {
       map.put(k1, TUtil.newLinkedHashMap(k2, value));
     }
   }
+
+  public static String arrayToString(Object [] objects) {
+    boolean first = false;
+    StringBuilder sb = new StringBuilder();
+    for(Object object : objects) {
+      if (first) {
+        first = false;
+      } else {
+        sb.append(", ");
+      }
+
+      sb.append(object.toString());
+    }
+
+    return sb.toString();
+  }
 }

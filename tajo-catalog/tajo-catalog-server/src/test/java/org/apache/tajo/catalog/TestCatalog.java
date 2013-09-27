@@ -179,40 +179,36 @@ public class TestCatalog {
 
 	@Test
 	public final void testRegisterFunc() throws Exception { 
-		assertFalse(catalog.containFunction("test2"));
-		FunctionDesc meta = new FunctionDesc("test2", TestFunc1.class, FunctionType.GENERAL,
+		assertFalse(catalog.containFunction("test2", FunctionType.UDF));
+		FunctionDesc meta = new FunctionDesc("test2", TestFunc1.class, FunctionType.UDF,
         CatalogUtil.newDataTypesWithoutLen(Type.INT4),
         CatalogUtil.newDataTypesWithoutLen(Type.INT4));
 
-    catalog.registerFunction(meta);
+    catalog.createFunction(meta);
 		assertTrue(catalog.containFunction("test2", CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
 		FunctionDesc retrived = catalog.getFunction("test2", CatalogUtil.newDataTypesWithoutLen(Type.INT4));
 
 		assertEquals(retrived.getSignature(),"test2");
 		assertEquals(retrived.getFuncClass(),TestFunc1.class);
-		assertEquals(retrived.getFuncType(),FunctionType.GENERAL);
+		assertEquals(retrived.getFuncType(),FunctionType.UDF);
 	}
 
   @Test
-  public final void testUnregisterFunc() throws Exception {    
-    assertFalse(catalog
-        .containFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
-    FunctionDesc meta = new FunctionDesc("test3", TestFunc1.class, FunctionType.GENERAL,
+  public final void testDropFunction() throws Exception {
+    assertFalse(catalog.containFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
+    FunctionDesc meta = new FunctionDesc("test3", TestFunc1.class, FunctionType.UDF,
         CatalogUtil.newDataTypesWithoutLen(Type.INT4),
         CatalogUtil.newDataTypesWithoutLen(Type.INT4 ));
-    catalog.registerFunction(meta);
+    catalog.createFunction(meta);
     assertTrue(catalog.containFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
-    catalog.unregisterFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4));
-    assertFalse(catalog
-        .containFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
+    catalog.dropFunction("test3");
+    assertFalse(catalog.containFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4)));
 
-    assertFalse(catalog.containFunction("test3",
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.BLOB)));
+    assertFalse(catalog.containFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.BLOB)));
     FunctionDesc overload = new FunctionDesc("test3", TestFunc2.class, FunctionType.GENERAL,
         CatalogUtil.newDataTypesWithoutLen(Type.INT4),
         CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.BLOB));
-    catalog.registerFunction(overload);
-    assertTrue(catalog.containFunction("test3",
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.BLOB)));
+    catalog.createFunction(overload);
+    assertTrue(catalog.containFunction("test3", CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.BLOB)));
   }
 }

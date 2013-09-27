@@ -57,7 +57,7 @@ public class TestEvalTree {
     util.startCatalogCluster();
     cat = util.getMiniCatalogCluster().getCatalog();
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
-      cat.registerFunction(funcDesc);
+      cat.createFunction(funcDesc);
     }
 
     Schema schema = new Schema();
@@ -72,7 +72,7 @@ public class TestEvalTree {
     FunctionDesc funcMeta = new FunctionDesc("test_sum", TestSum.class, FunctionType.GENERAL,
         CatalogUtil.newDataTypesWithoutLen(INT4),
         CatalogUtil.newDataTypesWithoutLen(INT4, INT4));
-    cat.registerFunction(funcMeta);
+    cat.createFunction(funcMeta);
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(cat);

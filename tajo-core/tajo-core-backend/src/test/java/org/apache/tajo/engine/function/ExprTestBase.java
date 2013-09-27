@@ -56,7 +56,7 @@ public class ExprTestBase {
     util.startCatalogCluster();
     cat = util.getMiniCatalogCluster().getCatalog();
     for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
-      cat.registerFunction(funcDesc);
+      cat.createFunction(funcDesc);
     }
 
     analyzer = new SQLAnalyzer();

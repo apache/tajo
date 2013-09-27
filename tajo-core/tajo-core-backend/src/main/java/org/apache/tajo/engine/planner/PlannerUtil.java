@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,10 +35,7 @@ import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.query.exception.InvalidQueryException;
 import org.apache.tajo.storage.TupleComparator;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class PlannerUtil {
   private static final Log LOG = LogFactory.getLog(PlannerUtil.class);
@@ -111,42 +109,64 @@ public class PlannerUtil {
     }
     parentNode.setChild(newNode);
   }
-  
+
   public static GroupbyNode transformGroupbyTo2P(GroupbyNode groupBy) {
     Preconditions.checkNotNull(groupBy);
 
     GroupbyNode child = null;
+
+    // cloning groupby node
     try {
-      // cloning groupby node
       child = (GroupbyNode) groupBy.clone();
+    } catch (CloneNotSupportedException e) {
+      e.printStackTrace();
+    }
 
-      List<Target> newChildTargets = Lists.newArrayList();
-      Target[] secondTargets = groupBy.getTargets();
-      Target[] firstTargets = child.getTargets();
+    List<Target> firstStepTargets = Lists.newArrayList();
+    Target[] secondTargets = groupBy.getTargets();
+    Target[] firstTargets = child.getTargets();
 
-      Target second;
-      Target first;
-      int targetId =  0;
-      for (int i = 0; i < firstTargets.length; i++) {
-        second = secondTargets[i];
-        first = firstTargets[i];
+    Target second;
+    Target first;
+    int targetId =  0;
+    for (int i = 0; i < firstTargets.length; i++) {
+      second = secondTargets[i];
+      first = firstTargets[i];
 
-        List<AggFuncCallEval> secondFuncs = EvalTreeUtil
-            .findDistinctAggFunction(second.getEvalTree());
-        List<AggFuncCallEval> firstFuncs = EvalTreeUtil.findDistinctAggFunction(first.getEvalTree());
+      List<AggFuncCallEval> secondStepFunctions = EvalTreeUtil.findDistinctAggFunction(second.getEvalTree());
+      List<AggFuncCallEval> firstStepFunctions = EvalTreeUtil.findDistinctAggFunction(first.getEvalTree());
 
-        if (firstFuncs.size() == 0) {
-          newChildTargets.add(first);
-          targetId++;
-        } else {
-          for (AggFuncCallEval func : firstFuncs) {
-            func.setFirstPhase();
-            Target newTarget = new Target(func);
+      if (firstStepFunctions.size() == 0) {
+        firstStepTargets.add(first);
+        targetId++;
+      } else {
+        for (AggFuncCallEval func : firstStepFunctions) {
+          Target newTarget;
+
+          if (func.isDistinct()) {
+            List<Column> fields = EvalTreeUtil.findAllColumnRefs(func);
+            newTarget = new Target(new FieldEval(fields.get(0)));
             String targetName = "column_" + (targetId++);
             newTarget.setAlias(targetName);
 
             AggFuncCallEval secondFunc = null;
-            for (AggFuncCallEval sf : secondFuncs) {
+            for (AggFuncCallEval sf : secondStepFunctions) {
+              if (func.equals(sf)) {
+                secondFunc = sf;
+                break;
+              }
+            }
+
+            secondFunc.setArgs(new EvalNode [] {new FieldEval(
+                new Column(targetName, newTarget.getEvalTree().getValueType()[0]))});
+          } else {
+            func.setFirstPhase();
+            newTarget = new Target(func);
+            String targetName = "column_" + (targetId++);
+            newTarget.setAlias(targetName);
+
+            AggFuncCallEval secondFunc = null;
+            for (AggFuncCallEval sf : secondStepFunctions) {
               if (func.equals(sf)) {
                 secondFunc = sf;
                 break;
@@ -158,23 +178,32 @@ public class PlannerUtil {
               secondFunc.setArgs(new EvalNode [] {new FieldEval(
                   new Column(targetName, newTarget.getEvalTree().getValueType()[0]))});
             }
-            newChildTargets.add(newTarget);
           }
+          firstStepTargets.add(newTarget);
         }
       }
 
-      Target[] targetArray = newChildTargets.toArray(new Target[newChildTargets.size()]);
+      // Getting new target list and updating input/output schema from the new target list.
+      Target[] targetArray = firstStepTargets.toArray(new Target[firstStepTargets.size()]);
+      Schema targetSchema = PlannerUtil.targetToSchema(targetArray);
+      List<Target> newTarget = Lists.newArrayList();
+      for (Column column : groupBy.getGroupingColumns()) {
+        if (!targetSchema.contains(column.getQualifiedName())) {
+          newTarget.add(new Target(new FieldEval(column)));
+        }
+      }
+      targetArray = ObjectArrays.concat(targetArray, newTarget.toArray(new Target[newTarget.size()]), Target.class);
+
       child.setTargets(targetArray);
       child.setOutSchema(PlannerUtil.targetToSchema(targetArray));
       // set the groupby chaining
       groupBy.setChild(child);
       groupBy.setInSchema(child.getOutSchema());
-    } catch (CloneNotSupportedException e) {
-      LOG.error(e);
+
     }
-    
     return child;
   }
+
   
   /**
    * Find the top logical node matched to type from the given node
@@ -402,10 +431,24 @@ public class PlannerUtil {
   }
 
   public static SortSpec[] schemaToSortSpecs(Schema schema) {
-    SortSpec[] specs = new SortSpec[schema.getColumnNum()];
+    return schemaToSortSpecs(schema.toArray());
+  }
 
-    for (int i = 0; i < schema.getColumnNum(); i++) {
-      specs[i] = new SortSpec(schema.getColumn(i), true, false);
+  public static SortSpec[] schemaToSortSpecs(Column [] columns) {
+    SortSpec[] specs = new SortSpec[columns.length];
+
+    for (int i = 0; i < columns.length; i++) {
+      specs[i] = new SortSpec(columns[i], true, false);
+    }
+
+    return specs;
+  }
+
+  public static SortSpec [] columnsToSortSpec(Collection<Column> columns) {
+    SortSpec[] specs = new SortSpec[columns.size()];
+    int i = 0;
+    for (Column column : columns) {
+      specs[i++] = new SortSpec(column, true, false);
     }
 
     return specs;
