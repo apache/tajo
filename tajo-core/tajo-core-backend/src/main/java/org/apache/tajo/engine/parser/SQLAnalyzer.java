@@ -23,12 +23,14 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.engine.parser.SQLParser.*;
 import org.apache.tajo.engine.query.exception.SQLParseError;
 import org.apache.tajo.engine.query.exception.SQLSyntaxError;
+import org.apache.tajo.storage.CSVFile;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -780,7 +782,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     if (ctx.param_clause() != null) {
-      Map<String, String> params = getParams(ctx.param_clause());
+      Map<String, String> params = escapeTableMeta(getParams(ctx.param_clause()));
       createTable.setParams(params);
     }
     return createTable;
@@ -1006,7 +1008,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         insertExpr.setStorageType(ctx.file_type.getText());
 
         if (ctx.param_clause() != null) {
-          insertExpr.setParams(getParams(ctx.param_clause()));
+          insertExpr.setParams(escapeTableMeta(getParams(ctx.param_clause())));
         }
       }
     }
@@ -1032,6 +1034,21 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       params.put(stripQuote(ctx.param(i).key.getText()), stripQuote(ctx.param(i).value.getText()));
     }
 
+    return params;
+  }
+
+  private Map<String, String> escapeTableMeta(Map<String, String> map) {
+    Map<String, String> params = new HashMap<String, String>();
+    for (Map.Entry<String, String> entry : map.entrySet()) {
+      String value = StringEscapeUtils.unescapeJava(entry.getValue());
+      if (entry.getKey().equals(CSVFile.DELIMITER)) {
+        try {
+          value = new String(new byte[]{Byte.valueOf(value).byteValue()});
+        } catch (NumberFormatException e) {
+        }
+      }
+      params.put(entry.getKey(), StringEscapeUtils.escapeJava(value));
+    }
     return params;
   }
 

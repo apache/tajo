@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -58,7 +59,7 @@ public class CSVFile {
     private FSDataOutputStream fos;
     private DataOutputStream outputStream;
     private CompressionOutputStream deflateFilter;
-    private String delimiter;
+    private char delimiter;
     private TableStatistics stats = null;
     private Compressor compressor;
     private CompressionCodecFactory codecFactory;
@@ -71,7 +72,7 @@ public class CSVFile {
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = meta.getSchema();
-      this.delimiter = this.meta.getOption(DELIMITER, DELIMITER_DEFAULT);
+      this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(DELIMITER, DELIMITER_DEFAULT)).charAt(0);
     }
 
     @Override
@@ -136,7 +137,7 @@ public class CSVFile {
           }
 
           if(colNum - 1 > i){
-            outputStream.write(delimiter.getBytes());
+            outputStream.write((byte) delimiter);
           }
 
           if (enabledStats) {
@@ -207,7 +208,7 @@ public class CSVFile {
             }
           }
           if(colNum - 1 > i){
-            outputStream.write(delimiter.getBytes());
+            outputStream.write((byte) delimiter);
           }
         }
       }
@@ -310,8 +311,7 @@ public class CSVFile {
       // Buffer size, Delimiter
       this.bufSize = DEFAULT_BUFFER_SIZE;
       String delim  = fragment.getMeta().getOption(DELIMITER, DELIMITER_DEFAULT);
-      this.delimiter = delim.charAt(0);
-
+      this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
       // Fragment information
       fs = fragment.getPath().getFileSystem(conf);
       fis = fs.open(fragment.getPath());

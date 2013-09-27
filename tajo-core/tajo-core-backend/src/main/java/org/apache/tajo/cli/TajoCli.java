@@ -446,6 +446,12 @@ public class TajoCli {
           FileUtil.humanReadableByteCount(desc.getMeta().getStat().getNumBytes(),
               true)).append("\n");
     }
+    sb.append("Options: \n");
+    for(Map.Entry<String, String> entry : desc.getMeta().getOptions().entrySet()){
+      sb.append("\t").append("'").append(entry.getKey()).append("'").append("=")
+          .append("'").append(entry.getValue()).append("'").append("\n");
+    }
+    sb.append("\n");
     sb.append("schema: \n");
 
     for(int i = 0; i < desc.getMeta().getSchema().getColumnNum(); i++) {
