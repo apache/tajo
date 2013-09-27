@@ -26,7 +26,7 @@ import java.util.regex.PatternSyntaxException;
 public class RegexPredicateEval extends PatternMatchPredicateEval {
   @Expose private String operator;
   public RegexPredicateEval(boolean not, EvalNode field, ConstEval pattern, boolean caseInsensitive) {
-    super(EvalType.Regex, not, field, pattern, caseInsensitive);
+    super(EvalType.REGEX, not, field, pattern, caseInsensitive);
     StringBuilder sb = new StringBuilder();
     if (not) {
       sb.append("!");

@@ -105,7 +105,7 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
       case SIMILAR_TO:
         result = visitSimilarTo(context, stack, (SimilarToPredicateEval) evalNode);
         break;
-      case Regex:
+      case REGEX:
         result = visitRegex(context, stack, (RegexPredicateEval) evalNode);
         break;
 

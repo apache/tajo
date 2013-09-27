@@ -4,8 +4,10 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-206: Implement String concatenation operator (||). (hyunsik)
+
     TAJO-213: NULL characters in meta of csv table should be supported.
-    (jinho)
+    (jinho)    
 
     TAJO-185: Implement split_part function. (hyunsik)
 

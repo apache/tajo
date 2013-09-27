@@ -779,7 +779,11 @@ numeric_value_expression
   ;
 
 term
-  : left=numeric_primary ((MULTIPLY|DIVIDE|MODULAR) right=numeric_primary)*
+  : left=concatenatable_term ((MULTIPLY|DIVIDE|MODULAR) right=concatenatable_term)*
+  ;
+
+concatenatable_term
+  : left=numeric_primary (CONCATENATION_OPERATOR right=numeric_primary)*
   ;
 
 array
@@ -796,14 +800,15 @@ numeric_primary
   ;
 
 literal
-  : string_value_expr
+  : string_value_expression
   | signed_numerical_literal
   | NULL
   ;
 
-string_value_expr
+string_value_expression
   : Character_String_Literal
   ;
+
 
 signed_numerical_literal
   : sign? unsigned_numerical_literal

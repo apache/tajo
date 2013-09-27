@@ -1002,6 +1002,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       case Multiply:
       case Divide:
       case Modular:
+      case Concatenate:
         BinaryOperator bin = (BinaryOperator) expr;
         return new BinaryEval(exprTypeToEvalType(expr.getType()),
             createEvalTree(plan, block, bin.getLeft()),
@@ -1125,6 +1126,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       case Multiply: return EvalType.MULTIPLY;
       case Divide: return EvalType.DIVIDE;
       case Modular: return EvalType.MODULAR;
+      case Concatenate: return EvalType.CONCATENATE;
       case Column: return EvalType.FIELD;
       case Function: return EvalType.FUNCTION;
       default: throw new RuntimeException("Unsupported type: " + type);

@@ -309,6 +309,7 @@ ASSIGN  : ':=';
 EQUAL  : '=';
 SEMI_COLON :  ';';
 COMMA : ',';
+CONCATENATION_OPERATOR : VERTICAL_BAR VERTICAL_BAR;
 NOT_EQUAL  : '<>' | '!=' | '~='| '^=' ;
 LTH : '<' ;
 LEQ : '<=';
@@ -323,6 +324,7 @@ DIVIDE  : '/';
 MODULAR : '%';
 DOT : '.';
 UNDERLINE : '_';
+VERTICAL_BAR : '|';
 
 NUMBER : Digit+;
 

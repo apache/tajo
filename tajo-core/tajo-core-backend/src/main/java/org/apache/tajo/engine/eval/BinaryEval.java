@@ -54,19 +54,20 @@ public class BinaryEval extends EvalNode implements Cloneable {
 			type == EvalType.LTH ||
 			type == EvalType.GTH ||
 			type == EvalType.LEQ ||
-			type == EvalType.GEQ
-		) {
+			type == EvalType.GEQ ) {
 			this.returnType = CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
 		} else if (
 			type == EvalType.PLUS ||
 			type == EvalType.MINUS ||
 			type == EvalType.MULTIPLY ||
 			type == EvalType.DIVIDE ||
-      type == EvalType.MODULAR
-		) {
+      type == EvalType.MODULAR ) {
 			this.returnType = SchemaUtil.newNoNameSchema(determineType(left.getValueType()[0],
 				right.getValueType()[0]));
-		}
+
+		} else if (type == EvalType.CONCATENATE) {
+      this.returnType = CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.TEXT);
+    }
 	}
 
   public BinaryEval(PartialBinaryExpr expr) {
@@ -178,6 +179,10 @@ public class BinaryEval extends EvalNode implements Cloneable {
         return leftExpr.terminate(binCtx.left).divide(rightExpr.terminate(binCtx.right));
       case MODULAR:
         return leftExpr.terminate(binCtx.left).modular(rightExpr.terminate(binCtx.right));
+
+      case CONCATENATE:
+        return DatumFactory.createText(leftExpr.terminate(binCtx.left).asChars()
+            + rightExpr.terminate(binCtx.right).asChars());
       default:
         throw new InvalidEvalException("We does not support " + type + " expression yet");
     }
@@ -197,7 +202,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	}
 	
 	public String toString() {
-		return leftExpr +" "+type+" "+rightExpr;
+		return leftExpr +" " + type.getOperatorName() + " "+rightExpr;
 	}
 	
   @Override

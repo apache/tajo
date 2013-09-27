@@ -67,10 +67,11 @@ public enum OpType {
   ValueList(ValueListExpr.class),
   Is,
 
-  // pattern matching predicates
+  // string operator or pattern matching predicates
   LikePredicate(PatternMatchPredicate.class),
   SimilarToPredicate(PatternMatchPredicate.class),
   Regexp(PatternMatchPredicate.class),
+  Concatenate(BinaryOperator.class),
 
   // arithmetic operators
   Plus(BinaryOperator.class),

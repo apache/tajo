@@ -118,13 +118,14 @@ public class QueryInProgress extends CompositeService {
       } catch (InterruptedException e) {
         break;
       }
-      if(System.currentTimeMillis() - startTime > 300 * 1000) {
+      if(System.currentTimeMillis() - startTime > 60 * 1000) {
         LOG.warn("Failed to stop QueryMaster:" + queryId);
         break;
       }
     }
 
     super.stop();
+
     if(queryMasterRpc != null) {
       //TODO release to connection pool
       queryMasterRpc.close();

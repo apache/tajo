@@ -543,14 +543,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitTerm(SQLParser.TermContext ctx) {
-    Expr current = visitNumeric_primary(ctx.numeric_primary(0));
+    Expr current = visitConcatenatable_term(ctx.concatenatable_term(0));
 
     Expr left;
     Expr right;
     for (int i = 1; i < ctx.getChildCount(); i++) {
       left = current;
       TerminalNode operator = (TerminalNode) ctx.getChild(i++);
-      right = visitNumeric_primary((Numeric_primaryContext) ctx.getChild(i));
+      right = visitConcatenatable_term((Concatenatable_termContext) ctx.getChild(i));
 
       if (operator.getSymbol().getType() == MULTIPLY) {
         current = new BinaryOperator(OpType.Multiply, left, right);
@@ -558,6 +558,27 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         current = new BinaryOperator(OpType.Divide, left, right);
       } else {
         current = new BinaryOperator(OpType.Modular, left, right);
+      }
+    }
+
+    return current;
+  }
+
+  @Override public Expr visitConcatenatable_term(SQLParser.Concatenatable_termContext ctx) {
+    Expr current = visitNumeric_primary(ctx.numeric_primary(0));
+
+    Expr left;
+    Expr right;
+    for (int i = 1; i < ctx.getChildCount(); i++) {
+      left = current;
+      i++; // skip '||' operator
+      right = visitNumeric_primary((Numeric_primaryContext) ctx.getChild(i));
+
+      if (left.getType() == OpType.Literal && right.getType() == OpType.Literal) {
+        current = new LiteralValue(((LiteralValue)left).getValue() + ((LiteralValue)right).getValue(),
+            LiteralType.String);
+      } else {
+        current = new BinaryOperator(OpType.Concatenate, left, right);
       }
     }
 
@@ -745,8 +766,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public LiteralValue visitString_value_expr(SQLParser.String_value_exprContext ctx) {
-    return new LiteralValue(stripQuote(ctx.getText()), LiteralType.String);
+  public LiteralValue visitString_value_expression(@NotNull SQLParser.String_value_expressionContext ctx) {
+    return new LiteralValue(stripQuote(ctx.Character_String_Literal().getText()), LiteralType.String);
   }
 
   @Override
