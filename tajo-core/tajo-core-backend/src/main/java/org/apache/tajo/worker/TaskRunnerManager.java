@@ -22,19 +22,22 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.service.CompositeService;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.master.querymaster.QueryMasterTask;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TaskRunnerManager extends CompositeService {
   private static final Log LOG = LogFactory.getLog(TaskRunnerManager.class);
 
   private final Map<String, TaskRunner> taskRunnerMap = new HashMap<String, TaskRunner>();
+  private final Map<String, TaskRunner> finishedTaskRunnerMap = new HashMap<String, TaskRunner>();
   private TajoWorker.WorkerContext workerContext;
   private TajoConf tajoConf;
   private AtomicBoolean stop = new AtomicBoolean(false);
+  private FinishedTaskCleanThread finishedTaskCleanThread;
 
   public TaskRunnerManager(TajoWorker.WorkerContext workerContext) {
     super(TaskRunnerManager.class.getName());
@@ -50,6 +53,8 @@ public class TaskRunnerManager extends CompositeService {
 
   @Override
   public void start() {
+    finishedTaskCleanThread = new FinishedTaskCleanThread();
+    finishedTaskCleanThread.start();
     super.start();
   }
 
@@ -66,6 +71,10 @@ public class TaskRunnerManager extends CompositeService {
         }
       }
     }
+
+    if(finishedTaskCleanThread != null) {
+      finishedTaskCleanThread.interrupted();
+    }
     super.stop();
     if(!workerContext.isStandbyMode()) {
       workerContext.stopWorker(true);
@@ -75,10 +84,25 @@ public class TaskRunnerManager extends CompositeService {
   public void stopTask(String id) {
     LOG.info("Stop Task:" + id);
     synchronized(taskRunnerMap) {
-      taskRunnerMap.remove(id);
+      TaskRunner taskRunner = taskRunnerMap.remove(id);
+      if(taskRunner != null) {
+        finishedTaskRunnerMap.put(id, taskRunner);
+      }
     }
     if(!workerContext.isStandbyMode()) {
       stop();
+    }
+  }
+
+  public Collection<TaskRunner> getTaskRunners() {
+    synchronized(taskRunnerMap) {
+      return Collections.unmodifiableCollection(taskRunnerMap.values());
+    }
+  }
+
+  public Collection<TaskRunner> getFinishedTaskRunners() {
+    synchronized(finishedTaskRunnerMap) {
+      return Collections.unmodifiableCollection(finishedTaskRunnerMap.values());
     }
   }
 
@@ -109,5 +133,40 @@ public class TaskRunnerManager extends CompositeService {
     };
 
     t.start();
+  }
+
+  class FinishedTaskCleanThread extends Thread {
+    public void run() {
+      int expireIntervalTime = tajoConf.getInt("tajo.worker.history.expire.interval.min", 12 * 60); //12 hour
+      LOG.info("FinishedQueryMasterTaskCleanThread started: expireIntervalTime=" + expireIntervalTime);
+      while(!stop.get()) {
+        try {
+          Thread.sleep(60 * 1000 * 60);   //hourly
+        } catch (InterruptedException e) {
+          break;
+        }
+        try {
+          long expireTime = System.currentTimeMillis() - expireIntervalTime * 60 * 1000;
+          cleanExpiredFinishedQueryMasterTask(expireTime);
+        } catch (Exception e) {
+          LOG.error(e.getMessage(), e);
+        }
+      }
+    }
+
+    private void cleanExpiredFinishedQueryMasterTask(long expireTime) {
+      synchronized(finishedTaskRunnerMap) {
+        List<String> expiredIds = new ArrayList<String>();
+        for(Map.Entry<String, TaskRunner> entry: finishedTaskRunnerMap.entrySet()) {
+          if(entry.getValue().getStartTime() > expireTime) {
+            expiredIds.add(entry.getKey());
+          }
+        }
+
+        for(String eachId: expiredIds) {
+          finishedTaskRunnerMap.remove(eachId);
+        }
+      }
+    }
   }
 }

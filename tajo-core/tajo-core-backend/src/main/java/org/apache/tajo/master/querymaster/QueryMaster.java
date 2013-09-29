@@ -61,6 +61,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private Map<QueryId, QueryMasterTask> queryMasterTasks = new HashMap<QueryId, QueryMasterTask>();
 
+  private Map<QueryId, QueryMasterTask> finishedQueryMasterTasks = new HashMap<QueryId, QueryMasterTask>();
+
   private ClientSessionTimeoutCheckThread clientSessionTimeoutCheckThread;
 
   private AtomicBoolean queryMasterStop = new AtomicBoolean(false);
@@ -68,6 +70,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
   private QueryMasterContext queryMasterContext;
 
   private QueryHeartbeatThread queryHeartbeatThread;
+
+  private FinishedQueryMasterTaskCleanThread finishedQueryMasterTaskCleanThread;
 
   private TajoWorker.WorkerContext workerContext;
 
@@ -112,6 +116,9 @@ public class QueryMaster extends CompositeService implements EventHandler {
     clientSessionTimeoutCheckThread = new ClientSessionTimeoutCheckThread();
     clientSessionTimeoutCheckThread.start();
 
+    finishedQueryMasterTaskCleanThread = new FinishedQueryMasterTaskCleanThread();
+    finishedQueryMasterTaskCleanThread.start();
+
     super.start();
   }
 
@@ -132,6 +139,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     if(clientSessionTimeoutCheckThread != null) {
       clientSessionTimeoutCheckThread.interrupt();
+    }
+
+    if(finishedQueryMasterTaskCleanThread != null) {
+      finishedQueryMasterTaskCleanThread.interrupt();
     }
     super.stop();
 
@@ -176,12 +187,29 @@ public class QueryMaster extends CompositeService implements EventHandler {
     return queryMasterTasks.get(queryId);
   }
 
+  public QueryMasterTask getQueryMasterTask(QueryId queryId, boolean includeFinished) {
+    QueryMasterTask queryMasterTask =  queryMasterTasks.get(queryId);
+    if(queryMasterTask != null) {
+      return queryMasterTask;
+    } else {
+      if(includeFinished) {
+        return finishedQueryMasterTasks.get(queryId);
+      } else {
+        return null;
+      }
+    }
+  }
+
   public QueryMasterContext getContext() {
     return this.queryMasterContext;
   }
 
   public Collection<QueryMasterTask> getQueryMasterTasks() {
     return queryMasterTasks.values();
+  }
+
+  public Collection<QueryMasterTask> getFinishedQueryMasterTasks() {
+    return finishedQueryMasterTasks.values();
   }
 
   public class QueryMasterContext {
@@ -234,6 +262,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
         }
+        finishedQueryMasterTasks.put(queryId, queryMasterTask);
       } else {
         LOG.warn("No query info:" + queryId);
       }
@@ -302,7 +331,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
   }
 
-
   class ClientSessionTimeoutCheckThread extends Thread {
     public void run() {
       LOG.info("ClientSessionTimeoutCheckThread started");
@@ -330,6 +358,41 @@ public class QueryMaster extends CompositeService implements EventHandler {
               LOG.error(eachTask.getQueryId() + ":" + e.getMessage(), e);
             }
           }
+        }
+      }
+    }
+  }
+
+  class FinishedQueryMasterTaskCleanThread extends Thread {
+    public void run() {
+      int expireIntervalTime = systemConf.getInt("tajo.worker.history.expire.interval.min", 12 * 60); //12 hour
+      LOG.info("FinishedQueryMasterTaskCleanThread started: expireIntervalTime=" + expireIntervalTime);
+      while(!queryMasterStop.get()) {
+        try {
+          Thread.sleep(60 * 1000 * 60);   //hourly
+        } catch (InterruptedException e) {
+          break;
+        }
+        try {
+          long expireTime = System.currentTimeMillis() - expireIntervalTime * 60 * 1000;
+          cleanExpiredFinishedQueryMasterTask(expireTime);
+        } catch (Exception e) {
+          LOG.error(e.getMessage(), e);
+        }
+      }
+    }
+
+    private void cleanExpiredFinishedQueryMasterTask(long expireTime) {
+      synchronized(finishedQueryMasterTasks) {
+        List<QueryId> expiredQueryIds = new ArrayList<QueryId>();
+        for(Map.Entry<QueryId, QueryMasterTask> entry: finishedQueryMasterTasks.entrySet()) {
+          if(entry.getValue().getStartTime() > expireTime) {
+            expiredQueryIds.add(entry.getKey());
+          }
+        }
+
+        for(QueryId eachId: expiredQueryIds) {
+          finishedQueryMasterTasks.remove(eachId);
         }
       }
     }

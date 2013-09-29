@@ -34,6 +34,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-214: System should inquire finished query history after execution 
+    in web. (SeongHwa Ahn via hyunsik)
+
     TAJO-145: count(distinct column) should be supported. (hyunsik)
 
     TAJO-197: Implement Enforcer that forces physical planner to choose

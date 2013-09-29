@@ -105,6 +105,8 @@ public class TaskRunner extends AbstractService {
 
   private TaskRunnerManager taskRunnerManager;
 
+  private long finishTime;
+
   public TaskRunner(TaskRunnerManager taskRunnerManager, TajoConf conf, String[] args) {
     super(TaskRunner.class.getName());
 
@@ -188,8 +190,8 @@ public class TaskRunner extends AbstractService {
 
   @Override
   public void start() {
-    run();
     super.start();
+    run();
   }
 
   @Override
@@ -197,6 +199,7 @@ public class TaskRunner extends AbstractService {
     if(isStopped()) {
       return;
     }
+    finishTime = System.currentTimeMillis();
     // If this flag become true, taskLauncher will be terminated.
     this.stopped = true;
 
@@ -217,6 +220,10 @@ public class TaskRunner extends AbstractService {
     synchronized (this) {
       notifyAll();
     }
+  }
+
+  public long getFinishTime() {
+    return finishTime;
   }
 
   public class TaskRunnerContext {

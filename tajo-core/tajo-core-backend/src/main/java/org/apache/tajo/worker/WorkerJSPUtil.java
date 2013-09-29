@@ -1,0 +1,114 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.worker;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.master.querymaster.QueryUnit;
+
+import java.text.DecimalFormat;
+import java.util.*;
+
+public class WorkerJSPUtil {
+  public static void sortQueryUnit(QueryUnit[] queryUnits, String sortField, String sortOrder) {
+    if(sortField == null || sortField.isEmpty()) {
+      sortField = "id";
+    }
+
+    Arrays.sort(queryUnits, new QueryUnitComparator(sortField, "asc".equals(sortOrder)));
+  }
+
+  public static void sortTaskRunner(List<TaskRunner> taskRunners) {
+    Collections.sort(taskRunners, new Comparator<TaskRunner>() {
+      @Override
+      public int compare(TaskRunner taskRunner, TaskRunner taskRunner2) {
+        return taskRunner.getId().compareTo(taskRunner2.getId());
+      }
+    });
+  }
+
+  static DecimalFormat decimalF = new DecimalFormat("###.0");
+
+  public static String getElapsedTime(long startTime, long finishTime) {
+    return finishTime == 0 ? decimalF.format((System.currentTimeMillis() - startTime) / 1000) + " sec"
+        : decimalF.format((finishTime - startTime) / 1000) + " sec";
+  }
+
+  public static String getTajoMasterHttpAddr(Configuration config) {
+    try {
+      String[] masterAddr = config.get("tajo.master.manager.addr").split(":");
+
+      return masterAddr[0] + ":" + config.getInt("tajo.master.http.port", 8080);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return e.getMessage();
+    }
+  }
+
+  static class QueryUnitComparator implements Comparator<QueryUnit> {
+    private String sortField;
+    private boolean asc;
+    public QueryUnitComparator(String sortField, boolean asc) {
+      this.sortField = sortField;
+      this.asc = asc;
+    }
+
+    @Override
+    public int compare(QueryUnit queryUnit, QueryUnit queryUnit2) {
+      if(asc) {
+        if("id".equals(sortField)) {
+          return queryUnit.getId().compareTo(queryUnit2.getId());
+        } else if("host".equals(sortField)) {
+          String host1 = queryUnit.getSucceededHost() == null ? "-" : queryUnit.getSucceededHost();
+          String host2 = queryUnit2.getSucceededHost() == null ? "-" : queryUnit2.getSucceededHost();
+          return host1.compareTo(host2);
+        } else if("runTime".equals(sortField)) {
+          return compareLong(queryUnit.getRunningTime(), queryUnit2.getRunningTime());
+        } else if("startTime".equals(sortField)) {
+          return compareLong(queryUnit.getLaunchTime(), queryUnit2.getLaunchTime());
+        } else {
+          return queryUnit.getId().compareTo(queryUnit2.getId());
+        }
+      } else {
+        if("id".equals(sortField)) {
+          return queryUnit2.getId().compareTo(queryUnit.getId());
+        } else if("host".equals(sortField)) {
+          String host1 = queryUnit.getSucceededHost() == null ? "-" : queryUnit.getSucceededHost();
+          String host2 = queryUnit2.getSucceededHost() == null ? "-" : queryUnit2.getSucceededHost();
+          return host2.compareTo(host1);
+        } else if("runTime".equals(sortField)) {
+          return compareLong(queryUnit2.getRunningTime(), queryUnit.getRunningTime());
+        } else if("startTime".equals(sortField)) {
+          return compareLong(queryUnit2.getLaunchTime(), queryUnit.getLaunchTime());
+        } else {
+          return queryUnit2.getId().compareTo(queryUnit.getId());
+        }
+      }
+    }
+  }
+
+  static int compareLong(long a, long b) {
+    if(a > b) {
+      return 1;
+    } else if(a < b) {
+      return -1;
+    } else {
+      return 0;
+    }
+  }
+}
