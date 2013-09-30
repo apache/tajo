@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.function;
+package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.function.Function;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;

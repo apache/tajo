@@ -19,13 +19,12 @@
 package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.function.GeneralFunction;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.Int8Datum;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 
-public class Today extends GeneralFunction<Int8Datum> {
+public class Today extends GeneralFunction {
 
   public Today() {
     super(new Column[] {});

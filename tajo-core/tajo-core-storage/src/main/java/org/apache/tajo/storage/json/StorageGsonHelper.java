@@ -26,10 +26,6 @@ import com.google.gson.GsonBuilder;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.function.AggFunction;
-import org.apache.tajo.catalog.function.Function;
-import org.apache.tajo.catalog.function.GeneralFunction;
-import org.apache.tajo.catalog.json.FunctionAdapter;
 import org.apache.tajo.catalog.json.TableDescAdapter;
 import org.apache.tajo.catalog.json.TableMetaAdapter;
 import org.apache.tajo.datum.Datum;
@@ -52,9 +48,6 @@ public class StorageGsonHelper {
     adapters.put(TableDesc.class, new TableDescAdapter());
     adapters.put(Class.class, new ClassNameSerializer());
     adapters.put(TableMeta.class, new TableMetaAdapter());
-    adapters.put(Function.class, new FunctionAdapter());
-    adapters.put(GeneralFunction.class, new FunctionAdapter());
-    adapters.put(AggFunction.class, new FunctionAdapter());
     adapters.put(Datum.class, new DatumAdapter());
     return adapters;
   }

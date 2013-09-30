@@ -22,6 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
@@ -30,15 +31,35 @@ import org.apache.tajo.util.TUtil;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.DISTINCT_AGGREGATION;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.DISTINCT_UDA;
 
-public abstract class FuncEval extends EvalNode implements Cloneable {
-	@Expose protected FunctionDesc funcDesc;
+public abstract class FunctionEval extends EvalNode implements Cloneable {
+  public static enum ParamType {
+    CONSTANT, VARIABLE, NULL
+  }
+
+  @Expose protected FunctionDesc funcDesc;
 	@Expose protected EvalNode [] argEvals;
 
-	public FuncEval(EvalType type, FunctionDesc funcDesc, EvalNode[] argEvals) {
+	public FunctionEval(EvalType type, FunctionDesc funcDesc, EvalNode[] argEvals) {
 		super(type);
 		this.funcDesc = funcDesc;
 		this.argEvals = argEvals;
 	}
+
+  public ParamType [] getParamType() {
+    ParamType [] paramTypes = new ParamType[argEvals.length];
+    for (int i = 0; i < argEvals.length; i++) {
+      if (argEvals[i].getType() == EvalType.CONST) {
+        if (argEvals[i].getValueType()[0].getType() == TajoDataTypes.Type.NULL) {
+          paramTypes[i] = ParamType.NULL;
+        } else {
+          paramTypes[i] = ParamType.CONSTANT;
+        }
+      } else {
+        paramTypes[i] = ParamType.VARIABLE;
+      }
+    }
+    return paramTypes;
+  }
 
   public boolean isDistinct() {
     return funcDesc.getFuncType() == DISTINCT_AGGREGATION || funcDesc.getFuncType() == DISTINCT_UDA;
@@ -85,8 +106,8 @@ public abstract class FuncEval extends EvalNode implements Cloneable {
 	
 	@Override
 	public boolean equals(Object obj) {
-	  if (obj instanceof FuncEval) {
-      FuncEval other = (FuncEval) obj;
+	  if (obj instanceof FunctionEval) {
+      FunctionEval other = (FunctionEval) obj;
 
       boolean b1 = this.type == other.type;
       boolean b2 = TUtil.checkEquals(funcDesc, other.funcDesc);
@@ -104,7 +125,7 @@ public abstract class FuncEval extends EvalNode implements Cloneable {
 	
 	@Override
   public Object clone() throws CloneNotSupportedException {
-    FuncEval eval = (FuncEval) super.clone();
+    FunctionEval eval = (FunctionEval) super.clone();
     eval.funcDesc = (FunctionDesc) funcDesc.clone();
     eval.argEvals = new EvalNode[argEvals.length];
     for (int i = 0; i < argEvals.length; i++) {

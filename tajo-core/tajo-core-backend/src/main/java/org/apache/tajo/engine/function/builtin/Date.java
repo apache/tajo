@@ -21,8 +21,7 @@ package org.apache.tajo.engine.function.builtin;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.function.GeneralFunction;
-import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.Int8Datum;
 import org.apache.tajo.storage.Tuple;
@@ -32,7 +31,7 @@ import java.text.SimpleDateFormat;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
-public class Date extends GeneralFunction<Int8Datum> {
+public class Date extends GeneralFunction {
   private final Log LOG = LogFactory.getLog(Date.class);
   private final static String dateFormat = "dd/MM/yyyy HH:mm:ss";
 
@@ -41,7 +40,7 @@ public class Date extends GeneralFunction<Int8Datum> {
   }
 
   @Override
-  public Datum eval(Tuple params) {
+  public Int8Datum eval(Tuple params) {
     try {
       return DatumFactory.createInt8(new SimpleDateFormat(dateFormat)
           .parse(params.get(0).asChars()).getTime());

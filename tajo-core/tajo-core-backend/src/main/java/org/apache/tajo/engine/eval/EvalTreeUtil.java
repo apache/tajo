@@ -326,25 +326,25 @@ public class EvalTreeUtil {
     }
   }
 
-  public static List<AggFuncCallEval> findDistinctAggFunction(EvalNode expr) {
+  public static List<AggregationFunctionCallEval> findDistinctAggFunction(EvalNode expr) {
     AllAggFunctionFinder finder = new AllAggFunctionFinder();
     expr.postOrder(finder);
     return Lists.newArrayList(finder.getAggregationFunction());
   }
 
   public static class AllAggFunctionFinder implements EvalNodeVisitor {
-    private Set<AggFuncCallEval> aggFucntions = Sets.newHashSet();
-    private AggFuncCallEval field = null;
+    private Set<AggregationFunctionCallEval> aggFucntions = Sets.newHashSet();
+    private AggregationFunctionCallEval field = null;
 
     @Override
     public void visit(EvalNode node) {
       if (node.getType() == EvalType.AGG_FUNCTION) {
-        field = (AggFuncCallEval) node;
+        field = (AggregationFunctionCallEval) node;
         aggFucntions.add(field);
       }
     }
 
-    public Set<AggFuncCallEval> getAggregationFunction() {
+    public Set<AggregationFunctionCallEval> getAggregationFunction() {
       return this.aggFucntions;
     }
   }

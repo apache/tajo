@@ -39,8 +39,8 @@ public enum EvalType {
   DIVIDE(BinaryEval.class, "/"),
 
   // Function
-  AGG_FUNCTION(AggFuncCallEval.class),
-  FUNCTION(FuncCallEval.class),
+  AGG_FUNCTION(AggregationFunctionCallEval.class),
+  FUNCTION(GeneralFunctionEval.class),
 
   // String operator or pattern matching predicates
   LIKE(LikePredicateEval.class),

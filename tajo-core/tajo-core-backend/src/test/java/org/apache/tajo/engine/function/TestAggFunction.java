@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.function;
 
 import org.junit.Test;
-import org.apache.tajo.catalog.function.FunctionContext;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.function.builtin.AvgLong;

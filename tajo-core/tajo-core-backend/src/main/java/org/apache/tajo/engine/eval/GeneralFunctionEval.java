@@ -22,21 +22,22 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.function.GeneralFunction;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.TUtil;
 
-public class FuncCallEval extends FuncEval {
-	@Expose protected GeneralFunction instance;
+public class GeneralFunctionEval extends FunctionEval {
+  @Expose protected GeneralFunction instance;
   private Tuple tuple;
   private Tuple params = null;
   private Schema schema;
 
-	public FuncCallEval(FunctionDesc desc, GeneralFunction instance, EvalNode [] givenArgs) {
+	public GeneralFunctionEval(FunctionDesc desc, GeneralFunction instance, EvalNode[] givenArgs) {
 		super(EvalType.FUNCTION, desc, givenArgs);
 		this.instance = instance;
+    this.instance.init(getParamType());
   }
 
   /* (non-Javadoc)
@@ -67,8 +68,8 @@ public class FuncCallEval extends FuncEval {
 	
 	@Override
 	public boolean equals(Object obj) {
-	  if (obj instanceof FuncCallEval) {
-      FuncCallEval other = (FuncCallEval) obj;
+	  if (obj instanceof GeneralFunctionEval) {
+      GeneralFunctionEval other = (GeneralFunctionEval) obj;
       return super.equals(other) &&
           TUtil.checkEquals(instance, other.instance);
 	  }
@@ -83,7 +84,7 @@ public class FuncCallEval extends FuncEval {
 	
 	@Override
   public Object clone() throws CloneNotSupportedException {
-    FuncCallEval eval = (FuncCallEval) super.clone();
+    GeneralFunctionEval eval = (GeneralFunctionEval) super.clone();
     eval.instance = (GeneralFunction) instance.clone();
     return eval;
   }

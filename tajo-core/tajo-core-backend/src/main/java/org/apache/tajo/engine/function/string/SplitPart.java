@@ -20,12 +20,11 @@ package org.apache.tajo.engine.function.string;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.function.GeneralFunction;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.storage.Tuple;
 
 /**
@@ -33,7 +32,7 @@ import org.apache.tajo.storage.Tuple;
  *
  * text split_part(string text, delimiter text, field int)
  */
-public class SplitPart extends GeneralFunction<TextDatum> {
+public class SplitPart extends GeneralFunction {
   public SplitPart() {
     super(new Column[] {
         new Column("text", TajoDataTypes.Type.TEXT),

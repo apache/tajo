@@ -60,6 +60,6 @@ public interface EvalNodeVisitor2<CONTEXT, RESULT> {
   RESULT visitRegex(CONTEXT context, Stack<EvalNode> stack, RegexPredicateEval evalNode);
 
   // Functions
-  RESULT visitFuncCall(CONTEXT context, Stack<EvalNode> stack, FuncCallEval evalNode);
-  RESULT visitAggrFuncCall(CONTEXT context, Stack<EvalNode> stack, AggFuncCallEval evalNode);
+  RESULT visitFuncCall(CONTEXT context, Stack<EvalNode> stack, GeneralFunctionEval evalNode);
+  RESULT visitAggrFuncCall(CONTEXT context, Stack<EvalNode> stack, AggregationFunctionCallEval evalNode);
 }

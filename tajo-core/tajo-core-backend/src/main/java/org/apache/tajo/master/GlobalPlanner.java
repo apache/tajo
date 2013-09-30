@@ -27,7 +27,7 @@ import org.apache.tajo.DataChannel;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.eval.AggFuncCallEval;
+import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.MasterPlan;
@@ -207,8 +207,8 @@ public class GlobalPlanner {
       LinkedHashSet<Column> columnsForDistinct = new LinkedHashSet<Column>();
 
       for (Target target : groupByNode.getTargets()) {
-        List<AggFuncCallEval> functions = EvalTreeUtil.findDistinctAggFunction(target.getEvalTree());
-        for (AggFuncCallEval function : functions) {
+        List<AggregationFunctionCallEval> functions = EvalTreeUtil.findDistinctAggFunction(target.getEvalTree());
+        for (AggregationFunctionCallEval function : functions) {
           if (function.isDistinct()) {
             columnsForDistinct.addAll(EvalTreeUtil.findDistinctRefColumns(function));
           }

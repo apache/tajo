@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.function;
+package org.apache.tajo.engine.function;
 
 public interface FunctionContext {
 }

@@ -16,18 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.function;
+package org.apache.tajo.engine.function;
 
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.function.Function;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.eval.FunctionEval;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.storage.Tuple;
 
-public abstract class GeneralFunction<T extends Datum> extends Function<T> implements GsonObject {
+public abstract class GeneralFunction extends Function implements GsonObject {
   public GeneralFunction(Column[] definedArgs) {
     super(definedArgs);
   }
+
+  /**
+   * This method gives hints to an actual function instance.
+   */
+  public void init(FunctionEval.ParamType [] paramTypes) {}
 
   public abstract Datum eval(Tuple params);
 

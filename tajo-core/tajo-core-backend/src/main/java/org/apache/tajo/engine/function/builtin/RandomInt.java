@@ -19,7 +19,7 @@
 package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.function.GeneralFunction;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
@@ -28,7 +28,7 @@ import java.util.Random;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 
-public class RandomInt extends GeneralFunction<Datum> {
+public class RandomInt extends GeneralFunction {
   private Random random;
 
   public RandomInt() {

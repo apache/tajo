@@ -26,8 +26,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.CreateTable.ColumnDefinition;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.function.AggFunction;
-import org.apache.tajo.catalog.function.GeneralFunction;
+import org.apache.tajo.engine.function.AggFunction;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -1008,7 +1008,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         try {
           block.setHasGrouping();
 
-          return new AggFuncCallEval(countRows, (AggFunction) countRows.newInstance(),
+          return new AggregationFunctionCallEval(countRows, (AggFunction) countRows.newInstance(),
               new EvalNode[] {});
         } catch (InternalException e) {
           throw new UndefinedFunctionException(CatalogUtil.
@@ -1039,7 +1039,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           block.setHasGrouping();
         }
         try {
-          return new AggFuncCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
+          return new AggregationFunctionCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
         } catch (InternalException e) {
           e.printStackTrace();
         }
@@ -1068,12 +1068,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
           FunctionType functionType = funcDesc.getFuncType();
           if (functionType == FunctionType.GENERAL || functionType == FunctionType.UDF) {
-            return new FuncCallEval(funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
+            return new GeneralFunctionEval(funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
           } else if (functionType == FunctionType.AGGREGATION || functionType == FunctionType.UDA) {
             if (!block.hasGroupbyNode()) {
               block.setHasGrouping();
             }
-            return new AggFuncCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
+            return new AggregationFunctionCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
           } else if (functionType == FunctionType.DISTINCT_AGGREGATION || functionType == FunctionType.DISTINCT_UDA) {
             throw new PlanningException("Unsupported function: " + funcDesc.toString());
           }

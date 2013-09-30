@@ -44,6 +44,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.Country;
 import org.apache.tajo.engine.function.InCountry;
 import org.apache.tajo.engine.function.builtin.*;
+import org.apache.tajo.engine.function.string.RegexpReplace;
 import org.apache.tajo.engine.function.string.SplitPart;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
@@ -66,16 +67,21 @@ public class TajoMaster extends CompositeService {
   public static final int SHUTDOWN_HOOK_PRIORITY = 30;
 
   /** rw-r--r-- */
+  @SuppressWarnings("OctalInteger")
   final public static FsPermission TAJO_ROOT_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
   /** rw-r--r-- */
+  @SuppressWarnings("OctalInteger")
   final public static FsPermission SYSTEM_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
   /** rw-r--r-- */
   final public static FsPermission SYSTEM_RESOURCE_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
   /** rw-r--r-- */
+  @SuppressWarnings("OctalInteger")
   final public static FsPermission WAREHOUSE_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
   /** rw-r--r-- */
+  @SuppressWarnings("OctalInteger")
   final public static FsPermission STAGING_ROOTDIR_PERMISSION = FsPermission.createImmutable((short) 0644);
   /** rw-r--r-- */
+  @SuppressWarnings("OctalInteger")
   final public static FsPermission SYSTEM_CONF_FILE_PERMISSION = FsPermission.createImmutable((short) 0644);
 
 
@@ -308,6 +314,10 @@ public class TajoMaster extends CompositeService {
         new FunctionDesc("split_part", SplitPart.class, FunctionType.GENERAL,
             CatalogUtil.newDataTypesWithoutLen(Type.TEXT),
             CatalogUtil.newDataTypesWithoutLen(Type.TEXT, Type.TEXT, Type.INT4)));
+    sqlFuncs.add(
+        new FunctionDesc("regexp_replace", RegexpReplace.class, FunctionType.GENERAL,
+            CatalogUtil.newDataTypesWithoutLen(Type.TEXT),
+            CatalogUtil.newDataTypesWithoutLen(Type.TEXT, Type.TEXT, Type.TEXT)));
 
     return sqlFuncs;
   }

@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-211: Implement regexp_replace function. (hyunsik)
+
     TAJO-212: Implement type cast expresion. (hyunsik)
 
     TAJO-206: Implement String concatenation operator (||). (hyunsik)

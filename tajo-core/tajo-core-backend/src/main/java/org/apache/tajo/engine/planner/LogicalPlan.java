@@ -715,7 +715,7 @@ public class LogicalPlan {
           groupbyNode.setTargets(getCurrentTargets());
           boolean distinct = false;
           for (Target target : groupbyNode.getTargets()) {
-            for (AggFuncCallEval aggrFunc : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {
+            for (AggregationFunctionCallEval aggrFunc : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {
               if (aggrFunc.isDistinct()) {
                 distinct = true;
                 break;
@@ -728,7 +728,7 @@ public class LogicalPlan {
           // if a having condition is given,
           if (hasHaving()) {
             EvalNode havingCondition = planner.createEvalTree(LogicalPlan.this, this, getHaving().getQual());
-            List<AggFuncCallEval> aggrFunctions = EvalTreeUtil.findDistinctAggFunction(havingCondition);
+            List<AggregationFunctionCallEval> aggrFunctions = EvalTreeUtil.findDistinctAggFunction(havingCondition);
 
             if (aggrFunctions.size() == 0) {
               groupbyNode.setHavingCondition(havingCondition);

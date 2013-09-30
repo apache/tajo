@@ -49,4 +49,30 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testEval(schema, "table1", "abc,2,3.14", "select col1 || col2 || col3 from table1", new String[]{"abc23.14"});
     testEval(schema, "table1", "abc,2,3.14", "select col1 || '---' || col3 from table1", new String[]{"abc---3.14"});
   }
+
+  @Test
+  public void testRegexReplace() {
+    testSimpleEval("select regexp_replace('abcdef','bc','--') as col1 ", new String[]{"a--def"});
+
+    // TODO - The following tests require the resolution of TAJO-215 (https://issues.apache.org/jira/browse/TAJO-215)
+    // null test
+    // testSimpleEval("select regexp_replace(null, 'bc', '--') as col1 ", new String[]{""});
+    // testSimpleEval("select regexp_replace('abcdef', null, '--') as col1 ", new String[]{""});
+    // testSimpleEval("select regexp_replace('abcdef','bc', null) as col1 ", new String[]{""});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+
+    // find matches and replace from column values
+    testEval(schema, "table1", "------,(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from table1",
+        new String[]{"ab--ab"});
+
+    // null test from a table
+    testEval(schema, "table1", ",(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from table1",
+        new String[]{""});
+    testEval(schema, "table1", "------,(^--|--$),", "select regexp_replace(col1, col2, col3) as str from table1",
+        new String[]{""});
+  }
 }

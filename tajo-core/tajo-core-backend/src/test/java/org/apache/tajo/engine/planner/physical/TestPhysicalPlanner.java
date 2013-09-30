@@ -34,7 +34,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.engine.eval.AggFuncCallEval;
+import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
@@ -566,8 +566,8 @@ public class TestPhysicalPlanner {
     GroupbyNode groupbyNode = PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
     for (Target target : groupbyNode.getTargets()) {
       for (EvalNode eval : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {
-        if (eval instanceof AggFuncCallEval) {
-          ((AggFuncCallEval) eval).setFirstPhase();
+        if (eval instanceof AggregationFunctionCallEval) {
+          ((AggregationFunctionCallEval) eval).setFirstPhase();
         }
       }
     }
@@ -601,8 +601,8 @@ public class TestPhysicalPlanner {
     GroupbyNode groupbyNode = (GroupbyNode) PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
     for (Target target : groupbyNode.getTargets()) {
       for (EvalNode eval : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {
-        if (eval instanceof AggFuncCallEval) {
-          ((AggFuncCallEval) eval).setFirstPhase();
+        if (eval instanceof AggregationFunctionCallEval) {
+          ((AggregationFunctionCallEval) eval).setFirstPhase();
         }
       }
     }

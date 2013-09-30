@@ -21,19 +21,19 @@ package org.apache.tajo.engine.eval;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.function.AggFunction;
-import org.apache.tajo.catalog.function.FunctionContext;
+import org.apache.tajo.engine.function.AggFunction;
+import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
-public class AggFuncCallEval extends FuncEval implements Cloneable {
+public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
   @Expose protected AggFunction instance;
   @Expose boolean firstPhase = false;
   private Tuple params;
 
-  public AggFuncCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
+  public AggregationFunctionCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
     super(EvalType.AGG_FUNCTION, desc, givenArgs);
     this.instance = instance;
   }

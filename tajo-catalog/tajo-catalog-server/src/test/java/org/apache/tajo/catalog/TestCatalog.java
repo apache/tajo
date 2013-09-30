@@ -19,18 +19,16 @@
 package org.apache.tajo.catalog;
 
 import org.apache.hadoop.fs.Path;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.apache.tajo.catalog.function.GeneralFunction;
+import org.apache.tajo.catalog.function.Function;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.storage.Tuple;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -81,8 +79,6 @@ public class TestCatalog {
 		assertFalse(catalog.existsTable("getTable"));
 		catalog.addTable(meta);
 		assertTrue(catalog.existsTable("getTable"));
-		
-		TableDesc meta2 = catalog.getTableDesc("getTable");
 		
 		catalog.deleteTable("getTable");
 		assertFalse(catalog.existsTable("getTable"));
@@ -145,7 +141,7 @@ public class TestCatalog {
 	  catalog.deleteTable(desc.getName());
 	}
 	
-	public static class TestFunc1 extends GeneralFunction {
+	public static class TestFunc1 extends Function {
 		public TestFunc1() {
 			super(					
 					new Column [] {
@@ -153,15 +149,9 @@ public class TestCatalog {
 					}
 			);
 		}
-
-    @Override
-    public Datum eval(Tuple params) {
-      return params.get(0);
-    }
 	}
 
-  public static class TestFunc2 extends GeneralFunction {
-    private Datum param;
+  public static class TestFunc2 extends Function {
     public TestFunc2() {
       super(
           new Column [] {
@@ -169,11 +159,6 @@ public class TestCatalog {
               new Column("bytes", TajoDataTypes.Type.BLOB)
           }
       );
-    }
-
-    @Override
-    public Datum eval(Tuple params) {
-      return params.get(1);
     }
   }
 

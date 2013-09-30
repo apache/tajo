@@ -133,14 +133,14 @@ public class PlannerUtil {
       second = secondTargets[i];
       first = firstTargets[i];
 
-      List<AggFuncCallEval> secondStepFunctions = EvalTreeUtil.findDistinctAggFunction(second.getEvalTree());
-      List<AggFuncCallEval> firstStepFunctions = EvalTreeUtil.findDistinctAggFunction(first.getEvalTree());
+      List<AggregationFunctionCallEval> secondStepFunctions = EvalTreeUtil.findDistinctAggFunction(second.getEvalTree());
+      List<AggregationFunctionCallEval> firstStepFunctions = EvalTreeUtil.findDistinctAggFunction(first.getEvalTree());
 
       if (firstStepFunctions.size() == 0) {
         firstStepTargets.add(first);
         targetId++;
       } else {
-        for (AggFuncCallEval func : firstStepFunctions) {
+        for (AggregationFunctionCallEval func : firstStepFunctions) {
           Target newTarget;
 
           if (func.isDistinct()) {
@@ -149,8 +149,8 @@ public class PlannerUtil {
             String targetName = "column_" + (targetId++);
             newTarget.setAlias(targetName);
 
-            AggFuncCallEval secondFunc = null;
-            for (AggFuncCallEval sf : secondStepFunctions) {
+            AggregationFunctionCallEval secondFunc = null;
+            for (AggregationFunctionCallEval sf : secondStepFunctions) {
               if (func.equals(sf)) {
                 secondFunc = sf;
                 break;
@@ -165,8 +165,8 @@ public class PlannerUtil {
             String targetName = "column_" + (targetId++);
             newTarget.setAlias(targetName);
 
-            AggFuncCallEval secondFunc = null;
-            for (AggFuncCallEval sf : secondStepFunctions) {
+            AggregationFunctionCallEval secondFunc = null;
+            for (AggregationFunctionCallEval sf : secondStepFunctions) {
               if (func.equals(sf)) {
                 secondFunc = sf;
                 break;

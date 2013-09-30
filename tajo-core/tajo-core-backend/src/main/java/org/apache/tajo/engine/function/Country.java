@@ -19,22 +19,20 @@
 package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.function.GeneralFunction;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.GeoUtil;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
-public class Country extends GeneralFunction<TextDatum> {
+public class Country extends GeneralFunction {
 
   public Country() {
     super(new Column[] {new Column("addr", TEXT)});
   }
 
   @Override
-  public Datum eval(Tuple params) {
+  public TextDatum eval(Tuple params) {
     return new TextDatum(GeoUtil.getCountryCode(params.get(0).asChars()));
   }
 }

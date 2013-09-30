@@ -308,11 +308,11 @@ public class TestEvalTreeUtil {
   public final void testFindDistinctAggFunctions() {
     String query = "select sum(score) + max(age) from people";
     Target [] targets = getRawTargets(query);
-    List<AggFuncCallEval> list = EvalTreeUtil.
+    List<AggregationFunctionCallEval> list = EvalTreeUtil.
         findDistinctAggFunction(targets[0].getEvalTree());
     assertEquals(2, list.size());
     Set<String> result = Sets.newHashSet("max", "sum");
-    for (AggFuncCallEval eval : list) {
+    for (AggregationFunctionCallEval eval : list) {
       assertTrue(result.contains(eval.getName()));
     }
   }
