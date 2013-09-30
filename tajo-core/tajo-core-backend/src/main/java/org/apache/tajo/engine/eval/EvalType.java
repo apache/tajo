@@ -54,9 +54,10 @@ public enum EvalType {
   IN(InEval.class),
 
   // Value or Reference
+  CAST(CastEval.class),
+  ROW_CONSTANT(RowConstantEval.class),
   FIELD(FieldEval.class),
-  CONST(ConstEval.class),
-  ROW_CONSTANT(RowConstantEval.class);
+  CONST(ConstEval.class);
 
   private Class<? extends EvalNode> baseClass;
   private String operatorName;

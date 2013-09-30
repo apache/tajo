@@ -75,8 +75,8 @@ public class LogicalPlan {
     return newAndGetBlock(NONAME_BLOCK_PREFIX + (noNameBlockId++));
   }
 
-  public String newNonameColumnName() {
-    return "?_" + (noNameColumnId++);
+  public String newNonameColumnName(String prefix) {
+    return "?" + prefix + "_" + (noNameColumnId++);
   }
 
   /**
@@ -735,7 +735,8 @@ public class LogicalPlan {
             } else {
               Target [] addedTargets = new Target[aggrFunctions.size()];
               for (int i = 0; i < aggrFunctions.size(); i++) {
-                Target aggrFunctionTarget = new Target(aggrFunctions.get(i), newNonameColumnName());
+                Target aggrFunctionTarget = new Target(aggrFunctions.get(i),
+                    newNonameColumnName(aggrFunctions.get(i).getName()));
                 addedTargets[i] = aggrFunctionTarget;
                 EvalTreeUtil.replace(havingCondition, aggrFunctions.get(i),
                     new FieldEval(aggrFunctionTarget.getColumnSchema()));

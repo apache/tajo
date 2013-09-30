@@ -124,6 +124,7 @@ AVG : A V G;
 BY : B Y;
 
 CASE : C A S E;
+CAST : C A S T;
 CHARACTER : C H A R A C T E R;
 COALESCE : C O A L E S C E;
 COUNT : C O U N T;
@@ -305,8 +306,14 @@ Not_Similar_To : '!~';
 Similar_To_Case_Insensitive : '~*';
 Not_Similar_To_Case_Insensitive : '!~*';
 
+// Cast Operator
+CAST_EXPRESSION
+  : COLON COLON
+  ;
+
 ASSIGN  : ':=';
 EQUAL  : '=';
+COLON :  ':';
 SEMI_COLON :  ';';
 COMMA : ',';
 CONCATENATION_OPERATOR : VERTICAL_BAR VERTICAL_BAR;
@@ -357,7 +364,7 @@ Identifier
   ;
 
 Regular_Identifier
-  : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|Digit|'_'|':')*
+  : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|Digit|'_')*
   ;
 
 /*

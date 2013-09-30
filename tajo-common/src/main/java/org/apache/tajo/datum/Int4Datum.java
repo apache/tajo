@@ -45,6 +45,11 @@ public class Int4Datum extends Datum implements NumericDatum {
     this.val = bb.getInt();
   }
 
+  @Override
+  public char asChar() {
+    return asChars().charAt(0);
+  }
+
 	@Override
 	public short asInt2() {
 		return (short) val;
@@ -62,7 +67,7 @@ public class Int4Datum extends Datum implements NumericDatum {
 
   @Override
 	public byte asByte() {
-		throw new InvalidCastException();
+		return (byte) val;
 	}
 
   @Override

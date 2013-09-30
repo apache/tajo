@@ -49,6 +49,11 @@ public class Int8Datum extends Datum implements NumericDatum {
 	public boolean asBool() {
 		throw new InvalidCastException();
 	}
+
+  @Override
+  public char asChar() {
+    return asChars().charAt(0);
+  }
 	
 	@Override
 	public short asInt2() {

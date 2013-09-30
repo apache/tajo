@@ -22,6 +22,7 @@ import org.apache.tajo.algebra.Projection;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
+import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.eval.FieldEval;
 
 import java.util.Collection;
@@ -152,12 +153,11 @@ public class TargetListManager {
   public Column getResolvedTargetToColumn(int id) {
     Target t = targets[id];
     String name;
-    if (t.hasAlias()) {
-      name = t.getAlias();
-    } else if (t.getEvalTree().getName().equals("?")) {
-      name = plan.newNonameColumnName();
-    } else {
-      name = t.getEvalTree().getName();
+    if (t.hasAlias() || t.getEvalTree().getType() == EvalType.FIELD) {
+      name = t.getCanonicalName();
+    } else { // if alias name is not given or target is an expression
+      t.setAlias(plan.newNonameColumnName(t.getEvalTree().getName()));
+      name = t.getCanonicalName();
     }
     return new Column(name, t.getEvalTree().getValueType()[0]);
   }

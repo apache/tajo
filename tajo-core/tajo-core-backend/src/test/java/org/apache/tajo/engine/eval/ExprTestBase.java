@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function;
+package org.apache.tajo.engine.eval;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoTestingCluster;
@@ -25,8 +25,6 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.engine.eval.EvalContext;
-import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalPlan;

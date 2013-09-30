@@ -43,6 +43,11 @@ public class Int2Datum extends Datum implements NumericDatum {
     ByteBuffer bb = ByteBuffer.wrap(bytes);
     this.val = bb.getShort();
   }
+
+  @Override
+  public char asChar() {
+    return asChars().charAt(0);
+  }
 	
 	@Override
 	public short asInt2() {

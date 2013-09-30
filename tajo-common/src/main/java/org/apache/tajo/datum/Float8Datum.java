@@ -46,6 +46,11 @@ public class Float8Datum extends Datum implements NumericDatum {
     ByteBuffer bb = ByteBuffer.wrap(bytes);
     this.val = bb.getDouble();
   }
+
+  @Override
+  public char asChar() {
+    return asChars().charAt(0);
+  }
 	
 	@Override
 	public short asInt2() {

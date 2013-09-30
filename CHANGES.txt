@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-212: Implement type cast expresion. (hyunsik)
+
     TAJO-206: Implement String concatenation operator (||). (hyunsik)
 
     TAJO-213: NULL characters in meta of csv table should be supported.

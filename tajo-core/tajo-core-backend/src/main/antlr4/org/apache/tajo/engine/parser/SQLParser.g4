@@ -52,7 +52,7 @@ predefined_type
 
 character_string_type
   : CHARACTER type_length?
-  | CHAR type_length?  |
+  | CHAR type_length?
   | CHARACTER VARYING type_length?
   | CHAR VARYING type_length?
   | VARCHAR type_length?
@@ -593,6 +593,10 @@ null_ordering
 */
 
 boolean_value_expression
+  : or_predicate (CAST_EXPRESSION data_type)?
+  ;
+
+or_predicate
   : and_predicate (OR and_predicate)*
   ;
 
@@ -796,6 +800,7 @@ numeric_primary
   | set_function_specification
   | routine_invocation
   | scalar_subquery
+  | cast_specification
   | LEFT_PAREN numeric_value_expression RIGHT_PAREN
   ;
 
@@ -863,4 +868,22 @@ else_clause
 
 result
   : numeric_value_expression | NULL
+  ;
+
+/*
+===============================================================================
+  cast_specification
+===============================================================================
+*/
+
+cast_specification
+  : CAST LEFT_PAREN cast_operand AS cast_target RIGHT_PAREN
+  ;
+
+cast_operand
+  : boolean_value_expression
+  ;
+
+cast_target
+  : data_type
   ;

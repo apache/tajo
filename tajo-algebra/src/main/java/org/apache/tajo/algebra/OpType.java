@@ -89,9 +89,11 @@ public enum OpType {
   CountRowsFunction(CountRowsFunctionExpr.class),
   GeneralSetFunction(GeneralSetFunctionExpr.class),
 
+  Cast(CastExpr.class),
+  ScalarSubQuery(ScalarSubQuery.class),
   Literal(LiteralValue.class),
   Null(NullValue.class),
-  ScalarSubQuery(ScalarSubQuery.class);
+  DataType(org.apache.tajo.algebra.DataType.class);
 
   private Class baseClass;
 

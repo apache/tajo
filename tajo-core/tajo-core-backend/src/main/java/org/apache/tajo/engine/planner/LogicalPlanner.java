@@ -807,35 +807,19 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return schema;
   }
 
-  private Column convertColumn(ColumnDefinition columnDefinition) {
-    TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(columnDefinition.getDataType());
-    Column column;
-    switch (type) {
-      case CHAR:
-      case VARCHAR:
-      case NCHAR:
-      case NVARCHAR:
-        column = new Column(columnDefinition.getColumnName(),
-            TajoDataTypes.Type.valueOf(columnDefinition.getDataType()),
-            columnDefinition.getLengthOrPrecision());
-        break;
-      case FLOAT4:
-      case FLOAT8:
-        // TODO: support precision
-        column = new Column(columnDefinition.getColumnName(),
-            TajoDataTypes.Type.valueOf(columnDefinition.getDataType()));
-        break;
-      case NUMERIC:
-      case DECIMAL:
-        // TODO: support precision and scale
-        column = new Column(columnDefinition.getColumnName(),
-            TajoDataTypes.Type.valueOf(columnDefinition.getDataType()));
-        break;
-      default:
-        column = new Column(columnDefinition.getColumnName(),
-            TajoDataTypes.Type.valueOf(columnDefinition.getDataType()));
+  private DataType convertDataType(org.apache.tajo.algebra.DataType dataType) {
+    TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(dataType.getTypeName());
+
+    DataType.Builder builder = DataType.newBuilder();
+    builder.setType(type);
+    if (dataType.hasLengthOrPrecision()) {
+      builder.setLength(dataType.getLengthOrPrecision());
     }
-    return column;
+    return builder.build();
+  }
+
+  private Column convertColumn(ColumnDefinition columnDefinition) {
+    return new Column(columnDefinition.getColumnName(), convertDataType(columnDefinition));
   }
 
   protected LogicalNode visitInsert(PlanContext context, Stack<OpType> stack, Insert expr) throws PlanningException {
@@ -940,6 +924,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           default:
             throw new RuntimeException("Unsupported type: " + literal.getValueType());
         }
+
+      case Cast:
+        CastExpr cast = (CastExpr) expr;
+        return new CastEval(createEvalTree(plan, block, cast.getOperand()),
+            convertDataType(cast.getTarget()));
 
       case ValueList: {
         ValueListExpr valueList = (ValueListExpr) expr;
@@ -1182,12 +1171,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for(Target t : targets) {
       DataType type = t.getEvalTree().getValueType()[0];
       String name;
-      if (t.hasAlias()) {
+      if (t.hasAlias() || t.getEvalTree().getType() == EvalType.FIELD) {
+        name = t.getCanonicalName();
+      } else { // if an alias is not given or this target is an expression
+        t.setAlias(plan.newNonameColumnName(t.getEvalTree().getName()));
         name = t.getAlias();
-      } else if (t.getEvalTree().getName().equals("?")) {
-        name = plan.newNonameColumnName();
-      } else {
-        name = t.getEvalTree().getName();
       }
       projected.addColumn(name,type);
     }

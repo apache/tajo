@@ -124,47 +124,33 @@ public class CreateTable extends Expr {
         TUtil.checkEquals(params, another.params);
   }
 
-  public static class ColumnDefinition {
+  public static class ColumnDefinition extends DataType {
     String col_name;
-    String data_type;
-    Integer length_or_precision;
-    Integer scale;
 
     public ColumnDefinition(String columnName, String dataType) {
+      super(dataType);
       this.col_name = columnName;
-      this.data_type = dataType;
+    }
+
+    public ColumnDefinition(String columnName, DataType dataType) {
+      super(dataType.getTypeName());
+      if (dataType.hasLengthOrPrecision()) {
+        setLengthOrPrecision(dataType.lengthOrPrecision);
+        if (dataType.hasScale()) {
+          setScale(dataType.scale);
+        }
+      }
+      this.col_name = columnName;
     }
 
     public String getColumnName() {
       return this.col_name;
     }
 
-    public String getDataType() {
-      return this.data_type;
-    }
-
-    public void setLengthOrPrecision(int lengthOrPrecision) {
-      this.length_or_precision = lengthOrPrecision;
-    }
-
-    public Integer getLengthOrPrecision() {
-      return this.length_or_precision;
-    }
-
-    public void setScale(int scale) {
-      this.scale = scale;
-    }
-
-    public Integer getScale() {
-      return this.scale;
-    }
-
     public boolean equals(Object obj) {
       if (obj instanceof ColumnDefinition) {
         ColumnDefinition another = (ColumnDefinition) obj;
-        return col_name.equals(another.col_name) && data_type.equals(another.data_type) &&
-            TUtil.checkEquals(length_or_precision, another.length_or_precision) &&
-            TUtil.checkEquals(scale, another.scale);
+        return col_name.equals(another.col_name) && super.equals(another);
       }
 
       return false;

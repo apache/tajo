@@ -78,7 +78,7 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 	public abstract String getName();
 	
 	public String toString() {
-		return "("+this.type+"("+leftExpr.toString()+" "+rightExpr.toString()+"))";
+		return "(" + this.type + "(" + leftExpr.toString() + " " + rightExpr.toString() + "))";
 	}
 
   @Override
@@ -90,12 +90,14 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 
   public abstract Datum terminate(EvalContext ctx);
 
+  @Deprecated
 	public void preOrder(EvalNodeVisitor visitor) {
 	  visitor.visit(this);
 	  leftExpr.preOrder(visitor);
 	  rightExpr.preOrder(visitor);
 	}
-	
+
+  @Deprecated
 	public void postOrder(EvalNodeVisitor visitor) {
 	  leftExpr.postOrder(visitor);
 	  rightExpr.postOrder(visitor);	  	  

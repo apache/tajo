@@ -20,6 +20,7 @@ package org.apache.tajo.engine.function;
 
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
