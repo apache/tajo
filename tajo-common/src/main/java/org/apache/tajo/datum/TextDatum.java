@@ -18,6 +18,7 @@
 
 package org.apache.tajo.datum;
 
+import com.google.common.primitives.UnsignedBytes;
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.tajo.common.TajoDataTypes;
@@ -25,6 +26,9 @@ import org.apache.tajo.datum.exception.InvalidCastException;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 
 import java.util.Arrays;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 public class TextDatum extends Datum {
   @Expose private int size;
@@ -102,11 +106,14 @@ public class TextDatum extends Datum {
   public int compareTo(Datum datum) {
     switch (datum.type()) {
       case TEXT:
-        byte[] o = datum.asByteArray();
-        return WritableComparator.compareBytes(this.bytes, 0, this.bytes.length,
-            o, 0, o.length);
+      case CHAR:
+      case BLOB:
+        return UnsignedBytes.lexicographicalComparator().compare(bytes, datum.asByteArray());
+
+      case NULL:
+        return -1;
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException();
     }
   }
 
@@ -114,7 +121,7 @@ public class TextDatum extends Datum {
   public boolean equals(Object obj) {
     if (obj instanceof TextDatum) {
       TextDatum o = (TextDatum) obj;
-      return Arrays.equals(this.bytes, o.bytes);
+      return UnsignedBytes.lexicographicalComparator().compare(this.bytes, o.bytes) == 0;
     }
 
     return false;
@@ -124,10 +131,14 @@ public class TextDatum extends Datum {
   public BooleanDatum equalsTo(Datum datum) {
     switch (datum.type()) {
       case TEXT:
-        return DatumFactory.createBool(
-            Arrays.equals(this.bytes, datum.asByteArray()));
+      case CHAR:
+      case BLOB:
+        return DatumFactory.createBool(UnsignedBytes.lexicographicalComparator()
+            .compare(bytes, datum.asByteArray()) == 0);
+      case NULL:
+        return DatumFactory.createBool(false);
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException();
     }
   }
 

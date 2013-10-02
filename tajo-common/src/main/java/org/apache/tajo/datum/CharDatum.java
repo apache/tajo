@@ -18,6 +18,7 @@
 
 package org.apache.tajo.datum;
 
+import com.google.common.primitives.UnsignedBytes;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.datum.exception.InvalidOperationException;
 
@@ -135,10 +136,14 @@ public class CharDatum extends Datum {
   @Override
   public BooleanDatum equalsTo(Datum datum) {
     switch (datum.type()) {
-    case CHAR:
-      return DatumFactory.createBool(this.equals(datum));
-    default:
-      throw new InvalidOperationException(datum.type());
+      case CHAR:
+        return DatumFactory.createBool(this.equals(datum));
+
+      case NULL:
+        return DatumFactory.createBool(false);
+
+      default:
+        throw new InvalidOperationException();
     }
   }
   
@@ -147,9 +152,13 @@ public class CharDatum extends Datum {
     switch (datum.type()) {
       case CHAR:
         CharDatum other = (CharDatum) datum;
-        return this.getString().compareTo(other.getString());
-    default:
-      throw new InvalidOperationException(datum.type());
+        return UnsignedBytes.lexicographicalComparator().compare(bytes, other.bytes);
+
+      case NULL:
+        return -1;
+
+      default:
+        throw new InvalidOperationException();
     }
   }
 }

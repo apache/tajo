@@ -29,6 +29,13 @@ import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.query.exception.InvalidQueryException;
 
+import org.apache.tajo.engine.eval.EvalType; 
+import org.apache.tajo.engine.eval.FieldEval;
+import org.apache.tajo.catalog.Column;
+import com.google.common.collect.Sets;
+import java.util.Set;
+import java.util.Iterator;
+
 import java.util.List;
 import java.util.Stack;
 
@@ -85,10 +92,111 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
     return selNode;
   }
 
+  private boolean isOuterJoin(JoinType joinType) {
+    return joinType == JoinType.LEFT_OUTER || joinType == JoinType.RIGHT_OUTER || joinType==JoinType.FULL_OUTER;
+  }
+
   public LogicalNode visitJoin(LogicalPlan plan, JoinNode joinNode, Stack<LogicalNode> stack, List<EvalNode> cnf)
       throws PlanningException {
     LogicalNode left = joinNode.getRightChild();
     LogicalNode right = joinNode.getLeftChild();
+
+    // here we should stop selection pushdown on the null supplying side(s) of an outer join
+    // get the two operands of the join operation as well as the join type
+    JoinType joinType = joinNode.getJoinType();
+    EvalNode joinQual = joinNode.getJoinQual();
+    if (joinQual != null && isOuterJoin(joinType)) {
+
+      // if both are fields
+       if (joinQual.getLeftExpr().getType() == EvalType.FIELD && joinQual.getRightExpr().getType() == EvalType.FIELD) {
+
+          String leftTableName = ((FieldEval) joinQual.getLeftExpr()).getTableId();
+          String rightTableName = ((FieldEval) joinQual.getRightExpr()).getTableId();
+          List<String> nullSuppliers = Lists.newArrayList();
+          String [] leftLineage = PlannerUtil.getLineage(joinNode.getLeftChild());
+          String [] rightLineage = PlannerUtil.getLineage(joinNode.getRightChild());
+          Set<String> leftTableSet = Sets.newHashSet(leftLineage);
+          Set<String> rightTableSet = Sets.newHashSet(rightLineage);
+
+          // some verification
+          if (joinType == JoinType.FULL_OUTER) {
+             nullSuppliers.add(leftTableName);
+             nullSuppliers.add(rightTableName);
+
+             // verify that these null suppliers are indeed in the left and right sets
+             if (!rightTableSet.contains(nullSuppliers.get(0)) && !leftTableSet.contains(nullSuppliers.get(0))) {
+                throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
+             }
+             if (!rightTableSet.contains(nullSuppliers.get(1)) && !leftTableSet.contains(nullSuppliers.get(1))) {
+                throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
+             }
+
+          } else if (joinType == JoinType.LEFT_OUTER) {
+             nullSuppliers.add(((ScanNode)joinNode.getRightChild()).getTableName()); 
+             //verify that this null supplier is indeed in the right sub-tree
+             if (!rightTableSet.contains(nullSuppliers.get(0))) {
+                 throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
+             }
+          } else if (joinType == JoinType.RIGHT_OUTER) {
+            if (((ScanNode)joinNode.getRightChild()).getTableName().equals(rightTableName)) {
+              nullSuppliers.add(leftTableName);
+            } else {
+              nullSuppliers.add(rightTableName);
+            }
+
+            // verify that this null supplier is indeed in the left sub-tree
+            if (!leftTableSet.contains(nullSuppliers.get(0))) {
+              throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
+            }
+          }
+         
+         // retain in this outer join node's JoinQual those selection predicates
+         // related to the outer join's null supplier(s)
+         List<EvalNode> matched2 = Lists.newArrayList();
+         for (EvalNode eval : cnf) {
+            
+            Set<Column> columnRefs = EvalTreeUtil.findDistinctRefColumns(eval);
+            Set<String> tableNames = Sets.newHashSet();
+            // getting distinct table references
+            for (Column col : columnRefs) {
+              if (!tableNames.contains(col.getQualifier())) {
+                tableNames.add(col.getQualifier());
+              }
+            }
+            
+            //if the predicate involves any of the null suppliers
+            boolean shouldKeep=false;
+            Iterator<String> it2 = nullSuppliers.iterator();
+            while(it2.hasNext()){
+              if(tableNames.contains(it2.next()) == true) {
+                   shouldKeep = true; 
+              }
+            }
+
+            if(shouldKeep == true) {
+                matched2.add(eval);
+            }
+            
+          }
+
+          //merge the retained predicates and establish them in the current outer join node. Then remove them from the cnf
+          EvalNode qual2 = null;
+          if (matched2.size() > 1) {
+             // merged into one eval tree
+             qual2 = EvalTreeUtil.transformCNF2Singleton(
+                        matched2.toArray(new EvalNode [matched2.size()]));
+          } else if (matched2.size() == 1) {
+             // if the number of matched expr is one
+             qual2 = matched2.get(0);
+          }
+
+          if (qual2 != null) {
+             EvalNode conjQual2 = EvalTreeUtil.transformCNF2Singleton(joinNode.getJoinQual(), qual2);
+             joinNode.setJoinQual(conjQual2);
+             cnf.removeAll(matched2);
+          } // for the remaining cnf, push it as usual
+       }
+    }
 
     visitChild(plan, left, stack, cnf);
     visitChild(plan, right, stack, cnf);
@@ -112,8 +220,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
 
     if (qual != null) {
       if (joinNode.hasJoinQual()) {
-        EvalNode conjQual = EvalTreeUtil.
-            transformCNF2Singleton(joinNode.getJoinQual(), qual);
+        EvalNode conjQual = EvalTreeUtil.transformCNF2Singleton(joinNode.getJoinQual(), qual);
         joinNode.setJoinQual(conjQual);
       } else {
         joinNode.setJoinQual(qual);

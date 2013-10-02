@@ -179,7 +179,7 @@ public class TestMergeJoinExec {
       assertTrue(i == tuple.getInt(0).asInt4());
       assertTrue(i == tuple.getInt(1).asInt4());
       assertTrue(("dept_" + i).equals(tuple.getString(2).asChars()));
-      assertTrue(10 + i == tuple.getInt(3).asInt4());
+      assertTrue((10 + i) == tuple.getInt(3).asInt4());
 
       i += 2;
     }

@@ -4,6 +4,9 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-216: Improve FilterPushDownRule and Implement physical operators 
+    for outer join. (camelia_c via hyunsik)
+
     TAJO-211: Implement regexp_replace function. (hyunsik)
 
     TAJO-212: Implement type cast expresion. (hyunsik)

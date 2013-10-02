@@ -385,4 +385,20 @@ public class TupleUtil {
     }
     return new TupleRange(target, startTuple, endTuple);
   }
+
+  /**
+   * It creates a tuple of a given size filled with NULL values in all fields
+   * It is usually used in outer join algorithms.
+   *
+   * @param size The number of columns of a creating tuple
+   * @return The created tuple filled with NULL values
+   */
+  public static Tuple createNullPaddedTuple(int size){
+    VTuple aTuple = new VTuple(size);
+    int i;
+    for(i = 0; i < size; i++){
+      aTuple.put(i, DatumFactory.createNullDatum());
+    }
+    return aTuple;
+  }
 }

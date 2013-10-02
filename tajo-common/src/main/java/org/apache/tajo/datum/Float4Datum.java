@@ -33,7 +33,7 @@ public class Float4Datum extends Datum implements NumericDatum {
 	public Float4Datum() {
 		super(TajoDataTypes.Type.FLOAT4);
 	}
-	
+
 	public Float4Datum(float val) {
 		this();
 		this.val = val;
@@ -44,7 +44,7 @@ public class Float4Datum extends Datum implements NumericDatum {
     ByteBuffer bb = ByteBuffer.wrap(bytes);
     this.val = bb.getFloat();
   }
-	
+
 	public boolean asBool() {
 		throw new InvalidCastException();
 	}
@@ -53,7 +53,7 @@ public class Float4Datum extends Datum implements NumericDatum {
   public char asChar() {
     return asChars().charAt(0);
   }
-	
+
 	@Override
 	public short asInt2() {
 		return (short) val;
@@ -105,7 +105,7 @@ public class Float4Datum extends Datum implements NumericDatum {
   public int size() {
     return size;
   }
-  
+
   @Override
   public int hashCode() {
     return (int) val;
@@ -117,73 +117,87 @@ public class Float4Datum extends Datum implements NumericDatum {
       Float4Datum other = (Float4Datum) obj;
       return val == other.val;
     }
-    
+
     return false;
   }
 
   @Override
   public BooleanDatum equalsTo(Datum datum) {
     switch (datum.type()) {
-    case INT2:
-      return DatumFactory.createBool(val == datum.asInt2());
-    case INT4:
-      return DatumFactory.createBool(val == datum.asInt4());
-    case INT8:
-      return DatumFactory.createBool(val == datum.asInt8());
-    case FLOAT4:
-      return DatumFactory.createBool(val == datum.asFloat4());
-    case FLOAT8:
-      return DatumFactory.createBool(val == datum.asFloat8());
-    default:
-      throw new InvalidOperationException(datum.type());
+      case INT2:
+        return DatumFactory.createBool(val == datum.asInt2());
+      case INT4:
+        return DatumFactory.createBool(val == datum.asInt4());
+      case INT8:
+        return DatumFactory.createBool(val == datum.asInt8());
+      case FLOAT4:
+        return DatumFactory.createBool(val == datum.asFloat4());
+      case FLOAT8:
+        return DatumFactory.createBool(val == datum.asFloat8());
+      case NULL:
+        return DatumFactory.createBool(false);
+      default:
+        throw new InvalidOperationException();
     }
   }
 
   @Override
   public int compareTo(Datum datum) {
     switch (datum.type()) {
-      case INT2:
-        if (val < datum.asInt2()) {
+      case INT2: {
+        short another = datum.asInt2();
+        if (val < another) {
           return -1;
-        } else if (datum.asInt2() < val) {
+        } else if (val > another) {
           return 1;
         } else {
           return 0;
         }
-      case INT4:
-        if (val < datum.asInt4()) {
+      }
+      case INT4: {
+        int another = datum.asInt4();
+        if (val < another) {
           return -1;
-        } else if (datum.asInt4() < val) {
+        } else if (val > another) {
           return 1;
         } else {
           return 0;
         }
-      case INT8:
-        if (val < datum.asInt8()) {
+      }
+      case INT8: {
+        long another = datum.asInt8();
+        if (val < another) {
           return -1;
-        } else if (datum.asInt8() < val) {
+        } else if (val > another) {
           return 1;
         } else {
           return 0;
         }
-      case FLOAT4:
-        if (val < datum.asFloat4()) {
+      }
+      case FLOAT4: {
+        float another = datum.asFloat4();
+        if (val < another) {
           return -1;
-        } else if (datum.asFloat4() < val) {
+        } else if (val > another) {
           return 1;
         } else {
           return 0;
         }
-      case FLOAT8:
-        if (val < datum.asFloat8()) {
+      }
+      case FLOAT8: {
+        double another = datum.asFloat8();
+        if (val < another) {
           return -1;
-        } else if (datum.asFloat8() < val) {
+        } else if (val > another) {
           return 1;
         } else {
           return 0;
         }
+      }
+      case NULL:
+        return -1;
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException();
     }
   }
 
@@ -200,6 +214,8 @@ public class Float4Datum extends Datum implements NumericDatum {
       return DatumFactory.createFloat8(val + datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val + datum.asFloat8());
+    case NULL:
+      return datum;
     default:
       throw new InvalidOperationException(datum.type());
     }
@@ -218,6 +234,8 @@ public class Float4Datum extends Datum implements NumericDatum {
       return DatumFactory.createFloat8(val - datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val - datum.asFloat8());
+    case NULL:
+      return datum;
     default:
       throw new InvalidOperationException(datum.type());
     }
@@ -236,6 +254,8 @@ public class Float4Datum extends Datum implements NumericDatum {
       return DatumFactory.createFloat8(val * datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val * datum.asFloat8());
+    case NULL:
+      return datum;
     default:
       throw new InvalidOperationException();
     }
@@ -254,6 +274,8 @@ public class Float4Datum extends Datum implements NumericDatum {
       return DatumFactory.createFloat8(val / datum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(val / datum.asFloat8());
+    case NULL:
+      return datum;
     default:
       throw new InvalidOperationException(datum.type());
     }
@@ -272,6 +294,8 @@ public class Float4Datum extends Datum implements NumericDatum {
         return DatumFactory.createFloat4(val / datum.asFloat4());
       case FLOAT8:
         return DatumFactory.createFloat8(val / datum.asFloat8());
+      case NULL:
+        return datum;
       default:
         throw new InvalidOperationException(datum.type());
     }
@@ -279,6 +303,6 @@ public class Float4Datum extends Datum implements NumericDatum {
 
   @Override
   public void inverseSign() {
-    this.val = - val;    
+    this.val = - val;
   }
 }
