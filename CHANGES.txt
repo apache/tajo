@@ -41,6 +41,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-223: Maximize disk read bandwidth utilization of StorageManagerV2 by
+    moving Tuple creation role to next(). (Keuntae Park via hyunsik)
+
     TAJO-199: All relations in catalog must have data volume size. (hyunsik)
 
     TAJO-224: Rearrange DataType enumeration and Refactor type systems.

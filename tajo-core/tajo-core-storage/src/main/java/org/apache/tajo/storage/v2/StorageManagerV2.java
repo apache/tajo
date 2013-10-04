@@ -20,13 +20,10 @@ package org.apache.tajo.storage.v2;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.AbstractStorageManager;
-import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.Scanner;
 
@@ -124,6 +121,10 @@ public class StorageManagerV2 extends AbstractStorageManager {
 
     public TajoConf getConf() {
       return conf;
+    }
+
+    public void incrementReadBytes(int diskId, long[] readBytes) {
+      scanScheduler.incrementReadBytes(diskId, readBytes);
     }
   }
 

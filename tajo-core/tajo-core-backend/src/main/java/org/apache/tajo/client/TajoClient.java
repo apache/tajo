@@ -65,6 +65,7 @@ public class TajoClient {
 
   public TajoClient(TajoConf conf) throws IOException {
     this.conf = conf;
+    this.conf.set("tajo.disk.scheduler.report.interval", "0");
     String masterAddr = this.conf.getVar(ConfVars.CLIENT_SERVICE_ADDRESS);
     InetSocketAddress addr = NetUtils.createSocketAddr(masterAddr);
     connect(addr);

@@ -43,6 +43,8 @@ public class ScanScheduler extends Thread {
 
   private Random rand = new Random(System.currentTimeMillis());
 
+  private Thread schedulerStatusReportThread;
+
   public ScanScheduler(StorgaeManagerContext context) {
     this.context = context;
     this.scanQueueLock = context.getScanQueueLock();
@@ -59,6 +61,29 @@ public class ScanScheduler extends Thread {
       initFileScanners();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
+    }
+
+    final int reportInterval = context.getConf().getInt("tajo.disk.scheduler.report.interval", 60 * 1000);
+    if(reportInterval  > 0) {
+      schedulerStatusReportThread = new Thread() {
+        public void run() {
+          while (true) {
+            try {
+              Thread.sleep(reportInterval);
+            } catch (InterruptedException e) {
+              break;
+            }
+            synchronized (diskFileScannerMap) {
+              for (DiskFileScanScheduler eachScheduler : diskFileScannerMap
+                  .values()) {
+                eachScheduler.printDiskSchedulerInfo();
+              }
+            }
+          }
+        }
+      };
+
+      schedulerStatusReportThread.start();
     }
   }
 
@@ -93,6 +118,7 @@ public class ScanScheduler extends Thread {
           synchronized(diskFileScannerMap) {
             requestMap.put(fileScannerV2.getId(), fileScannerV2);
             DiskFileScanScheduler diskScheduler = diskFileScannerMap.get(diskId);
+            fileScannerV2.setAllocatedDiskId(diskId);
             diskScheduler.requestScanFile(fileScannerV2);
           }
         }
@@ -136,6 +162,10 @@ public class ScanScheduler extends Thread {
     }
 
     return -1;
+  }
+
+  public void incrementReadBytes(int diskId, long[] readBytes) {
+    diskFileScannerMap.get(diskId).incrementReadBytes(readBytes);
   }
 
   private void initFileScanners() {

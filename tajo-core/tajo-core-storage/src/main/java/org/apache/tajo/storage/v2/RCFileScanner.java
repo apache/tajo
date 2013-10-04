@@ -30,7 +30,6 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.rcfile.BytesRefArrayWritable;
 import org.apache.tajo.storage.rcfile.ColumnProjectionUtils;
-import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.TUtil;
 
@@ -47,6 +46,9 @@ public class RCFileScanner extends FileScannerV2 {
   private LongWritable key;
   private BytesRefArrayWritable column;
   private Integer [] projectionMap;
+  private ScheduledInputStream sin;
+  private boolean first = true;
+  private int maxBytesPerSchedule;
 
   public RCFileScanner(final Configuration conf,
                        final TableMeta meta,
@@ -60,7 +62,19 @@ public class RCFileScanner extends FileScannerV2 {
 	}
 
   @Override
-  protected Tuple getNextTuple() throws IOException {
+  protected Tuple nextTuple() throws IOException {
+    if(first) {
+      first = false;
+      if (start > in.getPosition()) {
+        in.sync(start); // sync to start
+      }
+      this.start = in.getPosition();
+      more = start < end;
+      if(!more) {
+        return null;
+      }
+    }
+
     more = next(key);
 
     if (more) {
@@ -180,12 +194,17 @@ public class RCFileScanner extends FileScannerV2 {
 
   @Override
   public void close() throws IOException {
+    if(closed.get()) {
+      return;
+    }
     try {
       if(in != null) {
         in.close();
         in = null;
+        sin = null;
       }
     } catch (Exception e) {
+      LOG.warn(e.getMessage(), e);
     }
 
     if(column != null) {
@@ -214,18 +233,53 @@ public class RCFileScanner extends FileScannerV2 {
   }
 
   @Override
-  protected void initFirstScan() throws IOException {
-    if(!firstSchdeuled) {
-      return;
-    }
-    this.in = new RCFile.Reader(fs, fragment.getPath(), conf);
+  protected boolean initFirstScan(int maxBytesPerSchedule) throws IOException {
+    synchronized(this) {
+      first = true;
+      this.maxBytesPerSchedule = maxBytesPerSchedule;
+      if(sin == null) {
+        sin = new ScheduledInputStream(
+            fragment.getPath(),
+            fs.open(fragment.getPath()),
+            fragment.getStartOffset(),
+            fragment.getLength(),
+            fs.getLength(fragment.getPath()));
 
-    if (start > in.getPosition()) {
-      in.sync(start); // sync to start
+        this.in = new RCFile.Reader(fragment.getPath(), sin, fs, fs.getConf());
+      }
     }
-    this.start = in.getPosition();
-    more = start < end;
-    firstSchdeuled = false;
+    return true;
+  }
+
+  @Override
+  public boolean isStopScanScheduling() {
+    if(sin != null && sin.IsEndOfStream()) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  protected boolean scanNext(int length) throws IOException {
+    synchronized(this) {
+      if(isClosed()) {
+        return false;
+      }
+      return sin.readNext(length);
+    }
+  }
+
+
+  @Override
+  public boolean isFetchProcessing() {
+    //TODO row group size
+    if(sin != null && sin.getAvaliableSize() > maxBytesPerSchedule * 3) {
+//			System.out.println(">>>>>sin.getAvaliableSize()>" + sin.getAvaliableSize());
+      return true;
+    } else {
+      return false;
+    }
   }
 
   @Override
@@ -234,9 +288,22 @@ public class RCFileScanner extends FileScannerV2 {
   }
 
   @Override
-  public void reset() throws IOException {
-    //in.seek(0);
-    super.reset();
+  public void scannerReset() {
+    if(in != null) {
+      try {
+        in.seek(0);
+      } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
+    if(sin != null) {
+      try {
+        sin.seek(0);
+        sin.reset();
+      } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
   }
 
   @Override
@@ -252,5 +319,14 @@ public class RCFileScanner extends FileScannerV2 {
   @Override
   public boolean isSplittable(){
     return true;
+  }
+
+  @Override
+  protected long[] reportReadBytes() {
+    if(sin == null) {
+      return new long[]{0, 0};
+    } else {
+      return new long[]{sin.getTotalReadBytesForFetch(), sin.getTotalReadBytesFromDisk()};
+    }
   }
 }

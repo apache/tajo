@@ -31,15 +31,10 @@ import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class FileScannerV2 implements Scanner {
   private static final Log LOG = LogFactory.getLog(FileScannerV2.class);
-
-  protected AtomicBoolean fetchProcessing = new AtomicBoolean(false);
 
 	protected AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -52,20 +47,28 @@ public abstract class FileScannerV2 implements Scanner {
   protected final Fragment fragment;
   protected final int columnNum;
   protected Column[] targets;
+  protected long totalScanTime = 0;
+  protected int allocatedDiskId;
 
   protected StorageManagerV2.StorgaeManagerContext smContext;
 
-  protected boolean firstSchdeuled = true;
+  protected AtomicBoolean firstSchdeuled = new AtomicBoolean(true);
 
-  protected Queue<Tuple> tuplePool;
+  protected abstract boolean scanNext(int length) throws IOException;
 
-  AtomicInteger tuplePoolMemory = new AtomicInteger();
-
-  protected abstract Tuple getNextTuple() throws IOException;
-
-  protected abstract void initFirstScan() throws IOException;
+  protected abstract boolean initFirstScan(int maxBytesPerSchedule) throws IOException;
 
   protected abstract long getFilePosition() throws IOException;
+
+  protected abstract Tuple nextTuple() throws IOException;
+
+  public abstract boolean isFetchProcessing();
+
+  public abstract boolean isStopScanScheduling();
+
+  public abstract void scannerReset();
+
+  protected abstract long[] reportReadBytes();
 
 	public FileScannerV2(final Configuration conf,
                        final TableMeta meta,
@@ -77,19 +80,11 @@ public abstract class FileScannerV2 implements Scanner {
     this.columnNum = this.schema.getColumnNum();
 
     this.fs = fragment.getPath().getFileSystem(conf);
-
-    tuplePool = new ConcurrentLinkedQueue<Tuple>();
 	}
 
   public void init() throws IOException {
     closed.set(false);
-    fetchProcessing.set(false);
-    firstSchdeuled = true;
-    //tuplePoolIndex = 0;
-    if(tuplePool == null) {
-      tuplePool = new ConcurrentLinkedQueue<Tuple>();
-    }
-    tuplePool.clear();
+    firstSchdeuled.set(true);
 
     if(!inited) {
       smContext.requestFileScan(this);
@@ -99,14 +94,18 @@ public abstract class FileScannerV2 implements Scanner {
 
   @Override
   public void reset() throws IOException {
+    scannerReset();
     close();
     inited = false;
-
     init();
   }
 
+  public void setAllocatedDiskId(int allocatedDiskId) {
+    this.allocatedDiskId = allocatedDiskId;
+  }
+
   public String getId() {
-    return fragment.getPath().toString() + ":" + fragment.getStartOffset() + ":" +
+    return fragment.getPath().getName() + ":" + fragment.getStartOffset() + ":" +
         fragment.getLength() + "_" + System.currentTimeMillis();
   }
 
@@ -146,59 +145,31 @@ public abstract class FileScannerV2 implements Scanner {
     this.smContext = context;
   }
 
-  public boolean isFetchProcessing() {
-//    return fetchProcessing.get();
-    return tuplePoolMemory.get() > 16 * 1024 * 1024;
-  }
-
-  long lastScanScheduleTime;
-
   public String toString() {
     return fragment.getPath() + ":" + fragment.getStartOffset();
   }
 
   public void scan(int maxBytesPerSchedule) throws IOException {
-    if(firstSchdeuled) {
-      initFirstScan();
-      firstSchdeuled = false;
-    }
-    long scanStartPos = getFilePosition();
-    int recordCount = 0;
-    while(true) {
-      Tuple tuple = getNextTuple();
-      if(tuple == null) {
-        break;
-      }
-      tuplePoolMemory.addAndGet(tuple.size());
-      tuplePool.offer(tuple);
-      recordCount++;
-      if(recordCount % 1000 == 0) {
-        if(getFilePosition() - scanStartPos >= maxBytesPerSchedule) {
-          break;
-        } else {
-          synchronized(tuplePool) {
-            tuplePool.notifyAll();
-          }
+    long startTime = System.currentTimeMillis();
+    try {
+    synchronized(firstSchdeuled) {
+      if(firstSchdeuled.get()) {
+        boolean moreData = initFirstScan(maxBytesPerSchedule);
+        firstSchdeuled.set(false);
+        firstSchdeuled.notifyAll();
+        if(moreData) {
+          smContext.requestFileScan(this);
         }
+        return;
       }
     }
-    if(tuplePool != null) {
-      synchronized(tuplePool) {
-        tuplePool.notifyAll();
-      }
-    }
-    if(!isClosed()) {
+    boolean moreData = scanNext(maxBytesPerSchedule);
+
+    if(moreData) {
       smContext.requestFileScan(this);
     }
-  }
-
-  public void waitScanStart() {
-    //for test
-    synchronized(fetchProcessing) {
-      try {
-        fetchProcessing.wait();
-      } catch (InterruptedException e) {
-      }
+    } finally {
+      totalScanTime += System.currentTimeMillis() - startTime;
     }
   }
 
@@ -207,12 +178,10 @@ public abstract class FileScannerV2 implements Scanner {
     if(closed.get()) {
       return;
     }
+    long[] readBytes = reportReadBytes();
+    smContext.incrementReadBytes(allocatedDiskId, readBytes);
     closed.set(true);
-
-    synchronized(tuplePool) {
-      tuplePool.notifyAll();
-    }
-    LOG.info(toString() + " closed");
+    LOG.info(toString() + " closed, totalScanTime=" + totalScanTime);
   }
 
   public boolean isClosed() {
@@ -220,30 +189,14 @@ public abstract class FileScannerV2 implements Scanner {
   }
 
   public Tuple next() throws IOException {
-    if(isClosed() && tuplePool == null) {
-      return null;
-    }
-    while(true) {
-      Tuple tuple = tuplePool.poll();
-      if(tuple == null) {
-        if(isClosed()) {
-          tuplePool.clear();
-          tuplePool = null;
-          return null;
+    synchronized(firstSchdeuled) {
+      if(firstSchdeuled.get()) {
+        try {
+          firstSchdeuled.wait();
+        } catch (InterruptedException e) {
         }
-        synchronized(tuplePool) {
-          try {
-            tuplePool.wait();
-          } catch (InterruptedException e) {
-            break;
-          }
-        }
-      } else {
-        tuplePoolMemory.addAndGet(0 - tuple.size());
-        return tuple;
       }
     }
-
-    return null;
+    return nextTuple();
   }
 }

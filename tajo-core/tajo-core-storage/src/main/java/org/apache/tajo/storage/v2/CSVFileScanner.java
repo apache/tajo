@@ -18,31 +18,23 @@
 
 package org.apache.tajo.storage.v2;
 
-import com.google.protobuf.Message;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.net.util.Base64;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.Seekable;
 import org.apache.hadoop.io.compress.*;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.ProtobufDatumFactory;
-import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
-import org.apache.tajo.datum.protobuf.TextUtils;
 import org.apache.tajo.storage.Fragment;
+import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.compress.CodecPool;
+import org.apache.tajo.util.Bytes;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
-import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class CSVFileScanner extends FileScannerV2 {
   public static final String DELIMITER = "csvfile.delimiter";
@@ -53,8 +45,8 @@ public class CSVFileScanner extends FileScannerV2 {
   private final static int DEFAULT_BUFFER_SIZE = 256 * 1024;
   private int bufSize;
   private char delimiter;
-  private FSDataInputStream fis;
-  private InputStream is; //decompressd stream
+  private ScheduledInputStream sin;
+  private InputStream is; // decompressd stream
   private CompressionCodecFactory factory;
   private CompressionCodec codec;
   private Decompressor decompressor;
@@ -62,7 +54,7 @@ public class CSVFileScanner extends FileScannerV2 {
   private boolean splittable = true;
   private long startOffset, length;
   private byte[] buf = null;
-  private String[] tuples = null;
+  private byte[][] tuples = null;
   private long[] tupleOffsets = null;
   private int currentIdx = 0, validIdx = 0;
   private byte[] tail = null;
@@ -70,6 +62,10 @@ public class CSVFileScanner extends FileScannerV2 {
   private long prevTailLen = -1;
   private int[] targetColumnIndexes;
   private boolean eof = false;
+  private boolean first = true;
+
+  private long totalReadBytesForFetch;
+  private long totalReadBytesFromDisk;
 
   public CSVFileScanner(Configuration conf, final TableMeta meta,
                     final Fragment fragment) throws IOException {
@@ -92,26 +88,31 @@ public class CSVFileScanner extends FileScannerV2 {
   }
 
   @Override
-  protected void initFirstScan() throws IOException {
-    if(!firstSchdeuled) {
-      return;
+  protected boolean initFirstScan(int maxBytesPerSchedule) throws IOException {
+    synchronized(this) {
+      eof = false;
+      first = true;
+      if(sin == null) {
+        FSDataInputStream fin = fs.open(fragment.getPath(), 128 * 1024);
+        sin = new ScheduledInputStream(fragment.getPath(), fin,
+            fragment.getStartOffset(), fragment.getLength(), fs.getLength(fragment.getPath()));
+        startOffset = fragment.getStartOffset();
+        length = fragment.getLength();
+
+        if (startOffset > 0) {
+          startOffset--; // prev line feed
+        }
+      }
     }
-    firstSchdeuled = false;
+    return true;
+  }
 
-    // Fragment information
-    fis = fs.open(fragment.getPath(), 128 * 1024);
-    startOffset = fragment.getStartOffset();
-    length = fragment.getLength();
-
-    if (startOffset > 0) {
-      startOffset--; // prev line feed
-    }
-
+  private boolean scanFirst() throws IOException {
     if (codec != null) {
       decompressor = CodecPool.getDecompressor(codec);
       if (codec instanceof SplittableCompressionCodec) {
         SplitCompressionInputStream cIn = ((SplittableCompressionCodec) codec).createInputStream(
-            fis, decompressor, startOffset, startOffset + length,
+            sin, decompressor, startOffset, startOffset + length,
             SplittableCompressionCodec.READ_MODE.BYBLOCK);
 
         startOffset = cIn.getAdjustedStart();
@@ -119,15 +120,15 @@ public class CSVFileScanner extends FileScannerV2 {
         filePosition = cIn;
         is = cIn;
       } else {
-        is = new DataInputStream(codec.createInputStream(fis, decompressor));
+        is = new DataInputStream(codec.createInputStream(sin, decompressor));
       }
     } else {
-      fis.seek(startOffset);
-      filePosition = fis;
-      is = fis;
+      sin.seek(startOffset);
+      filePosition = sin;
+      is = sin;
     }
 
-    tuples = new String[0];
+    tuples = new byte[0][];
     if (targets == null) {
       targets = schema.toArray();
     }
@@ -151,9 +152,18 @@ public class CSVFileScanner extends FileScannerV2 {
 
     if (fragmentable() < 1) {
       close();
-      return;
+      return false;
     }
-    page();
+    return true;
+  }
+
+  @Override
+  public boolean isStopScanScheduling() {
+    if(sin != null && sin.IsEndOfStream()) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   private long fragmentable() throws IOException {
@@ -166,9 +176,19 @@ public class CSVFileScanner extends FileScannerV2 {
     if (filePosition != null) {
       retVal = filePosition.getPos();
     } else {
-      retVal = fis.getPos();
+      retVal = sin.getPos();
     }
     return retVal;
+  }
+
+  @Override
+  public boolean isFetchProcessing() {
+    if(sin != null &&
+        (sin.getAvaliableSize() >= 64 * 1024 * 1024)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   private void page() throws IOException {
@@ -200,34 +220,37 @@ public class CSVFileScanner extends FileScannerV2 {
 
     if (prevTailLen == 0) {
       tail = new byte[0];
-      tuples = StringUtils.split(new String(buf, 0, rbyte), (char) LF);
+      tuples = Bytes.splitPreserveAllTokens(buf, rbyte, (char) LF);
     } else {
-      tuples = StringUtils.split(new String(tail)
-          + new String(buf, 0, rbyte), (char) LF);
+      byte[] lastRow = ArrayUtils.addAll(tail, buf);
+      tuples = Bytes.splitPreserveAllTokens(lastRow, rbyte + tail.length, (char) LF);
       tail = null;
     }
 
     // Check tail
     if ((char) buf[rbyte - 1] != LF) {
       if ((fragmentable() < 1 || rbyte != bufSize)) {
-        int cnt = 0;
+        int lineFeedPos = 0;
         byte[] temp = new byte[DEFAULT_BUFFER_SIZE];
-        // Read bytes
-        while ((temp[cnt] = (byte) is.read()) != LF) {
-          cnt++;
+
+        // find line feed
+        while ((temp[lineFeedPos] = (byte)is.read()) != (byte)LF) {
+          if(temp[lineFeedPos] < 0) {
+            break;
+          }
+          lineFeedPos++;
         }
 
-        // Replace tuple
-        tuples[tuples.length - 1] = tuples[tuples.length - 1]
-            + new String(temp, 0, cnt);
+        tuples[tuples.length - 1] = ArrayUtils.addAll(tuples[tuples.length - 1],
+            ArrayUtils.subarray(temp, 0, lineFeedPos));
         validIdx = tuples.length;
       } else {
-        tail = tuples[tuples.length - 1].getBytes();
+        tail = tuples[tuples.length - 1];
         validIdx = tuples.length - 1;
       }
     } else {
       tail = new byte[0];
-      validIdx = tuples.length;
+      validIdx = tuples.length - 1;
     }
 
     if(!isCompress()) makeTupleOffset();
@@ -238,13 +261,18 @@ public class CSVFileScanner extends FileScannerV2 {
     this.tupleOffsets = new long[this.validIdx];
     for (int i = 0; i < this.validIdx; i++) {
       this.tupleOffsets[i] = curTupleOffset + this.pageStart;
-      curTupleOffset += this.tuples[i].getBytes().length + 1;// tuple byte
-      // + 1byte
-      // line feed
+      curTupleOffset += this.tuples[i].length + 1;//tuple byte +  1byte line feed
     }
   }
 
-  protected Tuple getNextTuple() throws IOException {
+  protected Tuple nextTuple() throws IOException {
+    if(first) {
+      boolean more = scanFirst();
+      first = false;
+      if(!more) {
+        return null;
+      }
+    }
     try {
       if (currentIdx == validIdx) {
         if (isSplittable() && fragmentable() < 1) {
@@ -265,71 +293,8 @@ public class CSVFileScanner extends FileScannerV2 {
         offset = this.tupleOffsets[currentIdx];
       }
 
-      String[] cells = StringUtils.splitPreserveAllTokens(tuples[currentIdx++], delimiter);
-
-      int targetLen = targets.length;
-
-      VTuple tuple = new VTuple(columnNum);
-      Column field;
-      tuple.setOffset(offset);
-      for (int i = 0; i < targetLen; i++) {
-        field = targets[i];
-        int tid = targetColumnIndexes[i];
-        if (cells.length <= tid) {
-          tuple.put(tid, DatumFactory.createNullDatum());
-        } else {
-          String cell = cells[tid].trim();
-
-          if (cell.equals("")) {
-            tuple.put(tid, DatumFactory.createNullDatum());
-          } else {
-            DataType dataType = field.getDataType();
-            switch (dataType.getType()) {
-              case BOOLEAN:
-                tuple.put(tid, DatumFactory.createBool(cell));
-                break;
-              case BIT:
-                tuple.put(tid, DatumFactory.createBit(Base64.decodeBase64(cell)[0]));
-                break;
-              case CHAR:
-                String trimmed = cell.trim();
-                tuple.put(tid, DatumFactory.createChar(trimmed));
-                break;
-              case BLOB:
-                tuple.put(tid, DatumFactory.createBlob(Base64.decodeBase64(cell)));
-                break;
-              case INT2:
-                tuple.put(tid, DatumFactory.createInt2(cell));
-                break;
-              case INT4:
-                tuple.put(tid, DatumFactory.createInt4(cell));
-                break;
-              case INT8:
-                tuple.put(tid, DatumFactory.createInt8(cell));
-                break;
-              case FLOAT4:
-                tuple.put(tid, DatumFactory.createFloat4(cell));
-                break;
-              case FLOAT8:
-                tuple.put(tid, DatumFactory.createFloat8(cell));
-                break;
-              case TEXT:
-                tuple.put(tid, DatumFactory.createText(cell));
-                break;
-              case PROTOBUF:
-                ProtobufDatumFactory factory = ProtobufDatumFactory.get(dataType);
-                Message.Builder builder = factory.newBuilder();
-                ProtobufJsonFormat.getInstance().merge(TextUtils.toInputStream(cell), builder);
-                tuple.put(tid, factory.createDatum(builder.build()));
-                break;
-              case INET4:
-                tuple.put(tid, DatumFactory.createInet4(cell));
-                break;
-            }
-          }
-        }
-      }
-      return tuple;
+      byte[][] cells = Bytes.splitPreserveAllTokens(tuples[currentIdx++], delimiter, targetColumnIndexes);
+      return new LazyTuple(schema, cells, offset);
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
     }
@@ -341,8 +306,22 @@ public class CSVFileScanner extends FileScannerV2 {
   }
 
   @Override
-  public void reset() throws IOException {
-    super.reset();
+  public void scannerReset() {
+    if(sin != null) {
+      try {
+        filePosition.seek(0);
+      } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
+    if(sin != null) {
+      try {
+        sin.seek(0);
+        sin.reset();
+      } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
   }
 
   @Override
@@ -350,8 +329,16 @@ public class CSVFileScanner extends FileScannerV2 {
     if(closed.get()) {
       return;
     }
+    if(sin != null) {
+      totalReadBytesForFetch = sin.getTotalReadBytesForFetch();
+      totalReadBytesFromDisk = sin.getTotalReadBytesFromDisk();
+    }
     try {
-      is.close();
+      if(is != null) {
+        is.close();
+      }
+      is = null;
+      sin = null;
     } finally {
       if (decompressor != null) {
         CodecPool.returnDecompressor(decompressor);
@@ -359,6 +346,16 @@ public class CSVFileScanner extends FileScannerV2 {
       }
       tuples = null;
       super.close();
+    }
+  }
+
+  @Override
+  protected boolean scanNext(int length) throws IOException {
+    synchronized(this) {
+      if(isClosed()) {
+        return false;
+      }
+      return sin.readNext(length);
     }
   }
 
@@ -381,4 +378,8 @@ public class CSVFileScanner extends FileScannerV2 {
     return splittable;
   }
 
+  @Override
+  protected long[] reportReadBytes() {
+    return new long[]{totalReadBytesForFetch, totalReadBytesFromDisk};
+  }
 }

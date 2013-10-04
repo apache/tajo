@@ -30,7 +30,6 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexReader;
 import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexWriter;
-import org.apache.tajo.storage.v2.FileScannerV2;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Before;
 import org.junit.Test;
@@ -134,9 +133,7 @@ public class TestBSTIndex {
     reader.open();
     scanner = StorageManagerFactory.getSeekableScanner(conf, meta, tablet, meta.getSchema());
     scanner.init();
-    if(scanner instanceof FileScannerV2) {
-      ((FileScannerV2)scanner).waitScanStart();
-    }
+
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {
       tuple.put(0, DatumFactory.createInt8(i));
       tuple.put(1, DatumFactory.createFloat8(i));
@@ -453,10 +450,6 @@ public class TestBSTIndex {
     reader.open();
     scanner  = StorageManagerFactory.getSeekableScanner(conf, meta, tablet, meta.getSchema());
     scanner.init();
-
-    if(scanner instanceof FileScannerV2) {
-      ((FileScannerV2)scanner).waitScanStart();
-    }
 
     Tuple result;
     for(int i = 1 ; i < TUPLE_NUM -1 ; i+=2) {
