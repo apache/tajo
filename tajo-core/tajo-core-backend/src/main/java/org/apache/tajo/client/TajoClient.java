@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
@@ -47,9 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * TajoClient is ThreadSafe
- */
+@ThreadSafe
 public class TajoClient {
   private final Log LOG = LogFactory.getLog(TajoClient.class);
 
@@ -88,9 +87,6 @@ public class TajoClient {
     } catch (Exception e) {
       throw new IOException(e);
     }
-
-    LOG.info("connected to tajo cluster (" +
-        org.apache.tajo.util.NetUtils.normalizeInetSocketAddress(addr) + ")");
   }
 
   public void close() {
@@ -188,8 +184,8 @@ public class TajoClient {
       queryMasterConnectionMap.put(queryId, service);
       queryMasterClientMap.put(queryId, client);
 
-      LOG.info("Connected to Query Master (qid=" + queryId + ", addr=" +
-          NetUtils.normalizeInetSocketAddress(addr) + ")");
+      LOG.info("Connected to Query Master (qid=" + queryId + ", addr=" + NetUtils.normalizeInetSocketAddress(addr)
+          + ")");
     } catch (Exception e) {
       LOG.error(e.getMessage());
       throw new RuntimeException(e);

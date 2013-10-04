@@ -267,8 +267,12 @@ public class TajoCli {
 
   public int executeStatements(String line) throws Exception {
 
+    // TODO - comment handling and multi line queries should be improved
+    // remove comments
+    String filtered = line.replaceAll("--[^\\r\\n]*", "").trim();
+
     String stripped;
-    for (String statement : line.split(";")) {
+    for (String statement : filtered.split(";")) {
       stripped = StringUtils.chomp(statement);
       if (StringUtils.isBlank(stripped)) {
         continue;
@@ -430,16 +434,6 @@ public class TajoCli {
     public abstract String getDescription();
   }
 
-  private void showTables() throws ServiceException {
-    List<String> tableList = client.getTableList();
-    if (tableList.size() == 0) {
-      sout.println("No Relation Found");
-    }
-    for (String table : tableList) {
-      sout.println(table);
-    }
-  }
-
   private String toFormattedString(TableDesc desc) {
     StringBuilder sb = new StringBuilder();
     sb.append("\ntable name: ").append(desc.getName()).append("\n");
@@ -507,7 +501,7 @@ public class TajoCli {
 
     @Override
     public String getDescription() {
-      return "list CLI commands";
+      return "show table description";
     }
   }
 

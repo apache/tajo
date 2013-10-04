@@ -280,18 +280,12 @@ elif [ "$COMMAND" = "worker" ] ; then
 elif [ "$COMMAND" = "catalog" ] ; then
   CLASS='org.apache.tajo.catalog.CatalogServer'
   TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"
-elif [ "$COMMAND" = "catutil" ] ; then
-  CLASS='org.apache.tajo.catalog.CatalogUtil'
-  TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"
-elif [ "$COMMAND" = "cluster" ] ; then
-  CLASS='org.apache.tajo.engine.cluster.ClusterUtil'
-  TAJO_OPTS="$TAJO_OPTS $TAJO_ZKSERVER_OPTS"
 elif [ "$COMMAND" = "cli" ] ; then
   CLASS='org.apache.tajo.cli.TajoCli'
-  TAJO_OPTS="$TAJO_OPTS $TAJO_ZKSERVER_OPTS"
-elif [ "$COMMAND" = "benchmark" ] ; then
-  CLASS='org.apache.tajo.benchmark.Driver'
-  TAJO_OPTS="$TAJO_OPTS $TAJO_ZKSERVER_OPTS"
+  TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
+elif [ "$COMMAND" = "dump" ] ; then
+  CLASS='org.apache.tajo.client.TajoDump'
+  TAJO_OPTS="$TAJO_OPTS $TAJO_DUMP_OPTS"
 else
   CLASS=$COMMAND
 fi

@@ -349,7 +349,7 @@ BlockComment
     ;
 
 LineComment
-    :   '//' ~[\r\n]* -> skip
+    :   '--' ~[\r\n]* -> skip
     ;
 
 /*
