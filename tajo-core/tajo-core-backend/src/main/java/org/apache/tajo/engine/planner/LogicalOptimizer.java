@@ -27,18 +27,20 @@ import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
  * This class optimizes a logical plan.
  */
 public class LogicalOptimizer {
-  private BasicQueryRewriteEngine rewriteEngine;
+  private BasicQueryRewriteEngine rulesBeforeJoinOpt;
+  private BasicQueryRewriteEngine rulesAfterToJoinOpt;
 
   public LogicalOptimizer() {
-    rewriteEngine = new BasicQueryRewriteEngine();
+    rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
+    rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule());
 
-    rewriteEngine.addRewriteRule(new FilterPushDownRule());
-    rewriteEngine.addRewriteRule(new ProjectionPushDownRule());
+    rulesAfterToJoinOpt = new BasicQueryRewriteEngine();
+    rulesAfterToJoinOpt.addRewriteRule(new ProjectionPushDownRule());
   }
 
   public LogicalNode optimize(LogicalPlan plan) throws PlanningException {
-    rewriteEngine.rewrite(plan);
-
+    rulesBeforeJoinOpt.rewrite(plan);
+    rulesAfterToJoinOpt.rewrite(plan);
     return plan.getRootBlock().getRoot();
   }
 }

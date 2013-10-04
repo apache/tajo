@@ -16,13 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.annotation;
+package org.apache.tajo.engine.planner.graph;
 
-import java.lang.annotation.ElementType;
 
-@java.lang.annotation.Documented
-@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
-@java.lang.annotation.Target({java.lang.annotation.ElementType.PARAMETER, java.lang.annotation.ElementType.FIELD,
-    ElementType.METHOD})
-public @interface Nullable {
+import org.apache.tajo.annotation.NotNull;
+
+import java.util.Collection;
+
+public interface UndirectedGraph<V, E> extends Graph<V, E> {
+  Collection<E> getEdges(@NotNull V v);
+
+  int getDegree(@NotNull V v);
 }

@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.graph;
 
+import org.apache.tajo.annotation.Nullable;
+
 import java.util.List;
 
 /**
@@ -26,37 +28,30 @@ import java.util.List;
  * @param <V> The vertex class type
  * @param <E> The edge class type
  */
-public interface DirectedGraph<V, E> {
+public interface DirectedGraph<V, E> extends Graph<V, E> {
 
-  int size();
-
-  void connect(V tail, V head, E edge);
-
-  void disconnect(V tail, V head);
-
-  boolean isConnected(V tail, V head);
-
-  boolean isReversedConnected(V head, V tail);
-
-  E getEdge(V tail, V head);
+  boolean hasReversedEdge(V head, V tail);
 
   E getReverseEdge(V head, V tail);
-
-  int getChildCount(V v);
 
   List<E> getIncomingEdges(V head);
 
   List<E> getOutgoingEdges(V tail);
 
-  List<V> getChilds(V v);
-
-  V getChild(V block, int idx);
-
-  V getParent(V v);
-
+  /////////////////////////////////
+  // belows are tree features
+  /////////////////////////////////
   boolean isRoot(V v);
 
   boolean isLeaf(V v);
+
+  @Nullable V getParent(V v);
+
+  int getChildCount(V v);
+
+  @Nullable V getChild(V block, int idx);
+
+  List<V> getChilds(V v);
 
   /**
    * It visits all vertices in a post-order traverse way.

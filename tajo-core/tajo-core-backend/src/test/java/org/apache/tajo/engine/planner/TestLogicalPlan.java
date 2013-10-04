@@ -89,9 +89,9 @@ public class TestLogicalPlan {
     LogicalPlan.QueryBlock new1 = plan.newAndGetBlock("@new1");
     LogicalPlan.QueryBlock new2 = plan.newAndGetBlock("@new2");
 
-    plan.getQueryBlockGraph().connect(new1.getName(), root.getName(),
+    plan.getQueryBlockGraph().addEdge(new1.getName(), root.getName(),
         new LogicalPlan.BlockEdge(new1, root, BlockType.TableSubQuery));
-    plan.getQueryBlockGraph().connect(new2.getName(), root.getName(),
+    plan.getQueryBlockGraph().addEdge(new2.getName(), root.getName(),
         new LogicalPlan.BlockEdge(new2, root, BlockType.TableSubQuery));
 
     SimpleDirectedGraph<String, LogicalPlan.BlockEdge> graph = plan.getQueryBlockGraph();

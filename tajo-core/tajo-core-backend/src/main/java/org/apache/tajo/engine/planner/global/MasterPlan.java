@@ -107,7 +107,7 @@ public class MasterPlan {
   }
 
   public void addConnect(DataChannel dataChannel) {
-    execBlockGraph.connect(dataChannel.getSrcId(), dataChannel.getTargetId(), dataChannel);
+    execBlockGraph.addEdge(dataChannel.getSrcId(), dataChannel.getTargetId(), dataChannel);
   }
 
   public void addConnect(ExecutionBlock src, ExecutionBlock target, PartitionType type) {
@@ -123,15 +123,15 @@ public class MasterPlan {
   }
 
   public boolean isConnected(ExecutionBlockId src, ExecutionBlockId target) {
-    return execBlockGraph.isConnected(src, target);
+    return execBlockGraph.hasEdge(src, target);
   }
 
   public boolean isReverseConnected(ExecutionBlock target, ExecutionBlock src) {
-    return execBlockGraph.isReversedConnected(target.getId(), src.getId());
+    return execBlockGraph.hasReversedEdge(target.getId(), src.getId());
   }
 
   public boolean isReverseConnected(ExecutionBlockId target, ExecutionBlockId src) {
-    return execBlockGraph.isReversedConnected(target, src);
+    return execBlockGraph.hasReversedEdge(target, src);
   }
 
   public DataChannel getChannel(ExecutionBlock src, ExecutionBlock target) {
@@ -167,7 +167,7 @@ public class MasterPlan {
   }
 
   public void disconnect(ExecutionBlockId src, ExecutionBlockId target) {
-    execBlockGraph.disconnect(src, target);
+    execBlockGraph.removeEdge(src, target);
   }
 
   public ExecutionBlock getParent(ExecutionBlock executionBlock) {

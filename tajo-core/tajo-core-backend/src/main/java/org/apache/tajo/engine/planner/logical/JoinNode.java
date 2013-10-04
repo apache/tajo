@@ -32,9 +32,13 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private EvalNode joinQual;
   @Expose private Target[] targets;
 
-  public JoinNode(int pid, JoinType joinType, LogicalNode left) {
+  public JoinNode(int pid, JoinType joinType) {
     super(pid, NodeType.JOIN);
     this.joinType = joinType;
+  }
+
+  public JoinNode(int pid, JoinType joinType, LogicalNode left) {
+    this(pid, joinType);
     setLeftChild(left);
   }
 

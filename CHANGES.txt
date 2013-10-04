@@ -43,6 +43,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-229: Implement JoinGraph to represent a graph of relation joins.
+    (hyunsik)
+
     TAJO-223: Maximize disk read bandwidth utilization of StorageManagerV2 by
     moving Tuple creation role to next(). (Keuntae Park via hyunsik)
 

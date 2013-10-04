@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog;
+package org.apache.tajo.client;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.GzipCodec;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.util.FileUtil;

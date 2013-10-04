@@ -28,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class TestGenericDirectedGraph {
+public class TestSimpleDirectedGraph {
 
   @Test
   public final void test() {
@@ -50,21 +50,27 @@ public class TestGenericDirectedGraph {
     String child3 = "child3";
     String child4 = "child4";
 
-    graph.connect(child1, root, 1);
-    graph.connect(child2, root, 2);
-    graph.connect(child3, child2, 3);
-    graph.connect(child4, child2, 4);
+    graph.addEdge(child1, root, 1);
+    graph.addEdge(child2, root, 2);
+    graph.addEdge(child3, child2, 3);
+    graph.addEdge(child4, child2, 4);
 
+    assertEquals(4, graph.getEdgeNum());
+    assertEquals(4, graph.getEdgesAll().size());
+
+    // tree features
     assertTrue(graph.isRoot(root));
     assertFalse(graph.isLeaf(root));
 
     assertEquals(2, graph.getChildCount(root));
     assertEquals(2, graph.getChildCount(child2));
 
+    // visitor
     graph.accept(root, new Visitor());
   }
 
   private class Visitor implements DirectedGraphVisitor<String> {
+
     @Override
     public void visit(Stack<String> stack, String s) {
       System.out.println("===> " + s);

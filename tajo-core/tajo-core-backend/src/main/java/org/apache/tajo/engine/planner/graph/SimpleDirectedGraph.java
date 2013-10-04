@@ -19,12 +19,11 @@
 package org.apache.tajo.engine.planner.graph;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * This represents a simple directed graph. It does not support multiple edges between both vertices.
@@ -34,23 +33,33 @@ import java.util.Stack;
  */
 public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   /** map: child -> parent */
-  private Map<V, Map<V, E>> directedEdges = TUtil.newLinkedHashMap();
+  protected Map<V, Map<V, E>> directedEdges = TUtil.newLinkedHashMap();
   /** map: parent -> child */
-  private Map<V, Map<V, E>> reversedEdges = TUtil.newLinkedHashMap();
+  protected Map<V, Map<V, E>> reversedEdges = TUtil.newLinkedHashMap();
 
   @Override
-  public int size() {
+  public int getVertexSize() {
     return directedEdges.size();
   }
 
   @Override
-  public void connect(V tail, V head, E edge) {
+  public int getEdgeNum() {
+    int edgeNum = 0;
+    for (Map<V, E> map : directedEdges.values()) {
+      edgeNum += map.values().size();
+    }
+
+    return edgeNum;
+  }
+
+  @Override
+  public void addEdge(V tail, V head, E edge) {
     TUtil.putToNestedMap(directedEdges, tail, head, edge);
     TUtil.putToNestedMap(reversedEdges, head, tail, edge);
   }
 
   @Override
-  public void disconnect(V tail, V head) {
+  public void removeEdge(V tail, V head) {
     if (directedEdges.containsKey(tail)) {
       directedEdges.get(tail).remove(head);
       if (directedEdges.get(tail).isEmpty()) {
@@ -67,18 +76,18 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   }
 
   @Override
-  public boolean isConnected(V tail, V head) {
+  public boolean hasEdge(V tail, V head) {
     return directedEdges.containsKey(tail) && directedEdges.get(tail).containsKey(head);
   }
 
   @Override
-  public boolean isReversedConnected(V head, V tail) {
+  public boolean hasReversedEdge(V head, V tail) {
     return reversedEdges.containsKey(head) && reversedEdges.get(head).containsKey(tail);
   }
 
   @Override
-  public E getEdge(V tail, V head) {
-    if (isConnected(tail, head)) {
+  public @Nullable E getEdge(V tail, V head) {
+    if (hasEdge(tail, head)) {
       return directedEdges.get(tail).get(head);
     } else {
       return null;
@@ -86,12 +95,22 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   }
 
   @Override
-  public E getReverseEdge(V head, V tail) {
-    if (isReversedConnected(head, tail)) {
+  public @Nullable
+  E getReverseEdge(V head, V tail) {
+    if (hasReversedEdge(head, tail)) {
       return reversedEdges.get(head).get(tail);
     } else {
       return null;
     }
+  }
+
+  @Override
+  public Collection<E> getEdgesAll() {
+    List<E> edges = Lists.newArrayList();
+    for (Map<V, E> map : directedEdges.values()) {
+      edges.addAll(map.values());
+    }
+    return edges;
   }
 
   @Override
@@ -138,7 +157,7 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   }
 
   @Override
-  public V getParent(V v) {
+  public @Nullable V getParent(V v) {
     if (directedEdges.containsKey(v)) {
       return directedEdges.get(v).keySet().iterator().next();
     } else {

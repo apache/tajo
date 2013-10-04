@@ -16,13 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.annotation;
+package org.apache.tajo.engine.planner.graph;
 
-import java.lang.annotation.ElementType;
+import org.apache.tajo.annotation.Nullable;
 
-@java.lang.annotation.Documented
-@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
-@java.lang.annotation.Target({java.lang.annotation.ElementType.PARAMETER, java.lang.annotation.ElementType.FIELD,
-    ElementType.METHOD})
-public @interface Nullable {
+import java.util.Collection;
+
+/**
+ * This is the topmost graph interface. It only provides essential graph features.
+ * @param <V> Vertex class
+ * @param <E> Edge Class
+ */
+
+public interface Graph<V, E> {
+  int getVertexSize();
+
+  int getEdgeNum();
+
+  void addEdge(V tail, V head, E edge);
+
+  void removeEdge(V tail, V head);
+
+  boolean hasEdge(V tail, V head);
+
+  @Nullable E getEdge(V tail, V head);
+
+  Collection<E> getEdgesAll();
 }

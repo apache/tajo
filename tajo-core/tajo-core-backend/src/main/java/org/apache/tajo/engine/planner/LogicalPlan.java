@@ -112,7 +112,7 @@ public class LogicalPlan {
   }
 
   public void connectBlocks(QueryBlock srcBlock, QueryBlock targetBlock, BlockType type) {
-    queryBlockGraph.connect(srcBlock.getName(), targetBlock.getName(), new BlockEdge(srcBlock, targetBlock, type));
+    queryBlockGraph.addEdge(srcBlock.getName(), targetBlock.getName(), new BlockEdge(srcBlock, targetBlock, type));
   }
 
   public QueryBlock getParentBlock(QueryBlock block) {

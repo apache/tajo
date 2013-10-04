@@ -18,11 +18,8 @@
 
 package org.apache.tajo.annotation;
 
-import java.lang.annotation.ElementType;
-
 @java.lang.annotation.Documented
 @java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
-@java.lang.annotation.Target({java.lang.annotation.ElementType.PARAMETER, java.lang.annotation.ElementType.FIELD,
-    ElementType.METHOD})
-public @interface Nullable {
+@java.lang.annotation.Target({java.lang.annotation.ElementType.PARAMETER, java.lang.annotation.ElementType.FIELD})
+public @interface NotNull {
 }
