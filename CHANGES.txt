@@ -41,6 +41,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-224: Rearrange DataType enumeration and Refactor type systems.
+    (hyunsik)
+
     TAJO-214: System should inquire finished query history after execution 
     in web. (SeongHwa Ahn via hyunsik)
 

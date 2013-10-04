@@ -49,7 +49,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
     ParamType [] paramTypes = new ParamType[argEvals.length];
     for (int i = 0; i < argEvals.length; i++) {
       if (argEvals[i].getType() == EvalType.CONST) {
-        if (argEvals[i].getValueType()[0].getType() == TajoDataTypes.Type.NULL) {
+        if (argEvals[i].getValueType().getType() == TajoDataTypes.Type.NULL) {
           paramTypes[i] = ParamType.NULL;
         } else {
           paramTypes[i] = ParamType.CONSTANT;
@@ -79,7 +79,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
     this.argEvals = args;
   }
 	
-	public DataType [] getValueType() {
+	public DataType getValueType() {
 		return this.funcDesc.getReturnType();
 	}
 

@@ -23,7 +23,6 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.storage.Tuple;
 
 public class FieldEval extends EvalNode implements Cloneable {
@@ -77,8 +76,8 @@ public class FieldEval extends EvalNode implements Cloneable {
   }
 
   @Override
-	public DataType[] getValueType() {
-		return SchemaUtil.newNoNameSchema(column.getDataType());
+	public DataType getValueType() {
+		return column.getDataType();
 	}
 	
   public Column getColumnRef() {

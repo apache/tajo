@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.rcfile;
 
+import com.google.protobuf.Message;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -26,8 +27,8 @@ import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStat;
-import org.apache.tajo.datum.ArrayDatum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.util.Bytes;
@@ -35,6 +36,8 @@ import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
+
+import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class RCFileWrapper {
 
@@ -111,18 +114,11 @@ public class RCFileWrapper {
             case BLOB:
             case INET4:
             case INET6:
+            case PROTOBUF:
               bytes = t.get(i).asByteArray();
               cu = new BytesRefWritable(bytes, 0, bytes.length);
               byteRef.set(i, cu);
               break;
-            case ARRAY: {
-              ArrayDatum array = (ArrayDatum) t.get(i);
-              String json = array.toJson();
-              bytes = json.getBytes();
-              cu = new BytesRefWritable(bytes, 0, bytes.length);
-              byteRef.set(i, cu);
-              break;
-            }
             case NULL:
               cu = new BytesRefWritable(new byte[0]);
               byteRef.set(i, cu);
@@ -245,7 +241,8 @@ public class RCFileWrapper {
         if (column.get(tid).getLength() == 0) {
           tuple.put(tid, DatumFactory.createNullDatum());
         } else {
-          switch (targets[i].getDataType().getType()) {
+          DataType dataType = targets[i].getDataType();
+          switch (dataType.getType()) {
             case BOOLEAN:
               tuple.put(tid,
                   DatumFactory.createBool(column.get(tid).getBytesCopy()[0]));
@@ -289,21 +286,22 @@ public class RCFileWrapper {
                       column.get(tid).getBytesCopy())));
               break;
 
-            case INET4:
-              tuple.put(tid,
-                  DatumFactory.createInet4(column.get(tid).getBytesCopy()));
-              break;
-
-//            case STRING:
-//              tuple.put(tid,
-//                  DatumFactory.createText(
-//                      Bytes.toString(column.get(tid).getBytesCopy())));
-//              break;
-
             case TEXT:
               tuple.put(tid,
                   DatumFactory.createText(
                       column.get(tid).getBytesCopy()));
+              break;
+
+            case PROTOBUF: {
+              ProtobufDatumFactory factory = ProtobufDatumFactory.get(dataType.getCode());
+              Message.Builder builder = factory.newBuilder();
+              builder.mergeFrom(column.get(tid).getBytesCopy());
+              tuple.put(tid, factory.createDatum(builder));
+              break;
+            }
+            case INET4:
+              tuple.put(tid,
+                  DatumFactory.createInet4(column.get(tid).getBytesCopy()));
               break;
 
             case BLOB:

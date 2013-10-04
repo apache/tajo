@@ -24,12 +24,10 @@ import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.query.exception.InvalidQueryException;
@@ -158,7 +156,7 @@ public class PlannerUtil {
             }
 
             secondFunc.setArgs(new EvalNode [] {new FieldEval(
-                new Column(targetName, newTarget.getEvalTree().getValueType()[0]))});
+                new Column(targetName, newTarget.getEvalTree().getValueType()))});
           } else {
             func.setFirstPhase();
             newTarget = new Target(func);
@@ -172,12 +170,8 @@ public class PlannerUtil {
                 break;
               }
             }
-            if (func.getValueType().length > 1) { // hack for partial result
-              secondFunc.setArgs(new EvalNode[] {new FieldEval(new Column(targetName, Type.ARRAY))});
-            } else {
-              secondFunc.setArgs(new EvalNode [] {new FieldEval(
-                  new Column(targetName, newTarget.getEvalTree().getValueType()[0]))});
-            }
+            secondFunc.setArgs(new EvalNode [] {new FieldEval(
+                new Column(targetName, newTarget.getEvalTree().getValueType()))});
           }
           firstStepTargets.add(newTarget);
         }
@@ -564,12 +558,7 @@ public class PlannerUtil {
   public static Schema targetToSchema(Target[] targets) {
     Schema schema = new Schema();
     for(Target t : targets) {
-      DataType type;
-      if (t.getEvalTree().getValueType().length > 1) {
-        type = CatalogUtil.newDataTypeWithoutLen(Type.ARRAY);
-      } else {
-        type = t.getEvalTree().getValueType()[0];
-      }
+      DataType type = t.getEvalTree().getValueType();
       String name;
       if (t.hasAlias()) {
         name = t.getAlias();

@@ -18,8 +18,11 @@
 
 package org.apache.tajo.catalog.statistics;
 
+import com.google.protobuf.Message;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
+
+import java.io.IOException;
 
 public class TupleUtil {
   public static Datum createFromBytes(DataType type, byte [] bytes) {
@@ -44,6 +47,16 @@ public class TupleUtil {
         return new TextDatum(bytes);
       case INET4:
         return new Inet4Datum(bytes);
+      case PROTOBUF:
+        ProtobufDatumFactory factory = ProtobufDatumFactory.get(type);
+        Message.Builder builder = factory.newBuilder();
+        try {
+          builder.mergeFrom(bytes);
+          return factory.createDatum(builder.build());
+        } catch (IOException e) {
+          e.printStackTrace();
+          throw new RuntimeException(e);
+        }
       default: throw new UnsupportedOperationException(type + " is not supported yet");
     }
   }

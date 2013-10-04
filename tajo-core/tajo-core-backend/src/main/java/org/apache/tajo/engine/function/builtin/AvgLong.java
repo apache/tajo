@@ -20,15 +20,17 @@ package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.function.AggFunction;
-import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.ArrayDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.Float8Datum;
+import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.engine.function.AggFunction;
+import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
+
+import static org.apache.tajo.InternalTypes.AvgLongProto;
 
 public class AvgLong extends AggFunction<Float8Datum> {
 
@@ -52,24 +54,24 @@ public class AvgLong extends AggFunction<Float8Datum> {
   @Override
   public void merge(FunctionContext ctx, Tuple part) {
     AvgContext avgCtx = (AvgContext) ctx;
-    ArrayDatum array = (ArrayDatum) part.get(0);
-    avgCtx.sum += array.get(0).asInt8();
-    avgCtx.count += array.get(1).asInt8();
+    ProtobufDatum datum = (ProtobufDatum) part.get(0);
+    AvgLongProto proto = (AvgLongProto) datum.get();
+    avgCtx.sum += proto.getSum();
+    avgCtx.count += proto.getCount();
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
     AvgContext avgCtx = (AvgContext) ctx;
-    ArrayDatum part = new ArrayDatum(2);
-    part.put(0, DatumFactory.createInt8(avgCtx.sum));
-    part.put(1, DatumFactory.createInt8(avgCtx.count));
-
-    return part;
+    AvgLongProto.Builder builder = AvgLongProto.newBuilder();
+    builder.setSum(avgCtx.sum);
+    builder.setCount(avgCtx.count);
+    return new ProtobufDatum(builder.build());
   }
 
   @Override
-  public DataType[] getPartialResultType() {
-    return CatalogUtil.newDataTypesWithoutLen(Type.INT8, Type.INT8);
+  public DataType getPartialResultType() {
+    return CatalogUtil.newDataType(Type.PROTOBUF, AvgLongProto.class.getName());
   }
 
   @Override
@@ -78,7 +80,7 @@ public class AvgLong extends AggFunction<Float8Datum> {
     return DatumFactory.createFloat8((double) avgCtx.sum / avgCtx.count);
   }
 
-  private class AvgContext implements FunctionContext {
+  protected class AvgContext implements FunctionContext {
     long sum;
     long count;
   }

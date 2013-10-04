@@ -21,7 +21,6 @@ package org.apache.tajo.engine.eval;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 
@@ -53,23 +52,8 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
 	}
 
   @Override
-	public DataType [] getValueType() {
-		switch(this.datum.type()) {
-      case BOOLEAN: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
-      case BIT: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BIT);
-      case CHAR: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.CHAR);
-      case INT1: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT1);
-      case INT2: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT2);
-      case INT4: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT4);
-      case INT8: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT8);
-      case FLOAT4: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.FLOAT4);
-      case FLOAT8 : return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.FLOAT8);
-      case BLOB : return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BLOB);
-      case TEXT: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.TEXT);
-      case INET4: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INET4);
-      case NULL: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.NULL);
-      default: return CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.ANY);
-		}
+	public DataType getValueType() {
+    return CatalogUtil.newSimpleDataType(datum.type());
 	}
 
 	@Override

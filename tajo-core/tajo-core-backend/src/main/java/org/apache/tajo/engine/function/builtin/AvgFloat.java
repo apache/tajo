@@ -18,28 +18,12 @@
 
 package org.apache.tajo.engine.function.builtin;
 
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.FunctionContext;
-import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.ArrayDatum;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.Float4Datum;
 import org.apache.tajo.storage.Tuple;
 
-public class AvgFloat extends AggFunction<Float4Datum> {
+public class AvgFloat extends AvgDouble {
 
   public AvgFloat() {
-    super(new Column[] {
-        new Column("val", Type.FLOAT8)
-    });
-  }
-
-  public AvgContext newContext() {
-    return new AvgContext();
   }
 
   @Override
@@ -47,39 +31,5 @@ public class AvgFloat extends AggFunction<Float4Datum> {
     AvgContext avgCtx = (AvgContext) ctx;
     avgCtx.sum += params.get(0).asFloat4();
     avgCtx.count++;
-  }
-
-  @Override
-  public void merge(FunctionContext ctx, Tuple part) {
-    AvgContext avgCtx = (AvgContext) ctx;
-    ArrayDatum array = (ArrayDatum) part.get(0);
-    avgCtx.sum += array.get(0).asFloat8();
-    avgCtx.count += array.get(1).asInt8();
-  }
-
-  @Override
-  public Datum getPartialResult(FunctionContext ctx) {
-    AvgContext avgCtx = (AvgContext) ctx;
-    ArrayDatum part = new ArrayDatum(2);
-    part.put(0, DatumFactory.createFloat8(avgCtx.sum));
-    part.put(1, DatumFactory.createInt8(avgCtx.count));
-
-    return part;
-  }
-
-  @Override
-  public DataType[] getPartialResultType() {
-    return CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8, Type.INT8);
-  }
-
-  @Override
-  public Float4Datum terminate(FunctionContext ctx) {
-    AvgContext avgCtx = (AvgContext) ctx;
-    return DatumFactory.createFloat4((float) (avgCtx.sum / avgCtx.count));
-  }
-
-  private class AvgContext implements FunctionContext {
-    double sum;
-    long count;
   }
 }

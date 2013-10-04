@@ -19,13 +19,11 @@
 package org.apache.tajo.engine.planner;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.engine.eval.EvalType;
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TUtil;
 
 /**
@@ -38,11 +36,7 @@ public class Target implements Cloneable, GsonObject {
 
   public Target(EvalNode expr) {
     this.expr = expr;
-    if (expr.getType() == EvalType.AGG_FUNCTION && expr.getValueType().length > 1) { // hack for partial result
-      this.column = new Column(expr.getName(), Type.ARRAY);
-    } else {
-      this.column = new Column(expr.getName(), expr.getValueType()[0]);
-    }
+    this.column = new Column(expr.getName(), expr.getValueType());
   }
 
   public Target(final EvalNode eval, final String alias) {
@@ -56,7 +50,7 @@ public class Target implements Cloneable, GsonObject {
 
   public final void setAlias(String alias) {
     this.alias = alias;
-    this.column = new Column(alias, expr.getValueType()[0]);
+    this.column = new Column(alias, expr.getValueType());
   }
 
   public final String getAlias() {

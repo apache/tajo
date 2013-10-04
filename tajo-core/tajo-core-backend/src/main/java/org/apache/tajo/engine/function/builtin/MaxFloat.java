@@ -52,8 +52,8 @@ public class MaxFloat extends AggFunction<Datum> {
   }
 
   @Override
-  public DataType[] getPartialResultType() {
-    return CatalogUtil.newDataTypesWithoutLen(Type.FLOAT4);
+  public DataType getPartialResultType() {
+    return CatalogUtil.newSimpleDataType(Type.FLOAT4);
   }
 
   @Override

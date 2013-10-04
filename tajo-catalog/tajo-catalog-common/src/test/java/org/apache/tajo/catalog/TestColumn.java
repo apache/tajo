@@ -33,9 +33,9 @@ public class TestColumn {
 	static final String FieldName2="f2";
 	static final String FieldName3="f3";	
 	
-	static final DataType Type1 = CatalogUtil.newDataTypeWithoutLen(Type.BLOB);
-	static final DataType Type2 = CatalogUtil.newDataTypeWithoutLen(Type.INT4);
-	static final DataType Type3 = CatalogUtil.newDataTypeWithoutLen(Type.INT8);
+	static final DataType Type1 = CatalogUtil.newSimpleDataType(Type.BLOB);
+	static final DataType Type2 = CatalogUtil.newSimpleDataType(Type.INT4);
+	static final DataType Type3 = CatalogUtil.newSimpleDataType(Type.INT8);
 	
 	Column field1;
 	Column field2;

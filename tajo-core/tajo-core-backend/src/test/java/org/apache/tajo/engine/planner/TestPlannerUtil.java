@@ -55,7 +55,7 @@ public class TestPlannerUtil {
 
     Schema schema = new Schema();
     schema.addColumn("name", Type.TEXT);
-    schema.addColumn("empId", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    schema.addColumn("empId", CatalogUtil.newSimpleDataType(Type.INT4));
     schema.addColumn("deptName", Type.TEXT);
 
     Schema schema2 = new Schema();
@@ -64,7 +64,7 @@ public class TestPlannerUtil {
 
     Schema schema3 = new Schema();
     schema3.addColumn("deptName", Type.TEXT);
-    schema3.addColumn("score", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    schema3.addColumn("score", CatalogUtil.newSimpleDataType(Type.INT4));
 
     TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     TableDesc people = new TableDescImpl("employee", meta,
@@ -82,8 +82,8 @@ public class TestPlannerUtil {
     catalog.addTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4));
+        CatalogUtil.newSimpleDataType(Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(Type.INT4));
 
     catalog.createFunction(funcDesc);
     analyzer = new SQLAnalyzer();
@@ -157,9 +157,9 @@ public class TestPlannerUtil {
 
   @Test
   public final void testIsJoinQual() {
-    FieldEval f1 = new FieldEval("part.p_partkey", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f1 = new FieldEval("part.p_partkey", CatalogUtil.newSimpleDataType(Type.INT4));
     FieldEval f2 = new FieldEval("partsupp.ps_partkey",
-        CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+        CatalogUtil.newSimpleDataType(Type.INT4));
 
 
     BinaryEval [] joinQuals = new BinaryEval[5];
@@ -190,16 +190,16 @@ public class TestPlannerUtil {
   @Test
   public final void testGetJoinKeyPairs() {
     Schema outerSchema = new Schema();
-    outerSchema.addColumn("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    outerSchema.addColumn("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    outerSchema.addColumn("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
+    outerSchema.addColumn("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4));
     Schema innerSchema = new Schema();
-    innerSchema.addColumn("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    innerSchema.addColumn("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    innerSchema.addColumn("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
+    innerSchema.addColumn("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
 
-    FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
+    FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
+    FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4));
+    FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
 
     EvalNode joinQual = new BinaryEval(EvalType.EQUAL, f1, f2);
 
@@ -236,16 +236,16 @@ public class TestPlannerUtil {
   @Test
   public final void testGetSortKeysFromJoinQual() {
     Schema outerSchema = new Schema();
-    outerSchema.addColumn("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    outerSchema.addColumn("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    outerSchema.addColumn("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
+    outerSchema.addColumn("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4));
     Schema innerSchema = new Schema();
-    innerSchema.addColumn("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    innerSchema.addColumn("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    innerSchema.addColumn("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
+    innerSchema.addColumn("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
 
-    FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
+    FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
+    FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4));
+    FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
 
     EvalNode joinQual = new BinaryEval(EvalType.EQUAL, f1, f2);
     SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(joinQual, outerSchema, innerSchema);
@@ -272,16 +272,16 @@ public class TestPlannerUtil {
   @Test
   public final void testComparatorsFromJoinQual() {
     Schema outerSchema = new Schema();
-    outerSchema.addColumn("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    outerSchema.addColumn("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    outerSchema.addColumn("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
+    outerSchema.addColumn("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4));
     Schema innerSchema = new Schema();
-    innerSchema.addColumn("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    innerSchema.addColumn("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    innerSchema.addColumn("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
+    innerSchema.addColumn("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
 
-    FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
-    FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newDataTypeWithoutLen(Type.INT4));
+    FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
+    FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
+    FieldEval f3 = new FieldEval("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4));
+    FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
 
     EvalNode joinQual = new BinaryEval(EvalType.EQUAL, f1, f2);
     TupleComparator [] comparators = PlannerUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);

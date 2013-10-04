@@ -49,7 +49,7 @@ public class Column implements ProtoObject<ColumnProto>, Cloneable, GsonObject {
 	}
 
   public Column(String columnName, TajoDataTypes.Type type) {
-    this(columnName, CatalogUtil.newDataTypeWithoutLen(type));
+    this(columnName, CatalogUtil.newSimpleDataType(type));
   }
 
   public Column(String columnName, TajoDataTypes.Type type, int typeLength) {

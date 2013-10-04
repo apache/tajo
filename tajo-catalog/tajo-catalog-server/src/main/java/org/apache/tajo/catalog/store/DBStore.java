@@ -985,7 +985,7 @@ public class DBStore implements CatalogStore {
   private ColumnProto resultToColumnProto(final ResultSet res) throws SQLException {
     ColumnProto.Builder builder = ColumnProto.newBuilder();
     builder.setColumnName(res.getString("column_name"));
-    builder.setDataType(CatalogUtil.newDataTypeWithoutLen(
+    builder.setDataType(CatalogUtil.newSimpleDataType(
         getDataType(res.getString("data_type").trim())));
     return builder.build();
   }

@@ -159,7 +159,7 @@ public class TargetListManager {
       t.setAlias(plan.newNonameColumnName(t.getEvalTree().getName()));
       name = t.getCanonicalName();
     }
-    return new Column(name, t.getEvalTree().getValueType()[0]);
+    return new Column(name, t.getEvalTree().getValueType());
   }
 
   public boolean isAllResolved() {

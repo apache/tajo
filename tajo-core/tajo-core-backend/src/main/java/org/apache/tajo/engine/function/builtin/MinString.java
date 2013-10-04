@@ -58,8 +58,8 @@ public class MinString extends AggFunction<Datum> {
   }
 
   @Override
-  public DataType [] getPartialResultType() {
-    return CatalogUtil.newDataTypesWithoutLen(Type.TEXT);
+  public DataType getPartialResultType() {
+    return CatalogUtil.newSimpleDataType(Type.TEXT);
   }
 
   @Override

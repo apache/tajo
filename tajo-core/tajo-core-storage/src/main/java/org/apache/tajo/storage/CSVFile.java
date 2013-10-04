@@ -33,10 +33,11 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.ArrayDatum;
 import org.apache.tajo.datum.CharDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
@@ -67,6 +68,7 @@ public class CSVFile {
     private CompressionCodec codec;
     private Path compressedPath;
     private byte[] nullChars;
+    private ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
 
     public CSVAppender(Configuration conf, final TableMeta meta,
                        final Path path) throws IOException {
@@ -129,30 +131,31 @@ public class CSVFile {
       Datum datum;
 
       int colNum = schema.getColumnNum();
-      if(tuple instanceof LazyTuple){
+      if (tuple instanceof LazyTuple) {
         LazyTuple  lTuple = (LazyTuple)tuple;
         for (int i = 0; i < colNum; i++) {
-          col = schema.getColumn(i);
-          if (col.getDataType().getType().equals(TajoDataTypes.Type.NULL)) {
+          TajoDataTypes.DataType dataType = schema.getColumn(i).getDataType();
+          datum = tuple.get(i);
 
-          } else if (col.getDataType().getType().equals(TajoDataTypes.Type.CHAR)) {
-            datum = tuple.get(i);
-            if (datum instanceof NullDatum) {
-              outputStream.write(nullChars);
-            } else {
-              byte[] pad = new byte[col.getDataType().getLength() - datum.size()];
+          switch (dataType.getType()) {
+            case TEXT:
+              outputStream.write(datum.asTextBytes());
+              break;
+            case CHAR:
+              byte[] pad = new byte[dataType.getLength() - datum.size()];
               outputStream.write(datum.asTextBytes());
               outputStream.write(pad);
-            }
-          } else if (col.getDataType().getType().equals(TajoDataTypes.Type.TEXT)) {
-            datum = tuple.get(i);
-            if (datum instanceof NullDatum) {
+              break;
+            case NULL:
               outputStream.write(nullChars);
-            } else {
-              outputStream.write(datum.asTextBytes());
-            }
-          } else {
-            outputStream.write(lTuple.getTextBytes(i));
+              break;
+            case PROTOBUF:
+              ProtobufDatum protobufDatum = (ProtobufDatum) datum;
+              protobufJsonFormat.print(protobufDatum.get(), outputStream);
+              break;
+            default:
+              outputStream.write(lTuple.getTextBytes(i));
+              break;
           }
 
           if(colNum - 1 > i){
@@ -213,15 +216,10 @@ public class CSVFile {
                 break;
               case INET6:
                 outputStream.write(tuple.getIPv6(i).toString().getBytes());
-              case ARRAY:
-            /*
-             * sb.append("["); boolean first = true; ArrayDatum array =
-             * (ArrayDatum) tuple.get(i); for (Datum field : array.toArray()) {
-             * if (first) { first = false; } else { sb.append(delimiter); }
-             * sb.append(field.asChars()); } sb.append("]");
-             */
-                ArrayDatum array = (ArrayDatum) tuple.get(i);
-                outputStream.write(array.toJson().getBytes());
+                break;
+              case PROTOBUF:
+                ProtobufDatum protobuf = (ProtobufDatum) datum;
+                ProtobufJsonFormat.getInstance().print(protobuf.get(), outputStream);
                 break;
               default:
                 throw new UnsupportedOperationException("Cannot write such field: "

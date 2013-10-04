@@ -27,7 +27,7 @@ public class TestCatalogUtil {
   @Test
   public final void testGetCanonicalName() {
     String canonical = CatalogUtil.getCanonicalName("sum",
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4,  Type.INT8));
+        CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
     assertEquals("sum(INT4,INT8)", canonical);
   }
 }

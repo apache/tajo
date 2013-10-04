@@ -86,7 +86,7 @@ public class TestRowFile {
     appender.enableStats();
     appender.init();
 
-    int tupleNum = 100000;
+    int tupleNum = 100;
     Tuple tuple;
     Datum stringDatum = DatumFactory.createText("abcdefghijklmnopqrstuvwxyz");
     Set<Integer> idSet = Sets.newHashSet();
@@ -100,14 +100,10 @@ public class TestRowFile {
       appender.addTuple(tuple);
       idSet.add(i+1);
     }
-
-    long end = System.currentTimeMillis();
     appender.close();
 
     TableStat stat = appender.getStats();
     assertEquals(tupleNum, stat.getNumRows().longValue());
-
-    System.out.println("append time: " + (end - start));
 
     FileStatus file = fs.getFileStatus(dataPath);
     TableProto proto = (TableProto) FileUtil.loadProto(
@@ -123,18 +119,14 @@ public class TestRowFile {
       tupleCnt++;
     }
     scanner.close();
-    end = System.currentTimeMillis();
 
     assertEquals(tupleNum, tupleCnt);
-    System.out.println("scan time: " + (end - start));
 
     tupleCnt = 0;
     long fileStart = 0;
     long fileLen = file.getLen()/13;
-    System.out.println("total length: " + file.getLen());
 
     for (int i = 0; i < 13; i++) {
-      System.out.println("range: " + fileStart + ", " + fileLen);
       fragment = new Fragment("test.tbl", dataPath, meta, fileStart, fileLen);
       scanner = new RowFile.RowFileScanner(conf, meta, fragment);
       scanner.init();
@@ -144,16 +136,11 @@ public class TestRowFile {
         }
         tupleCnt++;
       }
-      System.out.println("tuple count: " + tupleCnt);
       scanner.close();
       fileStart += fileLen;
       if (i == 11) {
         fileLen = file.getLen() - fileStart;
       }
-    }
-
-    for (Integer id : idSet) {
-      System.out.println("remaining id: " + id);
     }
     assertEquals(tupleNum, tupleCnt);
   }

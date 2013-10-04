@@ -20,17 +20,17 @@ package org.apache.tajo.engine.eval;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.ArrayDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.util.TUtil;
 
-public class RowConstantEval extends EvalNode {
-  @Expose ArrayDatum values;
+import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-  public RowConstantEval(Datum[] values) {
+public class RowConstantEval extends EvalNode {
+  @Expose Datum [] values;
+
+  public RowConstantEval(Datum [] values) {
     super(EvalType.ROW_CONSTANT);
-    this.values = new ArrayDatum(values);
+    this.values = values;
   }
 
   @Override
@@ -39,8 +39,8 @@ public class RowConstantEval extends EvalNode {
   }
 
   @Override
-  public TajoDataTypes.DataType[] getValueType() {
-    return new TajoDataTypes.DataType[] {CatalogUtil.newDataTypeWithoutLen(values.get(0).type())};
+  public DataType getValueType() {
+    return CatalogUtil.newSimpleDataType(values[0].type());
   }
 
   @Override
@@ -50,7 +50,7 @@ public class RowConstantEval extends EvalNode {
 
   @Override
   public Datum terminate(EvalContext ctx) {
-    return values;
+    return null;
   }
 
   @Override
@@ -64,19 +64,11 @@ public class RowConstantEval extends EvalNode {
   }
 
   public String toString() {
-    StringBuilder sb = new StringBuilder("(");
-    for (int i = 0; i < values.toArray().length; i++) {
-      if (i != 0) {
-        sb.append(",");
-      }
-      sb.append(values.get(i).toString());
-    }
-    sb.append(")");
-    return sb.toString();
+    return TUtil.arrayToString(values);
   }
 
   public Datum [] getValues() {
-    return values.toArray();
+    return values;
   }
 
   public void preOrder(EvalNodeVisitor visitor) {

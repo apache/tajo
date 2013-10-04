@@ -53,8 +53,8 @@ public class MinInt extends AggFunction<Datum> {
   }
 
   @Override
-  public DataType[] getPartialResultType() {
-    return CatalogUtil.newDataTypesWithoutLen(Type.INT4);
+  public DataType getPartialResultType() {
+    return CatalogUtil.newSimpleDataType(Type.INT4);
   }
 
   @Override

@@ -18,12 +18,14 @@
 
 package org.apache.tajo.storage.trevni;
 
+import com.google.protobuf.Message;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.BlobDatum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.Tuple;
@@ -34,6 +36,8 @@ import org.apache.trevni.avro.HadoopInput;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class TrevniScanner extends FileScanner {
   private boolean inited = false;
@@ -84,7 +88,8 @@ public class TrevniScanner extends FileScanner {
     for (int i = 0; i < projectionMap.length; i++) {
       tid = projectionMap[i];
       columns[i].startRow();
-      switch (schema.getColumn(tid).getDataType().getType()) {
+      DataType dataType = schema.getColumn(tid).getDataType();
+      switch (dataType.getType()) {
         case BOOLEAN:
           tuple.put(tid,
               DatumFactory.createBool(((Integer)columns[i].nextValue()).byteValue()));
@@ -132,6 +137,14 @@ public class TrevniScanner extends FileScanner {
           tuple.put(tid,
               DatumFactory.createText((String) columns[i].nextValue()));
           break;
+
+        case PROTOBUF: {
+          ProtobufDatumFactory factory = ProtobufDatumFactory.get(dataType.getCode());
+          Message.Builder builder = factory.newBuilder();
+          builder.mergeFrom(((ByteBuffer)columns[i].nextValue()).array());
+          tuple.put(tid, factory.createDatum(builder));
+          break;
+        }
 
         case BLOB:
           tuple.put(tid,

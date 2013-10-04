@@ -21,6 +21,8 @@ package org.apache.tajo.storage;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Options;
 import org.apache.tajo.catalog.Schema;
@@ -32,6 +34,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
@@ -74,11 +77,11 @@ public class TestStorages {
 
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
-    return Arrays.asList(new Object[][]{
+    return Arrays.asList(new Object[][] {
         {StoreType.CSV, true, true},
+        {StoreType.RAW, false, false},
         {StoreType.RCFILE, true, true},
         {StoreType.TREVNI, false, true},
-        {StoreType.RAW, false, false},
     });
   }
 		
@@ -196,6 +199,7 @@ public class TestStorages {
     schema.addColumn("col10", Type.BLOB);
     schema.addColumn("col11", Type.INET4);
     schema.addColumn("col12", Type.NULL);
+    schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     Options options = new Options();
     TableMeta meta = CatalogUtil.newTableMeta(schema, storeType, options);
@@ -204,7 +208,10 @@ public class TestStorages {
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, tablePath);
     appender.init();
 
-    Tuple tuple = new VTuple(12);
+    QueryId queryid = new QueryId("12345", 5);
+    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
+
+    Tuple tuple = new VTuple(13);
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createBit((byte) 0x99),
@@ -217,7 +224,8 @@ public class TestStorages {
         DatumFactory.createText("hyunsik"),
         DatumFactory.createBlob("hyunsik".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get()
+        NullDatum.get(),
+        factory.createDatum(queryid.getProto())
     });
     appender.addTuple(tuple);
     appender.flush();

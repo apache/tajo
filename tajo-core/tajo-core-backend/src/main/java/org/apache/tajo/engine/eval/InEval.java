@@ -29,8 +29,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
 
 public class InEval extends BinaryEval {
-  private static final TajoDataTypes.DataType[] RES_TYPE
-      = CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
+  private static final TajoDataTypes.DataType RES_TYPE = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
 
   @Expose private boolean not;
   private Integer fieldId = null;
@@ -51,7 +50,7 @@ public class InEval extends BinaryEval {
   }
 
   @Override
-  public TajoDataTypes.DataType[] getValueType() {
+  public TajoDataTypes.DataType getValueType() {
     return RES_TYPE;
   }
 
@@ -100,7 +99,7 @@ public class InEval extends BinaryEval {
   }
 
   public String toString() {
-    return leftExpr + " IN " + rightExpr;
+    return leftExpr + " IN (" + rightExpr + ")";
   }
 
   private class InEvalCtx implements EvalContext {

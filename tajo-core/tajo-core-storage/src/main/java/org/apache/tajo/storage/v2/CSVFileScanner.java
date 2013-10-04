@@ -18,10 +18,7 @@
 
 package org.apache.tajo.storage.v2;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
+import com.google.protobuf.Message;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,13 +29,20 @@ import org.apache.hadoop.fs.Seekable;
 import org.apache.hadoop.io.compress.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.ProtobufDatumFactory;
+import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
+import org.apache.tajo.datum.protobuf.TextUtils;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.compress.CodecPool;
-import org.apache.tajo.storage.json.StorageGsonHelper;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class CSVFileScanner extends FileScannerV2 {
   public static final String DELIMITER = "csvfile.delimiter";
@@ -279,7 +283,8 @@ public class CSVFileScanner extends FileScannerV2 {
           if (cell.equals("")) {
             tuple.put(tid, DatumFactory.createNullDatum());
           } else {
-            switch (field.getDataType().getType()) {
+            DataType dataType = field.getDataType();
+            switch (dataType.getType()) {
               case BOOLEAN:
                 tuple.put(tid, DatumFactory.createBool(cell));
                 break;
@@ -311,13 +316,14 @@ public class CSVFileScanner extends FileScannerV2 {
               case TEXT:
                 tuple.put(tid, DatumFactory.createText(cell));
                 break;
+              case PROTOBUF:
+                ProtobufDatumFactory factory = ProtobufDatumFactory.get(dataType);
+                Message.Builder builder = factory.newBuilder();
+                ProtobufJsonFormat.getInstance().merge(TextUtils.toInputStream(cell), builder);
+                tuple.put(tid, factory.createDatum(builder.build()));
+                break;
               case INET4:
                 tuple.put(tid, DatumFactory.createInet4(cell));
-                break;
-              case ARRAY:
-                Datum data = StorageGsonHelper.getInstance().fromJson(cell,
-                    Datum.class);
-                tuple.put(tid, data);
                 break;
             }
           }

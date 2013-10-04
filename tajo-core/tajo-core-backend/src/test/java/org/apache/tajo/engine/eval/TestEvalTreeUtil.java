@@ -78,8 +78,8 @@ public class TestEvalTreeUtil {
 
     FunctionDesc funcMeta = new FunctionDesc("test_sum", TestSum.class,
         FunctionType.GENERAL,
-        CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT4),
-        CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.INT4, TajoDataTypes.Type.INT4));
+        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(TajoDataTypes.Type.INT4, TajoDataTypes.Type.INT4));
     catalog.createFunction(funcMeta);
 
     analyzer = new SQLAnalyzer();

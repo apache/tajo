@@ -27,11 +27,10 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.storage.Tuple;
 
 public class BinaryEval extends EvalNode implements Cloneable {
-	@Expose private DataType[] returnType = null;
+	@Expose private DataType returnType = null;
 
   private class BinaryEvalCtx implements EvalContext {
     EvalContext left;
@@ -55,18 +54,17 @@ public class BinaryEval extends EvalNode implements Cloneable {
 			type == EvalType.GTH ||
 			type == EvalType.LEQ ||
 			type == EvalType.GEQ ) {
-			this.returnType = CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
+			this.returnType = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
 		} else if (
 			type == EvalType.PLUS ||
 			type == EvalType.MINUS ||
 			type == EvalType.MULTIPLY ||
 			type == EvalType.DIVIDE ||
       type == EvalType.MODULAR ) {
-			this.returnType = SchemaUtil.newNoNameSchema(determineType(left.getValueType()[0],
-				right.getValueType()[0]));
+			this.returnType = determineType(left.getValueType(), right.getValueType());
 
 		} else if (type == EvalType.CONCATENATE) {
-      this.returnType = CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.TEXT);
+      this.returnType = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT);
     }
 	}
 
@@ -88,10 +86,10 @@ public class BinaryEval extends EvalNode implements Cloneable {
       case INT4: {
         switch(right.getType()) {
           case INT2:
-          case INT4: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.INT4);
-          case INT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.INT8);
-          case FLOAT4: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.FLOAT4);
-          case FLOAT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.FLOAT8);
+          case INT4: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT4);
+          case INT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT8);
+          case FLOAT4: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT4);
+          case FLOAT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT8);
           default: throw new InvalidEvalException();
         }
       }
@@ -100,9 +98,9 @@ public class BinaryEval extends EvalNode implements Cloneable {
         switch(right.getType()) {
           case INT2:
           case INT4:
-          case INT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.INT8);
+          case INT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT8);
           case FLOAT4:
-          case FLOAT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.FLOAT8);
+          case FLOAT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT8);
           default: throw new InvalidEvalException();
         }
       }
@@ -113,7 +111,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
           case INT4:
           case INT8:
           case FLOAT4:
-          case FLOAT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.FLOAT8);
+          case FLOAT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT8);
           default: throw new InvalidEvalException();
         }
       }
@@ -124,7 +122,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
           case INT4:
           case INT8:
           case FLOAT4:
-          case FLOAT8: return CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.FLOAT8);
+          case FLOAT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT8);
           default: throw new InvalidEvalException();
         }
       }
@@ -194,10 +192,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	}
 	
 	@Override
-	public DataType [] getValueType() {
-		if (returnType == null) {
-		  
-		}
+	public DataType getValueType() {
 	  return returnType;
 	}
 	

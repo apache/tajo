@@ -53,8 +53,8 @@ public class SumDouble extends AggFunction<Datum> {
   }
 
   @Override
-  public DataType [] getPartialResultType() {
-    return CatalogUtil.newDataTypesWithoutLen(Type.FLOAT8);
+  public DataType getPartialResultType() {
+    return CatalogUtil.newSimpleDataType(Type.FLOAT8);
   }
 
   @Override

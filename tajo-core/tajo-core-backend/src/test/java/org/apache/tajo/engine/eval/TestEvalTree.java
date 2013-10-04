@@ -22,12 +22,12 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalPlan;
@@ -70,8 +70,8 @@ public class TestEvalTree {
     cat.addTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("test_sum", TestSum.class, FunctionType.GENERAL,
-        CatalogUtil.newDataTypesWithoutLen(INT4),
-        CatalogUtil.newDataTypesWithoutLen(INT4, INT4));
+        CatalogUtil.newSimpleDataType(INT4),
+        CatalogUtil.newSimpleDataTypeArray(INT4, INT4));
     cat.createFunction(funcMeta);
 
     analyzer = new SQLAnalyzer();
@@ -204,7 +204,7 @@ public class TestEvalTree {
   public void testTupleEval() throws CloneNotSupportedException {
     ConstEval e1 = new ConstEval(DatumFactory.createInt4(1));
     assertCloneEqual(e1);
-    FieldEval e2 = new FieldEval("table1.score", CatalogUtil.newDataTypeWithoutLen(INT4)); // it indicates
+    FieldEval e2 = new FieldEval("table1.score", CatalogUtil.newSimpleDataType(INT4)); // it indicates
     assertCloneEqual(e2);
 
     Schema schema1 = new Schema();
@@ -250,8 +250,8 @@ public class TestEvalTree {
     }
 
     @Override
-    public DataType [] getValueType() {
-      return CatalogUtil.newDataTypesWithoutLen(BOOLEAN);
+    public DataType getValueType() {
+      return CatalogUtil.newSimpleDataType(BOOLEAN);
     }
 
   }
@@ -283,8 +283,8 @@ public class TestEvalTree {
     }
 
     @Override
-    public DataType [] getValueType() {
-      return CatalogUtil.newDataTypesWithoutLen(BOOLEAN);
+    public DataType getValueType() {
+      return CatalogUtil.newSimpleDataType(BOOLEAN);
     }
   }
 
@@ -471,18 +471,18 @@ public class TestEvalTree {
     e1 = new ConstEval(DatumFactory.createInt4(9));
     e2 = new ConstEval(DatumFactory.createInt4(34));
     BinaryEval expr = new BinaryEval(EvalType.PLUS, e1, e2);
-    assertEquals(CatalogUtil.newDataTypeWithoutLen(INT4), expr.getValueType()[0]);
+    assertEquals(CatalogUtil.newSimpleDataType(INT4), expr.getValueType());
 
     expr = new BinaryEval(EvalType.LTH, e1, e2);
     EvalContext evalCtx = expr.newContext();
     expr.eval(evalCtx, null, null);
     assertTrue(expr.terminate(evalCtx).asBool());
-    assertEquals(CatalogUtil.newDataTypeWithoutLen(BOOLEAN), expr.getValueType()[0]);
+    assertEquals(CatalogUtil.newSimpleDataType(BOOLEAN), expr.getValueType());
 
     e1 = new ConstEval(DatumFactory.createFloat8(9.3));
     e2 = new ConstEval(DatumFactory.createFloat8(34.2));
     expr = new BinaryEval(EvalType.PLUS, e1, e2);
-    assertEquals(CatalogUtil.newDataTypeWithoutLen(FLOAT8), expr.getValueType()[0]);
+    assertEquals(CatalogUtil.newSimpleDataType(FLOAT8), expr.getValueType());
   }
   
   @Test

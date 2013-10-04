@@ -27,10 +27,6 @@ import org.apache.tajo.util.NumberUtil;
 import java.nio.ByteBuffer;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-
 public class Int8Datum extends Datum implements NumericDatum {
   private static final int size = 8;
   @Expose private long val;
@@ -81,7 +77,7 @@ public class Int8Datum extends Datum implements NumericDatum {
 	}
 
   @Override
-	public byte[] asByteArray() {
+	public byte [] asByteArray() {
 		ByteBuffer bb = ByteBuffer.allocate(8);
 		bb.putLong(val);
 		return bb.array();

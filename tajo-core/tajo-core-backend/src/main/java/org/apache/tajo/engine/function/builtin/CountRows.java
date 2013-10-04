@@ -60,8 +60,8 @@ public class CountRows extends AggFunction<Datum> {
   }
 
   @Override
-  public DataType[] getPartialResultType() {
-    return CatalogUtil.newDataTypesWithoutLen(Type.INT8);
+  public DataType getPartialResultType() {
+    return CatalogUtil.newSimpleDataType(Type.INT8);
   }
 
   @Override

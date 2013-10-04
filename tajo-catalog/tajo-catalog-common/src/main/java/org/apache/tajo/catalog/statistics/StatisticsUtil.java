@@ -66,26 +66,24 @@ public class StatisticsUtil {
 
     for (TableStat ts : tableStats) {
       // if there is empty stats
-      if (ts.getColumnStats().size() == 0) {
-        continue;
-      }
-
-      // aggregate column stats for each table
-      for (int i = 0; i < ts.getColumnStats().size(); i++) {
-        ColumnStat cs = ts.getColumnStats().get(i);
-        if (cs == null) {
-          LOG.warn("ERROR: One of column stats is NULL (expected column: " + css[i].getColumn() + ")");
-          continue;
-        }
-        css[i].setNumDistVals(css[i].getNumDistValues() + cs.getNumDistValues());
-        css[i].setNumNulls(css[i].getNumNulls() + cs.getNumNulls());
-        if (!cs.minIsNotSet() && (css[i].minIsNotSet() ||
-            css[i].getMinValue().compareTo(cs.getMinValue()) > 0)) {
-          css[i].setMinValue(cs.getMinValue());
-        }
-        if (!cs.maxIsNotSet() && (css[i].maxIsNotSet() ||
-            css[i].getMaxValue().compareTo(cs.getMaxValue()) < 0)) {
-          css[i].setMaxValue(ts.getColumnStats().get(i).getMaxValue());
+      if (ts.getColumnStats().size() > 0) {
+        // aggregate column stats for each table
+        for (int i = 0; i < ts.getColumnStats().size(); i++) {
+          ColumnStat cs = ts.getColumnStats().get(i);
+          if (cs == null) {
+            LOG.warn("ERROR: One of column stats is NULL (expected column: " + css[i].getColumn() + ")");
+            continue;
+          }
+          css[i].setNumDistVals(css[i].getNumDistValues() + cs.getNumDistValues());
+          css[i].setNumNulls(css[i].getNumNulls() + cs.getNumNulls());
+          if (!cs.minIsNotSet() && (css[i].minIsNotSet() ||
+              css[i].getMinValue().compareTo(cs.getMinValue()) > 0)) {
+            css[i].setMinValue(cs.getMinValue());
+          }
+          if (!cs.maxIsNotSet() && (css[i].maxIsNotSet() ||
+              css[i].getMaxValue().compareTo(cs.getMaxValue()) < 0)) {
+            css[i].setMaxValue(ts.getColumnStats().get(i).getMaxValue());
+          }
         }
       }
 

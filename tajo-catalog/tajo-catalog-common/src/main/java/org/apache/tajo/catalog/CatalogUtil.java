@@ -151,11 +151,23 @@ public class CatalogUtil {
     return revisedSchema.build();
   }
 
-  public static DataType newDataTypeWithoutLen(Type type) {
+  public static DataType newDataType(Type type, String code) {
+    return newDataType(type, code, 0);
+  }
+
+  public static DataType newDataType(Type type, String code, int len) {
+    DataType.Builder builder = DataType.newBuilder();
+    builder.setType(type)
+        .setCode(code)
+        .setLength(len);
+    return builder.build();
+  }
+
+  public static DataType newSimpleDataType(Type type) {
     return DataType.newBuilder().setType(type).build();
   }
 
-  public static DataType [] newDataTypesWithoutLen(Type... types) {
+  public static DataType [] newSimpleDataTypeArray(Type... types) {
     DataType [] dataTypes = new DataType[types.length];
     for (int i = 0; i < types.length; i++) {
       dataTypes[i] = DataType.newBuilder().setType(types[i]).build();

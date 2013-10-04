@@ -30,8 +30,7 @@ import org.apache.tajo.storage.Tuple;
 
 public class NotEval extends EvalNode implements Cloneable {
   @Expose private EvalNode subExpr;
-  private static final DataType[] RES_TYPE =
-      CatalogUtil.newDataTypesWithoutLen(TajoDataTypes.Type.BOOLEAN);
+  private static final DataType RES_TYPE = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
 
   public NotEval(EvalNode subExpr) {
     super(EvalType.NOT);
@@ -51,7 +50,7 @@ public class NotEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public DataType [] getValueType() {
+  public DataType getValueType() {
     return RES_TYPE;
   }
 

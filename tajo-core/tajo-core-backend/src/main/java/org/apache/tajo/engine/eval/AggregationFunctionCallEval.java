@@ -76,7 +76,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   @Override
-  public DataType[] getValueType() {
+  public DataType getValueType() {
     if (firstPhase) {
       return instance.getPartialResultType();
     } else {

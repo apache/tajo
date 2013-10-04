@@ -108,7 +108,7 @@ public class TrevniAppender extends FileAppender {
         return ValueType.BYTES;
       case INET6:
         return ValueType.BYTES;
-      case ARRAY:
+      case PROTOBUF:
         return ValueType.BYTES;
       case NULL:
         return ValueType.NULL;
@@ -155,15 +155,12 @@ public class TrevniAppender extends FileAppender {
           case TEXT:
             writer.writeValue(t.get(i).asChars(), i);
             break;
+          case PROTOBUF:
+          case BLOB:
           case INET4:
           case INET6:
             writer.writeValue(t.get(i).asByteArray(), i);
-            break;
-          case ARRAY:
-            writer.writeValue(t.get(i).asChars(), i);
-            break;
-          case BLOB:
-            writer.writeValue(t.get(i).asByteArray(), i);
+
           default:
             break;
         }

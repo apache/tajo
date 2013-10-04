@@ -54,13 +54,13 @@ public class TestFunctionDesc {
   @Test
   public void testGetSignature() throws IOException, ClassNotFoundException {
     FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8));
+        CatalogUtil.newSimpleDataType(Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
     assertEquals("sum", desc.getSignature());
     assertEquals(TestSum.class, desc.getFuncClass());
     assertEquals(FunctionType.GENERAL, desc.getFuncType());
-    assertEquals(Type.INT4, desc.getReturnType()[0].getType());
-    assertArrayEquals(CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8),
+    assertEquals(Type.INT4, desc.getReturnType().getType());
+    assertArrayEquals(CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8),
         desc.getParamTypes());
 
     CommonTestingUtil.getTestDir(TEST_PATH);
@@ -74,8 +74,8 @@ public class TestFunctionDesc {
     assertEquals("sum", newDesc.getSignature());
     assertEquals(TestSum.class, newDesc.getFuncClass());
     assertEquals(FunctionType.GENERAL, newDesc.getFuncType());
-    assertEquals(Type.INT4, newDesc.getReturnType()[0].getType());
-    assertArrayEquals(CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8),
+    assertEquals(Type.INT4, newDesc.getReturnType().getType());
+    assertArrayEquals(CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8),
         newDesc.getParamTypes());
 
     assertEquals(desc.getProto(), newDesc.getProto());
@@ -84,8 +84,8 @@ public class TestFunctionDesc {
   @Test
   public void testToJson() throws InternalException {
 	  FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8));
+        CatalogUtil.newSimpleDataType(Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
 	  String json = desc.toJson();
 	  FunctionDesc fromJson = CatalogGsonHelper.fromJson(json, FunctionDesc.class);
 	  assertEquals(desc, fromJson);
@@ -95,8 +95,8 @@ public class TestFunctionDesc {
   @Test
   public void testGetProto() throws InternalException, ClassNotFoundException {
     FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8));
+        CatalogUtil.newSimpleDataType(Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
     FunctionDescProto proto = desc.getProto();
     FunctionDesc fromProto = new FunctionDesc(proto);
     assertEquals(desc, fromProto);
@@ -106,8 +106,8 @@ public class TestFunctionDesc {
   @Test
   public void testClone() throws CloneNotSupportedException {
     FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4),
-        CatalogUtil.newDataTypesWithoutLen(Type.INT4, Type.INT8));
+        CatalogUtil.newSimpleDataType(Type.INT4),
+        CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
     FunctionDesc cloned = (FunctionDesc)desc.clone();
     assertTrue("reference chk" , !(desc == cloned));
     assertTrue("getClass() chk", desc.getClass() == cloned.getClass());

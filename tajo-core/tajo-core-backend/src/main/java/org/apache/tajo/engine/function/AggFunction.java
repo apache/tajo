@@ -41,7 +41,7 @@ public abstract class AggFunction<T extends Datum> extends Function<T> {
 
   public abstract Datum getPartialResult(FunctionContext ctx);
 
-  public abstract DataType [] getPartialResultType();
+  public abstract DataType getPartialResultType();
 
   public abstract T terminate(FunctionContext ctx);
 

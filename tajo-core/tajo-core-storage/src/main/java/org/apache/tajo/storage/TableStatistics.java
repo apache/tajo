@@ -21,7 +21,6 @@ package org.apache.tajo.storage;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.ColumnStat;
 import org.apache.tajo.catalog.statistics.TableStat;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
@@ -52,7 +51,7 @@ public class TableStatistics {
     DataType type;
     for (int i = 0; i < schema.getColumnNum(); i++) {
       type = schema.getColumn(i).getDataType();
-      if (type.getType() == Type.ARRAY) {
+      if (type.getType() == Type.PROTOBUF) {
         comparable[i] = false;
       } else {
         comparable[i] = true;
@@ -86,16 +85,14 @@ public class TableStatistics {
       return;
     }
 
-    if (datum.type() != TajoDataTypes.Type.ARRAY) {
-      if (comparable[idx]) {
-        if (!maxValues.contains(idx) ||
-            maxValues.get(idx).compareTo(datum) < 0) {
-          maxValues.put(idx, datum);
-        }
-        if (!minValues.contains(idx) ||
-            minValues.get(idx).compareTo(datum) > 0) {
-          minValues.put(idx, datum);
-        }
+    if (comparable[idx]) {
+      if (!maxValues.contains(idx) ||
+          maxValues.get(idx).compareTo(datum) < 0) {
+        maxValues.put(idx, datum);
+      }
+      if (!minValues.contains(idx) ||
+          minValues.get(idx).compareTo(datum) > 0) {
+        minValues.put(idx, datum);
       }
     }
   }

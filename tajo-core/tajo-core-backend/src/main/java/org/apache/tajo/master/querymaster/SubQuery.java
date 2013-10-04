@@ -574,7 +574,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       int mb = (int) Math.ceil((double)volume / 1048576);
       LOG.info("Table's volume is approximately " + mb + " MB");
       // determine the number of task per 64MB
-      int maxTaskNum = (int) Math.ceil((double)mb / 64);
+      int maxTaskNum = Math.max(1, (int) Math.ceil((double)mb / 64));
       LOG.info("The determined number of non-leaf tasks is " + maxTaskNum);
       return maxTaskNum;
     }

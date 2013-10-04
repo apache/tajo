@@ -133,6 +133,7 @@
                 <argument>src/main/proto/TajoMasterProtocol.proto</argument>
                 <argument>src/main/proto/TajoWorkerProtocol.proto</argument>
                 <argument>src/main/proto/TajoMasterClientProtocol.proto</argument>
+                <argument>src/main/proto/InternalTypes.proto</argument>
               </arguments>
             </configuration>
             <goals>

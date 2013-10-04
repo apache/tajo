@@ -16,21 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.builtin;
+option java_package = "org.apache.tajo";
+option java_outer_classname = "InternalTypes";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
 
-import org.apache.tajo.engine.function.FunctionContext;
-import org.apache.tajo.storage.Tuple;
+message AvgLongProto {
+  required int64 sum = 1;
+  required int64 count = 2;
+}
 
-public class AvgInt extends AvgLong {
-
-  public AvgInt() {
-    super();
-  }
-
-  @Override
-  public void eval(FunctionContext ctx, Tuple params) {
-    AvgContext avgCtx = (AvgContext) ctx;
-    avgCtx.sum += params.get(0).asInt4();
-    avgCtx.count++;
-  }
+message AvgDoubleProto {
+  required double sum = 1;
+  required int64 count = 2;
 }

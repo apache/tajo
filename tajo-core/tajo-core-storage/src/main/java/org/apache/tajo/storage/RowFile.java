@@ -29,10 +29,8 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.datum.ArrayDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.util.BitArray;
 
@@ -274,15 +272,6 @@ public class RowFile {
               tuple.put(i, datum);
               break;
 
-            case ARRAY:
-              short bufSize = buffer.getShort();
-              byte [] bytes = new byte[bufSize];
-              buffer.get(bytes);
-              String json = new String(bytes);
-              ArrayDatum array = (ArrayDatum) CommonGsonHelper.fromJson(json, Datum.class);
-              tuple.put(i, array);
-              break;
-
             default:
               break;
           }
@@ -445,14 +434,6 @@ public class RowFile {
               break;
             case INET6:
               buffer.put(t.getIPv6Bytes(i));
-            case ARRAY: {
-              ArrayDatum array = (ArrayDatum) t.get(i);
-              String json = array.toJson();
-              byte [] byteArray = json.getBytes();
-              buffer.putShort((short)byteArray.length);
-              buffer.put(byteArray);
-              break;
-            }
             case NULL:
               nullFlags.set(i);
               break;

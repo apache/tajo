@@ -1025,9 +1025,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
             FunctionType.DISTINCT_AGGREGATION : FunctionType.AGGREGATION;
         givenArgs[0] = createEvalTree(plan, block, params[0]);
         if (setFunction.getSignature().equalsIgnoreCase("count")) {
-          paramTypes[0] = CatalogUtil.newDataTypeWithoutLen(TajoDataTypes.Type.ANY);
+          paramTypes[0] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.ANY);
         } else {
-          paramTypes[0] = givenArgs[0].getValueType()[0];
+          paramTypes[0] = givenArgs[0].getValueType();
         }
 
         if (!catalog.containFunction(setFunction.getSignature(), functionType, paramTypes)) {
@@ -1055,7 +1055,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
         for (int i = 0; i < params.length; i++) {
             givenArgs[i] = createEvalTree(plan, block, params[i]);
-            paramTypes[i] = givenArgs[i].getValueType()[0];
+            paramTypes[i] = givenArgs[i].getValueType();
         }
 
         if (!catalog.containFunction(function.getSignature(), paramTypes)) {
@@ -1169,7 +1169,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   static Schema getProjectedSchema(LogicalPlan plan, Target[] targets) {
     Schema projected = new Schema();
     for(Target t : targets) {
-      DataType type = t.getEvalTree().getValueType()[0];
+      DataType type = t.getEvalTree().getValueType();
       String name;
       if (t.hasAlias() || t.getEvalTree().getType() == EvalType.FIELD) {
         name = t.getCanonicalName();

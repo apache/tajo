@@ -44,8 +44,8 @@ public class CastEval extends EvalNode {
   }
 
   @Override
-  public DataType[] getValueType() {
-    return new DataType[] {target};
+  public DataType getValueType() {
+    return target;
   }
 
   @Override
@@ -82,7 +82,7 @@ public class CastEval extends EvalNode {
       case BLOB:
         return DatumFactory.createBlob(operand.terminate(castContext.childCtx).asByteArray());
       default:
-        throw new InvalidCastException("Cannot cast " + operand.getValueType()[0].getType() + " to "
+        throw new InvalidCastException("Cannot cast " + operand.getValueType().getType() + " to "
             + target.getType());
     }
   }

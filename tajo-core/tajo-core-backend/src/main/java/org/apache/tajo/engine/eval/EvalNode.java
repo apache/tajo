@@ -19,11 +19,11 @@
 package org.apache.tajo.engine.eval;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.storage.Tuple;
 
 public abstract class EvalNode implements Cloneable, GsonObject {
@@ -73,7 +73,7 @@ public abstract class EvalNode implements Cloneable, GsonObject {
     }
   }
 	
-	public abstract DataType [] getValueType();
+	public abstract DataType getValueType();
 	
 	public abstract String getName();
 	

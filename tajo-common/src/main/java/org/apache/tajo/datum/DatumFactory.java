@@ -54,8 +54,6 @@ public class DatumFactory {
         return Inet4Datum.class;
       case ANY:
         return NullDatum.class;
-      case ARRAY:
-        return ArrayDatum.class;
       case NULL:
         return NullDatum.class;
       default:
@@ -110,19 +108,10 @@ public class DatumFactory {
   public static BooleanDatum createBool(boolean val) {
     return new BooleanDatum(val);
   }
-  /*
-  public static BoolDatum createBool(int val) {
-    return new BoolDatum(val);
-  }
-  */
   
 	public static BitDatum createBit(byte val) {
 		return new BitDatum(val);
 	}
-  /*
-  public static ByteDatum createBit(int val) {
-    return new ByteDatum(val);
-  }*/
 
   public static CharDatum createChar(char val) {
     return new CharDatum(val);

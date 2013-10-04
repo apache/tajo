@@ -37,14 +37,14 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   @Expose private String signature;
   @Expose private Class<? extends Function> funcClass;
   @Expose private FunctionType funcType;
-  @Expose private DataType [] returnType;
+  @Expose private DataType returnType;
   @Expose private DataType [] params;
 
   public FunctionDesc() {
   }
 
   public FunctionDesc(String signature, Class<? extends Function> clazz,
-      FunctionType funcType, DataType [] retType, DataType [] params) {
+      FunctionType funcType, DataType retType, DataType [] params) {
     this.signature = signature.toLowerCase();
     this.funcClass = clazz;
     this.funcType = funcType;
@@ -54,12 +54,12 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   
   public FunctionDesc(FunctionDescProto proto) throws ClassNotFoundException {
     this(proto.getSignature(), proto.getClassName(), proto.getType(),
-        newNoNameSchema(proto.getReturnType()),
+        proto.getReturnType(),
         proto.getParameterTypesList().toArray(new DataType[proto.getParameterTypesCount()]));
   }
 
   public FunctionDesc(String signature, String className, FunctionType type,
-                      DataType [] retType, DataType... argTypes) throws ClassNotFoundException {
+                      DataType retType, DataType... argTypes) throws ClassNotFoundException {
     this(signature, (Class<? extends Function>) Class.forName(className), type,
         retType, argTypes);
   }
@@ -95,7 +95,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     return this.params;
   }
 
-  public DataType [] getReturnType() {
+  public DataType getReturnType() {
     return this.returnType;
   }
 
@@ -135,7 +135,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     builder.setSignature(this.signature);
     builder.setClassName(this.funcClass.getName());
     builder.setType(this.funcType);
-    builder.setReturnType(this.returnType[0]);
+    builder.setReturnType(this.returnType);
 
     if (this.params != null) { // repeated field
       builder.addAllParameterTypes(Arrays.asList(params));

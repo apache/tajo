@@ -24,6 +24,7 @@ package org.apache.tajo.catalog.statistics;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnStatProto;
@@ -69,6 +70,9 @@ public class TableStat implements ProtoObject<TableStatProto>, Cloneable, GsonOb
 
     this.columnStats = TUtil.newList();
     for (ColumnStatProto colProto : proto.getColStatList()) {
+      if (colProto.getColumn().getDataType().getType() == TajoDataTypes.Type.PROTOBUF) {
+        continue;
+      }
       columnStats.add(new ColumnStat(colProto));
     }
   }

@@ -18,6 +18,9 @@
 
 package org.apache.tajo.storage;
 
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.CodedOutputStream;
+import com.google.protobuf.Message;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -25,11 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.datum.ArrayDatum;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.json.CommonGsonHelper;
+import org.apache.tajo.datum.*;
 import org.apache.tajo.util.BitArray;
 
 import java.io.File;
@@ -192,34 +191,32 @@ public class RawFile {
             tuple.put(i, DatumFactory.createFloat8(buffer.getDouble()));
             break;
 
-          case TEXT :
+          case TEXT : {
             // TODO - shoud use CharsetEncoder / CharsetDecoder
-            int strSize2 = buffer.getInt();
-            byte [] strBytes2 = new byte[strSize2];
-            buffer.get(strBytes2);
-            tuple.put(i, DatumFactory.createText(new String(strBytes2)));
+            byte [] rawBytes = getColumnBytes();
+            tuple.put(i, DatumFactory.createText(new String(rawBytes)));
             break;
+          }
 
-          case BLOB :
-            int byteSize = buffer.getInt();
-            byte [] rawBytes = new byte[byteSize];
-            buffer.get(rawBytes);
+          case BLOB : {
+            byte [] rawBytes = getColumnBytes();
             tuple.put(i, DatumFactory.createBlob(rawBytes));
             break;
+          }
+
+          case PROTOBUF: {
+            byte [] rawBytes = getColumnBytes();
+            ProtobufDatumFactory factory = ProtobufDatumFactory.get(columnTypes[i]);
+            Message.Builder builder = factory.newBuilder();
+            builder.mergeFrom(rawBytes);
+            tuple.put(i, factory.createDatum(builder.build()));
+            break;
+          }
 
           case INET4 :
             byte [] ipv4Bytes = new byte[4];
             buffer.get(ipv4Bytes);
             tuple.put(i, DatumFactory.createInet4(ipv4Bytes));
-            break;
-
-          case ARRAY :
-            int arrayByteSize = buffer.getInt();
-            byte [] arrayBytes = new byte[arrayByteSize];
-            buffer.get(arrayBytes);
-            String json = new String(arrayBytes);
-            ArrayDatum array = (ArrayDatum) CommonGsonHelper.fromJson(json, Datum.class);
-            tuple.put(i, array);
             break;
 
           case NULL:
@@ -234,6 +231,26 @@ public class RawFile {
         eof = true;
       }
       return tuple;
+    }
+
+    /**
+     * It reads a variable byte array whose length is represented as a variable unsigned integer.
+     *
+     * @return A byte array read
+     */
+    private byte [] getColumnBytes() throws IOException {
+      byte [] lenBytesLen = new byte[4];
+      buffer.mark();
+      buffer.get(lenBytesLen);
+      CodedInputStream ins = CodedInputStream.newInstance(lenBytesLen);
+      int bytesLen = ins.readUInt32(); // get a variable unsigned integer length to be read
+      int read = ins.getTotalBytesRead();
+      buffer.reset();
+      buffer.position(buffer.position() + read);
+
+      byte [] rawBytes = new byte[bytesLen];
+      buffer.get(rawBytes);
+      return rawBytes;
     }
 
     @Override
@@ -409,49 +426,29 @@ public class RawFile {
             buffer.putDouble(t.get(i).asFloat8());
             break;
 
-//          case TEXT :
-//            byte [] strBytes = t.get(i).asByteArray();
-//            if (flushBufferAndReplace(recordOffset, strBytes.length + 4)) {
-//              recordOffset = 0;
-//            }
-//            buffer.putInt(strBytes.length);
-//            buffer.put(strBytes);
-//            break;
-
           case TEXT:
-            byte [] strBytes2 = t.get(i).asByteArray();
-            if (flushBufferAndReplace(recordOffset, strBytes2.length + 4)) {
+          case BLOB:
+          case PROTOBUF: {
+            byte [] lengthByte = new byte[4];
+            byte [] byteArray = t.get(i).asByteArray();
+            CodedOutputStream outputStream = CodedOutputStream.newInstance(lengthByte);
+            outputStream.writeUInt32NoTag(byteArray.length);
+            outputStream.flush();
+            int legnthByteLength = CodedOutputStream.computeInt32SizeNoTag(byteArray.length);
+            if (flushBufferAndReplace(recordOffset, byteArray.length + legnthByteLength)) {
               recordOffset = 0;
             }
-            buffer.putInt(strBytes2.length);
-            buffer.put(strBytes2);
+            buffer.put(lengthByte, 0, legnthByteLength);
+            buffer.put(byteArray);
             break;
-
-          case BLOB :
-            byte [] rawBytes = t.get(i).asByteArray();
-            if (flushBufferAndReplace(recordOffset, rawBytes.length + 4)) {
-              recordOffset = 0;
-            }
-            buffer.putInt(rawBytes.length);
-            buffer.put(rawBytes);
-            break;
+          }
 
           case INET4 :
             buffer.put(t.get(i).asByteArray());
             break;
 
-          case ARRAY :
-            ArrayDatum array = (ArrayDatum) t.get(i);
-            String json = array.toJson();
-            byte [] jsonBytes = json.getBytes();
-            if (flushBufferAndReplace(recordOffset, jsonBytes.length + 4)) {
-              recordOffset = 0;
-            }
-            buffer.putInt(jsonBytes.length);
-            buffer.put(jsonBytes);
-            break;
-
           default:
+            throw new IOException("Cannot support data type: " + columnTypes[i].getType());
         }
       }
 
