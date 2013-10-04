@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.Clock;
@@ -35,6 +36,7 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableDescImpl;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.master.ExecutionBlock;
@@ -375,7 +377,15 @@ public class Query implements EventHandler<QueryEvent> {
         outputTableName = query.getId().toString();
       }
 
-      TableDesc outputTableDesc = new TableDescImpl(outputTableName, subQuery.getTableMeta(), finalOutputDir);
+      TableMeta meta = subQuery.getTableMeta();
+      try {
+        FileSystem fs = finalOutputDir.getFileSystem(query.systemConf);
+        ContentSummary directorySummary = fs.getContentSummary(finalOutputDir);
+        meta.getStat().setNumBytes(directorySummary.getLength());
+      } catch (IOException e) {
+        LOG.error(e);
+      }
+      TableDesc outputTableDesc = new TableDescImpl(outputTableName, meta, finalOutputDir);
       TableDesc finalTableDesc = outputTableDesc;
 
       // If a query has a target table, a TableDesc is updated.
@@ -384,7 +394,7 @@ public class Query implements EventHandler<QueryEvent> {
           CatalogService catalog = query.context.getQueryMasterContext().getWorkerContext().getCatalog();
           Preconditions.checkNotNull(catalog, "CatalogService is NULL");
           TableDesc updatingTable = catalog.getTableDesc(outputTableDesc.getName());
-          updatingTable.getMeta().setStat(outputTableDesc.getMeta().getStat());
+          updatingTable.getMeta().setStat(meta.getStat());
           finalTableDesc = updatingTable;
         }
       }

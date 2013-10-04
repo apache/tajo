@@ -45,8 +45,10 @@ public interface TableMeta extends ProtoObject<TableProto>, Cloneable, GsonObjec
   String getOption(String key);
   
   String getOption(String key, String defaultValue);
-  
-  Map<String,String> getOptions();
+
+  Options getOptions();
+
+  Map<String,String> toMap();
   
   TableStat getStat();
   

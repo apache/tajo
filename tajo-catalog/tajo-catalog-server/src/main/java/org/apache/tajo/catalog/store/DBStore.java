@@ -406,7 +406,7 @@ public class DBStore implements CatalogStore {
         columnId++;
       }
       
-      Iterator<Entry<String,String>> it = table.getMeta().getOptions().entrySet().iterator();
+      Iterator<Entry<String,String>> it = table.getMeta().toMap().entrySet().iterator();
       String optSql;
       while (it.hasNext()) {
         optSql = keyvalToSQL(table, it.next());

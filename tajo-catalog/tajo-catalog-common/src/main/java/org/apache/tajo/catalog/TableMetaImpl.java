@@ -136,9 +136,14 @@ public class TableMetaImpl implements TableMeta, GsonObject {
     this.options = new Options(p.getParams());
     return options.get(key, defaultValue);
   }
+
+  @Override
+  public Options getOptions() {
+    return options;
+  }
   
   @Override
-  public Map<String,String> getOptions() {
+  public Map<String,String> toMap() {
     TableProtoOrBuilder p = viaProto ? proto : builder;
     if (options != null) {
       return this.options.getAllKeyValus();
@@ -171,7 +176,7 @@ public class TableMetaImpl implements TableMeta, GsonObject {
     meta.schema = (Schema) getSchema().clone();
     meta.storeType = getStoreType();
     meta.stat = (TableStat) (getStat() != null ? stat.clone() : null);
-    meta.options = (Options) (getOptions() != null ? options.clone() : null);
+    meta.options = (Options) (toMap() != null ? options.clone() : null);
     
     return meta;
 	}
@@ -202,7 +207,7 @@ public class TableMetaImpl implements TableMeta, GsonObject {
   public void mergeProtoToLocal() {
     getSchema();
     getStoreType();
-    getOptions();
+    toMap();
     getStat();
   }
 

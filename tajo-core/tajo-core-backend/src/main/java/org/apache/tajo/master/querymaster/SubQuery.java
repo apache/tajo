@@ -48,6 +48,7 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.master.ExecutionBlock;
 import org.apache.tajo.master.TaskRunnerGroupEvent;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
@@ -367,7 +368,15 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
 
     DataChannel channel = masterPlan.getOutgoingChannels(getId()).get(0);
-    meta = CatalogUtil.newTableMeta(channel.getSchema(), CatalogProtos.StoreType.CSV, new Options());
+    // get default or store type
+    CatalogProtos.StoreType storeType = CatalogProtos.StoreType.CSV; // default setting
+
+    // if store plan (i.e., CREATE or INSERT OVERWRITE)
+    StoreTableNode storeTableNode = PlannerUtil.findTopNode(getBlock().getPlan(), NodeType.STORE);
+    if (storeTableNode != null) {
+      storeType = storeTableNode.getStorageType();
+    }
+    meta = CatalogUtil.newTableMeta(channel.getSchema(), storeType, new Options());
     meta.setStat(stat);
     statistics = stat;
     setFinishTime();

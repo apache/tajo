@@ -228,7 +228,6 @@ public class QueryMasterTask extends CompositeService {
   }
 
   public synchronized void startQuery() {
-    LOG.info("Plan JSON:" + logicalPlanJson);
     if(query != null) {
       LOG.warn("Query already started");
       return;

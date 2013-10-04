@@ -29,6 +29,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
@@ -183,6 +184,7 @@ public class TajoCli {
     boolean newStatement = true;
     int code = 0;
 
+    sout.write("Try \\? for help.\n");
     while((raw = reader.readLine(curPrompt + "> ")) != null) {
       // each accumulated line has a space delimiter
       if (!accumulatedLine.equals("")) {
@@ -333,8 +335,7 @@ public class TajoCli {
         if (status.getState() == QueryState.QUERY_RUNNING ||
             status.getState() == QueryState.QUERY_SUCCEEDED) {
           sout.println("Progress: " + (int)(status.getProgress() * 100.0f)
-              + "%, response time: " + ((float)(status.getFinishTime() - status.getSubmitTime())
-              / 1000.0) + " sec");
+              + "%, response time: " + ((float)(status.getFinishTime() - status.getSubmitTime()) / 1000.0) + " sec");
           sout.flush();
         }
 
@@ -349,6 +350,10 @@ public class TajoCli {
         sout.println(queryId + " is killed.");
       } else {
         if (status.getState() == QueryState.QUERY_SUCCEEDED) {
+          sout.println("final state: " + status.getState()
+              + ", init time: " + (((float)(status.getInitTime() - status.getSubmitTime()) / 1000.0) + " sec")
+              + ", response time: " + (((float)(status.getFinishTime() - status.getSubmitTime()) / 1000.0)
+              + " sec"));
           if (status.hasResult()) {
             ResultSet res = client.getQueryResult(queryId);
             try {
@@ -359,14 +364,10 @@ public class TajoCli {
 
               ResultSetMetaData rsmd = res.getMetaData();
               TableDesc desc = client.getResultDesc(queryId);
-              sout.println("final state: " + status.getState()
-                  + ", init time: " + (((float)(status.getInitTime() - status.getSubmitTime())
-                  / 1000.0) + " sec")
-                  + ", execution time: " + (((float)status.getFinishTime() - status.getInitTime())
-                  / 1000.0) + " sec"
-                  + ", total response time: " + (((float)(status.getFinishTime() -
-                  status.getSubmitTime()) / 1000.0) + " sec"));
-              sout.println("result: " + desc.getPath() + "\n");
+              TableStat stat = desc.getMeta().getStat();
+              String volume = FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
+              long resultRows = stat.getNumRows();
+              sout.println("result: " + desc.getPath() + ", " + resultRows + " rows (" + volume + ")");
 
               int numOfColumns = rsmd.getColumnCount();
               for (int i = 1; i <= numOfColumns; i++) {
@@ -446,12 +447,12 @@ public class TajoCli {
     sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
     if (desc.getMeta().getStat() != null) {
       sb.append("number of rows: ").append(desc.getMeta().getStat().getNumRows()).append("\n");
-      sb.append("volume (bytes): ").append(
+      sb.append("volume: ").append(
           FileUtil.humanReadableByteCount(desc.getMeta().getStat().getNumBytes(),
               true)).append("\n");
     }
     sb.append("Options: \n");
-    for(Map.Entry<String, String> entry : desc.getMeta().getOptions().entrySet()){
+    for(Map.Entry<String, String> entry : desc.getMeta().toMap().entrySet()){
       sb.append("\t").append("'").append(entry.getKey()).append("'").append("=")
           .append("'").append(entry.getValue()).append("'").append("\n");
     }
@@ -628,21 +629,24 @@ public class TajoCli {
   }
 
   public int executeCommand(String line) throws Exception {
-    String cmd [];
-    cmd = line.split(" ");
+    String [] metaCommands = line.split(";");
+    for (String metaCommand : metaCommands) {
+      String arguments [];
+      arguments = metaCommand.split(" ");
 
-    Command invoked = commands.get(cmd[0]);
-    if (invoked == null) {
-      printInvalidCommand(cmd[0]);
-      return -1;
-    }
+      Command invoked = commands.get(arguments[0]);
+      if (invoked == null) {
+        printInvalidCommand(arguments[0]);
+        return -1;
+      }
 
-    try {
-      invoked.invoke(cmd);
-    } catch (IllegalArgumentException ige) {
-      sout.println("usage: " + invoked.getCommand() + " " + invoked.getUsage());
-    } catch (Exception e) {
-      sout.println(e.getMessage());
+      try {
+        invoked.invoke(arguments);
+      } catch (IllegalArgumentException ige) {
+        sout.println("usage: " + invoked.getCommand() + " " + invoked.getUsage());
+      } catch (Exception e) {
+        sout.println(e.getMessage());
+      }
     }
 
     return 0;

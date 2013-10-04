@@ -340,11 +340,12 @@ public class TajoMasterClientService extends AbstractService {
       }
 
       if (meta.getStat() == null) {
-        long totalSize = 0;
+        long totalSize;
         try {
-          totalSize = calculateSize(tablePath);
+          FileSystem fs = tablePath.getFileSystem(conf);
+          totalSize = fs.getContentSummary(tablePath).getSpaceConsumed();
         } catch (IOException e) {
-          LOG.error("Cannot calculate the size of the relation", e);
+          LOG.error("Cannot get the volume of the table", e);
           return null;
         }
 
@@ -378,15 +379,5 @@ public class TajoMasterClientService extends AbstractService {
       LOG.info("Table " + tableName + " is detached");
       return BOOL_TRUE;
     }
-  }
-
-  private long calculateSize(Path path) throws IOException {
-    FileSystem fs = path.getFileSystem(conf);
-    long totalSize = 0;
-    for (FileStatus status : fs.listStatus(path)) {
-      totalSize += status.getLen();
-    }
-
-    return totalSize;
   }
 }

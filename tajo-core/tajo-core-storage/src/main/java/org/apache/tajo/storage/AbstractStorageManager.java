@@ -282,23 +282,12 @@ public abstract class AbstractStorageManager {
     return tablets;
   }
 
-  public void writeTableMeta(Path tableRoot, TableMeta meta)
-      throws IOException {
-    FileSystem fs = tableRoot.getFileSystem(conf);
-    FSDataOutputStream out = fs.create(new Path(tableRoot, ".meta"));
-    FileUtil.writeProto(out, meta.getProto());
-    out.flush();
-    out.close();
-  }
-
   public long calculateSize(Path tablePath) throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
     long totalSize = 0;
 
     if (fs.exists(tablePath)) {
-      for (FileStatus status : fs.listStatus(tablePath)) {
-        totalSize += status.getLen();
-      }
+      totalSize = fs.getContentSummary(tablePath).getLength();
     }
 
     return totalSize;

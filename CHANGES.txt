@@ -41,6 +41,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-199: All relations in catalog must have data volume size. (hyunsik)
+
     TAJO-224: Rearrange DataType enumeration and Refactor type systems.
     (hyunsik)
 

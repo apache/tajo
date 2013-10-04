@@ -32,6 +32,7 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.AlreadyExistsTableException;
 import org.apache.tajo.catalog.exception.NoSuchTableException;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
@@ -362,19 +363,42 @@ public class GlobalEngine extends AbstractService {
       // It also remove data files if overwrite is true.
       String outputTableName;
       Path outputPath;
+      CatalogProtos.StoreType storeType;
+      Options options = new Options();
       if (insertNode.hasTargetTable()) { // INSERT INTO [TB_NAME]
         TableDesc desc = insertNode.getTargetTable();
         outputTableName = desc.getName();
         outputPath = desc.getPath();
         queryContext.setOutputTable(outputTableName);
+
+        // set default values
+        options.putAll(desc.getMeta().getOptions());
+        storeType = desc.getMeta().getStoreType();
       } else { // INSERT INTO LOCATION ...
         outputTableName = PlannerUtil.normalizeTableName(insertNode.getPath().getName());
         outputPath = insertNode.getPath();
         queryContext.setFileOutput();
+
+        // set default values
+        options = new Options();
+        storeType = CatalogProtos.StoreType.CSV;
+      }
+
+      // overwrite the store type if store type is specified in the query statement
+      if (insertNode.hasStorageType()) {
+        storeType = insertNode.getStorageType();
+      }
+
+      // overwrite the table properties if they are specified in the query statement
+      if (insertNode.hasOptions()) {
+        options.putAll(insertNode.getOptions());
       }
 
       storeNode = new StoreTableNode(plan.newPID(), outputTableName);
-      storeNode.setOptions(new Options());
+      storeNode.setStorageType(storeType);
+      storeNode.setOptions(options);
+
+      // set OutputPath
       queryContext.setOutputPath(outputPath);
 
       if (insertNode.isOverwrite()) {
@@ -389,7 +413,7 @@ public class GlobalEngine extends AbstractService {
       Schema subQueryOutSchema = subQuery.getOutSchema();
 
       if (insertNode.hasTargetTable()) { // if a target table is given, it computes the proper schema.
-        storeNode.getOptions().putAll(insertNode.getTargetTable().getMeta().getOptions());
+        storeNode.getOptions().putAll(insertNode.getTargetTable().getMeta().toMap());
 
         Schema targetTableSchema = insertNode.getTargetTable().getMeta().getSchema();
         Schema targetProjectedSchema = insertNode.getTargetSchema();
@@ -433,13 +457,6 @@ public class GlobalEngine extends AbstractService {
         storeNode.setInSchema(subQueryOutSchema);
         List<LogicalPlan.QueryBlock> childBlocks = plan.getChildBlocks(plan.getRootBlock());
         storeNode.setChild(childBlocks.get(0).getRoot());
-      }
-
-      if (insertNode.hasStorageType()) {
-        storeNode.setStorageType(insertNode.getStorageType());
-      }
-      if (insertNode.hasOptions()) {
-        storeNode.getOptions().putAll(insertNode.getOptions());
       }
 
       // find a subquery query of insert node and merge root block and subquery into one query block.
