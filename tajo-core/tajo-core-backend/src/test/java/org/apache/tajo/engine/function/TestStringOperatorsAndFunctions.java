@@ -51,6 +51,69 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
+  public void testLTrim() {
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+
+    testSimpleEval("select ltrim(' trim') ", new String[]{"trim"});
+    testSimpleEval("select ltrim('xxtrim', 'xx') ", new String[]{"trim"});
+
+    testSimpleEval("select trim(leading 'xx' from 'xxtrim') ", new String[]{"trim"});
+    testSimpleEval("select trim(leading from '  trim') ", new String[]{"trim"});
+    testSimpleEval("select trim('  trim') ", new String[]{"trim"});
+
+    testEval(schema, "table1", "  trim,abc", "select ltrim(col1) from table1", new String[]{"trim"});
+    testEval(schema, "table1", "xxtrim,abc", "select ltrim(col1, 'xx') from table1", new String[]{"trim"});
+    testEval(schema, "table1", "xxtrim,abc", "select trim(leading 'xx' from col1) from table1", new String[]{"trim"});
+
+    testEval(schema, "table1", "  trim,  abc", "select ltrim(col1) || ltrim(col2) from table1",
+        new String[]{"trimabc"});
+  }
+
+  @Test
+  public void testRTrim() {
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+
+    testSimpleEval("select rtrim('trim ') ", new String[]{"trim"});
+    testSimpleEval("select rtrim('trimxx', 'xx') ", new String[]{"trim"});
+
+    testSimpleEval("select trim(trailing 'xx' from 'trimxx') ", new String[]{"trim"});
+    testSimpleEval("select trim(trailing from 'trim  ') ", new String[]{"trim"});
+    testSimpleEval("select trim('trim  ') ", new String[]{"trim"});
+
+    testEval(schema, "table1", "trim  ,abc", "select rtrim(col1) from table1", new String[]{"trim"});
+    testEval(schema, "table1", "trimxx,abc", "select rtrim(col1, 'xx') from table1", new String[]{"trim"});
+    testEval(schema, "table1", "trimxx,abc", "select trim(trailing 'xx' from col1) from table1", new String[]{"trim"});
+
+    testEval(schema, "table1", "trim  ,abc  ", "select rtrim(col1) || rtrim(col2) from table1",
+        new String[]{"trimabc"});
+  }
+
+  @Test
+  public void testTrim() {
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+
+    testSimpleEval("select trim(' trim ') ", new String[]{"trim"});
+    testSimpleEval("select btrim('xxtrimxx', 'xx') ", new String[]{"trim"});
+
+    testSimpleEval("select trim(both 'xx' from 'xxtrimxx') ", new String[]{"trim"});
+    testSimpleEval("select trim(both from '  trim  ') ", new String[]{"trim"});
+    testSimpleEval("select trim('  trim  ') ", new String[]{"trim"});
+
+    testEval(schema, "table1", "  trim  ,abc", "select trim(col1) from table1", new String[]{"trim"});
+    testEval(schema, "table1", "xxtrimxx,abc", "select trim(col1, 'xx') from table1", new String[]{"trim"});
+    testEval(schema, "table1", "xxtrimxx,abc", "select trim(both 'xx' from col1) from table1", new String[]{"trim"});
+
+    testEval(schema, "table1", "  trim  ,xxabcxx", "select trim(col1) || trim(col2,'xx') from table1",
+        new String[]{"trimabc"});
+  }
+
+  @Test
   public void testRegexReplace() {
     testSimpleEval("select regexp_replace('abcdef','bc','--') as col1 ", new String[]{"a--def"});
 

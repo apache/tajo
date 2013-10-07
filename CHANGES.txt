@@ -4,6 +4,9 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-147: Implement trim(text), ltrim(text), and rtrim(text) function.
+    (hyunsik)
+
     TAJO-148: Implement UPPER(text), LOWER(text) function. (hyunsik)
 
     TAJO-220: Implement catalog dump feature. (hyunsik)

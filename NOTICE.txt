@@ -22,11 +22,6 @@ Copyright (c) 2006-2012 Google Inc.
 This product includes/uses Protocol Buffers (http://code.google.com/p/protobuf/)
 Copyright (c) 2008, Google Inc.
 
-This product includes/uses SQL BNF Grammer (http://www.antlr3.org/grammar/1304304798093/SQL2003_Grammar.zip)
-Copyright (c) 2011, Mage Systems
-Portions Copyright (c)  Jonathan Leffler 2004-2009'
-Portions Copyright (c) 2003, ISO - International Organization for Standardization
-
 This product includes/uses Protobuf-java-format (http://code.google.com/p/protobuf-java-format/)
 Copyright 2000-2011 NeuStar, Inc. All rights reserved.
 Copyright (c) 2009, Orbitz World Wide All rights reserved.

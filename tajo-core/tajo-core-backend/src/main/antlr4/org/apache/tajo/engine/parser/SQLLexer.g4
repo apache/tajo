@@ -121,6 +121,7 @@ ANY : A N Y;
 ASC : A S C;
 AVG : A V G;
 
+BOTH : B O T H;
 BY : B Y;
 
 CASE : C A S E;
@@ -168,6 +169,7 @@ IS : I S;
 JOIN : J O I N;
 
 LAST : L A S T;
+LEADING : L E A D I N G;
 LEFT : L E F T;
 LIKE : L I K E;
 LIMIT : L I M I T;
@@ -201,6 +203,7 @@ SOME : S O M E;
 
 TABLE : T A B L E;
 THEN : T H E N;
+TRAILING : T R A I L I N G;
 TRUE : T R U E;
 
 UNION : U N I O N;
@@ -236,6 +239,7 @@ STDDEV_POP : S T D D E V UNDERLINE P O P;
 STDDEV_SAMP : S T D D E V UNDERLINE S A M P;
 SUM : S U M;
 
+TRIM : T R I M;
 TO : T O;
 
 Nonreserved_keywords
@@ -246,6 +250,7 @@ Nonreserved_keywords
   | STDDEV_POP
   | STDDEV_SAMP
   | SUM
+  | TRIM
   | TO
   ;
 

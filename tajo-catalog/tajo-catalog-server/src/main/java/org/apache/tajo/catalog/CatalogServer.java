@@ -433,9 +433,7 @@ public class CatalogServer extends AbstractService {
     private FunctionDescProto findFunction(String signature, FunctionType type, List<DataType> params) {
       if (functions.containsKey(signature)) {
         for (FunctionDescProto existing : functions.get(signature)) {
-          if (existing.getType() == type &&
-              existing.getParameterTypesList().containsAll(params)
-              && params.containsAll(existing.getParameterTypesList())) {
+          if (existing.getType() == type && existing.getParameterTypesList().equals(params)) {
             return existing;
           }
         }

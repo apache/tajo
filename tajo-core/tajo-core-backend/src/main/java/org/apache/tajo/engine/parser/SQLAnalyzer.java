@@ -453,6 +453,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
+  public Expr visitParenthesized_value_expression(SQLParser.Parenthesized_value_expressionContext ctx) {
+    return visitValue_expression(ctx.value_expression());
+  }
+
+  @Override
   public Expr visitBoolean_value_expression(SQLParser.Boolean_value_expressionContext ctx) {
     Expr current = visitOr_predicate(ctx.or_predicate());
     if (checkIfExist(ctx.CAST_EXPRESSION())) {
@@ -509,15 +514,24 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Expr visitBoolean_primary(SQLParser.Boolean_primaryContext ctx) {
     if (ctx.predicate() != null) {
       return visitPredicate(ctx.predicate());
-    } else if (ctx.numeric_value_expression() != null) {
-      return visitNumeric_value_expression(ctx.numeric_value_expression());
-    } else if (ctx.case_expression() != null) {
-      return visitCase_expression(ctx.case_expression());
-    } else if (ctx.boolean_value_expression() != null) {
-      return visitBoolean_value_expression(ctx.boolean_value_expression());
     } else {
-      return visitChildren(ctx);
+      return visitBoolean_predicand(ctx.boolean_predicand());
     }
+  }
+
+  @Override
+  public Expr visitBoolean_predicand(SQLParser.Boolean_predicandContext ctx) {
+    if (checkIfExist(ctx.nonparenthesized_value_expression_primary())) {
+      return visitNonparenthesized_value_expression_primary(ctx.nonparenthesized_value_expression_primary());
+    } else {
+      return visitBoolean_value_expression(ctx.parenthesized_boolean_value_expression().boolean_value_expression());
+    }
+  }
+
+  @Override
+  public Expr visitNonparenthesized_value_expression_primary(
+      SQLParser.Nonparenthesized_value_expression_primaryContext ctx) {
+    return visitChildren(ctx);
   }
 
   @Override
@@ -551,14 +565,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitTerm(SQLParser.TermContext ctx) {
-    Expr current = visitConcatenatable_term(ctx.concatenatable_term(0));
+    Expr current = visitNumeric_primary(ctx.numeric_primary(0));
 
     Expr left;
     Expr right;
     for (int i = 1; i < ctx.getChildCount(); i++) {
       left = current;
       TerminalNode operator = (TerminalNode) ctx.getChild(i++);
-      right = visitConcatenatable_term((Concatenatable_termContext) ctx.getChild(i));
+      right = visitNumeric_primary((Numeric_primaryContext) ctx.getChild(i));
 
       if (operator.getSymbol().getType() == MULTIPLY) {
         current = new BinaryOperator(OpType.Multiply, left, right);
@@ -572,31 +586,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return current;
   }
 
-  @Override public Expr visitConcatenatable_term(SQLParser.Concatenatable_termContext ctx) {
-    Expr current = visitNumeric_primary(ctx.numeric_primary(0));
-
-    Expr left;
-    Expr right;
-    for (int i = 1; i < ctx.getChildCount(); i++) {
-      left = current;
-      i++; // skip '||' operator
-      right = visitNumeric_primary((Numeric_primaryContext) ctx.getChild(i));
-
-      if (left.getType() == OpType.Literal && right.getType() == OpType.Literal) {
-        current = new LiteralValue(((LiteralValue)left).getValue() + ((LiteralValue)right).getValue(),
-            LiteralType.String);
-      } else {
-        current = new BinaryOperator(OpType.Concatenate, left, right);
-      }
-    }
-
-    return current;
-  }
-
   @Override
   public Expr visitNumeric_primary(SQLParser.Numeric_primaryContext ctx) {
-    if (ctx.numeric_value_expression() != null) {
-      return visitNumeric_value_expression(ctx.numeric_value_expression());
+    if (ctx.value_expression_primary() != null) {
+      return visitValue_expression_primary(ctx.value_expression_primary());
     } else {
       return visitChildren(ctx);
     }
@@ -636,10 +629,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public ValueListExpr visitIn_predicate_value(SQLParser.In_predicate_valueContext ctx) {
-    int size = ctx.in_value_list().numeric_value_expression().size();
+    int size = ctx.in_value_list().row_value_expression().size();
     Expr [] exprs = new Expr[size];
     for (int i = 0; i < size; i++) {
-      exprs[i] = visit(ctx.in_value_list().numeric_value_expression(i));
+      exprs[i] = visitRow_value_expression(ctx.in_value_list().row_value_expression(i));
     }
     return new ValueListExpr(exprs);
   }
@@ -656,7 +649,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitPattern_matching_predicate(SQLParser.Pattern_matching_predicateContext ctx) {
-    Expr predicand = visitChildren(ctx.numeric_primary());
+    Expr predicand = visitChildren(ctx.row_value_predicand());
     Expr pattern = new LiteralValue(stripQuote(ctx.Character_String_Literal().getText()),
         LiteralType.String);
 
@@ -699,15 +692,6 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitLiteral(@NotNull SQLParser.LiteralContext ctx) {
-    if (checkIfExist(ctx.NULL())) {
-      return new NullValue();
-    } else {
-      return visitChildren(ctx);
-    }
-  }
-
-  @Override
   public ColumnReferenceExpr visitColumn_reference(SQLParser.Column_referenceContext ctx) {
     ColumnReferenceExpr column = new ColumnReferenceExpr(ctx.name.getText());
     if (ctx.tb_name != null) {
@@ -718,7 +702,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public LiteralValue visitUnsigned_numerical_literal(SQLParser.Unsigned_numerical_literalContext ctx) {
+  public LiteralValue visitUnsigned_numeric_literal(@NotNull SQLParser.Unsigned_numeric_literalContext ctx) {
     if (ctx.NUMBER() != null) {
       return new LiteralValue(ctx.getText(), LiteralType.Unsigned_Integer);
     } else {
@@ -737,7 +721,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override public FunctionExpr visitGeneral_set_function(SQLParser.General_set_functionContext ctx) {
     String signature = ctx.set_function_type().getText();
     boolean distinct = checkIfExist(ctx.set_qualifier()) && checkIfExist(ctx.set_qualifier().DISTINCT()) ? true : false;
-    Expr param = visitBoolean_value_expression(ctx.boolean_value_expression());
+    Expr param = visitValue_expression(ctx.value_expression());
 
     return new GeneralSetFunctionExpr(signature, distinct, param);
   }
@@ -747,11 +731,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     String signature = ctx.Identifier().getText();
     FunctionExpr function = new FunctionExpr(signature);
     if (ctx.sql_argument_list() != null) {
-      int numArgs = ctx.sql_argument_list().boolean_value_expression().size();
+      int numArgs = ctx.sql_argument_list().value_expression().size();
       Expr [] argument_list = new Expr[numArgs];
       for (int i = 0; i < numArgs; i++) {
-        argument_list[i] = visitBoolean_value_expression(ctx.sql_argument_list().
-            boolean_value_expression().get(i));
+        argument_list[i] = visitValue_expression(ctx.sql_argument_list().
+            value_expression().get(i));
       }
 
       function.setParams(argument_list);
@@ -761,7 +745,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Target visitDerived_column(SQLParser.Derived_columnContext ctx) {
-    Target target = new Target(visitBoolean_value_expression(ctx.boolean_value_expression()));
+    Target target = new Target(visitValue_expression(ctx.value_expression()));
     if (ctx.as_clause() != null) {
       target.setAlias(ctx.as_clause().Identifier().getText());
     }
@@ -769,13 +753,62 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public LiteralValue visitCharacter_string_type(SQLParser.Character_string_typeContext ctx) {
+  public Expr visitCharacter_string_type(SQLParser.Character_string_typeContext ctx) {
     return new LiteralValue(stripQuote(ctx.getText()), LiteralType.String);
   }
 
   @Override
-  public LiteralValue visitString_value_expression(@NotNull SQLParser.String_value_expressionContext ctx) {
-    return new LiteralValue(stripQuote(ctx.Character_String_Literal().getText()), LiteralType.String);
+  public Expr visitCharacter_value_expression(SQLParser.Character_value_expressionContext ctx) {
+    Expr current = visitCharacter_factor(ctx.character_factor(0));
+
+    Expr left;
+    Expr right;
+    for (int i = 1; i < ctx.getChildCount(); i++) {
+      left = current;
+      i++; // skip '||' operator
+      right = visitCharacter_factor((Character_factorContext) ctx.getChild(i));
+
+      if (left.getType() == OpType.Literal && right.getType() == OpType.Literal) {
+        current = new LiteralValue(((LiteralValue)left).getValue() + ((LiteralValue)right).getValue(),
+            LiteralType.String);
+      } else {
+        current = new BinaryOperator(OpType.Concatenate, left, right);
+      }
+    }
+
+    return current;
+  }
+
+  @Override
+  public Expr visitTrim_function(SQLParser.Trim_functionContext ctx) {
+    Expr trimSource = visitChildren(ctx.trim_operands().trim_source);
+    String functionName = "trim";
+    if (checkIfExist(ctx.trim_operands().FROM())) {
+      if (checkIfExist(ctx.trim_operands().trim_specification())) {
+        Trim_specificationContext specification = ctx.trim_operands().trim_specification();
+        if (checkIfExist(specification.LEADING())) {
+          functionName = "ltrim";
+        } else if (checkIfExist(specification.TRAILING())) {
+          functionName = "rtrim";
+        } else {
+          functionName = "trim";
+        }
+      }
+    }
+
+    Expr trimCharacters = null;
+    if (checkIfExist(ctx.trim_operands().trim_character)) {
+      trimCharacters = visitCharacter_value_expression(ctx.trim_operands().trim_character);
+    }
+
+    Expr [] params;
+    if (trimCharacters != null) {
+      params = new Expr[] {trimSource, trimCharacters};
+    } else {
+      params = new Expr[] {trimSource};
+    }
+
+    return new FunctionExpr(functionName, params);
   }
 
   @Override
@@ -1060,5 +1093,19 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     Expr operand = visitChildren(ctx.cast_operand());
     DataType castTarget = visitData_type(ctx.cast_target().data_type());
     return new CastExpr(operand, castTarget);
+  }
+
+  @Override public Expr visitUnsigned_value_specification(@NotNull SQLParser.Unsigned_value_specificationContext ctx) {
+    return visitChildren(ctx);
+  }
+
+  @Override
+  public Expr visitUnsigned_literal(@NotNull SQLParser.Unsigned_literalContext ctx) {
+    if (checkIfExist(ctx.unsigned_numeric_literal())) {
+      return visitUnsigned_numeric_literal(ctx.unsigned_numeric_literal());
+    } else {
+      return new LiteralValue(stripQuote(ctx.general_literal().Character_String_Literal().getText()),
+          LiteralType.String);
+    }
   }
 }
