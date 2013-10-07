@@ -75,4 +75,30 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testEval(schema, "table1", "------,(^--|--$),", "select regexp_replace(col1, col2, col3) as str from table1",
         new String[]{""});
   }
+
+  @Test
+  public void testUpper() {
+    testSimpleEval("select upper('abcdef') as col1 ", new String[]{"ABCDEF"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", "abc,efg,3.14", "select upper(col1), upper(col2) from table1",
+        new String[]{"ABC", "EFG"});
+    testEval(schema, "table1", "abc,efg,3.14", "select upper(col1) || upper(col2) from table1", new String[]{"ABCEFG"});
+  }
+
+  @Test
+  public void testLower() {
+    testSimpleEval("select lower('ABCdEF') as col1 ", new String[]{"abcdef"});
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", TEXT);
+    schema.addColumn("col2", TEXT);
+    schema.addColumn("col3", TEXT);
+    testEval(schema, "table1", "ABC,DEF,3.14", "select lower(col1), lower(col2) from table1",
+        new String[]{"abc", "def"});
+    testEval(schema, "table1", "ABC,DEF,3.14", "select lower(col1) || lower(col2) from table1", new String[]{"abcdef"});
+  }
 }

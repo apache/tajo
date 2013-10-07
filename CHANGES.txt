@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-148: Implement UPPER(text), LOWER(text) function. (hyunsik)
+
     TAJO-220: Implement catalog dump feature. (hyunsik)
 
     TAJO-216: Improve FilterPushDownRule and Implement physical operators 

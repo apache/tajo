@@ -44,8 +44,10 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.Country;
 import org.apache.tajo.engine.function.InCountry;
 import org.apache.tajo.engine.function.builtin.*;
+import org.apache.tajo.engine.function.string.Lower;
 import org.apache.tajo.engine.function.string.RegexpReplace;
 import org.apache.tajo.engine.function.string.SplitPart;
+import org.apache.tajo.engine.function.string.Upper;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.master.rm.YarnTajoResourceManager;
@@ -309,6 +311,15 @@ public class TajoMaster extends CompositeService {
         new FunctionDesc("random", RandomInt.class, FunctionType.GENERAL,
             CatalogUtil.newSimpleDataType(Type.INT4),
             CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
+
+    sqlFuncs.add(
+        new FunctionDesc("upper", Upper.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.TEXT),
+            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
+    sqlFuncs.add(
+        new FunctionDesc("lower", Lower.class, FunctionType.GENERAL,
+            CatalogUtil.newSimpleDataType(Type.TEXT),
+            CatalogUtil.newSimpleDataTypeArray(Type.TEXT)));
 
     sqlFuncs.add(
         new FunctionDesc("split_part", SplitPart.class, FunctionType.GENERAL,
