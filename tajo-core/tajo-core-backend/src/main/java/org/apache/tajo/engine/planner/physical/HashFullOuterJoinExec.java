@@ -35,7 +35,7 @@ import java.io.IOException;
 import java.util.*;
 
 
-public class FullOuterHashJoinExec extends BinaryPhysicalExec {
+public class HashFullOuterJoinExec extends BinaryPhysicalExec {
   // from logical plan
   protected JoinNode plan;
   protected EvalNode joinQual;
@@ -66,7 +66,7 @@ public class FullOuterHashJoinExec extends BinaryPhysicalExec {
   private int leftNumCols;
   private Map<Tuple, Boolean> matched;
 
-  public FullOuterHashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
+  public HashFullOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
                                PhysicalExec inner) {
     super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
         plan.getOutSchema(), outer, inner);

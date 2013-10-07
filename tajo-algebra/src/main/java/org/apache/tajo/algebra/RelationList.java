@@ -33,8 +33,8 @@ public class RelationList extends Expr {
       Preconditions.checkArgument(
           rel.getType() == OpType.Relation ||
           rel.getType() == OpType.Join ||
-          rel.getType() == OpType.TableSubQuery,
-          "Only Relation, Join, or TableSubQuery can be given to RelationList, but this expr "
+          rel.getType() == OpType.TablePrimaryTableSubQuery,
+          "Only Relation, Join, or TablePrimarySubQuery can be given to RelationList, but this expr "
               + " is " + rel.getType());
     }
   }

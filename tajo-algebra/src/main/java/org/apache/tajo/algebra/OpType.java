@@ -28,7 +28,8 @@ public enum OpType {
   Relation(Relation.class),
   RelationList(RelationList.class),
   Rename,
-  TableSubQuery(TableSubQuery.class),
+  SimpleTableSubQuery(SimpleTableSubQuery.class),
+  TablePrimaryTableSubQuery(TablePrimarySubQuery.class),
   Except(SetOperation.class),
   Having(Having.class),
 	Aggregation(Aggregation.class),
@@ -66,6 +67,7 @@ public enum OpType {
   InPredicate(InPredicate.class),
   ValueList(ValueListExpr.class),
   Is,
+  ExistsPredicate(ExistsPredicate.class),
 
   // string operator or pattern matching predicates
   LikePredicate(PatternMatchPredicate.class),

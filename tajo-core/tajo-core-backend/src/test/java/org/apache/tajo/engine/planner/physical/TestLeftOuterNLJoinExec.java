@@ -259,11 +259,11 @@ public class TestLeftOuterNLJoinExec {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
-    //maybe plan results with hash join exec algorithm usage. Must convert from LeftOuterHashJoinExec into LeftOuterNLJoinExec
+    //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof LeftOuterHashJoinExec) {
-      LeftOuterHashJoinExec join = proj.getChild();
-      LeftOuterNLJoinExec aJoin = new LeftOuterNLJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
+    if (proj.getChild() instanceof HashLeftOuterJoinExec) {
+      HashLeftOuterJoinExec join = proj.getChild();
+      NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
       exec = proj;
     }
@@ -300,11 +300,11 @@ public class TestLeftOuterNLJoinExec {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
-    //maybe plan results with hash join exec algorithm usage. Must convert from LeftOuterHashJoinExec into LeftOuterNLJoinExec
+    //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof LeftOuterHashJoinExec) {
-      LeftOuterHashJoinExec join = (LeftOuterHashJoinExec) proj.getChild();
-      LeftOuterNLJoinExec aJoin = new LeftOuterNLJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
+    if (proj.getChild() instanceof HashLeftOuterJoinExec) {
+      HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
+      NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
       exec = proj;
      
@@ -343,11 +343,11 @@ public class TestLeftOuterNLJoinExec {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
-    //maybe plan results with hash join exec algorithm usage. Must convert from LeftOuterHashJoinExec into LeftOuterNLJoinExec
+    //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof LeftOuterHashJoinExec) {
-      LeftOuterHashJoinExec join = (LeftOuterHashJoinExec) proj.getChild();
-      LeftOuterNLJoinExec aJoin = new LeftOuterNLJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
+    if (proj.getChild() instanceof HashLeftOuterJoinExec) {
+      HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
+      NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
       exec = proj;
      
@@ -387,11 +387,11 @@ public class TestLeftOuterNLJoinExec {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
-    //maybe plan results with hash join exec algorithm usage. Must convert from LeftOuterHashJoinExec into LeftOuterNLJoinExec
+    //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof LeftOuterHashJoinExec) {
-      LeftOuterHashJoinExec join = (LeftOuterHashJoinExec) proj.getChild();
-      LeftOuterNLJoinExec aJoin = new LeftOuterNLJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
+    if (proj.getChild() instanceof HashLeftOuterJoinExec) {
+      HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
+      NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
       exec = proj;
      
@@ -430,11 +430,11 @@ public class TestLeftOuterNLJoinExec {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
     
-    //maybe plan results with hash join exec algorithm usage. Must convert from LeftOuterHashJoinExec into LeftOuterNLJoinExec
+    //maybe plan results with hash join exec algorithm usage. Must convert from HashLeftOuterJoinExec into NLLeftOuterJoinExec
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof LeftOuterHashJoinExec) {
-      LeftOuterHashJoinExec join = (LeftOuterHashJoinExec) proj.getChild();
-      LeftOuterNLJoinExec aJoin = new LeftOuterNLJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
+    if (proj.getChild() instanceof HashLeftOuterJoinExec) {
+      HashLeftOuterJoinExec join = (HashLeftOuterJoinExec) proj.getChild();
+      NLLeftOuterJoinExec aJoin = new NLLeftOuterJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       proj.setChild(aJoin);
       exec = proj;
      

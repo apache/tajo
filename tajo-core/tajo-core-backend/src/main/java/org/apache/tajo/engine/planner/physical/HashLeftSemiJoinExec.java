@@ -26,12 +26,17 @@ import org.apache.tajo.storage.VTuple;
 
 import java.io.IOException;
 
-public class HashAntiJoinExec extends HashJoinExec {
+/**
+ * Prepare a hash table of the NOT IN side of the join. Scan the FROM side table.
+ * For each tuple of the FROM side table, it tries to find a matched tuple from the hash table for the NOT INT side.
+ * If found, it returns the tuple of the FROM side table.
+ */
+public class HashLeftSemiJoinExec extends HashJoinExec {
   private Tuple rightNullTuple;
 
-  public HashAntiJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec left,
-                      PhysicalExec right) {
-    super(context, plan, left, right);
+  public HashLeftSemiJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec fromSideChild,
+                              PhysicalExec inSideChild) {
+    super(context, plan, fromSideChild, inSideChild);
     // NUll Tuple
     rightNullTuple = new VTuple(leftChild.outColumnNum);
     for (int i = 0; i < leftChild.outColumnNum; i++) {
@@ -43,12 +48,14 @@ public class HashAntiJoinExec extends HashJoinExec {
    * The End of Tuple (EOT) condition is true only when no more tuple in the left relation (on disk).
    * next() method finds the first unmatched tuple from both tables.
    *
-   * For each left tuple, next() tries to find the right tuple from the hash table. If there is no hash bucket
-   * in the hash table. It returns a tuple. If next() find the hash bucket in the hash table, it reads tuples in
-   * the found bucket sequentially. If it cannot find tuple in the bucket, it returns a tuple.
+   * For each left tuple on the disk, next() tries to find at least one matched tuple from the hash table.
    *
-   * @return The tuple which is unmatched to a given join condition.
-   * @throws IOException
+   * In more detail, until there is a hash bucket matched to the left tuple in the hash table, it continues to traverse
+   * the left tuples. If next() finds the matched bucket in the hash table, it finds any matched tuple in the bucket.
+   * If found, it returns the composite tuple immediately without finding more matched tuple in the bucket.
+   *
+   * @return The tuple which is firstly matched to a given join condition.
+   * @throws java.io.IOException
    */
   public Tuple next() throws IOException {
     if (first) {
@@ -73,15 +80,11 @@ public class HashAntiJoinExec extends HashJoinExec {
         // if found, it gets a hash bucket from the hash table.
         iterator = tupleSlots.get(leftKeyTuple).iterator();
       } else {
-        // if not found, it returns a tuple.
-        frameTuple.set(leftTuple, rightNullTuple);
-        projector.eval(evalContexts, frameTuple);
-        projector.terminate(evalContexts, outTuple);
-        return outTuple;
+        continue;
       }
 
       // Reach here only when a hash bucket is found. Then, it checks all tuples in the found bucket.
-      // If it finds a matched tuple, it escapes the loop for all tuples in the hash bucket.
+      // If it finds any matched tuple, it returns the tuple immediately.
       notFound = true;
       while (notFound && iterator.hasNext()) {
         rightTuple = iterator.next();
@@ -89,13 +92,12 @@ public class HashAntiJoinExec extends HashJoinExec {
         joinQual.eval(qualCtx, inSchema, frameTuple);
         if (joinQual.terminate(qualCtx).asBool()) { // if the matched one is found
           notFound = false;
+          projector.eval(evalContexts, frameTuple);
+          projector.terminate(evalContexts, outTuple);
         }
       }
 
-      if (notFound) { // if there is no matched tuple
-        frameTuple.set(leftTuple, rightNullTuple);
-        projector.eval(evalContexts, frameTuple);
-        projector.terminate(evalContexts, outTuple);
+      if (!notFound) { // if there is no matched tuple
         break;
       }
     }

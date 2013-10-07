@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,37 +18,27 @@
 
 package org.apache.tajo.algebra;
 
-public class TableSubQuery extends Relation {
-  private Expr subquery;
-  private String [] columnNames;
+public class ExistsPredicate extends Expr {
+  private SimpleTableSubQuery simpleTableSubQuery;
+  private boolean not;
 
-  public TableSubQuery(String relName, Expr subquery) {
-    super(OpType.TableSubQuery, relName);
-    this.subquery = subquery;
+  public ExistsPredicate(SimpleTableSubQuery simpleTableSubQuery, boolean not) {
+    super(OpType.InPredicate);
+    this.simpleTableSubQuery = simpleTableSubQuery;
+    this.not = not;
   }
 
-  public boolean hasColumnNames() {
-    return this.columnNames != null;
+  public boolean isNot() {
+    return this.not;
   }
 
-  public void setColumnNames(String[] aliasList) {
-    this.columnNames = aliasList;
-  }
-
-  public String [] getColumnNames() {
-    return columnNames;
-  }
-
-  public Expr getSubQuery() {
-    return subquery;
+  public SimpleTableSubQuery getSubQuery() {
+    return simpleTableSubQuery;
   }
 
   @Override
   boolean equalsTo(Expr expr) {
-    return subquery.equals(subquery);
-  }
-
-  public String toJson() {
-    return JsonHelper.toJson(this);
+    ExistsPredicate another = (ExistsPredicate) expr;
+    return not == another.not && simpleTableSubQuery.equals(another.simpleTableSubQuery);
   }
 }

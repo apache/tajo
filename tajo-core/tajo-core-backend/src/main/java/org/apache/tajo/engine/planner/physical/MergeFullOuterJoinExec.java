@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class FullOuterMergeJoinExec extends BinaryPhysicalExec {
+public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
   // from logical plan
   private JoinNode joinNode;
   private EvalNode joinQual;
@@ -71,7 +71,7 @@ public class FullOuterMergeJoinExec extends BinaryPhysicalExec {
   boolean endInPopulationStage = false;
   private boolean initRightDone = false;
 
-  public FullOuterMergeJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
+  public MergeFullOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
                                 PhysicalExec rightChild, SortSpec[] leftSortKey, SortSpec[] rightSortKey) {
     super(context, plan.getInSchema(), plan.getOutSchema(), leftChild, rightChild);
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +

@@ -38,10 +38,10 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
       return visitProjection((ProjectionExec) exec, stack, context);
     } else if (exec instanceof HashJoinExec) {
       return visitHashJoin((HashJoinExec) exec, stack, context);
-    } else if (exec instanceof HashAntiJoinExec) {
-      return visitHashAntiJoin((HashAntiJoinExec) exec, stack, context);
-    } else if (exec instanceof HashSemiJoinExec) {
-      return visitHashSemiJoin((HashSemiJoinExec) exec, stack, context);
+    } else if (exec instanceof HashLeftAntiJoinExec) {
+      return visitHashAntiJoin((HashLeftAntiJoinExec) exec, stack, context);
+    } else if (exec instanceof HashLeftSemiJoinExec) {
+      return visitHashSemiJoin((HashLeftSemiJoinExec) exec, stack, context);
     } else if (exec instanceof LimitExec) {
       return visitLimit((LimitExec) exec, stack, context);
     } else {
@@ -108,13 +108,13 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
   }
 
   @Override
-  public RESULT visitHashSemiJoin(HashSemiJoinExec exec, Stack<PhysicalExec> stack, CONTEXT context)
+  public RESULT visitHashSemiJoin(HashLeftSemiJoinExec exec, Stack<PhysicalExec> stack, CONTEXT context)
       throws PhysicalPlanningException {
     return visitBinaryExecutor(exec, stack, context);
   }
 
   @Override
-  public RESULT visitHashAntiJoin(HashAntiJoinExec exec, Stack<PhysicalExec> stack, CONTEXT context)
+  public RESULT visitHashAntiJoin(HashLeftAntiJoinExec exec, Stack<PhysicalExec> stack, CONTEXT context)
       throws PhysicalPlanningException {
     return visitBinaryExecutor(exec, stack, context);
   }

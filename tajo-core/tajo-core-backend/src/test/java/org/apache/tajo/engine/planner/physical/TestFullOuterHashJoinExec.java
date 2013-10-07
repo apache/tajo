@@ -35,7 +35,6 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
@@ -268,7 +267,7 @@ public class TestFullOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    assertTrue(proj.getChild() instanceof FullOuterHashJoinExec);
+    assertTrue(proj.getChild() instanceof HashFullOuterJoinExec);
 
     int count = 0;
     exec.init();
@@ -305,7 +304,7 @@ public class TestFullOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    assertTrue(proj.getChild() instanceof FullOuterHashJoinExec);
+    assertTrue(proj.getChild() instanceof HashFullOuterJoinExec);
 
     int count = 0;
     exec.init();
@@ -341,7 +340,7 @@ public class TestFullOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    assertTrue(proj.getChild() instanceof FullOuterHashJoinExec);
+    assertTrue(proj.getChild() instanceof HashFullOuterJoinExec);
 
     int count = 0;
     exec.init();
@@ -379,7 +378,7 @@ public class TestFullOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    assertTrue(proj.getChild() instanceof FullOuterHashJoinExec);
+    assertTrue(proj.getChild() instanceof HashFullOuterJoinExec);
 
     int count = 0;
     exec.init();

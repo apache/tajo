@@ -501,7 +501,7 @@ public class HiveConverter extends HiveParserBaseVisitor<Expr>{
                 }
             }
 
-            TableSubQuery subQuery = new TableSubQuery(tableAlias, current);
+            TablePrimarySubQuery subQuery = new TablePrimarySubQuery(tableAlias, current);
             current = subQuery;
         }
         // TODO: implement lateralView

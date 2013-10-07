@@ -18,38 +18,24 @@
 
 package org.apache.tajo.algebra;
 
-public class BinaryOperator extends Expr {
-  protected Expr left;
-  protected Expr right;
+public class SimpleTableSubQuery extends Expr {
+  private Expr subquery;
 
-  BinaryOperator(OpType opType) {
-    super(opType);
+  public SimpleTableSubQuery(Expr subquery) {
+    super(OpType.SimpleTableSubQuery);
+    this.subquery = subquery;
   }
 
-  public BinaryOperator(OpType type, Expr left, Expr right) {
-    super(type);
-    this.left = left;
-    this.right = right;
-  }
-
-  public <T extends Expr> T getLeft() {
-    return (T) this.left;
-  }
-
-  public void setLeft(Expr left) {
-    this.left = left;
-  }
-
-  public <T extends Expr> T getRight() {
-    return (T) this.right;
-  }
-
-  public void setRight(Expr right) {
-    this.right = right;
+  public Expr getSubQuery() {
+    return subquery;
   }
 
   @Override
   boolean equalsTo(Expr expr) {
-    return true;
+    return subquery.equals(subquery);
+  }
+
+  public String toJson() {
+    return JsonHelper.toJson(this);
   }
 }

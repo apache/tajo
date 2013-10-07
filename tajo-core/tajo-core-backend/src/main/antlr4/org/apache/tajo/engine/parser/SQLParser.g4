@@ -831,6 +831,7 @@ predicate
   | in_predicate
   | pattern_matching_predicate
   | null_predicate
+  | exists_predicate
   ;
 
 /*
@@ -944,7 +945,7 @@ some : SOME | ANY;
 */
 
 exists_predicate
-  : EXISTS s=table_subquery
+  : NOT? EXISTS s=table_subquery
   ;
 
 

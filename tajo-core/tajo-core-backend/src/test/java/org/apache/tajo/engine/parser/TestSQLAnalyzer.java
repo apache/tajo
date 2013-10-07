@@ -252,6 +252,30 @@ public class TestSQLAnalyzer {
   }
 
   @Test
+  public void testInSubquery1() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/in_subquery_1.sql"));
+    parseQuery(sql);
+  }
+
+  @Test
+  public void testInSubquery2() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/in_subquery_2.sql"));
+    parseQuery(sql);
+  }
+
+  @Test
+  public void testExistsPredicate1() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/exists_predicate_1.sql"));
+    parseQuery(sql);
+  }
+
+  @Test
+  public void testExistsPredicate2() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/queries/exists_predicate_2.sql"));
+    parseQuery(sql);
+  }
+
+  @Test
   public void testInsertIntoTable() throws IOException {
     String sql = FileUtil.readTextFile(new File("src/test/queries/insert_into_select_1.sql"));
     parseQuery(sql);

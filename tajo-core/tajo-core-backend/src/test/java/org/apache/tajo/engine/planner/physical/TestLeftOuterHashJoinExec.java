@@ -34,7 +34,6 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
@@ -270,7 +269,7 @@ public class TestLeftOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    assertTrue(proj.getChild() instanceof LeftOuterHashJoinExec);
+    assertTrue(proj.getChild() instanceof HashLeftOuterJoinExec);
 
     int count = 0;
     exec.init();
@@ -302,7 +301,7 @@ public class TestLeftOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof LeftOuterNLJoinExec) {
+    if (proj.getChild() instanceof NLLeftOuterJoinExec) {
        //for this small data set this is not likely to happen
       
       assertEquals(1, 0);
@@ -342,7 +341,7 @@ public class TestLeftOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof LeftOuterNLJoinExec) {
+    if (proj.getChild() instanceof NLLeftOuterJoinExec) {
       //for this small data set this is not likely to happen
       
       assertEquals(1, 0);
@@ -383,7 +382,7 @@ public class TestLeftOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof LeftOuterNLJoinExec) {
+    if (proj.getChild() instanceof NLLeftOuterJoinExec) {
       //for this small data set this is not likely to happen
       
       assertEquals(1, 0);
@@ -424,7 +423,7 @@ public class TestLeftOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof LeftOuterNLJoinExec) {
+    if (proj.getChild() instanceof NLLeftOuterJoinExec) {
       //for this small data set this is not likely to happen
       
       assertEquals(1, 0);

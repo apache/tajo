@@ -30,7 +30,7 @@ import org.apache.tajo.storage.VTuple;
 
 import java.io.IOException;
 
-public class LeftOuterNLJoinExec extends BinaryPhysicalExec {
+public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
   // from logical plan
   private JoinNode plan;
   private EvalNode joinQual;
@@ -50,7 +50,7 @@ public class LeftOuterNLJoinExec extends BinaryPhysicalExec {
   private boolean foundAtLeastOneMatch;
   private int rightNumCols;
 
-  public LeftOuterNLJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
+  public NLLeftOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
                              PhysicalExec rightChild) {
     super(context, plan.getInSchema(), plan.getOutSchema(), leftChild, rightChild);
     this.plan = plan;

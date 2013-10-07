@@ -82,8 +82,8 @@ public abstract class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisi
       case RelationList:
         current = visitRelationList(ctx, stack, (RelationList) expr);
         break;
-      case TableSubQuery:
-        current = visitTableSubQuery(ctx, stack, (TableSubQuery) expr);
+      case TablePrimaryTableSubQuery:
+        current = visitTableSubQuery(ctx, stack, (TablePrimarySubQuery) expr);
         break;
       case Relation:
         current = visitRelation(ctx, stack, (Relation) expr);
@@ -209,7 +209,7 @@ public abstract class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisi
   }
 
   @Override
-  public RESULT visitTableSubQuery(CONTEXT ctx, Stack<OpType> stack, TableSubQuery expr) throws PlanningException {
+  public RESULT visitTableSubQuery(CONTEXT ctx, Stack<OpType> stack, TablePrimarySubQuery expr) throws PlanningException {
     stack.push(expr.getType());
     RESULT child = visitChild(ctx, stack, expr.getSubQuery());
     stack.pop();

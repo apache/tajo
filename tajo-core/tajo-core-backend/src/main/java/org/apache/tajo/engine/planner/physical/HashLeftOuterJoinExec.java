@@ -33,12 +33,12 @@ import org.apache.tajo.storage.VTuple;
 
 import java.io.IOException;
 import java.util.*;
-import org.apache.tajo.datum.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 
-public class LeftOuterHashJoinExec extends BinaryPhysicalExec {
+public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
   // from logical plan
   protected JoinNode plan;
   protected EvalNode joinQual;
@@ -67,9 +67,9 @@ public class LeftOuterHashJoinExec extends BinaryPhysicalExec {
 
   private int rightNumCols;
   private int leftNumCols;
-  private static final Log LOG = LogFactory.getLog(LeftOuterHashJoinExec.class);
+  private static final Log LOG = LogFactory.getLog(HashLeftOuterJoinExec.class);
 
-  public LeftOuterHashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
+  public HashLeftOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
                                PhysicalExec rightChild) {
     super(context, SchemaUtil.merge(leftChild.getSchema(), rightChild.getSchema()),
         plan.getOutSchema(), leftChild, rightChild);

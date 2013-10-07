@@ -79,7 +79,7 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString("TableSubQuery");
+    PlanString planStr = new PlanString("TablePrimarySubQuery");
     planStr.appendTitle(" as ").appendTitle(tableName);
     return planStr;
   }

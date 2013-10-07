@@ -169,9 +169,9 @@ public class TestHashAntiJoinExec {
 
       // 'people' should be outer table. So, the below code guarantees that people becomes the outer table.
       if (scanLeftChild.getTableName().equals("people")) {
-        exec = new HashAntiJoinExec(ctx, join.getPlan(), scanRightChild, scanLeftChild);
+        exec = new HashLeftAntiJoinExec(ctx, join.getPlan(), scanRightChild, scanLeftChild);
       } else {
-        exec = new HashAntiJoinExec(ctx, join.getPlan(), scanLeftChild, scanRightChild);
+        exec = new HashLeftAntiJoinExec(ctx, join.getPlan(), scanLeftChild, scanRightChild);
       }
     } else if (exec instanceof HashJoinExec) {
       HashJoinExec join = (HashJoinExec) exec;
@@ -179,9 +179,9 @@ public class TestHashAntiJoinExec {
 
       // 'people' should be outer table. So, the below code guarantees that people becomes the outer table.
       if (scanLeftChild.getTableName().equals("people")) {
-        exec = new HashAntiJoinExec(ctx, join.getPlan(), join.getRightChild(), join.getLeftChild());
+        exec = new HashLeftAntiJoinExec(ctx, join.getPlan(), join.getRightChild(), join.getLeftChild());
       } else {
-        exec = new HashAntiJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
+        exec = new HashLeftAntiJoinExec(ctx, join.getPlan(), join.getLeftChild(), join.getRightChild());
       }
     }
 

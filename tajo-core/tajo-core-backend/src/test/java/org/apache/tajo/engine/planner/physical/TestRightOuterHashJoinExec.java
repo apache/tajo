@@ -47,7 +47,7 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-// this is not a physical operator in itself, but it uses the LeftOuterHashJoinExec with switched inputs order
+// this is not a physical operator in itself, but it uses the HashLeftOuterJoinExec with switched inputs order
 public class TestRightOuterHashJoinExec {
   private TajoConf conf;
   private final String TEST_PATH = "target/test-data/TestRightOuterHashJoinExec";

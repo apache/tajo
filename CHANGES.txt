@@ -50,6 +50,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-232: Rename join operators and add other join operators to
+    PhysicalPlanner. (hyunsik)
+
     TAJO-229: Implement JoinGraph to represent a graph of relation joins.
     (hyunsik)
 

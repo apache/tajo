@@ -35,8 +35,6 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.SortNode;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
@@ -313,7 +311,7 @@ public class TestFullOuterMergeJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    assertTrue(proj.getChild() instanceof FullOuterMergeJoinExec);
+    assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
     int count = 0;
     exec.init();
 
@@ -348,7 +346,7 @@ public class TestFullOuterMergeJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    assertTrue(proj.getChild() instanceof FullOuterMergeJoinExec);
+    assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
 
     int count = 0;
     exec.init();
@@ -383,7 +381,7 @@ public class TestFullOuterMergeJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    assertTrue(proj.getChild() instanceof FullOuterMergeJoinExec);
+    assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
 
 
     int count = 0;
@@ -421,7 +419,7 @@ public class TestFullOuterMergeJoinExec {
     ProjectionExec proj = (ProjectionExec) exec;
 
     // if it chose the hash join WITH REVERSED ORDER, convert to merge join exec
-    assertTrue(proj.getChild() instanceof FullOuterMergeJoinExec);
+    assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
 
     int count = 0;
     exec.init();
@@ -458,7 +456,7 @@ public class TestFullOuterMergeJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    assertTrue(proj.getChild() instanceof FullOuterMergeJoinExec);
+    assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
 
     int count = 0;
     exec.init();
@@ -495,7 +493,7 @@ public class TestFullOuterMergeJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    assertTrue(proj.getChild() instanceof FullOuterMergeJoinExec);
+    assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
 
     int count = 0;
     exec.init();

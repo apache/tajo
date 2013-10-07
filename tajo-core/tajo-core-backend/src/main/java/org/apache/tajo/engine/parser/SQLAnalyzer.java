@@ -400,7 +400,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
       return relation;
     } else if (ctx.derived_table() != null) {
-      return new TableSubQuery(ctx.name.getText(), visit(ctx.derived_table().table_subquery()));
+      return new TablePrimarySubQuery(ctx.name.getText(), visit(ctx.derived_table().table_subquery()));
     } else {
       return null;
     }
@@ -628,13 +628,17 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public ValueListExpr visitIn_predicate_value(SQLParser.In_predicate_valueContext ctx) {
-    int size = ctx.in_value_list().row_value_expression().size();
-    Expr [] exprs = new Expr[size];
-    for (int i = 0; i < size; i++) {
-      exprs[i] = visitRow_value_expression(ctx.in_value_list().row_value_expression(i));
+  public Expr visitIn_predicate_value(SQLParser.In_predicate_valueContext ctx) {
+    if (checkIfExist(ctx.in_value_list())) {
+      int size = ctx.in_value_list().row_value_expression().size();
+      Expr [] exprs = new Expr[size];
+      for (int i = 0; i < size; i++) {
+        exprs[i] = visitRow_value_expression(ctx.in_value_list().row_value_expression(i));
+      }
+      return new ValueListExpr(exprs);
+    } else {
+      return new SimpleTableSubQuery(visitChildren(ctx.table_subquery()));
     }
-    return new ValueListExpr(exprs);
   }
 
   @Override
@@ -689,6 +693,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public IsNullPredicate visitNull_predicate(SQLParser.Null_predicateContext ctx) {
     ColumnReferenceExpr predicand = (ColumnReferenceExpr) visit(ctx.numeric_value_expression());
     return new IsNullPredicate(ctx.NOT() != null, predicand);
+  }
+
+  @Override
+  public ExistsPredicate visitExists_predicate(SQLParser.Exists_predicateContext ctx) {
+    return new ExistsPredicate(new SimpleTableSubQuery(visitTable_subquery(ctx.table_subquery())), ctx.NOT() != null);
   }
 
   @Override
