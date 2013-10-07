@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-179: Support MySQL CatalogStore. (jinho)
+
     TAJO-147: Implement trim(text), ltrim(text), and rtrim(text) function.
     (hyunsik)
 

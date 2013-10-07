@@ -22,15 +22,16 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStat;
-import org.apache.tajo.catalog.store.DBStore;
+import org.apache.tajo.catalog.store.AbstractDBStore;
+import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 
@@ -39,16 +40,16 @@ import static org.junit.Assert.*;
 public class TestDBStore {
   private static final Log LOG = LogFactory.getLog(TestDBStore.class);  
   private static Configuration conf;
-  private static DBStore store;
+  private static AbstractDBStore store;
 
   @BeforeClass
   public static void setUp() throws Exception {
     conf = new TajoConf();
     Path testDir = CommonTestingUtil.getTestDir("target/test-data/TestDBSTore");
     File absolutePath = new File(testDir.toUri());
-    conf.set(CatalogConstants.JDBC_URI, "jdbc:derby:"+absolutePath.getAbsolutePath()+"/db");
+    conf.set(CatalogConstants.JDBC_URI, "jdbc:derby:"+absolutePath.getAbsolutePath()+"/db;create=true");
     LOG.info("derby repository is set to "+conf.get(CatalogConstants.JDBC_URI));
-    store = new DBStore(conf);
+    store = new DerbyStore(conf);
   }
 
   @AfterClass

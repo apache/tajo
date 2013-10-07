@@ -22,11 +22,11 @@
 <configuration>
   <property>
     <name>tajo.catalog.store.class</name>
-    <value>org.apache.tajo.catalog.store.DBStore</value>
+    <value>org.apache.tajo.catalog.store.DerbyStore</value>
   </property>
 
   <property>
     <name>tajo.catalog.jdbc.uri</name>
-    <value>jdbc:derby:/tmp/tcat-${user.name}/db</value>
+    <value>jdbc:derby:/tmp/tcat-${user.name}/db;create=true</value>
   </property>
 </configuration>

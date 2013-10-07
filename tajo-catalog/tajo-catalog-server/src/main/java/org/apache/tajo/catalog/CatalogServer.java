@@ -29,7 +29,7 @@ import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
-import org.apache.tajo.catalog.store.DBStore;
+import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -105,7 +105,7 @@ public class CatalogServer extends AbstractService {
     Constructor<?> cons;
     try {
       Class<?> storeClass =
-          this.conf.getClass(CatalogConstants.STORE_CLASS, DBStore.class);
+          this.conf.getClass(CatalogConstants.STORE_CLASS, DerbyStore.class);
 
       LOG.info("Catalog Store Class: " + storeClass.getCanonicalName());
       cons = storeClass.

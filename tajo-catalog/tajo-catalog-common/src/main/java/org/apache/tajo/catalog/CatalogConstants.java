@@ -20,11 +20,18 @@ package org.apache.tajo.catalog;
 
 public class CatalogConstants {
   public static final String STORE_CLASS="tajo.catalog.store.class";
-  
-  public static final String JDBC_DRIVER="tajo.catalog.jdbc.driver";
-  public static final String DEFAULT_JDBC_DRIVER="org.apache.derby.jdbc.EmbeddedDriver";
-  
-  public static final String JDBC_URI="tajo.catalog.jdbc.uri";
 
-  private CatalogConstants() {}
+  //public static final String JDBC_DRIVER = "tajo.catalog.jdbc.driver";
+  public static final String CONNECTION_ID = "tajo.catalog.jdbc.connection.id";
+  public static final String CONNECTION_PASSWORD = "tajo.catalog.jdbc.connection.password";
+
+  public static final String JDBC_URI="tajo.catalog.jdbc.uri";
+  public static final String TB_META = "META";
+  public static final String TB_TABLES = "TABLES";
+  public static final String TB_COLUMNS = "COLUMNS";
+  public static final String TB_OPTIONS = "OPTIONS";
+  public static final String TB_INDEXES = "INDEXES";
+  public static final String TB_STATISTICS = "STATS";
+  public static final String C_TABLE_ID = "TABLE_ID";
+
 }

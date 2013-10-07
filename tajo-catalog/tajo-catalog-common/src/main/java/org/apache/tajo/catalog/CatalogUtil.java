@@ -29,6 +29,10 @@ import org.apache.tajo.util.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.Wrapper;
 import java.util.Collection;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -177,5 +181,21 @@ public class CatalogUtil {
 
   public static DataType newDataTypeWithLen(Type type, int length) {
     return DataType.newBuilder().setType(type).setLength(length).build();
+  }
+
+  public static void closeSQLWrapper(Wrapper... wrapper) {
+    if(wrapper == null) return;
+
+    for(Wrapper w : wrapper){
+      try{
+        if(w instanceof Statement){
+          ((Statement)w).close();
+        } else if(w instanceof ResultSet){
+          ((ResultSet)w).close();
+        } else if(w instanceof Connection){
+          ((Connection)w).close();
+        }
+      } catch (Exception e){}
+    }
   }
 }

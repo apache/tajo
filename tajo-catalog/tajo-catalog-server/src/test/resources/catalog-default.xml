@@ -32,6 +32,6 @@
 
   <property>
     <name>tajo.catalog.jdbc.uri</name>
-    <value>jdbc:derby:target/test-data/tcat/db</value>
+    <value>jdbc:derby:target/test-data/tcat/db;create=true</value>
   </property>
 </configuration>
