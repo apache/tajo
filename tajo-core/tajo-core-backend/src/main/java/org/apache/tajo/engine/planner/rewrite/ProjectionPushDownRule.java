@@ -337,7 +337,7 @@ public class ProjectionPushDownRule extends BasicLogicalPlanVisitor<ProjectionPu
     for (int i = 0; i < targetListManager.size(); i++) {
       expr = targetListManager.getTarget(i).getEvalTree();
 
-      if (!targetListManager.isEvaluated(i) && PlannerUtil.canBeEvaluated(expr, node)) {
+      if (!targetListManager.isResolved(i) && PlannerUtil.canBeEvaluated(expr, node)) {
 
         if (node instanceof RelationNode) { // For ScanNode
 

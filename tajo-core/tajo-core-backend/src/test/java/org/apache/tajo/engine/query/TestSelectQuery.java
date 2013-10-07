@@ -110,6 +110,46 @@ public class TestSelectQuery {
   }
 
   @Test
+  public final void testWhereCond1() throws Exception {
+    ResultSet res = tpch.execute("select l_orderkey + l_partkey as plus from lineitem where plus = 4");
+    try {
+      assertTrue(res.next());
+      assertEquals(4, res.getInt(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
+  public final void testWhereCondWithAlias1() throws Exception {
+    ResultSet res = tpch.execute("select l_orderkey as orderkey, l_partkey from lineitem where orderkey = 1");
+    try {
+      assertTrue(res.next());
+      assertEquals(1, res.getInt(1));
+      assertTrue(res.next());
+      assertEquals(1, res.getInt(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
+  public final void testWhereCondWithAlias2() throws Exception {
+    ResultSet res = tpch.execute("select l_orderkey as orderkey from lineitem where l_orderkey = 1");
+    try {
+      assertTrue(res.next());
+      assertEquals(1, res.getInt(1));
+      assertTrue(res.next());
+      assertEquals(1, res.getInt(1));
+      assertFalse(res.next());
+    } finally {
+      res.close();
+    }
+  }
+
+  @Test
   public final void testSelectAsterik() throws Exception {
     ResultSet res = tpch.execute("select * from lineitem");
     try {

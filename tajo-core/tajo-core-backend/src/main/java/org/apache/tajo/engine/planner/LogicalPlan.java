@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.Column;
@@ -139,7 +141,7 @@ public class LogicalPlan {
    * It resolves a column.
    */
   public Column resolveColumn(QueryBlock block, LogicalNode currentNode, ColumnReferenceExpr columnRef)
-      throws VerifyException {
+      throws PlanningException {
 
     if (columnRef.hasQualifier()) { // if a column referenec is qualified
 
@@ -214,6 +216,16 @@ public class LogicalPlan {
 
       throw new VerifyException("ERROR: no such a column name "+ columnRef.getCanonicalName());
     }
+  }
+
+  /**
+   * replace the found column if the column is renamed to an alias name
+   */
+  public Column getColumnOrAliasedColumn(QueryBlock block, Column column) throws PlanningException {
+    if (block.targetListManager.isResolve(column)) {
+      column = block.targetListManager.getResolvedColumn(column);
+    }
+    return column;
   }
 
   private static Column ensureUniqueColumn(List<Column> candidates)
@@ -579,7 +591,7 @@ public class LogicalPlan {
     }
 
     public boolean isTargetResolved(int targetId) {
-      return targetListManager.isEvaluated(targetId);
+      return targetListManager.isResolved(targetId);
     }
 
     public void resolveAllTargetList() {
@@ -603,7 +615,9 @@ public class LogicalPlan {
     }
 
     public void fillTarget(int idx) throws PlanningException {
-      targetListManager.update(idx, planner.createTarget(LogicalPlan.this, this, getProjection().getTargets()[idx]));
+      Target target = planner.createTarget(LogicalPlan.this, this, getProjection().getTargets()[idx]);
+      // below code reaches only when target is created.
+      targetListManager.fill(idx, target);
     }
 
     public boolean checkIfTargetCanBeEvaluated(int targetId, LogicalNode node) {
@@ -712,7 +726,8 @@ public class LogicalPlan {
         } else if (node instanceof GroupbyNode) {
           // Set the current targets to the GroupByNode because the GroupByNode is the last projection operator.
           GroupbyNode groupbyNode = (GroupbyNode) node;
-          groupbyNode.setTargets(getCurrentTargets());
+          groupbyNode.setTargets(targetListManager.getUpdatedTarget(Sets.newHashSet(newEvaluatedTargetIds)));
+          //groupbyNode.setTargets(getCurrentTargets());
           boolean distinct = false;
           for (Target target : groupbyNode.getTargets()) {
             for (AggregationFunctionCallEval aggrFunc : EvalTreeUtil.findDistinctAggFunction(target.getEvalTree())) {

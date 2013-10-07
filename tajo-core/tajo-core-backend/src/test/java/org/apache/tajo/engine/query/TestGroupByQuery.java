@@ -76,6 +76,44 @@ public class TestGroupByQuery {
   }
 
   @Test
+  public final void testGroupBy3() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_orderkey as gkey from lineitem group by gkey order by gkey");
+    assertTrue(res.next());
+    assertEquals(1, res.getLong(1));
+    assertTrue(res.next());
+    assertEquals(2, res.getLong(1));
+    assertTrue(res.next());
+    assertEquals(3, res.getLong(1));
+    assertFalse(res.next());
+    res.close();
+  }
+
+  @Test
+  public final void testGroupBy4() throws Exception {
+    ResultSet res = tpch.execute(
+        "select l_orderkey as gkey, count(1) as unique_key from lineitem group by lineitem.l_orderkey");
+
+    long [][] expectedRows = new long[3][];
+    expectedRows[0] = new long [] {1,2};
+    expectedRows[1] = new long [] {2,1};
+    expectedRows[2] = new long [] {3,2};
+    Map<Long, long []> expected = Maps.newHashMap();
+    for (long [] expectedRow : expectedRows) {
+      expected.put(expectedRow[0], expectedRow);
+    }
+
+    for (int i = 0; i < expectedRows.length; i++) {
+      assertTrue(res.next());
+      long [] expectedRow = expected.get(res.getLong(1));
+      assertEquals(expectedRow[0], res.getLong(1));
+      assertEquals(expectedRow[1], res.getLong(2));
+    }
+    assertFalse(res.next());
+    res.close();
+  }
+
+  @Test
   public final void testCountDistinct() throws Exception {
     ResultSet res = tpch.execute(
         "select l_orderkey, max(l_orderkey) as maximum, count(distinct l_linenumber) as unique_key from lineitem " +

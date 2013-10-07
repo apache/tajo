@@ -99,7 +99,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   }
   
   public String toString() {
-    StringBuilder sb = new StringBuilder("\"GroupBy\": {\"fields\":[");
+    StringBuilder sb = new StringBuilder("\"GroupBy\": {\"grouping fields\":[");
     for (int i=0; i < columns.length; i++) {
       sb.append("\"").append(columns[i]).append("\"");
       if(i < columns.length - 1)
@@ -123,8 +123,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     sb.append("\n  \"in schema\": ").append(getInSchema());
     sb.append("}");
     
-    return sb.toString() + "\n"
-        + getChild().toString();
+    return sb.toString() + "\n" + getChild().toString();
   }
   
   @Override

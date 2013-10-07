@@ -183,6 +183,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-226: Can't use group by column alias. (hyunsik)
+
     TAJO-203: Field delimiter does not work correctly. (jinho)
 
     TAJO-205: Repartitioner occasionally chooses a partition number as one.

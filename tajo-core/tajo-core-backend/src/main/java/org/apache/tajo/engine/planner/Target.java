@@ -65,8 +65,8 @@ public class Target implements Cloneable, GsonObject {
     return column.getDataType();
   }
 
-  public EvalNode getEvalTree() {
-    return this.expr;
+  public <T extends EvalNode> T getEvalTree() {
+    return (T) this.expr;
   }
 
   public Column getColumnSchema() {

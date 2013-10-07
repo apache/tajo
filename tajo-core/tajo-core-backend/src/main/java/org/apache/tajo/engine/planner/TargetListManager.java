@@ -18,14 +18,18 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.Projection;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
 import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.eval.FieldEval;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * It manages a list of targets.
@@ -36,6 +40,7 @@ public class TargetListManager {
   private Projection projection;
   private Target[] targets;
   private Target[] unresolvedTargets;
+  private Map<Column, Integer> targetColumnToId = Maps.newHashMap();
 
   public TargetListManager(LogicalPlan plan, Projection projection) {
     this.plan = plan;
@@ -81,9 +86,18 @@ public class TargetListManager {
     return this.unresolvedTargets;
   }
 
-  public void update(int id, Target target) {
+  public void fill(int id, Target target) {
     this.targets[id] = target;
     this.unresolvedTargets[id] = target;
+
+    EvalNode evalNode = target.getEvalTree();
+    if (evalNode.getType() == EvalType.FIELD) {
+      if (target.hasAlias()) {
+        FieldEval fieldEval = (FieldEval) evalNode;
+        targetColumnToId.put(fieldEval.getColumnRef(), id);
+      }
+    }
+    targetColumnToId.put(target.getColumnSchema(), id);
   }
 
   public int size() {
@@ -100,8 +114,53 @@ public class TargetListManager {
     }
   }
 
-  public boolean isEvaluated(int id) {
+  public boolean isResolved(int id) {
     return resolvedFlags[id];
+  }
+
+  /**
+   * It checks whether only column reference is resolve or not.
+   * Note that this method doesn't know if an expression is resolved.
+   *
+   * @param targetColumn A column to be checked
+   * @return True if a column reference belong to a target list and is already resolved. Otherwise, false.
+   */
+  public boolean isResolve(Column targetColumn) throws PlanningException {
+    Integer targetId = targetColumnToId.get(targetColumn);
+    if (targetId == null) {
+      return false;
+    }
+    return resolvedFlags[targetId];
+  }
+
+  public Column getResolvedColumn(Column targetColumn) throws PlanningException {
+    Integer targetId = targetColumnToId.get(targetColumn);
+    if (targetId == null) {
+      throw new PlanningException("Unknown target column: " + targetColumn);
+    }
+    return getResolvedTargetToColumn(targetId);
+  }
+
+  public Target [] getUpdatedTarget(Set<Integer> exclude) throws PlanningException {
+    Target [] updated = new Target[targets.length];
+
+    for (int i = 0; i < targets.length; i++) {
+      if (targets[i] == null) { // if it is not created
+        continue;
+      }
+
+      if (!exclude.contains(i) && resolvedFlags[i]) { // if this target was evaluated, it becomes a column target.
+        Column col = getResolvedTargetToColumn(i);
+        updated[i] = new Target(new FieldEval(col));
+      } else {
+        try {
+          updated[i] = (Target) targets[i].clone();
+        } catch (CloneNotSupportedException e) {
+          throw new PlanningException(e);
+        }
+      }
+    }
+    return updated;
   }
 
   public Target [] getUpdatedTarget() throws PlanningException {
