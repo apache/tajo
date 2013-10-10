@@ -50,6 +50,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-239: Improving web UI. (Keuntae Park via hyunsik)
+
     TAJO-232: Rename join operators and add other join operators to
     PhysicalPlanner. (hyunsik)
 

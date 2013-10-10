@@ -51,9 +51,13 @@ import org.apache.tajo.master.rm.YarnTajoResourceManager;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
 
-import java.io.IOException;
+import java.io.*;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
@@ -106,8 +110,22 @@ public class TajoMaster extends CompositeService {
 
   private QueryJobManager queryJobManager;
 
+  private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
+  }
+
+  public String getMasterName() {
+    return tajoMasterService.getBindAddress().getHostName() + ":" + tajoMasterService.getBindAddress().getPort();
+  }
+
+  public String getVersion() {
+    return "0.2.0";
+  }
+
+  public TajoMasterClientService getTajoMasterClientService() {
+    return  tajoMasterClientService;
   }
 
   @Override
@@ -167,6 +185,7 @@ public class TajoMaster extends CompositeService {
     int httpPort = systemConf.getInt("tajo.master.http.port", 8080);
     webServer = StaticHttpServer.getInstance(this ,"admin", null, httpPort ,
         true, null, context.getConf(), null);
+    webServer.addServlet("queryServlet", "/query_exec", QueryExecutorServlet.class);
     webServer.start();
   }
 
@@ -429,6 +448,10 @@ public class TajoMaster extends CompositeService {
     return this.catalog;
   }
 
+  public CatalogServer getCatalogServer() {
+    return this.catalogServer;
+  }
+
   public AbstractStorageManager getStorageManager() {
     return this.storeManager;
   }
@@ -477,6 +500,76 @@ public class TajoMaster extends CompositeService {
     }
   }
 
+  String getThreadTaskName(long id, String name) {
+    if (name == null) {
+      return Long.toString(id);
+    }
+    return id + " (" + name + ")";
+  }
+
+  public void dumpThread(Writer writer) {
+    PrintWriter stream = new PrintWriter(writer);
+    int STACK_DEPTH = 20;
+    boolean contention = threadBean.isThreadContentionMonitoringEnabled();
+    long[] threadIds = threadBean.getAllThreadIds();
+    stream.println("Process Thread Dump: Tajo Worker");
+    stream.println(threadIds.length + " active threads");
+    for (long tid : threadIds) {
+      ThreadInfo info = threadBean.getThreadInfo(tid, STACK_DEPTH);
+      if (info == null) {
+        stream.println("  Inactive");
+        continue;
+      }
+      stream.println("Thread " + getThreadTaskName(info.getThreadId(), info.getThreadName()) + ":");
+      Thread.State state = info.getThreadState();
+      stream.println("  State: " + state + ", Blocked count: " + info.getBlockedCount() +
+          ", Waited count: " + info.getWaitedCount());
+      if (contention) {
+        stream.println("  Blocked time: " + info.getBlockedTime() + ", Waited time: " + info.getWaitedTime());
+      }
+      if (state == Thread.State.WAITING) {
+        stream.println("  Waiting on " + info.getLockName());
+      } else if (state == Thread.State.BLOCKED) {
+        stream.println("  Blocked on " + info.getLockName() +
+            ", Blocked by " + getThreadTaskName(info.getLockOwnerId(), info.getLockOwnerName()));
+      }
+      stream.println("  Stack:");
+      for (StackTraceElement frame : info.getStackTrace()) {
+        stream.println("    " + frame.toString());
+      }
+      stream.println("");
+    }
+  }
+
+  public static List<File> getMountPath() throws Exception {
+    BufferedReader mountOutput = null;
+    try {
+      Process mountProcess = Runtime.getRuntime ().exec("mount");
+      mountOutput = new BufferedReader(new InputStreamReader(mountProcess.getInputStream()));
+      List<File> mountPaths = new ArrayList<File>();
+      while (true) {
+        String line = mountOutput.readLine();
+        if (line == null) {
+          break;
+        }
+
+        System.out.println(line);
+
+        int indexStart = line.indexOf(" on /");
+        int indexEnd = line.indexOf(" ", indexStart + 4);
+
+        mountPaths.add(new File(line.substring (indexStart + 4, indexEnd)));
+      }
+      return mountPaths;
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw e;
+    } finally {
+      if(mountOutput != null) {
+        mountOutput.close();
+      }
+    }
+  }
   public static void main(String[] args) throws Exception {
     StringUtils.startupShutdownMessage(TajoMaster.class, args, LOG);
 

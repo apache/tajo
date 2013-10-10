@@ -1,114 +1,117 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
 <%@ page import="java.util.*" %>
-<%@ page import="java.net.InetSocketAddress" %>
-<%@ page import="java.net.InetAddress"  %>
-<%@ page import="org.apache.hadoop.conf.Configuration" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.master.*" %>
 <%@ page import="org.apache.tajo.master.rm.*" %>
 <%@ page import="org.apache.tajo.catalog.*" %>
 <%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
-<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="org.apache.tajo.util.NetUtils" %>
+
+<%
+  TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
+  Map<String, WorkerResource> workers = master.getContext().getResourceManager().getWorkers();
+
+  int numLiveWorkers = 0;
+  int numDeadWorkers = 0;
+  int numDecommissionWorkers = 0;
+
+  int totalSlot = 0;
+  int runningSlot = 0;
+  int idleSlot = 0;
+
+  for(WorkerResource eachWorker: workers.values()) {
+    if(eachWorker.getWorkerStatus() == WorkerStatus.LIVE) {
+      numLiveWorkers++;
+      idleSlot += eachWorker.getAvaliableSlots();
+      totalSlot += eachWorker.getSlots();
+      runningSlot += eachWorker.getUsedSlots();
+    } else if(eachWorker.getWorkerStatus() == WorkerStatus.DEAD) {
+      numDeadWorkers++;
+    } else if(eachWorker.getWorkerStatus() == WorkerStatus.DECOMMISSION) {
+      numDecommissionWorkers++;
+    }
+  }
+
+  Collection<QueryInProgress> runningQueries = master.getContext().getQueryJobManager().getRunningQueries();
+  Collection<QueryInProgress> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
+
+  int avgQueryTime = 0;
+  int minQueryTime = Integer.MAX_VALUE;
+  int maxQueryTime = 0;
+
+  long totalTime = 0;
+  for(QueryInProgress eachQuery: finishedQueries) {
+    int runTime = (int)(eachQuery.getQueryInfo().getFinishTime() == 0 ? -1 :
+            eachQuery.getQueryInfo().getFinishTime() - eachQuery.getQueryInfo().getStartTime());
+    if(runTime > 0) {
+      totalTime += runTime;
+
+      if(runTime < minQueryTime) {
+        minQueryTime = runTime;
+      }
+
+      if(runTime > maxQueryTime) {
+        maxQueryTime = runTime;
+      }
+    }
+  }
+
+  if(minQueryTime == Integer.MAX_VALUE) {
+    minQueryTime = 0;
+  }
+  if(finishedQueries.size() > 0) {
+    avgQueryTime = (int)(totalTime / (long)finishedQueries.size());
+  }
+%>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
   <link rel="stylesheet" type = "text/css" href = "/static/style.css" />
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>tajo main</title>
-  <%
-    TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
-    CatalogService catalog = master.getCatalog();
-    Map<String, WorkerResource> workers = master.getContext().getResourceManager().getWorkers();
-    List<String> wokerKeys = new ArrayList<String>(workers.keySet());
-    Collections.sort(wokerKeys);
-  %>
+  <title>Tajo</title>
 </head>
 <body>
-<img src='/static/img/tajo_logo.png'/>
-<hr/>
+<%@ include file="header.jsp"%>
+<div class='contents'>
+  <h2>Tajo Master: <%=master.getMasterName()%></h2>
+  <hr/>
+  <h3>Master Status</h3>
+  <table border='0'>
+    <tr><td width="100">Version:</td><td><%=master.getVersion()%></td></tr>
+    <tr><td width="100">Started:</td><td><%=new Date(master.getStartTime())%></td></tr>
+    <tr><td width="100">Meta Store:</td><td><%=master.getCatalogServer().getCatalogServerName()%></td></tr>
+    <tr><td width="100">Client Service:</td><td><%=NetUtils.normalizeInetSocketAddress(master.getTajoMasterClientService().getBindAddress())%></td></tr>
+    <tr><td width='100'>MaxHeap: </td><td><%=Runtime.getRuntime().maxMemory()/1024/1024%> MB</td>
+    <tr><td width='100'>TotalHeap: </td><td><%=Runtime.getRuntime().totalMemory()/1024/1024%> MB</td>
+    <tr><td width='100'>FreeHeap: </td><td><%=Runtime.getRuntime().freeMemory()/1024/1024%> MB</td>
+    <tr><td width="100">Configuration:</td><td><a href='conf.jsp'>detail...</a></td></tr>
+    <tr><td width="100">Environment:</td><td><a href='env.jsp'>detail...</a></td></tr>
+    <tr><td width="100">Threads:</td><td><a href='thread.jsp'>thread dump...</a></tr>
+  </table>
+  <hr/>
 
-<h3>Works</h3>
-<div>Live:<%=wokerKeys.size()%></div>
-<table>
-  <tr><th>Worker</th><th>Ports</th><th>Running Tasks</th><th>Slot</th></th><th>Heap(free/max)</th><th>Disk</th><th>Cpu</th><th>Status</th></tr>
-  <%
-    for(String eachWorker: wokerKeys) {
-      WorkerResource worker = workers.get(eachWorker);
-      String workerHttp = "http://" + worker.getAllocatedHost() + ":" + worker.getHttpPort();
-  %>
-
-  <tr>
-    <td><a href='<%=workerHttp%>'><%=eachWorker%></a></td>
-    <td><%=worker.portsToStr()%></td>
-    <td><%=worker.getNumRunningTasks()%></td>
-    <td><%=worker.getUsedSlots()%>/<%=worker.getSlots()%></td>
-    <td><%=worker.getFreeHeap()/1024/1024%>/<%=worker.getMaxHeap()/1024/1024%> MB</td>
-    <td><%=worker.getUsedDiskSlots()%>/<%=worker.getDiskSlots()%></td>
-    <td><%=worker.getUsedCpuCoreSlots()%>/<%=worker.getCpuCoreSlots()%></td>
-    <td><%=worker.getWorkerStatus()%></td>
-  </tr>
-  <%
-    }
-
-    if(workers.isEmpty()) {
-  %>
-  <tr>
-    <td colspan='7'>No Workers</td>
-  </tr>
-  <%
-    }
-  %>
-</table>
-
-<%
-  Collection<QueryInProgress> runningQueries = master.getContext().getQueryJobManager().getRunningQueries();
-  Collection<QueryInProgress> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
-%>
-<hr/>
-<h3>Running Queries</h3>
-<table>
-  <tr></tr><th>QueryId</th><th>Query Master</th><th>Started</th><th>Progress</th><th>Time</th><th>sql</th></tr>
-<%
-  SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-  for(QueryInProgress eachQuery: runningQueries) {
-    long time = System.currentTimeMillis() - eachQuery.getQueryInfo().getStartTime();
-%>
+  <h3>Cluster Summary</h3>
+  <table border='0' width="100%">
     <tr>
-      <td><%=eachQuery.getQueryId()%></td>
-      <td><%=eachQuery.getQueryInfo().getQueryMasterHost()%></td>
-      <td><%=df.format(eachQuery.getQueryInfo().getStartTime())%></td>
-      <td><%=(int)(eachQuery.getQueryInfo().getProgress() * 100.0f)%>%</td>
-      <td><%=(int)(time/1000)%> sec</td>
-      <td><%=eachQuery.getQueryInfo().getSql()%></td>
+      <td width="100"><a href='cluster.jsp'>Workers:</a></td><td>Total: <%=workers.size()%>&nbsp;&nbsp;&nbsp;&nbsp;Live: <%=numLiveWorkers%>&nbsp;&nbsp;&nbsp;&nbsp;Dead: <%=numDeadWorkers%></td>
     </tr>
-<%
-  }
-%>
-</table>
+    <tr>
+      <td width="100">Task Slots</td><td>Total: <%=totalSlot%>&nbsp;&nbsp;&nbsp;&nbsp;Occupied:<%=runningSlot%>&nbsp;&nbsp;&nbsp;&nbsp;Idle: <%=idleSlot%></td>
+    </tr>
+  </table>
+  <hr/>
 
-<hr/>
-<h3>Finished Queries</h3>
-<table>
-  <tr></tr><th>QueryId</th><th>Query Master</th><th>Started</th><th>Finished</th><th>Time</th><th>Status</th><th>sql</th></tr>
-  <%
-    for(QueryInProgress eachQuery: finishedQueries) {
-      long runTime = eachQuery.getQueryInfo().getFinishTime() == 0 ? -1 :
-              eachQuery.getQueryInfo().getFinishTime() - eachQuery.getQueryInfo().getStartTime();
-  %>
-  <tr>
-    <td><%=eachQuery.getQueryId()%></td>
-    <td><%=eachQuery.getQueryInfo().getQueryMasterHost()%></td>
-    <td><%=df.format(eachQuery.getQueryInfo().getStartTime())%></td>
-    <td><%=df.format(eachQuery.getQueryInfo().getFinishTime())%></td>
-    <td><%=runTime%> ms</td>
-    <td><%=eachQuery.getQueryInfo().getQueryState()%></td>
-    <td><%=eachQuery.getQueryInfo().getSql()%></td>
-  </tr>
-  <%
-    }
-  %>
-</table>
+  <h3>Query Summary</h3>
+  <table border='0'>
+    <tr>
+      <td width="100">Queries:</td><td>Running: <%=runningQueries.size()%>&nbsp;&nbsp;&nbsp;&nbsp;Finished: <%=finishedQueries.size()%></td>
+    </tr>
+    <tr>
+      <td width="100">Running time:</td><td>Average: <%=avgQueryTime/1000%>&nbsp;&nbsp;&nbsp;&nbsp;Min: <%=minQueryTime/1000%>&nbsp;&nbsp;&nbsp;&nbsp;Max: <%=maxQueryTime/1000%> ms</td>
+    </tr>
+  </table>
+</div>
 </body>
 </html>

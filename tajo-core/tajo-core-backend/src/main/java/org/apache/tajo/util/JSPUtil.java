@@ -16,15 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.util;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.master.querymaster.QueryInProgress;
+import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.worker.TaskRunner;
 
 import java.text.DecimalFormat;
 import java.util.*;
 
-public class WorkerJSPUtil {
+public class JSPUtil {
+  static DecimalFormat decimalF = new DecimalFormat("###.0");
+
   public static void sortQueryUnit(QueryUnit[] queryUnits, String sortField, String sortOrder) {
     if(sortField == null || sortField.isEmpty()) {
       sortField = "id";
@@ -42,8 +48,6 @@ public class WorkerJSPUtil {
     });
   }
 
-  static DecimalFormat decimalF = new DecimalFormat("###.0");
-
   public static String getElapsedTime(long startTime, long finishTime) {
     return finishTime == 0 ? decimalF.format((System.currentTimeMillis() - startTime) / 1000) + " sec"
         : decimalF.format((finishTime - startTime) / 1000) + " sec";
@@ -58,6 +62,55 @@ public class WorkerJSPUtil {
       e.printStackTrace();
       return e.getMessage();
     }
+  }
+
+  public static List<QueryMasterTask> sortQueryMasterTask(Collection<QueryMasterTask> queryMasterTasks,
+                                                          final boolean desc) {
+    List<QueryMasterTask> queryMasterTaskList = new ArrayList<QueryMasterTask>(queryMasterTasks);
+
+    Collections.sort(queryMasterTaskList, new Comparator<QueryMasterTask>() {
+
+      @Override
+      public int compare(QueryMasterTask task1, QueryMasterTask task2) {
+        if(desc) {
+          return task2.getQueryId().toString().compareTo(task1.getQueryId().toString());
+        } else {
+          return task1.getQueryId().toString().compareTo(task2.getQueryId().toString());
+        }
+      }
+    });
+
+    return queryMasterTaskList;
+  }
+
+  public static List<QueryInProgress> sortQueryInProgress(Collection<QueryInProgress> queryInProgresses,
+                                                          final boolean desc) {
+    List<QueryInProgress> queryProgressList = new ArrayList<QueryInProgress>(queryInProgresses);
+
+    Collections.sort(queryProgressList, new Comparator<QueryInProgress>() {
+      @Override
+      public int compare(QueryInProgress query1, QueryInProgress query2) {
+        if(desc) {
+          return query2.getQueryId().toString().compareTo(query1.getQueryId().toString());
+        } else {
+          return query1.getQueryId().toString().compareTo(query2.getQueryId().toString());
+        }
+      }
+    });
+
+    return queryProgressList;
+  }
+
+  public static List<SubQuery> sortSubQuery(Collection<SubQuery> subQueries) {
+    List<SubQuery> subQueryList = new ArrayList<SubQuery>(subQueries);
+    Collections.sort(subQueryList, new Comparator<SubQuery>() {
+      @Override
+      public int compare(SubQuery subQuery1, SubQuery subQuery2) {
+        return subQuery1.getId().toString().compareTo(subQuery2.getId().toString());
+      }
+    });
+
+    return subQueryList;
   }
 
   static class QueryUnitComparator implements Comparator<QueryUnit> {

@@ -1,118 +1,121 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-    pageEncoding="UTF-8"%>
-<%--
-  Licensed to the Apache Software Foundation (ASF) under one
-  or more contributor license agreements.  See the NOTICE file
-  distributed with this work for additional information
-  regarding copyright ownership.  The ASF licenses this file
-  to you under the Apache License, Version 2.0 (the
-  "License"); you may not use this file except in compliance
-  with the License.  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--- %>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
 <%@ page import="java.util.*" %>
-<%@ page import="nta.engine.cluster.ClusterManager" %>
-<%@ page import="com.google.gson.Gson" %>
-<%@ page import="nta.engine.json.*" %>
-<%@ page import="nta.catalog.*" %>
-<%@ page import="nta.engine.*" %>
+<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
+<%@ page import="org.apache.tajo.master.*" %>
+<%@ page import="org.apache.tajo.catalog.*" %>
+<%@ page import="org.apache.tajo.util.FileUtil" %>
+<%
+  TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
+  CatalogService catalog = master.getCatalog();
+
+  String selectedDatabase = request.getParameter("database");
+  if(selectedDatabase == null || selectedDatabase.trim().isEmpty()) {
+    selectedDatabase = "default";
+  }
+
+  TableDesc tableDesc = null;
+  String selectedTable = request.getParameter("table");
+  if(selectedTable != null && !selectedTable.trim().isEmpty()) {
+    tableDesc = catalog.getTableDesc(selectedTable);
+  } else {
+    selectedTable = "";
+  }
+
+  //TODO filter with database
+  Collection<String> tableNames = catalog.getAllTableNames();
+%>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-  <link rel="stylesheet" type = "text/css" href = "./style.css" />
+  <link rel="stylesheet" type = "text/css" href = "/static/style.css" />
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>Tajo Catalog</title>
-  <%
-   String masterAddr = (String)application.getAttribute("tajo.master.addr");
-   NtaEngineMaster master = (NtaEngineMaster)application.getAttribute("tajo.master");
-   CatalogService catalog = master.getCatalog();
-   String tableName = request.getParameter("tablename");
-   if(tableName == null) {
-	  if(master.getCatalog().getAllTableNames().iterator().hasNext()) 
-	    tableName = catalog.getAllTableNames().iterator().next();
-	  else
-		tableName = null;
-   }
-   TableDesc desc = null;
-   TableMeta meta = null;
-   Collection<String> tableList = null;
-   if(tableName != null) {
-	 desc = catalog.getTableDesc(tableName);
-     meta = desc.getMeta();
-     tableList = master.getCatalog().getAllTableNames();
-   }
-   %>
+  <title>Tajo</title>
 </head>
 <body>
-  <div class = "container" >
-  <img src="./img/tajochar_catalog_small.jpg" />
-  </div>
-  <br />
-  <div class = "headline_2">
-   <div class = "container">
-    <a href="./index.jsp" class="headline">Tajo Main</a>
-      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-      <a href="./nodeview.jsp" class="headline">Workers</a>
-      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-      <a href="./queryview.jsp" class="headline">Queries</a>
-   </div>
-  </div>
-  <div class = "container">
-    
-    <%
-     if(tableName != null) {
-    	 out.write("<h2 class = \"line\" >Table Info</h2>");
-    	 TableDesc table = catalog.getTableDesc(tableName);
-    	 out.write("<ul>");
-    	 out.write("<li> Table Name : " + table.getId() + "</li>");
-    	 out.write("<li> Table Path : " + table.getPath() + "</li>");
-    	 out.write("<li> Store Type : " + table.getMeta().getStoreType() + "</li>");
-    	 out.write("<li> Schema<ul>");
-    	 Schema schema = table.getMeta().getSchema();
-    	 for(int i = 0 ; i < table.getMeta().getSchema().size() ; i ++) {
-    		 out.write("<li>" + schema.getColumn(i).toString() + "</li>");
-    	 }
-    	 out.write("</ul>");
-    	 out.write("</li>");
-    	 out.write("</ul>");
-     }
-    %>
-    <h2 class = "line">Table List</h2>
-    <table align = "center" class = "new">
+<%@ include file="header.jsp"%>
+<div class='contents'>
+  <h2>Tajo Master: <%=master.getMasterName()%></h2>
+  <hr/>
+  <h3>Catalog</h3>
+  <p/>
+  <table width="100%" border='0'>
     <tr>
-     <th>TableName</th>
-     <th>TablePath</th>
-     <th>StoreType</th>
-    </tr>
-    <%
-    String[] tableArr = catalog.getAllTableNames().toArray(new String[0]);
-    for(int i = 0 ; i < tableArr.length ; i ++ ) {
-      TableDesc table = catalog.getTableDesc(tableArr[i]);    
-    %>
-    <tr>
-      <td><a href = "./catalogview.jsp?tablename=<%=table.getId()%>" class = "tablelink"><%=table.getId()%></a></td>
-      <td><%=table.getPath()%></td>
-      <td><%=table.getMeta().getStoreType()%></td>
-    </tr>	
-    <% 	
+      <!-- left -->
+      <td width="20%" valign="top">
+        <div>
+          <b>Database:</b>
+          <select width="190" style="width: 190px">
+            <option value="default" selected>default</option>
+          </select>
+        </div>
+        <!-- table list -->
+        <div style='margin-top:5px'>
+<%
+  if(tableNames == null || tableNames.isEmpty()) {
+    out.write("No tables");
+  } else {
+%>
+          <table width="100%" border="1" class="border_table">
+            <tr><th>Table Name</th></tr>
+<%
+    for(String eachTableName: tableNames) {
+      String bold = "";
+      if(eachTableName.equals(selectedTable)) {
+        bold = "font-weight:bold";
+      }
+      String detailLink = "catalogview.jsp?database=" + selectedDatabase + "&table=" + eachTableName;
+      out.write("<tr><td><span style='" + bold + "'><a href='" + detailLink + "'>" + eachTableName + "</a></span></td></tr>");
     }
-    %>
-    </table>
-    
-    <h2 class = "line">Function List</h2>
-    <h2 class = "line">Others</h2>
-    
-    
-  </div>
+%>
+          </table>
+<%
+  }
+%>
+        </div>
+      </td>
+      <!-- right -->
+      <td width="80%" valign="top">
+        <div style='margin-left: 15px'>
+          <div style='font-weight:bold'>Table name: <%=selectedTable%></div>
+          <div style='margin-top:5px'>
+<%
+    if(tableDesc != null) {
+      List<Column> columns = tableDesc.getSchema().getColumns();
+      out.write("<table border='1' class='border_table'><tr><th>No</th><th>Column name</th><th>Type</th></tr>");
+      int columnIndex = 1;
+      for(Column eachColumn: columns) {
+        out.write("<tr><td width='30' align='right'>" + columnIndex + "</td><td width='320'>" + eachColumn.getColumnName() + "</td><td width='150'>" + eachColumn.getDataType().getType() + "</td></tr>");
+        columnIndex++;
+      }
+
+      String optionStr = "";
+      String prefix = "";
+      for(Map.Entry<String, String> entry: tableDesc.getMeta().toMap().entrySet()) {
+        optionStr += prefix + "'" + entry.getKey() + "'='" + entry.getValue() + "'";
+        prefix = "<br/>";
+      }
+      out.write("</table>");
+%>
+          </div>
+          <div style='margin-top:10px'>
+            <div style=''>Detail</div>
+            <table border="1" class='border_table'>
+              <tr><td width='100'>Table path</td><td width='410'><%=tableDesc.getPath()%></td></tr>
+              <tr><td>Store type</td><td><%=tableDesc.getMeta().getStoreType()%></td></tr>
+              <tr><td># rows</td><td><%=tableDesc.getMeta().getStat().getNumRows()%></td></tr>
+              <tr><td>Volume</td><td><%=FileUtil.humanReadableByteCount(tableDesc.getMeta().getStat().getNumBytes(),true)%></td></tr>
+              <tr><td>Options</td><td><%=optionStr%></td></tr>
+            </table>
+          </div>
+        </div>
+<%
+    }
+%>
+      </td>
+    </tr>
+  </table>
+</div>
 </body>
 </html>
-

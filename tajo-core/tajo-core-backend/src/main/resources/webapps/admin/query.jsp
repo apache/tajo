@@ -1,38 +1,100 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
 <%@ page import="java.util.*" %>
-<%@ page import="java.net.InetSocketAddress" %>
-<%@ page import="java.net.InetAddress"  %>
-<%@ page import="org.apache.hadoop.conf.Configuration" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.master.*" %>
-<%@ page import="org.apache.tajo.master.rm.*" %>
-<%@ page import="org.apache.tajo.catalog.*" %>
+<%@ page import="org.apache.tajo.util.*" %>
 <%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
+<%@ page import="java.text.SimpleDateFormat" %>
+
+<%
+  TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
+
+  List<QueryInProgress> runningQueries =
+          JSPUtil.sortQueryInProgress(master.getContext().getQueryJobManager().getRunningQueries(), true);
+
+  List<QueryInProgress> finishedQueries =
+          JSPUtil.sortQueryInProgress(master.getContext().getQueryJobManager().getFinishedQueries(), true);
+
+  SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+  int workerHttpPort = master.getConfig().getInt("tajo.worker.http.port", 28080);
+
+%>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-  <link rel="stylesheet" type = "text/css" href = "./style.css" />
+  <link rel="stylesheet" type = "text/css" href = "/static/style.css" />
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>tajo main</title>
-  <%
-    TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
-    CatalogService catalog = master.getCatalog();
-    Map<String, WorkerResource> workers = master.getContext().getResourceManager().getWorkers();
-  %>
+  <title>Tajo</title>
 </head>
 <body>
-<img src='img/tajo_logo.png'/>
-<hr/>
-
-<a href="index.jsp">Main</a>
-<a href="query.jsp">Query</a>
-
-<div><h3>Query</h3></div>
-<div>
-  <textarea></textarea>
+<%@ include file="header.jsp"%>
+<div class='contents'>
+  <h2>Tajo Master: <%=master.getMasterName()%></h2>
+  <hr/>
+  <h3>Running Queries</h3>
+<%
+  if(runningQueries.isEmpty()) {
+    out.write("No running queries");
+  } else {
+%>
+  <table width="100%" border="1" class='border_table'>
+    <tr></tr><th>QueryId</th><th>Query Master</th><th>Started</th><th>Progress</th><th>Time</th><th>sql</th></tr>
+    <%
+      for(QueryInProgress eachQuery: runningQueries) {
+        long time = System.currentTimeMillis() - eachQuery.getQueryInfo().getStartTime();
+        String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + workerHttpPort +
+                "/querydetail.jsp?queryId=" + eachQuery.getQueryId();
+    %>
+    <tr>
+      <td><a href='<%=detailView%>'><%=eachQuery.getQueryId()%></a></td>
+      <td><%=eachQuery.getQueryInfo().getQueryMasterHost()%></td>
+      <td><%=df.format(eachQuery.getQueryInfo().getStartTime())%></td>
+      <td><%=(int)(eachQuery.getQueryInfo().getProgress() * 100.0f)%>%</td>
+      <td><%=(int)(time/1000)%> sec</td>
+      <td><%=eachQuery.getQueryInfo().getSql()%></td>
+    </tr>
+    <%
+      }
+    %>
+  </table>
+<%
+  }
+%>
+  <p/>
+  <hr/>
+  <h3>Finished Queries</h3>
+  <%
+    if(finishedQueries.isEmpty()) {
+      out.write("No finished queries");
+    } else {
+  %>
+  <table width="100%" border="1" class='border_table'>
+    <tr></tr><th>QueryId</th><th>Query Master</th><th>Started</th><th>Finished</th><th>Time</th><th>Status</th><th>sql</th></tr>
+    <%
+      for(QueryInProgress eachQuery: finishedQueries) {
+        long runTime = eachQuery.getQueryInfo().getFinishTime() == 0 ? -1 :
+                eachQuery.getQueryInfo().getFinishTime() - eachQuery.getQueryInfo().getStartTime();
+        String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + workerHttpPort +
+                "/querydetail.jsp?queryId=" + eachQuery.getQueryId();
+    %>
+    <tr>
+      <td><a href='<%=detailView%>'><%=eachQuery.getQueryId()%></a></td>
+      <td><%=eachQuery.getQueryInfo().getQueryMasterHost()%></td>
+      <td><%=df.format(eachQuery.getQueryInfo().getStartTime())%></td>
+      <td><%=df.format(eachQuery.getQueryInfo().getFinishTime())%></td>
+      <td><%=runTime%> ms</td>
+      <td><%=eachQuery.getQueryInfo().getQueryState()%></td>
+      <td><%=eachQuery.getQueryInfo().getSql()%></td>
+    </tr>
+    <%
+      }
+    %>
+  </table>
+<%
+  }
+%>
 </div>
-<div>Run Query</div>
 </body>
 </html>

@@ -42,10 +42,10 @@ import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.webapp.StaticHttpServer;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,6 +94,8 @@ public class TajoWorker extends CompositeService {
   private AtomicInteger numClusterSlots = new AtomicInteger();
 
   private int httpPort;
+
+  private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
   public TajoWorker(String daemonMode) throws Exception {
     super(TajoWorker.class.getName());
@@ -468,6 +470,47 @@ public class TajoWorker extends CompositeService {
     setWorkerMode(args);
   }
 
+  String getThreadTaskName(long id, String name) {
+    if (name == null) {
+      return Long.toString(id);
+    }
+    return id + " (" + name + ")";
+  }
+
+  public void dumpThread(Writer writer) {
+    PrintWriter stream = new PrintWriter(writer);
+    int STACK_DEPTH = 20;
+    boolean contention = threadBean.isThreadContentionMonitoringEnabled();
+    long[] threadIds = threadBean.getAllThreadIds();
+    stream.println("Process Thread Dump: Tajo Worker");
+    stream.println(threadIds.length + " active threads");
+    for (long tid : threadIds) {
+      ThreadInfo info = threadBean.getThreadInfo(tid, STACK_DEPTH);
+      if (info == null) {
+        stream.println("  Inactive");
+        continue;
+      }
+      stream.println("Thread " + getThreadTaskName(info.getThreadId(), info.getThreadName()) + ":");
+      Thread.State state = info.getThreadState();
+      stream.println("  State: " + state + ",  Blocked count: " + info.getBlockedCount() +
+          ",  Waited count: " + info.getWaitedCount());
+      if (contention) {
+        stream.println("  Blocked time: " + info.getBlockedTime() + ",  Waited time: " + info.getWaitedTime());
+      }
+      if (state == Thread.State.WAITING) {
+        stream.println("  Waiting on " + info.getLockName());
+      } else if (state == Thread.State.BLOCKED) {
+        stream.println("  Blocked on " + info.getLockName() +
+            ", Blocked by " + getThreadTaskName(info.getLockOwnerId(), info.getLockOwnerName()));
+      }
+      stream.println("  Stack:");
+      for (StackTraceElement frame : info.getStackTrace()) {
+        stream.println("    " + frame.toString());
+      }
+      stream.println("");
+    }
+  }
+
   public static List<File> getMountPath() throws Exception {
     BufferedReader mountOutput = null;
     try {
@@ -507,6 +550,7 @@ public class TajoWorker extends CompositeService {
   }
 
   public static void main(String[] args) throws Exception {
+    args = new String[]{"standby"};
     StringUtils.startupShutdownMessage(TajoWorker.class, args, LOG);
 
     if(args.length < 1) {

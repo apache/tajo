@@ -1,0 +1,55 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.window {
+    border:3px solid;
+    width:15em;
+    height:1.5em;
+    z-index:20;
+    position:absolute;
+}
+
+.component {
+    opacity:0.8;
+    filter:alpha(opacity=80);
+    background-color:white;
+    color:black;
+    font-family:helvetica;
+    padding:0.5em;
+}
+
+.label {
+    border:1px solid #346789;
+    padding:4px;
+    padding:4px;
+    font-size: 0.8em;
+}
+
+.label:hover {
+    border-color:#5d94a6;
+}
+
+.textborder {
+    border: 1px solid;
+    padding: 2px;
+}
+
+.component a:link {text-decoration:none;}
+.component a:visited {text-decoration:none;}
+.component a:hover {text-decoration:underline;}
+.component a:active {text-decoration:underline;}
