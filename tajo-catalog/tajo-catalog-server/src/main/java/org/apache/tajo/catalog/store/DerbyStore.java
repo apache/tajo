@@ -67,7 +67,7 @@ public class DerbyStore extends AbstractDBStore {
     Statement stmt = null;
     try {
       // META
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       String meta_ddl = "CREATE TABLE " + TB_META + " (version int NOT NULL)";
       if (LOG.isDebugEnabled()) {
         LOG.debug(meta_ddl);
@@ -222,7 +222,7 @@ public class DerbyStore extends AbstractDBStore {
     ResultSet res = null;
     try {
       boolean found = false;
-      res = conn.getMetaData().getTables(null, null, null,
+      res = getConnection().getMetaData().getTables(null, null, null,
           new String [] {"TABLE"});
       
       String resName;
@@ -247,7 +247,7 @@ public class DerbyStore extends AbstractDBStore {
     ResultSet res = null;
     try {
       boolean found = false;
-      res = conn.getMetaData().getTables(null, null, null,
+      res = getConnection().getMetaData().getTables(null, null, null,
               new String [] {"TABLE"});
       while(res.next() && !found) {
         if (tableName.equals(res.getString("TABLE_NAME")))
@@ -275,7 +275,7 @@ public class DerbyStore extends AbstractDBStore {
 
     wlock.lock();
     try {
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
@@ -377,7 +377,7 @@ public class DerbyStore extends AbstractDBStore {
     boolean exist = false;
     rlock.lock();
     try {
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql.toString());
       }
@@ -399,7 +399,7 @@ public class DerbyStore extends AbstractDBStore {
     String sql = null;
     try {
       wlock.lock();
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       try {
         sql = "DELETE FROM " + TB_COLUMNS +
             " WHERE " + C_TABLE_ID + " = '" + name + "'";
@@ -457,7 +457,7 @@ public class DerbyStore extends AbstractDBStore {
 
     try {
       rlock.lock();
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
 
       try {
         String sql = 
@@ -584,7 +584,7 @@ public class DerbyStore extends AbstractDBStore {
     List<String> tables = new ArrayList<String>();
     rlock.lock();
     try {
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
@@ -611,7 +611,7 @@ public class DerbyStore extends AbstractDBStore {
 
     wlock.lock();
     try {
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, proto.getName());
       stmt.setString(2, proto.getTableId());
       stmt.setString(3, proto.getColumn().getColumnName());
@@ -643,7 +643,7 @@ public class DerbyStore extends AbstractDBStore {
       Statement stmt = null;
       wlock.lock(); 
       try {
-        stmt = conn.createStatement();
+        stmt = getConnection().createStatement();
         if (LOG.isDebugEnabled()) {
           LOG.debug(sql);
         }
@@ -669,7 +669,7 @@ public class DerbyStore extends AbstractDBStore {
           "SELECT index_name, " + C_TABLE_ID + ", column_name, data_type, " 
           + "index_type, is_unique, is_clustered, is_ascending FROM indexes "
           + "where index_name = ?";
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, indexName);
       if (LOG.isDebugEnabled()) {
         LOG.debug(stmt.toString());
@@ -701,7 +701,7 @@ public class DerbyStore extends AbstractDBStore {
           "SELECT index_name, " + C_TABLE_ID + ", column_name, data_type, " 
           + "index_type, is_unique, is_clustered, is_ascending FROM indexes "
           + "where " + C_TABLE_ID + " = ? AND column_name = ?";
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, tableName);
       stmt.setString(2, columnName);
       if (LOG.isDebugEnabled()) {
@@ -735,7 +735,7 @@ public class DerbyStore extends AbstractDBStore {
     boolean exist = false;
     rlock.lock();
     try {
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, indexName);
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -766,7 +766,7 @@ public class DerbyStore extends AbstractDBStore {
     boolean exist = false;
     rlock.lock();
     try {
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, tableName);
       stmt.setString(2, columnName);
       if (LOG.isDebugEnabled()) {
@@ -796,7 +796,7 @@ public class DerbyStore extends AbstractDBStore {
       String sql = "SELECT index_name, " + C_TABLE_ID + ", column_name, data_type, " 
           + "index_type, is_unique, is_clustered, is_ascending FROM indexes "
           + "where " + C_TABLE_ID + "= ?";
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, tableName);
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);

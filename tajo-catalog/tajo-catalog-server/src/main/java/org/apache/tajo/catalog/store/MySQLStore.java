@@ -51,7 +51,7 @@ public class MySQLStore extends AbstractDBStore  {
   protected void createBaseTable() throws SQLException {
 
     // META
-    Statement stmt = conn.createStatement();
+    Statement stmt = getConnection().createStatement();
     String meta_ddl = "CREATE TABLE " + TB_META + " (version int NOT NULL)";
     if (LOG.isDebugEnabled()) {
       LOG.debug(meta_ddl);
@@ -141,7 +141,7 @@ public class MySQLStore extends AbstractDBStore  {
 
   protected boolean isInitialized() throws SQLException {
     boolean found = false;
-    ResultSet res = conn.getMetaData().getTables(null, null, null,
+    ResultSet res = getConnection().getMetaData().getTables(null, null, null,
         new String[]{"TABLE"});
 
     String resName;

@@ -45,7 +45,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   protected final Log LOG = LogFactory.getLog(getClass());
   protected Configuration conf;
   protected String jdbcUri;
-  protected Connection conn;
+  private Connection conn;
 
   protected static final int VERSION = 1;
 
@@ -114,9 +114,23 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return jdbcUri;
   }
 
+  public Connection getConnection() throws SQLException{
+    boolean isValid = false;
+    try{
+      isValid = conn.isValid(100);
+    } catch (SQLException e){
+    }
+
+    if(!isValid){
+      CatalogUtil.closeSQLWrapper(conn);
+      conn = createConnection(conf);
+    }
+    return conn;
+  }
+
   private int needUpgrade() throws SQLException {
     String sql = "SELECT VERSION FROM " + TB_META;
-    Statement stmt = conn.createStatement();
+    Statement stmt = getConnection().createStatement();
     ResultSet res = stmt.executeQuery(sql);
 
     if (!res.next()) { // if this db version is 0
@@ -129,7 +143,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   private void insertVersion() throws SQLException {
     String sql = "INSERT INTO " + TB_META + " values (0)";
-    Statement stmt = conn.createStatement();
+    Statement stmt = getConnection().createStatement();
     stmt.executeUpdate(sql);
     stmt.close();
   }
@@ -142,7 +156,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         sql = "DROP INDEX idx_options_key";
         LOG.info(sql);
 
-        stmt = conn.createStatement();
+        stmt = getConnection().createStatement();
         stmt.addBatch(sql);
 
         sql =
@@ -173,14 +187,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
             + ")";
 
     try {
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
       stmt.executeUpdate(sql);
 
 
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       sql = "SELECT TID from " + TB_TABLES + " WHERE " + C_TABLE_ID
           + " = '" + table.getName() + "'";
       if (LOG.isDebugEnabled()) {
@@ -276,7 +290,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     boolean exist = false;
 
     try {
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql.toString());
       }
@@ -297,7 +311,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     String sql = null;
 
     try {
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       sql = "DELETE FROM " + TB_COLUMNS +
           " WHERE " + C_TABLE_ID + " = '" + name + "'";
       LOG.info(sql);
@@ -312,7 +326,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       sql = "DELETE FROM " + TB_OPTIONS +
           " WHERE " + C_TABLE_ID + " = '" + name + "'";
       LOG.info(sql);
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       stmt.execute(sql);
     } catch (SQLException se) {
       throw new IOException(se);
@@ -324,7 +338,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       sql = "DELETE FROM " + TB_STATISTICS +
           " WHERE " + C_TABLE_ID + " = '" + name + "'";
       LOG.info(sql);
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       stmt.execute(sql);
     } catch (SQLException se) {
       throw new IOException(se);
@@ -336,7 +350,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       sql = "DELETE FROM " + TB_TABLES +
           " WHERE " + C_TABLE_ID + " = '" + name + "'";
       LOG.info(sql);
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       stmt.execute(sql);
     } catch (SQLException se) {
       throw new IOException(se);
@@ -363,7 +377,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       res = stmt.executeQuery(sql);
       if (!res.next()) { // there is no table of the given name.
         return null;
@@ -382,7 +396,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       String sql = "SELECT column_name, data_type, type_length from " + TB_COLUMNS
           + " WHERE " + C_TABLE_ID + "='" + name + "' ORDER by column_id asc";
 
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
@@ -411,7 +425,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try {
       String sql = "SELECT key_, value_ from " + TB_OPTIONS
           + " WHERE " + C_TABLE_ID + "='" + name + "'";
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
@@ -434,7 +448,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       res = stmt.executeQuery(sql);
 
       if (res.next()) {
@@ -476,7 +490,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     List<String> tables = new ArrayList<String>();
 
     try {
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
@@ -502,7 +516,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement stmt = null;
 
     try {
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, proto.getName());
       stmt.setString(2, proto.getTableId());
       stmt.setString(3, proto.getColumn().getColumnName());
@@ -534,7 +548,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Statement stmt = null;
 
     try {
-      stmt = conn.createStatement();
+      stmt = getConnection().createStatement();
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
@@ -559,7 +573,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           "SELECT index_name, " + C_TABLE_ID + ", column_name, data_type, "
               + "index_type, is_unique, is_clustered, is_ascending FROM indexes "
               + "where index_name = ?";
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, indexName);
       if (LOG.isDebugEnabled()) {
         LOG.debug(stmt.toString());
@@ -590,7 +604,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           "SELECT index_name, " + C_TABLE_ID + ", column_name, data_type, "
               + "index_type, is_unique, is_clustered, is_ascending FROM indexes "
               + "where " + C_TABLE_ID + " = ? AND column_name = ?";
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, tableName);
       stmt.setString(2, columnName);
       if (LOG.isDebugEnabled()) {
@@ -624,7 +638,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     boolean exist = false;
 
     try {
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, indexName);
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -654,7 +668,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     ResultSet res = null;
 
     try {
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, tableName);
       stmt.setString(2, columnName);
       if (LOG.isDebugEnabled()) {
@@ -683,7 +697,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       String sql = "SELECT index_name, " + C_TABLE_ID + ", column_name, data_type, "
           + "index_type, is_unique, is_clustered, is_ascending FROM indexes "
           + "where " + C_TABLE_ID + "= ?";
-      stmt = conn.prepareStatement(sql);
+      stmt = getConnection().prepareStatement(sql);
       stmt.setString(1, tableName);
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);

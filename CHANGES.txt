@@ -193,6 +193,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-241: Does not reconnect the meta store. (jinho)
+
     TAJO-226: Can't use group by column alias. (hyunsik)
 
     TAJO-203: Field delimiter does not work correctly. (jinho)
