@@ -197,7 +197,10 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
-    TAJO-240: Reformat HiveConverter source code to match adopted conventions (jaehwa)   
+    TAJO-242: Enable omitted broadcast join feature after TAJO-184. (hyunsik)
+
+    TAJO-240: Reformat HiveConverter source code to match adopted conventions 
+    (jaehwa)   
 
     TAJO-241: Does not reconnect the meta store. (jinho)
 

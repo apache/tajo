@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalOptimizer;
@@ -61,6 +62,7 @@ public class TestExecutionBlockCursor {
     tpch.loadOutSchema();
     for (String table : tpch.getTableNames()) {
       TableMeta m = CatalogUtil.newTableMeta(tpch.getSchema(table), CatalogProtos.StoreType.CSV);
+      m.setStat(new TableStat());
       TableDesc d = CatalogUtil.newTableDesc(table, m, new Path("file:///"));
       catalog.addTable(d);
     }
@@ -103,7 +105,7 @@ public class TestExecutionBlockCursor {
       count++;
     }
 
-    // 4 input relations, 4 join, and 1 terminal = 9 execution blocks
-    assertEquals(10, count);
+    // 4 input relations, 1 broadcast join and 2 symmetric repartition joins and 1 terminal = 8 execution blocks
+    assertEquals(8, count);
   }
 }

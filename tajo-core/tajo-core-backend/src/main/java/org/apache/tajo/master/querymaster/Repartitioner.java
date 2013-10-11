@@ -74,9 +74,6 @@ public class Repartitioner {
     AbstractStorageManager storageManager = subQuery.getStorageManager();
 
     ScanNode[] scans = execBlock.getScanNodes();
-    ExecutionBlock [] childBlocks = new ExecutionBlock[2];
-    childBlocks[0] = masterPlan.getChild(execBlock.getId(), 0);
-    childBlocks[1] = masterPlan.getChild(execBlock.getId(), 1);
 
     Path tablePath;
     Fragment [] fragments = new Fragment[2];
@@ -87,6 +84,10 @@ public class Repartitioner {
       TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getCanonicalName());
       if (tableDesc == null) { // if it is a real table stored on storage
         // TODO - to be fixed (wrong directory)
+        ExecutionBlock [] childBlocks = new ExecutionBlock[2];
+        childBlocks[0] = masterPlan.getChild(execBlock.getId(), 0);
+        childBlocks[1] = masterPlan.getChild(execBlock.getId(), 1);
+
         tablePath = storageManager.getTablePath(scans[i].getTableName());
         stats[i] = masterContext.getSubQuery(childBlocks[i].getId()).getTableStat();
         fragments[i] = new Fragment(scans[i].getCanonicalName(), tablePath,

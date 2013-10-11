@@ -164,6 +164,39 @@ public class GlobalPlanner {
     LogicalNode leftNode = joinNode.getLeftChild();
     LogicalNode rightNode = joinNode.getRightChild();
 
+    boolean leftBroadcasted = false;
+    boolean rightBroadcasted = false;
+
+    if (leftNode.getType() == NodeType.SCAN && rightNode.getType() == NodeType.SCAN ) {
+      ScanNode leftScan = (ScanNode) leftNode;
+      ScanNode rightScan = (ScanNode) rightNode;
+
+      TableMeta leftMeta = leftScan.getTableDesc().getMeta();
+      TableMeta rightMeta = rightScan.getTableDesc().getMeta();
+      long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.BROADCAST_JOIN_THRESHOLD);
+
+      if (leftMeta.getStat().getNumBytes() < broadcastThreshold) {
+        leftBroadcasted = true;
+      }
+      if (rightMeta.getStat().getNumBytes() < broadcastThreshold) {
+        rightBroadcasted = true;
+      }
+
+      if (leftBroadcasted || rightBroadcasted) {
+        currentBlock = masterPlan.newExecutionBlock();
+        currentBlock.setPlan(joinNode);
+        if (leftBroadcasted) {
+          currentBlock.addBroadcastTable(leftScan.getCanonicalName());
+        }
+        if (rightBroadcasted) {
+          currentBlock.addBroadcastTable(rightScan.getCanonicalName());
+        }
+        return new ExecutionBlock[] { currentBlock, childBlock };
+      }
+    }
+
+    // symmetric repartition join
+
     ExecutionBlock leftBlock;
     if (lastChildBlock == null) {
       leftBlock = masterPlan.newExecutionBlock();
@@ -190,6 +223,7 @@ public class GlobalPlanner {
     masterPlan.addConnect(rightChannel);
 
     return new ExecutionBlock[] { currentBlock, childBlock };
+
   }
 
   private ExecutionBlock [] buildGroupBy(MasterPlan masterPlan, LogicalNode lastDistNode, LogicalNode currentNode,
