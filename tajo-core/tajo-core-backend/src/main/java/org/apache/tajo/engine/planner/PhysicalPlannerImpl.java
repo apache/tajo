@@ -57,9 +57,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   protected final TajoConf conf;
   protected final AbstractStorageManager sm;
 
-  final long threshold = 1048576 * 128; // 64MB
-
-
   public PhysicalPlannerImpl(final TajoConf conf, final AbstractStorageManager sm) {
     this.conf = conf;
     this.sm = sm;
@@ -295,7 +292,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     long leftSize = estimateSizeRecursive(context, leftLineage);
     long rightSize = estimateSizeRecursive(context, rightLineage);
 
-    final long threshold = conf.getLongVar(TajoConf.ConfVars.INMEMORY_HASH_JOIN_THRESHOLD);
+    final long threshold = conf.getLongVar(TajoConf.ConfVars.INMEMORY_INNER_HASH_JOIN_THRESHOLD);
 
     boolean hashJoin = false;
     if (leftSize < threshold || rightSize < threshold) {
@@ -366,7 +363,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     String [] rightLineage = PlannerUtil.getLineage(plan.getRightChild());
     long rightTableVolume = estimateSizeRecursive(context, rightLineage);
 
-    if (rightTableVolume < threshold) {
+    if (rightTableVolume < conf.getLongVar(TajoConf.ConfVars.INMEMORY_OUTER_HASH_AGGREGATION_THRESHOLD)) {
       // we can implement left outer join using hash join, using the right operand as the build relation
       LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
@@ -383,8 +380,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     //if the left operand is small enough => implement it as a left outer hash join with exchanged operators (note:
     // blocking, but merge join is blocking as well)
     String [] outerLineage4 = PlannerUtil.getLineage(plan.getLeftChild());
-    long outerSize4 = estimateSizeRecursive(context, outerLineage4);
-    if (outerSize4 < threshold){
+    long outerSize = estimateSizeRecursive(context, outerLineage4);
+    if (outerSize < conf.getLongVar(TajoConf.ConfVars.INMEMORY_OUTER_HASH_AGGREGATION_THRESHOLD)){
       LOG.info("Right Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, rightExec, leftExec);
     } else {

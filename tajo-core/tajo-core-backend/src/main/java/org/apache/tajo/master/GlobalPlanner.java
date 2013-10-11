@@ -71,7 +71,7 @@ public class GlobalPlanner {
     LOG.info(masterPlan.getLogicalPlan());
 
     LogicalNode rootNode = PlannerUtil.clone(masterPlan.getLogicalPlan().getRootBlock().getRoot());
-    planner.visitChild(masterPlan.getLogicalPlan(), rootNode, new Stack<LogicalNode>(), globalPlanContext);
+    planner.visitChild(globalPlanContext, masterPlan.getLogicalPlan(), rootNode, new Stack<LogicalNode>());
 
     ExecutionBlock terminalBlock = masterPlan.createTerminalBlock();
 
@@ -80,7 +80,7 @@ public class GlobalPlanner {
       UnionNode unionNode = (UnionNode) globalPlanContext.lastRepartionableNode;
       ConsecutiveUnionFinder finder = new ConsecutiveUnionFinder();
       UnionsFinderContext finderContext = new UnionsFinderContext();
-      finder.visitChild(masterPlan.getLogicalPlan(), unionNode, new Stack<LogicalNode>(), finderContext);
+      finder.visitChild(finderContext, masterPlan.getLogicalPlan(), unionNode, new Stack<LogicalNode>());
 
       for (UnionNode union : finderContext.unionList) {
         TableSubQueryNode leftSubQuery = union.getLeftChild();
@@ -248,7 +248,7 @@ public class GlobalPlanner {
         UnionNode unionNode = PlannerUtil.findTopNode(groupByNode, NodeType.UNION);
         ConsecutiveUnionFinder finder = new ConsecutiveUnionFinder();
         UnionsFinderContext finderContext = new UnionsFinderContext();
-        finder.visitChild(masterPlan.getLogicalPlan(), unionNode, new Stack<LogicalNode>(), finderContext);
+        finder.visitChild(finderContext, masterPlan.getLogicalPlan(), unionNode, new Stack<LogicalNode>());
 
         currentBlock = masterPlan.newExecutionBlock();
         GroupbyNode secondGroupBy = groupByNode;
@@ -368,12 +368,12 @@ public class GlobalPlanner {
     return new ExecutionBlock[] { currentBlock, childBlock };
   }
 
-  public class DistributedPlannerVisitor extends BasicLogicalPlanVisitor<GlobalPlanContext> {
+  public class DistributedPlannerVisitor extends BasicLogicalPlanVisitor<GlobalPlanContext, LogicalNode> {
 
     @Override
-    public LogicalNode visitRoot(LogicalPlan plan, LogicalRootNode node, Stack<LogicalNode> stack,
-                                 GlobalPlanContext context) throws PlanningException {
-      super.visitRoot(plan, node, stack, context);
+    public LogicalNode visitRoot(GlobalPlanContext context, LogicalPlan plan, LogicalRootNode node,
+                                 Stack<LogicalNode> stack) throws PlanningException {
+      super.visitRoot(context, plan, node, stack);
 
       if (context.lastRepartionableNode != null && context.lastRepartionableNode.getType() != NodeType.UNION) {
         context.topMostLeftExecBlock = buildRepartitionBlocks(context.plan, context.lastRepartionableNode, node, context.topmost, context.topMostLeftExecBlock);
@@ -390,26 +390,26 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitProjection(LogicalPlan plan, ProjectionNode node, Stack<LogicalNode> stack,
-                                       GlobalPlanContext context) throws PlanningException {
-      super.visitProjection(plan, node, stack, context);
+    public LogicalNode visitProjection(GlobalPlanContext context, LogicalPlan plan, ProjectionNode node,
+                                       Stack<LogicalNode> stack) throws PlanningException {
+      super.visitProjection(context, plan, node, stack);
       context.topmost = node;
       return node;
     }
 
     @Override
-    public LogicalNode visitLimit(LogicalPlan plan, LimitNode node, Stack<LogicalNode> stack, GlobalPlanContext context)
+    public LogicalNode visitLimit(GlobalPlanContext context, LogicalPlan plan, LimitNode node, Stack<LogicalNode> stack)
         throws PlanningException {
-      super.visitLimit(plan, node, stack, context);
+      super.visitLimit(context, plan, node, stack);
       context.topmost = node;
       return node;
     }
 
     @Override
-    public LogicalNode visitSort(LogicalPlan plan, SortNode node, Stack<LogicalNode> stack, GlobalPlanContext context)
+    public LogicalNode visitSort(GlobalPlanContext context, LogicalPlan plan, SortNode node, Stack<LogicalNode> stack)
         throws PlanningException {
 
-      super.visitSort(plan, node, stack, context);
+      super.visitSort(context, plan, node, stack);
 
       if (context.lastRepartionableNode != null) {
         context.topMostLeftExecBlock = buildRepartitionBlocks(context.plan, context.lastRepartionableNode, node, context.topmost,
@@ -423,13 +423,13 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitGroupBy(LogicalPlan plan, GroupbyNode node, Stack<LogicalNode> stack,
-                                    GlobalPlanContext context) throws PlanningException {
-      super.visitGroupBy(plan, node, stack, context);
+    public LogicalNode visitGroupBy(GlobalPlanContext context, LogicalPlan plan, GroupbyNode node,
+                                    Stack<LogicalNode> stack) throws PlanningException {
+      super.visitGroupBy(context, plan, node, stack);
 
       if (context.lastRepartionableNode != null) {
-        context.topMostLeftExecBlock = buildRepartitionBlocks(context.plan, context.lastRepartionableNode, node, context.topmost,
-            context.topMostLeftExecBlock);
+        context.topMostLeftExecBlock = buildRepartitionBlocks(context.plan, context.lastRepartionableNode, node,
+            context.topmost, context.topMostLeftExecBlock);
       }
 
       context.topmost = node;
@@ -438,17 +438,17 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitFilter(LogicalPlan plan, SelectionNode node, Stack<LogicalNode> stack,
-                                   GlobalPlanContext context) throws PlanningException {
-      super.visitFilter(plan, node, stack, context);
+    public LogicalNode visitFilter(GlobalPlanContext context, LogicalPlan plan, SelectionNode node,
+                                   Stack<LogicalNode> stack) throws PlanningException {
+      super.visitFilter(context, plan, node, stack);
       context.topmost = node;
       return node;
     }
 
     @Override
-    public LogicalNode visitJoin(LogicalPlan plan, JoinNode node, Stack<LogicalNode> stack, GlobalPlanContext context)
+    public LogicalNode visitJoin(GlobalPlanContext context, LogicalPlan plan, JoinNode node, Stack<LogicalNode> stack)
         throws PlanningException {
-      super.visitJoin(plan, node, stack, context);
+      super.visitJoin(context, plan, node, stack);
 
       if (context.lastRepartionableNode != null) {
         context.topMostLeftExecBlock = buildRepartitionBlocks(context.plan, context.lastRepartionableNode, node, context.topmost,
@@ -462,13 +462,13 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitUnion(LogicalPlan plan, UnionNode node, Stack<LogicalNode> stack,
-                                  GlobalPlanContext context) throws PlanningException {
-      super.visitUnion(plan, node, stack, context);
+    public LogicalNode visitUnion(GlobalPlanContext context, LogicalPlan plan, UnionNode node,
+                                  Stack<LogicalNode> stack) throws PlanningException {
+      super.visitUnion(context, plan, node, stack);
 
       if (context.lastRepartionableNode != null && context.lastRepartionableNode.getType() != NodeType.UNION) {
-        context.topMostLeftExecBlock = buildRepartitionBlocks(context.plan, context.lastRepartionableNode, node, context.topmost,
-            context.topMostLeftExecBlock);
+        context.topMostLeftExecBlock = buildRepartitionBlocks(context.plan, context.lastRepartionableNode, node,
+            context.topmost, context.topMostLeftExecBlock);
       }
 
       context.topmost = node;
@@ -477,49 +477,49 @@ public class GlobalPlanner {
     }
 
     @Override
-    public LogicalNode visitExcept(LogicalPlan plan, ExceptNode node, Stack<LogicalNode> stack,
-                                   GlobalPlanContext context) throws PlanningException {
-      super.visitExcept(plan, node, stack, context);
+    public LogicalNode visitExcept(GlobalPlanContext context, LogicalPlan plan, ExceptNode node,
+                                   Stack<LogicalNode> stack) throws PlanningException {
+      super.visitExcept(context, plan, node, stack);
       context.topmost = node;
       return node;
     }
 
     @Override
-    public LogicalNode visitIntersect(LogicalPlan plan, IntersectNode node, Stack<LogicalNode> stack,
-                                      GlobalPlanContext context) throws PlanningException {
-      super.visitIntersect(plan, node, stack, context);
+    public LogicalNode visitIntersect(GlobalPlanContext context, LogicalPlan plan, IntersectNode node,
+                                      Stack<LogicalNode> stack) throws PlanningException {
+      super.visitIntersect(context, plan, node, stack);
       context.topmost = node;
       return node;
     }
 
     @Override
-    public LogicalNode visitTableSubQuery(LogicalPlan plan, TableSubQueryNode node, Stack<LogicalNode> stack,
-                                          GlobalPlanContext context) throws PlanningException {
-      super.visitTableSubQuery(plan, node, stack, context);
+    public LogicalNode visitTableSubQuery(GlobalPlanContext context, LogicalPlan plan, TableSubQueryNode node,
+                                          Stack<LogicalNode> stack) throws PlanningException {
+      super.visitTableSubQuery(context, plan, node, stack);
       context.topmost = node;
       return node;
     }
 
     @Override
-    public LogicalNode visitScan(LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack, GlobalPlanContext context)
+    public LogicalNode visitScan(GlobalPlanContext context, LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack)
         throws PlanningException {
       context.topmost = node;
       return node;
     }
 
     @Override
-    public LogicalNode visitStoreTable(LogicalPlan plan, StoreTableNode node, Stack<LogicalNode> stack,
-                                       GlobalPlanContext context) throws PlanningException {
-      super.visitStoreTable(plan, node, stack, context);
+    public LogicalNode visitStoreTable(GlobalPlanContext context, LogicalPlan plan, StoreTableNode node,
+                                       Stack<LogicalNode> stack) throws PlanningException {
+      super.visitStoreTable(context, plan, node, stack);
       context.topmost = node;
       return node;
     }
 
     @Override
-    public LogicalNode visitInsert(LogicalPlan plan, InsertNode node, Stack<LogicalNode> stack,
-                                   GlobalPlanContext context)
+    public LogicalNode visitInsert(GlobalPlanContext context, LogicalPlan plan, InsertNode node,
+                                   Stack<LogicalNode> stack)
         throws PlanningException {
-      super.visitInsert(plan, node, stack, context);
+      super.visitInsert(context, plan, node, stack);
       context.topmost = node;
       return node;
     }
@@ -529,9 +529,11 @@ public class GlobalPlanner {
     List<UnionNode> unionList = new ArrayList<UnionNode>();
   }
 
-  private class ConsecutiveUnionFinder extends BasicLogicalPlanVisitor<UnionsFinderContext> {
-    public LogicalNode visitUnion(LogicalPlan plan, UnionNode node, Stack<LogicalNode> stack,
-                                  UnionsFinderContext context)
+  @SuppressWarnings("unused")
+  private class ConsecutiveUnionFinder extends BasicLogicalPlanVisitor<UnionsFinderContext, LogicalNode> {
+    @Override
+    public LogicalNode visitUnion(UnionsFinderContext context, LogicalPlan plan, UnionNode node,
+                                  Stack<LogicalNode> stack)
         throws PlanningException {
       if (node.getType() == NodeType.UNION) {
         context.unionList.add(node);
@@ -541,10 +543,10 @@ public class GlobalPlanner {
       TableSubQueryNode leftSubQuery = node.getLeftChild();
       TableSubQueryNode rightSubQuery = node.getRightChild();
       if (leftSubQuery.getSubQuery().getType() == NodeType.UNION) {
-        visitChild(plan, leftSubQuery, stack, context);
+        visitChild(context, plan, leftSubQuery, stack);
       }
       if (rightSubQuery.getSubQuery().getType() == NodeType.UNION) {
-        visitChild(plan, rightSubQuery, stack, context);
+        visitChild(context, plan, rightSubQuery, stack);
       }
       stack.pop();
 

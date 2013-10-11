@@ -95,6 +95,49 @@ public class PlannerUtil {
     }    
     return child;
   }
+
+  public static void replaceNode(LogicalPlan plan, LogicalNode startNode, LogicalNode oldNode, LogicalNode newNode) {
+    LogicalNodeReplaceVisitor replacer = new LogicalNodeReplaceVisitor(oldNode, newNode);
+    try {
+      replacer.visit(null, plan, startNode);
+    } catch (PlanningException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public static class LogicalNodeReplaceVisitor extends BasicLogicalPlanVisitor<Object, LogicalNode> {
+    private LogicalNode target;
+    private LogicalNode tobeReplaced;
+
+    public LogicalNodeReplaceVisitor(LogicalNode target, LogicalNode tobeReplaced) {
+      this.target = target;
+      this.tobeReplaced = tobeReplaced;
+    }
+
+    @Override
+    public LogicalNode visitChild(Object context, LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack)
+        throws PlanningException {
+      super.visitChild(context, plan, node, stack);
+
+      if (node.equals(target)) {
+        LogicalNode parent = stack.peek();
+
+        if (parent instanceof BinaryNode) {
+          BinaryNode binaryParent = (BinaryNode) parent;
+          if (binaryParent.getLeftChild().equals(target)) {
+            binaryParent.setLeftChild(tobeReplaced);
+          }
+          if (binaryParent.getRightChild().equals(target)) {
+            binaryParent.setRightChild(tobeReplaced);
+          }
+        } else if (parent instanceof UnaryNode) {
+          UnaryNode unaryParent = (UnaryNode) parent;
+          unaryParent.setChild(tobeReplaced);
+        }
+      }
+      return node;
+    }
+  }
   
   public static void replaceNode(LogicalNode plan, LogicalNode newNode, NodeType type) {
     LogicalNode parent = findTopParentNode(plan, type);

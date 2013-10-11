@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -183,10 +184,14 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         FileSystem fs = desc.getPath().getFileSystem(new Configuration());
         FileStatus status = fs.getFileStatus(desc.getPath());
         if (desc.getMeta().getStat() != null && (status.isDirectory() || status.isFile())) {
-          desc.getMeta().getStat().setNumBytes(fs.getContentSummary(desc.getPath()).getLength());
+          ContentSummary summary = fs.getContentSummary(desc.getPath());
+          if (summary != null) {
+            long volume = summary.getLength();
+            desc.getMeta().getStat().setNumBytes(volume);
+          }
         }
       } catch (Throwable t) {
-        t.printStackTrace();
+        LOG.warn(t);
       }
     }
   }

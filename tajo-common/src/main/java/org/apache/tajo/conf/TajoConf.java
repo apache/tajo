@@ -110,8 +110,9 @@ public class TajoConf extends YarnConfiguration {
     EXTENAL_SORT_BUFFER_NUM("tajo.sort.external.buffer", 1000000),
     BROADCAST_JOIN_THRESHOLD("tajo.join.broadcast.threshold", (long)5 * 1048576),
     INMEMORY_HASH_TABLE_DEFAULT_SIZE("tajo.join.inmemory.table.num", (long)1000000),
-    INMEMORY_HASH_JOIN_THRESHOLD("tajo.join.memhash, threshold", (long)256 * 1048576),
+    INMEMORY_INNER_HASH_JOIN_THRESHOLD("tajo.join.inner.memhash.threshold", (long)256 * 1048576),
     INMEMORY_HASH_AGGREGATION_THRESHOLD("tajo.aggregation.hash.threshold", (long)256 * 1048576),
+    INMEMORY_OUTER_HASH_AGGREGATION_THRESHOLD("tajo.join.outer.memhash.threshold", (long)256 * 1048576),
 
     //////////////////////////////////////////
     // Distributed Query Execution Parameters

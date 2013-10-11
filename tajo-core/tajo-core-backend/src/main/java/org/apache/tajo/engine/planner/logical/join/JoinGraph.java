@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.logical.join;
 
+import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.EvalNode;
@@ -27,36 +28,37 @@ import org.apache.tajo.engine.planner.graph.SimpleUndirectedGraph;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
-  public Collection<JoinEdge> getJoinsFrom(String relation) {
+  public Collection<JoinEdge> getJoinsWith(String relation) {
     return getEdges(relation);
   }
 
-  public void addJoin(EvalNode condition) {
-    List<Column> left = EvalTreeUtil.findAllColumnRefs(condition.getLeftExpr());
-    List<Column> right = EvalTreeUtil.findAllColumnRefs(condition.getRightExpr());
+  public Collection<EvalNode> addJoin(JoinType joinType, EvalNode joinQual) {
+    Set<EvalNode> cnf = Sets.newHashSet(EvalTreeUtil.getConjNormalForm(joinQual));
+    Set<EvalNode> nonJoinQuals = Sets.newHashSet();
+    for (EvalNode singleQual : cnf) {
+      if (PlannerUtil.isJoinQual(singleQual)) {
+        List<Column> left = EvalTreeUtil.findAllColumnRefs(singleQual.getLeftExpr());
+        List<Column> right = EvalTreeUtil.findAllColumnRefs(singleQual.getRightExpr());
 
-    String leftRelName = left.get(0).getQualifier();
-    String rightRelName = right.get(0).getQualifier();
+        String leftRelName = left.get(0).getQualifier();
+        String rightRelName = right.get(0).getQualifier();
 
-    JoinEdge edge = getEdge(leftRelName, rightRelName);
+        JoinEdge edge = getEdge(leftRelName, rightRelName);
 
-    if (edge != null) {
-      edge.addJoinQual(condition);
-    } else {
-      edge = new JoinEdge(JoinType.INNER, leftRelName, rightRelName, condition);
-      addEdge(leftRelName, rightRelName, edge);
-    }
-  }
-
-  public static JoinGraph createJoinGraph(EvalNode [] cnf) {
-    JoinGraph joinGraph = new JoinGraph();
-    for (EvalNode expr : cnf) {
-      if (PlannerUtil.isJoinQual(expr)) {
-        joinGraph.addJoin(expr);
+        if (edge != null) {
+          edge.addJoinQual(singleQual);
+        } else {
+          edge = new JoinEdge(joinType, leftRelName, rightRelName, singleQual);
+          addEdge(leftRelName, rightRelName, edge);
+        }
+      } else {
+        nonJoinQuals.add(singleQual);
       }
     }
-    return joinGraph;
+    cnf.retainAll(nonJoinQuals);
+    return cnf;
   }
 }

@@ -19,9 +19,13 @@
 package org.apache.tajo.engine.planner.rewrite;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
+import org.apache.tajo.engine.eval.EvalType;
+import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.planner.BasicLogicalPlanVisitor;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.PlannerUtil;
@@ -29,17 +33,9 @@ import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.query.exception.InvalidQueryException;
 
-import org.apache.tajo.engine.eval.EvalType; 
-import org.apache.tajo.engine.eval.FieldEval;
-import org.apache.tajo.catalog.Column;
-import com.google.common.collect.Sets;
-import java.util.Set;
-import java.util.Iterator;
+import java.util.*;
 
-import java.util.List;
-import java.util.Stack;
-
-public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> implements RewriteRule {
+public class FilterPushDownRule extends BasicLogicalPlanVisitor<Set<EvalNode>, LogicalNode> implements RewriteRule {
   private static final String NAME = "FilterPushDown";
 
   @Override
@@ -50,7 +46,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
   @Override
   public boolean isEligible(LogicalPlan plan) {
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
-      if (PlannerUtil.findTopNode(block.getRoot(), NodeType.SELECTION) != null) {
+      if (block.hasSelectionNode() || block.hasJoinNode()) {
         return true;
       }
     }
@@ -60,21 +56,19 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
   @Override
   public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
-      if (block.hasSelectionNode()) {
-        SelectionNode filterNode = block.getSelectionNode();
-        Stack<LogicalNode> stack = new Stack<LogicalNode>();
-        EvalNode [] cnf = EvalTreeUtil.getConjNormalForm(filterNode.getQual());
-        visitChild(plan, block.getRoot(), stack, Lists.newArrayList(cnf));
-      }
+      this.visit(new HashSet<EvalNode>(), plan, block.getRoot());
     }
 
     return plan;
   }
 
-  public LogicalNode visitFilter(LogicalPlan plan, SelectionNode selNode, Stack<LogicalNode> stack, List<EvalNode> cnf)
+  @Override
+  public LogicalNode visitFilter(Set<EvalNode> cnf, LogicalPlan plan, SelectionNode selNode, Stack<LogicalNode> stack)
       throws PlanningException {
+    cnf.addAll(Sets.newHashSet(EvalTreeUtil.getConjNormalForm(selNode.getQual())));
+
     stack.push(selNode);
-    visitChild(plan, selNode.getChild(), stack, cnf);
+    visitChild(cnf, plan, selNode.getChild(), stack);
     stack.pop();
 
     // remove the selection operator if there is no search condition
@@ -96,7 +90,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
     return joinType == JoinType.LEFT_OUTER || joinType == JoinType.RIGHT_OUTER || joinType==JoinType.FULL_OUTER;
   }
 
-  public LogicalNode visitJoin(LogicalPlan plan, JoinNode joinNode, Stack<LogicalNode> stack, List<EvalNode> cnf)
+  @Override
+  public LogicalNode visitJoin(Set<EvalNode> cnf, LogicalPlan plan, JoinNode joinNode, Stack<LogicalNode> stack)
       throws PlanningException {
     LogicalNode left = joinNode.getRightChild();
     LogicalNode right = joinNode.getLeftChild();
@@ -198,8 +193,12 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
        }
     }
 
-    visitChild(plan, left, stack, cnf);
-    visitChild(plan, right, stack, cnf);
+    if (joinNode.hasJoinQual()) {
+      cnf.addAll(Sets.newHashSet(EvalTreeUtil.getConjNormalForm(joinNode.getJoinQual())));
+    }
+
+    visitChild(cnf, plan, left, stack);
+    visitChild(cnf, plan, right, stack);
 
     List<EvalNode> matched = Lists.newArrayList();
     for (EvalNode eval : cnf) {
@@ -219,12 +218,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
     }
 
     if (qual != null) {
-      if (joinNode.hasJoinQual()) {
-        EvalNode conjQual = EvalTreeUtil.transformCNF2Singleton(joinNode.getJoinQual(), qual);
-        joinNode.setJoinQual(conjQual);
-      } else {
-        joinNode.setJoinQual(qual);
-      }
+      joinNode.setJoinQual(qual);
+
       if (joinNode.getJoinType() == JoinType.CROSS) {
         joinNode.setJoinType(JoinType.INNER);
       }
@@ -234,7 +229,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<List<EvalNode>> 
     return joinNode;
   }
 
-  public LogicalNode visitScan(LogicalPlan plan, ScanNode scanNode, Stack<LogicalNode> stack, List<EvalNode> cnf)
+  @Override
+  public LogicalNode visitScan(Set<EvalNode> cnf, LogicalPlan plan, ScanNode scanNode, Stack<LogicalNode> stack)
       throws PlanningException {
 
     List<EvalNode> matched = Lists.newArrayList();

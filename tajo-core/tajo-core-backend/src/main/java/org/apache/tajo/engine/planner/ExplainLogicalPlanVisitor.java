@@ -25,7 +25,7 @@ import java.util.Stack;
 /**
  * It returns a list of node plan strings.
  */
-public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLogicalPlanVisitor.Context> {
+public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLogicalPlanVisitor.Context, LogicalNode> {
 
   public static class Context {
     public int maxDepth  = -1;
@@ -67,56 +67,56 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
   public Context getBlockPlanStrings(LogicalPlan plan, String block) throws PlanningException {
     Stack<LogicalNode> stack = new Stack<LogicalNode>();
     Context explainContext = new Context();
-    visitChild(plan, plan.getBlock(block).getRoot(), stack, explainContext);
+    visitChild(explainContext, plan, plan.getBlock(block).getRoot(), stack);
     return explainContext;
   }
 
   @Override
-  public LogicalNode visitRoot(LogicalPlan plan, LogicalRootNode node, Stack<LogicalNode> stack, Context context)
+  public LogicalNode visitRoot(Context context, LogicalPlan plan, LogicalRootNode node, Stack<LogicalNode> stack)
       throws PlanningException {
-    return visitChild(plan, node.getChild(), stack, context);
+    return visitChild(context, plan, node.getChild(), stack);
   }
 
   @Override
-  public LogicalNode visitProjection(LogicalPlan plan, ProjectionNode node, Stack<LogicalNode> stack,
-                                     Context context) throws PlanningException {
-    return visitUnaryNode(plan, node, stack, context);
-  }
-
-  @Override
-  public LogicalNode visitLimit(LogicalPlan plan, LimitNode node, Stack<LogicalNode> stack, Context context)
+  public LogicalNode visitProjection(Context context, LogicalPlan plan, ProjectionNode node, Stack<LogicalNode> stack)
       throws PlanningException {
-    return visitUnaryNode(plan, node, stack, context);
+    return visitUnaryNode(context, plan, node, stack);
   }
 
   @Override
-  public LogicalNode visitSort(LogicalPlan plan, SortNode node, Stack<LogicalNode> stack,
-                               Context context) throws PlanningException {
-    return visitUnaryNode(plan, node, stack, context);
+  public LogicalNode visitLimit(Context context, LogicalPlan plan, LimitNode node, Stack<LogicalNode> stack)
+      throws PlanningException {
+    return visitUnaryNode(context, plan, node, stack);
   }
 
   @Override
-  public LogicalNode visitGroupBy(LogicalPlan plan, GroupbyNode node, Stack<LogicalNode> stack,
-                                  Context context) throws PlanningException {
-    return visitUnaryNode(plan, node, stack, context);
+  public LogicalNode visitSort(Context context, LogicalPlan plan, SortNode node, Stack<LogicalNode> stack)
+      throws PlanningException {
+    return visitUnaryNode(context, plan, node, stack);
   }
 
-  private LogicalNode visitUnaryNode(LogicalPlan plan, UnaryNode node, Stack<LogicalNode> stack, Context context)
+  @Override
+  public LogicalNode visitGroupBy(Context context, LogicalPlan plan, GroupbyNode node, Stack<LogicalNode> stack)
+      throws PlanningException {
+    return visitUnaryNode(context, plan, node, stack);
+  }
+
+  private LogicalNode visitUnaryNode(Context context, LogicalPlan plan, UnaryNode node, Stack<LogicalNode> stack)
       throws PlanningException {
     context.depth++;
     stack.push(node);
-    visitChild(plan, node.getChild(), stack, context);
+    visitChild(context, plan, node.getChild(), stack);
     context.depth--;
     context.add(context.depth, node.getPlanString());
     return node;
   }
 
-  private LogicalNode visitBinaryNode(LogicalPlan plan, BinaryNode node, Stack<LogicalNode> stack, Context context)
+  private LogicalNode visitBinaryNode(Context context, LogicalPlan plan, BinaryNode node, Stack<LogicalNode> stack)
       throws PlanningException {
     context.depth++;
     stack.push(node);
-    visitChild(plan, node.getLeftChild(), stack, context);
-    visitChild(plan, node.getRightChild(), stack, context);
+    visitChild(context, plan, node.getLeftChild(), stack);
+    visitChild(context, plan, node.getRightChild(), stack);
     stack.pop();
     context.depth--;
     context.add(context.depth, node.getPlanString());
@@ -124,41 +124,41 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
   }
 
   @Override
-  public LogicalNode visitFilter(LogicalPlan plan, SelectionNode node, Stack<LogicalNode> stack,
-                                 Context context) throws PlanningException {
-    return visitUnaryNode(plan, node, stack, context);
-  }
-
-  @Override
-  public LogicalNode visitJoin(LogicalPlan plan, JoinNode node, Stack<LogicalNode> stack, Context context)
+  public LogicalNode visitFilter(Context context, LogicalPlan plan, SelectionNode node, Stack<LogicalNode> stack)
       throws PlanningException {
-    return visitBinaryNode(plan, node, stack, context);
+    return visitUnaryNode(context, plan, node, stack);
   }
 
   @Override
-  public LogicalNode visitUnion(LogicalPlan plan, UnionNode node, Stack<LogicalNode> stack,
-                                Context context) throws PlanningException {
-    return visitBinaryNode(plan, node, stack, context);
+  public LogicalNode visitJoin(Context context, LogicalPlan plan, JoinNode node, Stack<LogicalNode> stack) throws
+      PlanningException {
+    return visitBinaryNode(context, plan, node, stack);
   }
 
   @Override
-  public LogicalNode visitExcept(LogicalPlan plan, ExceptNode node, Stack<LogicalNode> stack,
-                                 Context context) throws PlanningException {
-    return visitBinaryNode(plan, node, stack, context);
+  public LogicalNode visitUnion(Context context, LogicalPlan plan, UnionNode node, Stack<LogicalNode> stack)
+      throws PlanningException {
+    return visitBinaryNode(context, plan, node, stack);
   }
 
   @Override
-  public LogicalNode visitIntersect(LogicalPlan plan, IntersectNode node, Stack<LogicalNode> stack,
-                                    Context context) throws PlanningException {
-    return visitBinaryNode(plan, node, stack, context);
+  public LogicalNode visitExcept(Context context, LogicalPlan plan, ExceptNode node, Stack<LogicalNode> stack)
+      throws PlanningException {
+    return visitBinaryNode(context, plan, node, stack);
   }
 
   @Override
-  public LogicalNode visitTableSubQuery(LogicalPlan plan, TableSubQueryNode node, Stack<LogicalNode> stack,
-                                              Context context) throws PlanningException {
+  public LogicalNode visitIntersect(Context context, LogicalPlan plan, IntersectNode node, Stack<LogicalNode> stack)
+      throws PlanningException {
+    return visitBinaryNode(context, plan, node, stack);
+  }
+
+  @Override
+  public LogicalNode visitTableSubQuery(Context context, LogicalPlan plan, TableSubQueryNode node,
+                                        Stack<LogicalNode> stack) throws PlanningException {
     context.depth++;
     stack.push(node);
-    super.visitTableSubQuery(plan, node, stack, context);
+    super.visitTableSubQuery(context, plan, node, stack);
     stack.pop();
     context.depth--;
     context.add(context.depth, node.getPlanString());
@@ -167,22 +167,24 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
   }
 
   @Override
-  public LogicalNode visitScan(LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack, Context context)
+  public LogicalNode visitScan(Context context, LogicalPlan plan, ScanNode node, Stack<LogicalNode> stack)
       throws PlanningException {
     context.add(context.depth, node.getPlanString());
     return node;
   }
 
   @Override
-  public LogicalNode visitStoreTable(LogicalPlan plan, StoreTableNode node, Stack<LogicalNode> stack, Context context) throws PlanningException {
-    return visitUnaryNode(plan, node, stack, context);
+  public LogicalNode visitStoreTable(Context context, LogicalPlan plan, StoreTableNode node, Stack<LogicalNode> stack)
+      throws PlanningException {
+    return visitUnaryNode(context, plan, node, stack);
   }
 
   @Override
-  public LogicalNode visitInsert(LogicalPlan plan, InsertNode node, Stack<LogicalNode> stack, Context context) throws PlanningException {
+  public LogicalNode visitInsert(Context context, LogicalPlan plan, InsertNode node, Stack<LogicalNode> stack)
+      throws PlanningException {
     context.depth++;
     stack.push(node);
-    visitChild(plan, node.getSubQuery(), stack, context);
+    visitChild(context, plan, node.getSubQuery(), stack);
     stack.pop();
     context.depth--;
     context.add(context.depth, node.getPlanString());

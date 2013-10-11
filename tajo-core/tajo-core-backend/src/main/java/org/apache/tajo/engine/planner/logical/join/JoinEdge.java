@@ -18,20 +18,28 @@
 
 package org.apache.tajo.engine.planner.logical.join;
 
+import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.util.TUtil;
 
 import java.util.Collections;
 import java.util.Set;
 
 public class JoinEdge {
-  private JoinType joinType;
-  private String leftRelation;
-  private String rightRelation;
-  private Set<EvalNode> joinQual;
+  private final JoinType joinType;
+  private final String leftRelation;
+  private final String rightRelation;
+  private final Set<EvalNode> joinQual = Sets.newHashSet();
+
+  public JoinEdge(JoinType joinType, String leftRelation, String rightRelation) {
+    this.joinType = joinType;
+    this.leftRelation = leftRelation;
+    this.rightRelation = rightRelation;
+  }
 
   public JoinEdge(JoinType joinType, String leftRelation, String rightRelation, EvalNode ... condition) {
-    this.joinType = joinType;
+    this(joinType, leftRelation, rightRelation);
     Collections.addAll(joinQual, condition);
   }
 
@@ -47,11 +55,19 @@ public class JoinEdge {
     return rightRelation;
   }
 
+  public boolean hasJoinQual() {
+    return joinQual != null;
+  }
+
   public void addJoinQual(EvalNode joinQual) {
     this.joinQual.add(joinQual);
   }
 
   public EvalNode [] getJoinQual() {
     return joinQual.toArray(new EvalNode[joinQual.size()]);
+  }
+
+  public String toString() {
+    return leftRelation + " " + joinType + " " + rightRelation + " ON " + TUtil.collectionToString(joinQual);
   }
 }

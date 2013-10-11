@@ -25,6 +25,7 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalOptimizer;
 import org.apache.tajo.engine.planner.LogicalPlan;
@@ -59,15 +60,22 @@ public class TestGlobalPlanner {
     }
 
     // TPC-H Schema for Complex Queries
-    String [] tpchTables = {
+    String [] tables = {
         "part", "supplier", "partsupp", "nation", "region", "lineitem", "orders", "customer"
+    };
+    int [] volumes = {
+        100, 200, 50, 5, 5, 800, 300, 100
     };
     tpch = new TPCH();
     tpch.loadSchemas();
     tpch.loadOutSchema();
-    for (String table : tpchTables) {
-      TableMeta m = CatalogUtil.newTableMeta(tpch.getSchema(table), CatalogProtos.StoreType.CSV);
-      TableDesc d = CatalogUtil.newTableDesc(table, m, new Path("file:///"));
+    for (int i = 0; i < tables.length; i++) {
+      TableMeta m = CatalogUtil.newTableMeta(tpch.getSchema(tables[i]), CatalogProtos.StoreType.CSV);
+      TableStat stat = new TableStat();
+      stat.setNumBytes(volumes[i]);
+      m.setStat(stat);
+
+      TableDesc d = CatalogUtil.newTableDesc(tables[i], m, new Path("file:///"));
       catalog.addTable(d);
     }
 
@@ -181,5 +189,10 @@ public class TestGlobalPlanner {
         "select * from lineitem " +
         "union " +
         "select * from lineitem ) l group by l_orderkey");
+  }
+
+  @Test
+  public void testTPCH_Q5() throws Exception {
+    buildPlan(FileUtil.readTextFile(new File("benchmark/tpch/q5.tql")));
   }
 }
