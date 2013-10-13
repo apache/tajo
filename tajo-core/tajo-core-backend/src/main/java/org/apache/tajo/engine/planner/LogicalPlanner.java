@@ -1114,7 +1114,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       case IsNullPredicate:
         IsNullPredicate nullPredicate = (IsNullPredicate) expr;
         return new IsNullEval(nullPredicate.isNot(),
-            createFieldEval(plan, block, nullPredicate.getColumnRef()));
+            createEvalTree(plan, block, nullPredicate.getPredicand()));
 
       default:
     }

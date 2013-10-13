@@ -37,18 +37,17 @@ public class IsNullEval extends BinaryEval {
 
   // persistent variables
   @Expose private boolean isNot;
-  @Expose private Column columnRef;
-  @Expose private Integer fieldId = null;
 
-  public IsNullEval(boolean not, FieldEval field) {
-    super(EvalType.IS_NULL, field, DUMMY_EVAL);
+  public IsNullEval(boolean not, EvalNode predicand) {
+    super(EvalType.IS_NULL, predicand, DUMMY_EVAL);
     this.isNot = not;
-    this.columnRef = field.getColumnRef();
   }
 
   @Override
   public EvalContext newContext() {
-    return new IsNullEvalCtx();
+    IsNullEvalCtx context = new IsNullEvalCtx();
+    context.predicandContext = leftExpr.newContext();
+    return context;
   }
 
   @Override
@@ -64,14 +63,9 @@ public class IsNullEval extends BinaryEval {
   @Override
   public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
     IsNullEvalCtx isNullCtx = (IsNullEvalCtx) ctx;
-    if (fieldId == null) {
-      fieldId = schema.getColumnId(columnRef.getQualifiedName());
-    }
-    if (isNot) {
-      isNullCtx.result.setValue(!(tuple.get(fieldId) instanceof NullDatum));
-    } else {
-      isNullCtx.result.setValue(tuple.get(fieldId) instanceof NullDatum);
-    }
+    leftExpr.eval(isNullCtx.predicandContext, schema, tuple);
+    Datum result = leftExpr.terminate(((IsNullEvalCtx)ctx).predicandContext);
+    ((IsNullEvalCtx) ctx).result = DatumFactory.createBool(isNot ^ (result.type() == TajoDataTypes.Type.NULL));
   }
 
   @Override
@@ -87,9 +81,7 @@ public class IsNullEval extends BinaryEval {
   public boolean equals(Object obj) {
     if (obj instanceof IsNullEval) {
       IsNullEval other = (IsNullEval) obj;
-      return super.equals(other) &&
-          this.columnRef.equals(other.columnRef) &&
-          this.fieldId == other.fieldId;
+      return super.equals(other) && isNot == other.isNot();
     } else {
       return false;
     }
@@ -97,13 +89,13 @@ public class IsNullEval extends BinaryEval {
 
   public Object clone() throws CloneNotSupportedException {
     IsNullEval isNullEval = (IsNullEval) super.clone();
-    isNullEval.columnRef = (Column) columnRef.clone();
-    isNullEval.fieldId = fieldId;
+    isNullEval.isNot = isNot;
 
     return isNullEval;
   }
 
   private class IsNullEvalCtx implements EvalContext {
+    EvalContext predicandContext;
     BooleanDatum result;
 
     IsNullEvalCtx() {

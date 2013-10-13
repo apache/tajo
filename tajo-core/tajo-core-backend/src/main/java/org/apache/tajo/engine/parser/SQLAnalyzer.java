@@ -691,7 +691,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public IsNullPredicate visitNull_predicate(SQLParser.Null_predicateContext ctx) {
-    ColumnReferenceExpr predicand = (ColumnReferenceExpr) visit(ctx.numeric_value_expression());
+    Expr predicand = visit(ctx.numeric_value_expression());
     return new IsNullPredicate(ctx.NOT() != null, predicand);
   }
 

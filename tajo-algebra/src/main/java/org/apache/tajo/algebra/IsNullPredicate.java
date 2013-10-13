@@ -20,25 +20,25 @@ package org.apache.tajo.algebra;
 
 public class IsNullPredicate extends Expr {
   private final boolean not;
-  private final ColumnReferenceExpr columnRef;
+  private final Expr predicand;
 
-  public IsNullPredicate(boolean not, ColumnReferenceExpr column) {
+  public IsNullPredicate(boolean not, Expr column) {
     super(OpType.IsNullPredicate);
     this.not = not;
-    this.columnRef = column;
+    this.predicand = column;
   }
 
   public boolean isNot() {
     return not;
   }
 
-  public ColumnReferenceExpr getColumnRef() {
-    return columnRef;
+  public Expr getPredicand() {
+    return predicand;
   }
 
   @Override
   boolean equalsTo(Expr expr) {
     IsNullPredicate nullPredicate = (IsNullPredicate) expr;
-    return not == nullPredicate.not && columnRef.equals(nullPredicate.columnRef);
+    return not == nullPredicate.not && predicand.equals(nullPredicate.predicand);
   }
 }

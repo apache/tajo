@@ -197,6 +197,9 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-245: org.apache.tajo.algebra.FunctionExpr cannot be cast to 
+    org.apache.tajo.algebra.ColumnReferenceExpr. (hyunsik)
+
     TAJO-243: The 'tajo_dump' does not include options of table. (jinho)
 
     TAJO-244: assignToNonLeafTasks causes NPE occurs occasionally. (hyunsik)
