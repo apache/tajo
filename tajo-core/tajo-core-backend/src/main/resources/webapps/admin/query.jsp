@@ -52,7 +52,7 @@
       <td><%=eachQuery.getQueryInfo().getQueryMasterHost()%></td>
       <td><%=df.format(eachQuery.getQueryInfo().getStartTime())%></td>
       <td><%=(int)(eachQuery.getQueryInfo().getProgress() * 100.0f)%>%</td>
-      <td><%=(int)(time/1000)%> sec</td>
+      <td><%=StringUtils.formatTime(time)%></td>
       <td><%=eachQuery.getQueryInfo().getSql()%></td>
     </tr>
     <%
@@ -74,8 +74,8 @@
     <tr></tr><th>QueryId</th><th>Query Master</th><th>Started</th><th>Finished</th><th>Time</th><th>Status</th><th>sql</th></tr>
     <%
       for(QueryInProgress eachQuery: finishedQueries) {
-        long runTime = eachQuery.getQueryInfo().getFinishTime() == 0 ? -1 :
-                eachQuery.getQueryInfo().getFinishTime() - eachQuery.getQueryInfo().getStartTime();
+        long runTime = eachQuery.getQueryInfo().getFinishTime() >= 0 ?
+                eachQuery.getQueryInfo().getFinishTime() - eachQuery.getQueryInfo().getStartTime() : -1;
         String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + workerHttpPort +
                 "/querydetail.jsp?queryId=" + eachQuery.getQueryId();
     %>
@@ -83,8 +83,8 @@
       <td><a href='<%=detailView%>'><%=eachQuery.getQueryId()%></a></td>
       <td><%=eachQuery.getQueryInfo().getQueryMasterHost()%></td>
       <td><%=df.format(eachQuery.getQueryInfo().getStartTime())%></td>
-      <td><%=df.format(eachQuery.getQueryInfo().getFinishTime())%></td>
-      <td><%=runTime%> ms</td>
+      <td><%=eachQuery.getQueryInfo().getFinishTime() >= 0 ? df.format(eachQuery.getQueryInfo().getFinishTime()) : "N/A"%></td>
+      <td><%=runTime == -1 ? "N/A" : StringUtils.formatTime(runTime) %></td>
       <td><%=eachQuery.getQueryInfo().getQueryState()%></td>
       <td><%=eachQuery.getQueryInfo().getSql()%></td>
     </tr>

@@ -30,18 +30,21 @@ import org.apache.hadoop.yarn.service.Service;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.GlobalPlanner;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.QueryStartEvent;
+import org.apache.tajo.rpc.CallFuture2;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeat;
 
 // TODO - when exception, send error status to QueryJobManager
 public class QueryMaster extends CompositeService implements EventHandler {
@@ -155,7 +158,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
   public void reportQueryStatusToQueryMaster(QueryId queryId, TajoProtos.QueryState state) {
     LOG.info("Send QueryMaster Ready to QueryJobManager:" + queryId);
     try {
-      TajoMasterProtocol.TajoHeartbeat.Builder queryHeartbeatBuilder = TajoMasterProtocol.TajoHeartbeat.newBuilder()
+      TajoHeartbeat.Builder queryHeartbeatBuilder = TajoHeartbeat.newBuilder()
           .setTajoWorkerHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName())
           .setTajoWorkerPort(workerContext.getTajoWorkerManagerService().getBindAddr().getPort())
           .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
@@ -262,6 +265,15 @@ public class QueryMaster extends CompositeService implements EventHandler {
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
         }
+
+        TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
+        CallFuture2 futuer = new CallFuture2();
+        workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeat, futuer);
+        try {
+          futuer.get(3000, TimeUnit.SECONDS);
+        } catch (Throwable e) {
+          LOG.warn(e);
+        }
         finishedQueryMasterTasks.put(queryId, queryMasterTask);
       } else {
         LOG.warn("No query info:" + queryId);
@@ -270,6 +282,19 @@ public class QueryMaster extends CompositeService implements EventHandler {
         stop();
       }
     }
+  }
+
+  private TajoHeartbeat buildTajoHeartBeat(QueryMasterTask queryMasterTask) {
+    TajoHeartbeat queryHeartbeat = TajoHeartbeat.newBuilder()
+        .setTajoWorkerHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName())
+        .setTajoWorkerPort(workerContext.getTajoWorkerManagerService().getBindAddr().getPort())
+        .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
+        .setState(queryMasterTask.getState())
+        .setQueryId(queryMasterTask.getQueryId().getProto())
+        .setQueryProgress(queryMasterTask.getQuery().getProgress())
+        .setQueryFinishTime(queryMasterTask.getQuery().getFinishTime())
+        .build();
+    return queryHeartbeat;
   }
 
   private class QueryStartEventHandler implements EventHandler<QueryStartEvent> {
@@ -303,16 +328,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
         synchronized(queryMasterTasks) {
           for(QueryMasterTask eachTask: tempTasks) {
             try {
-              TajoMasterProtocol.TajoHeartbeat queryHeartbeat = TajoMasterProtocol.TajoHeartbeat.newBuilder()
-                  .setTajoWorkerHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName())
-                  .setTajoWorkerPort(workerContext.getTajoWorkerManagerService().getBindAddr().getPort())
-                  .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
-                  .setState(eachTask.getState())
-                  .setQueryId(eachTask.getQueryId().getProto())
-                  .setQueryProgress(eachTask.getQuery().getProgress())
-                  .setQueryFinishTime(eachTask.getQuery().getFinishTime())
-                  .build();
-
+              TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(eachTask);
               workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeat, NullCallback.get());
             } catch (Throwable t) {
               t.printStackTrace();

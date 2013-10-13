@@ -328,10 +328,11 @@ public class Query implements EventHandler<QueryEvent> {
               catalog.addTable(finalTableDesc);
             }
             query.setResultDesc(finalTableDesc);
+            query.finished(QueryState.QUERY_SUCCEEDED);
             query.eventHandler.handle(new QueryFinishEvent(query.getId()));
           }
 
-          return query.finished(QueryState.QUERY_SUCCEEDED);
+          return QueryState.QUERY_SUCCEEDED;
         }
       } else {
         // if at least one subquery is failed, the query is also failed.

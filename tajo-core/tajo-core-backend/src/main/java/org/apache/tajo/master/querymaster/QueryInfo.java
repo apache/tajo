@@ -122,6 +122,6 @@ public class QueryInfo {
 
   @Override
   public String toString() {
-    return queryId.toString() + ", queryMaster=" + queryMasterResource;
+    return queryId.toString() + "state=" + queryState +", queryMaster=" + queryMasterResource;
   }
 }
