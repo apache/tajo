@@ -37,7 +37,6 @@ import org.apache.tajo.exception.InternalException;
 import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -218,16 +217,24 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         columnId++;
       }
 
-      Iterator<Entry<String, String>> it = table.getMeta().toMap().entrySet().iterator();
-      String optSql;
-      while (it.hasNext()) {
-        optSql = keyvalToSQL(table, it.next());
-        if (LOG.isDebugEnabled()) {
-          LOG.debug(optSql);
+
+      String optSql = String.format("INSERT INTO %s (%s, key_, value_) VALUES(?, ?, ?)", TB_OPTIONS, C_TABLE_ID);
+      PreparedStatement pstmt = getConnection().prepareStatement(optSql);
+      try {
+        for (Entry<String, String> entry : table.getMeta().toMap().entrySet()) {
+          pstmt.setString(1, table.getName());
+          pstmt.setString(2, entry.getKey());
+          pstmt.setString(3, entry.getValue());
+          if (LOG.isDebugEnabled()) {
+            LOG.debug(optSql);
+          }
+          pstmt.addBatch();
         }
-        stmt.addBatch(optSql);
+        pstmt.executeBatch();
+      } finally {
+        CatalogUtil.closeSQLWrapper(pstmt);
       }
-      stmt.executeBatch();
+
       if (table.getMeta().getStat() != null) {
         sql = "INSERT INTO " + TB_STATISTICS + " (" + C_TABLE_ID + ", num_rows, num_bytes) "
             + "VALUES ('" + table.getName() + "', "
@@ -258,20 +265,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
             + "'" + col.getColumnName() + "',"
             + "'" + col.getDataType().getType().name() + "',"
             + (col.getDataType().hasLength() ? col.getDataType().getLength() : 0)
-            + ")";
-
-    return sql;
-  }
-
-  private String keyvalToSQL(final TableDesc desc,
-                             final Entry<String, String> keyVal) {
-    String sql =
-        "INSERT INTO " + TB_OPTIONS
-            + " (" + C_TABLE_ID + ", key_, value_) "
-            + "VALUES("
-            + "'" + desc.getName() + "',"
-            + "'" + keyVal.getKey() + "',"
-            + "'" + keyVal.getValue() + "'"
             + ")";
 
     return sql;

@@ -197,6 +197,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-243: The 'tajo_dump' does not include options of table. (jinho)
+
     TAJO-244: assignToNonLeafTasks causes NPE occurs occasionally. (hyunsik)
 
     TAJO-242: Enable omitted broadcast join feature after TAJO-184. (hyunsik)

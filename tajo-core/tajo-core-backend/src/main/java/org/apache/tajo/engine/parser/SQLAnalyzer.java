@@ -1075,9 +1075,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     for (Map.Entry<String, String> entry : map.entrySet()) {
       if (entry.getKey().equals(CSVFile.DELIMITER)) {
         params.put(entry.getKey(), escapeDelimiter(entry.getValue()));
-      } else if (entry.getKey().equals(CSVFile.NULL)) {
-        params.put(entry.getKey(), StringEscapeUtils.unescapeJava(entry.getValue()));
-      } else {
+      }  else {
         params.put(entry.getKey(), entry.getValue());
       }
     }

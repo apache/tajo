@@ -147,7 +147,7 @@ public class TestNullValues {
     };
     Options opts = new Options();
     opts.put(CSVFile.DELIMITER, ",");
-    opts.put(CSVFile.NULL, "\\N");
+    opts.put(CSVFile.NULL, "\\\\N");
     ResultSet res = TajoTestingCluster
         .run(table, schemas, opts, new String[][]{data},
             "select * from nulltable4 where col1 is null and col2 is null and col3 is null and col5 is null and col4 = 43578");

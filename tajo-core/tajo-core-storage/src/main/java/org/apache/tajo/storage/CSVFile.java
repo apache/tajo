@@ -78,7 +78,7 @@ public class CSVFile {
       this.schema = meta.getSchema();
       this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(DELIMITER, DELIMITER_DEFAULT)).charAt(0);
 
-      String nullCharacters = this.meta.getOption(NULL);
+      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(NULL));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -306,7 +306,7 @@ public class CSVFile {
       String delim  = fragment.getMeta().getOption(DELIMITER, DELIMITER_DEFAULT);
       this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
 
-      String nullCharacters = fragment.getMeta().getOption(NULL);
+      String nullCharacters = StringEscapeUtils.unescapeJava(fragment.getMeta().getOption(NULL));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {

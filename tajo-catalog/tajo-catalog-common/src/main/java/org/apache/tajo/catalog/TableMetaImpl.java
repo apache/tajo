@@ -139,20 +139,20 @@ public class TableMetaImpl implements TableMeta, GsonObject {
 
   @Override
   public Options getOptions() {
-    return options;
-  }
-  
-  @Override
-  public Map<String,String> toMap() {
     TableProtoOrBuilder p = viaProto ? proto : builder;
     if (options != null) {
-      return this.options.getAllKeyValus();
+      return this.options;
     }
     if (!p.hasParams()) {
       return null;
     }
     this.options = new Options(p.getParams());
-    return options.getAllKeyValus();
+    return options;
+  }
+  
+  @Override
+  public Map<String,String> toMap() {
+    return getOptions().getAllKeyValus();
   }
 	
 	public boolean equals(Object object) {
