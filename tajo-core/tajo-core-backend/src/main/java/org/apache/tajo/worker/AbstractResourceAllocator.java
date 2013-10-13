@@ -18,15 +18,15 @@
 
 package org.apache.tajo.worker;
 
+import com.google.common.collect.Maps;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.service.CompositeService;
 import org.apache.tajo.master.ContainerProxy;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public abstract class AbstractResourceAllocator extends CompositeService implements ResourceAllocator {
-  private Map<ContainerId, ContainerProxy> containers = new HashMap<ContainerId, ContainerProxy>();
+  private Map<ContainerId, ContainerProxy> containers = Maps.newConcurrentMap();
 
   public AbstractResourceAllocator() {
     super(AbstractResourceAllocator.class.getName());
