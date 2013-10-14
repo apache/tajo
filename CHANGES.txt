@@ -197,6 +197,9 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-169: the default TAJO_WORKER_STANDBY_MODE in tajo-env.sh is wrong. 
+    (hyunsik)
+
     TAJO-231: In StorageManger v2, TestCSVCompression incurs unexpected end of 
     stream occasionally. (hyunsik)
 
