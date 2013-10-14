@@ -90,10 +90,10 @@ public class TestTajoClient {
     Path tablePath = writeTmpTable(tableName);
 
     assertFalse(tajo.existTable(tableName));
-    String tql =
+    String sql =
         "create external table " + tableName + " (deptname text, score integer) "
             + "using csv location '" + tablePath + "'";
-    tajo.updateQuery(tql);
+    tajo.updateQuery(sql);
     assertTrue(tajo.existTable(tableName));
   }
 
@@ -121,10 +121,10 @@ public class TestTajoClient {
     Path tablePath = writeTmpTable(tableName);
     assertFalse(tajo.existTable(tableName));
 
-    String tql = "create external table " + tableName + " (deptname text, score int4) " + "using csv location '"
+    String sql = "create external table " + tableName + " (deptname text, score int4) " + "using csv location '"
         + tablePath + "'";
 
-    tajo.executeQueryAndGetResult(tql);
+    tajo.executeQueryAndGetResult(sql);
     assertTrue(tajo.existTable(tableName));
 
     tajo.updateQuery("drop table " + tableName);
@@ -140,9 +140,9 @@ public class TestTajoClient {
 
     assertFalse(tajo.existTable(tableName));
 
-    String tql = "create table " + tableName + " (deptname text, score int4)";
+    String sql = "create table " + tableName + " (deptname text, score int4)";
 
-    tajo.updateQuery(tql);
+    tajo.updateQuery(sql);
     assertTrue(tajo.existTable(tableName));
 
     Path tablePath = tajo.getTableDesc(tableName).getPath();
@@ -161,10 +161,10 @@ public class TestTajoClient {
     BackendTestingUtil.writeTmpTable(conf, "file:///tmp", tableName, false);
 
     assertFalse(tajo.existTable(tableName));
-    String tql =
+    String sql =
         "create external table " + tableName + " (deptname text, score int4) "
             + "using csv location 'file:///tmp/" + tableName + "'";
-    tajo.executeQueryAndGetResult(tql);
+    tajo.executeQueryAndGetResult(sql);
     assertTrue(tajo.existTable(tableName));
   }
 

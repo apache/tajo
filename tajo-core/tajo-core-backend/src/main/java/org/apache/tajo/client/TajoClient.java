@@ -124,9 +124,9 @@ public class TajoClient {
    * In order to get the result, you should use {@link #getQueryResult(org.apache.tajo.QueryId)}
    * or {@link #getQueryResultAndWait(org.apache.tajo.QueryId)}.
    */
-  public GetQueryStatusResponse executeQuery(String tql) throws ServiceException {
+  public GetQueryStatusResponse executeQuery(String sql) throws ServiceException {
     QueryRequest.Builder builder = QueryRequest.newBuilder();
-    builder.setQuery(tql);
+    builder.setQuery(sql);
 
     return tajoMasterService.submitQuery(null, builder.build());
   }
@@ -265,9 +265,9 @@ public class TajoClient {
     return CatalogUtil.newTableDesc(response.getTableDesc());
   }
 
-  public boolean updateQuery(String tql) throws ServiceException {
+  public boolean updateQuery(String sql) throws ServiceException {
     QueryRequest.Builder builder = QueryRequest.newBuilder();
-    builder.setQuery(tql);
+    builder.setQuery(sql);
 
     ResultCode resultCode =
         tajoMasterService.updateQuery(null, builder.build()).getResultCode();

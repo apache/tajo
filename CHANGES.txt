@@ -197,6 +197,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-251: Rename the legacy name *.tql to *.sql. (hyunsik)
+
     TAJO-169: the default TAJO_WORKER_STANDBY_MODE in tajo-env.sh is wrong. 
     (hyunsik)
 

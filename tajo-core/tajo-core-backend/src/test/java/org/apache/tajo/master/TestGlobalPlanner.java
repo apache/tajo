@@ -118,7 +118,7 @@ public class TestGlobalPlanner {
 
   @Test
   public void testMultipleJoin() throws Exception {
-    buildPlan(FileUtil.readTextFile(new File("src/test/queries/tpch_q2_simplified.tql")));
+    buildPlan(FileUtil.readTextFile(new File("src/test/queries/tpch_q2_simplified.sql")));
   }
 
   @Test
@@ -193,6 +193,6 @@ public class TestGlobalPlanner {
 
   @Test
   public void testTPCH_Q5() throws Exception {
-    buildPlan(FileUtil.readTextFile(new File("benchmark/tpch/q5.tql")));
+    buildPlan(FileUtil.readTextFile(new File("benchmark/tpch/q5.sql")));
   }
 }

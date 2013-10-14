@@ -87,7 +87,7 @@ public class TestJoinQuery {
   @Test
   public final void testTPCHQ2Join() throws Exception {
     ResultSet res = tpch.execute(FileUtil
-        .readTextFile(new File("src/test/queries/tpch_q2_simplified.tql")));
+        .readTextFile(new File("src/test/queries/tpch_q2_simplified.sql")));
 
     try {
       Object [][] result = new Object[3][3];

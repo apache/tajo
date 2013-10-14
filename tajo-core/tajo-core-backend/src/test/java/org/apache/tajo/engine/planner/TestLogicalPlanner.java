@@ -391,7 +391,7 @@ public class TestLogicalPlanner {
   @Test
   public final void testMultipleJoin() throws IOException, PlanningException {
     Expr expr = sqlAnalyzer.parse(
-        FileUtil.readTextFile(new File("src/test/queries/tpch_q2_simplified.tql")));
+        FileUtil.readTextFile(new File("src/test/queries/tpch_q2_simplified.sql")));
     LogicalNode plan = planner.createPlan(expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
     Schema expected = tpch.getOutSchema("q2");

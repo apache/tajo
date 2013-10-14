@@ -66,8 +66,8 @@ public abstract class BenchmarkSet {
     int last;
     String name, query;
     for (String file : queryDir.list()) {
-      if (file.endsWith(".tql")) {
-        last = file.indexOf(".tql");
+      if (file.endsWith(".sql")) {
+        last = file.indexOf(".sql");
         name = file.substring(0, last);
         query = FileUtil.readTextFile(new File(queryDir + "/" + file));
       }
