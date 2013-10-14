@@ -260,12 +260,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
         queryMasterTask = queryMasterTasks.remove(queryId);
       }
       if(queryMasterTask != null) {
-        try {
-          queryMasterTask.stop();
-        } catch (Exception e) {
-          LOG.error(e.getMessage(), e);
-        }
-
         TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
         CallFuture2 futuer = new CallFuture2();
         workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeat, futuer);
@@ -274,6 +268,13 @@ public class QueryMaster extends CompositeService implements EventHandler {
         } catch (Throwable e) {
           LOG.warn(e);
         }
+
+        try {
+          queryMasterTask.stop();
+        } catch (Exception e) {
+          LOG.error(e.getMessage(), e);
+        }
+
         finishedQueryMasterTasks.put(queryId, queryMasterTask);
       } else {
         LOG.warn("No query info:" + queryId);
