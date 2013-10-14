@@ -260,6 +260,7 @@ public class TajoTestingCluster {
     c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
     c.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
     c.set(CatalogConstants.JDBC_URI, "jdbc:derby:" + testBuildDir.getAbsolutePath() + "/db");
+    c.setVar(ConfVars.TASK_LOCAL_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo-localdir");
 
     LOG.info("derby repository is set to "+conf.get(CatalogConstants.JDBC_URI));
 

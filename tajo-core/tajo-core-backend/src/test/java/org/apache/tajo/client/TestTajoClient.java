@@ -117,7 +117,7 @@ public class TestTajoClient {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = "testCreateAndDropExternalTableByExecuteQuery";
 
-    BackendTestingUtil.writeTmpTable(conf, "file:///tmp", tableName, false);
+    BackendTestingUtil.writeTmpTable(conf, CommonTestingUtil.getTestDir(), tableName, false);
     Path tablePath = writeTmpTable(tableName);
     assertFalse(tajo.existTable(tableName));
 
@@ -158,7 +158,7 @@ public class TestTajoClient {
   public final void testDDLByExecuteQuery() throws IOException, ServiceException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = "testDDLByExecuteQuery";
-    BackendTestingUtil.writeTmpTable(conf, "file:///tmp", tableName, false);
+    BackendTestingUtil.writeTmpTable(conf, CommonTestingUtil.getTestDir(), tableName, false);
 
     assertFalse(tajo.existTable(tableName));
     String sql =

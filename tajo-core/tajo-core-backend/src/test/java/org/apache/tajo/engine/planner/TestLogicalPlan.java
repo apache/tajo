@@ -71,7 +71,7 @@ public class TestLogicalPlan {
       TableStat stat = new TableStat();
       stat.setNumBytes(tableVolumns[i]);
       m.setStat(stat);
-      TableDesc d = CatalogUtil.newTableDesc(tpchTables[i], m, new Path("file:///"));
+      TableDesc d = CatalogUtil.newTableDesc(tpchTables[i], m, new Path("/"));
       catalog.addTable(d);
     }
     planner = new LogicalPlanner(catalog);

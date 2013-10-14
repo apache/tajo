@@ -63,7 +63,7 @@ public class TestExecutionBlockCursor {
     for (String table : tpch.getTableNames()) {
       TableMeta m = CatalogUtil.newTableMeta(tpch.getSchema(table), CatalogProtos.StoreType.CSV);
       m.setStat(new TableStat());
-      TableDesc d = CatalogUtil.newTableDesc(table, m, new Path("file:///"));
+      TableDesc d = CatalogUtil.newTableDesc(table, m, new Path("/"));
       catalog.addTable(d);
     }
 

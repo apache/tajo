@@ -27,7 +27,7 @@
 
   <property>
     <name>tajo.rootdir</name>
-    <value>file:///tmp/tajo-${user.name}</value>
+    <value>/tajo</value>
     <description>A base for other temporary directories.</description>
   </property>
 

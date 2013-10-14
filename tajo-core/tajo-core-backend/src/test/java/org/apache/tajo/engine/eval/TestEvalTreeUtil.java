@@ -73,7 +73,7 @@ public class TestEvalTreeUtil {
     schema.addColumn("age", TajoDataTypes.Type.INT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl("people", meta, new Path("file:///"));
+    TableDesc desc = new TableDescImpl("people", meta, new Path("/"));
     catalog.addTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("test_sum", TestSum.class,

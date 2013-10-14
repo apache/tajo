@@ -75,7 +75,7 @@ public class TestGlobalPlanner {
       stat.setNumBytes(volumes[i]);
       m.setStat(stat);
 
-      TableDesc d = CatalogUtil.newTableDesc(tables[i], m, new Path("file:///"));
+      TableDesc d = CatalogUtil.newTableDesc(tables[i], m, new Path("/"));
       catalog.addTable(d);
     }
 
