@@ -197,6 +197,9 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-231: In StorageManger v2, TestCSVCompression incurs unexpected end of 
+    stream occasionally. (hyunsik)
+
     TAJO-250: QueryMaster must send the query finish heartbeat. (hyunsik)
 
     TAJO-245: org.apache.tajo.algebra.FunctionExpr cannot be cast to 

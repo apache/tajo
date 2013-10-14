@@ -96,7 +96,8 @@ public class TestCSVCompression {
       storageCompressionTest(storeType, Lz4Codec.class);
   }
 
-  @Test
+  // TODO - See https://issues.apache.org/jira/browse/HADOOP-9622
+  //@Test
   public void testSplitCompressionData() throws IOException {
 
     Schema schema = new Schema();
