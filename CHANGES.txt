@@ -197,8 +197,6 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
-    TAJO-251: Rename the legacy name *.tql to *.sql. (hyunsik)
-
     TAJO-169: the default TAJO_WORKER_STANDBY_MODE in tajo-env.sh is wrong. 
     (hyunsik)
 
@@ -318,3 +316,9 @@ Release 0.2.0 - unreleased
     TAJO-6: Rename tajo.engine.function.builtin.NewSumInt to SumInt. (rsumbaly)
 
     TAJO-21: CREATE EXTERNAL TABLE should support a file path. (JaeHwa Jung)
+
+  TASKS
+
+    TAJO-252: Add DISCLAIMER file. (hyunsik)
+
+    TAJO-251: Rename the legacy name *.tql to *.sql. (hyunsik)
