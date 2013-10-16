@@ -100,13 +100,11 @@ public class QueryInProgress extends CompositeService {
 
     masterContext.getResourceManager().stopQueryMaster(queryId);
 
-    boolean queryMasterStopped = false;
     long startTime = System.currentTimeMillis();
     while(true) {
       try {
         if(masterContext.getResourceManager().isQueryMasterStopped(queryId)) {
           LOG.info(queryId + " QueryMaster stopped");
-          queryMasterStopped = true;
           break;
         }
       } catch (Exception e) {

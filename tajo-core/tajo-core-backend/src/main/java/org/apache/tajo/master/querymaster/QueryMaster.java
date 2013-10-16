@@ -255,7 +255,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
 
     public void stopQuery(QueryId queryId) {
-      LOG.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> " + queryId + "<<>>>><<<<<<>>>>");
       QueryMasterTask queryMasterTask;
       queryMasterTask = queryMasterTasks.remove(queryId);
       finishedQueryMasterTasks.put(queryId, queryMasterTask);

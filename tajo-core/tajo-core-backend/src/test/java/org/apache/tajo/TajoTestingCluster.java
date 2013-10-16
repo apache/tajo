@@ -42,6 +42,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.master.rm.YarnTajoResourceManager;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -80,22 +81,27 @@ public class TajoTestingCluster {
 	 */
 	public static final String DEFAULT_TEST_DIRECTORY = "target/test-data";
 
-	public TajoTestingCluster() {
+  public TajoTestingCluster() {
     this.conf = new TajoConf();
-    if (System.getProperty("tajo.resource.manager") != null) {
+    initPropertiesAndConfigs();
+	}
+
+  void initPropertiesAndConfigs() {
+    if (System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname) != null) {
       String testResourceManager = System.getProperty("tajo.resource.manager");
       Preconditions.checkState(
           testResourceManager.equals(TajoWorkerResourceManager.class.getCanonicalName()) ||
-          testResourceManager.equals(YarnTajoResourceManager.class.getCanonicalName()),
+              testResourceManager.equals(YarnTajoResourceManager.class.getCanonicalName()),
           "tajo.resource.manager must be either " + TajoWorkerResourceManager.class.getCanonicalName() + " or " +
               YarnTajoResourceManager.class.getCanonicalName() +"."
       );
-      this.conf.set("tajo.resource.manager", System.getProperty("tajo.resource.manager"));
+      conf.set(ConfVars.RESOURCE_MANAGER_CLASS.varname, System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname));
     }
     this.standbyWorkerMode =
-        this.conf.get("tajo.resource.manager", TajoWorkerResourceManager.class.getCanonicalName())
+        conf.get(ConfVars.RESOURCE_MANAGER_CLASS.varname, TajoWorkerResourceManager.class.getCanonicalName())
             .indexOf(TajoWorkerResourceManager.class.getName()) >= 0;
-	}
+    conf.set(CommonTestingUtil.TAJO_TEST, "TRUE");
+  }
 
 	public TajoConf getConfiguration() {
 		return this.conf;
@@ -294,7 +300,7 @@ public class TajoTestingCluster {
 
   private void startTajoWorkers(int numSlaves) throws Exception {
     for(int i = 0; i < 1; i++) {
-      TajoWorker tajoWorker = new TajoWorker("all");
+      TajoWorker tajoWorker = new TajoWorker("worker_" + i);
 
       TajoConf workerConf  = new TajoConf(this.conf);
 
@@ -447,6 +453,13 @@ public class TajoTestingCluster {
     LOG.info("========================================");
     LOG.info("Minicluster is stopping");
     LOG.info("========================================");
+
+    try {
+      Thread.sleep(3000);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+
     shutdownMiniTajoCluster();
 
     if(this.catalogServer != null) {
@@ -467,7 +480,6 @@ public class TajoTestingCluster {
       this.dfsCluster.shutdown();
     }
 
-    /*
     if(this.clusterTestBuildDir != null && this.clusterTestBuildDir.exists()) {
       if(!ShutdownHookManager.get().isShutdownInProgress()) {
         //TODO clean test dir when ShutdownInProgress
@@ -476,8 +488,7 @@ public class TajoTestingCluster {
         localFS.close();
       }
       this.clusterTestBuildDir = null;
-    }*/
-
+    }
     LOG.info("Minicluster is down");
   }
 

@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class CommonTestingUtil {
+  public static final String TAJO_TEST = "tajo.test";
+
   /**
    *
    * @param dir a local directory to be created

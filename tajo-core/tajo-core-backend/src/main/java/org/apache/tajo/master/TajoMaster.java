@@ -50,6 +50,7 @@ import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.master.rm.YarnTajoResourceManager;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
@@ -182,11 +183,13 @@ public class TajoMaster extends CompositeService {
   }
 
   private void initWebServer() throws Exception {
-    int httpPort = systemConf.getInt("tajo.master.http.port", 8080);
-    webServer = StaticHttpServer.getInstance(this ,"admin", null, httpPort ,
-        true, null, context.getConf(), null);
-    webServer.addServlet("queryServlet", "/query_exec", QueryExecutorServlet.class);
-    webServer.start();
+    if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")) {
+      int httpPort = systemConf.getInt("tajo.master.http.port", 8080);
+      webServer = StaticHttpServer.getInstance(this ,"admin", null, httpPort ,
+          true, null, context.getConf(), null);
+      webServer.addServlet("queryServlet", "/query_exec", QueryExecutorServlet.class);
+      webServer.start();
+    }
   }
 
   private void checkAndInitializeSystemDirectories() throws IOException {
@@ -426,10 +429,12 @@ public class TajoMaster extends CompositeService {
 
   @Override
   public void stop() {
-    try {
-      webServer.stop();
-    } catch (Exception e) {
-      LOG.error(e);
+    if (webServer != null) {
+      try {
+        webServer.stop();
+      } catch (Exception e) {
+        LOG.error(e);
+      }
     }
 
     super.stop();

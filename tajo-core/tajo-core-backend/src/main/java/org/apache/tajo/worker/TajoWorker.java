@@ -39,6 +39,7 @@ import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.CallFuture2;
 import org.apache.tajo.rpc.ProtoAsyncRpcClient;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.webapp.StaticHttpServer;
@@ -148,15 +149,18 @@ public class TajoWorker extends CompositeService {
       LOG.info("Tajo worker started: mode=" + daemonMode + ", clientPort=" + clientPort + ", managerPort="
           + managerPort);
 
-      try {
-        httpPort = tajoConf.getInt("tajo.worker.http.port", 28080);
-        webServer = StaticHttpServer.getInstance(this ,"worker", null, httpPort ,
-            true, null, tajoConf, null);
-        webServer.start();
-        httpPort = webServer.getPort();
-        LOG.info("Worker info server started:" + httpPort);
-      } catch (IOException e) {
-        LOG.error(e.getMessage(), e);
+      if (!tajoConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")) {
+        try {
+          httpPort = tajoConf.getInt("tajo.worker.http.port", 28080);
+          webServer = StaticHttpServer.getInstance(this ,"worker", null, httpPort ,
+              true, null, tajoConf, null);
+          webServer.start();
+          httpPort = webServer.getPort();
+          LOG.info("Worker info server started:" + httpPort);
+          throw new IOException("AAA");
+        } catch (IOException e) {
+          LOG.error(e.getMessage(), e);
+        }
       }
       LOG.info("Tajo worker started: mode=" + daemonMode + ", clientPort=" + clientPort + ", managerPort="
           + managerPort);
