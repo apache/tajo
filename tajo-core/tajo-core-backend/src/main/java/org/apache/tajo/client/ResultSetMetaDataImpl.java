@@ -19,7 +19,7 @@
 /**
  * 
  */
-package org.apache.tajo.engine.query;
+package org.apache.tajo.client;
 
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.DataType;

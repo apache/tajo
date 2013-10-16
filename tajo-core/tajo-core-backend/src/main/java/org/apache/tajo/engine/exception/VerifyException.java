@@ -16,20 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.query.exception;
+package org.apache.tajo.engine.exception;
 
-public class InvalidQueryException extends RuntimeException {
-	private static final long serialVersionUID = -7085849718839416246L;
+import org.apache.tajo.engine.planner.PlanningException;
 
-  public InvalidQueryException() {
-    super();
-  }
-
-	public InvalidQueryException(String message) {
+public class VerifyException extends PlanningException {
+  public VerifyException(String message) {
     super(message);
   }
-	
-	public InvalidQueryException(Throwable t) {
-		super(t);
-	}
 }

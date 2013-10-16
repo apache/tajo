@@ -37,12 +37,13 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.exception.VerifyException;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.query.exception.InvalidQueryException;
-import org.apache.tajo.engine.query.exception.UndefinedFunctionException;
+import org.apache.tajo.engine.exception.InvalidQueryException;
+import org.apache.tajo.engine.exception.UndefinedFunctionException;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.exception.InternalException;
 

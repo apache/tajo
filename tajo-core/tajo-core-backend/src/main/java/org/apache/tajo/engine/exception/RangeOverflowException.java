@@ -16,28 +16,13 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
 package org.apache.tajo.engine.exception;
 
-public class NoSuchQueryIdException extends Exception {
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.TupleRange;
 
-  private static final long serialVersionUID = -4425982532461186746L;
-
-  public NoSuchQueryIdException() {
-    
-  }
-  
-  public NoSuchQueryIdException(String message) {
-    super(message);
-  }
-  
-  public NoSuchQueryIdException(Exception e) {
-    super(e);
-  }
-  
-  public NoSuchQueryIdException(String message, Exception e) {
-    super(message, e);
+public class RangeOverflowException extends RuntimeException {
+  public RangeOverflowException(TupleRange range, Tuple overflowValue, long inc) {
+    super("Overflow Error: tried to increase " + inc + " to " + overflowValue + ", but the range " + range);
   }
 }

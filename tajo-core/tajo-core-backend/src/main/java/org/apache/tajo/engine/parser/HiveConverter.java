@@ -27,8 +27,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.engine.query.exception.SQLParseError;
-import org.apache.tajo.engine.query.exception.SQLSyntaxError;
 
 import java.math.BigInteger;
 import java.util.ArrayList;

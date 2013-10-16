@@ -19,7 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
-import org.apache.tajo.TaskAttemptContext;
+import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.engine.eval.EvalContext;
 import org.apache.tajo.engine.eval.EvalNode;

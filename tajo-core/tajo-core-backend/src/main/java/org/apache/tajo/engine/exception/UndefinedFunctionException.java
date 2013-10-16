@@ -21,15 +21,14 @@
  */
 package org.apache.tajo.engine.exception;
 
-public class UnfinishedTaskException extends Exception {
 
-  private static final long serialVersionUID = -3229141373378209229L;
-  
-  public UnfinishedTaskException() {
-    
-  }
+public class UndefinedFunctionException extends InvalidQueryException {
+	private static final long serialVersionUID = 113593927391549716L;
 
-  public UnfinishedTaskException(String message) {
-    super(message);
-  }
+	/**
+	 * @param signature
+	 */
+	public UndefinedFunctionException(String signature) {
+		super("Error: call to undefined function "+signature+"()");	
+	}
 }

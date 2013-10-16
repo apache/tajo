@@ -30,16 +30,13 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.util.ConverterUtils;
-import org.apache.tajo.DataChannel;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
-import org.apache.tajo.TaskAttemptContext;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.exception.UnfinishedTaskException;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
@@ -48,8 +45,8 @@ import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TajoWorkerProtocolService.Interface;
-import org.apache.tajo.ipc.protocolrecords.QueryUnitRequest;
-import org.apache.tajo.master.QueryContext;
+import org.apache.tajo.engine.query.QueryUnitRequest;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.StorageUtil;
@@ -300,12 +297,11 @@ public class Task {
 
   public void cleanUp() {
     // remove itself from worker
-    // 끝난건지 확인
+
     if (context.getState() == TaskAttemptState.TA_SUCCEEDED) {
       try {
         // context.getWorkDir() 지우기
         localFS.delete(context.getWorkDir(), true);
-        // tasks에서 자기 지우기
         synchronized (taskRunnerContext.getTasks()) {
           taskRunnerContext.getTasks().remove(this.getId());
         }
@@ -313,8 +309,7 @@ public class Task {
         e.printStackTrace();
       }
     } else {
-      LOG.error(new UnfinishedTaskException("QueryUnitAttemptId: "
-          + context.getTaskId() + " status: " + context.getState()));
+      LOG.error("QueryUnitAttemptId: " + context.getTaskId() + " status: " + context.getState());
     }
   }
 

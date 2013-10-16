@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.engine.query;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Options;

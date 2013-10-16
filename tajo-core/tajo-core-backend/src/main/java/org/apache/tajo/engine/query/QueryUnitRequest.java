@@ -19,14 +19,13 @@
 /**
  * 
  */
-package org.apache.tajo.ipc.protocolrecords;
+package org.apache.tajo.engine.query;
 
-import org.apache.tajo.DataChannel;
+import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.storage.Fragment;
 
 import java.net.URI;

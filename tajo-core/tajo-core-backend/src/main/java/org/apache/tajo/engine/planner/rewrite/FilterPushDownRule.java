@@ -31,7 +31,7 @@ import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.query.exception.InvalidQueryException;
+import org.apache.tajo.engine.exception.InvalidQueryException;
 
 import java.util.*;
 

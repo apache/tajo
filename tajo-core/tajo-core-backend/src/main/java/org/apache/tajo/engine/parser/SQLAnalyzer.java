@@ -28,8 +28,6 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.engine.parser.SQLParser.*;
-import org.apache.tajo.engine.query.exception.SQLParseError;
-import org.apache.tajo.engine.query.exception.SQLSyntaxError;
 import org.apache.tajo.storage.CSVFile;
 
 import java.util.HashMap;

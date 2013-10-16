@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,12 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.scheduler.event;
+package org.apache.tajo.engine.exception;
 
-/**
- * Event Type for Scheduler
- */
-public enum SchedulerEventType {
-  SCHEDULE,
-  RESCHEDULE
+public class NoSuchColumnException extends VerifyException {
+  public NoSuchColumnException(String columnName) {
+    super("ERROR: no such column '" + columnName + "'");
+  }
 }

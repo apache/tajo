@@ -38,14 +38,12 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ConstEval;
 import org.apache.tajo.engine.eval.FieldEval;
-import org.apache.tajo.engine.exception.EmptyClusterException;
 import org.apache.tajo.engine.exception.IllegalQueryStatusException;
-import org.apache.tajo.engine.exception.NoSuchQueryIdException;
-import org.apache.tajo.engine.exception.UnknownWorkerException;
 import org.apache.tajo.engine.parser.HiveConverter;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.querymaster.QueryInfo;
@@ -103,9 +101,7 @@ public class GlobalEngine extends AbstractService {
   }
 
   public GetQueryStatusResponse executeQuery(String sql)
-      throws InterruptedException, IOException,
-      NoSuchQueryIdException, IllegalQueryStatusException,
-      UnknownWorkerException, EmptyClusterException {
+      throws InterruptedException, IOException, IllegalQueryStatusException {
 
     LOG.info("SQL: " + sql);
     QueryContext queryContext = new QueryContext();

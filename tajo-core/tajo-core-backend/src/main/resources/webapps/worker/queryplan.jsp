@@ -9,11 +9,11 @@
 <%@ page import="org.apache.tajo.master.querymaster.QueryMasterTask" %>
 <%@ page import="org.apache.tajo.master.querymaster.SubQuery" %>
 <%@ page import="java.text.DecimalFormat" %>
-<%@ page import="org.apache.tajo.master.ExecutionBlock" %>
+<%@ page import="org.apache.tajo.engine.planner.global.ExecutionBlock" %>
 <%@ page import="java.util.*" %>
 <%@ page import="org.apache.tajo.ExecutionBlockId" %>
 <%@ page import="org.apache.tajo.engine.planner.global.MasterPlan" %>
-<%@ page import="org.apache.tajo.DataChannel" %>
+<%@ page import="org.apache.tajo.engine.planner.global.DataChannel" %>
 
 <%
   QueryId queryId = TajoIdUtils.parseQueryId(request.getParameter("queryId"));

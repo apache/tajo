@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BackendTestingUtil;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
@@ -50,8 +51,7 @@ public class TestTajoClient {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    cluster = new TajoTestingCluster();
-    cluster.startMiniCluster(1);
+    cluster = TpchTestBase.getInstance().getTestingCluster();
     conf = cluster.getConfiguration();
     Thread.sleep(3000);
     tajo = new TajoClient(conf);
@@ -61,10 +61,10 @@ public class TestTajoClient {
 
   @AfterClass
   public static void tearDown() throws Exception {
-    cluster.shutdownMiniCluster();
-    if(tajo != null) {
-      tajo.close();
-    }
+//    cluster.shutdownMiniCluster();
+//    if(tajo != null) {
+//      tajo.close();
+//    }
   }
 
   private static Path writeTmpTable(String tableName) throws IOException {

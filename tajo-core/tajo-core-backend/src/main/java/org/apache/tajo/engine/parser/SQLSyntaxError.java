@@ -16,8 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.query.exception;
+package org.apache.tajo.engine.parser;
 
+
+import org.apache.tajo.engine.exception.InvalidQueryException;
 
 public class SQLSyntaxError extends InvalidQueryException {
   private static final long serialVersionUID = 5388279335175632066L;

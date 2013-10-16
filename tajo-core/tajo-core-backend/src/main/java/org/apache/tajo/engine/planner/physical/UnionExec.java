@@ -21,8 +21,8 @@
  */
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.TaskAttemptContext;
-import org.apache.tajo.engine.query.exception.InvalidQueryException;
+import org.apache.tajo.worker.TaskAttemptContext;
+import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;

@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo;
+package org.apache.tajo.engine.planner.global;
 
 import com.google.common.base.Preconditions;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.master.ExecutionBlock;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;

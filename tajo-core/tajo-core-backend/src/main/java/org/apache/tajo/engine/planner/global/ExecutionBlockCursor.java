@@ -12,12 +12,9 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
-
-import org.apache.tajo.engine.planner.global.MasterPlan;
+package org.apache.tajo.engine.planner.global;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 
 /**
  * A distributed execution plan (DEP) is a direct acyclic graph (DAG) of ExecutionBlocks.

@@ -18,17 +18,13 @@
 
 package org.apache.tajo.engine.exception;
 
-public class EmptyClusterException extends Exception {
+public class AmbiguousFieldException extends InvalidQueryException {
+	private static final long serialVersionUID = 3102675985226352347L;
 
-  public EmptyClusterException() {
-
-  }
-
-  public EmptyClusterException(String msg) {
-    super(msg);
-  }
-
-  public EmptyClusterException(Exception e) {
-    super(e);
-  }
+	/**
+	 * @param fieldName
+	 */
+	public AmbiguousFieldException(String fieldName) {
+		super("ERROR: column name "+ fieldName + " is ambiguous");	
+	}
 }

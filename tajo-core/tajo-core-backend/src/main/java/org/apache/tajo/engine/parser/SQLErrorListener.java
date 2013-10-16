@@ -20,7 +20,6 @@ package org.apache.tajo.engine.parser;
 
 import org.antlr.v4.runtime.*;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tajo.engine.query.exception.SQLParseError;
 
 public class SQLErrorListener extends BaseErrorListener {
   public void syntaxError(Recognizer<?, ?> recognizer,

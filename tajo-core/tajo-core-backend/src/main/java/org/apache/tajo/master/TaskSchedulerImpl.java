@@ -32,7 +32,7 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.protocolrecords.QueryUnitRequest;
+import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.master.event.TaskAttemptAssignedEvent;
 import org.apache.tajo.master.event.TaskRequestEvent;
 import org.apache.tajo.master.event.TaskScheduleEvent;

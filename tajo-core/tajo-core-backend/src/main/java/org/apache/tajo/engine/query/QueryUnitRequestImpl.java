@@ -18,14 +18,12 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.DataChannel;
+import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.ipc.TajoWorkerProtocol.Fetch;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProtoOrBuilder;
-import org.apache.tajo.ipc.protocolrecords.QueryUnitRequest;
-import org.apache.tajo.master.QueryContext;
 import org.apache.tajo.storage.Fragment;
 
 import java.net.URI;

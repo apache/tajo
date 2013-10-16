@@ -445,7 +445,7 @@ public class TajoTestingCluster {
 
   public void shutdownMiniCluster() throws IOException {
     LOG.info("========================================");
-    LOG.info("Shutdown minicluster");
+    LOG.info("Minicluster is stopping");
     LOG.info("========================================");
     shutdownMiniTajoCluster();
 
@@ -457,19 +457,26 @@ public class TajoTestingCluster {
       this.yarnCluster.stop();
     }
 
+    try {
+      Thread.sleep(3000);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+
     if(this.dfsCluster != null) {
       this.dfsCluster.shutdown();
     }
 
+    /*
     if(this.clusterTestBuildDir != null && this.clusterTestBuildDir.exists()) {
       if(!ShutdownHookManager.get().isShutdownInProgress()) {
         //TODO clean test dir when ShutdownInProgress
         LocalFileSystem localFS = LocalFileSystem.getLocal(conf);
-        localFS.delete(
-            new Path(clusterTestBuildDir.toString()), true);
+        localFS.delete(new Path(clusterTestBuildDir.toString()), true);
+        localFS.close();
       }
       this.clusterTestBuildDir = null;
-    }
+    }*/
 
     LOG.info("Minicluster is down");
   }

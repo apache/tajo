@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.querymaster;
 
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -30,8 +31,7 @@ import org.apache.hadoop.yarn.service.Service;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoMasterProtocol;
-import org.apache.tajo.master.GlobalPlanner;
+import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.rpc.CallFuture2;
@@ -62,9 +62,9 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private TajoConf systemConf;
 
-  private Map<QueryId, QueryMasterTask> queryMasterTasks = new HashMap<QueryId, QueryMasterTask>();
+  private Map<QueryId, QueryMasterTask> queryMasterTasks = Maps.newConcurrentMap();
 
-  private Map<QueryId, QueryMasterTask> finishedQueryMasterTasks = new HashMap<QueryId, QueryMasterTask>();
+  private Map<QueryId, QueryMasterTask> finishedQueryMasterTasks = Maps.newConcurrentMap();
 
   private ClientSessionTimeoutCheckThread clientSessionTimeoutCheckThread;
 
@@ -255,16 +255,17 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
 
     public void stopQuery(QueryId queryId) {
+      LOG.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> " + queryId + "<<>>>><<<<<<>>>>");
       QueryMasterTask queryMasterTask;
-      synchronized(queryMasterTasks) {
-        queryMasterTask = queryMasterTasks.remove(queryId);
-      }
+      queryMasterTask = queryMasterTasks.remove(queryId);
+      finishedQueryMasterTasks.put(queryId, queryMasterTask);
+
       if(queryMasterTask != null) {
         TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
-        CallFuture2 futuer = new CallFuture2();
-        workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeat, futuer);
+        CallFuture2 future = new CallFuture2();
+        workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeat, future);
         try {
-          futuer.get(3000, TimeUnit.SECONDS);
+          future.get(3, TimeUnit.SECONDS);
         } catch (Throwable e) {
           LOG.warn(e);
         }
@@ -274,8 +275,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
         }
-
-        finishedQueryMasterTasks.put(queryId, queryMasterTask);
       } else {
         LOG.warn("No query info:" + queryId);
       }
@@ -386,7 +385,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       LOG.info("FinishedQueryMasterTaskCleanThread started: expireIntervalTime=" + expireIntervalTime);
       while(!queryMasterStop.get()) {
         try {
-          Thread.sleep(60 * 1000 * 60);   //hourly
+          Thread.sleep(60 * 1000 * 60);   // hourly
         } catch (InterruptedException e) {
           break;
         }

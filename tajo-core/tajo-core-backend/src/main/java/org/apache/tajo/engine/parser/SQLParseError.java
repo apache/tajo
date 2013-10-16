@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.query.exception;
+package org.apache.tajo.engine.parser;
 
 
 import org.antlr.v4.runtime.Token;

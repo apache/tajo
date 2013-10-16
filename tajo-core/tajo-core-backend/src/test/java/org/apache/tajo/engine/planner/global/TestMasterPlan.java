@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner.global;
 
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.ExecutionBlock;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;

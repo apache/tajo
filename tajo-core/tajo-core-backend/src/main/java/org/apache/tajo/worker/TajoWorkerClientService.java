@@ -197,16 +197,16 @@ public class TajoWorkerClientService extends AbstractService {
             TajoIdProtos.QueryIdProto request) throws ServiceException {
       final QueryId queryId = new QueryId(request);
       LOG.info("Stop Query:" + queryId);
-      Thread t = new Thread() {
-        public void run() {
+//      Thread t = new Thread() {
+//        public void run() {
 //          try {
 //            Thread.sleep(1000);   //wait tile return to rpc response
 //          } catch (InterruptedException e) {
 //          }
           workerContext.getQueryMaster().getContext().stopQuery(queryId);
-        }
-      };
-      t.start();
+//        }
+//      };
+//      t.start();
       return BOOL_TRUE;
     }
   }

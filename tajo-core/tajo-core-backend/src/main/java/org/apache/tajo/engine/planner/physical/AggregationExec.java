@@ -19,7 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.collect.Sets;
-import org.apache.tajo.TaskAttemptContext;
+import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.DatumFactory;
