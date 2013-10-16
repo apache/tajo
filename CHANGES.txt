@@ -52,6 +52,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-254: Refactor package names and class names to have proper names.
+    (add a missed changelog)
+
     TAJO-255: Cleanup exceptions of engine. (hyunsik)
 
     TAJO-253: Clean up tajo-default.xml in test resource. (hyunsik)
