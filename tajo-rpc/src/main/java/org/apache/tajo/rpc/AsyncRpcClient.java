@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ProtoAsyncRpcClient extends NettyClientBase {
+public class AsyncRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(RpcProtos.class);
 
   private final ChannelUpstreamHandler handler;
@@ -47,8 +47,8 @@ public class ProtoAsyncRpcClient extends NettyClientBase {
   private final Class<?> protocol;
   private final Method stubMethod;
 
-  public ProtoAsyncRpcClient(final Class<?> protocol,
-                             final InetSocketAddress addr)
+  public AsyncRpcClient(final Class<?> protocol,
+                        final InetSocketAddress addr)
       throws Exception {
 
     this.protocol = protocol;

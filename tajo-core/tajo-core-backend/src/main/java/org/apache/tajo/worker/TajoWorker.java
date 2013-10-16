@@ -36,8 +36,8 @@ import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryMaster;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.pullserver.TajoPullServerService;
-import org.apache.tajo.rpc.CallFuture2;
-import org.apache.tajo.rpc.ProtoAsyncRpcClient;
+import org.apache.tajo.rpc.AsyncRpcClient;
+import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
@@ -73,7 +73,7 @@ public class TajoWorker extends CompositeService {
   private InetSocketAddress tajoMasterAddress;
 
   //to TajoMaster
-  private ProtoAsyncRpcClient tajoMasterRpc;
+  private AsyncRpcClient tajoMasterRpc;
 
   private TajoMasterProtocol.TajoMasterProtocolService tajoMasterRpcClient;
 
@@ -306,7 +306,7 @@ public class TajoWorker extends CompositeService {
 
     while(true) {
       try {
-        tajoMasterRpc = new ProtoAsyncRpcClient(TajoMasterProtocol.class, this.tajoMasterAddress);
+        tajoMasterRpc = new AsyncRpcClient(TajoMasterProtocol.class, this.tajoMasterAddress);
         tajoMasterRpcClient = tajoMasterRpc.getStub();
         break;
       } catch (Exception e) {
@@ -378,8 +378,8 @@ public class TajoWorker extends CompositeService {
     }
 
     public void run() {
-      CallFuture2<TajoMasterProtocol.TajoHeartbeatResponse> callBack =
-          new CallFuture2<TajoMasterProtocol.TajoHeartbeatResponse>();
+      CallFuture<TajoMasterProtocol.TajoHeartbeatResponse> callBack =
+          new CallFuture<TajoMasterProtocol.TajoHeartbeatResponse>();
       LOG.info("Worker Resource Heartbeat Thread start.");
       int sendDiskInfoCount = 0;
       int pullServerPort = 0;

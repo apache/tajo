@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ProtoBlockingRpcClient extends NettyClientBase {
+public class BlockingRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(RpcProtos.class);
 
   private final ChannelUpstreamHandler handler;
@@ -50,8 +50,8 @@ public class ProtoBlockingRpcClient extends NettyClientBase {
   private final Class<?> protocol;
   private final Method stubMethod;
 
-  public ProtoBlockingRpcClient(final Class<?> protocol,
-                                final InetSocketAddress addr)
+  public BlockingRpcClient(final Class<?> protocol,
+                           final InetSocketAddress addr)
       throws Exception {
 
     this.protocol = protocol;

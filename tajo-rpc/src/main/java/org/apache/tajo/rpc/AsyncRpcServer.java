@@ -18,43 +18,42 @@
 
 package org.apache.tajo.rpc;
 
-import com.google.protobuf.BlockingService;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Message;
+import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
+import com.google.protobuf.Service;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.netty.channel.*;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
+import org.jboss.netty.channel.*;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 
-public class ProtoBlockingRpcServer extends NettyServerBase {
-  private static Log LOG = LogFactory.getLog(ProtoBlockingRpcServer.class);
-  private final BlockingService service;
+public class AsyncRpcServer extends NettyServerBase {
+  private static final Log LOG = LogFactory.getLog(AsyncRpcServer.class);
+
+  private final Service service;
   private final ChannelPipelineFactory pipeline;
 
-  public ProtoBlockingRpcServer(final Class<?> protocol,
-                                final Object instance,
-                                final InetSocketAddress bindAddress)
+  public AsyncRpcServer(final Class<?> protocol,
+                        final Object instance,
+                        final InetSocketAddress bindAddress)
       throws Exception {
-
     super(protocol.getSimpleName(), bindAddress);
 
     String serviceClassName = protocol.getName() + "$" +
         protocol.getSimpleName() + "Service";
     Class<?> serviceClass = Class.forName(serviceClassName);
-    Class<?> interfaceClass = Class.forName(serviceClassName +
-        "$BlockingInterface");
-    Method method = serviceClass.getMethod(
-        "newReflectiveBlockingService", interfaceClass);
+    Class<?> interfaceClass = Class.forName(serviceClassName + "$Interface");
+    Method method = serviceClass.getMethod("newReflectiveService", interfaceClass);
+    this.service = (Service) method.invoke(null, instance);
 
-    this.service = (BlockingService) method.invoke(null, instance);
-    this.pipeline = new ProtoPipelineFactory(new ServerHandler(),
+    ServerHandler handler = new ServerHandler();
+    this.pipeline = new ProtoPipelineFactory(handler,
         RpcRequest.getDefaultInstance());
-
     super.init(this.pipeline);
   }
 
@@ -63,57 +62,62 @@ public class ProtoBlockingRpcServer extends NettyServerBase {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
         throws Exception {
+
       final RpcRequest request = (RpcRequest) e.getMessage();
 
       String methodName = request.getMethodName();
-      MethodDescriptor methodDescriptor =
-          service.getDescriptorForType().findMethodByName(methodName);
+      MethodDescriptor methodDescriptor = service.getDescriptorForType().
+          findMethodByName(methodName);
 
       if (methodDescriptor == null) {
         throw new RemoteCallException(request.getId(),
             new NoSuchMethodException(methodName));
       }
+
       Message paramProto = null;
       if (request.hasRequestMessage()) {
         try {
           paramProto = service.getRequestPrototype(methodDescriptor)
-              .newBuilderForType().mergeFrom(request.getRequestMessage()).
+                  .newBuilderForType().mergeFrom(request.getRequestMessage()).
                   build();
-
         } catch (Throwable t) {
           throw new RemoteCallException(request.getId(), methodDescriptor, t);
         }
       }
-      Message returnValue;
-      RpcController controller = new NettyRpcController();
 
-      try {
-        returnValue = service.callBlockingMethod(methodDescriptor,
-            controller, paramProto);
-      } catch (Throwable t) {
-        throw new RemoteCallException(request.getId(), methodDescriptor, t);
-      }
+      final Channel channel = e.getChannel();
+      final RpcController controller = new NettyRpcController();
 
-      RpcResponse.Builder builder =
-          RpcResponse.newBuilder().setId(request.getId());
+      RpcCallback<Message> callback =
+          !request.hasId() ? null : new RpcCallback<Message>() {
 
-      if (returnValue != null) {
-        builder.setResponseMessage(returnValue.toByteString());
-      }
+        public void run(Message returnValue) {
 
-      if (controller.failed()) {
-        builder.setErrorMessage(controller.errorText());
-      }
-      e.getChannel().write(builder.build());
+          RpcResponse.Builder builder = RpcResponse.newBuilder()
+              .setId(request.getId());
+
+          if (returnValue != null) {
+            builder.setResponseMessage(returnValue.toByteString());
+          }
+
+          if (controller.failed()) {
+            builder.setErrorMessage(controller.errorText());
+          }
+
+          channel.write(builder.build());
+        }
+      };
+
+      service.callMethod(methodDescriptor, controller, paramProto, callback);
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
+        throws Exception{
       if (e.getCause() instanceof RemoteCallException) {
         RemoteCallException callException = (RemoteCallException) e.getCause();
         e.getChannel().write(callException.getResponse());
       }
-
       throw new RemoteException(e.getCause());
     }
   }

@@ -29,7 +29,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.rm.WorkerResource;
-import org.apache.tajo.rpc.ProtoAsyncRpcServer;
+import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.util.NetUtils;
@@ -43,7 +43,7 @@ public class TajoMasterService extends AbstractService {
   private final TajoMaster.MasterContext context;
   private final TajoConf conf;
   private final TajoMasterServiceHandler masterHandler;
-  private ProtoAsyncRpcServer server;
+  private AsyncRpcServer server;
   private InetSocketAddress bindAddress;
 
   private final BoolProto BOOL_TRUE = BoolProto.newBuilder().setValue(true).build();
@@ -61,7 +61,7 @@ public class TajoMasterService extends AbstractService {
     String confMasterServiceAddr = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_SERVICE_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
     try {
-      server = new ProtoAsyncRpcServer(TajoMasterProtocol.class, masterHandler, initIsa);
+      server = new AsyncRpcServer(TajoMasterProtocol.class, masterHandler, initIsa);
     } catch (Exception e) {
       LOG.error(e);
     }

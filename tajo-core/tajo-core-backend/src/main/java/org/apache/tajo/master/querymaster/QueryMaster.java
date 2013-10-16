@@ -34,13 +34,16 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.QueryStartEvent;
-import org.apache.tajo.rpc.CallFuture2;
+import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.worker.TajoWorker;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -261,7 +264,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       if(queryMasterTask != null) {
         TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
-        CallFuture2 future = new CallFuture2();
+        CallFuture future = new CallFuture();
         workerContext.getTajoMasterRpcClient().heartbeat(null, queryHeartbeat, future);
         try {
           future.get(3, TimeUnit.SECONDS);

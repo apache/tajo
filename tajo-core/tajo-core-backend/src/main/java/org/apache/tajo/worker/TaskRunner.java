@@ -39,13 +39,12 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.rpc.CallFuture2;
+import org.apache.tajo.rpc.AsyncRpcClient;
+import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.ProtoAsyncRpcClient;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.security.PrivilegedExceptionAction;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -101,7 +100,7 @@ public class TaskRunner extends AbstractService {
   private String baseDir;
   private Path baseDirPath;
 
-  private ProtoAsyncRpcClient client;
+  private AsyncRpcClient client;
 
   private TaskRunnerManager taskRunnerManager;
 
@@ -137,10 +136,10 @@ public class TaskRunner extends AbstractService {
 
       // initialize MasterWorkerProtocol as an actual task owner.
       this.client =
-          taskOwner.doAs(new PrivilegedExceptionAction<ProtoAsyncRpcClient>() {
+          taskOwner.doAs(new PrivilegedExceptionAction<AsyncRpcClient>() {
             @Override
-            public ProtoAsyncRpcClient run() throws Exception {
-              return new ProtoAsyncRpcClient(TajoWorkerProtocol.class, masterAddr);
+            public AsyncRpcClient run() throws Exception {
+              return new AsyncRpcClient(TajoWorkerProtocol.class, masterAddr);
             }
           });
       this.master = client.getStub();
@@ -297,13 +296,13 @@ public class TaskRunner extends AbstractService {
         @Override
         public void run() {
           int receivedNum = 0;
-          CallFuture2<QueryUnitRequestProto> callFuture = null;
+          CallFuture<QueryUnitRequestProto> callFuture = null;
           QueryUnitRequestProto taskRequest = null;
 
           while(!stopped) {
             try {
               if (callFuture == null) {
-                callFuture = new CallFuture2<QueryUnitRequestProto>();
+                callFuture = new CallFuture<QueryUnitRequestProto>();
                 LOG.info("Request GetTask: " + getId());
                 GetTaskRequestProto request = GetTaskRequestProto.newBuilder()
                     .setExecutionBlockId(executionBlockId.getProto())

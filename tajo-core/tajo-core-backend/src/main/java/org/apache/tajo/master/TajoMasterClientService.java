@@ -45,7 +45,7 @@ import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryInfo;
 import org.apache.tajo.master.querymaster.QueryJobManager;
-import org.apache.tajo.rpc.ProtoBlockingRpcServer;
+import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.RemoteException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
@@ -61,7 +61,7 @@ public class TajoMasterClientService extends AbstractService {
   private final TajoConf conf;
   private final CatalogService catalog;
   private final TajoMasterClientProtocolServiceHandler clientHandler;
-  private ProtoBlockingRpcServer server;
+  private BlockingRpcServer server;
   private InetSocketAddress bindAddress;
 
   private final BoolProto BOOL_TRUE =
@@ -84,7 +84,7 @@ public class TajoMasterClientService extends AbstractService {
     String confClientServiceAddr = conf.getVar(ConfVars.CLIENT_SERVICE_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
     try {
-      server = new ProtoBlockingRpcServer(TajoMasterClientProtocol.class, clientHandler, initIsa);
+      server = new BlockingRpcServer(TajoMasterClientProtocol.class, clientHandler, initIsa);
     } catch (Exception e) {
       LOG.error(e);
     }

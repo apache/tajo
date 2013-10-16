@@ -33,7 +33,7 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
-import org.apache.tajo.rpc.ProtoBlockingRpcServer;
+import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
 
@@ -46,7 +46,7 @@ public class TajoWorkerClientService extends AbstractService {
   private final PrimitiveProtos.BoolProto BOOL_FALSE =
           PrimitiveProtos.BoolProto.newBuilder().setValue(false).build();
 
-  private ProtoBlockingRpcServer rpcServer;
+  private BlockingRpcServer rpcServer;
   private InetSocketAddress bindAddr;
   private String addr;
   private int port;
@@ -76,7 +76,7 @@ public class TajoWorkerClientService extends AbstractService {
       }
 
       // TODO blocking/non-blocking??
-      this.rpcServer = new ProtoBlockingRpcServer(QueryMasterClientProtocol.class, serviceHandler, initIsa);
+      this.rpcServer = new BlockingRpcServer(QueryMasterClientProtocol.class, serviceHandler, initIsa);
       this.rpcServer.start();
 
       this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());

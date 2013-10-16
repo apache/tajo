@@ -33,7 +33,7 @@ import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.rpc.ProtoBlockingRpcServer;
+import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
@@ -70,7 +70,7 @@ public class CatalogServer extends AbstractService {
       List<FunctionDescProto>>();
 
   // RPC variables
-  private ProtoBlockingRpcServer rpcServer;
+  private BlockingRpcServer rpcServer;
   private InetSocketAddress bindAddress;
   private String bindAddressStr;
   final CatalogProtocolHandler handler;
@@ -137,7 +137,7 @@ public class CatalogServer extends AbstractService {
     String serverAddr = conf.getVar(ConfVars.CATALOG_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
     try {
-      this.rpcServer = new ProtoBlockingRpcServer(
+      this.rpcServer = new BlockingRpcServer(
           CatalogProtocol.class,
           handler, initIsa);
       this.rpcServer.start();

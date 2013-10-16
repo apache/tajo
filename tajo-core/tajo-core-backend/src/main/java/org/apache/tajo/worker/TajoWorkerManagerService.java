@@ -36,7 +36,7 @@ import org.apache.tajo.master.TaskSchedulerImpl;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.querymaster.QueryMaster;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
-import org.apache.tajo.rpc.ProtoAsyncRpcServer;
+import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
 
@@ -46,7 +46,7 @@ public class TajoWorkerManagerService extends CompositeService
     implements TajoWorkerProtocol.TajoWorkerProtocolService.Interface {
   private static final Log LOG = LogFactory.getLog(TajoWorkerManagerService.class.getName());
 
-  private ProtoAsyncRpcServer rpcServer;
+  private AsyncRpcServer rpcServer;
   private InetSocketAddress bindAddr;
   private String addr;
   private int port;
@@ -75,7 +75,7 @@ public class TajoWorkerManagerService extends CompositeService
         throw new IllegalArgumentException("Failed resolve of " + initIsa);
       }
 
-      this.rpcServer = new ProtoAsyncRpcServer(TajoWorkerProtocol.class, this, initIsa);
+      this.rpcServer = new AsyncRpcServer(TajoWorkerProtocol.class, this, initIsa);
       this.rpcServer.start();
 
       this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());

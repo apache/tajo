@@ -30,8 +30,8 @@ import org.apache.tajo.master.event.QueryEventType;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.WorkerResource;
+import org.apache.tajo.rpc.AsyncRpcClient;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.ProtoAsyncRpcClient;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -62,13 +62,13 @@ public class TajoContainerProxy extends ContainerProxy {
   }
 
   private void assignExecutionBlock(ExecutionBlockId executionBlockId, Container container) {
-    ProtoAsyncRpcClient tajoWorkerRpc = null;
+    AsyncRpcClient tajoWorkerRpc = null;
     try {
       InetSocketAddress myAddr= context.getQueryMasterContext().getWorkerContext()
           .getTajoWorkerManagerService().getBindAddr();
 
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = new ProtoAsyncRpcClient(TajoWorkerProtocol.class, addr);
+      tajoWorkerRpc = new AsyncRpcClient(TajoWorkerProtocol.class, addr);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
 
       TajoWorkerProtocol.RunExecutionBlockRequestProto request =
@@ -93,8 +93,8 @@ public class TajoContainerProxy extends ContainerProxy {
   }
 
   class AyncRpcClose extends Thread {
-    ProtoAsyncRpcClient client;
-    public AyncRpcClose(ProtoAsyncRpcClient client) {
+    AsyncRpcClient client;
+    public AyncRpcClose(AsyncRpcClient client) {
       this.client = client;
     }
 

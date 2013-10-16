@@ -34,8 +34,8 @@ import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.master.rm.WorkerResourceManager;
+import org.apache.tajo.rpc.AsyncRpcClient;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.ProtoAsyncRpcClient;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.net.InetSocketAddress;
@@ -60,7 +60,7 @@ public class QueryInProgress extends CompositeService {
 
   private final TajoMaster.MasterContext masterContext;
 
-  private ProtoAsyncRpcClient queryMasterRpc;
+  private AsyncRpcClient queryMasterRpc;
 
   private TajoWorkerProtocol.TajoWorkerProtocolService queryMasterRpcClient;
 
@@ -180,7 +180,7 @@ public class QueryInProgress extends CompositeService {
           queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
       LOG.info("Connect to QueryMaster:" + addr);
       //TODO Get Connection from pool
-      queryMasterRpc = new ProtoAsyncRpcClient(TajoWorkerProtocol.class, addr);
+      queryMasterRpc = new AsyncRpcClient(TajoWorkerProtocol.class, addr);
       queryMasterRpcClient = queryMasterRpc.getStub();
     }
   }

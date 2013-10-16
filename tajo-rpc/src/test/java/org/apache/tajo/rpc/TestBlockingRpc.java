@@ -35,21 +35,21 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-public class TestProtoBlockingRpc {
-  public static String MESSAGE = "TestProtoBlockingRpc";
+public class TestBlockingRpc {
+  public static String MESSAGE = "TestBlockingRpc";
 
-  private ProtoBlockingRpcServer server;
-  private ProtoBlockingRpcClient client;
+  private BlockingRpcServer server;
+  private BlockingRpcClient client;
   private BlockingInterface stub;
   private DummyProtocolBlockingImpl service;
 
   @Before
   public void setUp() throws Exception {
     service = new DummyProtocolBlockingImpl();
-    server = new ProtoBlockingRpcServer(DummyProtocol.class, service,
+    server = new BlockingRpcServer(DummyProtocol.class, service,
         new InetSocketAddress("127.0.0.1", 0));
     server.start();
-    client = new ProtoBlockingRpcClient(DummyProtocol.class,
+    client = new BlockingRpcClient(DummyProtocol.class,
         NetUtils.getConnectAddress(server.getListenAddress()));
     stub = client.getStub();
   }

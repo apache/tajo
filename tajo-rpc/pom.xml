@@ -83,8 +83,6 @@
               <arguments>
                 <argument>-Isrc/main/proto/</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
-                <argument>src/main/proto/ProtoParamRpcProtos.proto</argument>
-                <argument>src/main/proto/ProtoParamRpcProtocol.proto</argument>
                 <argument>src/main/proto/DummyProtos.proto</argument>
                 <argument>src/main/proto/RpcProtos.proto</argument>
                 <argument>src/main/proto/TestProtos.proto</argument>

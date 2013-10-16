@@ -23,7 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.rpc.ProtoBlockingRpcClient;
+import org.apache.tajo.rpc.BlockingRpcClient;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
@@ -34,7 +34,7 @@ import java.net.InetSocketAddress;
  */
 public class CatalogClient extends AbstractCatalogClient {
   private final Log LOG = LogFactory.getLog(CatalogClient.class);
-  private ProtoBlockingRpcClient client;
+  private BlockingRpcClient client;
 
   /**
    * @throws java.io.IOException
@@ -53,7 +53,7 @@ public class CatalogClient extends AbstractCatalogClient {
     String addrStr = NetUtils.normalizeInetSocketAddress(serverAddr);
     LOG.info("Trying to connect the catalog (" + addrStr + ")");
     try {
-      client = new ProtoBlockingRpcClient(CatalogProtocol.class, serverAddr);
+      client = new BlockingRpcClient(CatalogProtocol.class, serverAddr);
       setStub((BlockingInterface) client.getStub());
     } catch (Exception e) {
       throw new IOException("Can't connect the catalog server (" + addrStr +")");

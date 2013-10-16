@@ -46,7 +46,7 @@ import org.apache.tajo.master.querymaster.SubQueryState;
 import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.TajoWorkerContainerId;
 import org.apache.tajo.master.rm.WorkerResource;
-import org.apache.tajo.rpc.CallFuture2;
+import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.util.ApplicationIdUtils;
 
 import java.io.IOException;
@@ -221,8 +221,8 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     @Override
     public void run() {
       LOG.info("Start TajoWorkerAllocationThread");
-      CallFuture2<TajoMasterProtocol.WorkerResourceAllocationResponse> callBack =
-          new CallFuture2<TajoMasterProtocol.WorkerResourceAllocationResponse>();
+      CallFuture<TajoMasterProtocol.WorkerResourceAllocationResponse> callBack =
+          new CallFuture<TajoMasterProtocol.WorkerResourceAllocationResponse>();
 
       int requiredMemoryMBSlot = 512;  //TODO
       int requiredDiskSlots = 1;  //TODO

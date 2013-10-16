@@ -41,13 +41,12 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
-import org.apache.tajo.rpc.CallFuture2;
-import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.worker.AbstractResourceAllocator;
 import org.apache.tajo.worker.TajoResourceAllocator;
@@ -57,7 +56,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -161,7 +159,7 @@ public class QueryMasterTask extends CompositeService {
 
     LOG.info("Stopping QueryMasterTask:" + queryId);
 
-    CallFuture2 future = new CallFuture2();
+    CallFuture future = new CallFuture();
     queryMasterContext.getWorkerContext().getTajoMasterRpcClient()
         .stopQueryMaster(null, queryId.getProto(), future);
     try {

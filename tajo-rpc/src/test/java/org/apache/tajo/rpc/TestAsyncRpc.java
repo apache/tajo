@@ -39,25 +39,25 @@ import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assert.*;
 
-public class TestProtoAsyncRpc {
-  private static Log LOG = LogFactory.getLog(TestProtoAsyncRpc.class);
-  private static String MESSAGE = "TestProtoAsyncRpc";
+public class TestAsyncRpc {
+  private static Log LOG = LogFactory.getLog(TestAsyncRpc.class);
+  private static String MESSAGE = "TestAsyncRpc";
 
   double sum;
   String echo;
 
-  static ProtoAsyncRpcServer server;
-  static ProtoAsyncRpcClient client;
+  static AsyncRpcServer server;
+  static AsyncRpcClient client;
   static Interface stub;
   static DummyProtocolAsyncImpl service;
 
   @Before
   public void setUp() throws Exception {
     service = new DummyProtocolAsyncImpl();
-    server = new ProtoAsyncRpcServer(DummyProtocol.class,
+    server = new AsyncRpcServer(DummyProtocol.class,
         service, new InetSocketAddress("127.0.0.1", 0));
     server.start();
-    client = new ProtoAsyncRpcClient(DummyProtocol.class,
+    client = new AsyncRpcClient(DummyProtocol.class,
         NetUtils.getConnectAddress(server.getListenAddress()));
     stub = client.getStub();
   }
@@ -127,7 +127,7 @@ public class TestProtoAsyncRpc {
   public void testCallFuture() throws Exception {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture2<EchoMessage> future = new CallFuture2<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
     stub.deley(null, echoMessage, future);
 
     assertFalse(future.isDone());
@@ -139,7 +139,7 @@ public class TestProtoAsyncRpc {
   public void testCallFutureTimeout() throws Exception {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture2<EchoMessage> future = new CallFuture2<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
     stub.deley(null, echoMessage, future);
 
     assertFalse(future.isDone());

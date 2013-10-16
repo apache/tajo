@@ -36,7 +36,7 @@ import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
-import org.apache.tajo.rpc.ProtoBlockingRpcClient;
+import org.apache.tajo.rpc.BlockingRpcClient;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.NetUtils;
 
@@ -52,14 +52,14 @@ public class TajoClient {
   private final Log LOG = LogFactory.getLog(TajoClient.class);
 
   private final TajoConf conf;
-  private ProtoBlockingRpcClient tasjoMasterClient;
+  private BlockingRpcClient tasjoMasterClient;
   private TajoMasterClientProtocolService.BlockingInterface tajoMasterService;
 
   private Map<QueryId, QueryMasterClientProtocolService.BlockingInterface> queryMasterConnectionMap =
           new HashMap<QueryId, QueryMasterClientProtocolService.BlockingInterface>();
 
-  private Map<QueryId, ProtoBlockingRpcClient> queryMasterClientMap =
-          new HashMap<QueryId, ProtoBlockingRpcClient>();
+  private Map<QueryId, BlockingRpcClient> queryMasterClientMap =
+          new HashMap<QueryId, BlockingRpcClient>();
 
   public TajoClient(TajoConf conf) throws IOException {
     this.conf = conf;
@@ -81,7 +81,7 @@ public class TajoClient {
 
   private void connect(InetSocketAddress addr) throws IOException {
     try {
-      tasjoMasterClient = new ProtoBlockingRpcClient(TajoMasterClientProtocol.class, addr);
+      tasjoMasterClient = new BlockingRpcClient(TajoMasterClientProtocol.class, addr);
       tajoMasterService = tasjoMasterClient.getStub();
     } catch (Exception e) {
       throw new IOException(e);
@@ -91,7 +91,7 @@ public class TajoClient {
   public void close() {
     tasjoMasterClient.close();
 
-    for(ProtoBlockingRpcClient eachClient: queryMasterClientMap.values()) {
+    for(BlockingRpcClient eachClient: queryMasterClientMap.values()) {
       eachClient.close();
     }
     queryMasterClientMap.clear();
@@ -177,7 +177,7 @@ public class TajoClient {
   private void connectionToQueryMaster(QueryId queryId, String queryMasterHost, int queryMasterPort) {
     try {
       InetSocketAddress addr = NetUtils.createSocketAddr(queryMasterHost, queryMasterPort);
-      ProtoBlockingRpcClient client = new ProtoBlockingRpcClient(QueryMasterClientProtocol.class, addr);
+      BlockingRpcClient client = new BlockingRpcClient(QueryMasterClientProtocol.class, addr);
       QueryMasterClientProtocolService.BlockingInterface service = client.getStub();
 
       queryMasterConnectionMap.put(queryId, service);
