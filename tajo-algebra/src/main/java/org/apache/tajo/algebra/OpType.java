@@ -62,6 +62,7 @@ public enum OpType {
   GreaterThanOrEquals(BinaryOperator.class),
 
   // other predicates
+  Between(BetweenPredicate.class),
   CaseWhen(CaseWhenPredicate.class),
   IsNullPredicate(IsNullPredicate.class),
   InPredicate(InPredicate.class),

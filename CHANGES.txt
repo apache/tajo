@@ -4,6 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-260: Add between predicate. (hyunsik)
+
     TAJO-208: Implement char_length(string) function. (hyunsik)
 
     TAJO-99: Design the interface of join enumeration algorithm. (hyunsik)

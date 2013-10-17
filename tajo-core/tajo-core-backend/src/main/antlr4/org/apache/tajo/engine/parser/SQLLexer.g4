@@ -118,9 +118,11 @@ AS : A S;
 ALL : A L L;
 AND : A N D;
 ANY : A N Y;
+ASYMMETRIC : A S Y M M E T R I C;
 ASC : A S C;
 AVG : A V G;
 
+BETWEEN : B E T W E E N;
 BOTH : B O T H;
 BY : B Y;
 
@@ -197,6 +199,7 @@ RIGHT : R I G H T;
 RLIKE : R L I K E;
 ROLLUP : R O L L U P;
 
+SYMMETRIC : S Y M M E T R I C;
 SET : S E T;
 SELECT : S E L E C T;
 SOME : S O M E;

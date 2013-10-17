@@ -828,8 +828,9 @@ subquery
 
 predicate
   : comparison_predicate
+  | between_predicate
   | in_predicate
-  | pattern_matching_predicate
+  | pattern_matching_predicate // like predicate and other similar predicates
   | null_predicate
   | exists_predicate
   ;
@@ -853,6 +854,21 @@ comp_op
   | GTH
   | GEQ
   ;
+
+/*
+===============================================================================
+  8.3 <between predicate>
+===============================================================================
+*/
+
+between_predicate
+  : predicand=row_value_predicand between_predicate_part_2
+  ;
+
+between_predicate_part_2
+  : (NOT)? BETWEEN (ASYMMETRIC | SYMMETRIC)? begin=row_value_predicand AND end=row_value_predicand
+  ;
+
 
 /*
 ===============================================================================

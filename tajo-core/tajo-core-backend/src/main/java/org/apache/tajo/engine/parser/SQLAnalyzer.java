@@ -411,6 +411,15 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
+  public BetweenPredicate visitBetween_predicate(SQLParser.Between_predicateContext ctx) {
+    Expr predicand = visitRow_value_predicand(ctx.predicand);
+    Expr begin = visitRow_value_predicand(ctx.between_predicate_part_2().begin);
+    Expr end = visitRow_value_predicand(ctx.between_predicate_part_2().end);
+    return new BetweenPredicate(checkIfExist(ctx.between_predicate_part_2().NOT()),
+        checkIfExist(ctx.between_predicate_part_2().SYMMETRIC()), predicand, begin, end);
+  }
+
+  @Override
   public CaseWhenPredicate visitSimple_case(SQLParser.Simple_caseContext ctx) {
     Expr leftTerm = visitBoolean_value_expression(ctx.boolean_value_expression());
     CaseWhenPredicate caseWhen = new CaseWhenPredicate();

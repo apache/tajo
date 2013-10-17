@@ -145,12 +145,15 @@ public class BinaryEval extends EvalNode implements Cloneable {
     BinaryEvalCtx binCtx = (BinaryEvalCtx) ctx;
 
     switch(type) {
-      case AND:
-        return DatumFactory.createBool(leftExpr.terminate(binCtx.left).asBool()
-            && rightExpr.terminate(binCtx.right).asBool());
+      case AND: {
+        boolean left = leftExpr.terminate(binCtx.left).asBool();
+        boolean right = rightExpr.terminate(binCtx.right).asBool();
+        return DatumFactory.createBool(left && right);
+      }
       case OR:
-        return DatumFactory.createBool(leftExpr.terminate(binCtx.left).asBool()
-            || rightExpr.terminate(binCtx.right).asBool());
+        boolean left = leftExpr.terminate(binCtx.left).asBool();
+        boolean right = rightExpr.terminate(binCtx.right).asBool();
+        return DatumFactory.createBool(left || right);
 
       case EQUAL:
         return leftExpr.terminate(binCtx.left).equalsTo(rightExpr.terminate(binCtx.right));

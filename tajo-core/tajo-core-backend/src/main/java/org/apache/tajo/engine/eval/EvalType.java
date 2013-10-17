@@ -49,6 +49,7 @@ public enum EvalType {
   CONCATENATE(BinaryEval.class, "||"),
 
   // Other predicates
+  BETWEEN(BetweenPredicateEval.class),
   CASE(CaseWhenEval.class),
   IF_THEN(CaseWhenEval.IfThenEval.class),
   IN(InEval.class),

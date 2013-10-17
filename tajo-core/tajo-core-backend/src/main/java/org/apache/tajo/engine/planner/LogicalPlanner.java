@@ -949,6 +949,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         NotExpr notExpr = (NotExpr) expr;
         return new NotEval(createEvalTree(plan, block, notExpr.getChild()));
 
+      case Between: {
+        BetweenPredicate between = (BetweenPredicate) expr;
+        BetweenPredicateEval betweenEval = new BetweenPredicateEval(between.isNot(), between.isSymmetric(),
+            createEvalTree(plan, block, between.predicand()), createEvalTree(plan, block, between.begin()),
+            createEvalTree(plan, block, between.end()));
+        return betweenEval;
+      }
       // pattern matching predicates
       case LikePredicate:
       case SimilarToPredicate:

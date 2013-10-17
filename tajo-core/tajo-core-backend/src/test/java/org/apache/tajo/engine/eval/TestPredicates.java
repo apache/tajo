@@ -47,4 +47,63 @@ public class TestPredicates extends ExprTestBase {
     testEval(schema2, "table1", "_123,",
         "select ltrim(col1, '_') is not null, upper(col2) is not null as a from table1", new String[]{"t", "f"});
   }
+
+  @Test
+  public void testBetween() {
+    Schema schema2 = new Schema();
+    schema2.addColumn("col1", TEXT);
+    schema2.addColumn("col2", TEXT);
+    schema2.addColumn("col3", TEXT);
+
+    // constant checker
+    testEval(schema2, "table1", "b,a,c", "select col1 between 'a' and 'c' from table1", new String[]{"t"});
+    testEval(schema2, "table1", "b,a,c", "select col1 between 'c' and 'a' from table1", new String[]{"f"});
+    testEval(schema2, "table1", "b,a,c", "select col1 between symmetric 'c' and 'a' from table1", new String[]{"t"});
+    testEval(schema2, "table1", "d,a,c", "select col1 between 'a' and 'c' from table1", new String[]{"f"});
+
+    // tests for inclusive
+    testEval(schema2, "table1", "a,a,c", "select col1 between col2 and col3 from table1", new String[]{"t"});
+    testEval(schema2, "table1", "b,a,c", "select col1 between col2 and col3 from table1", new String[]{"t"});
+    testEval(schema2, "table1", "c,a,c", "select col1 between col2 and col3 from table1", new String[]{"t"});
+    testEval(schema2, "table1", "d,a,c", "select col1 between col2 and col3 from table1", new String[]{"f"});
+
+    // tests for asymmetric and symmetric
+    testEval(schema2, "table1", "b,a,c", "select col1 between col3 and col2 from table1", new String[]{"f"});
+    testEval(schema2, "table1", "b,a,c", "select col1 between symmetric col3 and col2 from table1", new String[]{"t"});
+  }
+
+  @Test
+  public void testBetween2() { // for TAJO-249
+    Schema schema3 = new Schema();
+    schema3.addColumn("date_a", INT4);
+    schema3.addColumn("date_b", INT4);
+    schema3.addColumn("date_c", INT4);
+    schema3.addColumn("date_d", INT4);
+
+    String query = "select " +
+        "case " +
+        "when date_a BETWEEN 20130705 AND 20130715 AND ((date_b BETWEEN 20100101 AND 20120601) OR date_b > 20130715) " +
+        "AND (date_c < 20120601 OR date_c > 20130715) AND date_d > 20130715" +
+        "then 1 else 0 end from table1";
+
+    testEval(schema3, "table1", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
+    testEval(schema3, "table1", "20130716,20100102,20120525,20130716", query, new String [] {"0"});
+
+    // date_b
+    testEval(schema3, "table1", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
+    testEval(schema3, "table1", "20130715,20120602,20120525,20130716", query, new String [] {"0"});
+    testEval(schema3, "table1", "20130715,20091201,20120525,20130716", query, new String [] {"0"});
+    testEval(schema3, "table1", "20130715,20130716,20120525,20130716", query, new String [] {"1"});
+
+    // date_c
+    testEval(schema3, "table1", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
+    testEval(schema3, "table1", "20130715,20100102,20120602,20130716", query, new String [] {"0"});
+
+    testEval(schema3, "table1", "20130715,20100102,20130716,20130716", query, new String [] {"1"});
+    testEval(schema3, "table1", "20130715,20100102,20130714,20130716", query, new String [] {"0"});
+
+    // date_d
+    testEval(schema3, "table1", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
+    testEval(schema3, "table1", "20130715,20100102,20120525,20130705", query, new String [] {"0"});
+  }
 }

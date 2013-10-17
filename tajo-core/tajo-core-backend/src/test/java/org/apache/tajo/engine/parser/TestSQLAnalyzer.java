@@ -340,7 +340,7 @@ public class TestSQLAnalyzer {
       "col is null", // 25
       "col is not null", // 26
       "col = null", // 27
-      "col != null" // 38
+      "col != null", // 38
   };
 
   public static Expr parseExpr(String sql) {
@@ -350,8 +350,8 @@ public class TestSQLAnalyzer {
     SQLParser parser = new SQLParser(tokens);
     parser.setBuildParseTree(true);
     SQLAnalyzer visitor = new SQLAnalyzer();
-    Boolean_value_expressionContext context = parser.boolean_value_expression();
-    return visitor.visitBoolean_value_expression(context);
+    SQLParser.Value_expressionContext context = parser.value_expression();
+    return visitor.visitValue_expression(context);
   }
 
   @Test
