@@ -553,7 +553,6 @@ public class TajoWorker extends CompositeService {
   }
 
   public static void main(String[] args) throws Exception {
-    args = new String[]{"standby"};
     StringUtils.startupShutdownMessage(TajoWorker.class, args, LOG);
 
     if(args.length < 1) {

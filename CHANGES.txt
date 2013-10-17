@@ -211,6 +211,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-264: Remove hard-coded 'standby' mode. (jinho)
+
     TAJO-262: Integration test hang on jenkins. (jinho)
 
     TAJO-257: Unit tests occassionally fail. (hyunsik)
