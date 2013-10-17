@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.eval;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -37,7 +38,7 @@ public class EvalTreeUtil {
 
   public static void replace(EvalNode expr, EvalNode targetExpr, EvalNode tobeReplaced) {
     EvalReplaceVisitor replacer = new EvalReplaceVisitor(targetExpr, tobeReplaced);
-    replacer.visitChild(null, new Stack<EvalNode>(), expr);
+    replacer.visitChild(null, expr, new Stack<EvalNode>());
   }
 
   public static class EvalReplaceVisitor extends BasicEvalNodeVisitor<EvalNode, EvalNode> {
@@ -50,8 +51,8 @@ public class EvalTreeUtil {
     }
 
     @Override
-    public EvalNode visitChild(EvalNode context, Stack<EvalNode> stack, EvalNode evalNode) {
-      super.visitChild(context, stack, evalNode);
+    public EvalNode visitChild(EvalNode context, EvalNode evalNode, Stack<EvalNode> stack) {
+      super.visitChild(context, evalNode, stack);
 
       if (evalNode.equals(target)) {
         EvalNode parent = stack.peek();

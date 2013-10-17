@@ -21,16 +21,17 @@ package org.apache.tajo.engine.eval;
 import java.util.Stack;
 
 public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<CONTEXT, RESULT> {
+
   @Override
-  public RESULT visitChild(CONTEXT context, Stack<EvalNode> stack, EvalNode evalNode) {
+  public RESULT visitChild(CONTEXT context, EvalNode evalNode, Stack<EvalNode> stack) {
     RESULT result;
     switch (evalNode.getType()) {
       // Column and Value reference expressions
       case CONST:
-        result = visitConst(context, stack, (ConstEval) evalNode);
+        result = visitConst(context, (ConstEval) evalNode, stack);
         break;
       case ROW_CONSTANT:
-        result = visitRowConstant(context, stack, (RowConstantEval) evalNode);
+        result = visitRowConstant(context, (RowConstantEval) evalNode, stack);
         break;
       case FIELD:
         result = visitField(context, stack, (FieldEval) evalNode);
@@ -38,83 +39,83 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
 
       // Arithmetic expression
       case PLUS:
-        result = visitPlus(context, stack, (BinaryEval) evalNode);
+        result = visitPlus(context, (BinaryEval) evalNode, stack);
         break;
       case MINUS:
-        result = visitMinus(context, stack, (BinaryEval) evalNode);
+        result = visitMinus(context, (BinaryEval) evalNode, stack);
         break;
       case MULTIPLY:
-        result = visitMultiply(context, stack, (BinaryEval) evalNode);
+        result = visitMultiply(context, (BinaryEval) evalNode, stack);
         break;
       case DIVIDE:
-        result = visitDivide(context, stack, (BinaryEval) evalNode);
+        result = visitDivide(context, (BinaryEval) evalNode, stack);
         break;
       case MODULAR:
-        result = visitModular(context, stack, (BinaryEval) evalNode);
+        result = visitModular(context, (BinaryEval) evalNode, stack);
         break;
 
       // Logical Predicates
       case AND:
-        result = visitAnd(context, stack, (BinaryEval) evalNode);
+        result = visitAnd(context, (BinaryEval) evalNode, stack);
         break;
       case OR:
-        result = visitOr(context, stack, (BinaryEval) evalNode);
+        result = visitOr(context, (BinaryEval) evalNode, stack);
         break;
       case NOT:
-        result = visitNot(context, stack, (NotEval) evalNode);
+        result = visitNot(context, (NotEval) evalNode, stack);
         break;
 
       // Comparison Predicates
       case EQUAL:
-        result = visitEqual(context, stack, (BinaryEval) evalNode);
+        result = visitEqual(context, (BinaryEval) evalNode, stack);
         break;
       case NOT_EQUAL:
-        result = visitNotEqual(context, stack, (BinaryEval) evalNode);
+        result = visitNotEqual(context, (BinaryEval) evalNode, stack);
         break;
       case LTH:
-        result = visitLessThan(context, stack, (BinaryEval) evalNode);
+        result = visitLessThan(context, (BinaryEval) evalNode, stack);
         break;
       case LEQ:
-        result = visitLessThanOrEqual(context, stack, (BinaryEval) evalNode);
+        result = visitLessThanOrEqual(context, (BinaryEval) evalNode, stack);
         break;
       case GTH:
-        result = visitGreaterThan(context, stack, (BinaryEval) evalNode);
+        result = visitGreaterThan(context, (BinaryEval) evalNode, stack);
         break;
       case GEQ:
-        result = visitGreaterThanOrEqual(context, stack, (BinaryEval) evalNode);
+        result = visitGreaterThanOrEqual(context, (BinaryEval) evalNode, stack);
         break;
 
       // SQL standard predicates
       case IS_NULL:
-        result = visitIsNull(context, stack, (IsNullEval) evalNode);
+        result = visitIsNull(context, (IsNullEval) evalNode, stack);
         break;
       case CASE:
-        result = visitCaseWhen(context, stack, (CaseWhenEval) evalNode);
+        result = visitCaseWhen(context, (CaseWhenEval) evalNode, stack);
         break;
       case IF_THEN:
-        result = visitIfThen(context, stack, (CaseWhenEval.IfThenEval) evalNode);
+        result = visitIfThen(context, (CaseWhenEval.IfThenEval) evalNode, stack);
         break;
       case IN:
-        result = visitInPredicate(context, stack, (InEval) evalNode);
+        result = visitInPredicate(context, (InEval) evalNode, stack);
         break;
 
       // Pattern match predicates
       case LIKE:
-        result = visitLike(context, stack, (LikePredicateEval) evalNode);
+        result = visitLike(context, (LikePredicateEval) evalNode, stack);
         break;
       case SIMILAR_TO:
-        result = visitSimilarTo(context, stack, (SimilarToPredicateEval) evalNode);
+        result = visitSimilarTo(context, (SimilarToPredicateEval) evalNode, stack);
         break;
       case REGEX:
-        result = visitRegex(context, stack, (RegexPredicateEval) evalNode);
+        result = visitRegex(context, (RegexPredicateEval) evalNode, stack);
         break;
 
       // Functions
       case FUNCTION:
-        result = visitFuncCall(context, stack, (GeneralFunctionEval) evalNode);
+        result = visitFuncCall(context, (GeneralFunctionEval) evalNode, stack);
         break;
       case AGG_FUNCTION:
-        result = visitAggrFuncCall(context, stack, (AggregationFunctionCallEval) evalNode);
+        result = visitAggrFuncCall(context, (AggregationFunctionCallEval) evalNode, stack);
         break;
 
       default:
@@ -126,8 +127,8 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
 
   private RESULT visitDefaultBinaryEval(CONTEXT context, Stack<EvalNode> stack, BinaryEval binaryEval) {
     stack.push(binaryEval);
-    RESULT result = visitChild(context, stack, binaryEval.getLeftExpr());
-    visitChild(context, stack, binaryEval.getRightExpr());
+    RESULT result = visitChild(context, binaryEval.getLeftExpr(), stack);
+    visitChild(context, binaryEval.getRightExpr(), stack);
     stack.pop();
     return result;
   }
@@ -136,19 +137,19 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
     RESULT result = null;
     stack.push(functionEval);
     for (EvalNode arg : functionEval.getArgs()) {
-      result = visitChild(context, stack, arg);
+      result = visitChild(context, arg, stack);
     }
     stack.pop();
     return result;
   }
 
   @Override
-  public RESULT visitConst(CONTEXT context, Stack<EvalNode> stack, ConstEval evalNode) {
+  public RESULT visitConst(CONTEXT context, ConstEval evalNode, Stack<EvalNode> stack) {
     return null;
   }
 
   @Override
-  public RESULT visitRowConstant(CONTEXT context, Stack<EvalNode> stack, RowConstantEval evalNode) {
+  public RESULT visitRowConstant(CONTEXT context, RowConstantEval evalNode, Stack<EvalNode> stack) {
     return null;
   }
 
@@ -158,49 +159,49 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   }
 
   @Override
-  public RESULT visitPlus(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitPlus(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitMinus(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitMinus(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitMultiply(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitMultiply(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitDivide(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitDivide(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitModular(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitModular(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitAnd(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitAnd(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitOr(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitOr(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitNot(CONTEXT context, Stack<EvalNode> stack, NotEval evalNode) {
+  public RESULT visitNot(CONTEXT context, NotEval evalNode, Stack<EvalNode> stack) {
     RESULT result;
     stack.push(evalNode);
     if (evalNode.getChild() instanceof NotEval) {
-      result = visitChild(context, stack, evalNode);
+      result = visitChild(context, evalNode, stack);
     } else {
-      result = visitChild(context, stack, evalNode.getLeftExpr());
-      visitChild(context, stack, evalNode.getRightExpr());
+      result = visitChild(context, evalNode.getLeftExpr(), stack);
+      visitChild(context, evalNode.getRightExpr(), stack);
     }
     stack.pop();
 
@@ -208,91 +209,91 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   }
 
   @Override
-  public RESULT visitEqual(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitEqual(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitNotEqual(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitNotEqual(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitLessThan(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitLessThan(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitLessThanOrEqual(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitLessThanOrEqual(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitGreaterThan(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitGreaterThan(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitGreaterThanOrEqual(CONTEXT context, Stack<EvalNode> stack, BinaryEval evalNode) {
+  public RESULT visitGreaterThanOrEqual(CONTEXT context, BinaryEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitIsNull(CONTEXT context, Stack<EvalNode> stack, IsNullEval evalNode) {
+  public RESULT visitIsNull(CONTEXT context, IsNullEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitCaseWhen(CONTEXT context, Stack<EvalNode> stack, CaseWhenEval evalNode) {
+  public RESULT visitCaseWhen(CONTEXT context, CaseWhenEval evalNode, Stack<EvalNode> stack) {
     RESULT result = null;
     stack.push(evalNode);
     for (CaseWhenEval.IfThenEval ifThenEval : evalNode.getIfThenEvals()) {
-      result = visitIfThen(context, stack, ifThenEval);
+      result = visitIfThen(context, ifThenEval, stack);
     }
     if (evalNode.hasElse()) {
-      result = visitChild(context, stack, evalNode.getElse());
+      result = visitChild(context, evalNode.getElse(), stack);
     }
     stack.pop();
     return result;
   }
 
   @Override
-  public RESULT visitIfThen(CONTEXT context, Stack<EvalNode> stack, CaseWhenEval.IfThenEval evalNode) {
+  public RESULT visitIfThen(CONTEXT context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
     RESULT result;
     stack.push(evalNode);
-    result = visitChild(context, stack, evalNode.getConditionExpr());
-    visitChild(context, stack, evalNode.getResultExpr());
+    result = visitChild(context, evalNode.getConditionExpr(), stack);
+    visitChild(context, evalNode.getResultExpr(), stack);
     stack.pop();
     return result;
   }
 
   @Override
-  public RESULT visitInPredicate(CONTEXT context, Stack<EvalNode> stack, InEval evalNode) {
+  public RESULT visitInPredicate(CONTEXT context, InEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitLike(CONTEXT context, Stack<EvalNode> stack, LikePredicateEval evalNode) {
+  public RESULT visitLike(CONTEXT context, LikePredicateEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitSimilarTo(CONTEXT context, Stack<EvalNode> stack, SimilarToPredicateEval evalNode) {
+  public RESULT visitSimilarTo(CONTEXT context, SimilarToPredicateEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitRegex(CONTEXT context, Stack<EvalNode> stack, RegexPredicateEval evalNode) {
+  public RESULT visitRegex(CONTEXT context, RegexPredicateEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultBinaryEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitFuncCall(CONTEXT context, Stack<EvalNode> stack, GeneralFunctionEval evalNode) {
+  public RESULT visitFuncCall(CONTEXT context, GeneralFunctionEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultFunctionEval(context, stack, evalNode);
   }
 
   @Override
-  public RESULT visitAggrFuncCall(CONTEXT context, Stack<EvalNode> stack, AggregationFunctionCallEval evalNode) {
+  public RESULT visitAggrFuncCall(CONTEXT context, AggregationFunctionCallEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultFunctionEval(context, stack, evalNode);
   }
 }

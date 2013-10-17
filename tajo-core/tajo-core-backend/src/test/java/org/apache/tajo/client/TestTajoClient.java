@@ -53,18 +53,8 @@ public class TestTajoClient {
   public static void setUp() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     conf = cluster.getConfiguration();
-    Thread.sleep(3000);
     tajo = new TajoClient(conf);
-
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
-  }
-
-  @AfterClass
-  public static void tearDown() throws Exception {
-//    cluster.shutdownMiniCluster();
-//    if(tajo != null) {
-//      tajo.close();
-//    }
   }
 
   private static Path writeTmpTable(String tableName) throws IOException {

@@ -52,6 +52,9 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-236: Implement LogicalPlanVerifier to check if a logical plan is 
+    valid. (hyunsik)
+
     TAJO-254: Refactor package names and class names to have proper names.
     (add a missed changelog)
 

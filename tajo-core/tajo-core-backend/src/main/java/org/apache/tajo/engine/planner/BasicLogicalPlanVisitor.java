@@ -98,6 +98,12 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case INSERT:
         current = visitInsert(context, plan, (InsertNode) node, stack);
         break;
+      case CREATE_TABLE:
+        current = visitCreateTable(context, plan, (CreateTableNode) node, stack);
+        break;
+      case DROP_TABLE:
+        current = visitDropTable(context, plan, (DropTableNode) node, stack);
+        break;
       default:
         throw new PlanningException("Unknown logical node type: " + node.getType());
     }
@@ -230,5 +236,15 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
     RESULT result = visitChild(context, plan, node.getSubQuery(), stack);
     stack.pop();
     return result;
+  }
+
+  @Override
+  public RESULT visitCreateTable(CONTEXT context, LogicalPlan plan, CreateTableNode node, Stack<LogicalNode> stack) {
+    return null;
+  }
+
+  @Override
+  public RESULT visitDropTable(CONTEXT context, LogicalPlan plan, DropTableNode node, Stack<LogicalNode> stack) {
+    return null;
   }
 }

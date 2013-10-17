@@ -301,7 +301,7 @@ public class TajoMasterClientService extends AbstractService {
       TableMeta meta = new TableMetaImpl(request.getMeta());
       TableDesc desc;
       try {
-        desc = context.getGlobalEngine().createTable(request.getName(), meta, path);
+        desc = context.getGlobalEngine().createTableOnDirectory(request.getName(), meta, path, false);
       } catch (Exception e) {
         return TableResponse.newBuilder().setErrorMessage(e.getMessage()).build();
       }

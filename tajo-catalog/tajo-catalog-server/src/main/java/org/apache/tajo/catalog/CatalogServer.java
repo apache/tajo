@@ -229,10 +229,8 @@ public class CatalogServer extends AbstractService {
     @Override
     public BoolProto addTable(RpcController controller, TableDescProto tableDesc)
         throws ServiceException {
-      Preconditions.checkArgument(tableDesc.hasId(),
-          "Must be set to the table name");
-      Preconditions.checkArgument(tableDesc.hasPath(),
-          "Must be set to the table URI");
+      Preconditions.checkArgument(tableDesc.hasId(), "Must be set to the table name");
+      Preconditions.checkArgument(tableDesc.hasPath(), "Must be set to the table URI");
 
       wlock.lock();
       try {

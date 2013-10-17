@@ -51,4 +51,8 @@ public interface LogicalPlanVisitor <CONTEXT, RESULT> {
       throws PlanningException;
   RESULT visitInsert(CONTEXT context, LogicalPlan plan, InsertNode node, Stack<LogicalNode> stack)
       throws PlanningException;
+  RESULT visitCreateTable(CONTEXT context, LogicalPlan plan, CreateTableNode node, Stack<LogicalNode> stack)
+      throws PlanningException;
+  RESULT visitDropTable(CONTEXT context, LogicalPlan plan, DropTableNode node, Stack<LogicalNode> stack)
+      throws PlanningException;
 }

@@ -39,6 +39,7 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ConstEval;
 import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.exception.IllegalQueryStatusException;
+import org.apache.tajo.engine.exception.VerifyException;
 import org.apache.tajo.engine.parser.HiveConverter;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
@@ -49,7 +50,6 @@ import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.querymaster.QueryInfo;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.storage.AbstractStorageManager;
-import org.apache.tajo.storage.StorageUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -70,6 +70,7 @@ public class GlobalEngine extends AbstractService {
   private CatalogService catalog;
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
+  private LogicalPlanVerifier verifier;
   private DistributedQueryHookManager hookManager;
 
   public GlobalEngine(final MasterContext context) {
@@ -85,6 +86,7 @@ public class GlobalEngine extends AbstractService {
       converter = new HiveConverter();
       planner = new LogicalPlanner(context.getCatalog());
       optimizer = new LogicalOptimizer();
+      verifier = new LogicalPlanVerifier(context.getConf(), context.getCatalog());
 
       hookManager = new DistributedQueryHookManager();
       hookManager.addHook(new CreateTableHook());
@@ -178,7 +180,7 @@ public class GlobalEngine extends AbstractService {
     // parse the query
     Expr expr = analyzer.parse(sql);
     LogicalPlan plan = createLogicalPlan(expr);
-    LogicalRootNode rootNode = (LogicalRootNode) plan.getRootBlock().getRoot();
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
     if (!PlannerUtil.checkIfDDLPlan(rootNode)) {
       throw new SQLException("This is not update query:\n" + sql);
@@ -213,6 +215,17 @@ public class GlobalEngine extends AbstractService {
       LOG.debug("LogicalPlan:\n" + plan.getRootBlock().getRoot());
     }
 
+    VerificationState state = new VerificationState();
+    verifier.visit(state, plan, plan.getRootBlock());
+
+    if (!state.verified()) {
+      StringBuilder sb = new StringBuilder();
+      for (String error : state.getErrorMessages()) {
+        sb.append("ERROR: ").append(error).append("\n");
+      }
+      throw new VerifyException(sb.toString());
+    }
+
     return plan;
   }
 
@@ -234,15 +247,20 @@ public class GlobalEngine extends AbstractService {
       Preconditions.checkState(createTable.hasPath(), "ERROR: LOCATION must be given.");
     }
 
-    return createTable(createTable.getTableName(), meta, createTable.getPath());
+    return createTableOnDirectory(createTable.getTableName(), meta, createTable.getPath(), true);
   }
 
-  public TableDesc createTable(String tableName, TableMeta meta, Path path) throws IOException {
+  public TableDesc createTableOnDirectory(String tableName, TableMeta meta, Path path, boolean isCreated)
+      throws IOException {
     if (catalog.existsTable(tableName)) {
       throw new AlreadyExistsTableException(tableName);
     }
 
     FileSystem fs = path.getFileSystem(context.getConf());
+
+    if (isCreated) {
+      fs.mkdirs(path);
+    }
 
     if(fs.exists(path) && fs.isFile(path)) {
       throw new IOException("ERROR: LOCATION must be a directory.");
@@ -261,7 +279,6 @@ public class GlobalEngine extends AbstractService {
     meta.setStat(stat);
 
     TableDesc desc = CatalogUtil.newTableDesc(tableName, meta, path);
-    StorageUtil.writeTableMeta(context.getConf(), path, meta);
     catalog.addTable(desc);
 
     LOG.info("Table " + desc.getName() + " is created (" + desc.getMeta().getStat().getNumBytes() + ")");

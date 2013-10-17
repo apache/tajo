@@ -18,6 +18,7 @@
 
 package org.apache.tajo.worker;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -181,6 +182,7 @@ public class TaskRunner extends AbstractService {
       // Here, we can setup row-based query engine or columnar query engine.
       this.queryEngine = new TajoQueryEngine(systemConf);
     } catch (Throwable t) {
+      t.printStackTrace();
       LOG.error(t);
     }
 
@@ -363,6 +365,7 @@ public class TaskRunner extends AbstractService {
                     task.run();
                   } catch (Throwable t) {
                     fatalError(taskRunnerContext.getMaster(), taskAttemptId, t.getMessage());
+                    t.printStackTrace();
                   } finally {
                     callFuture = null;
                     taskRequest = null;
@@ -370,7 +373,7 @@ public class TaskRunner extends AbstractService {
                 }
               }
             } catch (Throwable t) {
-              LOG.error(t);
+              t.printStackTrace();
             }
           }
         }

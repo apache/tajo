@@ -18,7 +18,6 @@
 
 package org.apache.tajo.worker;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -157,7 +156,6 @@ public class TajoWorker extends CompositeService {
           webServer.start();
           httpPort = webServer.getPort();
           LOG.info("Worker info server started:" + httpPort);
-          throw new IOException("AAA");
         } catch (IOException e) {
           LOG.error(e.getMessage(), e);
         }

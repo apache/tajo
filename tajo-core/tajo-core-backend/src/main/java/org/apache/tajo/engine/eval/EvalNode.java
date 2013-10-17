@@ -51,16 +51,16 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 		this.leftExpr = expr;
 	}
 	
-	public EvalNode getLeftExpr() {
-		return this.leftExpr;
+	public <T extends EvalNode> T getLeftExpr() {
+		return (T) this.leftExpr;
 	}
 	
 	public void setRightExpr(EvalNode expr) {
 		this.rightExpr = expr;
 	}
 	
-	public EvalNode getRightExpr() {
-		return this.rightExpr;
+	public <T extends EvalNode> T getRightExpr() {
+		return (T) this.rightExpr;
 	}
 
   public EvalNode getExpr(int id) {

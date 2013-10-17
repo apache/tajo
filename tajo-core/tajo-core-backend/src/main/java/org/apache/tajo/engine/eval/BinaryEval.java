@@ -81,7 +81,10 @@ public class BinaryEval extends EvalNode implements Cloneable {
     return newCtx;
   }
 
-  private DataType determineType(DataType left, DataType right) {
+  /**
+   * This is verified by ExprsVerifier.checkArithmeticOperand().
+   */
+  private DataType determineType(DataType left, DataType right) throws InvalidEvalException {
     switch (left.getType()) {
       case INT4: {
         switch(right.getType()) {
@@ -90,7 +93,6 @@ public class BinaryEval extends EvalNode implements Cloneable {
           case INT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT8);
           case FLOAT4: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT4);
           case FLOAT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT8);
-          default: throw new InvalidEvalException();
         }
       }
 
@@ -101,7 +103,6 @@ public class BinaryEval extends EvalNode implements Cloneable {
           case INT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT8);
           case FLOAT4:
           case FLOAT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT8);
-          default: throw new InvalidEvalException();
         }
       }
 
@@ -112,7 +113,6 @@ public class BinaryEval extends EvalNode implements Cloneable {
           case INT8:
           case FLOAT4:
           case FLOAT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT8);
-          default: throw new InvalidEvalException();
         }
       }
 
@@ -123,7 +123,6 @@ public class BinaryEval extends EvalNode implements Cloneable {
           case INT8:
           case FLOAT4:
           case FLOAT8: return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT8);
-          default: throw new InvalidEvalException();
         }
       }
 

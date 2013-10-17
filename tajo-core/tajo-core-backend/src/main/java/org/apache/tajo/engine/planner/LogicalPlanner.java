@@ -358,8 +358,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     TableSubQueryNode rightSubQuery = new TableSubQueryNode(plan.newPID(), rightContext.block.getName(), right);
     context.plan.connectBlocks(rightContext.block, context.block, BlockType.TableSubQuery);
 
-    verifySetStatement(setOperation.getType(), leftContext.block, rightContext.block);
-
     BinaryNode setOp;
     if (setOperation.getType() == OpType.Union) {
       setOp = new UnionNode(plan.newPID(), leftSubQuery, rightSubQuery);
@@ -386,26 +384,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     return setOp;
-  }
-
-  private boolean verifySetStatement(OpType type, QueryBlock left, QueryBlock right)
-      throws VerifyException {
-
-    if (left.getCurrentTargets().length != right.getCurrentTargets().length) {
-      throw new VerifyException("ERROR: each " + type.name() + " query must have the same number of columns");
-    }
-
-    Target[] targets1 = left.getCurrentTargets();
-    Target[] targets2 = right.getCurrentTargets();
-
-    for (int i = 0; i < targets1.length; i++) {
-      if (!targets1[i].getDataType().equals(targets2[i].getDataType())) {
-        throw new VerifyException(type + " types " + targets1[i].getDataType().getType() + " and "
-            + targets2[i].getDataType().getType() + " cannot be matched");
-      }
-    }
-
-    return true;
   }
 
   @Override
@@ -876,7 +854,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         }
       }
 
-      ensureDomains(targetSchema, subQuery.getOutSchema());
       insertNode = new InsertNode(context.plan.newPID(), desc, subQuery);
       insertNode.setTargetSchema(targetSchema);
       insertNode.setOutSchema(targetSchema);
