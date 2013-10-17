@@ -14,7 +14,6 @@
 
 package org.apache.tajo.master;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
@@ -37,6 +36,8 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
+import org.apache.tajo.util.CommonTestingUtil;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -50,6 +51,7 @@ public class TestExecutionBlockCursor {
   private static SQLAnalyzer analyzer;
   private static LogicalPlanner logicalPlanner;
   private static LogicalOptimizer optimizer;
+  private static AsyncDispatcher dispatcher;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -64,7 +66,7 @@ public class TestExecutionBlockCursor {
     for (String table : tpch.getTableNames()) {
       TableMeta m = CatalogUtil.newTableMeta(tpch.getSchema(table), CatalogProtos.StoreType.CSV);
       m.setStat(new TableStat());
-      TableDesc d = CatalogUtil.newTableDesc(table, m, new Path("/"));
+      TableDesc d = CatalogUtil.newTableDesc(table, m, CommonTestingUtil.getTestDir());
       catalog.addTable(d);
     }
 
@@ -73,14 +75,16 @@ public class TestExecutionBlockCursor {
     optimizer = new LogicalOptimizer();
 
     AbstractStorageManager sm  = StorageManagerFactory.getStorageManager(conf);
-    AsyncDispatcher dispatcher = new AsyncDispatcher();
+    dispatcher = new AsyncDispatcher();
     dispatcher.init(conf);
     dispatcher.start();
     planner = new GlobalPlanner(conf, sm);
   }
 
+  @AfterClass
   public static void tearDown() {
     util.shutdownCatalogCluster();
+    dispatcher.stop();
   }
 
   @Test

@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -35,6 +34,7 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.StorageManagerFactory;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -77,7 +77,7 @@ public class TestGlobalPlanner {
       stat.setNumBytes(volumes[i]);
       m.setStat(stat);
 
-      TableDesc d = CatalogUtil.newTableDesc(tables[i], m, new Path("/"));
+      TableDesc d = CatalogUtil.newTableDesc(tables[i], m, CommonTestingUtil.getTestDir());
       catalog.addTable(d);
     }
 

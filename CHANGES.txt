@@ -211,6 +211,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-262: Integration test hang on jenkins. (jinho)
+
     TAJO-257: Unit tests occassionally fail. (hyunsik)
 
     TAJO-169: the default TAJO_WORKER_STANDBY_MODE in tajo-env.sh is wrong. 

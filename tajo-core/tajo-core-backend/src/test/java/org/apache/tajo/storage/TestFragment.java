@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -37,6 +38,7 @@ import static org.junit.Assert.assertTrue;
 public class TestFragment {
   private Schema schema1;
   private TableMeta meta1;
+  private Path path;
   
   @Before
   public final void setUp() throws Exception {
@@ -44,15 +46,16 @@ public class TestFragment {
     schema1.addColumn("id", Type.INT4);
     schema1.addColumn("name", Type.TEXT);
     meta1 = CatalogUtil.newTableMeta(schema1, StoreType.CSV);
+    path = CommonTestingUtil.getTestDir();
   }
 
   @Test
   public final void testGetAndSetFields() {    
-    Fragment fragment1 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500);
+    Fragment fragment1 = new Fragment("table1_1", new Path(path, "table0"), meta1, 0, 500);
     fragment1.setDistCached();
 
     assertEquals("table1_1", fragment1.getName());
-    assertEquals(new Path("/table0"), fragment1.getPath());
+    assertEquals(new Path(path, "table0"), fragment1.getPath());
     assertEquals(meta1.getStoreType(), fragment1.getMeta().getStoreType());
     assertEquals(meta1.getSchema().getColumnNum(),
         fragment1.getMeta().getSchema().getColumnNum());
@@ -69,11 +72,11 @@ public class TestFragment {
 
   @Test
   public final void testTabletTabletProto() {
-    Fragment fragment0 = new Fragment("table1_1", new Path("/table0"), meta1, 0, 500);
+    Fragment fragment0 = new Fragment("table1_1", new Path(path, "table0"), meta1, 0, 500);
     
     Fragment fragment1 = new Fragment(fragment0.getProto());
     assertEquals("table1_1", fragment1.getName());
-    assertEquals(new Path("/table0"), fragment1.getPath());
+    assertEquals(new Path(path, "table0"), fragment1.getPath());
     assertEquals(meta1.getStoreType(), fragment1.getMeta().getStoreType());
     assertEquals(meta1.getSchema().getColumnNum(),
         fragment1.getMeta().getSchema().getColumnNum());
@@ -92,7 +95,7 @@ public class TestFragment {
     final int num = 10;
     Fragment [] tablets = new Fragment[num];
     for (int i = num - 1; i >= 0; i--) {
-      tablets[i] = new Fragment("tablet1_"+i, new Path("tablet0"), meta1, i * 500, (i+1) * 500);
+      tablets[i] = new Fragment("tablet1_"+i, new Path(path, "tablet0"), meta1, i * 500, (i+1) * 500);
     }
     
     Arrays.sort(tablets);
@@ -107,7 +110,7 @@ public class TestFragment {
     final int num = 1860;
     Fragment [] tablets = new Fragment[num];
     for (int i = num - 1; i >= 0; i--) {
-      tablets[i] = new Fragment("tablet1_"+i, new Path("tablet0"), meta1, (long)i * 6553500, (long)(i+1) * 6553500);
+      tablets[i] = new Fragment("tablet1_"+i, new Path(path, "tablet0"), meta1, (long)i * 6553500, (long)(i+1) * 6553500);
     }
 
     SortedSet sortedSet = Sets.newTreeSet();

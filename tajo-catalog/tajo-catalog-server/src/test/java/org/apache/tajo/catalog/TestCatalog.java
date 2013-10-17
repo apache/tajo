@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -68,13 +69,13 @@ public class TestCatalog {
 		schema1.addColumn(FieldName1, Type.BLOB);
 		schema1.addColumn(FieldName2, Type.INT4);
 		schema1.addColumn(FieldName3, Type.INT8);
-		
+    Path path = new Path(CommonTestingUtil.getTestDir(), "table1");
 		TableDesc meta = CatalogUtil.newTableDesc(
         "getTable",
         schema1,
         StoreType.CSV,
         new Options(),
-        new Path("/table1"));
+        path);
 		
 		assertFalse(catalog.existsTable("getTable"));
 		catalog.addTable(meta);

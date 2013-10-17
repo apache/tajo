@@ -22,12 +22,14 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 public class TestPatternMatchingPredicates extends ExprTestBase {
 
   @Test
-  public void testLike() {
+  public void testLike() throws IOException {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
 
@@ -56,7 +58,7 @@ public class TestPatternMatchingPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testILike() {
+  public void testILike() throws IOException {
     testSimpleEval("select 'abc' ilike '%c'", new String[]{"t"});
     testSimpleEval("select 'abc' ilike 'a%'", new String[]{"t"});
     testSimpleEval("select 'abc' ilike '_bc'", new String[]{"t"});
@@ -78,7 +80,7 @@ public class TestPatternMatchingPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testSimilarToLike() {
+  public void testSimilarToLike() throws IOException {
     testSimpleEval("select 'abc' similar to '%c'", new String[]{"t"});
     testSimpleEval("select 'abc' similar to 'a%'", new String[]{"t"});
     testSimpleEval("select 'abc' similar to '_bc'", new String[]{"t"});
@@ -102,7 +104,7 @@ public class TestPatternMatchingPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testRegexWithSimilarOperator() {
+  public void testRegexWithSimilarOperator() throws IOException {
     testSimpleEval("select 'abc' ~ '.*c'", new String[]{"t"});
     testSimpleEval("select 'abc' ~ '.*c$'", new String[]{"t"});
     testSimpleEval("select 'aaabc' ~ '([a-z]){3}bc'", new String[]{"t"});
@@ -119,7 +121,7 @@ public class TestPatternMatchingPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testRegexp() {
+  public void testRegexp() throws IOException {
     testSimpleEval("select 'abc' regexp '.*c'", new String[]{"t"});
     testSimpleEval("select 'abc' regexp '.*c$'", new String[]{"t"});
 
@@ -128,7 +130,7 @@ public class TestPatternMatchingPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testRLike() {
+  public void testRLike() throws IOException {
     testSimpleEval("select 'abc' rlike '.*c'", new String[]{"t"});
     testSimpleEval("select 'abc' rlike '.*c$'", new String[]{"t"});
 

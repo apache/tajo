@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -51,15 +52,13 @@ public class TestRowFile {
 
   @Before
   public void setup() throws Exception {
-    cluster = new TajoTestingCluster();
+    cluster = TpchTestBase.getInstance().getTestingCluster();
     conf = cluster.getConfiguration();
     conf.setInt(ConfVars.RAWFILE_SYNC_INTERVAL.varname, 100);
-    cluster.startMiniDFSCluster(1);
   }
 
   @After
   public void teardown() throws Exception {
-    cluster.shutdownMiniDFSCluster();
   }
 
   @Test

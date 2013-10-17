@@ -24,6 +24,7 @@ package org.apache.tajo.engine.query;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStat;
@@ -53,8 +54,7 @@ public class TestResultSetImpl {
 
   @BeforeClass
   public static void setup() throws Exception {
-    util = new TajoTestingCluster();
-    util.startMiniCluster(3);
+    util = TpchTestBase.getInstance().getTestingCluster();
     conf = util.getConfiguration();
     sm = StorageManagerFactory.getStorageManager(conf);
 
@@ -92,7 +92,7 @@ public class TestResultSetImpl {
 
   @AfterClass
   public static void terminate() throws IOException {
-    util.shutdownMiniCluster();
+
   }
 
   @Test

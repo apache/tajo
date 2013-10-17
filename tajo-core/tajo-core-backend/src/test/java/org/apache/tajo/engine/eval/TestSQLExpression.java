@@ -21,12 +21,14 @@ package org.apache.tajo.engine.eval;
 import org.apache.tajo.catalog.Schema;
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 public class TestSQLExpression extends ExprTestBase {
 
   @Test
-  public void testCast() {
+  public void testCast() throws IOException {
     testSimpleEval("select cast (1 as char)", new String[] {"1"});
     testSimpleEval("select cast (119 as char)", new String[] {"1"});
 
@@ -59,7 +61,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testCastFromTable() {
+  public void testCastFromTable() throws IOException {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);

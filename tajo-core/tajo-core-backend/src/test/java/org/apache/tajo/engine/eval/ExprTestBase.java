@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.eval;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
@@ -36,8 +35,11 @@ import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -85,11 +87,11 @@ public class ExprTestBase {
     return targets;
   }
 
-  public void testSimpleEval(String query, String [] expected) {
+  public void testSimpleEval(String query, String [] expected) throws IOException {
     testEval(null, null, null, query, expected);
   }
 
-  public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected) {
+  public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected) throws IOException {
     LazyTuple lazyTuple;
     VTuple vtuple  = null;
     Schema inputSchema = null;
@@ -112,7 +114,7 @@ public class ExprTestBase {
           vtuple.put(i, lazyTuple.get(i));
         }
       }
-      cat.addTable(new TableDescImpl(tableName, inputSchema, CatalogProtos.StoreType.CSV, new Options(), new Path("/")));
+      cat.addTable(new TableDescImpl(tableName, inputSchema, CatalogProtos.StoreType.CSV, new Options(), CommonTestingUtil.getTestDir()));
     }
 
     Target [] targets = null;

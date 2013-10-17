@@ -21,12 +21,14 @@ package org.apache.tajo.engine.eval;
 import org.apache.tajo.catalog.Schema;
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 public class TestPredicates extends ExprTestBase {
   @Test
-  public void testIsNullPredicate() {
+  public void testIsNullPredicate() throws IOException {
     Schema schema1 = new Schema();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
@@ -37,7 +39,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testIsNullPredicateWithFunction() {
+  public void testIsNullPredicateWithFunction() throws IOException {
     Schema schema2 = new Schema();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", TEXT);
@@ -49,7 +51,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testBetween() {
+  public void testBetween() throws IOException {
     Schema schema2 = new Schema();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", TEXT);
@@ -73,7 +75,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testBetween2() { // for TAJO-249
+  public void testBetween2() throws IOException { // for TAJO-249
     Schema schema3 = new Schema();
     schema3.addColumn("date_a", INT4);
     schema3.addColumn("date_b", INT4);

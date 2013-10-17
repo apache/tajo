@@ -23,6 +23,8 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
@@ -30,7 +32,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
   @Test
-  public void testConcatenateOnLiteral() {
+  public void testConcatenateOnLiteral() throws IOException {
     testSimpleEval("select ('abc' || 'def') col1 ", new String[]{"abcdef"});
     testSimpleEval("select 'abc' || 'def' as col1 ", new String[]{"abcdef"});
     testSimpleEval("select 1 || 'def' as col1 ", new String[]{"1def"});
@@ -38,7 +40,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testConcatenateOnExpressions() {
+  public void testConcatenateOnExpressions() throws IOException {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", INT4);
@@ -51,7 +53,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testLTrim() {
+  public void testLTrim() throws IOException {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
@@ -72,7 +74,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testRTrim() {
+  public void testRTrim() throws IOException {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
@@ -93,7 +95,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testTrim() {
+  public void testTrim() throws IOException {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
@@ -114,7 +116,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testRegexReplace() {
+  public void testRegexReplace() throws IOException {
     testSimpleEval("select regexp_replace('abcdef','bc','--') as col1 ", new String[]{"a--def"});
 
     // TODO - The following tests require the resolution of TAJO-215 (https://issues.apache.org/jira/browse/TAJO-215)
@@ -140,7 +142,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testUpper() {
+  public void testUpper() throws IOException {
     testSimpleEval("select upper('abcdef') as col1 ", new String[]{"ABCDEF"});
 
     Schema schema = new Schema();
@@ -153,7 +155,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testLower() {
+  public void testLower() throws IOException {
     testSimpleEval("select lower('ABCdEF') as col1 ", new String[]{"abcdef"});
 
     Schema schema = new Schema();
@@ -166,7 +168,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testCharLength() {
+  public void testCharLength() throws IOException {
     testSimpleEval("select char_length('123456') as col1 ", new String[]{"6"});
 
     Schema schema = new Schema();

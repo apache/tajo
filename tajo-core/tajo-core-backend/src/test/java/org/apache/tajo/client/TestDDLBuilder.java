@@ -41,7 +41,6 @@ public class TestDDLBuilder {
     meta.putOption("csv.delimiter", "|");
     meta.putOption(TableMeta.COMPRESSION_CODEC, GzipCodec.class.getName());
 
-
     TableDesc desc = new TableDescImpl("table1", meta, new Path("/table1"));
 
     assertEquals(FileUtil.readTextFile(new File("src/test/results/testBuildDDL.result")), DDLBuilder.buildDDL(desc));

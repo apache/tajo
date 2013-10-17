@@ -34,6 +34,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import static org.junit.Assert.*;
 
@@ -69,7 +70,7 @@ public class TestDBStore {
     Options opts = new Options();
     opts.put("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV, opts);
-    TableDesc desc = new TableDescImpl(tableName, meta, new Path("/addedtable"));
+    TableDesc desc = new TableDescImpl(tableName, meta, new Path(CommonTestingUtil.getTestDir(), "addedtable"));
     assertFalse(store.existTable(tableName));
     store.addTable(desc);
     assertTrue(store.existTable(tableName));
@@ -99,7 +100,7 @@ public class TestDBStore {
     stat.setNumBytes(1023234);
     meta.setStat(stat);
 
-    TableDesc desc = new TableDescImpl(tableName, meta, new Path("/gettable"));
+    TableDesc desc = new TableDescImpl(tableName, meta, new Path(CommonTestingUtil.getTestDir(), "gettable"));
 
     store.addTable(desc);
     TableDesc retrieved = store.getTable(tableName);
@@ -124,8 +125,8 @@ public class TestDBStore {
     for (int i = 0; i < numTables; i++) {
       String tableName = "tableA_" + i;
       TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
-      TableDesc desc = new TableDescImpl(tableName, meta, 
-          new Path("/tableA_" + i));
+      TableDesc desc = new TableDescImpl(tableName, meta,
+          new Path(CommonTestingUtil.getTestDir(), "tableA_" + i));
       store.addTable(desc);
     }
     
@@ -195,7 +196,7 @@ public class TestDBStore {
     store.deleteTable(table.getName());
   }
   
-  public static TableDesc prepareTable() {
+  public static TableDesc prepareTable() throws IOException {
     Schema schema = new Schema();
     schema.addColumn("indexed.id", Type.INT4)
     .addColumn("indexed.name", Type.TEXT)
@@ -205,7 +206,7 @@ public class TestDBStore {
     String tableName = "indexed";
     
     TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
-    return new TableDescImpl(tableName, meta, new Path("/indexed"));
+    return new TableDescImpl(tableName, meta, new Path(CommonTestingUtil.getTestDir(), "indexed"));
   }
 
   public static void assertSchemaOrder(Schema s1, Schema s2) {

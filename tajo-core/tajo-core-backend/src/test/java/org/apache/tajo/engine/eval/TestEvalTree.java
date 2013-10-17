@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.eval;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
@@ -37,6 +36,7 @@ import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,7 +66,7 @@ public class TestEvalTree {
     schema.addColumn("age", INT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
-    TableDesc desc = new TableDescImpl("people", meta, new Path("/"));
+    TableDesc desc = new TableDescImpl("people", meta, CommonTestingUtil.getTestDir());
     cat.addTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("test_sum", TestSum.class, FunctionType.GENERAL,

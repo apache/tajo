@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JoinType;
@@ -35,6 +34,7 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -76,13 +76,13 @@ public class TestLogicalPlanner {
     schema3.addColumn("score", Type.INT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.CSV);
-    TableDesc people = new TableDescImpl("employee", meta, new Path("/"));
+    TableDesc people = new TableDescImpl("employee", meta, CommonTestingUtil.getTestDir());
     catalog.addTable(people);
 
-    TableDesc student = new TableDescImpl("dept", schema2, StoreType.CSV, new Options(), new Path("/"));
+    TableDesc student = new TableDescImpl("dept", schema2, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
     catalog.addTable(student);
 
-    TableDesc score = new TableDescImpl("score", schema3, StoreType.CSV, new Options(), new Path("/"));
+    TableDesc score = new TableDescImpl("score", schema3, StoreType.CSV, new Options(), CommonTestingUtil.getTestDir());
     catalog.addTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,
@@ -99,7 +99,7 @@ public class TestLogicalPlanner {
     tpch.loadOutSchema();
     for (String table : tpchTables) {
       TableMeta m = CatalogUtil.newTableMeta(tpch.getSchema(table), StoreType.CSV);
-      TableDesc d = CatalogUtil.newTableDesc(table, m, new Path("/"));
+      TableDesc d = CatalogUtil.newTableDesc(table, m, CommonTestingUtil.getTestDir());
       catalog.addTable(d);
     }
 

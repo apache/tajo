@@ -189,6 +189,7 @@ public class TajoTestingCluster {
     builder.format(true);
     builder.manageNameDfsDirs(true);
     builder.manageDataDfsDirs(true);
+    builder.waitSafeMode(true);
     this.dfsCluster = builder.build();
 
     // Set this just-started cluser as our filesystem.
@@ -204,6 +205,12 @@ public class TajoTestingCluster {
 
   public void shutdownMiniDFSCluster() throws Exception {
     if (this.dfsCluster != null) {
+      try {
+        FileSystem fs = this.dfsCluster.getFileSystem();
+        if (fs != null) fs.close();
+      } catch (IOException e) {
+        System.err.println("error closing file system: " + e);
+      }
       // The below throws an exception per dn, AsynchronousCloseException.
       this.dfsCluster.shutdown();
     }
@@ -477,7 +484,14 @@ public class TajoTestingCluster {
     }
 
     if(this.dfsCluster != null) {
-      this.dfsCluster.shutdown();
+
+      try {
+        FileSystem fs = this.dfsCluster.getFileSystem();
+        if (fs != null) fs.close();
+        this.dfsCluster.shutdown();
+      } catch (IOException e) {
+        System.err.println("error closing file system: " + e);
+      }
     }
 
     if(this.clusterTestBuildDir != null && this.clusterTestBuildDir.exists()) {

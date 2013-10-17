@@ -21,46 +21,53 @@ package org.apache.tajo.catalog;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
+
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
 public class TestTableDesc {
 	TableMeta info;
 	TableDesc desc;
+  Path path;
 	
 	@Before
-	public void setup() {
+	public void setup() throws IOException {
 	  Schema schema = new Schema();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
     info = CatalogUtil.newTableMeta(schema, StoreType.CSV);
-
-    desc = new TableDescImpl("table1", info, new Path("/table1"));
+    path = new Path(CommonTestingUtil.getTestDir(), "table1");
+    desc = new TableDescImpl("table1", info, path);
 	}
 
   @Test
-  public void test() throws CloneNotSupportedException {
+  public void test() throws CloneNotSupportedException, IOException {
     Schema schema = new Schema();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
     TableMeta info = CatalogUtil.newTableMeta(schema, StoreType.CSV);
     testClone(info);
 
-    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo"));
+    Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");
+
+    TableDesc desc = new TableDescImpl("table1", info, path);
     assertEquals("table1", desc.getName());
     
-    assertEquals(new Path("/tajo"), desc.getPath());
+    assertEquals(path, desc.getPath());
     assertEquals(info, desc.getMeta());
     testClone(desc);
   }
 
   @Test
-  public void testGetProto() throws CloneNotSupportedException {
-    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo"));
+  public void testGetProto() throws CloneNotSupportedException, IOException {
+    Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");
+    TableDesc desc = new TableDescImpl("table1", info, path);
     CatalogProtos.TableDescProto proto = (CatalogProtos.TableDescProto) desc.getProto();
 
     TableDesc fromProto = new TableDescImpl(proto);
@@ -68,8 +75,9 @@ public class TestTableDesc {
   }
 
   @Test
-  public void testToJson() throws CloneNotSupportedException {
-    TableDesc desc = new TableDescImpl("table1", info, new Path("/tajo"));
+  public void testToJson() throws CloneNotSupportedException, IOException {
+    Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");
+    TableDesc desc = new TableDescImpl("table1", info, path);
     String json = desc.toJson();
 
     TableDesc fromJson = CatalogGsonHelper.fromJson(json, TableDesc.class);
