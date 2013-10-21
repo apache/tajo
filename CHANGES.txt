@@ -215,6 +215,8 @@ Release 0.2.0 - unreleased
 
   BUG FIXES
 
+    TAJO-272: boolean test does not work correctly. (hyunsik)
+
     TAJO-264: Remove hard-coded 'standby' mode. (jinho)
 
     TAJO-262: Integration test hang on jenkins. (jinho)
