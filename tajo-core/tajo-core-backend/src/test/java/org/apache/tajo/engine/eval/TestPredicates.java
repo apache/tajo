@@ -108,4 +108,28 @@ public class TestPredicates extends ExprTestBase {
     testEval(schema3, "table1", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
     testEval(schema3, "table1", "20130715,20100102,20120525,20130705", query, new String [] {"0"});
   }
+
+  @Test
+  public void testBooleanTest() throws IOException {
+    testSimpleEval("select 1 < 3 is true", new String [] {"t"});
+    testSimpleEval("select 1 < 3 is not true", new String [] {"f"});
+    testSimpleEval("select 1 < 3 is false", new String [] {"f"});
+    testSimpleEval("select 1 < 3 is not false", new String [] {"t"});
+
+    testSimpleEval("select not (1 < 3 is true)", new String [] {"f"});
+    testSimpleEval("select not (1 < 3 is not true)", new String [] {"t"});
+    testSimpleEval("select not (1 < 3 is false)", new String [] {"t"});
+    testSimpleEval("select not (1 < 3 is not false)", new String [] {"f"});
+
+    testSimpleEval("select 1 > 3 is true", new String [] {"f"});
+    testSimpleEval("select 1 > 3 is not true", new String [] {"t"});
+    testSimpleEval("select 1 > 3 is false", new String [] {"t"});
+    testSimpleEval("select 1 > 3 is not false", new String [] {"f"});
+
+    testSimpleEval("select not (1 > 3 is true)", new String [] {"t"});
+    testSimpleEval("select not (1 > 3 is not true)", new String [] {"f"});
+    testSimpleEval("select not (1 > 3 is false)", new String [] {"f"});
+    testSimpleEval("select not (1 > 3 is not false)", new String [] {"t"});
+
+  }
 }

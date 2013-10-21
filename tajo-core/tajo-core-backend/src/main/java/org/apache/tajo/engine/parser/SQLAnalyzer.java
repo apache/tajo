@@ -514,7 +514,24 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitBoolean_test(SQLParser.Boolean_testContext ctx) {
-    return visitBoolean_primary(ctx.boolean_primary());
+    if (checkIfExist(ctx.is_clause())) {
+      Is_clauseContext isClauseContext = ctx.is_clause();
+      if (checkIfExist(isClauseContext.NOT())) {
+        if (checkIfExist(ctx.is_clause().truth_value().TRUE())) {
+          return new NotExpr(visitBoolean_primary(ctx.boolean_primary()));
+        } else {
+          return visitBoolean_primary(ctx.boolean_primary());
+        }
+      } else {
+        if (checkIfExist(ctx.is_clause().truth_value().TRUE())) {
+          return visitBoolean_primary(ctx.boolean_primary());
+        } else {
+          return new NotExpr(visitBoolean_primary(ctx.boolean_primary()));
+        }
+      }
+    } else {
+      return visitBoolean_primary(ctx.boolean_primary());
+    }
   }
 
   @Override
