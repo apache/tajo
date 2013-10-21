@@ -343,6 +343,9 @@ Release 0.2.0 - unreleased
 
   TASKS
 
+    TAJO-271: Add MIT license to NOTICE.txt and LICENSE.txt for jquery and 
+    jsPlumb. (hyunsik)
+
     TAJO-265: Update installation guide and other documentation for 0.2
     release. (hyunsik)
 

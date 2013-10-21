@@ -1,5 +1,5 @@
-Tajo
-Copyright (c) 2012 Database Lab., Korea University
+Apache Tajo
+Copyright 2013 The Apache Software Foundation
 
 This product includes software developed by The Apache Software
 Foundation (http://www.apache.org/).
@@ -25,3 +25,9 @@ Copyright (c) 2008, Google Inc.
 This product includes/uses Protobuf-java-format (http://code.google.com/p/protobuf-java-format/)
 Copyright 2000-2011 NeuStar, Inc. All rights reserved.
 Copyright (c) 2009, Orbitz World Wide All rights reserved.
+
+This product includes/uses jQuery (http://jquery.com)
+Copyright 2013 jQuery Foundation and other contributors
+
+This product includes/uses jsPlumb (http://jsplumb.org)
+Copyright (c) 2013 Simon Porritt, http://jsplumb.org/
