@@ -44,6 +44,15 @@ public abstract class BinaryNode extends LogicalNode implements Cloneable, GsonO
 	public void setRightChild(LogicalNode op) {
 		this.rightChild = op;
 	}
+
+  public boolean deepEquals(Object o) {
+    if (o instanceof BinaryNode) {
+      BinaryNode b = (BinaryNode) o;
+      return equals(o) &&
+          leftChild.deepEquals(b.leftChild) && rightChild.deepEquals(b.rightChild);
+    }
+    return false;
+  }
 	
 	@Override
   public Object clone() throws CloneNotSupportedException {

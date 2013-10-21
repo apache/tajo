@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.logical;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.util.TUtil;
 
 import java.util.Arrays;
 
@@ -85,15 +86,13 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 	    ProjectionNode other = (ProjectionNode) obj;
 	    
 	    boolean b1 = super.equals(other);
-	    boolean b2 = Arrays.equals(targets, other.targets);
-	    boolean b3 = child.equals(other.child);
-	    
-	    return b1 && b2 && b3;
+      boolean b2 = TUtil.checkEquals(targets, other.targets);
+      return b1 && b2;
 	  } else {
 	    return false;
 	  }
 	}
-	
+
 	@Override
   public Object clone() throws CloneNotSupportedException {
 	  ProjectionNode projNode = (ProjectionNode) super.clone();

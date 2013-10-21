@@ -82,18 +82,21 @@ public abstract class LogicalNode implements Cloneable, GsonObject {
 	  if (obj instanceof LogicalNode) {
 	    LogicalNode other = (LogicalNode) obj;
 
-      boolean eq = this.pid == other.pid;
-      eq = this.type == other.type;
+      boolean eq = this.type == other.type;
       eq = eq && TUtil.checkEquals(this.inputSchema, other.inputSchema);
       eq = eq && TUtil.checkEquals(this.outputSchema, other.outputSchema);
       eq = eq && this.cost == other.cost;
-      
+
       return eq;
 	  } else {
 	    return false;
 	  }
-	}
-	
+  }
+
+  public boolean deepEquals(Object o) {
+    return equals(o);
+  }
+
 	@Override
 	public Object clone() throws CloneNotSupportedException {
 	  LogicalNode node = (LogicalNode)super.clone();

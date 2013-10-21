@@ -50,13 +50,12 @@ public class SelectionNode extends UnaryNode implements Cloneable {
     if (obj instanceof SelectionNode) {
       SelectionNode other = (SelectionNode) obj;
       return super.equals(other) 
-          && this.qual.equals(other.qual)
-          && child.equals(other.child);
+          && this.qual.equals(other.qual);
     } else {
       return false;
     }
   }
-  
+
   @Override
   public Object clone() throws CloneNotSupportedException {
     SelectionNode selNode = (SelectionNode) super.clone();

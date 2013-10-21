@@ -134,7 +134,6 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
       eq = eq && TUtil.checkEquals(columns, other.columns);
       eq = eq && TUtil.checkEquals(havingCondition, other.havingCondition);
       eq = eq && TUtil.checkEquals(targets, other.targets);
-      eq = eq && child.equals(other.child);
       return eq;
     } else {
       return false;  

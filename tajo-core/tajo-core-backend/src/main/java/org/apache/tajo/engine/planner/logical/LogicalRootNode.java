@@ -30,19 +30,6 @@ public class LogicalRootNode extends UnaryNode implements Cloneable {
   }
   
   @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof LogicalRootNode) {
-      LogicalRootNode other = (LogicalRootNode) obj;
-      boolean b1 = super.equals(other);
-      boolean b2 = child.equals(other.child);
-      
-      return b1 && b2;
-    } else {
-      return false;
-    }
-  }
-  
-  @Override
   public Object clone() throws CloneNotSupportedException {
     return super.clone();
   }

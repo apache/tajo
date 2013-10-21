@@ -51,13 +51,12 @@ public final class SortNode extends UnaryNode implements Cloneable {
       SortNode other = (SortNode) obj;
       boolean eq = super.equals(other);
       eq = eq && TUtil.checkEquals(sortKeys, other.sortKeys);
-      eq = eq && child.equals(other.child);
       return eq;
     } else {
       return false;
     }
   }
-  
+
   @Override
   public Object clone() throws CloneNotSupportedException {
     SortNode sort = (SortNode) super.clone();

@@ -83,9 +83,9 @@ public class PlannerUtil {
 
     } else if (parent instanceof BinaryNode) {
       BinaryNode binaryParent = (BinaryNode) parent;
-      if (binaryParent.getLeftChild().equals(child)) {
+      if (binaryParent.getLeftChild().deepEquals(child)) {
         binaryParent.setLeftChild(grandChild);
-      } else if (binaryParent.getRightChild().equals(child)) {
+      } else if (binaryParent.getRightChild().deepEquals(child)) {
         binaryParent.setRightChild(grandChild);
       } else {
         throw new IllegalStateException("ERROR: both logical node must be parent and child nodes");
@@ -119,15 +119,15 @@ public class PlannerUtil {
         throws PlanningException {
       super.visitChild(context, plan, node, stack);
 
-      if (node.equals(target)) {
+      if (node.deepEquals(target)) {
         LogicalNode parent = stack.peek();
 
         if (parent instanceof BinaryNode) {
           BinaryNode binaryParent = (BinaryNode) parent;
-          if (binaryParent.getLeftChild().equals(target)) {
+          if (binaryParent.getLeftChild().deepEquals(target)) {
             binaryParent.setLeftChild(tobeReplaced);
           }
-          if (binaryParent.getRightChild().equals(target)) {
+          if (binaryParent.getRightChild().deepEquals(target)) {
             binaryParent.setRightChild(tobeReplaced);
           }
         } else if (parent instanceof UnaryNode) {

@@ -38,6 +38,15 @@ public abstract class UnaryNode extends LogicalNode implements Cloneable {
 	public <T extends LogicalNode> T getChild() {
 		return (T) this.child;
 	}
+
+  @Override
+  public boolean deepEquals(Object o) {
+    if (o instanceof UnaryNode) {
+      UnaryNode u = (UnaryNode) o;
+      return equals(o) && child.deepEquals(u.child);
+    }
+    return false;
+  }
 	
 	@Override
   public Object clone() throws CloneNotSupportedException {

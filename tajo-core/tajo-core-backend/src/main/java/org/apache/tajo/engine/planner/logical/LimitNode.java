@@ -43,13 +43,12 @@ public final class LimitNode extends UnaryNode implements Cloneable {
     if (obj instanceof LimitNode) {
       LimitNode other = (LimitNode) obj;
       return super.equals(other)
-          && fetchFirstNum == other.fetchFirstNum
-          && child.equals(other.child);
+          && fetchFirstNum == other.fetchFirstNum;
     } else {
       return false;
     }
   }
-  
+
   @Override
   public Object clone() throws CloneNotSupportedException {
     LimitNode newLimitNode = (LimitNode) super.clone();

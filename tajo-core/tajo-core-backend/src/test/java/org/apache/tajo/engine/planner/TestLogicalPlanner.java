@@ -832,7 +832,7 @@ public class TestLogicalPlanner {
   public void testJsonSerDerObject(LogicalNode rootNode) {
     String json = rootNode.toJson();
     LogicalNode fromJson = CoreGsonHelper.fromJson(json, LogicalNode.class);
-    assertEquals("JSON (de) serialization equivalence check", rootNode, fromJson);
+    assertTrue("JSON (de) serialization equivalence check", rootNode.deepEquals(fromJson));
   }
 
   // Table descriptions

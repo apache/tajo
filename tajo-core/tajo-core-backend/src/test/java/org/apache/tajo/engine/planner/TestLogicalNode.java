@@ -18,13 +18,55 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.planner.logical.GroupbyNode;
+import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class TestLogicalNode {
   public static final void testCloneLogicalNode(LogicalNode n1) throws CloneNotSupportedException {
     LogicalNode copy = (LogicalNode) n1.clone();
-    assertEquals(n1, copy);
+    assertTrue(n1.deepEquals(copy));
+  }
+
+  @Test
+  public void testEquals() {
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    schema.addColumn("age", Type.INT2);
+    GroupbyNode groupbyNode = new GroupbyNode(0, new Column[]{schema.getColumn(1), schema.getColumn(2)});
+    ScanNode scanNode = new ScanNode(0,
+        CatalogUtil.newTableDesc("in", CatalogUtil.newTableMeta(schema, StoreType.CSV), new Path("in")));
+
+    GroupbyNode groupbyNode2 = new GroupbyNode(0, new Column[]{schema.getColumn(1), schema.getColumn(2)});
+    JoinNode joinNode = new JoinNode(0);
+    ScanNode scanNode2 = new ScanNode(0,
+        CatalogUtil.newTableDesc("in2", CatalogUtil.newTableMeta(schema, StoreType.CSV), new Path("in2")));
+
+    groupbyNode.setChild(scanNode);
+    groupbyNode2.setChild(joinNode);
+    joinNode.setLeftChild(scanNode);
+    joinNode.setRightChild(scanNode2);
+
+    assertTrue(groupbyNode.equals(groupbyNode2));
+    assertFalse(groupbyNode.deepEquals(groupbyNode2));
+
+    ScanNode scanNode3 = new ScanNode(0,
+        CatalogUtil.newTableDesc("in", CatalogUtil.newTableMeta(schema, StoreType.CSV), new Path("in")));
+    groupbyNode2.setChild(scanNode3);
+
+    assertTrue(groupbyNode.equals(groupbyNode2));
+    assertTrue(groupbyNode.deepEquals(groupbyNode2));
   }
 }

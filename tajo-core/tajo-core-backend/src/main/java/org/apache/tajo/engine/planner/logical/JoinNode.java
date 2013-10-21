@@ -26,6 +26,7 @@ import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.Target;
+import org.apache.tajo.util.TUtil;
 
 public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private JoinType joinType;
@@ -105,8 +106,16 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof JoinNode) {
       JoinNode other = (JoinNode) obj;
-      return super.equals(other) && leftChild.equals(other.leftChild)
-          && rightChild.equals(other.rightChild);
+      boolean eq = this.joinType.equals(other.joinType);
+      eq &= TUtil.checkEquals(this.targets, other.targets);
+      if (this.joinQual != null && other.joinQual != null) {
+        eq &= this.joinQual.equals(other.joinQual);
+      } else if (this.joinQual == null && other.joinQual == null) {
+
+      } else {
+        eq = false;
+      }
+      return eq;
     } else {
       return false;
     }

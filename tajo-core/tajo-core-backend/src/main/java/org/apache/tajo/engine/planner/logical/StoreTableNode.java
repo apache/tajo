@@ -131,13 +131,12 @@ public class StoreTableNode extends UnaryNode implements Cloneable {
       eq = eq && TUtil.checkEquals(options, other.options);
       eq = eq && isCreatedTable == other.isCreatedTable;
       eq = eq && isOverwritten == other.isOverwritten;
-      eq = eq && child.equals(other.child);
       return eq;
     } else {
       return false;
     }
   }
-  
+
   @Override
   public Object clone() throws CloneNotSupportedException {
     StoreTableNode store = (StoreTableNode) super.clone();
