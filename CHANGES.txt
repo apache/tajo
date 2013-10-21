@@ -341,6 +341,9 @@ Release 0.2.0 - unreleased
 
   TASKS
 
+    TAJO-265: Update installation guide and other documentation for 0.2
+    release. (hyunsik)
+
     TAJO-252: Add DISCLAIMER file. (hyunsik)
 
     TAJO-251: Rename the legacy name *.tql to *.sql. (hyunsik)
