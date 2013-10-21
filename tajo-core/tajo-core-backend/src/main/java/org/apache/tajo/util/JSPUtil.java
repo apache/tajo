@@ -19,6 +19,7 @@
 package org.apache.tajo.util;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.QueryUnit;
@@ -27,6 +28,8 @@ import org.apache.tajo.worker.TaskRunner;
 
 import java.text.DecimalFormat;
 import java.util.*;
+
+import static org.apache.tajo.conf.TajoConf.ConfVars;
 
 public class JSPUtil {
   static DecimalFormat decimalF = new DecimalFormat("###.0");
@@ -55,9 +58,9 @@ public class JSPUtil {
 
   public static String getTajoMasterHttpAddr(Configuration config) {
     try {
-      String[] masterAddr = config.get("tajo.master.manager.addr").split(":");
-
-      return masterAddr[0] + ":" + config.getInt("tajo.master.http.port", 8080);
+      TajoConf conf = (TajoConf) config;
+      String [] masterAddr = conf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS).split(":");
+      return masterAddr[0] + ":" + conf.getVar(ConfVars.TAJO_MASTER_INFO_ADDRESS).split(":")[1];
     } catch (Exception e) {
       e.printStackTrace();
       return e.getMessage();

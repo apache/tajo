@@ -16,16 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.tajo;
+package org.apache.tajo.client;
 
-public class TajoConstants {
-  public static String TAJO_VERSION = "0.2.0-SNAPSHOT";
-  public static String SYSTEM_CONF_FILENAME = "system_conf.xml";
+public enum SQLStates {
+  ER_NO_SUCH_TABLE("42S02");
 
-  public static String SYSTEM_DIR_NAME = "system";
-  public static String WAREHOUSE_DIR_NAME = "warehouse";
-  public static String SYSTEM_RESOURCE_DIR_NAME = "resource";
-  public static String RESULT_DIR_NAME="RESULT";
+  private String state;
 
-  private TajoConstants() {}
+  SQLStates(String state) {
+    this.state = state;
+  }
+
+  public String getState() {
+    return state;
+  }
 }

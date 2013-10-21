@@ -171,13 +171,14 @@ public class QueryJobManager extends CompositeService {
     if(queryHeartbeat.getTajoWorkerHost() != null) {
       WorkerResource queryMasterResource = new WorkerResource();
       queryMasterResource.setAllocatedHost(queryHeartbeat.getTajoWorkerHost());
-      queryMasterResource.setManagerPort(queryHeartbeat.getTajoWorkerPort());
+      queryMasterResource.setPeerRpcPort(queryHeartbeat.getTajoWorkerPort());
       queryMasterResource.setClientPort(queryHeartbeat.getTajoWorkerClientPort());
       queryMasterResource.setPullServerPort(queryHeartbeat.getTajoWorkerPullServerPort());
       queryInfo.setQueryMasterResource(queryMasterResource);
     }
     queryInfo.setLastMessage(queryHeartbeat.getStatusMessage());
     queryInfo.setQueryState(queryHeartbeat.getState());
+    queryInfo.setProgress(queryHeartbeat.getQueryProgress());
 
     if (queryHeartbeat.hasQueryFinishTime()) {
       queryInfo.setFinishTime(queryHeartbeat.getQueryFinishTime());

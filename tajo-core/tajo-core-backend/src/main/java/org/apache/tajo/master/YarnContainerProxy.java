@@ -296,7 +296,7 @@ public class YarnContainerProxy extends ContainerProxy {
     Map<String, LocalResource> localResources = new HashMap<String, LocalResource>();
     FileSystem fs = null;
     FileContext fsCtx = null;
-    LOG.info("defaultFS: " + conf.get("fs.defaultFS"));
+    LOG.info("defaultFS: " + conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY));
     try {
       fs = FileSystem.get(conf);
       fsCtx = FileContext.getFileContext(conf);
@@ -305,7 +305,7 @@ public class YarnContainerProxy extends ContainerProxy {
     }
 
     try {
-      Path systemConfPath = TajoConf.getSystemConf(conf);
+      Path systemConfPath = TajoConf.getSystemConfPath(conf);
       if (!fs.exists(systemConfPath)) {
         LOG.error("system_conf.xml (" + systemConfPath.toString() + ") Not Found");
       }

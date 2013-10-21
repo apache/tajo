@@ -74,7 +74,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
   public TajoResourceAllocator(QueryMasterTask.QueryMasterTaskContext queryTaskContext) {
     this.queryTaskContext = queryTaskContext;
     executorService = Executors.newFixedThreadPool(
-        queryTaskContext.getConf().getIntVar(TajoConf.ConfVars.AM_TASKRUNNER_LAUNCH_PARALLEL_NUM));
+        queryTaskContext.getConf().getIntVar(TajoConf.ConfVars.YARN_RM_TASKRUNNER_LAUNCH_PARALLEL_NUM));
   }
 
   @Override
@@ -277,7 +277,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
 
           WorkerResource workerResource = new WorkerResource();
           workerResource.setAllocatedHost(nodeId.getHost());
-          workerResource.setManagerPort(nodeId.getPort());
+          workerResource.setPeerRpcPort(nodeId.getPort());
           workerResource.setPullServerPort(eachWorker.getWorkerPullServerPort());
           workerResource.setMemoryMBSlots(requiredMemoryMBSlot);
           workerResource.setDiskSlots(requiredDiskSlots);

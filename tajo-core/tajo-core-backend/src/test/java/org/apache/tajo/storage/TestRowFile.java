@@ -70,8 +70,7 @@ public class TestRowFile {
 
     TableMeta meta = CatalogUtil.newTableMeta(schema, StoreType.ROWFILE);
 
-    AbstractStorageManager sm = StorageManagerFactory.getStorageManager(conf,
-        new Path(conf.get(TajoConf.ConfVars.ROOT_DIR.name())));
+    AbstractStorageManager sm = StorageManagerFactory.getStorageManager(conf, new Path(conf.getVar(ConfVars.ROOT_DIR)));
 
     Path tablePath = new Path("/test");
     Path metaPath = new Path(tablePath, ".meta");

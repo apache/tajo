@@ -68,7 +68,7 @@ public class YarnTaskRunnerLauncherImpl extends AbstractService implements TaskR
     this.context = context;
     this.yarnRPC = yarnRPC;
     executorService = Executors.newFixedThreadPool(
-        context.getConf().getIntVar(TajoConf.ConfVars.AM_TASKRUNNER_LAUNCH_PARALLEL_NUM));
+        context.getConf().getIntVar(TajoConf.ConfVars.YARN_RM_TASKRUNNER_LAUNCH_PARALLEL_NUM));
   }
 
   public void start() {

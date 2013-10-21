@@ -1,14 +1,18 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="java.util.*" %>
-<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="org.apache.tajo.master.*" %>
-<%@ page import="org.apache.tajo.util.*" %>
+<%@ page import="org.apache.tajo.master.TajoMaster" %>
 <%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
+<%@ page import="org.apache.tajo.util.JSPUtil" %>
+<%@ page import="org.apache.tajo.util.StringUtils" %>
+<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.util.List" %>
+<%@ page import="static org.apache.tajo.conf.TajoConf.ConfVars.WORKER_INFO_ADDRESS" %>
+<%@ page import="org.apache.tajo.conf.TajoConf" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
+  TajoConf conf = master.getContext().getConf();
 
   List<QueryInProgress> runningQueries =
           JSPUtil.sortQueryInProgress(master.getContext().getQueryJobManager().getRunningQueries(), true);
@@ -17,8 +21,7 @@
           JSPUtil.sortQueryInProgress(master.getContext().getQueryJobManager().getFinishedQueries(), true);
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-  int workerHttpPort = master.getConfig().getInt("tajo.worker.http.port", 28080);
-
+  int workerHttpPort = Integer.valueOf(conf.getVar(WORKER_INFO_ADDRESS).split(":")[1]);
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">

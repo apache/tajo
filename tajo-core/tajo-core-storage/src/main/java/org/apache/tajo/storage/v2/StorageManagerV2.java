@@ -112,7 +112,7 @@ public class StorageManagerV2 extends AbstractStorageManager {
 		}
 
 		public int getMaxReadBytesPerScheduleSlot() {
-			return conf.getInt("tajo.storage.manager.maxReadBytes", 8 * 1024 * 1024);		//8MB
+			return conf.getIntVar(TajoConf.ConfVars.STORAGE_MANAGER_DISK_SCHEDULER_MAX_READ_BYTES_PER_SLOT);
 		}
 
     public void requestFileScan(FileScannerV2 fileScanner) {

@@ -64,7 +64,7 @@
 %>
     <tr>
       <td width='30' align='right'><%=no++%></td>
-      <td><a href='<%=workerHttp%>'><%=worker.getAllocatedHost() + ":" + worker.getManagerPort()%></a></td>
+      <td><a href='<%=workerHttp%>'><%=worker.getAllocatedHost() + ":" + worker.getPeerRpcPort()%></a></td>
       <td width='100'><%=worker.portsToStr()%></td>
       <td width='100' align='right'><%=worker.getNumRunningTasks()%></td>
       <td width='100' align='right'><%=worker.getUsedSlots()%>/<%=worker.getSlots()%></td>
@@ -101,7 +101,7 @@
 %>
     <tr>
       <td width='30' align='right'><%=no++%></td>
-      <td><%=worker.getAllocatedHost() + ":" + worker.getManagerPort()%></td>
+      <td><%=worker.getAllocatedHost() + ":" + worker.getPeerRpcPort()%></td>
       <td><%=worker.portsToStr()%></td>
       <td><%=worker.getNumRunningTasks()%></td>
       <td><%=worker.getUsedSlots()%>/<%=worker.getSlots()%></td>

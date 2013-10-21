@@ -39,7 +39,6 @@ import org.apache.hadoop.yarn.service.AbstractService;
 import org.apache.hadoop.yarn.service.Service;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.pullserver.PullServerAuxService;
-import org.apache.tajo.util.NetUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -108,7 +107,7 @@ public class MiniTajoYarnCluster extends MiniYARNCluster {
     conf.setInt(TajoConf.ConfVars.PULLSERVER_PORT.name(), 0);
 
     // local directory
-    conf.set(TajoConf.ConfVars.TASK_LOCAL_DIR.name(), "/tmp/tajo-localdir");
+    conf.set(TajoConf.ConfVars.WORKER_TEMPORAL_DIR.name(), "/tmp/tajo-localdir");
 
     conf.setClass(YarnConfiguration.NM_CONTAINER_EXECUTOR,
         DefaultContainerExecutor.class, ContainerExecutor.class);

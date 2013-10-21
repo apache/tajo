@@ -21,6 +21,8 @@
  */
 package org.apache.tajo;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -38,6 +40,7 @@ import java.io.IOException;
 public class BackendTestingUtil {
 	public final static Schema mockupSchema;
 	public final static TableMeta mockupMeta;
+  private static final Log LOG = LogFactory.getLog(BackendTestingUtil.class);
 
 	static {
     mockupSchema = new Schema();
@@ -46,23 +49,20 @@ public class BackendTestingUtil {
     mockupMeta = CatalogUtil.newTableMeta(mockupSchema, StoreType.CSV);
 	}
 
-  public static void writeTmpTable(TajoConf conf, Path path,
-                                   String tableName, boolean writeMeta)
+  public static void writeTmpTable(TajoConf conf, Path tablePath)
       throws IOException {
-    AbstractStorageManager sm = StorageManagerFactory.getStorageManager(conf, path);
+    AbstractStorageManager sm = StorageManagerFactory.getStorageManager(conf, tablePath);
     FileSystem fs = sm.getFileSystem();
+
     Appender appender;
 
-    Path tablePath = StorageUtil.concatPath(path, tableName, "table.csv");
-    if (fs.exists(tablePath.getParent())) {
-      fs.delete(tablePath.getParent(), true);
+    Path filePath = new Path(tablePath, "table.csv");
+    if (fs.exists(tablePath)) {
+      fs.delete(tablePath, true);
     }
-    fs.mkdirs(tablePath.getParent());
+    fs.mkdirs(tablePath);
 
-    if (writeMeta) {
-      FileUtil.writeProto(fs, new Path(tablePath.getParent(), ".meta"), mockupMeta.getProto());
-    }
-    appender = StorageManagerFactory.getStorageManager(conf).getAppender(mockupMeta, tablePath);
+    appender = sm.getAppender(mockupMeta, filePath);
     appender.init();
 
     int deptSize = 10000;
@@ -76,13 +76,5 @@ public class BackendTestingUtil {
       appender.addTuple(tuple);
     }
     appender.close();
-  }
-
-	public static void writeTmpTable(TajoConf conf, String parent,
-	    String tableName, boolean writeMeta) throws IOException {
-    writeTmpTable(conf, new Path(parent), tableName, writeMeta);
-	}
-
-  public BackendTestingUtil(TajoConf conf) throws IOException {
   }
 }

@@ -241,7 +241,7 @@ public class GlobalEngine extends AbstractService {
     }
 
     if(!createTable.isExternal()){
-      Path tablePath = new Path(sm.getTableBaseDir(), createTable.getTableName().toLowerCase());
+      Path tablePath = new Path(sm.getWarehouseDir(), createTable.getTableName().toLowerCase());
       createTable.setPath(tablePath);
     } else {
       Preconditions.checkState(createTable.hasPath(), "ERROR: LOCATION must be given.");
@@ -353,7 +353,7 @@ public class GlobalEngine extends AbstractService {
       StoreTableNode storeTableNode = plan.getRootBlock().getStoreTableNode();
       String tableName = storeTableNode.getTableName();
       queryContext.setOutputTable(tableName);
-      queryContext.setOutputPath(new Path(TajoConf.getWarehousePath(context.getConf()), tableName));
+      queryContext.setOutputPath(new Path(TajoConf.getWarehouseDir(context.getConf()), tableName));
       queryContext.setCreateTable();
     }
   }

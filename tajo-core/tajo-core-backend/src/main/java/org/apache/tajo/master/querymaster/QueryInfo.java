@@ -66,7 +66,7 @@ public class QueryInfo {
     if(queryMasterResource == null) {
       return 0;
     }
-    return queryMasterResource.getManagerPort();
+    return queryMasterResource.getPeerRpcPort();
   }
 
   public int getQueryMasterClientPort() {
@@ -122,6 +122,6 @@ public class QueryInfo {
 
   @Override
   public String toString() {
-    return queryId.toString() + "state=" + queryState +", queryMaster=" + queryMasterResource;
+    return queryId.toString() + "state=" + queryState +",progress=" + progress + ", queryMaster=" + queryMasterResource;
   }
 }

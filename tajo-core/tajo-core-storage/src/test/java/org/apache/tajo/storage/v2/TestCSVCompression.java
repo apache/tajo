@@ -55,7 +55,7 @@ public class TestCSVCompression {
   public TestCSVCompression(CatalogProtos.StoreType type) throws IOException {
     this.storeType = type;
     conf = new TajoConf();
-    conf.set("tajo.storage.manager.v2", "true");
+    conf.setBoolVar(TajoConf.ConfVars.STORAGE_MANAGER_VERSION_2, true);
 
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);

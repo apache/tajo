@@ -324,18 +324,13 @@ public class PullServerAuxService extends AbstractService
   }
 
   class PullServer extends SimpleChannelUpstreamHandler {
-
     private final Configuration conf;
-//    private final IndexCache indexCache;
-    private final LocalDirAllocator lDirAlloc =
-      new LocalDirAllocator(ConfVars.TASK_LOCAL_DIR.varname);
+    private final LocalDirAllocator lDirAlloc = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
     private int port;
 
     public PullServer(Configuration conf) {
       this.conf = conf;
-//      indexCache = new IndexCache(new JobConf(conf));
-      this.port = conf.getInt(ConfVars.PULLSERVER_PORT.varname,
-          ConfVars.PULLSERVER_PORT.defaultIntVal);
+      this.port = conf.getInt(ConfVars.PULLSERVER_PORT.varname, ConfVars.PULLSERVER_PORT.defaultIntVal);
     }
     
     public void setPort(int port) {
@@ -397,7 +392,7 @@ public class PullServerAuxService extends AbstractService
       LOG.info("PullServer request param: repartitionType=" + repartitionType +
           ", sid=" + sid + ", partitionId=" + partitionId + ", taskIds=" + taskIdList);
 
-      String taskLocalDir = conf.get(ConfVars.TASK_LOCAL_DIR.varname);
+      String taskLocalDir = conf.get(ConfVars.WORKER_TEMPORAL_DIR.varname);
       if (taskLocalDir == null ||
           taskLocalDir.equals("")) {
         LOG.error("Tajo local directory should be specified.");

@@ -512,7 +512,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         LOG.info("Smaller Table's volume is approximately " + mb + " MB");
         // determine the number of task
         int taskNum = (int) Math.ceil((double)mb /
-            conf.getIntVar(ConfVars.JOIN_PARTITION_VOLUME));
+            conf.getIntVar(ConfVars.DIST_QUERY_JOIN_PARTITION_VOLUME));
         LOG.info("The determined number of join partitions is " + taskNum);
         return taskNum;
 
@@ -528,7 +528,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           LOG.info("Table's volume is approximately " + mb + " MB");
           // determine the number of task
           int taskNum = (int) Math.ceil((double)mb /
-              conf.getIntVar(ConfVars.AGGREGATION_PARTITION_VOLUME));
+              conf.getIntVar(ConfVars.DIST_QUERY_GROUPBY_PARTITION_VOLUME));
           LOG.info("The determined number of aggregation partitions is " + taskNum);
           return taskNum;
         }

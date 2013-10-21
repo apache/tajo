@@ -22,6 +22,7 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -36,6 +37,7 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.service.CompositeService;
 import org.apache.hadoop.yarn.service.Service;
 import org.apache.hadoop.yarn.util.RackResolver;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -46,8 +48,8 @@ import org.apache.tajo.engine.function.InCountry;
 import org.apache.tajo.engine.function.builtin.*;
 import org.apache.tajo.engine.function.string.*;
 import org.apache.tajo.master.querymaster.QueryJobManager;
+import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
-import org.apache.tajo.master.rm.YarnTajoResourceManager;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -60,6 +62,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,21 +75,21 @@ public class TajoMaster extends CompositeService {
 
   /** rw-r--r-- */
   @SuppressWarnings("OctalInteger")
-  final public static FsPermission TAJO_ROOT_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
+  final public static FsPermission TAJO_ROOT_DIR_PERMISSION = FsPermission.createImmutable((short) 0755);
   /** rw-r--r-- */
   @SuppressWarnings("OctalInteger")
-  final public static FsPermission SYSTEM_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
+  final public static FsPermission SYSTEM_DIR_PERMISSION = FsPermission.createImmutable((short) 0755);
   /** rw-r--r-- */
-  final public static FsPermission SYSTEM_RESOURCE_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
-  /** rw-r--r-- */
-  @SuppressWarnings("OctalInteger")
-  final public static FsPermission WAREHOUSE_DIR_PERMISSION = FsPermission.createImmutable((short) 0644);
+  final public static FsPermission SYSTEM_RESOURCE_DIR_PERMISSION = FsPermission.createImmutable((short) 0755);
   /** rw-r--r-- */
   @SuppressWarnings("OctalInteger")
-  final public static FsPermission STAGING_ROOTDIR_PERMISSION = FsPermission.createImmutable((short) 0644);
+  final public static FsPermission WAREHOUSE_DIR_PERMISSION = FsPermission.createImmutable((short) 0755);
   /** rw-r--r-- */
   @SuppressWarnings("OctalInteger")
-  final public static FsPermission SYSTEM_CONF_FILE_PERMISSION = FsPermission.createImmutable((short) 0644);
+  final public static FsPermission STAGING_ROOTDIR_PERMISSION = FsPermission.createImmutable((short) 0755);
+  /** rw-r--r-- */
+  @SuppressWarnings("OctalInteger")
+  final public static FsPermission SYSTEM_CONF_FILE_PERMISSION = FsPermission.createImmutable((short) 0755);
 
 
   private MasterContext context;
@@ -118,11 +121,11 @@ public class TajoMaster extends CompositeService {
   }
 
   public String getMasterName() {
-    return tajoMasterService.getBindAddress().getHostName() + ":" + tajoMasterService.getBindAddress().getPort();
+    return NetUtils.normalizeInetSocketAddress(tajoMasterService.getBindAddress());
   }
 
   public String getVersion() {
-    return "0.2.0";
+    return TajoConstants.TAJO_VERSION;
   }
 
   public TajoMasterClientService getTajoMasterClientService() {
@@ -176,7 +179,7 @@ public class TajoMaster extends CompositeService {
 
   private void initResourceManager() throws Exception {
     Class<WorkerResourceManager>  resourceManagerClass = (Class<WorkerResourceManager>)
-        systemConf.getClass(ConfVars.RESOURCE_MANAGER_CLASS.varname, YarnTajoResourceManager.class);
+        systemConf.getClass(ConfVars.RESOURCE_MANAGER_CLASS.varname, TajoWorkerResourceManager.class);
     Constructor<WorkerResourceManager> constructor = resourceManagerClass.getConstructor(MasterContext.class);
     resourceManager = constructor.newInstance(context);
     resourceManager.init(context.getConf());
@@ -184,8 +187,8 @@ public class TajoMaster extends CompositeService {
 
   private void initWebServer() throws Exception {
     if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")) {
-      int httpPort = systemConf.getInt("tajo.master.http.port", 8080);
-      webServer = StaticHttpServer.getInstance(this ,"admin", null, httpPort ,
+      InetSocketAddress address = systemConf.getSocketAddrVar(ConfVars.TAJO_MASTER_INFO_ADDRESS);
+      webServer = StaticHttpServer.getInstance(this ,"admin", address.getHostName(), address.getPort(),
           true, null, context.getConf(), null);
       webServer.addServlet("queryServlet", "/query_exec", QueryExecutorServlet.class);
       webServer.start();
@@ -194,12 +197,12 @@ public class TajoMaster extends CompositeService {
 
   private void checkAndInitializeSystemDirectories() throws IOException {
     // Get Tajo root dir
-    this.tajoRootPath = TajoConf.getTajoRootPath(systemConf);
+    this.tajoRootPath = TajoConf.getTajoRootDir(systemConf);
     LOG.info("Tajo Root Directory: " + tajoRootPath);
 
     // Check and Create Tajo root dir
     this.defaultFS = tajoRootPath.getFileSystem(systemConf);
-    systemConf.set("fs.defaultFS", defaultFS.getUri().toString());
+    systemConf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, defaultFS.getUri().toString());
     LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
     if (!defaultFS.exists(tajoRootPath)) {
       defaultFS.mkdirs(tajoRootPath, new FsPermission(TAJO_ROOT_DIR_PERMISSION));
@@ -207,20 +210,20 @@ public class TajoMaster extends CompositeService {
     }
 
     // Check and Create system and system resource dir
-    Path systemPath = TajoConf.getSystemPath(systemConf);
+    Path systemPath = TajoConf.getSystemDir(systemConf);
     if (!defaultFS.exists(systemPath)) {
       defaultFS.mkdirs(systemPath, new FsPermission(SYSTEM_DIR_PERMISSION));
       LOG.info("System dir '" + systemPath + "' is created");
     }
-    Path systemResourcePath = TajoConf.getSystemResourcePath(systemConf);
+    Path systemResourcePath = TajoConf.getSystemResourceDir(systemConf);
     if (!defaultFS.exists(systemResourcePath)) {
       defaultFS.mkdirs(systemResourcePath, new FsPermission(SYSTEM_RESOURCE_DIR_PERMISSION));
       LOG.info("System resource dir '" + systemResourcePath + "' is created");
     }
 
     // Get Warehouse dir
-    this.wareHousePath = TajoConf.getWarehousePath(systemConf);
-    LOG.info("Tajo Warehouse Dir: " + wareHousePath);
+    this.wareHousePath = TajoConf.getWarehouseDir(systemConf);
+    LOG.info("Tajo Warehouse dir: " + wareHousePath);
 
     // Check and Create Warehouse dir
     if (!defaultFS.exists(wareHousePath)) {
@@ -228,9 +231,11 @@ public class TajoMaster extends CompositeService {
       LOG.info("Warehouse dir '" + wareHousePath + "' is created");
     }
 
-    Path stagingPath = TajoConf.getStagingRoot(systemConf);
+    Path stagingPath = TajoConf.getStagingDir(systemConf);
+    LOG.info("Staging dir: " + wareHousePath);
     if (!defaultFS.exists(stagingPath)) {
       defaultFS.mkdirs(stagingPath, new FsPermission(STAGING_ROOTDIR_PERMISSION));
+      LOG.info("Staging dir '" + stagingPath + "' is created");
     }
   }
 
@@ -420,11 +425,16 @@ public class TajoMaster extends CompositeService {
 
   private void writeSystemConf() throws IOException {
     // Storing the system configs
-    Path systemResourcePath = TajoConf.getSystemResourcePath(systemConf);
-    Path systemConfPath = new Path(systemResourcePath, "system_conf.xml");
-    systemConf.setVar(ConfVars.SYSTEM_CONF_PATH, systemConfPath.toUri().toString());
+    Path systemConfPath = TajoConf.getSystemConfPath(systemConf);
 
-    defaultFS.delete(systemConfPath, true);
+    if (!defaultFS.exists(systemConfPath.getParent())) {
+      defaultFS.mkdirs(systemConfPath.getParent());
+    }
+
+    if (defaultFS.exists(systemConfPath)) {
+      defaultFS.delete(systemConfPath, false);
+    }
+
     FSDataOutputStream out = FileSystem.create(defaultFS, systemConfPath,
         new FsPermission(SYSTEM_CONF_FILE_PERMISSION));
     try {

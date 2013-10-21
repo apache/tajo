@@ -21,7 +21,6 @@ package org.apache.tajo.catalog;
 public class CatalogConstants {
   public static final String STORE_CLASS="tajo.catalog.store.class";
 
-  //public static final String JDBC_DRIVER = "tajo.catalog.jdbc.driver";
   public static final String CONNECTION_ID = "tajo.catalog.jdbc.connection.id";
   public static final String CONNECTION_PASSWORD = "tajo.catalog.jdbc.connection.password";
 

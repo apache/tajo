@@ -21,9 +21,12 @@ package org.apache.tajo.webapp;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.worker.TajoWorker;
 import org.mortbay.jetty.Connector;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 
 public class StaticHttpServer extends HttpServer {
   private static StaticHttpServer instance = null;
@@ -43,7 +46,11 @@ public class StaticHttpServer extends HttpServer {
     String addr = bindAddress;
     if(instance == null) {
       if(bindAddress == null || bindAddress.compareTo("") == 0) {
-        addr = conf.getVar(ConfVars.TASKRUNNER_LISTENER_ADDRESS).split(":")[0];
+        if (containerObject instanceof TajoMaster) {
+          addr = conf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS).split(":")[0];
+        } else if (containerObject instanceof TajoWorker) {
+          addr = Inet4Address.getLocalHost().getHostName();
+        }
       }
       
       instance = new StaticHttpServer(containerObject, name, addr, port,

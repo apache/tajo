@@ -1438,7 +1438,6 @@ public class RCFile {
       seekToNextKeyBuffer();
       currentRecordLength = readRecordLength();
       if (currentRecordLength == -1) {
-    	  //System.out.println(">>>>>currentRecordLength is minus");
         keyInit = false;
         return -1;
       }

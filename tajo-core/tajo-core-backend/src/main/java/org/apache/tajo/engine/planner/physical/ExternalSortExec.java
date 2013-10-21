@@ -50,7 +50,7 @@ public class ExternalSortExec extends SortExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), child, plan.getSortKeys());
     this.plan = plan;
 
-    this.MEM_TUPLE_NUM = context.getConf().getIntVar(ConfVars.EXTENAL_SORT_BUFFER_NUM);
+    this.MEM_TUPLE_NUM = context.getConf().getIntVar(ConfVars.EXECUTOR_SORT_EXTENAL_BUFFER_SIZE);
     this.tupleSlots = new ArrayList<Tuple>(MEM_TUPLE_NUM);
 
     this.sortTmpDir = new Path(context.getWorkDir(), UUID.randomUUID().toString());

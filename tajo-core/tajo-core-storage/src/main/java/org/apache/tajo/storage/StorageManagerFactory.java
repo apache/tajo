@@ -18,6 +18,9 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.collect.Maps;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -28,49 +31,49 @@ import org.apache.tajo.storage.v2.StorageManagerV2;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.tajo.conf.TajoConf.ConfVars;
+
 public class StorageManagerFactory {
-  private static Map<String, AbstractStorageManager> storageManagers =
-      new HashMap<String, AbstractStorageManager>();
+  private static final Map<String, AbstractStorageManager> storageManagers = Maps.newConcurrentMap();
 
   public static AbstractStorageManager getStorageManager(TajoConf conf) throws IOException {
     return getStorageManager(conf, null);
   }
 
   public static synchronized AbstractStorageManager getStorageManager (
-      TajoConf conf, Path dataRoot) throws IOException {
-    return getStorageManager(conf, dataRoot, conf.getBoolean("tajo.storage.manager.v2", false));
+      TajoConf conf, Path warehouseDir) throws IOException {
+    return getStorageManager(conf, warehouseDir, conf.getBoolVar(ConfVars.STORAGE_MANAGER_VERSION_2));
   }
 
   private static synchronized AbstractStorageManager getStorageManager (
-      TajoConf conf, Path dataRoot, boolean v2) throws IOException {
-    if(dataRoot != null) {
-      conf.setVar(TajoConf.ConfVars.ROOT_DIR, dataRoot.toString());
-    }
+      TajoConf conf, Path warehouseDir, boolean v2) throws IOException {
 
     URI uri;
-    if(dataRoot == null) {
-      uri = FileSystem.get(conf).getUri();
-    } else {
-      uri = dataRoot.toUri();
+    TajoConf localConf = new TajoConf(conf);
+    if (warehouseDir != null) {
+      localConf.setVar(ConfVars.WAREHOUSE_DIR, warehouseDir.toUri().toString());
     }
-    String key = "file".equals(uri.getScheme()) ? "file" : uri.getScheme() + uri.getHost() + uri.getPort();
+
+    uri = TajoConf.getWarehouseDir(localConf).toUri();
+
+    String key = "file".equals(uri.getScheme()) ? "file" : uri.toString();
 
     if(v2) {
       key += "_v2";
     }
 
     if(storageManagers.containsKey(key)) {
-      return storageManagers.get(key);
+      AbstractStorageManager sm = storageManagers.get(key);
+      return sm;
     } else {
-      AbstractStorageManager storageManager = null;
+      AbstractStorageManager storageManager;
 
       if(v2) {
-        storageManager = new StorageManagerV2(conf);
+        storageManager = new StorageManagerV2(localConf);
       } else {
-        storageManager = new StorageManager(conf);
+        storageManager = new StorageManager(localConf);
       }
 
       storageManagers.put(key, storageManager);

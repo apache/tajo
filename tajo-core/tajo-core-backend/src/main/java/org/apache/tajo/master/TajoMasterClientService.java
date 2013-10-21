@@ -81,7 +81,7 @@ public class TajoMasterClientService extends AbstractService {
   public void start() {
 
     // start the rpc server
-    String confClientServiceAddr = conf.getVar(ConfVars.CLIENT_SERVICE_ADDRESS);
+    String confClientServiceAddr = conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
     try {
       server = new BlockingRpcServer(TajoMasterClientProtocol.class, clientHandler, initIsa);
@@ -90,7 +90,7 @@ public class TajoMasterClientService extends AbstractService {
     }
     server.start();
     bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
-    this.conf.setVar(ConfVars.CLIENT_SERVICE_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
+    this.conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
     LOG.info("Instantiated TajoMasterClientService at " + this.bindAddress);
     super.start();
   }
@@ -287,26 +287,63 @@ public class TajoMasterClientService extends AbstractService {
       String name = request.getTableName();
       if (catalog.existsTable(name)) {
         return TableResponse.newBuilder()
+            .setResultCode(ResultCode.OK)
             .setTableDesc((TableDescProto) catalog.getTableDesc(name).getProto())
             .build();
       } else {
-        return null;
+        return TableResponse.newBuilder()
+            .setResultCode(ResultCode.ERROR)
+            .setErrorMessage("No such a table: " + request.getTableName())
+            .build();
       }
     }
 
     @Override
-    public TableResponse createTable(RpcController controller, CreateTableRequest request)
+    public TableResponse createExternalTable(RpcController controller, CreateTableRequest request)
         throws ServiceException {
-      Path path = new Path(request.getPath());
-      TableMeta meta = new TableMetaImpl(request.getMeta());
-      TableDesc desc;
       try {
-        desc = context.getGlobalEngine().createTableOnDirectory(request.getName(), meta, path, false);
-      } catch (Exception e) {
-        return TableResponse.newBuilder().setErrorMessage(e.getMessage()).build();
-      }
+        Path path = new Path(request.getPath());
+        FileSystem fs = path.getFileSystem(conf);
 
-      return TableResponse.newBuilder().setTableDesc((TableDescProto) desc.getProto()).build();
+        if (!fs.exists(path)) {
+          throw new IOException("No such a directory: " + path);
+        }
+
+        TableMeta meta = new TableMetaImpl(request.getMeta());
+
+        if (meta.getStat() == null) {
+          meta.setStat(new TableStat());
+        }
+
+        TableStat stat = meta.getStat();
+        long totalSize;
+        try {
+          totalSize = fs.getContentSummary(path).getSpaceConsumed();
+        } catch (IOException e) {
+          String message =
+              "Cannot get the volume of the table \"" + request.getName() + "\" from " + request.getPath();
+          LOG.warn(message);
+          throw new IOException(message, e);
+        }
+        stat.setNumBytes(totalSize);
+
+        TableDesc desc;
+        try {
+          desc = context.getGlobalEngine().createTableOnDirectory(request.getName(), meta, path, false);
+        } catch (Exception e) {
+          return TableResponse.newBuilder()
+              .setResultCode(ResultCode.ERROR)
+              .setErrorMessage(e.getMessage()).build();
+        }
+
+        return TableResponse.newBuilder()
+            .setResultCode(ResultCode.OK)
+            .setTableDesc((TableDescProto) desc.getProto()).build();
+      } catch (IOException ioe) {
+        return TableResponse.newBuilder()
+            .setResultCode(ResultCode.ERROR)
+            .setErrorMessage(ioe.getMessage()).build();
+      }
     }
 
     @Override

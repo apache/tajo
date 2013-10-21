@@ -58,7 +58,7 @@ public class TajoMasterService extends AbstractService {
 
   @Override
   public void start() {
-    String confMasterServiceAddr = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_SERVICE_ADDRESS);
+    String confMasterServiceAddr = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
     try {
       server = new AsyncRpcServer(TajoMasterProtocol.class, masterHandler, initIsa);
@@ -67,7 +67,7 @@ public class TajoMasterService extends AbstractService {
     }
     server.start();
     bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
-    this.conf.setVar(TajoConf.ConfVars.TAJO_MASTER_SERVICE_ADDRESS,
+    this.conf.setVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
         NetUtils.normalizeInetSocketAddress(bindAddress));
     LOG.info("Instantiated TajoMasterService at " + this.bindAddress);
     super.start();
@@ -139,7 +139,7 @@ public class TajoMasterService extends AbstractService {
         WorkerResource workerResource = new WorkerResource();
         String[] tokens = eachWorkerResource.getWorkerHostAndPort().split(":");
         workerResource.setAllocatedHost(tokens[0]);
-        workerResource.setManagerPort(Integer.parseInt(tokens[1]));
+        workerResource.setPeerRpcPort(Integer.parseInt(tokens[1]));
         workerResource.setMemoryMBSlots(eachWorkerResource.getMemoryMBSlots());
         workerResource.setDiskSlots(eachWorkerResource.getDiskSlots());
 

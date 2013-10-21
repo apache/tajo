@@ -25,6 +25,8 @@ import org.apache.tajo.storage.v2.StorageManagerV2.StorgaeManagerContext;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.apache.tajo.conf.TajoConf.ConfVars;
+
 public class ScanScheduler extends Thread {
   private static final Log LOG = LogFactory.getLog(ScanScheduler.class);
 
@@ -63,7 +65,7 @@ public class ScanScheduler extends Thread {
       LOG.error(e.getMessage(), e);
     }
 
-    final int reportInterval = context.getConf().getInt("tajo.disk.scheduler.report.interval", 60 * 1000);
+    final int reportInterval = context.getConf().getIntVar(ConfVars.STORAGE_MANAGER_DISK_SCHEDULER_REPORT_INTERVAL);
     if(reportInterval  > 0) {
       schedulerStatusReportThread = new Thread() {
         public void run() {

@@ -171,7 +171,7 @@ public class GlobalPlanner {
 
       TableMeta leftMeta = leftScan.getTableDesc().getMeta();
       TableMeta rightMeta = rightScan.getTableDesc().getMeta();
-      long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.BROADCAST_JOIN_THRESHOLD);
+      long broadcastThreshold = conf.getLongVar(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_THRESHOLD);
 
       if (leftMeta.getStat().getNumBytes() < broadcastThreshold) {
         leftBroadcasted = true;

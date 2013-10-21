@@ -22,9 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.service.CompositeService;
-import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.master.querymaster.QueryMasterTask;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -137,11 +135,11 @@ public class TaskRunnerManager extends CompositeService {
 
   class FinishedTaskCleanThread extends Thread {
     public void run() {
-      int expireIntervalTime = tajoConf.getInt("tajo.worker.history.expire.interval.min", 12 * 60); //12 hour
-      LOG.info("FinishedQueryMasterTaskCleanThread started: expireIntervalTime=" + expireIntervalTime);
+      int expireIntervalTime = tajoConf.getIntVar(TajoConf.ConfVars.WORKER_HISTORY_EXPIRE_PERIOD);
+      LOG.info("FinishedQueryMasterTaskCleanThread started: expire interval minutes = " + expireIntervalTime);
       while(!stop.get()) {
         try {
-          Thread.sleep(60 * 1000 * 60);   //hourly
+          Thread.sleep(60 * 1000 * 60);   // hourly check
         } catch (InterruptedException e) {
           break;
         }

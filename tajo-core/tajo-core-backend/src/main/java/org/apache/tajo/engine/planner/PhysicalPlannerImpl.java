@@ -292,7 +292,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     long leftSize = estimateSizeRecursive(context, leftLineage);
     long rightSize = estimateSizeRecursive(context, rightLineage);
 
-    final long threshold = conf.getLongVar(TajoConf.ConfVars.INMEMORY_INNER_HASH_JOIN_THRESHOLD);
+    final long threshold = conf.getLongVar(TajoConf.ConfVars.EXECUTOR_INNER_JOIN_INMEMORY_HASH_THRESHOLD);
 
     boolean hashJoin = false;
     if (leftSize < threshold || rightSize < threshold) {
@@ -363,7 +363,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     String [] rightLineage = PlannerUtil.getLineage(plan.getRightChild());
     long rightTableVolume = estimateSizeRecursive(context, rightLineage);
 
-    if (rightTableVolume < conf.getLongVar(TajoConf.ConfVars.INMEMORY_OUTER_HASH_AGGREGATION_THRESHOLD)) {
+    if (rightTableVolume < conf.getLongVar(TajoConf.ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)) {
       // we can implement left outer join using hash join, using the right operand as the build relation
       LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
@@ -381,7 +381,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     // blocking, but merge join is blocking as well)
     String [] outerLineage4 = PlannerUtil.getLineage(plan.getLeftChild());
     long outerSize = estimateSizeRecursive(context, outerLineage4);
-    if (outerSize < conf.getLongVar(TajoConf.ConfVars.INMEMORY_OUTER_HASH_AGGREGATION_THRESHOLD)){
+    if (outerSize < conf.getLongVar(TajoConf.ConfVars.EXECUTOR_OUTER_JOIN_INMEMORY_HASH_THRESHOLD)){
       LOG.info("Right Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, rightExec, leftExec);
     } else {
@@ -701,7 +701,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     String [] outerLineage = PlannerUtil.getLineage(groupbyNode.getChild());
     long estimatedSize = estimateSizeRecursive(context, outerLineage);
-    final long threshold = conf.getLongVar(TajoConf.ConfVars.INMEMORY_HASH_AGGREGATION_THRESHOLD);
+    final long threshold = conf.getLongVar(TajoConf.ConfVars.EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD);
 
     // if the relation size is less than the threshold,
     // the hash aggregation will be used.

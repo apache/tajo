@@ -84,7 +84,9 @@ public class LogicalPlan {
   }
 
   public String newNonameColumnName(String prefix) {
-    return "?" + prefix + "_" + (noNameColumnId++);
+    String suffix = noNameColumnId == 0 ? "" : String.valueOf(noNameColumnId);
+    noNameColumnId++;
+    return "?" + prefix + suffix;
   }
 
   /**

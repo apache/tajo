@@ -21,17 +21,12 @@
 
 <configuration>
   <property>
-    <name>tajo.catalog.master.addr</name>
-    <value>127.0.0.1:9002</value>
+    <name>tajo.catalog.store.class</name>
+    <value>org.apache.tajo.catalog.store.DerbyStore</value>
   </property>
 
   <property>
-    <name>catalog.store.class</name>
-    <value>org.apache.tajo.catalog.store.MemStore</value>
-  </property>
-
-  <property>
-    <name>catalog.jdbc.uri</name>
-    <value>jdbc:derby:target/test-data/tcat/db</value>
+    <name>tajo.catalog.jdbc.uri</name>
+    <value>jdbc:derby:/tmp/tajo-catalog-${user.name}/db;create=true</value>
   </property>
 </configuration>

@@ -68,7 +68,7 @@ public class YarnResourceAllocator extends AbstractResourceAllocator {
     int numClusterNodes = workerContext.getNumClusterNodes();
 
     TajoConf conf =  (TajoConf)workerContext.getQueryMaster().getConfig();
-    int workerNum = conf.getIntVar(TajoConf.ConfVars.MAX_WORKER_PER_NODE);
+    int workerNum = conf.getIntVar(TajoConf.ConfVars.YARN_RM_WORKER_NUMBER_PER_NODE);
     return numClusterNodes == 0 ? numTasks: Math.min(numTasks, numClusterNodes * workerNum);
   }
 

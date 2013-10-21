@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
+import static org.apache.tajo.conf.TajoConf.ConfVars;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -63,7 +64,7 @@ public class TestStorages {
     this.statsable = statsable;
 
     conf = new TajoConf();
-    conf.set("tajo.storage.manager.v2", "true");
+    conf.setBoolVar(ConfVars.STORAGE_MANAGER_VERSION_2, true);
 
     if (storeType == StoreType.RCFILE) {
       conf.setInt(RCFile.RECORD_INTERVAL_CONF_STR, 100);

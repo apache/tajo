@@ -113,8 +113,7 @@ public class QueryMasterTask extends CompositeService {
 
     try {
       queryTaskContext = new QueryMasterTaskContext();
-      String resourceManagerClassName = conf.get("tajo.resource.manager",
-          TajoWorkerResourceManager.class.getCanonicalName());
+      String resourceManagerClassName = systemConf.getVar(TajoConf.ConfVars.RESOURCE_MANAGER_CLASS);
 
       if(resourceManagerClassName.indexOf(TajoWorkerResourceManager.class.getName()) >= 0) {
         resourceAllocator = new TajoResourceAllocator(queryTaskContext);
@@ -307,7 +306,7 @@ public class QueryMasterTask extends CompositeService {
     ugi = UserGroupInformation.getLoginUser();
     realUser = ugi.getShortUserName();
     currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
-    FileSystem defaultFS = FileSystem.get(systemConf);
+    FileSystem defaultFS = TajoConf.getWarehouseDir(systemConf).getFileSystem(systemConf);
 
     Path stagingDir = null;
     Path outputDir = null;
@@ -316,7 +315,7 @@ public class QueryMasterTask extends CompositeService {
       // Create Output Directory
       ////////////////////////////////////////////
 
-      stagingDir = new Path(TajoConf.getStagingRoot(systemConf), queryId.toString());
+      stagingDir = new Path(TajoConf.getStagingDir(systemConf), queryId.toString());
 
       if (defaultFS.exists(stagingDir)) {
         throw new IOException("The staging directory '" + stagingDir + "' already exists");

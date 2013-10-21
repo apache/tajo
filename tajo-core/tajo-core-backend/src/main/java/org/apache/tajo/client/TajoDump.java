@@ -21,16 +21,14 @@ package org.apache.tajo.client;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
-import org.apache.commons.cli.Options;
 import org.apache.tajo.catalog.DDLBuilder;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.function.builtin.Date;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -51,7 +49,7 @@ public class TajoDump {
     formatter.printHelp( "tajo_dump [options] [table_name]", options );
   }
 
-  public static void main(String [] args) throws ParseException, IOException, ServiceException {
+  public static void main(String [] args) throws ParseException, IOException, ServiceException, SQLException {
     TajoConf conf = new TajoConf();
 
     CommandLineParser parser = new PosixParser();
@@ -68,17 +66,17 @@ public class TajoDump {
 
     // if there is no "-h" option,
     if(hostName == null) {
-      if (conf.getVar(TajoConf.ConfVars.CLIENT_SERVICE_ADDRESS) != null) {
+      if (conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
         // it checks if the client service address is given in configuration and distributed mode.
         // if so, it sets entryAddr.
-        hostName = conf.getVar(TajoConf.ConfVars.CLIENT_SERVICE_ADDRESS).split(":")[0];
+        hostName = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[0];
       }
     }
     if (port == null) {
-      if (conf.getVar(TajoConf.ConfVars.CLIENT_SERVICE_ADDRESS) != null) {
+      if (conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
         // it checks if the client service address is given in configuration and distributed mode.
         // if so, it sets entryAddr.
-        port = Integer.parseInt(conf.getVar(TajoConf.ConfVars.CLIENT_SERVICE_ADDRESS).split(":")[1]);
+        port = Integer.parseInt(conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[1]);
       }
     }
 
@@ -87,7 +85,7 @@ public class TajoDump {
       System.err.println("ERROR: cannot find valid Tajo server address");
       System.exit(-1);
     } else if (hostName != null && port != null) {
-      conf.setVar(TajoConf.ConfVars.CLIENT_SERVICE_ADDRESS, hostName+":"+port);
+      conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
       client = new TajoClient(conf);
     } else if (hostName == null && port == null) {
       client = new TajoClient(conf);

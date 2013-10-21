@@ -36,6 +36,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.apache.tajo.conf.TajoConf.ConfVars;
 import static org.junit.Assert.assertEquals;
 
 public class TestCSVScanner {
@@ -48,7 +49,7 @@ public class TestCSVScanner {
   @Before
   public void setUp() throws Exception {
     conf = new TajoConf();
-    conf.set("tajo.storage.manager.v2", "true");
+    conf.setBoolVar(ConfVars.STORAGE_MANAGER_VERSION_2, true);
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
     sm = StorageManagerFactory.getStorageManager(conf, testDir);

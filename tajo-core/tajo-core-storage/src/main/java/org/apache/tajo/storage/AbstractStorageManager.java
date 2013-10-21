@@ -45,7 +45,6 @@ public abstract class AbstractStorageManager {
 
   protected final TajoConf conf;
   protected final FileSystem fs;
-  protected final Path baseDir;
   protected final Path tableBaseDir;
   protected final boolean blocksMetadataEnabled;
 
@@ -73,9 +72,8 @@ public abstract class AbstractStorageManager {
 
   protected AbstractStorageManager(TajoConf conf) throws IOException {
     this.conf = conf;
-    this.baseDir = new Path(conf.getVar(TajoConf.ConfVars.ROOT_DIR));
-    this.tableBaseDir = TajoConf.getWarehousePath(conf);
-    this.fs = baseDir.getFileSystem(conf);
+    this.tableBaseDir = TajoConf.getWarehouseDir(conf);
+    this.fs = tableBaseDir.getFileSystem(conf);
     this.blocksMetadataEnabled = conf.getBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED,
         DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT);
     if (!this.blocksMetadataEnabled)
@@ -99,11 +97,7 @@ public abstract class AbstractStorageManager {
     return this.fs;
   }
 
-  public Path getBaseDir() {
-    return this.baseDir;
-  }
-
-  public Path getTableBaseDir() {
+  public Path getWarehouseDir() {
     return this.tableBaseDir;
   }
 

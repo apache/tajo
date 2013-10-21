@@ -273,7 +273,6 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     @Override
     public void transition(QueryUnitAttempt queryUnitAttempt,
                            TaskAttemptEvent taskAttemptEvent) {
-      LOG.info(">>>>>>>>> Already Assigned: " + queryUnitAttempt.getId());
     }
   }
 
@@ -283,7 +282,6 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     @Override
     public void transition(QueryUnitAttempt queryUnitAttempt,
                            TaskAttemptEvent taskAttemptEvent) {
-      LOG.info(">>>>>>>>> Already Done: " + queryUnitAttempt.getId());
     }
   }
 

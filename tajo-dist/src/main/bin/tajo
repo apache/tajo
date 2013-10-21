@@ -31,8 +31,11 @@
 #                                    by doing 
 #                                    export TAJO_USER_CLASSPATH_FIRST=true
 #
-#   TAJO_HEAPSIZE  The maximum amount of heap to use, in MB. 
-#                    Default is 1000.
+#   TAJO_MASTER_HEAPSIZE  The maximum amount of heap to use, in MB. 
+#                         Default is 1000.
+#
+#   TAJO_WORKER_HEAPSIZE  The maximum amount of heap to use, in MB. 
+#                         Default is 1000.
 #
 #   TAJO_OPTS      Extra Java runtime options.
 
@@ -101,14 +104,21 @@ if [ "$JAVA_HOME" = "" ]; then
 fi
 
 JAVA=$JAVA_HOME/bin/java
-JAVA_HEAP_MAX=-Xmx1000m 
+JAVA_TAJO_MASTER_HEAP_MAX=-Xmx1000m 
+JAVA_WORKER_HEAP_MAX=-Xmx1000m 
 
 # check envvars which might override default args
-if [ "$TAJO_HEAPSIZE" != "" ]; then
-  #echo "run with heapsize $TAJO_HEAPSIZE"
-  JAVA_HEAP_MAX="-Xmx""$TAJO_HEAPSIZE""m"
-  #echo $JAVA_HEAP_MAX
+if [ "$TAJO_MASTER_HEAPSIZE" != "" ]; then
+  #echo "run with heapsize $TAJO_MASTER_HEAPSIZE"
+  JAVA_TAJO_MASTER_HEAP_MAX="-Xmx""$TAJO_MASTER_HEAPSIZE""m"
+  #echo $JAVA_MASTER_HEAP_MAX
 fi
+if [ "$TAJO_WORKER_HEAPSIZE" != "" ]; then
+  #echo "run with heapsize $TAJO_WORKER_HEAPSIZE"
+  JAVA_WORKER_HEAP_MAX="-Xmx""$TAJO_WORKER_HEAPSIZE""m"
+  #echo $JAVA_WORKER_HEAP_MAX
+fi
+
 
 ##############################################################################
 # Hadoop Version Checking Section Start
@@ -273,10 +283,10 @@ if [ "$COMMAND" = "classpath" ] ; then
   exit
 elif [ "$COMMAND" = "master" ] ; then
   CLASS='org.apache.tajo.master.TajoMaster'
-  TAJO_OPTS="$TAJO_OPTS $TAJO_MASTER_OPTS"
+  TAJO_OPTS="$TAJO_OPTS $JAVA_TAJO_MASTER_HEAP_MAX $TAJO_MASTER_OPTS"
 elif [ "$COMMAND" = "worker" ] ; then
   CLASS='org.apache.tajo.worker.TajoWorker'
-  TAJO_OPTS="$TAJO_OPTS $TAJO_WORKER_OPTS"
+  TAJO_OPTS="$TAJO_OPTS $JAVA_WORKER_HEAP_MAX $TAJO_WORKER_OPTS"
 elif [ "$COMMAND" = "catalog" ] ; then
   CLASS='org.apache.tajo.catalog.CatalogServer'
   TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"
@@ -336,23 +346,5 @@ if [ "x$JAVA_LIBRARY_PATH" != "x" ]; then
 fi  
 TAJO_OPTS="$TAJO_OPTS -Dtajo.policy.file=$TAJO_POLICYFILE"
 
-# Check to see if we should start a secure datanode
-if [ "$starting_secure_dn" = "true" ]; then
-  if [ "$TAJO_PID_DIR" = "" ]; then
-    TAJO_SECURE_DN_PID="/tmp/tajo_secure_dn.pid"
-  else
-   TAJO_SECURE_DN_PID="$TAJO_PID_DIR/tajo_secure_dn.pid"
-  fi
-
-  exec "$TAJO_HOME/bin/jsvc" -Dproc_$COMMAND -outfile "$TAJO_LOG_DIR/jsvc.out" \
-                                               -errfile "$TAJO_LOG_DIR/jsvc.err" \
-                                               -pidfile "$TAJO_SECURE_DN_PID" \
-                                               -nodetach \
-                                               -user "$TAJO_SECURE_DN_USER" \
-                                               -cp "$CLASSPATH" \
-                                               $JAVA_HEAP_MAX $TAJO_OPTS \
-                                               org.apache.tajo.hdfs.server.datanode.SecureDataNodeStarter "$@"
-else
-  # run it
-  exec "$JAVA" -Dproc_$COMMAND $JAVA_HEAP_MAX $TAJO_OPTS -classpath "$CLASSPATH" $CLASS "$@"
-fi
+# run it
+exec "$JAVA" -Dproc_$COMMAND $TAJO_OPTS -classpath "$CLASSPATH" $CLASS "$@"

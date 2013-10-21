@@ -104,8 +104,7 @@ public class CatalogServer extends AbstractService {
 
     Constructor<?> cons;
     try {
-      Class<?> storeClass =
-          this.conf.getClass(CatalogConstants.STORE_CLASS, DerbyStore.class);
+      Class<?> storeClass = this.conf.getClass(CatalogConstants.STORE_CLASS, DerbyStore.class);
 
       LOG.info("Catalog Store Class: " + storeClass.getCanonicalName());
       cons = storeClass.
@@ -123,7 +122,8 @@ public class CatalogServer extends AbstractService {
   }
 
   public String getCatalogServerName() {
-    return bindAddressStr + ", class=" + this.store.getClass().getSimpleName() + ", jdbc=" + conf.get(CatalogConstants.JDBC_URI);
+    return bindAddressStr + ", store=" + this.store.getClass().getSimpleName() + ", jdbc="
+        + conf.get(CatalogConstants.JDBC_URI);
   }
 
   private void initBuiltinFunctions(List<FunctionDesc> functions)
@@ -144,7 +144,7 @@ public class CatalogServer extends AbstractService {
 
       this.bindAddress = NetUtils.getConnectAddress(this.rpcServer.getListenAddress());
       this.bindAddressStr = NetUtils.normalizeInetSocketAddress(bindAddress);
-      conf.set(ConfVars.CATALOG_ADDRESS.varname, bindAddressStr);
+      conf.setVar(ConfVars.CATALOG_ADDRESS, bindAddressStr);
     } catch (Exception e) {
       LOG.error("CatalogServer startup failed", e);
       throw new CatalogException(e);

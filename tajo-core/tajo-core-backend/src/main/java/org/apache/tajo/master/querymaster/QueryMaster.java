@@ -53,7 +53,7 @@ import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeat;
 public class QueryMaster extends CompositeService implements EventHandler {
   private static final Log LOG = LogFactory.getLog(QueryMaster.class.getName());
 
-  private static int QUERY_SESSION_TIMEOUT = 60 * 1000;  //60 sec
+  private int querySessionTimeout;
 
   private Clock clock;
 
@@ -91,7 +91,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     try {
       systemConf = (TajoConf)conf;
 
-      QUERY_SESSION_TIMEOUT = 60 * 1000;
+      querySessionTimeout = systemConf.getIntVar(TajoConf.ConfVars.QUERY_SESSION_TIMEOUT);
       queryMasterContext = new QueryMasterContext(systemConf);
 
       clock = new SystemClock();
@@ -368,7 +368,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
             try {
               long lastHeartbeat = eachTask.getLastClientHeartbeat();
               long time = System.currentTimeMillis() - lastHeartbeat;
-              if(lastHeartbeat > 0 && time > QUERY_SESSION_TIMEOUT) {
+              if(lastHeartbeat > 0 && time > querySessionTimeout * 1000) {
                 LOG.warn("Query " + eachTask.getQueryId() + " stopped cause query sesstion timeout: " + time + " ms");
                 eachTask.expiredSessionTimeout();
               }
@@ -383,8 +383,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   class FinishedQueryMasterTaskCleanThread extends Thread {
     public void run() {
-      int expireIntervalTime = systemConf.getInt("tajo.worker.history.expire.interval.min", 12 * 60); //12 hour
-      LOG.info("FinishedQueryMasterTaskCleanThread started: expireIntervalTime=" + expireIntervalTime);
+      int expireIntervalTime = systemConf.getIntVar(TajoConf.ConfVars.WORKER_HISTORY_EXPIRE_PERIOD);
+      LOG.info("FinishedQueryMasterTaskCleanThread started: expire interval minutes = " + expireIntervalTime);
       while(!queryMasterStop.get()) {
         try {
           Thread.sleep(60 * 1000 * 60);   // hourly

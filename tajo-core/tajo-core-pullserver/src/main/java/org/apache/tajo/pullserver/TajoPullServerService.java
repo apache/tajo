@@ -319,7 +319,7 @@ public class TajoPullServerService extends AbstractService {
     private final Configuration conf;
 //    private final IndexCache indexCache;
     private final LocalDirAllocator lDirAlloc =
-      new LocalDirAllocator(ConfVars.TASK_LOCAL_DIR.varname);
+      new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
     private int port;
 
     public PullServer(Configuration conf) {
@@ -390,7 +390,7 @@ public class TajoPullServerService extends AbstractService {
       // the working dir of tajo worker for each query
       String queryBaseDir = queryId.toString() + "/output";
 
-      LOG.info("PullServer baseDir: " + conf.get(ConfVars.TASK_LOCAL_DIR.varname) + "/" + queryBaseDir);
+      LOG.info("PullServer baseDir: " + conf.get(ConfVars.WORKER_TEMPORAL_DIR.varname) + "/" + queryBaseDir);
 
       // if a subquery requires a range partitioning
       if (repartitionType.equals("r")) {

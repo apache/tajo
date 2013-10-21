@@ -43,6 +43,7 @@ import org.apache.tajo.util.NetUtils;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,7 @@ public class TajoClient {
   public TajoClient(TajoConf conf) throws IOException {
     this.conf = conf;
     this.conf.set("tajo.disk.scheduler.report.interval", "0");
-    String masterAddr = this.conf.getVar(ConfVars.CLIENT_SERVICE_ADDRESS);
+    String masterAddr = this.conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS);
     InetSocketAddress addr = NetUtils.createSocketAddr(masterAddr);
     connect(addr);
   }
@@ -299,14 +300,18 @@ public class TajoClient {
     return tajoMasterService.detachTable(null, builder.build()).getValue();
   }
 
-  public TableDesc createTable(String name, Path path, TableMeta meta)
-      throws ServiceException {
+  public TableDesc createExternalTable(String name, Path path, TableMeta meta)
+      throws SQLException, ServiceException {
     CreateTableRequest.Builder builder = CreateTableRequest.newBuilder();
     builder.setName(name);
-    builder.setPath(path.toString());
+    builder.setPath(path.toUri().toString());
     builder.setMeta(meta.getProto());
-    TableResponse res = tajoMasterService.createTable(null, builder.build());
-    return CatalogUtil.newTableDesc(res.getTableDesc());
+    TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
+    if (res.getResultCode() == ResultCode.OK) {
+      return CatalogUtil.newTableDesc(res.getTableDesc());
+    } else {
+      throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
+    }
   }
 
   public boolean dropTable(String name) throws ServiceException {
@@ -325,14 +330,14 @@ public class TajoClient {
     return res.getTablesList();
   }
 
-  public TableDesc getTableDesc(String tableName) throws ServiceException {
+  public TableDesc getTableDesc(String tableName) throws SQLException, ServiceException {
     GetTableDescRequest.Builder build = GetTableDescRequest.newBuilder();
     build.setTableName(tableName);
     TableResponse res = tajoMasterService.getTableDesc(null, build.build());
-    if (res == null) {
-      return null;
-    } else {
+    if (res.getResultCode() == ResultCode.OK) {
       return CatalogUtil.newTableDesc(res.getTableDesc());
+    } else {
+      throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
     }
   }
 

@@ -88,7 +88,6 @@ public class TajoWorkerClientService extends AbstractService {
     }
     // Get the master address
     LOG.info(TajoWorkerClientService.class.getSimpleName() + " is bind to " + addr);
-    //queryConf.setVar(TajoConf.ConfVars.TASKRUNNER_LISTENER_ADDRESS, addr);
 
     super.init(conf);
   }

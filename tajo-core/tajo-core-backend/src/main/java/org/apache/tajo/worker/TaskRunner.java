@@ -18,7 +18,6 @@
 
 package org.apache.tajo.worker;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -114,8 +113,8 @@ public class TaskRunner extends AbstractService {
     try {
       final ExecutionBlockId executionBlockId = TajoIdUtils.createExecutionBlockId(args[1]);
 
-      LOG.info("NM Local Dir: " + conf.get(ConfVars.TASK_LOCAL_DIR.varname));
       LOG.info("Tajo Root Dir: " + conf.getVar(ConfVars.ROOT_DIR));
+      LOG.info("Worker Local Dir: " + conf.getVar(ConfVars.WORKER_TEMPORAL_DIR));
 
       UserGroupInformation.setConfiguration(conf);
 
@@ -132,7 +131,7 @@ public class TaskRunner extends AbstractService {
       LOG.info("QueryMaster Address:" + masterAddr);
       // TODO - 'load credential' should be implemented
       // Getting taskOwner
-      UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(conf.getVar(ConfVars.TAJO_USERNAME));
+      UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(conf.getVar(ConfVars.USERNAME));
       //taskOwner.addToken(token);
 
       // initialize MasterWorkerProtocol as an actual task owner.
@@ -166,14 +165,14 @@ public class TaskRunner extends AbstractService {
 
     try {
       // initialize DFS and LocalFileSystems
-      defaultFS = TajoConf.getTajoRootPath(systemConf).getFileSystem(conf);
+      defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(conf);
       localFS = FileSystem.getLocal(conf);
 
       // the base dir for an output dir
       baseDir = queryId.toString() + "/output" + "/" + executionBlockId.getId();
 
       // initialize LocalDirAllocator
-      lDirAllocator = new LocalDirAllocator(ConfVars.TASK_LOCAL_DIR.varname);
+      lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
 
       baseDirPath = localFS.makeQualified(lDirAllocator.getLocalPathForWrite(baseDir, conf));
       LOG.info("TaskRunner basedir is created (" + baseDir +")");

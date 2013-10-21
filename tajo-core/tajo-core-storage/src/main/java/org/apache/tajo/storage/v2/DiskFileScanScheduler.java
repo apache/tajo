@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.apache.tajo.conf.TajoConf.ConfVars;
+
 public class DiskFileScanScheduler extends Thread {
   private static final Log LOG = LogFactory.getLog(DiskFileScanScheduler.class);
 
@@ -156,7 +158,7 @@ public class DiskFileScanScheduler extends Thread {
 
 	private void initScannerPool() {
 		// TODO finally implements heuristic, currently set with property
-		scanConcurrency = smContext.getConf().getInt("tajo.storage.manager.concurrency.perDisk", 1);
+		scanConcurrency = smContext.getConf().getIntVar(ConfVars.STORAGE_MANAGER_CONCURRENCY_PER_DISK);
 	}
 
   public int getTotalQueueSize() {

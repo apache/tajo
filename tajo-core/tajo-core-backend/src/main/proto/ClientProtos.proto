@@ -131,6 +131,7 @@ message AttachTableRequest {
 }
 
 message TableResponse {
-  optional TableDescProto tableDesc = 1;
-  optional string errorMessage = 2;
+  required ResultCode resultCode = 1;
+  optional TableDescProto tableDesc = 2;
+  optional string errorMessage = 3;
 }

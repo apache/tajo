@@ -30,6 +30,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.storage.CSVFile;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 public class TPCH extends BenchmarkSet {
   private final Log LOG = LogFactory.getLog(TPCH.class);
@@ -166,6 +167,10 @@ public class TPCH extends BenchmarkSet {
   private void loadTable(String tableName) throws ServiceException {
     TableMeta meta = CatalogUtil.newTableMeta(getSchema(tableName), StoreType.CSV);
     meta.putOption(CSVFile.DELIMITER, "|");
-    tajo.createTable(tableName, new Path(dataDir, tableName), meta);
+    try {
+      tajo.createExternalTable(tableName, new Path(dataDir, tableName), meta);
+    } catch (SQLException s) {
+      throw new ServiceException(s);
+    }
   }
 }

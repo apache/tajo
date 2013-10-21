@@ -55,13 +55,15 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.apache.tajo.conf.TajoConf.ConfVars;
+
 public class TajoWorker extends CompositeService {
   public static PrimitiveProtos.BoolProto TRUE_PROTO = PrimitiveProtos.BoolProto.newBuilder().setValue(true).build();
   public static PrimitiveProtos.BoolProto FALSE_PROTO = PrimitiveProtos.BoolProto.newBuilder().setValue(false).build();
 
   private static final Log LOG = LogFactory.getLog(TajoWorker.class);
 
-  private TajoConf tajoConf;
+  private TajoConf systemConf;
 
   private StaticHttpServer webServer;
 
@@ -107,26 +109,24 @@ public class TajoWorker extends CompositeService {
   public void init(Configuration conf) {
     Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 
-    this.tajoConf = (TajoConf)conf;
-    RackResolver.init(tajoConf);
+    this.systemConf = (TajoConf)conf;
+    RackResolver.init(systemConf);
 
     workerContext = new WorkerContext();
 
-    String resourceManagerClassName = conf.get("tajo.resource.manager",
-        TajoWorkerResourceManager.class.getCanonicalName());
+    String resourceManagerClassName = systemConf.getVar(ConfVars.RESOURCE_MANAGER_CLASS);
 
     boolean randomPort = true;
     if(resourceManagerClassName.indexOf(TajoWorkerResourceManager.class.getName()) >= 0) {
       randomPort = false;
     }
-    int clientPort = tajoConf.getInt("tajo.worker.client.rpc.port", 8091);
-    int managerPort = tajoConf.getInt("tajo.worker.manager.rpc.port", 8092);
+    int clientPort = systemConf.getSocketAddrVar(ConfVars.WORKER_CLIENT_RPC_ADDRESS).getPort();
+    int peerRpcPort = systemConf.getSocketAddrVar(ConfVars.WORKER_PEER_RPC_ADDRESS).getPort();
 
     if(randomPort) {
       clientPort = 0;
-      managerPort = 0;
-      tajoConf.setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname, 0);
-      //infoPort = 0;
+      peerRpcPort = 0;
+      systemConf.setIntVar(ConfVars.PULLSERVER_PORT, 0);
     }
 
     if(!"qm".equals(daemonMode)) {
@@ -143,16 +143,16 @@ public class TajoWorker extends CompositeService {
       tajoWorkerClientService = new TajoWorkerClientService(workerContext, clientPort);
       addService(tajoWorkerClientService);
 
-      tajoWorkerManagerService = new TajoWorkerManagerService(workerContext, managerPort);
+      tajoWorkerManagerService = new TajoWorkerManagerService(workerContext, peerRpcPort);
       addService(tajoWorkerManagerService);
-      LOG.info("Tajo worker started: mode=" + daemonMode + ", clientPort=" + clientPort + ", managerPort="
-          + managerPort);
+      LOG.info("Tajo worker started: mode=" + daemonMode + ", clientPort=" + clientPort + ", peerRpcPort="
+          + peerRpcPort);
 
-      if (!tajoConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")) {
+      if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")) {
         try {
-          httpPort = tajoConf.getInt("tajo.worker.http.port", 28080);
+          httpPort = systemConf.getSocketAddrVar(ConfVars.WORKER_INFO_ADDRESS).getPort();
           webServer = StaticHttpServer.getInstance(this ,"worker", null, httpPort ,
-              true, null, tajoConf, null);
+              true, null, systemConf, null);
           webServer.start();
           httpPort = webServer.getPort();
           LOG.info("Worker info server started:" + httpPort);
@@ -160,8 +160,8 @@ public class TajoWorker extends CompositeService {
           LOG.error(e.getMessage(), e);
         }
       }
-      LOG.info("Tajo worker started: mode=" + daemonMode + ", clientPort=" + clientPort + ", managerPort="
-          + managerPort);
+      LOG.info("Tajo worker started: mode=" + daemonMode + ", clientPort=" + clientPort + ", peerRpcPort="
+          + peerRpcPort);
 
     } else {
       LOG.info("Tajo worker started: mode=" + daemonMode);
@@ -291,7 +291,7 @@ public class TajoWorker extends CompositeService {
     } else if("tr".equals(daemonMode)) { //TaskRunner mode
       taskRunnerManager.startTask(params);
     } else { //Standby mode
-      connectToTajoMaster(tajoConf.get("tajo.master.manager.addr"));
+      connectToTajoMaster(systemConf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
       connectToCatalog();
       workerHeartbeatThread = new WorkerHeartbeatThread();
       workerHeartbeatThread.start();
@@ -320,11 +320,8 @@ public class TajoWorker extends CompositeService {
   }
 
   private void connectToCatalog() {
-    // TODO: To be improved. it's a hack. It assumes that CatalogServer is embedded in TajoMaster.
-    String catalogAddr = tajoConf.getVar(TajoConf.ConfVars.CATALOG_ADDRESS);
-    //int port = Integer.parseInt(tajoConf.getVar(TajoConf.ConfVars.CATALOG_ADDRESS).split(":")[1]);
     try {
-      catalogClient = new CatalogClient(tajoConf);
+      catalogClient = new CatalogClient(systemConf);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -332,16 +329,15 @@ public class TajoWorker extends CompositeService {
 
   class WorkerHeartbeatThread extends Thread {
     TajoMasterProtocol.ServerStatusProto.System systemInfo;
-    List<TajoMasterProtocol.ServerStatusProto.Disk> diskInfos =
-        new ArrayList<TajoMasterProtocol.ServerStatusProto.Disk>();
-    int workerDiskSlots;
+    List<TajoMasterProtocol.ServerStatusProto.Disk> diskInfos = new ArrayList<TajoMasterProtocol.ServerStatusProto.Disk>();
+    int workerDisksNum;
     List<File> mountPaths;
 
     public WorkerHeartbeatThread() {
-      int workerMemoryMBSlots;
-      int workerCpuCoreSlots;
+      int workerMemoryMB;
+      int workerCpuCoreNum;
 
-      boolean useSystemInfo = tajoConf.getBoolean("tajo.worker.slots.use.os.info", false);
+      boolean dedicatedResource = systemConf.getBoolVar(ConfVars.WORKER_RESOURCE_DEDICATED);
 
       try {
         mountPaths = getMountPath();
@@ -349,29 +345,29 @@ public class TajoWorker extends CompositeService {
         LOG.error(e.getMessage(), e);
       }
 
-      if(useSystemInfo) {
-        float memoryRatio = tajoConf.getFloat("tajo.worker.slots.os.memory.ratio", 0.8f);
-        workerMemoryMBSlots = getTotalMemoryMB();
-        workerMemoryMBSlots = (int)((float)(workerMemoryMBSlots) * memoryRatio);
-        workerCpuCoreSlots = Runtime.getRuntime().availableProcessors();
+      if(dedicatedResource) {
+        float dedicatedMemoryRatio = systemConf.getFloatVar(ConfVars.WORKER_RESOURCE_DEDICATED_MEMORY_RATIO);
+        int totalMemory = getTotalMemoryMB();
+        workerMemoryMB = (int) ((float) (totalMemory) * dedicatedMemoryRatio);
+        workerCpuCoreNum = Runtime.getRuntime().availableProcessors();
         if(mountPaths == null) {
-          workerDiskSlots = 2;
+          workerDisksNum = ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS.defaultIntVal;
         } else {
-          workerDiskSlots = mountPaths.size();
+          workerDisksNum = mountPaths.size();
         }
       } else {
-        workerMemoryMBSlots = tajoConf.getInt("tajo.worker.slots.memoryMB", 2048);
-        workerDiskSlots = tajoConf.getInt("tajo.worker.slots.disk", 2);
-        workerCpuCoreSlots = tajoConf.getInt("tajo.worker.slots.cpu.core", 4);
+        // TODO - it's a hack and it must be fixed
+        //workerMemoryMB = systemConf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
+        workerMemoryMB = 512 * systemConf.getIntVar(ConfVars.WORKER_EXECUTION_MAX_SLOTS);
+        workerDisksNum = systemConf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS);
+        workerCpuCoreNum = systemConf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES);
       }
 
-      workerDiskSlots = workerDiskSlots * tajoConf.getInt("tajo.worker.slots.disk.concurrency", 4);
-
       systemInfo = TajoMasterProtocol.ServerStatusProto.System.newBuilder()
-          .setAvailableProcessors(workerCpuCoreSlots)
+          .setAvailableProcessors(workerCpuCoreNum)
           .setFreeMemoryMB(0)
           .setMaxMemoryMB(0)
-          .setTotalMemoryMB(workerMemoryMBSlots)
+          .setTotalMemoryMB(workerMemoryMB)
           .build();
     }
 
@@ -408,7 +404,7 @@ public class TajoWorker extends CompositeService {
             .addAllDisk(diskInfos)
             .setRunningTaskNum(taskRunnerManager == null ? 1 : taskRunnerManager.getNumTasks())   //TODO
             .setSystem(systemInfo)
-            .setDiskSlots(workerDiskSlots)
+            .setDiskSlots(workerDisksNum)
             .setJvmHeap(jvmHeap)
             .build();
 
@@ -525,8 +521,6 @@ public class TajoWorker extends CompositeService {
         if (line == null) {
           break;
         }
-
-        System.out.println(line);
 
         int indexStart = line.indexOf(" on /");
         int indexEnd = line.indexOf(" ", indexStart + 4);

@@ -25,6 +25,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.querymaster.QueryInProgress;
@@ -66,8 +67,8 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
   public TajoWorkerResourceManager(TajoMaster.MasterContext masterContext) {
     this.masterContext = masterContext;
     this.queryIdSeed = String.valueOf(System.currentTimeMillis());
-    this.queryMasterMemoryMB = masterContext.getConf().getInt("tajo.querymaster.memoryMB", 512);
-    this.queryMasterDiskSlot = masterContext.getConf().getInt("tajo.querymaster.diskSlot", 1);
+    this.queryMasterMemoryMB = masterContext.getConf().getIntVar(TajoConf.ConfVars.YARN_RM_QUERY_MASTER_MEMORY_MB);
+    this.queryMasterDiskSlot = masterContext.getConf().getIntVar(TajoConf.ConfVars.YARN_RM_QUERY_MASTER_DISKS);
 
     requestQueue = new LinkedBlockingDeque<WorkerResourceRequest>();
     reAllocationList = new ArrayList<WorkerResourceRequest>();
@@ -222,7 +223,7 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
 
               for(WorkerResource eachWorker: workerResources) {
                 workerHosts.add(TajoMasterProtocol.WorkerAllocatedResource.newBuilder()
-                    .setWorkerHostAndPort(eachWorker.getAllocatedHost() + ":" + eachWorker.getManagerPort())
+                    .setWorkerHostAndPort(eachWorker.getAllocatedHost() + ":" + eachWorker.getPeerRpcPort())
                     .setWorkerPullServerPort(eachWorker.getPullServerPort())
                     .build());
               }
@@ -368,7 +369,7 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
 
         int[] ports = new int[] { request.getTajoWorkerPort(), request.getTajoWorkerClientPort() };
 
-        workerResource.setManagerPort(request.getTajoWorkerPort());
+        workerResource.setPeerRpcPort(request.getTajoWorkerPort());
         workerResource.setClientPort(request.getTajoWorkerClientPort());
         workerResource.setPullServerPort(request.getTajoWorkerPullServerPort());
         workerResource.setHttpPort(request.getTajoWorkerHttpPort());

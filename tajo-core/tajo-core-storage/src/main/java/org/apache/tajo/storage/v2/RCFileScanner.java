@@ -275,7 +275,6 @@ public class RCFileScanner extends FileScannerV2 {
   public boolean isFetchProcessing() {
     //TODO row group size
     if(sin != null && sin.getAvaliableSize() > maxBytesPerSchedule * 3) {
-//			System.out.println(">>>>>sin.getAvaliableSize()>" + sin.getAvaliableSize());
       return true;
     } else {
       return false;

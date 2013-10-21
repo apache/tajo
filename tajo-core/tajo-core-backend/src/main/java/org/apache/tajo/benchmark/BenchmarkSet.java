@@ -42,9 +42,9 @@ public abstract class BenchmarkSet {
 
   public void init(TajoConf conf, String dataDir) throws IOException {
     this.dataDir = dataDir;
-    if (System.getProperty(ConfVars.TASKRUNNER_LISTENER_ADDRESS.varname) != null) {
+    if (System.getProperty(ConfVars.WORKER_PEER_RPC_ADDRESS.varname) != null) {
       tajo = new TajoClient(NetUtils.createSocketAddr(
-          System.getProperty(ConfVars.TASKRUNNER_LISTENER_ADDRESS.varname)));
+          System.getProperty(ConfVars.WORKER_PEER_RPC_ADDRESS.varname)));
     } else {
       conf.set(CatalogConstants.STORE_CLASS, MemStore.class.getCanonicalName());
       tajo = new TajoClient(conf);

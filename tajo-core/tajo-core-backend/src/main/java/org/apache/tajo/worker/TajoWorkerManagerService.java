@@ -30,8 +30,8 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TaskSchedulerImpl;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.querymaster.QueryMaster;
@@ -67,6 +67,7 @@ public class TajoWorkerManagerService extends CompositeService
 
   @Override
   public void init(Configuration conf) {
+    TajoConf tajoConf = (TajoConf) conf;
     try {
       // Setup RPC server
       InetSocketAddress initIsa =
@@ -91,9 +92,8 @@ public class TajoWorkerManagerService extends CompositeService
     }
     // Get the master address
     LOG.info("TajoWorkerManagerService is bind to " + addr);
-    ((TajoConf)conf).setVar(TajoConf.ConfVars.TASKRUNNER_LISTENER_ADDRESS, addr);
-
-    super.init(conf);
+    tajoConf.setVar(TajoConf.ConfVars.WORKER_PEER_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddr));
+    super.init(tajoConf);
   }
 
   @Override

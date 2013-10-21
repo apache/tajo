@@ -28,7 +28,7 @@ public class WorkerResource {
   private static final Log LOG = LogFactory.getLog(WorkerResource.class);
 
   private String allocatedHost;
-  private int managerPort;
+  private int peerRpcPort;
   private int clientPort;
   private int pullServerPort;
   private int httpPort;
@@ -58,11 +58,11 @@ public class WorkerResource {
   private long lastHeartbeat;
 
   public String getId() {
-    return allocatedHost + ":" + managerPort;
+    return allocatedHost + ":" + peerRpcPort;
   }
 
   public void copyId(WorkerResource workerResource) {
-    managerPort = workerResource.getManagerPort();
+    peerRpcPort = workerResource.getPeerRpcPort();
     allocatedHost = workerResource.getAllocatedHost();
   }
 
@@ -140,7 +140,7 @@ public class WorkerResource {
   }
 
   public String portsToStr() {
-    return managerPort + "," + clientPort + "," + pullServerPort;
+    return peerRpcPort + "," + clientPort + "," + pullServerPort;
   }
 
   public void setLastHeartbeat(long heartbeatTime) {
@@ -222,7 +222,7 @@ public class WorkerResource {
 
   public int getSlots() {
     //TODO what is slot? 512MB = 1slot?
-    return getMemoryMBSlots()/512;
+    return getMemoryMBSlots() / 512;
   }
 
   public int getAvaliableSlots() {
@@ -235,12 +235,12 @@ public class WorkerResource {
     return getUsedMemoryMBSlots()/512;
   }
 
-  public int getManagerPort() {
-    return managerPort;
+  public int getPeerRpcPort() {
+    return peerRpcPort;
   }
 
-  public void setManagerPort(int managerPort) {
-    this.managerPort = managerPort;
+  public void setPeerRpcPort(int peerRpcPort) {
+    this.peerRpcPort = peerRpcPort;
   }
 
   public int getClientPort() {

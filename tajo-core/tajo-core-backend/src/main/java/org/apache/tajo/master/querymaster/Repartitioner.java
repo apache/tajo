@@ -161,7 +161,7 @@ public class Repartitioner {
       // of a larger table
       int largerIdx = stats[0].getNumBytes() >= stats[1].getNumBytes() ? 0 : 1;
       int desireJoinTaskVolumn = subQuery.getContext().getConf().
-          getIntVar(ConfVars.JOIN_TASK_VOLUME);
+          getIntVar(ConfVars.DIST_QUERY_JOIN_TASK_VOLUME);
 
       // calculate the number of tasks according to the data size
       int mb = (int) Math.ceil((double)stats[largerIdx].getNumBytes() / 1048576);

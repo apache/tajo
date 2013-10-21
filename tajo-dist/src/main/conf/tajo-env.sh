@@ -21,6 +21,9 @@
 # set JAVA_HOME in this file, so that it is correctly defined on
 # remote nodes.
 
+# Hadoop home. Required
+# export HADOOP_HOME=
+
 # The java implementation to use.  Required.
 # export JAVA_HOME=/usr
 
@@ -28,11 +31,13 @@
 # export TAJO_CLASSPATH=
 
 # The maximum amount of heap to use, in MB. Default is 1000.
-# export TAJO_HEAPSIZE=1000
+# export TAJO_MASTER_HEAPSIZE=1000
+
+# The maximum amount of heap to use, in MB. Default is 1000.
+# export TAJO_WORKER_HEAPSIZE=1000
 
 # Extra Java runtime options.  Empty by default.
 # export TAJO_OPTS=-server
-export TAJO_OPTS=-XX:+PrintGCTimeStamps
 
 # Extra TajoMaster's java runtime options for TajoMaster. Empty by default
 # export TAJO_MASTER_OPTS=
@@ -52,7 +57,5 @@ export TAJO_OPTS=-XX:+PrintGCTimeStamps
 # The scheduling priority for daemon processes.  See 'man nice'.
 # export TAJO_NICENESS=10
 
-# Tajo Distributed Execution Mode
-# the default mode is on-demand mode using YarnTajoResourceManager.
-# export TAJO_WORKER_STANDBY_MODE=true
-
+# Tajo cluster mode. the default mode is standby mode.
+export TAJO_WORKER_STANDBY_MODE=true
