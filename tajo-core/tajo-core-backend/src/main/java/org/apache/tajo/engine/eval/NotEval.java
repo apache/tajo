@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.eval;
 
-import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -29,24 +28,23 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
 
 public class NotEval extends EvalNode implements Cloneable {
-  @Expose private EvalNode subExpr;
+  @Expose private EvalNode childEval;
   private static final DataType RES_TYPE = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
 
-  public NotEval(EvalNode subExpr) {
+  public NotEval(EvalNode childEval) {
     super(EvalType.NOT);
-    Preconditions.checkArgument(subExpr instanceof BinaryEval || subExpr instanceof NotEval);
-    this.subExpr = subExpr;
+    this.childEval = childEval;
   }
 
   @Override
   public EvalContext newContext() {
     NotEvalCtx newCtx = new NotEvalCtx();
-    newCtx.subExprCtx = subExpr.newContext();
+    newCtx.childExprCtx = childEval.newContext();
     return newCtx;
   }
 
   public EvalNode getChild() {
-    return subExpr;
+    return childEval;
   }
 
   @Override
@@ -61,38 +59,28 @@ public class NotEval extends EvalNode implements Cloneable {
 
   @Override
   public void eval(EvalContext ctx, Schema schema, Tuple tuple) {
-    subExpr.eval(((NotEvalCtx)ctx).subExprCtx, schema, tuple);
+    childEval.eval(((NotEvalCtx) ctx).childExprCtx, schema, tuple);
   }
 
   @Override
   public Datum terminate(EvalContext ctx) {
-    return DatumFactory.createBool(!subExpr.terminate(((NotEvalCtx)ctx).subExprCtx).asBool());
+    return DatumFactory.createBool(!childEval.terminate(((NotEvalCtx) ctx).childExprCtx).asBool());
   }
 
   @Override
   public String toString() {
-    return "NOT " + subExpr.toString();
+    return "NOT " + childEval.toString();
   }
 
   @Override
   public void preOrder(EvalNodeVisitor visitor) {
     visitor.visit(this);
-    if (subExpr instanceof NotEval) {
-      ((NotEval)subExpr).subExpr.preOrder(visitor);
-    } else {
-      subExpr.leftExpr.preOrder(visitor);
-      subExpr.rightExpr.preOrder(visitor);
-    }
+    childEval.preOrder(visitor);
   }
 
   @Override
   public void postOrder(EvalNodeVisitor visitor) {    
-    if (subExpr instanceof NotEval) {
-      ((NotEval)subExpr).subExpr.preOrder(visitor);
-    } else {
-      subExpr.leftExpr.preOrder(visitor);
-      subExpr.rightExpr.preOrder(visitor);
-    }
+    childEval.postOrder(visitor);
     visitor.visit(this);
   }
 
@@ -100,7 +88,7 @@ public class NotEval extends EvalNode implements Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof NotEval) {
       NotEval other = (NotEval) obj;
-      return this.subExpr.equals(other.subExpr);
+      return this.childEval.equals(other.childEval);
     } else {
       return false;
     }
@@ -109,11 +97,11 @@ public class NotEval extends EvalNode implements Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     NotEval eval = (NotEval) super.clone();
-    eval.subExpr = (EvalNode) this.subExpr.clone();
+    eval.childEval = (EvalNode) this.childEval.clone();
     return eval;
   }
 
   private class NotEvalCtx implements EvalContext {
-    EvalContext subExprCtx;
+    EvalContext childExprCtx;
   }
 }

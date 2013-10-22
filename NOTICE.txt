@@ -7,11 +7,14 @@ Foundation (http://www.apache.org/).
 This product includes/uses Jetty (http://jetty.mortbay.org/),
 Copyright (c) Mort Bay Consulting Pty. Ltd. (Australia)
 
-This product includes/uses Netty (http://www.jboss.org/netty)
-Copyright 2009 Red Hat, Inc.
+This product includes/uses Netty (http://netty.io)
+Copyright 2011 The Netty Project.
 
 This product includes/uses ANTLR (http://www.antlr.org/),
 Copyright (c) 2010 Terence Parr.
+
+This product includes/uses Mockito (http://code.google.com/p/mockito/)
+Copyright (c) 2007 Mockito contributors.
 
 This product includes/uses JLine2 (https://github.com/jline/jline2/),
 Copyright (c) 2002-2012, the original author or authors.

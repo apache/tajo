@@ -208,9 +208,62 @@ Your use of the source code for these subcomponents is subject to the terms
 and conditions of the following licenses.
 
 ------------------------------------------------------------------------------
-For the ANTLR 3 libraries:
+For Jetty libraries (http://jetty.mortbay.org/) :
 
-Copyright (c) 2010 Terence Parr
+Copyright 1995-2009 Mort Bay Consulting Pty Ltd
+
+The Jetty Web Container is Copyright Mort Bay Consulting Pty Ltd
+unless otherwise noted. It is licensed under the apache 2.0
+license.
+
+The javax.servlet package used by Jetty is copyright
+Sun Microsystems, Inc and Apache Software Foundation. It is
+distributed under the Common Development and Distribution License.
+You can obtain a copy of the license at
+https://glassfish.dev.java.net/public/CDDLv1.0.html.
+
+The UnixCrypt.java code ~Implements the one way cryptography used by
+Unix systems for simple password protection.  Copyright 1996 Aki Yoshida,
+modified April 2001  by Iris Van den Broeke, Daniel Deville.
+Permission to use, copy, modify and distribute UnixCrypt
+for non-commercial or commercial purposes and without fee is
+granted provided that the copyright notice appears in all copies.
+
+The default JSP implementation is provided by the Glassfish JSP engine
+from project Glassfish http://glassfish.dev.java.net.  Copyright 2005
+Sun Microsystems, Inc. and portions Copyright Apache Software Foundation.
+
+Some portions of the code are Copyright:
+  2006 Tim Vernum
+  1999 Jason Gilbert.
+
+The jboss integration module contains some LGPL code.
+
+The win32 Java Service Wrapper (v3.2.3) is Copyright (c) 1999, 2006
+Tanuki Software, Inc.  and 2001 Silver Egg Technology.  It is
+covered by an open license which is viewable at
+http://svn.codehaus.org/jetty/jetty/branches/jetty-6.1/extras/win32service/LICENSE.txt
+
+------------------------------------------------------------------------------
+For Netty libraries (http://netty.io) :
+
+Copyright 2011 The Netty Project
+
+The Netty Project licenses this file to you under the Apache License,
+version 2.0 (the "License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at:
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations
+under the License.
+------------------------------------------------------------------------------
+For the ANTLR 4 libraries (http://antlr.org) :
+
+Copyright (c) 2012 Terence Parr and Sam Harwell
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -239,7 +292,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-For the Mockito library:
+For the Mockito library (http://code.google.com/p/mockito/):
 
 The MIT License
 
@@ -264,7 +317,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ------------------------------------------------------------------------------
-For the JLine2 libraries:
+For the JLine2 libraries (https://github.com/jline/jline2) :
 
 Copyright (c) 2002-2012, the original author or authors.
 All rights reserved.
@@ -302,7 +355,23 @@ IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
-For the Protocol Buffers libraries:
+For guava-libraries (http://code.google.com/p/guava-libraries/) :
+
+Copyright (C) 2010 The Guava Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+------------------------------------------------------------------------------
+For the Protocol Buffers libraries (http://code.google.com/p/protobuf/) :
 
 Copyright 2008, Google Inc.
 All rights reserved.
@@ -339,7 +408,7 @@ standalone and requires a support library to be linked with it.  This
 support library is itself covered by the above license.
 
 ------------------------------------------------------------------------------
-For protobuf-java-format (http://code.google.com/p/protobuf-java-format/)
+For protobuf-java-format libraries (http://code.google.com/p/protobuf-java-format/) :
 
 Copyright 2000-2011 NeuStar, Inc. All rights reserved.
 NeuStar, the Neustar logo and related names and logos are registered
@@ -375,6 +444,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
+For jQuery libraries (http://jquery.com/) :
+
 Copyright 2013 jQuery Foundation and other contributors
 http://jquery.com/
 
@@ -398,6 +469,8 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
+For jsPlumb libraries (http://jsplumb.org/) :
+
 Copyright (c) 2013 Simon Porritt, http://jsplumb.org/
 
 Permission is hereby granted, free of charge, to any person obtaining
