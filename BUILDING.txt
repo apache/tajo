@@ -1,15 +1,15 @@
 Build instructions for Tajo
 
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 Requirements:
 
 * Unix System
-* JDK 1.7
-* Maven 3.0
+* JDK 1.6 or higher
+* Maven 3.0 or higher
 * Protocol Buffers 2.4.1
 * Internet connection for first build (to fetch all Maven and Tajo dependencies)
 
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 Maven main modules:
 
   tajo                            (Main Tajo project)
@@ -21,7 +21,7 @@ Maven main modules:
          - tajo-rpc
          - tajo-dist              (Tajo distribution assembler)
 
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 Maven build goals:
 
  * Clean                     : mvn clean
@@ -43,12 +43,11 @@ Maven build goals:
   * -Dtest.exclude=<TESTCLASSNAME>
   * -Dtest.exclude.pattern=**/<TESTCLASSNAME1>.java,**/<TESTCLASSNAME2>.java
 
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 Building distributions:
 
 Create binary distribution
 
   $ mvn package -Pdist -DskipTests -Dtar
 
-----------------------------------------------------------------------------------
-
+--------------------------------------------------------------------------------
