@@ -42,7 +42,7 @@ bin=`cd "$bin"; pwd`
 
 # If the workers file is specified in the command line,
 # then it takes precedence over the definition in
-# neptune-env.sh. Save it here.
+# tajo-env.sh. Save it here.
 HOSTLIST=$TAJO_WORKERS
 
 if [ -f "${TAJO_CONF_DIR}/tajo-env.sh" ]; then

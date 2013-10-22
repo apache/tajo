@@ -4,7 +4,8 @@ Release 0.2.0 - unreleased
 
   NEW FEATURES
 
-    TAJO-267: Implement equals() and deepEquals() functions at LogicalNode. (jihoon)
+    TAJO-267: Implement equals() and deepEquals() functions at LogicalNode. 
+    (jihoon)
 
     TAJO-260: Add between predicate. (hyunsik)
 
@@ -214,6 +215,8 @@ Release 0.2.0 - unreleased
     TAJO-2: remove all @author tags and update license header. (hyunsik)
 
   BUG FIXES
+
+    TAJO-273: NotEval incurs NPE with boolean column. (hyunsik)
 
     TAJO-272: boolean test does not work correctly. (hyunsik)
 

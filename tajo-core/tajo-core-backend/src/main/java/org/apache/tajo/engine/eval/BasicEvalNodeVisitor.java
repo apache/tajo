@@ -197,12 +197,7 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   public RESULT visitNot(CONTEXT context, NotEval evalNode, Stack<EvalNode> stack) {
     RESULT result;
     stack.push(evalNode);
-    if (evalNode.getChild() instanceof NotEval) {
-      result = visitChild(context, evalNode, stack);
-    } else {
-      result = visitChild(context, evalNode.getLeftExpr(), stack);
-      visitChild(context, evalNode.getRightExpr(), stack);
-    }
+    result = visitChild(context, evalNode.getChild(), stack);
     stack.pop();
 
     return result;

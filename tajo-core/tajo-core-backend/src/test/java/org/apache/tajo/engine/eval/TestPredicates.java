@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.apache.tajo.common.TajoDataTypes.Type.BOOLEAN;
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
@@ -130,6 +131,17 @@ public class TestPredicates extends ExprTestBase {
     testSimpleEval("select not (1 > 3 is not true)", new String [] {"f"});
     testSimpleEval("select not (1 > 3 is false)", new String [] {"f"});
     testSimpleEval("select not (1 > 3 is not false)", new String [] {"t"});
+  }
 
+  @Test
+  public void testBooleanTestOnTable() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("col1", BOOLEAN);
+    schema.addColumn("col2", BOOLEAN);
+    testEval(schema, "table1", "t,f", "select col1 is true, col2 is false from table1", new String [] {"t", "t"});
+    testEval(schema, "table1", "t,f", "select col1 is not true, col2 is not false from table1",
+        new String [] {"f", "f"});
+    testEval(schema, "table1", "t,f", "select not col1 is not true, not col2 is not false from table1",
+        new String [] {"t", "t"});
   }
 }
