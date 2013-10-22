@@ -344,6 +344,7 @@ public class TajoWorkerResourceManager implements WorkerResourceManager {
     workerResource.setMemoryMBSlots(queryMasterMemoryMB);
     workerResource.setDiskSlots(queryMasterDiskSlot);
     workerResource.setCpuCoreSlots(0);
+    workerResource.setQueryMasterAllocated(queryMasterWorkerResource.isQueryMasterAllocated());
     releaseWorkerResource(queryId, workerResource);
     LOG.info("release QueryMaster resource:" + queryId + "," + queryMasterWorkerResource);
   }
