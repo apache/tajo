@@ -47,11 +47,15 @@ import java.io.*;
 import java.util.Arrays;
 
 public class CSVFile {
+  public static byte[] trueBytes = "true".getBytes();
+  public static byte[] falseBytes = "false".getBytes();
+
   public static final String DELIMITER = "csvfile.delimiter";
   public static final String NULL = "csvfile.null";     //read only
   public static final String DELIMITER_DEFAULT = "|";
   public static final byte LF = '\n';
   public static int EOF = -1;
+
   private static final Log LOG = LogFactory.getLog(CSVFile.class);
 
   public static class CSVAppender extends FileAppender {
@@ -135,26 +139,46 @@ public class CSVFile {
         LazyTuple  lTuple = (LazyTuple)tuple;
         for (int i = 0; i < colNum; i++) {
           TajoDataTypes.DataType dataType = schema.getColumn(i).getDataType();
-          datum = tuple.get(i);
 
           switch (dataType.getType()) {
-            case TEXT:
-              outputStream.write(datum.asTextBytes());
+            case TEXT: {
+              datum = tuple.get(i);
+              if (datum instanceof NullDatum) {
+                outputStream.write(nullChars);
+              } else {
+                outputStream.write(datum.asTextBytes());
+              }
               break;
-            case CHAR:
-              byte[] pad = new byte[dataType.getLength() - datum.size()];
-              outputStream.write(datum.asTextBytes());
-              outputStream.write(pad);
+            }
+            case CHAR: {
+              datum = tuple.get(i);
+              if (datum instanceof NullDatum) {
+                outputStream.write(nullChars);
+              } else {
+                byte[] pad = new byte[dataType.getLength() - datum.size()];
+                outputStream.write(datum.asTextBytes());
+                outputStream.write(pad);
+              }
               break;
+            }
+            case BOOLEAN: {
+              datum = tuple.get(i);
+              if (datum instanceof NullDatum) {
+                //null datum is zero length byte array
+              } else {
+                outputStream.write(datum.asBool() ? trueBytes : falseBytes);   //Compatibility with Apache Hive
+              }
+              break;
+            }
             case NULL:
-              outputStream.write(nullChars);
               break;
             case PROTOBUF:
+              datum = tuple.get(i);
               ProtobufDatum protobufDatum = (ProtobufDatum) datum;
               protobufJsonFormat.print(protobufDatum.get(), outputStream);
               break;
             default:
-              outputStream.write(lTuple.getTextBytes(i));
+              outputStream.write(lTuple.getTextBytes(i)); //better usage for insertion to table of lazy tuple
               break;
           }
 
@@ -179,7 +203,7 @@ public class CSVFile {
             col = schema.getColumn(i);
             switch (col.getDataType().getType()) {
               case BOOLEAN:
-                outputStream.write(tuple.getBoolean(i).asTextBytes());
+                outputStream.write(tuple.getBoolean(i).asBool() ? trueBytes : falseBytes);   //Compatibility with Apache Hive
                 break;
               case BIT:
                 outputStream.write(tuple.getByte(i).asTextBytes());

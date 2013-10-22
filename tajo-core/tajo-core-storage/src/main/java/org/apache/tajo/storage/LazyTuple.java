@@ -306,7 +306,7 @@ public class LazyTuple implements Tuple {
   private  Datum createByTextBytes(TajoDataTypes.DataType type, byte [] val) {
     switch (type.getType()) {
       case BOOLEAN:
-        return isNotNull(val) ? DatumFactory.createBool(new String(val)) : NullDatum.get();
+        return isNotNull(val) ? DatumFactory.createBool(val[0] == 't' || val[0] == 'T') : NullDatum.get();
       case INT2:
         return isNotNull(val) ? DatumFactory.createInt2(new String(val)) : NullDatum.get();
       case INT4:
