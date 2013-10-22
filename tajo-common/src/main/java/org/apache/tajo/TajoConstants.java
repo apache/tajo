@@ -19,7 +19,7 @@
 package org.apache.tajo;
 
 public class TajoConstants {
-  public static String TAJO_VERSION = "0.2-incubating";
+  public static String TAJO_VERSION = "0.2.0-incubating";
   public static String SYSTEM_CONF_FILENAME = "system_conf.xml";
 
   public static String SYSTEM_DIR_NAME = "system";
