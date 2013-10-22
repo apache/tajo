@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.Clock;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
+import org.apache.tajo.catalog.statistics.TableStat;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
@@ -382,9 +383,10 @@ public class Query implements EventHandler<QueryEvent> {
       try {
         FileSystem fs = finalOutputDir.getFileSystem(query.systemConf);
         ContentSummary directorySummary = fs.getContentSummary(finalOutputDir);
+        if(meta.getStat() == null) meta.setStat(new TableStat());
         meta.getStat().setNumBytes(directorySummary.getLength());
       } catch (IOException e) {
-        LOG.error(e);
+        LOG.error(e.getMessage(), e);
       }
       TableDesc outputTableDesc = new TableDescImpl(outputTableName, meta, finalOutputDir);
       TableDesc finalTableDesc = outputTableDesc;

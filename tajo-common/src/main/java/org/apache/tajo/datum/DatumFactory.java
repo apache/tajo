@@ -94,12 +94,7 @@ public class DatumFactory {
   public static NullDatum createNullDatum() {
     return NullDatum.get();
   }
-  
-  public static BooleanDatum createBool(String val) {
-    boolean boolVal = val.equalsIgnoreCase("t");
-    return new BooleanDatum(boolVal);
-  }
-  
+
   public static BooleanDatum createBool(byte val) {
     boolean boolVal = val == 0x01;
     return new BooleanDatum(boolVal);

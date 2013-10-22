@@ -48,7 +48,7 @@ public class BooleanDatum extends Datum {
   public BooleanDatum(byte[] bytes) {
     this(bytes[0]);
   }
-	
+
 	public boolean asBool() {
 		return val;
 	}

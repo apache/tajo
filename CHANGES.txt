@@ -61,6 +61,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-270: Boolean datum compatible to apache hive. (jinho)
+
     TAJO-261: Rearrange default port numbers and config names. (hyunsik)
 
     TAJO-236: Implement LogicalPlanVerifier to check if a logical plan is 
