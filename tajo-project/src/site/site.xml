@@ -87,6 +87,7 @@
       <item name="License" href="http://www.apache.org/licenses/" />
       <item name="Issue Tracking" href="https://issues.apache.org/jira/browse/TAJO" />
       <item name="Source Repository" href="source-repository.html" />
+      <item name="Logos" href="http://wiki.apache.org/tajo/Logos" />
       <!-- <item name="FAQ" href="faq.html" /> -->
     </menu>
 
@@ -104,7 +105,8 @@
     <menu name="Developer Documents">
       <item name="Get Involved" href="http://www.apache.org/foundation/getinvolved.html" />
       <item name="How To Contribute" href="http://wiki.apache.org/tajo/HowToContribute" />
-      <item name="Tajo Internal" href="http://wiki.apache.org/tajo/Configuration" />
+      <item name="Tajo Architecture" href="http://wiki.apache.org/tajo/Architecture" />
+      <item name="Tajo Internal" href="http://wiki.apache.org/tajo/TajoInternal" />
       <item name="Coding Style" href="http://wiki.apache.org/tajo/CodingStyle" />
     </menu>
 

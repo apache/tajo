@@ -26,16 +26,17 @@ Introduction
 
 Features
 
-  * Fast and low-latency query processing on SQL queries including projection, filter, group-by,
-  sort, and join.
+  * Fast, low-latency, and fully distributed SQL query processing on large data sets stored in HDFS
 
   * Rudiment ETL that transforms one data format to another data format.
 
-  * Support various file formats, such as CSV, RCFile, RowFile (a row store file), and Trevni.
+  * Various file formats support, such as CSV, RCFile, RowFile (a row store file), and Trevni.
 
-  * Command line interface to allow users to submit SQL queries
+  * Interactive shell to allow users to submit SQL queries to Tajo clusters
 
-  * Java API to enable clients to submit SQL queries to Tajo
+  * Asynchronous/Synchronous Java API to enable clients to submit SQL queries to Tajo clusters
+
+  * User-defined Function support
 
 News
 
@@ -49,13 +50,17 @@ News
 
 Documentation
 
-  * {{{./getting_started.html}Getting Started}}
+  * {{{http://wiki.apache.org/tajo/GettingStarted}Getting Started}}
 
-  * {{{./build.html}Build Instruction}}
+  * {{{http://wiki.apache.org/tajo/BuildInstruction}Build Instruction}}
 
-  * {{{./query_language.html}Query Language}}
+  * {{{http://wiki.apache.org/tajo/QueryLanguage}Query Language}}
 
-  * {{{./configuration.html}Configuration Guide}}
+  * {{{http://wiki.apache.org/tajo/Configuration}Configuration Guide}}
+
+  * {{{http://wiki.apache.org/tajo/BackupAndRestore}Backup and Restore}}
+
+  * {{{http://wiki.apache.org/tajo/Functions}Functions}}
 
 Presentations
 
