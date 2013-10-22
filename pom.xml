@@ -310,9 +310,7 @@
             <exclude>**/*.hiveql</exclude>
             <exclude>**/*.schema</exclude>
             <exclude>**/*.tbl</exclude>
-            <exclude>**/*.jsp</exclude>
             <exclude>**/*.js</exclude>
-            <exclude>**/web.xml</exclude>
             <exclude>**/*.result</exclude>
             <!-- generated content -->
             <exclude>**/target/**</exclude>
