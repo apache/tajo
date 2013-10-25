@@ -59,6 +59,8 @@ Release 0.2.0 - unreleased
 
   IMPROVEMENTS
 
+    TAJO-275: Separating QueryMaster and TaskRunner roles in worker. (Keuntae Park via jihoon)
+
     TAJO-270: Boolean datum compatible to apache hive. (jinho)
 
     TAJO-261: Rearrange default port numbers and config names. (hyunsik)

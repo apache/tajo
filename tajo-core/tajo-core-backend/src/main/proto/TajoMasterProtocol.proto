@@ -54,20 +54,23 @@ message ServerStatusProto {
     repeated Disk disk = 3;
     required int32 runningTaskNum = 4;
     required JvmHeap jvmHeap = 5;
+    required BoolProto queryMasterMode = 6;
+    required BoolProto taskRunnerMode = 7;
 }
 
 message TajoHeartbeat {
   required string tajoWorkerHost = 1;
-  required int32 tajoWorkerPort = 2;
-  optional ServerStatusProto serverStatus = 3;
-  optional int32 tajoWorkerClientPort = 4;
-  optional QueryIdProto queryId = 5;
-  optional QueryState state = 6;
-  optional string statusMessage = 7;
-  optional int32 tajoWorkerPullServerPort = 8;
-  optional int32 tajoWorkerHttpPort = 9;
-  optional float queryProgress = 10;
-  optional int64 queryFinishTime = 11;
+  required int32 peerRpcPort = 2;
+  required int32 tajoQueryMasterPort = 3;
+  optional ServerStatusProto serverStatus = 4;
+  optional int32 tajoWorkerClientPort = 5;
+  optional QueryIdProto queryId = 6;
+  optional QueryState state = 7;
+  optional string statusMessage = 8;
+  optional int32 tajoWorkerPullServerPort = 9;
+  optional int32 tajoWorkerHttpPort = 10;
+  optional float queryProgress = 11;
+  optional int64 queryFinishTime = 12;
 }
 
 message TajoHeartbeatResponse {
@@ -89,10 +92,12 @@ message WorkerResourceAllocationRequest {
 }
 
 message WorkerResourceProto {
-    required string workerHostAndPort = 1;
-    required ExecutionBlockIdProto executionBlockId = 2;
-    required int32 memoryMBSlots = 3 ;
-    required int32 diskSlots = 4;
+    required string host = 1;
+    required int32 peerRpcPort = 2;
+    required int32 queryMasterPort = 3;
+    required ExecutionBlockIdProto executionBlockId = 4;
+    required int32 memoryMBSlots = 5 ;
+    required int32 diskSlots = 6;
 }
 
 message WorkerResourceReleaseRequest {
@@ -100,8 +105,10 @@ message WorkerResourceReleaseRequest {
 }
 
 message WorkerAllocatedResource {
-    required string workerHostAndPort = 1;
-    required int32 workerPullServerPort = 2;
+    required string workerHost = 1;
+    required int32 peerRpcPort = 2;
+    required int32 queryMasterPort = 3;
+    required int32 workerPullServerPort = 4;
 }
 
 message WorkerResourceAllocationResponse {

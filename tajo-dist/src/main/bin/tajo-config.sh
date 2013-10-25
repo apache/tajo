@@ -62,8 +62,8 @@ then
     if [ "--hosts" = "$1" ]
     then
         shift
-        workesfile=$1
+        workerfile=$1
         shift
-        export TAJO_WORKERS="${TAJO_CONF_DIR}/$workesfile"
+        export TAJO_WORKERS="${TAJO_CONF_DIR}/$workerfile"
     fi
 fi

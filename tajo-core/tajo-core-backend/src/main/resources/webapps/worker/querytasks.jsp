@@ -46,7 +46,7 @@
 
   TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
   QueryMasterTask queryMasterTask = tajoWorker.getWorkerContext()
-          .getTajoWorkerManagerService().getQueryMaster().getQueryMasterTask(queryId, true);
+          .getQueryMasterManagerService().getQueryMaster().getQueryMasterTask(queryId, true);
 
   if(queryMasterTask == null) {
     out.write("<script type='text/javascript'>alert('no query'); history.back(0); </script>");

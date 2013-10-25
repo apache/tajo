@@ -107,7 +107,9 @@ public class QueryJobManager extends CompositeService {
     queryInProgress.init(getConfig());
     queryInProgress.start();
 
-    queryInProgress.startQueryMaster();
+    if(!queryInProgress.startQueryMaster()) {
+      return null;
+    }
 
     return queryInProgress.getQueryInfo();
   }
@@ -171,7 +173,8 @@ public class QueryJobManager extends CompositeService {
     if(queryHeartbeat.getTajoWorkerHost() != null) {
       WorkerResource queryMasterResource = new WorkerResource();
       queryMasterResource.setAllocatedHost(queryHeartbeat.getTajoWorkerHost());
-      queryMasterResource.setPeerRpcPort(queryHeartbeat.getTajoWorkerPort());
+      queryMasterResource.setPeerRpcPort(queryHeartbeat.getPeerRpcPort());
+      queryMasterResource.setQueryMasterPort(queryHeartbeat.getTajoQueryMasterPort());
       queryMasterResource.setClientPort(queryHeartbeat.getTajoWorkerClientPort());
       queryMasterResource.setPullServerPort(queryHeartbeat.getTajoWorkerPullServerPort());
       queryInfo.setQueryMasterResource(queryMasterResource);

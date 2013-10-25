@@ -74,7 +74,7 @@ public class TaskRunnerManager extends CompositeService {
       finishedTaskCleanThread.interrupted();
     }
     super.stop();
-    if(!workerContext.isStandbyMode()) {
+    if(workerContext.isYarnContainerMode()) {
       workerContext.stopWorker(true);
     }
   }
@@ -87,7 +87,7 @@ public class TaskRunnerManager extends CompositeService {
         finishedTaskRunnerMap.put(id, taskRunner);
       }
     }
-    if(!workerContext.isStandbyMode()) {
+    if(workerContext.isYarnContainerMode()) {
       stop();
     }
   }

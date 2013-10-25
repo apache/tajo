@@ -153,7 +153,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     super.stop();
 
     LOG.info("QueryMaster stop");
-    if(!queryMasterContext.getWorkerContext().isStandbyMode()) {
+    if(queryMasterContext.getWorkerContext().isYarnContainerMode()) {
       queryMasterContext.getWorkerContext().stopWorker(true);
     }
   }
@@ -162,8 +162,9 @@ public class QueryMaster extends CompositeService implements EventHandler {
     LOG.info("Send QueryMaster Ready to QueryJobManager:" + queryId);
     try {
       TajoHeartbeat.Builder queryHeartbeatBuilder = TajoHeartbeat.newBuilder()
-          .setTajoWorkerHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName())
-          .setTajoWorkerPort(workerContext.getTajoWorkerManagerService().getBindAddr().getPort())
+          .setTajoWorkerHost(workerContext.getQueryMasterManagerService().getBindAddr().getHostName())
+          .setPeerRpcPort(workerContext.getPeerRpcPort())
+          .setTajoQueryMasterPort(workerContext.getQueryMasterManagerService().getBindAddr().getPort())
           .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
           .setState(state)
           .setQueryId(queryId.getProto());
@@ -280,7 +281,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       } else {
         LOG.warn("No query info:" + queryId);
       }
-      if(!workerContext.isStandbyMode()) {
+      if(workerContext.isYarnContainerMode()) {
         stop();
       }
     }
@@ -288,8 +289,9 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private TajoHeartbeat buildTajoHeartBeat(QueryMasterTask queryMasterTask) {
     TajoHeartbeat queryHeartbeat = TajoHeartbeat.newBuilder()
-        .setTajoWorkerHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName())
-        .setTajoWorkerPort(workerContext.getTajoWorkerManagerService().getBindAddr().getPort())
+        .setTajoWorkerHost(workerContext.getQueryMasterManagerService().getBindAddr().getHostName())
+        .setTajoQueryMasterPort(workerContext.getQueryMasterManagerService().getBindAddr().getPort())
+        .setPeerRpcPort(workerContext.getPeerRpcPort())
         .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
         .setState(queryMasterTask.getState())
         .setQueryId(queryMasterTask.getQueryId().getProto())

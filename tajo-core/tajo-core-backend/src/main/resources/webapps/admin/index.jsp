@@ -19,25 +19,30 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
+<%@ page import="java.util.*" %>
+<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
+<%@ page import="org.apache.tajo.master.*" %>
+<%@ page import="org.apache.tajo.master.rm.*" %>
+<%@ page import="org.apache.tajo.catalog.*" %>
+<%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
+<%@ page import="org.apache.tajo.util.NetUtils" %>
+<%@ page import="org.apache.hadoop.util.StringUtils" %>
 <%@ page import="org.apache.hadoop.fs.FileSystem" %>
 <%@ page import="org.apache.tajo.conf.TajoConf" %>
-<%@ page import="org.apache.tajo.master.TajoMaster" %>
-<%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
-<%@ page import="org.apache.tajo.master.rm.WorkerResource" %>
-<%@ page import="org.apache.tajo.master.rm.WorkerStatus" %>
-<%@ page import="org.apache.tajo.util.NetUtils" %>
-<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="java.util.Collection" %>
-<%@ page import="java.util.Date" %>
-<%@ page import="java.util.Map" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
   Map<String, WorkerResource> workers = master.getContext().getResourceManager().getWorkers();
 
+  int numWorkers = 0;
   int numLiveWorkers = 0;
   int numDeadWorkers = 0;
   int numDecommissionWorkers = 0;
+
+  int numQueryMasters = 0;
+  int numLiveQueryMasters = 0;
+  int numDeadQueryMasters = 0;
+  int runningQueryMasterTask = 0;
 
   int totalSlot = 0;
   int runningSlot = 0;
@@ -45,16 +50,34 @@
 
   for(WorkerResource eachWorker: workers.values()) {
     if(eachWorker.getWorkerStatus() == WorkerStatus.LIVE) {
-      numLiveWorkers++;
-      idleSlot += eachWorker.getAvaliableSlots();
-      totalSlot += eachWorker.getSlots();
-      runningSlot += eachWorker.getUsedSlots();
+      if(eachWorker.isQueryMasterMode()) {
+        numQueryMasters++;
+        numLiveQueryMasters++;
+        runningQueryMasterTask += eachWorker.getNumQueryMasterTasks();
+      }
+      if(eachWorker.isTaskRunnerMode()) {
+        numWorkers++;
+        numLiveWorkers++;
+        idleSlot += eachWorker.getAvaliableSlots();
+        totalSlot += eachWorker.getSlots();
+        runningSlot += eachWorker.getUsedSlots();
+      }
     } else if(eachWorker.getWorkerStatus() == WorkerStatus.DEAD) {
-      numDeadWorkers++;
+      if(eachWorker.isQueryMasterMode()) {
+        numQueryMasters++;
+        numDeadQueryMasters++;
+      }
+      if(eachWorker.isTaskRunnerMode()) {
+        numWorkers++;
+        numDeadWorkers++;
+      }
     } else if(eachWorker.getWorkerStatus() == WorkerStatus.DECOMMISSION) {
       numDecommissionWorkers++;
     }
   }
+
+  String numDeadWorkersHtml = numDeadWorkers == 0 ? "0" : "<font color='red'>" + numDeadWorkers + "</font>";
+  String numDeadQueryMastersHtml = numDeadQueryMasters == 0 ? "0" : "<font color='red'>" + numDeadQueryMasters + "</font>";
 
   Collection<QueryInProgress> runningQueries = master.getContext().getQueryJobManager().getRunningQueries();
   Collection<QueryInProgress> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
@@ -111,9 +134,7 @@
     <tr><td width='150'>Staging dir:</td><td><%=TajoConf.getStagingDir(master.getContext().getConf())%></td></tr>
     <tr><td width='150'>Client Service:</td><td><%=NetUtils.normalizeInetSocketAddress(master.getTajoMasterClientService().getBindAddress())%></td></tr>
     <tr><td width='150'>Catalog Service:</td><td><%=master.getCatalogServer().getCatalogServerName()%></td></tr>
-    <tr><td width='150'>MaxHeap: </td><td><%=Runtime.getRuntime().maxMemory()/1024/1024%> MB</td>
-    <tr><td width='150'>TotalHeap: </td><td><%=Runtime.getRuntime().totalMemory()/1024/1024%> MB</td>
-    <tr><td width='150'>FreeHeap: </td><td><%=Runtime.getRuntime().freeMemory()/1024/1024%> MB</td>
+    <tr><td width='150'>Heap(Free/Total/Max): </td><td><%=Runtime.getRuntime().freeMemory()/1024/1024%> MB / <%=Runtime.getRuntime().totalMemory()/1024/1024%> MB / <%=Runtime.getRuntime().maxMemory()/1024/1024%> MB</td>
     <tr><td width='150'>Configuration:</td><td><a href='conf.jsp'>detail...</a></td></tr>
     <tr><td width='150'>Environment:</td><td><a href='env.jsp'>detail...</a></td></tr>
     <tr><td width='150'>Threads:</td><td><a href='thread.jsp'>thread dump...</a></tr>
@@ -121,23 +142,39 @@
   <hr/>
 
   <h3>Cluster Summary</h3>
-  <table border='0' width="100%">
+  <table width="100%" class="border_table" border="1">
+    <tr><th>Type</th><th>Total</th><th>Live</th><th>Dead</th><th>Total Slots</th><th>Running Slots</th><th>Idle Slots</th></tr>
     <tr>
-      <td width='150'><a href='cluster.jsp'>Workers:</a></td><td>Total: <%=workers.size()%>&nbsp;&nbsp;&nbsp;&nbsp;Live: <%=numLiveWorkers%>&nbsp;&nbsp;&nbsp;&nbsp;Dead: <%=numDeadWorkers%></td>
+      <td><a href='cluster.jsp'>Query Master</a></td>
+      <td align='right'><%=numQueryMasters%></td>
+      <td align='right'><%=numLiveQueryMasters%></td>
+      <td align='right'><%=numDeadQueryMastersHtml%></td>
+      <td align='right'>-</td>
+      <td align='right'><%=runningQueryMasterTask%></td>
+      <td align='right'>-</td>
     </tr>
     <tr>
-      <td width='150'>Task Slots</td><td>Total: <%=totalSlot%>&nbsp;&nbsp;&nbsp;&nbsp;Occupied:<%=runningSlot%>&nbsp;&nbsp;&nbsp;&nbsp;Idle: <%=idleSlot%></td>
+      <td><a href='cluster.jsp'>Worker</a></td>
+      <td align='right'><%=numWorkers%></td>
+      <td align='right'><%=numLiveWorkers%></td>
+      <td align='right'><%=numDeadWorkersHtml%></td>
+      <td align='right'><%=totalSlot%></td>
+      <td align='right'><%=runningSlot%></td>
+      <td align='right'><%=idleSlot%></td>
     </tr>
   </table>
+  <p/>
   <hr/>
 
   <h3>Query Summary</h3>
-  <table border='0'>
+  <table width="100%" class="border_table" border="1">
+    <tr><th>Running Queries</th><th>Finished Queries</th><th>Average Execution Time</th><th>Min. Execution Time</th><th>Max. Execution Time</th></tr>
     <tr>
-      <td width="100">Queries:</td><td>Running: <%=runningQueries.size()%>&nbsp;&nbsp;&nbsp;&nbsp;Finished: <%=finishedQueries.size()%></td>
-    </tr>
-    <tr>
-      <td width="100">Running time:</td><td>Average: <%=avgQueryTime/1000%>&nbsp;&nbsp;&nbsp;&nbsp;Min: <%=minQueryTime/1000%>&nbsp;&nbsp;&nbsp;&nbsp;Max: <%=maxQueryTime/1000%> ms</td>
+      <td align='right'><%=runningQueries.size()%></td>
+      <td align='right'><%=finishedQueries.size()%></td>
+      <td align='left'><%=avgQueryTime/1000%> sec</td>
+      <td align='left'><%=minQueryTime/1000%> sec</td>
+      <td align='left'><%=maxQueryTime/1000%> sec</td>
     </tr>
   </table>
 </div>

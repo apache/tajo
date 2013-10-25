@@ -93,7 +93,8 @@ public class TajoMasterService extends AbstractService {
         RpcController controller,
         TajoMasterProtocol.TajoHeartbeat request, RpcCallback<TajoMasterProtocol.TajoHeartbeatResponse> done) {
       if(LOG.isDebugEnabled()) {
-        LOG.debug("Received QueryHeartbeat:" + request.getTajoWorkerHost() + ":" + request.getTajoWorkerPort());
+        LOG.debug("Received QueryHeartbeat:" + request.getTajoWorkerHost() + ":" +
+            request.getTajoQueryMasterPort() + ":" + request.getPeerRpcPort());
       }
 
       TajoMasterProtocol.TajoHeartbeatResponse.ResponseCommand command = null;
@@ -137,9 +138,10 @@ public class TajoMasterService extends AbstractService {
       List<TajoMasterProtocol.WorkerResourceProto> workerResources = request.getWorkerResourcesList();
       for(TajoMasterProtocol.WorkerResourceProto eachWorkerResource: workerResources) {
         WorkerResource workerResource = new WorkerResource();
-        String[] tokens = eachWorkerResource.getWorkerHostAndPort().split(":");
-        workerResource.setAllocatedHost(tokens[0]);
-        workerResource.setPeerRpcPort(Integer.parseInt(tokens[1]));
+        workerResource.setAllocatedHost(eachWorkerResource.getHost());
+
+        workerResource.setPeerRpcPort(eachWorkerResource.getPeerRpcPort());
+        workerResource.setQueryMasterPort(eachWorkerResource.getQueryMasterPort());
         workerResource.setMemoryMBSlots(eachWorkerResource.getMemoryMBSlots());
         workerResource.setDiskSlots(eachWorkerResource.getDiskSlots());
 

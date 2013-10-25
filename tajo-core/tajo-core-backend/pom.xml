@@ -129,6 +129,7 @@
                 <argument>--java_out=target/generated-sources/proto</argument>
                 <argument>src/main/proto/tajo_protos.proto</argument>
                 <argument>src/main/proto/ClientProtos.proto</argument>
+                <argument>src/main/proto/QueryMasterProtocol.proto</argument>
                 <argument>src/main/proto/QueryMasterClientProtocol.proto</argument>
                 <argument>src/main/proto/TajoMasterProtocol.proto</argument>
                 <argument>src/main/proto/TajoWorkerProtocol.proto</argument>

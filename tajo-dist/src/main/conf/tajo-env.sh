@@ -36,6 +36,9 @@
 # The maximum amount of heap to use, in MB. Default is 1000.
 # export TAJO_WORKER_HEAPSIZE=1000
 
+# The maximum amount of heap to use, in MB. Default is 1000.
+# export TAJO_QUERYMASTER_HEAPSIZE=1000
+
 # Extra Java runtime options.  Empty by default.
 # export TAJO_OPTS=-server
 
@@ -44,6 +47,9 @@
 
 # Extra TajoWorker's java runtime options for TajoMaster. Empty by default
 # export TAJO_WORKER_OPTS=
+
+# Extra  QueryMaster mode TajoWorker's java runtime options for TajoMaster. Empty by default
+# export TAJO_QUERYMASTER_OPTS=
 
 # Where log files are stored.  $TAJO_HOME/logs by default.
 # export TAJO_LOG_DIR=${TAJO_HOME}/logs

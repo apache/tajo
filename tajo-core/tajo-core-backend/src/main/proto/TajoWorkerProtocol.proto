@@ -155,15 +155,7 @@ message RunExecutionBlockRequestProto {
 }
 
 service TajoWorkerProtocolService {
-  //from Worker
-  rpc getTask(GetTaskRequestProto) returns (QueryUnitRequestProto);
-  rpc statusUpdate (TaskStatusProto) returns (BoolProto);
   rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
-  rpc fatalError(TaskFatalErrorReport) returns (BoolProto);
-  rpc done (TaskCompletionReport) returns (BoolProto);
-
-  //from TajoMaster's QueryJobManager
-  rpc executeQuery(QueryExecutionRequestProto) returns (BoolProto);
 
   //from QueryMaster(Worker)
   rpc executeExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);

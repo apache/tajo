@@ -79,6 +79,10 @@ public class YarnTajoResourceManager implements WorkerResourceManager {
     return new HashMap<String, WorkerResource>();
   }
 
+  public Collection<String> getQueryMasters() {
+    return new ArrayList<String>();
+  }
+
   public int getNumClusterSlots() {
     return 0;
   }

@@ -40,10 +40,11 @@ import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.SortNode;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
-import org.apache.tajo.ipc.TajoWorkerProtocol.*;
-import org.apache.tajo.ipc.TajoWorkerProtocol.TajoWorkerProtocolService.Interface;
+import org.apache.tajo.ipc.QueryMasterProtocol;
+import org.apache.tajo.ipc.QueryMasterProtocol.*;
 import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.Fragment;
 import org.apache.tajo.storage.StorageUtil;
@@ -68,7 +69,7 @@ public class Task {
   private final QueryContext queryContext;
   private final FileSystem localFS;
   private final TaskRunner.TaskRunnerContext taskRunnerContext;
-  private final Interface masterProxy;
+  private final QueryMasterProtocol.QueryMasterProtocolService.Interface masterProxy;
   private final LocalDirAllocator lDirAllocator;
   private final QueryUnitAttemptId taskId;
 
@@ -125,7 +126,8 @@ public class Task {
       };
 
   public Task(QueryUnitAttemptId taskId,
-              final TaskRunner.TaskRunnerContext worker, final Interface masterProxy,
+              final TaskRunner.TaskRunnerContext worker,
+              final QueryMasterProtocolService.Interface masterProxy,
               final QueryUnitRequest request) throws IOException {
     this.request = request;
     this.reporter = new Reporter(masterProxy);
@@ -544,12 +546,12 @@ public class Task {
   }
 
   protected class Reporter implements Runnable {
-    private Interface masterStub;
+    private QueryMasterProtocolService.Interface masterStub;
     private Thread pingThread;
     private Object lock = new Object();
     private static final int PROGRESS_INTERVAL = 3000;
 
-    public Reporter(Interface masterStub) {
+    public Reporter(QueryMasterProtocolService.Interface masterStub) {
       this.masterStub = masterStub;
     }
 

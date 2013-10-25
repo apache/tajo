@@ -261,10 +261,9 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
         for(TajoMasterProtocol.WorkerAllocatedResource eachWorker: workerHosts) {
           TajoWorkerContainer container = new TajoWorkerContainer();
           NodeIdPBImpl nodeId = new NodeIdPBImpl();
-          String[] tokens = eachWorker.getWorkerHostAndPort().split(":");
 
-          nodeId.setHost(tokens[0]);
-          nodeId.setPort(Integer.parseInt(tokens[1]));
+          nodeId.setHost(eachWorker.getWorkerHost());
+          nodeId.setPort(eachWorker.getPeerRpcPort());
 
           TajoWorkerContainerId containerId = new TajoWorkerContainerId();
 
@@ -278,6 +277,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
           WorkerResource workerResource = new WorkerResource();
           workerResource.setAllocatedHost(nodeId.getHost());
           workerResource.setPeerRpcPort(nodeId.getPort());
+          workerResource.setQueryMasterPort(eachWorker.getQueryMasterPort());
           workerResource.setPullServerPort(eachWorker.getWorkerPullServerPort());
           workerResource.setMemoryMBSlots(requiredMemoryMBSlot);
           workerResource.setDiskSlots(requiredDiskSlots);

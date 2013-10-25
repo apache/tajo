@@ -65,7 +65,7 @@ public class TajoContainerProxy extends ContainerProxy {
     AsyncRpcClient tajoWorkerRpc = null;
     try {
       InetSocketAddress myAddr= context.getQueryMasterContext().getWorkerContext()
-          .getTajoWorkerManagerService().getBindAddr();
+          .getQueryMasterManagerService().getBindAddr();
 
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
       tajoWorkerRpc = new AsyncRpcClient(TajoWorkerProtocol.class, addr);
@@ -151,7 +151,9 @@ public class TajoContainerProxy extends ContainerProxy {
 
     for(WorkerResource eahWorkerResource: workerResources) {
       workerResourceProtos.add(TajoMasterProtocol.WorkerResourceProto.newBuilder()
-          .setWorkerHostAndPort(eahWorkerResource.getId())
+          .setHost(eahWorkerResource.getAllocatedHost())
+          .setQueryMasterPort(eahWorkerResource.getQueryMasterPort())
+          .setPeerRpcPort(eahWorkerResource.getPeerRpcPort())
           .setExecutionBlockId(executionBlockId.getProto())
           .setMemoryMBSlots(eahWorkerResource.getMemoryMBSlots())
           .setDiskSlots(eahWorkerResource.getDiskSlots())

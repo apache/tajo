@@ -105,7 +105,8 @@ fi
 
 JAVA=$JAVA_HOME/bin/java
 JAVA_TAJO_MASTER_HEAP_MAX=-Xmx1000m 
-JAVA_WORKER_HEAP_MAX=-Xmx1000m 
+JAVA_WORKER_HEAP_MAX=-Xmx1000m
+JAVA_QUERYMASTER_HEAP_MAX=-Xmx1000m
 
 # check envvars which might override default args
 if [ "$TAJO_MASTER_HEAPSIZE" != "" ]; then
@@ -117,6 +118,11 @@ if [ "$TAJO_WORKER_HEAPSIZE" != "" ]; then
   #echo "run with heapsize $TAJO_WORKER_HEAPSIZE"
   JAVA_WORKER_HEAP_MAX="-Xmx""$TAJO_WORKER_HEAPSIZE""m"
   #echo $JAVA_WORKER_HEAP_MAX
+fi
+if [ "$TAJO_QUERYMASTER_HEAPSIZE" != "" ]; then
+  #echo "run with heapsize $TAJO_QUERYMASTER_HEAPSIZE"
+  JAVA_QUERYMASTER_HEAP_MAX="-Xmx""$TAJO_QUERYMASTER_HEAPSIZE""m"
+  #echo $JAVA_QUERYMASTER_HEAP_MAX
 fi
 
 
@@ -287,6 +293,15 @@ elif [ "$COMMAND" = "master" ] ; then
 elif [ "$COMMAND" = "worker" ] ; then
   CLASS='org.apache.tajo.worker.TajoWorker'
   TAJO_OPTS="$TAJO_OPTS $JAVA_WORKER_HEAP_MAX $TAJO_WORKER_OPTS"
+elif [ "$COMMAND" = "querymaster" ] ; then
+  CLASS='org.apache.tajo.worker.TajoWorker'
+  TAJO_OPTS="$TAJO_OPTS $JAVA_QUERYMASTER_HEAP_MAX $TAJO_QUERYMASTER_OPTS"
+  TAJO_DAEMON_MODE='standby-qm'
+elif [ "$COMMAND" = "taskrunner" ] ; then
+  CLASS='org.apache.tajo.worker.TajoWorker'
+  TAJO_OPTS="$TAJO_OPTS $TAJO_WORKER_OPTS"
+  TAJO_OPTS="$TAJO_OPTS $JAVA_WORKER_HEAP_MAX $TAJO_WORKER_OPTS"
+  TAJO_DAEMON_MODE='standby-tr'
 elif [ "$COMMAND" = "catalog" ] ; then
   CLASS='org.apache.tajo.catalog.CatalogServer'
   TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"
@@ -347,4 +362,4 @@ fi
 TAJO_OPTS="$TAJO_OPTS -Dtajo.policy.file=$TAJO_POLICYFILE"
 
 # run it
-exec "$JAVA" -Dproc_$COMMAND $TAJO_OPTS -classpath "$CLASSPATH" $CLASS "$@"
+exec "$JAVA" -Dproc_$COMMAND $TAJO_OPTS -classpath "$CLASSPATH" $CLASS $TAJO_DAEMON_MODE "$@"

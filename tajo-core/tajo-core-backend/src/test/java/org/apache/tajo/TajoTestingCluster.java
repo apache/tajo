@@ -301,7 +301,7 @@ public class TajoTestingCluster {
 
   private void startTajoWorkers(int numSlaves) throws Exception {
     for(int i = 0; i < 1; i++) {
-      TajoWorker tajoWorker = new TajoWorker("worker_" + i);
+      TajoWorker tajoWorker = new TajoWorker();
 
       TajoConf workerConf  = new TajoConf(this.conf);
 
@@ -309,6 +309,8 @@ public class TajoTestingCluster {
       workerConf.setVar(ConfVars.WORKER_CLIENT_RPC_ADDRESS, "localhost:0");
       workerConf.setVar(ConfVars.WORKER_PEER_RPC_ADDRESS, "localhost:0");
 
+      workerConf.setVar(ConfVars.WORKER_QM_RPC_ADDRESS, "localhost:0");
+      
       tajoWorker.startWorker(workerConf, new String[]{"standby"});
 
       LOG.info("MiniTajoCluster Worker #" + (i + 1) + " started.");

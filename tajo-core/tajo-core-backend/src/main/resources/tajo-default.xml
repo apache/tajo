@@ -24,4 +24,17 @@
     <name>tajo.worker.tmpdir.locations</name>
     <value>/tmp/tajo-${user.name}/tmpdir</value>
   </property>
+
+  <property>
+    <name>tajo.worker.mode.querymaster</name>
+    <value>true</value>
+    <description></description>
+  </property>
+
+  <property>
+    <name>tajo.worker.mode.taskrunner</name>
+    <value>true</value>
+    <description></description>
+  </property>
+
 </configuration>

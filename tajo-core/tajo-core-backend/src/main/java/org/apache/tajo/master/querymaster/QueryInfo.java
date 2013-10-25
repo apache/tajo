@@ -66,7 +66,7 @@ public class QueryInfo {
     if(queryMasterResource == null) {
       return 0;
     }
-    return queryMasterResource.getPeerRpcPort();
+    return queryMasterResource.getQueryMasterPort();
   }
 
   public int getQueryMasterClientPort() {

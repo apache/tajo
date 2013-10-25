@@ -25,6 +25,7 @@ import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 
 public interface WorkerResourceManager {
@@ -62,4 +63,6 @@ public interface WorkerResourceManager {
   public void stop();
 
   public int getNumClusterSlots();
+
+  Collection<String> getQueryMasters();
 }

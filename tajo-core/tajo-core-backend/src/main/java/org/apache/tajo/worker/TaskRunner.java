@@ -38,6 +38,8 @@ import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
+import org.apache.tajo.ipc.QueryMasterProtocol;
+import org.apache.tajo.ipc.QueryMasterProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.rpc.AsyncRpcClient;
 import org.apache.tajo.rpc.CallFuture;
@@ -68,7 +70,7 @@ public class TaskRunner extends AbstractService {
   private ContainerId containerId;
 
   // Cluster Management
-  private TajoWorkerProtocol.TajoWorkerProtocolService.Interface master;
+  private QueryMasterProtocolService.Interface master;
 
   // for temporal or intermediate files
   private FileSystem localFS;
@@ -134,12 +136,12 @@ public class TaskRunner extends AbstractService {
       UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(conf.getVar(ConfVars.USERNAME));
       //taskOwner.addToken(token);
 
-      // initialize MasterWorkerProtocol as an actual task owner.
+      // initialize QueryMasterProtocol as an actual task owner.
       this.client =
           taskOwner.doAs(new PrivilegedExceptionAction<AsyncRpcClient>() {
             @Override
             public AsyncRpcClient run() throws Exception {
-              return new AsyncRpcClient(TajoWorkerProtocol.class, masterAddr);
+              return new AsyncRpcClient(QueryMasterProtocol.class, masterAddr);
             }
           });
       this.master = client.getStub();
@@ -235,7 +237,7 @@ public class TaskRunner extends AbstractService {
       return nodeId.toString();
     }
 
-    public TajoWorkerProtocolService.Interface getMaster() {
+    public QueryMasterProtocolService.Interface getMaster() {
       return master;
     }
 
@@ -280,7 +282,7 @@ public class TaskRunner extends AbstractService {
     return taskRunnerContext;
   }
 
-  static void fatalError(TajoWorkerProtocolService.Interface proxy,
+  static void fatalError(QueryMasterProtocolService.Interface proxy,
                          QueryUnitAttemptId taskAttemptId, String message) {
     TaskFatalErrorReport.Builder builder = TaskFatalErrorReport.newBuilder()
         .setId(taskAttemptId.getProto())

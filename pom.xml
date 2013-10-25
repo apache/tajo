@@ -306,6 +306,7 @@
           <excludes>
             <exclude>CHANGES.txt</exclude>
             <exclude>**/workers</exclude>
+            <exclude>**/querymasters</exclude>
             <exclude>**/*.sql</exclude>
             <exclude>**/*.hiveql</exclude>
             <exclude>**/*.schema</exclude>

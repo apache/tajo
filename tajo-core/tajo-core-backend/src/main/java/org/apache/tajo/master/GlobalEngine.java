@@ -149,13 +149,20 @@ public class GlobalEngine extends AbstractService {
 
         queryInfo = queryJobManager.createNewQueryJob(queryContext, sql, rootNode);
 
-        responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
-        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
-        responseBuilder.setState(queryInfo.getQueryState());
-        if(queryInfo.getQueryMasterHost() != null) {
-          responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+        if(queryInfo == null) {
+          responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+          responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
+          responseBuilder.setState(TajoProtos.QueryState.QUERY_ERROR);
+          responseBuilder.setErrorMessage("Fail starting QueryMaster.");
+        } else {
+          responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
+          responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+          responseBuilder.setState(queryInfo.getQueryState());
+          if(queryInfo.getQueryMasterHost() != null) {
+            responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+          }
+          responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
         }
-        responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
       }
       GetQueryStatusResponse response = responseBuilder.build();
 

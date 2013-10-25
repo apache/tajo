@@ -19,19 +19,16 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="org.apache.tajo.master.TajoMaster" %>
-<%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
-<%@ page import="org.apache.tajo.util.JSPUtil" %>
-<%@ page import="org.apache.tajo.util.StringUtils" %>
+<%@ page import="java.util.*" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
+<%@ page import="org.apache.tajo.master.*" %>
+<%@ page import="org.apache.tajo.util.*" %>
+<%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
 <%@ page import="java.text.SimpleDateFormat" %>
-<%@ page import="java.util.List" %>
-<%@ page import="static org.apache.tajo.conf.TajoConf.ConfVars.WORKER_INFO_ADDRESS" %>
-<%@ page import="org.apache.tajo.conf.TajoConf" %>
+<%@ page import="org.apache.tajo.master.rm.WorkerResource" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
-  TajoConf conf = master.getContext().getConf();
 
   List<QueryInProgress> runningQueries =
           JSPUtil.sortQueryInProgress(master.getContext().getQueryJobManager().getRunningQueries(), true);
@@ -40,7 +37,17 @@
           JSPUtil.sortQueryInProgress(master.getContext().getQueryJobManager().getFinishedQueries(), true);
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-  int workerHttpPort = Integer.valueOf(conf.getVar(WORKER_INFO_ADDRESS).split(":")[1]);
+
+  Map<String, WorkerResource> workers = master.getContext().getResourceManager().getWorkers();
+  Map<String, Integer> portMap = new HashMap<String, Integer>();
+
+  Collection<String> queryMasters = master.getContext().getResourceManager().getQueryMasters();
+  for(String eachQueryMasterKey: queryMasters) {
+    WorkerResource queryMaster = workers.get(eachQueryMasterKey);
+    if(queryMaster != null) {
+      portMap.put(queryMaster.getAllocatedHost(), queryMaster.getHttpPort());
+    }
+  }
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -66,7 +73,7 @@
     <%
       for(QueryInProgress eachQuery: runningQueries) {
         long time = System.currentTimeMillis() - eachQuery.getQueryInfo().getStartTime();
-        String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + workerHttpPort +
+        String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + portMap.get(eachQuery.getQueryInfo().getQueryMasterHost()) +
                 "/querydetail.jsp?queryId=" + eachQuery.getQueryId();
     %>
     <tr>
@@ -98,7 +105,7 @@
       for(QueryInProgress eachQuery: finishedQueries) {
         long runTime = eachQuery.getQueryInfo().getFinishTime() >= 0 ?
                 eachQuery.getQueryInfo().getFinishTime() - eachQuery.getQueryInfo().getStartTime() : -1;
-        String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + workerHttpPort +
+        String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + portMap.get(eachQuery.getQueryInfo().getQueryMasterHost())  +
                 "/querydetail.jsp?queryId=" + eachQuery.getQueryId();
     %>
     <tr>
